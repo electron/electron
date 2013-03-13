@@ -1,0 +1,26 @@
+#!/bin/sh
+#/ Usage: bootstrap https://base.url.com/from/libchromiumcontent/script/upload
+#/ Bootstrap this project.
+
+set -e
+
+usage() {
+  grep '^#/' <"$0"| cut -c4-
+}
+
+BASE_URL="${1}"
+
+if [ -z "${BASE_URL}" ]; then
+  usage
+  exit 1
+fi
+
+cd "$(dirname "$0")/.."
+
+git submodule sync --quiet
+git submodule update --init --recursive
+
+SOURCE_ROOT="$(pwd -P)"
+DOWNLOAD_DIR="${SOURCE_ROOT}/vendor/download"
+mkdir -p "${DOWNLOAD_DIR}"
+vendor/libchromiumcontent/script/download "${BASE_URL}" "${DOWNLOAD_DIR}/libchromiumcontent"
