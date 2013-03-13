@@ -4,6 +4,8 @@
 
 #include "browser_context.h"
 
+#include "common/application_name.h"
+
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "content/public/browser/browser_thread.h"
@@ -53,10 +55,9 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(content::Prot
 }
 
 base::FilePath BrowserContext::GetPath() {
-  // FIXME: This should be an application-specific path.
   base::FilePath path;
   CHECK(PathService::Get(base::DIR_APP_DATA, &path));
-  return path.Append("Brightray");
+  return path.Append(GetApplicationName());
 }
 
 bool BrowserContext::IsOffTheRecord() const {

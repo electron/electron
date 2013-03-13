@@ -5,6 +5,7 @@
 
 #import "main_delegate.h"
 
+#include "common/application_name.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/path_service.h"
@@ -35,23 +36,19 @@ base::FilePath GetFrameworksPath() {
   return path.Append("Frameworks");
 }
 
-std::string OuterBundleName() {
-  return [[base::mac::OuterBundle().infoDictionary objectForKey:base::mac::CFToNSCast(kCFBundleNameKey)] UTF8String];
-}
-
 }
 
 void MainDelegate::OverrideFrameworkBundlePath() {
-  base::FilePath helper_path = GetFrameworksPath().Append(OuterBundleName() + ".framework");
+  base::FilePath helper_path = GetFrameworksPath().Append(GetApplicationName() + ".framework");
 
   base::mac::SetOverrideFrameworkBundlePath(helper_path);
 }
 
 void MainDelegate::OverrideChildProcessPath() {
-  base::FilePath helper_path = GetFrameworksPath().Append(OuterBundleName() + " Helper.app")
+  base::FilePath helper_path = GetFrameworksPath().Append(GetApplicationName() + " Helper.app")
     .Append("Contents")
     .Append("MacOS")
-    .Append(OuterBundleName() + " Helper");
+    .Append(GetApplicationName() + " Helper");
 
   PathService::Override(content::CHILD_PROCESS_EXE, helper_path);
 }

@@ -7,6 +7,7 @@
       'target_name': 'brightray',
       'type': 'static_library',
       'include_dirs': [
+        '.',
         '<(libchromiumcontent_include_dir)',
       ],
       'direct_dependent_settings': {
@@ -28,6 +29,8 @@
         'browser/network_delegate.h',
         'browser/url_request_context_getter.cc',
         'browser/url_request_context_getter.h',
+        'common/application_name.h',
+        'common/application_name_mac.mm',
         'common/main_delegate.cc',
         'common/main_delegate.h',
         'common/main_delegate_mac.mm',
