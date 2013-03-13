@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef __brightray__browser_client__
-#define __brightray__browser_client__
+#ifndef BRIGHTRAY_BROWSER_BROWSER_CLIENT_H_
+#define BRIGHTRAY_BROWSER_BROWSER_CLIENT_H_
 
 #include "content/public/browser/content_browser_client.h"
 
@@ -36,4 +36,4 @@ private:
 
 }
 
-#endif /* defined(__brightray__browser_client__) */
+#endif

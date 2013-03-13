@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef __brightray__main_parts__
-#define __brightray__main_parts__
+#ifndef BRIGHTRAY_BROWSER_BROWSER_MAIN_PARTS_H_
+#define BRIGHTRAY_BROWSER_BROWSER_MAIN_PARTS_H_
 
 #include "base/compiler_specific.h"
 #include "base/memory/scoped_ptr.h"
@@ -35,4 +35,4 @@ private:
 
 }
 
-#endif /* defined(__brightray__main_parts__) */
+#endif

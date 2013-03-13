@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef __brightray__network_delegate__
-#define __brightray__network_delegate__
+#ifndef BRIGHTRAY_BROWSER_NETWORK_DELEGATE_H_
+#define BRIGHTRAY_BROWSER_NETWORK_DELEGATE_H_
 
 #include "net/base/network_delegate.h"
 
@@ -38,4 +38,4 @@ private:
 
 }
 
-#endif /* defined(__brightray__network_delegate__) */
+#endif

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef __brightray__url_request_context_getter__
-#define __brightray__url_request_context_getter__
+#ifndef BRIGHTRAY_BROWSER_URL_REQUEST_CONTEXT_GETTER_H_
+#define BRIGHTRAY_BROWSER_URL_REQUEST_CONTEXT_GETTER_H_
 
 #include "base/files/file_path.h"
 #include "base/memory/scoped_ptr.h"
@@ -51,4 +51,4 @@ private:
 
 }
 
-#endif /* defined(__brightray__url_request_context_getter__) */
+#endif

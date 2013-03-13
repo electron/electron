@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef __brightray__main_delegate__
-#define __brightray__main_delegate__
+#ifndef BRIGHTRAY_COMMON_MAIN_DELEGATE_H_
+#define BRIGHTRAY_COMMON_MAIN_DELEGATE_H_
 
 #include "base/compiler_specific.h"
 #include "base/memory/scoped_ptr.h"
@@ -28,4 +28,4 @@ private:
 };
 
 }
-#endif /* defined(__brightray__main_delegate__) */
+#endif
