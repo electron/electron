@@ -6,6 +6,7 @@
 #import "main_delegate.h"
 
 #include "common/application_name.h"
+#include "common/mac/main_application_bundle.h"
 
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
@@ -18,24 +19,7 @@ namespace brightray {
 namespace {
 
 base::FilePath GetFrameworksPath() {
-  // Start out with the path to the running executable.
-  base::FilePath path;
-  PathService::Get(base::FILE_EXE, &path);
-  
-  // Up to Contents.
-  if (base::mac::IsBackgroundOnlyProcess()) {
-    // The running executable is the helper. Go up five steps:
-    // Contents/Frameworks/Helper.app/Contents/MacOS/Helper
-    // ^ to here                                     ^ from here
-    path = path.DirName().DirName().DirName().DirName().DirName();
-  } else {
-    // One step up to MacOS, another to Contents.
-    path = path.DirName().DirName();
-  }
-  DCHECK_EQ(path.BaseName().value(), "Contents");
-  
-  // Go into the frameworks directory.
-  return path.Append("Frameworks");
+  return MainApplicationBundlePath().Append("Contents").Append("Frameworks");
 }
 
 }
