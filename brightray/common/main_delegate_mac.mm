@@ -6,10 +6,12 @@
 #import "main_delegate.h"
 
 #include "common/application_name.h"
+
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/path_service.h"
 #include "content/public/common/content_paths.h"
+#include "ui/base/resource/resource_bundle.h"
 
 namespace brightray {
 
@@ -36,6 +38,12 @@ base::FilePath GetFrameworksPath() {
   return path.Append("Frameworks");
 }
 
+}
+
+void MainDelegate::InitializeResourceBundle() {
+  auto path = [base::mac::FrameworkBundle() pathForResource:@"content_shell" ofType:@"pak"];
+
+  ui::ResourceBundle::InitSharedInstanceWithPakPath(base::mac::NSStringToFilePath(path));
 }
 
 void MainDelegate::OverrideFrameworkBundlePath() {
