@@ -7,6 +7,7 @@
 
 #include "base/memory/scoped_ptr.h"
 #include "content/public/browser/devtools_frontend_host_delegate.h"
+#include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 
 namespace content {
@@ -16,13 +17,15 @@ class DevToolsClientHost;
 
 namespace brightray {
 
-class DevToolsFrontend : content::DevToolsFrontendHostDelegate, content::WebContentsObserver {
+class DevToolsFrontend : content::DevToolsFrontendHostDelegate, content::WebContentsObserver, content::WebContentsDelegate {
 public:
   static content::WebContents* Show(content::WebContents* inspected_contents);
 
 private:
   DevToolsFrontend(content::WebContents* inspected_contents);
   ~DevToolsFrontend();
+
+  // content::DevToolsFrontendHostDelegate
 
   virtual void ActivateWindow() OVERRIDE;
   virtual void ChangeAttachedWindowHeight(unsigned height) OVERRIDE;
@@ -40,9 +43,16 @@ private:
   virtual void RemoveFileSystem(const std::string& file_system_path) OVERRIDE;
   virtual void InspectedContentsClosing() OVERRIDE;
 
+  // content::WebContentsObserver
+
   virtual void RenderViewCreated(content::RenderViewHost*) OVERRIDE;
   virtual void WebContentsDestroyed(content::WebContents*) OVERRIDE;
 
+  // content::WebContentsDelegate
+
+  virtual void HandleKeyboardEvent(content::WebContents*, const content::NativeWebKeyboardEvent&) OVERRIDE;
+
+  content::WebContents* inspected_web_contents_;
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
   scoped_ptr<content::DevToolsClientHost> frontend_host_;
 };

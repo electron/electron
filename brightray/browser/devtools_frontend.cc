@@ -24,8 +24,10 @@ content::WebContents* DevToolsFrontend::Show(content::WebContents* inspected_con
 
 DevToolsFrontend::DevToolsFrontend(content::WebContents* inspected_contents)
   : WebContentsObserver(content::WebContents::Create(content::WebContents::CreateParams(inspected_contents->GetBrowserContext()))),
+    inspected_web_contents_(inspected_contents),
     agent_host_(content::DevToolsAgentHost::GetFor(inspected_contents->GetRenderViewHost())),
     frontend_host_(content::DevToolsClientHost::CreateDevToolsFrontendHost(web_contents(), this)) {
+  web_contents()->SetDelegate(this);
   auto client = static_cast<BrowserClient*>(content::GetContentClient()->browser());
   auto handler = client->browser_main_parts()->devtools_http_handler();
   auto url = handler->GetFrontendURL(nullptr);
@@ -79,6 +81,12 @@ void DevToolsFrontend::RenderViewCreated(content::RenderViewHost* render_view_ho
 void DevToolsFrontend::WebContentsDestroyed(content::WebContents*) {
   content::DevToolsManager::GetInstance()->ClientHostClosing(frontend_host_.get());
   delete this;
+}
+
+void DevToolsFrontend::HandleKeyboardEvent(content::WebContents* source, const content::NativeWebKeyboardEvent& event) {
+  auto delegate = inspected_web_contents_->GetDelegate();
+  if (delegate)
+    delegate->HandleKeyboardEvent(source, event);
 }
 
 }
