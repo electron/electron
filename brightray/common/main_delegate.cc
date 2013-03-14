@@ -25,9 +25,6 @@ bool MainDelegate::BasicStartupComplete(int* exit_code) {
 }
 
 void MainDelegate::PreSandboxStartup() {
-  // FIXME: We don't currently support running sandboxed.
-  CommandLine::ForCurrentProcess()->AppendSwitch(switches::kNoSandbox);
-
 #if defined(OS_MACOSX)
   OverrideChildProcessPath();
   OverrideFrameworkBundlePath();
