@@ -35,6 +35,7 @@ using namespace brightray;
 }
 
 - (void)dealloc {
+  [_private->splitView release];
   [_private release];
   _private = nil;
 
