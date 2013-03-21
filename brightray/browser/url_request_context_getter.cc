@@ -10,14 +10,14 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/url_constants.h"
 #include "net/base/cert_verifier.h"
-#include "net/base/default_server_bound_cert_store.h"
-#include "net/base/server_bound_cert_service.h"
-#include "net/base/ssl_config_service_defaults.h"
 #include "net/cookies/cookie_monster.h"
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_cache.h"
 #include "net/http/http_server_properties_impl.h"
 #include "net/proxy/proxy_service.h"
+#include "net/ssl/default_server_bound_cert_store.h"
+#include "net/ssl/server_bound_cert_service.h"
+#include "net/ssl/ssl_config_service_defaults.h"
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_storage.h"
@@ -64,7 +64,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext()
         base::WorkerPool::GetTaskRunner(true)));
     storage_->set_http_user_agent_settings(
         new net::StaticHttpUserAgentSettings(
-            "en-us,en", "iso-8859-1,*,utf-8", EmptyString()));
+            "en-us,en", EmptyString()));
 
     scoped_ptr<net::HostResolver> host_resolver(
         net::HostResolver::CreateDefaultResolver(NULL));

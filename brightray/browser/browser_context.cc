@@ -11,7 +11,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_context.h"
 #include "content/public/browser/storage_partition.h"
-#include "net/base/host_resolver.h"
 #include "url_request_context_getter.h"
 
 namespace brightray {
@@ -34,7 +33,6 @@ private:
   }
 
   URLRequestContextGetter* getter_;
-  scoped_ptr<net::HostResolver> host_resolver_;
 };
 
 BrowserContext::BrowserContext() : resource_context_(new ResourceContext) {

@@ -36,4 +36,8 @@ content::DevToolsHttpHandlerDelegate::TargetType DevToolsDelegate::GetTargetType
   return kTargetTypeTab;
 }
 
+std::string DevToolsDelegate::GetViewDescription(content::RenderViewHost*) {
+  return std::string();
+}
+
 }

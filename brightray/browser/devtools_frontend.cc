@@ -25,7 +25,7 @@ content::WebContents* DevToolsFrontend::Show(content::WebContents* inspected_con
 DevToolsFrontend::DevToolsFrontend(content::WebContents* inspected_contents)
   : WebContentsObserver(content::WebContents::Create(content::WebContents::CreateParams(inspected_contents->GetBrowserContext()))),
     inspected_web_contents_(inspected_contents),
-    agent_host_(content::DevToolsAgentHost::GetFor(inspected_contents->GetRenderViewHost())),
+    agent_host_(content::DevToolsAgentHost::GetOrCreateFor(inspected_contents->GetRenderViewHost())),
     frontend_host_(content::DevToolsClientHost::CreateDevToolsFrontendHost(web_contents(), this)) {
   web_contents()->SetDelegate(this);
   auto client = static_cast<BrowserClient*>(content::GetContentClient()->browser());

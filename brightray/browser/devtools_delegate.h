@@ -21,6 +21,7 @@ private:
   virtual std::string GetPageThumbnailData(const GURL&) OVERRIDE;
   virtual content::RenderViewHost* CreateNewTarget() OVERRIDE;
   virtual TargetType GetTargetType(content::RenderViewHost*) OVERRIDE;
+  virtual std::string GetViewDescription(content::RenderViewHost*) OVERRIDE;
 };
 
 }
