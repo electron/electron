@@ -23,4 +23,4 @@ git submodule update --init --recursive
 SOURCE_ROOT="$(pwd -P)"
 DOWNLOAD_DIR="${SOURCE_ROOT}/vendor/download"
 mkdir -p "${DOWNLOAD_DIR}"
-vendor/libchromiumcontent/script/download "${BASE_URL}" "${DOWNLOAD_DIR}/libchromiumcontent"
+vendor/libchromiumcontent/script/download -f "${BASE_URL}" "${DOWNLOAD_DIR}/libchromiumcontent"
