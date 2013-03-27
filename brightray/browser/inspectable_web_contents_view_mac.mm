@@ -25,4 +25,8 @@ void InspectableWebContentsViewMac::ShowDevTools() {
   [view_ setDevToolsVisible:YES];
 }
 
+void InspectableWebContentsViewMac::CloseDevTools() {
+  [view_ setDevToolsVisible:NO];
+}
+
 }

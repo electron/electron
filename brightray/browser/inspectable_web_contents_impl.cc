@@ -13,6 +13,7 @@
 #include "content/public/browser/devtools_client_host.h"
 #include "content/public/browser/devtools_http_handler.h"
 #include "content/public/browser/devtools_manager.h"
+#include "content/public/browser/web_contents_view.h"
 
 namespace brightray {
 
@@ -60,6 +61,9 @@ void InspectableWebContentsImpl::ChangeAttachedWindowHeight(unsigned height) {
 }
 
 void InspectableWebContentsImpl::CloseWindow() {
+  view_->CloseDevTools();
+  devtools_web_contents_.reset();
+  web_contents_->GetView()->Focus();
 }
 
 void InspectableWebContentsImpl::MoveWindow(int x, int y) {
@@ -99,7 +103,6 @@ void InspectableWebContentsImpl::WebContentsDestroyed(content::WebContents*) {
   Observe(nullptr);
   agent_host_ = nullptr;
   frontend_host_.reset();
-  devtools_web_contents_.reset();
 }
 
 void InspectableWebContentsImpl::HandleKeyboardEvent(content::WebContents* source, const content::NativeWebKeyboardEvent& event) {

@@ -12,6 +12,7 @@ public:
   virtual gfx::NativeView GetNativeView() const = 0;
 
   virtual void ShowDevTools() = 0;
+  virtual void CloseDevTools() = 0;
 };
 
 }
