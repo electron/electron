@@ -18,7 +18,7 @@ public:
   ~BrowserClient();
 
   BrowserContext* browser_context();
-  BrowserMainParts* browser_main_parts() { return browser_main_parts_.get(); }
+  BrowserMainParts* browser_main_parts() { return browser_main_parts_; }
 
 protected:
   // Subclasses should override this to provide their own BrowserMainParts implementation. The
@@ -29,7 +29,7 @@ private:
   virtual content::BrowserMainParts* CreateBrowserMainParts(const content::MainFunctionParams&) OVERRIDE;
   virtual net::URLRequestContextGetter* CreateRequestContext(content::BrowserContext*, content::ProtocolHandlerMap*) OVERRIDE;
 
-  scoped_ptr<BrowserMainParts> browser_main_parts_;
+  BrowserMainParts* browser_main_parts_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserClient);
 };

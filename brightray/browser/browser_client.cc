@@ -24,8 +24,9 @@ BrowserMainParts* BrowserClient::OverrideCreateBrowserMainParts(const content::M
 }
 
 content::BrowserMainParts* BrowserClient::CreateBrowserMainParts(const content::MainFunctionParams& parameters) {
-  browser_main_parts_.reset(OverrideCreateBrowserMainParts(parameters));
-  return browser_main_parts_.get();
+  DCHECK(!browser_main_parts_);
+  browser_main_parts_ = OverrideCreateBrowserMainParts(parameters);
+  return browser_main_parts_;
 }
 
 net::URLRequestContextGetter* BrowserClient::CreateRequestContext(content::BrowserContext* browser_context, content::ProtocolHandlerMap* protocol_handlers) {
