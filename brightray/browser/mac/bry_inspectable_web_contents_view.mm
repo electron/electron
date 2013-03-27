@@ -12,8 +12,18 @@ using namespace brightray;
 @public
   InspectableWebContentsViewMac *inspectableWebContentsView;
   NSSplitView *splitView;
+  NSWindow *window;
 }
 @end
+
+namespace {
+
+NSRect devtoolsWindowFrame(NSView *referenceView) {
+  auto screenFrame = [referenceView.window convertRectToScreen:[referenceView convertRect:referenceView.bounds toView:nil]];
+  return NSInsetRect(screenFrame, NSWidth(screenFrame) / 6, NSHeight(screenFrame) / 6);
+}
+
+}
 
 @implementation BRYInspectableWebContentsView
 
@@ -35,6 +45,7 @@ using namespace brightray;
 }
 
 - (void)dealloc {
+  [_private->window release];
   [_private->splitView release];
   [_private release];
   _private = nil;
@@ -53,6 +64,15 @@ using namespace brightray;
 
   auto devToolsWebContents = _private->inspectableWebContentsView->inspectable_web_contents()->devtools_web_contents();
   auto devToolsView = devToolsWebContents->GetView()->GetNativeView();
+
+  if (_private->window && devToolsView.window == _private->window) {
+    if (visible) {
+      [_private->window makeKeyAndOrderFront:nil];
+    } else {
+      [_private->window orderOut:nil];
+    }
+    return;
+  }
 
   if (visible) {
     auto inspectedView = _private->inspectableWebContentsView->inspectable_web_contents()->GetWebContents()->GetView()->GetNativeView();
@@ -75,14 +95,58 @@ using namespace brightray;
 - (BOOL)setDockSide:(const std::string&)side {
   if (side == "right") {
     _private->splitView.vertical = YES;
+    [self moveToSplitView];
   } else if (side == "bottom") {
     _private->splitView.vertical = NO;
+    [self moveToSplitView];
+  } else if (side == "undocked") {
+    [self moveToWindow];
   } else {
     return NO;
   }
 
-  [_private->splitView adjustSubviews];
   return YES;
+}
+
+- (void)moveToWindow {
+  if (!_private->window) {
+    auto styleMask = NSTitledWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask | NSResizableWindowMask | NSTexturedBackgroundWindowMask | NSUnifiedTitleAndToolbarWindowMask;
+    auto contentRect = [NSWindow contentRectForFrameRect:devtoolsWindowFrame(_private->splitView) styleMask:styleMask];
+    _private->window = [[NSWindow alloc] initWithContentRect:contentRect styleMask:styleMask backing:NSBackingStoreBuffered defer:YES];
+    _private->window.delegate = self;
+    _private->window.releasedWhenClosed = NO;
+    _private->window.title = @"Developer Tools";
+    [_private->window setAutorecalculatesContentBorderThickness:NO forEdge:NSMaxYEdge];
+    [_private->window setContentBorderThickness:24 forEdge:NSMaxYEdge];
+  }
+
+  auto devToolsWebContents = _private->inspectableWebContentsView->inspectable_web_contents()->devtools_web_contents();
+  auto devToolsView = devToolsWebContents->GetView()->GetNativeView();
+
+  NSView *contentView = _private->window.contentView;
+  devToolsView.frame = contentView.bounds;
+  devToolsView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+
+  [contentView addSubview:devToolsView];
+  [_private->window makeKeyAndOrderFront:nil];
+  [_private->splitView adjustSubviews];
+}
+
+- (void)moveToSplitView {
+  [_private->window orderOut:nil];
+
+  auto devToolsWebContents = _private->inspectableWebContentsView->inspectable_web_contents()->devtools_web_contents();
+  auto devToolsView = devToolsWebContents->GetView()->GetNativeView();
+
+  [_private->splitView addSubview:devToolsView];
+  [_private->splitView adjustSubviews];
+}
+
+#pragma mark - NSWindowDelegate
+
+- (BOOL)windowShouldClose:(id)sender {
+  [_private->window orderOut:nil];
+  return NO;
 }
 
 @end
