@@ -18,6 +18,7 @@ public:
   virtual gfx::NativeView GetNativeView() const OVERRIDE;
   virtual void ShowDevTools() OVERRIDE;
   virtual void CloseDevTools() OVERRIDE;
+  virtual bool SetDockSide(const std::string& side) OVERRIDE;
 
   InspectableWebContentsImpl* inspectable_web_contents() { return inspectable_web_contents_; }
 

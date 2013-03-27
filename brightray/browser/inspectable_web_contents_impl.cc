@@ -9,11 +9,14 @@
 #include "browser/browser_main_parts.h"
 #include "browser/inspectable_web_contents_view.h"
 
+#include "base/stringprintf.h"
+#include "base/utf_string_conversions.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_client_host.h"
 #include "content/public/browser/devtools_http_handler.h"
 #include "content/public/browser/devtools_manager.h"
 #include "content/public/browser/web_contents_view.h"
+#include "content/public/browser/render_view_host.h"
 
 namespace brightray {
 
@@ -70,6 +73,11 @@ void InspectableWebContentsImpl::MoveWindow(int x, int y) {
 }
 
 void InspectableWebContentsImpl::SetDockSide(const std::string& side) {
+  if (!view_->SetDockSide(side))
+    return;
+
+  auto javascript = base::StringPrintf("InspectorFrontendAPI.setDockSide(\"%s\")", side.c_str());
+  devtools_web_contents_->GetRenderViewHost()->ExecuteJavascriptInWebFrame(string16(), ASCIIToUTF16(javascript));
 }
 
 void InspectableWebContentsImpl::OpenInNewTab(const std::string& url) {

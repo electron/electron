@@ -72,6 +72,19 @@ using namespace brightray;
   [_private->splitView adjustSubviews];
 }
 
+- (BOOL)setDockSide:(const std::string&)side {
+  if (side == "right") {
+    _private->splitView.vertical = YES;
+  } else if (side == "bottom") {
+    _private->splitView.vertical = NO;
+  } else {
+    return NO;
+  }
+
+  [_private->splitView adjustSubviews];
+  return YES;
+}
+
 @end
 
 @implementation BRYInspectableWebContentsViewPrivate
