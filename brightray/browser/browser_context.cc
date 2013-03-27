@@ -43,11 +43,11 @@ BrowserContext::~BrowserContext() {
 
 net::URLRequestContextGetter* BrowserContext::CreateRequestContext(content::ProtocolHandlerMap* protocol_handlers) {
   DCHECK(!url_request_getter_);
-  url_request_getter_.reset(new URLRequestContextGetter(
+  url_request_getter_ = new URLRequestContextGetter(
       GetPath(),
       content::BrowserThread::UnsafeGetMessageLoopForThread(content::BrowserThread::IO),
       content::BrowserThread::UnsafeGetMessageLoopForThread(content::BrowserThread::FILE),
-      protocol_handlers));
+      protocol_handlers);
   resource_context_->set_url_request_context_getter(url_request_getter_.get());
   return url_request_getter_.get();
 }

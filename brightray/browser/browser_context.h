@@ -36,7 +36,7 @@ private:
   virtual quota::SpecialStoragePolicy* GetSpecialStoragePolicy() OVERRIDE;
 
   scoped_ptr<ResourceContext> resource_context_;
-  scoped_ptr<URLRequestContextGetter> url_request_getter_;
+  scoped_refptr<URLRequestContextGetter> url_request_getter_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserContext);
 };
