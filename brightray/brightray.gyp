@@ -28,8 +28,6 @@
         'browser/default_web_contents_delegate_mac.mm',
         'browser/devtools_delegate.cc',
         'browser/devtools_delegate.h',
-        'browser/devtools_frontend.cc',
-        'browser/devtools_frontend.h',
         'browser/inspectable_web_contents.cc',
         'browser/inspectable_web_contents.h',
         'browser/inspectable_web_contents_impl.cc',
