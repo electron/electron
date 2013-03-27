@@ -2,11 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "url_request_context_getter.h"
+#include "browser/url_request_context_getter.h"
 
 #include "network_delegate.h"
 #include "base/string_util.h"
 #include "base/threading/worker_pool.h"
+#include "chrome/browser/net/sqlite_persistent_cookie_store.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/url_constants.h"
 #include "net/base/cert_verifier.h"
@@ -58,7 +59,14 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext()
     url_request_context_->set_network_delegate(network_delegate_.get());
     storage_.reset(
         new net::URLRequestContextStorage(url_request_context_.get()));
-    storage_->set_cookie_store(new net::CookieMonster(NULL, NULL));
+    storage_->set_cookie_store(new net::CookieMonster(
+        new SQLitePersistentCookieStore(
+            base_path_.Append(FILE_PATH_LITERAL("Cookies")),
+            content::BrowserThread::GetMessageLoopProxyForThread(content::BrowserThread::IO),
+            content::BrowserThread::GetMessageLoopProxyForThread(content::BrowserThread::DB),
+            false,
+            nullptr),
+        NULL));
     storage_->set_server_bound_cert_service(new net::ServerBoundCertService(
         new net::DefaultServerBoundCertStore(NULL),
         base::WorkerPool::GetTaskRunner(true)));
