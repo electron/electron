@@ -11,6 +11,7 @@ namespace brightray {
 
 class BrowserContext;
 class BrowserMainParts;
+class NotificationPresenter;
 
 class BrowserClient : public content::ContentBrowserClient {
 public:
@@ -19,6 +20,7 @@ public:
 
   BrowserContext* browser_context();
   BrowserMainParts* browser_main_parts() { return browser_main_parts_; }
+  NotificationPresenter* notification_presenter();
 
 protected:
   // Subclasses should override this to provide their own BrowserMainParts implementation. The
@@ -35,6 +37,7 @@ private:
       bool worker) OVERRIDE;
 
   BrowserMainParts* browser_main_parts_;
+  scoped_ptr<NotificationPresenter> notification_presenter_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserClient);
 };

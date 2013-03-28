@@ -18,7 +18,6 @@
       'sources': [
         'browser/browser_client.cc',
         'browser/browser_client.h',
-        'browser/browser_client_mac.mm',
         'browser/browser_context.cc',
         'browser/browser_context.h',
         'browser/browser_main_parts.cc',
@@ -43,6 +42,9 @@
         'browser/mac/bry_inspectable_web_contents_view_private.h',
         'browser/network_delegate.cc',
         'browser/network_delegate.h',
+        'browser/notification_presenter.cc',
+        'browser/notification_presenter.h',
+        'browser/notification_presenter_mac.mm',
         'browser/url_request_context_getter.cc',
         'browser/url_request_context_getter.h',
         'common/application_name.h',

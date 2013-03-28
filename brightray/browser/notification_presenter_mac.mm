@@ -1,4 +1,4 @@
-#import "browser/browser_client.h"
+#import "browser/notification_presenter.h"
 
 #import "base/strings/sys_string_conversions.h"
 #import "content/public/browser/render_view_host.h"
@@ -8,11 +8,10 @@
 
 namespace brightray {
 
-void BrowserClient::ShowDesktopNotification(
+void NotificationPresenter::ShowNotification(
     const content::ShowDesktopNotificationHostMsgParams& params,
     int render_process_id,
-    int render_view_id,
-    bool worker) {
+    int render_view_id) {
   auto notification = [[NSUserNotification alloc] init];
   notification.title = base::SysUTF16ToNSString(params.title);
   notification.informativeText = base::SysUTF16ToNSString(params.body);
