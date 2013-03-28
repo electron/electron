@@ -18,6 +18,7 @@
       'sources': [
         'browser/browser_client.cc',
         'browser/browser_client.h',
+        'browser/browser_client_mac.mm',
         'browser/browser_context.cc',
         'browser/browser_context.h',
         'browser/browser_main_parts.cc',

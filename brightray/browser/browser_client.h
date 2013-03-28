@@ -28,6 +28,11 @@ protected:
 private:
   virtual content::BrowserMainParts* CreateBrowserMainParts(const content::MainFunctionParams&) OVERRIDE;
   virtual net::URLRequestContextGetter* CreateRequestContext(content::BrowserContext*, content::ProtocolHandlerMap*) OVERRIDE;
+  virtual void ShowDesktopNotification(
+      const content::ShowDesktopNotificationHostMsgParams&,
+      int render_process_id,
+      int render_view_id,
+      bool worker) OVERRIDE;
 
   BrowserMainParts* browser_main_parts_;
 
