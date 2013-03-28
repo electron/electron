@@ -6,13 +6,18 @@
 
 #import <Foundation/Foundation.h>
 
+@interface BRYUserNotificationCenterDelegate : NSObject <NSUserNotificationCenterDelegate>
+@end
+
 namespace brightray {
 
 NotificationPresenter* NotificationPresenter::Create() {
   return new NotificationPresenterMac;
 }
 
-NotificationPresenterMac::NotificationPresenterMac() {
+NotificationPresenterMac::NotificationPresenterMac()
+    : delegate_([[BRYUserNotificationCenterDelegate alloc] init]) {
+  NSUserNotificationCenter.defaultUserNotificationCenter.delegate = delegate_;
 }
 
 NotificationPresenterMac::~NotificationPresenterMac() {
@@ -37,3 +42,12 @@ void NotificationPresenterMac::ShowNotification(
 }
 
 }
+
+@implementation BRYUserNotificationCenterDelegate
+
+- (BOOL)userNotificationCenter:(NSUserNotificationCenter *)center shouldPresentNotification:(NSUserNotification *)notification {
+  // Display notifications even if the app is active.
+  return YES;
+}
+
+@end

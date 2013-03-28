@@ -3,7 +3,9 @@
 
 #import "browser/notification_presenter.h"
 
-#import "base/compiler_specific.h"
+#import "base/memory/scoped_nsobject.h"
+
+@class BRYUserNotificationCenterDelegate;
 
 namespace brightray {
 
@@ -16,6 +18,9 @@ class NotificationPresenterMac : public NotificationPresenter {
       const content::ShowDesktopNotificationHostMsgParams&,
       int render_process_id,
       int render_view_id) OVERRIDE;
+
+ private:
+  scoped_nsobject<BRYUserNotificationCenterDelegate> delegate_;
 };
 
 }
