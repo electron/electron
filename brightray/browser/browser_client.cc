@@ -22,7 +22,7 @@ BrowserContext* BrowserClient::browser_context() {
 
 NotificationPresenter* BrowserClient::notification_presenter() {
   if (!notification_presenter_)
-    notification_presenter_.reset(new NotificationPresenter);
+    notification_presenter_.reset(NotificationPresenter::Create());
   return notification_presenter_.get();
 }
 

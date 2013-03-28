@@ -1,4 +1,4 @@
-#import "browser/notification_presenter.h"
+#import "browser/notification_presenter_mac.h"
 
 #import "base/strings/sys_string_conversions.h"
 #import "content/public/browser/render_view_host.h"
@@ -8,7 +8,17 @@
 
 namespace brightray {
 
-void NotificationPresenter::ShowNotification(
+NotificationPresenter* NotificationPresenter::Create() {
+  return new NotificationPresenterMac;
+}
+
+NotificationPresenterMac::NotificationPresenterMac() {
+}
+
+NotificationPresenterMac::~NotificationPresenterMac() {
+}
+
+void NotificationPresenterMac::ShowNotification(
     const content::ShowDesktopNotificationHostMsgParams& params,
     int render_process_id,
     int render_view_id) {

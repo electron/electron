@@ -9,13 +9,14 @@ namespace brightray {
 
 class NotificationPresenter {
  public:
-  NotificationPresenter();
-  ~NotificationPresenter();
+  virtual ~NotificationPresenter() {};
 
-  void ShowNotification(
+  static NotificationPresenter* Create();
+
+  virtual void ShowNotification(
       const content::ShowDesktopNotificationHostMsgParams&,
       int render_process_id,
-      int render_view_id);
+      int render_view_id) = 0;
 };
 
 }
