@@ -1,6 +1,7 @@
 #import "browser/browser_client.h"
 
 #import "base/strings/sys_string_conversions.h"
+#import "content/public/browser/render_view_host.h"
 #import "content/public/common/show_desktop_notification_params.h"
 
 #import <Foundation/Foundation.h>
@@ -18,6 +19,12 @@ void BrowserClient::ShowDesktopNotification(
 
   [NSUserNotificationCenter.defaultUserNotificationCenter deliverNotification:notification];
   [notification release];
+
+  auto host = content::RenderViewHost::FromID(render_process_id, render_view_id);
+  if (!host)
+    return;
+
+  host->DesktopNotificationPostDisplay(params.notification_id);
 }
 
 }
