@@ -18,15 +18,16 @@ public:
   MainDelegate();
   ~MainDelegate();
 
+protected:
+  virtual bool BasicStartupComplete(int* exit_code) OVERRIDE;
+  virtual void PreSandboxStartup() OVERRIDE;
+
 private:
   static void InitializeResourceBundle();
 #if defined(OS_MACOSX)
   static void OverrideChildProcessPath();
   static void OverrideFrameworkBundlePath();
 #endif
-
-  virtual bool BasicStartupComplete(int* exit_code) OVERRIDE;
-  virtual void PreSandboxStartup() OVERRIDE;
 
   scoped_ptr<ContentClient> content_client_;
 
