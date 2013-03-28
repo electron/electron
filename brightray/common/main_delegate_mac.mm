@@ -6,10 +6,10 @@
 #import "main_delegate.h"
 
 #include "common/application_name.h"
+#include "common/mac/foundation_util.h"
 #include "common/mac/main_application_bundle.h"
 
 #include "base/mac/bundle_locations.h"
-#include "base/mac/foundation_util.h"
 #include "base/path_service.h"
 #include "content/public/common/content_paths.h"
 #include "ui/base/resource/resource_bundle.h"

@@ -5,8 +5,9 @@
 
 #import "common/mac/main_application_bundle.h"
 
+#import "common/mac/foundation_util.h"
+
 #import "base/files/file_path.h"
-#import "base/mac/foundation_util.h"
 #import "base/path_service.h"
 
 namespace brightray {

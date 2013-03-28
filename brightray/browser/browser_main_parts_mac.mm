@@ -14,7 +14,7 @@ void BrowserMainParts::PreMainMessageLoopStart() {
 
   NSString *mainNibName = [infoDictionary objectForKey:@"NSMainNibFile"];
   auto mainNib = [[NSNib alloc] initWithNibNamed:mainNibName bundle:base::mac::FrameworkBundle()];
-  [mainNib instantiateNibWithOwner:application topLevelObjects:nil];
+  [mainNib instantiateWithOwner:application topLevelObjects:nil];
   [mainNib release];
 }
 
