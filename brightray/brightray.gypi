@@ -4,6 +4,8 @@
     'libchromiumcontent_library_dir': '<(libchromiumcontent_dir)/Release',
     'libchromiumcontent_include_dir': '<(libchromiumcontent_dir)/include',
     'libchromiumcontent_resources_dir': '<(libchromiumcontent_library_dir)',
+    'mac_deployment_target%': '10.7',
+    'mac_sdkroot%': 'macosx10.7',
   },
   'target_defaults': {
     'defines': [
@@ -16,9 +18,9 @@
       'COMBINE_HIDPI_IMAGES': 'YES',
       'GCC_ENABLE_CPP_RTTI': 'NO',
       'GCC_TREAT_WARNINGS_AS_ERRORS': 'YES',
-      'MACOSX_DEPLOYMENT_TARGET': '10.7',
+      'MACOSX_DEPLOYMENT_TARGET': '<(mac_deployment_target)',
       'RUN_CLANG_STATIC_ANALYZER': 'YES',
-      'SDKROOT': 'macosx10.7',
+      'SDKROOT': '<(mac_sdkroot)',
       'USE_HEADER_MAP': 'NO',
       'WARNING_CFLAGS': [
         '-Wall',
