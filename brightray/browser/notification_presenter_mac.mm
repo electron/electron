@@ -11,6 +11,20 @@
 
 namespace brightray {
 
+namespace {
+
+scoped_nsobject<NSUserNotification> CreateUserNotification(
+    const content::ShowDesktopNotificationHostMsgParams& params,
+    int render_process_id,
+    int render_view_id) {
+  auto notification = [[NSUserNotification alloc] init];
+  notification.title = base::SysUTF16ToNSString(params.title);
+  notification.informativeText = base::SysUTF16ToNSString(params.body);
+  return scoped_nsobject<NSUserNotification>(notification);
+}
+
+}
+
 NotificationPresenter* NotificationPresenter::Create() {
   return new NotificationPresenterMac;
 }
@@ -27,12 +41,8 @@ void NotificationPresenterMac::ShowNotification(
     const content::ShowDesktopNotificationHostMsgParams& params,
     int render_process_id,
     int render_view_id) {
-  auto notification = [[NSUserNotification alloc] init];
-  notification.title = base::SysUTF16ToNSString(params.title);
-  notification.informativeText = base::SysUTF16ToNSString(params.body);
-
+  auto notification = CreateUserNotification(params, render_process_id, render_view_id);
   [NSUserNotificationCenter.defaultUserNotificationCenter deliverNotification:notification];
-  [notification release];
 
   auto host = content::RenderViewHost::FromID(render_process_id, render_view_id);
   if (!host)
