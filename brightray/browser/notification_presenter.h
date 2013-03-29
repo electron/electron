@@ -17,6 +17,10 @@ class NotificationPresenter {
       const content::ShowDesktopNotificationHostMsgParams&,
       int render_process_id,
       int render_view_id) = 0;
+  virtual void CancelNotification(
+      int render_process_id,
+      int render_view_id,
+      int notification_id) = 0;
 };
 
 }

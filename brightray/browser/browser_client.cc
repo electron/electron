@@ -48,4 +48,11 @@ void BrowserClient::ShowDesktopNotification(
   notification_presenter()->ShowNotification(params, render_process_id, render_view_id);
 }
 
+void BrowserClient::CancelDesktopNotification(
+    int render_process_id,
+    int render_view_id,
+    int notification_id) {
+  notification_presenter()->CancelNotification(render_process_id, render_view_id, notification_id);
+}
+
 }
