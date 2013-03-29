@@ -13,6 +13,16 @@ namespace brightray {
 
 namespace {
 
+struct NotificationID {
+  int render_process_id;
+  int render_view_id;
+  int notification_id;
+};
+
+NSString * const kRenderProcessIDKey = @"RenderProcessID";
+NSString * const kRenderViewIDKey = @"RenderViewID";
+NSString * const kNotificationIDKey = @"NotificationID";
+
 scoped_nsobject<NSUserNotification> CreateUserNotification(
     const content::ShowDesktopNotificationHostMsgParams& params,
     int render_process_id,
@@ -20,7 +30,21 @@ scoped_nsobject<NSUserNotification> CreateUserNotification(
   auto notification = [[NSUserNotification alloc] init];
   notification.title = base::SysUTF16ToNSString(params.title);
   notification.informativeText = base::SysUTF16ToNSString(params.body);
+  notification.userInfo = @{
+    kRenderProcessIDKey: @(render_process_id),
+    kRenderViewIDKey: @(render_view_id),
+    kNotificationIDKey: @(params.notification_id),
+  };
+
   return scoped_nsobject<NSUserNotification>(notification);
+}
+
+NotificationID GetID(NSUserNotification* notification) {
+  NotificationID ID;
+  ID.render_process_id = [[notification.userInfo objectForKey:kRenderProcessIDKey] intValue];
+  ID.render_view_id = [[notification.userInfo objectForKey:kRenderViewIDKey] intValue];
+  ID.notification_id = [[notification.userInfo objectForKey:kNotificationIDKey] intValue];
+  return ID;
 }
 
 }
@@ -43,17 +67,21 @@ void NotificationPresenterMac::ShowNotification(
     int render_view_id) {
   auto notification = CreateUserNotification(params, render_process_id, render_view_id);
   [NSUserNotificationCenter.defaultUserNotificationCenter deliverNotification:notification];
-
-  auto host = content::RenderViewHost::FromID(render_process_id, render_view_id);
-  if (!host)
-    return;
-
-  host->DesktopNotificationPostDisplay(params.notification_id);
 }
 
 }
 
 @implementation BRYUserNotificationCenterDelegate
+
+- (void)userNotificationCenter:(NSUserNotificationCenter *)center didDeliverNotification:(NSUserNotification *)notification {
+  auto ID = brightray::GetID(notification);
+
+  auto host = content::RenderViewHost::FromID(ID.render_process_id, ID.render_view_id);
+  if (!host)
+    return;
+
+  host->DesktopNotificationPostDisplay(ID.notification_id);
+}
 
 - (BOOL)userNotificationCenter:(NSUserNotificationCenter *)center shouldPresentNotification:(NSUserNotification *)notification {
   // Display notifications even if the app is active.
