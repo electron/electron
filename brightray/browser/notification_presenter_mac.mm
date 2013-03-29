@@ -13,15 +13,38 @@ namespace brightray {
 
 namespace {
 
+NSString * const kRenderProcessIDKey = @"RenderProcessID";
+NSString * const kRenderViewIDKey = @"RenderViewID";
+NSString * const kNotificationIDKey = @"NotificationID";
+
 struct NotificationID {
+  NotificationID(
+      const content::ShowDesktopNotificationHostMsgParams& params,
+      int render_process_id,
+      int render_view_id)
+      : render_process_id(render_process_id),
+        render_view_id(render_view_id),
+        notification_id(params.notification_id) {
+  }
+
+  NotificationID(NSUserNotification* notification)
+      : render_process_id([[notification.userInfo objectForKey:kRenderProcessIDKey] intValue]),
+        render_view_id([[notification.userInfo objectForKey:kRenderViewIDKey] intValue]),
+        notification_id([[notification.userInfo objectForKey:kNotificationIDKey] intValue]) {
+  }
+
+  NSDictionary* GetUserInfo() {
+    return @{
+      kRenderProcessIDKey: @(render_process_id),
+      kRenderViewIDKey: @(render_view_id),
+      kNotificationIDKey: @(notification_id),
+    };
+  }
+
   int render_process_id;
   int render_view_id;
   int notification_id;
 };
-
-NSString * const kRenderProcessIDKey = @"RenderProcessID";
-NSString * const kRenderViewIDKey = @"RenderViewID";
-NSString * const kNotificationIDKey = @"NotificationID";
 
 scoped_nsobject<NSUserNotification> CreateUserNotification(
     const content::ShowDesktopNotificationHostMsgParams& params,
@@ -30,21 +53,9 @@ scoped_nsobject<NSUserNotification> CreateUserNotification(
   auto notification = [[NSUserNotification alloc] init];
   notification.title = base::SysUTF16ToNSString(params.title);
   notification.informativeText = base::SysUTF16ToNSString(params.body);
-  notification.userInfo = @{
-    kRenderProcessIDKey: @(render_process_id),
-    kRenderViewIDKey: @(render_view_id),
-    kNotificationIDKey: @(params.notification_id),
-  };
+  notification.userInfo = NotificationID(params, render_process_id, render_view_id).GetUserInfo();
 
   return scoped_nsobject<NSUserNotification>(notification);
-}
-
-NotificationID GetID(NSUserNotification* notification) {
-  NotificationID ID;
-  ID.render_process_id = [[notification.userInfo objectForKey:kRenderProcessIDKey] intValue];
-  ID.render_view_id = [[notification.userInfo objectForKey:kRenderViewIDKey] intValue];
-  ID.notification_id = [[notification.userInfo objectForKey:kNotificationIDKey] intValue];
-  return ID;
 }
 
 }
@@ -74,7 +85,7 @@ void NotificationPresenterMac::ShowNotification(
 @implementation BRYUserNotificationCenterDelegate
 
 - (void)userNotificationCenter:(NSUserNotificationCenter *)center didDeliverNotification:(NSUserNotification *)notification {
-  auto ID = brightray::GetID(notification);
+  brightray::NotificationID ID(notification);
 
   auto host = content::RenderViewHost::FromID(ID.render_process_id, ID.render_view_id);
   if (!host)
@@ -84,7 +95,7 @@ void NotificationPresenterMac::ShowNotification(
 }
 
 - (void)userNotificationCenter:(NSUserNotificationCenter *)center didActivateNotification:(NSUserNotification *)notification {
-  auto ID = brightray::GetID(notification);
+  brightray::NotificationID ID(notification);
 
   auto host = content::RenderViewHost::FromID(ID.render_process_id, ID.render_view_id);
   if (!host)
