@@ -8,6 +8,10 @@
 
 #include "base/files/file_path.h"
 #include "base/path_service.h"
+#include "base/prefs/json_pref_store.h"
+#include "base/prefs/pref_registry_simple.h"
+#include "base/prefs/pref_service.h"
+#include "base/prefs/pref_service_builder.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_context.h"
 #include "content/public/browser/storage_partition.h"
@@ -36,6 +40,15 @@ private:
 };
 
 BrowserContext::BrowserContext() : resource_context_(new ResourceContext) {
+  auto prefs_path = GetPath().Append("Preferences");
+  PrefServiceBuilder builder;
+  builder.WithUserFilePrefs(prefs_path,
+      JsonPrefStore::GetTaskRunnerForFile(prefs_path, content::BrowserThread::GetBlockingPool()));
+
+  auto registry = make_scoped_refptr(new PrefRegistrySimple);
+  RegisterPrefs(registry);
+
+  prefs_.reset(builder.Create(registry));
 }
 
 BrowserContext::~BrowserContext() {

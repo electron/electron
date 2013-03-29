@@ -8,6 +8,9 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/content_browser_client.h"
 
+class PrefRegistrySimple;
+class PrefService;
+
 namespace brightray {
 
 class URLRequestContextGetter;
@@ -18,6 +21,12 @@ public:
   ~BrowserContext();
 
   net::URLRequestContextGetter* CreateRequestContext(content::ProtocolHandlerMap*);
+
+  PrefService* prefs() { return prefs_.get(); }
+
+protected:
+  // Subclasses should override this to register custom preferences.
+  virtual void RegisterPrefs(PrefRegistrySimple*) {}
 
 private:
   class ResourceContext;
@@ -37,6 +46,7 @@ private:
 
   scoped_ptr<ResourceContext> resource_context_;
   scoped_refptr<URLRequestContextGetter> url_request_getter_;
+  scoped_ptr<PrefService> prefs_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserContext);
 };
