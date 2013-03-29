@@ -83,6 +83,16 @@ void NotificationPresenterMac::ShowNotification(
   host->DesktopNotificationPostDisplay(ID.notification_id);
 }
 
+- (void)userNotificationCenter:(NSUserNotificationCenter *)center didActivateNotification:(NSUserNotification *)notification {
+  auto ID = brightray::GetID(notification);
+
+  auto host = content::RenderViewHost::FromID(ID.render_process_id, ID.render_view_id);
+  if (!host)
+    return;
+
+  host->DesktopNotificationPostClick(ID.notification_id);
+}
+
 - (BOOL)userNotificationCenter:(NSUserNotificationCenter *)center shouldPresentNotification:(NSUserNotification *)notification {
   // Display notifications even if the app is active.
   return YES;
