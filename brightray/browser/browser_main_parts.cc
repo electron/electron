@@ -21,13 +21,17 @@ BrowserMainParts::~BrowserMainParts() {
 }
 
 void BrowserMainParts::PreMainMessageLoopRun() {
-  browser_context_.reset(new BrowserContext);
+  browser_context_.reset(CreateBrowserContext());
 
   // These two objects are owned by devtools_http_handler_.
   auto delegate = new DevToolsDelegate;
   auto factory = new net::TCPListenSocketFactory("127.0.0.1", 0);
 
   devtools_http_handler_ = content::DevToolsHttpHandler::Start(factory, std::string(), delegate);
+}
+
+BrowserContext* BrowserMainParts::CreateBrowserContext() {
+  return new BrowserContext;
 }
 
 }

@@ -26,6 +26,10 @@ public:
   content::DevToolsHttpHandler* devtools_http_handler() { return devtools_http_handler_; }
 
 protected:
+  // Subclasses should override this to provide their own BrowserContxt implementation. The caller
+  // takes ownership of the returned object.
+  virtual BrowserContext* CreateBrowserContext();
+
 #if defined(OS_MACOSX)
   virtual void PreMainMessageLoopStart() OVERRIDE;
 #endif
