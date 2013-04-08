@@ -7,6 +7,7 @@
 #include "common/application_info.h"
 
 #include "base/stringprintf.h"
+#include "base/string_util.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "webkit/user_agent/user_agent_util.h"
 
@@ -19,7 +20,9 @@ ContentClient::~ContentClient() {
 }
 
 std::string ContentClient::GetProduct() const {
-  return base::StringPrintf("%s/%s", GetApplicationName().c_str(), GetApplicationVersion().c_str());
+  auto name = GetApplicationName();
+  RemoveChars(name, kWhitespaceASCII, &name);
+  return base::StringPrintf("%s/%s", name.c_str(), GetApplicationVersion().c_str());
 }
 
 std::string ContentClient::GetUserAgent() const {
