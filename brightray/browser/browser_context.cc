@@ -4,7 +4,7 @@
 
 #include "browser_context.h"
 
-#include "common/application_name.h"
+#include "common/application_info.h"
 
 #include "base/files/file_path.h"
 #include "base/path_service.h"

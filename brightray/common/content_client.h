@@ -16,6 +16,7 @@ public:
   ~ContentClient();
 
 private:
+  virtual std::string GetProduct() const OVERRIDE;
   virtual std::string GetUserAgent() const OVERRIDE;
   virtual base::StringPiece GetDataResource(int resource_id, ui::ScaleFactor) const OVERRIDE;
 

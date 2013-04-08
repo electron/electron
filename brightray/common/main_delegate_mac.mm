@@ -5,7 +5,7 @@
 
 #import "main_delegate.h"
 
-#include "common/application_name.h"
+#include "common/application_info.h"
 #include "common/mac/foundation_util.h"
 #include "common/mac/main_application_bundle.h"
 
