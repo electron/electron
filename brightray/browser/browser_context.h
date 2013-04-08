@@ -31,6 +31,8 @@ protected:
 private:
   class ResourceContext;
 
+  void RegisterInternalPrefs(PrefRegistrySimple*);
+
   virtual base::FilePath GetPath() OVERRIDE;
   virtual bool IsOffTheRecord() const OVERRIDE;
   virtual net::URLRequestContextGetter* GetRequestContext() OVERRIDE;

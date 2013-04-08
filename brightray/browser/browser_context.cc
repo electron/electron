@@ -4,6 +4,7 @@
 
 #include "browser_context.h"
 
+#include "browser/inspectable_web_contents_impl.h"
 #include "common/application_info.h"
 
 #include "base/files/file_path.h"
@@ -46,12 +47,17 @@ BrowserContext::BrowserContext() : resource_context_(new ResourceContext) {
       JsonPrefStore::GetTaskRunnerForFile(prefs_path, content::BrowserThread::GetBlockingPool()));
 
   auto registry = make_scoped_refptr(new PrefRegistrySimple);
+  RegisterInternalPrefs(registry);
   RegisterPrefs(registry);
 
   prefs_.reset(builder.Create(registry));
 }
 
 BrowserContext::~BrowserContext() {
+}
+
+void BrowserContext::RegisterInternalPrefs(PrefRegistrySimple* registry) {
+  InspectableWebContentsImpl::RegisterPrefs(registry);
 }
 
 net::URLRequestContextGetter* BrowserContext::CreateRequestContext(content::ProtocolHandlerMap* protocol_handlers) {

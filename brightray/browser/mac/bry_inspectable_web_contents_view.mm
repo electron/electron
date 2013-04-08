@@ -13,6 +13,7 @@ using namespace brightray;
   InspectableWebContentsViewMac *inspectableWebContentsView;
   NSSplitView *splitView;
   NSWindow *window;
+  BOOL visible;
 }
 @end
 
@@ -58,9 +59,9 @@ NSRect devtoolsWindowFrame(NSView *referenceView) {
 }
 
 - (void)setDevToolsVisible:(BOOL)visible {
-  BOOL wasVisible = _private->splitView.subviews.count == 2;
-  if (wasVisible == visible)
+  if (_private->visible == visible)
     return;
+  _private->visible = visible;
 
   auto devToolsWebContents = _private->inspectableWebContentsView->inspectable_web_contents()->devtools_web_contents();
   auto devToolsView = devToolsWebContents->GetView()->GetNativeView();

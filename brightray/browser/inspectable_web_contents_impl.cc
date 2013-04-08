@@ -6,9 +6,12 @@
 #include "browser/inspectable_web_contents_impl.h"
 
 #include "browser/browser_client.h"
+#include "browser/browser_context.h"
 #include "browser/browser_main_parts.h"
 #include "browser/inspectable_web_contents_view.h"
 
+#include "base/prefs/pref_registry_simple.h"
+#include "base/prefs/pref_service.h"
 #include "base/stringprintf.h"
 #include "base/utf_string_conversions.h"
 #include "content/public/browser/devtools_agent_host.h"
@@ -20,11 +23,24 @@
 
 namespace brightray {
 
+namespace {
+
+const char kDockSidePref[] = "brightray.devtools.dockside";
+
+}
+
 // Implemented separately on each platform.
 InspectableWebContentsView* CreateInspectableContentsView(InspectableWebContentsImpl*);
 
+void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
+  registry->RegisterStringPref(kDockSidePref, "bottom");
+}
+
 InspectableWebContentsImpl::InspectableWebContentsImpl(const content::WebContents::CreateParams& create_params)
     : web_contents_(content::WebContents::Create(create_params)) {
+  auto context = static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
+  dock_side_ = context->prefs()->GetString(kDockSidePref);
+
   view_.reset(CreateInspectableContentsView(this));
 }
 
@@ -54,7 +70,13 @@ void InspectableWebContentsImpl::ShowDevTools() {
     devtools_web_contents_->GetController().LoadURL(url, content::Referrer(), content::PAGE_TRANSITION_AUTO_TOPLEVEL, std::string());
   }
 
+  view_->SetDockSide(dock_side_);
   view_->ShowDevTools();
+}
+
+void InspectableWebContentsImpl::UpdateFrontendDockSide() {
+  auto javascript = base::StringPrintf("InspectorFrontendAPI.setDockSide(\"%s\")", dock_side_.c_str());
+  devtools_web_contents_->GetRenderViewHost()->ExecuteJavascriptInWebFrame(string16(), ASCIIToUTF16(javascript));
 }
 
 void InspectableWebContentsImpl::ActivateWindow() {
@@ -76,8 +98,12 @@ void InspectableWebContentsImpl::SetDockSide(const std::string& side) {
   if (!view_->SetDockSide(side))
     return;
 
-  auto javascript = base::StringPrintf("InspectorFrontendAPI.setDockSide(\"%s\")", side.c_str());
-  devtools_web_contents_->GetRenderViewHost()->ExecuteJavascriptInWebFrame(string16(), ASCIIToUTF16(javascript));
+  dock_side_ = side;
+
+  auto context = static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
+  context->prefs()->SetString(kDockSidePref, side);
+
+  UpdateFrontendDockSide();
 }
 
 void InspectableWebContentsImpl::OpenInNewTab(const std::string& url) {
@@ -104,6 +130,13 @@ void InspectableWebContentsImpl::InspectedContentsClosing() {
 void InspectableWebContentsImpl::RenderViewCreated(content::RenderViewHost* render_view_host) {
   content::DevToolsClientHost::SetupDevToolsFrontendClient(web_contents()->GetRenderViewHost());
   content::DevToolsManager::GetInstance()->RegisterDevToolsClientHostFor(agent_host_, frontend_host_.get());
+}
+
+void InspectableWebContentsImpl::DidFinishLoad(int64, const GURL&, bool is_main_frame, content::RenderViewHost*) {
+  if (!is_main_frame)
+    return;
+
+  UpdateFrontendDockSide();
 }
 
 void InspectableWebContentsImpl::WebContentsDestroyed(content::WebContents*) {
