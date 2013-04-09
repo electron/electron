@@ -4,6 +4,7 @@
 #import "browser/inspectable_web_contents_view_mac.h"
 #import "browser/mac/bry_inspectable_web_contents_view_private.h"
 
+#import "content/public/browser/render_widget_host_view.h"
 #import "content/public/browser/web_contents_view.h"
 
 using namespace brightray;
@@ -22,6 +23,14 @@ namespace {
 NSRect devtoolsWindowFrame(NSView *referenceView) {
   auto screenFrame = [referenceView.window convertRectToScreen:[referenceView convertRect:referenceView.bounds toView:nil]];
   return NSInsetRect(screenFrame, NSWidth(screenFrame) / 6, NSHeight(screenFrame) / 6);
+}
+
+void SetActive(content::WebContents* web_contents, bool active) {
+  auto render_widget_host_view = web_contents->GetRenderWidgetHostView();
+  if (!render_widget_host_view)
+    return;
+
+  render_widget_host_view->SetActive(active);
 }
 
 }
@@ -63,10 +72,7 @@ NSRect devtoolsWindowFrame(NSView *referenceView) {
     return;
   _private->visible = visible;
 
-  auto devToolsWebContents = _private->inspectableWebContentsView->inspectable_web_contents()->devtools_web_contents();
-  auto devToolsView = devToolsWebContents->GetView()->GetNativeView();
-
-  if (_private->window && devToolsView.window == _private->window) {
+  if ([self isDocked]) {
     if (visible) {
       [_private->window makeKeyAndOrderFront:nil];
     } else {
@@ -74,6 +80,9 @@ NSRect devtoolsWindowFrame(NSView *referenceView) {
     }
     return;
   }
+
+  auto devToolsWebContents = _private->inspectableWebContentsView->inspectable_web_contents()->devtools_web_contents();
+  auto devToolsView = devToolsWebContents->GetView()->GetNativeView();
 
   if (visible) {
     auto inspectedView = _private->inspectableWebContentsView->inspectable_web_contents()->GetWebContents()->GetView()->GetNativeView();
@@ -143,11 +152,60 @@ NSRect devtoolsWindowFrame(NSView *referenceView) {
   [_private->splitView adjustSubviews];
 }
 
+- (BOOL)isDocked {
+  auto devToolsWebContents = _private->inspectableWebContentsView->inspectable_web_contents()->devtools_web_contents();
+  if (!devToolsWebContents)
+    return NO;
+  auto devToolsView = devToolsWebContents->GetView()->GetNativeView();
+  
+  return _private->window && devToolsView.window == _private->window;
+}
+
+- (void)window:(NSWindow *)window didBecomeActive:(BOOL)active {
+  auto inspectable_contents = _private->inspectableWebContentsView->inspectable_web_contents();
+
+  // Changes to the active state of the window we create only affects the dev tools contents.
+  if (window == _private->window) {
+    SetActive(inspectable_contents->devtools_web_contents(), active);
+    return;
+  }
+  
+  // Changes the window that hosts us always affect our main web contents. If the dev tools are also
+  // hosted in this window, they are affected too.
+  SetActive(inspectable_contents->GetWebContents(), active);
+  if (![self isDocked])
+    return;
+  SetActive(inspectable_contents->devtools_web_contents(), active);
+}
+
+#pragma mark - NSView
+
+- (void)viewWillMoveToWindow:(NSWindow *)newWindow {
+  if (self.window) {
+    [NSNotificationCenter.defaultCenter removeObserver:self name:NSWindowDidBecomeKeyNotification object:self.window];
+    [NSNotificationCenter.defaultCenter removeObserver:self name:NSWindowDidResignKeyNotification object:self.window];
+  }
+
+  if (!newWindow)
+    return;
+
+  [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(windowDidBecomeKey:) name:NSWindowDidBecomeKeyNotification object:newWindow];
+  [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(windowDidResignKey:) name:NSWindowDidResignKeyNotification object:newWindow];
+}
+
 #pragma mark - NSWindowDelegate
 
 - (BOOL)windowShouldClose:(id)sender {
   [_private->window orderOut:nil];
   return NO;
+}
+
+- (void)windowDidBecomeKey:(NSNotification *)notification {
+  [self window:notification.object didBecomeActive:YES];
+}
+
+- (void)windowDidResignKey:(NSNotification *)notification {
+  [self window:notification.object didBecomeActive:NO];
 }
 
 @end
