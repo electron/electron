@@ -44,8 +44,6 @@ class NativeWindowMac : public NativeWindow {
   virtual void SetKiosk(bool kiosk) OVERRIDE;
   virtual bool IsKiosk() OVERRIDE;
 
-  void set_is_fullscreen(bool fullscreen) { is_fullscreen_ = fullscreen; }
-
   NSWindow* window() const { return window_; }
 
  protected:

@@ -11,9 +11,30 @@
 #include "base/mac/mac_util.h"
 #include "base/sys_string_conversions.h"
 #include "base/values.h"
+#include "browser/atom_event_processing_window.h"
 #include "common/options_switches.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
+
+@interface AtomNSWindow : AtomEventProcessingWindow {
+ @private
+  atom::NativeWindowMac* shell_;
+}
+- (void)setShell:(atom::NativeWindowMac*)shell;
+- (IBAction)showDevTools:(id)sender;
+@end
+
+@implementation AtomNSWindow
+
+- (void)setShell:(atom::NativeWindowMac*)shell {
+  shell_ = shell;
+}
+
+- (IBAction)showDevTools:(id)sender {
+  shell_->ShowDevTools();
+}
+
+@end
 
 namespace atom {
 
@@ -36,10 +57,14 @@ NativeWindowMac::NativeWindowMac(content::BrowserContext* browser_context,
   NSUInteger style_mask = NSTitledWindowMask | NSClosableWindowMask |
                           NSMiniaturizableWindowMask | NSResizableWindowMask |
                           NSTexturedBackgroundWindowMask;
-  window_ = [[NSWindow alloc] initWithContentRect:cocoa_bounds
-                                        styleMask:style_mask
-                                          backing:NSBackingStoreBuffered
-                                            defer:YES];
+  AtomNSWindow* atom_window = [[AtomNSWindow alloc]
+      initWithContentRect:cocoa_bounds
+                styleMask:style_mask
+                  backing:NSBackingStoreBuffered
+                    defer:YES];
+  [atom_window setShell:this];
+
+  window_ = atom_window;
 
   // Disable fullscreen button when 'fullscreen' is specified to false.
   bool fullscreen;

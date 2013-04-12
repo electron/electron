@@ -65,12 +65,18 @@ class NativeWindow {
   virtual void FlashFrame(bool flash) = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
+  virtual void ShowDevTools();
+  virtual void CloseDevTools();
 
   content::WebContents* GetWebContents() const;
 
  protected:
   explicit NativeWindow(content::BrowserContext* browser_context,
                         base::DictionaryValue* options);
+
+  brightray::InspectableWebContents* inspectable_web_contents() const {
+    return inspectable_web_contents_.get();
+  }
 
  private:
   scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
