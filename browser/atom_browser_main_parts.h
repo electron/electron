@@ -10,11 +10,11 @@
 namespace atom {
 
 class AtomBrowserMainParts : public brightray::BrowserMainParts {
-public:
+ public:
   AtomBrowserMainParts();
-  ~AtomBrowserMainParts();
+  virtual ~AtomBrowserMainParts();
 
-protected:
+ protected:
   virtual void PreMainMessageLoopRun() OVERRIDE;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserMainParts);

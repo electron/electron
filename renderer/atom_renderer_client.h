@@ -10,11 +10,11 @@
 namespace atom {
 
 class AtomRendererClient : public content::ContentRendererClient {
-public:
+ public:
   AtomRendererClient();
-  ~AtomRendererClient();
+  virtual ~AtomRendererClient();
 
-private:
+ private:
   virtual void RenderViewCreated(content::RenderView*) OVERRIDE;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);

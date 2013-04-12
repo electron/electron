@@ -10,11 +10,11 @@
 namespace atom {
 
 class AtomMainDelegate : public brightray::MainDelegate {
-public:
+ public:
   AtomMainDelegate();
   ~AtomMainDelegate();
 
-private:
+ private:
   virtual content::ContentBrowserClient* CreateContentBrowserClient() OVERRIDE;
   virtual content::ContentRendererClient*
       CreateContentRendererClient() OVERRIDE;

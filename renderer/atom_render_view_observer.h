@@ -10,11 +10,11 @@
 namespace atom {
 
 class AtomRenderViewObserver : content::RenderViewObserver {
-public:
+ public:
   explicit AtomRenderViewObserver(content::RenderView*);
 
-private:
-  ~AtomRenderViewObserver();
+ private:
+  virtual ~AtomRenderViewObserver();
 
   virtual void DidClearWindowObject(WebKit::WebFrame*) OVERRIDE;
 

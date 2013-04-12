@@ -10,16 +10,16 @@
 namespace atom {
 
 class AtomBrowserClient : public brightray::BrowserClient {
-public:
+ public:
   AtomBrowserClient();
-  ~AtomBrowserClient();
+  virtual ~AtomBrowserClient();
 
-protected:
+ protected:
   virtual void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
                                    const GURL& url,
                                    webkit_glue::WebPreferences* prefs) OVERRIDE;
 
-private:
+ private:
   virtual brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
       const content::MainFunctionParams&) OVERRIDE;
 
