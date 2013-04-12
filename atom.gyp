@@ -30,9 +30,6 @@
       'app/atom_library_main.h',
     ],
   },
-  'includes': [
-    'vendor/brightray/brightray.gypi',
-  ],
   'targets': [
     {
       'target_name': '<(project_name)',

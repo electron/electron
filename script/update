@@ -4,4 +4,4 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-gyp --depth . atom.gyp
+gyp --depth . atom.gyp -I vendor/brightray/brightray.gypi
