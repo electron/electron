@@ -9,7 +9,7 @@ Experimental native layer for the [Atom](https://github.com/github/atom).
 You must previously have built and uploaded libchromiumcontent using its
 `script/upload` script.
 
-    $ script/bootstrap http://base.url.com/used/by/script/upload
+    $ script/bootstrap https://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent
 
 ### Building
 
