@@ -30,6 +30,9 @@
       'app/atom_library_main.h',
     ],
   },
+  'includes': [
+    'vendor/brightray/brightray.gypi'
+  ],
   'targets': [
     {
       'target_name': '<(project_name)',
@@ -93,6 +96,7 @@
       'type': 'static_library',
       'dependencies': [
         'vendor/brightray/brightray.gyp:brightray',
+        'vendor/node/node.gyp:node',
       ],
       'sources': [
         '<@(lib_sources)',
