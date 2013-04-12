@@ -10,6 +10,7 @@
 #include "base/basictypes.h"
 #include "base/compiler_specific.h"
 #include "base/memory/scoped_ptr.h"
+#include "content/public/browser/web_contents_delegate.h"
 
 namespace base {
 class DictionaryValue;
@@ -32,7 +33,7 @@ class Size;
 
 namespace atom {
 
-class NativeWindow {
+class NativeWindow : public content::WebContentsDelegate {
  public:
   virtual ~NativeWindow();
 

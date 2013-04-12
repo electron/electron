@@ -11,10 +11,11 @@
 #include "base/mac/mac_util.h"
 #include "base/sys_string_conversions.h"
 #include "base/values.h"
-#include "browser/atom_event_processing_window.h"
+#import "browser/atom_event_processing_window.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "common/options_switches.h"
+#include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
 
@@ -291,6 +292,19 @@ void NativeWindowMac::SetKiosk(bool kiosk) {
 
 bool NativeWindowMac::IsKiosk() {
   return is_kiosk_;
+}
+
+void NativeWindowMac::HandleKeyboardEvent(
+    content::WebContents*,
+    const content::NativeWebKeyboardEvent& event) {
+  if (event.skip_in_browser ||
+      event.type == content::NativeWebKeyboardEvent::Char)
+    return;
+
+  AtomEventProcessingWindow* event_window =
+      static_cast<AtomEventProcessingWindow*>(window());
+  DCHECK([event_window isKindOfClass:[AtomEventProcessingWindow class]]);
+  [event_window redispatchKeyEvent:event.os_event];
 }
 
 void NativeWindowMac::InstallView() {

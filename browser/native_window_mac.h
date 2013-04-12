@@ -49,6 +49,11 @@ class NativeWindowMac : public NativeWindow {
  protected:
   void SetNonLionFullscreen(bool fullscreen);
 
+  // Implementations of content::WebContentsDelegate.
+  virtual void HandleKeyboardEvent(
+      content::WebContents*,
+      const content::NativeWebKeyboardEvent&) OVERRIDE;
+
  private:
   void InstallView();
   void UninstallView();

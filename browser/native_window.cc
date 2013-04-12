@@ -8,7 +8,6 @@
 
 #include "base/values.h"
 #include "brightray/browser/browser_context.h"
-#include "brightray/browser/default_web_contents_delegate.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "common/options_switches.h"
@@ -22,7 +21,7 @@ NativeWindow::NativeWindow(content::BrowserContext* browser_context,
                            base::DictionaryValue* options)
     : inspectable_web_contents_(brightray::InspectableWebContents::Create(
           content::WebContents::CreateParams(browser_context))) {
-  GetWebContents()->SetDelegate(new brightray::DefaultWebContentsDelegate());
+  GetWebContents()->SetDelegate(this);
 }
 
 NativeWindow::~NativeWindow() {
