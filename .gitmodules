@@ -1,6 +1,3 @@
-[submodule "vendor/ninja"]
-	path = vendor/ninja
-	url = https://github.com/martine/ninja.git
 [submodule "vendor/brightray"]
 	path = vendor/brightray
 	url = git@github.com:aroben/brightray.git

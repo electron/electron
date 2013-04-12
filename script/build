@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -e
+
+MODE=Release
+if [ ! -z $1 ]; then
+  MODE=$1
+fi
+
+cd "$(dirname "$0")/.."
+
+xcodebuild -configuration ${MODE} -target atom
