@@ -12,7 +12,6 @@
       'browser/atom_browser_client.h',
       'browser/atom_browser_main_parts.cc',
       'browser/atom_browser_main_parts.h',
-      'browser/atom_browser_main_parts_mac.mm',
       'browser/atom_event_processing_window.h',
       'browser/atom_event_processing_window.mm',
       'browser/native_window.cc',
