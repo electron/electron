@@ -14,6 +14,11 @@ public:
   AtomBrowserClient();
   ~AtomBrowserClient();
 
+protected:
+  virtual void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
+                                   const GURL& url,
+                                   webkit_glue::WebPreferences* prefs) OVERRIDE;
+
 private:
   virtual brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
       const content::MainFunctionParams&) OVERRIDE;
