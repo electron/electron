@@ -12,6 +12,8 @@
 #include "base/sys_string_conversions.h"
 #include "base/values.h"
 #include "browser/atom_event_processing_window.h"
+#include "brightray/browser/inspectable_web_contents.h"
+#include "brightray/browser/inspectable_web_contents_view.h"
 #include "common/options_switches.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
@@ -74,9 +76,6 @@ NativeWindowMac::NativeWindowMac(content::BrowserContext* browser_context,
     collectionBehavior |= NSWindowCollectionBehaviorFullScreenPrimary;
     [window() setCollectionBehavior:collectionBehavior];
   }
-
-  NSView* view = GetWebContents()->GetView()->GetNativeView();
-  [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
   InstallView();
 }
@@ -295,7 +294,8 @@ bool NativeWindowMac::IsKiosk() {
 }
 
 void NativeWindowMac::InstallView() {
-  NSView* view = GetWebContents()->GetView()->GetNativeView();
+  NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
+  [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   [view setFrame:[[window() contentView] bounds]];
   [[window() contentView] addSubview:view];
 }

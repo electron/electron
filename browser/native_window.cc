@@ -83,7 +83,7 @@ void NativeWindow::ShowDevTools() {
 }
 
 void NativeWindow::CloseDevTools() {
-  // inspectable_web_contents()->CloseDevTools();
+  inspectable_web_contents()->GetView()->CloseDevTools();
 }
 
 content::WebContents* NativeWindow::GetWebContents() const {
