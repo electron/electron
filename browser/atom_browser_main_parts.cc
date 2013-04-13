@@ -15,18 +15,28 @@
 namespace atom {
 
 AtomBrowserMainParts::AtomBrowserMainParts()
-    : node_bindings_(new NodeBindings(true)) {
+    : node_bindings_(NodeBindings::Create(true)) {
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {
 }
 
 void AtomBrowserMainParts::PostEarlyInitialization() {
+  brightray::BrowserMainParts::PostEarlyInitialization();
+
   node_bindings_->Initialize();
+}
+
+void AtomBrowserMainParts::PreMainMessageLoopStart() {
+  brightray::BrowserMainParts::PreMainMessageLoopStart();
+
+  node_bindings_->PrepareMessageLoop();
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
   brightray::BrowserMainParts::PreMainMessageLoopRun();
+
+  node_bindings_->RunMessageLoop();
 
   scoped_ptr<base::DictionaryValue> options(new base::DictionaryValue);
   options->SetInteger("width", 800);
@@ -38,7 +48,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   window->InitFromOptions(options.get());
 
   window->GetWebContents()->GetController().LoadURL(
-      GURL("http://adam.roben.org/brightray_example/start.html"),
+      GURL("http://localhost"),
       content::Referrer(),
       content::PAGE_TRANSITION_AUTO_TOPLEVEL,
       std::string());

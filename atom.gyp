@@ -20,6 +20,8 @@
       'browser/native_window_mac.mm',
       'common/node_bindings.cc',
       'common/node_bindings.h',
+      'common/node_bindings_mac.h',
+      'common/node_bindings_mac.mm',
       'common/options_switches.cc',
       'common/options_switches.h',
       'renderer/atom_render_view_observer.cc',

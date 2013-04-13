@@ -19,6 +19,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 
  protected:
   virtual void PostEarlyInitialization() OVERRIDE;
+  virtual void PreMainMessageLoopStart() OVERRIDE; 
   virtual void PreMainMessageLoopRun() OVERRIDE;
 
  private:
