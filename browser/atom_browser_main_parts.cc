@@ -15,7 +15,7 @@
 namespace atom {
 
 AtomBrowserMainParts::AtomBrowserMainParts()
-    : node_bindings_(new NodeBindings) {
+    : node_bindings_(new NodeBindings(true)) {
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {

@@ -11,13 +11,15 @@ namespace atom {
 
 class NodeBindings {
  public:
-  NodeBindings();
+  NodeBindings(bool is_browser);
   virtual ~NodeBindings();
 
   // Setup everything including V8, libuv and node.js main script.
   void Initialize();
 
  private:
+  bool is_browser_;
+
   DISALLOW_COPY_AND_ASSIGN(NodeBindings);
 };
 
