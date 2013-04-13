@@ -6,8 +6,11 @@
 #define ATOM_BROWSER_ATOM_BROWSER_MAIN_PARTS_
 
 #include "brightray/browser/browser_main_parts.h"
+#include "common/node_bindings.h"
 
 namespace atom {
+
+class NodeBindings;
 
 class AtomBrowserMainParts : public brightray::BrowserMainParts {
  public:
@@ -15,7 +18,11 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   virtual ~AtomBrowserMainParts();
 
  protected:
+  virtual void PostEarlyInitialization() OVERRIDE;
   virtual void PreMainMessageLoopRun() OVERRIDE;
+
+ private:
+  scoped_ptr<NodeBindings> node_bindings_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserMainParts);
 };

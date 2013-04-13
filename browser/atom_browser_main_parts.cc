@@ -10,13 +10,19 @@
 #include "brightray/browser/default_web_contents_delegate.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
+#include "common/node_bindings.h"
 
 namespace atom {
 
-AtomBrowserMainParts::AtomBrowserMainParts() {
+AtomBrowserMainParts::AtomBrowserMainParts()
+    : node_bindings_(new NodeBindings) {
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {
+}
+
+void AtomBrowserMainParts::PostEarlyInitialization() {
+  node_bindings_->Initialize();
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
