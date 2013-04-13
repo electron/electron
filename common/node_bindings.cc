@@ -28,6 +28,9 @@ void NodeBindings::Initialize() {
   for (size_t i = 0; i < str_argv.size(); ++i)
     argv[i] = const_cast<char*>(str_argv[i].c_str());
 
+  // Open node's error reporting system for browser process.
+  node::g_standalone_mode = is_browser_;
+
   // Init node.
   node::Init(argv.size(), &argv[0]);
   v8::V8::Initialize();
