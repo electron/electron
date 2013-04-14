@@ -47,9 +47,13 @@ void NodeBindings::Initialize() {
     v8::Handle<v8::String> type =
         is_browser_ ? v8::String::New("browser") : v8::String::New("renderer");
     process->Set(v8::String::New("__atom_type"), type);
-
-    node::Load(process);
   }
+}
+
+void NodeBindings::Load() {
+  v8::HandleScope scope;
+  v8::Context::Scope context_scope(node::g_context);
+  node::Load(node::process);
 }
 
 }  // namespace atom

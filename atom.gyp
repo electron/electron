@@ -8,6 +8,12 @@
     'lib_sources': [
       'app/atom_main_delegate.cc',
       'app/atom_main_delegate.h',
+      'browser/api/atom_bindings.cc',
+      'browser/api/atom_bindings.h',
+      'browser/api/atom_extensions.cc',
+      'browser/api/atom_extensions.h',
+      'browser/api/atom_window.cc',
+      'browser/api/atom_window.h',
       'browser/atom_browser_client.cc',
       'browser/atom_browser_client.h',
       'browser/atom_browser_main_parts.cc',

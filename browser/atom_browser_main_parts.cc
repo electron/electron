@@ -5,17 +5,19 @@
 #include "browser/atom_browser_main_parts.h"
 
 #include "base/values.h"
+#include "browser/api/atom_bindings.h"
 #include "browser/native_window.h"
 #include "brightray/browser/browser_context.h"
-#include "brightray/browser/default_web_contents_delegate.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "common/node_bindings.h"
+#include "vendor/node/src/node_internals.h"
 
 namespace atom {
 
 AtomBrowserMainParts::AtomBrowserMainParts()
-    : node_bindings_(NodeBindings::Create(true)) {
+    : atom_bindings_(new AtomBindings),
+      node_bindings_(NodeBindings::Create(true)) {
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {
@@ -25,6 +27,10 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   brightray::BrowserMainParts::PostEarlyInitialization();
 
   node_bindings_->Initialize();
+
+  atom_bindings_->BindTo(node::process);
+
+  node_bindings_->Load();
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopStart() {

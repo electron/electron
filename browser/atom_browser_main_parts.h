@@ -10,6 +10,7 @@
 
 namespace atom {
 
+class AtomBindings;
 class NodeBindings;
 
 class AtomBrowserMainParts : public brightray::BrowserMainParts {
@@ -23,6 +24,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   virtual void PreMainMessageLoopRun() OVERRIDE;
 
  private:
+  scoped_ptr<AtomBindings> atom_bindings_;
   scoped_ptr<NodeBindings> node_bindings_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserMainParts);

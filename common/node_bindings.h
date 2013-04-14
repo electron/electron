@@ -15,8 +15,11 @@ class NodeBindings {
 
   virtual ~NodeBindings();
 
-  // Setup everything including V8, libuv and node.js main script.
+  // Setup V8, libuv and the process object.
   virtual void Initialize();
+
+  // Load node.js main script.
+  virtual void Load();
 
   // Prepare for message loop integration.
   virtual void PrepareMessageLoop() = 0;
