@@ -83,6 +83,12 @@
                 '<(PRODUCT_DIR)/<(product_name).framework',
               ],
             },
+            {
+              'destination': '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources',
+              'files': [
+                'browser/default_app',
+              ],
+            }
           ],
           'postbuilds': [
             {
