@@ -6,10 +6,8 @@
 #define ATOM_APP_ATOM_LIBRARY_MAIN_
 
 extern "C" {
-
-__attribute__ ((visibility ("default")))
+__attribute__((visibility("default")))
 int AtomMain(int argc, const char* argv[]);
-
 }
 
 #endif  // ATOM_APP_ATOM_LIBRARY_MAIN_

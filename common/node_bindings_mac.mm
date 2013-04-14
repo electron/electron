@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "node_bindings_mac.h"
+#include "common/node_bindings_mac.h"
 
 #include "base/message_loop.h"
 #include "content/public/browser/browser_thread.h"
@@ -76,7 +76,7 @@ void NodeBindingsMac::UvRunOnce() {
   // Deal with uv events.
   int r = uv_run(loop_, (uv_run_mode)(UV_RUN_ONCE | UV_RUN_NOWAIT));
   if (r == 0 || loop_->stop_flag != 0)
-    MessageLoop::current()->QuitWhenIdle(); // Quit from uv.
+    MessageLoop::current()->QuitWhenIdle();  // Quit from uv.
 
   // Tell the worker thread to continue polling.
   uv_sem_post(&embed_sem_);

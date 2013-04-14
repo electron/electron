@@ -29,10 +29,9 @@ namespace atom {
 #define NODE_EXT_LIST_ITEM NODE_EXT_STRING
 #define NODE_EXT_LIST_END NULL};
 
-#include "browser/api/atom_extensions.h"
+#include "browser/api/atom_extensions.h" // NOLINT
 
-node::node_module_struct* get_builtin_module(const char *name)
-{
+node::node_module_struct* get_builtin_module(const char *name) {
   char buf[128];
   node::node_module_struct *cur = NULL;
   snprintf(buf, sizeof(buf), "atom_%s", name);

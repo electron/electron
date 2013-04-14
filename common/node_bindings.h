@@ -32,9 +32,10 @@ class NodeBindings {
 
   bool is_browser_;
 
+ private:
   DISALLOW_COPY_AND_ASSIGN(NodeBindings);
 };
 
-}  // namespace at
+}  // namespace atom
 
 #endif  // RAVE_COMMON_NODE_BINDINGS_
