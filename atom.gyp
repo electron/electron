@@ -5,6 +5,9 @@
     'app_sources': [
       'app/atom_main.cc',
     ],
+    'coffee_sources': [
+      'browser/atom/atom.coffee',
+    ],
     'lib_sources': [
       'app/atom_main_delegate.cc',
       'app/atom_main_delegate.h',
@@ -48,6 +51,7 @@
       'target_name': '<(project_name)',
       'type': 'executable',
       'dependencies': [
+        'generated_sources',
         '<(project_name)_lib',
       ],
       'sources': [
@@ -77,12 +81,6 @@
               'files': [
                 '<(PRODUCT_DIR)/<(product_name) Helper.app',
                 '<(PRODUCT_DIR)/<(product_name).framework',
-              ],
-            },
-            {
-              'destination': '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources',
-              'files': [
-                'browser/atom',
               ],
             },
           ],
@@ -120,6 +118,31 @@
       'include_dirs': [
         '.',
         'vendor',
+      ],
+    },
+    {
+      'target_name': 'generated_sources',
+      'type': 'none',
+      'sources': [
+        '<@(coffee_sources)',
+      ],
+      'rules': [
+        {
+          'rule_name': 'coffee',
+          'extension': 'coffee',
+          'inputs': [
+            'script/compile-coffee',
+          ],
+          'outputs': [
+            '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
+          ],
+          'action': [
+            'sh',
+            'script/compile-coffee',
+            '<(RULE_INPUT_PATH)',
+            '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
+          ],
+        },
       ],
     },
   ],
