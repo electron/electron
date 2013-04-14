@@ -1,0 +1,21 @@
+#!/bin/bash
+
+cd "`dirname $0`/.."
+
+# List all Objective-C headers here, should not cpplint them.
+OBJC_HEADERS='
+browser/atom_event_processing_window.h
+browser/native_window_mac.h'
+
+FILES=`find app browser common renderer -type f -name '*.h' -or -name '*.cc'`
+FILTERED_FILES=
+
+while read file; do
+  if ! echo "$OBJC_HEADERS" | grep "$file" > /dev/null ; then
+    FILTERED_FILES="$FILTERED_FILES $file"
+  fi
+done <<< "$FILES"
+
+python ./vendor/cpplint.py \
+  --filter=-build/header_guard,-build/include_what_you_use \
+  $FILTERED_FILES
