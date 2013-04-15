@@ -11,8 +11,10 @@ using node::node_isolate;
 
 namespace atom {
 
-// Defined in atom_extensions.cc.
+// Defined in atom_api_extensions.cc.
+namespace api {
 node::node_module_struct* get_builtin_module(const char *name);
+}
 
 v8::Persistent<v8::Object> AtomBindings::binding_cache_;
 
@@ -49,7 +51,7 @@ v8::Handle<v8::Value> AtomBindings::Binding(const v8::Arguments& args) {
     return scope.Close(exports);
   }
 
-  if ((modp = get_builtin_module(*module_v)) != NULL) {
+  if ((modp = api::get_builtin_module(*module_v)) != NULL) {
     exports = v8::Object::New();
     // Internal bindings don't have a "module" object,
     // only exports.

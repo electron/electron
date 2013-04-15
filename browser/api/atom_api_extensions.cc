@@ -10,6 +10,8 @@
 
 namespace atom {
 
+namespace api {
+
 #undef NODE_EXT_LIST_START
 #undef NODE_EXT_LIST_ITEM
 #undef NODE_EXT_LIST_END
@@ -18,7 +20,7 @@ namespace atom {
 #define NODE_EXT_LIST_ITEM NODE_MODULE_DECL
 #define NODE_EXT_LIST_END
 
-#include "browser/api/atom_extensions.h"
+#include "browser/api/atom_api_extensions.h"
 
 #undef NODE_EXT_LIST_START
 #undef NODE_EXT_LIST_ITEM
@@ -29,12 +31,12 @@ namespace atom {
 #define NODE_EXT_LIST_ITEM NODE_EXT_STRING
 #define NODE_EXT_LIST_END NULL};
 
-#include "browser/api/atom_extensions.h" // NOLINT
+#include "browser/api/atom_api_extensions.h" // NOLINT
 
 node::node_module_struct* get_builtin_module(const char *name) {
   char buf[128];
   node::node_module_struct *cur = NULL;
-  snprintf(buf, sizeof(buf), "atom_%s", name);
+  snprintf(buf, sizeof(buf), "atom_api_%s", name);
   /* TODO: you could look these up in a hash, but there are only
    * a few, and once loaded they are cached. */
   for (int i = 0; node_module_list[i] != NULL; i++) {
@@ -46,5 +48,7 @@ node::node_module_struct* get_builtin_module(const char *name) {
 
   return NULL;
 }
+
+}  // namespace api
 
 }  // namespace atom

@@ -6,6 +6,6 @@
 
 NODE_EXT_LIST_START
 
-NODE_EXT_LIST_ITEM(atom_window)
+NODE_EXT_LIST_ITEM(atom_api_window)
 
 NODE_EXT_LIST_END
