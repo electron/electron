@@ -6,6 +6,7 @@
       'app/atom_main.cc',
     ],
     'coffee_sources': [
+      'browser/api/lib/atom.coffee',
       'browser/atom/atom.coffee',
     ],
     'lib_sources': [
@@ -84,7 +85,7 @@
               ],
             },
             {
-              'destination': '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources',
+              'destination': '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources/browser',
               'files': [
                 'browser/default_app',
               ],
