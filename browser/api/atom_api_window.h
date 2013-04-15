@@ -5,10 +5,39 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_WINDOW_H_
 #define ATOM_BROWSER_API_ATOM_API_WINDOW_H_
 
-#include "vendor/node/src/node.h"
-#include "vendor/node/src/node_object_wrap.h"
+#include "browser/api/atom_api_event_emitter.h"
+
+namespace base {
+class DictionaryValue;
+}
 
 namespace atom {
+
+class NativeWindow;
+
+namespace api {
+
+class Window : public EventEmitter {
+ public:
+  virtual ~Window();
+
+  static void Initialize(v8::Handle<v8::Object> target);
+
+  NativeWindow* window() { return window_.get(); }
+
+ protected:
+  explicit Window(v8::Handle<v8::Object> wrapper,
+                  base::DictionaryValue* options);
+
+ private:
+  static v8::Handle<v8::Value> New(const v8::Arguments &args);
+
+  scoped_ptr<NativeWindow> window_;
+
+  DISALLOW_COPY_AND_ASSIGN(Window);
+};
+
+}  // namespace api
 
 }  // namespace atom
 

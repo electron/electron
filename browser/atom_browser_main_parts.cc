@@ -6,6 +6,7 @@
 
 #include "base/values.h"
 #include "browser/api/atom_bindings.h"
+#include "browser/atom_browser_context.h"
 #include "browser/native_window.h"
 #include "brightray/browser/browser_context.h"
 #include "brightray/browser/inspectable_web_contents.h"
@@ -21,6 +22,10 @@ AtomBrowserMainParts::AtomBrowserMainParts()
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {
+}
+
+brightray::BrowserContext* AtomBrowserMainParts::CreateBrowserContext() {
+  return new AtomBrowserContext();
 }
 
 void AtomBrowserMainParts::PostEarlyInitialization() {

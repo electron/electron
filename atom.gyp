@@ -12,6 +12,8 @@
     'lib_sources': [
       'app/atom_main_delegate.cc',
       'app/atom_main_delegate.h',
+      'browser/api/atom_api_event_emitter.cc',
+      'browser/api/atom_api_event_emitter.h',
       'browser/api/atom_api_extensions.cc',
       'browser/api/atom_api_extensions.h',
       'browser/api/atom_api_window.cc',
@@ -20,6 +22,8 @@
       'browser/api/atom_bindings.h',
       'browser/atom_browser_client.cc',
       'browser/atom_browser_client.h',
+      'browser/atom_browser_context.cc',
+      'browser/atom_browser_context.h',
       'browser/atom_browser_main_parts.cc',
       'browser/atom_browser_main_parts.h',
       'browser/atom_event_processing_window.h',

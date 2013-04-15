@@ -4,6 +4,8 @@
 
 #include "browser/native_window_mac.h"
 
+#include <string>
+
 // FIXME: The foundation_util.h is aborting our compilation, do not
 // include it.
 #define BASE_MAC_FOUNDATION_UTIL_H_
