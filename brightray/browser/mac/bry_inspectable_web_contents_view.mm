@@ -89,7 +89,16 @@ void SetActive(content::WebContents* web_contents, bool active) {
     CGRect frame = NSRectToCGRect(inspectedView.frame);
     CGRect inspectedViewFrame;
     CGRect devToolsFrame;
-    CGRectDivide(frame, &inspectedViewFrame, &devToolsFrame, CGRectGetHeight(frame) * 2 / 3, CGRectMaxYEdge);
+    CGFloat amount;
+    CGRectEdge edge;
+    if ([_private->splitView isVertical]) {
+      amount = CGRectGetWidth(frame) * 2 / 3;
+      edge = CGRectMaxXEdge;
+    } else {
+      amount = CGRectGetHeight(frame) * 2 / 3;
+      edge = CGRectMaxYEdge;
+    }
+    CGRectDivide(frame, &inspectedViewFrame, &devToolsFrame, amount, edge);
 
     inspectedView.frame = NSRectFromCGRect(inspectedViewFrame);
     devToolsView.frame = NSRectFromCGRect(devToolsFrame);
