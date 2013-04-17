@@ -43,12 +43,12 @@ void NativeWindow::InitFromOptions(base::DictionaryValue* options) {
   int min_height, min_width;
   if (options->GetInteger(switches::kMinHeight, &min_height) &&
       options->GetInteger(switches::kMinWidth, &min_width)) {
-    SetMinimumSize(min_width, min_height);
+    SetMinimumSize(gfx::Size(min_width, min_height));
   }
   int max_height, max_width;
   if (options->GetInteger(switches::kMaxHeight, &max_height) &&
       options->GetInteger(switches::kMaxWidth, &max_width)) {
-    SetMaximumSize(max_width, max_height);
+    SetMaximumSize(gfx::Size(max_width, max_height));
   }
   bool resizable;
   if (options->GetBoolean(switches::kResizable, &resizable)) {

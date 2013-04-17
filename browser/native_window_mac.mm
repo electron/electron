@@ -84,6 +84,8 @@ NativeWindowMac::NativeWindowMac(content::BrowserContext* browser_context,
 }
 
 NativeWindowMac::~NativeWindowMac() {
+  Close();
+  [window() release];
 }
 
 void NativeWindowMac::Close() {
@@ -216,14 +218,14 @@ gfx::Size NativeWindowMac::GetSize() {
   return gfx::Size(frame.size.width, frame.size.height);
 }
 
-void NativeWindowMac::SetMinimumSize(int width, int height) {
-  NSSize min_size = NSMakeSize(width, height);
+void NativeWindowMac::SetMinimumSize(const gfx::Size& size) {
+  NSSize min_size = NSMakeSize(size.width(), size.height());
   NSView* content = [window() contentView];
   [window() setContentMinSize:[content convertSize:min_size toView:nil]];
 }
 
-void NativeWindowMac::SetMaximumSize(int width, int height) {
-  NSSize max_size = NSMakeSize(width, height);
+void NativeWindowMac::SetMaximumSize(const gfx::Size& size) {
+  NSSize max_size = NSMakeSize(size.width(), size.height());
   NSView* content = [window() contentView];
   [window() setContentMaxSize:[content convertSize:max_size toView:nil]];
 }
