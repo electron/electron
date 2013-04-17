@@ -6,7 +6,6 @@
 #define ATOM_BROWSER_ATOM_BROWSER_MAIN_PARTS_
 
 #include "brightray/browser/browser_main_parts.h"
-#include "common/node_bindings.h"
 
 namespace atom {
 

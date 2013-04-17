@@ -4,6 +4,7 @@
 
 #include "browser/api/atom_bindings.h"
 
+#include "base/logging.h"
 #include "vendor/node/src/node.h"
 #include "vendor/node/src/node_internals.h"
 
@@ -29,6 +30,21 @@ void AtomBindings::BindTo(v8::Handle<v8::Object> process) {
   v8::Context::Scope context_scope(node::g_context);
 
   node::SetMethod(process, "atom_binding", Binding);
+}
+
+void AtomBindings::AfterLoad() {
+  v8::HandleScope scope;
+  v8::Context::Scope context_scope(node::g_context);
+
+  v8::Handle<v8::Object> global = node::g_context->Global();
+  v8::Handle<v8::Object> atom =
+    global->Get(v8::String::New("__atom"))->ToObject();
+  DCHECK(!atom.IsEmpty());
+
+  browser_main_parts_ = v8::Persistent<v8::Object>::New(
+      node_isolate,
+      atom->Get(v8::String::New("browserMainParts"))->ToObject());
+  DCHECK(!browser_main_parts_.IsEmpty());
 }
 
 // static

@@ -7,7 +7,8 @@
 #include "base/values.h"
 #include "browser/atom_browser_context.h"
 #include "browser/native_window.h"
-#include "content/public/renderer/v8_value_converter.h"
+#include "common/v8_value_converter_impl.h"
+#include "content/public/browser/web_contents.h"
 
 using content::V8ValueConverter;
 
@@ -18,6 +19,12 @@ namespace api {
 Window::Window(v8::Handle<v8::Object> wrapper, base::DictionaryValue* options)
     : EventEmitter(wrapper),
       window_(NativeWindow::Create(AtomBrowserContext::Get(), options)) {
+  window_->InitFromOptions(options);
+  window_->GetWebContents()->GetController().LoadURL(
+      GURL("https://github.com"),
+      content::Referrer(),
+      content::PAGE_TRANSITION_AUTO_TOPLEVEL,
+      std::string());
 }
 
 Window::~Window() {
@@ -30,7 +37,7 @@ v8::Handle<v8::Value> Window::New(const v8::Arguments &args) {
   if (!args[0]->IsObject())
     return node::ThrowTypeError("Bad argument");
 
-  scoped_ptr<V8ValueConverter> converter(V8ValueConverter::create());
+  scoped_ptr<V8ValueConverter> converter(new V8ValueConverterImpl());
   scoped_ptr<base::Value> options(
       converter->FromV8Value(args[0], v8::Context::GetCurrent()));
 

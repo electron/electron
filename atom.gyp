@@ -7,6 +7,7 @@
     ],
     'coffee_sources': [
       'browser/api/lib/atom.coffee',
+      'browser/api/lib/window.coffee',
       'browser/atom/atom.coffee',
     ],
     'lib_sources': [
@@ -38,6 +39,8 @@
       'common/node_bindings_mac.mm',
       'common/options_switches.cc',
       'common/options_switches.h',
+      'common/v8_value_converter_impl.cc',
+      'common/v8_value_converter_impl.h',
       'renderer/atom_render_view_observer.cc',
       'renderer/atom_render_view_observer.h',
       'renderer/atom_renderer_client.cc',

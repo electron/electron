@@ -4,14 +4,11 @@
 
 #include "browser/atom_browser_main_parts.h"
 
-#include "base/values.h"
 #include "browser/api/atom_bindings.h"
 #include "browser/atom_browser_context.h"
 #include "browser/native_window.h"
-#include "brightray/browser/browser_context.h"
-#include "brightray/browser/inspectable_web_contents.h"
-#include "brightray/browser/inspectable_web_contents_view.h"
 #include "common/node_bindings.h"
+#include "vendor/node/src/node.h"
 #include "vendor/node/src/node_internals.h"
 
 namespace atom {
@@ -36,6 +33,8 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   atom_bindings_->BindTo(node::process);
 
   node_bindings_->Load();
+
+  atom_bindings_->AfterLoad();
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopStart() {
@@ -47,22 +46,17 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
   brightray::BrowserMainParts::PreMainMessageLoopRun();
 
+  {
+    v8::HandleScope scope;
+    v8::Context::Scope context_scope(node::g_context);
+
+    v8::Handle<v8::Value> args;
+    node::MakeCallback(atom_bindings_->browser_main_parts(),
+                       "preMainMessageLoopRun",
+                       0, &args);
+  }
+
   node_bindings_->RunMessageLoop();
-
-  scoped_ptr<base::DictionaryValue> options(new base::DictionaryValue);
-  options->SetInteger("width", 800);
-  options->SetInteger("height", 600);
-  options->SetString("title", "Atom");
-
-  // FIXME: Leak object here.
-  NativeWindow* window = NativeWindow::Create(browser_context(), options.get());
-  window->InitFromOptions(options.get());
-
-  window->GetWebContents()->GetController().LoadURL(
-      GURL("http://localhost"),
-      content::Referrer(),
-      content::PAGE_TRANSITION_AUTO_TOPLEVEL,
-      std::string());
 }
 
 }  // namespace atom
