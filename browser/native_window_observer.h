@@ -11,7 +11,7 @@ namespace atom {
 
 class NativeWindowObserver {
  public:
-  virtual ~NativeWindowObserver() {};
+  virtual ~NativeWindowObserver() {}
 
   // Called when the web page of the window has updated it's document title.
   virtual void OnPageTitleUpdated(bool* prevent_default,

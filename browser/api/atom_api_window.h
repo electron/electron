@@ -5,7 +5,9 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_WINDOW_H_
 #define ATOM_BROWSER_API_ATOM_API_WINDOW_H_
 
+#include "base/memory/scoped_ptr.h"
 #include "browser/api/atom_api_event_emitter.h"
+#include "browser/native_window_observer.h"
 
 namespace base {
 class DictionaryValue;
@@ -17,7 +19,8 @@ class NativeWindow;
 
 namespace api {
 
-class Window : public EventEmitter {
+class Window : public EventEmitter,
+               public NativeWindowObserver {
  public:
   virtual ~Window();
 
@@ -28,6 +31,10 @@ class Window : public EventEmitter {
  protected:
   explicit Window(v8::Handle<v8::Object> wrapper,
                   base::DictionaryValue* options);
+
+  // Implementations of NativeWindowObserver.
+  virtual void OnPageTitleUpdated(bool* prevent_default,
+                                  const std::string& title) OVERRIDE;
 
  private:
   static v8::Handle<v8::Value> New(const v8::Arguments &args);

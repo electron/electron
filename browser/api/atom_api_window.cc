@@ -34,9 +34,17 @@ Window::Window(v8::Handle<v8::Object> wrapper, base::DictionaryValue* options)
     : EventEmitter(wrapper),
       window_(NativeWindow::Create(AtomBrowserContext::Get(), options)) {
   window_->InitFromOptions(options);
+  window_->AddObserver(this);
 }
 
 Window::~Window() {
+}
+
+void Window::OnPageTitleUpdated(bool* prevent_default,
+                                const std::string& title) {
+  scoped_ptr<base::ListValue> args(new base::ListValue);
+  args->AppendString(title);
+  *prevent_default = Emit("page-title-updated", args.get());
 }
 
 // static

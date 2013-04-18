@@ -5,8 +5,14 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_EVENT_EMITTER_H_
 #define ATOM_BROWSER_API_ATOM_API_EVENT_EMITTER_H_
 
+#include <iosfwd>
+
 #include "base/basictypes.h"
 #include "vendor/node/src/node_object_wrap.h"
+
+namespace base {
+class ListValue;
+}
 
 namespace atom {
 
@@ -18,6 +24,9 @@ namespace api {
 class EventEmitter : public node::ObjectWrap {
  public:
   virtual ~EventEmitter();
+
+  // Emit an event and returns whether the handler has called preventDefault().
+  bool Emit(const std::string& name, base::ListValue* args);
 
   // Small accessor to return handle_, this follows Google C++ Style.
   v8::Persistent<v8::Object>& handle() { return handle_; }

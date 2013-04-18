@@ -30,6 +30,9 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 
   node_bindings_->Initialize();
 
+  // Wrap whole process in one global context.
+  node::g_context->Enter();
+
   atom_bindings_->BindTo(node::process);
 
   node_bindings_->Load();

@@ -27,14 +27,12 @@ AtomBindings::~AtomBindings() {
 
 void AtomBindings::BindTo(v8::Handle<v8::Object> process) {
   v8::HandleScope scope;
-  v8::Context::Scope context_scope(node::g_context);
 
   node::SetMethod(process, "atom_binding", Binding);
 }
 
 void AtomBindings::AfterLoad() {
   v8::HandleScope scope;
-  v8::Context::Scope context_scope(node::g_context);
 
   v8::Handle<v8::Object> global = node::g_context->Global();
   v8::Handle<v8::Object> atom =

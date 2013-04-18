@@ -1,4 +1,10 @@
+EventEmitter = require('events').EventEmitter
+
 Window = process.atom_binding('window').Window
+
+# Inherits EventEmitter.
+for prop, func of EventEmitter.prototype
+  Window.prototype[prop] = func
 
 # Convient accessors.
 setupGetterAndSetter = (constructor, name, getter, setter) ->
