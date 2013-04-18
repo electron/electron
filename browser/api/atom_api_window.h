@@ -79,6 +79,7 @@ class Window : public EventEmitter,
 
   // APIs for NavigationController.
   static v8::Handle<v8::Value> LoadURL(const v8::Arguments &args);
+  static v8::Handle<v8::Value> GetURL(const v8::Arguments &args);
   static v8::Handle<v8::Value> CanGoBack(const v8::Arguments &args);
   static v8::Handle<v8::Value> CanGoForward(const v8::Arguments &args);
   static v8::Handle<v8::Value> CanGoToOffset(const v8::Arguments &args);

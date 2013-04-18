@@ -8,6 +8,7 @@
 #include "browser/atom_browser_context.h"
 #include "browser/native_window.h"
 #include "common/v8_value_converter_impl.h"
+#include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/web_contents.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
@@ -414,6 +415,19 @@ v8::Handle<v8::Value> Window::LoadURL(const v8::Arguments &args) {
 }
 
 // static
+v8::Handle<v8::Value> Window::GetURL(const v8::Arguments &args) {
+  Window* self = ObjectWrap::Unwrap<Window>(args.This());
+
+  NavigationController& controller =
+      self->window_->GetWebContents()->GetController();
+  std::string url;
+  if (controller.GetActiveEntry())
+    url = controller.GetActiveEntry()->GetVirtualURL().spec();
+
+  return v8::String::New(url.c_str(), url.size());
+}
+
+// static
 v8::Handle<v8::Value> Window::CanGoBack(const v8::Arguments &args) {
   Window* self = ObjectWrap::Unwrap<Window>(args.This());
 
@@ -565,6 +579,7 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "stop", Stop);
 
   NODE_SET_PROTOTYPE_METHOD(t, "loadURL", LoadURL);
+  NODE_SET_PROTOTYPE_METHOD(t, "getURL", GetURL);
   NODE_SET_PROTOTYPE_METHOD(t, "canGoBack", CanGoBack);
   NODE_SET_PROTOTYPE_METHOD(t, "canGoForward", CanGoForward);
   NODE_SET_PROTOTYPE_METHOD(t, "canGoToOffset", CanGoToOffset);
