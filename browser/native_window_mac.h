@@ -33,9 +33,13 @@ class NativeWindowMac : public NativeWindow {
   virtual void SetSize(const gfx::Size& size) OVERRIDE;
   virtual gfx::Size GetSize() OVERRIDE;
   virtual void SetMinimumSize(const gfx::Size& size) OVERRIDE;
+  virtual gfx::Size GetMinimumSize() OVERRIDE;
   virtual void SetMaximumSize(const gfx::Size& size) OVERRIDE;
+  virtual gfx::Size GetMaximumSize() OVERRIDE;
   virtual void SetResizable(bool resizable) OVERRIDE;
+  virtual bool IsResizable() OVERRIDE;
   virtual void SetAlwaysOnTop(bool top) OVERRIDE;
+  virtual bool IsAlwaysOnTop() OVERRIDE;
   virtual void SetPosition(const std::string& position) OVERRIDE;
   virtual void SetPosition(const gfx::Point& position) OVERRIDE;
   virtual gfx::Point GetPosition() OVERRIDE;

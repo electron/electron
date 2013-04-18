@@ -194,6 +194,18 @@ v8::Handle<v8::Value> Window::SetMinimumSize(const v8::Arguments &args) {
 }
 
 // static
+v8::Handle<v8::Value> Window::GetMinimumSize(const v8::Arguments &args) {
+  Window* self = ObjectWrap::Unwrap<Window>(args.This());
+
+  gfx::Size size = self->window_->GetMinimumSize();
+  v8::Handle<v8::Array> ret = v8::Array::New(2);
+  ret->Set(0, v8::Integer::New(size.width()));
+  ret->Set(1, v8::Integer::New(size.height()));
+
+  return ret;
+}
+
+// static
 v8::Handle<v8::Value> Window::SetMaximumSize(const v8::Arguments &args) {
   Window* self = ObjectWrap::Unwrap<Window>(args.This());
 
@@ -203,6 +215,18 @@ v8::Handle<v8::Value> Window::SetMaximumSize(const v8::Arguments &args) {
       gfx::Size(args[0]->IntegerValue(), args[1]->IntegerValue()));
 
   return v8::Undefined();
+}
+
+// static
+v8::Handle<v8::Value> Window::GetMaximumSize(const v8::Arguments &args) {
+  Window* self = ObjectWrap::Unwrap<Window>(args.This());
+
+  gfx::Size size = self->window_->GetMaximumSize();
+  v8::Handle<v8::Array> ret = v8::Array::New(2);
+  ret->Set(0, v8::Integer::New(size.width()));
+  ret->Set(1, v8::Integer::New(size.height()));
+
+  return ret;
 }
 
 // static
@@ -217,6 +241,13 @@ v8::Handle<v8::Value> Window::SetResizable(const v8::Arguments &args) {
 }
 
 // static
+v8::Handle<v8::Value> Window::IsResizable(const v8::Arguments &args) {
+  Window* self = ObjectWrap::Unwrap<Window>(args.This());
+
+  return v8::Boolean::New(self->window_->IsResizable());
+}
+
+// static
 v8::Handle<v8::Value> Window::SetAlwaysOnTop(const v8::Arguments &args) {
   Window* self = ObjectWrap::Unwrap<Window>(args.This());
 
@@ -225,6 +256,13 @@ v8::Handle<v8::Value> Window::SetAlwaysOnTop(const v8::Arguments &args) {
   self->window_->SetAlwaysOnTop(args[0]->BooleanValue());
 
   return v8::Undefined();
+}
+
+// static
+v8::Handle<v8::Value> Window::IsAlwaysOnTop(const v8::Arguments &args) {
+  Window* self = ObjectWrap::Unwrap<Window>(args.This());
+
+  return v8::Boolean::New(self->window_->IsAlwaysOnTop());
 }
 
 // static
@@ -496,9 +534,13 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "setSize", SetSize);
   NODE_SET_PROTOTYPE_METHOD(t, "getSize", GetSize);
   NODE_SET_PROTOTYPE_METHOD(t, "setMinimumSize", SetMinimumSize);
+  NODE_SET_PROTOTYPE_METHOD(t, "getMinimumSize", GetMinimumSize);
   NODE_SET_PROTOTYPE_METHOD(t, "setMaximumSize", SetMaximumSize);
+  NODE_SET_PROTOTYPE_METHOD(t, "getMaximumSize", GetMaximumSize);
   NODE_SET_PROTOTYPE_METHOD(t, "setResizable", SetResizable);
+  NODE_SET_PROTOTYPE_METHOD(t, "isResizable", IsResizable);
   NODE_SET_PROTOTYPE_METHOD(t, "setAlwaysOnTop", SetAlwaysOnTop);
+  NODE_SET_PROTOTYPE_METHOD(t, "isAlwaysOnTop", IsAlwaysOnTop);
   NODE_SET_PROTOTYPE_METHOD(t, "setPosition", SetPosition);
   NODE_SET_PROTOTYPE_METHOD(t, "getPosition", GetPosition);
   NODE_SET_PROTOTYPE_METHOD(t, "setTitle", SetTitle);

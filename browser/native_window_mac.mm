@@ -224,10 +224,24 @@ void NativeWindowMac::SetMinimumSize(const gfx::Size& size) {
   [window() setContentMinSize:[content convertSize:min_size toView:nil]];
 }
 
+gfx::Size NativeWindowMac::GetMinimumSize() {
+  NSView* content = [window() contentView];
+  NSSize min_size = [content convertSize:[window() contentMinSize]
+                                fromView:nil];
+  return gfx::Size(min_size.width, min_size.height);
+}
+
 void NativeWindowMac::SetMaximumSize(const gfx::Size& size) {
   NSSize max_size = NSMakeSize(size.width(), size.height());
   NSView* content = [window() contentView];
   [window() setContentMaxSize:[content convertSize:max_size toView:nil]];
+}
+
+gfx::Size NativeWindowMac::GetMaximumSize() {
+  NSView* content = [window() contentView];
+  NSSize max_size = [content convertSize:[window() contentMaxSize]
+                                fromView:nil];
+  return gfx::Size(max_size.width, max_size.height);
 }
 
 void NativeWindowMac::SetResizable(bool resizable) {
@@ -240,8 +254,16 @@ void NativeWindowMac::SetResizable(bool resizable) {
   }
 }
 
+bool NativeWindowMac::IsResizable() {
+  return [window() styleMask] & NSResizableWindowMask;
+}
+
 void NativeWindowMac::SetAlwaysOnTop(bool top) {
   [window() setLevel:(top ? NSFloatingWindowLevel : NSNormalWindowLevel)];
+}
+
+bool NativeWindowMac::IsAlwaysOnTop() {
+  return [window() level] == NSFloatingWindowLevel;
 }
 
 void NativeWindowMac::SetPosition(const std::string& position) {

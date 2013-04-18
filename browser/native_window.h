@@ -56,9 +56,13 @@ class NativeWindow : public content::WebContentsDelegate {
   virtual void SetSize(const gfx::Size& size) = 0;
   virtual gfx::Size GetSize() = 0;
   virtual void SetMinimumSize(const gfx::Size& size) = 0;
+  virtual gfx::Size GetMinimumSize() = 0;
   virtual void SetMaximumSize(const gfx::Size& size) = 0;
+  virtual gfx::Size GetMaximumSize() = 0;
   virtual void SetResizable(bool resizable) = 0;
+  virtual bool IsResizable() = 0;
   virtual void SetAlwaysOnTop(bool top) = 0;
+  virtual bool IsAlwaysOnTop() = 0;
   virtual void SetPosition(const std::string& position) = 0;
   virtual void SetPosition(const gfx::Point& position) = 0;
   virtual gfx::Point GetPosition() = 0;
