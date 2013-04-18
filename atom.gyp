@@ -33,6 +33,7 @@
       'browser/native_window.h',
       'browser/native_window_mac.h',
       'browser/native_window_mac.mm',
+      'browser/native_window_observer.h',
       'common/node_bindings.cc',
       'common/node_bindings.h',
       'common/node_bindings_mac.h',

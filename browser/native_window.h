@@ -10,6 +10,10 @@
 #include "base/basictypes.h"
 #include "base/compiler_specific.h"
 #include "base/memory/scoped_ptr.h"
+#include "base/observer_list.h"
+#include "browser/native_window_observer.h"
+#include "content/public/browser/notification_registrar.h"
+#include "content/public/browser/notification_observer.h"
 #include "content/public/browser/web_contents_delegate.h"
 
 namespace base {
@@ -33,7 +37,8 @@ class Size;
 
 namespace atom {
 
-class NativeWindow : public content::WebContentsDelegate {
+class NativeWindow : public content::WebContentsDelegate,
+                     public content::NotificationObserver {
  public:
   virtual ~NativeWindow();
 
@@ -76,6 +81,14 @@ class NativeWindow : public content::WebContentsDelegate {
 
   content::WebContents* GetWebContents() const;
 
+  void AddObserver(NativeWindowObserver* obs) {
+    observers_.AddObserver(obs);
+  }
+
+  void RemoveObserver(NativeWindowObserver* obs) {
+    observers_.RemoveObserver(obs);
+  }
+
  protected:
   explicit NativeWindow(content::BrowserContext* browser_context,
                         base::DictionaryValue* options);
@@ -84,7 +97,18 @@ class NativeWindow : public content::WebContentsDelegate {
     return inspectable_web_contents_.get();
   }
 
+  // Implementations of content::NotificationObserver
+  virtual void Observe(int type,
+                       const content::NotificationSource& source,
+                       const content::NotificationDetails& details) OVERRIDE;
+
  private:
+  // Notification manager.
+  content::NotificationRegistrar registrar_;
+
+  // Observers of this window.
+  ObserverList<NativeWindowObserver> observers_;
+
   scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindow);

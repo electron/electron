@@ -6,14 +6,21 @@
 
 #include <string>
 
+#include "base/utf_string_conversions.h"
 #include "base/values.h"
 #include "brightray/browser/browser_context.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
+#include "content/public/browser/navigation_entry.h"
+#include "content/public/browser/notification_details.h"
+#include "content/public/browser/notification_source.h"
+#include "content/public/browser/notification_types.h"
 #include "common/options_switches.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
+
+using content::NavigationEntry;
 
 namespace atom {
 
@@ -21,7 +28,13 @@ NativeWindow::NativeWindow(content::BrowserContext* browser_context,
                            base::DictionaryValue* options)
     : inspectable_web_contents_(brightray::InspectableWebContents::Create(
           content::WebContents::CreateParams(browser_context))) {
-  GetWebContents()->SetDelegate(this);
+  content::WebContents* web_contents = GetWebContents();
+
+  web_contents->SetDelegate(this);
+
+  // Add window as an observer of the web contents.
+  registrar_.Add(this, content::NOTIFICATION_WEB_CONTENTS_TITLE_UPDATED,
+      content::Source<content::WebContents>(web_contents));
 }
 
 NativeWindow::~NativeWindow() {
@@ -87,6 +100,26 @@ void NativeWindow::CloseDevTools() {
 
 content::WebContents* NativeWindow::GetWebContents() const {
   return inspectable_web_contents_->GetWebContents();
+}
+
+void NativeWindow::Observe(int type,
+                           const content::NotificationSource& source,
+                           const content::NotificationDetails& details) {
+  if (type == content::NOTIFICATION_WEB_CONTENTS_TITLE_UPDATED) {
+    std::pair<NavigationEntry*, bool>* title =
+        content::Details<std::pair<NavigationEntry*, bool>>(details).ptr();
+
+    if (title->first) {
+      bool prevent_default = false;
+      std::string text = UTF16ToUTF8(title->first->GetTitle());
+      FOR_EACH_OBSERVER(NativeWindowObserver,
+                        observers_,
+                        OnPageTitleUpdated(&prevent_default, text));
+
+      if (!prevent_default)
+        SetTitle(text);
+    }
+  }
 }
 
 }  // namespace atom
