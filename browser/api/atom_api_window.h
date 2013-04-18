@@ -53,6 +53,7 @@ class Window : public EventEmitter {
   static v8::Handle<v8::Value> SetPosition(const v8::Arguments &args);
   static v8::Handle<v8::Value> GetPosition(const v8::Arguments &args);
   static v8::Handle<v8::Value> SetTitle(const v8::Arguments &args);
+  static v8::Handle<v8::Value> GetTitle(const v8::Arguments &args);
   static v8::Handle<v8::Value> FlashFrame(const v8::Arguments &args);
   static v8::Handle<v8::Value> SetKiosk(const v8::Arguments &args);
   static v8::Handle<v8::Value> IsKiosk(const v8::Arguments &args);

@@ -265,6 +265,10 @@ void NativeWindowMac::SetTitle(const std::string& title) {
   [window() setTitle:base::SysUTF8ToNSString(title)];
 }
 
+std::string NativeWindowMac::GetTitle() {
+  return base::SysNSStringToUTF8([window() title]);
+}
+
 void NativeWindowMac::FlashFrame(bool flash) {
   if (flash) {
     attention_request_id_ = [NSApp requestUserAttention:NSInformationalRequest];

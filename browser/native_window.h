@@ -63,6 +63,7 @@ class NativeWindow : public content::WebContentsDelegate {
   virtual void SetPosition(const gfx::Point& position) = 0;
   virtual gfx::Point GetPosition() = 0;
   virtual void SetTitle(const std::string& title) = 0;
+  virtual std::string GetTitle() = 0;
   virtual void FlashFrame(bool flash) = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;

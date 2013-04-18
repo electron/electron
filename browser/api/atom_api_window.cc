@@ -258,6 +258,15 @@ v8::Handle<v8::Value> Window::SetTitle(const v8::Arguments &args) {
 }
 
 // static
+v8::Handle<v8::Value> Window::GetTitle(const v8::Arguments &args) {
+  Window *self = ObjectWrap::Unwrap<Window>(args.This());
+
+  std::string title = self->window_->GetTitle();
+
+  return v8::String::New(title.c_str(), title.size());
+}
+
+// static
 v8::Handle<v8::Value> Window::FlashFrame(const v8::Arguments &args) {
   Window *self = ObjectWrap::Unwrap<Window>(args.This());
 
@@ -331,6 +340,7 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "setPosition" , SetPosition);
   NODE_SET_PROTOTYPE_METHOD(t, "getPosition" , GetPosition);
   NODE_SET_PROTOTYPE_METHOD(t, "setTitle" , SetTitle);
+  NODE_SET_PROTOTYPE_METHOD(t, "getTitle" , GetTitle);
   NODE_SET_PROTOTYPE_METHOD(t, "flashFrame" , FlashFrame);
   NODE_SET_PROTOTYPE_METHOD(t, "setKiosk" , SetKiosk);
   NODE_SET_PROTOTYPE_METHOD(t, "isKiosk" , IsKiosk);
