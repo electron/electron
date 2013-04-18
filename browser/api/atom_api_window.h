@@ -60,6 +60,24 @@ class Window : public EventEmitter {
   static v8::Handle<v8::Value> ShowDevTools(const v8::Arguments &args);
   static v8::Handle<v8::Value> CloseDevTools(const v8::Arguments &args);
 
+  // APIs for WebContents.
+  static v8::Handle<v8::Value> GetPageTitle(const v8::Arguments &args);
+  static v8::Handle<v8::Value> IsLoading(const v8::Arguments &args);
+  static v8::Handle<v8::Value> IsWaitingForResponse(const v8::Arguments &args);
+  static v8::Handle<v8::Value> Stop(const v8::Arguments &args);
+
+  // APIs for NavigationController.
+  static v8::Handle<v8::Value> LoadURL(const v8::Arguments &args);
+  static v8::Handle<v8::Value> CanGoBack(const v8::Arguments &args);
+  static v8::Handle<v8::Value> CanGoForward(const v8::Arguments &args);
+  static v8::Handle<v8::Value> CanGoToOffset(const v8::Arguments &args);
+  static v8::Handle<v8::Value> GoBack(const v8::Arguments &args);
+  static v8::Handle<v8::Value> GoForward(const v8::Arguments &args);
+  static v8::Handle<v8::Value> GoToIndex(const v8::Arguments &args);
+  static v8::Handle<v8::Value> GoToOffset(const v8::Arguments &args);
+  static v8::Handle<v8::Value> Reload(const v8::Arguments &args);
+  static v8::Handle<v8::Value> ReloadIgnoringCache(const v8::Arguments &args);
+
   scoped_ptr<NativeWindow> window_;
 
   DISALLOW_COPY_AND_ASSIGN(Window);
