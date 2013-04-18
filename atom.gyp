@@ -13,6 +13,8 @@
     'lib_sources': [
       'app/atom_main_delegate.cc',
       'app/atom_main_delegate.h',
+      'browser/api/atom_api_event.cc',
+      'browser/api/atom_api_event.h',
       'browser/api/atom_api_event_emitter.cc',
       'browser/api/atom_api_event_emitter.h',
       'browser/api/atom_api_extensions.cc',

@@ -6,7 +6,6 @@
 #define ATOM_BROWSER_API_ATOM_API_EVENT_EMITTER_H_
 
 #include "base/basictypes.h"
-#include "base/memory/scoped_ptr.h"
 #include "vendor/node/src/node_object_wrap.h"
 
 namespace atom {
