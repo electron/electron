@@ -64,8 +64,7 @@ void InspectableWebContentsImpl::ShowDevTools() {
     agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(web_contents_->GetRenderViewHost());
     frontend_host_.reset(content::DevToolsClientHost::CreateDevToolsFrontendHost(devtools_web_contents_.get(), this));
 
-    auto client = static_cast<BrowserClient*>(content::GetContentClient()->browser());
-    auto handler = client->browser_main_parts()->devtools_http_handler();
+    auto handler = BrowserClient::Get()->browser_main_parts()->devtools_http_handler();
     auto url = handler->GetFrontendURL(nullptr);
     devtools_web_contents_->GetController().LoadURL(url, content::Referrer(), content::PAGE_TRANSITION_AUTO_TOPLEVEL, std::string());
   }

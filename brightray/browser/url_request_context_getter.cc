@@ -7,10 +7,10 @@
 #include "network_delegate.h"
 #include "base/string_util.h"
 #include "base/threading/worker_pool.h"
-#include "chrome/browser/net/sqlite_persistent_cookie_store.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/cookie_store_factory.h"
 #include "content/public/common/url_constants.h"
-#include "net/base/cert_verifier.h"
+#include "net/cert/cert_verifier.h"
 #include "net/cookies/cookie_monster.h"
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_cache.h"
@@ -59,14 +59,11 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext()
     url_request_context_->set_network_delegate(network_delegate_.get());
     storage_.reset(
         new net::URLRequestContextStorage(url_request_context_.get()));
-    storage_->set_cookie_store(new net::CookieMonster(
-        new SQLitePersistentCookieStore(
-            base_path_.Append(FILE_PATH_LITERAL("Cookies")),
-            content::BrowserThread::GetMessageLoopProxyForThread(content::BrowserThread::IO),
-            content::BrowserThread::GetMessageLoopProxyForThread(content::BrowserThread::DB),
-            false,
-            nullptr),
-        NULL));
+    storage_->set_cookie_store(content::CreatePersistentCookieStore(
+        base_path_.Append(FILE_PATH_LITERAL("Cookies")),
+        false,
+        nullptr,
+        nullptr));
     storage_->set_server_bound_cert_service(new net::ServerBoundCertService(
         new net::DefaultServerBoundCertStore(NULL),
         base::WorkerPool::GetTaskRunner(true)));

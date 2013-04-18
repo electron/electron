@@ -15,6 +15,8 @@ class NotificationPresenter;
 
 class BrowserClient : public content::ContentBrowserClient {
 public:
+  static BrowserClient* Get();
+
   BrowserClient();
   ~BrowserClient();
 

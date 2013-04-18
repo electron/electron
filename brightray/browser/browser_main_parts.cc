@@ -8,7 +8,7 @@
 #include "browser/devtools_delegate.h"
 
 #include "content/public/browser/devtools_http_handler.h"
-#include "net/base/tcp_listen_socket.h"
+#include "net/socket/tcp_listen_socket.h"
 
 namespace brightray {
 

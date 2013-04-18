@@ -40,4 +40,10 @@ std::string DevToolsDelegate::GetViewDescription(content::RenderViewHost*) {
   return std::string();
 }
 
+scoped_refptr<net::StreamListenSocket> DevToolsDelegate::CreateSocketForTethering(
+    net::StreamListenSocket::Delegate*,
+    std::string* name) {
+  return nullptr;
+}
+
 }

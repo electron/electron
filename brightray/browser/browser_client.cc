@@ -10,7 +10,19 @@
 
 namespace brightray {
 
+namespace {
+
+BrowserClient* g_browser_client;
+
+}
+
+BrowserClient* BrowserClient::Get() {
+  return g_browser_client;
+}
+
 BrowserClient::BrowserClient() {
+  DCHECK(!g_browser_client);
+  g_browser_client = this;
 }
 
 BrowserClient::~BrowserClient() {

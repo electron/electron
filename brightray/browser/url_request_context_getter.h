@@ -10,7 +10,9 @@
 #include "content/public/browser/content_browser_client.h"
 #include "net/url_request/url_request_context_getter.h"
 
+namespace base {
 class MessageLoop;
+}
 
 namespace net {
 class HostResolver;
@@ -25,8 +27,8 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 public:
   URLRequestContextGetter(
       const base::FilePath& base_path,
-      MessageLoop* io_loop,
-      MessageLoop* file_loop,
+      base::MessageLoop* io_loop,
+      base::MessageLoop* file_loop,
       content::ProtocolHandlerMap*);
   virtual ~URLRequestContextGetter();
 
@@ -37,8 +39,8 @@ private:
   virtual scoped_refptr<base::SingleThreadTaskRunner> GetNetworkTaskRunner() const OVERRIDE;
 
   base::FilePath base_path_;
-  MessageLoop* io_loop_;
-  MessageLoop* file_loop_;
+  base::MessageLoop* io_loop_;
+  base::MessageLoop* file_loop_;
 
   scoped_ptr<net::ProxyConfigService> proxy_config_service_;
   scoped_ptr<net::NetworkDelegate> network_delegate_;
