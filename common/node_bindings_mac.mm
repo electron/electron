@@ -4,14 +4,14 @@
 
 #include "common/node_bindings_mac.h"
 
+#include <sys/sysctl.h>
+#include <sys/time.h>
+#include <sys/types.h>
+
 #include "base/message_loop.h"
 #include "content/public/browser/browser_thread.h"
 #include "vendor/node/src/node.h"
 #include "vendor/node/src/node_internals.h"
-
-#define UV__POLLIN   1
-#define UV__POLLOUT  2
-#define UV__POLLERR  4
 
 using content::BrowserThread;
 
@@ -27,8 +27,8 @@ void UvNoOp(uv_async_t* handle, int status) {
 NodeBindingsMac::NodeBindingsMac(bool is_browser)
     : NodeBindings(is_browser),
       loop_(uv_default_loop()),
-      embed_closed_(false),
-      has_pending_event_(false) {
+      kqueue_(kqueue()),
+      embed_closed_(false) {
 }
 
 NodeBindingsMac::~NodeBindingsMac() {
@@ -60,13 +60,6 @@ void NodeBindingsMac::RunMessageLoop() {
   UvRunOnce();
 }
 
-void NodeBindingsMac::OnKqueueHasNewEvents() {
-  DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
-
-  DealWithPendingEvent();
-  UvRunOnce();
-}
-
 void NodeBindingsMac::UvRunOnce() {
   DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
 
@@ -82,57 +75,19 @@ void NodeBindingsMac::UvRunOnce() {
   uv_sem_post(&embed_sem_);
 }
 
-void NodeBindingsMac::DealWithPendingEvent() {
-  DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
-
-  if (has_pending_event_) {
-    has_pending_event_ = false;
-
-    // Enter node context while dealing with uv events.
-    v8::Context::Scope context_scope(node::g_context);
-
-    // The pending event must be a one shot event, so we don't need to
-    // delete it from kqueue.
-    uv__io_t* w = loop_->watchers[event_.ident];
-    if (w) {
-      unsigned int revents;
-
-      if (event_.filter == EVFILT_VNODE) {
-        w->cb(loop_, w, event_.fflags);
-        return;
-      }
-
-      revents = 0;
-
-      if (event_.filter == EVFILT_READ && (w->events & UV__POLLIN)) {
-        revents |= UV__POLLIN;
-        w->rcount = event_.data;
-      }
-
-      if (event_.filter == EVFILT_WRITE && (w->events & UV__POLLOUT)) {
-        revents |= UV__POLLOUT;
-        w->wcount = event_.data;
-      }
-
-      if (event_.flags & EV_ERROR)
-        revents |= UV__POLLERR;
-
-      if (revents == 0)
-        return;
-
-      w->cb(loop_, w, revents);
-    }
-  }
-}
-
 void NodeBindingsMac::EmbedThreadRunner(void *arg) {
   NodeBindingsMac* self = static_cast<NodeBindingsMac*>(arg);
+
+  uv_loop_t* loop = self->loop_;
+
+  // Add uv's backend fd to kqueue.
+  struct kevent ev;
+  EV_SET(&ev, uv_backend_fd(loop), EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, 0);
+  kevent(self->kqueue_, &ev, 1, NULL, 0, NULL);
 
   while (!self->embed_closed_) {
     // Wait for the main loop to deal with events.
     uv_sem_wait(&self->embed_sem_);
-
-    uv_loop_t* loop = self->loop_;
 
     struct timespec spec;
     int timeout = uv_backend_timeout(loop);
@@ -144,18 +99,13 @@ void NodeBindingsMac::EmbedThreadRunner(void *arg) {
     // Wait for new libuv events.
     int r;
     do {
-      r = ::kevent(uv_backend_fd(loop), NULL, 0, &self->event_, 1,
+      r = ::kevent(self->kqueue_, NULL, 0, &ev, 1,
                    timeout == -1 ? NULL : &spec);
     } while (r == -1 && errno == EINTR);
 
-    // We captured a one shot event, we should deal it in main thread because
-    // next kevent call will not catch it.
-    if (r == 1 && (self->event_.flags & EV_ONESHOT))
-      self->has_pending_event_ = true;
-
     // Deal with event in main thread.
     dispatch_async(dispatch_get_main_queue(), ^{
-      self->OnKqueueHasNewEvents();
+      self->UvRunOnce();
     });
   }
 }

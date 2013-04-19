@@ -5,10 +5,6 @@
 #ifndef ATOM_COMMON_NODE_BINDINGS_MAC_
 #define ATOM_COMMON_NODE_BINDINGS_MAC_
 
-#include <sys/sysctl.h>
-#include <sys/time.h>
-#include <sys/types.h>
-
 #include "base/compiler_specific.h"
 #include "common/node_bindings.h"
 #include "vendor/node/deps/uv/include/uv.h"
@@ -27,12 +23,6 @@ class NodeBindingsMac : public NodeBindings {
   // Run the libuv loop for once.
   void UvRunOnce();
 
-  // Run pending one shot events if we have.
-  void DealWithPendingEvent();
-
-  // Called when kqueue notifies new event.
-  void OnKqueueHasNewEvents();
-
   // Thread to poll uv events.
   static void EmbedThreadRunner(void *arg);
 
@@ -41,6 +31,9 @@ class NodeBindingsMac : public NodeBindings {
 
   // Main thread's loop.
   uv_loop_t* loop_;
+
+  // Kqueue to poll for uv's backend fd.
+  int kqueue_;
 
   // Dummy handle to make uv's loop not quit.
   uv_async_t dummy_uv_handle_;
@@ -53,10 +46,6 @@ class NodeBindingsMac : public NodeBindings {
 
   // Semaphore to wait for main loop in the embed thread.
   uv_sem_t embed_sem_;
-
-  // Captured oneshot event in embed thread.
-  bool has_pending_event_;
-  struct ::kevent event_;
 
   DISALLOW_COPY_AND_ASSIGN(NodeBindingsMac);
 };
