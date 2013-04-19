@@ -11,7 +11,7 @@
 #define BASE_MAC_FOUNDATION_UTIL_H_
 
 #include "base/mac/mac_util.h"
-#include "base/sys_string_conversions.h"
+#include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 #import "browser/atom_event_processing_window.h"
 #include "brightray/browser/inspectable_web_contents.h"
