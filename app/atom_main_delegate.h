@@ -14,6 +14,9 @@ class AtomMainDelegate : public brightray::MainDelegate {
   AtomMainDelegate();
   ~AtomMainDelegate();
 
+protected:
+  virtual void PreSandboxStartup() OVERRIDE;
+
  private:
   virtual content::ContentBrowserClient* CreateContentBrowserClient() OVERRIDE;
   virtual content::ContentRendererClient*

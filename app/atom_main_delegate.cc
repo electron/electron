@@ -4,7 +4,9 @@
 
 #include "app/atom_main_delegate.h"
 
+#include "base/command_line.h"
 #include "browser/atom_browser_client.h"
+#include "content/public/common/content_switches.h"
 #include "renderer/atom_renderer_client.h"
 
 namespace atom {
@@ -13,6 +15,14 @@ AtomMainDelegate::AtomMainDelegate() {
 }
 
 AtomMainDelegate::~AtomMainDelegate() {
+}
+
+void AtomMainDelegate::PreSandboxStartup() {
+  brightray::MainDelegate::PreSandboxStartup();
+
+  // Disable renderer sandbox for most of node's functions.
+  CommandLine* command_line = CommandLine::ForCurrentProcess();
+  command_line->AppendSwitch(switches::kNoSandbox);
 }
 
 content::ContentBrowserClient* AtomMainDelegate::CreateContentBrowserClient() {
