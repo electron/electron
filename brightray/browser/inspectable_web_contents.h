@@ -10,6 +10,7 @@ class InspectableWebContentsView;
 class InspectableWebContents {
 public:
   static InspectableWebContents* Create(const content::WebContents::CreateParams&);
+  static InspectableWebContents* Create(content::WebContents*);
   virtual ~InspectableWebContents() {}
 
   virtual InspectableWebContentsView* GetView() const = 0;

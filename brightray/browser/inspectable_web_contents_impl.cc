@@ -36,8 +36,8 @@ void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
   registry->RegisterStringPref(kDockSidePref, "bottom");
 }
 
-InspectableWebContentsImpl::InspectableWebContentsImpl(const content::WebContents::CreateParams& create_params)
-    : web_contents_(content::WebContents::Create(create_params)) {
+InspectableWebContentsImpl::InspectableWebContentsImpl(content::WebContents* web_contents)
+    : web_contents_(web_contents) {
   auto context = static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
   dock_side_ = context->prefs()->GetString(kDockSidePref);
 
