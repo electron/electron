@@ -101,6 +101,13 @@ class NativeWindow : public content::WebContentsDelegate,
     return inspectable_web_contents_.get();
   }
 
+  // Implementations of content::WebContentsDelegate.
+  virtual void WebContentsCreated(content::WebContents* source_contents,
+                                  int64 source_frame_id,
+                                  const string16& frame_name,
+                                  const GURL& target_url,
+                                  content::WebContents* new_contents) OVERRIDE;
+
   // Implementations of content::NotificationObserver
   virtual void Observe(int type,
                        const content::NotificationSource& source,
