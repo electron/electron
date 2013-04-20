@@ -4,21 +4,24 @@
 
 #include "renderer/atom_render_view_observer.h"
 
-#include "third_party/WebKit/Source/WebKit/chromium/public/WebDocument.h"
-#include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
+#include "common/node_bindings.h"
+#include "renderer/atom_renderer_client.h"
 #include "v8/include/v8.h"
 
 namespace atom {
 
 AtomRenderViewObserver::AtomRenderViewObserver(
-    content::RenderView *render_view)
-    : content::RenderViewObserver(render_view) {
+    content::RenderView* render_view,
+    AtomRendererClient* renderer_client)
+    : content::RenderViewObserver(render_view),
+      renderer_client_(renderer_client) {
 }
 
 AtomRenderViewObserver::~AtomRenderViewObserver() {
 }
 
 void AtomRenderViewObserver::DidClearWindowObject(WebKit::WebFrame* frame) {
+  renderer_client_->node_bindings()->BindTo(frame);
 }
 
 }  // namespace atom

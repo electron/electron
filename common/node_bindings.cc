@@ -8,8 +8,11 @@
 #include "base/files/file_path.h"
 #include "base/logging.h"
 #include "v8/include/v8.h"
+#include "third_party/WebKit/Source/WebKit/chromium/public/WebDocument.h"
+#include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
 #include "vendor/node/src/node.h"
 #include "vendor/node/src/node_internals.h"
+#include "vendor/node/src/node_javascript.h"
 
 namespace atom {
 
@@ -54,6 +57,31 @@ void NodeBindings::Load() {
   v8::HandleScope scope;
   v8::Context::Scope context_scope(node::g_context);
   node::Load(node::process);
+}
+
+void NodeBindings::BindTo(WebKit::WebFrame* frame) {
+  v8::HandleScope handle_scope;
+
+  v8::Handle<v8::Context> context = frame->mainWorldScriptContext();
+  if (context.IsEmpty())
+    return;
+
+  v8::Context::Scope scope(context);
+
+  // Erase security token.
+  context->SetSecurityToken(node::g_context->GetSecurityToken());
+
+  // Evaluate cefode.js.
+  v8::Handle<v8::Script> script = node::CompileCefodeMainSource();
+  v8::Local<v8::Value> result = script->Run();
+
+  // Run the script of cefode.js.
+  std::string script_path(GURL(frame->document().url()).path());
+  v8::Handle<v8::Value> args[2] = {
+    v8::Local<v8::Value>::New(node::process),
+    v8::String::New(script_path.c_str(), script_path.size())
+  };
+  v8::Local<v8::Function>::Cast(result)->Call(context->Global(), 2, args);
 }
 
 }  // namespace atom

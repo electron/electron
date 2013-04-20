@@ -7,6 +7,10 @@
 
 #include "base/basictypes.h"
 
+namespace WebKit {
+class WebFrame;
+}
+
 namespace atom {
 
 class NodeBindings {
@@ -20,6 +24,9 @@ class NodeBindings {
 
   // Load node.js main script.
   virtual void Load();
+
+  // Load cefode.js script under web frame.
+  virtual void BindTo(WebKit::WebFrame* frame);
 
   // Prepare for message loop integration.
   virtual void PrepareMessageLoop() = 0;
