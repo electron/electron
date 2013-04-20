@@ -20,6 +20,7 @@ class AtomRenderViewObserver : content::RenderViewObserver {
   virtual ~AtomRenderViewObserver();
 
   virtual void DidClearWindowObject(WebKit::WebFrame*) OVERRIDE;
+  virtual void FrameWillClose(WebKit::WebFrame*) OVERRIDE;
 
   // Weak reference to renderer client.
   AtomRendererClient* renderer_client_;
