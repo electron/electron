@@ -7,8 +7,7 @@
 
 #include <iosfwd>
 
-#include "base/basictypes.h"
-#include "vendor/node/src/node_object_wrap.h"
+#include "browser/api/atom_api_recorded_object.h"
 
 namespace base {
 class ListValue;
@@ -21,15 +20,12 @@ namespace api {
 // Class interiting EventEmitter should assume it's a javascript object which
 // interits require('events').EventEmitter, this class provides many helper
 // methods to do event processing in C++.
-class EventEmitter : public node::ObjectWrap {
+class EventEmitter : public RecordedObject {
  public:
   virtual ~EventEmitter();
 
   // Emit an event and returns whether the handler has called preventDefault().
   bool Emit(const std::string& name, base::ListValue* args);
-
-  // Small accessor to return handle_, this follows Google C++ Style.
-  v8::Persistent<v8::Object>& handle() { return handle_; }
 
  protected:
   explicit EventEmitter(v8::Handle<v8::Object> wrapper);

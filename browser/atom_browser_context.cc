@@ -4,12 +4,15 @@
 
 #include "browser/atom_browser_context.h"
 
+#include "browser/api/atom_api_objects_registry.h"
+
 namespace atom {
 
 // static
 AtomBrowserContext* AtomBrowserContext::self_;
 
-AtomBrowserContext::AtomBrowserContext() {
+AtomBrowserContext::AtomBrowserContext()
+    : objects_registry_(new api::ObjectsRegistry) {
   DCHECK(!self_);
 
   self_ = this;

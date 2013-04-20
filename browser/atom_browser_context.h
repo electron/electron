@@ -5,9 +5,14 @@
 #ifndef ATOM_BROWSER_ATOM_BROWSER_CONTEXT_H_
 #define ATOM_BROWSER_ATOM_BROWSER_CONTEXT_H_
 
+#include "base/memory/scoped_ptr.h"
 #include "brightray/browser/browser_context.h"
 
 namespace atom {
+
+namespace api {
+class ObjectsRegistry;
+}
 
 class AtomBrowserContext : public brightray::BrowserContext {
  public:
@@ -17,8 +22,14 @@ class AtomBrowserContext : public brightray::BrowserContext {
   // We assume there is only one BrowserContext per browser process.
   static AtomBrowserContext* Get();
 
+  api::ObjectsRegistry* objects_registry() const {
+    return objects_registry_.get();
+  }
+
  private:
   static AtomBrowserContext* self_;
+
+  scoped_ptr<api::ObjectsRegistry> objects_registry_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);
 };

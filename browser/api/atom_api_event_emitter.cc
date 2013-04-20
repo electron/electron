@@ -16,8 +16,8 @@ namespace atom {
 
 namespace api {
 
-EventEmitter::EventEmitter(v8::Handle<v8::Object> wrapper) {
-  Wrap(wrapper);
+EventEmitter::EventEmitter(v8::Handle<v8::Object> wrapper)
+    : RecordedObject(wrapper) {
 }
 
 EventEmitter::~EventEmitter() {
