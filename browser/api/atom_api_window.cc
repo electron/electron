@@ -5,7 +5,6 @@
 #include "browser/api/atom_api_window.h"
 
 #include "base/values.h"
-#include "browser/atom_browser_context.h"
 #include "browser/native_window.h"
 #include "common/v8_value_converter_impl.h"
 #include "content/public/browser/navigation_entry.h"
@@ -33,7 +32,7 @@ v8::Handle<v8::String> UTF16ToV8String(const string16& s) {
 
 Window::Window(v8::Handle<v8::Object> wrapper, base::DictionaryValue* options)
     : EventEmitter(wrapper),
-      window_(NativeWindow::Create(AtomBrowserContext::Get(), options)) {
+      window_(NativeWindow::Create(options)) {
   window_->InitFromOptions(options);
   window_->AddObserver(this);
 }

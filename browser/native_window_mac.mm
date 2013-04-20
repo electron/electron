@@ -43,9 +43,9 @@
 
 namespace atom {
 
-NativeWindowMac::NativeWindowMac(content::BrowserContext* browser_context,
+NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
                                  base::DictionaryValue* options)
-    : NativeWindow(browser_context, options),
+    : NativeWindow(web_contents, options),
       is_fullscreen_(false),
       is_kiosk_(false),
       attention_request_id_(0) {
@@ -350,9 +350,9 @@ void NativeWindowMac::UninstallView() {
 }
 
 // static
-NativeWindow* NativeWindow::Create(content::BrowserContext* browser_context,
+NativeWindow* NativeWindow::Create(content::WebContents* web_contents,
                                    base::DictionaryValue* options) {
-  return new NativeWindowMac(browser_context, options);
+  return new NativeWindowMac(web_contents, options);
 }
 
 }  // namespace atom

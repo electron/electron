@@ -11,6 +11,7 @@
 #include "brightray/browser/browser_context.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
+#include "browser/atom_browser_context.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/notification_details.h"
 #include "content/public/browser/notification_source.h"
@@ -24,12 +25,10 @@ using content::NavigationEntry;
 
 namespace atom {
 
-NativeWindow::NativeWindow(content::BrowserContext* browser_context,
+NativeWindow::NativeWindow(content::WebContents* web_contents,
                            base::DictionaryValue* options)
-    : inspectable_web_contents_(brightray::InspectableWebContents::Create(
-          content::WebContents::CreateParams(browser_context))) {
-  content::WebContents* web_contents = GetWebContents();
-
+    : inspectable_web_contents_(
+          brightray::InspectableWebContents::Create(web_contents)) {
   web_contents->SetDelegate(this);
 
   // Add window as an observer of the web contents.
@@ -38,6 +37,12 @@ NativeWindow::NativeWindow(content::BrowserContext* browser_context,
 }
 
 NativeWindow::~NativeWindow() {
+}
+
+// static
+NativeWindow* NativeWindow::Create(base::DictionaryValue* options) {
+  content::WebContents::CreateParams create_params(AtomBrowserContext::Get());
+  return Create(content::WebContents::Create(create_params), options);
 }
 
 void NativeWindow::InitFromOptions(base::DictionaryValue* options) {

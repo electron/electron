@@ -42,8 +42,12 @@ class NativeWindow : public content::WebContentsDelegate,
  public:
   virtual ~NativeWindow();
 
-  static NativeWindow* Create(content::BrowserContext* browser_context,
+  // Create window with existing WebContents.
+  static NativeWindow* Create(content::WebContents* web_contents,
                               base::DictionaryValue* options);
+
+  // Create window with new WebContents.
+  static NativeWindow* Create(base::DictionaryValue* options);
 
   void InitFromOptions(base::DictionaryValue* options);
 
@@ -90,7 +94,7 @@ class NativeWindow : public content::WebContentsDelegate,
   }
 
  protected:
-  explicit NativeWindow(content::BrowserContext* browser_context,
+  explicit NativeWindow(content::WebContents* web_contents,
                         base::DictionaryValue* options);
 
   brightray::InspectableWebContents* inspectable_web_contents() const {
