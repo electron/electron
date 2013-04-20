@@ -40,14 +40,14 @@ bool EnterFirstWindowContext() {
 
 bool IsValidWindowContext(v8::Handle<v8::Context> context) {
   size_t size = web_frames().size();
-  for (size_t i = 0; i < size; ++i) 
+  for (size_t i = 0; i < size; ++i)
     if (web_frames()[i]->mainWorldScriptContext() == context)
       return true;
 
   return false;
 }
 
-}
+}  // namespace
 
 AtomRenderViewObserver::AtomRenderViewObserver(
     content::RenderView* render_view,
