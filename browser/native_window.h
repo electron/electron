@@ -15,6 +15,7 @@
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
 #include "content/public/browser/web_contents_delegate.h"
+#include "content/public/browser/web_contents_observer.h"
 
 namespace base {
 class DictionaryValue;
@@ -38,6 +39,7 @@ class Size;
 namespace atom {
 
 class NativeWindow : public content::WebContentsDelegate,
+                     public content::WebContentsObserver,
                      public content::NotificationObserver {
  public:
   virtual ~NativeWindow();
@@ -107,6 +109,9 @@ class NativeWindow : public content::WebContentsDelegate,
                                   const string16& frame_name,
                                   const GURL& target_url,
                                   content::WebContents* new_contents) OVERRIDE;
+
+  // Implementations of content::WebContentsObserver.
+  virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
 
   // Implementations of content::NotificationObserver
   virtual void Observe(int type,

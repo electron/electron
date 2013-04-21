@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// Multiply-included file, no traditional include guard.
+
 // Used by atom_extensions.cc to declare a list of built-in modules of Atom.
 
 NODE_EXT_LIST_START

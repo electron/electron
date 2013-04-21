@@ -32,6 +32,9 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
   web_contents->SetDelegate(this);
 
   // Add window as an observer of the web contents.
+  content::WebContentsObserver::Observe(web_contents);
+
+  // Get notified of title updated message.
   registrar_.Add(this, content::NOTIFICATION_WEB_CONTENTS_TITLE_UPDATED,
       content::Source<content::WebContents>(web_contents));
 }
@@ -123,6 +126,10 @@ void NativeWindow::WebContentsCreated(
 
   NativeWindow* window = Create(new_contents, options.get());
   window->InitFromOptions(options.get());
+}
+
+bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
+  return false;
 }
 
 void NativeWindow::Observe(int type,
