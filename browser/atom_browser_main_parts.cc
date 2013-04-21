@@ -4,7 +4,7 @@
 
 #include "browser/atom_browser_main_parts.h"
 
-#include "browser/api/atom_bindings.h"
+#include "browser/api/atom_browser_bindings.h"
 #include "browser/atom_browser_context.h"
 #include "browser/native_window.h"
 #include "common/node_bindings.h"
@@ -14,7 +14,7 @@
 namespace atom {
 
 AtomBrowserMainParts::AtomBrowserMainParts()
-    : atom_bindings_(new AtomBindings),
+    : atom_bindings_(new AtomBrowserBindings),
       node_bindings_(NodeBindings::Create(true)) {
 }
 

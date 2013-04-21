@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <vector>
 
+#include "common/api/atom_bindings.h"
 #include "common/node_bindings.h"
 #include "renderer/atom_renderer_client.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
@@ -67,6 +68,7 @@ void AtomRenderViewObserver::DidClearWindowObject(WebFrame* frame) {
   web_frames().push_back(frame);
 
   renderer_client_->node_bindings()->BindTo(frame);
+  renderer_client_->atom_bindings()->BindToFrame(frame);
 }
 
 void AtomRenderViewObserver::FrameWillClose(WebFrame* frame) {

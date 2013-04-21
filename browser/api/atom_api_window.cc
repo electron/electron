@@ -596,4 +596,4 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
 
 }  // namespace atom
 
-NODE_MODULE(atom_api_window, atom::api::Window::Initialize)
+NODE_MODULE(atom_browser_window, atom::api::Window::Initialize)

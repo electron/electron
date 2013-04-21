@@ -4,6 +4,7 @@
 
 #include "renderer/atom_renderer_client.h"
 
+#include "common/api/atom_bindings.h"
 #include "common/node_bindings.h"
 #include "renderer/atom_render_view_observer.h"
 #include "vendor/node/src/node_internals.h"
@@ -15,7 +16,8 @@ extern void SetNodeContext(v8::Persistent<v8::Context> context);
 namespace atom {
 
 AtomRendererClient::AtomRendererClient()
-    : node_bindings_(NodeBindings::Create(false)) {
+    : atom_bindings_(new AtomBindings),
+      node_bindings_(NodeBindings::Create(false)) {
 }
 
 AtomRendererClient::~AtomRendererClient() {
