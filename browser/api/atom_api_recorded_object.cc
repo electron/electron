@@ -24,6 +24,7 @@ RecordedObject::RecordedObject(v8::Handle<v8::Object> wrapper)
 }
 
 RecordedObject::~RecordedObject() {
+  AtomBrowserContext::Get()->objects_registry()->Remove(id());
 }
 
 // static
