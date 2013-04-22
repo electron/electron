@@ -31,7 +31,7 @@ class InspectableWebContentsImpl :
 public:
   static void RegisterPrefs(PrefRegistrySimple*);
 
-  InspectableWebContentsImpl(const content::WebContents::CreateParams&);
+  InspectableWebContentsImpl(content::WebContents*);
   virtual ~InspectableWebContentsImpl() OVERRIDE;
 
   virtual InspectableWebContentsView* GetView() const OVERRIDE;
