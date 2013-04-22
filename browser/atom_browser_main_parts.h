@@ -17,6 +17,10 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   AtomBrowserMainParts();
   virtual ~AtomBrowserMainParts();
 
+  static AtomBrowserMainParts* Get();
+
+  AtomBrowserBindings* atom_bindings() { return atom_bindings_.get(); }
+
  protected:
   // Implementations of brightray::BrowserMainParts.
   virtual brightray::BrowserContext* CreateBrowserContext() OVERRIDE;
@@ -29,6 +33,8 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
  private:
   scoped_ptr<AtomBrowserBindings> atom_bindings_;
   scoped_ptr<NodeBindings> node_bindings_;
+
+  static AtomBrowserMainParts* self_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserMainParts);
 };

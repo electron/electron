@@ -54,6 +54,7 @@ AtomRenderViewObserver::AtomRenderViewObserver(
     content::RenderView* render_view,
     AtomRendererClient* renderer_client)
     : content::RenderViewObserver(render_view),
+      atom_bindings_(new AtomRendererBindings(render_view)),
       renderer_client_(renderer_client) {
   // Interact with dirty workarounds of extra node context in WebKit.
   webkit_atom::SetEnterFirstWindowContext(EnterFirstWindowContext);
@@ -68,7 +69,8 @@ void AtomRenderViewObserver::DidClearWindowObject(WebFrame* frame) {
   web_frames().push_back(frame);
 
   renderer_client_->node_bindings()->BindTo(frame);
-  renderer_client_->atom_bindings()->BindToFrame(frame);
+  atom_bindings()->BindToFrame(frame);
+  atom_bindings()->AddIPCBindings(frame);
 }
 
 void AtomRenderViewObserver::FrameWillClose(WebFrame* frame) {

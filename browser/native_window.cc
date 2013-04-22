@@ -8,15 +8,18 @@
 
 #include "base/utf_string_conversions.h"
 #include "base/values.h"
-#include "brightray/browser/browser_context.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
+#include "browser/api/atom_browser_bindings.h"
 #include "browser/atom_browser_context.h"
+#include "browser/atom_browser_main_parts.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/notification_details.h"
 #include "content/public/browser/notification_source.h"
 #include "content/public/browser/notification_types.h"
+#include "common/api/api_messages.h"
 #include "common/options_switches.h"
+#include "ipc/ipc_message_macros.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
@@ -27,12 +30,10 @@ namespace atom {
 
 NativeWindow::NativeWindow(content::WebContents* web_contents,
                            base::DictionaryValue* options)
-    : inspectable_web_contents_(
+    : content::WebContentsObserver(web_contents),
+      inspectable_web_contents_(
           brightray::InspectableWebContents::Create(web_contents)) {
   web_contents->SetDelegate(this);
-
-  // Add window as an observer of the web contents.
-  content::WebContentsObserver::Observe(web_contents);
 
   // Get notified of title updated message.
   registrar_.Add(this, content::NOTIFICATION_WEB_CONTENTS_TITLE_UPDATED,
@@ -129,7 +130,13 @@ void NativeWindow::WebContentsCreated(
 }
 
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
-  return false;
+  bool handled = true;
+  IPC_BEGIN_MESSAGE_MAP(NativeWindow, message)
+    IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
+    IPC_MESSAGE_UNHANDLED(handled = false)
+  IPC_END_MESSAGE_MAP()
+
+  return handled;
 }
 
 void NativeWindow::Observe(int type,
@@ -150,6 +157,11 @@ void NativeWindow::Observe(int type,
         SetTitle(text);
     }
   }
+}
+
+void NativeWindow::OnRendererMessage(const base::ListValue& args) {
+  AtomBrowserMainParts::Get()->atom_bindings()->OnRendererMessage(
+      GetWebContents()->GetRoutingID(), args);
 }
 
 }  // namespace atom

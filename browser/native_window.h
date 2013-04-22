@@ -19,6 +19,7 @@
 
 namespace base {
 class DictionaryValue;
+class ListValue;
 }
 
 namespace brightray {
@@ -119,6 +120,8 @@ class NativeWindow : public content::WebContentsDelegate,
                        const content::NotificationDetails& details) OVERRIDE;
 
  private:
+  void OnRendererMessage(const base::ListValue& args);
+
   // Notification manager.
   content::NotificationRegistrar registrar_;
 

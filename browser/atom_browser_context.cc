@@ -5,17 +5,12 @@
 #include "browser/atom_browser_context.h"
 
 #include "browser/api/atom_api_objects_registry.h"
+#include "browser/atom_browser_main_parts.h"
 
 namespace atom {
 
-// static
-AtomBrowserContext* AtomBrowserContext::self_;
-
 AtomBrowserContext::AtomBrowserContext()
     : objects_registry_(new api::ObjectsRegistry) {
-  DCHECK(!self_);
-
-  self_ = this;
 }
 
 AtomBrowserContext::~AtomBrowserContext() {
@@ -23,9 +18,8 @@ AtomBrowserContext::~AtomBrowserContext() {
 
 // static
 AtomBrowserContext* AtomBrowserContext::Get() {
-  DCHECK(self_);
-
-  return self_;
+  return static_cast<AtomBrowserContext*>(
+      AtomBrowserMainParts::Get()->browser_context());
 }
 
 }  // namespace atom

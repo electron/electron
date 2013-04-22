@@ -15,21 +15,8 @@
 
 #define IPC_MESSAGE_START ShellMsgStart
 
-IPC_SYNC_MESSAGE_CONTROL2_1(AtomViewHostMsg_Allocate_Object,
-                            std::string /* module */,
-                            DictionaryValue /* options */,
-                            int /* object id */)
+IPC_MESSAGE_ROUTED1(AtomViewHostMsg_Message,
+                    ListValue /* arguments */)
 
-IPC_SYNC_MESSAGE_CONTROL1_0(AtomViewHostMsg_Deallocate_Object,
-                            int /* object id */)
-
-IPC_SYNC_MESSAGE_CONTROL3_1(AtomViewHostMsg_Call_Object_Method,
-                            int /* object id */,
-                            std::string /* method name */,
-                            ListValue /* arguments */,
-                            DictionaryValue /* return value */)
-
-IPC_SYNC_MESSAGE_CONTROL2_1(AtomViewMsg_Callback,
-                            int /* callback id */,
-                            ListValue /* arguments */,
-                            DictionaryValue /* return value */)
+IPC_MESSAGE_ROUTED1(AtomViewMsg_Message,
+                    ListValue /* arguments */)

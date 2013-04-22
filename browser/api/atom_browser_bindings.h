@@ -7,6 +7,10 @@
 
 #include "common/api/atom_bindings.h"
 
+namespace base {
+class ListValue;
+}
+
 namespace atom {
 
 class AtomBrowserBindings : public AtomBindings {
@@ -16,6 +20,9 @@ class AtomBrowserBindings : public AtomBindings {
 
   // Called when the node.js main script has been loaded.
   virtual void AfterLoad();
+
+  // Called when received a message from renderer.
+  void OnRendererMessage(int routing_id, const base::ListValue& args);
 
   // The require('atom').browserMainParts object.
   v8::Handle<v8::Object> browser_main_parts() {

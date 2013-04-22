@@ -5,6 +5,7 @@
 #include "browser/api/atom_browser_bindings.h"
 
 #include "base/logging.h"
+#include "base/values.h"
 #include "content/public/browser/browser_thread.h"
 #include "vendor/node/src/node.h"
 #include "vendor/node/src/node_internals.h"
@@ -33,6 +34,12 @@ void AtomBrowserBindings::AfterLoad() {
       node_isolate,
       atom->Get(v8::String::New("browserMainParts"))->ToObject());
   DCHECK(!browser_main_parts_.IsEmpty());
+}
+
+void AtomBrowserBindings::OnRendererMessage(
+    int routing_id, const base::ListValue& args) {
+  LOG(ERROR) << "OnRendererMessage routing_id:" << routing_id
+             << " args:" << args;
 }
 
 }  // namespace atom

@@ -19,7 +19,6 @@ class AtomBrowserContext : public brightray::BrowserContext {
   AtomBrowserContext();
   virtual ~AtomBrowserContext();
 
-  // We assume there is only one BrowserContext per browser process.
   static AtomBrowserContext* Get();
 
   api::ObjectsRegistry* objects_registry() const {
@@ -27,8 +26,6 @@ class AtomBrowserContext : public brightray::BrowserContext {
   }
 
  private:
-  static AtomBrowserContext* self_;
-
   scoped_ptr<api::ObjectsRegistry> objects_registry_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);

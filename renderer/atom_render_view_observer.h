@@ -5,16 +5,20 @@
 #ifndef ATOM_RENDERER_ATOM_RENDER_VIEW_OBSERVER_
 #define ATOM_RENDERER_ATOM_RENDER_VIEW_OBSERVER_
 
+#include "base/memory/scoped_ptr.h"
 #include "content/public/renderer/render_view_observer.h"
 
 namespace atom {
 
+class AtomRendererBindings;
 class AtomRendererClient;
 
 class AtomRenderViewObserver : content::RenderViewObserver {
  public:
   explicit AtomRenderViewObserver(content::RenderView* render_view,
                                   AtomRendererClient* renderer_client);
+
+  AtomRendererBindings* atom_bindings() const { return atom_bindings_.get(); }
 
  protected:
   virtual ~AtomRenderViewObserver();
@@ -23,6 +27,8 @@ class AtomRenderViewObserver : content::RenderViewObserver {
   virtual void FrameWillClose(WebKit::WebFrame*) OVERRIDE;
 
  private:
+  scoped_ptr<AtomRendererBindings> atom_bindings_;
+
   // Weak reference to renderer client.
   AtomRendererClient* renderer_client_;
 

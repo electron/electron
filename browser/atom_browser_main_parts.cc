@@ -5,6 +5,7 @@
 #include "browser/atom_browser_main_parts.h"
 
 #include "browser/api/atom_browser_bindings.h"
+#include "browser/atom_browser_client.h"
 #include "browser/atom_browser_context.h"
 #include "browser/native_window.h"
 #include "common/node_bindings.h"
@@ -13,12 +14,23 @@
 
 namespace atom {
 
+// static
+AtomBrowserMainParts* AtomBrowserMainParts::self_ = NULL;
+
 AtomBrowserMainParts::AtomBrowserMainParts()
     : atom_bindings_(new AtomBrowserBindings),
       node_bindings_(NodeBindings::Create(true)) {
+  DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
+  self_ = this;
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {
+}
+
+// static
+AtomBrowserMainParts* AtomBrowserMainParts::Get() {
+  DCHECK(self_);
+  return self_;
 }
 
 brightray::BrowserContext* AtomBrowserMainParts::CreateBrowserContext() {
