@@ -16,7 +16,7 @@
 #define IPC_MESSAGE_START ShellMsgStart
 
 IPC_SYNC_MESSAGE_CONTROL2_1(AtomViewHostMsg_Allocate_Object,
-                            std::string /* type name */,
+                            std::string /* module */,
                             DictionaryValue /* options */,
                             int /* object id */)
 

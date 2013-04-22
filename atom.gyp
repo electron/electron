@@ -9,7 +9,6 @@
       'browser/api/lib/atom.coffee',
       'browser/api/lib/window.coffee',
       'browser/atom/atom.coffee',
-      'renderer/api/lib/remote_object.coffee',
     ],
     'lib_sources': [
       'app/atom_main_delegate.cc',
@@ -53,8 +52,6 @@
       'common/options_switches.h',
       'common/v8_value_converter_impl.cc',
       'common/v8_value_converter_impl.h',
-      'renderer/api/atom_api_remote_object.cc',
-      'renderer/api/atom_api_remote_object.h',
       'renderer/atom_render_view_observer.cc',
       'renderer/atom_render_view_observer.h',
       'renderer/atom_renderer_client.cc',
