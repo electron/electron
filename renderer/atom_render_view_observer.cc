@@ -7,8 +7,8 @@
 #include <algorithm>
 #include <vector>
 
-#include "common/api/atom_bindings.h"
 #include "common/node_bindings.h"
+#include "renderer/api/atom_renderer_bindings.h"
 #include "renderer/atom_renderer_client.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
 #include "v8/include/v8.h"

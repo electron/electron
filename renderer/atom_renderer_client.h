@@ -9,7 +9,7 @@
 
 namespace atom {
 
-class AtomBindings;
+class AtomRendererBindings;
 class NodeBindings;
 
 class AtomRendererClient : public content::ContentRendererClient {
@@ -17,14 +17,14 @@ class AtomRendererClient : public content::ContentRendererClient {
   AtomRendererClient();
   virtual ~AtomRendererClient();
 
-  AtomBindings* atom_bindings() const { return atom_bindings_.get(); }
+  AtomRendererBindings* atom_bindings() const { return atom_bindings_.get(); }
   NodeBindings* node_bindings() const { return node_bindings_.get(); }
 
  private:
   virtual void RenderThreadStarted() OVERRIDE;
   virtual void RenderViewCreated(content::RenderView*) OVERRIDE;
 
-  scoped_ptr<AtomBindings> atom_bindings_;
+  scoped_ptr<AtomRendererBindings> atom_bindings_;
   scoped_ptr<NodeBindings> node_bindings_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);

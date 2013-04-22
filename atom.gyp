@@ -52,6 +52,8 @@
       'common/options_switches.h',
       'common/v8_value_converter_impl.cc',
       'common/v8_value_converter_impl.h',
+      'renderer/api/atom_renderer_bindings.cc',
+      'renderer/api/atom_renderer_bindings.h',
       'renderer/atom_render_view_observer.cc',
       'renderer/atom_render_view_observer.h',
       'renderer/atom_renderer_client.cc',

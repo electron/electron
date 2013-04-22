@@ -5,7 +5,6 @@
 #include "common/api/atom_bindings.h"
 
 #include "base/logging.h"
-#include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
 #include "vendor/node/src/node.h"
 
 namespace atom {
@@ -70,22 +69,6 @@ v8::Handle<v8::Value> AtomBindings::Binding(const v8::Arguments& args) {
 
   return v8::ThrowException(v8::Exception::Error(
       v8::String::New("No such module")));
-}
-
-void AtomBindings::BindToFrame(WebKit::WebFrame* frame) {
-  v8::HandleScope handle_scope;
-
-  v8::Handle<v8::Context> context = frame->mainWorldScriptContext();
-  if (context.IsEmpty())
-    return;
-
-  v8::Context::Scope scope(context);
-
-  v8::Handle<v8::Object> process =
-      context->Global()->Get(v8::String::New("process"))->ToObject();
-  DCHECK(!process.IsEmpty());
-
-  AtomBindings::BindTo(process);
 }
 
 }  // namespace atom
