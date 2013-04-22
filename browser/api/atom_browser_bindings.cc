@@ -4,12 +4,16 @@
 
 #include "browser/api/atom_browser_bindings.h"
 
+#include <vector>
+
 #include "base/logging.h"
 #include "base/values.h"
+#include "common/v8_value_converter_impl.h"
 #include "content/public/browser/browser_thread.h"
 #include "vendor/node/src/node.h"
 #include "vendor/node/src/node_internals.h"
 
+using content::V8ValueConverter;
 using node::node_isolate;
 
 namespace atom {
@@ -38,8 +42,24 @@ void AtomBrowserBindings::AfterLoad() {
 
 void AtomBrowserBindings::OnRendererMessage(
     int routing_id, const base::ListValue& args) {
-  LOG(ERROR) << "OnRendererMessage routing_id:" << routing_id
-             << " args:" << args;
+  v8::HandleScope scope;
+
+  v8::Handle<v8::Context> context = v8::Context::GetCurrent();
+
+  scoped_ptr<V8ValueConverter> converter(new V8ValueConverterImpl());
+
+  std::vector<v8::Handle<v8::Value>> arguments;
+  arguments.reserve(2 + args.GetSize());
+  arguments.push_back(v8::String::New("message"));
+  arguments.push_back(v8::Integer::New(routing_id));
+
+  for (size_t i = 0; i < args.GetSize(); i++) {
+    const base::Value* value;
+    if (args.Get(i, &value))
+      arguments.push_back(converter->ToV8Value(value, context));
+  }
+
+  node::MakeCallback(node::process, "emit", arguments.size(), &arguments[0]);
 }
 
 }  // namespace atom
