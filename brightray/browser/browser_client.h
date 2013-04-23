@@ -29,9 +29,12 @@ protected:
   // lifetime of the returned instance is managed by the caller.
   virtual BrowserMainParts* OverrideCreateBrowserMainParts(const content::MainFunctionParams&);
 
+  // Subclasses that override this (e.g., to provide their own protocol handlers) should call this
+  // implementation after doing their own work.
+  virtual net::URLRequestContextGetter* CreateRequestContext(content::BrowserContext*, content::ProtocolHandlerMap*) OVERRIDE;
+
 private:
   virtual content::BrowserMainParts* CreateBrowserMainParts(const content::MainFunctionParams&) OVERRIDE;
-  virtual net::URLRequestContextGetter* CreateRequestContext(content::BrowserContext*, content::ProtocolHandlerMap*) OVERRIDE;
   virtual void ShowDesktopNotification(
       const content::ShowDesktopNotificationHostMsgParams&,
       int render_process_id,
