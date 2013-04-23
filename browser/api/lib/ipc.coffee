@@ -7,6 +7,9 @@ class Ipc extends EventEmitter
       @emit('message', args...)
 
   send: (process_id, routing_id, args...) ->
-    send(process_id, routing_id, 'ATOM_INTERNAL_MESSAGE', args...)
+    @sendChannel(process_id, routing_id, 'ATOM_INTERNAL_MESSAGE', args...)
+
+  sendChannel: (args...) ->
+    send(args...)
 
 module.exports = new Ipc

@@ -9,6 +9,7 @@
 #include "common/v8_value_converter_impl.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/browser/render_process_host.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
@@ -397,6 +398,21 @@ v8::Handle<v8::Value> Window::Stop(const v8::Arguments &args) {
 }
 
 // static
+v8::Handle<v8::Value> Window::GetRoutingID(const v8::Arguments &args) {
+  Window* self = ObjectWrap::Unwrap<Window>(args.This());
+
+  return v8::Integer::New(self->window_->GetWebContents()->GetRoutingID());
+}
+
+// static
+v8::Handle<v8::Value> Window::GetProcessID(const v8::Arguments &args) {
+  Window* self = ObjectWrap::Unwrap<Window>(args.This());
+
+  return v8::Integer::New(
+      self->window_->GetWebContents()->GetRenderProcessHost()->GetID());
+}
+
+// static
 v8::Handle<v8::Value> Window::LoadURL(const v8::Arguments &args) {
   Window* self = ObjectWrap::Unwrap<Window>(args.This());
 
@@ -576,6 +592,8 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "isLoading", IsLoading);
   NODE_SET_PROTOTYPE_METHOD(t, "isWaitingForResponse", IsWaitingForResponse);
   NODE_SET_PROTOTYPE_METHOD(t, "stop", Stop);
+  NODE_SET_PROTOTYPE_METHOD(t, "getRoutingID", GetRoutingID);
+  NODE_SET_PROTOTYPE_METHOD(t, "getProcessID", GetProcessID);
 
   NODE_SET_PROTOTYPE_METHOD(t, "loadURL", LoadURL);
   NODE_SET_PROTOTYPE_METHOD(t, "getURL", GetURL);

@@ -76,6 +76,8 @@ class Window : public EventEmitter,
   static v8::Handle<v8::Value> IsLoading(const v8::Arguments &args);
   static v8::Handle<v8::Value> IsWaitingForResponse(const v8::Arguments &args);
   static v8::Handle<v8::Value> Stop(const v8::Arguments &args);
+  static v8::Handle<v8::Value> GetRoutingID(const v8::Arguments &args);
+  static v8::Handle<v8::Value> GetProcessID(const v8::Arguments &args);
 
   // APIs for NavigationController.
   static v8::Handle<v8::Value> LoadURL(const v8::Arguments &args);

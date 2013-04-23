@@ -4,8 +4,8 @@ var Window = require('window');
 
 var mainWindow = null;
 
+// Echo every message back.
 ipc.on('message', function(process_id, routing_id) {
-  console.log('message from', process_id, routing_id);
   ipc.send.apply(ipc, arguments);
 });
 
