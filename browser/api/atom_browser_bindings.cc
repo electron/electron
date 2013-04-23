@@ -50,7 +50,7 @@ void AtomBrowserBindings::OnRendererMessage(int process_id,
 
   scoped_ptr<V8ValueConverter> converter(new V8ValueConverterImpl());
 
-  // process.emit('ATOM_INTERNAL_MESSAGE', 'message', process_id, routing_id);
+  // process.emit(channel, 'message', process_id, routing_id);
   std::vector<v8::Handle<v8::Value>> arguments;
   arguments.reserve(3 + args.GetSize());
   arguments.push_back(v8::String::New(channel.c_str(), channel.size()));
@@ -67,6 +67,45 @@ void AtomBrowserBindings::OnRendererMessage(int process_id,
   }
 
   node::MakeCallback(node::process, "emit", arguments.size(), &arguments[0]);
+}
+
+void AtomBrowserBindings::OnRendererMessageSync(
+    int process_id,
+    int routing_id,
+    const std::string& channel,
+    const base::ListValue& args,
+    base::DictionaryValue* result) {
+  v8::HandleScope scope;
+
+  v8::Handle<v8::Context> context = v8::Context::GetCurrent();
+
+  scoped_ptr<V8ValueConverter> converter(new V8ValueConverterImpl());
+
+  v8::Handle<v8::Object> event = v8::Object::New();
+
+  // process.emit(channel, 'sync-message', event, process_id, routing_id);
+  std::vector<v8::Handle<v8::Value>> arguments;
+  arguments.reserve(3 + args.GetSize());
+  arguments.push_back(v8::String::New(channel.c_str(), channel.size()));
+  const base::Value* value;
+  if (args.Get(0, &value))
+    arguments.push_back(converter->ToV8Value(value, context));
+  arguments.push_back(event);
+  arguments.push_back(v8::Integer::New(process_id));
+  arguments.push_back(v8::Integer::New(routing_id));
+
+  for (size_t i = 1; i < args.GetSize(); i++) {
+    const base::Value* value;
+    if (args.Get(i, &value))
+      arguments.push_back(converter->ToV8Value(value, context));
+  }
+
+  node::MakeCallback(node::process, "emit", arguments.size(), &arguments[0]);
+
+  scoped_ptr<base::Value> base_event(converter->FromV8Value(event, context));
+  DCHECK(base_event && base_event->IsType(base::Value::TYPE_DICTIONARY));
+
+  result->Swap(static_cast<base::DictionaryValue*>(base_event.get()));
 }
 
 }  // namespace atom

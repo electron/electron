@@ -63,17 +63,57 @@ v8::Handle<v8::Value> RendererIPC::Send(const v8::Arguments &args) {
 
   DCHECK(arguments && arguments->IsType(base::Value::TYPE_LIST));
 
-  render_view->Send(new AtomViewHostMsg_Message(
+  bool success = render_view->Send(new AtomViewHostMsg_Message(
       render_view->GetRoutingID(),
       channel,
       *static_cast<base::ListValue*>(arguments.get())));
+
+  if (!success)
+    return node::ThrowError("Unable to send AtomViewHostMsg_Message");
 
   return v8::Undefined();
 }
 
 // static
+v8::Handle<v8::Value> RendererIPC::SendSync(const v8::Arguments &args) {
+  v8::HandleScope scope;
+
+  if (!args[0]->IsString())
+    return node::ThrowTypeError("Bad argument");
+
+  v8::Handle<v8::Context> context = v8::Context::GetCurrent();
+  std::string channel(*v8::String::Utf8Value(args[0]));
+
+  // Convert Arguments to Array, so we can use V8ValueConverter to convert it
+  // to ListValue.
+  v8::Local<v8::Array> v8_args = v8::Array::New(args.Length() - 1);
+  for (int i = 0; i < args.Length() - 1; ++i)
+    v8_args->Set(i, args[i + 1]);
+
+  scoped_ptr<V8ValueConverter> converter(V8ValueConverter::create());
+  scoped_ptr<base::Value> arguments(converter->FromV8Value(v8_args, context));
+
+  DCHECK(arguments && arguments->IsType(base::Value::TYPE_LIST));
+
+  RenderView* render_view = GetCurrentRenderView();
+
+  base::DictionaryValue result;
+  bool success = render_view->Send(new AtomViewHostMsg_Message_Sync(
+      render_view->GetRoutingID(),
+      channel,
+      *static_cast<base::ListValue*>(arguments.get()),
+      &result));
+
+  if (!success)
+    return node::ThrowError("Unable to send AtomViewHostMsg_Message_Sync");
+
+  return scope.Close(converter->ToV8Value(&result, context));
+}
+
+// static
 void RendererIPC::Initialize(v8::Handle<v8::Object> target) {
   node::SetMethod(target, "send", Send);
+  node::SetMethod(target, "sendSync", SendSync);
 }
 
 }  // namespace api

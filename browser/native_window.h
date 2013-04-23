@@ -123,6 +123,10 @@ class NativeWindow : public content::WebContentsDelegate,
   void OnRendererMessage(const std::string& channel,
                          const base::ListValue& args);
 
+  void OnRendererMessageSync(const std::string& channel,
+                             const base::ListValue& args,
+                             base::DictionaryValue* result);
+
   // Notification manager.
   content::NotificationRegistrar registrar_;
 
