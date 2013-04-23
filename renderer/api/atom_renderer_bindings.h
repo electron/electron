@@ -2,10 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_RENDERER_API_ATOM_RENDERER_BINDINGS_
-#define ATOM_RENDERER_API_ATOM_RENDERER_BINDINGS_
+#ifndef ATOM_RENDERER_API_ATOM_RENDERER_BINDINGS_H_
+#define ATOM_RENDERER_API_ATOM_RENDERER_BINDINGS_H_
+
+#include <iosfwd>
 
 #include "common/api/atom_bindings.h"
+
+namespace base {
+class ListValue;
+}
 
 namespace content {
 class RenderView;
@@ -25,12 +31,11 @@ class AtomRendererBindings : public AtomBindings {
   // Call BindTo for process object of the frame.
   void BindToFrame(WebKit::WebFrame* frame);
 
-  // Add process.send and make process.on accept IPC message.
-  void AddIPCBindings(WebKit::WebFrame* frame);
+  // Dispatch messages from browser.
+  void OnRendererMessage(const std::string& channel,
+                         const base::ListValue& args);
 
  private:
-  static v8::Handle<v8::Value> Send(const v8::Arguments &args);
-
   content::RenderView* render_view_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererBindings);
@@ -38,4 +43,4 @@ class AtomRendererBindings : public AtomBindings {
 
 }  // namespace atom
 
-#endif  // ATOM_RENDERER_API_ATOM_BINDINGS_
+#endif  // ATOM_RENDERER_API_ATOM_BINDINGS_H_

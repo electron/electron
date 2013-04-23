@@ -17,6 +17,7 @@
 #include "content/public/browser/notification_details.h"
 #include "content/public/browser/notification_source.h"
 #include "content/public/browser/notification_types.h"
+#include "content/public/browser/render_process_host.h"
 #include "common/api/api_messages.h"
 #include "common/options_switches.h"
 #include "ipc/ipc_message_macros.h"
@@ -159,9 +160,13 @@ void NativeWindow::Observe(int type,
   }
 }
 
-void NativeWindow::OnRendererMessage(const base::ListValue& args) {
+void NativeWindow::OnRendererMessage(const std::string& channel,
+                                     const base::ListValue& args) {
   AtomBrowserMainParts::Get()->atom_bindings()->OnRendererMessage(
-      GetWebContents()->GetRoutingID(), args);
+      GetWebContents()->GetRenderProcessHost()->GetID(),
+      GetWebContents()->GetRoutingID(),
+      channel,
+      args);
 }
 
 }  // namespace atom

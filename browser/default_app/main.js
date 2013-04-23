@@ -1,10 +1,12 @@
 var atom = require('atom');
+var ipc = require('ipc');
 var Window = require('window');
 
 var mainWindow = null;
 
-process.on('message', function() {
-  console.log.apply(this, arguments);
+ipc.on('message', function(process_id, routing_id) {
+  console.log('message from', process_id, routing_id);
+  ipc.send.apply(ipc, arguments);
 });
 
 atom.browserMainParts.preMainMessageLoopRun = function() {

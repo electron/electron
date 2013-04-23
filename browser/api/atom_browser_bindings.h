@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_API_ATOM_BROWSER_BINDINGS_
 #define ATOM_BROWSER_API_ATOM_BROWSER_BINDINGS_
 
+#include <iosfwd>
+
 #include "common/api/atom_bindings.h"
 
 namespace base {
@@ -22,7 +24,10 @@ class AtomBrowserBindings : public AtomBindings {
   virtual void AfterLoad();
 
   // Called when received a message from renderer.
-  void OnRendererMessage(int routing_id, const base::ListValue& args);
+  void OnRendererMessage(int process_id,
+                         int routing_id,
+                         const std::string& channel,
+                         const base::ListValue& args);
 
   // The require('atom').browserMainParts object.
   v8::Handle<v8::Object> browser_main_parts() {

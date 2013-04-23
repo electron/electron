@@ -7,7 +7,9 @@
 #include <algorithm>
 #include <vector>
 
+#include "common/api/api_messages.h"
 #include "common/node_bindings.h"
+#include "ipc/ipc_message_macros.h"
 #include "renderer/api/atom_renderer_bindings.h"
 #include "renderer/atom_renderer_client.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
@@ -70,12 +72,26 @@ void AtomRenderViewObserver::DidClearWindowObject(WebFrame* frame) {
 
   renderer_client_->node_bindings()->BindTo(frame);
   atom_bindings()->BindToFrame(frame);
-  atom_bindings()->AddIPCBindings(frame);
 }
 
 void AtomRenderViewObserver::FrameWillClose(WebFrame* frame) {
   std::vector<WebFrame*>& vec = web_frames();
   vec.erase(std::remove(vec.begin(), vec.end(), frame), vec.end());
+}
+
+bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
+  bool handled = true;
+  IPC_BEGIN_MESSAGE_MAP(AtomRenderViewObserver, message)
+    IPC_MESSAGE_HANDLER(AtomViewMsg_Message, OnRendererMessage)
+    IPC_MESSAGE_UNHANDLED(handled = false)
+  IPC_END_MESSAGE_MAP()
+
+  return handled;
+}
+
+void AtomRenderViewObserver::OnRendererMessage(const std::string& channel,
+                                               const base::ListValue& args) {
+  atom_bindings()->OnRendererMessage(channel, args);
 }
 
 }  // namespace atom

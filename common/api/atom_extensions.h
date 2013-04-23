@@ -8,6 +8,9 @@
 
 NODE_EXT_LIST_START
 
+NODE_EXT_LIST_ITEM(atom_browser_ipc)
 NODE_EXT_LIST_ITEM(atom_browser_window)
+
+NODE_EXT_LIST_ITEM(atom_renderer_ipc)
 
 NODE_EXT_LIST_END

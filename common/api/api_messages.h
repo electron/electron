@@ -15,8 +15,10 @@
 
 #define IPC_MESSAGE_START ShellMsgStart
 
-IPC_MESSAGE_ROUTED1(AtomViewHostMsg_Message,
+IPC_MESSAGE_ROUTED2(AtomViewHostMsg_Message,
+                    std::string /* channel */,
                     ListValue /* arguments */)
 
-IPC_MESSAGE_ROUTED1(AtomViewMsg_Message,
+IPC_MESSAGE_ROUTED2(AtomViewMsg_Message,
+                    std::string /* channel */,
                     ListValue /* arguments */)

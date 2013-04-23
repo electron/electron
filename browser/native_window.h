@@ -120,7 +120,8 @@ class NativeWindow : public content::WebContentsDelegate,
                        const content::NotificationDetails& details) OVERRIDE;
 
  private:
-  void OnRendererMessage(const base::ListValue& args);
+  void OnRendererMessage(const std::string& channel,
+                         const base::ListValue& args);
 
   // Notification manager.
   content::NotificationRegistrar registrar_;

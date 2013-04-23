@@ -40,8 +40,10 @@ void AtomBrowserBindings::AfterLoad() {
   DCHECK(!browser_main_parts_.IsEmpty());
 }
 
-void AtomBrowserBindings::OnRendererMessage(
-    int routing_id, const base::ListValue& args) {
+void AtomBrowserBindings::OnRendererMessage(int process_id,
+                                            int routing_id,
+                                            const std::string& channel,
+                                            const base::ListValue& args) {
   v8::HandleScope scope;
 
   v8::Handle<v8::Context> context = v8::Context::GetCurrent();
@@ -49,8 +51,9 @@ void AtomBrowserBindings::OnRendererMessage(
   scoped_ptr<V8ValueConverter> converter(new V8ValueConverterImpl());
 
   std::vector<v8::Handle<v8::Value>> arguments;
-  arguments.reserve(2 + args.GetSize());
-  arguments.push_back(v8::String::New("message"));
+  arguments.reserve(3 + args.GetSize());
+  arguments.push_back(v8::String::New(channel.c_str(), channel.size()));
+  arguments.push_back(v8::Integer::New(process_id));
   arguments.push_back(v8::Integer::New(routing_id));
 
   for (size_t i = 0; i < args.GetSize(); i++) {

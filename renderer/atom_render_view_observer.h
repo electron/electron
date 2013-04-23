@@ -8,6 +8,10 @@
 #include "base/memory/scoped_ptr.h"
 #include "content/public/renderer/render_view_observer.h"
 
+namespace base {
+class ListValue;
+}
+
 namespace atom {
 
 class AtomRendererBindings;
@@ -27,6 +31,12 @@ class AtomRenderViewObserver : content::RenderViewObserver {
   virtual void FrameWillClose(WebKit::WebFrame*) OVERRIDE;
 
  private:
+  // content::RenderViewObserver implementation.
+  virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
+
+  void OnRendererMessage(const std::string& channel,
+                         const base::ListValue& args);
+
   scoped_ptr<AtomRendererBindings> atom_bindings_;
 
   // Weak reference to renderer client.
