@@ -50,13 +50,17 @@ void AtomBrowserBindings::OnRendererMessage(int process_id,
 
   scoped_ptr<V8ValueConverter> converter(new V8ValueConverterImpl());
 
+  // process.emit('ATOM_INTERNAL_MESSAGE', 'message', process_id, routing_id);
   std::vector<v8::Handle<v8::Value>> arguments;
   arguments.reserve(3 + args.GetSize());
   arguments.push_back(v8::String::New(channel.c_str(), channel.size()));
+  const base::Value* value;
+  if (args.Get(0, &value))
+    arguments.push_back(converter->ToV8Value(value, context));
   arguments.push_back(v8::Integer::New(process_id));
   arguments.push_back(v8::Integer::New(routing_id));
 
-  for (size_t i = 0; i < args.GetSize(); i++) {
+  for (size_t i = 1; i < args.GetSize(); i++) {
     const base::Value* value;
     if (args.Get(i, &value))
       arguments.push_back(converter->ToV8Value(value, context));

@@ -51,8 +51,8 @@ void AtomRendererBindings::BindToFrame(WebFrame* frame) {
   AtomBindings::BindTo(GetProcessObject(context));
 }
 
-void AtomRendererBindings::OnRendererMessage(const std::string& channel,
-                                             const base::ListValue& args) {
+void AtomRendererBindings::OnBrowserMessage(const std::string& channel,
+                                            const base::ListValue& args) {
   if (!render_view_->GetWebView())
     return;
 

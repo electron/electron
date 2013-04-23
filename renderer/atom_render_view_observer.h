@@ -34,8 +34,8 @@ class AtomRenderViewObserver : content::RenderViewObserver {
   // content::RenderViewObserver implementation.
   virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
 
-  void OnRendererMessage(const std::string& channel,
-                         const base::ListValue& args);
+  void OnBrowserMessage(const std::string& channel,
+                        const base::ListValue& args);
 
   scoped_ptr<AtomRendererBindings> atom_bindings_;
 

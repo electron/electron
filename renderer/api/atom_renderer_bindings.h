@@ -32,8 +32,8 @@ class AtomRendererBindings : public AtomBindings {
   void BindToFrame(WebKit::WebFrame* frame);
 
   // Dispatch messages from browser.
-  void OnRendererMessage(const std::string& channel,
-                         const base::ListValue& args);
+  void OnBrowserMessage(const std::string& channel,
+                        const base::ListValue& args);
 
  private:
   content::RenderView* render_view_;

@@ -82,16 +82,16 @@ void AtomRenderViewObserver::FrameWillClose(WebFrame* frame) {
 bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(AtomRenderViewObserver, message)
-    IPC_MESSAGE_HANDLER(AtomViewMsg_Message, OnRendererMessage)
+    IPC_MESSAGE_HANDLER(AtomViewMsg_Message, OnBrowserMessage)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
   return handled;
 }
 
-void AtomRenderViewObserver::OnRendererMessage(const std::string& channel,
-                                               const base::ListValue& args) {
-  atom_bindings()->OnRendererMessage(channel, args);
+void AtomRenderViewObserver::OnBrowserMessage(const std::string& channel,
+                                              const base::ListValue& args) {
+  atom_bindings()->OnBrowserMessage(channel, args);
 }
 
 }  // namespace atom

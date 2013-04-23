@@ -22,12 +22,12 @@ namespace api {
 v8::Handle<v8::Value> BrowserIPC::Send(const v8::Arguments &args) {
   v8::HandleScope scope;
 
-  if (!args[0]->IsNumber() || !args[1]->IsNumber() || !args[2]->IsString())
+  if (!args[0]->IsString() || !args[1]->IsNumber() || !args[2]->IsNumber())
     return node::ThrowTypeError("Bad argument");
 
-  int process_id = args[0]->IntegerValue();
-  int routing_id = args[1]->IntegerValue();
-  std::string channel(*v8::String::Utf8Value(args[2]));
+  std::string channel(*v8::String::Utf8Value(args[0]));
+  int process_id = args[1]->IntegerValue();
+  int routing_id = args[2]->IntegerValue();
 
   RenderViewHost* render_view_host(RenderViewHost::FromID(
       process_id, routing_id));
