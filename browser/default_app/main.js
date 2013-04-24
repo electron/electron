@@ -15,11 +15,11 @@ ipc.on('sync-message', function(event, process_id, routing_id) {
 
 atom.browserMainParts.preMainMessageLoopRun = function() {
   mainWindow = new Window({ width: 800, height: 600 });
-  mainWindow.url = 'file://' + __dirname + '/index.html';
+  mainWindow.loadURL('file://' + __dirname + '/index.html');
 
   mainWindow.on('page-title-updated', function(event, title) {
     event.preventDefault();
 
-    this.title = 'Atom Shell - ' + title;
+    this.setTitle('Atom Shell - ' + title);
   });
 }

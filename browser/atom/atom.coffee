@@ -14,8 +14,12 @@ atom.browserMainParts =
 global.__atom = atom
 
 # Add Atom.app/Contents/Resources/browser/api/lib to require's search paths,
-# which contains javascript of Atom's built-in libraries.  
-require('module').globalPaths.push path.join(__dirname, '..', 'api', 'lib')
+# which contains javascript part of Atom's built-in libraries.  
+globalPaths = require('module').globalPaths
+globalPaths.push path.join(__dirname, '..', 'api', 'lib')
+
+# And Atom.app/Contents/Resources/common/api/lib
+globalPaths.push path.join(__dirname, '..', '..', 'common', 'api', 'lib')
 
 # Don't quit on fatal error.
 process.on 'uncaughtException', (error) ->
@@ -23,6 +27,9 @@ process.on 'uncaughtException', (error) ->
   message = error.stack ? "#{error.name}: #{error.message}"
   console.error 'uncaughtException:'
   console.error message
+
+# Load the RPC server.
+require './rpc_server.js'
 
 # Now we try to load app's package.json.
 packageJson = null

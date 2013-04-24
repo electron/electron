@@ -8,9 +8,13 @@
     'coffee_sources': [
       'browser/api/lib/atom.coffee',
       'browser/api/lib/ipc.coffee',
+      'browser/api/lib/.coffee',
       'browser/api/lib/window.coffee',
       'browser/atom/atom.coffee',
+      'browser/atom/objects_registry.coffee',
+      'browser/atom/rpc_server.coffee',
       'renderer/api/lib/ipc.coffee',
+      'renderer/api/lib/remote.coffee',
     ],
     'lib_sources': [
       'app/atom_main_delegate.cc',
