@@ -20,7 +20,8 @@ BrowserClient* BrowserClient::Get() {
   return g_browser_client;
 }
 
-BrowserClient::BrowserClient() {
+BrowserClient::BrowserClient()
+    : browser_main_parts_() {
   DCHECK(!g_browser_client);
   g_browser_client = this;
 }
