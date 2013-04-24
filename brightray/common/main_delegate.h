@@ -19,6 +19,9 @@ public:
   ~MainDelegate();
 
 protected:
+  // Subclasses can override this to provide their own ContentClient implementation.
+  virtual scoped_ptr<ContentClient> CreateContentClient();
+
   virtual bool BasicStartupComplete(int* exit_code) OVERRIDE;
   virtual void PreSandboxStartup() OVERRIDE;
 

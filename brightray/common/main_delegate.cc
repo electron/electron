@@ -12,14 +12,18 @@
 
 namespace brightray {
 
-MainDelegate::MainDelegate()
-    : content_client_(new ContentClient) {
+MainDelegate::MainDelegate() {
 }
 
 MainDelegate::~MainDelegate() {
 }
 
+scoped_ptr<ContentClient> MainDelegate::CreateContentClient() {
+  return make_scoped_ptr(new ContentClient).Pass();
+}
+
 bool MainDelegate::BasicStartupComplete(int* exit_code) {
+  content_client_ = CreateContentClient().Pass();
   SetContentClient(content_client_.get());
   return false;
 }
