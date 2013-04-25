@@ -25,9 +25,9 @@ ipc.on 'ATOM_INTERNAL_REQUIRE', (event, process_id, routing_id, module) ->
 
 ipc.on 'ATOM_INTERNAL_CONSTRUCTOR', (event, process_id, routing_id, id, args) ->
   try
-    # Call new with array of arguments.
-    # TODO(zcbenz): Paste the URL of the StackOverflow question.
     constructor = objectsRegistry.get id
+    # Call new with array of arguments.
+    # http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
     obj = new (Function::bind.apply(constructor, [null].concat(args)))
     event.result = new PlainObject(obj)
   catch e
