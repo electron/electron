@@ -8,7 +8,6 @@
     'coffee_sources': [
       'browser/api/lib/atom.coffee',
       'browser/api/lib/ipc.coffee',
-      'browser/api/lib/.coffee',
       'browser/api/lib/window.coffee',
       'browser/atom/atom.coffee',
       'browser/atom/objects_registry.coffee',
@@ -25,10 +24,6 @@
       'browser/api/atom_api_event.h',
       'browser/api/atom_api_event_emitter.cc',
       'browser/api/atom_api_event_emitter.h',
-      'browser/api/atom_api_objects_registry.cc',
-      'browser/api/atom_api_objects_registry.h',
-      'browser/api/atom_api_recorded_object.cc',
-      'browser/api/atom_api_recorded_object.h',
       'browser/api/atom_api_window.cc',
       'browser/api/atom_api_window.h',
       'browser/api/atom_browser_bindings.cc',

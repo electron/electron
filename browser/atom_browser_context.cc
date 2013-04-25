@@ -4,13 +4,11 @@
 
 #include "browser/atom_browser_context.h"
 
-#include "browser/api/atom_api_objects_registry.h"
 #include "browser/atom_browser_main_parts.h"
 
 namespace atom {
 
-AtomBrowserContext::AtomBrowserContext()
-    : objects_registry_(new api::ObjectsRegistry) {
+AtomBrowserContext::AtomBrowserContext() {
 }
 
 AtomBrowserContext::~AtomBrowserContext() {

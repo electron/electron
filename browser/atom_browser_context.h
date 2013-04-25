@@ -10,10 +10,6 @@
 
 namespace atom {
 
-namespace api {
-class ObjectsRegistry;
-}
-
 class AtomBrowserContext : public brightray::BrowserContext {
  public:
   AtomBrowserContext();
@@ -21,13 +17,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
 
   static AtomBrowserContext* Get();
 
-  api::ObjectsRegistry* objects_registry() const {
-    return objects_registry_.get();
-  }
-
  private:
-  scoped_ptr<api::ObjectsRegistry> objects_registry_;
-
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);
 };
 
