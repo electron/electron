@@ -43,6 +43,7 @@
       'browser/native_window_observer.h',
       'common/api/api_messages.cc',
       'common/api/api_messages.h',
+      'common/api/atom_api_idle_gc.cc',
       'common/api/atom_api_v8_util.cc',
       'common/api/atom_bindings.cc',
       'common/api/atom_bindings.h',

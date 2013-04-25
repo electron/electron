@@ -18,6 +18,7 @@ NODE_EXT_LIST_ITEM(atom_renderer_ipc)
 
 // Module names start with `atom_common_` can be used by both browser and
 // renderer processes.
+NODE_EXT_LIST_ITEM(atom_common_idle_gc)
 NODE_EXT_LIST_ITEM(atom_common_v8_util)
 
 NODE_EXT_LIST_END
