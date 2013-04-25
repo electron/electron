@@ -11,6 +11,8 @@
 #include "base/values.h"
 #include "browser/api/atom_api_event.h"
 #include "common/v8_value_converter_impl.h"
+#include "vendor/node/src/node.h"
+#include "vendor/node/src/node_internals.h"
 
 namespace atom {
 
@@ -18,9 +20,22 @@ namespace api {
 
 EventEmitter::EventEmitter(v8::Handle<v8::Object> wrapper) {
   Wrap(wrapper);
+
+  // process.emit('ATOM_BROWSER_INTERNAL_NEW', this).
+  v8::Handle<v8::Value> args[] = {
+      v8::String::New("ATOM_BROWSER_INTERNAL_NEW"),
+      wrapper,
+  };
+  node::MakeCallback(node::process, "emit", 2, args);
 }
 
 EventEmitter::~EventEmitter() {
+  // process.emit('ATOM_BROWSER_INTERNAL_DELETE', this).
+  v8::Handle<v8::Value> args[] = {
+      v8::String::New("ATOM_BROWSER_INTERNAL_DELETE"),
+      handle_,
+  };
+  node::MakeCallback(node::process, "emit", 2, args);
 }
 
 bool EventEmitter::Emit(const std::string& name, base::ListValue* args) {
