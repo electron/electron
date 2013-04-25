@@ -8,14 +8,17 @@ class PlainObject
   constructor: (value) ->
     @type = typeof value
     @type = 'value' if value is null
+    @type = 'array' if Array.isArray value
 
-    if @type is 'object' or @type is 'function'
+    if @type is 'array'
+      @members = []
+      @members.push new PlainObject(el) for el in value
+    else if @type is 'object' or @type is 'function'
       @name = value.constructor.name
       @id = objectsRegistry.add value
 
       @members = []
-      for prop, field of value
-        @members.push { name: prop, type: typeof field }
+      @members.push { name: prop, type: typeof field } for prop, field of value
     else
       @type = 'value'
       @value = value
