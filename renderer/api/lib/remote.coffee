@@ -45,8 +45,14 @@ generateFromPainObject = (plain) ->
               ret = ipc.sendChannelSync 'ATOM_INTERNAL_MEMBER_GET', plain.id, member.name
               generateFromPainObject ret
 
+      # Track delegate object's life time, and tell the browser to clean up
+      # when the object is GCed.
+      v8_util.setDestructor ret, ->
+        ipc.sendChannel 'ATOM_INTERNAL_DESTROY', plain.id
+
       ret
 
+# Get remote module.
 exports.require = (module) ->
   plain = ipc.sendChannelSync 'ATOM_INTERNAL_REQUIRE', module
   generateFromPainObject plain

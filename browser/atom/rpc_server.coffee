@@ -62,3 +62,6 @@ ipc.on 'ATOM_INTERNAL_MEMBER_GET', (event, process_id, routing_id, id, name) ->
     event.result = new PlainObject(objectsRegistry.get(id)[name])
   catch e
     event.result = type: 'error', value: e.message
+
+ipc.on 'ATOM_INTERNAL_DESTROY', (process_id, routing_id, id) ->
+  objectsRegistry.remove id
