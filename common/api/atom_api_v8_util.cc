@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "common/api/object_life_monitor.h"
 #include "vendor/node/src/node.h"
 
 namespace atom {
@@ -38,6 +39,11 @@ v8::Handle<v8::Value> GetObjectHash(const v8::Arguments& args) {
       args[0]->ToObject()->GetIdentityHash()));
 }
 
+v8::Handle<v8::Value> SetDestructor(const v8::Arguments& args) {
+  ObjectLifeMonitor::BindTo(args[0]->ToObject(), args[1]);
+  return v8::Undefined();
+}
+
 }  // namespace
 
 void InitializeV8Util(v8::Handle<v8::Object> target) {
@@ -45,6 +51,7 @@ void InitializeV8Util(v8::Handle<v8::Object> target) {
   NODE_SET_METHOD(target, "getHiddenValue", GetHiddenValue);
   NODE_SET_METHOD(target, "setHiddenValue", SetHiddenValue);
   NODE_SET_METHOD(target, "getObjectHash", GetObjectHash);
+  NODE_SET_METHOD(target, "setDestructor", SetDestructor);
 }
 
 }  // namespace api
