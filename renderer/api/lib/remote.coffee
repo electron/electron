@@ -1,4 +1,5 @@
 ipc = require 'ipc'
+v8_util = process.atom_binding 'v8_util'
 
 generateFromPainObject = (plain) ->
   switch plain.type
@@ -6,13 +7,12 @@ generateFromPainObject = (plain) ->
     when 'value' then plain.value
     when 'array' then (generateFromPainObject(el) for el in plain.members)
     else
-      ret = {}
       if plain.type is 'function'
         # A shadow class to represent the remote function object.
         ret =
-        class RemoteObject
+        class RemoteFunction
           constructor: ->
-            if @constructor == RemoteObject
+            if @constructor == RemoteFunction
               # Constructor call.
               obj = ipc.sendChannelSync 'ATOM_INTERNAL_CONSTRUCTOR', plain.id, Array::slice.call(arguments)
 
@@ -24,6 +24,8 @@ generateFromPainObject = (plain) ->
               # Function call.
               ret = ipc.sendChannelSync 'ATOM_INTERNAL_FUNCTION_CALL', plain.id, Array::slice.call(arguments)
               return generateFromPainObject ret
+      else
+        ret = v8_util.createObjectWithName plain.name
 
       # Polulate delegate members.
       for member in plain.members
