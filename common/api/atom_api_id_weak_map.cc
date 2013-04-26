@@ -42,6 +42,8 @@ int IDWeakMap::GetNextID() {
 void IDWeakMap::WeakCallback(v8::Isolate* isolate,
                              v8::Persistent<v8::Value> value,
                              void *data) {
+  v8::HandleScope scope;
+
   IDWeakMap* obj = static_cast<IDWeakMap*>(data);
   int key = value->ToObject()->GetHiddenValue(
       v8::String::New("IDWeakMapKey"))->IntegerValue();
