@@ -19,6 +19,7 @@ class ObjectsStore
     @objects[id]?
 
   remove: (id) ->
+    throw new Error("Invalid key #{id} for ObjectsStore") unless @has id
     delete @objects[id]
 
   get: (id) ->
@@ -30,6 +31,8 @@ class ObjectsStore
     @stores[key] = new ObjectsStore unless @stores[key]?
     @stores[key]
 
+# Objects in weak map will be not referenced (so we won't leak memory), and
+# every object created in browser will have a unique id in weak map.
 objectsWeakMap = new IDWeakMap
 objectsWeakMap.add = (obj) ->
   id = IDWeakMap::add.call this, obj
@@ -40,14 +43,18 @@ objectsWeakMap.add = (obj) ->
 process.on 'ATOM_BROWSER_INTERNAL_NEW', (obj) ->
   # It's possible that user created a object in browser side and then want to
   # get it in renderer via remote.getObject. So we must add every native object
-  # created in browser to the weak map.
+  # created in browser to the weak map even it may not be referenced by the
+  # renderer.
   objectsWeakMap.add obj
 
 exports.add = (process_id, routing_id, obj) ->
-  # Some native types may already been added to objectsWeakMap, in that case we
-  # don't add it twice.
+  # Some native objects may already been added to objectsWeakMap, be care not
+  # to add it twice.
   objectsWeakMap.add obj unless obj.id?
 
+  # Store and reference the object, then return the storeId which points to
+  # where the object is stored. The caller can later dereference the object
+  # with the storeId.
   store = ObjectsStore.forRenderView process_id, routing_id
   store.add obj
 

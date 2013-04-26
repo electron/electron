@@ -2,7 +2,9 @@ ipc = require 'ipc'
 path = require 'path'
 objectsRegistry = require './objects_registry.js'
 
-class PlainObject
+# Convert a real value into a POD structure which carries information of this
+# value.
+class Meta
   constructor: (process_id, routing_id, value) ->
     @type = typeof value
     @type = 'value' if value is null
@@ -10,9 +12,13 @@ class PlainObject
 
     if @type is 'array'
       @members = []
-      @members.push new PlainObject(process_id, routing_id, el) for el in value
+      @members.push new Meta(process_id, routing_id, el) for el in value
     else if @type is 'object' or @type is 'function'
       @name = value.constructor.name
+
+      # Reference the original value if it's an object, because when it's
+      # passed to renderer we would assume the renderer keeps a reference of
+      # it.
       @storeId = objectsRegistry.add process_id, routing_id, value
       @id = value.id
 
@@ -24,7 +30,7 @@ class PlainObject
 
 ipc.on 'ATOM_INTERNAL_REQUIRE', (event, process_id, routing_id, module) ->
   try
-    event.result = new PlainObject(process_id, routing_id, require(module))
+    event.result = new Meta(process_id, routing_id, require(module))
   catch e
     event.result = type: 'error', value: e.message
 
@@ -34,7 +40,7 @@ ipc.on 'ATOM_INTERNAL_CONSTRUCTOR', (event, process_id, routing_id, id, args) ->
     # Call new with array of arguments.
     # http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
     obj = new (Function::bind.apply(constructor, [null].concat(args)))
-    event.result = new PlainObject(process_id, routing_id, obj)
+    event.result = new Meta(process_id, routing_id, obj)
   catch e
     event.result = type: 'error', value: e.message
 
@@ -42,7 +48,7 @@ ipc.on 'ATOM_INTERNAL_FUNCTION_CALL', (event, process_id, routing_id, id, args) 
   try
     func = objectsRegistry.get id
     ret = func.apply global, args
-    event.result = new PlainObject(process_id, routing_id, ret)
+    event.result = new Meta(process_id, routing_id, ret)
   catch e
     event.result = type: 'error', value: e.message
 
@@ -50,7 +56,7 @@ ipc.on 'ATOM_INTERNAL_MEMBER_CALL', (event, process_id, routing_id, id, method, 
   try
     obj = objectsRegistry.get id
     ret = obj[method].apply(obj, args)
-    event.result = new PlainObject(process_id, routing_id, ret)
+    event.result = new Meta(process_id, routing_id, ret)
   catch e
     event.result = type: 'error', value: e.message
 
@@ -64,14 +70,14 @@ ipc.on 'ATOM_INTERNAL_MEMBER_SET', (event, process_id, routing_id, id, name, val
 ipc.on 'ATOM_INTERNAL_MEMBER_GET', (event, process_id, routing_id, id, name) ->
   try
     obj = objectsRegistry.get id
-    event.result = new PlainObject(process_id, routing_id, obj[name])
+    event.result = new Meta(process_id, routing_id, obj[name])
   catch e
     event.result = type: 'error', value: e.message
 
 ipc.on 'ATOM_INTERNAL_REFERENCE', (event, process_id, routing_id, id) ->
   try
     obj = objectsRegistry.get id
-    event.result = new PlainObject(process_id, routing_id, obj)
+    event.result = new Meta(process_id, routing_id, obj)
   catch e
     event.result = type: 'error', value: e.message
 
