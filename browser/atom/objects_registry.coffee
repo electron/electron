@@ -3,6 +3,12 @@ IDWeakMap = require 'id_weak_map'
 globalStore = {}
 globalMap = new IDWeakMap
 
+addObjectToWeakMap = (obj) ->
+  id = globalMap.add obj
+  Object.defineProperty obj, 'id',
+    enumerable: true, writable: false, value: id
+  id
+
 getStoreForRenderView = (process_id, routing_id) ->
   key = "#{process_id}_#{routing_id}"
   globalStore[key] = {} unless globalStore[key]?
@@ -10,13 +16,15 @@ getStoreForRenderView = (process_id, routing_id) ->
 
 process.on 'ATOM_BROWSER_INTERNAL_NEW', (obj) ->
   # For objects created in browser scripts, keep a weak reference here.
-  id = globalMap.add obj
-  obj.id = id
+  addObjectToWeakMap obj
 
 exports.add = (process_id, routing_id, obj) ->
   # Some native types may already been added to globalMap, in that case we
   # don't add it twice.
-  id = obj.id ? globalMap.add obj
+  if obj.id?
+    id = obj.id
+  else
+    id = addObjectToWeakMap obj
 
   store = getStoreForRenderView process_id, routing_id
 
