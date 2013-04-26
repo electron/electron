@@ -16,6 +16,7 @@
       'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++11',
       'CLANG_CXX_LIBRARY': 'libstdc++',
       'COMBINE_HIDPI_IMAGES': 'YES',
+      'GCC_ENABLE_CPP_EXCEPTIONS': 'NO',
       'GCC_ENABLE_CPP_RTTI': 'NO',
       'GCC_TREAT_WARNINGS_AS_ERRORS': 'YES',
       'MACOSX_DEPLOYMENT_TARGET': '<(mac_deployment_target)',
