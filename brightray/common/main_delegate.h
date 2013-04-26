@@ -8,6 +8,11 @@
 #include "base/compiler_specific.h"
 #include "base/memory/scoped_ptr.h"
 #include "content/public/app/content_main_delegate.h"
+#include <vector>
+
+namespace base {
+class FilePath;
+}
 
 namespace brightray {
 
@@ -22,11 +27,14 @@ protected:
   // Subclasses can override this to provide their own ContentClient implementation.
   virtual scoped_ptr<ContentClient> CreateContentClient();
 
+  // Subclasses can override this to provide additional .pak files to be included in the ui::ResourceBundle.
+  virtual void AddPakPaths(std::vector<base::FilePath>* pak_paths) {}
+
   virtual bool BasicStartupComplete(int* exit_code) OVERRIDE;
   virtual void PreSandboxStartup() OVERRIDE;
 
 private:
-  static void InitializeResourceBundle();
+  void InitializeResourceBundle();
 #if defined(OS_MACOSX)
   static void OverrideChildProcessPath();
   static void OverrideFrameworkBundlePath();

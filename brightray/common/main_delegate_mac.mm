@@ -28,6 +28,11 @@ void MainDelegate::InitializeResourceBundle() {
   auto path = [base::mac::FrameworkBundle() pathForResource:@"content_shell" ofType:@"pak"];
 
   ui::ResourceBundle::InitSharedInstanceWithPakPath(base::mac::NSStringToFilePath(path));
+
+  std::vector<base::FilePath> pak_paths;
+  AddPakPaths(&pak_paths);
+  for (const auto& path : pak_paths)
+    ui::ResourceBundle::GetSharedInstance().AddDataPackFromPath(path, ui::SCALE_FACTOR_NONE);
 }
 
 void MainDelegate::OverrideFrameworkBundlePath() {
