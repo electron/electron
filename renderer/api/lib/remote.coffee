@@ -3,7 +3,7 @@ v8_util = process.atom_binding 'v8_util'
 
 generateFromPainObject = (plain) ->
   switch plain.type
-    when 'error' then throw new Error('Remote Error: ' + plain.value)
+    when 'error' then throw new Error(plain.value)
     when 'value' then plain.value
     when 'array' then (generateFromPainObject(el) for el in plain.members)
     else
@@ -55,4 +55,9 @@ generateFromPainObject = (plain) ->
 # Get remote module.
 exports.require = (module) ->
   plain = ipc.sendChannelSync 'ATOM_INTERNAL_REQUIRE', module
+  generateFromPainObject plain
+
+# Get object with specified id.
+exports.getObject = (id) ->
+  plain = ipc.sendChannelSync 'ATOM_INTERNAL_GET_OBJECT', id
   generateFromPainObject plain

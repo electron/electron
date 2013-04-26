@@ -30,12 +30,6 @@ EventEmitter::EventEmitter(v8::Handle<v8::Object> wrapper) {
 }
 
 EventEmitter::~EventEmitter() {
-  // process.emit('ATOM_BROWSER_INTERNAL_DELETE', this).
-  v8::Handle<v8::Value> args[] = {
-      v8::String::New("ATOM_BROWSER_INTERNAL_DELETE"),
-      handle_,
-  };
-  node::MakeCallback(node::process, "emit", 2, args);
 }
 
 bool EventEmitter::Emit(const std::string& name, base::ListValue* args) {
