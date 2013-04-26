@@ -1,22 +1,22 @@
-module.exports =
-class ObjectsRegistry
-  @nextId = 0
+IDWeakMap = require 'id_weak_map'
 
-  constructor: ->
-    @objects = []
+globalStore = {}
+globalMap = new IDWeakMap
 
-  getNextId: ->
-    ++ObjectsRegistry.nextId
+getStoreForRenderView = (process_id, routing_id) ->
+  key = "#{process_id}_#{routing_id}"
+  globalStore[key] = {} unless globalStore[key]?
+  globalStore[key]
 
-  add: (obj) ->
-    id = @getNextId()
-    @objects[id] = obj
-    id
+exports.add = (process_id, routing_id, obj) ->
+  id = globalMap.add obj
+  store = getStoreForRenderView process_id, routing_id
+  store[id] = obj
+  id
 
-  remove: (id) ->
-    obj = @objects[id]
-    delete @objects[id]
-    obj
+exports.get = (process_id, routing_id, id) ->
+  globalMap.get id
 
-  get: (id) ->
-    @objects[id]
+exports.remove = (process_id, routing_id, id) ->
+  store = getStoreForRenderView process_id, routing_id
+  delete store[id]
