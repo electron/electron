@@ -48,7 +48,7 @@ generateFromPainObject = (plain) ->
       # Track delegate object's life time, and tell the browser to clean up
       # when the object is GCed.
       v8_util.setDestructor ret, ->
-        ipc.sendChannel 'ATOM_INTERNAL_DESTROY', plain.id
+        ipc.sendChannel 'ATOM_INTERNAL_DEREFERENCE', plain.storeId
 
       ret
 
@@ -59,5 +59,5 @@ exports.require = (module) ->
 
 # Get object with specified id.
 exports.getObject = (id) ->
-  plain = ipc.sendChannelSync 'ATOM_INTERNAL_GET_OBJECT', id
+  plain = ipc.sendChannelSync 'ATOM_INTERNAL_REFERENCE', id
   generateFromPainObject plain

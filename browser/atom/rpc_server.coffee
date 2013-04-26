@@ -13,7 +13,8 @@ class PlainObject
       @members.push new PlainObject(process_id, routing_id, el) for el in value
     else if @type is 'object' or @type is 'function'
       @name = value.constructor.name
-      @id = objectsRegistry.add process_id, routing_id, value
+      @storeId = objectsRegistry.add process_id, routing_id, value
+      @id = value.id
 
       @members = []
       @members.push { name: prop, type: typeof field } for prop, field of value
@@ -67,12 +68,12 @@ ipc.on 'ATOM_INTERNAL_MEMBER_GET', (event, process_id, routing_id, id, name) ->
   catch e
     event.result = type: 'error', value: e.message
 
-ipc.on 'ATOM_INTERNAL_GET_OBJECT', (event, process_id, routing_id, id) ->
+ipc.on 'ATOM_INTERNAL_REFERENCE', (event, process_id, routing_id, id) ->
   try
     obj = objectsRegistry.get id
     event.result = new PlainObject(process_id, routing_id, obj)
   catch e
     event.result = type: 'error', value: e.message
 
-ipc.on 'ATOM_INTERNAL_DESTROY', (process_id, routing_id, id) ->
-  objectsRegistry.remove process_id, routing_id, id
+ipc.on 'ATOM_INTERNAL_DEREFERENCE', (process_id, routing_id, storeId) ->
+  objectsRegistry.remove process_id, routing_id, storeId
