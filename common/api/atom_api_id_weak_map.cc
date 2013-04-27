@@ -10,14 +10,14 @@ namespace atom {
 namespace api {
 
 IDWeakMap::IDWeakMap()
-    : nextId_(0) {
+    : next_id_(0) {
 }
 
 IDWeakMap::~IDWeakMap() {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
 
   auto copied_map = map_;
-  for (auto el : copied_map)
+  for (const auto& el : copied_map)
     Erase(isolate, el.first);
 }
 
@@ -35,7 +35,7 @@ void IDWeakMap::Erase(v8::Isolate* isolate, int key) {
 }
 
 int IDWeakMap::GetNextID() {
-  return ++nextId_;
+  return ++next_id_;
 }
 
 // static
@@ -103,6 +103,21 @@ v8::Handle<v8::Value> IDWeakMap::Has(const v8::Arguments& args) {
 }
 
 // static
+v8::Handle<v8::Value> IDWeakMap::Keys(const v8::Arguments& args) {
+  IDWeakMap* obj = ObjectWrap::Unwrap<IDWeakMap>(args.This());
+
+  v8::Handle<v8::Array> keys = v8::Array::New(obj->map_.size());
+
+  int i = 0;
+  for (const auto& el : obj->map_) {
+    keys->Set(i, v8::Integer::New(el.first));
+    ++i;
+  }
+
+  return keys;
+}
+
+// static
 v8::Handle<v8::Value> IDWeakMap::Remove(const v8::Arguments& args) {
   if (!args[0]->IsNumber())
     return node::ThrowTypeError("Bad argument");
@@ -128,6 +143,7 @@ void IDWeakMap::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "add", Add);
   NODE_SET_PROTOTYPE_METHOD(t, "get", Get);
   NODE_SET_PROTOTYPE_METHOD(t, "has", Has);
+  NODE_SET_PROTOTYPE_METHOD(t, "keys", Keys);
   NODE_SET_PROTOTYPE_METHOD(t, "remove", Remove);
 
   target->Set(v8::String::NewSymbol("IDWeakMap"), t->GetFunction());

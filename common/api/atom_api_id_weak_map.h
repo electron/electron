@@ -35,9 +35,10 @@ class IDWeakMap : public node::ObjectWrap {
   static v8::Handle<v8::Value> Add(const v8::Arguments& args);
   static v8::Handle<v8::Value> Get(const v8::Arguments& args);
   static v8::Handle<v8::Value> Has(const v8::Arguments& args);
+  static v8::Handle<v8::Value> Keys(const v8::Arguments& args);
   static v8::Handle<v8::Value> Remove(const v8::Arguments& args);
 
-  int nextId_;
+  int next_id_;
 
   std::map<int, v8::Persistent<v8::Value>> map_;
 
