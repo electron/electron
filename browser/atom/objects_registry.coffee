@@ -40,12 +40,17 @@ objectsWeakMap.add = (obj) ->
     enumerable: true, writable: false, value: id
   id
 
+windowsWeakMap = new IDWeakMap
+
 process.on 'ATOM_BROWSER_INTERNAL_NEW', (obj) ->
   # It's possible that user created a object in browser side and then want to
   # get it in renderer via remote.getObject. So we must add every native object
   # created in browser to the weak map even it may not be referenced by the
   # renderer.
   objectsWeakMap.add obj
+
+  # Also remember all windows.
+  windowsWeakMap.add obj if obj.constructor.name is 'Window'
 
 exports.add = (process_id, routing_id, obj) ->
   # Some native objects may already been added to objectsWeakMap, be care not
@@ -60,6 +65,10 @@ exports.add = (process_id, routing_id, obj) ->
 
 exports.get = (id) ->
   objectsWeakMap.get id
+
+exports.getAllWindows = () ->
+  keys = windowsWeakMap.keys()
+  windowsWeakMap.get key for key in keys
 
 exports.remove = (process_id, routing_id, storeId) ->
   ObjectsStore.forRenderView(process_id, routing_id).remove storeId

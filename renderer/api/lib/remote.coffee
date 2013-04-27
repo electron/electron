@@ -62,3 +62,8 @@ exports.require = (module) ->
 exports.getObject = (id) ->
   meta = ipc.sendChannelSync 'ATOM_INTERNAL_REFERENCE', id
   metaToValue meta
+
+# Get current window object.
+exports.getCurrentWindow = ->
+  meta = ipc.sendChannelSync 'ATOM_INTERNAL_CURRENT_WINDOW'
+  metaToValue meta

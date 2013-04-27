@@ -34,6 +34,16 @@ ipc.on 'ATOM_INTERNAL_REQUIRE', (event, process_id, routing_id, module) ->
   catch e
     event.result = type: 'error', value: e.message
 
+ipc.on 'ATOM_INTERNAL_CURRENT_WINDOW', (event, process_id, routing_id) ->
+  try
+    windows = objectsRegistry.getAllWindows()
+    for window in windows
+      break if window.getProcessID() == process_id and
+               window.getRoutingID() == routing_id
+    event.result = new Meta(process_id, routing_id, window)
+  catch e
+    event.result = type: 'error', value: e.message
+
 ipc.on 'ATOM_INTERNAL_CONSTRUCTOR', (event, process_id, routing_id, id, args) ->
   try
     constructor = objectsRegistry.get id
