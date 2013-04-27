@@ -21,7 +21,7 @@ AtomBindings::~AtomBindings() {
 void AtomBindings::BindTo(v8::Handle<v8::Object> process) {
   v8::HandleScope scope;
 
-  node::SetMethod(process, "atom_binding", Binding);
+  node::SetMethod(process, "atomBinding", Binding);
 }
 
 // static
@@ -42,7 +42,7 @@ v8::Handle<v8::Value> AtomBindings::Binding(const v8::Arguments& args) {
 
   // Cached in process.__atom_binding_cache.
   v8::Local<v8::Object> binding_cache;
-  v8::Local<v8::String> bc_name = v8::String::New("__atom_binding_cache");
+  v8::Local<v8::String> bc_name = v8::String::New("__atomBindingCache");
   if (process->Has(bc_name)) {
     binding_cache = process->Get(bc_name)->ToObject();
     DCHECK(!binding_cache.IsEmpty());

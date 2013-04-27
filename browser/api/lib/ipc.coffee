@@ -1,5 +1,5 @@
 EventEmitter = require('events').EventEmitter
-send = process.atom_binding('ipc').send
+send = process.atomBinding('ipc').send
 
 class Ipc extends EventEmitter
   constructor: ->
@@ -8,8 +8,8 @@ class Ipc extends EventEmitter
     process.on 'ATOM_INTERNAL_MESSAGE_SYNC', (args...) =>
       @emit(args...)
 
-  send: (process_id, routing_id, args...) ->
-    @sendChannel(process_id, routing_id, 'message', args...)
+  send: (processId, routingId, args...) ->
+    @sendChannel(processId, routingId, 'message', args...)
 
   sendChannel: (args...) ->
     send('ATOM_INTERNAL_MESSAGE', args...)

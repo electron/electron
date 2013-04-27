@@ -2,7 +2,7 @@ fs = require 'fs'
 path = require 'path'
 
 # Enable idle gc.
-process.atom_binding('idle_gc').start()
+process.atomBinding('idle_gc').start()
 
 # Provide default Content API implementations.
 atom = {}

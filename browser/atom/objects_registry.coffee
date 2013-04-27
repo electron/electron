@@ -26,8 +26,8 @@ class ObjectsStore
     throw new Error("Invalid key #{id} for ObjectsStore") unless @has id
     @objects[id]
 
-  @forRenderView: (process_id, routing_id) ->
-    key = "#{process_id}_#{routing_id}"
+  @forRenderView: (processId, routingId) ->
+    key = "#{processId}_#{routingId}"
     @stores[key] = new ObjectsStore unless @stores[key]?
     @stores[key]
 
@@ -52,7 +52,7 @@ process.on 'ATOM_BROWSER_INTERNAL_NEW', (obj) ->
   # Also remember all windows.
   windowsWeakMap.add obj if obj.constructor.name is 'Window'
 
-exports.add = (process_id, routing_id, obj) ->
+exports.add = (processId, routingId, obj) ->
   # Some native objects may already been added to objectsWeakMap, be care not
   # to add it twice.
   objectsWeakMap.add obj unless obj.id?
@@ -60,7 +60,7 @@ exports.add = (process_id, routing_id, obj) ->
   # Store and reference the object, then return the storeId which points to
   # where the object is stored. The caller can later dereference the object
   # with the storeId.
-  store = ObjectsStore.forRenderView process_id, routing_id
+  store = ObjectsStore.forRenderView processId, routingId
   store.add obj
 
 exports.get = (id) ->
@@ -70,5 +70,5 @@ exports.getAllWindows = () ->
   keys = windowsWeakMap.keys()
   windowsWeakMap.get key for key in keys
 
-exports.remove = (process_id, routing_id, storeId) ->
-  ObjectsStore.forRenderView(process_id, routing_id).remove storeId
+exports.remove = (processId, routingId, storeId) ->
+  ObjectsStore.forRenderView(processId, routingId).remove storeId

@@ -1,5 +1,5 @@
 ipc = require 'ipc'
-v8_util = process.atom_binding 'v8_util'
+v8_util = process.atomBinding 'v8_util'
 
 # Transform the description of value into a value or delegate object.
 metaToValue = (meta) ->
