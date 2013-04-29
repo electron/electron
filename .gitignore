@@ -1,5 +1,6 @@
 .DS_Store
 build/
 node_modules/
+vendor/
 *.xcodeproj
 *.swp
