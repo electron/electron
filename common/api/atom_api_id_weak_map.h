@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_ATOM_API_ID_WEAK_MAP_H_
-#define ATOM_BROWSER_API_ATOM_API_ID_WEAK_MAP_H_
+#ifndef ATOM_COMMON_API_ATOM_API_ID_WEAK_MAP_H_
+#define ATOM_COMMON_API_ATOM_API_ID_WEAK_MAP_H_
 
 #include <map>
 
@@ -49,4 +49,4 @@ class IDWeakMap : public node::ObjectWrap {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_API_ATOM_API_ID_WEAK_MAP_H_
+#endif  // ATOM_COMMON_API_ATOM_API_ID_WEAK_MAP_H_
