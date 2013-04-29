@@ -12,9 +12,9 @@ argsToValues = (processId, routingId, metas) ->
     # Create a delegate function to do asynchronous RPC call.
     ret = ->
       args = new Meta(processId, routingId, arguments)
-      ipc.sendChannel processId, routingId, 'ATOM_INTERNAL_FUNCTION_CALL', meta.id, args
+      ipc.sendChannel processId, routingId, 'ATOM_RENDERER_FUNCTION_CALL', meta.id, args
     v8_util.setDestructor ret, ->
-      ipc.sendChannel processId, routingId, 'ATOM_INTERNAL_DEREFERENCE', meta.id
+      ipc.sendChannel processId, routingId, 'ATOM_RENDERER_DEREFERENCE', meta.id
     ret
 
   constructCallback meta for meta in metas
@@ -48,13 +48,13 @@ class Meta
       @type = 'value'
       @value = value
 
-ipc.on 'ATOM_INTERNAL_REQUIRE', (event, processId, routingId, module) ->
+ipc.on 'ATOM_BROWSER_REQUIRE', (event, processId, routingId, module) ->
   try
     event.result = new Meta(processId, routingId, require(module))
   catch e
     event.result = type: 'error', value: e.message
 
-ipc.on 'ATOM_INTERNAL_CURRENT_WINDOW', (event, processId, routingId) ->
+ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event, processId, routingId) ->
   try
     windows = objectsRegistry.getAllWindows()
     for window in windows
@@ -64,7 +64,7 @@ ipc.on 'ATOM_INTERNAL_CURRENT_WINDOW', (event, processId, routingId) ->
   catch e
     event.result = type: 'error', value: e.message
 
-ipc.on 'ATOM_INTERNAL_CONSTRUCTOR', (event, processId, routingId, id, args) ->
+ipc.on 'ATOM_BROWSER_CONSTRUCTOR', (event, processId, routingId, id, args) ->
   try
     args = argsToValues processId, routingId, args
     constructor = objectsRegistry.get id
@@ -75,7 +75,7 @@ ipc.on 'ATOM_INTERNAL_CONSTRUCTOR', (event, processId, routingId, id, args) ->
   catch e
     event.result = type: 'error', value: e.message
 
-ipc.on 'ATOM_INTERNAL_FUNCTION_CALL', (event, processId, routingId, id, args) ->
+ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, processId, routingId, id, args) ->
   try
     args = argsToValues processId, routingId, args
     func = objectsRegistry.get id
@@ -84,7 +84,7 @@ ipc.on 'ATOM_INTERNAL_FUNCTION_CALL', (event, processId, routingId, id, args) ->
   catch e
     event.result = type: 'error', value: e.message
 
-ipc.on 'ATOM_INTERNAL_MEMBER_CALL', (event, processId, routingId, id, method, args) ->
+ipc.on 'ATOM_BROWSER_MEMBER_CALL', (event, processId, routingId, id, method, args) ->
   try
     args = argsToValues processId, routingId, args
     obj = objectsRegistry.get id
@@ -93,26 +93,26 @@ ipc.on 'ATOM_INTERNAL_MEMBER_CALL', (event, processId, routingId, id, method, ar
   catch e
     event.result = type: 'error', value: e.message
 
-ipc.on 'ATOM_INTERNAL_MEMBER_SET', (event, processId, routingId, id, name, value) ->
+ipc.on 'ATOM_BROWSER_MEMBER_SET', (event, processId, routingId, id, name, value) ->
   try
     obj = objectsRegistry.get id
     obj[name] = value
   catch e
     event.result = type: 'error', value: e.message
 
-ipc.on 'ATOM_INTERNAL_MEMBER_GET', (event, processId, routingId, id, name) ->
+ipc.on 'ATOM_BROWSER_MEMBER_GET', (event, processId, routingId, id, name) ->
   try
     obj = objectsRegistry.get id
     event.result = new Meta(processId, routingId, obj[name])
   catch e
     event.result = type: 'error', value: e.message
 
-ipc.on 'ATOM_INTERNAL_REFERENCE', (event, processId, routingId, id) ->
+ipc.on 'ATOM_BROWSER_REFERENCE', (event, processId, routingId, id) ->
   try
     obj = objectsRegistry.get id
     event.result = new Meta(processId, routingId, obj)
   catch e
     event.result = type: 'error', value: e.message
 
-ipc.on 'ATOM_INTERNAL_DEREFERENCE', (processId, routingId, storeId) ->
+ipc.on 'ATOM_BROWSER_DEREFERENCE', (processId, routingId, storeId) ->
   objectsRegistry.remove processId, routingId, storeId

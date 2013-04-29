@@ -42,7 +42,7 @@ metaToValue = (meta) ->
           constructor: ->
             if @constructor == RemoteFunction
               # Constructor call.
-              obj = ipc.sendChannelSync 'ATOM_INTERNAL_CONSTRUCTOR', meta.id, argumentsToMetaList(arguments)
+              obj = ipc.sendChannelSync 'ATOM_BROWSER_CONSTRUCTOR', meta.id, argumentsToMetaList(arguments)
 
               # Returning object in constructor will replace constructed object
               # with the returned object.
@@ -50,7 +50,7 @@ metaToValue = (meta) ->
               return metaToValue obj
             else
               # Function call.
-              ret = ipc.sendChannelSync 'ATOM_INTERNAL_FUNCTION_CALL', meta.id, argumentsToMetaList(arguments)
+              ret = ipc.sendChannelSync 'ATOM_BROWSER_FUNCTION_CALL', meta.id, argumentsToMetaList(arguments)
               return metaToValue ret
       else
         ret = v8_util.createObjectWithName meta.name
@@ -61,45 +61,46 @@ metaToValue = (meta) ->
           if member.type is 'function'
             ret[member.name] = ->
               # Call member function.
-              ret = ipc.sendChannelSync 'ATOM_INTERNAL_MEMBER_CALL', meta.id, member.name, argumentsToMetaList(arguments)
+              ret = ipc.sendChannelSync 'ATOM_BROWSER_MEMBER_CALL', meta.id, member.name, argumentsToMetaList(arguments)
               metaToValue ret
           else
             ret.__defineSetter__ member.name, (value) ->
               # Set member data.
-              ipc.sendChannelSync 'ATOM_INTERNAL_MEMBER_SET', meta.id, member.name, value
+              ipc.sendChannelSync 'ATOM_BROWSER_MEMBER_SET', meta.id, member.name, value
 
             ret.__defineGetter__ member.name, ->
               # Get member data.
-              ret = ipc.sendChannelSync 'ATOM_INTERNAL_MEMBER_GET', meta.id, member.name
+              ret = ipc.sendChannelSync 'ATOM_BROWSER_MEMBER_GET', meta.id, member.name
               metaToValue ret
 
       # Track delegate object's life time, and tell the browser to clean up
       # when the object is GCed.
       v8_util.setDestructor ret, ->
-        ipc.sendChannel 'ATOM_INTERNAL_DEREFERENCE', meta.storeId
+        ipc.sendChannel 'ATOM_BROWSER_DEREFERENCE', meta.storeId
 
       ret
 
 # Browser calls a callback in renderer.
-ipc.on 'ATOM_INTERNAL_FUNCTION_CALL', (callbackId, args) ->
+ipc.on 'ATOM_RENDERER_FUNCTION_CALL', (callbackId, args) ->
   callback = callbacksRegistry.get callbackId
   callback.apply global, metaToValue(args)
 
 # Browser releases a callback in renderer.
-ipc.on 'ATOM_INTERNAL_DEREFERENCE', (callbackId) ->
+ipc.on 'ATOM_RENDERER_DEREFERENCE', (callbackId) ->
+  console.log callbackId
   callbacksRegistry.remove callbackId
 
 # Get remote module.
 exports.require = (module) ->
-  meta = ipc.sendChannelSync 'ATOM_INTERNAL_REQUIRE', module
+  meta = ipc.sendChannelSync 'ATOM_BROWSER_REQUIRE', module
   metaToValue meta
 
 # Get object with specified id.
 exports.getObject = (id) ->
-  meta = ipc.sendChannelSync 'ATOM_INTERNAL_REFERENCE', id
+  meta = ipc.sendChannelSync 'ATOM_BROWSER_REFERENCE', id
   metaToValue meta
 
 # Get current window object.
 exports.getCurrentWindow = ->
-  meta = ipc.sendChannelSync 'ATOM_INTERNAL_CURRENT_WINDOW'
+  meta = ipc.sendChannelSync 'ATOM_BROWSER_CURRENT_WINDOW'
   metaToValue meta
