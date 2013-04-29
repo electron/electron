@@ -87,7 +87,6 @@ ipc.on 'ATOM_RENDERER_FUNCTION_CALL', (callbackId, args) ->
 
 # Browser releases a callback in renderer.
 ipc.on 'ATOM_RENDERER_DEREFERENCE', (callbackId) ->
-  console.log callbackId
   callbacksRegistry.remove callbackId
 
 # Get remote module.
