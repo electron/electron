@@ -81,11 +81,18 @@ v8::Handle<v8::Value> Shell::MoveItemToTrash(const v8::Arguments &args) {
 }
 
 // static
+v8::Handle<v8::Value> Shell::Beep(const v8::Arguments &args) {
+  platform_util::Beep();
+  return v8::Undefined();
+}
+
+// static
 void Shell::Initialize(v8::Handle<v8::Object> target) {
   node::SetMethod(target, "showItemInFolder", ShowItemInFolder);
   node::SetMethod(target, "openItem", OpenItem);
   node::SetMethod(target, "openExternal", OpenExternal);
   node::SetMethod(target, "moveItemToTrash", MoveItemToTrash);
+  node::SetMethod(target, "beep", Beep);
 }
 
 }  // namespace api

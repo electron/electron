@@ -21,6 +21,7 @@ class Shell {
   static v8::Handle<v8::Value> OpenItem(const v8::Arguments &args);
   static v8::Handle<v8::Value> OpenExternal(const v8::Arguments &args);
   static v8::Handle<v8::Value> MoveItemToTrash(const v8::Arguments &args);
+  static v8::Handle<v8::Value> Beep(const v8::Arguments &args);
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(Shell);
 };

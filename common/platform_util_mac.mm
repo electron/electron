@@ -141,4 +141,8 @@ void MoveItemToTrash(const base::FilePath& full_path) {
                  << " to trash";
 }
 
+void Beep() {
+  NSBeep();
+}
+
 }  // namespace platform_util

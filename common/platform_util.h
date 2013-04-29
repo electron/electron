@@ -28,6 +28,8 @@ void OpenExternal(const GURL& url);
 // Move a file to trash.
 void MoveItemToTrash(const base::FilePath& full_path);
 
+void Beep();
+
 }  // platform_util
 
 #endif  // ATOM_COMMON_PLATFORM_UTIL_H_
