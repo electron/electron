@@ -60,6 +60,8 @@
       'common/node_bindings_mac.mm',
       'common/options_switches.cc',
       'common/options_switches.h',
+      'common/platform_util_mac.mm',
+      'common/platform_util.h',
       'common/v8_value_converter_impl.cc',
       'common/v8_value_converter_impl.h',
       'renderer/api/atom_api_renderer_ipc.cc',
