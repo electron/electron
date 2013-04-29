@@ -48,6 +48,9 @@ v8::Handle<v8::Value> Event::New(const v8::Arguments &args) {
 
 v8::Handle<v8::Value> Event::PreventDefault(const v8::Arguments &args) {
   Event* event = Unwrap<Event>(args.This());
+  if (event == NULL)
+    return node::ThrowError("Event is already destroyed");
+
   event->prevent_default_ = true;
 
   return v8::Undefined();
