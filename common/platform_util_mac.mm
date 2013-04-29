@@ -126,4 +126,19 @@ void OpenExternal(const GURL& url) {
     LOG(WARNING) << "NSWorkspace failed to open URL " << url;
 }
 
+void MoveItemToTrash(const base::FilePath& full_path) {
+  DCHECK([NSThread isMainThread]);
+  NSString* path_string = base::SysUTF8ToNSString(full_path.value());
+  NSArray* file_array =
+      [NSArray arrayWithObject:[path_string lastPathComponent]];
+  if (!path_string || !file_array || ![[NSWorkspace sharedWorkspace]
+      performFileOperation:NSWorkspaceRecycleOperation
+                    source:[path_string stringByDeletingLastPathComponent]
+               destination:@""
+                     files:file_array
+                       tag:nil])
+    LOG(WARNING) << "NSWorkspace failed to move file " << full_path.value()
+                 << " to trash";
+}
+
 }  // namespace platform_util

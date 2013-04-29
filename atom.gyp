@@ -13,6 +13,7 @@
       'browser/atom/objects_registry.coffee',
       'browser/atom/rpc_server.coffee',
       'common/api/lib/id_weak_map.coffee',
+      'common/api/lib/shell.coffee',
       'renderer/api/lib/ipc.coffee',
       'renderer/api/lib/remote.coffee',
     ],
@@ -47,6 +48,8 @@
       'common/api/atom_api_idle_gc.cc',
       'common/api/atom_api_id_weak_map.cc',
       'common/api/atom_api_id_weak_map.h',
+      'common/api/atom_api_shell.cc',
+      'common/api/atom_api_shell.h',
       'common/api/atom_api_v8_util.cc',
       'common/api/atom_bindings.cc',
       'common/api/atom_bindings.h',
@@ -159,6 +162,15 @@
       'include_dirs': [
         '.',
         'vendor',
+      ],
+      'conditions': [
+        ['OS=="mac"', {
+          'link_settings': {
+            'libraries': [
+              '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
+            ],
+          },
+        }],
       ],
     },
     {

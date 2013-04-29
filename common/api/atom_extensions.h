@@ -20,6 +20,7 @@ NODE_EXT_LIST_ITEM(atom_renderer_ipc)
 // renderer processes.
 NODE_EXT_LIST_ITEM(atom_common_idle_gc)
 NODE_EXT_LIST_ITEM(atom_common_id_weak_map)
+NODE_EXT_LIST_ITEM(atom_common_shell)
 NODE_EXT_LIST_ITEM(atom_common_v8_util)
 
 NODE_EXT_LIST_END

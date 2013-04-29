@@ -25,6 +25,9 @@ void OpenItem(const base::FilePath& full_path);
 // (For example, mailto: URLs in the default mail user agent.)
 void OpenExternal(const GURL& url);
 
+// Move a file to trash.
+void MoveItemToTrash(const base::FilePath& full_path);
+
 }  // platform_util
 
 #endif  // ATOM_COMMON_PLATFORM_UTIL_H_
