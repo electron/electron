@@ -4,6 +4,7 @@
 
 #include "browser/native_window.h"
 
+#include <algorithm>
 #include <string>
 
 #include "base/utf_string_conversions.h"
@@ -29,6 +30,9 @@ using content::NavigationEntry;
 
 namespace atom {
 
+// static
+std::vector<NativeWindow*> NativeWindow::windows_;
+
 NativeWindow::NativeWindow(content::WebContents* web_contents,
                            base::DictionaryValue* options)
     : content::WebContentsObserver(web_contents),
@@ -36,18 +40,37 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
           brightray::InspectableWebContents::Create(web_contents)) {
   web_contents->SetDelegate(this);
 
+  windows_.push_back(this);
+
   // Get notified of title updated message.
   registrar_.Add(this, content::NOTIFICATION_WEB_CONTENTS_TITLE_UPDATED,
       content::Source<content::WebContents>(web_contents));
 }
 
 NativeWindow::~NativeWindow() {
+  windows_.erase(std::remove(windows_.begin(), windows_.end(), this),
+                 windows_.end());
 }
 
 // static
 NativeWindow* NativeWindow::Create(base::DictionaryValue* options) {
   content::WebContents::CreateParams create_params(AtomBrowserContext::Get());
   return Create(content::WebContents::Create(create_params), options);
+}
+
+// static
+NativeWindow* NativeWindow::FromProcessIDAndRoutingID(int process_id,
+                                                      int routing_id) {
+  // Stupid iterating.
+  for (auto window : windows_) {
+    content::WebContents* web_contents = window->GetWebContents();
+    int window_process_id = web_contents->GetRenderProcessHost()->GetID();
+    int window_routing_id = web_contents->GetRoutingID();
+    if (window_routing_id == routing_id && window_process_id == process_id)
+      return window;
+  }
+
+  return NULL;
 }
 
 void NativeWindow::InitFromOptions(base::DictionaryValue* options) {

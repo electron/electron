@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_NATIVE_WINDOW_H_
 
 #include <iosfwd>
+#include <vector>
 
 #include "base/basictypes.h"
 #include "base/compiler_specific.h"
@@ -51,6 +52,10 @@ class NativeWindow : public content::WebContentsDelegate,
 
   // Create window with new WebContents.
   static NativeWindow* Create(base::DictionaryValue* options);
+
+  // Find a window from its process id and routing id.
+  static NativeWindow* FromProcessIDAndRoutingID(int process_id,
+                                                 int routing_id);
 
   void InitFromOptions(base::DictionaryValue* options);
 
@@ -132,6 +137,9 @@ class NativeWindow : public content::WebContentsDelegate,
 
   // Observers of this window.
   ObserverList<NativeWindowObserver> observers_;
+
+  // Stores all windows.
+  static std::vector<NativeWindow*> windows_;
 
   scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
 
