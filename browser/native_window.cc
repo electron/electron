@@ -14,6 +14,7 @@
 #include "browser/api/atom_browser_bindings.h"
 #include "browser/atom_browser_context.h"
 #include "browser/atom_browser_main_parts.h"
+#include "browser/atom_javascript_dialog_manager.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/notification_details.h"
 #include "content/public/browser/notification_source.h"
@@ -151,6 +152,13 @@ void NativeWindow::WebContentsCreated(
 
   NativeWindow* window = Create(new_contents, options.get());
   window->InitFromOptions(options.get());
+}
+
+content::JavaScriptDialogManager* NativeWindow::GetJavaScriptDialogManager() {
+  if (!dialog_manager_)
+    dialog_manager_.reset(new AtomJavaScriptDialogManager);
+
+  return dialog_manager_.get();
 }
 
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {

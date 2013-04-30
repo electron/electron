@@ -40,6 +40,8 @@ class Size;
 
 namespace atom {
 
+class AtomJavaScriptDialogManager;
+
 class NativeWindow : public content::WebContentsDelegate,
                      public content::WebContentsObserver,
                      public content::NotificationObserver {
@@ -115,6 +117,8 @@ class NativeWindow : public content::WebContentsDelegate,
                                   const string16& frame_name,
                                   const GURL& target_url,
                                   content::WebContents* new_contents) OVERRIDE;
+  virtual content::JavaScriptDialogManager*
+      GetJavaScriptDialogManager() OVERRIDE;
 
   // Implementations of content::WebContentsObserver.
   virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
@@ -140,6 +144,8 @@ class NativeWindow : public content::WebContentsDelegate,
 
   // Stores all windows.
   static std::vector<NativeWindow*> windows_;
+
+  scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
 
   scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
 

@@ -39,6 +39,8 @@
       'browser/atom_browser_main_parts.h',
       'browser/atom_event_processing_window.h',
       'browser/atom_event_processing_window.mm',
+      'browser/atom_javascript_dialog_manager.cc',
+      'browser/atom_javascript_dialog_manager.h',
       'browser/native_window.cc',
       'browser/native_window.h',
       'browser/native_window_mac.h',
