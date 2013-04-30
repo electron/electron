@@ -1,23 +1,6 @@
 ipc = require 'ipc'
 path = require 'path'
 objectsRegistry = require './objects_registry.js'
-v8_util = process.atomBinding 'v8_util'
-
-# Convert list of meta information into real arguments array, the main
-# purpose is to turn remote function's id into delegate function.
-argsToValues = (processId, routingId, metas) ->
-  constructCallback = (meta) ->
-    return meta.value if meta.type is 'value'
-
-    # Create a delegate function to do asynchronous RPC call.
-    ret = ->
-      args = new Meta(processId, routingId, arguments)
-      ipc.sendChannel processId, routingId, 'ATOM_RENDERER_FUNCTION_CALL', meta.id, args
-    v8_util.setDestructor ret, ->
-      ipc.sendChannel processId, routingId, 'ATOM_RENDERER_DEREFERENCE', meta.id
-    ret
-
-  constructCallback meta for meta in metas
 
 # Convert a real value into a POD structure which carries information of this
 # value.
@@ -72,7 +55,6 @@ ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event, processId, routingId) ->
 
 ipc.on 'ATOM_BROWSER_CONSTRUCTOR', (event, processId, routingId, id, args) ->
   try
-    args = argsToValues processId, routingId, args
     constructor = objectsRegistry.get id
     # Call new with array of arguments.
     # http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
@@ -83,7 +65,6 @@ ipc.on 'ATOM_BROWSER_CONSTRUCTOR', (event, processId, routingId, id, args) ->
 
 ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, processId, routingId, id, args) ->
   try
-    args = argsToValues processId, routingId, args
     func = objectsRegistry.get id
     ret = func.apply global, args
     event.result = new Meta(processId, routingId, ret)
@@ -92,7 +73,6 @@ ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, processId, routingId, id, args) ->
 
 ipc.on 'ATOM_BROWSER_MEMBER_CALL', (event, processId, routingId, id, method, args) ->
   try
-    args = argsToValues processId, routingId, args
     obj = objectsRegistry.get id
     ret = obj[method].apply(obj, args)
     event.result = new Meta(processId, routingId, ret)

@@ -1,32 +1,5 @@
 ipc = require 'ipc'
-IDWeakMap = require 'id_weak_map'
 v8_util = process.atomBinding 'v8_util'
-
-class CallbacksRegistry
-  constructor: ->
-    @referencesMap = {}
-    @weakMap = new IDWeakMap
-
-  get: (id) -> @weakMap.get id
-  remove: (id) -> delete @referencesMap[id]
-
-  add: (callback) ->
-    id = @weakMap.add callback
-    @referencesMap[id] = callback
-    id
-
-# Translate arguments object into a list of meta data.
-# Unlike the Meta class in browser, this function only create delegate object
-# for functions, other types of value are transfered after serialization.
-callbacksRegistry = new CallbacksRegistry
-argumentsToMetaList = (args) ->
-  metas = []
-  for arg in args
-    if typeof arg is 'function'
-      metas.push type: 'function', id: callbacksRegistry.add(arg)
-    else
-      metas.push type: 'value', value: arg
-  metas
 
 # Transform the description of value into a value or delegate object.
 metaToValue = (meta) ->
@@ -42,7 +15,7 @@ metaToValue = (meta) ->
           constructor: ->
             if @constructor == RemoteFunction
               # Constructor call.
-              obj = ipc.sendChannelSync 'ATOM_BROWSER_CONSTRUCTOR', meta.id, argumentsToMetaList(arguments)
+              obj = ipc.sendChannelSync 'ATOM_BROWSER_CONSTRUCTOR', meta.id, Array::slice.call(arguments)
 
               # Returning object in constructor will replace constructed object
               # with the returned object.
@@ -50,7 +23,7 @@ metaToValue = (meta) ->
               return metaToValue obj
             else
               # Function call.
-              ret = ipc.sendChannelSync 'ATOM_BROWSER_FUNCTION_CALL', meta.id, argumentsToMetaList(arguments)
+              ret = ipc.sendChannelSync 'ATOM_BROWSER_FUNCTION_CALL', meta.id, Array::slice.call(arguments)
               return metaToValue ret
       else
         ret = v8_util.createObjectWithName meta.name
@@ -61,7 +34,7 @@ metaToValue = (meta) ->
           if member.type is 'function'
             ret[member.name] = ->
               # Call member function.
-              ret = ipc.sendChannelSync 'ATOM_BROWSER_MEMBER_CALL', meta.id, member.name, argumentsToMetaList(arguments)
+              ret = ipc.sendChannelSync 'ATOM_BROWSER_MEMBER_CALL', meta.id, member.name, Array::slice.call(arguments)
               metaToValue ret
           else
             ret.__defineSetter__ member.name, (value) ->
@@ -79,15 +52,6 @@ metaToValue = (meta) ->
         ipc.sendChannel 'ATOM_BROWSER_DEREFERENCE', meta.storeId
 
       ret
-
-# Browser calls a callback in renderer.
-ipc.on 'ATOM_RENDERER_FUNCTION_CALL', (callbackId, args) ->
-  callback = callbacksRegistry.get callbackId
-  callback.apply global, metaToValue(args)
-
-# Browser releases a callback in renderer.
-ipc.on 'ATOM_RENDERER_DEREFERENCE', (callbackId) ->
-  callbacksRegistry.remove callbackId
 
 # Get remote module.
 exports.require = (module) ->
