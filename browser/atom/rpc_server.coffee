@@ -54,6 +54,12 @@ ipc.on 'ATOM_BROWSER_REQUIRE', (event, processId, routingId, module) ->
   catch e
     event.result = type: 'error', value: e.message
 
+ipc.on 'ATOM_BROWSER_GLOBAL', (event, processId, routingId, name) ->
+  try
+    event.result = new Meta(processId, routingId, global[name])
+  catch e
+    event.result = type: 'error', value: e.message
+
 ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event, processId, routingId) ->
   try
     windows = objectsRegistry.getAllWindows()

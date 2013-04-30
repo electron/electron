@@ -103,3 +103,14 @@ exports.getObject = (id) ->
 exports.getCurrentWindow = ->
   meta = ipc.sendChannelSync 'ATOM_BROWSER_CURRENT_WINDOW'
   metaToValue meta
+
+# Get a global object in browser.
+exports.getGlobal = (name) ->
+  meta = ipc.sendChannelSync 'ATOM_BROWSER_GLOBAL', name
+  metaToValue meta
+
+# Get the process object in browser.
+processCache = null
+exports.__defineGetter__ 'process', ->
+  processCache = exports.getGlobal('process') unless processCache?
+  processCache
