@@ -76,10 +76,10 @@ private:
   virtual void HandleKeyboardEvent(content::WebContents*, const content::NativeWebKeyboardEvent&) OVERRIDE;
   
   scoped_ptr<content::WebContents> web_contents_;
+  scoped_ptr<content::DevToolsClientHost> frontend_host_;
   scoped_ptr<content::WebContents> devtools_web_contents_;
   scoped_ptr<InspectableWebContentsView> view_;
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
-  scoped_ptr<content::DevToolsClientHost> frontend_host_;
   std::string dock_side_;
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsImpl);
