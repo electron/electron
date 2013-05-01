@@ -36,15 +36,16 @@
   return self;
 }
 
+- (void)windowWillClose:(NSNotification *)notification {
+  [self autorelease];
+}
+
 - (BOOL)windowShouldClose:(id)window {
-  if (!shell_->CanClose()) {
-    shell_->RequestToDestroyWindow();
-    return NO;
-  }
-
-  [self release];
-
-  return YES;
+  // When user tries to close the window by clicking the close button, we do
+  // not close the window immediately, instead we try to close the web page
+  // fisrt, and when the web page is closed the window will also be closed.
+  shell_->CloseWebContents();
+  return NO;
 }
 
 @end
@@ -119,6 +120,10 @@ NativeWindowMac::~NativeWindowMac() {
 
 void NativeWindowMac::Close() {
   [window() performClose:nil];
+}
+
+void NativeWindowMac::CloseImmediately() {
+  [window() close];
 }
 
 void NativeWindowMac::Move(const gfx::Rect& pos) {

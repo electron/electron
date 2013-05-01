@@ -20,6 +20,7 @@ class NativeWindowMac : public NativeWindow {
 
   // NativeWindow implementation.
   virtual void Close() OVERRIDE;
+  virtual void CloseImmediately() OVERRIDE;
   virtual void Move(const gfx::Rect& pos) OVERRIDE;
   virtual void Focus(bool focus) OVERRIDE;
   virtual void Show() OVERRIDE;

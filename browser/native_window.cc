@@ -39,9 +39,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
                            base::DictionaryValue* options)
     : content::WebContentsObserver(web_contents),
       inspectable_web_contents_(
-          brightray::InspectableWebContents::Create(web_contents)),
-      window_going_to_destroy_(false),
-      can_destroy_window_(false) {
+          brightray::InspectableWebContents::Create(web_contents)) {
   web_contents->SetDelegate(this);
 
   windows_.push_back(this);
@@ -135,24 +133,13 @@ void NativeWindow::CloseDevTools() {
   inspectable_web_contents()->GetView()->CloseDevTools();
 }
 
-void NativeWindow::RequestToDestroyWindow() {
-  if (window_going_to_destroy_)
-    return;
-
-  window_going_to_destroy_ = true;
-
+void NativeWindow::CloseWebContents() {
   content::WebContents* web_contents(GetWebContents());
-
-  web_contents->OnCloseStarted();
 
   if (web_contents->NeedToFireBeforeUnload())
     web_contents->GetRenderViewHost()->FirePageBeforeUnload(false);
   else
     web_contents->Close();
-}
-
-bool NativeWindow::CanClose() {
-  return !GetWebContents()->NeedToFireBeforeUnload() || can_destroy_window_;
 }
 
 content::WebContents* NativeWindow::GetWebContents() const {
@@ -184,24 +171,11 @@ content::JavaScriptDialogManager* NativeWindow::GetJavaScriptDialogManager() {
   return dialog_manager_.get();
 }
 
-void NativeWindow::BeforeUnloadFired(content::WebContents* source,
-                                     bool proceed,
-                                     bool* proceed_to_fire_unload) {
-  *proceed_to_fire_unload = proceed;
-
-  if (proceed && window_going_to_destroy_) {
-    can_destroy_window_ = true;
-  } else {
-    window_going_to_destroy_ = false;
-    can_destroy_window_ = false;
-  }
-}
-
 void NativeWindow::CloseContents(content::WebContents* source) {
   // When the web contents is gone, close the window immediately, but the
-  // wrapper itself will not get destroyed until you call delete.
+  // memory will not be freed until you call delete.
   // In this way, it would be safe to manage windows via smart pointers.
-  Close();
+  CloseImmediately();
 }
 
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
