@@ -43,6 +43,9 @@ ipc.on 'ATOM_BROWSER_GLOBAL', (event, processId, routingId, name) ->
   catch e
     event.result = type: 'error', value: e.message
 
+ipc.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (event, processId, routingId) ->
+  objectsRegistry.clear processId, routingId
+
 ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event, processId, routingId) ->
   try
     windows = objectsRegistry.getAllWindows()

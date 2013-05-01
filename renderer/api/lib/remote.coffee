@@ -53,6 +53,10 @@ metaToValue = (meta) ->
 
       ret
 
+# Release all resources of current render view when it's going to be unloaded.
+window.addEventListener 'unload', (event) ->
+  ipc.sendChannelSync 'ATOM_BROWSER_RELEASE_RENDER_VIEW'
+
 # Get remote module.
 exports.require = (module) ->
   meta = ipc.sendChannelSync 'ATOM_BROWSER_REQUIRE', module

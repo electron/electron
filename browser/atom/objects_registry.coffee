@@ -31,6 +31,10 @@ class ObjectsStore
     @stores[key] = new ObjectsStore unless @stores[key]?
     @stores[key]
 
+  @releaseForRenderView: (processId, routingId) ->
+    key = "#{processId}_#{routingId}"
+    delete @stores[key]
+
 # Objects in weak map will be not referenced (so we won't leak memory), and
 # every object created in browser will have a unique id in weak map.
 objectsWeakMap = new IDWeakMap
@@ -72,3 +76,6 @@ exports.getAllWindows = () ->
 
 exports.remove = (processId, routingId, storeId) ->
   ObjectsStore.forRenderView(processId, routingId).remove storeId
+
+exports.clear = (processId, routingId) ->
+  ObjectsStore.releaseForRenderView processId, routingId
