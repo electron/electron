@@ -44,13 +44,24 @@ Window::Window(v8::Handle<v8::Object> wrapper, base::DictionaryValue* options)
 }
 
 Window::~Window() {
+  window_->RemoveObserver(this);
 }
 
 void Window::OnPageTitleUpdated(bool* prevent_default,
                                 const std::string& title) {
-  scoped_ptr<base::ListValue> args(new base::ListValue);
-  args->AppendString(title);
-  *prevent_default = Emit("page-title-updated", args.get());
+  base::ListValue args;
+  args.AppendString(title);
+  *prevent_default = Emit("page-title-updated", &args);
+}
+
+void Window::WillCloseWindow(bool* prevent_default) {
+  base::ListValue args;
+  *prevent_default = Emit("close", &args);
+}
+
+void Window::OnWindowClosed() {
+  // Free memory immediately when window is closed.
+  delete this;
 }
 
 // static

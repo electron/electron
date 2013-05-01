@@ -37,6 +37,7 @@
 }
 
 - (void)windowWillClose:(NSNotification *)notification {
+  shell_->window() = nil;
   [self autorelease];
 }
 
@@ -114,6 +115,8 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
 }
 
 NativeWindowMac::~NativeWindowMac() {
+  if (window())
+    [window() release];
 }
 
 void NativeWindowMac::Close() {
@@ -121,6 +124,7 @@ void NativeWindowMac::Close() {
 }
 
 void NativeWindowMac::CloseImmediately() {
+  [window() orderOut:nil];
   [window() close];
 }
 

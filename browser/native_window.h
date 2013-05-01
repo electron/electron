@@ -157,8 +157,6 @@ class NativeWindow : public content::WebContentsDelegate,
 
   scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
 
-  bool window_going_to_destroy_;
-
   DISALLOW_COPY_AND_ASSIGN(NativeWindow);
 };
 
