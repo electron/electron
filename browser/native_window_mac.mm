@@ -99,7 +99,6 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
   [atom_window setShell:this];
 
   window_ = atom_window;
-  [window() setReleasedWhenClosed:NO];
   [window() setDelegate:[[AtomNSWindowDelegate alloc] initWithShell:this]];
 
   // Disable fullscreen button when 'fullscreen' is specified to false.
@@ -115,7 +114,6 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
 }
 
 NativeWindowMac::~NativeWindowMac() {
-  [window() release];
 }
 
 void NativeWindowMac::Close() {

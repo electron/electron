@@ -134,6 +134,13 @@ void NativeWindow::CloseDevTools() {
 }
 
 void NativeWindow::CloseWebContents() {
+  bool prevent_default = false;
+  FOR_EACH_OBSERVER(NativeWindowObserver,
+                    observers_,
+                    WillCloseWindow(&prevent_default));
+  if (prevent_default)
+    return;
+
   content::WebContents* web_contents(GetWebContents());
 
   if (web_contents->NeedToFireBeforeUnload())
@@ -174,8 +181,12 @@ content::JavaScriptDialogManager* NativeWindow::GetJavaScriptDialogManager() {
 void NativeWindow::CloseContents(content::WebContents* source) {
   // When the web contents is gone, close the window immediately, but the
   // memory will not be freed until you call delete.
-  // In this way, it would be safe to manage windows via smart pointers.
+  // In this way, it would be safe to manage windows via smart pointers. If you
+  // want to free memory when the window is closed, you can do deleting by
+  // overriding WillCloseWindow method in the observer.
   CloseImmediately();
+
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowClosed());
 }
 
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {

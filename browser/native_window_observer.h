@@ -15,7 +15,13 @@ class NativeWindowObserver {
 
   // Called when the web page of the window has updated it's document title.
   virtual void OnPageTitleUpdated(bool* prevent_default,
-                                  const std::string& title) = 0;
+                                  const std::string& title) {}
+
+  // Called when the window is gonna closed.
+  virtual void WillCloseWindow(bool* prevent_default) {}
+
+  // Called when the window is closed.
+  virtual void OnWindowClosed() {}
 };
 
 }  // namespace atom
