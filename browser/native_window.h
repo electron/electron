@@ -90,8 +90,17 @@ class NativeWindow : public content::WebContentsDelegate,
   virtual void FlashFrame(bool flash) = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
+
   virtual void ShowDevTools();
   virtual void CloseDevTools();
+
+  // Close the web page in this window and then desctruct.
+  virtual void RequestToDestroyWindow();
+
+  // Used by platform dependent code to determine whether the window can be
+  // closed. A window can only be closed when the beforeunload handler
+  // doesn't prevent it.
+  bool CanClose();
 
   content::WebContents* GetWebContents() const;
 
@@ -119,6 +128,10 @@ class NativeWindow : public content::WebContentsDelegate,
                                   content::WebContents* new_contents) OVERRIDE;
   virtual content::JavaScriptDialogManager*
       GetJavaScriptDialogManager() OVERRIDE;
+  virtual void CloseContents(content::WebContents* source) OVERRIDE;
+  virtual void BeforeUnloadFired(content::WebContents* source,
+                                 bool proceed,
+                                 bool* proceed_to_fire_unload) OVERRIDE;
 
   // Implementations of content::WebContentsObserver.
   virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
@@ -148,6 +161,9 @@ class NativeWindow : public content::WebContentsDelegate,
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
 
   scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
+
+  bool window_going_to_destroy_;
+  bool can_destroy_window_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindow);
 };

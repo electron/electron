@@ -21,6 +21,34 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
 
+@interface AtomNSWindowDelegate : NSObject<NSWindowDelegate> {
+ @private
+  atom::NativeWindowMac* shell_;
+}
+- (id)initWithShell:(atom::NativeWindowMac*)shell;
+@end
+
+@implementation AtomNSWindowDelegate
+
+- (id)initWithShell:(atom::NativeWindowMac*)shell {
+  if ((self = [super init]))
+    shell_ = shell;
+  return self;
+}
+
+- (BOOL)windowShouldClose:(id)window {
+  if (!shell_->CanClose()) {
+    shell_->RequestToDestroyWindow();
+    return NO;
+  }
+
+  [self release];
+
+  return YES;
+}
+
+@end
+
 @interface AtomNSWindow : AtomEventProcessingWindow {
  @private
   atom::NativeWindowMac* shell_;
@@ -70,6 +98,8 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
   [atom_window setShell:this];
 
   window_ = atom_window;
+  [window() setReleasedWhenClosed:NO];
+  [window() setDelegate:[[AtomNSWindowDelegate alloc] initWithShell:this]];
 
   // Disable fullscreen button when 'fullscreen' is specified to false.
   bool fullscreen;
@@ -84,7 +114,6 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
 }
 
 NativeWindowMac::~NativeWindowMac() {
-  Close();
   [window() release];
 }
 

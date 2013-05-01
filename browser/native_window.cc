@@ -20,6 +20,7 @@
 #include "content/public/browser/notification_source.h"
 #include "content/public/browser/notification_types.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/render_view_host.h"
 #include "common/api/api_messages.h"
 #include "common/options_switches.h"
 #include "ipc/ipc_message_macros.h"
@@ -38,7 +39,9 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
                            base::DictionaryValue* options)
     : content::WebContentsObserver(web_contents),
       inspectable_web_contents_(
-          brightray::InspectableWebContents::Create(web_contents)) {
+          brightray::InspectableWebContents::Create(web_contents)),
+      window_going_to_destroy_(false),
+      can_destroy_window_(false) {
   web_contents->SetDelegate(this);
 
   windows_.push_back(this);
@@ -132,6 +135,26 @@ void NativeWindow::CloseDevTools() {
   inspectable_web_contents()->GetView()->CloseDevTools();
 }
 
+void NativeWindow::RequestToDestroyWindow() {
+  if (window_going_to_destroy_)
+    return;
+
+  window_going_to_destroy_ = true;
+
+  content::WebContents* web_contents(GetWebContents());
+
+  web_contents->OnCloseStarted();
+
+  if (web_contents->NeedToFireBeforeUnload())
+    web_contents->GetRenderViewHost()->FirePageBeforeUnload(false);
+  else
+    web_contents->Close();
+}
+
+bool NativeWindow::CanClose() {
+  return !GetWebContents()->NeedToFireBeforeUnload() || can_destroy_window_;
+}
+
 content::WebContents* NativeWindow::GetWebContents() const {
   return inspectable_web_contents_->GetWebContents();
 }
@@ -159,6 +182,26 @@ content::JavaScriptDialogManager* NativeWindow::GetJavaScriptDialogManager() {
     dialog_manager_.reset(new AtomJavaScriptDialogManager);
 
   return dialog_manager_.get();
+}
+
+void NativeWindow::BeforeUnloadFired(content::WebContents* source,
+                                     bool proceed,
+                                     bool* proceed_to_fire_unload) {
+  *proceed_to_fire_unload = proceed;
+
+  if (proceed && window_going_to_destroy_) {
+    can_destroy_window_ = true;
+  } else {
+    window_going_to_destroy_ = false;
+    can_destroy_window_ = false;
+  }
+}
+
+void NativeWindow::CloseContents(content::WebContents* source) {
+  // When the web contents is gone, close the window immediately, but the
+  // wrapper itself will not get destroyed until you call delete.
+  // In this way, it would be safe to manage windows via smart pointers.
+  Close();
 }
 
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
