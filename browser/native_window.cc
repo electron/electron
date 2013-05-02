@@ -38,6 +38,7 @@ std::vector<NativeWindow*> NativeWindow::windows_;
 NativeWindow::NativeWindow(content::WebContents* web_contents,
                            base::DictionaryValue* options)
     : content::WebContentsObserver(web_contents),
+      is_closed_(false),
       inspectable_web_contents_(
           brightray::InspectableWebContents::Create(web_contents)) {
   web_contents->SetDelegate(this);
@@ -50,8 +51,9 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
 }
 
 NativeWindow::~NativeWindow() {
-  windows_.erase(std::remove(windows_.begin(), windows_.end(), this),
-                 windows_.end());
+  // It's possible that the windows gets destroyed before it's closed, in that
+  // case we need to ensure the OnWindowClosed message is still notified.
+  NotifyWindowClosed();
 }
 
 // static
@@ -153,6 +155,17 @@ content::WebContents* NativeWindow::GetWebContents() const {
   return inspectable_web_contents_->GetWebContents();
 }
 
+void NativeWindow::NotifyWindowClosed() {
+  if (is_closed_)
+    return;
+
+  is_closed_ = true;
+  windows_.erase(std::remove(windows_.begin(), windows_.end(), this),
+                 windows_.end());
+
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowClosed());
+}
+
 // Window opened by window.open.
 void NativeWindow::WebContentsCreated(
     content::WebContents* source_contents,
@@ -186,7 +199,7 @@ void NativeWindow::CloseContents(content::WebContents* source) {
   // overriding the WillCloseWindow method in the observer.
   CloseImmediately();
 
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowClosed());
+  NotifyWindowClosed();
 }
 
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {

@@ -59,6 +59,9 @@ class NativeWindow : public content::WebContentsDelegate,
   static NativeWindow* FromProcessIDAndRoutingID(int process_id,
                                                  int routing_id);
 
+  // Return all opened windows.
+  static std::vector<NativeWindow*> windows() { return windows_; }
+
   void InitFromOptions(base::DictionaryValue* options);
 
   virtual void Close() = 0;
@@ -92,6 +95,7 @@ class NativeWindow : public content::WebContentsDelegate,
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
 
+  virtual bool IsClosed() const { return is_closed_; }
   virtual void ShowDevTools();
   virtual void CloseDevTools();
 
@@ -117,6 +121,8 @@ class NativeWindow : public content::WebContentsDelegate,
   brightray::InspectableWebContents* inspectable_web_contents() const {
     return inspectable_web_contents_.get();
   }
+
+  void NotifyWindowClosed();
 
   // Implementations of content::WebContentsDelegate.
   virtual void WebContentsCreated(content::WebContents* source_contents,
@@ -153,8 +159,9 @@ class NativeWindow : public content::WebContentsDelegate,
   // Stores all windows.
   static std::vector<NativeWindow*> windows_;
 
-  scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
+  bool is_closed_;
 
+  scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindow);
