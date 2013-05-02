@@ -9,6 +9,7 @@
 NODE_EXT_LIST_START
 
 // Module names start with `atom_browser_` can only be used by browser process.
+NODE_EXT_LIST_ITEM(atom_browser_app)
 NODE_EXT_LIST_ITEM(atom_browser_ipc)
 NODE_EXT_LIST_ITEM(atom_browser_window)
 

@@ -6,6 +6,7 @@
       'app/atom_main.cc',
     ],
     'coffee_sources': [
+      'browser/api/lib/app.coffee',
       'browser/api/lib/atom.coffee',
       'browser/api/lib/ipc.coffee',
       'browser/api/lib/window.coffee',
@@ -21,6 +22,8 @@
     'lib_sources': [
       'app/atom_main_delegate.cc',
       'app/atom_main_delegate.h',
+      'browser/api/atom_api_app.cc',
+      'browser/api/atom_api_app.h',
       'browser/api/atom_api_browser_ipc.cc',
       'browser/api/atom_api_browser_ipc.h',
       'browser/api/atom_api_event.cc',
