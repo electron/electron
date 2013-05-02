@@ -5,8 +5,8 @@
 #include "browser/atom_browser_main_parts.h"
 
 #import "base/mac/bundle_locations.h"
-#import "browser/atom_application.h"
-#import "browser/atom_application_delegate.h"
+#import "browser/atom_application_mac.h"
+#import "browser/atom_application_delegate_mac.h"
 
 namespace atom {
 

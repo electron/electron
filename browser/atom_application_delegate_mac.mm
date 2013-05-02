@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#import "browser/atom_application_delegate.h"
+#import "browser/atom_application_delegate_mac.h"
 
-#import "browser/atom_application.h"
+#import "browser/atom_application_mac.h"
 
 @implementation AtomApplicationDelegate
 
