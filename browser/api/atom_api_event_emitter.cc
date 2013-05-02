@@ -32,6 +32,11 @@ EventEmitter::EventEmitter(v8::Handle<v8::Object> wrapper) {
 EventEmitter::~EventEmitter() {
 }
 
+bool EventEmitter::Emit(const std::string& name) {
+  base::ListValue args;
+  return Emit(name, &args);
+}
+
 bool EventEmitter::Emit(const std::string& name, base::ListValue* args) {
   v8::HandleScope scope;
 

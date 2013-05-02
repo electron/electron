@@ -26,6 +26,7 @@ class EventEmitter : public node::ObjectWrap {
   virtual ~EventEmitter();
 
   // Emit an event and returns whether the handler has called preventDefault().
+  bool Emit(const std::string& name);
   bool Emit(const std::string& name, base::ListValue* args);
 
   // Small accessor to return handle_, this follows Google C++ Style.

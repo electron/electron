@@ -34,7 +34,7 @@ v8::Handle<v8::String> UTF16ToV8String(const string16& s) {
   return v8::String::New(reinterpret_cast<const uint16_t*>(s.data()), s.size());
 }
 
-}
+}  // namespace
 
 Window::Window(v8::Handle<v8::Object> wrapper, base::DictionaryValue* options)
     : EventEmitter(wrapper),
@@ -44,6 +44,8 @@ Window::Window(v8::Handle<v8::Object> wrapper, base::DictionaryValue* options)
 }
 
 Window::~Window() {
+  Emit("destroyed");
+
   window_->RemoveObserver(this);
 }
 
@@ -55,11 +57,12 @@ void Window::OnPageTitleUpdated(bool* prevent_default,
 }
 
 void Window::WillCloseWindow(bool* prevent_default) {
-  base::ListValue args;
-  *prevent_default = Emit("close", &args);
+  *prevent_default = Emit("close");
 }
 
 void Window::OnWindowClosed() {
+  Emit("closed");
+
   // Free memory immediately when window is closed.
   delete this;
 }
