@@ -4,7 +4,6 @@
 
 #include "browser/native_window.h"
 
-#include <algorithm>
 #include <string>
 
 #include "base/utf_string_conversions.h"
@@ -15,6 +14,7 @@
 #include "browser/atom_browser_context.h"
 #include "browser/atom_browser_main_parts.h"
 #include "browser/atom_javascript_dialog_manager.h"
+#include "browser/window_list.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/notification_details.h"
 #include "content/public/browser/notification_source.h"
@@ -32,9 +32,6 @@ using content::NavigationEntry;
 
 namespace atom {
 
-// static
-std::vector<NativeWindow*> NativeWindow::windows_;
-
 NativeWindow::NativeWindow(content::WebContents* web_contents,
                            base::DictionaryValue* options)
     : content::WebContentsObserver(web_contents),
@@ -43,7 +40,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
           brightray::InspectableWebContents::Create(web_contents)) {
   web_contents->SetDelegate(this);
 
-  windows_.push_back(this);
+  WindowList::AddWindow(this);
 
   // Get notified of title updated message.
   registrar_.Add(this, content::NOTIFICATION_WEB_CONTENTS_TITLE_UPDATED,
@@ -66,7 +63,8 @@ NativeWindow* NativeWindow::Create(base::DictionaryValue* options) {
 NativeWindow* NativeWindow::FromProcessIDAndRoutingID(int process_id,
                                                       int routing_id) {
   // Stupid iterating.
-  for (auto window : windows_) {
+  WindowList& window_list = *WindowList::GetInstance();
+  for (auto window : window_list) {
     content::WebContents* web_contents = window->GetWebContents();
     int window_process_id = web_contents->GetRenderProcessHost()->GetID();
     int window_routing_id = web_contents->GetRoutingID();
@@ -160,8 +158,7 @@ void NativeWindow::NotifyWindowClosed() {
     return;
 
   is_closed_ = true;
-  windows_.erase(std::remove(windows_.begin(), windows_.end(), this),
-                 windows_.end());
+  WindowList::RemoveWindow(this);
 
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowClosed());
 }

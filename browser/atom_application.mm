@@ -6,7 +6,7 @@
 
 #include "base/auto_reset.h"
 #include "base/logging.h"
-#include "browser/native_window.h"
+#include "browser/window_list.h"
 
 @implementation AtomApplication
 
@@ -28,9 +28,11 @@
 }
 
 - (IBAction)closeAllWindows:(id)sender {
-  std::vector<atom::NativeWindow*> windows = atom::NativeWindow::windows();
-  for (size_t i = 0; i < windows.size(); ++i)
-    windows[i]->Close();
+  atom::WindowList* window_list = atom::WindowList::GetInstance();
+  if (window_list->size() == 0)
+    [self terminate:self];
+
+  window_list->CloseAllWindows();
 }
 
 @end
