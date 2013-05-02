@@ -51,13 +51,9 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   atom_bindings_->AfterLoad();
 }
 
-void AtomBrowserMainParts::PreMainMessageLoopStart() {
-  brightray::BrowserMainParts::PreMainMessageLoopStart();
-
-  node_bindings_->PrepareMessageLoop();
-}
-
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
+  node_bindings_->PrepareMessageLoop();
+
   brightray::BrowserMainParts::PreMainMessageLoopRun();
 
   {
