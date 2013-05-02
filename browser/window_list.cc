@@ -52,6 +52,12 @@ void WindowList::RemoveWindow(NativeWindow* window) {
 }
 
 // static
+void WindowList::WindowCloseCancelled(NativeWindow* window) {
+  FOR_EACH_OBSERVER(WindowListObserver, observers_.Get(),
+                    OnWindowCloseCancelled(window));
+}
+
+// static
 void WindowList::AddObserver(WindowListObserver* observer) {
   observers_.Get().AddObserver(observer);
 }

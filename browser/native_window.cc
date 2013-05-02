@@ -188,6 +188,15 @@ content::JavaScriptDialogManager* NativeWindow::GetJavaScriptDialogManager() {
   return dialog_manager_.get();
 }
 
+void NativeWindow::BeforeUnloadFired(content::WebContents* tab,
+                                     bool proceed,
+                                     bool* proceed_to_fire_unload) {
+  *proceed_to_fire_unload = proceed;
+
+  if (!proceed)
+    WindowList::WindowCloseCancelled(this);
+}
+
 void NativeWindow::CloseContents(content::WebContents* source) {
   // When the web contents is gone, close the window immediately, but the
   // memory will not be freed until you call delete.

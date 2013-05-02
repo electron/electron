@@ -128,6 +128,9 @@ class NativeWindow : public content::WebContentsDelegate,
                                   content::WebContents* new_contents) OVERRIDE;
   virtual content::JavaScriptDialogManager*
       GetJavaScriptDialogManager() OVERRIDE;
+  virtual void BeforeUnloadFired(content::WebContents* tab,
+                                 bool proceed,
+                                 bool* proceed_to_fire_unload) OVERRIDE;
   virtual void CloseContents(content::WebContents* source) OVERRIDE;
 
   // Implementations of content::WebContentsObserver.

@@ -7,6 +7,7 @@
 #include "browser/api/atom_browser_bindings.h"
 #include "browser/atom_browser_client.h"
 #include "browser/atom_browser_context.h"
+#include "browser/browser.h"
 #include "common/node_bindings.h"
 #include "vendor/node/src/node.h"
 #include "vendor/node/src/node_internals.h"
@@ -18,6 +19,7 @@ AtomBrowserMainParts* AtomBrowserMainParts::self_ = NULL;
 
 AtomBrowserMainParts::AtomBrowserMainParts()
     : atom_bindings_(new AtomBrowserBindings),
+      browser_(new Browser),
       node_bindings_(NodeBindings::Create(true)) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
   self_ = this;

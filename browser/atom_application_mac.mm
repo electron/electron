@@ -5,8 +5,7 @@
 #import "browser/atom_application_mac.h"
 
 #include "base/auto_reset.h"
-#include "base/logging.h"
-#include "browser/window_list.h"
+#include "browser/browser.h"
 
 @implementation AtomApplication
 
@@ -28,11 +27,7 @@
 }
 
 - (IBAction)closeAllWindows:(id)sender {
-  atom::WindowList* window_list = atom::WindowList::GetInstance();
-  if (window_list->size() == 0)
-    [self terminate:self];
-
-  window_list->CloseAllWindows();
+  atom::Browser::Get()->Quit();
 }
 
 @end

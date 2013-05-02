@@ -10,6 +10,7 @@
 namespace atom {
 
 class AtomBrowserBindings;
+class Browser;
 class NodeBindings;
 
 class AtomBrowserMainParts : public brightray::BrowserMainParts {
@@ -20,6 +21,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   static AtomBrowserMainParts* Get();
 
   AtomBrowserBindings* atom_bindings() { return atom_bindings_.get(); }
+  Browser* browser() { return browser_.get(); }
 
  protected:
   // Implementations of brightray::BrowserMainParts.
@@ -32,6 +34,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 
  private:
   scoped_ptr<AtomBrowserBindings> atom_bindings_;
+  scoped_ptr<Browser> browser_;
   scoped_ptr<NodeBindings> node_bindings_;
 
   static AtomBrowserMainParts* self_;

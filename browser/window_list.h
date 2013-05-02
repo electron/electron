@@ -38,6 +38,9 @@ class WindowList {
   static void AddWindow(NativeWindow* window);
   static void RemoveWindow(NativeWindow* window);
 
+  // Called by window when a close is cancelled by beforeunload handler.
+  static void WindowCloseCancelled(NativeWindow* window);
+
   // Adds and removes |observer| from the observer list.
   static void AddObserver(WindowListObserver* observer);
   static void RemoveObserver(WindowListObserver* observer);
