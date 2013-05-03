@@ -55,8 +55,7 @@ class NativeWindow : public content::WebContentsDelegate,
   static NativeWindow* Create(base::DictionaryValue* options);
 
   // Find a window from its process id and routing id.
-  static NativeWindow* FromProcessIDAndRoutingID(int process_id,
-                                                 int routing_id);
+  static NativeWindow* FromRenderView(int process_id, int routing_id);
 
   void InitFromOptions(base::DictionaryValue* options);
 
@@ -90,6 +89,7 @@ class NativeWindow : public content::WebContentsDelegate,
   virtual void FlashFrame(bool flash) = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
+  virtual gfx::NativeWindow GetNativeWindow() = 0;
 
   virtual bool IsClosed() const { return is_closed_; }
   virtual void ShowDevTools();

@@ -360,6 +360,10 @@ bool NativeWindowMac::IsKiosk() {
   return is_kiosk_;
 }
 
+gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
+  return window();
+}
+
 void NativeWindowMac::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {

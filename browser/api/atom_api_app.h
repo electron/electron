@@ -14,7 +14,7 @@ namespace atom {
 namespace api {
 
 class App : public EventEmitter,
-            public BrowserObserver{
+            public BrowserObserver {
  public:
   virtual ~App();
 

@@ -60,8 +60,7 @@ NativeWindow* NativeWindow::Create(base::DictionaryValue* options) {
 }
 
 // static
-NativeWindow* NativeWindow::FromProcessIDAndRoutingID(int process_id,
-                                                      int routing_id) {
+NativeWindow* NativeWindow::FromRenderView(int process_id, int routing_id) {
   // Stupid iterating.
   WindowList& window_list = *WindowList::GetInstance();
   for (auto window : window_list) {
