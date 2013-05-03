@@ -68,9 +68,11 @@ exports.getObject = (id) ->
   metaToValue meta
 
 # Get current window object.
+windowCache = null
 exports.getCurrentWindow = ->
+  return windowCache if windowCache?
   meta = ipc.sendChannelSync 'ATOM_BROWSER_CURRENT_WINDOW'
-  metaToValue meta
+  windowCache = metaToValue meta
 
 # Get a global object in browser.
 exports.getGlobal = (name) ->
