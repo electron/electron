@@ -2,12 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "browser/api/atom_api_file_dialog.h"
+#include "browser/api/atom_api_dialog.h"
 
 #include <string>
 
 #include "base/utf_string_conversions.h"
 #include "base/values.h"
+#include "browser/message_box.h"
 #include "browser/native_window.h"
 
 namespace atom {
@@ -21,22 +22,43 @@ base::FilePath V8ValueToFilePath(v8::Handle<v8::Value> path) {
   return base::FilePath::FromUTF8Unsafe(path_string);
 }
 
-ui::SelectFileDialog::Type IntToDialogType(int type) {
-  switch (type) {
-    case ui::SelectFileDialog::SELECT_FOLDER:
-      return ui::SelectFileDialog::SELECT_FOLDER;
-    case ui::SelectFileDialog::SELECT_SAVEAS_FILE:
-      return ui::SelectFileDialog::SELECT_SAVEAS_FILE;
-    case ui::SelectFileDialog::SELECT_OPEN_FILE:
-      return ui::SelectFileDialog::SELECT_OPEN_FILE;
-    case ui::SelectFileDialog::SELECT_OPEN_MULTI_FILE:
-      return ui::SelectFileDialog::SELECT_OPEN_MULTI_FILE;
-    default:
-      return ui::SelectFileDialog::SELECT_NONE;
-  }
-}
-
 }  // namespace
+
+v8::Handle<v8::Value> ShowMessageBox(const v8::Arguments &args) {
+  v8::HandleScope scope;
+
+  if (!args[0]->IsNumber() ||  // process_id
+      !args[1]->IsNumber() ||  // routing_id
+      !args[2]->IsNumber() ||  // type
+      !args[3]->IsArray() ||   // buttons
+      !args[4]->IsString() ||  // title
+      !args[5]->IsString() ||  // message
+      !args[6]->IsString())    // detail
+    return node::ThrowTypeError("Bad argument");
+
+  int process_id = args[0]->IntegerValue();
+  int routing_id = args[1]->IntegerValue();
+  NativeWindow* window = NativeWindow::FromRenderView(process_id, routing_id);
+  if (!window)
+    return node::ThrowError("Window not found");
+
+  gfx::NativeWindow owning_window = window->GetNativeWindow();
+
+  MessageBoxType type = (MessageBoxType)(args[2]->IntegerValue());
+
+  std::vector<std::string> buttons;
+  v8::Handle<v8::Array> v8_buttons = v8::Handle<v8::Array>::Cast(args[3]);
+  for (uint32_t i = 0; i < v8_buttons->Length(); ++i)
+    buttons.push_back(*v8::String::Utf8Value(v8_buttons->Get(i)));
+
+  std::string title(*v8::String::Utf8Value(args[4]));
+  std::string message(*v8::String::Utf8Value(args[5]));
+  std::string detail(*v8::String::Utf8Value(args[6]));
+
+  int result = atom::ShowMessageBox(
+      owning_window, type, buttons, title, message, detail);
+  return v8::Integer::New(result);
+}
 
 FileDialog::FileDialog(v8::Handle<v8::Object> wrapper)
     : EventEmitter(wrapper),
@@ -133,7 +155,7 @@ v8::Handle<v8::Value> FileDialog::SelectFile(const v8::Arguments &args) {
   int callback_id = args[8]->IntegerValue();
 
   self->dialog_->SelectFile(
-      IntToDialogType(type),
+      (ui::SelectFileDialog::Type)(type),
       UTF8ToUTF16(title),
       default_path,
       file_types.extensions.size() > 0 ? &file_types : NULL,
@@ -152,7 +174,7 @@ void FileDialog::FillTypeInfo(ui::SelectFileDialog::FileTypeInfo* file_types,
   file_types->support_drive = true;
 
   for (uint32_t i = 0; i < v8_file_types->Length(); ++i) {
-    v8::Handle<v8::Object> element = v8_file_types->Get(i)->ToObject(); 
+    v8::Handle<v8::Object> element = v8_file_types->Get(i)->ToObject();
 
     std::string description(*v8::String::Utf8Value(
         element->Get(v8::String::New("description"))));
@@ -182,10 +204,12 @@ void FileDialog::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "selectFile", SelectFile);
 
   target->Set(v8::String::NewSymbol("FileDialog"), t->GetFunction());
+
+  NODE_SET_METHOD(target, "showMessageBox", ShowMessageBox);
 }
 
 }  // namespace api
 
 }  // namespace atom
 
-NODE_MODULE(atom_browser_file_dialog, atom::api::FileDialog::Initialize)
+NODE_MODULE(atom_browser_dialog, atom::api::FileDialog::Initialize)

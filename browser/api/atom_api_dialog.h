@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_ATOM_API_FILE_DIALOG_H_
-#define ATOM_BROWSER_API_ATOM_API_FILE_DIALOG_H_
+#ifndef ATOM_BROWSER_API_ATOM_API_DIALOG_H_
+#define ATOM_BROWSER_API_ATOM_API_DIALOG_H_
 
 #include "browser/api/atom_api_event_emitter.h"
 #include "ui/shell_dialogs/select_file_dialog.h"
@@ -11,6 +11,8 @@
 namespace atom {
 
 namespace api {
+
+v8::Handle<v8::Value> ShowMessageBox(const v8::Arguments &args);
 
 class FileDialog : public EventEmitter,
                    public ui::SelectFileDialog::Listener {
@@ -44,4 +46,4 @@ class FileDialog : public EventEmitter,
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_API_ATOM_API_FILE_DIALOG_H_
+#endif  // ATOM_BROWSER_API_ATOM_API_DIALOG_H_

@@ -1,7 +1,8 @@
+binding = process.atomBinding 'dialog'
 EventEmitter = require('events').EventEmitter
 ipc = require 'ipc'
 
-FileDialog = process.atomBinding('file_dialog').FileDialog
+FileDialog = binding.FileDialog
 FileDialog.prototype.__proto__ = EventEmitter.prototype
 
 callbacksInfo = {}
