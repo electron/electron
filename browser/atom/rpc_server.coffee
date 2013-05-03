@@ -2,6 +2,15 @@ ipc = require 'ipc'
 path = require 'path'
 objectsRegistry = require './objects_registry.js'
 
+metaToArgs = (metas) ->
+  metas.map (meta) ->
+    if meta.type is 'value'
+      meta.value
+    else if meta.type is 'remoteObject'
+      objectsRegistry.get meta.id
+    else
+      throw new TypeError("Unknown type: #{meta.type}")
+
 # Convert a real value into a POD structure which carries information of this
 # value.
 class Meta
@@ -58,6 +67,7 @@ ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event, processId, routingId) ->
 
 ipc.on 'ATOM_BROWSER_CONSTRUCTOR', (event, processId, routingId, id, args) ->
   try
+    args = metaToArgs args
     constructor = objectsRegistry.get id
     # Call new with array of arguments.
     # http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
@@ -68,6 +78,7 @@ ipc.on 'ATOM_BROWSER_CONSTRUCTOR', (event, processId, routingId, id, args) ->
 
 ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, processId, routingId, id, args) ->
   try
+    args = metaToArgs args
     func = objectsRegistry.get id
     ret = func.apply global, args
     event.result = new Meta(processId, routingId, ret)
@@ -76,6 +87,7 @@ ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, processId, routingId, id, args) ->
 
 ipc.on 'ATOM_BROWSER_MEMBER_CALL', (event, processId, routingId, id, method, args) ->
   try
+    args = metaToArgs args
     obj = objectsRegistry.get id
     ret = obj[method].apply(obj, args)
     event.result = new Meta(processId, routingId, ret)

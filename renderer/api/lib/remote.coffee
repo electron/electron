@@ -1,6 +1,19 @@
 ipc = require 'ipc'
 v8_util = process.atomBinding 'v8_util'
 
+# Transform the arguments passed to browser into list of descriptions.
+#
+# This function assumes an array is passed, and it only converts remote objects
+# and functions, other types of values are passed as it is.
+argsToMeta = (args) ->
+  args.map (value) ->
+    if typeof value is 'object' and v8_util.getHiddenValue value, 'isRemoteObject'
+      type: 'remoteObject', id: value.id
+    else if typeof value is 'function'
+      throw new TypeError('functions is not supported yet')
+    else
+      type: 'value', value: value
+
 # Transform the description of value into a value or delegate object.
 metaToValue = (meta) ->
   switch meta.type
@@ -50,6 +63,9 @@ metaToValue = (meta) ->
       # when the object is GCed.
       v8_util.setDestructor ret, ->
         ipc.sendChannel 'ATOM_BROWSER_DEREFERENCE', meta.storeId
+
+      # Mark this is a remote object.
+      v8_util.setHiddenValue ret, 'isRemoteObject', true
 
       ret
 
