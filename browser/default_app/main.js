@@ -1,8 +1,14 @@
+var app = require('app');
 var atom = require('atom');
 var ipc = require('ipc');
 var Window = require('window');
 
 var mainWindow = null;
+
+// Quit when all windows are closed.
+app.on('window-all-closed', function() {
+  app.terminate();
+});
 
 // Echo every message back.
 ipc.on('message', function(process_id, routing_id) {

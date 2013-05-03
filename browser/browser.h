@@ -7,6 +7,8 @@
 
 #include "base/basictypes.h"
 #include "base/compiler_specific.h"
+#include "base/observer_list.h"
+#include "browser/browser_observer.h"
 #include "browser/window_list_observer.h"
 
 namespace atom {
@@ -25,15 +27,26 @@ class Browser : public WindowListObserver {
   // Quit the application immediately without cleanup work.
   void Terminate();
 
-  bool is_quiting() const { return is_quiting_; }
+  void AddObserver(BrowserObserver* obs) {
+    observers_.AddObserver(obs);
+  }
+
+  void RemoveObserver(BrowserObserver* obs) {
+    observers_.RemoveObserver(obs);
+  }
 
  protected:
+  void NotifyAndTerminate();
+
   bool is_quiting_;
 
  private:
   // WindowListObserver implementations:
   virtual void OnWindowCloseCancelled(NativeWindow* window) OVERRIDE;
   virtual void OnWindowAllClosed() OVERRIDE;
+
+  // Observers of the browser.
+  ObserverList<BrowserObserver> observers_;
 
   DISALLOW_COPY_AND_ASSIGN(Browser);
 };

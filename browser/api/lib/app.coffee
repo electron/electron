@@ -1,8 +1,7 @@
-binding = process.atomBinding 'app'
 EventEmitter = require('events').EventEmitter
 
-class App extends EventEmitter
-  quit: binding.quit
-  terminate: binding.terminate
+Application = process.atomBinding('app').Application
+Application.prototype.__proto__ = EventEmitter.prototype
 
-module.exports = new App
+# Only one App object pemitted.
+module.exports = new Application

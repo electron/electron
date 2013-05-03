@@ -10,7 +10,7 @@ namespace atom {
 class NativeWindow;
 
 class WindowListObserver {
-  public:
+ public:
   // Called immediately after a window is added to the list.
   virtual void OnWindowAdded(NativeWindow* window) {}
 

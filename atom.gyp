@@ -52,6 +52,7 @@
       'browser/browser.cc',
       'browser/browser.h',
       'browser/browser_mac.mm',
+      'browser/browser_observer.h',
       'browser/native_window.cc',
       'browser/native_window.h',
       'browser/native_window_mac.h',

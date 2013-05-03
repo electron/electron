@@ -11,6 +11,35 @@ namespace atom {
 
 namespace api {
 
+App::App(v8::Handle<v8::Object> wrapper)
+    : EventEmitter(wrapper) {
+  Browser::Get()->AddObserver(this);
+}
+
+App::~App() {
+  Browser::Get()->RemoveObserver(this);
+}
+
+void App::OnWillQuit(bool* prevent_default) {
+  *prevent_default = Emit("will-quit");
+}
+
+void App::OnWindowAllClosed() {
+  Emit("window-all-closed");
+}
+
+// static
+v8::Handle<v8::Value> App::New(const v8::Arguments &args) {
+  v8::HandleScope scope;
+
+  if (!args.IsConstructCall())
+    return node::ThrowError("Require constructor call");
+
+  new App(args.This());
+
+  return args.This();
+}
+
 // static
 v8::Handle<v8::Value> App::Quit(const v8::Arguments &args) {
   v8::HandleScope scope;
@@ -31,8 +60,16 @@ v8::Handle<v8::Value> App::Terminate(const v8::Arguments &args) {
 
 // static
 void App::Initialize(v8::Handle<v8::Object> target) {
-  node::SetMethod(target, "quit", Quit);
-  node::SetMethod(target, "terminate", Terminate);
+  v8::HandleScope scope;
+
+  v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(App::New);
+  t->InstanceTemplate()->SetInternalFieldCount(1);
+  t->SetClassName(v8::String::NewSymbol("Application"));
+
+  NODE_SET_PROTOTYPE_METHOD(t, "quit", Quit);
+  NODE_SET_PROTOTYPE_METHOD(t, "terminate", Terminate);
+
+  target->Set(v8::String::NewSymbol("Application"), t->GetFunction());
 }
 
 }  // namespace api

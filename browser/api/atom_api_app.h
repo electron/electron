@@ -5,22 +5,35 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_APP_H_
 #define ATOM_BROWSER_API_ATOM_API_APP_H_
 
-#include "base/basictypes.h"
-#include "v8/include/v8.h"
+#include "base/compiler_specific.h"
+#include "browser/api/atom_api_event_emitter.h"
+#include "browser/browser_observer.h"
 
 namespace atom {
 
 namespace api {
 
-class App {
+class App : public EventEmitter,
+            public BrowserObserver{
  public:
+  virtual ~App();
+
   static void Initialize(v8::Handle<v8::Object> target);
 
+ protected:
+  explicit App(v8::Handle<v8::Object> wrapper);
+
+  // BrowserObserver implementations:
+  virtual void OnWillQuit(bool* prevent_default) OVERRIDE;
+  virtual void OnWindowAllClosed() OVERRIDE;
+
  private:
+  static v8::Handle<v8::Value> New(const v8::Arguments &args);
+
   static v8::Handle<v8::Value> Quit(const v8::Arguments &args);
   static v8::Handle<v8::Value> Terminate(const v8::Arguments &args);
 
-  DISALLOW_IMPLICIT_CONSTRUCTORS(App);
+  DISALLOW_COPY_AND_ASSIGN(App);
 };
 
 }  // namespace api

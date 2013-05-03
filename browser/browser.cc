@@ -26,10 +26,20 @@ Browser* Browser::Get() {
 void Browser::Quit() {
   atom::WindowList* window_list = atom::WindowList::GetInstance();
   if (window_list->size() == 0)
-    Terminate();
+    NotifyAndTerminate();
 
   is_quiting_ = true;
   window_list->CloseAllWindows();
+}
+
+void Browser::NotifyAndTerminate() {
+  bool prevent_default = false;
+  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWillQuit(&prevent_default));
+
+  if (prevent_default)
+    return;
+
+  Terminate();
 }
 
 void Browser::OnWindowCloseCancelled(NativeWindow* window) {
@@ -40,7 +50,9 @@ void Browser::OnWindowCloseCancelled(NativeWindow* window) {
 
 void Browser::OnWindowAllClosed() {
   if (is_quiting_)
-    Terminate();
+    NotifyAndTerminate();
+  else
+    FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWindowAllClosed());
 }
 
 }  // namespace atom
