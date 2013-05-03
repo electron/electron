@@ -50,8 +50,8 @@ ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event, processId, routingId) ->
   try
     windows = objectsRegistry.getAllWindows()
     for window in windows
-      break if window.getProcessID() == processId and
-               window.getRoutingID() == routingId
+      break if window.getProcessId() == processId and
+               window.getRoutingId() == routingId
     event.result = new Meta(processId, routingId, window)
   catch e
     event.result = type: 'error', value: e.message

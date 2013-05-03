@@ -21,7 +21,7 @@ ipc.on('sync-message', function(event, process_id, routing_id) {
 
 atom.browserMainParts.preMainMessageLoopRun = function() {
   mainWindow = new Window({ width: 800, height: 600 });
-  mainWindow.loadURL('file://' + __dirname + '/index.html');
+  mainWindow.loadUrl('file://' + __dirname + '/index.html');
 
   mainWindow.on('page-title-updated', function(event, title) {
     event.preventDefault();

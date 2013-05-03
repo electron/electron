@@ -614,11 +614,11 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "isLoading", IsLoading);
   NODE_SET_PROTOTYPE_METHOD(t, "isWaitingForResponse", IsWaitingForResponse);
   NODE_SET_PROTOTYPE_METHOD(t, "stop", Stop);
-  NODE_SET_PROTOTYPE_METHOD(t, "getRoutingID", GetRoutingID);
-  NODE_SET_PROTOTYPE_METHOD(t, "getProcessID", GetProcessID);
+  NODE_SET_PROTOTYPE_METHOD(t, "getRoutingId", GetRoutingID);
+  NODE_SET_PROTOTYPE_METHOD(t, "getProcessId", GetProcessID);
 
-  NODE_SET_PROTOTYPE_METHOD(t, "loadURL", LoadURL);
-  NODE_SET_PROTOTYPE_METHOD(t, "getURL", GetURL);
+  NODE_SET_PROTOTYPE_METHOD(t, "loadUrl", LoadURL);
+  NODE_SET_PROTOTYPE_METHOD(t, "getUrl", GetURL);
   NODE_SET_PROTOTYPE_METHOD(t, "canGoBack", CanGoBack);
   NODE_SET_PROTOTYPE_METHOD(t, "canGoForward", CanGoForward);
   NODE_SET_PROTOTYPE_METHOD(t, "canGoToOffset", CanGoToOffset);
