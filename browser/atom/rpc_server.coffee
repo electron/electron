@@ -1,15 +1,22 @@
 ipc = require 'ipc'
 path = require 'path'
 objectsRegistry = require './objects_registry.js'
+v8_util = process.atomBinding 'v8_util'
 
-metaToArgs = (metas) ->
-  metas.map (meta) ->
-    if meta.type is 'value'
-      meta.value
-    else if meta.type is 'remoteObject'
-      objectsRegistry.get meta.id
+unwrapArgs = (processId, routingId, args) ->
+  args.map (arg) ->
+    if arg.type is 'value'
+      arg.value
+    else if arg.type is 'remoteObject'
+      objectsRegistry.get arg.id
+    else if arg.type is 'function'
+      ret = ->
+        ipc.sendChannel processId, routingId, 'ATOM_RENDERER_CALLBACK', arg.id, new Meta(processId, routingId, arguments)
+      v8_util.setDestructor ret, ->
+        ipc.sendChannel processId, routingId, 'ATOM_RENDERER_RELEASE_CALLBACK', arg.id
+      ret
     else
-      throw new TypeError("Unknown type: #{meta.type}")
+      throw new TypeError("Unknown type: #{arg.type}")
 
 # Convert a real value into a POD structure which carries information of this
 # value.
@@ -67,7 +74,7 @@ ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event, processId, routingId) ->
 
 ipc.on 'ATOM_BROWSER_CONSTRUCTOR', (event, processId, routingId, id, args) ->
   try
-    args = metaToArgs args
+    args = unwrapArgs processId, routingId, args
     constructor = objectsRegistry.get id
     # Call new with array of arguments.
     # http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
@@ -78,7 +85,7 @@ ipc.on 'ATOM_BROWSER_CONSTRUCTOR', (event, processId, routingId, id, args) ->
 
 ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, processId, routingId, id, args) ->
   try
-    args = metaToArgs args
+    args = unwrapArgs processId, routingId, args
     func = objectsRegistry.get id
     ret = func.apply global, args
     event.result = new Meta(processId, routingId, ret)
@@ -87,7 +94,7 @@ ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, processId, routingId, id, args) ->
 
 ipc.on 'ATOM_BROWSER_MEMBER_CALL', (event, processId, routingId, id, method, args) ->
   try
-    args = metaToArgs args
+    args = unwrapArgs processId, routingId, args
     obj = objectsRegistry.get id
     ret = obj[method].apply(obj, args)
     event.result = new Meta(processId, routingId, ret)

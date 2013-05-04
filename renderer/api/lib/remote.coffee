@@ -1,16 +1,30 @@
 ipc = require 'ipc'
 v8_util = process.atomBinding 'v8_util'
 
+nextCallbackId = 0
+storedCallbacks = {}
+
+storeCallback = (callback) ->
+  ++nextCallbackId
+  storedCallbacks[nextCallbackId] = callback
+  nextCallbackId
+
+makeCallback = (id, args) ->
+  storedCallbacks[id].apply global, args
+
+releaseCallback = (id) ->
+  delete storedCallbacks[id]
+
 # Transform the arguments passed to browser into list of descriptions.
 #
 # This function assumes an array is passed, and it only converts remote objects
 # and functions, other types of values are passed as it is.
-argsToMeta = (args) ->
-  args.map (value) ->
+wrapArgs = (args) ->
+  Array::slice.call(args).map (value) ->
     if typeof value is 'object' and v8_util.getHiddenValue value, 'isRemoteObject'
       type: 'remoteObject', id: value.id
     else if typeof value is 'function'
-      throw new TypeError('functions is not supported yet')
+      type: 'function', id: storeCallback(value)
     else
       type: 'value', value: value
 
@@ -28,7 +42,7 @@ metaToValue = (meta) ->
           constructor: ->
             if @constructor == RemoteFunction
               # Constructor call.
-              obj = ipc.sendChannelSync 'ATOM_BROWSER_CONSTRUCTOR', meta.id, Array::slice.call(arguments)
+              obj = ipc.sendChannelSync 'ATOM_BROWSER_CONSTRUCTOR', meta.id, wrapArgs(arguments)
 
               # Returning object in constructor will replace constructed object
               # with the returned object.
@@ -36,7 +50,7 @@ metaToValue = (meta) ->
               return metaToValue obj
             else
               # Function call.
-              ret = ipc.sendChannelSync 'ATOM_BROWSER_FUNCTION_CALL', meta.id, Array::slice.call(arguments)
+              ret = ipc.sendChannelSync 'ATOM_BROWSER_FUNCTION_CALL', meta.id, wrapArgs(arguments)
               return metaToValue ret
       else
         ret = v8_util.createObjectWithName meta.name
@@ -47,7 +61,7 @@ metaToValue = (meta) ->
           if member.type is 'function'
             ret[member.name] = ->
               # Call member function.
-              ret = ipc.sendChannelSync 'ATOM_BROWSER_MEMBER_CALL', meta.id, member.name, Array::slice.call(arguments)
+              ret = ipc.sendChannelSync 'ATOM_BROWSER_MEMBER_CALL', meta.id, member.name, wrapArgs(arguments)
               metaToValue ret
           else
             ret.__defineSetter__ member.name, (value) ->
@@ -68,6 +82,12 @@ metaToValue = (meta) ->
       v8_util.setHiddenValue ret, 'isRemoteObject', true
 
       ret
+
+ipc.on 'ATOM_RENDERER_CALLBACK', (id, args) ->
+  makeCallback id, metaToValue(args)
+
+ipc.on 'ATOM_RENDERER_RELEASE_CALLBACK', (id) ->
+  releaseCallback id
 
 # Release all resources of current render view when it's going to be unloaded.
 window.addEventListener 'unload', (event) ->
