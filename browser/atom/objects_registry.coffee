@@ -59,7 +59,7 @@ process.on 'ATOM_BROWSER_INTERNAL_NEW', (obj) ->
 exports.add = (processId, routingId, obj) ->
   # Some native objects may already been added to objectsWeakMap, be care not
   # to add it twice.
-  objectsWeakMap.add obj unless obj.id?
+  objectsWeakMap.add obj unless obj.id? and objectsWeakMap.has obj.id
 
   # Store and reference the object, then return the storeId which points to
   # where the object is stored. The caller can later dereference the object
