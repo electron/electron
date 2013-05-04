@@ -3,20 +3,6 @@ path = require 'path'
 objectsRegistry = require './objects_registry.js'
 v8_util = process.atomBinding 'v8_util'
 
-# Convert array of meta data from renderer into array of real values.
-unwrapArgs = (processId, routingId, args) ->
-  args.map (meta) ->
-    switch meta.type
-      when 'value' then meta.value
-      when 'object' then objectsRegistry.get meta.id
-      when 'function'
-        ret = ->
-          ipc.sendChannel processId, routingId, 'ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(processId, routingId, arguments)
-        v8_util.setDestructor ret, ->
-          ipc.sendChannel processId, routingId, 'ATOM_RENDERER_RELEASE_CALLBACK', meta.id
-        ret
-      else throw new TypeError("Unknown type: #{meta.type}")
-
 # Convert a real value into meta data.
 valueToMeta = (processId, routingId, value) ->
   meta = type: typeof value
@@ -46,6 +32,20 @@ valueToMeta = (processId, routingId, value) ->
     meta.value = value
 
   meta
+
+# Convert array of meta data from renderer into array of real values.
+unwrapArgs = (processId, routingId, args) ->
+  args.map (meta) ->
+    switch meta.type
+      when 'value' then meta.value
+      when 'object' then objectsRegistry.get meta.id
+      when 'function'
+        ret = ->
+          ipc.sendChannel processId, routingId, 'ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(processId, routingId, arguments)
+        v8_util.setDestructor ret, ->
+          ipc.sendChannel processId, routingId, 'ATOM_RENDERER_RELEASE_CALLBACK', meta.id
+        ret
+      else throw new TypeError("Unknown type: #{meta.type}")
 
 ipc.on 'ATOM_BROWSER_REQUIRE', (event, processId, routingId, module) ->
   try
