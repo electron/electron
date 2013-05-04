@@ -1,34 +1,31 @@
 ipc = require 'ipc'
 v8_util = process.atomBinding 'v8_util'
 
-nextCallbackId = 0
-storedCallbacks = {}
+class CallbacksRegistry
+  @nextId = 0
+  @callbacks = {}
 
-storeCallback = (callback) ->
-  ++nextCallbackId
-  storedCallbacks[nextCallbackId] = callback
-  nextCallbackId
+  @add: (callback) ->
+    @callbacks[++@nextId] = callback
+    @nextId
 
-makeCallback = (id, args) ->
-  storedCallbacks[id].apply global, args
+  @call: (id, args) ->
+    @callbacks[id].apply global, args
 
-releaseCallback = (id) ->
-  delete storedCallbacks[id]
+  @remove: (id) ->
+    delete @callbacks[id]
 
-# Transform the arguments passed to browser into list of descriptions.
-#
-# This function assumes an array is passed, and it only converts remote objects
-# and functions, other types of values are passed as it is.
+# Convert the arguments object into an array of meta data.
 wrapArgs = (args) ->
   Array::slice.call(args).map (value) ->
     if typeof value is 'object' and v8_util.getHiddenValue value, 'isRemoteObject'
-      type: 'remoteObject', id: value.id
+      type: 'object', id: value.id
     else if typeof value is 'function'
-      type: 'function', id: storeCallback(value)
+      type: 'function', id: CallbacksRegistry.add(value)
     else
       type: 'value', value: value
 
-# Transform the description of value into a value or delegate object.
+# Convert meta data from browser into real value.
 metaToValue = (meta) ->
   switch meta.type
     when 'error' then throw new Error(meta.value)
@@ -83,11 +80,13 @@ metaToValue = (meta) ->
 
       ret
 
+# Browser calls a callback in renderer.
 ipc.on 'ATOM_RENDERER_CALLBACK', (id, args) ->
-  makeCallback id, metaToValue(args)
+  CallbacksRegistry.call id, metaToValue(args)
 
+# A callback in browser is released.
 ipc.on 'ATOM_RENDERER_RELEASE_CALLBACK', (id) ->
-  releaseCallback id
+  CallbacksRegistry.remove id
 
 # Release all resources of current render view when it's going to be unloaded.
 window.addEventListener 'unload', (event) ->

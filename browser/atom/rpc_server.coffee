@@ -3,59 +3,59 @@ path = require 'path'
 objectsRegistry = require './objects_registry.js'
 v8_util = process.atomBinding 'v8_util'
 
+# Convert array of meta data from renderer into array of real values.
 unwrapArgs = (processId, routingId, args) ->
-  args.map (arg) ->
-    if arg.type is 'value'
-      arg.value
-    else if arg.type is 'remoteObject'
-      objectsRegistry.get arg.id
-    else if arg.type is 'function'
-      ret = ->
-        ipc.sendChannel processId, routingId, 'ATOM_RENDERER_CALLBACK', arg.id, new Meta(processId, routingId, arguments)
-      v8_util.setDestructor ret, ->
-        ipc.sendChannel processId, routingId, 'ATOM_RENDERER_RELEASE_CALLBACK', arg.id
-      ret
-    else
-      throw new TypeError("Unknown type: #{arg.type}")
+  args.map (meta) ->
+    switch meta.type
+      when 'value' then meta.value
+      when 'object' then objectsRegistry.get meta.id
+      when 'function'
+        ret = ->
+          ipc.sendChannel processId, routingId, 'ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(processId, routingId, arguments)
+        v8_util.setDestructor ret, ->
+          ipc.sendChannel processId, routingId, 'ATOM_RENDERER_RELEASE_CALLBACK', meta.id
+        ret
+      else throw new TypeError("Unknown type: #{meta.type}")
 
-# Convert a real value into a POD structure which carries information of this
-# value.
-class Meta
-  constructor: (processId, routingId, value) ->
-    @type = typeof value
-    @type = 'value' if value is null
-    @type = 'array' if Array.isArray value
+# Convert a real value into meta data.
+valueToMeta = (processId, routingId, value) ->
+  meta = type: typeof value
 
-    # Treat the arguments object as array.
-    @type = 'array' if @type is 'object' and value.callee? and value.length?
+  meta.type = 'value' if value is null
+  meta.type = 'array' if Array.isArray value
 
-    if @type is 'array'
-      @members = []
-      @members.push new Meta(processId, routingId, el) for el in value
-    else if @type is 'object' or @type is 'function'
-      @name = value.constructor.name
+  # Treat the arguments object as array.
+  meta.type = 'array' if meta.type is 'object' and value.callee? and value.length?
 
-      # Reference the original value if it's an object, because when it's
-      # passed to renderer we would assume the renderer keeps a reference of
-      # it.
-      @storeId = objectsRegistry.add processId, routingId, value
-      @id = value.id
+  if meta.type is 'array'
+    meta.members = []
+    meta.members.push valueToMeta(processId, routingId, el) for el in value
+  else if meta.type is 'object' or meta.type is 'function'
+    meta.name = value.constructor.name
 
-      @members = []
-      @members.push { name: prop, type: typeof field } for prop, field of value
-    else
-      @type = 'value'
-      @value = value
+    # Reference the original value if it's an object, because when it's
+    # passed to renderer we would assume the renderer keeps a reference of
+    # it.
+    meta.storeId = objectsRegistry.add processId, routingId, value
+    meta.id = value.id
+
+    meta.members = []
+    meta.members.push {name: prop, type: typeof field} for prop, field of value
+  else
+    meta.type = 'value'
+    meta.value = value
+
+  meta
 
 ipc.on 'ATOM_BROWSER_REQUIRE', (event, processId, routingId, module) ->
   try
-    event.result = new Meta(processId, routingId, require(module))
+    event.result = valueToMeta processId, routingId, require(module)
   catch e
     event.result = type: 'error', value: e.message
 
 ipc.on 'ATOM_BROWSER_GLOBAL', (event, processId, routingId, name) ->
   try
-    event.result = new Meta(processId, routingId, global[name])
+    event.result = valueToMeta processId, routingId, global[name]
   catch e
     event.result = type: 'error', value: e.message
 
@@ -68,7 +68,7 @@ ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event, processId, routingId) ->
     for window in windows
       break if window.getProcessId() == processId and
                window.getRoutingId() == routingId
-    event.result = new Meta(processId, routingId, window)
+    event.result = valueToMeta processId, routingId, window
   catch e
     event.result = type: 'error', value: e.message
 
@@ -79,7 +79,7 @@ ipc.on 'ATOM_BROWSER_CONSTRUCTOR', (event, processId, routingId, id, args) ->
     # Call new with array of arguments.
     # http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
     obj = new (Function::bind.apply(constructor, [null].concat(args)))
-    event.result = new Meta(processId, routingId, obj)
+    event.result = valueToMeta processId, routingId, obj
   catch e
     event.result = type: 'error', value: e.message
 
@@ -88,7 +88,7 @@ ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, processId, routingId, id, args) ->
     args = unwrapArgs processId, routingId, args
     func = objectsRegistry.get id
     ret = func.apply global, args
-    event.result = new Meta(processId, routingId, ret)
+    event.result = valueToMeta processId, routingId, ret
   catch e
     event.result = type: 'error', value: e.message
 
@@ -97,7 +97,7 @@ ipc.on 'ATOM_BROWSER_MEMBER_CALL', (event, processId, routingId, id, method, arg
     args = unwrapArgs processId, routingId, args
     obj = objectsRegistry.get id
     ret = obj[method].apply(obj, args)
-    event.result = new Meta(processId, routingId, ret)
+    event.result = valueToMeta processId, routingId, ret
   catch e
     event.result = type: 'error', value: e.message
 
@@ -111,14 +111,14 @@ ipc.on 'ATOM_BROWSER_MEMBER_SET', (event, processId, routingId, id, name, value)
 ipc.on 'ATOM_BROWSER_MEMBER_GET', (event, processId, routingId, id, name) ->
   try
     obj = objectsRegistry.get id
-    event.result = new Meta(processId, routingId, obj[name])
+    event.result = valueToMeta processId, routingId, obj[name]
   catch e
     event.result = type: 'error', value: e.message
 
 ipc.on 'ATOM_BROWSER_REFERENCE', (event, processId, routingId, id) ->
   try
     obj = objectsRegistry.get id
-    event.result = new Meta(processId, routingId, obj)
+    event.result = valueToMeta processId, routingId, obj
   catch e
     event.result = type: 'error', value: e.message
 
