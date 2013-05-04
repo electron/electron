@@ -6,6 +6,9 @@ class Ipc extends EventEmitter
     process.on 'ATOM_INTERNAL_MESSAGE', (args...) =>
       @emit(args...)
 
+    window.addEventListener 'unload', (event) ->
+      process.removeAllListeners 'ATOM_INTERNAL_MESSAGE'
+
   send: (args...) ->
     ipc.send('ATOM_INTERNAL_MESSAGE', 'message', args...)
 
