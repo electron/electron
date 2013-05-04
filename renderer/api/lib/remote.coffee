@@ -1,6 +1,8 @@
 ipc = require 'ipc'
 v8_util = process.atomBinding 'v8_util'
 
+currentContextExist = true
+
 class CallbacksRegistry
   @nextId = 0
   @callbacks = {}
@@ -73,6 +75,7 @@ metaToValue = (meta) ->
       # Track delegate object's life time, and tell the browser to clean up
       # when the object is GCed.
       v8_util.setDestructor ret, ->
+        return unless currentContextExist
         ipc.sendChannel 'ATOM_BROWSER_DEREFERENCE', meta.storeId
 
       # Mark this is a remote object.
@@ -90,6 +93,7 @@ ipc.on 'ATOM_RENDERER_RELEASE_CALLBACK', (id) ->
 
 # Release all resources of current render view when it's going to be unloaded.
 window.addEventListener 'unload', (event) ->
+  currentContextExist = false
   ipc.sendChannelSync 'ATOM_BROWSER_RELEASE_RENDER_VIEW'
 
 # Get remote module.
