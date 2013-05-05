@@ -5,18 +5,32 @@ ipc = require 'ipc'
 FileDialog = binding.FileDialog
 FileDialog.prototype.__proto__ = EventEmitter.prototype
 
-callbacksInfo = {}
+class CallbacksRegistry
+  @nextId = 0
+  @callbacks = {}
+
+  @add: (callback) ->
+    @callbacks[++@nextId] = callback
+    @nextId
+
+  @get: (id) ->
+    @callbacks[id]
+
+  @call: (id, args...) ->
+    @callbacks[id].call global, args...
+
+  @remove: (id) ->
+    delete @callbacks[id]
 
 fileDialog = new FileDialog
 
-onSelected = (event, id, paths...) ->
-  {processId, routingId} = callbacksInfo[id]
-  delete callbacksInfo[id]
+fileDialog.on 'selected', (event, callbackId, paths...) ->
+  CallbacksRegistry.call callbackId, 'selected', paths...
+  CallbacksRegistry.remove callbackId
 
-  ipc.sendChannel processId, routingId, 'ATOM_RENDERER_DIALOG', id, paths...
-
-fileDialog.on 'selected', onSelected
-fileDialog.on 'cancelled', onSelected
+fileDialog.on 'cancelled', (event, callbackId) ->
+  CallbacksRegistry.call callbackId, 'cancelled'
+  CallbacksRegistry.remove callbackId
 
 validateOptions = (options) ->
   return false unless typeof options is 'object'
@@ -30,19 +44,20 @@ validateOptions = (options) ->
   options.defaultPath = '' unless options.defaultPath?
   options.fileTypeIndex = 0 unless options.fileTypeIndex?
   options.defaultExtension = '' unless options.defaultExtension?
-
   true
 
-ipc.on 'ATOM_BROWSER_FILE_DIALOG', (processId, routingId, callbackId, type, title, options) ->
+selectFileWrap = (window, options, callback, type, title) ->
+  throw new TypeError('Need Window object') unless window.constructor?.name is 'Window'
+
   options = {} unless options?
   options.type = type
   options.title = title unless options.title?
 
   throw new TypeError('Bad arguments') unless validateOptions options
 
-  callbacksInfo[callbackId] = processId: processId, routingId: routingId
+  callbackId = CallbacksRegistry.add callback
 
-  fileDialog.selectFile processId, routingId,
+  fileDialog.selectFile window.getProcessId(), window.getRoutingId(),
                         options.type,
                         options.title,
                         options.defaultPath,
@@ -50,3 +65,16 @@ ipc.on 'ATOM_BROWSER_FILE_DIALOG', (processId, routingId, callbackId, type, titl
                         options.fileTypeIndex,
                         options.defaultExtension,
                         callbackId
+
+module.exports =
+  openFolder: (args...) ->
+    selectFileWrap args..., 1, 'Open Folder'
+
+  saveAs: (args...) ->
+    selectFileWrap args..., 2, 'Save As'
+
+  openFile: (args...) ->
+    selectFileWrap args..., 3, 'Open File'
+
+  openMultiFiles: (args...) ->
+    selectFileWrap args..., 4, 'Open Files'
