@@ -1,36 +1,22 @@
 binding = process.atomBinding 'dialog'
+CallbacksRegistry = require 'callbacks_registry'
 EventEmitter = require('events').EventEmitter
 ipc = require 'ipc'
 
 FileDialog = binding.FileDialog
 FileDialog.prototype.__proto__ = EventEmitter.prototype
 
-class CallbacksRegistry
-  @nextId = 0
-  @callbacks = {}
-
-  @add: (callback) ->
-    @callbacks[++@nextId] = callback
-    @nextId
-
-  @get: (id) ->
-    @callbacks[id]
-
-  @call: (id, args...) ->
-    @callbacks[id].call global, args...
-
-  @remove: (id) ->
-    delete @callbacks[id]
+callbacksRegistry = new CallbacksRegistry
 
 fileDialog = new FileDialog
 
 fileDialog.on 'selected', (event, callbackId, paths...) ->
-  CallbacksRegistry.call callbackId, 'selected', paths...
-  CallbacksRegistry.remove callbackId
+  callbacksRegistry.call callbackId, 'selected', paths...
+  callbacksRegistry.remove callbackId
 
 fileDialog.on 'cancelled', (event, callbackId) ->
-  CallbacksRegistry.call callbackId, 'cancelled'
-  CallbacksRegistry.remove callbackId
+  callbacksRegistry.call callbackId, 'cancelled'
+  callbacksRegistry.remove callbackId
 
 validateOptions = (options) ->
   return false unless typeof options is 'object'
@@ -55,7 +41,7 @@ selectFileWrap = (window, options, callback, type, title) ->
 
   throw new TypeError('Bad arguments') unless validateOptions options
 
-  callbackId = CallbacksRegistry.add callback
+  callbackId = callbacksRegistry.add callback
 
   fileDialog.selectFile window.getProcessId(), window.getRoutingId(),
                         options.type,

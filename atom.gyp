@@ -14,6 +14,7 @@
       'browser/atom/atom.coffee',
       'browser/atom/objects_registry.coffee',
       'browser/atom/rpc_server.coffee',
+      'common/api/lib/callbacks_registry.coffee',
       'common/api/lib/clipboard.coffee',
       'common/api/lib/id_weak_map.coffee',
       'common/api/lib/shell.coffee',

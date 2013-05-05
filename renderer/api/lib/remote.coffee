@@ -1,21 +1,9 @@
 ipc = require 'ipc'
+CallbacksRegistry = require 'callbacks_registry'
 v8_util = process.atomBinding 'v8_util'
 
 currentContextExist = true
-
-class CallbacksRegistry
-  @nextId = 0
-  @callbacks = {}
-
-  @add: (callback) ->
-    @callbacks[++@nextId] = callback
-    @nextId
-
-  @call: (id, args) ->
-    @callbacks[id].apply global, args
-
-  @remove: (id) ->
-    delete @callbacks[id]
+callbacksRegistry = new CallbacksRegistry
 
 # Convert the arguments object into an array of meta data.
 wrapArgs = (args) ->
@@ -23,7 +11,7 @@ wrapArgs = (args) ->
     if typeof value is 'object' and v8_util.getHiddenValue value, 'isRemoteObject'
       type: 'object', id: value.id
     else if typeof value is 'function'
-      type: 'function', id: CallbacksRegistry.add(value)
+      type: 'function', id: callbacksRegistry.add(value)
     else
       type: 'value', value: value
 
@@ -85,11 +73,11 @@ metaToValue = (meta) ->
 
 # Browser calls a callback in renderer.
 ipc.on 'ATOM_RENDERER_CALLBACK', (id, args) ->
-  CallbacksRegistry.call id, metaToValue(args)
+  callbacksRegistry.apply id, metaToValue(args)
 
 # A callback in browser is released.
 ipc.on 'ATOM_RENDERER_RELEASE_CALLBACK', (id) ->
-  CallbacksRegistry.remove id
+  callbacksRegistry.remove id
 
 # Release all resources of current render view when it's going to be unloaded.
 window.addEventListener 'unload', (event) ->
