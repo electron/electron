@@ -43,7 +43,7 @@ selectFileWrap = (window, options, callback, type, title) ->
 
   callbackId = callbacksRegistry.add callback
 
-  fileDialog.selectFile window.getProcessId(), window.getRoutingId(),
+  fileDialog.selectFile window,
                         options.type,
                         options.title,
                         options.defaultPath,

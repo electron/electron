@@ -8,6 +8,7 @@
 
 #include "base/utf_string_conversions.h"
 #include "base/values.h"
+#include "browser/api/atom_api_window.h"
 #include "browser/message_box.h"
 #include "browser/native_window.h"
 
@@ -27,33 +28,30 @@ base::FilePath V8ValueToFilePath(v8::Handle<v8::Value> path) {
 v8::Handle<v8::Value> ShowMessageBox(const v8::Arguments &args) {
   v8::HandleScope scope;
 
-  if (!args[0]->IsNumber() ||  // process_id
-      !args[1]->IsNumber() ||  // routing_id
-      !args[2]->IsNumber() ||  // type
-      !args[3]->IsArray() ||   // buttons
-      !args[4]->IsString() ||  // title
-      !args[5]->IsString() ||  // message
-      !args[6]->IsString())    // detail
+  if (!args[0]->IsObject() ||  // window
+      !args[1]->IsNumber() ||  // type
+      !args[2]->IsArray() ||   // buttons
+      !args[3]->IsString() ||  // title
+      !args[4]->IsString() ||  // message
+      !args[5]->IsString())    // detail
     return node::ThrowTypeError("Bad argument");
 
-  int process_id = args[0]->IntegerValue();
-  int routing_id = args[1]->IntegerValue();
-  NativeWindow* window = NativeWindow::FromRenderView(process_id, routing_id);
-  if (!window)
-    return node::ThrowError("Window not found");
+  Window* window = Window::Unwrap<Window>(args[0]->ToObject());
+  if (!window || !window->window())
+    return node::ThrowError("Invalid window");
 
-  gfx::NativeWindow owning_window = window->GetNativeWindow();
+  gfx::NativeWindow owning_window = window->window()->GetNativeWindow();
 
-  MessageBoxType type = (MessageBoxType)(args[2]->IntegerValue());
+  MessageBoxType type = (MessageBoxType)(args[1]->IntegerValue());
 
   std::vector<std::string> buttons;
-  v8::Handle<v8::Array> v8_buttons = v8::Handle<v8::Array>::Cast(args[3]);
+  v8::Handle<v8::Array> v8_buttons = v8::Handle<v8::Array>::Cast(args[2]);
   for (uint32_t i = 0; i < v8_buttons->Length(); ++i)
     buttons.push_back(*v8::String::Utf8Value(v8_buttons->Get(i)));
 
-  std::string title(*v8::String::Utf8Value(args[4]));
-  std::string message(*v8::String::Utf8Value(args[5]));
-  std::string detail(*v8::String::Utf8Value(args[6]));
+  std::string title(*v8::String::Utf8Value(args[3]));
+  std::string message(*v8::String::Utf8Value(args[4]));
+  std::string detail(*v8::String::Utf8Value(args[5]));
 
   int result = atom::ShowMessageBox(
       owning_window, type, buttons, title, message, detail);
@@ -124,35 +122,32 @@ v8::Handle<v8::Value> FileDialog::SelectFile(const v8::Arguments &args) {
   if (!self)
     return node::ThrowError("The FileDialog object is corrupted");
 
-  if (!args[0]->IsNumber() ||  // process_id
-      !args[1]->IsNumber() ||  // routing_id
-      !args[2]->IsNumber() ||  // type
-      !args[3]->IsString() ||  // title
-      !args[4]->IsString() ||  // default_path
-      !args[5]->IsArray() ||   // file_types
-      !args[6]->IsNumber() ||  // file_type_index
-      !args[7]->IsString() ||  // default_extension
-      !args[8]->IsNumber())    // callback_id
+  if (!args[0]->IsObject() ||  // window
+      !args[1]->IsNumber() ||  // type
+      !args[2]->IsString() ||  // title
+      !args[3]->IsString() ||  // default_path
+      !args[4]->IsArray() ||   // file_types
+      !args[5]->IsNumber() ||  // file_type_index
+      !args[6]->IsString() ||  // default_extension
+      !args[7]->IsNumber())    // callback_id
     return node::ThrowTypeError("Bad argument");
 
-  int process_id = args[0]->IntegerValue();
-  int routing_id = args[1]->IntegerValue();
-  NativeWindow* window = NativeWindow::FromRenderView(process_id, routing_id);
-  if (!window)
-    return node::ThrowError("Window not found");
+  Window* window = Window::Unwrap<Window>(args[0]->ToObject());
+  if (!window || !window->window())
+    return node::ThrowError("Invalid window");
 
-  gfx::NativeWindow owning_window = window->GetNativeWindow();
+  gfx::NativeWindow owning_window = window->window()->GetNativeWindow();
 
-  int type = args[2]->IntegerValue();
-  std::string title(*v8::String::Utf8Value(args[3]));
-  base::FilePath default_path(V8ValueToFilePath(args[4]));
+  int type = args[1]->IntegerValue();
+  std::string title(*v8::String::Utf8Value(args[2]));
+  base::FilePath default_path(V8ValueToFilePath(args[3]));
 
   ui::SelectFileDialog::FileTypeInfo file_types;
-  FillTypeInfo(&file_types, v8::Handle<v8::Array>::Cast(args[5]));
+  FillTypeInfo(&file_types, v8::Handle<v8::Array>::Cast(args[4]));
 
-  int file_type_index = args[6]->IntegerValue();
-  std::string default_extension(*v8::String::Utf8Value(args[7]));
-  int callback_id = args[8]->IntegerValue();
+  int file_type_index = args[5]->IntegerValue();
+  std::string default_extension(*v8::String::Utf8Value(args[6]));
+  int callback_id = args[7]->IntegerValue();
 
   self->dialog_->SelectFile(
       (ui::SelectFileDialog::Type)(type),
