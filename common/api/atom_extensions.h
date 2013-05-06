@@ -12,6 +12,7 @@ NODE_EXT_LIST_START
 NODE_EXT_LIST_ITEM(atom_browser_app)
 NODE_EXT_LIST_ITEM(atom_browser_dialog)
 NODE_EXT_LIST_ITEM(atom_browser_ipc)
+NODE_EXT_LIST_ITEM(atom_browser_menu)
 NODE_EXT_LIST_ITEM(atom_browser_window)
 
 // Module names start with `atom_renderer_` can only be used by renderer
