@@ -28,4 +28,9 @@ atom.browserMainParts.preMainMessageLoopRun = function() {
 
     this.setTitle('Atom Shell - ' + title);
   });
+
+  mainWindow.on('closed', function() {
+    console.log('closed');
+    mainWindow = null;
+  });
 }

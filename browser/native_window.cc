@@ -157,9 +157,9 @@ void NativeWindow::NotifyWindowClosed() {
     return;
 
   is_closed_ = true;
-  WindowList::RemoveWindow(this);
-
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowClosed());
+
+  WindowList::RemoveWindow(this);
 }
 
 // Window opened by window.open.
