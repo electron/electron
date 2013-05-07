@@ -7,7 +7,7 @@
     ],
     'coffee_sources': [
       'browser/api/lib/app.coffee',
-      'browser/api/lib/atom.coffee',
+      'browser/api/lib/atom_delegate.coffee',
       'browser/api/lib/dialog.coffee',
       'browser/api/lib/ipc.coffee',
       'browser/api/lib/window.coffee',

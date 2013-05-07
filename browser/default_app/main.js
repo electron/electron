@@ -1,5 +1,5 @@
 var app = require('app');
-var atom = require('atom');
+var delegate = require('atom_delegate');
 var ipc = require('ipc');
 var Window = require('window');
 
@@ -19,7 +19,7 @@ ipc.on('sync-message', function(event, process_id, routing_id) {
   event.result = arguments;
 });
 
-atom.browserMainParts.preMainMessageLoopRun = function() {
+delegate.browserMainParts.preMainMessageLoopRun = function() {
   mainWindow = new Window({ width: 800, height: 600 });
   mainWindow.loadUrl('file://' + __dirname + '/index.html');
 
