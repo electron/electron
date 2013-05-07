@@ -90,12 +90,12 @@ v8::Handle<v8::Value> Menu::InsertCheckItem(const v8::Arguments &args) {
     return node::ThrowTypeError("Bad argument");
 
   int index = args[0]->IntegerValue();
+  int command_id = args[1]->IntegerValue();
 
   if (index < 0)
-    self->model_->AddCheckItem(args[1]->IntegerValue(), V8ValueToUTF16(args[2]));
+    self->model_->AddCheckItem(command_id, V8ValueToUTF16(args[2]));
   else
-    self->model_->InsertCheckItemAt(
-        index, args[1]->IntegerValue(), V8ValueToUTF16(args[2]));
+    self->model_->InsertCheckItemAt(index, command_id, V8ValueToUTF16(args[2]));
 
   return v8::Undefined();
 }
@@ -206,7 +206,8 @@ v8::Handle<v8::Value> Menu::Clear(const v8::Arguments &args) {
 // static
 v8::Handle<v8::Value> Menu::GetIndexOfCommandId(const v8::Arguments &args) {
   UNWRAP_MEMNU_AND_CHECK;
-  return v8::Integer::New(self->model_->GetIndexOfCommandId(args[0]->IntegerValue()));
+  int index = args[0]->IntegerValue();
+  return v8::Integer::New(self->model_->GetIndexOfCommandId(index));
 }
 
 // static
@@ -218,26 +219,29 @@ v8::Handle<v8::Value> Menu::GetItemCount(const v8::Arguments &args) {
 // static
 v8::Handle<v8::Value> Menu::GetCommandIdAt(const v8::Arguments &args) {
   UNWRAP_MEMNU_AND_CHECK;
-  return v8::Integer::New(self->model_->GetCommandIdAt(args[0]->IntegerValue()));
+  int index = args[0]->IntegerValue();
+  return v8::Integer::New(self->model_->GetCommandIdAt(index));
 }
 
 // static
 v8::Handle<v8::Value> Menu::GetLabelAt(const v8::Arguments &args) {
   UNWRAP_MEMNU_AND_CHECK;
-  return UTF16ToV8Value(self->model_->GetLabelAt(args[0]->IntegerValue()));
+  int index = args[0]->IntegerValue();
+  return UTF16ToV8Value(self->model_->GetLabelAt(index));
 }
 
 // static
 v8::Handle<v8::Value> Menu::GetSublabelAt(const v8::Arguments &args) {
   UNWRAP_MEMNU_AND_CHECK;
-  return UTF16ToV8Value(self->model_->GetSublabelAt(args[0]->IntegerValue()));
+  int index = args[0]->IntegerValue();
+  return UTF16ToV8Value(self->model_->GetSublabelAt(index));
 }
 
 // static
 v8::Handle<v8::Value> Menu::IsItemCheckedAt(const v8::Arguments &args) {
   UNWRAP_MEMNU_AND_CHECK;
-  return v8::Boolean::New(
-      self->model_->IsItemCheckedAt(args[0]->IntegerValue()));
+  int index = args[0]->IntegerValue();
+  return v8::Boolean::New(self->model_->IsItemCheckedAt(index));
 }
 
 // static
