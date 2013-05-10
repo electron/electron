@@ -81,7 +81,7 @@ class NativeWindow : public content::WebContentsDelegate,
   virtual bool IsResizable() = 0;
   virtual void SetAlwaysOnTop(bool top) = 0;
   virtual bool IsAlwaysOnTop() = 0;
-  virtual void SetPosition(const std::string& position) = 0;
+  virtual void Center() = 0;
   virtual void SetPosition(const gfx::Point& position) = 0;
   virtual gfx::Point GetPosition() = 0;
   virtual void SetTitle(const std::string& title) = 0;
@@ -92,7 +92,7 @@ class NativeWindow : public content::WebContentsDelegate,
   virtual gfx::NativeWindow GetNativeWindow() = 0;
 
   virtual bool IsClosed() const { return is_closed_; }
-  virtual void ShowDevTools();
+  virtual void OpenDevTools();
   virtual void CloseDevTools();
 
   // The same with closing a tab in a real browser.

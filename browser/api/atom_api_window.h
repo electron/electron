@@ -63,6 +63,7 @@ class Window : public EventEmitter,
   static v8::Handle<v8::Value> IsResizable(const v8::Arguments &args);
   static v8::Handle<v8::Value> SetAlwaysOnTop(const v8::Arguments &args);
   static v8::Handle<v8::Value> IsAlwaysOnTop(const v8::Arguments &args);
+  static v8::Handle<v8::Value> Center(const v8::Arguments &args);
   static v8::Handle<v8::Value> SetPosition(const v8::Arguments &args);
   static v8::Handle<v8::Value> GetPosition(const v8::Arguments &args);
   static v8::Handle<v8::Value> SetTitle(const v8::Arguments &args);
@@ -70,7 +71,7 @@ class Window : public EventEmitter,
   static v8::Handle<v8::Value> FlashFrame(const v8::Arguments &args);
   static v8::Handle<v8::Value> SetKiosk(const v8::Arguments &args);
   static v8::Handle<v8::Value> IsKiosk(const v8::Arguments &args);
-  static v8::Handle<v8::Value> ShowDevTools(const v8::Arguments &args);
+  static v8::Handle<v8::Value> OpenDevTools(const v8::Arguments &args);
   static v8::Handle<v8::Value> CloseDevTools(const v8::Arguments &args);
 
   // APIs for WebContents.

@@ -77,15 +77,15 @@ NativeWindow* NativeWindow::FromRenderView(int process_id, int routing_id) {
 void NativeWindow::InitFromOptions(base::DictionaryValue* options) {
   // Setup window from options.
   int x, y;
-  std::string position;
+  bool center;
   if (options->GetInteger(switches::kX, &x) &&
       options->GetInteger(switches::kY, &y)) {
     int width, height;
     options->GetInteger(switches::kWidth, &width);
     options->GetInteger(switches::kHeight, &height);
     Move(gfx::Rect(x, y, width, height));
-  } else if (options->GetString(switches::kPosition, &position)) {
-    SetPosition(position);
+  } else if (options->GetBoolean(switches::kCenter, &center) && center) {
+    Center();
   }
   int min_height, min_width;
   if (options->GetInteger(switches::kMinHeight, &min_height) &&
@@ -124,7 +124,7 @@ void NativeWindow::InitFromOptions(base::DictionaryValue* options) {
     Show();
 }
 
-void NativeWindow::ShowDevTools() {
+void NativeWindow::OpenDevTools() {
   inspectable_web_contents()->ShowDevTools();
 }
 

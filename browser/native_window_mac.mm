@@ -302,9 +302,8 @@ bool NativeWindowMac::IsAlwaysOnTop() {
   return [window() level] == NSFloatingWindowLevel;
 }
 
-void NativeWindowMac::SetPosition(const std::string& position) {
-  if (position == "center")
-    [window() center];
+void NativeWindowMac::Center() {
+  [window() center];
 }
 
 void NativeWindowMac::SetPosition(const gfx::Point& position) {

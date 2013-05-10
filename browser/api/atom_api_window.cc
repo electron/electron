@@ -297,6 +297,15 @@ v8::Handle<v8::Value> Window::IsAlwaysOnTop(const v8::Arguments &args) {
 }
 
 // static
+v8::Handle<v8::Value> Window::Center(const v8::Arguments &args) {
+  UNWRAP_WINDOW_AND_CHECK;
+
+  self->window_->Center();
+
+  return v8::Undefined();
+}
+
+// static
 v8::Handle<v8::Value> Window::SetPosition(const v8::Arguments &args) {
   UNWRAP_WINDOW_AND_CHECK;
 
@@ -369,10 +378,10 @@ v8::Handle<v8::Value> Window::IsKiosk(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::ShowDevTools(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::OpenDevTools(const v8::Arguments &args) {
   UNWRAP_WINDOW_AND_CHECK;
 
-  self->window_->ShowDevTools();
+  self->window_->OpenDevTools();
 
   return v8::Undefined();
 }
@@ -600,6 +609,7 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "isResizable", IsResizable);
   NODE_SET_PROTOTYPE_METHOD(t, "setAlwaysOnTop", SetAlwaysOnTop);
   NODE_SET_PROTOTYPE_METHOD(t, "isAlwaysOnTop", IsAlwaysOnTop);
+  NODE_SET_PROTOTYPE_METHOD(t, "center", Center);
   NODE_SET_PROTOTYPE_METHOD(t, "setPosition", SetPosition);
   NODE_SET_PROTOTYPE_METHOD(t, "getPosition", GetPosition);
   NODE_SET_PROTOTYPE_METHOD(t, "setTitle", SetTitle);
@@ -607,7 +617,7 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "flashFrame", FlashFrame);
   NODE_SET_PROTOTYPE_METHOD(t, "setKiosk", SetKiosk);
   NODE_SET_PROTOTYPE_METHOD(t, "isKiosk", IsKiosk);
-  NODE_SET_PROTOTYPE_METHOD(t, "showDevTools", ShowDevTools);
+  NODE_SET_PROTOTYPE_METHOD(t, "openDevTools", OpenDevTools);
   NODE_SET_PROTOTYPE_METHOD(t, "closeDevTools", CloseDevTools);
 
   NODE_SET_PROTOTYPE_METHOD(t, "getPageTitle", GetPageTitle);
