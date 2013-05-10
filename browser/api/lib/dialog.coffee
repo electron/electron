@@ -2,6 +2,7 @@ binding = process.atomBinding 'dialog'
 CallbacksRegistry = require 'callbacks_registry'
 EventEmitter = require('events').EventEmitter
 ipc = require 'ipc'
+Window = require 'window'
 
 FileDialog = binding.FileDialog
 FileDialog.prototype.__proto__ = EventEmitter.prototype
@@ -33,7 +34,7 @@ validateOptions = (options) ->
   true
 
 selectFileWrap = (window, options, callback, type, title) ->
-  throw new TypeError('Need Window object') unless window.constructor?.name is 'Window'
+  throw new TypeError('Need Window object') unless window.constructor is Window
 
   options = {} unless options?
   options.type = type
@@ -64,3 +65,26 @@ module.exports =
 
   openMultiFiles: (args...) ->
     selectFileWrap args..., 4, 'Open Files'
+
+  showMessageBox: (window, options) ->
+    throw new TypeError('Need Window object') unless window.constructor is Window
+
+    options = {} unless options?
+    options.type = options.type ? module.exports.MESSAGE_BOX_NONE
+    throw new TypeError('Invalid message box type') unless 0 <= options.type <= 2
+
+    throw new TypeError('Buttons need to be array') unless Array.isArray options.buttons
+
+    options.title = options.title ? ''
+    options.message = options.message ? ''
+    options.detail = options.detail ? ''
+
+    binding.showMessageBox window, options.type, options.buttons,
+                           String(options.title),
+                           String(options.message),
+                           String(options.detail)
+
+  # Message box types:
+  MESSAGE_BOX_NONE: 0
+  MESSAGE_BOX_INFORMATION: 1
+  MESSAGE_BOX_WARNING: 2
