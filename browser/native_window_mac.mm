@@ -66,7 +66,7 @@
 }
 
 - (IBAction)showDevTools:(id)sender {
-  shell_->ShowDevTools();
+  shell_->OpenDevTools();
 }
 
 @end
