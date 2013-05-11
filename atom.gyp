@@ -157,7 +157,14 @@
               'files': [
                 'browser/default_app',
               ],
-            }
+            },
+            {
+              # Copy node binary for worker process support.
+              'destination': '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources',
+              'files': [
+                'node/node',
+              ],
+            },
           ],
           'postbuilds': [
             {
