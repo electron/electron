@@ -1,0 +1,61 @@
+#!/usr/bin/env python
+
+import errno
+import glob
+import os
+import subprocess
+
+
+SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+
+
+def main():
+    try:
+        ensure_s3put()
+        upload()
+    except AssertionError as e:
+        return e.message
+
+
+def ensure_s3put():
+    output = ''
+    try:
+        output = subprocess.check_output(['s3put', '--help'])
+    except OSError as e:
+        if e.errno != errno.ENOENT:
+            raise
+    assert 'multipart' in output, 'Error: Please install boto and filechunkio'
+
+
+def upload():
+    os.chdir(SOURCE_ROOT)
+    bucket, access_key, secret_key = s3_config()
+    commit = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip()
+
+    args = [
+        's3put',
+        '--bucket', bucket,
+        '--access_key', access_key,
+        '--secret_key', secret_key,
+        '--prefix', SOURCE_ROOT,
+        '--key_prefix', 'atom-shell/{0}'.format(commit),
+        '--grant', 'public-read'
+    ] + glob.glob('atom-shell*.zip')
+
+    subprocess.check_call(args)
+
+
+def s3_config():
+    config = (os.environ.get('ATOM_SHELL_S3_BUCKET', ''),
+              os.environ.get('ATOM_SHELL_S3_ACCESS_KEY', ''),
+              os.environ.get('ATOM_SHELL_S3_SECRET_KEY', ''))
+    message = ('Error: Please set the $ATOM_SHELL_S3_BUCKET, '
+               '$ATOM_SHELL_S3_ACCESS_KEY, and '
+               '$ATOM_SHELL_S3_SECRET_KEY environment variables')
+    assert all(len(c) for c in config), message
+    return config
+
+
+if __name__ == '__main__':
+    import sys
+    sys.exit(main())

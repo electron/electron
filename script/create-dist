@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+
+import errno
+import os
+import shutil
+
+
+SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
+BUNDLE_NAME = 'Atom.app'
+BUNDLE_DIR = os.path.join(SOURCE_ROOT, 'build', 'Release', BUNDLE_NAME)
+
+
+def main():
+    rm_rf(DIST_DIR)
+    os.makedirs(DIST_DIR)
+
+    copy_binaries()
+    create_zip()
+
+
+def copy_binaries():
+    shutil.copytree(BUNDLE_DIR, os.path.join(DIST_DIR, BUNDLE_NAME))
+
+
+def create_zip():
+    print "Zipping distribution..."
+    zip_file = os.path.join(SOURCE_ROOT, 'atom-shell.zip')
+    safe_unlink(zip_file)
+    shutil.make_archive(os.path.splitext(zip_file)[0], 'zip',
+                        root_dir=DIST_DIR)
+
+
+def rm_rf(path):
+    try:
+        shutil.rmtree(path)
+    except OSError as e:
+        if e.errno != errno.ENOENT:
+            raise
+
+
+def safe_unlink(path):
+    try:
+        os.unlink(path)
+    except OSError as e:
+        if e.errno != errno.ENOENT:
+            raise
+
+
+if __name__ == '__main__':
+    import sys
+    sys.exit(main())
