@@ -1,0 +1,103 @@
+#!/usr/bin/env python
+
+import argparse
+import contextlib
+import errno
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import urllib2
+import zipfile
+
+
+SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+
+
+class ProgramError(Exception):
+    pass
+
+
+def main():
+    try:
+        args = parse_args()
+        commit = head_commit()
+        download_if_needed(args.path, args.url, commit, force=args.force)
+    except ProgramError as e:
+        return e.message
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Download and extract '
+                                     'atom-shell')
+    parser.add_argument('-f', '--force', action='store_true',
+                        help='Overwrite destination if it already exists.')
+    parser.add_argument('url', help='The base URL from which to download '
+                        '(i.e., the URL you passed to script/upload)')
+    parser.add_argument('path', help='The path to extract to')
+    return parser.parse_args()
+
+
+def head_commit():
+    args = [
+        'git',
+        '--git-dir',
+        os.path.join(SOURCE_ROOT, '.git'),
+        'rev-parse',
+        'HEAD',
+    ]
+    return subprocess.check_output(args).strip()
+
+
+def download_if_needed(destination, base_url, commit, force):
+    version_file = os.path.join(destination, '.version')
+    existing_version = ''
+    try:
+        with open(version_file, 'r') as f:
+            existing_version = f.readline().strip()
+    except IOError as e:
+        if e.errno != errno.ENOENT:
+            raise
+    if existing_version == commit:
+        return
+
+    if force:
+        rm_rf(destination)
+    elif os.path.exists(destination):
+        raise ProgramError('Error: {0} already exists. Pass --force if you '
+                           'want to overwrite it.'.format(destination))
+    sys.stderr.write('Downloading atom-shell {0}...\n'.format(commit))
+    sys.stderr.flush()
+    download_and_extract(destination, '{0}/{1}/atom-shell.zip'.format(base_url, commit))
+    with open(version_file, 'w') as f:
+        f.write('{0}\n'.format(commit))
+
+
+def download_and_extract(destination, url):
+    print url
+    with tempfile.TemporaryFile() as t:
+        with contextlib.closing(urllib2.urlopen(url)) as u:
+            while True:
+                chunk = u.read(1024*1024)
+                if not len(chunk):
+                    break
+                sys.stderr.write('.')
+                sys.stderr.flush()
+                t.write(chunk)
+        sys.stderr.write('\nExtracting...\n')
+        sys.stderr.flush()
+        with zipfile.ZipFile(t) as z:
+            z.extractall(destination)
+
+
+def rm_rf(path):
+    try:
+        shutil.rmtree(path)
+    except OSError as e:
+        if e.errno != errno.ENOENT:
+            raise
+
+
+if __name__ == '__main__':
+    sys.exit(main())
