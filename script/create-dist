@@ -20,7 +20,7 @@ def main():
 
 
 def copy_binaries():
-    shutil.copytree(BUNDLE_DIR, os.path.join(DIST_DIR, BUNDLE_NAME))
+    shutil.copytree(BUNDLE_DIR, os.path.join(DIST_DIR, BUNDLE_NAME), symlinks=True)
 
 
 def create_zip():
