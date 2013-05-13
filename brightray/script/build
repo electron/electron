@@ -1,8 +1,18 @@
-#!/bin/sh
+#!/usr/bin/env python
 
-set -e
+import os
+import subprocess
 
-cd "$(dirname "$0")/.."
 
-gyp --depth . brightray.gyp
-xcodebuild
+SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+
+
+def main():
+    os.chdir(SOURCE_ROOT)
+    subprocess.check_call(['gyp', '--depth', '.', 'brightray.gyp'])
+    subprocess.check_call(['xcodebuild'])
+
+
+if __name__ == '__main__':
+    import sys
+    sys.exit(main())
