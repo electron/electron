@@ -3,6 +3,7 @@
 import errno
 import os
 import shutil
+import subprocess
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -27,8 +28,11 @@ def create_zip():
     print "Zipping distribution..."
     zip_file = os.path.join(SOURCE_ROOT, 'atom-shell.zip')
     safe_unlink(zip_file)
-    shutil.make_archive(os.path.splitext(zip_file)[0], 'zip',
-                        root_dir=DIST_DIR)
+
+    cwd = os.getcwd()
+    os.chdir(DIST_DIR)
+    subprocess.check_call(['zip', '-r', '-y', zip_file, 'Atom.app'])
+    os.chdir(cwd)
 
 
 def rm_rf(path):
