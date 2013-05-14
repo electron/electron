@@ -6,9 +6,11 @@
 	<string>com.github.atom</string>
 	<key>CFBundleName</key>
 	<string>${PRODUCT_NAME}</string>
+  <key>CFBundleIconFile</key>
+  <string>atom.icns</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
-	<string>BRYApplication</string>
+	<string>AtomApplication</string>
 </dict>
 </plist>

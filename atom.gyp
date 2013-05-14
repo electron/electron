@@ -5,6 +5,9 @@
     'app_sources': [
       'app/atom_main.cc',
     ],
+    'bundle_sources': [
+      'browser/mac/atom.icns',
+    ],
     'coffee_sources': [
       'browser/api/lib/app.coffee',
       'browser/api/lib/atom_delegate.coffee',
@@ -125,6 +128,9 @@
       ],
       'sources': [
         '<@(app_sources)',
+      ],
+      'mac_bundle_resources': [
+        '<@(bundle_sources)',
       ],
       'include_dirs': [
         '.',
