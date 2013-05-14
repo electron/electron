@@ -5,5 +5,13 @@
 </head>
 <body>
   Content
+  <script type="text/javascript" charset="utf-8">
+    var ipc = require('ipc');
+
+    window.addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+      ipc.send('menu');
+    }, false);
+  </script>
 </body>
 </html>

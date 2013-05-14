@@ -1,22 +1,15 @@
 var app = require('app');
 var delegate = require('atom_delegate');
 var ipc = require('ipc');
+var Menu = require('menu');
 var Window = require('window');
 
 var mainWindow = null;
+var menu = null;
 
 // Quit when all windows are closed.
 app.on('window-all-closed', function() {
   app.terminate();
-});
-
-// Echo every message back.
-ipc.on('message', function(process_id, routing_id) {
-  ipc.send.apply(ipc, arguments);
-});
-
-ipc.on('sync-message', function(event, process_id, routing_id) {
-  event.result = arguments;
 });
 
 delegate.browserMainParts.preMainMessageLoopRun = function() {
@@ -32,5 +25,25 @@ delegate.browserMainParts.preMainMessageLoopRun = function() {
   mainWindow.on('closed', function() {
     console.log('closed');
     mainWindow = null;
+  });
+
+  menu = new Menu;
+  menu.appendItem(0, 'Open GitHub');
+
+  menu.delegate = {
+    getAcceleratorForCommandId: function(commandId) {
+      if (commandId == 0)
+        return 'Ctrl+g';
+    }
+  }
+
+  menu.on('execute', function(commandId) {
+    if (commandId == 0)
+      mainWindow.loadUrl('https://github.com');
+  });
+
+  ipc.on('message', function(processId, routingId, type) {
+    if (type == 'menu')
+      menu.popup(mainWindow);
   });
 }
