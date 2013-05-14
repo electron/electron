@@ -4,6 +4,8 @@
 
 #include "browser/api/atom_api_menu.h"
 
+#include "browser/api/atom_api_window.h"
+
 #define UNWRAP_MEMNU_AND_CHECK \
   Menu* self = ObjectWrap::Unwrap<Menu>(args.This()); \
   if (self == NULL) \
@@ -26,6 +28,26 @@ v8::Handle<v8::Value> UTF16ToV8Value(const string16& s) {
   return v8::String::New(reinterpret_cast<const uint16_t*>(s.data()), s.size());
 }
 
+// Call method of delegate object.
+v8::Handle<v8::Value> CallDelegate(v8::Handle<v8::Value> default_value,
+                                   v8::Handle<v8::Object> menu,
+                                   const char* method,
+                                   int command_id) {
+  v8::HandleScope scope;
+
+  v8::Handle<v8::Value> delegate = menu->Get(v8::String::New("delegate"));
+  if (!delegate->IsObject())
+    return default_value;
+
+  v8::Handle<v8::Function> function = v8::Handle<v8::Function>::Cast(
+      delegate->ToObject()->Get(v8::String::New(method)));
+  if (!function->IsFunction())
+    return default_value;
+
+  return scope.Close(
+      function->Call(v8::Context::GetCurrent()->Global(), 0, NULL));
+}
+
 }  // namespace
 
 Menu::Menu(v8::Handle<v8::Object> wrapper)
@@ -37,32 +59,50 @@ Menu::~Menu() {
 }
 
 bool Menu::IsCommandIdChecked(int command_id) const {
-  return false;
+  return CallDelegate(v8::False(),
+                      handle(),
+                      "isCommandIdChecked",
+                      command_id)->BooleanValue();
 }
 
 bool Menu::IsCommandIdEnabled(int command_id) const {
-  return true;
+  return CallDelegate(v8::True(),
+                      handle(),
+                      "isCommandIdEnabled",
+                      command_id)->BooleanValue();
 }
 
 bool Menu::IsCommandIdVisible(int command_id) const {
-  return true;
+  return CallDelegate(v8::True(),
+                      handle(),
+                      "isCommandIdVisible",
+                      command_id)->BooleanValue();
 }
 
 bool Menu::GetAcceleratorForCommandId(int command_id,
-                                    ui::Accelerator* accelerator) {
+                                      ui::Accelerator* accelerator) {
   return false;
 }
 
 bool Menu::IsItemForCommandIdDynamic(int command_id) const {
-  return false;
+  return CallDelegate(v8::False(),
+                      handle(),
+                      "isItemForCommandIdDynamic",
+                      command_id)->BooleanValue();
 }
 
 string16 Menu::GetLabelForCommandId(int command_id) const {
-  return string16();
+  return V8ValueToUTF16(CallDelegate(v8::False(),
+                                     handle(),
+                                     "getLabelForCommandId",
+                                     command_id));
 }
 
 string16 Menu::GetSublabelForCommandId(int command_id) const {
-  return string16();
+  return V8ValueToUTF16(CallDelegate(v8::False(),
+                                     handle(),
+                                     "getSubLabelForCommandId",
+                                     command_id));
 }
 
 void Menu::ExecuteCommand(int command_id, int event_flags) {
@@ -276,15 +316,11 @@ v8::Handle<v8::Value> Menu::IsVisibleAt(const v8::Arguments &args) {
 v8::Handle<v8::Value> Menu::Popup(const v8::Arguments &args) {
   UNWRAP_MEMNU_AND_CHECK;
 
-  if (!args[0]->IsObject() || !args[1]->IsNumber() || !args[2]->IsNumber())
-    return node::ThrowTypeError("Bad argument");
-
-  NativeWindow* window = Unwrap<NativeWindow>(args[0]->ToObject());
+  Window* window = Window::Unwrap<Window>(args[0]->ToObject());
   if (!window)
     return node::ThrowTypeError("Invalid window");
 
-  self->Popup(window, args[1]->IntegerValue(), args[2]->IntegerValue());
-
+  self->Popup(window->window());
   return v8::Undefined();
 }
 

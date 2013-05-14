@@ -39,7 +39,7 @@ class Menu : public EventEmitter,
   virtual string16 GetSublabelForCommandId(int command_id) const OVERRIDE;
   virtual void ExecuteCommand(int command_id, int event_flags) OVERRIDE;
 
-  virtual void Popup(NativeWindow* window, int x, int y) = 0;
+  virtual void Popup(NativeWindow* window) = 0;
 
   scoped_ptr<ui::SimpleMenuModel> model_;
 

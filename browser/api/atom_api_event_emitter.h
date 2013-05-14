@@ -30,7 +30,7 @@ class EventEmitter : public node::ObjectWrap {
   bool Emit(const std::string& name, base::ListValue* args);
 
   // Small accessor to return handle_, this follows Google C++ Style.
-  v8::Persistent<v8::Object>& handle() { return handle_; }
+  v8::Persistent<v8::Object> handle() const { return handle_; }
 
  protected:
   explicit EventEmitter(v8::Handle<v8::Object> wrapper);
