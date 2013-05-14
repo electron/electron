@@ -7,8 +7,6 @@
 
 #include "browser/api/atom_api_menu.h"
 
-#import "chrome/browser/ui/cocoa/menu_controller.h"
-
 namespace atom {
 
 namespace api {
@@ -19,9 +17,7 @@ class MenuMac : public Menu {
   virtual ~MenuMac();
 
  protected:
-  virtual void Popup(NativeWindow* window, int x, int y) OVERRIDE;
-
-  scoped_nsobject<MenuController> controller_;
+  virtual void Popup(NativeWindow* window) OVERRIDE;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(MenuMac);
