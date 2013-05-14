@@ -4,6 +4,7 @@
 
 #include "browser/api/atom_api_menu.h"
 
+#include "browser/accelerator_util.h"
 #include "browser/api/atom_api_window.h"
 
 #define UNWRAP_MEMNU_AND_CHECK \
@@ -81,6 +82,15 @@ bool Menu::IsCommandIdVisible(int command_id) const {
 
 bool Menu::GetAcceleratorForCommandId(int command_id,
                                       ui::Accelerator* accelerator) {
+  v8::Handle<v8::Value> shortcut = CallDelegate(v8::Undefined(),
+                                                handle(),
+                                                "getAcceleratorForCommandId",
+                                                command_id);
+  if (shortcut->IsString()) {
+    std::string shortcut_str(*v8::String::Utf8Value(shortcut));
+    return accelerator_util::StringToAccelerator(shortcut_str, accelerator);
+  }
+
   return false;
 }
 
