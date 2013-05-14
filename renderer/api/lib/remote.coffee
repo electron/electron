@@ -18,9 +18,11 @@ wrapArgs = (args) ->
 # Convert meta data from browser into real value.
 metaToValue = (meta) ->
   switch meta.type
-    when 'error' then throw new Error(meta.value)
     when 'value' then meta.value
     when 'array' then (metaToValue(el) for el in meta.members)
+    when 'error'
+      console.log meta.stack
+      throw new Error(meta.message)
     else
       if meta.type is 'function'
         # A shadow class to represent the remote function object.

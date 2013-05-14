@@ -33,6 +33,10 @@ valueToMeta = (processId, routingId, value) ->
 
   meta
 
+# Convert Error into meta data.
+errorToMeta = (error) ->
+  type: 'error', message: error.message, stack: (error.stack || error)
+
 # Convert array of meta data from renderer into array of real values.
 unwrapArgs = (processId, routingId, args) ->
   args.map (meta) ->
@@ -51,13 +55,13 @@ ipc.on 'ATOM_BROWSER_REQUIRE', (event, processId, routingId, module) ->
   try
     event.result = valueToMeta processId, routingId, require(module)
   catch e
-    event.result = type: 'error', value: e.message
+    event.result = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_GLOBAL', (event, processId, routingId, name) ->
   try
     event.result = valueToMeta processId, routingId, global[name]
   catch e
-    event.result = type: 'error', value: e.message
+    event.result = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (event, processId, routingId) ->
   objectsRegistry.clear processId, routingId
@@ -70,7 +74,7 @@ ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event, processId, routingId) ->
                window.getRoutingId() == routingId
     event.result = valueToMeta processId, routingId, window
   catch e
-    event.result = type: 'error', value: e.message
+    event.result = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_CONSTRUCTOR', (event, processId, routingId, id, args) ->
   try
@@ -81,7 +85,7 @@ ipc.on 'ATOM_BROWSER_CONSTRUCTOR', (event, processId, routingId, id, args) ->
     obj = new (Function::bind.apply(constructor, [null].concat(args)))
     event.result = valueToMeta processId, routingId, obj
   catch e
-    event.result = type: 'error', value: e.message
+    event.result = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, processId, routingId, id, args) ->
   try
@@ -90,7 +94,7 @@ ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, processId, routingId, id, args) ->
     ret = func.apply global, args
     event.result = valueToMeta processId, routingId, ret
   catch e
-    event.result = type: 'error', value: e.message
+    event.result = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_MEMBER_CALL', (event, processId, routingId, id, method, args) ->
   try
@@ -99,28 +103,28 @@ ipc.on 'ATOM_BROWSER_MEMBER_CALL', (event, processId, routingId, id, method, arg
     ret = obj[method].apply(obj, args)
     event.result = valueToMeta processId, routingId, ret
   catch e
-    event.result = type: 'error', value: e.message
+    event.result = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_MEMBER_SET', (event, processId, routingId, id, name, value) ->
   try
     obj = objectsRegistry.get id
     obj[name] = value
   catch e
-    event.result = type: 'error', value: e.message
+    event.result = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_MEMBER_GET', (event, processId, routingId, id, name) ->
   try
     obj = objectsRegistry.get id
     event.result = valueToMeta processId, routingId, obj[name]
   catch e
-    event.result = type: 'error', value: e.message
+    event.result = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_REFERENCE', (event, processId, routingId, id) ->
   try
     obj = objectsRegistry.get id
     event.result = valueToMeta processId, routingId, obj
   catch e
-    event.result = type: 'error', value: e.message
+    event.result = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_DEREFERENCE', (processId, routingId, storeId) ->
   objectsRegistry.remove processId, routingId, storeId
