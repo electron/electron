@@ -19,6 +19,8 @@ class MenuMac : public Menu {
   virtual ~MenuMac();
 
  protected:
+  virtual void Popup(NativeWindow* window, int x, int y) OVERRIDE;
+
   scoped_nsobject<MenuController> controller_;
 
  private:

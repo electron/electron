@@ -44,9 +44,25 @@ bool Menu::IsCommandIdEnabled(int command_id) const {
   return true;
 }
 
+bool Menu::IsCommandIdVisible(int command_id) const {
+  return true;
+}
+
 bool Menu::GetAcceleratorForCommandId(int command_id,
                                     ui::Accelerator* accelerator) {
   return false;
+}
+
+bool Menu::IsItemForCommandIdDynamic(int command_id) const {
+  return false;
+}
+
+string16 Menu::GetLabelForCommandId(int command_id) const {
+  return string16();
+}
+
+string16 Menu::GetSublabelForCommandId(int command_id) const {
+  return string16();
 }
 
 void Menu::ExecuteCommand(int command_id, int event_flags) {
@@ -257,6 +273,22 @@ v8::Handle<v8::Value> Menu::IsVisibleAt(const v8::Arguments &args) {
 }
 
 // static
+v8::Handle<v8::Value> Menu::Popup(const v8::Arguments &args) {
+  UNWRAP_MEMNU_AND_CHECK;
+
+  if (!args[0]->IsObject() || !args[1]->IsNumber() || !args[2]->IsNumber())
+    return node::ThrowTypeError("Bad argument");
+
+  NativeWindow* window = Unwrap<NativeWindow>(args[0]->ToObject());
+  if (!window)
+    return node::ThrowTypeError("Invalid window");
+
+  self->Popup(window, args[1]->IntegerValue(), args[2]->IntegerValue());
+
+  return v8::Undefined();
+}
+
+// static
 void Menu::Initialize(v8::Handle<v8::Object> target) {
   v8::HandleScope scope;
 
@@ -269,9 +301,12 @@ void Menu::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "insertRadioItem", InsertRadioItem);
   NODE_SET_PROTOTYPE_METHOD(t, "insertSeparator", InsertSeparator);
   NODE_SET_PROTOTYPE_METHOD(t, "insertSubMenu", InsertSubMenu);
+
   NODE_SET_PROTOTYPE_METHOD(t, "setIcon", SetIcon);
   NODE_SET_PROTOTYPE_METHOD(t, "setSublabel", SetSublabel);
+
   NODE_SET_PROTOTYPE_METHOD(t, "clear", Clear);
+
   NODE_SET_PROTOTYPE_METHOD(t, "getIndexOfCommandId", GetIndexOfCommandId);
   NODE_SET_PROTOTYPE_METHOD(t, "getItemCount", GetItemCount);
   NODE_SET_PROTOTYPE_METHOD(t, "getCommandIdAt", GetCommandIdAt);
@@ -280,6 +315,8 @@ void Menu::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "isItemCheckedAt", IsItemCheckedAt);
   NODE_SET_PROTOTYPE_METHOD(t, "isEnabledAt", IsEnabledAt);
   NODE_SET_PROTOTYPE_METHOD(t, "isVisibleAt", IsVisibleAt);
+
+  NODE_SET_PROTOTYPE_METHOD(t, "popup", Popup);
 
   target->Set(v8::String::NewSymbol("Menu"), t->GetFunction());
 }

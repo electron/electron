@@ -11,6 +11,8 @@
 
 namespace atom {
 
+class NativeWindow;
+
 namespace api {
 
 class Menu : public EventEmitter,
@@ -28,10 +30,16 @@ class Menu : public EventEmitter,
   // ui::SimpleMenuModel::Delegate implementations:
   virtual bool IsCommandIdChecked(int command_id) const OVERRIDE;
   virtual bool IsCommandIdEnabled(int command_id) const OVERRIDE;
+  virtual bool IsCommandIdVisible(int command_id) const OVERRIDE;
   virtual bool GetAcceleratorForCommandId(
       int command_id,
       ui::Accelerator* accelerator) OVERRIDE;
+  virtual bool IsItemForCommandIdDynamic(int command_id) const OVERRIDE;
+  virtual string16 GetLabelForCommandId(int command_id) const OVERRIDE;
+  virtual string16 GetSublabelForCommandId(int command_id) const OVERRIDE;
   virtual void ExecuteCommand(int command_id, int event_flags) OVERRIDE;
+
+  virtual void Popup(NativeWindow* window, int x, int y) = 0;
 
   scoped_ptr<ui::SimpleMenuModel> model_;
 
@@ -57,6 +65,8 @@ class Menu : public EventEmitter,
   static v8::Handle<v8::Value> IsItemCheckedAt(const v8::Arguments &args);
   static v8::Handle<v8::Value> IsEnabledAt(const v8::Arguments &args);
   static v8::Handle<v8::Value> IsVisibleAt(const v8::Arguments &args);
+
+  static v8::Handle<v8::Value> Popup(const v8::Arguments &args);
 
   DISALLOW_COPY_AND_ASSIGN(Menu);
 };
