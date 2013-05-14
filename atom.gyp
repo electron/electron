@@ -29,6 +29,8 @@
     'lib_sources': [
       'app/atom_main_delegate.cc',
       'app/atom_main_delegate.h',
+      'browser/accelerator_util.cc',
+      'browser/accelerator_util.h',
       'browser/api/atom_api_app.cc',
       'browser/api/atom_api_app.h',
       'browser/api/atom_api_browser_ipc.cc',
