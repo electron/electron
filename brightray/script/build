@@ -2,17 +2,20 @@
 
 import os
 import subprocess
+import sys
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-
+GYP = {
+	'darwin': 'gyp',
+	'win32': 'gyp.bat',
+}[sys.platform]
 
 def main():
     os.chdir(SOURCE_ROOT)
-    subprocess.check_call(['gyp', '--depth', '.', 'brightray.gyp'])
+    subprocess.check_call([GYP, '--depth', '.', 'brightray.gyp'])
     subprocess.check_call(['xcodebuild'])
 
 
 if __name__ == '__main__':
-    import sys
     sys.exit(main())
