@@ -1,26 +1,52 @@
-#!/bin/sh
-#/ Usage: bootstrap https://base.url.com/from/libchromiumcontent/script/upload
-#/ Bootstrap this project.
+#!/usr/bin/env python
 
-set -e
+import argparse
+import errno
+import os
+import subprocess
+import sys
 
-usage() {
-  grep '^#/' <"$0"| cut -c4-
-}
 
-BASE_URL="${1}"
+SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
+DOWNLOAD_DIR = os.path.join(VENDOR_DIR, 'download')
 
-if [ -z "${BASE_URL}" ]; then
-  usage
-  exit 1
-fi
 
-cd "$(dirname "$0")/.."
+def main():
+    args = parse_args()
+    update_submodules()
+    download_libchromiumcontent(args.url)
 
-git submodule sync --quiet
-git submodule update --init --recursive
 
-SOURCE_ROOT="$(pwd -P)"
-DOWNLOAD_DIR="${SOURCE_ROOT}/vendor/download"
-mkdir -p "${DOWNLOAD_DIR}"
-vendor/libchromiumcontent/script/download -f "${BASE_URL}" "${DOWNLOAD_DIR}/libchromiumcontent"
+def parse_args():
+    parser = argparse.ArgumentParser(description='Bootstrap this project')
+    parser.add_argument('url', help='The base URL from which to download '
+                        'libchromiumcontent (i.e., the URL you passed to '
+                        'libchromiumcontent\'s script/upload script')
+    return parser.parse_args()
+
+
+def update_submodules():
+    subprocess.check_call(['git', 'submodule', 'sync', '--quiet'])
+    subprocess.check_call(['git', 'submodule', 'update', '--init',
+                           '--recursive'])
+
+
+def download_libchromiumcontent(url):
+    mkdir_p(DOWNLOAD_DIR)
+    download = os.path.join(VENDOR_DIR, 'libchromiumcontent', 'script',
+                            'download')
+    subprocess.check_call([sys.executable, download, '-f', url,
+                           os.path.join(DOWNLOAD_DIR, 'libchromiumcontent')])
+
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+
+
+if __name__ == '__main__':
+    sys.exit(main())
