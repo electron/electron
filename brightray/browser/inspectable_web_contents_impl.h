@@ -70,6 +70,7 @@ private:
   // content::WebContentsObserver
   
   virtual void RenderViewCreated(content::RenderViewHost*) OVERRIDE;
+  virtual void AboutToNavigateRenderView(content::RenderViewHost* render_view_host) OVERRIDE;
   virtual void DidFinishLoad(int64 frame_id,
                              const GURL& validated_url,
                              bool is_main_frame,

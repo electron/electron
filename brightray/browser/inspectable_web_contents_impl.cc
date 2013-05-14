@@ -74,6 +74,7 @@ void InspectableWebContentsImpl::ShowDevTools() {
 
     agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(web_contents_->GetRenderViewHost());
     frontend_host_.reset(content::DevToolsClientHost::CreateDevToolsFrontendHost(devtools_web_contents_.get(), this));
+    content::DevToolsManager::GetInstance()->RegisterDevToolsClientHostFor(agent_host_, frontend_host_.get());
 
     devtools_web_contents_->GetController().LoadURL(GetDevToolsURL(), content::Referrer(), content::PAGE_TRANSITION_AUTO_TOPLEVEL, std::string());
   }
@@ -145,8 +146,10 @@ void InspectableWebContentsImpl::InspectedContentsClosing() {
 }
 
 void InspectableWebContentsImpl::RenderViewCreated(content::RenderViewHost* render_view_host) {
+}
+
+void InspectableWebContentsImpl::AboutToNavigateRenderView(content::RenderViewHost* render_view_host) {
   content::DevToolsClientHost::SetupDevToolsFrontendClient(web_contents()->GetRenderViewHost());
-  content::DevToolsManager::GetInstance()->RegisterDevToolsClientHostFor(agent_host_, frontend_host_.get());
 }
 
 void InspectableWebContentsImpl::DidFinishLoad(int64, const GURL&, bool is_main_frame, content::RenderViewHost*) {
