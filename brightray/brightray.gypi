@@ -31,14 +31,58 @@
       ],
     },
     'configurations': {
+      'Common_Base': {
+        'abstract': 1,
+        'msvs_configuration_attributes': {
+          'OutputDirectory': '<(DEPTH)\\build\\$(ConfigurationName)', 
+          'IntermediateDirectory': '$(OutDir)\\obj\\$(ProjectName)',
+          'CharacterSet': '1',
+        },
+      },
       'Debug': {
+        'inherit_from': [
+          'Common_Base',
+        ],
         'xcode_settings': {
           'COPY_PHASE_STRIP': 'NO',
           'GCC_OPTIMIZATION_LEVEL': '0',
         },
       },
       'Release': {
+        'inherit_from': [
+          'Common_Base',
+        ],
       },
     },
   },
+  'conditions': [
+    ['OS=="win"', {
+      'target_defaults': {
+        'defines': [
+          '_WIN32_WINNT=0x0602',
+          'WINVER=0x0602',
+          'WIN32',
+          '_WINDOWS',
+          'NOMINMAX',
+          'PSAPI_VERSION=1',
+          '_CRT_RAND_S',
+          'CERT_CHAIN_PARA_HAS_EXTRA_FIELDS',
+          'WIN32_LEAN_AND_MEAN',
+          '_ATL_NO_OPENGL',
+        ],
+      },
+      'msvs_settings': {
+        'VCCLCompilerTool': {
+          'AdditionalOptions': ['/MP'],
+          'MinimalRebuild': 'false',
+          'BufferSecurityCheck': 'true',
+          'EnableFunctionLevelLinking': 'true',
+          'RuntimeTypeInfo': 'false',
+          'WarningLevel': '4',
+          'WarnAsError': 'true',
+          'DebugInformationFormat': '3',
+        },
+      },
+    }],
+  ],
 }
