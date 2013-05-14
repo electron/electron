@@ -123,8 +123,9 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext()
 
     scoped_ptr<net::URLRequestJobFactoryImpl> job_factory(
         new net::URLRequestJobFactoryImpl());
-    for (auto& it : protocol_handlers_) {
-      bool set_protocol = job_factory->SetProtocolHandler(it.first, it.second.release());
+    for (auto it = protocol_handlers_.begin(),
+        end = protocol_handlers_.end(); it != end; ++it) {
+      bool set_protocol = job_factory->SetProtocolHandler(it->first, it->second.release());
       DCHECK(set_protocol);
     }
     protocol_handlers_.clear();
