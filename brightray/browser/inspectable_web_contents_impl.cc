@@ -25,7 +25,12 @@ namespace brightray {
 
 namespace {
 
+const char kChromeUIDevToolsURL[] = "chrome-devtools://devtools/devtools.html";
 const char kDockSidePref[] = "brightray.devtools.dockside";
+
+GURL GetDevToolsURL() {
+  return GURL(kChromeUIDevToolsURL);
+}
 
 }
 
@@ -70,9 +75,7 @@ void InspectableWebContentsImpl::ShowDevTools() {
     agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(web_contents_->GetRenderViewHost());
     frontend_host_.reset(content::DevToolsClientHost::CreateDevToolsFrontendHost(devtools_web_contents_.get(), this));
 
-    auto handler = BrowserClient::Get()->browser_main_parts()->devtools_http_handler();
-    auto url = handler->GetFrontendURL(nullptr);
-    devtools_web_contents_->GetController().LoadURL(url, content::Referrer(), content::PAGE_TRANSITION_AUTO_TOPLEVEL, std::string());
+    devtools_web_contents_->GetController().LoadURL(GetDevToolsURL(), content::Referrer(), content::PAGE_TRANSITION_AUTO_TOPLEVEL, std::string());
   }
 
   view_->SetDockSide(dock_side_);

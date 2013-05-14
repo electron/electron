@@ -9,13 +9,10 @@
 #include "base/memory/scoped_ptr.h"
 #include "content/public/browser/browser_main_parts.h"
 
-namespace content {
-class DevToolsHttpHandler;
-}
-
 namespace brightray {
 
 class BrowserContext;
+class WebUIControllerFactory;
 
 class BrowserMainParts : public content::BrowserMainParts {
 public:
@@ -23,7 +20,6 @@ public:
   ~BrowserMainParts();
 
   BrowserContext* browser_context() { return browser_context_.get(); }
-  content::DevToolsHttpHandler* devtools_http_handler() { return devtools_http_handler_; }
 
 protected:
   // Subclasses should override this to provide their own BrowserContxt implementation. The caller
@@ -38,7 +34,7 @@ protected:
 
 private:
   scoped_ptr<BrowserContext> browser_context_;
-  content::DevToolsHttpHandler* devtools_http_handler_;
+  scoped_ptr<WebUIControllerFactory> web_ui_controller_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserMainParts);
 };
