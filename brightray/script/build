@@ -11,10 +11,25 @@ GYP = {
 	'win32': 'gyp.bat',
 }[sys.platform]
 
+
 def main():
     os.chdir(SOURCE_ROOT)
+    run_gyp()
+    build()
+
+
+def run_gyp():
     subprocess.check_call([GYP, '--depth', '.', 'brightray.gyp'])
-    subprocess.check_call(['xcodebuild'])
+
+
+def build():
+    if sys.platform == 'darwin':
+        subprocess.check_call(['xcodebuild'])
+        return
+
+    assert sys.platform == 'win32', sys.platform
+    msbuild = os.path.join(os.environ['windir'], 'Microsoft.NET', 'Framework', 'v4.0.30319', 'MSBuild.exe')
+    subprocess.check_call([msbuild, 'brightray.sln'])
 
 
 if __name__ == '__main__':
