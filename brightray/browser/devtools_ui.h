@@ -17,9 +17,6 @@ class DevToolsUI : public content::WebUIController {
   explicit DevToolsUI(BrowserContext* browser_context, content::WebUI* web_ui);
 
  private:
-  // Weak reference to the browser context.
-  BrowserContext* browser_context_;
-
   DISALLOW_COPY_AND_ASSIGN(DevToolsUI);
 };
 

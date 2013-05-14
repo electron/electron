@@ -93,10 +93,9 @@ class BundledDataSource : public content::URLDataSource {
 }
 
 DevToolsUI::DevToolsUI(BrowserContext* browser_context, content::WebUI* web_ui)
-   : WebUIController(web_ui),
-     browser_context_(browser_context) {
+   : WebUIController(web_ui) {
   web_ui->SetBindings(0);
-  content::URLDataSource::Add(browser_context_, new BundledDataSource());
+  content::URLDataSource::Add(browser_context, new BundledDataSource());
 }
 
 }

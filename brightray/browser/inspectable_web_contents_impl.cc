@@ -28,10 +28,6 @@ namespace {
 const char kChromeUIDevToolsURL[] = "chrome-devtools://devtools/devtools.html";
 const char kDockSidePref[] = "brightray.devtools.dockside";
 
-GURL GetDevToolsURL() {
-  return GURL(kChromeUIDevToolsURL);
-}
-
 }
 
 // Implemented separately on each platform.
@@ -76,7 +72,8 @@ void InspectableWebContentsImpl::ShowDevTools() {
     frontend_host_.reset(content::DevToolsClientHost::CreateDevToolsFrontendHost(devtools_web_contents_.get(), this));
     content::DevToolsManager::GetInstance()->RegisterDevToolsClientHostFor(agent_host_, frontend_host_.get());
 
-    devtools_web_contents_->GetController().LoadURL(GetDevToolsURL(), content::Referrer(), content::PAGE_TRANSITION_AUTO_TOPLEVEL, std::string());
+    GURL devtools_url(kChromeUIDevToolsURL);
+    devtools_web_contents_->GetController().LoadURL(devtools_url, content::Referrer(), content::PAGE_TRANSITION_AUTO_TOPLEVEL, std::string());
   }
 
   view_->SetDockSide(dock_side_);
@@ -143,9 +140,6 @@ void InspectableWebContentsImpl::SearchInPath(int request_id, const std::string&
 }
 
 void InspectableWebContentsImpl::InspectedContentsClosing() {
-}
-
-void InspectableWebContentsImpl::RenderViewCreated(content::RenderViewHost* render_view_host) {
 }
 
 void InspectableWebContentsImpl::AboutToNavigateRenderView(content::RenderViewHost* render_view_host) {

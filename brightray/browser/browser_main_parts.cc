@@ -7,8 +7,6 @@
 #include "browser/browser_context.h"
 #include "browser/web_ui_controller_factory.h"
 
-#include "net/socket/tcp_listen_socket.h"
-
 namespace brightray {
 
 BrowserMainParts::BrowserMainParts() {
