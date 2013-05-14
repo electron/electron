@@ -41,7 +41,7 @@ private:
 };
 
 BrowserContext::BrowserContext() : resource_context_(new ResourceContext) {
-  auto prefs_path = GetPath().Append("Preferences");
+  auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
   PrefServiceBuilder builder;
   builder.WithUserFilePrefs(prefs_path,
       JsonPrefStore::GetTaskRunnerForFile(prefs_path, content::BrowserThread::GetBlockingPool()));
