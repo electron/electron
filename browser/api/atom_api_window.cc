@@ -586,7 +586,7 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
 
   v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(Window::New);
   t->InstanceTemplate()->SetInternalFieldCount(1);
-  t->SetClassName(v8::String::NewSymbol("Window"));
+  t->SetClassName(v8::String::NewSymbol("BrowserWindow"));
 
   NODE_SET_PROTOTYPE_METHOD(t, "destroy", Destroy);
   NODE_SET_PROTOTYPE_METHOD(t, "close", Close);
@@ -639,7 +639,7 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "reload", Reload);
   NODE_SET_PROTOTYPE_METHOD(t, "reloadIgnoringCache", ReloadIgnoringCache);
 
-  target->Set(v8::String::NewSymbol("Window"), t->GetFunction());
+  target->Set(v8::String::NewSymbol("BrowserWindow"), t->GetFunction());
 }
 
 }  // namespace api

@@ -11,10 +11,10 @@
     'coffee_sources': [
       'browser/api/lib/app.coffee',
       'browser/api/lib/atom_delegate.coffee',
+      'browser/api/lib/browser_window.coffee',
       'browser/api/lib/dialog.coffee',
       'browser/api/lib/ipc.coffee',
       'browser/api/lib/menu.coffee',
-      'browser/api/lib/window.coffee',
       'browser/atom/atom.coffee',
       'browser/atom/objects_registry.coffee',
       'browser/atom/rpc_server.coffee',

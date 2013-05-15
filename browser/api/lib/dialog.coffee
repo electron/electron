@@ -1,8 +1,8 @@
 binding = process.atomBinding 'dialog'
+BrowserWindow = require 'browser_window'
 CallbacksRegistry = require 'callbacks_registry'
 EventEmitter = require('events').EventEmitter
 ipc = require 'ipc'
-Window = require 'window'
 
 FileDialog = binding.FileDialog
 FileDialog.prototype.__proto__ = EventEmitter.prototype
@@ -34,7 +34,7 @@ validateOptions = (options) ->
   true
 
 selectFileWrap = (window, options, callback, type, title) ->
-  throw new TypeError('Need Window object') unless window.constructor is Window
+  throw new TypeError('Need BrowserWindow object') unless window.constructor is BrowserWindow
 
   options = {} unless options?
   options.type = type

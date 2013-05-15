@@ -2,7 +2,7 @@ var app = require('app');
 var delegate = require('atom_delegate');
 var ipc = require('ipc');
 var Menu = require('menu');
-var Window = require('window');
+var BrowserWindow = require('browser_window');
 
 var mainWindow = null;
 var menu = null;
@@ -13,7 +13,7 @@ app.on('window-all-closed', function() {
 });
 
 delegate.browserMainParts.preMainMessageLoopRun = function() {
-  mainWindow = new Window({ width: 800, height: 600 });
+  mainWindow = new BrowserWindow({ width: 800, height: 600 });
   mainWindow.loadUrl('file://' + __dirname + '/index.html');
 
   mainWindow.on('page-title-updated', function(event, title) {

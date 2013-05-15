@@ -1,12 +1,12 @@
 EventEmitter = require('events').EventEmitter
-Window = require 'window'
+BrowserWindow = require 'browser_window'
 
 Menu = process.atomBinding('menu').Menu
 Menu::__proto__ = EventEmitter.prototype
 
 popup = Menu::popup
 Menu::popup = (window) ->
-  throw new TypeError('Invalid window') unless window?.constructor is Window
+  throw new TypeError('Invalid window') unless window?.constructor is BrowserWindow
 
   popup.call this, window
 
