@@ -1194,6 +1194,15 @@
 								</object>
 								<object class="NSMenuItem" id="885614672">
 									<reference key="NSMenu" ref="466310130"/>
+									<string key="NSTitle">Reload</string>
+									<string key="NSKeyEquiv">r</string>
+									<int key="NSKeyEquivModMask">1048576</int>
+									<int key="NSMnemonicLoc">2147483647</int>
+									<reference key="NSOnImage" ref="229763992"/>
+									<reference key="NSMixedImage" ref="909111550"/>
+								</object>
+								<object class="NSMenuItem" id="502782526">
+									<reference key="NSMenu" ref="466310130"/>
 									<string key="NSTitle">Show Developer Tools</string>
 									<string key="NSKeyEquiv">i</string>
 									<int key="NSKeyEquivModMask">1572864</int>
@@ -1904,9 +1913,17 @@
 					<object class="IBActionConnection" key="connection">
 						<string key="label">showDevTools:</string>
 						<reference key="source" ref="1014"/>
+						<reference key="destination" ref="502782526"/>
+					</object>
+					<int key="connectionID">805</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">reload:</string>
+						<reference key="source" ref="1014"/>
 						<reference key="destination" ref="885614672"/>
 					</object>
-					<int key="connectionID">801</int>
+					<int key="connectionID">806</int>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBActionConnection" key="connection">
@@ -2245,6 +2262,7 @@
 							<reference ref="237841660"/>
 							<reference ref="1058117013"/>
 							<reference ref="885614672"/>
+							<reference ref="502782526"/>
 						</array>
 						<reference key="parent" ref="586577488"/>
 					</object>
@@ -2947,6 +2965,11 @@
 						<reference key="object" ref="885614672"/>
 						<reference key="parent" ref="466310130"/>
 					</object>
+					<object class="IBObjectRecord">
+						<int key="objectID">804</int>
+						<reference key="object" ref="502782526"/>
+						<reference key="parent" ref="466310130"/>
+					</object>
 				</array>
 			</object>
 			<dictionary class="NSMutableDictionary" key="flattenedProperties">
@@ -3098,6 +3121,7 @@
 				<string key="791.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="798.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="799.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
+				<string key="804.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="81.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="82.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="83.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -3107,7 +3131,7 @@
 			<nil key="activeLocalization"/>
 			<dictionary class="NSMutableDictionary" key="localizations"/>
 			<nil key="sourceID"/>
-			<int key="maxID">803</int>
+			<int key="maxID">806</int>
 		</object>
 		<object class="IBClassDescriber" key="IBDocument.Classes">
 			<array class="NSMutableArray" key="referencedPartialClassDescriptions">

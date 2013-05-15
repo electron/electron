@@ -65,6 +65,10 @@
   shell_ = shell;
 }
 
+- (IBAction)reload:(id)sender {
+  shell_->GetWebContents()->GetController().ReloadIgnoringCache(false);
+}
+
 - (IBAction)showDevTools:(id)sender {
   shell_->OpenDevTools();
 }
