@@ -67,7 +67,7 @@ module.exports =
     selectFileWrap args..., 4, 'Open Files'
 
   showMessageBox: (window, options) ->
-    throw new TypeError('Need Window object') unless window.constructor is Window
+    throw new TypeError('Need Window object') unless window.constructor is BrowserWindow
 
     options = {} unless options?
     options.type = options.type ? module.exports.MESSAGE_BOX_NONE

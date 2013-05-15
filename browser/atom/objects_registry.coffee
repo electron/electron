@@ -1,3 +1,4 @@
+BrowserWindow = require 'browser_window'
 IDWeakMap = require 'id_weak_map'
 
 class ObjectsStore
@@ -54,7 +55,7 @@ process.on 'ATOM_BROWSER_INTERNAL_NEW', (obj) ->
   objectsWeakMap.add obj
 
   # Also remember all windows.
-  windowsWeakMap.add obj if obj.constructor.name is 'Window'
+  windowsWeakMap.add obj if obj.constructor is BrowserWindow
 
 exports.add = (processId, routingId, obj) ->
   # Some native objects may already been added to objectsWeakMap, be care not
