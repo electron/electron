@@ -131,7 +131,11 @@ class NativeWindow : public content::WebContentsDelegate,
   virtual void BeforeUnloadFired(content::WebContents* tab,
                                  bool proceed,
                                  bool* proceed_to_fire_unload) OVERRIDE;
+  virtual void MoveContents(content::WebContents* source,
+                            const gfx::Rect& pos) OVERRIDE;
   virtual void CloseContents(content::WebContents* source) OVERRIDE;
+  virtual bool IsPopupOrPanel(
+      const content::WebContents* source) const OVERRIDE;
 
   // Implementations of content::WebContentsObserver.
   virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;

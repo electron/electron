@@ -196,6 +196,12 @@ void NativeWindow::BeforeUnloadFired(content::WebContents* tab,
     WindowList::WindowCloseCancelled(this);
 }
 
+void NativeWindow::MoveContents(content::WebContents* source,
+                                const gfx::Rect& pos) {
+  SetPosition(pos.origin());
+  SetSize(pos.size());
+}
+
 void NativeWindow::CloseContents(content::WebContents* source) {
   // When the web contents is gone, close the window immediately, but the
   // memory will not be freed until you call delete.
@@ -205,6 +211,11 @@ void NativeWindow::CloseContents(content::WebContents* source) {
   CloseImmediately();
 
   NotifyWindowClosed();
+}
+
+bool NativeWindow::IsPopupOrPanel(const content::WebContents* source) const {
+  // Only popup window can use things like window.moveTo.
+  return true;
 }
 
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
