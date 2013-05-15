@@ -201,7 +201,7 @@ void NativeWindow::CloseContents(content::WebContents* source) {
   // memory will not be freed until you call delete.
   // In this way, it would be safe to manage windows via smart pointers. If you
   // want to free memory when the window is closed, you can do deleting by
-  // overriding the WillCloseWindow method in the observer.
+  // overriding the OnWindowClosed method in the observer.
   CloseImmediately();
 
   NotifyWindowClosed();
