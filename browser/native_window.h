@@ -131,6 +131,12 @@ class NativeWindow : public content::WebContentsDelegate,
   virtual void BeforeUnloadFired(content::WebContents* tab,
                                  bool proceed,
                                  bool* proceed_to_fire_unload) OVERRIDE;
+  virtual void RequestToLockMouse(content::WebContents* web_contents,
+                                  bool user_gesture,
+                                  bool last_unlocked_by_target) OVERRIDE;
+  virtual bool CanOverscrollContent() const OVERRIDE;
+  virtual void ActivateContents(content::WebContents* contents) OVERRIDE;
+  virtual void DeactivateContents(content::WebContents* contents) OVERRIDE;
   virtual void MoveContents(content::WebContents* source,
                             const gfx::Rect& pos) OVERRIDE;
   virtual void CloseContents(content::WebContents* source) OVERRIDE;

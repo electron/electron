@@ -196,6 +196,24 @@ void NativeWindow::BeforeUnloadFired(content::WebContents* tab,
     WindowList::WindowCloseCancelled(this);
 }
 
+void NativeWindow::RequestToLockMouse(content::WebContents* web_contents,
+                                      bool user_gesture,
+                                      bool last_unlocked_by_target) {
+  GetWebContents()->GotResponseToLockMouseRequest(true);
+}
+
+bool NativeWindow::CanOverscrollContent() const {
+  return false;
+}
+
+void NativeWindow::ActivateContents(content::WebContents* contents) {
+  GetWebContents()->GetRenderViewHost()->Focus();
+}
+
+void NativeWindow::DeactivateContents(content::WebContents* contents) {
+  GetWebContents()->GetRenderViewHost()->Blur();
+}
+
 void NativeWindow::MoveContents(content::WebContents* source,
                                 const gfx::Rect& pos) {
   SetPosition(pos.origin());
