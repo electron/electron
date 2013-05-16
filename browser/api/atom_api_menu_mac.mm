@@ -67,8 +67,14 @@ void MenuMac::FixMenuTitles(NSMenu* menu) {
   int size = [menu numberOfItems];
   for (int i = 0; i < size; ++i) {
     NSMenuItem* item = [menu itemAtIndex:i];
-    if ([item hasSubmenu])
-      [[item submenu] setTitle:[item title]];
+    if ([item hasSubmenu]) {
+      NSString* title = [item title];
+      NSMenu* submenu = [item submenu];
+      [submenu setTitle:title];
+
+      if ([title isEqualToString:@"Window"] && [submenu numberOfItems] > 0)
+        [NSApp setWindowsMenu:submenu];
+    }
   }
 }
 

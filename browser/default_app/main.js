@@ -61,7 +61,31 @@ delegate.browserMainParts.preMainMessageLoopRun = function() {
     }
   }));
 
+  var windowMenu = new Menu;
+  windowMenu.append(new MenuItem({
+    label: 'Minimize',
+    accelerator: 'Command+M',
+    click: function() {
+      Menu.sendActionToFirstResponder('performMiniaturize:');
+    }
+  }));
+  windowMenu.append(new MenuItem({
+    label: 'Close',
+    accelerator: 'Command+W',
+    click: function() {
+      Menu.sendActionToFirstResponder('performClose:');
+    }
+  }));
+  windowMenu.append(new MenuItem({ type: 'separator' }));
+  windowMenu.append(new MenuItem({
+    label: 'Bring All to Front',
+    click: function() {
+      Menu.sendActionToFirstResponder('arrangeInFront:');
+    }
+  }));
+
   menu.append(new MenuItem({ type: 'submenu', submenu: appleMenu }));
+  menu.append(new MenuItem({ label: 'Window', type: 'submenu', submenu: windowMenu }));
 
   Menu.setApplicationMenu(menu);
 
