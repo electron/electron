@@ -13,6 +13,9 @@ Menu::popup = (window) ->
 
   popup.call this, window
 
+Menu::append = (item) ->
+  @insert @getItemCount(), item
+
 Menu::insert = (pos, item) ->
   throw new TypeError('Invalid item') unless item?.constructor is MenuItem
 
@@ -25,11 +28,15 @@ Menu::insert = (pos, item) ->
 
   @setSublabel pos, item.sublabel if item.sublabel?
 
-  @items = {} unless @items?
+  unless @items?
+    @items = {}
+    @delegate =
+      isCommandIdChecked: (commandId) => @items[commandId]?.checked
+      isCommandIdEnabled: (commandId) => @items[commandId]?.enabled
+      isCommandIdVisible: (commandId) => @items[commandId]?.visible
+      getAcceleratorForCommandId: (commandId) => @items[commandId]?.accelerator
+      executeCommand: (commandId) => @items[commandId]?.click()
   @items[item.commandId] = item
-
-Menu::append = (item) ->
-  @insert @getItemCount(), item
 
 Menu.setApplicationMenu = (menu) ->
   throw new TypeError('Invalid menu') unless menu?.constructor is Menu

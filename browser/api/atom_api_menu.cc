@@ -126,11 +126,7 @@ string16 Menu::GetSublabelForCommandId(int command_id) const {
 
 void Menu::ExecuteCommand(int command_id, int event_flags) {
   v8::HandleScope scope;
-  v8::Handle<v8::Value> args[] = {
-    v8::String::New("execute"),
-    v8::Integer::New(command_id)
-  };
-  node::MakeCallback(handle(), "emit", 2, args);
+  CallDelegate(v8::False(), handle(), "executeCommand", command_id);
 }
 
 // static
