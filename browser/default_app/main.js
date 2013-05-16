@@ -69,10 +69,12 @@ delegate.browserMainParts.preMainMessageLoopRun = function() {
         {
           label: 'Reload',
           accelerator: 'Command+R',
+          click: function() { BrowserWindow.getFocusedWindow().reloadIgnoringCache(); }
         },
         {
           label: 'Show DevTools',
           accelerator: 'Alt+Command+I',
+          click: function() { BrowserWindow.getFocusedWindow().openDevTools(); }
         },
       ]
     },
