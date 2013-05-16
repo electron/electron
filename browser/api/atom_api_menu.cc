@@ -374,9 +374,11 @@ void Menu::Initialize(v8::Handle<v8::Object> target) {
 
   target->Set(v8::String::NewSymbol("Menu"), t->GetFunction());
 
+#if defined(OS_MACOSX)
   NODE_SET_METHOD(target, "setApplicationMenu", SetApplicationMenu);
   NODE_SET_METHOD(
       target, "sendActionToFirstResponder", SendActionToFirstResponder);
+#endif
 }
 
 }  // namespace api
