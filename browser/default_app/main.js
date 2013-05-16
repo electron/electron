@@ -33,24 +33,18 @@ delegate.browserMainParts.preMainMessageLoopRun = function() {
   var appleMenu = new Menu;
   appleMenu.append(new MenuItem({
     label: 'About Atom Shell',
-    click: function() {
-      Menu.sendActionToFirstResponder('orderFrontStandardAboutPanel:');
-    }
+    selector: 'orderFrontStandardAboutPanel:'
   }));
   appleMenu.append(new MenuItem({ type: 'separator' }));
   appleMenu.append(new MenuItem({
     label: 'Hide Atom Shell',
     accelerator: 'Command+H',
-    click: function() {
-      Menu.sendActionToFirstResponder('hide:');
-    }
+    selector: 'hide:'
   }));
   appleMenu.append(new MenuItem({
     label: 'Hide Others',
     accelerator: 'Command+Shift+H',
-    click: function() {
-      Menu.sendActionToFirstResponder('hideOtherApplications:');
-    }
+    selector: 'hideOtherApplications:'
   }));
   appleMenu.append(new MenuItem({ type: 'separator' }));
   appleMenu.append(new MenuItem({
@@ -65,23 +59,17 @@ delegate.browserMainParts.preMainMessageLoopRun = function() {
   windowMenu.append(new MenuItem({
     label: 'Minimize',
     accelerator: 'Command+M',
-    click: function() {
-      Menu.sendActionToFirstResponder('performMiniaturize:');
-    }
+    selector: 'performMiniaturize:'
   }));
   windowMenu.append(new MenuItem({
     label: 'Close',
     accelerator: 'Command+W',
-    click: function() {
-      Menu.sendActionToFirstResponder('performClose:');
-    }
+    selector: 'performClose:'
   }));
   windowMenu.append(new MenuItem({ type: 'separator' }));
   windowMenu.append(new MenuItem({
     label: 'Bring All to Front',
-    click: function() {
-      Menu.sendActionToFirstResponder('arrangeInFront:');
-    }
+    selector: 'arrangeInFront:'
   }));
 
   menu.append(new MenuItem({ type: 'submenu', submenu: appleMenu }));

@@ -4,7 +4,7 @@ class MenuItem
   @types = ['normal', 'separator', 'submenu', 'checkbox', 'radio']
 
   constructor: (options) ->
-    {click, @type, @label, @sublabel, @accelerator, @enabled, @visible, @checked, @groupId, @submenu} = options
+    {click, selector, @type, @label, @sublabel, @accelerator, @enabled, @visible, @checked, @groupId, @submenu} = options
 
     @type = @type ? 'normal'
     @label = @label ? ''
@@ -16,6 +16,10 @@ class MenuItem
     throw new Error('Invalid menu') if @type is 'submenu' and @submenu?.constructor.name isnt 'Menu'
 
     @commandId = ++nextCommandId
-    @click = -> click() if typeof click is 'function'
+    @click = ->
+      if typeof click is 'function'
+        click()
+      else if typeof selector is 'string'
+        require('menu').sendActionToFirstResponder selector
 
 module.exports = MenuItem
