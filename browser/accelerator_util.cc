@@ -43,6 +43,7 @@ bool StringToAccelerator(const std::string& description,
   std::vector<std::string> tokens;
   base::SplitString(shortcut, '+', &tokens);
   if (tokens.size() < 2 || tokens.size() > 3) {
+    LOG(WARNING) << "Invalid accelerator description: " << description;
     return false;
   }
 
@@ -69,15 +70,18 @@ bool StringToAccelerator(const std::string& description,
       } else if (tokens[i][0] >= '0' && tokens[i][0] <= '9') {
         key = static_cast<ui::KeyboardCode>(ui::VKEY_0 + (tokens[i][0] - '0'));
       } else {
+        LOG(WARNING) << "Invalid accelerator character: " << tokens[i];
         key = ui::VKEY_UNKNOWN;
         break;
       }
     } else {
+      LOG(WARNING) << "Invalid accelerator token: " << tokens[i];
       return false;
     }
   }
 
   *accelerator = ui::Accelerator(key, modifiers);
+  SetPlatformAccelerator(accelerator);
   return true;
 }
 

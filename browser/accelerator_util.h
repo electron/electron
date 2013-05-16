@@ -17,6 +17,9 @@ namespace accelerator_util {
 bool StringToAccelerator(const std::string& description,
                          ui::Accelerator* accelerator);
 
+// Set platform accelerator for the Accelerator.
+void SetPlatformAccelerator(ui::Accelerator* accelerator);
+
 }  // namespace accelerator_util
 
 #endif  // BROWSER_ACCELERATOR_UTIL_H_
