@@ -28,53 +28,79 @@ delegate.browserMainParts.preMainMessageLoopRun = function() {
     mainWindow = null;
   });
 
-  menu = new Menu;
+  var template = [
+    {
+      label: 'Atom Shell',
+      submenu: [
+        {
+          label: 'About Atom Shell',
+          selector: 'orderFrontStandardAboutPanel:'
+        },
+        {
+          type: 'separator'
+        },
+        {
+          label: 'Hide Atom Shell',
+          accelerator: 'Command+H',
+          selector: 'hide:'
+        },
+        {
+          label: 'Hide Others',
+          accelerator: 'Command+Shift+H',
+          selector: 'hideOtherApplications:'
+        },
+        {
+          label: 'Show All',
+          selector: 'unhideAllApplications:'
+        },
+        {
+          type: 'separator'
+        },
+        {
+          label: 'Quit',
+          accelerator: 'Command+Q',
+          click: function() { app.quit(); }
+        },
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        {
+          label: 'Reload',
+          accelerator: 'Command+R',
+        },
+        {
+          label: 'Show DevTools',
+          accelerator: 'Alt+Command+I',
+        },
+      ]
+    },
+    {
+      label: 'Window',
+      submenu: [
+        {
+          label: 'Minimize',
+          accelerator: 'Command+M',
+          selector: 'performMiniaturize:'
+        },
+        {
+          label: 'Close',
+          accelerator: 'Command+W',
+          selector: 'performClose:'
+        },
+        {
+          type: 'separator'
+        },
+        {
+          label: 'Bring All to Front',
+          selector: 'arrangeInFront:'
+        },
+      ]
+    },
+  ];
 
-  var appleMenu = new Menu;
-  appleMenu.append(new MenuItem({
-    label: 'About Atom Shell',
-    selector: 'orderFrontStandardAboutPanel:'
-  }));
-  appleMenu.append(new MenuItem({ type: 'separator' }));
-  appleMenu.append(new MenuItem({
-    label: 'Hide Atom Shell',
-    accelerator: 'Command+H',
-    selector: 'hide:'
-  }));
-  appleMenu.append(new MenuItem({
-    label: 'Hide Others',
-    accelerator: 'Command+Shift+H',
-    selector: 'hideOtherApplications:'
-  }));
-  appleMenu.append(new MenuItem({ type: 'separator' }));
-  appleMenu.append(new MenuItem({
-    label: 'Quit',
-    accelerator: 'Command+Q',
-    click: function() {
-      app.quit();
-    }
-  }));
-
-  var windowMenu = new Menu;
-  windowMenu.append(new MenuItem({
-    label: 'Minimize',
-    accelerator: 'Command+M',
-    selector: 'performMiniaturize:'
-  }));
-  windowMenu.append(new MenuItem({
-    label: 'Close',
-    accelerator: 'Command+W',
-    selector: 'performClose:'
-  }));
-  windowMenu.append(new MenuItem({ type: 'separator' }));
-  windowMenu.append(new MenuItem({
-    label: 'Bring All to Front',
-    selector: 'arrangeInFront:'
-  }));
-
-  menu.append(new MenuItem({ submenu: appleMenu }));
-  menu.append(new MenuItem({ label: 'Window', submenu: windowMenu }));
-
+  menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 
   ipc.on('message', function(processId, routingId, type) {

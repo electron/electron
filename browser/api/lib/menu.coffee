@@ -44,4 +44,16 @@ Menu.setApplicationMenu = (menu) ->
 
 Menu.sendActionToFirstResponder = bindings.sendActionToFirstResponder
 
+Menu.buildFromTemplate = (template) ->
+  throw new TypeError('Invalid template for Menu') unless Array.isArray template
+
+  menu = new Menu
+  for item in template
+    throw new TypeError('Invalid template for MenuItem') unless typeof item is 'object'
+
+    item.submenu = Menu.buildFromTemplate item.submenu if item.submenu?
+    menu.append new MenuItem(item)
+
+  menu
+
 module.exports = Menu
