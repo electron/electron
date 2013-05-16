@@ -151,6 +151,10 @@ void NativeWindowMac::Focus(bool focus) {
     [window() orderBack:nil];
 }
 
+bool NativeWindowMac::IsFocused() {
+  return [window() isKeyWindow];
+}
+
 void NativeWindowMac::Show() {
   [window() makeKeyAndOrderFront:nil];
 }

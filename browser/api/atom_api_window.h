@@ -45,6 +45,7 @@ class Window : public EventEmitter,
   // APIs for NativeWindow.
   static v8::Handle<v8::Value> Close(const v8::Arguments &args);
   static v8::Handle<v8::Value> Focus(const v8::Arguments &args);
+  static v8::Handle<v8::Value> IsFocused(const v8::Arguments &args);
   static v8::Handle<v8::Value> Show(const v8::Arguments &args);
   static v8::Handle<v8::Value> Hide(const v8::Arguments &args);
   static v8::Handle<v8::Value> Maximize(const v8::Arguments &args);

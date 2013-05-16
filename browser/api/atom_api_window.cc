@@ -117,6 +117,12 @@ v8::Handle<v8::Value> Window::Focus(const v8::Arguments &args) {
 }
 
 // static
+v8::Handle<v8::Value> Window::IsFocused(const v8::Arguments &args) {
+  UNWRAP_WINDOW_AND_CHECK;
+  return v8::Boolean::New(self->window_->IsFocused());
+}
+
+// static
 v8::Handle<v8::Value> Window::Show(const v8::Arguments &args) {
   UNWRAP_WINDOW_AND_CHECK;
 
@@ -591,6 +597,7 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "destroy", Destroy);
   NODE_SET_PROTOTYPE_METHOD(t, "close", Close);
   NODE_SET_PROTOTYPE_METHOD(t, "focus", Focus);
+  NODE_SET_PROTOTYPE_METHOD(t, "isFocused", IsFocused);
   NODE_SET_PROTOTYPE_METHOD(t, "show", Show);
   NODE_SET_PROTOTYPE_METHOD(t, "hide", Hide);
   NODE_SET_PROTOTYPE_METHOD(t, "maximize", Maximize);

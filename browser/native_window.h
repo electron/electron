@@ -63,6 +63,7 @@ class NativeWindow : public content::WebContentsDelegate,
   virtual void CloseImmediately() = 0;
   virtual void Move(const gfx::Rect& pos) = 0;
   virtual void Focus(bool focus) = 0;
+  virtual bool IsFocused() = 0;
   virtual void Show() = 0;
   virtual void Hide() = 0;
   virtual void Maximize() = 0;
