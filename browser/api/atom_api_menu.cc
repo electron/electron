@@ -208,7 +208,7 @@ v8::Handle<v8::Value> Menu::InsertRadioItem(const v8::Arguments &args) {
 v8::Handle<v8::Value> Menu::InsertSeparator(const v8::Arguments &args) {
   UNWRAP_MEMNU_AND_CHECK;
 
-  if (!args[0]->IsNumber() || !args[1]->IsNumber() || !args[2]->IsString())
+  if (!args[0]->IsNumber())
     return node::ThrowTypeError("Bad argument");
 
   int index = args[0]->IntegerValue();

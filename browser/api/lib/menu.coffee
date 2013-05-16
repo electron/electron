@@ -1,7 +1,9 @@
 EventEmitter = require('events').EventEmitter
 BrowserWindow = require 'browser_window'
+MenuItem = require 'menu_item'
 
 bindings = process.atomBinding 'menu'
+
 Menu = bindings.Menu
 Menu::__proto__ = EventEmitter.prototype
 
@@ -11,23 +13,28 @@ Menu::popup = (window) ->
 
   popup.call this, window
 
-insertSubMenu = Menu::insertSubMenu
-Menu::insertSubMenu = (index, command_id, label, submenu) ->
-  throw new TypeError('Invalid menu') unless submenu?.constructor is Menu
+Menu::insert = (pos, item) ->
+  throw new TypeError('Invalid item') unless item?.constructor is MenuItem
 
-  @menus = [] unless Array.isArray @menus
-  @menus.push submenu # prevent submenu from getting destroyed
-  insertSubMenu.apply this, arguments
+  switch item.type
+    when 'normal' then @insertItem pos, item.commandId, item.label
+    when 'checkbox' then @insertCheckItem pos, item.commandId, item.label
+    when 'radio' then @insertRadioItem pos, item.commandId, item.label, item.groupId
+    when 'separator' then @insertSeparator pos
+    when 'submenu' then @insertSubMenu pos, item.commandId, item.label, item.submenu
 
-Menu::appendItem = (args...) -> @insertItem -1, args...
-Menu::appendCheckItem = (args...) -> @insertCheckItem -1, args...
-Menu::appendRadioItem = (args...) -> @insertRadioItem -1, args...
-Menu::appendSeparator = (args...) -> @insertSeparator -1, args...
-Menu::appendSubMenu = (args...) -> @insertSubMenu -1, args...
+  @setSublabel pos, item.sublabel if item.sublabel?
+
+  @items = {} unless @items?
+  @items[item.commandId] = item
+
+Menu::append = (item) ->
+  @insert @getItemCount(), item
 
 Menu.setApplicationMenu = (menu) ->
   throw new TypeError('Invalid menu') unless menu?.constructor is Menu
   bindings.setApplicationMenu menu
+
 Menu.sendActionToFirstResponder = bindings.sendActionToFirstResponder
 
 module.exports = Menu
