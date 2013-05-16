@@ -60,6 +60,7 @@ Menu::~Menu() {
 }
 
 bool Menu::IsCommandIdChecked(int command_id) const {
+  v8::HandleScope scope;
   return CallDelegate(v8::False(),
                       handle(),
                       "isCommandIdChecked",
@@ -67,6 +68,7 @@ bool Menu::IsCommandIdChecked(int command_id) const {
 }
 
 bool Menu::IsCommandIdEnabled(int command_id) const {
+  v8::HandleScope scope;
   return CallDelegate(v8::True(),
                       handle(),
                       "isCommandIdEnabled",
@@ -74,6 +76,7 @@ bool Menu::IsCommandIdEnabled(int command_id) const {
 }
 
 bool Menu::IsCommandIdVisible(int command_id) const {
+  v8::HandleScope scope;
   return CallDelegate(v8::True(),
                       handle(),
                       "isCommandIdVisible",
@@ -82,6 +85,7 @@ bool Menu::IsCommandIdVisible(int command_id) const {
 
 bool Menu::GetAcceleratorForCommandId(int command_id,
                                       ui::Accelerator* accelerator) {
+  v8::HandleScope scope;
   v8::Handle<v8::Value> shortcut = CallDelegate(v8::Undefined(),
                                                 handle(),
                                                 "getAcceleratorForCommandId",
@@ -95,6 +99,7 @@ bool Menu::GetAcceleratorForCommandId(int command_id,
 }
 
 bool Menu::IsItemForCommandIdDynamic(int command_id) const {
+  v8::HandleScope scope;
   return CallDelegate(v8::False(),
                       handle(),
                       "isItemForCommandIdDynamic",
@@ -102,6 +107,7 @@ bool Menu::IsItemForCommandIdDynamic(int command_id) const {
 }
 
 string16 Menu::GetLabelForCommandId(int command_id) const {
+  v8::HandleScope scope;
   return V8ValueToUTF16(CallDelegate(v8::False(),
                                      handle(),
                                      "getLabelForCommandId",
@@ -109,6 +115,7 @@ string16 Menu::GetLabelForCommandId(int command_id) const {
 }
 
 string16 Menu::GetSublabelForCommandId(int command_id) const {
+  v8::HandleScope scope;
   return V8ValueToUTF16(CallDelegate(v8::False(),
                                      handle(),
                                      "getSubLabelForCommandId",
@@ -116,6 +123,7 @@ string16 Menu::GetSublabelForCommandId(int command_id) const {
 }
 
 void Menu::ExecuteCommand(int command_id, int event_flags) {
+  v8::HandleScope scope;
   v8::Handle<v8::Value> args[] = {
     v8::String::New("execute"),
     v8::Integer::New(command_id)
@@ -214,9 +222,6 @@ v8::Handle<v8::Value> Menu::InsertSeparator(const v8::Arguments &args) {
 // static
 v8::Handle<v8::Value> Menu::InsertSubMenu(const v8::Arguments &args) {
   UNWRAP_MEMNU_AND_CHECK;
-
-  // FIXME should rely on js code to keep a reference of submenu and check
-  // the constructor type of menu object.
 
   if (!args[0]->IsNumber() ||
       !args[1]->IsNumber() ||
@@ -370,6 +375,8 @@ void Menu::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "popup", Popup);
 
   target->Set(v8::String::NewSymbol("Menu"), t->GetFunction());
+
+  NODE_SET_METHOD(target, "setApplicationMenu", SetApplicationMenu);
 }
 
 }  // namespace api

@@ -1,7 +1,8 @@
 EventEmitter = require('events').EventEmitter
 BrowserWindow = require 'browser_window'
 
-Menu = process.atomBinding('menu').Menu
+bindings = process.atomBinding 'menu'
+Menu = bindings.Menu
 Menu::__proto__ = EventEmitter.prototype
 
 popup = Menu::popup
@@ -23,5 +24,9 @@ Menu::appendCheckItem = (args...) -> @insertCheckItem -1, args...
 Menu::appendRadioItem = (args...) -> @insertRadioItem -1, args...
 Menu::appendSeparator = (args...) -> @insertSeparator -1, args...
 Menu::appendSubMenu = (args...) -> @insertSubMenu -1, args...
+
+Menu.setApplicationMenu = (menu) ->
+  throw new TypeError('Invalid menu') unless menu?.constructor is Menu
+  bindings.setApplicationMenu menu
 
 module.exports = Menu

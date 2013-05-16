@@ -68,6 +68,8 @@ class Menu : public EventEmitter,
 
   static v8::Handle<v8::Value> Popup(const v8::Arguments &args);
 
+  static v8::Handle<v8::Value> SetApplicationMenu(const v8::Arguments &args);
+
   DISALLOW_COPY_AND_ASSIGN(Menu);
 };
 

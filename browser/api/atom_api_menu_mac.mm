@@ -7,7 +7,6 @@
 #include "base/message_loop.h"
 #include "base/mac/scoped_sending_event.h"
 #include "browser/native_window.h"
-#import "chrome/browser/ui/cocoa/menu_controller.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
 
@@ -60,6 +59,28 @@ void MenuMac::Popup(NativeWindow* native_window) {
                    withEvent:clickEvent
                      forView:web_contents->GetView()->GetContentNativeView()];
   }
+}
+
+// static
+v8::Handle<v8::Value> Menu::SetApplicationMenu(const v8::Arguments &args) {
+  v8::HandleScope scope;
+
+  if (!args[0]->IsObject())
+    return node::ThrowTypeError("Bad argument");
+
+  MenuMac* menu = ObjectWrap::Unwrap<MenuMac>(args[0]->ToObject());
+  if (!menu)
+    return node::ThrowError("Menu is destroyed");
+
+  scoped_nsobject<MenuController> menu_controller(
+      [[MenuController alloc] initWithModel:menu->model_.get()
+                     useWithPopUpButtonCell:NO]);
+  [NSApp setMainMenu:[menu_controller menu]];
+
+  // Ensure the menu_controller_ is destroyed after main menu is set.
+  menu_controller.swap(menu->menu_controller_);
+
+  return v8::Undefined();
 }
 
 // static
