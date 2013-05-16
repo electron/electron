@@ -4,7 +4,12 @@ class MenuItem
   @types = ['normal', 'separator', 'submenu', 'checkbox', 'radio']
 
   constructor: (options) ->
+    Menu = require 'menu'
+
     {click, selector, @type, @label, @sublabel, @accelerator, @enabled, @visible, @checked, @groupId, @submenu} = options
+
+    @type = 'submenu' if not @type? and @submenu?
+    throw new Error('Invalid submenu') if @type is 'submenu' and @submenu?.constructor isnt Menu
 
     @type = @type ? 'normal'
     @label = @label ? ''
@@ -13,13 +18,12 @@ class MenuItem
     @visible = @visible ? true
 
     throw new Error('Unknown menu type') if MenuItem.types.indexOf(@type) is -1
-    throw new Error('Invalid menu') if @type is 'submenu' and @submenu?.constructor.name isnt 'Menu'
 
     @commandId = ++nextCommandId
     @click = ->
       if typeof click is 'function'
         click()
       else if typeof selector is 'string'
-        require('menu').sendActionToFirstResponder selector
+        Menu.sendActionToFirstResponder selector
 
 module.exports = MenuItem

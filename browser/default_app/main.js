@@ -72,8 +72,8 @@ delegate.browserMainParts.preMainMessageLoopRun = function() {
     selector: 'arrangeInFront:'
   }));
 
-  menu.append(new MenuItem({ type: 'submenu', submenu: appleMenu }));
-  menu.append(new MenuItem({ label: 'Window', type: 'submenu', submenu: windowMenu }));
+  menu.append(new MenuItem({ submenu: appleMenu }));
+  menu.append(new MenuItem({ label: 'Window', submenu: windowMenu }));
 
   Menu.setApplicationMenu(menu);
 
