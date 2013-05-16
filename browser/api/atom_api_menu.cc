@@ -45,8 +45,10 @@ v8::Handle<v8::Value> CallDelegate(v8::Handle<v8::Value> default_value,
   if (!function->IsFunction())
     return default_value;
 
+  v8::Handle<v8::Value> argv = v8::Integer::New(command_id);
+
   return scope.Close(
-      function->Call(v8::Context::GetCurrent()->Global(), 0, NULL));
+      function->Call(v8::Context::GetCurrent()->Global(), 1, &argv));
 }
 
 }  // namespace
