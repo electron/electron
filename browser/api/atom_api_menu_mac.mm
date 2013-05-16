@@ -6,6 +6,7 @@
 
 #include "base/message_loop.h"
 #include "base/mac/scoped_sending_event.h"
+#include "base/strings/sys_string_conversions.h"
 #include "browser/native_window.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
@@ -72,6 +73,14 @@ void MenuMac::FixMenuTitles(NSMenu* menu) {
 }
 
 // static
+void MenuMac::SendActionToFirstResponder(const std::string& action) {
+  SEL selector = NSSelectorFromString(base::SysUTF8ToNSString(action));
+  [[NSApplication sharedApplication] sendAction:selector
+                                             to:nil
+                                           from:[NSApp mainMenu]];
+}
+
+// static
 v8::Handle<v8::Value> Menu::SetApplicationMenu(const v8::Arguments &args) {
   v8::HandleScope scope;
 
@@ -90,6 +99,20 @@ v8::Handle<v8::Value> Menu::SetApplicationMenu(const v8::Arguments &args) {
 
   // Ensure the menu_controller_ is destroyed after main menu is set.
   menu_controller.swap(menu->menu_controller_);
+
+  return v8::Undefined();
+}
+
+// static
+v8::Handle<v8::Value> Menu::SendActionToFirstResponder(
+    const v8::Arguments &args) {
+  v8::HandleScope scope;
+
+  if (!args[0]->IsString())
+    return node::ThrowTypeError("Bad argument");
+
+  std::string action(*v8::String::Utf8Value(args[0]));
+  MenuMac::SendActionToFirstResponder(action);
 
   return v8::Undefined();
 }

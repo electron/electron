@@ -28,5 +28,6 @@ Menu::appendSubMenu = (args...) -> @insertSubMenu -1, args...
 Menu.setApplicationMenu = (menu) ->
   throw new TypeError('Invalid menu') unless menu?.constructor is Menu
   bindings.setApplicationMenu menu
+Menu.sendActionToFirstResponder = bindings.sendActionToFirstResponder
 
 module.exports = Menu

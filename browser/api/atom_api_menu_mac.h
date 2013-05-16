@@ -31,6 +31,9 @@ class MenuMac : public Menu {
   // submenus and set their titles.
   static void FixMenuTitles(NSMenu* menu);
 
+  // Fake sending an action from the application menu.
+  static void SendActionToFirstResponder(const std::string& action);
+
   DISALLOW_COPY_AND_ASSIGN(MenuMac);
 };
 
