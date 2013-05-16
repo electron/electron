@@ -9,10 +9,12 @@
       'include_dirs': [
         '.',
         '<(libchromiumcontent_include_dir)',
+        '<(libchromiumcontent_include_dir)/third_party/skia/include/config',
       ],
       'direct_dependent_settings': {
         'include_dirs': [
           '<(libchromiumcontent_include_dir)',
+          '<(libchromiumcontent_include_dir)/third_party/skia/include/config',
         ],
       },
       'sources': [

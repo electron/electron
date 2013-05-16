@@ -32,7 +32,7 @@ public:
   static void RegisterPrefs(PrefRegistrySimple*);
 
   InspectableWebContentsImpl(content::WebContents*);
-  virtual ~InspectableWebContentsImpl() OVERRIDE;
+  virtual ~InspectableWebContentsImpl();
 
   virtual InspectableWebContentsView* GetView() const OVERRIDE;
   virtual content::WebContents* GetWebContents() const OVERRIDE;

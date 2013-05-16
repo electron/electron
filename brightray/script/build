@@ -2,17 +2,35 @@
 
 import os
 import subprocess
+import sys
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+GYP = {
+	'darwin': 'gyp',
+	'win32': 'gyp.bat',
+}[sys.platform]
 
 
 def main():
     os.chdir(SOURCE_ROOT)
-    subprocess.check_call(['gyp', '--depth', '.', 'brightray.gyp'])
-    subprocess.check_call(['xcodebuild'])
+    run_gyp()
+    build()
+
+
+def run_gyp():
+    subprocess.check_call([GYP, '--depth', '.', 'brightray.gyp'])
+
+
+def build():
+    if sys.platform == 'darwin':
+        subprocess.check_call(['xcodebuild'])
+        return
+
+    assert sys.platform == 'win32', sys.platform
+    msbuild = os.path.join(os.environ['windir'], 'Microsoft.NET', 'Framework', 'v4.0.30319', 'MSBuild.exe')
+    subprocess.check_call([msbuild, 'brightray.sln'])
 
 
 if __name__ == '__main__':
-    import sys
     sys.exit(main())

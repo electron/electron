@@ -41,7 +41,7 @@ private:
 };
 
 BrowserContext::BrowserContext() : resource_context_(new ResourceContext) {
-  auto prefs_path = GetPath().Append("Preferences");
+  auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
   PrefServiceBuilder builder;
   builder.WithUserFilePrefs(prefs_path,
       JsonPrefStore::GetTaskRunnerForFile(prefs_path, content::BrowserThread::GetBlockingPool()));
@@ -74,7 +74,7 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(content::Prot
 base::FilePath BrowserContext::GetPath() {
   base::FilePath path;
   CHECK(PathService::Get(base::DIR_APP_DATA, &path));
-  return path.Append(GetApplicationName());
+  return path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
 }
 
 bool BrowserContext::IsOffTheRecord() const {
