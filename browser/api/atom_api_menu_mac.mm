@@ -62,6 +62,16 @@ void MenuMac::Popup(NativeWindow* native_window) {
 }
 
 // static
+void MenuMac::FixMenuTitles(NSMenu* menu) {
+  int size = [menu numberOfItems];
+  for (int i = 0; i < size; ++i) {
+    NSMenuItem* item = [menu itemAtIndex:i];
+    if ([item hasSubmenu])
+      [[item submenu] setTitle:[item title]];
+  }
+}
+
+// static
 v8::Handle<v8::Value> Menu::SetApplicationMenu(const v8::Arguments &args) {
   v8::HandleScope scope;
 
@@ -75,6 +85,7 @@ v8::Handle<v8::Value> Menu::SetApplicationMenu(const v8::Arguments &args) {
   scoped_nsobject<MenuController> menu_controller(
       [[MenuController alloc] initWithModel:menu->model_.get()
                      useWithPopUpButtonCell:NO]);
+  MenuMac::FixMenuTitles([menu_controller menu]);
   [NSApp setMainMenu:[menu_controller menu]];
 
   // Ensure the menu_controller_ is destroyed after main menu is set.

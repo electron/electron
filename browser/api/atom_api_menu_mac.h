@@ -26,6 +26,11 @@ class MenuMac : public Menu {
  private:
   friend class Menu;
 
+  // The MenuController doesn't set title for menus, however it's required by
+  // application menu to show submenus correctly, fix it by iterating all
+  // submenus and set their titles.
+  static void FixMenuTitles(NSMenu* menu);
+
   DISALLOW_COPY_AND_ASSIGN(MenuMac);
 };
 
