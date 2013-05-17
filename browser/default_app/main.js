@@ -14,6 +14,8 @@ app.on('window-all-closed', function() {
 });
 
 delegate.browserMainParts.preMainMessageLoopRun = function() {
+  app.commandLine.appendSwitch('js-flags', '--harmony_collections');
+
   mainWindow = new BrowserWindow({ width: 800, height: 600 });
   mainWindow.loadUrl('file://' + __dirname + '/index.html');
 

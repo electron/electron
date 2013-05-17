@@ -32,6 +32,8 @@ class App : public EventEmitter,
 
   static v8::Handle<v8::Value> Quit(const v8::Arguments &args);
   static v8::Handle<v8::Value> Terminate(const v8::Arguments &args);
+  static v8::Handle<v8::Value> AppendSwitch(const v8::Arguments &args);
+  static v8::Handle<v8::Value> AppendArgument(const v8::Arguments &args);
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };
