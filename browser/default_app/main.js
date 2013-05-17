@@ -74,9 +74,9 @@ delegate.browserMainParts.preMainMessageLoopRun = function() {
           click: function() { BrowserWindow.getFocusedWindow().reloadIgnoringCache(); }
         },
         {
-          label: 'Show DevTools',
+          label: 'Toggle DevTools',
           accelerator: 'Alt+Command+I',
-          click: function() { BrowserWindow.getFocusedWindow().openDevTools(); }
+          click: function() { BrowserWindow.getFocusedWindow().toggleDevTools(); }
         },
       ]
     },
