@@ -18,4 +18,9 @@ BrowserWindow.getFocusedWindow = ->
   windows = objectsRegistry.getAllWindows()
   return window for window in windows when window.isFocused()
 
+BrowserWindow.fromProcessIdAndRoutingId = (processId, routingId) ->
+  windows = objectsRegistry.getAllWindows()
+  return window for window in windows when window.getProcessId() == processId and
+                                           window.getRoutingId() == routingId
+
 module.exports = BrowserWindow

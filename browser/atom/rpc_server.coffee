@@ -68,10 +68,8 @@ ipc.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (event, processId, routingId) ->
 
 ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event, processId, routingId) ->
   try
-    windows = objectsRegistry.getAllWindows()
-    for window in windows
-      break if window.getProcessId() == processId and
-               window.getRoutingId() == routingId
+    BrowserWindow = require 'browser_window'
+    window = BrowserWindow.fromProcessIdAndRoutingId processId, routingId
     event.result = valueToMeta processId, routingId, window
   catch e
     event.result = errorToMeta e
