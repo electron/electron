@@ -10,8 +10,7 @@
 
 namespace atom {
 
-int ShowMessageBox(gfx::NativeWindow parent,
-                   MessageBoxType type,
+int ShowMessageBox(MessageBoxType type,
                    const std::vector<std::string>& buttons,
                    const std::string& title,
                    const std::string& message,

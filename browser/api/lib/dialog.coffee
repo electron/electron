@@ -68,10 +68,8 @@ module.exports =
   openMultiFiles: (args...) ->
     selectFileWrap args..., 4, 'Open Files'
 
-  showMessageBox: (window, options) ->
-    throw new TypeError('Need Window object') unless window.constructor is BrowserWindow
-
-    options = {} unless options?
+  showMessageBox: (options) ->
+    options = type: 'none' unless options?
     options.type = options.type ? 'none'
     options.type = messageBoxTypes.indexOf options.type
     throw new TypeError('Invalid message box type') unless options.type > -1
@@ -82,7 +80,7 @@ module.exports =
     options.message = options.message ? ''
     options.detail = options.detail ? ''
 
-    binding.showMessageBox window, options.type, options.buttons,
+    binding.showMessageBox options.type, options.buttons,
                            String(options.title),
                            String(options.message),
                            String(options.detail)

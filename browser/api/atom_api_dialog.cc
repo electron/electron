@@ -28,34 +28,26 @@ base::FilePath V8ValueToFilePath(v8::Handle<v8::Value> path) {
 v8::Handle<v8::Value> ShowMessageBox(const v8::Arguments &args) {
   v8::HandleScope scope;
 
-  if (!args[0]->IsObject() ||  // window
-      !args[1]->IsNumber() ||  // type
-      !args[2]->IsArray() ||   // buttons
-      !args[3]->IsString() ||  // title
-      !args[4]->IsString() ||  // message
-      !args[5]->IsString())    // detail
+  if (!args[0]->IsNumber() ||  // type
+      !args[1]->IsArray() ||   // buttons
+      !args[2]->IsString() ||  // title
+      !args[3]->IsString() ||  // message
+      !args[4]->IsString())    // detail
     return node::ThrowTypeError("Bad argument");
 
-  Window* window = Window::Unwrap<Window>(args[0]->ToObject());
-  if (!window || !window->window())
-    return node::ThrowError("Invalid window");
-
-  gfx::NativeWindow owning_window = window->window()->GetNativeWindow();
-
-  MessageBoxType type = (MessageBoxType)(args[1]->IntegerValue());
+  MessageBoxType type = (MessageBoxType)(args[0]->IntegerValue());
 
   std::vector<std::string> buttons;
-  v8::Handle<v8::Array> v8_buttons = v8::Handle<v8::Array>::Cast(args[2]);
+  v8::Handle<v8::Array> v8_buttons = v8::Handle<v8::Array>::Cast(args[1]);
   for (uint32_t i = 0; i < v8_buttons->Length(); ++i)
     buttons.push_back(*v8::String::Utf8Value(v8_buttons->Get(i)));
 
-  std::string title(*v8::String::Utf8Value(args[3]));
-  std::string message(*v8::String::Utf8Value(args[4]));
-  std::string detail(*v8::String::Utf8Value(args[5]));
+  std::string title(*v8::String::Utf8Value(args[2]));
+  std::string message(*v8::String::Utf8Value(args[3]));
+  std::string detail(*v8::String::Utf8Value(args[4]));
 
-  int result = atom::ShowMessageBox(
-      owning_window, type, buttons, title, message, detail);
-  return v8::Integer::New(result);
+  int chosen = atom::ShowMessageBox(type, buttons, title, message, detail);
+  return scope.Close(v8::Integer::New(chosen));
 }
 
 FileDialog::FileDialog(v8::Handle<v8::Object> wrapper)

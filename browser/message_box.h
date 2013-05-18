@@ -8,8 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "ui/gfx/native_widget_types.h"
-
 namespace atom {
 
 enum MessageBoxType {
@@ -18,8 +16,7 @@ enum MessageBoxType {
   MESSAGE_BOX_TYPE_WARNING
 };
 
-int ShowMessageBox(gfx::NativeWindow parent,
-                   MessageBoxType type,
+int ShowMessageBox(MessageBoxType type,
                    const std::vector<std::string>& buttons,
                    const std::string& title,
                    const std::string& message,
