@@ -53,6 +53,8 @@ selectFileWrap = (window, options, callback, type, title) ->
                         options.defaultExtension,
                         callbackId
 
+messageBoxTypes = ['none', 'info', 'warning']
+
 module.exports =
   openFolder: (args...) ->
     selectFileWrap args..., 1, 'Open Folder'
@@ -70,8 +72,9 @@ module.exports =
     throw new TypeError('Need Window object') unless window.constructor is BrowserWindow
 
     options = {} unless options?
-    options.type = options.type ? module.exports.MESSAGE_BOX_NONE
-    throw new TypeError('Invalid message box type') unless 0 <= options.type <= 2
+    options.type = options.type ? 'none'
+    options.type = messageBoxTypes.indexOf options.type
+    throw new TypeError('Invalid message box type') unless options.type > -1
 
     throw new TypeError('Buttons need to be array') unless Array.isArray options.buttons
 
@@ -83,8 +86,3 @@ module.exports =
                            String(options.title),
                            String(options.message),
                            String(options.detail)
-
-  # Message box types:
-  MESSAGE_BOX_NONE: 0
-  MESSAGE_BOX_INFORMATION: 1
-  MESSAGE_BOX_WARNING: 2
