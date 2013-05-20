@@ -1,72 +1,34 @@
 binding = process.atomBinding 'dialog'
 BrowserWindow = require 'browser_window'
-CallbacksRegistry = require 'callbacks_registry'
-EventEmitter = require('events').EventEmitter
-ipc = require 'ipc'
 
-FileDialog = binding.FileDialog
-FileDialog.prototype.__proto__ = EventEmitter.prototype
-
-callbacksRegistry = new CallbacksRegistry
-
-fileDialog = new FileDialog
-
-fileDialog.on 'selected', (event, callbackId, paths...) ->
-  callbacksRegistry.call callbackId, 'selected', paths...
-  callbacksRegistry.remove callbackId
-
-fileDialog.on 'cancelled', (event, callbackId) ->
-  callbacksRegistry.call callbackId, 'cancelled'
-  callbacksRegistry.remove callbackId
-
-validateOptions = (options) ->
-  return false unless typeof options is 'object'
-
-  options.fileTypes = [] unless Array.isArray options.fileTypes
-  for type in options.fileTypes
-    return false unless typeof type is 'object' and
-                        typeof type.description is 'string'
-                        Array.isArray type.extensions
-
-  options.defaultPath = '' unless options.defaultPath?
-  options.fileTypeIndex = 0 unless options.fileTypeIndex?
-  options.defaultExtension = '' unless options.defaultExtension?
-  true
-
-selectFileWrap = (window, options, callback, type, title) ->
-  throw new TypeError('Need BrowserWindow object') unless window.constructor is BrowserWindow
-
-  options = {} unless options?
-  options.type = type
-  options.title = title unless options.title?
-
-  throw new TypeError('Bad arguments') unless validateOptions options
-
-  callbackId = callbacksRegistry.add callback
-
-  fileDialog.selectFile window,
-                        options.type,
-                        options.title,
-                        options.defaultPath,
-                        options.fileTypes,
-                        options.fileTypeIndex,
-                        options.defaultExtension,
-                        callbackId
+fileDialogProperties =
+  openFile: 1, openDirectory: 2, multiSelections: 4, createDirectory: 8
 
 messageBoxTypes = ['none', 'info', 'warning']
 
 module.exports =
-  openFolder: (args...) ->
-    selectFileWrap args..., 1, 'Open Folder'
+  showOpenDialog: (options) ->
+    options = title: 'Open', properties: ['openFile'] unless options?
+    options.properties = options.properties ? ['openFile']
+    throw new TypeError('Properties need to be array') unless Array.isArray options.properties
 
-  saveAs: (args...) ->
-    selectFileWrap args..., 2, 'Save As'
+    properties = 0
+    for prop, value of fileDialogProperties
+      properties |= value if prop in options.properties
 
-  openFile: (args...) ->
-    selectFileWrap args..., 3, 'Open File'
+    options.title = options.title ? ''
+    options.defaultPath = options.defaultPath ? ''
 
-  openMultiFiles: (args...) ->
-    selectFileWrap args..., 4, 'Open Files'
+    binding.showOpenDialog options.title, options.defaultPath, properties
+
+  showSaveDialog: (window, options) ->
+    throw new TypeError('Invalid window') unless window?.constructor is BrowserWindow
+    options = title: 'Save' unless options?
+
+    options.title = options.title ? ''
+    options.defaultPath = options.defaultPath ? ''
+
+    binding.showSaveDialog window, options.title, options.defaultPath
 
   showMessageBox: (options) ->
     options = type: 'none' unless options?

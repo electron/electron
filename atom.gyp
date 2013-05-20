@@ -70,6 +70,8 @@
       'browser/browser.h',
       'browser/browser_mac.mm',
       'browser/browser_observer.h',
+      'browser/file_dialog.h',
+      'browser/file_dialog_mac.mm',
       'browser/message_box.h',
       'browser/message_box_mac.mm',
       'browser/native_window.cc',
