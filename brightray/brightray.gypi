@@ -68,6 +68,7 @@
           'VCLinkerTool': {
             'AdditionalDependencies': [
               'advapi32.lib',
+              'user32.lib',
             ],
           },
         },
