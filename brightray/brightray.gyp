@@ -52,6 +52,7 @@
         'browser/url_request_context_getter.h',
         'common/application_info.h',
         'common/application_info_mac.mm',
+        'common/application_info_win.cc',
         'common/content_client.cc',
         'common/content_client.h',
         'common/mac/foundation_util.h',
