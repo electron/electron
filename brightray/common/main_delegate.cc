@@ -32,8 +32,8 @@ void MainDelegate::PreSandboxStartup() {
 #if defined(OS_MACOSX)
   OverrideChildProcessPath();
   OverrideFrameworkBundlePath();
-#endif
   InitializeResourceBundle();
+#endif
 }
 
 }
