@@ -74,6 +74,7 @@
         ['OS=="win"', {
           'link_settings': {
             'libraries': [
+              '<(libchromiumcontent_library_dir)/base_static.lib',
               '<(libchromiumcontent_library_dir)/chromiumcontent.dll.lib',
               '<(libchromiumcontent_library_dir)/sandbox_static.lib',
             ],
