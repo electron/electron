@@ -28,9 +28,6 @@
     'win_release_InlineFunctionExpansion%': '2', # 1 = only __inline, 2 = max
   },
   'target_defaults': {
-    'defines': [
-      'NDEBUG',
-    ],
     'xcode_settings': {
       'ALWAYS_SEARCH_USER_PATHS': 'NO',
       'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++11',
@@ -53,6 +50,14 @@
     'configurations': {
       'Common_Base': {
         'abstract': 1,
+        'defines': [
+          'COMPONENT_BUILD',
+          'GURL_DLL',
+          'SKIA_DLL',
+          'NDEBUG',
+          'USING_V8_SHARED',
+          'WEBKIT_DLL',
+        ],
         'msvs_configuration_attributes': {
           'OutputDirectory': '<(DEPTH)\\build\\$(ConfigurationName)', 
           'IntermediateDirectory': '$(OutDir)\\obj\\$(ProjectName)',
