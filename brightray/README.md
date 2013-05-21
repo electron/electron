@@ -1,12 +1,12 @@
 # Brightray
 
 Brightray is a static library that makes
-[libchromiumcontent](https://github.com/aroben/libchromiumcontent) easier to
+[libchromiumcontent](https://github.com/brightray/libchromiumcontent) easier to
 use in applications.
 
 ## Using it in your app
 
-See [brightray_example](https://github.com/aroben/brightray_example) for a
+See [brightray_example](https://github.com/brightray/brightray_example) for a
 sample application written using Brightray.
 
 ## Development
@@ -33,7 +33,7 @@ You must previously have built and uploaded libchromiumcontent using its
 
 Building Brightray on its own isn’t all that interesting, since it’s just a
 static library. Building it into an application (like
-[brightray_example](https://github.com/aroben/brightray_example)) is the only
+[brightray_example](https://github.com/brightray/brightray_example)) is the only
 way to test it.
 
 ## License
