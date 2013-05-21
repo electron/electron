@@ -64,6 +64,13 @@
           'IntermediateDirectory': '$(OutDir)\\obj\\$(ProjectName)',
           'CharacterSet': '1',
         },
+        'msvs_settings': {
+          'VCLinkerTool': {
+            'AdditionalDependencies': [
+              'advapi32.lib',
+            ],
+          },
+        },
       },
       'Debug': {
         'inherit_from': [
