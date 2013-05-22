@@ -70,6 +70,13 @@
             ],
           },
         }],
+        ['OS=="win"', {
+          'link_settings': {
+            'libraries': [
+              '<(libchromiumcontent_library_dir)/chromiumcontent.dll.lib',
+            ],
+          },
+        }],
       ],
     },
   ],
