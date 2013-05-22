@@ -41,9 +41,7 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(content::WebContents* web
   auto context = static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
   dock_side_ = context->prefs()->GetString(kDockSidePref);
 
-#if defined(OS_MACOSX)
   view_.reset(CreateInspectableContentsView(this));
-#endif
 }
 
 InspectableWebContentsImpl::~InspectableWebContentsImpl() {
