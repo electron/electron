@@ -64,6 +64,7 @@ void NodeBindingsMac::UvRunOnce() {
   DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
 
   // Enter node context while dealing with uv events.
+  v8::HandleScope scope;
   v8::Context::Scope context_scope(node::g_context);
 
   // Deal with uv events.
