@@ -42,7 +42,7 @@ bool StringToAccelerator(const std::string& description,
 
   std::vector<std::string> tokens;
   base::SplitString(shortcut, '+', &tokens);
-  if (tokens.size() < 2 || tokens.size() > 3) {
+  if (tokens.size() < 2 || tokens.size() > 4) {
     LOG(WARNING) << "Invalid accelerator description: " << description;
     return false;
   }
