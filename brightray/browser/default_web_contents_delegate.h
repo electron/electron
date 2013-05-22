@@ -13,7 +13,9 @@ public:
   ~DefaultWebContentsDelegate();
 
 protected:
+#if defined(OS_MACOSX)
   virtual void HandleKeyboardEvent(content::WebContents*, const content::NativeWebKeyboardEvent&) OVERRIDE;
+#endif
 };
 
 }
