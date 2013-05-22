@@ -34,8 +34,9 @@ protected:
   virtual void PreSandboxStartup() OVERRIDE;
 
 private:
-#if defined(OS_MACOSX)
   void InitializeResourceBundle();
+#if defined(OS_MACOSX)
+  static base::FilePath GetResourcesPakFilePath();
   static void OverrideChildProcessPath();
   static void OverrideFrameworkBundlePath();
 #endif

@@ -8,7 +8,9 @@
 #include "common/content_client.h"
 
 #include "base/command_line.h"
+#include "base/path_service.h"
 #include "content/public/common/content_switches.h"
+#include "ui/base/resource/resource_bundle.h"
 
 namespace brightray {
 
@@ -32,8 +34,26 @@ void MainDelegate::PreSandboxStartup() {
 #if defined(OS_MACOSX)
   OverrideChildProcessPath();
   OverrideFrameworkBundlePath();
-  InitializeResourceBundle();
 #endif
+  InitializeResourceBundle();
+}
+
+void MainDelegate::InitializeResourceBundle() {
+  base::FilePath path;
+#if defined(OS_MACOSX)
+  path = GetResourcesPakFilePath();
+#else
+  base::FilePath pak_dir;
+  PathService::Get(base::DIR_MODULE, &pak_dir);
+  path = pak_dir.Append(FILE_PATH_LITERAL("content_shell.pak"));
+#endif
+
+  ui::ResourceBundle::InitSharedInstanceWithPakPath(path);
+
+  std::vector<base::FilePath> pak_paths;
+  AddPakPaths(&pak_paths);
+  for (auto it = pak_paths.begin(), end = pak_paths.end(); it != end; ++it)
+    ui::ResourceBundle::GetSharedInstance().AddDataPackFromPath(*it, ui::SCALE_FACTOR_NONE);
 }
 
 }
