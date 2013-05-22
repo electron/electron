@@ -74,6 +74,7 @@
           'link_settings': {
             'libraries': [
               '<(libchromiumcontent_library_dir)/chromiumcontent.dll.lib',
+              '<(libchromiumcontent_library_dir)/sandbox_static.lib',
             ],
           },
         }],
