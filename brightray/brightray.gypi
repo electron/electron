@@ -8,8 +8,8 @@
     'mac_deployment_target%': '10.8',
     'mac_sdkroot%': 'macosx',
 
-    'win_release_RuntimeLibrary%': '0', # /MT (nondebug static)
-    'win_debug_RuntimeLibrary%': '1', # /MTd (debug static)
+    'win_release_RuntimeLibrary%': '2', # /MD (nondebug DLL)
+    'win_debug_RuntimeLibrary%': '3', # /MTd (debug DLL)
 
     # See http://msdn.microsoft.com/en-us/library/aa652360(VS.71).aspx
     'win_release_Optimization%': '2', # 2 = /Os
