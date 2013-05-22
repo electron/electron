@@ -12,7 +12,6 @@
 #include "base/mac/bundle_locations.h"
 #include "base/path_service.h"
 #include "content/public/common/content_paths.h"
-#include "ui/base/resource/resource_bundle.h"
 
 namespace brightray {
 
@@ -24,15 +23,9 @@ base::FilePath GetFrameworksPath() {
 
 }
 
-void MainDelegate::InitializeResourceBundle() {
+base::FilePath MainDelegate::GetResourcesPakFilePath() {
   auto path = [base::mac::FrameworkBundle() pathForResource:@"content_shell" ofType:@"pak"];
-
-  ui::ResourceBundle::InitSharedInstanceWithPakPath(base::mac::NSStringToFilePath(path));
-
-  std::vector<base::FilePath> pak_paths;
-  AddPakPaths(&pak_paths);
-  for (const auto& path : pak_paths)
-    ui::ResourceBundle::GetSharedInstance().AddDataPackFromPath(path, ui::SCALE_FACTOR_NONE);
+  return base::mac::NSStringToFilePath(path);
 }
 
 void MainDelegate::OverrideFrameworkBundlePath() {

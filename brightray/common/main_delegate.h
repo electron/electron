@@ -36,6 +36,7 @@ protected:
 private:
   void InitializeResourceBundle();
 #if defined(OS_MACOSX)
+  static base::FilePath GetResourcesPakFilePath();
   static void OverrideChildProcessPath();
   static void OverrideFrameworkBundlePath();
 #endif

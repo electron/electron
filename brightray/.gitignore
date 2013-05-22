@@ -4,3 +4,6 @@
 /brightray.vcxproj*
 /brightray.xcodeproj/
 /build/
+
+# Vim
+*.swp

@@ -13,6 +13,7 @@
       ],
       'direct_dependent_settings': {
         'include_dirs': [
+          '..',
           '<(libchromiumcontent_include_dir)',
           '<(libchromiumcontent_include_dir)/third_party/skia/include/config',
         ],
@@ -51,6 +52,7 @@
         'browser/url_request_context_getter.h',
         'common/application_info.h',
         'common/application_info_mac.mm',
+        'common/application_info_win.cc',
         'common/content_client.cc',
         'common/content_client.h',
         'common/mac/foundation_util.h',
@@ -68,6 +70,25 @@
               '$(SDKROOT)/System/Library/Frameworks/AppKit.framework',
             ],
           },
+        }, {
+          'sources/': [
+            ['exclude', '/mac/'],
+            ['exclude', '_mac\.(mm|h)$'],
+          ],
+        }],
+        ['OS=="win"', {
+          'link_settings': {
+            'libraries': [
+              '<(libchromiumcontent_library_dir)/base_static.lib',
+              '<(libchromiumcontent_library_dir)/chromiumcontent.dll.lib',
+              '<(libchromiumcontent_library_dir)/sandbox_static.lib',
+            ],
+          },
+        }, {
+          'sources/': [
+            ['exclude', '/win/'],
+            ['exclude', '_win\.(cc|h)$'],
+          ],
         }],
       ],
     },
