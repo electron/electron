@@ -17,10 +17,9 @@
 
 using WebKit::WebFrame;
 
-namespace webkit_atom {
-extern void SetNodeContext(v8::Persistent<v8::Context> context);
-extern void SetEnterFirstWindowContext(bool (*func)());
-extern void SetIsValidWindowContext(bool (*func)(v8::Handle<v8::Context>));
+namespace webkit {
+extern void SetGetFirstWindowContext(v8::Handle<v8::Context> (*)());
+extern void SetIsValidWindowContext(bool (*)(v8::Handle<v8::Context>));
 }
 
 namespace atom {
@@ -32,13 +31,11 @@ std::vector<WebFrame*>& web_frames() {
   return frames;
 }
 
-bool EnterFirstWindowContext() {
+v8::Handle<v8::Context> GetFirstWindowContext() {
   if (web_frames().size() == 0)
-    return false;
+    return v8::Handle<v8::Context>();
 
-  DCHECK(!web_frames()[0]->mainWorldScriptContext().IsEmpty());
-  web_frames()[0]->mainWorldScriptContext()->Enter();
-  return true;
+  return web_frames()[0]->mainWorldScriptContext();
 }
 
 bool IsValidWindowContext(v8::Handle<v8::Context> context) {
@@ -59,8 +56,8 @@ AtomRenderViewObserver::AtomRenderViewObserver(
       atom_bindings_(new AtomRendererBindings(render_view)),
       renderer_client_(renderer_client) {
   // Interact with dirty workarounds of extra node context in WebKit.
-  webkit_atom::SetEnterFirstWindowContext(EnterFirstWindowContext);
-  webkit_atom::SetIsValidWindowContext(IsValidWindowContext);
+  webkit::SetGetFirstWindowContext(GetFirstWindowContext);
+  webkit::SetIsValidWindowContext(IsValidWindowContext);
 }
 
 AtomRenderViewObserver::~AtomRenderViewObserver() {
