@@ -37,6 +37,7 @@ class Window : public EventEmitter,
                                   const std::string& title) OVERRIDE;
   virtual void WillCloseWindow(bool* prevent_default) OVERRIDE;
   virtual void OnWindowClosed() OVERRIDE;
+  virtual void OnWindowBlur() OVERRIDE;
 
  private:
   static v8::Handle<v8::Value> New(const v8::Arguments &args);
