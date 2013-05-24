@@ -51,6 +51,15 @@ v8::Handle<v8::Value> App::Quit(const v8::Arguments &args) {
 }
 
 // static
+v8::Handle<v8::Value> App::Exit(const v8::Arguments &args) {
+  v8::HandleScope scope;
+
+  exit(args[0]->IntegerValue());
+
+  return v8::Undefined();
+}
+
+// static
 v8::Handle<v8::Value> App::Terminate(const v8::Arguments &args) {
   v8::HandleScope scope;
 
@@ -100,6 +109,7 @@ void App::Initialize(v8::Handle<v8::Object> target) {
   t->SetClassName(v8::String::NewSymbol("Application"));
 
   NODE_SET_PROTOTYPE_METHOD(t, "quit", Quit);
+  NODE_SET_PROTOTYPE_METHOD(t, "exit", Exit);
   NODE_SET_PROTOTYPE_METHOD(t, "terminate", Terminate);
 
   target->Set(v8::String::NewSymbol("Application"), t->GetFunction());
