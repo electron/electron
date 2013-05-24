@@ -37,7 +37,7 @@
   return self;
 }
 
-- (void)windowDidResignKey:(NSNotification*)notification {
+- (void)windowDidResignMain:(NSNotification*)notification {
   shell_->NotifyWindowBlur();
 }
 
