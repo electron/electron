@@ -20,6 +20,7 @@
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
+#include "content/public/browser/render_view_host.h"
 
 @interface AtomNSWindowDelegate : NSObject<NSWindowDelegate> {
  @private
@@ -36,7 +37,11 @@
   return self;
 }
 
-- (void)windowWillClose:(NSNotification *)notification {
+- (void)windowDidResignKey:(NSNotification*)notification {
+  shell_->NotifyWindowBlur();
+}
+
+- (void)windowWillClose:(NSNotification*)notification {
   shell_->window() = nil;
   [self autorelease];
 }

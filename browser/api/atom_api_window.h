@@ -74,6 +74,8 @@ class Window : public EventEmitter,
   static v8::Handle<v8::Value> IsKiosk(const v8::Arguments &args);
   static v8::Handle<v8::Value> OpenDevTools(const v8::Arguments &args);
   static v8::Handle<v8::Value> CloseDevTools(const v8::Arguments &args);
+  static v8::Handle<v8::Value> FocusOnWebView(const v8::Arguments &args);
+  static v8::Handle<v8::Value> BlurWebView(const v8::Arguments &args);
 
   // APIs for WebContents.
   static v8::Handle<v8::Value> GetPageTitle(const v8::Arguments &args);

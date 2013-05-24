@@ -95,6 +95,8 @@ class NativeWindow : public content::WebContentsDelegate,
   virtual bool IsClosed() const { return is_closed_; }
   virtual void OpenDevTools();
   virtual void CloseDevTools();
+  virtual void FocusOnWebView();
+  virtual void BlurWebView();
 
   // The same with closing a tab in a real browser.
   //
@@ -120,6 +122,7 @@ class NativeWindow : public content::WebContentsDelegate,
   }
 
   void NotifyWindowClosed();
+  void NotifyWindowBlur();
 
   // Implementations of content::WebContentsDelegate.
   virtual void WebContentsCreated(content::WebContents* source_contents,

@@ -54,6 +54,8 @@ class NativeWindowMac : public NativeWindow {
 
   NSWindow*& window() { return window_; }
 
+  void NotifyWindowBlur() { NativeWindow::NotifyWindowBlur(); }
+
  protected:
   void SetNonLionFullscreen(bool fullscreen);
 

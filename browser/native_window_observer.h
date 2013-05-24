@@ -22,6 +22,9 @@ class NativeWindowObserver {
 
   // Called when the window is closed.
   virtual void OnWindowClosed() {}
+
+  // Called when window loses focus.
+  virtual void OnWindowBlur() {}
 };
 
 }  // namespace atom

@@ -132,6 +132,14 @@ void NativeWindow::CloseDevTools() {
   inspectable_web_contents()->GetView()->CloseDevTools();
 }
 
+void NativeWindow::FocusOnWebView() {
+  GetWebContents()->GetRenderViewHost()->Focus();
+}
+
+void NativeWindow::BlurWebView() {
+  GetWebContents()->GetRenderViewHost()->Blur();
+}
+
 void NativeWindow::CloseWebContents() {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(NativeWindowObserver,
@@ -160,6 +168,10 @@ void NativeWindow::NotifyWindowClosed() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowClosed());
 
   WindowList::RemoveWindow(this);
+}
+
+void NativeWindow::NotifyWindowBlur() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowBlur());
 }
 
 // Window opened by window.open.
@@ -207,11 +219,11 @@ bool NativeWindow::CanOverscrollContent() const {
 }
 
 void NativeWindow::ActivateContents(content::WebContents* contents) {
-  GetWebContents()->GetRenderViewHost()->Focus();
+  FocusOnWebView();
 }
 
 void NativeWindow::DeactivateContents(content::WebContents* contents) {
-  GetWebContents()->GetRenderViewHost()->Blur();
+  BlurWebView();
 }
 
 void NativeWindow::MoveContents(content::WebContents* source,
