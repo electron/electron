@@ -150,10 +150,12 @@ void NativeWindowMac::Move(const gfx::Rect& pos) {
 }
 
 void NativeWindowMac::Focus(bool focus) {
-  if (focus && [window() isVisible])
+  if (focus && [window() isVisible]) {
+    [[NSApplication sharedApplication] activateIgnoringOtherApps:YES];
     [window() makeKeyAndOrderFront:nil];
-  else
+  } else {
     [window() orderBack:nil];
+  }
 }
 
 bool NativeWindowMac::IsFocused() {
