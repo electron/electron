@@ -9,8 +9,12 @@ namespace brightray {
 
 namespace {
 
+std::string ApplicationInfoDictionaryValue(NSString* key) {
+  return base::SysNSStringToUTF8([MainApplicationBundle().infoDictionary objectForKey:key]);
+}
+
 std::string ApplicationInfoDictionaryValue(CFStringRef key) {
-  return base::SysNSStringToUTF8([MainApplicationBundle().infoDictionary objectForKey:base::mac::CFToNSCast(key)]);
+  return ApplicationInfoDictionaryValue(base::mac::CFToNSCast(key));
 }
 
 }
@@ -20,7 +24,7 @@ std::string GetApplicationName() {
 }
 
 std::string GetApplicationVersion() {
-  return ApplicationInfoDictionaryValue(kCFBundleVersionKey);
+  return ApplicationInfoDictionaryValue(@"CFBundleShortVersionString");
 }
 
 }
