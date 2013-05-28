@@ -1,13 +1,19 @@
 #include "common/application_info.h"
 
+#include "base/file_version_info.h"
+#include "base/memory/scoped_ptr.h"
+#include "base/utf_string_conversions.h"
+
 namespace brightray {
 
 std::string GetApplicationName() {
-  return std::string();
+  auto info = make_scoped_ptr(FileVersionInfo::CreateFileVersionInfoForModule(GetModuleHandle(nullptr)));
+  return UTF16ToUTF8(info->product_name());
 }
 
 std::string GetApplicationVersion() {
-  return std::string();
+  auto info = make_scoped_ptr(FileVersionInfo::CreateFileVersionInfoForModule(GetModuleHandle(nullptr)));
+  return UTF16ToUTF8(info->file_version());
 }
 
 }
