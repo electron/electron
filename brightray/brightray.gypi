@@ -180,6 +180,11 @@
             'WarnAsError': 'true',
             'DebugInformationFormat': '3',
           },
+          'VCLinkerTool': {
+            'GenerateDebugInformation': 'true',
+            'MapFileName': '$(OutDir)\\$(TargetName).map',
+            'ImportLibrary': '$(OutDir)\\lib\\$(TargetName).lib',
+          },
         },
         'msvs_disabled_warnings': [
           4100, # unreferenced formal parameter
