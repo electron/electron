@@ -72,11 +72,6 @@
               '$(SDKROOT)/System/Library/Frameworks/AppKit.framework',
             ],
           },
-        }, {
-          'sources/': [
-            ['exclude', '/mac/'],
-            ['exclude', '_mac\.(mm|h)$'],
-          ],
         }],
         ['OS=="win"', {
           'link_settings': {
@@ -86,11 +81,6 @@
               '<(libchromiumcontent_library_dir)/sandbox_static.lib',
             ],
           },
-        }, {
-          'sources/': [
-            ['exclude', '/win/'],
-            ['exclude', '_win\.(cc|h)$'],
-          ],
         }],
       ],
     },

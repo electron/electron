@@ -153,6 +153,20 @@
         },
       },
     },
+    'conditions': [
+      ['OS!="mac"', {
+        'sources/': [
+          ['exclude', '/mac/'],
+          ['exclude', '_mac\.(mm|h)$'],
+        ],
+      }],
+      ['OS!="win"', {
+        'sources/': [
+          ['exclude', '/win/'],
+          ['exclude', '_win\.(cc|h)$'],
+        ],
+      }],
+    ],
   },
   'conditions': [
     ['OS=="win"', {
