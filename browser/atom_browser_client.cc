@@ -38,6 +38,14 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->enable_scroll_animator = false;
 }
 
+bool AtomBrowserClient::ShouldSwapProcessesForNavigation(
+    content::SiteInstance* site_instance,
+    const GURL& current_url,
+    const GURL& new_url) {
+  // Restart renderer process if navigating to the same url.
+  return current_url == new_url;
+}
+
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
     const content::MainFunctionParams&) {
   return new AtomBrowserMainParts;

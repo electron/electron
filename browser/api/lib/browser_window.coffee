@@ -14,6 +14,9 @@ BrowserWindow::toggleDevTools = ->
     @openDevTools()
     v8Util.setHiddenValue this, 'devtoolsOpened', true
 
+BrowserWindow::restart = ->
+  @loadUrl(@getUrl())
+
 BrowserWindow.getFocusedWindow = ->
   windows = objectsRegistry.getAllWindows()
   return window for window in windows when window.isFocused()
