@@ -80,7 +80,6 @@
         'msvs_settings': {
           'VCCLCompilerTool': {
             'Optimization': '<(win_debug_Optimization)',
-            'PreprocessorDefinitions': ['_DEBUG'],
             'BasicRuntimeChecks': '<(win_debug_RuntimeChecks)',
             # We use Release to match the version of chromiumcontent.dll we
             # link against.
