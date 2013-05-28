@@ -169,18 +169,30 @@
           'WIN32_LEAN_AND_MEAN',
           '_ATL_NO_OPENGL',
         ],
-      },
-      'msvs_settings': {
-        'VCCLCompilerTool': {
-          'AdditionalOptions': ['/MP'],
-          'MinimalRebuild': 'false',
-          'BufferSecurityCheck': 'true',
-          'EnableFunctionLevelLinking': 'true',
-          'RuntimeTypeInfo': 'false',
-          'WarningLevel': '4',
-          'WarnAsError': 'true',
-          'DebugInformationFormat': '3',
+        'msvs_settings': {
+          'VCCLCompilerTool': {
+            'AdditionalOptions': ['/MP'],
+            'MinimalRebuild': 'false',
+            'BufferSecurityCheck': 'true',
+            'EnableFunctionLevelLinking': 'true',
+            'RuntimeTypeInfo': 'false',
+            'WarningLevel': '4',
+            'WarnAsError': 'true',
+            'DebugInformationFormat': '3',
+          },
         },
+        'msvs_disabled_warnings': [
+          4100, # unreferenced formal parameter
+          4127, # conditional expression is constant
+          4244, # 'initializing' : conversion from 'double' to 'size_t', possible loss of data
+          4245, # 'initializing' : conversion from 'int' to 'const net::QuicVersionTag', signed/unsigned mismatch
+          4251, # class 'std::xx' needs to have dll-interface.
+          4310, # cast truncates constant value
+          4480, # nonstandard extension used: specifying underlying type for enum
+          4481, # nonstandard extension used: override specifier 'override'
+          4512, # assignment operator could not be generated
+          4702, # unreachable code
+        ],
       },
     }],
   ],
