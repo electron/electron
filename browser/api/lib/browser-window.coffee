@@ -1,6 +1,6 @@
 EventEmitter = require('events').EventEmitter
 v8Util = process.atomBinding 'v8_util'
-objectsRegistry = require '../../atom/objects_registry.js'
+objectsRegistry = require '../../atom/objects-registry.js'
 
 BrowserWindow = process.atomBinding('window').BrowserWindow
 BrowserWindow::__proto__ = EventEmitter.prototype

@@ -1,6 +1,6 @@
 ipc = require 'ipc'
-CallbacksRegistry = require 'callbacks_registry'
-v8_util = process.atomBinding 'v8_util'
+CallbacksRegistry = require 'callbacks-registry'
+v8Util = process.atomBinding 'v8_util'
 
 currentContextExist = true
 callbacksRegistry = new CallbacksRegistry
@@ -8,7 +8,7 @@ callbacksRegistry = new CallbacksRegistry
 # Convert the arguments object into an array of meta data.
 wrapArgs = (args) ->
   Array::slice.call(args).map (value) ->
-    if typeof value is 'object' and v8_util.getHiddenValue value, 'isRemoteObject'
+    if typeof value is 'object' and v8Util.getHiddenValue value, 'isRemoteObject'
       type: 'object', id: value.id
     else if typeof value is 'function'
       type: 'function', id: callbacksRegistry.add(value)
@@ -42,7 +42,7 @@ metaToValue = (meta) ->
               ret = ipc.sendChannelSync 'ATOM_BROWSER_FUNCTION_CALL', meta.id, wrapArgs(arguments)
               return metaToValue ret
       else
-        ret = v8_util.createObjectWithName meta.name
+        ret = v8Util.createObjectWithName meta.name
 
       # Polulate delegate members.
       for member in meta.members
@@ -64,12 +64,12 @@ metaToValue = (meta) ->
 
       # Track delegate object's life time, and tell the browser to clean up
       # when the object is GCed.
-      v8_util.setDestructor ret, ->
+      v8Util.setDestructor ret, ->
         return unless currentContextExist
         ipc.sendChannel 'ATOM_BROWSER_DEREFERENCE', meta.storeId
 
       # Mark this is a remote object.
-      v8_util.setHiddenValue ret, 'isRemoteObject', true
+      v8Util.setHiddenValue ret, 'isRemoteObject', true
 
       ret
 

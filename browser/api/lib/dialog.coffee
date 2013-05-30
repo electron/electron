@@ -1,5 +1,5 @@
 binding = process.atomBinding 'dialog'
-BrowserWindow = require 'browser_window'
+BrowserWindow = require 'browser-window'
 
 fileDialogProperties =
   openFile: 1, openDirectory: 2, multiSelections: 4, createDirectory: 8

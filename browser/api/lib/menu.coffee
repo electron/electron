@@ -1,6 +1,6 @@
 EventEmitter = require('events').EventEmitter
-BrowserWindow = require 'browser_window'
-MenuItem = require 'menu_item'
+BrowserWindow = require 'browser-window'
+MenuItem = require 'menu-item'
 
 bindings = process.atomBinding 'menu'
 

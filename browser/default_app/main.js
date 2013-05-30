@@ -1,9 +1,9 @@
 var app = require('app');
-var delegate = require('atom_delegate');
+var delegate = require('atom-delegate');
 var ipc = require('ipc');
 var Menu = require('menu');
-var MenuItem = require('menu_item');
-var BrowserWindow = require('browser_window');
+var MenuItem = require('menu-item');
+var BrowserWindow = require('browser-window');
 
 var mainWindow = null;
 var menu = null;

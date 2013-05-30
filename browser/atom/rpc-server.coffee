@@ -1,7 +1,7 @@
 ipc = require 'ipc'
 path = require 'path'
-objectsRegistry = require './objects_registry.js'
-v8_util = process.atomBinding 'v8_util'
+objectsRegistry = require './objects-registry.js'
+v8Util = process.atomBinding 'v8_util'
 
 # Convert a real value into meta data.
 valueToMeta = (processId, routingId, value) ->
@@ -46,7 +46,7 @@ unwrapArgs = (processId, routingId, args) ->
       when 'function'
         ret = ->
           ipc.sendChannel processId, routingId, 'ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(processId, routingId, arguments)
-        v8_util.setDestructor ret, ->
+        v8Util.setDestructor ret, ->
           ipc.sendChannel processId, routingId, 'ATOM_RENDERER_RELEASE_CALLBACK', meta.id
         ret
       else throw new TypeError("Unknown type: #{meta.type}")
@@ -68,7 +68,7 @@ ipc.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (event, processId, routingId) ->
 
 ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event, processId, routingId) ->
   try
-    BrowserWindow = require 'browser_window'
+    BrowserWindow = require 'browser-window'
     window = BrowserWindow.fromProcessIdAndRoutingId processId, routingId
     event.result = valueToMeta processId, routingId, window
   catch e

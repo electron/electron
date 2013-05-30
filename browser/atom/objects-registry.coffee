@@ -1,5 +1,5 @@
-BrowserWindow = require 'browser_window'
-IDWeakMap = require 'id_weak_map'
+BrowserWindow = require 'browser-window'
+IDWeakMap = require 'id-weak-map'
 
 class ObjectsStore
   @stores = {}

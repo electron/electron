@@ -32,7 +32,7 @@ process.on 'uncaughtException', (error) ->
   console.error message
 
 # Load the RPC server.
-require './rpc_server.js'
+require './rpc-server.js'
 
 # Now we try to load app's package.json.
 packageJson = null

@@ -2,7 +2,7 @@ EventEmitter = require('events').EventEmitter
 send = process.atomBinding('ipc').send
 
 sendWrap = (channel, processId, routingId, args...) ->
-  BrowserWindow = require 'browser_window'
+  BrowserWindow = require 'browser-window'
   if processId?.constructor is BrowserWindow
     window = processId
     processId = window.getProcessId()
