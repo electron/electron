@@ -207,6 +207,7 @@
           4245, # 'initializing' : conversion from 'int' to 'const net::QuicVersionTag', signed/unsigned mismatch
           4251, # class 'std::xx' needs to have dll-interface.
           4310, # cast truncates constant value
+          4355, # 'this' : used in base member initializer list
           4480, # nonstandard extension used: specifying underlying type for enum
           4481, # nonstandard extension used: override specifier 'override'
           4512, # assignment operator could not be generated

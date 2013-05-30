@@ -90,6 +90,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext()
     net::HttpCache::DefaultBackend* main_backend =
         new net::HttpCache::DefaultBackend(
             net::DISK_CACHE,
+            net::CACHE_BACKEND_DEFAULT,
             cache_path,
             0,
             content::BrowserThread::GetMessageLoopProxyForThread(
