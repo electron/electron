@@ -25,4 +25,8 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
   [mainNib release];
 }
 
+void AtomBrowserMainParts::PostDestroyThreads() {
+  [[[AtomApplication sharedApplication] delegate] release];
+}
+
 }  // namespace atom

@@ -10,13 +10,15 @@
   BOOL handlingSendEvent_;
 }
 
++ (AtomApplication*)sharedApplication;
+
 // CrAppProtocol:
 - (BOOL)isHandlingSendEvent;
 
 // CrAppControlProtocol:
 - (void)setHandlingSendEvent:(BOOL)handlingSendEvent;
 
-+ (AtomApplication*)sharedApplication;
+- (BOOL)openFile:(NSString*)file;
 
 - (IBAction)closeAllWindows:(id)sender;
 

@@ -4,6 +4,7 @@
 
 #include "browser/api/atom_api_app.h"
 
+#include "base/values.h"
 #include "base/command_line.h"
 #include "browser/browser.h"
 #include "vendor/node/src/node.h"
@@ -27,6 +28,12 @@ void App::OnWillQuit(bool* prevent_default) {
 
 void App::OnWindowAllClosed() {
   Emit("window-all-closed");
+}
+
+void App::OnOpenFile(bool* prevent_default, const std::string& file_path) {
+  base::ListValue args;
+  args.AppendString(file_path);
+  *prevent_default = Emit("open-file", &args);
 }
 
 // static

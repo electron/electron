@@ -5,6 +5,8 @@
 #ifndef ATOM_BROSER_BROWSER_OBSERVER_H_
 #define ATOM_BROSER_BROWSER_OBSERVER_H_
 
+#include <string>
+
 namespace atom {
 
 class BrowserObserver {
@@ -15,6 +17,11 @@ class BrowserObserver {
   // The browser has closed all windows. If the browser is quiting, then this
   // method will not be called, instead it will call OnWillQuit.
   virtual void OnWindowAllClosed() {}
+
+  // The browser has opened a file by double clicking in Finder or dragging the
+  // file to the Dock icon. (OS X only)
+  virtual void OnOpenFile(bool* prevent_default,
+                          const std::string& file_path) {}
 
  protected:
   virtual ~BrowserObserver() {}

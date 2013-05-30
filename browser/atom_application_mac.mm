@@ -5,9 +5,14 @@
 #import "browser/atom_application_mac.h"
 
 #include "base/auto_reset.h"
+#include "base/strings/sys_string_conversions.h"
 #include "browser/browser.h"
 
 @implementation AtomApplication
+
++ (AtomApplication*)sharedApplication {
+  return (AtomApplication*)[super sharedApplication];
+}
 
 - (BOOL)isHandlingSendEvent {
   return handlingSendEvent_;
@@ -22,8 +27,9 @@
   handlingSendEvent_ = handlingSendEvent;
 }
 
-+ (AtomApplication*)sharedApplication {
-  return (AtomApplication*)[super sharedApplication];
+- (BOOL)openFile:(NSString*)filename {
+  std::string filename_str(base::SysNSStringToUTF8(filename));
+  return atom::Browser::Get()->OpenFile(filename_str) ? YES : NO;
 }
 
 - (IBAction)closeAllWindows:(id)sender {

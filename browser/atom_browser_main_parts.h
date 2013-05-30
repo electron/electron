@@ -31,6 +31,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   virtual void PostEarlyInitialization() OVERRIDE;
   virtual void PreMainMessageLoopStart() OVERRIDE;
   virtual void PreMainMessageLoopRun() OVERRIDE;
+  virtual void PostDestroyThreads() OVERRIDE;
 
  private:
   scoped_ptr<AtomBrowserBindings> atom_bindings_;

@@ -16,6 +16,11 @@
            andEventID:kAEQuitApplication];
 }
 
+- (BOOL)application:(NSApplication*)sender
+           openFile:(NSString*)filename {
+  return [[AtomApplication sharedApplication] openFile:filename];
+}
+
 - (void)handleQuitEvent:(NSAppleEventDescriptor*)event
          withReplyEvent:(NSAppleEventDescriptor*)replyEvent {
   [[AtomApplication sharedApplication] closeAllWindows:self];

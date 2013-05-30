@@ -32,6 +32,15 @@ void Browser::Quit() {
   window_list->CloseAllWindows();
 }
 
+bool Browser::OpenFile(const std::string& file_path) {
+  bool prevent_default = false;
+  FOR_EACH_OBSERVER(BrowserObserver,
+                    observers_,
+                    OnOpenFile(&prevent_default, file_path));
+
+  return prevent_default;
+}
+
 void Browser::NotifyAndTerminate() {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWillQuit(&prevent_default));

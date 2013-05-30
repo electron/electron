@@ -26,6 +26,8 @@ class App : public EventEmitter,
   // BrowserObserver implementations:
   virtual void OnWillQuit(bool* prevent_default) OVERRIDE;
   virtual void OnWindowAllClosed() OVERRIDE;
+  virtual void OnOpenFile(bool* prevent_default,
+                          const std::string& file_path) OVERRIDE;
 
  private:
   static v8::Handle<v8::Value> New(const v8::Arguments &args);

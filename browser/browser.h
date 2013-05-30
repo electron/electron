@@ -27,6 +27,9 @@ class Browser : public WindowListObserver {
   // Quit the application immediately without cleanup work.
   void Terminate();
 
+  // Tell the application to open a file.
+  bool OpenFile(const std::string& file_path);
+
   void AddObserver(BrowserObserver* obs) {
     observers_.AddObserver(obs);
   }
