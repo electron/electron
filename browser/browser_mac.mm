@@ -12,4 +12,8 @@ void Browser::Terminate() {
   [[AtomApplication sharedApplication] terminate:nil];
 }
 
+void Browser::Focus() {
+  [[NSApplication sharedApplication] activateIgnoringOtherApps:YES];
+}
+
 }  // namespace atom
