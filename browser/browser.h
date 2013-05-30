@@ -30,6 +30,9 @@ class Browser : public WindowListObserver {
   // Tell the application to open a file.
   bool OpenFile(const std::string& file_path);
 
+  // Tell the application the loading has been done.
+  void DidFinishLaunching();
+
   void AddObserver(BrowserObserver* obs) {
     observers_.AddObserver(obs);
   }

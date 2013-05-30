@@ -28,6 +28,7 @@ class App : public EventEmitter,
   virtual void OnWindowAllClosed() OVERRIDE;
   virtual void OnOpenFile(bool* prevent_default,
                           const std::string& file_path) OVERRIDE;
+  virtual void OnFinishLaunching() OVERRIDE;
 
  private:
   static v8::Handle<v8::Value> New(const v8::Arguments &args);

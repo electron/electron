@@ -69,6 +69,11 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   }
 
   node_bindings_->RunMessageLoop();
+
+#if !defined(OS_MACOSX)
+  // The corresponding call in OS X is in AtomApplicationDelegate.
+  Browser::Get()->DidFinishLaunching();
+#endif
 }
 
 }  // namespace atom

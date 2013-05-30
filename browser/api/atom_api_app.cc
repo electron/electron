@@ -36,6 +36,10 @@ void App::OnOpenFile(bool* prevent_default, const std::string& file_path) {
   *prevent_default = Emit("open-file", &args);
 }
 
+void App::OnFinishLaunching() {
+  Emit("finish-launching");
+}
+
 // static
 v8::Handle<v8::Value> App::New(const v8::Arguments &args) {
   v8::HandleScope scope;

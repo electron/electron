@@ -23,6 +23,9 @@ class BrowserObserver {
   virtual void OnOpenFile(bool* prevent_default,
                           const std::string& file_path) {}
 
+  // The browser has finished loading.
+  virtual void OnFinishLaunching() {}
+
  protected:
   virtual ~BrowserObserver() {}
 };

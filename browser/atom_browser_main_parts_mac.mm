@@ -26,7 +26,7 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
 }
 
 void AtomBrowserMainParts::PostDestroyThreads() {
-  [[[AtomApplication sharedApplication] delegate] release];
+  [[AtomApplication sharedApplication] setDelegate:nil];
 }
 
 }  // namespace atom

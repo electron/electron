@@ -18,8 +18,6 @@
 // CrAppControlProtocol:
 - (void)setHandlingSendEvent:(BOOL)handlingSendEvent;
 
-- (BOOL)openFile:(NSString*)file;
-
 - (IBAction)closeAllWindows:(id)sender;
 
 @end
