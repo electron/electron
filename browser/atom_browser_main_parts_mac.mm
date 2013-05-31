@@ -23,6 +23,11 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
   auto mainNib = [[NSNib alloc] initWithNibNamed:mainNibName bundle:base::mac::FrameworkBundle()];
   [mainNib instantiateWithOwner:application topLevelObjects:nil];
   [mainNib release];
+
+  // Prevent Cocoa from turning command-line arguments into
+  // |-application:openFiles:|, since we already handle them directly.
+  [[NSUserDefaults standardUserDefaults]
+      setObject:@"NO" forKey:@"NSTreatUnknownArgumentsAsOpen"];
 }
 
 void AtomBrowserMainParts::PostDestroyThreads() {
