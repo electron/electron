@@ -4,7 +4,7 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-./script/update-node v0.10.9
+./script/update-node v0.10.5
 
 gyp --depth . atom.gyp \
   -Ivendor/brightray/brightray.gypi \
