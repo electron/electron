@@ -60,14 +60,20 @@ void BrowserClient::ShowDesktopNotification(
     int render_process_id,
     int render_view_id,
     bool worker) {
-  notification_presenter()->ShowNotification(params, render_process_id, render_view_id);
+  auto presenter = notification_presenter();
+  if (!presenter)
+    return;
+  presenter->ShowNotification(params, render_process_id, render_view_id);
 }
 
 void BrowserClient::CancelDesktopNotification(
     int render_process_id,
     int render_view_id,
     int notification_id) {
-  notification_presenter()->CancelNotification(render_process_id, render_view_id, notification_id);
+  auto presenter = notification_presenter();
+  if (!presenter)
+    return;
+  presenter->CancelNotification(render_process_id, render_view_id, notification_id);
 }
 
 }
