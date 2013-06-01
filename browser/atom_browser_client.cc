@@ -18,7 +18,7 @@ AtomBrowserClient::~AtomBrowserClient() {
 void AtomBrowserClient::OverrideWebkitPrefs(
     content::RenderViewHost* render_view_host,
     const GURL& url,
-    webkit_glue::WebPreferences* prefs) {
+    WebPreferences* prefs) {
   prefs->javascript_enabled = true;
   prefs->web_security_enabled = false;
   prefs->javascript_can_open_windows_automatically = true;
@@ -26,7 +26,6 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->dom_paste_enabled = true;
   prefs->java_enabled = false;
   prefs->allow_scripts_to_close_windows = true;
-  prefs->uses_page_cache = false;
   prefs->javascript_can_access_clipboard = true;
   prefs->local_storage_enabled = true;
   prefs->databases_enabled = true;
@@ -34,8 +33,8 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->allow_universal_access_from_file_urls = true;
   prefs->allow_file_access_from_file_urls = true;
   prefs->experimental_webgl_enabled = false;
+  prefs->allow_displaying_insecure_content = true;
   prefs->allow_running_insecure_content = true;
-  prefs->enable_scroll_animator = false;
 }
 
 bool AtomBrowserClient::ShouldSwapProcessesForNavigation(

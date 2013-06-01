@@ -40,7 +40,8 @@ void NodeBindings::Initialize() {
 
   // Load node.js.
   v8::HandleScope scope;
-  node::g_context = v8::Context::New();
+  node::g_context = v8::Persistent<v8::Context>::New(
+      node::node_isolate, v8::Context::New(node::node_isolate));
   {
     v8::Context::Scope context_scope(node::g_context);
     v8::Handle<v8::Object> process = node::SetupProcessObject(
