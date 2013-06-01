@@ -120,10 +120,20 @@
       'app/atom_library_main.cc',
       'app/atom_library_main.h',
     ],
+    'fix_framework_link_command': [
+      'install_name_tool',
+      '-change',
+      '@executable_path/../Frameworks/Quincy.framework/Versions/A/Quincy',
+      '@rpath/Quincy.framework/Versions/A/Quincy',
+      '${BUILT_PRODUCTS_DIR}/${EXECUTABLE_PATH}'
+    ],
   },
   'includes': [
     'vendor/brightray/brightray.gypi'
   ],
+  'target_defaults': {
+    'mac_framework_dirs': [ 'frameworks' ],
+  },
   'targets': [
     {
       'target_name': '<(project_name)',
@@ -162,6 +172,7 @@
               'files': [
                 '<(PRODUCT_DIR)/<(product_name) Helper.app',
                 '<(PRODUCT_DIR)/<(product_name).framework',
+                'frameworks/Quincy.framework'
               ],
             },
             {
@@ -179,6 +190,12 @@
             },
           ],
           'postbuilds': [
+            {
+              'postbuild_name': 'Fix Framework Link',
+              'action': [
+                '<@(fix_framework_link_command)',
+              ],
+            },
             {
               # This postbuid step is responsible for creating the following
               # helpers:
@@ -212,15 +229,6 @@
       'include_dirs': [
         '.',
         'vendor',
-      ],
-      'conditions': [
-        ['OS=="mac"', {
-          'link_settings': {
-            'libraries': [
-              '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
-            ],
-          },
-        }],
       ],
     },
     {
@@ -267,6 +275,12 @@
             'vendor',
             '<(libchromiumcontent_include_dir)',
           ],
+          'link_settings': {
+            'libraries': [
+              '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
+              'frameworks/Quincy.framework',
+            ],
+          },
           'mac_bundle': 1,
           'mac_bundle_resources': [
             'browser/mac/MainMenu.xib',
@@ -289,7 +303,15 @@
               ],
             },
           ],
-        },
+          'postbuilds': [
+            {
+              'postbuild_name': 'Fix Framework Link',
+              'action': [
+                '<@(fix_framework_link_command)',
+              ],
+            },
+          ],
+        },  # target framework
         {
           'target_name': '<(project_name)_helper',
           'product_name': '<(product_name) Helper',
@@ -306,9 +328,17 @@
           'mac_bundle': 1,
           'xcode_settings': {
             'INFOPLIST_FILE': 'renderer/mac/Info.plist',
-            'LD_RUNPATH_SEARCH_PATHS': '@executable_path/../../../../Frameworks',
+            'LD_RUNPATH_SEARCH_PATHS': '@executable_path/../../..',
           },
-        },
+          'postbuilds': [
+            {
+              'postbuild_name': 'Fix Framework Link',
+              'action': [
+                '<@(fix_framework_link_command)',
+              ],
+            },
+          ],
+        },  # target helper
       ],
     }],
   ],
