@@ -22,6 +22,7 @@ void AtomBindings::BindTo(v8::Handle<v8::Object> process) {
   v8::HandleScope scope;
 
   node::SetMethod(process, "atomBinding", Binding);
+  node::SetMethod(process, "crash", Crash);
 }
 
 // static
@@ -69,6 +70,12 @@ v8::Handle<v8::Value> AtomBindings::Binding(const v8::Arguments& args) {
 
   return v8::ThrowException(v8::Exception::Error(
       v8::String::New("No such module")));
+}
+
+// static
+v8::Handle<v8::Value> AtomBindings::Crash(const v8::Arguments& args) {
+  __builtin_trap();
+  return v8::Undefined();
 }
 
 }  // namespace atom
