@@ -126,6 +126,9 @@
     'fix_framework_link_command': [
       'install_name_tool',
       '-change',
+      '@loader_path/../Frameworks/Sparkle.framework/Versions/A/Sparkle',
+      '@rpath/Sparkle.framework/Versions/A/Sparkle',
+      '-change',
       '@executable_path/../Frameworks/Quincy.framework/Versions/A/Quincy',
       '@rpath/Quincy.framework/Versions/A/Quincy',
       '${BUILT_PRODUCTS_DIR}/${EXECUTABLE_PATH}'
@@ -175,7 +178,8 @@
               'files': [
                 '<(PRODUCT_DIR)/<(product_name) Helper.app',
                 '<(PRODUCT_DIR)/<(product_name).framework',
-                'frameworks/Quincy.framework'
+                'frameworks/Sparkle.framework',
+                'frameworks/Quincy.framework',
               ],
             },
             {
@@ -281,6 +285,7 @@
           'link_settings': {
             'libraries': [
               '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
+              'frameworks/Sparkle.framework',
               'frameworks/Quincy.framework',
             ],
           },
