@@ -26,10 +26,14 @@ globalPaths.push path.join(__dirname, '..', '..', 'common', 'api', 'lib')
 
 # Don't quit on fatal error.
 process.on 'uncaughtException', (error) ->
-  # TODO Show error in GUI.
+  # Show error in GUI.
   message = error.stack ? "#{error.name}: #{error.message}"
-  console.error 'uncaughtException:'
-  console.error message
+  require('dialog').showMessageBox
+      type: 'warning'
+      title: 'An javascript error occured in the browser'
+      message: 'uncaughtException'
+      detail: message
+      buttons: ['OK']
 
 # Load the RPC server.
 require './rpc-server.js'
