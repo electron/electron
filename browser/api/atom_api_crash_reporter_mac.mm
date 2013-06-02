@@ -51,7 +51,7 @@ v8::Handle<v8::Value> CrashReporter::SetAutoSubmit(const v8::Arguments &args) {
 // static
 void CrashReporter::Initialize(v8::Handle<v8::Object> target) {
   node::SetMethod(target, "setCompanyName", SetCompanyName);
-  node::SetMethod(target, "setSubmissionURL", SetSubmissionURL);
+  node::SetMethod(target, "setSubmissionUrl", SetSubmissionURL);
   node::SetMethod(target, "setAutoSubmit", SetAutoSubmit);
 }
 
