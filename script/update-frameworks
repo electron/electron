@@ -9,13 +9,15 @@ cd frameworks
 
 FRAMEWORKS_URL='https://gh-contractor-zcbenz.s3.amazonaws.com/frameworks'
 
-trap 'rm *.zip' EXIT
+trap 'rm -f *.zip' EXIT
 
-echo 'Downloading Quincy...'
-polite_curl "$FRAMEWORKS_URL/Quincy.framework.zip" > Quincy.framework.zip
+function download_and_unzip() {
+  if ! [ -d $1.framework ]; then
+    echo "Downloading $1..."
+    polite_curl "$FRAMEWORKS_URL/$1.framework.zip" > $1.framework.zip
+    unzip $1.framework.zip
+  fi
+}
 
-echo 'Downloading Sparkle...'
-polite_curl "$FRAMEWORKS_URL/Sparkle.framework.zip" > Sparkle.framework.zip
-
-unzip Quincy.framework.zip
-unzip Sparkle.framework.zip
+download_and_unzip Quincy
+download_and_unzip Sparkle
