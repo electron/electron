@@ -40,20 +40,20 @@ void CallNSInvocation(ScopedNSInvocation invocation) {
 
 @implementation SUUpdaterDelegate
 
-- (void)updater:(SUUpdater*)updater
-        willInstallUpdateOnQuit:(SUAppcastItem*)update
-        immediateInstallationInvocation:(NSInvocation*)invocation {
+- (BOOL)updater:(SUUpdater*)updater
+        shouldPostponeRelaunchForUpdate:(SUAppcastItem*)update
+        untilInvoking:(NSInvocation*)invocation {
   AutoUpdaterDelegate* delegate = auto_updater::AutoUpdater::GetDelegate();
-  if (!delegate) {
-    [invocation invoke];
-    return;
-  }
+  if (!delegate)
+    return NO;
 
   std::string version(base::SysNSStringToUTF8([update versionString]));
   ScopedNSInvocation invocation_ptr([invocation retain]);
   delegate->WillInstallUpdate(
       version,
       base::Bind(&CallNSInvocation, base::Passed(invocation_ptr.Pass())));
+
+  return YES;
 }
 
 @end
