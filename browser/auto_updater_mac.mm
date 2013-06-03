@@ -56,10 +56,6 @@ void CallNSInvocation(ScopedNSInvocation invocation) {
       base::Bind(&CallNSInvocation, base::Passed(invocation_ptr.Pass())));
 }
 
-- (void)updaterWillRelaunchApplication:(SUUpdater*)updater {
-  [[SUUpdater sharedUpdater] setDelegate:nil];
-}
-
 @end
 
 namespace auto_updater {
@@ -67,7 +63,6 @@ namespace auto_updater {
 // static
 void AutoUpdater::Init() {
   SUUpdaterDelegate* delegate = [[SUUpdaterDelegate alloc] init];
-  [delegate autorelease];
   [[SUUpdater sharedUpdater] setDelegate:delegate];
 }
 
@@ -89,7 +84,7 @@ void AutoUpdater::SetAutomaticallyDownloadsUpdates(bool yes) {
 
 // static
 void AutoUpdater::CheckForUpdates() {
-  [[SUUpdater sharedUpdater] checkForUpdates:[SUUpdater sharedUpdater]];
+  [[SUUpdater sharedUpdater] checkForUpdates:nil];
 }
 
 // static
