@@ -19,6 +19,8 @@
 #include "net/ssl/default_server_bound_cert_store.h"
 #include "net/ssl/server_bound_cert_service.h"
 #include "net/ssl/ssl_config_service_defaults.h"
+#include "net/url_request/data_protocol_handler.h"
+#include "net/url_request/file_protocol_handler.h"
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_storage.h"
@@ -130,6 +132,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext()
       DCHECK(set_protocol);
     }
     protocol_handlers_.clear();
+    job_factory->SetProtocolHandler(chrome::kDataScheme, new net::DataProtocolHandler);
+    job_factory->SetProtocolHandler(chrome::kFileScheme, new net::FileProtocolHandler);
     storage_->set_job_factory(job_factory.release());
   }
 
