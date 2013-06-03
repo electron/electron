@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_AUTO_UPDATER_H_
 #define ATOM_BROWSER_AUTO_UPDATER_H_
 
+#include <string>
+
 #include "base/basictypes.h"
 
 namespace auto_updater {
@@ -19,8 +21,10 @@ class AutoUpdater {
 
   static void Init();
 
+  static void SetFeedURL(const std::string& url);
   static void SetAutomaticallyChecksForUpdates(bool yes);
   static void SetAutomaticallyDownloadsUpdates(bool yes);
+  static void CheckForUpdates();
   static void CheckForUpdatesInBackground();
 
  private:

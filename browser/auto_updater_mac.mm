@@ -72,6 +72,12 @@ void AutoUpdater::Init() {
 }
 
 // static
+void AutoUpdater::SetFeedURL(const std::string& url) {
+  NSString* url_str(base::SysUTF8ToNSString(url));
+  [[SUUpdater sharedUpdater] setFeedURL:[NSURL URLWithString:url_str]];
+}
+
+// static
 void AutoUpdater::SetAutomaticallyChecksForUpdates(bool yes) {
   [[SUUpdater sharedUpdater] setAutomaticallyChecksForUpdates:yes];
 }
@@ -79,6 +85,11 @@ void AutoUpdater::SetAutomaticallyChecksForUpdates(bool yes) {
 // static
 void AutoUpdater::SetAutomaticallyDownloadsUpdates(bool yes) {
   [[SUUpdater sharedUpdater] setAutomaticallyDownloadsUpdates:yes];
+}
+
+// static
+void AutoUpdater::CheckForUpdates() {
+  [[SUUpdater sharedUpdater] checkForUpdates:[SUUpdater sharedUpdater]];
 }
 
 // static
