@@ -4,6 +4,7 @@ set -e
 
 cd "$(dirname "$0")/.."
 
+./script/update-frameworks
 ./script/update-node v0.10.9
 
 gyp --depth . atom.gyp \

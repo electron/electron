@@ -1,0 +1,21 @@
+#!/bin/bash
+
+cd "$(dirname $0)/.."
+
+. script/lib/polite-curl
+
+[ -d frameworks ] || mkdir frameworks
+cd frameworks
+
+FRAMEWORKS_URL='https://gh-contractor-zcbenz.s3.amazonaws.com/frameworks'
+
+trap 'rm *.zip' EXIT
+
+echo 'Downloading Quincy...'
+polite_curl "$FRAMEWORKS_URL/Quincy.framework.zip" > Quincy.framework.zip
+
+echo 'Downloading Sparkle...'
+polite_curl "$FRAMEWORKS_URL/Sparkle.framework.zip" > Sparkle.framework.zip
+
+unzip Quincy.framework.zip
+unzip Sparkle.framework.zip

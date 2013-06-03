@@ -3,6 +3,7 @@ atom-shell.zip
 version
 build/
 dist/
+frameworks/
 node/
 node_modules/
 vendor/
