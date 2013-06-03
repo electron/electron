@@ -3,4 +3,8 @@ EventEmitter = require('events').EventEmitter
 
 AutoUpdater::__proto__ = EventEmitter.prototype
 
-module.exports = new AutoUpdater
+autoUpdater = new AutoUpdater
+autoUpdater.on 'will-install-update-raw', (event, version) ->
+  @emit 'will-install-update', event, version, => @continueUpdate()
+
+module.exports = autoUpdater

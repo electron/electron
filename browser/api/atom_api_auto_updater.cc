@@ -25,7 +25,7 @@ void AutoUpdater::WillInstallUpdate(const std::string& version,
                                     const base::Closure& install) {
   base::ListValue args;
   args.AppendString(version);
-  bool prevent_default = Emit("will-install-update", &args);
+  bool prevent_default = Emit("will-install-update-raw", &args);
 
   if (prevent_default)
     continue_update_ = install;
