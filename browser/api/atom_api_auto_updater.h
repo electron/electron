@@ -26,6 +26,9 @@ class AutoUpdater : public EventEmitter,
 
   virtual void WillInstallUpdate(const std::string& version,
                                  const base::Closure& install) OVERRIDE;
+  virtual void ReadyForUpdateOnQuit(
+      const std::string& version,
+      const base::Closure& quit_and_install) OVERRIDE;
 
  private:
   static v8::Handle<v8::Value> New(const v8::Arguments &args);
@@ -40,8 +43,10 @@ class AutoUpdater : public EventEmitter,
       const v8::Arguments &args);
 
   static v8::Handle<v8::Value> ContinueUpdate(const v8::Arguments &args);
+  static v8::Handle<v8::Value> QuitAndInstall(const v8::Arguments &args);
 
   base::Closure continue_update_;
+  base::Closure quit_and_install_;
 
   DISALLOW_COPY_AND_ASSIGN(AutoUpdater);
 };

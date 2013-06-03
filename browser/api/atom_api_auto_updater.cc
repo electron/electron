@@ -23,14 +23,23 @@ AutoUpdater::~AutoUpdater() {
 
 void AutoUpdater::WillInstallUpdate(const std::string& version,
                                     const base::Closure& install) {
+  continue_update_ = install;
+
   base::ListValue args;
   args.AppendString(version);
   bool prevent_default = Emit("will-install-update-raw", &args);
 
-  if (prevent_default)
-    continue_update_ = install;
-  else
+  if (!prevent_default)
     install.Run();
+}
+
+void AutoUpdater::ReadyForUpdateOnQuit(const std::string& version,
+                                       const base::Closure& quit_and_install) {
+  quit_and_install_ = quit_and_install;
+
+  base::ListValue args;
+  args.AppendString(version);
+  Emit("ready-for-update-on-quit-raw", &args);
 }
 
 // static
@@ -88,6 +97,13 @@ v8::Handle<v8::Value> AutoUpdater::ContinueUpdate(const v8::Arguments &args) {
 }
 
 // static
+v8::Handle<v8::Value> AutoUpdater::QuitAndInstall(const v8::Arguments &args) {
+  AutoUpdater* self = AutoUpdater::Unwrap<AutoUpdater>(args.This());
+  self->quit_and_install_.Run();
+  return v8::Undefined();
+}
+
+// static
 void AutoUpdater::Initialize(v8::Handle<v8::Object> target) {
   v8::HandleScope scope;
 
@@ -109,6 +125,7 @@ void AutoUpdater::Initialize(v8::Handle<v8::Object> target) {
                             CheckForUpdatesInBackground);
 
   NODE_SET_PROTOTYPE_METHOD(t, "continueUpdate", ContinueUpdate);
+  NODE_SET_PROTOTYPE_METHOD(t, "quitAndInstall", QuitAndInstall);
 
   target->Set(v8::String::NewSymbol("AutoUpdater"), t->GetFunction());
 }

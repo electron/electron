@@ -13,4 +13,9 @@ void AutoUpdaterDelegate::WillInstallUpdate(const std::string& version,
   install.Run();
 }
 
+void AutoUpdaterDelegate::ReadyForUpdateOnQuit(
+    const std::string& version,
+    const base::Closure& quit_and_install) {
+}
+
 }  // namespace auto_updater
