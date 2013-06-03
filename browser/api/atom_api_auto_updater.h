@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_AUTO_UPDATER_H_
 #define ATOM_BROWSER_API_ATOM_API_AUTO_UPDATER_H_
 
+#include "base/callback.h"
+#include "base/memory/scoped_ptr.h"
 #include "browser/api/atom_api_event_emitter.h"
 #include "browser/auto_updater_delegate.h"
 
@@ -22,8 +24,24 @@ class AutoUpdater : public EventEmitter,
  protected:
   explicit AutoUpdater(v8::Handle<v8::Object> wrapper);
 
+  virtual void WillInstallUpdate(const std::string& version,
+                                 const base::Closure& install) OVERRIDE;
+
  private:
   static v8::Handle<v8::Value> New(const v8::Arguments &args);
+
+  static v8::Handle<v8::Value> SetFeedURL(const v8::Arguments &args);
+  static v8::Handle<v8::Value> SetAutomaticallyChecksForUpdates(
+      const v8::Arguments &args);
+  static v8::Handle<v8::Value> SetAutomaticallyDownloadsUpdates(
+      const v8::Arguments &args);
+  static v8::Handle<v8::Value> CheckForUpdates(const v8::Arguments &args);
+  static v8::Handle<v8::Value> CheckForUpdatesInBackground(
+      const v8::Arguments &args);
+
+  static v8::Handle<v8::Value> ContinueUpdate(const v8::Arguments &args);
+
+  base::Closure continue_update_;
 
   DISALLOW_COPY_AND_ASSIGN(AutoUpdater);
 };

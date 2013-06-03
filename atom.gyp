@@ -11,6 +11,7 @@
     'coffee_sources': [
       'browser/api/lib/app.coffee',
       'browser/api/lib/atom-delegate.coffee',
+      'browser/api/lib/auto-updater.coffee',
       'browser/api/lib/browser-window.coffee',
       'browser/api/lib/crash-reporter.coffee',
       'browser/api/lib/dialog.coffee',
@@ -35,6 +36,8 @@
       'browser/accelerator_util_mac.mm',
       'browser/api/atom_api_app.cc',
       'browser/api/atom_api_app.h',
+      'browser/api/atom_api_auto_updater.cc',
+      'browser/api/atom_api_auto_updater.h',
       'browser/api/atom_api_browser_ipc.cc',
       'browser/api/atom_api_browser_ipc.h',
       'browser/api/atom_api_crash_reporter.h',
