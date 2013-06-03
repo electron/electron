@@ -24,6 +24,7 @@ class BrowserObserver {
                           const std::string& file_path) {}
 
   // The browser has finished loading.
+  virtual void OnWillFinishLaunching() {}
   virtual void OnFinishLaunching() {}
 
  protected:

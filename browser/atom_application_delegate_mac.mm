@@ -10,6 +10,10 @@
 
 @implementation AtomApplicationDelegate
 
+- (void)applicationWillFinishLaunching:(NSNotification*)notify {
+  atom::Browser::Get()->WillFinishLaunching();
+}
+
 - (void)applicationDidFinishLaunching:(NSNotification*)notify {
   // Trap the quit message to handleQuitEvent.
   NSAppleEventManager* em = [NSAppleEventManager sharedAppleEventManager];

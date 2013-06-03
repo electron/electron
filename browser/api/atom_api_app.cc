@@ -36,6 +36,10 @@ void App::OnOpenFile(bool* prevent_default, const std::string& file_path) {
   *prevent_default = Emit("open-file", &args);
 }
 
+void App::OnWillFinishLaunching() {
+  Emit("will-finish-launching");
+}
+
 void App::OnFinishLaunching() {
   Emit("finish-launching");
 }
