@@ -46,6 +46,7 @@ private:
   virtual content::SpeechRecognitionPreferences* GetSpeechRecognitionPreferences() OVERRIDE;
   virtual quota::SpecialStoragePolicy* GetSpecialStoragePolicy() OVERRIDE;
 
+  base::FilePath path_;
   scoped_ptr<ResourceContext> resource_context_;
   scoped_refptr<URLRequestContextGetter> url_request_getter_;
   scoped_ptr<PrefService> prefs_;

@@ -72,9 +72,13 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(content::Prot
 }
 
 base::FilePath BrowserContext::GetPath() {
+  if (!path_.empty())
+    return path_;
+
   base::FilePath path;
   CHECK(PathService::Get(base::DIR_APP_DATA, &path));
-  return path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+  path_ = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+  return path_;
 }
 
 bool BrowserContext::IsOffTheRecord() const {
