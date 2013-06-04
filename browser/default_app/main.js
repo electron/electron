@@ -112,6 +112,10 @@ delegate.browserMainParts.preMainMessageLoopRun = function() {
           click: function() { BrowserWindow.getFocusedWindow().reloadIgnoringCache(); }
         },
         {
+          label: 'Enter Fullscreen',
+          click: function() { BrowserWindow.getFocusedWindow().setFullscreen(true); }
+        },
+        {
           label: 'Toggle DevTools',
           accelerator: 'Alt+Command+I',
           click: function() { BrowserWindow.getFocusedWindow().toggleDevTools(); }

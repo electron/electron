@@ -85,7 +85,6 @@ namespace atom {
 NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
                                  base::DictionaryValue* options)
     : NativeWindow(web_contents, options),
-      is_fullscreen_(false),
       is_kiosk_(false),
       attention_request_id_(0) {
   int width, height;
@@ -187,72 +186,19 @@ void NativeWindowMac::Restore() {
 }
 
 void NativeWindowMac::SetFullscreen(bool fullscreen) {
-  if (fullscreen == is_fullscreen_)
+  if (fullscreen == IsFullscreen())
     return;
 
-  if (base::mac::IsOSLionOrLater()) {
-    is_fullscreen_ = fullscreen;
-    [window() toggleFullScreen:nil];
+  if (!base::mac::IsOSLionOrLater()) {
+    LOG(ERROR) << "Fullscreen mode is only supported above Lion";
     return;
   }
 
-  DCHECK(base::mac::IsOSSnowLeopard());
-
-  SetNonLionFullscreen(fullscreen);
+  [window() toggleFullScreen:nil];
 }
 
 bool NativeWindowMac::IsFullscreen() {
-  return is_fullscreen_;
-}
-
-void NativeWindowMac::SetNonLionFullscreen(bool fullscreen) {
-  if (fullscreen == is_fullscreen_)
-    return;
-
-  is_fullscreen_ = fullscreen;
-
-  // Fade to black.
-  const CGDisplayReservationInterval kFadeDurationSeconds = 0.6;
-  bool did_fade_out = false;
-  CGDisplayFadeReservationToken token;
-  if (CGAcquireDisplayFadeReservation(kFadeDurationSeconds, &token) ==
-      kCGErrorSuccess) {
-    did_fade_out = true;
-    CGDisplayFade(token, kFadeDurationSeconds / 2, kCGDisplayBlendNormal,
-        kCGDisplayBlendSolidColor, 0.0, 0.0, 0.0, /*synchronous=*/true);
-  }
-
-  // Since frameless windows insert the WebContentsView into the NSThemeFrame
-  // ([[window contentView] superview]), and since that NSThemeFrame is
-  // destroyed and recreated when we change the styleMask of the window, we
-  // need to remove the view from the window when we change the style, and
-  // add it back afterwards.
-  UninstallView();
-  if (fullscreen) {
-    restored_bounds_ = [window() frame];
-    [window() setStyleMask:NSBorderlessWindowMask];
-    [window() setFrame:[window()
-        frameRectForContentRect:[[window() screen] frame]]
-               display:YES];
-    base::mac::RequestFullScreen(base::mac::kFullScreenModeAutoHideAll);
-  } else {
-    base::mac::ReleaseFullScreen(base::mac::kFullScreenModeAutoHideAll);
-    NSUInteger style_mask = NSTitledWindowMask | NSClosableWindowMask |
-                            NSMiniaturizableWindowMask | NSResizableWindowMask |
-                            NSTexturedBackgroundWindowMask;
-    [window() setStyleMask:style_mask];
-    [window() setFrame:restored_bounds_ display:YES];
-  }
-  InstallView();
-
-  // Fade back in.
-  if (did_fade_out) {
-    CGDisplayFade(token, kFadeDurationSeconds / 2, kCGDisplayBlendSolidColor,
-        kCGDisplayBlendNormal, 0.0, 0.0, 0.0, /*synchronous=*/false);
-    CGReleaseDisplayFadeReservation(token);
-  }
-
-  is_fullscreen_ = fullscreen;
+  return [window() styleMask] & NSFullScreenWindowMask;
 }
 
 void NativeWindowMac::SetSize(const gfx::Size& size) {
@@ -362,11 +308,11 @@ void NativeWindowMac::SetKiosk(bool kiosk) {
         NSApplicationPresentationDisableHideApplication;
     [NSApp setPresentationOptions:options];
     is_kiosk_ = true;
-    SetNonLionFullscreen(true);
+    SetFullscreen(true);
   } else {
     [NSApp setPresentationOptions:[NSApp currentSystemPresentationOptions]];
     is_kiosk_  = false;
-    SetNonLionFullscreen(false);
+    SetFullscreen(false);
   }
 }
 

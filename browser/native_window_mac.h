@@ -57,8 +57,6 @@ class NativeWindowMac : public NativeWindow {
   void NotifyWindowBlur() { NativeWindow::NotifyWindowBlur(); }
 
  protected:
-  void SetNonLionFullscreen(bool fullscreen);
-
   // Implementations of content::WebContentsDelegate.
   virtual void HandleKeyboardEvent(
       content::WebContents*,
@@ -70,9 +68,7 @@ class NativeWindowMac : public NativeWindow {
 
   NSWindow* window_;
 
-  bool is_fullscreen_;
   bool is_kiosk_;
-  NSRect restored_bounds_;
 
   NSInteger attention_request_id_;  // identifier from requestUserAttention
 
