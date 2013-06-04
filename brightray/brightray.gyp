@@ -50,6 +50,8 @@
         'browser/notification_presenter_mac.mm',
         'browser/url_request_context_getter.cc',
         'browser/url_request_context_getter.h',
+        'browser/win/devtools_window.cc',
+        'browser/win/devtools_window.h',
         'browser/win/inspectable_web_contents_view_win.cc',
         'browser/win/inspectable_web_contents_view_win.h',
         'common/application_info.h',

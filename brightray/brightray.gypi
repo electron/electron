@@ -171,6 +171,9 @@
   'conditions': [
     ['OS=="win"', {
       'target_defaults': {
+        'include_dirs': [
+          '<(libchromiumcontent_include_dir)/third_party/wtl/include',
+        ],
         'defines': [
           '_WIN32_WINNT=0x0602',
           'WINVER=0x0602',
@@ -182,6 +185,10 @@
           'CERT_CHAIN_PARA_HAS_EXTRA_FIELDS',
           'WIN32_LEAN_AND_MEAN',
           '_ATL_NO_OPENGL',
+          '_SECURE_ATL',
+        ],
+        'msvs_system_include_dirs': [
+          '$(VSInstallDir)/VC/atlmfc/include',
         ],
         'msvs_settings': {
           'VCCLCompilerTool': {

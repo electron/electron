@@ -4,9 +4,11 @@
 #include "browser/inspectable_web_contents_view.h"
 
 #include "base/compiler_specific.h"
+#include "base/memory/weak_ptr.h"
 
 namespace brightray {
 
+class DevToolsWindow;
 class InspectableWebContentsImpl;
 
 class InspectableWebContentsViewWin : public InspectableWebContentsView {
@@ -24,6 +26,8 @@ public:
 private:
   // Owns us.
   InspectableWebContentsImpl* inspectable_web_contents_;
+
+  base::WeakPtr<DevToolsWindow> devtools_window_;
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewWin);
 };
