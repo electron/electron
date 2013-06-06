@@ -28,12 +28,13 @@ protected:
   // Subclasses should override this to register custom preferences.
   virtual void RegisterPrefs(PrefRegistrySimple*) {}
 
+  virtual base::FilePath GetPath() OVERRIDE;
+
 private:
   class ResourceContext;
 
   void RegisterInternalPrefs(PrefRegistrySimple*);
 
-  virtual base::FilePath GetPath() OVERRIDE;
   virtual bool IsOffTheRecord() const OVERRIDE;
   virtual net::URLRequestContextGetter* GetRequestContext() OVERRIDE;
   virtual net::URLRequestContextGetter* GetRequestContextForRenderProcess(int renderer_child_id);
