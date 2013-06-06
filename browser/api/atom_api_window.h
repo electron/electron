@@ -38,6 +38,8 @@ class Window : public EventEmitter,
   virtual void WillCloseWindow(bool* prevent_default) OVERRIDE;
   virtual void OnWindowClosed() OVERRIDE;
   virtual void OnWindowBlur() OVERRIDE;
+  virtual void OnRendererUnresponsive() OVERRIDE;
+  virtual void OnRendererResponsive() OVERRIDE;
 
  private:
   static v8::Handle<v8::Value> New(const v8::Arguments &args);

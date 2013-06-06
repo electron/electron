@@ -146,6 +146,8 @@ class NativeWindow : public content::WebContentsDelegate,
   virtual void CloseContents(content::WebContents* source) OVERRIDE;
   virtual bool IsPopupOrPanel(
       const content::WebContents* source) const OVERRIDE;
+  virtual void RendererUnresponsive(content::WebContents* source) OVERRIDE;
+  virtual void RendererResponsive(content::WebContents* source) OVERRIDE;
 
   // Implementations of content::WebContentsObserver.
   virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;

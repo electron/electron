@@ -7,9 +7,11 @@
   This is the default mode of Atom Shell, please follow the instructions in
   wiki to get started.
   <script type="text/javascript" charset="utf-8">
+
     var ipc = require('ipc');
 
     window.addEventListener('contextmenu', function (e) {
+      while(1) {}
       e.preventDefault();
       ipc.send('menu');
     }, false);

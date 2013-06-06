@@ -30,6 +30,10 @@ delegate.browserMainParts.preMainMessageLoopRun = function() {
     mainWindow = null;
   });
 
+  mainWindow.on('unresponsive', function() {
+    console.log('unresponsive');
+  });
+
   var template = [
     {
       label: 'Atom Shell',

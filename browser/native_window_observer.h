@@ -25,6 +25,12 @@ class NativeWindowObserver {
 
   // Called when window loses focus.
   virtual void OnWindowBlur() {}
+
+  // Called when renderer is hung.
+  virtual void OnRendererUnresponsive() {}
+
+  // Called when renderer recovers.
+  virtual void OnRendererResponsive() {}
 };
 
 }  // namespace atom

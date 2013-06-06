@@ -248,6 +248,14 @@ bool NativeWindow::IsPopupOrPanel(const content::WebContents* source) const {
   return true;
 }
 
+void NativeWindow::RendererUnresponsive(content::WebContents* source) {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererUnresponsive());
+}
+
+void NativeWindow::RendererResponsive(content::WebContents* source) {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
+}
+
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(NativeWindow, message)
