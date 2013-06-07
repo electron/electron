@@ -89,6 +89,8 @@
       'browser/native_window_mac.h',
       'browser/native_window_mac.mm',
       'browser/native_window_observer.h',
+      'browser/nsalert_synchronous_sheet.h',
+      'browser/nsalert_synchronous_sheet.mm',
       'browser/window_list.cc',
       'browser/window_list.h',
       'browser/window_list_observer.h',
