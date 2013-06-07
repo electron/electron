@@ -30,7 +30,11 @@ module.exports =
 
     binding.showSaveDialog window, options.title, options.defaultPath
 
-  showMessageBox: (options) ->
+  showMessageBox: (window, options) ->
+    if window?.constructor isnt BrowserWindow
+      options = window
+      window = null
+
     options = type: 'none' unless options?
     options.type = options.type ? 'none'
     options.type = messageBoxTypes.indexOf options.type
@@ -42,7 +46,9 @@ module.exports =
     options.message = options.message ? ''
     options.detail = options.detail ? ''
 
-    binding.showMessageBox options.type, options.buttons,
+    binding.showMessageBox options.type,
+                           options.buttons,
                            String(options.title),
                            String(options.message),
-                           String(options.detail)
+                           String(options.detail),
+                           window

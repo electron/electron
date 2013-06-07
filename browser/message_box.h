@@ -10,13 +10,16 @@
 
 namespace atom {
 
+class NativeWindow;
+
 enum MessageBoxType {
   MESSAGE_BOX_TYPE_NONE = 0,
   MESSAGE_BOX_TYPE_INFORMATION,
   MESSAGE_BOX_TYPE_WARNING
 };
 
-int ShowMessageBox(MessageBoxType type,
+int ShowMessageBox(NativeWindow* parent_window,
+                   MessageBoxType type,
                    const std::vector<std::string>& buttons,
                    const std::string& title,
                    const std::string& message,

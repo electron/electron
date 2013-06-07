@@ -49,6 +49,15 @@ v8::Handle<v8::Value> ShowMessageBox(const v8::Arguments &args) {
       !args[4]->IsString())    // detail
     return node::ThrowTypeError("Bad argument");
 
+  NativeWindow* native_window = NULL;
+  if (args[5]->IsObject()) {
+    Window* window = Window::Unwrap<Window>(args[5]->ToObject());
+    if (!window || !window->window())
+      return node::ThrowError("Invalid window");
+
+    native_window = window->window();
+  }
+
   MessageBoxType type = (MessageBoxType)(args[0]->IntegerValue());
 
   std::vector<std::string> buttons;
@@ -60,7 +69,8 @@ v8::Handle<v8::Value> ShowMessageBox(const v8::Arguments &args) {
   std::string message(*v8::String::Utf8Value(args[3]));
   std::string detail(*v8::String::Utf8Value(args[4]));
 
-  int chosen = atom::ShowMessageBox(type, buttons, title, message, detail);
+  int chosen = atom::ShowMessageBox(
+      native_window, type, buttons, title, message, detail);
   return scope.Close(v8::Integer::New(chosen));
 }
 

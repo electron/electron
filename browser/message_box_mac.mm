@@ -7,10 +7,13 @@
 #import <Cocoa/Cocoa.h>
 
 #include "base/strings/sys_string_conversions.h"
+#include "browser/native_window.h"
+#include "browser/nsalert_synchronous_sheet.h"
 
 namespace atom {
 
-int ShowMessageBox(MessageBoxType type,
+int ShowMessageBox(NativeWindow* parent_window,
+                   MessageBoxType type,
                    const std::vector<std::string>& buttons,
                    const std::string& title,
                    const std::string& message,
@@ -37,7 +40,10 @@ int ShowMessageBox(MessageBoxType type,
     [button setTag:i];
   }
 
-  return [alert runModal];
+  if (parent_window)
+    return [alert runModalSheetForWindow:parent_window->GetNativeWindow()];
+  else
+    return [alert runModal];
 }
 
 }  // namespace atom
