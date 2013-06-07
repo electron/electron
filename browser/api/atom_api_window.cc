@@ -634,8 +634,8 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "unmaximize", Unmaximize);
   NODE_SET_PROTOTYPE_METHOD(t, "minimize", Minimize);
   NODE_SET_PROTOTYPE_METHOD(t, "restore", Restore);
-  NODE_SET_PROTOTYPE_METHOD(t, "setFullscreen", SetFullscreen);
-  NODE_SET_PROTOTYPE_METHOD(t, "isFullscreen", IsFullscreen);
+  NODE_SET_PROTOTYPE_METHOD(t, "setFullScreen", SetFullscreen);
+  NODE_SET_PROTOTYPE_METHOD(t, "isFullScreen", IsFullscreen);
   NODE_SET_PROTOTYPE_METHOD(t, "setSize", SetSize);
   NODE_SET_PROTOTYPE_METHOD(t, "getSize", GetSize);
   NODE_SET_PROTOTYPE_METHOD(t, "setMinimumSize", SetMinimumSize);
