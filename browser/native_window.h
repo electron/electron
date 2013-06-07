@@ -97,6 +97,7 @@ class NativeWindow : public content::WebContentsDelegate,
   virtual void CloseDevTools();
   virtual void FocusOnWebView();
   virtual void BlurWebView();
+  virtual void RestartHangMonitorTimeout();
 
   // The same with closing a tab in a real browser.
   //

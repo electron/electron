@@ -140,6 +140,10 @@ void NativeWindow::BlurWebView() {
   GetWebContents()->GetRenderViewHost()->Blur();
 }
 
+void NativeWindow::RestartHangMonitorTimeout() {
+  GetWebContents()->GetRenderViewHost()->RestartHangMonitorTimeout();
+}
+
 void NativeWindow::CloseWebContents() {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(NativeWindowObserver,
