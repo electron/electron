@@ -149,6 +149,8 @@ class NativeWindow : public content::WebContentsDelegate,
       const content::WebContents* source) const OVERRIDE;
   virtual void RendererUnresponsive(content::WebContents* source) OVERRIDE;
   virtual void RendererResponsive(content::WebContents* source) OVERRIDE;
+  virtual void NavigationStateChanged(const content::WebContents* source,
+                                      unsigned changed_flags) OVERRIDE;
 
   // Implementations of content::WebContentsObserver.
   virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;

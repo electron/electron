@@ -31,6 +31,9 @@ class NativeWindowObserver {
 
   // Called when renderer recovers.
   virtual void OnRendererResponsive() {}
+
+  // Called when renderer has crashed.
+  virtual void OnRendererCrashed() {}
 };
 
 }  // namespace atom

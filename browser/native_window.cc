@@ -15,6 +15,7 @@
 #include "browser/atom_browser_main_parts.h"
 #include "browser/atom_javascript_dialog_manager.h"
 #include "browser/window_list.h"
+#include "content/public/browser/invalidate_type.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/notification_details.h"
 #include "content/public/browser/notification_source.h"
@@ -258,6 +259,13 @@ void NativeWindow::RendererUnresponsive(content::WebContents* source) {
 
 void NativeWindow::RendererResponsive(content::WebContents* source) {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
+}
+
+void NativeWindow::NavigationStateChanged(const content::WebContents* source,
+                                          unsigned changed_flags) {
+  if (changed_flags == content::INVALIDATE_TYPE_TAB &&
+      source->IsCrashed())
+    FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererCrashed());
 }
 
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
