@@ -79,6 +79,10 @@ void Window::OnRendererResponsive() {
   Emit("responsive");
 }
 
+void Window::OnRendererCrashed() {
+  Emit("crashed");
+}
+
 // static
 v8::Handle<v8::Value> Window::New(const v8::Arguments &args) {
   v8::HandleScope scope;
@@ -490,6 +494,13 @@ v8::Handle<v8::Value> Window::GetProcessID(const v8::Arguments &args) {
 }
 
 // static
+v8::Handle<v8::Value> Window::IsCrashed(const v8::Arguments &args) {
+  UNWRAP_WINDOW_AND_CHECK;
+
+  return v8::Boolean::New(self->window_->GetWebContents()->IsCrashed());
+}
+
+// static
 v8::Handle<v8::Value> Window::LoadURL(const v8::Arguments &args) {
   UNWRAP_WINDOW_AND_CHECK;
 
@@ -678,6 +689,7 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "stop", Stop);
   NODE_SET_PROTOTYPE_METHOD(t, "getRoutingId", GetRoutingID);
   NODE_SET_PROTOTYPE_METHOD(t, "getProcessId", GetProcessID);
+  NODE_SET_PROTOTYPE_METHOD(t, "isCrashed", IsCrashed);
 
   NODE_SET_PROTOTYPE_METHOD(t, "loadUrl", LoadURL);
   NODE_SET_PROTOTYPE_METHOD(t, "getUrl", GetURL);

@@ -40,6 +40,7 @@ class Window : public EventEmitter,
   virtual void OnWindowBlur() OVERRIDE;
   virtual void OnRendererUnresponsive() OVERRIDE;
   virtual void OnRendererResponsive() OVERRIDE;
+  virtual void OnRendererCrashed() OVERRIDE;
 
  private:
   static v8::Handle<v8::Value> New(const v8::Arguments &args);
@@ -89,6 +90,7 @@ class Window : public EventEmitter,
   static v8::Handle<v8::Value> Stop(const v8::Arguments &args);
   static v8::Handle<v8::Value> GetRoutingID(const v8::Arguments &args);
   static v8::Handle<v8::Value> GetProcessID(const v8::Arguments &args);
+  static v8::Handle<v8::Value> IsCrashed(const v8::Arguments &args);
 
   // APIs for NavigationController.
   static v8::Handle<v8::Value> LoadURL(const v8::Arguments &args);
