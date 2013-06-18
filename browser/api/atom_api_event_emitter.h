@@ -29,11 +29,36 @@ class EventEmitter : public node::ObjectWrap {
   bool Emit(const std::string& name);
   bool Emit(const std::string& name, base::ListValue* args);
 
+  // Same with Unwrap but if the handle is not a native object, which happened
+  // when user inherits a native class, we would search for the native object,
+  // otherwise we won't get the correct C++ object.
+  template <typename T>
+  static inline bool SafeUnwrap(v8::Handle<v8::Object> handle, T** pointer) {
+    v8::Handle<v8::Object> real_handle = SearchNativeObject(handle);
+    if (real_handle->InternalFieldCount() == 0)
+      return false;
+
+    *pointer = Unwrap<T>(real_handle);
+    return true;
+  }
+
+  // Helper function to call "new" when constructor is called as normal
+  // function, this usually happens when inheriting native class.
+  //
+  // This function also does some special hacks to make sure the inheritance
+  // would work, because normal inheritance would not inherit internal fields.
+  static v8::Handle<v8::Value> FromConstructorTemplate(
+      v8::Persistent<v8::FunctionTemplate> t,
+      const v8::Arguments& args);
+
   // Small accessor to return handle_, this follows Google C++ Style.
   v8::Persistent<v8::Object> handle() const { return handle_; }
 
  protected:
   explicit EventEmitter(v8::Handle<v8::Object> wrapper);
+
+  static v8::Handle<v8::Object> SearchNativeObject(
+      v8::Handle<v8::Object> handle);
 
  private:
   DISALLOW_COPY_AND_ASSIGN(EventEmitter);

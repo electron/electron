@@ -19,9 +19,13 @@ using content::NavigationController;
 using node::ObjectWrap;
 
 #define UNWRAP_WINDOW_AND_CHECK \
-  Window* self = ObjectWrap::Unwrap<Window>(args.This()); \
-  if (self == NULL) \
-    return node::ThrowError("Window is already destroyed")
+  Window* self; \
+  if (SafeUnwrap<Window>(args.This(), &self)) { \
+    if (self == NULL) \
+      return node::ThrowError("Window is already destroyed"); \
+  } else { \
+    return node::ThrowTypeError("Window methods are not generic");\
+  }
 
 namespace atom {
 
@@ -35,6 +39,9 @@ v8::Handle<v8::String> UTF16ToV8String(const string16& s) {
 }
 
 }  // namespace
+
+// static
+v8::Persistent<v8::FunctionTemplate> Window::constructor_template_;
 
 Window::Window(v8::Handle<v8::Object> wrapper, base::DictionaryValue* options)
     : EventEmitter(wrapper),
@@ -85,10 +92,10 @@ void Window::OnRendererCrashed() {
 
 // static
 v8::Handle<v8::Value> Window::New(const v8::Arguments &args) {
-  v8::HandleScope scope;
-
   if (!args.IsConstructCall())
-    return node::ThrowError("Require constructor call");
+    return FromConstructorTemplate(constructor_template_, args);
+
+  v8::HandleScope scope;
 
   if (!args[0]->IsObject())
     return node::ThrowTypeError("Need options creating Window");
@@ -643,7 +650,10 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
 
   v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(Window::New);
   t->InstanceTemplate()->SetInternalFieldCount(1);
-  t->SetClassName(v8::String::NewSymbol("BrowserWindow"));
+  t->SetClassName(v8::String::NewSymbol("Window"));
+
+  constructor_template_ = v8::Persistent<v8::FunctionTemplate>::New(
+      node::node_isolate, t);
 
   NODE_SET_PROTOTYPE_METHOD(t, "destroy", Destroy);
   NODE_SET_PROTOTYPE_METHOD(t, "close", Close);
@@ -703,7 +713,7 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "reload", Reload);
   NODE_SET_PROTOTYPE_METHOD(t, "reloadIgnoringCache", ReloadIgnoringCache);
 
-  target->Set(v8::String::NewSymbol("BrowserWindow"), t->GetFunction());
+  target->Set(v8::String::NewSymbol("Window"), t->GetFunction());
 }
 
 }  // namespace api
