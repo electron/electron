@@ -105,8 +105,6 @@ class Window : public EventEmitter,
   static v8::Handle<v8::Value> Reload(const v8::Arguments &args);
   static v8::Handle<v8::Value> ReloadIgnoringCache(const v8::Arguments &args);
 
-  static v8::Persistent<v8::FunctionTemplate> constructor_template_;
-
   scoped_ptr<NativeWindow> window_;
 
   DISALLOW_COPY_AND_ASSIGN(Window);

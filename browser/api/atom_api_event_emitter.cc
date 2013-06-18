@@ -20,6 +20,13 @@ namespace api {
 
 EventEmitter::EventEmitter(v8::Handle<v8::Object> wrapper) {
   Wrap(wrapper);
+
+  // process.emit('ATOM_BROWSER_INTERNAL_NEW', this).
+  v8::Handle<v8::Value> args[] = {
+      v8::String::New("ATOM_BROWSER_INTERNAL_NEW"),
+      wrapper,
+  };
+  node::MakeCallback(node::process, "emit", 2, args);
 }
 
 EventEmitter::~EventEmitter() {
@@ -62,26 +69,6 @@ bool EventEmitter::Emit(const std::string& name, base::ListValue* args) {
   delete event;
 
   return prevent_default;
-}
-
-// static
-v8::Handle<v8::Value> EventEmitter::FromConstructorTemplate(
-    v8::Persistent<v8::FunctionTemplate> t,
-    const v8::Arguments& args) {
-  v8::Handle<v8::Value> new_object = node::FromConstructorTemplate(t, args);
-  args.This()->SetHiddenValue(v8::String::New("native_object"), new_object);
-  return new_object;
-}
-
-// static
-v8::Handle<v8::Object> EventEmitter::SearchNativeObject(
-    v8::Handle<v8::Object> handle) {
-  if (handle->InternalFieldCount() > 0)
-    return handle;
-
-  // If the object is not a native object, we assume the native object is
-  // stored in it.
-  return handle->GetHiddenValue(v8::String::New("native_object"))->ToObject();
 }
 
 }  // namespace api
