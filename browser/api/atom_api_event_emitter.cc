@@ -20,13 +20,6 @@ namespace api {
 
 EventEmitter::EventEmitter(v8::Handle<v8::Object> wrapper) {
   Wrap(wrapper);
-
-  // process.emit('ATOM_BROWSER_INTERNAL_NEW', this).
-  v8::Handle<v8::Value> args[] = {
-      v8::String::New("ATOM_BROWSER_INTERNAL_NEW"),
-      wrapper,
-  };
-  node::MakeCallback(node::process, "emit", 2, args);
 }
 
 EventEmitter::~EventEmitter() {

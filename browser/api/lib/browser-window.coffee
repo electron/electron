@@ -9,6 +9,9 @@ module.exports = class BrowserWindow extends Window
   constructor: ->
     super
 
+    # Remember all BrowserWindows.
+    process.emit 'ATOM_BROWSER_INTERNAL_NEW_BROWSER_WINDOW', this
+
   toggleDevTools: ->
     opened = v8Util.getHiddenValue this, 'devtoolsOpened'
     if opened
