@@ -7,7 +7,8 @@ cd "$(dirname "$0")/.."
 ./script/update-frameworks
 ./script/update-node v0.10.9
 
-gyp --depth . atom.gyp \
+gyp -f ninja --depth . atom.gyp \
+  -Icommon.gypi \
   -Ivendor/brightray/brightray.gypi \
   -Dtarget_arch=ia32 \
   -Dlibrary=static_library

@@ -144,11 +144,10 @@
       '${BUILT_PRODUCTS_DIR}/${EXECUTABLE_PATH}'
     ],
   },
-  'includes': [
-    'vendor/brightray/brightray.gypi'
-  ],
   'target_defaults': {
-    'mac_framework_dirs': [ 'frameworks' ],
+    'mac_framework_dirs': [
+      '<(source_root)/frameworks',
+    ],
   },
   'targets': [
     {
@@ -180,7 +179,9 @@
           ],
           'xcode_settings': {
             'INFOPLIST_FILE': 'browser/mac/Info.plist',
-            'LD_RUNPATH_SEARCH_PATHS': '@executable_path/../Frameworks',
+            'LD_RUNPATH_SEARCH_PATHS': [
+              '@executable_path/../Frameworks',
+            ],
           },
           'copies': [
             {
@@ -305,11 +306,12 @@
             '<(libchromiumcontent_resources_dir)/content_shell.pak',
           ],
           'xcode_settings': {
-            'LIBRARY_SEARCH_PATHS': '<(libchromiumcontent_library_dir)',
+            'LIBRARY_SEARCH_PATHS': [
+              '<(libchromiumcontent_library_dir)',
+            ],
             'LD_DYLIB_INSTALL_NAME': '@rpath/<(product_name).framework/<(product_name)',
-            'LD_RUNPATH_SEARCH_PATHS': '@loader_path/Libraries',
-            'OTHER_LDFLAGS': [
-              '-ObjC',
+            'LD_RUNPATH_SEARCH_PATHS': [
+              '@loader_path/Libraries',
             ],
           },
           'copies': [
@@ -346,7 +348,9 @@
           'mac_bundle': 1,
           'xcode_settings': {
             'INFOPLIST_FILE': 'renderer/mac/Info.plist',
-            'LD_RUNPATH_SEARCH_PATHS': '@executable_path/../../..',
+            'LD_RUNPATH_SEARCH_PATHS': [
+              '@executable_path/../../..',
+            ],
           },
           'postbuilds': [
             {
@@ -358,6 +362,6 @@
           ],
         },  # target helper
       ],
-    }],
+    }],  # OS==Mac
   ],
 }
