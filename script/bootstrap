@@ -11,8 +11,7 @@ usage() {
 BASE_URL="${1}"
 
 if [ -z "${BASE_URL}" ]; then
-  usage
-  exit 1
+  BASE_URL="https://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent"
 fi
 
 cd "$(dirname "$0")/.."

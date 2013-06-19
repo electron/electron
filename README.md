@@ -6,7 +6,7 @@ Experimental native layer for the [Atom](https://github.com/github/atom).
 
 ### One-time setup
 
-    $ script/bootstrap https://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent
+    $ script/bootstrap
 
 ### Building
 
