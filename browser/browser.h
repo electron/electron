@@ -30,6 +30,9 @@ class Browser : public WindowListObserver {
   // Focus the application.
   void Focus();
 
+  // Returns the version of the executable (or bundle).
+  std::string GetVersion();
+
   // Tell the application to open a file.
   bool OpenFile(const std::string& file_path);
 

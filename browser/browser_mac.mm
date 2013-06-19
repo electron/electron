@@ -4,6 +4,8 @@
 
 #include "browser/browser.h"
 
+#import "base/mac/bundle_locations.h"
+#include "base/strings/sys_string_conversions.h"
 #import "browser/atom_application_mac.h"
 
 namespace atom {
@@ -14,6 +16,12 @@ void Browser::Terminate() {
 
 void Browser::Focus() {
   [[NSApplication sharedApplication] activateIgnoringOtherApps:YES];
+}
+
+std::string Browser::GetVersion() {
+  NSDictionary* infoDictionary = base::mac::OuterBundle().infoDictionary;
+  NSString *version = [infoDictionary objectForKey:@"CFBundleVersion"];
+  return base::SysNSStringToUTF8(version);
 }
 
 }  // namespace atom
