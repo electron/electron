@@ -1,30 +1,60 @@
-#!/bin/sh
-#/ Usage: bootstrap https://base.url.com/from/libchromiumcontent/script/upload
-#/ Bootstrap this project.
+#!/usr/bin/env python
 
-set -e
+import argparse
+import errno
+import os
+import subprocess
+import sys
 
-usage() {
-  grep '^#/' <"$0"| cut -c4-
-}
 
-BASE_URL="${1}"
+SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
+BASE_URL = 'https://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent'
 
-if [ -z "${BASE_URL}" ]; then
-  BASE_URL="https://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent"
-fi
 
-cd "$(dirname "$0")/.."
-SOURCE_ROOT=$(pwd -P)
-VENDOR_DIR="${SOURCE_ROOT}/vendor"
-BRIGHTRAY_DIR="${VENDOR_DIR}/brightray"
+def main():
+  os.chdir(SOURCE_ROOT)
 
-git submodule sync --quiet
-git submodule update --init --recursive
+  args = parse_args()
+  update_submodules()
+  update_npm()
+  bootstrap_brightray(args.url)
+  update_atom_shell()
 
-npm install npm --silent
-./node_modules/.bin/npm install --silent
 
-"${BRIGHTRAY_DIR}/script/bootstrap" "${BASE_URL}"
+def parse_args():
+  parser = argparse.ArgumentParser(description='Bootstrap this project')
+  parser.add_argument('--url',
+                      help='The base URL from which to download '
+                      'libchromiumcontent (i.e., the URL you passed to '
+                      'libchromiumcontent\'s script/upload script',
+                      default=BASE_URL,
+                      required=False)
+  return parser.parse_args()
 
-"${SOURCE_ROOT}/script/update"
+
+def update_submodules():
+  subprocess.check_call(['git', 'submodule', 'sync', '--quiet'])
+  subprocess.check_call(['git', 'submodule', 'update', '--init',
+                         '--recursive'])
+
+
+def update_npm():
+  subprocess.check_call(['npm', 'install', 'npm', '--silent'])
+
+  npm = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'npm')
+  subprocess.check_call([npm, 'install', '--silent'])
+
+
+def bootstrap_brightray(url):
+  bootstrap = os.path.join(VENDOR_DIR, 'brightray', 'script', 'bootstrap')
+  subprocess.check_call([sys.executable, bootstrap, url])
+
+
+def update_atom_shell():
+  update = os.path.join(SOURCE_ROOT, 'script', 'update')
+  subprocess.check_call([update])
+
+
+if __name__ == '__main__':
+  sys.exit(main())
