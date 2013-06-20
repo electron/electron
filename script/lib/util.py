@@ -7,6 +7,7 @@ import tarfile
 import tempfile
 import urllib2
 import os
+import zipfile
 
 
 def tempdir(prefix=''):
@@ -37,9 +38,14 @@ def download(text, url, path):
     print
 
 
-def extract_tarball(tarball_path, member, path):
+def extract_tarball(tarball_path, member, destination):
   with tarfile.open(tarball_path) as tarball:
-    tarball.extract(member, path)
+    tarball.extract(member, destination)
+
+
+def extract_zip(zip_path, destination):
+  with zipfile.ZipFile(zip_path) as z:
+    z.extractall(destination)
 
 
 def safe_unlink(path):

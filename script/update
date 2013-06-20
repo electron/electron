@@ -4,7 +4,7 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-./script/update-frameworks
+./script/update-frameworks.py
 ./script/update-node.py --version v0.10.9
 
 gyp -f ninja --depth . atom.gyp \
