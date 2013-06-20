@@ -1,20 +1,27 @@
+#!/usr/bin/env python
+
 import atexit
+import errno
 import shutil
 import tarfile
 import tempfile
 import urllib2
+import os
 
 
-def download(text, url, filename):
-  directory = tempfile.mkdtemp(prefix='atom-shell-')
+def tempdir(prefix=''):
+  directory = tempfile.mkdtemp(prefix=prefix)
   atexit.register(shutil.rmtree, directory)
+  return directory
 
-  web_file = urllib2.urlopen(url)
-  file_size = int(web_file.info().getheaders("Content-Length")[0])
-  downloaded_size = 0
-  block_size = 128
 
-  with open(os.path.join(directory, filename), 'w+') as local_file:
+def download(text, url, path):
+  with open(path, 'w') as local_file:
+    web_file = urllib2.urlopen(url)
+    file_size = int(web_file.info().getheaders("Content-Length")[0])
+    downloaded_size = 0
+    block_size = 128
+
     while True:
       buf = web_file.read(block_size)
       if not buf:
@@ -28,8 +35,6 @@ def download(text, url, filename):
       print status,
 
     print
-
-  return directory
 
 
 def extract_tarball(tarball_path, member, path):

@@ -23,12 +23,14 @@ def main():
     return 0
 
   url, filename = get_node_url(args.url, args.version)
-  directory = download('Download node', url, filename)
+  directory = tempdir(prefix='atom-shell-')
+  path = os.path.join(directory, filename)
+  download('Download node', url, path)
 
   if IS_POSIX:
     root_name = 'node-{0}-{1}-x86'.format(args.version, sys.platform)
     member = os.path.join(root_name, 'bin', 'node')
-    extract_tarball(os.path.join(directory, filename), member, directory)
+    extract_tarball(path, member, directory)
     node_path = os.path.join(directory, member)
 
   copy_node(node_path)
