@@ -10,3 +10,4 @@ out/
 vendor/
 *.xcodeproj
 *.swp
+*.pyc
