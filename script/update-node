@@ -1,31 +1,130 @@
-#!/bin/bash
+#!/usr/bin/env python
 
-set -e
+import argparse
+import atexit
+import errno
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
+import os
+import urllib2
 
-cd "$(dirname $0)/.."
 
-NODE_VERSION=v0.10.5
-[ -z $1 ] || NODE_VERSION=$1
+SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))
+NODE_VERSION = 'v0.10.9'
+NODE_DIST_URL = 'https://gh-contractor-zcbenz.s3.amazonaws.com/node/dist'
+IS_POSIX = (sys.platform != 'win32') and (sys.platform != 'cygwin')
 
-# Test whether we need update.
-if [ -f "node/node" ] && [[ `node/node --version` == $NODE_VERSION ]] ; then
-  exit 0
-fi
 
-case $OSTYPE in
-  darwin*) NODE_PLATFORM=darwin ;;
-  linux*) NODE_PLATFORM=linux ;;
-  *) echo "Unsupported platform $OSTYPE" && exit 1 ;;
-esac
+def main():
+  os.chdir(SOURCE_ROOT)
 
-NODE_DIST_NAME="node-$NODE_VERSION-$NODE_PLATFORM-x86"
+  args = parse_args()
+  if not node_needs_update(args.version):
+    return 0
 
-# Download node and untar
-NODE_TARBALL_URL="https://gh-contractor-zcbenz.s3.amazonaws.com/node/dist/$NODE_DIST_NAME.tar.gz"
-TARGET_DIR='node'
-[ -d "$TARGET_DIR" ] || mkdir "$TARGET_DIR"
-cd "$TARGET_DIR"
-curl -fsSkL $NODE_TARBALL_URL | tar -zx || exit 1
+  url, filename = get_node_url(args.url, args.version)
+  directory = download('Download node', url, filename)
 
-cp "$NODE_DIST_NAME/bin/node" .
-rm -rf "$NODE_DIST_NAME"
+  if IS_POSIX:
+    root_name = 'node-{0}-{1}-x86'.format(args.version, sys.platform)
+    member = os.path.join(root_name, 'bin', 'node')
+    extract_tarball(os.path.join(directory, filename), member, directory)
+    node_path = os.path.join(directory, member)
+
+  copy_node(node_path)
+
+
+def parse_args():
+  parser = argparse.ArgumentParser(description='Update node binary')
+  parser.add_argument('--version',
+                      help='Version of node',
+                      default=NODE_VERSION,
+                      required=False)
+  parser.add_argument('--url',
+                      help='URL to download node',
+                      default=NODE_DIST_URL,
+                      required=False)
+  return parser.parse_args()
+
+
+def node_needs_update(target_version):
+  try:
+    node = os.path.join('node', 'node')
+    if not IS_POSIX:
+      node += '.exe'
+    version = subprocess.check_output([node, '--version'])
+    return version.strip() != target_version
+  except OSError as e:
+    if e.errno != errno.ENOENT:
+      raise
+    return True
+
+
+def get_node_url(base_url, target_version):
+  if IS_POSIX:
+    distname = 'node-{0}-{1}-x86.tar.gz'.format(target_version, sys.platform)
+  else:
+    distname = 'node-{0}.exe'.format(target_version)
+  return '{0}/{1}'.format(base_url, distname), distname
+
+
+def copy_node(node_path):
+  safe_mkdir('node')
+  node = os.path.join('node', 'node')
+  safe_unlink(node)
+  os.rename(node_path, node)
+
+
+def download(text, url, filename):
+  directory = tempfile.mkdtemp(prefix='atom-shell-')
+  atexit.register(shutil.rmtree, directory)
+
+  web_file = urllib2.urlopen(url)
+  file_size = int(web_file.info().getheaders("Content-Length")[0])
+  downloaded_size = 0
+  block_size = 128
+
+  with open(os.path.join(directory, filename), 'w+') as local_file:
+    while True:
+      buf = web_file.read(block_size)
+      if not buf:
+        break
+
+      downloaded_size += len(buf)
+      local_file.write(buf)
+
+      percent = downloaded_size * 100. / file_size
+      status = "\r%s  %10d  [%3.1f%%]" % (text, downloaded_size, percent)
+      print status,
+
+    print
+
+  return directory
+
+
+def extract_tarball(tarball_path, member, path):
+  with tarfile.open(tarball_path) as tarball:
+    tarball.extract(member, path)
+
+
+def safe_unlink(path):
+  try:
+    os.unlink(path)
+  except OSError as e:
+    if e.errno != errno.ENOENT:
+      raise
+
+
+def safe_mkdir(path):
+  try:
+    os.makedirs(path)
+  except OSError as e:
+    if e.errno != errno.EEXIST:
+      raise
+
+
+if __name__ == '__main__':
+  sys.exit(main())
