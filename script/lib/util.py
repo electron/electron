@@ -3,6 +3,8 @@
 import atexit
 import errno
 import shutil
+import subprocess
+import sys
 import tarfile
 import tempfile
 import urllib2
@@ -44,8 +46,12 @@ def extract_tarball(tarball_path, member, destination):
 
 
 def extract_zip(zip_path, destination):
-  with zipfile.ZipFile(zip_path) as z:
-    z.extractall(destination)
+  if sys.platform == 'darwin':
+    # Use unzip command on Mac to keep symbol links in zip file work.
+    subprocess.check_call(['unzip', zip_path, '-d', destination])
+  else:
+    with zipfile.ZipFile(zip_path) as z:
+      z.extractall(destination)
 
 
 def safe_unlink(path):
