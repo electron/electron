@@ -14,6 +14,7 @@
 #include "browser/atom_browser_context.h"
 #include "browser/atom_browser_main_parts.h"
 #include "browser/atom_javascript_dialog_manager.h"
+#include "browser/media/media_stream_devices_controller.h"
 #include "browser/window_list.h"
 #include "content/public/browser/invalidate_type.h"
 #include "content/public/browser/navigation_entry.h"
@@ -217,6 +218,14 @@ void NativeWindow::RequestToLockMouse(content::WebContents* web_contents,
                                       bool user_gesture,
                                       bool last_unlocked_by_target) {
   GetWebContents()->GotResponseToLockMouseRequest(true);
+}
+
+void NativeWindow::RequestMediaAccessPermission(
+      content::WebContents* web_contents,
+      const content::MediaStreamRequest& request,
+      const content::MediaResponseCallback& callback) {
+  MediaStreamDevicesController controller(request, callback);
+  controller.TakeAction();
 }
 
 bool NativeWindow::CanOverscrollContent() const {
