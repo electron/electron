@@ -18,6 +18,7 @@ class AtomBrowserClient : public brightray::BrowserClient {
   virtual void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
                                    const GURL& url,
                                    WebPreferences* prefs) OVERRIDE;
+  virtual content::MediaObserver* GetMediaObserver() OVERRIDE;
   virtual bool ShouldSwapProcessesForNavigation(
       content::SiteInstance* site_instance,
       const GURL& current_url,
