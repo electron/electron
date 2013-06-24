@@ -52,8 +52,8 @@ def bootstrap_brightray(url):
 
 
 def update_atom_shell():
-  update = os.path.join(SOURCE_ROOT, 'script', 'update')
-  subprocess.check_call([update])
+  update = os.path.join(SOURCE_ROOT, 'script', 'update.py')
+  subprocess.check_call([sys.executable, update])
 
 
 if __name__ == '__main__':
