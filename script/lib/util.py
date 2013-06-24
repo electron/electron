@@ -54,6 +54,14 @@ def extract_zip(zip_path, destination):
       z.extractall(destination)
 
 
+def rm_rf(path):
+  try:
+    shutil.rmtree(path)
+  except OSError as e:
+    if e.errno != errno.ENOENT:
+      raise
+
+
 def safe_unlink(path):
   try:
     os.unlink(path)
