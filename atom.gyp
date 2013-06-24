@@ -264,14 +264,14 @@
           'rule_name': 'coffee',
           'extension': 'coffee',
           'inputs': [
-            'script/compile-coffee',
+            'script/compile-coffee.py',
           ],
           'outputs': [
             '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
           ],
           'action': [
-            'sh',
-            'script/compile-coffee',
+            'python',
+            'script/compile-coffee.py',
             '<(RULE_INPUT_PATH)',
             '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
           ],

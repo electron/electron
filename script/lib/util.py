@@ -68,3 +68,10 @@ def safe_mkdir(path):
   except OSError as e:
     if e.errno != errno.EEXIST:
       raise
+
+
+def get_node_path():
+  node = os.path.join(os.path.dirname(__file__), '..', '..', 'node', 'node')
+  if sys.platform == 'win32' or sys.platform == 'cygwin':
+    node += '.exe'
+  return node
