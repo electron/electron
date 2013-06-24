@@ -13,7 +13,7 @@ def main():
   args = parse_args()
   for config in args.configuration:
     build_path = os.path.join('out', config)
-    subprocess.check_call(['ninja', '-C', build_path])
+    subprocess.call(['ninja', '-C', build_path])
 
 
 def parse_args():
