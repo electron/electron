@@ -6,6 +6,8 @@
 	<string>com.github.atom.helper</string>
 	<key>CFBundleName</key>
 	<string>${PRODUCT_NAME}</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
 	<key>LSUIElement</key>
 	<true/>
 </dict>
