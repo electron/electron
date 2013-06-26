@@ -151,8 +151,10 @@ void NativeWindow::CloseWebContents() {
   FOR_EACH_OBSERVER(NativeWindowObserver,
                     observers_,
                     WillCloseWindow(&prevent_default));
-  if (prevent_default)
+  if (prevent_default) {
+    WindowList::WindowCloseCancelled(this);
     return;
+  }
 
   content::WebContents* web_contents(GetWebContents());
 
