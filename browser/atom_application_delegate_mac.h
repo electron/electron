@@ -7,7 +7,4 @@
 @interface AtomApplicationDelegate : NSObject<NSApplicationDelegate> {
 }
 
-- (void)handleQuitEvent:(NSAppleEventDescriptor*)event
-         withReplyEvent:(NSAppleEventDescriptor*)replyEvent;
-
 @end

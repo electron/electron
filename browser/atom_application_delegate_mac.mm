@@ -15,13 +15,6 @@
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification*)notify {
-  // Trap the quit message to handleQuitEvent.
-  NSAppleEventManager* em = [NSAppleEventManager sharedAppleEventManager];
-  [em setEventHandler:self
-          andSelector:@selector(handleQuitEvent:withReplyEvent:)
-        forEventClass:kCoreEventClass
-           andEventID:kAEQuitApplication];
-
   atom::Browser::Get()->DidFinishLaunching();
 }
 
@@ -31,9 +24,15 @@
   return atom::Browser::Get()->OpenFile(filename_str) ? YES : NO;
 }
 
-- (void)handleQuitEvent:(NSAppleEventDescriptor*)event
-         withReplyEvent:(NSAppleEventDescriptor*)replyEvent {
-  [[AtomApplication sharedApplication] closeAllWindows:self];
+- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication*)sender {
+  atom::Browser* browser = atom::Browser::Get();
+  if (browser->is_quiting()) {
+    return NSTerminateNow;
+  } else {
+    // System started termination.
+    atom::Browser::Get()->Quit();
+    return NSTerminateLater;
+  }
 }
 
 @end

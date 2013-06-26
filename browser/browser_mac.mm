@@ -11,17 +11,22 @@
 namespace atom {
 
 void Browser::Terminate() {
+  is_quiting_ = true;
   [[AtomApplication sharedApplication] terminate:nil];
 }
 
 void Browser::Focus() {
-  [[NSApplication sharedApplication] activateIgnoringOtherApps:YES];
+  [[AtomApplication sharedApplication] activateIgnoringOtherApps:YES];
 }
 
 std::string Browser::GetVersion() {
   NSDictionary* infoDictionary = base::mac::OuterBundle().infoDictionary;
   NSString *version = [infoDictionary objectForKey:@"CFBundleVersion"];
   return base::SysNSStringToUTF8(version);
+}
+
+void Browser::CancelQuit() {
+  [[AtomApplication sharedApplication] replyToApplicationShouldTerminate:NO];
 }
 
 }  // namespace atom

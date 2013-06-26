@@ -48,8 +48,14 @@ class Browser : public WindowListObserver {
     observers_.RemoveObserver(obs);
   }
 
+  bool is_quiting() const { return is_quiting_; }
+
  protected:
+  // Send the will-quit message and then terminate the application.
   void NotifyAndTerminate();
+
+  // Tell the system we have cancelled quiting.
+  void CancelQuit();
 
   bool is_quiting_;
 

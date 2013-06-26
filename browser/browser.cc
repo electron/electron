@@ -24,11 +24,12 @@ Browser* Browser::Get() {
 }
 
 void Browser::Quit() {
+  is_quiting_ = true;
+
   atom::WindowList* window_list = atom::WindowList::GetInstance();
   if (window_list->size() == 0)
     NotifyAndTerminate();
 
-  is_quiting_ = true;
   window_list->CloseAllWindows();
 }
 
@@ -53,16 +54,22 @@ void Browser::NotifyAndTerminate() {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWillQuit(&prevent_default));
 
-  if (prevent_default)
+  if (prevent_default) {
+    is_quiting_ = false;
     return;
+  }
 
   Terminate();
 }
 
 void Browser::OnWindowCloseCancelled(NativeWindow* window) {
-  // Once a beforeunload handler has prevented the closing, we think the quit
-  // is cancelled too.
-  is_quiting_ = false;
+  if (is_quiting_) {
+    // Once a beforeunload handler has prevented the closing, we think the quit
+    // is cancelled too.
+    is_quiting_ = false;
+
+    CancelQuit();
+  }
 }
 
 void Browser::OnWindowAllClosed() {
