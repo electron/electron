@@ -334,6 +334,15 @@
                 '<@(fix_framework_link_command)',
               ],
             },
+            {
+              'postbuild_name': 'Add symlinks for framework subdirectories',
+              'action': [
+                'tools/mac/create-framework-subdir-symlinks.sh',
+                '<(product_name)',
+                'Libraries',
+                'Frameworks',
+              ],
+            },
           ],
         },  # target framework
         {
