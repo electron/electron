@@ -317,6 +317,9 @@
             'LD_RUNPATH_SEARCH_PATHS': [
               '@loader_path/Libraries',
             ],
+            'OTHER_LDFLAGS': [
+              '-ObjC',
+            ],
           },
           'copies': [
             {
