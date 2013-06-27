@@ -31,7 +31,7 @@ module.exports =
     binding.showSaveDialog window, options.title, options.defaultPath
 
   showMessageBox: (window, options) ->
-    if window?.constructor isnt BrowserWindow
+    if window? and window.constructor isnt BrowserWindow
       options = window
       window = null
 
