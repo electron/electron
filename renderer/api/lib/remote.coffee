@@ -8,7 +8,7 @@ callbacksRegistry = new CallbacksRegistry
 # Convert the arguments object into an array of meta data.
 wrapArgs = (args) ->
   Array::slice.call(args).map (value) ->
-    if typeof value is 'object' and v8Util.getHiddenValue value, 'isRemoteObject'
+    if value? and typeof value is 'object' and v8Util.getHiddenValue value, 'isRemoteObject'
       type: 'object', id: value.id
     else if typeof value is 'function'
       type: 'function', id: callbacksRegistry.add(value)
