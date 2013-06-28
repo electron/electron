@@ -7,7 +7,7 @@ frameworks/
 node/
 node_modules/
 out/
-vendor/
+vendor/brightray/vendor/download/
 *.xcodeproj
 *.swp
 *.pyc
