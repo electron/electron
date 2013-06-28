@@ -27,7 +27,9 @@ def update_frameworks_and_node(version):
 
 
 def update_gyp():
-  subprocess.check_call(['gyp', '-f', 'ninja', '--depth', '.', 'atom.gyp',
+  gyp = os.path.join(SOURCE_ROOT, 'vendor', 'gyp', 'gyp')
+  subprocess.check_call([sys.executable, gyp,
+                         '-f', 'ninja', '--depth', '.', 'atom.gyp',
                          '-Icommon.gypi', '-Ivendor/brightray/brightray.gypi',
                          '-Dtarget_arch=ia32', '-Dlibrary=static_library'])
 
