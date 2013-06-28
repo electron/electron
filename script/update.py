@@ -18,9 +18,11 @@ def main():
 
 
 def update_frameworks_and_node(version):
-  uf = os.path.join(SOURCE_ROOT, 'script', 'update-frameworks.py')
+  if sys.platform == 'darwin':
+    uf = os.path.join(SOURCE_ROOT, 'script', 'update-frameworks.py')
+    subprocess.check_call([sys.executable, uf])
+
   un = os.path.join(SOURCE_ROOT, 'script', 'update-node.py')
-  subprocess.check_call([sys.executable, uf])
   subprocess.check_call([sys.executable, un, '--version', version])
 
 
