@@ -17,9 +17,9 @@ def main():
 
   args = parse_args()
   update_submodules()
-  update_npm()
   bootstrap_brightray(args.url)
   update_atom_shell()
+  update_npm()
 
 
 def parse_args():
