@@ -55,7 +55,7 @@ def upload():
 
   s3put(bucket, access_key, secret_key, 'atom-shell/{0}'.format(commit), glob.glob('atom-shell*.zip'))
 
-  update_version(bucket, access_key, secret_key, commit)
+  update_version(bucket, access_key, secret_key)
 
 
 def s3_config():
@@ -69,13 +69,9 @@ def s3_config():
   return config
 
 
-def update_version(bucket, access_key, secret_key, commit):
-  version_path = os.path.join(SOURCE_ROOT, 'version')
-  with open(version_path, 'w') as version_file:
-    version_file.write(commit)
-
-  # Upload after file is closed, it's required under Windows.
-  s3put(bucket, access_key, secret_key, 'atom-shell', [ version_path ])
+def update_version(bucket, access_key, secret_key):
+  version = os.path.join(SOURCE_ROOT, 'dist', 'version')
+  s3put(bucket, access_key, secret_key, 'atom-shell', [ version ])
 
 
 def s3put(bucket, access_key, secret_key, key_prefix, files):
