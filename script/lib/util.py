@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import atexit
+import contextlib
 import errno
 import shutil
 import subprocess
@@ -16,6 +17,16 @@ def tempdir(prefix=''):
   directory = tempfile.mkdtemp(prefix=prefix)
   atexit.register(shutil.rmtree, directory)
   return directory
+
+
+@contextlib.contextmanager
+def scoped_cwd(path):
+  cwd = os.getcwd()
+  os.chdir(path)
+  try:
+    yield
+  finally:
+    os.chdir(cwd)
 
 
 def download(text, url, path):
