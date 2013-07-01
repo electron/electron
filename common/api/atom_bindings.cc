@@ -4,6 +4,7 @@
 
 #include "common/api/atom_bindings.h"
 
+#include "base/debug/debugger.h"
 #include "base/logging.h"
 #include "vendor/node/src/node.h"
 
@@ -74,7 +75,7 @@ v8::Handle<v8::Value> AtomBindings::Binding(const v8::Arguments& args) {
 
 // static
 v8::Handle<v8::Value> AtomBindings::Crash(const v8::Arguments& args) {
-  __builtin_trap();
+  base::debug::BreakDebugger();
   return v8::Undefined();
 }
 
