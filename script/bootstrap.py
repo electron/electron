@@ -21,10 +21,10 @@ def main():
   args = parse_args()
   update_submodules()
   bootstrap_brightray(args.url)
+  update_node_modules()
   if sys.platform == 'cygwin':
     update_win32_python()
   update_atom_shell()
-  update_npm()
 
 
 def parse_args():
@@ -49,6 +49,10 @@ def bootstrap_brightray(url):
   subprocess.check_call([sys.executable, bootstrap, url])
 
 
+def update_node_modules():
+  subprocess.check_call(['npm', 'install', '--silent'])
+
+
 def update_win32_python():
   with scoped_cwd(VENDOR_DIR):
     if not os.path.exists('python_26'):
@@ -61,13 +65,6 @@ def update_win32_python():
 def update_atom_shell():
   update = os.path.join(SOURCE_ROOT, 'script', 'update.py')
   subprocess.check_call([sys.executable, update])
-
-
-def update_npm():
-  subprocess.check_call(['npm', 'install', 'npm', '--silent'])
-
-  npm = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'npm')
-  subprocess.check_call([npm, 'install', '--silent'])
 
 
 if __name__ == '__main__':
