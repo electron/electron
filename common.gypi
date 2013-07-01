@@ -23,6 +23,8 @@
           4152,  # function/data pointer conversion in expression
           4206,  # translation unit is empty
           4204,  # non-constant aggregate initializer
+          4232,  # address of dllimport 'free' is not static, identity not guaranteed
+          4295,  # array is too small to include a terminating null character
           4389,  # '==' : signed/unsigned mismatch
           4505,  # unreferenced local function has been removed
           4701,  # potentially uninitialized local variable 'sizew' used
