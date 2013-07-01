@@ -21,20 +21,26 @@ def main():
   args = parse_args()
   update_submodules()
   bootstrap_brightray(args.url)
-  update_node_modules()
-  if sys.platform == 'cygwin':
-    update_win32_python()
+
+  if not args.skip_network:
+    update_node_modules()
+    if sys.platform == 'cygwin':
+      update_win32_python()
+
   update_atom_shell()
 
 
 def parse_args():
   parser = argparse.ArgumentParser(description='Bootstrap this project')
-  parser.add_argument('--url',
+  parser.add_argument('-u', '--url',
                       help='The base URL from which to download '
                       'libchromiumcontent (i.e., the URL you passed to '
                       'libchromiumcontent\'s script/upload script',
                       default=BASE_URL,
                       required=False)
+  parser.add_argument('-s', '--skip-network',
+                      help='Skip operations require networking',
+                      action='store_true')
   return parser.parse_args()
 
 
