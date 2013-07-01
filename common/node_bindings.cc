@@ -7,6 +7,7 @@
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/logging.h"
+#include "base/strings/utf_string_conversions.h"
 #include "v8/include/v8.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebDocument.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
@@ -26,10 +27,21 @@ NodeBindings::~NodeBindings() {
 void NodeBindings::Initialize() {
   CommandLine::StringVector str_argv = CommandLine::ForCurrentProcess()->argv();
 
+#if defined(OS_WIN)
+  std::vector<std::string> utf8_str_argv;
+  utf8_str_argv.reserve(str_argv.size());
+#endif
+
   // Convert string vector to char* array.
   std::vector<char*> argv(str_argv.size(), NULL);
-  for (size_t i = 0; i < str_argv.size(); ++i)
+  for (size_t i = 0; i < str_argv.size(); ++i) {
+#if defined(OS_WIN)
+    utf8_str_argv.push_back(UTF16ToUTF8(str_argv[i]));
+    argv[i] = const_cast<char*>(utf8_str_argv[i].c_str());
+#else
     argv[i] = const_cast<char*>(str_argv[i].c_str());
+#endif
+  }
 
   // Open node's error reporting system for browser process.
   node::g_standalone_mode = is_browser_;
