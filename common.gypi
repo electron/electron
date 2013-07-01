@@ -12,7 +12,7 @@
   # Settings to compile node under Windows.
   'target_defaults': {
     'target_conditions': [
-      ['_target_name in ["libuv", "cares", "openssl", "node", "zlib"]', {
+      ['_target_name in ["libuv", "http_parser", "cares", "openssl", "node", "zlib"]', {
         'msvs_disabled_warnings': [
           4013,  # 'free' undefined; assuming extern returning int
           4054,  #
@@ -23,6 +23,7 @@
           4152,  # function/data pointer conversion in expression
           4206,  # translation unit is empty
           4204,  # non-constant aggregate initializer
+          4214,  # bit field types other than int
           4232,  # address of dllimport 'free' is not static, identity not guaranteed
           4295,  # array is too small to include a terminating null character
           4389,  # '==' : signed/unsigned mismatch
