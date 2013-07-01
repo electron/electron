@@ -17,8 +17,8 @@ IDWeakMap::~IDWeakMap() {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
 
   auto copied_map = map_;
-  for (const auto& el : copied_map)
-    Erase(isolate, el.first);
+  for (auto el = copied_map.begin(); el != copied_map.end(); ++el)
+    Erase(isolate, el->first);
 }
 
 bool IDWeakMap::Has(int key) const {
@@ -109,8 +109,8 @@ v8::Handle<v8::Value> IDWeakMap::Keys(const v8::Arguments& args) {
   v8::Handle<v8::Array> keys = v8::Array::New(obj->map_.size());
 
   int i = 0;
-  for (const auto& el : obj->map_) {
-    keys->Set(i, v8::Integer::New(el.first));
+  for (auto el = obj->map_.begin(); el != obj->map_.end(); ++ el) {
+    keys->Set(i, v8::Integer::New(el->first));
     ++i;
   }
 
