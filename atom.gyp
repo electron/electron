@@ -252,6 +252,14 @@
         '.',
         'vendor',
       ],
+      'msvs_settings': {
+        'VCCLCompilerTool': {
+          # Programs that use the Standard C++ library must be compiled with C++
+          # exception handling enabled.
+          # http://support.microsoft.com/kb/154419
+          'ExceptionHandling': 1,
+        },
+      },
     },
     {
       'target_name': 'generated_sources',
