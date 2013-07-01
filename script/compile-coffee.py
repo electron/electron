@@ -15,7 +15,8 @@ def main():
   output_dir = os.path.dirname(sys.argv[2])
 
   node = get_node_path()
-  coffee = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'coffee')
+  coffee = os.path.join(SOURCE_ROOT, 'node_modules', 'coffee-script', 'bin',
+                        'coffee')
   subprocess.check_call([node, coffee, '-c', '-o', output_dir, input_file])
 
 
