@@ -7,7 +7,9 @@
 #include "app/atom_main_delegate.h"
 #include "content/public/app/content_main.h"
 
+#if defined(OS_MACOSX)
 int AtomMain(int argc, const char* argv[]) {
   atom::AtomMainDelegate delegate;
   return content::ContentMain(argc, argv, &delegate);
 }
+#endif  // OS_MACOSX

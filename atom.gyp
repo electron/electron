@@ -252,6 +252,14 @@
         '.',
         'vendor',
       ],
+      'direct_dependent_settings': {
+        'include_dirs': [
+          '.',
+        ],
+      },
+      'export_dependent_settings': [
+        'vendor/brightray/brightray.gyp:brightray',
+      ],
     },
     {
       'target_name': 'generated_sources',
@@ -296,6 +304,9 @@
             '.',
             'vendor',
             '<(libchromiumcontent_include_dir)',
+          ],
+          'export_dependent_settings': [
+            '<(project_name)_lib',
           ],
           'link_settings': {
             'libraries': [
