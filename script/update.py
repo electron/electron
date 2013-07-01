@@ -6,7 +6,7 @@ import sys
 from lib.util import *
 
 
-SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))
+SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 NODE_VERSION = 'v0.10.12'
 
 
@@ -19,16 +19,19 @@ def main():
 
 def update_frameworks_and_node(version):
   if sys.platform == 'darwin':
-    uf = os.path.join(SOURCE_ROOT, 'script', 'update-frameworks.py')
+    uf = os.path.join('script', 'update-frameworks.py')
     subprocess.check_call([sys.executable, uf])
 
-  un = os.path.join(SOURCE_ROOT, 'script', 'update-node.py')
+  un = os.path.join('script', 'update-node.py')
   subprocess.check_call([sys.executable, un, '--version', version])
 
 
 def update_gyp():
-  gyp = os.path.join(SOURCE_ROOT, 'vendor', 'gyp', 'gyp')
-  subprocess.check_call([sys.executable, gyp,
+  gyp = os.path.join('vendor', 'gyp', 'gyp')
+  python = sys.executable
+  if sys.platform == 'cygwin':
+    python = os.path.join('vendor', 'python_26', 'python.exe')
+  subprocess.check_call([python, gyp,
                          '-f', 'ninja', '--depth', '.', 'atom.gyp',
                          '-Icommon.gypi', '-Ivendor/brightray/brightray.gypi',
                          '-Dtarget_arch=ia32', '-Dlibrary=static_library'])

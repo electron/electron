@@ -9,7 +9,7 @@ import os
 from lib.util import *
 
 
-SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))
+SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 NODE_VERSION = 'v0.10.9'
 NODE_DIST_URL = 'https://gh-contractor-zcbenz.s3.amazonaws.com/node/dist'
 IS_POSIX = (sys.platform != 'win32') and (sys.platform != 'cygwin')
