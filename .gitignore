@@ -8,6 +8,7 @@ node/
 node_modules/
 out/
 vendor/brightray/vendor/download/
+vendor/python_26/
 *.xcodeproj
 *.swp
 *.pyc
