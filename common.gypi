@@ -77,5 +77,18 @@
         },
       },
     }],  # clang==1
+    # Windows specific settings.
+    ['OS=="win"', {
+      'target_defaults': {
+        'msvs_settings': {
+          'VCCLCompilerTool': {
+            # Programs that use the Standard C++ library must be compiled with C++
+            # exception handling enabled.
+            # http://support.microsoft.com/kb/154419
+            'ExceptionHandling': 1,
+          },
+        },
+      },
+    }],  # OS=="win"
   ],
 }
