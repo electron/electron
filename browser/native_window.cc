@@ -65,7 +65,8 @@ NativeWindow* NativeWindow::Create(base::DictionaryValue* options) {
 NativeWindow* NativeWindow::FromRenderView(int process_id, int routing_id) {
   // Stupid iterating.
   WindowList& window_list = *WindowList::GetInstance();
-  for (auto window : window_list) {
+  for (auto w = window_list.begin(); w != window_list.end(); ++w) {
+    auto& window = *w;
     content::WebContents* web_contents = window->GetWebContents();
     int window_process_id = web_contents->GetRenderProcessHost()->GetID();
     int window_routing_id = web_contents->GetRoutingID();
@@ -78,23 +79,23 @@ NativeWindow* NativeWindow::FromRenderView(int process_id, int routing_id) {
 
 void NativeWindow::InitFromOptions(base::DictionaryValue* options) {
   // Setup window from options.
-  int x, y;
+  int x = -1, y = -1;
   bool center;
   if (options->GetInteger(switches::kX, &x) &&
       options->GetInteger(switches::kY, &y)) {
-    int width, height;
+    int width = -1, height = -1;
     options->GetInteger(switches::kWidth, &width);
     options->GetInteger(switches::kHeight, &height);
     Move(gfx::Rect(x, y, width, height));
   } else if (options->GetBoolean(switches::kCenter, &center) && center) {
     Center();
   }
-  int min_height, min_width;
+  int min_height = -1, min_width = -1;
   if (options->GetInteger(switches::kMinHeight, &min_height) &&
       options->GetInteger(switches::kMinWidth, &min_width)) {
     SetMinimumSize(gfx::Size(min_width, min_height));
   }
-  int max_height, max_width;
+  int max_height = -1, max_width = -1;
   if (options->GetInteger(switches::kMaxHeight, &max_height) &&
       options->GetInteger(switches::kMaxWidth, &max_width)) {
     SetMaximumSize(gfx::Size(max_width, max_height));
