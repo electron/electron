@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "base/string_util.h"
 #include "vendor/node/src/node.h"
 #include "vendor/node/src/node_version.h"
 
@@ -35,10 +36,10 @@ node::node_module_struct* GetBuiltinModule(const char *name, bool is_browser) {
   char common[128];
   char spec[128];
   node::node_module_struct *cur = NULL;
-  snprintf(common, sizeof(common), "atom_common_%s", name);
-  snprintf(spec, sizeof(spec),
-           (is_browser ? "atom_browser_%s": "atom_renderer_%s"),
-           name);
+  base::snprintf(common, sizeof(common), "atom_common_%s", name);
+  base::snprintf(spec, sizeof(spec),
+                 (is_browser ? "atom_browser_%s": "atom_renderer_%s"),
+                 name);
   /* TODO: you could look these up in a hash, but there are only
    * a few, and once loaded they are cached. */
   for (int i = 0; node_module_list[i] != NULL; i++) {
