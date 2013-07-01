@@ -5,7 +5,7 @@
 #ifndef BROWSER_ACCELERATOR_UTIL_H_
 #define BROWSER_ACCELERATOR_UTIL_H_
 
-#include <iosfwd>
+#include <string>
 
 namespace ui {
 class Accelerator;

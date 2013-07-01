@@ -5,7 +5,7 @@
 #ifndef ATOM_BROWSER_API_ATOM_BROWSER_BINDINGS_
 #define ATOM_BROWSER_API_ATOM_BROWSER_BINDINGS_
 
-#include <iosfwd>
+#include <string>
 
 #include "common/api/atom_bindings.h"
 

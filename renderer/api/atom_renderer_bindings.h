@@ -5,7 +5,7 @@
 #ifndef ATOM_RENDERER_API_ATOM_RENDERER_BINDINGS_H_
 #define ATOM_RENDERER_API_ATOM_RENDERER_BINDINGS_H_
 
-#include <iosfwd>
+#include <string>
 
 #include "common/api/atom_bindings.h"
 

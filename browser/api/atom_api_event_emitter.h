@@ -5,7 +5,7 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_EVENT_EMITTER_H_
 #define ATOM_BROWSER_API_ATOM_API_EVENT_EMITTER_H_
 
-#include <iosfwd>
+#include <string>
 
 #include "base/basictypes.h"
 #include "vendor/node/src/node_object_wrap.h"
