@@ -6,10 +6,13 @@ import os
 import subprocess
 import sys
 
+from lib.util import *
+
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
 BASE_URL = 'https://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent'
+PYTHON_26_URL = 'https://chromium.googlesource.com/chromium/deps/python_26'
 
 
 def main():
@@ -18,6 +21,8 @@ def main():
   args = parse_args()
   update_submodules()
   bootstrap_brightray(args.url)
+  if sys.platform == 'cygwin':
+    update_win32_python()
   update_atom_shell()
   update_npm()
 
@@ -39,21 +44,30 @@ def update_submodules():
                          '--recursive'])
 
 
-def update_npm():
-  subprocess.check_call(['npm', 'install', 'npm', '--silent'])
-
-  npm = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'npm')
-  subprocess.check_call([npm, 'install', '--silent'])
-
-
 def bootstrap_brightray(url):
   bootstrap = os.path.join(VENDOR_DIR, 'brightray', 'script', 'bootstrap')
   subprocess.check_call([sys.executable, bootstrap, url])
 
 
+def update_win32_python():
+  with scoped_cwd(VENDOR_DIR):
+    if not os.path.exists('python_26'):
+      subprocess.check_call(['git', 'clone', PYTHON_26_URL])
+    else:
+      with scoped_cwd('python_26'):
+        subprocess.check_call(['git', 'pull', '--rebase'])
+
+
 def update_atom_shell():
   update = os.path.join(SOURCE_ROOT, 'script', 'update.py')
   subprocess.check_call([sys.executable, update])
+
+
+def update_npm():
+  subprocess.check_call(['npm', 'install', 'npm', '--silent'])
+
+  npm = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'npm')
+  subprocess.check_call([npm, 'install', '--silent'])
 
 
 if __name__ == '__main__':
