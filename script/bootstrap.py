@@ -19,14 +19,14 @@ def main():
   os.chdir(SOURCE_ROOT)
 
   args = parse_args()
-  update_submodules()
-  bootstrap_brightray(args.url)
-
   if not args.skip_network:
+    update_submodules()
     update_node_modules()
+    bootstrap_brightray(args.url)
     if sys.platform == 'cygwin':
       update_win32_python()
 
+  touch_config_gypi()
   update_atom_shell()
 
 
@@ -66,6 +66,12 @@ def update_win32_python():
     else:
       with scoped_cwd('python_26'):
         subprocess.check_call(['git', 'pull', '--rebase'])
+
+
+def touch_config_gypi():
+  config_gypi = os.path.join(SOURCE_ROOT, 'vendor', 'node', 'config.gypi')
+  with open(config_gypi, 'w+') as f:
+    f.truncate(0)
 
 
 def update_atom_shell():

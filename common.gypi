@@ -1,7 +1,6 @@
 {
   'variables': {
     'clang': 0,
-    'python': 'python',
     'source_root': '<!(python tools/mac/source_root.py)',
     'conditions': [
       ['OS=="mac"', {
@@ -9,6 +8,23 @@
         'mac_sdk%': '<!(python tools/mac/find_sdk.py 10.8)',
       }],
     ],
+    # Reflects node's config.gypi.
+    'python': 'python',
+    'node_install_npm': 'false',
+    'node_prefix': '',
+    'node_shared_cares': 'false',
+    'node_shared_http_parser': 'false',
+    'node_shared_libuv': 'false',
+    'node_shared_openssl': 'false',
+    'node_shared_v8': 'true',
+    'node_shared_zlib': 'false',
+    'node_tag': '',
+    'node_unsafe_optimizations': 0,
+    'node_use_dtrace': 'false',
+    'node_use_etw': 'false',
+    'node_use_openssl': 'true',
+    'node_use_perfctr': 'false',
+    'node_use_systemtap': 'false',
   },
   # Settings to compile node under Windows.
   'target_defaults': {
@@ -37,6 +53,9 @@
           'VCCLCompilerTool': {
             'WarnAsError': 'false',
           },
+        },
+        'xcode_settings': {
+          'GCC_TREAT_WARNINGS_AS_ERRORS': 'NO'
         },
       }],
     ],
