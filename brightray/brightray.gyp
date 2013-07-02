@@ -2,6 +2,9 @@
   'includes': [
     'brightray.gypi',
   ],
+  'variables': {
+    'brightray_source_root': '<!(python tools/brightray_source_root.py)',
+  },
   'targets': [
     {
       'target_name': 'brightray',
@@ -70,7 +73,7 @@
         ['OS=="mac"', {
           'link_settings': {
             'libraries': [
-              'libchromiumcontent.dylib',
+              '<(brightray_source_root)/<(libchromiumcontent_library_dir)/libchromiumcontent.dylib',
               '$(SDKROOT)/System/Library/Frameworks/AppKit.framework',
             ],
           },
@@ -78,9 +81,9 @@
         ['OS=="win"', {
           'link_settings': {
             'libraries': [
-              '<(libchromiumcontent_library_dir)/base_static.lib',
-              '<(libchromiumcontent_library_dir)/chromiumcontent.dll.lib',
-              '<(libchromiumcontent_library_dir)/sandbox_static.lib',
+              '<(brightray_source_root)/<(libchromiumcontent_library_dir)/base_static.lib',
+              '<(brightray_source_root)/<(libchromiumcontent_library_dir)/chromiumcontent.dll.lib',
+              '<(brightray_source_root)/<(libchromiumcontent_library_dir)/sandbox_static.lib',
             ],
           },
         }],
