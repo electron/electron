@@ -9,7 +9,7 @@
 #include "base/stringprintf.h"
 #include "base/string_util.h"
 #include "ui/base/resource/resource_bundle.h"
-#include "webkit/common/user_agent/user_agent_util.h"
+#include "webkit/user_agent/user_agent_util.h"
 
 namespace brightray {
 
