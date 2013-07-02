@@ -147,10 +147,11 @@
       '@rpath/Quincy.framework/Versions/A/Quincy',
       '${BUILT_PRODUCTS_DIR}/${EXECUTABLE_PATH}'
     ],
+    'atom_source_root': '<!(python tools/atom_source_root.py)',
   },
   'target_defaults': {
     'mac_framework_dirs': [
-      '<(source_root)/frameworks',
+      '<(atom_source_root)/frameworks',
     ],
   },
   'targets': [

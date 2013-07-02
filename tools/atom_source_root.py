@@ -6,5 +6,4 @@ import os
 """
 
 
-relative_source_root = os.path.join(__file__, '..', '..', '..')
-print os.path.abspath(relative_source_root)
+print os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
