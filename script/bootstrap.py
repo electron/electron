@@ -70,8 +70,9 @@ def update_win32_python():
 
 def touch_config_gypi():
   config_gypi = os.path.join(SOURCE_ROOT, 'vendor', 'node', 'config.gypi')
-  with open(config_gypi, 'w+') as f:
-    f.truncate(0)
+  if not os.path.exists(config_gypi):
+    with open(config_gypi, 'w+') as f:
+      f.truncate(0)
 
 
 def update_atom_shell():
