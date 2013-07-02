@@ -1,6 +1,7 @@
 {
   'variables': {
     'clang': 0,
+    'python': 'python',
     'source_root': '<!(python tools/mac/source_root.py)',
     'conditions': [
       ['OS=="mac"', {
