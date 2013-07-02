@@ -73,6 +73,7 @@ def touch_config_gypi():
   if not os.path.exists(config_gypi):
     with open(config_gypi, 'w+') as f:
       f.truncate(0)
+      f.write('{}')
 
 
 def update_atom_shell():
