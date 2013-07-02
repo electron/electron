@@ -4,6 +4,7 @@
     'product_name': 'Atom',
     'app_sources': [
       'app/atom_main.cc',
+      '<(libchromiumcontent_src_dir)/content/app/startup_helper_win.cc',
     ],
     'bundle_sources': [
       'browser/mac/atom.icns',
