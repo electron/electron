@@ -53,7 +53,8 @@ def upload():
   bucket, access_key, secret_key = s3_config()
   commit = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip()
 
-  s3put(bucket, access_key, secret_key, 'atom-shell/{0}'.format(commit), glob.glob('atom-shell*.zip'))
+  s3put(bucket, access_key, secret_key, SOURCE_ROOT,
+        'atom-shell/{0}'.format(commit), glob.glob('atom-shell*.zip'))
 
   update_version(bucket, access_key, secret_key)
 
@@ -70,17 +71,18 @@ def s3_config():
 
 
 def update_version(bucket, access_key, secret_key):
-  version = os.path.join(SOURCE_ROOT, 'dist', 'version')
-  s3put(bucket, access_key, secret_key, 'atom-shell', [ version ])
+  prefix = os.path.join(SOURCE_ROOT, 'dist')
+  version = os.path.join(prefix, 'version')
+  s3put(bucket, access_key, secret_key, prefix, 'atom-shell', [ version ])
 
 
-def s3put(bucket, access_key, secret_key, key_prefix, files):
+def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
   args = [
     's3put',
     '--bucket', bucket,
     '--access_key', access_key,
     '--secret_key', secret_key,
-    '--prefix', SOURCE_ROOT,
+    '--prefix', prefix,
     '--key_prefix', key_prefix,
     '--grant', 'public-read'
   ] + files
