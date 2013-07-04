@@ -81,6 +81,7 @@
       'browser/browser.cc',
       'browser/browser.h',
       'browser/browser_mac.mm',
+      'browser/browser_win.cc',
       'browser/browser_observer.h',
       'browser/crash_reporter.h',
       'browser/crash_reporter_mac.mm',
