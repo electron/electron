@@ -20,7 +20,7 @@ AtomBrowserMainParts* AtomBrowserMainParts::self_ = NULL;
 AtomBrowserMainParts::AtomBrowserMainParts()
     : atom_bindings_(new AtomBrowserBindings),
       browser_(new Browser),
-      node_bindings_(NodeBindings::Create(true)) {
+      node_bindings_(NodeBindings::CreateInBrowser()) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
   self_ = this;
 }

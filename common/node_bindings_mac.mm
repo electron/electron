@@ -123,8 +123,13 @@ void NodeBindingsMac::OnWatcherQueueChanged(uv_loop_t* loop) {
 }
 
 // static
-NodeBindings* NodeBindings::Create(bool is_browser) {
-  return new NodeBindingsMac(is_browser);
+NodeBindings* NodeBindings::CreateInBrowser() {
+  return new NodeBindingsMac(true);
+}
+
+// static
+NodeBindings* NodeBindings::CreateInRenderer() {
+  return new NodeBindingsMac(false);
 }
 
 }  // namespace atom

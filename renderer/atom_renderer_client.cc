@@ -23,7 +23,7 @@ v8::Handle<v8::Context> GetNodeContext() {
 }  // namespace
 
 AtomRendererClient::AtomRendererClient()
-    : node_bindings_(NodeBindings::Create(false)) {
+    : node_bindings_(NodeBindings::CreateInRenderer()) {
 }
 
 AtomRendererClient::~AtomRendererClient() {
