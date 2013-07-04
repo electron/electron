@@ -99,6 +99,8 @@
       'browser/native_window_mac.h',
       'browser/native_window_mac.mm',
       'browser/native_window_observer.h',
+      'browser/node_bindings_browser_win.cc',
+      'browser/node_bindings_browser_win.h',
       'browser/nsalert_synchronous_sheet.h',
       'browser/nsalert_synchronous_sheet.mm',
       'browser/window_list.cc',
@@ -139,6 +141,8 @@
       'renderer/atom_render_view_observer.h',
       'renderer/atom_renderer_client.cc',
       'renderer/atom_renderer_client.h',
+      'renderer/node_bindings_renderer_win.cc',
+      'renderer/node_bindings_renderer_win.h',
     ],
     'framework_sources': [
       'app/atom_library_main.cc',
