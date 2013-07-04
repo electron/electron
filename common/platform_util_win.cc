@@ -164,4 +164,22 @@ void OpenExternal(const GURL& url) {
   }
 }
 
+void MoveItemToTrash(const base::FilePath& path) {
+  // SHFILEOPSTRUCT wants the path to be terminated with two NULLs,
+  // so we have to use wcscpy because wcscpy_s writes non-NULLs
+  // into the rest of the buffer.
+  wchar_t double_terminated_path[MAX_PATH + 1] = {0};
+#pragma warning(suppress:4996)  // don't complain about wcscpy deprecation
+  wcscpy(double_terminated_path, path.value().c_str());
+
+  SHFILEOPSTRUCT file_operation = {0};
+  file_operation.wFunc = FO_DELETE;
+  file_operation.pFrom = double_terminated_path;
+  file_operation.fFlags = FOF_ALLOWUNDO;
+  SHFileOperation(&file_operation);
+}
+
+void Beep() {
+}
+
 }  // namespace platform_util
