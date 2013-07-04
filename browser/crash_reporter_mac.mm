@@ -19,8 +19,7 @@ void CrashReporter::SetCompanyName(const std::string& name) {
 // static
 void CrashReporter::SetSubmissionURL(const std::string& url) {
   BWQuincyManager *manager = [BWQuincyManager sharedQuincyManager];
-  [manager setSubmissionURL:base::SysUTF8ToNSString(name)];
-  return v8::Undefined();
+  [manager setSubmissionURL:base::SysUTF8ToNSString(url)];
 }
 
 // static
