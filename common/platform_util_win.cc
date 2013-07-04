@@ -180,6 +180,7 @@ void MoveItemToTrash(const base::FilePath& path) {
 }
 
 void Beep() {
+  MessageBeep(MB_OK);
 }
 
 }  // namespace platform_util
