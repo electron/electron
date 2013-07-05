@@ -90,6 +90,7 @@
       'browser/crash_reporter_win.cc',
       'browser/file_dialog.h',
       'browser/file_dialog_mac.mm',
+      'browser/file_dialog_win.cc',
       'browser/media/media_capture_devices_dispatcher.cc',
       'browser/media/media_capture_devices_dispatcher.h',
       'browser/media/media_stream_devices_controller.cc',
