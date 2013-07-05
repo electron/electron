@@ -53,6 +53,8 @@
       'browser/api/atom_api_menu.h',
       'browser/api/atom_api_menu_mac.h',
       'browser/api/atom_api_menu_mac.mm',
+      'browser/api/atom_api_menu_win.cc',
+      'browser/api/atom_api_menu_win.h',
       'browser/api/atom_api_window.cc',
       'browser/api/atom_api_window.h',
       'browser/api/atom_browser_bindings.cc',
