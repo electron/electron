@@ -96,6 +96,7 @@
       'browser/media/media_stream_devices_controller.h',
       'browser/message_box.h',
       'browser/message_box_mac.mm',
+      'browser/message_box_win.cc',
       'browser/native_window.cc',
       'browser/native_window.h',
       'browser/native_window_mac.h',
