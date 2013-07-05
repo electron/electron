@@ -35,6 +35,7 @@
       'browser/accelerator_util.cc',
       'browser/accelerator_util.h',
       'browser/accelerator_util_mac.mm',
+      'browser/accelerator_util_win.cc',
       'browser/api/atom_api_app.cc',
       'browser/api/atom_api_app.h',
       'browser/api/atom_api_auto_updater.cc',
