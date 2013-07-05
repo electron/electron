@@ -103,6 +103,8 @@
       'browser/native_window.h',
       'browser/native_window_mac.h',
       'browser/native_window_mac.mm',
+      'browser/native_window_win.cc',
+      'browser/native_window_win.h',
       'browser/native_window_observer.h',
       'browser/node_bindings_browser_win.cc',
       'browser/node_bindings_browser_win.h',
