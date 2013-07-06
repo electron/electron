@@ -4,7 +4,6 @@
     'product_name': 'Atom',
     'app_sources': [
       'app/atom_main.cc',
-      '<(libchromiumcontent_src_dir)/content/app/startup_helper_win.cc',
     ],
     'bundle_sources': [
       'browser/mac/atom.icns',
@@ -155,6 +154,15 @@
       'app/atom_library_main.cc',
       'app/atom_library_main.h',
     ],
+    'conditions': [
+      ['OS=="win"', {
+        'app_sources': [
+          'app/win/resource.h',
+          'app/win/atom.rc',
+          '<(libchromiumcontent_src_dir)/content/app/startup_helper_win.cc',
+        ],
+      }],  # OS=="win"
+    ],
     'fix_framework_link_command': [
       'install_name_tool',
       '-change',
@@ -183,9 +191,6 @@
       'sources': [
         '<@(app_sources)',
       ],
-      'mac_bundle_resources': [
-        '<@(bundle_sources)',
-      ],
       'include_dirs': [
         '.',
       ],
@@ -206,6 +211,9 @@
               '@executable_path/../Frameworks',
             ],
           },
+          'mac_bundle_resources': [
+            '<@(bundle_sources)',
+          ],
           'copies': [
             {
               'destination': '<(PRODUCT_DIR)/<(product_name).app/Contents/Frameworks',
@@ -254,7 +262,31 @@
               ],
             },
           ]
-        }],
+        }],  # OS=="mac"
+        ['OS=="win"', {
+          'copies': [
+            {
+              'destination': '<(PRODUCT_DIR)',
+              'files': [
+                '<(libchromiumcontent_library_dir)/chromiumcontent.dll',
+                '<(libchromiumcontent_library_dir)/icudt.dll',
+                '<(libchromiumcontent_library_dir)/libGLESv2.dll',
+              ],
+            },
+            {
+              'destination': '<(PRODUCT_DIR)/resources/browser',
+              'files': [
+                'browser/default_app',
+              ]
+            },
+            {
+              'destination': '<(PRODUCT_DIR)/resources',
+              'files': [
+                'node/node.exe',
+              ]
+            },
+          ],
+        }],  # OS=="win"
       ],
     },
     {
@@ -293,14 +325,29 @@
           'inputs': [
             'script/compile-coffee.py',
           ],
-          'outputs': [
-            '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
-          ],
-          'action': [
-            'python',
-            'script/compile-coffee.py',
-            '<(RULE_INPUT_PATH)',
-            '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
+          'conditions': [
+            ['OS=="mac"', {
+              'outputs': [
+                '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
+              ],
+              'action': [
+                'python',
+                'script/compile-coffee.py',
+                '<(RULE_INPUT_PATH)',
+                '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
+              ],
+            }],  # OS=="mac"
+            ['OS=="win"', {
+              'outputs': [
+                '<(PRODUCT_DIR)/resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
+              ],
+              'action': [
+                'python',
+                'script/compile-coffee.py',
+                '<(RULE_INPUT_PATH)',
+                '<(PRODUCT_DIR)/resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
+              ],
+            }],  # OS=="win"
           ],
         },
       ],
