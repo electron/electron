@@ -55,7 +55,7 @@ std::string Browser::GetVersion() {
 }
 
 void Browser::CancelQuit() {
-  // TODO: Research on how to cancel shutdown in Windows.
+  // TODO(zcbenz): Research on how to cancel shutdown in Windows.
 }
 
 }  // namespace atom

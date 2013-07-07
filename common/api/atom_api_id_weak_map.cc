@@ -109,7 +109,7 @@ v8::Handle<v8::Value> IDWeakMap::Keys(const v8::Arguments& args) {
   v8::Handle<v8::Array> keys = v8::Array::New(obj->map_.size());
 
   int i = 0;
-  for (auto el = obj->map_.begin(); el != obj->map_.end(); ++ el) {
+  for (auto el = obj->map_.begin(); el != obj->map_.end(); ++el) {
     keys->Set(i, v8::Integer::New(el->first));
     ++i;
   }
