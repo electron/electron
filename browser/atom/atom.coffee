@@ -16,13 +16,13 @@ atom.browserMainParts =
 # implement various logics.
 global.__atom = atom
 
-# Add Atom.app/Contents/Resources/browser/api/lib to require's search paths,
+# Add browser/api/lib to require's search paths,
 # which contains javascript part of Atom's built-in libraries.  
 globalPaths = require('module').globalPaths
-globalPaths.push path.join(__dirname, '..', 'api', 'lib')
+globalPaths.push path.join process.resourcesPath, 'browser', 'api', 'lib'
 
-# And Atom.app/Contents/Resources/common/api/lib
-globalPaths.push path.join(__dirname, '..', '..', 'common', 'api', 'lib')
+# And also common/api/lib
+globalPaths.push path.join process.resourcesPath, 'common', 'api', 'lib'
 
 # Don't quit on fatal error.
 process.on 'uncaughtException', (error) ->
@@ -41,13 +41,13 @@ require './rpc-server.js'
 # Now we try to load app's package.json.
 packageJson = null
 
-packagePath = path.join __dirname, '..', '..', 'app'
+packagePath = path.join process.resourcesPath, 'app'
 try
-  # First we try to load Atom.app/Contents/Resources/app
+  # First we try to load process.resourcesPath/app
   packageJson = JSON.parse(fs.readFileSync(path.join(packagePath, 'package.json')))
 catch error
-  # If not found then we load Atom.app/Contents/Resources/browser/default_app
-  packagePath = path.join __dirname, '..', 'default_app'
+  # If not found then we load browser/default_app
+  packagePath = path.join process.resourcesPath, 'browser', 'default_app'
   packageJson = JSON.parse(fs.readFileSync(path.join(packagePath, 'package.json')))
 
 # Finally load app's main.js and transfer control to C++.
