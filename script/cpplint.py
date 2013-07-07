@@ -6,6 +6,7 @@ import subprocess
 import sys
 
 OBJC_HEADERS = [
+  'app/win/resource.h',
   'browser/atom_event_processing_window.h',
   'browser/atom_application_mac.h',
   'browser/atom_application_delegate_mac.h',
@@ -36,7 +37,7 @@ def list_files(directories, filters):
 
 
 def call_cpplint(files):
-  cpplint = os.path.join(SOURCE_ROOT, 'vendor', 'cpplint.py')
+  cpplint = os.path.join(SOURCE_ROOT, 'vendor', 'depot_tools', 'cpplint.py')
   rules = '--filter=-build/header_guard,-build/include_what_you_use'
   subprocess.call([sys.executable, cpplint, rules] + files)
 

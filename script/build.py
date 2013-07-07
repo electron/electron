@@ -7,13 +7,20 @@ import sys
 
 
 CONFIGURATIONS = ['Release', 'Debug']
+SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))
 
 
 def main():
+  os.chdir(SOURCE_ROOT)
+
+  ninja = os.path.join('vendor', 'depot_tools', 'ninja')
+  if sys.platform == 'win32':
+    ninja += '.exe'
+
   args = parse_args()
   for config in args.configuration:
     build_path = os.path.join('out', config)
-    subprocess.call(['ninja', '-C', build_path])
+    subprocess.call([ninja, '-C', build_path])
 
 
 def parse_args():

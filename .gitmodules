@@ -1,9 +1,12 @@
 [submodule "vendor/brightray"]
 	path = vendor/brightray
-  url = https://github.com/aroben/brightray.git
+  url = https://github.com/brightray/brightray.git
 [submodule "vendor/node"]
 	path = vendor/node
   url = https://github.com/atom/cefode-node.git
 [submodule "vendor/gyp"]
 	path = vendor/gyp
 	url = https://github.com/svn2github/gyp.git
+[submodule "vendor/depot_tools"]
+	path = vendor/depot_tools
+	url = https://chromium.googlesource.com/chromium/tools/depot_tools.git
