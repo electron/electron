@@ -74,6 +74,7 @@ class NativeWindowWin : public NativeWindow,
   virtual bool ShouldShowWindowIcon() const OVERRIDE;
   virtual views::Widget* GetWidget() OVERRIDE;
   virtual const views::Widget* GetWidget() const OVERRIDE;
+  virtual views::ClientView* CreateClientView(views::Widget* widget) OVERRIDE;
 
  private:
   scoped_ptr<views::Widget> window_;

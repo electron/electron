@@ -10,8 +10,33 @@
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/widget/widget.h"
+#include "ui/views/window/client_view.h"
 
 namespace atom {
+
+namespace {
+
+class NativeWindowClientView : public views::ClientView {
+ public:
+  NativeWindowClientView(views::Widget* widget,
+                         views::View* contents_view,
+                         NativeWindowWin* shell)
+      : views::ClientView(widget, contents_view),
+        shell_(shell) {
+  }
+  virtual ~NativeWindowClientView() {}
+
+  virtual bool CanClose() OVERRIDE {
+    shell_->CloseWebContents();
+    return false;
+  }
+
+ private:
+  NativeWindowWin* shell_;
+};
+
+
+}  // namespace
 
 NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
                                  base::DictionaryValue* options)
@@ -32,7 +57,6 @@ NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
   window_->CenterWindow(size);
 
   web_view_->SetWebContents(web_contents);
-  window_->SetContentsView(web_view_);
 }
 
 NativeWindowWin::~NativeWindowWin() {
@@ -214,6 +238,10 @@ views::Widget* NativeWindowWin::GetWidget() {
 
 const views::Widget* NativeWindowWin::GetWidget() const {
   return window_.get();
+}
+
+views::ClientView* NativeWindowWin::CreateClientView(views::Widget* widget) {
+  return new NativeWindowClientView(widget, web_view_, this);
 }
 
 // static
