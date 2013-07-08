@@ -144,14 +144,6 @@ gfx::Size NativeWindowWin::GetMaximumSize() {
 
 void NativeWindowWin::SetResizable(bool resizable) {
   resizable_ = resizable;
-
-  // Show/Hide the maximize button.
-  DWORD style = ::GetWindowLong(window_->GetNativeView(), GWL_STYLE);
-  if (resizable)
-    style |= WS_MAXIMIZEBOX;
-  else
-    style &= ~WS_MAXIMIZEBOX;
-  ::SetWindowLong(window_->GetNativeView(), GWL_STYLE, style);
 }
 
 bool NativeWindowWin::IsResizable() {
