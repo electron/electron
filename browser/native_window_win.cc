@@ -47,6 +47,7 @@ NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
   views::Widget::InitParams params(views::Widget::InitParams::TYPE_WINDOW);
   params.delegate = this;
   params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
+  window_->set_frame_type(views::Widget::FRAME_TYPE_FORCE_NATIVE);
   window_->Init(params);
 
   int width = 800, height = 600;
