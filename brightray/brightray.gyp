@@ -19,6 +19,8 @@
           '..',
           '<(libchromiumcontent_include_dir)',
           '<(libchromiumcontent_include_dir)/third_party/skia/include/config',
+          # For SkMatrix.h.
+          '<(libchromiumcontent_include_dir)/third_party/skia/include/core',
         ],
       },
       'sources': [
