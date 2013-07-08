@@ -15,6 +15,7 @@ class AtomMainDelegate : public brightray::MainDelegate {
   ~AtomMainDelegate();
 
  protected:
+  virtual bool BasicStartupComplete(int* exit_code) OVERRIDE;
   virtual void PreSandboxStartup() OVERRIDE;
 
  private:

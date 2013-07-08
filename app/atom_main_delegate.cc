@@ -5,6 +5,7 @@
 #include "app/atom_main_delegate.h"
 
 #include "base/command_line.h"
+#include "base/logging.h"
 #include "browser/atom_browser_client.h"
 #include "content/public/common/content_switches.h"
 #include "renderer/atom_renderer_client.h"
@@ -15,6 +16,21 @@ AtomMainDelegate::AtomMainDelegate() {
 }
 
 AtomMainDelegate::~AtomMainDelegate() {
+}
+
+bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
+  // Disable logging out to debug.log on Windows
+#if defined(OS_WIN)
+  logging::InitLogging(
+      L"debug.log",
+      logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG,
+      logging::LOCK_LOG_FILE,
+      logging::DELETE_OLD_LOG_FILE,
+      logging::DISABLE_DCHECK_FOR_NON_OFFICIAL_RELEASE_BUILDS);
+  logging::SetLogItems(true, false, true, false);
+#endif
+
+  return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
 
 void AtomMainDelegate::PreSandboxStartup() {
