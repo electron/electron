@@ -271,6 +271,7 @@
                 '<(libchromiumcontent_library_dir)/chromiumcontent.dll',
                 '<(libchromiumcontent_library_dir)/icudt.dll',
                 '<(libchromiumcontent_library_dir)/libGLESv2.dll',
+                '<(libchromiumcontent_resources_dir)/content_shell.pak',
               ],
             },
             {
