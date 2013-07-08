@@ -5,9 +5,12 @@
 #ifndef ATOM_BROWSER_NATIVE_WINDOW_WIN_H_
 #define ATOM_BROWSER_NATIVE_WINDOW_WIN_H_
 
+#include "base/string16.h"
+
 #include "base/memory/scoped_ptr.h"
 #include "browser/native_window.h"
 #include "ui/gfx/size.h"
+#include "ui/views/widget/widget_delegate.h"
 
 namespace views {
 class WebView;
@@ -16,7 +19,8 @@ class Widget;
 
 namespace atom {
 
-class NativeWindowWin : public NativeWindow {
+class NativeWindowWin : public NativeWindow,
+                        public views::WidgetDelegate {
  public:
   explicit NativeWindowWin(content::WebContents* web_contents,
                            base::DictionaryValue* options);
@@ -57,17 +61,26 @@ class NativeWindowWin : public NativeWindow {
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
 
  protected:
-  // Implementations of content::WebContentsDelegate.
+  // Overridden from content::WebContentsDelegate:
   virtual void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent&) OVERRIDE;
+
+  // Overridden from views::WidgetDelegate:
+  virtual bool CanResize() const OVERRIDE;
+  virtual bool CanMaximize() const OVERRIDE;
+  virtual string16 GetWindowTitle() const OVERRIDE;
+  virtual bool ShouldHandleSystemCommands() const OVERRIDE;
+  virtual bool ShouldShowWindowIcon() const OVERRIDE;
+  virtual views::Widget* GetWidget() OVERRIDE;
+  virtual const views::Widget* GetWidget() const OVERRIDE;
 
  private:
   scoped_ptr<views::Widget> window_;
   views::WebView* web_view_;  // managed by window_.
 
   bool resizable_;
-  std::string title_;
+  string16 title_;
   gfx::Size minimum_size_;
   gfx::Size maximum_size_;
 

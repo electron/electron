@@ -4,6 +4,7 @@
 
 #include "browser/native_window_win.h"
 
+#include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "common/options_switches.h"
 #include "content/public/browser/native_web_keyboard_event.h"
@@ -16,8 +17,10 @@ NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
                                  base::DictionaryValue* options)
     : NativeWindow(web_contents, options),
       window_(new views::Widget),
-      web_view_(new views::WebView(NULL)) {
+      web_view_(new views::WebView(NULL)),
+      resizable_(true) {
   views::Widget::InitParams params(views::Widget::InitParams::TYPE_WINDOW);
+  params.delegate = this;
   params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
   window_->Init(params);
 
@@ -152,12 +155,12 @@ gfx::Point NativeWindowWin::GetPosition() {
 }
 
 void NativeWindowWin::SetTitle(const std::string& title) {
-  title_ = title;
+  title_ = UTF8ToUTF16(title);
   window_->UpdateWindowTitle();
 }
 
 std::string NativeWindowWin::GetTitle() {
-  return title_;
+  return UTF16ToUTF8(title_);
 }
 
 void NativeWindowWin::FlashFrame(bool flash) {
@@ -183,6 +186,34 @@ void NativeWindowWin::HandleKeyboardEvent(
   // This allows stuff like F10, etc to work correctly.
   DefWindowProc(event.os_event.hwnd, event.os_event.message,
                 event.os_event.wParam, event.os_event.lParam);
+}
+
+bool NativeWindowWin::CanResize() const {
+  return resizable_;
+}
+
+bool NativeWindowWin::CanMaximize() const {
+  return resizable_;
+}
+
+string16 NativeWindowWin::GetWindowTitle() const {
+  return title_;
+}
+
+bool NativeWindowWin::ShouldHandleSystemCommands() const {
+  return true;
+}
+
+bool NativeWindowWin::ShouldShowWindowIcon() const {
+  return true;
+}
+
+views::Widget* NativeWindowWin::GetWidget() {
+  return window_.get();
+}
+
+const views::Widget* NativeWindowWin::GetWidget() const {
+  return window_.get();
 }
 
 // static
