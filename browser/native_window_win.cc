@@ -11,6 +11,7 @@
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/client_view.h"
+#include "ui/views/window/native_frame_view.h"
 
 namespace atom {
 
@@ -33,6 +34,30 @@ class NativeWindowClientView : public views::ClientView {
 
  private:
   NativeWindowWin* shell_;
+
+  DISALLOW_COPY_AND_ASSIGN(NativeWindowClientView);
+};
+
+class NativeWindowFrameView : public views::NativeFrameView {
+ public:
+  explicit NativeWindowFrameView(views::Widget* frame, NativeWindowWin* shell)
+      : NativeFrameView(frame),
+        shell_(shell) {
+  }
+  virtual ~NativeWindowFrameView() {}
+
+  virtual gfx::Size GetMinimumSize() OVERRIDE {
+    return shell_->GetMinimumSize();
+  }
+
+  virtual gfx::Size GetMaximumSize() OVERRIDE {
+    return shell_->GetMaximumSize();
+  }
+
+ private:
+  NativeWindowWin* shell_;
+
+  DISALLOW_COPY_AND_ASSIGN(NativeWindowFrameView);
 };
 
 
@@ -235,6 +260,11 @@ const views::Widget* NativeWindowWin::GetWidget() const {
 
 views::ClientView* NativeWindowWin::CreateClientView(views::Widget* widget) {
   return new NativeWindowClientView(widget, web_view_, this);
+}
+
+views::NonClientFrameView* NativeWindowWin::CreateNonClientFrameView(
+    views::Widget* widget) {
+  return new NativeWindowFrameView(widget, this);
 }
 
 // static
