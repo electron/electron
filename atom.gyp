@@ -318,7 +318,7 @@
             'libraries': [
               '-limm32.lib',
               '-loleacc.lib',
-              '<(atom_source_root)/<(libchromiumcontent_library_dir)/views_chromiumcontent.lib',
+              '<(atom_source_root)/<(libchromiumcontent_library_dir)/chromiumviews.lib',
             ],
           },
         }],
