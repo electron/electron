@@ -312,6 +312,17 @@
       'export_dependent_settings': [
         'vendor/brightray/brightray.gyp:brightray',
       ],
+      'conditions': [
+        ['OS=="win"', {
+          'link_settings': {
+            'libraries': [
+              '-limm32.lib',
+              '-loleacc.lib',
+              '<(atom_source_root)/<(libchromiumcontent_library_dir)/views_chromiumcontent.lib',
+            ],
+          },
+        }],
+      ],
     },
     {
       'target_name': 'generated_sources',

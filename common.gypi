@@ -66,6 +66,24 @@
       4800,  # (v8.h) forcing value to bool 'true' or 'false'
       4819,  # The file contains a character that cannot be represented in the current code page
     ],
+    'msvs_settings': {
+      'VCLinkerTool': {
+        'AdditionalOptions': [
+          # ATL 8.0 included in WDK 7.1 makes the linker to generate following
+          # warnings:
+          #   - warning LNK4254: section 'ATL' (50000040) merged into
+          #     '.rdata' (40000040) with different attributes
+          #   - warning LNK4078: multiple 'ATL' sections found with
+          #     different attributes
+          '/ignore:4254',
+          '/ignore:4078',
+          # views_chromiumcontent.lib generates this warning because it's
+          # symobls are defined as dllexport but used as static library:
+          #   - warning LNK4217: locally defined symbol imported in function
+          '/ignore:4217',
+        ],
+      },
+    },
   },
   'conditions': [
     # Settings to compile with clang under OS X.
