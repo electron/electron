@@ -10,10 +10,20 @@
 
 namespace atom {
 
+namespace {
+
+static uv_async_t dummy_uv_handle;
+
+void UvNoOp(uv_async_t* handle, int status) {
+}
+
+}  // namespace
+
 // Defined in atom_extensions.cc.
 node::node_module_struct* GetBuiltinModule(const char *name, bool is_browser);
 
 AtomBindings::AtomBindings() {
+  uv_async_init(uv_default_loop(), &dummy_uv_handle, UvNoOp);
 }
 
 AtomBindings::~AtomBindings() {
@@ -24,6 +34,7 @@ void AtomBindings::BindTo(v8::Handle<v8::Object> process) {
 
   node::SetMethod(process, "atomBinding", Binding);
   node::SetMethod(process, "crash", Crash);
+  node::SetMethod(process, "activateUvLoop", ActivateUVLoop);
 }
 
 // static
@@ -76,6 +87,12 @@ v8::Handle<v8::Value> AtomBindings::Binding(const v8::Arguments& args) {
 // static
 v8::Handle<v8::Value> AtomBindings::Crash(const v8::Arguments& args) {
   base::debug::BreakDebugger();
+  return v8::Undefined();
+}
+
+// static
+v8::Handle<v8::Value> AtomBindings::ActivateUVLoop(const v8::Arguments& args) {
+  uv_async_send(&dummy_uv_handle);
   return v8::Undefined();
 }
 
