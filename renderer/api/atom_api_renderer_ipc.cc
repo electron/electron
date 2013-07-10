@@ -98,11 +98,14 @@ v8::Handle<v8::Value> RendererIPC::SendSync(const v8::Arguments &args) {
   RenderView* render_view = GetCurrentRenderView();
 
   base::DictionaryValue result;
-  bool success = render_view->Send(new AtomViewHostMsg_Message_Sync(
+  IPC::SyncMessage* message = new AtomViewHostMsg_Message_Sync(
       render_view->GetRoutingID(),
       channel,
       *static_cast<base::ListValue*>(arguments.get()),
-      &result));
+      &result);
+  // Enable the UI thread in browser to receive messages.
+  message->EnableMessagePumping();
+  bool success = render_view->Send(message);
 
   if (!success)
     return node::ThrowError("Unable to send AtomViewHostMsg_Message_Sync");
