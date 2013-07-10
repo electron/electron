@@ -28,6 +28,7 @@ class App : public EventEmitter,
   virtual void OnWindowAllClosed() OVERRIDE;
   virtual void OnOpenFile(bool* prevent_default,
                           const std::string& file_path) OVERRIDE;
+  virtual void OnOpenURL(const std::string& url) OVERRIDE;
   virtual void OnWillFinishLaunching() OVERRIDE;
   virtual void OnFinishLaunching() OVERRIDE;
 

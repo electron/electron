@@ -42,6 +42,10 @@ bool Browser::OpenFile(const std::string& file_path) {
   return prevent_default;
 }
 
+void Browser::OpenURL(const std::string& url) {
+  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnOpenURL(url));
+}
+
 void Browser::WillFinishLaunching() {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWillFinishLaunching());
 }

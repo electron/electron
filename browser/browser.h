@@ -36,6 +36,9 @@ class Browser : public WindowListObserver {
   // Tell the application to open a file.
   bool OpenFile(const std::string& file_path);
 
+  // Tell the application to open a url.
+  void OpenURL(const std::string& url);
+
   // Tell the application the loading has been done.
   void WillFinishLaunching();
   void DidFinishLaunching();

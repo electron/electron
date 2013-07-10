@@ -1,4 +1,5 @@
 var app = require('app');
+var dialog = require('dialog');
 var delegate = require('atom-delegate');
 var ipc = require('ipc');
 var Menu = require('menu');
@@ -11,6 +12,10 @@ var menu = null;
 // Quit when all windows are closed.
 app.on('window-all-closed', function() {
   app.terminate();
+});
+
+app.on('open-url', function(event, url) {
+  dialog.showMessageBox({message: url, buttons: ['OK']});
 });
 
 delegate.browserMainParts.preMainMessageLoopRun = function() {

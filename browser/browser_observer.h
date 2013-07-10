@@ -23,6 +23,9 @@ class BrowserObserver {
   virtual void OnOpenFile(bool* prevent_default,
                           const std::string& file_path) {}
 
+  // Browser is used to open a url.
+  virtual void OnOpenURL(const std::string& url) {}
+
   // The browser has finished loading.
   virtual void OnWillFinishLaunching() {}
   virtual void OnFinishLaunching() {}

@@ -5,6 +5,7 @@
 #import "browser/atom_application_mac.h"
 
 #include "base/auto_reset.h"
+#include "base/strings/sys_string_conversions.h"
 #include "browser/browser.h"
 
 @implementation AtomApplication
@@ -26,8 +27,23 @@
   handlingSendEvent_ = handlingSendEvent;
 }
 
+- (void)awakeFromNib {
+  [[NSAppleEventManager sharedAppleEventManager]
+      setEventHandler:self
+          andSelector:@selector(handleURLEvent:withReplyEvent:)
+        forEventClass:kInternetEventClass
+           andEventID:kAEGetURL];
+}
+
 - (IBAction)closeAllWindows:(id)sender {
   atom::Browser::Get()->Quit();
+}
+
+- (void)handleURLEvent:(NSAppleEventDescriptor*)event
+        withReplyEvent:(NSAppleEventDescriptor*)replyEvent {
+  NSString* url = [
+      [event paramDescriptorForKeyword:keyDirectObject] stringValue];
+  atom::Browser::Get()->OpenURL(base::SysNSStringToUTF8(url));
 }
 
 @end

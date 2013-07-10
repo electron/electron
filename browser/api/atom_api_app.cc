@@ -36,6 +36,12 @@ void App::OnOpenFile(bool* prevent_default, const std::string& file_path) {
   *prevent_default = Emit("open-file", &args);
 }
 
+void App::OnOpenURL(const std::string& url) {
+  base::ListValue args;
+  args.AppendString(url);
+  Emit("open-url", &args);
+}
+
 void App::OnWillFinishLaunching() {
   Emit("will-finish-launching");
 }
