@@ -118,7 +118,7 @@ delegate.browserMainParts.preMainMessageLoopRun = function() {
         {
           label: 'Reload',
           accelerator: 'Command+R',
-          click: function() { BrowserWindow.getFocusedWindow().reloadIgnoringCache(); }
+          click: function() { BrowserWindow.getFocusedWindow().restart(); }
         },
         {
           label: 'Enter Fullscreen',
