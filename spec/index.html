@@ -1,0 +1,38 @@
+<html>
+<head>
+  <link href="node_modules/mocha/mocha.css" rel="stylesheet">
+</head>
+<body>
+
+<div id="mocha"></div>
+
+<script type="text/javascript" charset="utf-8">
+(function() {
+  require('coffee-script'); // Supports .coffee tests.
+
+  var Mocha = require('mocha');
+
+  var mocha = new Mocha();
+  mocha.ui('bdd').reporter('html');
+
+  var query = Mocha.utils.parseQuery(window.location.search || '');
+  if (query.grep) mocha.grep(query.grep);
+  if (query.invert) mocha.invert();
+
+  // Read all test files.
+  var finder = require('findit').find(__dirname);
+
+  finder.on('file', function(file) {
+    if (/.coffee$/.test(file))
+      mocha.addFile(file);
+  });
+
+  finder.on('end', function() {
+    mocha.run(function() {
+      Mocha.utils.highlightTags('code');
+    });
+  });
+})();
+</script>
+</body>
+</html>
