@@ -1,5 +1,8 @@
 {
-  "name"    : "atom",
-  "version" : "0.1.0",
-  "main"    : "main.js"
+  "name": "atom",
+  "version": "0.1.0",
+  "main": "main.js",
+  "dependencies": {
+    "optimist": "*"
+  }
 }

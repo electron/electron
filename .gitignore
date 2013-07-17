@@ -6,6 +6,8 @@ dist/
 frameworks/
 node/
 node_modules/
+browser/default_app/node_modules/
+spec/node_modules/
 out/
 vendor/brightray/vendor/download/
 vendor/python_26/
