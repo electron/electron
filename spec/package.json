@@ -1,9 +1,5 @@
 {
   "name": "atom-shell-specs",
   "main": "main.js",
-  "version": "0.1.0",
-  "dependencies": {
-    "mocha": "*",
-    "findit": "*"
-  }
+  "version": "0.1.0"
 }

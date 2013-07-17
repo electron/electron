@@ -3,7 +3,9 @@
   "version" : "0.1.0",
 
   "dependencies": {
-    "coffee-script": "1.6.2"
+    "coffee-script": "1.6.2",
+    "mocha": "*",
+    "findit": "*"
   },
 
   "private": true,

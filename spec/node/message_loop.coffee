@@ -1,5 +1,3 @@
-assert = require 'assert'
-
 describe 'message loop', ->
   describe 'process.nextTick', ->
     it 'should emit the callback', (done) ->
