@@ -20,10 +20,16 @@ def main():
   rm_rf(DIST_DIR)
   os.makedirs(DIST_DIR)
 
+  force_build()
   copy_binaries()
   copy_license()
   create_version()
   create_zip()
+
+
+def force_build():
+  build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
+  subprocess.check_call([sys.executable, build, '-c', 'Release']);
 
 
 def copy_binaries():
