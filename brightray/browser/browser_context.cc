@@ -5,6 +5,7 @@
 #include "browser_context.h"
 
 #include "browser/inspectable_web_contents_impl.h"
+#include "browser/network_delegate.h"
 #include "common/application_info.h"
 
 #include "base/files/file_path.h"
@@ -66,9 +67,14 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(content::Prot
       GetPath(),
       content::BrowserThread::UnsafeGetMessageLoopForThread(content::BrowserThread::IO),
       content::BrowserThread::UnsafeGetMessageLoopForThread(content::BrowserThread::FILE),
+      CreateNetworkDelegate().Pass(),
       protocol_handlers);
   resource_context_->set_url_request_context_getter(url_request_getter_.get());
   return url_request_getter_.get();
+}
+
+scoped_ptr<NetworkDelegate> BrowserContext::CreateNetworkDelegate() {
+  return make_scoped_ptr(new NetworkDelegate).Pass();
 }
 
 base::FilePath BrowserContext::GetPath() {

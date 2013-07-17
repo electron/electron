@@ -13,6 +13,7 @@ class PrefService;
 
 namespace brightray {
 
+class NetworkDelegate;
 class URLRequestContextGetter;
 
 class BrowserContext : public content::BrowserContext {
@@ -27,6 +28,9 @@ public:
 protected:
   // Subclasses should override this to register custom preferences.
   virtual void RegisterPrefs(PrefRegistrySimple*) {}
+
+  // Subclasses should override this to provide a custom NetworkDelegate implementation.
+  virtual scoped_ptr<NetworkDelegate> CreateNetworkDelegate();
 
   virtual base::FilePath GetPath() OVERRIDE;
 

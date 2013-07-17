@@ -10,11 +10,11 @@
 namespace brightray {
 
 class NetworkDelegate : public net::NetworkDelegate {
-public:
+ public:
   NetworkDelegate();
   virtual ~NetworkDelegate();
 
-private:
+ protected:
   virtual int OnBeforeURLRequest(net::URLRequest* request, const net::CompletionCallback& callback, GURL* new_url) OVERRIDE;
   virtual int OnBeforeSendHeaders(net::URLRequest* request, const net::CompletionCallback& callback, net::HttpRequestHeaders* headers) OVERRIDE;
   virtual void OnSendHeaders(net::URLRequest* request, const net::HttpRequestHeaders& headers) OVERRIDE;
@@ -33,6 +33,7 @@ private:
   virtual int OnBeforeSocketStreamConnect(net::SocketStream* stream, const net::CompletionCallback& callback) OVERRIDE;
   virtual void OnRequestWaitStateChange(const net::URLRequest& request, RequestWaitState state) OVERRIDE;
 
+ private:
   DISALLOW_COPY_AND_ASSIGN(NetworkDelegate);
 };
 

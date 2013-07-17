@@ -16,12 +16,13 @@ class MessageLoop;
 
 namespace net {
 class HostResolver;
-class NetworkDelegate;
 class ProxyConfigService;
 class URLRequestContextStorage;
 }
 
 namespace brightray {
+
+class NetworkDelegate;
 
 class URLRequestContextGetter : public net::URLRequestContextGetter {
 public:
@@ -29,6 +30,7 @@ public:
       const base::FilePath& base_path,
       base::MessageLoop* io_loop,
       base::MessageLoop* file_loop,
+      scoped_ptr<NetworkDelegate>,
       content::ProtocolHandlerMap*);
   virtual ~URLRequestContextGetter();
 
@@ -43,7 +45,7 @@ private:
   base::MessageLoop* file_loop_;
 
   scoped_ptr<net::ProxyConfigService> proxy_config_service_;
-  scoped_ptr<net::NetworkDelegate> network_delegate_;
+  scoped_ptr<NetworkDelegate> network_delegate_;
   scoped_ptr<net::URLRequestContextStorage> storage_;
   scoped_ptr<net::URLRequestContext> url_request_context_;
   content::ProtocolHandlerMap protocol_handlers_;
