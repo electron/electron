@@ -3,7 +3,7 @@
   url = https://github.com/brightray/brightray.git
 [submodule "vendor/node"]
 	path = vendor/node
-  url = https://github.com/atom/cefode-node.git
+  url = https://github.com/atom/node.git
 [submodule "vendor/gyp"]
 	path = vendor/gyp
 	url = https://github.com/svn2github/gyp.git
