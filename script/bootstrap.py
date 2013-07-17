@@ -56,7 +56,13 @@ def bootstrap_brightray(url):
 
 
 def update_node_modules():
-  subprocess.check_call(['npm', 'install', '--silent'])
+  for dirname in ['.', 'browser/default_app', 'spec']:
+    update_node_modules_for_dir(dirname);
+
+
+def update_node_modules_for_dir(dirname):
+  with scoped_cwd(dirname):
+    subprocess.check_call(['npm', 'install', '--silent'])
 
 
 def update_win32_python():
