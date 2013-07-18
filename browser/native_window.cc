@@ -16,6 +16,7 @@
 #include "browser/atom_javascript_dialog_manager.h"
 #include "browser/media/media_stream_devices_controller.h"
 #include "browser/window_list.h"
+#include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/invalidate_type.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/notification_details.h"
@@ -133,6 +134,14 @@ void NativeWindow::OpenDevTools() {
 
 void NativeWindow::CloseDevTools() {
   inspectable_web_contents()->GetView()->CloseDevTools();
+}
+
+void NativeWindow::InspectElement(int x, int y) {
+  OpenDevTools();
+  content::RenderViewHost* rvh = GetWebContents()->GetRenderViewHost();
+  scoped_refptr<content::DevToolsAgentHost> agent(
+      content::DevToolsAgentHost::GetOrCreateFor(rvh));
+  agent->InspectElement(x, y);
 }
 
 void NativeWindow::FocusOnWebView() {

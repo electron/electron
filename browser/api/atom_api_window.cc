@@ -418,6 +418,16 @@ v8::Handle<v8::Value> Window::CloseDevTools(const v8::Arguments &args) {
 }
 
 // static
+v8::Handle<v8::Value> Window::InspectElement(const v8::Arguments& args) {
+  UNWRAP_WINDOW_AND_CHECK;
+
+  self->window_->InspectElement(args[0]->IntegerValue(),
+                                args[1]->IntegerValue());
+
+  return v8::Undefined();
+}
+
+// static
 v8::Handle<v8::Value> Window::FocusOnWebView(const v8::Arguments &args) {
   UNWRAP_WINDOW_AND_CHECK;
 
@@ -677,6 +687,7 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "isKiosk", IsKiosk);
   NODE_SET_PROTOTYPE_METHOD(t, "openDevTools", OpenDevTools);
   NODE_SET_PROTOTYPE_METHOD(t, "closeDevTools", CloseDevTools);
+  NODE_SET_PROTOTYPE_METHOD(t, "inspectElement", InspectElement);
   NODE_SET_PROTOTYPE_METHOD(t, "focusOnWebView", FocusOnWebView);
   NODE_SET_PROTOTYPE_METHOD(t, "blurWebView", BlurWebView);
   NODE_SET_PROTOTYPE_METHOD(t,
