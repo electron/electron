@@ -4,8 +4,10 @@
 
   "dependencies": {
     "coffee-script": "1.6.2",
+
     "mocha": "*",
-    "findit": "*"
+    "findit": "*",
+    "unzip": "*"
   },
 
   "private": true,
