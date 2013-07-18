@@ -273,13 +273,6 @@ void NativeWindow::RendererResponsive(content::WebContents* source) {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
 }
 
-void NativeWindow::NavigationStateChanged(const content::WebContents* source,
-                                          unsigned changed_flags) {
-  if (changed_flags == content::INVALIDATE_TYPE_TAB &&
-      source->IsCrashed())
-    FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererCrashed());
-}
-
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(NativeWindow, message)
@@ -289,6 +282,10 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   IPC_END_MESSAGE_MAP()
 
   return handled;
+}
+
+void NativeWindow::RenderViewGone(base::TerminationStatus status) {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererCrashed());
 }
 
 void NativeWindow::Observe(int type,
