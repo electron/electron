@@ -9,13 +9,15 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
 def main():
+  os.chdir(SOURCE_ROOT)
+
   if sys.platform == 'darwin':
     atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Debug', 'Atom.app',
                               'Contents', 'MacOS', 'Atom')
   else:
     atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Debug', 'atom.exe')
 
-  subprocess.check_call([atom_shell, os.path.join(SOURCE_ROOT, 'spec')])
+  subprocess.check_call([atom_shell, 'spec'])
 
 
 if __name__ == '__main__':
