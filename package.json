@@ -6,7 +6,7 @@
     "coffee-script": "1.6.2",
 
     "mocha": "*",
-    "findit": "*",
+    "walkdir": "*",
     "unzip": "*"
   },
 

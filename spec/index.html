@@ -20,14 +20,14 @@
   if (query.invert) mocha.invert();
 
   // Read all test files.
-  var finder = require('findit').find(__dirname);
+  var walker = require('walkdir').walk(__dirname);
 
-  finder.on('file', function(file) {
+  walker.on('file', function(file) {
     if (/.coffee$/.test(file))
       mocha.addFile(file);
   });
 
-  finder.on('end', function() {
+  walker.on('end', function() {
     mocha.run(function() {
       Mocha.utils.highlightTags('code');
     });
