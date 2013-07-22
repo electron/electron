@@ -20,8 +20,7 @@ namespace atom {
 
 class NodeBindings {
  public:
-  static NodeBindings* CreateInBrowser();
-  static NodeBindings* CreateInRenderer();
+  static NodeBindings* Create(bool is_browser);
 
   virtual ~NodeBindings();
 

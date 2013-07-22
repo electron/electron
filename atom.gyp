@@ -105,8 +105,6 @@
       'browser/native_window_win.cc',
       'browser/native_window_win.h',
       'browser/native_window_observer.h',
-      'browser/node_bindings_browser_win.cc',
-      'browser/node_bindings_browser_win.h',
       'browser/nsalert_synchronous_sheet.h',
       'browser/nsalert_synchronous_sheet.mm',
       'browser/window_list.cc',
@@ -132,6 +130,8 @@
       'common/node_bindings.h',
       'common/node_bindings_mac.cc',
       'common/node_bindings_mac.h',
+      'common/node_bindings_win.cc',
+      'common/node_bindings_win.h',
       'common/options_switches.cc',
       'common/options_switches.h',
       'common/platform_util.h',
@@ -147,8 +147,6 @@
       'renderer/atom_render_view_observer.h',
       'renderer/atom_renderer_client.cc',
       'renderer/atom_renderer_client.h',
-      'renderer/node_bindings_renderer_win.cc',
-      'renderer/node_bindings_renderer_win.h',
     ],
     'framework_sources': [
       'app/atom_library_main.cc',
@@ -178,6 +176,10 @@
   'target_defaults': {
     'mac_framework_dirs': [
       '<(atom_source_root)/frameworks',
+    ],
+    'includes': [
+       # Rules for excluding e.g. foo_win.cc from the build on non-Windows.
+      'filename_rules.gypi',
     ],
   },
   'targets': [

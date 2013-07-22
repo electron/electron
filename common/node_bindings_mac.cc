@@ -45,13 +45,8 @@ void NodeBindingsMac::PollEvents() {
 }
 
 // static
-NodeBindings* NodeBindings::CreateInBrowser() {
-  return new NodeBindingsMac(true);
-}
-
-// static
-NodeBindings* NodeBindings::CreateInRenderer() {
-  return new NodeBindingsMac(false);
+NodeBindings* NodeBindings::Create(bool is_browser) {
+  return new NodeBindingsMac(is_browser);
 }
 
 }  // namespace atom
