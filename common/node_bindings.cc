@@ -7,7 +7,9 @@
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/logging.h"
+#include "base/message_loop.h"
 #include "base/strings/utf_string_conversions.h"
+#include "content/public/browser/browser_thread.h"
 #include "v8/include/v8.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebDocument.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
@@ -15,13 +17,29 @@
 #include "vendor/node/src/node_internals.h"
 #include "vendor/node/src/node_javascript.h"
 
+using content::BrowserThread;
+
 namespace atom {
 
+namespace {
+
+void UvNoOp(uv_async_t* handle, int status) {
+}
+
+}  // namespace
+
 NodeBindings::NodeBindings(bool is_browser)
-    : is_browser_(is_browser) {
+    : is_browser_(is_browser),
+      message_loop_(NULL),
+      uv_loop_(uv_default_loop()),
+      embed_closed_(false) {
 }
 
 NodeBindings::~NodeBindings() {
+  // Clear uv.
+  embed_closed_ = true;
+  uv_thread_join(&embed_thread_);
+  uv_sem_destroy(&embed_sem_);
 }
 
 void NodeBindings::Initialize() {
@@ -95,6 +113,80 @@ void NodeBindings::BindTo(WebKit::WebFrame* frame) {
     v8::String::New(script_path.c_str(), script_path.size())
   };
   v8::Local<v8::Function>::Cast(result)->Call(context->Global(), 2, args);
+}
+
+void NodeBindings::PrepareMessageLoop() {
+  DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
+
+  // Add dummy handle for libuv, otherwise libuv would quit when there is
+  // nothing to do.
+  uv_async_init(uv_loop_, &dummy_uv_handle_, UvNoOp);
+
+  // Start worker that will interrupt main loop when having uv events.
+  uv_sem_init(&embed_sem_, 0);
+  uv_thread_create(&embed_thread_, EmbedThreadRunner, this);
+}
+
+void NodeBindings::RunMessageLoop() {
+  DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
+
+  // The MessageLoop should have been created, remember the one in main thread.
+  message_loop_ = base::MessageLoop::current();
+
+  // Get notified when libuv's watcher queue changes.
+  uv_loop_->data = this;
+  uv_loop_->on_watcher_queue_updated = OnWatcherQueueChanged;
+
+  // Run uv loop for once to give the uv__io_poll a chance to add all events.
+  UvRunOnce();
+}
+
+void NodeBindings::UvRunOnce() {
+  DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
+
+  // Enter node context while dealing with uv events.
+  v8::HandleScope scope;
+  v8::Context::Scope context_scope(node::g_context);
+
+  // Deal with uv events.
+  int r = uv_run(uv_loop_, (uv_run_mode)(UV_RUN_ONCE | UV_RUN_NOWAIT));
+  if (r == 0 || uv_loop_->stop_flag != 0)
+    message_loop_->QuitWhenIdle();  // Quit from uv.
+
+  // Tell the worker thread to continue polling.
+  uv_sem_post(&embed_sem_);
+}
+
+void NodeBindings::WakeupMainThread() {
+  DCHECK(message_loop_);
+  message_loop_->PostTask(FROM_HERE, base::Bind(&NodeBindings::UvRunOnce,
+                                                base::Unretained(this)));
+}
+
+// static
+void NodeBindings::EmbedThreadRunner(void *arg) {
+  NodeBindings* self = static_cast<NodeBindings*>(arg);
+
+  while (!self->embed_closed_) {
+    // Wait for the main loop to deal with events.
+    uv_sem_wait(&self->embed_sem_);
+
+    self->PollEvents();
+
+    // Deal with event in main thread.
+    self->WakeupMainThread();
+  }
+}
+
+// static
+void NodeBindings::OnWatcherQueueChanged(uv_loop_t* loop) {
+  NodeBindings* self = static_cast<NodeBindings*>(loop->data);
+
+  DCHECK(!self->is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
+
+  // We need to break the io polling in the kqueue thread when loop's watcher
+  // queue changes, otherwise new events cannot be notified.
+  uv_async_send(&self->dummy_uv_handle_);
 }
 
 }  // namespace atom
