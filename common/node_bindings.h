@@ -61,24 +61,24 @@ class NodeBindings {
   // Main thread's libuv loop.
   uv_loop_t* uv_loop_;
 
-  // Dummy handle to make uv's loop not quit.
-  uv_async_t dummy_uv_handle_;
-
-  // Thread for polling events.
-  uv_thread_t embed_thread_;
-
-  // Whether we're done.
-  bool embed_closed_;
-
-  // Semaphore to wait for main loop in the embed thread.
-  uv_sem_t embed_sem_;
-
  private:
   // Thread to poll uv events.
   static void EmbedThreadRunner(void *arg);
 
   // Called when uv's watcher queue changes.
   static void OnWatcherQueueChanged(uv_loop_t* loop);
+
+  // Whether the libuv loop has ended.
+  bool embed_closed_;
+
+  // Dummy handle to make uv's loop not quit.
+  uv_async_t dummy_uv_handle_;
+
+  // Thread for polling events.
+  uv_thread_t embed_thread_;
+
+  // Semaphore to wait for main loop in the embed thread.
+  uv_sem_t embed_sem_;
 
   DISALLOW_COPY_AND_ASSIGN(NodeBindings);
 };

@@ -5,17 +5,18 @@
 #include "common/node_bindings.h"
 
 #include "base/command_line.h"
-#include "base/files/file_path.h"
 #include "base/logging.h"
 #include "base/message_loop.h"
-#include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
-#include "v8/include/v8.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebDocument.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
 #include "vendor/node/src/node.h"
 #include "vendor/node/src/node_internals.h"
 #include "vendor/node/src/node_javascript.h"
+
+#if defined(OS_WIN)
+#include "base/strings/utf_string_conversions.h"
+#endif
 
 using content::BrowserThread;
 
