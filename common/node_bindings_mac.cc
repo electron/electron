@@ -42,9 +42,6 @@ void NodeBindingsMac::PollEvents() {
     r = ::kevent(kqueue_, NULL, 0, &ev, 1,
                  timeout == -1 ? NULL : &spec);
   } while (r == -1 && errno == EINTR);
-
-  // Deal with event in main thread.
-  WakeupMainThread();
 }
 
 // static
