@@ -9,6 +9,10 @@
 #include "common/node_bindings.h"
 #include "vendor/node/deps/uv/include/uv.h"
 
+namespace base {
+class MessageLoop;
+}
+
 namespace atom {
 
 class NodeBindingsMac : public NodeBindings {
@@ -23,14 +27,20 @@ class NodeBindingsMac : public NodeBindings {
   // Run the libuv loop for once.
   void UvRunOnce();
 
+  // Make the main thread run libuv loop.
+  void WakeupMainThread();
+
   // Thread to poll uv events.
   static void EmbedThreadRunner(void *arg);
 
   // Called when uv's watcher queue changes.
   static void OnWatcherQueueChanged(uv_loop_t* loop);
 
-  // Main thread's loop.
-  uv_loop_t* loop_;
+  // Main thread's MessageLoop.
+  base::MessageLoop* message_loop_;
+
+  // Main thread's libuv loop.
+  uv_loop_t* uv_loop_;
 
   // Kqueue to poll for uv's backend fd.
   int kqueue_;

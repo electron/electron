@@ -26,7 +26,8 @@ void UvNoOp(uv_async_t* handle, int status) {
 
 NodeBindingsMac::NodeBindingsMac(bool is_browser)
     : NodeBindings(is_browser),
-      loop_(uv_default_loop()),
+      message_loop_(NULL),
+      uv_loop_(uv_default_loop()),
       kqueue_(kqueue()),
       embed_closed_(false) {
 }
@@ -43,7 +44,7 @@ void NodeBindingsMac::PrepareMessageLoop() {
 
   // Add dummy handle for libuv, otherwise libuv would quit when there is
   // nothing to do.
-  uv_async_init(loop_, &dummy_uv_handle_, UvNoOp);
+  uv_async_init(uv_loop_, &dummy_uv_handle_, UvNoOp);
 
   // Start worker that will interrupt main loop when having uv events.
   uv_sem_init(&embed_sem_, 0);
@@ -53,8 +54,12 @@ void NodeBindingsMac::PrepareMessageLoop() {
 void NodeBindingsMac::RunMessageLoop() {
   DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
 
-  loop_->data = this;
-  loop_->on_watcher_queue_updated = OnWatcherQueueChanged;
+  // The MessageLoop should have been created, remember the one in main thread.
+  message_loop_ = base::MessageLoop::current();
+
+  // Get notified when libuv's watcher queue changes.
+  uv_loop_->data = this;
+  uv_loop_->on_watcher_queue_updated = OnWatcherQueueChanged;
 
   // Run uv loop for once to give the uv__io_poll a chance to add all events.
   UvRunOnce();
@@ -68,18 +73,24 @@ void NodeBindingsMac::UvRunOnce() {
   v8::Context::Scope context_scope(node::g_context);
 
   // Deal with uv events.
-  int r = uv_run(loop_, (uv_run_mode)(UV_RUN_ONCE | UV_RUN_NOWAIT));
-  if (r == 0 || loop_->stop_flag != 0)
-    MessageLoop::current()->QuitWhenIdle();  // Quit from uv.
+  int r = uv_run(uv_loop_, (uv_run_mode)(UV_RUN_ONCE | UV_RUN_NOWAIT));
+  if (r == 0 || uv_loop_->stop_flag != 0)
+    message_loop_->QuitWhenIdle();  // Quit from uv.
 
   // Tell the worker thread to continue polling.
   uv_sem_post(&embed_sem_);
 }
 
+void NodeBindingsMac::WakeupMainThread() {
+  DCHECK(message_loop_);
+  message_loop_->PostTask(FROM_HERE, base::Bind(&NodeBindingsMac::UvRunOnce,
+                                                base::Unretained(this)));
+}
+
 void NodeBindingsMac::EmbedThreadRunner(void *arg) {
   NodeBindingsMac* self = static_cast<NodeBindingsMac*>(arg);
 
-  uv_loop_t* loop = self->loop_;
+  uv_loop_t* loop = self->uv_loop_;
 
   // Add uv's backend fd to kqueue.
   struct kevent ev;
@@ -105,9 +116,7 @@ void NodeBindingsMac::EmbedThreadRunner(void *arg) {
     } while (r == -1 && errno == EINTR);
 
     // Deal with event in main thread.
-    dispatch_async(dispatch_get_main_queue(), ^{
-      self->UvRunOnce();
-    });
+    self->WakeupMainThread();
   }
 }
 
