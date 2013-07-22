@@ -4,6 +4,9 @@
 
 #include "common/node_bindings_win.h"
 
+#include <windows.h>
+
+#include "base/logging.h"
 #include "vendor/node/src/node.h"
 #include "vendor/node/src/node_internals.h"
 
@@ -17,6 +20,7 @@ NodeBindingsWin::~NodeBindingsWin() {
 }
 
 void NodeBindingsWin::PollEvents() {
+  Sleep(50);
 }
 
 // static
