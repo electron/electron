@@ -181,6 +181,13 @@
        # Rules for excluding e.g. foo_win.cc from the build on non-Windows.
       'filename_rules.gypi',
     ],
+    'configurations': {
+      'Debug': {
+        'defines': [
+          'DEBUG',
+        ],
+      },
+    },
   },
   'targets': [
     {

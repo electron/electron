@@ -23,12 +23,16 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 #if defined(OS_WIN)
   logging::InitLogging(
       L"debug.log",
+#if defined(DEBUG)
+      logging::LOG_TO_BOTH_FILE_AND_SYSTEM_DEBUG_LOG ,
+#else
       logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG,
+#endif  // defined(NDEBUG)
       logging::LOCK_LOG_FILE,
       logging::DELETE_OLD_LOG_FILE,
       logging::DISABLE_DCHECK_FOR_NON_OFFICIAL_RELEASE_BUILDS);
   logging::SetLogItems(true, false, true, false);
-#endif
+#endif  // defined(OS_WIN)
 
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
