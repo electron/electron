@@ -87,9 +87,14 @@ window.addEventListener 'unload', (event) ->
   ipc.sendChannelSync 'ATOM_BROWSER_RELEASE_RENDER_VIEW'
 
 # Get remote module.
+# (Just like node's require, the modules are cached permanently, note that this
+#  is safe leak since the object is not expected to get freed in browser)
+moduleCache = {}
 exports.require = (module) ->
+  return moduleCache[module] if moduleCache[module]?
+
   meta = ipc.sendChannelSync 'ATOM_BROWSER_REQUIRE', module
-  metaToValue meta
+  moduleCache[module] = metaToValue meta
 
 # Get object with specified id.
 exports.getObject = (id) ->
