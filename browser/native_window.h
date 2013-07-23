@@ -163,6 +163,8 @@ class NativeWindow : public content::WebContentsDelegate,
                        const content::NotificationDetails& details) OVERRIDE;
 
  private:
+  void RendererUnresponsiveDelayed();
+
   void OnRendererMessage(const std::string& channel,
                          const base::ListValue& args);
 
@@ -176,7 +178,11 @@ class NativeWindow : public content::WebContentsDelegate,
   // Observers of this window.
   ObserverList<NativeWindowObserver> observers_;
 
+  // The windows has been closed.
   bool is_closed_;
+
+  // The window is not responding.
+  bool not_responding_;
 
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;

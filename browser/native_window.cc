@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "base/message_loop.h"
 #include "base/utf_string_conversions.h"
 #include "base/values.h"
 #include "brightray/browser/inspectable_web_contents.h"
@@ -39,6 +40,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
                            base::DictionaryValue* options)
     : content::WebContentsObserver(web_contents),
       is_closed_(false),
+      not_responding_(false),
       inspectable_web_contents_(
           brightray::InspectableWebContents::Create(web_contents)) {
   web_contents->SetDelegate(this);
@@ -275,10 +277,16 @@ bool NativeWindow::IsPopupOrPanel(const content::WebContents* source) const {
 }
 
 void NativeWindow::RendererUnresponsive(content::WebContents* source) {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererUnresponsive());
+  not_responding_ = true;
+  base::MessageLoop::current()->PostDelayedTask(
+      FROM_HERE,
+      base::Bind(&NativeWindow::RendererUnresponsiveDelayed,
+                 base::Unretained(this)),
+      base::TimeDelta::FromSeconds(1));
 }
 
 void NativeWindow::RendererResponsive(content::WebContents* source) {
+  not_responding_ = false;
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
 }
 
@@ -295,6 +303,13 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
 
 void NativeWindow::RenderViewGone(base::TerminationStatus status) {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererCrashed());
+}
+
+void NativeWindow::RendererUnresponsiveDelayed() {
+  if (not_responding_)
+    FOR_EACH_OBSERVER(NativeWindowObserver,
+                      observers_,
+                      OnRendererUnresponsive());
 }
 
 void NativeWindow::Observe(int type,
