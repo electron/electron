@@ -134,10 +134,6 @@ void NodeBindings::RunMessageLoop() {
   // The MessageLoop should have been created, remember the one in main thread.
   message_loop_ = base::MessageLoop::current();
 
-  // Get notified when libuv's watcher queue changes.
-  uv_loop_->data = this;
-  uv_loop_->on_watcher_queue_updated = OnWatcherQueueChanged;
-
   // Run uv loop for once to give the uv__io_poll a chance to add all events.
   UvRunOnce();
 }
@@ -164,6 +160,10 @@ void NodeBindings::WakeupMainThread() {
                                                 base::Unretained(this)));
 }
 
+void NodeBindings::WakeupEmbedThread() {
+  uv_async_send(&dummy_uv_handle_);
+}
+
 // static
 void NodeBindings::EmbedThreadRunner(void *arg) {
   NodeBindings* self = static_cast<NodeBindings*>(arg);
@@ -177,17 +177,6 @@ void NodeBindings::EmbedThreadRunner(void *arg) {
     // Deal with event in main thread.
     self->WakeupMainThread();
   }
-}
-
-// static
-void NodeBindings::OnWatcherQueueChanged(uv_loop_t* loop) {
-  NodeBindings* self = static_cast<NodeBindings*>(loop->data);
-
-  DCHECK(!self->is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
-
-  // We need to break the io polling in the kqueue thread when loop's watcher
-  // queue changes, otherwise new events cannot be notified.
-  uv_async_send(&self->dummy_uv_handle_);
 }
 
 }  // namespace atom

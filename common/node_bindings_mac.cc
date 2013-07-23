@@ -27,6 +27,23 @@ NodeBindingsMac::NodeBindingsMac(bool is_browser)
 NodeBindingsMac::~NodeBindingsMac() {
 }
 
+void NodeBindingsMac::RunMessageLoop() {
+  // Get notified when libuv's watcher queue changes.
+  uv_loop_->data = this;
+  uv_loop_->on_watcher_queue_updated = OnWatcherQueueChanged;
+
+  NodeBindings::RunMessageLoop();
+}
+
+// static
+void NodeBindingsMac::OnWatcherQueueChanged(uv_loop_t* loop) {
+  NodeBindingsMac* self = static_cast<NodeBindingsMac*>(loop->data);
+
+  // We need to break the io polling in the kqueue thread when loop's watcher
+  // queue changes, otherwise new events cannot be notified.
+  self->WakeupEmbedThread();
+}
+
 void NodeBindingsMac::PollEvents() {
   struct timespec spec;
   int timeout = uv_backend_timeout(uv_loop_);

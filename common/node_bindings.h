@@ -51,6 +51,9 @@ class NodeBindings {
   // Make the main thread run libuv loop.
   void WakeupMainThread();
 
+  // Interrupt the PollEvents.
+  void WakeupEmbedThread();
+
   // Are we running in browser.
   bool is_browser_;
 
@@ -63,9 +66,6 @@ class NodeBindings {
  private:
   // Thread to poll uv events.
   static void EmbedThreadRunner(void *arg);
-
-  // Called when uv's watcher queue changes.
-  static void OnWatcherQueueChanged(uv_loop_t* loop);
 
   // Whether the libuv loop has ended.
   bool embed_closed_;
