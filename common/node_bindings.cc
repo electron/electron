@@ -39,6 +39,7 @@ NodeBindings::NodeBindings(bool is_browser)
 NodeBindings::~NodeBindings() {
   // Clear uv.
   embed_closed_ = true;
+  WakeupEmbedThread();
   uv_thread_join(&embed_thread_);
   uv_sem_destroy(&embed_sem_);
 }
