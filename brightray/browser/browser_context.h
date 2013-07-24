@@ -13,6 +13,7 @@ class PrefService;
 
 namespace brightray {
 
+class DownloadManagerDelegate;
 class NetworkDelegate;
 class URLRequestContextGetter;
 
@@ -55,6 +56,7 @@ private:
   scoped_ptr<ResourceContext> resource_context_;
   scoped_refptr<URLRequestContextGetter> url_request_getter_;
   scoped_ptr<PrefService> prefs_;
+  scoped_ptr<DownloadManagerDelegate> download_manager_delegate_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserContext);
 };

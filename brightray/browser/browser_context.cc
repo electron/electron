@@ -4,6 +4,7 @@
 
 #include "browser_context.h"
 
+#include "browser/download_manager_delegate.h"
 #include "browser/inspectable_web_contents_impl.h"
 #include "browser/network_delegate.h"
 #include "common/application_info.h"
@@ -116,7 +117,9 @@ content::ResourceContext* BrowserContext::GetResourceContext() {
 }
 
 content::DownloadManagerDelegate* BrowserContext::GetDownloadManagerDelegate() {
-  return nullptr;
+  if (!download_manager_delegate_)
+    download_manager_delegate_.reset(new DownloadManagerDelegate);
+  return download_manager_delegate_.get();
 }
 
 content::GeolocationPermissionContext* BrowserContext::GetGeolocationPermissionContext() {
