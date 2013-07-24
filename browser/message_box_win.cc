@@ -40,6 +40,7 @@ class MessageDialog : public base::MessageLoop::Dispatcher,
   virtual views::Widget* GetWidget() OVERRIDE;
   virtual const views::Widget* GetWidget() const OVERRIDE;
   virtual views::ClientView* CreateClientView(views::Widget* widget) OVERRIDE;
+  virtual ui::ModalType GetModalType() const OVERRIDE;
 
   // Overridden from views::ButtonListener:
   virtual void ButtonPressed(views::Button* sender,
@@ -102,6 +103,10 @@ const views::Widget* MessageDialog::GetWidget() const {
 
 views::ClientView* MessageDialog::CreateClientView(views::Widget* widget) {
   return new views::ClientView(widget, message_box_view_);
+}
+
+ui::ModalType MessageDialog::GetModalType() const {
+  return ui::MODAL_TYPE_WINDOW;
 }
 
 void MessageDialog::ButtonPressed(views::Button* sender,
