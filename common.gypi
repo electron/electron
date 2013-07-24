@@ -80,7 +80,9 @@
           # views_chromiumcontent.lib generates this warning because it's
           # symobls are defined as dllexport but used as static library:
           #   - warning LNK4217: locally defined symbol imported in function
+          #   - warning LNK4049: locally defined symbol imported
           '/ignore:4217',
+          '/ignore:4049',
         ],
       },
     },
