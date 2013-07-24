@@ -71,7 +71,7 @@ def update_win32_python():
       subprocess.check_call(['git', 'clone', PYTHON_26_URL])
     else:
       with scoped_cwd('python_26'):
-        subprocess.check_call(['git', 'pull', '--rebase'])
+        subprocess.check_call(['git', 'pull', '--rebase', 'origin', 'master'])
 
 
 def touch_config_gypi():
