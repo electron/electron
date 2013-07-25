@@ -40,7 +40,8 @@ class MessageDialog : public base::MessageLoop::Dispatcher,
   // Overridden from MessageLoop::Dispatcher:
   virtual bool Dispatch(const base::NativeEvent& event) OVERRIDE;
 
-  // Overridden from views::Widget:
+  // Overridden from views::WidgetDelegate:
+  virtual string16 GetWindowTitle() const;
   virtual void WindowClosing() OVERRIDE;
   virtual views::Widget* GetWidget() OVERRIDE;
   virtual const views::Widget* GetWidget() const OVERRIDE;
@@ -57,6 +58,7 @@ class MessageDialog : public base::MessageLoop::Dispatcher,
 
   bool should_close_;
   int result_;
+  string16 title_;
   views::Widget* widget_;
   views::MessageBoxView* message_box_view_;
   std::vector<views::LabelButton*> buttons_;
@@ -75,13 +77,14 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
                              const std::string& detail)
     : should_close_(false),
       result_(-1),
+      title_(UTF8ToUTF16(title)),
       widget_(NULL),
       message_box_view_(NULL) {
   DCHECK(buttons.size() > 0);
   set_owned_by_client();
 
   views::MessageBoxView::InitParams params(UTF8ToUTF16(title));
-  params.message = UTF8ToUTF16(message);
+  params.message = UTF8ToUTF16(message + "\n" + detail);
   message_box_view_ = new views::MessageBoxView(params);
   AddChildView(message_box_view_);
 
@@ -120,6 +123,10 @@ bool MessageDialog::Dispatch(const base::NativeEvent& event) {
   TranslateMessage(&event);
   DispatchMessage(&event);
   return !should_close_;
+}
+
+string16 MessageDialog::GetWindowTitle() const {
+  return title_;
 }
 
 void MessageDialog::WindowClosing() {
