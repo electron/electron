@@ -87,17 +87,22 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
   for (size_t i = 0; i < buttons.size(); ++i)
     column_set->AddColumn(views::GridLayout::CENTER,
                           views::GridLayout::CENTER,
-                          0.f, views::GridLayout::USE_PREF, 0, 0);
+                          0.8f, views::GridLayout::USE_PREF, 0, 0);
 
   layout->StartRow(0 /* no expand */, button_column);
 
-  for (size_t i = 0; i < buttons.size(); ++i) {
+  for (int i = buttons.size() - 1; i >= 0; --i) {
     views::LabelButton* button = new views::LabelButton(
         this, UTF8ToUTF16(buttons[i]));
+    if (i == 0)
+      button->SetIsDefault(true);
     button->set_tag(i);
+    button->set_min_size(gfx::Size(60, 20));
     button->SetStyle(views::Button::STYLE_NATIVE_TEXTBUTTON);
     layout->AddView(button);
   }
+
+  layout->AddPaddingRow(0, 10);
 
   views::Widget::InitParams widget_params;
   widget_params.delegate = this;
