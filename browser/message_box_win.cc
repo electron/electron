@@ -12,6 +12,7 @@
 #include "ui/views/controls/button/label_button.h"
 #include "ui/views/controls/message_box_view.h"
 #include "ui/views/layout/grid_layout.h"
+#include "ui/views/layout/layout_constants.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/widget/widget_delegate.h"
 
@@ -43,6 +44,10 @@ class MessageDialog : public base::MessageLoop::Dispatcher,
   virtual views::View* GetContentsView() OVERRIDE;
   virtual ui::ModalType GetModalType() const OVERRIDE;
 
+  // Overridden from views::View:
+  virtual gfx::Size GetPreferredSize() OVERRIDE;
+  virtual void Layout() OVERRIDE;
+
   // Overridden from views::ButtonListener:
   virtual void ButtonPressed(views::Button* sender,
                              const ui::Event& event) OVERRIDE;
@@ -50,6 +55,7 @@ class MessageDialog : public base::MessageLoop::Dispatcher,
   bool should_close_;
   views::Widget* widget_;
   views::MessageBoxView* message_box_view_;
+  std::vector<views::LabelButton*> buttons_;
 
   DISALLOW_COPY_AND_ASSIGN(MessageDialog);
 };
@@ -71,27 +77,9 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
   views::MessageBoxView::InitParams params(UTF8ToUTF16(title));
   params.message = UTF8ToUTF16(message);
   message_box_view_ = new views::MessageBoxView(params);
+  AddChildView(message_box_view_);
 
-  views::GridLayout* layout = new views::GridLayout(this);
-  SetLayoutManager(layout);
-
-  const int message_box_column = 0;
-  views::ColumnSet* column_set = layout->AddColumnSet(message_box_column);
-  column_set->AddColumn(views::GridLayout::FILL, views::GridLayout::FILL, 1,
-                        views::GridLayout::USE_PREF, 0, 0);
-  layout->StartRow(1 /* expand */, message_box_column);
-  layout->AddView(message_box_view_);
-
-  const int button_column = 1;
-  column_set = layout->AddColumnSet(button_column);
-  for (size_t i = 0; i < buttons.size(); ++i)
-    column_set->AddColumn(views::GridLayout::CENTER,
-                          views::GridLayout::CENTER,
-                          0.8f, views::GridLayout::USE_PREF, 0, 0);
-
-  layout->StartRow(0 /* no expand */, button_column);
-
-  for (int i = buttons.size() - 1; i >= 0; --i) {
+  for (size_t i = 0; i < buttons.size(); ++i) {
     views::LabelButton* button = new views::LabelButton(
         this, UTF8ToUTF16(buttons[i]));
     if (i == 0)
@@ -99,10 +87,10 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
     button->set_tag(i);
     button->set_min_size(gfx::Size(60, 20));
     button->SetStyle(views::Button::STYLE_NATIVE_TEXTBUTTON);
-    layout->AddView(button);
-  }
 
-  layout->AddPaddingRow(0, 10);
+    buttons_.push_back(button);
+    AddChildView(button);
+  }
 
   views::Widget::InitParams widget_params;
   widget_params.delegate = this;
@@ -147,6 +135,44 @@ views::View* MessageDialog::GetContentsView() {
 
 ui::ModalType MessageDialog::GetModalType() const {
   return ui::MODAL_TYPE_WINDOW;
+}
+
+gfx::Size MessageDialog::GetPreferredSize() {
+  gfx::Size size(0, buttons_[0]->GetPreferredSize().height());
+  for (size_t i = 0; i < buttons_.size(); ++i)
+    size.Enlarge(buttons_[i]->GetPreferredSize().width(), 0);
+
+  // Button spaces.
+  size.Enlarge(views::kRelatedButtonHSpacing * (buttons_.size() - 1),
+               views::kRelatedControlVerticalSpacing);
+
+  // The message box view.
+  gfx::Size contents_size = message_box_view_->GetPreferredSize();
+  size.Enlarge(0, contents_size.height());
+  if (contents_size.width() > size.width())
+    size.set_width(contents_size.width());
+
+  return size;
+}
+
+void MessageDialog::Layout() {
+  gfx::Rect bounds = GetContentsBounds();
+
+  // Layout the row containing the buttons.
+  int x = bounds.width();
+  int height = buttons_[0]->GetPreferredSize().height() +
+               views::kRelatedControlVerticalSpacing;
+  for (size_t i = 0; i < buttons_.size(); ++i) {
+    gfx::Size size = buttons_[i]->GetPreferredSize();
+    x -= size.width() + views::kRelatedButtonHSpacing;
+
+    buttons_[i]->SetBounds(x, bounds.height() - height,
+                           size.width(), size.height());
+  }
+
+  // Layout the message box view.
+  message_box_view_->SetBounds(bounds.x(), bounds.y(), bounds.width(),
+                               bounds.height() - height);
 }
 
 void MessageDialog::ButtonPressed(views::Button* sender,
