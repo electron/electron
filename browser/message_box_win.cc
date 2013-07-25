@@ -6,6 +6,7 @@
 
 #include "base/message_loop.h"
 #include "base/run_loop.h"
+#include "base/string_util.h"
 #include "base/utf_string_conversions.h"
 #include "browser/native_window.h"
 #include "skia/ext/skia_utils_win.h"
@@ -33,6 +34,8 @@ class MessageDialog : public base::MessageLoop::Dispatcher,
                 const std::string& detail);
   virtual ~MessageDialog();
 
+  int result() const { return result_; }
+
  private:
   // Overridden from MessageLoop::Dispatcher:
   virtual bool Dispatch(const base::NativeEvent& event) OVERRIDE;
@@ -53,6 +56,7 @@ class MessageDialog : public base::MessageLoop::Dispatcher,
                              const ui::Event& event) OVERRIDE;
 
   bool should_close_;
+  int result_;
   views::Widget* widget_;
   views::MessageBoxView* message_box_view_;
   std::vector<views::LabelButton*> buttons_;
@@ -70,8 +74,10 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
                              const std::string& message,
                              const std::string& detail)
     : should_close_(false),
+      result_(-1),
       widget_(NULL),
       message_box_view_(NULL) {
+  DCHECK(buttons.size() > 0);
   set_owned_by_client();
 
   views::MessageBoxView::InitParams params(UTF8ToUTF16(title));
@@ -82,8 +88,6 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
   for (size_t i = 0; i < buttons.size(); ++i) {
     views::LabelButton* button = new views::LabelButton(
         this, UTF8ToUTF16(buttons[i]));
-    if (i == 0)
-      button->SetIsDefault(true);
     button->set_tag(i);
     button->set_min_size(gfx::Size(60, 20));
     button->SetStyle(views::Button::STYLE_NATIVE_TEXTBUTTON);
@@ -91,6 +95,7 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
     buttons_.push_back(button);
     AddChildView(button);
   }
+  buttons_[0]->SetIsDefault(true);
 
   views::Widget::InitParams widget_params;
   widget_params.delegate = this;
@@ -177,6 +182,8 @@ void MessageDialog::Layout() {
 
 void MessageDialog::ButtonPressed(views::Button* sender,
                                   const ui::Event& event) {
+  result_ = sender->tag();
+  widget_->Close();
 }
 
 }  // namespace
@@ -194,7 +201,19 @@ int ShowMessageBox(NativeWindow* parent_window,
     base::RunLoop run_loop(&dialog);
     run_loop.Run();
   }
-  return 0;
+
+  // When the dialog is closed without choosing anything, we think the user
+  // chose 'Cancel', otherwise we think the default behavior is chosen.
+  if (dialog.result() == -1) {
+    for (size_t i = 0; i < buttons.size(); ++i)
+      if (LowerCaseEqualsASCII(buttons[i], "cancel")) {
+        return i;
+      }
+
+    return 0;
+  } else {
+    return dialog.result();
+  }
 }
 
 }  // namespace atom
