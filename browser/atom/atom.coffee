@@ -1,6 +1,12 @@
 fs = require 'fs'
 path = require 'path'
 
+# Redirect node's console to use our own implementations, since node can not
+# handle output when running as GUI program.
+if process.platform is 'win32'
+  console.log = console.error = console.warn = process.log
+  process.stdout.write = process.stderr.write = process.log
+
 # Enable idle gc.
 process.atomBinding('idle_gc').start()
 

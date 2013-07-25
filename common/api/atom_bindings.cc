@@ -35,6 +35,7 @@ void AtomBindings::BindTo(v8::Handle<v8::Object> process) {
   node::SetMethod(process, "atomBinding", Binding);
   node::SetMethod(process, "crash", Crash);
   node::SetMethod(process, "activateUvLoop", ActivateUVLoop);
+  node::SetMethod(process, "log", Log);
 }
 
 // static
@@ -93,6 +94,16 @@ v8::Handle<v8::Value> AtomBindings::Crash(const v8::Arguments& args) {
 // static
 v8::Handle<v8::Value> AtomBindings::ActivateUVLoop(const v8::Arguments& args) {
   uv_async_send(&dummy_uv_handle);
+  return v8::Undefined();
+}
+
+// static
+v8::Handle<v8::Value> AtomBindings::Log(const v8::Arguments& args) {
+  std::string message;
+  for (int i = 0; i < args.Length(); ++i)
+    message += *v8::String::Utf8Value(args[i]);
+
+  logging::LogMessage("CONSOLE", 0, 0).stream() << message;
   return v8::Undefined();
 }
 
