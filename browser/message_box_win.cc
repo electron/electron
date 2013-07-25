@@ -21,6 +21,10 @@ namespace atom {
 
 namespace {
 
+// The group used by the buttons.  This name is chosen voluntarily big not to
+// conflict with other groups that could be in the dialog content.
+const int kButtonGroup = 1127;
+
 class MessageDialog : public base::MessageLoop::Dispatcher,
                       public views::WidgetDelegate,
                       public views::View,
@@ -46,11 +50,13 @@ class MessageDialog : public base::MessageLoop::Dispatcher,
   virtual views::Widget* GetWidget() OVERRIDE;
   virtual const views::Widget* GetWidget() const OVERRIDE;
   virtual views::View* GetContentsView() OVERRIDE;
+  virtual views::View* GetInitiallyFocusedView() OVERRIDE;
   virtual ui::ModalType GetModalType() const OVERRIDE;
 
   // Overridden from views::View:
   virtual gfx::Size GetPreferredSize() OVERRIDE;
   virtual void Layout() OVERRIDE;
+  virtual bool AcceleratorPressed(const ui::Accelerator& accelerator) OVERRIDE;
 
   // Overridden from views::ButtonListener:
   virtual void ButtonPressed(views::Button* sender,
@@ -94,19 +100,27 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
     button->set_tag(i);
     button->set_min_size(gfx::Size(60, 20));
     button->SetStyle(views::Button::STYLE_NATIVE_TEXTBUTTON);
+    button->SetGroup(kButtonGroup);
 
     buttons_.push_back(button);
     AddChildView(button);
   }
+
+  // First button is always default button.
   buttons_[0]->SetIsDefault(true);
+  buttons_[0]->AddAccelerator(ui::Accelerator(ui::VKEY_RETURN, ui::EF_NONE));
 
   views::Widget::InitParams widget_params;
   widget_params.delegate = this;
+  widget_params.top_level = true;
   if (parent_window)
     widget_params.parent = parent_window->GetNativeWindow();
   widget_ = new views::Widget;
   widget_->set_frame_type(views::Widget::FRAME_TYPE_FORCE_NATIVE);
   widget_->Init(widget_params);
+
+  // Bind to ESC.
+  AddAccelerator(ui::Accelerator(ui::VKEY_ESCAPE, ui::EF_NONE));
 
   set_background(views::Background::CreateSolidBackground(
         skia::COLORREFToSkColor(GetSysColor(COLOR_WINDOW))));
@@ -143,6 +157,13 @@ const views::Widget* MessageDialog::GetWidget() const {
 
 views::View* MessageDialog::GetContentsView() {
   return this;
+}
+
+views::View* MessageDialog::GetInitiallyFocusedView() {
+  if (buttons_.size() > 0)
+    return buttons_[0];
+  else
+    return this;
 }
 
 ui::ModalType MessageDialog::GetModalType() const {
@@ -185,6 +206,12 @@ void MessageDialog::Layout() {
   // Layout the message box view.
   message_box_view_->SetBounds(bounds.x(), bounds.y(), bounds.width(),
                                bounds.height() - height);
+}
+
+bool MessageDialog::AcceleratorPressed(const ui::Accelerator& accelerator) {
+  DCHECK_EQ(accelerator.key_code(), ui::VKEY_ESCAPE);
+  widget_->Close();
+  return true;
 }
 
 void MessageDialog::ButtonPressed(views::Button* sender,
