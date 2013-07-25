@@ -8,6 +8,7 @@
 #include "base/run_loop.h"
 #include "base/utf_string_conversions.h"
 #include "browser/native_window.h"
+#include "skia/ext/skia_utils_win.h"
 #include "ui/views/controls/button/label_button.h"
 #include "ui/views/controls/message_box_view.h"
 #include "ui/views/layout/grid_layout.h"
@@ -106,7 +107,8 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
   widget_->set_frame_type(views::Widget::FRAME_TYPE_FORCE_NATIVE);
   widget_->Init(widget_params);
 
-  set_background(views::Background::CreateStandardPanelBackground());
+  set_background(views::Background::CreateSolidBackground(
+        skia::COLORREFToSkColor(GetSysColor(COLOR_WINDOW))));
   widget_->Show();
 }
 
