@@ -1,11 +1,12 @@
 BrowserWindow = require 'browser-window'
 IDWeakMap = require 'id-weak-map'
+v8Util = process.atomBinding 'v8_util'
 
 class ObjectsStore
   @stores = {}
 
   constructor: ->
-    @nextId = 0
+    @nextId = 1
     @objects = []
 
   getNextId: ->
@@ -41,8 +42,7 @@ class ObjectsStore
 objectsWeakMap = new IDWeakMap
 objectsWeakMap.add = (obj) ->
   id = IDWeakMap::add.call this, obj
-  Object.defineProperty obj, 'id',
-    enumerable: true, writable: false, value: id
+  v8Util.setHiddenValue obj, 'atomId', id
   id
 
 windowsWeakMap = new IDWeakMap
@@ -63,13 +63,16 @@ process.on 'ATOM_BROWSER_INTERNAL_NEW', (obj) ->
 exports.add = (processId, routingId, obj) ->
   # Some native objects may already been added to objectsWeakMap, be care not
   # to add it twice.
-  objectsWeakMap.add obj unless obj.id? and objectsWeakMap.has obj.id
+  objectsWeakMap.add obj unless v8Util.getHiddenValue obj, 'atomId'
+  id = v8Util.getHiddenValue obj, 'atomId'
 
   # Store and reference the object, then return the storeId which points to
   # where the object is stored. The caller can later dereference the object
   # with the storeId.
   store = ObjectsStore.forRenderView processId, routingId
-  store.add obj
+  storeId = store.add obj
+
+  [id, storeId]
 
 exports.get = (id) ->
   objectsWeakMap.get id

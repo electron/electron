@@ -8,8 +8,8 @@ callbacksRegistry = new CallbacksRegistry
 # Convert the arguments object into an array of meta data.
 wrapArgs = (args) ->
   Array::slice.call(args).map (value) ->
-    if value? and typeof value is 'object' and v8Util.getHiddenValue value, 'isRemoteObject'
-      type: 'object', id: value.id
+    if value? and typeof value is 'object' and v8Util.getHiddenValue value, 'atomId'
+      type: 'object', id: v8Util.getHiddenValue value, 'atomId'
     else if typeof value is 'function'
       type: 'function', id: callbacksRegistry.add(value)
     else
@@ -68,8 +68,8 @@ metaToValue = (meta) ->
         return unless currentContextExist
         ipc.sendChannel 'ATOM_BROWSER_DEREFERENCE', meta.storeId
 
-      # Mark this is a remote object.
-      v8Util.setHiddenValue ret, 'isRemoteObject', true
+      # Remember object's id.
+      v8Util.setHiddenValue ret, 'atomId', meta.id
 
       ret
 

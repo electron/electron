@@ -22,8 +22,7 @@ valueToMeta = (processId, routingId, value) ->
     # Reference the original value if it's an object, because when it's
     # passed to renderer we would assume the renderer keeps a reference of
     # it.
-    meta.storeId = objectsRegistry.add processId, routingId, value
-    meta.id = value.id
+    [meta.id, meta.storeId] = objectsRegistry.add processId, routingId, value
 
     meta.members = []
     meta.members.push {name: prop, type: typeof field} for prop, field of value
