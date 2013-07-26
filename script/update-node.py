@@ -10,7 +10,7 @@ from lib.util import *
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-NODE_VERSION = 'v0.10.9'
+NODE_VERSION = 'v0.10.15'
 NODE_DIST_URL = 'https://gh-contractor-zcbenz.s3.amazonaws.com/node/dist'
 IS_POSIX = (sys.platform != 'win32') and (sys.platform != 'cygwin')
 
@@ -66,8 +66,8 @@ def get_node_url(base_url, target_version):
   if IS_POSIX:
     distname = 'node-{0}-{1}-x86.tar.gz'.format(target_version, sys.platform)
   else:
-    distname = 'node-{0}.exe'.format(target_version)
-  return '{0}/{1}'.format(base_url, distname), distname
+    distname = 'node.exe'
+  return '{0}/{1}/{2}'.format(base_url, target_version, distname), distname
 
 
 def copy_node(node_path):
