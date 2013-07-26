@@ -7,7 +7,7 @@ from lib.util import *
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-NODE_VERSION = 'v0.10.12'
+NODE_VERSION = 'v0.10.15'
 
 
 def main():
