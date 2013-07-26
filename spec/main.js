@@ -1,7 +1,12 @@
 var app = require('app');
+var ipc = require('ipc');
 var BrowserWindow = require('browser-window');
 
 var window = null;
+
+ipc.on('message', function() {
+  ipc.send.apply(this, arguments);
+});
 
 process.on('uncaughtException', function() {
   window.openDevTools();
