@@ -7,9 +7,6 @@ if process.platform is 'win32'
   console.log = console.error = console.warn = process.log
   process.stdout.write = process.stderr.write = process.log
 
-# Enable idle gc.
-process.atomBinding('idle_gc').start()
-
 # Provide default Content API implementations.
 atom = {}
 

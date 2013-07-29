@@ -114,7 +114,6 @@
       'common/api/api_messages.h',
       'common/api/atom_api_clipboard.cc',
       'common/api/atom_api_clipboard.h',
-      'common/api/atom_api_idle_gc.cc',
       'common/api/atom_api_id_weak_map.cc',
       'common/api/atom_api_id_weak_map.h',
       'common/api/atom_api_shell.cc',
