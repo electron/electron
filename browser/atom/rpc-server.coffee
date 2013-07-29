@@ -116,12 +116,5 @@ ipc.on 'ATOM_BROWSER_MEMBER_GET', (event, processId, routingId, id, name) ->
   catch e
     event.result = errorToMeta e
 
-ipc.on 'ATOM_BROWSER_REFERENCE', (event, processId, routingId, id) ->
-  try
-    obj = objectsRegistry.get id
-    event.result = valueToMeta processId, routingId, obj
-  catch e
-    event.result = errorToMeta e
-
 ipc.on 'ATOM_BROWSER_DEREFERENCE', (processId, routingId, storeId) ->
   objectsRegistry.remove processId, routingId, storeId

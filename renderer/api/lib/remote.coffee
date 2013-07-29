@@ -96,11 +96,6 @@ exports.require = (module) ->
   meta = ipc.sendChannelSync 'ATOM_BROWSER_REQUIRE', module
   moduleCache[module] = metaToValue meta
 
-# Get object with specified id.
-exports.getObject = (id) ->
-  meta = ipc.sendChannelSync 'ATOM_BROWSER_REFERENCE', id
-  metaToValue meta
-
 # Get current window object.
 windowCache = null
 exports.getCurrentWindow = ->
