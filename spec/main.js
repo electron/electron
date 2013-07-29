@@ -4,6 +4,8 @@ var BrowserWindow = require('browser-window');
 
 var window = null;
 
+app.commandLine.appendSwitch('js-flags', '--expose_gc');
+
 ipc.on('message', function() {
   ipc.send.apply(this, arguments);
 });
