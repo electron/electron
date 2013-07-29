@@ -5,6 +5,8 @@
 
 #include "common/api/atom_api_id_weak_map.h"
 
+#include "base/logging.h"
+
 namespace atom {
 
 namespace api {
@@ -26,6 +28,11 @@ bool IDWeakMap::Has(int key) const {
 }
 
 void IDWeakMap::Erase(v8::Isolate* isolate, int key) {
+  if (!Has(key)) {
+    LOG(WARNING) << "Object with key " << key << " is being GCed for twice.";
+    return;
+  }
+
   v8::Persistent<v8::Value> value = map_[key];
   value.ClearWeak(isolate);
   value.Dispose(isolate);
@@ -47,6 +54,7 @@ void IDWeakMap::WeakCallback(v8::Isolate* isolate,
   IDWeakMap* obj = static_cast<IDWeakMap*>(data);
   int key = value->ToObject()->GetHiddenValue(
       v8::String::New("IDWeakMapKey"))->IntegerValue();
+
   obj->Erase(isolate, key);
 }
 
