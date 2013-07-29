@@ -42,6 +42,7 @@ NodeBindings::~NodeBindings() {
   WakeupEmbedThread();
   uv_thread_join(&embed_thread_);
   uv_sem_destroy(&embed_sem_);
+  uv_timer_stop(&idle_timer_);
 }
 
 void NodeBindings::Initialize() {
@@ -62,6 +63,10 @@ void NodeBindings::Initialize() {
     argv[i] = const_cast<char*>(str_argv[i].c_str());
 #endif
   }
+
+  // Init idle GC.
+  uv_timer_init(uv_default_loop(), &idle_timer_);
+  uv_timer_start(&idle_timer_, IdleCallback, 5000, 5000);
 
   // Open node's error reporting system for browser process.
   node::g_standalone_mode = is_browser_;
@@ -178,6 +183,11 @@ void NodeBindings::EmbedThreadRunner(void *arg) {
     // Deal with event in main thread.
     self->WakeupMainThread();
   }
+}
+
+// static
+void NodeBindings::IdleCallback(uv_timer_t*, int) {
+  v8::V8::IdleNotification();
 }
 
 }  // namespace atom
