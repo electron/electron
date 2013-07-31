@@ -44,6 +44,7 @@ private:
       int render_process_id,
       int render_view_id,
       int notification_id) OVERRIDE;
+  virtual content::MediaObserver* GetMediaObserver() OVERRIDE;
 
   BrowserMainParts* browser_main_parts_;
   scoped_ptr<NotificationPresenter> notification_presenter_;

@@ -13,6 +13,9 @@ public:
   ~DefaultWebContentsDelegate();
 
 protected:
+  virtual void RequestMediaAccessPermission(content::WebContents*,
+                                            const content::MediaStreamRequest&,
+                                            const content::MediaResponseCallback&) OVERRIDE;
 #if defined(OS_MACOSX)
   virtual void HandleKeyboardEvent(content::WebContents*, const content::NativeWebKeyboardEvent&) OVERRIDE;
 #endif
