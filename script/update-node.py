@@ -3,6 +3,7 @@
 import argparse
 import errno
 import subprocess
+import stat
 import sys
 import os
 
@@ -24,13 +25,13 @@ def main():
 
   url, filename = get_node_url(args.url, args.version)
   directory = tempdir(prefix='atom-shell-')
-  path = os.path.join(directory, filename)
-  download('Download node', url, path)
+  node_path = os.path.join(directory, filename)
+  download('Download node', url, node_path)
 
   if IS_POSIX:
     root_name = 'node-{0}-{1}-x86'.format(args.version, sys.platform)
     member = os.path.join(root_name, 'bin', 'node')
-    extract_tarball(path, member, directory)
+    extract_tarball(node_path, member, directory)
     node_path = os.path.join(directory, member)
 
   copy_node(node_path)
@@ -73,8 +74,13 @@ def get_node_url(base_url, target_version):
 def copy_node(node_path):
   safe_mkdir('node')
   node = os.path.join('node', 'node')
+  if not IS_POSIX:
+    node += '.exe'
   safe_unlink(node)
   os.rename(node_path, node)
+
+  st = os.stat(node)
+  os.chmod(node, st.st_mode | stat.S_IEXEC)
 
 
 if __name__ == '__main__':
