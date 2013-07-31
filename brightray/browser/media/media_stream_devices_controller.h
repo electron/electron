@@ -41,6 +41,6 @@ class MediaStreamDevicesController {
   DISALLOW_COPY_AND_ASSIGN(MediaStreamDevicesController);
 };
 
-}  // namespace atom
+}  // namespace brightray
 
 #endif  // BRIGHTRAY_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_

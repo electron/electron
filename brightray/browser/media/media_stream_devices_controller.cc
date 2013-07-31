@@ -83,4 +83,4 @@ void MediaStreamDevicesController::Deny() {
                 scoped_ptr<content::MediaStreamUI>());
 }
 
-}  // namespace atom
+}  // namespace brightray
