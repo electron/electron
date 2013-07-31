@@ -2,11 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser_client.h"
+#include "browser/browser_client.h"
 
-#include "browser_context.h"
-#include "browser_main_parts.h"
-#include "notification_presenter.h"
+#include "browser/browser_context.h"
+#include "browser/browser_main_parts.h"
+#include "browser/media/media_capture_devices_dispatcher.h"
+#include "browser/notification_presenter.h"
 
 namespace brightray {
 
@@ -74,6 +75,10 @@ void BrowserClient::CancelDesktopNotification(
   if (!presenter)
     return;
   presenter->CancelNotification(render_process_id, render_view_id, notification_id);
+}
+
+content::MediaObserver* BrowserClient::GetMediaObserver() {
+  return MediaCaptureDevicesDispatcher::GetInstance();
 }
 
 }
