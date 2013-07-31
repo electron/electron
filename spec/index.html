@@ -8,6 +8,11 @@
 
 <script type="text/javascript" charset="utf-8">
 (function() {
+  // Show DevTools.
+  document.oncontextmenu = function(e) {
+    require('remote').getCurrentWindow().inspectElement(e.clientX, e.clientY);
+  }
+
   require('coffee-script'); // Supports .coffee tests.
 
   var Mocha = require('mocha');
