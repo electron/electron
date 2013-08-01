@@ -7,7 +7,8 @@
 
     "mocha": "*",
     "walkdir": "*",
-    "unzip": "*"
+    "unzip": "*",
+    "int64-native": "*"
   },
 
   "private": true,
