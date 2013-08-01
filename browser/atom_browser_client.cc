@@ -5,7 +5,6 @@
 #include "browser/atom_browser_client.h"
 
 #include "browser/atom_browser_main_parts.h"
-#include "browser/media/media_capture_devices_dispatcher.h"
 #include "webkit/glue/webpreferences.h"
 
 namespace atom {
@@ -36,10 +35,6 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->experimental_webgl_enabled = false;
   prefs->allow_displaying_insecure_content = true;
   prefs->allow_running_insecure_content = true;
-}
-
-content::MediaObserver* AtomBrowserClient::GetMediaObserver() {
-  return MediaCaptureDevicesDispatcher::GetInstance();
 }
 
 bool AtomBrowserClient::ShouldSwapProcessesForNavigation(
