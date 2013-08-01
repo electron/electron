@@ -322,6 +322,7 @@
             'libraries': [
               '-limm32.lib',
               '-loleacc.lib',
+              '-lComdlg32.lib',
               '<(atom_source_root)/<(libchromiumcontent_library_dir)/chromiumviews.lib',
             ],
           },
