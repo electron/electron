@@ -4,6 +4,7 @@
 
 #include "browser/atom_browser_main_parts.h"
 
+#include "base/power_monitor/power_monitor.h"
 #include "browser/api/atom_browser_bindings.h"
 #include "browser/atom_browser_client.h"
 #include "browser/atom_browser_context.h"
@@ -40,6 +41,10 @@ brightray::BrowserContext* AtomBrowserMainParts::CreateBrowserContext() {
 
 void AtomBrowserMainParts::PostEarlyInitialization() {
   brightray::BrowserMainParts::PostEarlyInitialization();
+
+#if defined(OS_MACOSX)
+  base::PowerMonitor::AllocateSystemIOPorts();
+#endif
 
   node_bindings_->Initialize();
 

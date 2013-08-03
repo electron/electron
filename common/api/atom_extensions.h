@@ -15,6 +15,7 @@ NODE_EXT_LIST_ITEM(atom_browser_crash_reporter)
 NODE_EXT_LIST_ITEM(atom_browser_dialog)
 NODE_EXT_LIST_ITEM(atom_browser_ipc)
 NODE_EXT_LIST_ITEM(atom_browser_menu)
+NODE_EXT_LIST_ITEM(atom_browser_power_monitor)
 NODE_EXT_LIST_ITEM(atom_browser_window)
 
 // Module names start with `atom_renderer_` can only be used by renderer
