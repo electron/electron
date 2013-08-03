@@ -23,6 +23,7 @@ def main():
   if not args.skip_network:
     update_submodules()
     update_node()
+    update_apm()
     update_node_modules()
     bootstrap_brightray(args.url)
     if sys.platform is 'cygwin':
@@ -62,6 +63,11 @@ def bootstrap_brightray(url):
   subprocess.check_call([sys.executable, bootstrap, url])
 
 
+def update_apm():
+  with scoped_cwd(os.path.join('vendor', 'apm')):
+    subprocess.check_call(['npm', 'install', '.'])
+
+
 def update_node_modules():
   for dirname in ['.', 'browser/default_app', 'spec']:
     update_node_modules_for_dir(dirname);
@@ -69,7 +75,8 @@ def update_node_modules():
 
 def update_node_modules_for_dir(dirname):
   with scoped_cwd(dirname):
-    subprocess.check_call(['npm', 'install', '--silent'])
+    apm = os.path.join(SOURCE_ROOT, 'vendor', 'apm', 'bin', 'apm')
+    subprocess.check_call(['node', apm, 'install'])
 
 
 def update_win32_python():
