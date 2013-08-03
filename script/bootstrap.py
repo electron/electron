@@ -11,6 +11,7 @@ from lib.util import *
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
+NODE_VERSION = 'v0.10.15'
 BASE_URL = 'https://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent'
 PYTHON_26_URL = 'https://chromium.googlesource.com/chromium/deps/python_26'
 
@@ -21,9 +22,10 @@ def main():
   args = parse_args()
   if not args.skip_network:
     update_submodules()
+    update_node()
     update_node_modules()
     bootstrap_brightray(args.url)
-    if sys.platform == 'cygwin':
+    if sys.platform is 'cygwin':
       update_win32_python()
 
   touch_config_gypi()
@@ -48,6 +50,11 @@ def update_submodules():
   subprocess.check_call(['git', 'submodule', 'sync', '--quiet'])
   subprocess.check_call(['git', 'submodule', 'update', '--init',
                          '--recursive'])
+
+
+def update_node():
+  un = os.path.join('script', 'update-node.py')
+  subprocess.check_call([sys.executable, un, '--version', NODE_VERSION])
 
 
 def bootstrap_brightray(url):
