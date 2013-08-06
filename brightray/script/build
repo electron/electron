@@ -7,9 +7,8 @@ import sys
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 GYP = {
-	'darwin': 'gyp',
-	'win32': 'gyp.bat',
-}[sys.platform]
+    'win32': 'gyp.bat',
+}.get(sys.platform, 'gyp')
 
 
 def main():
