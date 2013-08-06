@@ -73,6 +73,13 @@
             ],
           },
         },
+        'conditions': [
+          ['OS not in ["mac", "win"]', {
+            'defines': [
+              'USE_X11',
+            ],
+          }],
+        ],
       },
       'Debug': {
         'inherit_from': [
