@@ -76,7 +76,7 @@ def update_node_modules():
 def update_node_modules_for_dir(dirname):
   with scoped_cwd(dirname):
     apm = os.path.join(SOURCE_ROOT, 'vendor', 'apm', 'bin', 'apm')
-    subprocess.check_call(['node', apm, 'install'])
+    subprocess.check_call(['node', os.path.relpath(apm), 'install'])
 
 
 def update_win32_python():
