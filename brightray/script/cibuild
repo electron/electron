@@ -16,8 +16,9 @@ def main():
         return 'Error: Can\'t find {0}'.format(S3_CREDENTIALS_FILE)
     copy_to_environment(S3_CREDENTIALS_FILE)
 
-    run_script('bootstrap', 'https://{0}.s3.amazonaws.com/libchromiumcontent'.format(os.environ['JANKY_ARTIFACTS_S3_BUCKET']))
-    run_script('build')
+    url = 'https://{0}.s3.amazonaws.com/libchromiumcontent'.format(os.environ['JANKY_ARTIFACTS_S3_BUCKET'])
+    return (run_script('bootstrap', url) or
+            run_script('build'))
 
 
 def copy_to_environment(credentials_file):
@@ -32,7 +33,7 @@ def run_script(script, *args):
     script = os.path.join('script', script)
     sys.stderr.write('+ {0}\n'.format(script))
     sys.stderr.flush()
-    subprocess.check_call([sys.executable, script] + list(args))
+    return subprocess.call([sys.executable, script] + list(args))
 
 
 if __name__ == '__main__':
