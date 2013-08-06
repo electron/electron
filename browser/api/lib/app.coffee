@@ -18,6 +18,7 @@ if process.platform is 'darwin'
     bounce: (type = 'informational') -> bindings.dockBounce type
     cancelBounce: bindings.dockCancelBounce
     setBadge: bindings.dockSetBadgeText
+    getBadge: bindings.dockGetBadgeText
 
 # Only one App object pemitted.
 module.exports = app

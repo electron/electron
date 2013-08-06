@@ -42,4 +42,9 @@ void Browser::DockSetBadgeText(const std::string& label) {
   [tile setBadgeLabel:base::SysUTF8ToNSString(label)];
 }
 
+std::string Browser::DockGetBadgeText() {
+  NSDockTile *tile = [[AtomApplication sharedApplication] dockTile];
+  return base::SysNSStringToUTF8([tile badgeLabel]);
+}
+
 }  // namespace atom

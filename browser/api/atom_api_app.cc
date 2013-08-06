@@ -169,6 +169,12 @@ v8::Handle<v8::Value> App::DockSetBadgeText(const v8::Arguments& args) {
   return v8::Undefined();
 }
 
+// static
+v8::Handle<v8::Value> App::DockGetBadgeText(const v8::Arguments& args) {
+  std::string text(Browser::Get()->DockGetBadgeText());
+  return v8::String::New(text.data(), text.size());
+}
+
 #endif  // defined(OS_MACOSX)
 
 // static
@@ -194,6 +200,7 @@ void App::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_METHOD(target, "dockBounce", DockBounce);
   NODE_SET_METHOD(target, "dockCancelBounce", DockCancelBounce);
   NODE_SET_METHOD(target, "dockSetBadgeText", DockSetBadgeText);
+  NODE_SET_METHOD(target, "dockGetBadgeText", DockGetBadgeText);
 #endif  // defined(OS_MACOSX)
 }
 

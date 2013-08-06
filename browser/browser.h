@@ -42,8 +42,9 @@ class Browser : public WindowListObserver {
   int DockBounce(BounceType type);
   void DockCancelBounce(int request_id);
 
-  // Set dock's badge text.
+  // Set/Get dock's badge text.
   void DockSetBadgeText(const std::string& label);
+  std::string DockGetBadgeText();
 #endif  // defined(OS_MACOSX)
 
   // Tell the application to open a file.
