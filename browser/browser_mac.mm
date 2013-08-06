@@ -29,4 +29,17 @@ void Browser::CancelQuit() {
   [[AtomApplication sharedApplication] replyToApplicationShouldTerminate:NO];
 }
 
+int Browser::DockBounce(BounceType type) {
+  return [[AtomApplication sharedApplication] requestUserAttention:type];
+}
+
+void Browser::DockCancelBounce(int rid) {
+  [[AtomApplication sharedApplication] cancelUserAttentionRequest:rid];
+}
+
+void Browser::DockSetBadgeText(const std::string& label) {
+  NSDockTile *tile = [[AtomApplication sharedApplication] dockTile];
+  [tile setBadgeLabel:base::SysUTF8ToNSString(label)];
+}
+
 }  // namespace atom

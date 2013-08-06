@@ -43,6 +43,12 @@ class App : public EventEmitter,
   static v8::Handle<v8::Value> AppendSwitch(const v8::Arguments &args);
   static v8::Handle<v8::Value> AppendArgument(const v8::Arguments &args);
 
+#if defined(OS_MACOSX)
+  static v8::Handle<v8::Value> DockBounce(const v8::Arguments& args);
+  static v8::Handle<v8::Value> DockCancelBounce(const v8::Arguments& args);
+  static v8::Handle<v8::Value> DockSetBadgeText(const v8::Arguments& args);
+#endif  // defined(OS_MACOSX)
+
   DISALLOW_COPY_AND_ASSIGN(App);
 };
 

@@ -33,6 +33,19 @@ class Browser : public WindowListObserver {
   // Returns the version of the executable (or bundle).
   std::string GetVersion();
 
+#if defined(OS_MACOSX)
+  // Bounce the dock icon.
+  enum BounceType {
+    BOUNCE_CRITICAL = 0,
+    BOUNCE_INFORMATIONAL = 10,
+  };
+  int DockBounce(BounceType type);
+  void DockCancelBounce(int request_id);
+
+  // Set dock's badge text.
+  void DockSetBadgeText(const std::string& label);
+#endif  // defined(OS_MACOSX)
+
   // Tell the application to open a file.
   bool OpenFile(const std::string& file_path);
 

@@ -13,5 +13,11 @@ app.commandLine =
   appendSwitch: bindings.appendSwitch,
   appendArgument: bindings.appendArgument
 
+if process.platform is 'darwin'
+  app.dock =
+    bounce: (type = 'informational') -> bindings.dockBounce type
+    cancelBounce: bindings.dockCancelBounce
+    setBadge: bindings.dockSetBadgeText
+
 # Only one App object pemitted.
 module.exports = app

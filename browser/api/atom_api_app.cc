@@ -139,6 +139,38 @@ v8::Handle<v8::Value> App::AppendArgument(const v8::Arguments &args) {
   return v8::Undefined();
 }
 
+#if defined(OS_MACOSX)
+
+// static
+v8::Handle<v8::Value> App::DockBounce(const v8::Arguments& args) {
+  std::string type(*v8::String::Utf8Value(args[0]));
+  int request_id = -1;
+
+  if (type == "critical")
+    request_id = Browser::Get()->DockBounce(Browser::BOUNCE_CRITICAL);
+  else if (type == "informational")
+    request_id = Browser::Get()->DockBounce(Browser::BOUNCE_INFORMATIONAL);
+  else
+    return node::ThrowTypeError("Invalid bounce type");
+
+  return v8::Integer::New(request_id);
+}
+
+// static
+v8::Handle<v8::Value> App::DockCancelBounce(const v8::Arguments& args) {
+  Browser::Get()->DockCancelBounce(args[0]->IntegerValue());
+  return v8::Undefined();
+}
+
+// static
+v8::Handle<v8::Value> App::DockSetBadgeText(const v8::Arguments& args) {
+  std::string label(*v8::String::Utf8Value(args[0]));
+  Browser::Get()->DockSetBadgeText(label);
+  return v8::Undefined();
+}
+
+#endif  // defined(OS_MACOSX)
+
 // static
 void App::Initialize(v8::Handle<v8::Object> target) {
   v8::HandleScope scope;
@@ -157,6 +189,12 @@ void App::Initialize(v8::Handle<v8::Object> target) {
 
   NODE_SET_METHOD(target, "appendSwitch", AppendSwitch);
   NODE_SET_METHOD(target, "appendArgument", AppendArgument);
+
+#if defined(OS_MACOSX)
+  NODE_SET_METHOD(target, "dockBounce", DockBounce);
+  NODE_SET_METHOD(target, "dockCancelBounce", DockCancelBounce);
+  NODE_SET_METHOD(target, "dockSetBadgeText", DockSetBadgeText);
+#endif  // defined(OS_MACOSX)
 }
 
 }  // namespace api
