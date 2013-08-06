@@ -156,9 +156,12 @@ app.on('finish-launching', function() {
   ];
 
   menu = Menu.buildFromTemplate(template);
-  Menu.setApplicationMenu(menu);
+
+  if (process.platform == 'darwin')
+    Menu.setApplicationMenu(menu);
 
   ipc.on('message', function(processId, routingId, type) {
+    console.log(type);
     if (type == 'menu')
       menu.popup(mainWindow);
   });
