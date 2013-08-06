@@ -26,7 +26,7 @@ def main():
     update_apm()
     update_node_modules()
     bootstrap_brightray(args.url)
-    if sys.platform is 'cygwin':
+    if sys.platform == 'cygwin':
       update_win32_python()
 
   touch_config_gypi()
