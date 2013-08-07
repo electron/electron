@@ -1,19 +1,20 @@
 # Atom Shell
 
-Experimental native layer for the [Atom](https://github.com/github/atom).
+Native layer for the [Atom](https://github.com/github/atom).
 
-## Development
+## Features
 
-### One-time setup
+* Write desktop applications with web techniques
+* Support built-in and third-party modules of node.js 
+* Support native node.js modules
+* Extended built-in modules for desktop programming
+* JavaScript on browser side
+* Easy API for cross-process communication
 
-    $ script/bootstrap
+## Usage & Development
 
-### Building
-
-    $ script/build
-
-This will build the app into the `build` directory.
+See the [Wiki](https://github.com/atom/atom-shell/wiki).
 
 ## License
 
-See the [`LICENSE`](LICENSE) file.
+We use MIT license, see the [`LICENSE`](LICENSE) file.
