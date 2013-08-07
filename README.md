@@ -17,4 +17,4 @@ See the [Wiki](https://github.com/atom/atom-shell/wiki).
 
 ## License
 
-We use MIT license, see the [`LICENSE`](LICENSE) file.
+See the [`LICENSE`](LICENSE) file.
