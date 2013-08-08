@@ -4,7 +4,6 @@ version
 /build/
 /dist/
 /frameworks/
-/node/
 /out/
 /vendor/brightray/vendor/download/
 /vendor/python_26/

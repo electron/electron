@@ -237,13 +237,6 @@
                 'browser/default_app',
               ],
             },
-            {
-              # Copy node binary for worker process support.
-              'destination': '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources',
-              'files': [
-                'node/node',
-              ],
-            },
           ],
           'postbuilds': [
             {
@@ -285,12 +278,6 @@
               'destination': '<(PRODUCT_DIR)/resources/browser',
               'files': [
                 'browser/default_app',
-              ]
-            },
-            {
-              'destination': '<(PRODUCT_DIR)/resources',
-              'files': [
-                'node/node.exe',
               ]
             },
           ],
