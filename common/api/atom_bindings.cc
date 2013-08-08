@@ -6,6 +6,7 @@
 
 #include "base/debug/debugger.h"
 #include "base/logging.h"
+#include "common/atom_version.h"
 #include "vendor/node/src/node.h"
 
 namespace atom {
@@ -36,6 +37,9 @@ void AtomBindings::BindTo(v8::Handle<v8::Object> process) {
   node::SetMethod(process, "crash", Crash);
   node::SetMethod(process, "activateUvLoop", ActivateUVLoop);
   node::SetMethod(process, "log", Log);
+
+  process->Get(v8::String::New("versions"))->ToObject()->
+    Set(v8::String::New("atom-shell"), v8::String::New(ATOM_VERSION_STRING));
 }
 
 // static
