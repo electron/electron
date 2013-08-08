@@ -51,7 +51,7 @@ def dist_newer_than_head():
 def upload():
   os.chdir(SOURCE_ROOT)
   bucket, access_key, secret_key = s3_config()
-  commit = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip()
+  commit = subprocess.check_output(['git', 'describe', '--tags']).strip()
 
   s3put(bucket, access_key, secret_key, SOURCE_ROOT,
         'atom-shell/{0}'.format(commit), glob.glob('atom-shell*.zip'))
