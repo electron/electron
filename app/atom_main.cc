@@ -54,6 +54,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* wargv, int argc) {
       }
     }
     // Now that conversion is done, we can finally start.
+    argv[1] = argv[0];
     return node::Start(argc - 1, argv + 1);
   }
 
@@ -68,8 +69,10 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* wargv, int argc) {
 #include "app/atom_library_main.h"
 
 int main(int argc, const char* argv[]) {
-  if (argc > 1 && strcmp(argv[1], "--atom-child_process-fork") == 0)
+  if (argc > 1 && strcmp(argv[1], "--atom-child_process-fork") == 0) {
+    argv[1] = argv[0];
     return node::Start(argc - 1, const_cast<char**>(argv + 1));
+  }
 
   return AtomMain(argc, argv);
 }
