@@ -55,7 +55,7 @@ def create_zip():
   safe_unlink(zip_file)
 
   with scoped_cwd(DIST_DIR):
-    files = glob.glob('*')
+    files = ['Atom.app', 'LICENSE', 'version']
     subprocess.check_call(['zip', '-r', '-y', zip_file] + files)
 
 
