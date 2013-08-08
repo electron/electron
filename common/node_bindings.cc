@@ -70,6 +70,7 @@ void NodeBindings::Initialize() {
 
   // Open node's error reporting system for browser process.
   node::g_standalone_mode = is_browser_;
+  node::g_upstream_node_mode = false;
 
   // Init node.
   node::Init(argv.size(), &argv[0]);
