@@ -8,6 +8,7 @@
     "mocha": "*",
     "walkdir": "*",
     "unzip": "*",
+    "d3": "*",
     "int64-native": "*"
   },
 
