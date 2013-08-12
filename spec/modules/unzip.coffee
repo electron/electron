@@ -5,9 +5,8 @@ unzip = require 'unzip'
 
 fixtures = path.resolve __dirname, '..', 'fixtures'
 
-describe 'modules', ->
-  describe 'unzip module', ->
-    it 'fires close event', (done) ->
-      fs.createReadStream(path.join(fixtures, 'zip', 'a.zip'))
-        .pipe(unzip.Parse())
-        .on('close', done)
+describe 'unzip module', ->
+  it 'fires close event', (done) ->
+    fs.createReadStream(path.join(fixtures, 'zip', 'a.zip'))
+      .pipe(unzip.Parse())
+      .on('close', done)
