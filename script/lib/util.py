@@ -87,3 +87,7 @@ def safe_mkdir(path):
   except OSError as e:
     if e.errno != errno.EEXIST:
       raise
+
+
+def get_atom_shell_version():
+  return subprocess.check_output(['git', 'describe', '--tags']).strip()
