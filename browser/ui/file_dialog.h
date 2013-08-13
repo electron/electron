@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BROWSER_FILE_DIALOG_H_
-#define BROWSER_FILE_DIALOG_H_
+#ifndef BROWSER_UI_FILE_DIALOG_H_
+#define BROWSER_UI_FILE_DIALOG_H_
 
 #include <string>
 #include <vector>
@@ -35,4 +35,4 @@ bool ShowSaveDialog(atom::NativeWindow* window,
 
 }  // namespace file_dialog
 
-#endif  // BROWSER_FILE_DIALOG_H_
+#endif  // BROWSER_UI_FILE_DIALOG_H_

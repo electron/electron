@@ -9,9 +9,9 @@
 #include "base/utf_string_conversions.h"
 #include "base/values.h"
 #include "browser/api/atom_api_window.h"
-#include "browser/file_dialog.h"
-#include "browser/message_box.h"
 #include "browser/native_window.h"
+#include "browser/ui/file_dialog.h"
+#include "browser/ui/message_box.h"
 
 namespace atom {
 
