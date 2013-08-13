@@ -5,15 +5,16 @@ import os
 import subprocess
 import sys
 
-OBJC_HEADERS = [
+IGNORE_FILES = [
   'app/win/resource.h',
   'browser/atom_event_processing_window.h',
   'browser/atom_application_mac.h',
   'browser/atom_application_delegate_mac.h',
   'browser/native_window_mac.h',
-  'browser/nsalert_synchronous_sheet.h',
+  'browser/ui/nsalert_synchronous_sheet_mac.h',
   'common/api/api_messages.cc',
   'common/api/api_messages.h',
+  'common/atom_version.h',
 ]
 
 SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))
@@ -23,7 +24,7 @@ def main():
   os.chdir(SOURCE_ROOT)
   files = list_files(['app', 'browser', 'common', 'renderer'],
                      ['*.cc', '*.h'])
-  call_cpplint(list(set(files) - set(OBJC_HEADERS)))
+  call_cpplint(list(set(files) - set(IGNORE_FILES)))
 
 
 def list_files(directories, filters):
