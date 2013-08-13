@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BROWSER_ACCELERATOR_UTIL_H_
-#define BROWSER_ACCELERATOR_UTIL_H_
+#ifndef BROWSER_UI_ACCELERATOR_UTIL_H_
+#define BROWSER_UI_ACCELERATOR_UTIL_H_
 
 #include <string>
 
@@ -22,4 +22,4 @@ void SetPlatformAccelerator(ui::Accelerator* accelerator);
 
 }  // namespace accelerator_util
 
-#endif  // BROWSER_ACCELERATOR_UTIL_H_
+#endif  // BROWSER_UI_ACCELERATOR_UTIL_H_

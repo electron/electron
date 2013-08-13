@@ -4,8 +4,8 @@
 
 #include "browser/api/atom_api_menu.h"
 
-#include "browser/accelerator_util.h"
 #include "browser/api/atom_api_window.h"
+#include "browser/ui/accelerator_util.h"
 
 #define UNWRAP_MEMNU_AND_CHECK \
   Menu* self = ObjectWrap::Unwrap<Menu>(args.This()); \
