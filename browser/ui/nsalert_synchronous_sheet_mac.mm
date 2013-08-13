@@ -1,7 +1,8 @@
 // Copyright (c) 2013 GitHub, Inc. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-#import "browser/nsalert_synchronous_sheet.h"
+#import "browser/ui/nsalert_synchronous_sheet_mac.h"
 
 // Private methods -- use prefixes to avoid collisions with Apple's methods
 @interface NSAlert (SynchronousSheetPrivate)

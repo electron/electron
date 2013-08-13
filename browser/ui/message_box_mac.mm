@@ -8,7 +8,7 @@
 
 #include "base/strings/sys_string_conversions.h"
 #include "browser/native_window.h"
-#include "browser/nsalert_synchronous_sheet.h"
+#include "browser/ui/nsalert_synchronous_sheet_mac.h"
 
 namespace atom {
 
