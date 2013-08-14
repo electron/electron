@@ -73,6 +73,13 @@
             ],
           },
         },
+        'conditions': [
+          ['OS not in ["mac", "win"]', {
+            'defines': [
+              'USE_X11',
+            ],
+          }],
+        ],
       },
       'Debug': {
         'inherit_from': [
@@ -167,9 +174,24 @@
           ['exclude', '_win\.(cc|h)$'],
         ],
       }],
+      ['OS=="linux"', {
+        'cflags_cc': [
+          '-std=gnu++11',
+        ],
+      }],
     ],
   },
   'conditions': [
+    ['OS=="linux"', {
+      'make_global_settings': [
+        ['CC', '/usr/bin/clang'],
+        ['CXX', '/usr/bin/clang++'],
+        ['LINK', '$(CXX)'],
+        ['CC.host', '$(CC)'],
+        ['CXX.host', '$(CXX)'],
+        ['LINK.host', '$(LINK)'],
+      ],
+    }],
     ['OS=="win"', {
       'target_defaults': {
         'include_dirs': [

@@ -14,8 +14,8 @@ DOWNLOAD_DIR = os.path.join(VENDOR_DIR, 'download')
 
 def main():
     args = parse_args()
-    update_submodules()
-    download_libchromiumcontent(args.url)
+    return (update_submodules() or
+            download_libchromiumcontent(args.url))
 
 
 def parse_args():
@@ -27,17 +27,17 @@ def parse_args():
 
 
 def update_submodules():
-    subprocess.check_call(['git', 'submodule', 'sync', '--quiet'])
-    subprocess.check_call(['git', 'submodule', 'update', '--init',
-                           '--recursive'])
+    return (subprocess.call(['git', 'submodule', 'sync', '--quiet']) or
+            subprocess.call(['git', 'submodule', 'update', '--init',
+                             '--recursive']))
 
 
 def download_libchromiumcontent(url):
     mkdir_p(DOWNLOAD_DIR)
     download = os.path.join(VENDOR_DIR, 'libchromiumcontent', 'script',
                             'download')
-    subprocess.check_call([sys.executable, download, '-f', url,
-                           os.path.join(DOWNLOAD_DIR, 'libchromiumcontent')])
+    return subprocess.call([sys.executable, download, '-f', url,
+                            os.path.join(DOWNLOAD_DIR, 'libchromiumcontent')])
 
 
 def mkdir_p(path):

@@ -9,6 +9,7 @@
 #include "browser/network_delegate.h"
 #include "common/application_info.h"
 
+#include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/prefs/json_pref_store.h"
@@ -19,6 +20,10 @@
 #include "content/public/browser/resource_context.h"
 #include "content/public/browser/storage_partition.h"
 #include "url_request_context_getter.h"
+
+#if defined(OS_LINUX)
+#include "base/nix/xdg_util.h"
+#endif
 
 namespace brightray {
 
@@ -83,7 +88,15 @@ base::FilePath BrowserContext::GetPath() {
     return path_;
 
   base::FilePath path;
+#if defined(OS_LINUX)
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  path = base::nix::GetXDGDirectory(env.get(),
+                                    base::nix::kXdgConfigHomeEnvVar,
+                                    base::nix::kDotConfigDir);
+#else
   CHECK(PathService::Get(base::DIR_APP_DATA, &path));
+#endif
+
   path_ = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
   return path_;
 }
