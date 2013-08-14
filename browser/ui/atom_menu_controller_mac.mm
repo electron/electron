@@ -68,18 +68,15 @@ int EventFlagsFromNSEvent(NSEvent* event) {
 @implementation AtomMenuController
 
 @synthesize model = model_;
-@synthesize useWithPopUpButtonCell = useWithPopUpButtonCell_;
 
 - (id)init {
   self = [super init];
   return self;
 }
 
-- (id)initWithModel:(ui::MenuModel*)model
-    useWithPopUpButtonCell:(BOOL)useWithCell {
+- (id)initWithModel:(ui::MenuModel*)model {
   if ((self = [super init])) {
     model_ = model;
-    useWithPopUpButtonCell_ = useWithCell;
     [self menu];
   }
   return self;
@@ -118,11 +115,6 @@ int EventFlagsFromNSEvent(NSEvent* event) {
   }
 
   return menu;
-}
-
-- (int)maxWidthForMenuModel:(ui::MenuModel*)model
-                 modelIndex:(int)modelIndex {
-  return -1;
 }
 
 // Adds a separator item at the given index. As the separator doesn't need
@@ -241,15 +233,6 @@ int EventFlagsFromNSEvent(NSEvent* event) {
   if (!menu_ && model_) {
     menu_.reset([[self menuFromModel:model_] retain]);
     [menu_ setDelegate:self];
-    // If this is to be used with a NSPopUpButtonCell, add an item at the 0th
-    // position that's empty. Doing it after the menu has been constructed won't
-    // complicate creation logic, and since the tags are model indexes, they
-    // are unaffected by the extra item.
-    if (useWithPopUpButtonCell_) {
-      scoped_nsobject<NSMenuItem> blankItem(
-          [[NSMenuItem alloc] initWithTitle:@"" action:nil keyEquivalent:@""]);
-      [menu_ insertItem:blankItem atIndex:0];
-    }
   }
   return menu_.get();
 }

@@ -25,14 +25,10 @@ class MenuModel;
  @protected
   ui::MenuModel* model_;  // weak
   scoped_nsobject<NSMenu> menu_;
-  BOOL useWithPopUpButtonCell_;  // If YES, 0th item is blank
   BOOL isMenuOpen_;
 }
 
 @property(nonatomic, assign) ui::MenuModel* model;
-// Note that changing this will have no effect if you use
-// |-initWithModel:useWithPopUpButtonCell:| or after the first call to |-menu|.
-@property(nonatomic) BOOL useWithPopUpButtonCell;
 
 // NIB-based initializer. This does not create a menu. Clients can set the
 // properties of the object and the menu will be created upon the first call to
@@ -40,12 +36,8 @@ class MenuModel;
 - (id)init;
 
 // Builds a NSMenu from the pre-built model (must not be nil). Changes made
-// to the contents of the model after calling this will not be noticed. If
-// the menu will be displayed by a NSPopUpButtonCell, it needs to be of a
-// slightly different form (0th item is empty). Note this attribute of the menu
-// cannot be changed after it has been created.
-- (id)initWithModel:(ui::MenuModel*)model
-    useWithPopUpButtonCell:(BOOL)useWithCell;
+// to the contents of the model after calling this will not be noticed.
+- (id)initWithModel:(ui::MenuModel*)model;
 
 // Programmatically close the constructed menu.
 - (void)cancel;
@@ -75,10 +67,6 @@ class MenuModel;
               atIndex:(NSInteger)index
             fromModel:(ui::MenuModel*)model;
 - (NSMenu*)menuFromModel:(ui::MenuModel*)model;
-// Returns the maximum width for the menu item. Returns -1 to indicate
-// that there's no maximum width.
-- (int)maxWidthForMenuModel:(ui::MenuModel*)model
-                 modelIndex:(int)modelIndex;
 @end
 
 #endif  // ATOM_BROWSER_UI_ATOM_MENU_CONTROLLER_MAC_H_

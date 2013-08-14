@@ -24,8 +24,7 @@ MenuMac::~MenuMac() {
 
 void MenuMac::Popup(NativeWindow* native_window) {
   scoped_nsobject<AtomMenuController> menu_controller(
-      [[AtomMenuController alloc] initWithModel:model_.get()
-                         useWithPopUpButtonCell:NO]);
+      [[AtomMenuController alloc] initWithModel:model_.get()]);
 
   NSWindow* window = native_window->GetNativeWindow();
   content::WebContents* web_contents = native_window->GetWebContents();
@@ -82,8 +81,7 @@ v8::Handle<v8::Value> Menu::SetApplicationMenu(const v8::Arguments &args) {
     return node::ThrowError("Menu is destroyed");
 
   scoped_nsobject<AtomMenuController> menu_controller(
-      [[AtomMenuController alloc] initWithModel:menu->model_.get()
-                         useWithPopUpButtonCell:NO]);
+      [[AtomMenuController alloc] initWithModel:menu->model_.get()]);
   [NSApp setMainMenu:[menu_controller menu]];
 
   // Ensure the menu_controller_ is destroyed after main menu is set.
