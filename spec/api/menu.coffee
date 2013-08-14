@@ -23,3 +23,15 @@ describe 'Menu API', ->
       assert.equal menu.items[1].label, 'inserted'
       assert.equal menu.items[2].label, '2'
       assert.equal menu.items[3].label, '3'
+
+  describe 'MenuItem.click', ->
+    it 'should be called with the item object passed', (done) ->
+      menu = new Menu
+      menuItem = new MenuItem
+        label: 'text'
+        click: (item) ->
+          assert.equal item.constructor.name, 'MenuItem'
+          assert.equal item.label, 'text'
+          done()
+      menu.append menuItem
+      menu.delegate.executeCommand menuItem.commandId
