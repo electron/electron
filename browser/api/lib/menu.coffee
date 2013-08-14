@@ -37,7 +37,9 @@ Menu::insert = (pos, item) ->
       isCommandIdEnabled: (commandId) => @commandsMap[commandId]?.enabled
       isCommandIdVisible: (commandId) => @commandsMap[commandId]?.visible
       getAcceleratorForCommandId: (commandId) => @commandsMap[commandId]?.accelerator
-      executeCommand: (commandId) => @commandsMap[commandId]?.click()
+      executeCommand: (commandId) =>
+        activeItem = @commandsMap[commandId]
+        activeItem.click(activeItem) if activeItem?
   @items.splice pos, 0, item
   @commandsMap[item.commandId] = item
 

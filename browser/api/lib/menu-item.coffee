@@ -20,9 +20,9 @@ class MenuItem
     throw new Error('Unknown menu type') if MenuItem.types.indexOf(@type) is -1
 
     @commandId = ++nextCommandId
-    @click = ->
+    @click = =>
       if typeof click is 'function'
-        click()
+        click.apply this, arguments
       else if typeof selector is 'string'
         Menu.sendActionToFirstResponder selector
 
