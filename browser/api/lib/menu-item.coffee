@@ -14,8 +14,12 @@ class MenuItem
     @type = @type ? 'normal'
     @label = @label ? ''
     @sublabel = @sublabel ? ''
+    @accelerator = @accelerator ? null
     @enabled = @enabled ? true
     @visible = @visible ? true
+    @checked = @checked ? false
+    @groupId = @groupId ? null
+    @submenu = @submenu ? null
 
     throw new Error('Unknown menu type') if MenuItem.types.indexOf(@type) is -1
 
