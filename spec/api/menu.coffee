@@ -26,12 +26,11 @@ describe 'Menu API', ->
 
   describe 'MenuItem.click', ->
     it 'should be called with the item object passed', (done) ->
-      menu = new Menu
-      menuItem = new MenuItem
+      menu = Menu.buildFromTemplate [
         label: 'text'
         click: (item) ->
           assert.equal item.constructor.name, 'MenuItem'
           assert.equal item.label, 'text'
           done()
-      menu.append menuItem
-      menu.delegate.executeCommand menuItem.commandId
+      ]
+      menu.delegate.executeCommand menu.items[0].commandId
