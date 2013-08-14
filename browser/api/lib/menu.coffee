@@ -1,5 +1,6 @@
-EventEmitter = require('events').EventEmitter
 BrowserWindow = require 'browser-window'
+EventEmitter = require('events').EventEmitter
+IDWeakMap = require 'id-weak-map'
 MenuItem = require 'menu-item'
 
 bindings = process.atomBinding 'menu'
@@ -28,15 +29,17 @@ Menu::insert = (pos, item) ->
 
   @setSublabel pos, item.sublabel if item.sublabel?
 
-  unless @items?
-    @items = {}
+  unless @delegate?
+    @commandsMap = {}
+    @items = []
     @delegate =
-      isCommandIdChecked: (commandId) => @items[commandId]?.checked
-      isCommandIdEnabled: (commandId) => @items[commandId]?.enabled
-      isCommandIdVisible: (commandId) => @items[commandId]?.visible
-      getAcceleratorForCommandId: (commandId) => @items[commandId]?.accelerator
-      executeCommand: (commandId) => @items[commandId]?.click()
-  @items[item.commandId] = item
+      isCommandIdChecked: (commandId) => @commandsMap[commandId]?.checked
+      isCommandIdEnabled: (commandId) => @commandsMap[commandId]?.enabled
+      isCommandIdVisible: (commandId) => @commandsMap[commandId]?.visible
+      getAcceleratorForCommandId: (commandId) => @commandsMap[commandId]?.accelerator
+      executeCommand: (commandId) => @commandsMap[commandId]?.click()
+  @items.splice pos, 0, item
+  @commandsMap[item.commandId] = item
 
 Menu.setApplicationMenu = (menu) ->
   throw new TypeError('Invalid menu') unless menu?.constructor is Menu
