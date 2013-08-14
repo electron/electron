@@ -15,6 +15,8 @@ sample application written using Brightray.
 
 * Python 2.7
 * gyp
+* Linux:
+    * Clang 3.0
 * Mac:
     * Xcode
 * Windows:
