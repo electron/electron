@@ -11,6 +11,18 @@ namespace api {
 
 namespace {
 
+v8::Handle<v8::Value> PropGetter(v8::Local<v8::String> property,
+                                 const v8::AccessorInfo& info) {
+  return info.This()->GetRealNamedPropertyInPrototypeChain(property);
+}
+
+v8::Handle<v8::Value> PropSetter(v8::Local<v8::String> property,
+                                 v8::Local<v8::Value> value,
+                                 const v8::AccessorInfo& info) {
+  info.This()->ForceSet(property, value);
+  return value;
+}
+
 v8::Handle<v8::Value> DummyNew(const v8::Arguments& args) {
   return args.This();
 }
@@ -20,6 +32,7 @@ v8::Handle<v8::Value> CreateObjectWithName(const v8::Arguments& args) {
 
   v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(DummyNew);
   t->SetClassName(args[0]->ToString());
+  t->InstanceTemplate()->SetNamedPropertyHandler(PropGetter, PropSetter);
 
   return scope.Close(t->GetFunction()->NewInstance());
 }
