@@ -174,6 +174,11 @@
           ['exclude', '_win\.(cc|h)$'],
         ],
       }],
+      ['OS=="linux"', {
+        'cflags_cc': [
+          '-std=gnu++11',
+        ],
+      }],
     ],
   },
   'conditions': [
