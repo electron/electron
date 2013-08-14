@@ -177,6 +177,16 @@
     ],
   },
   'conditions': [
+    ['OS=="linux"', {
+      'make_global_settings': [
+        ['CC', '/usr/bin/clang'],
+        ['CXX', '/usr/bin/clang++'],
+        ['LINK', '$(CXX)'],
+        ['CC.host', '$(CC)'],
+        ['CXX.host', '$(CXX)'],
+        ['LINK.host', '$(LINK)'],
+      ],
+    }],
     ['OS=="win"', {
       'target_defaults': {
         'include_dirs': [
