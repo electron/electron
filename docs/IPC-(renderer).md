@@ -1,6 +1,6 @@
 ## Synopsis
 
-The `ipc` module provides a few methods so you can send synchronous and asynchronous messages to the browser, and also receive messages sent from browser. If you want to make use of modules of browser from renderer, you might consider using the [[remote]] module.
+The `ipc` module provides a few methods so you can send synchronous and asynchronous messages to the browser, and also receive messages sent from browser. If you want to make use of modules of browser from renderer, you might consider using the [remote](remote.md) module.
 
 An example of echoing messages between browser and renderer:
 
