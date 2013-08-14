@@ -159,7 +159,12 @@ int EventFlagsFromNSEvent(NSEvent* event) {
     ui::MenuModel* submenuModel = model->GetSubmenuModelAt(index);
     NSMenu* submenu =
         [self menuFromModel:(ui::SimpleMenuModel*)submenuModel];
+    [submenu setTitle:[item title]];
     [item setSubmenu:submenu];
+
+    // Hack to set window menu.
+    if ([[item title] isEqualToString:@"Window"] && [submenu numberOfItems] > 0)
+      [NSApp setWindowsMenu:submenu];
   } else {
     // The MenuModel works on indexes so we can't just set the command id as the
     // tag like we do in other menus. Also set the represented object to be

@@ -63,22 +63,6 @@ void MenuMac::Popup(NativeWindow* native_window) {
 }
 
 // static
-void MenuMac::FixMenuTitles(NSMenu* menu) {
-  int size = [menu numberOfItems];
-  for (int i = 0; i < size; ++i) {
-    NSMenuItem* item = [menu itemAtIndex:i];
-    if ([item hasSubmenu]) {
-      NSString* title = [item title];
-      NSMenu* submenu = [item submenu];
-      [submenu setTitle:title];
-
-      if ([title isEqualToString:@"Window"] && [submenu numberOfItems] > 0)
-        [NSApp setWindowsMenu:submenu];
-    }
-  }
-}
-
-// static
 void MenuMac::SendActionToFirstResponder(const std::string& action) {
   SEL selector = NSSelectorFromString(base::SysUTF8ToNSString(action));
   [[NSApplication sharedApplication] sendAction:selector
@@ -100,7 +84,6 @@ v8::Handle<v8::Value> Menu::SetApplicationMenu(const v8::Arguments &args) {
   scoped_nsobject<AtomMenuController> menu_controller(
       [[AtomMenuController alloc] initWithModel:menu->model_.get()
                          useWithPopUpButtonCell:NO]);
-  MenuMac::FixMenuTitles([menu_controller menu]);
   [NSApp setMainMenu:[menu_controller menu]];
 
   // Ensure the menu_controller_ is destroyed after main menu is set.
