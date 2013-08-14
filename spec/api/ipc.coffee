@@ -25,6 +25,9 @@ describe 'ipc', ->
       property2 = remote.require path.join(fixtures, 'module', 'property.js')
       assert.equal property2.property, 1007
 
+      # Restore.
+      property.property = 1127
+
   describe 'ipc.send', ->
     it 'should work when sending an object containing id property', (done) ->
       obj = id: 1, name: 'ly'
