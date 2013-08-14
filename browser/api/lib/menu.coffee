@@ -52,7 +52,10 @@ Menu.buildFromTemplate = (template) ->
     throw new TypeError('Invalid template for MenuItem') unless typeof item is 'object'
 
     item.submenu = Menu.buildFromTemplate item.submenu if item.submenu?
-    menu.append new MenuItem(item)
+    menuItem = new MenuItem(item)
+    menuItem[key] = value for key, value of item
+
+    menu.append menuItem
 
   menu
 
