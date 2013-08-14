@@ -7,13 +7,21 @@ callbacksRegistry = new CallbacksRegistry
 
 # Convert the arguments object into an array of meta data.
 wrapArgs = (args) ->
-  Array::slice.call(args).map (value) ->
-    if value? and typeof value is 'object' and v8Util.getHiddenValue value, 'atomId'
-      type: 'object', id: v8Util.getHiddenValue value, 'atomId'
+  valueToMeta = (value) ->
+    if Array.isArray value
+      type: 'array', value: wrapArgs(value)
+    else if value? and typeof value is 'object' and v8Util.getHiddenValue value, 'atomId'
+      type: 'remote-object', id: v8Util.getHiddenValue value, 'atomId'
+    else if value? and typeof value is 'object'
+      ret = type: 'object', members: []
+      ret.members.push(name: prop, value: valueToMeta(field)) for prop, field of value
+      ret
     else if typeof value is 'function'
       type: 'function', id: callbacksRegistry.add(value)
     else
       type: 'value', value: value
+
+  Array::slice.call(args).map valueToMeta
 
 # Convert meta data from browser into real value.
 metaToValue = (meta) ->

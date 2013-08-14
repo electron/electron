@@ -38,10 +38,16 @@ errorToMeta = (error) ->
 
 # Convert array of meta data from renderer into array of real values.
 unwrapArgs = (processId, routingId, args) ->
-  args.map (meta) ->
+  metaToValue = (meta) ->
     switch meta.type
       when 'value' then meta.value
-      when 'object' then objectsRegistry.get meta.id
+      when 'remote-object' then objectsRegistry.get meta.id
+      when 'array' then unwrapArgs processId, routingId, meta.value
+      when 'object'
+        ret = {}
+        for member in meta.members
+          ret[member.name] = metaToValue(member.value)
+        ret
       when 'function'
         ret = ->
           ipc.sendChannel processId, routingId, 'ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(processId, routingId, arguments)
@@ -49,6 +55,8 @@ unwrapArgs = (processId, routingId, args) ->
           ipc.sendChannel processId, routingId, 'ATOM_RENDERER_RELEASE_CALLBACK', meta.id
         ret
       else throw new TypeError("Unknown type: #{meta.type}")
+
+  args.map metaToValue
 
 ipc.on 'ATOM_BROWSER_REQUIRE', (event, processId, routingId, module) ->
   try
