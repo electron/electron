@@ -27,7 +27,7 @@ class MenuItem
     @click = =>
       if typeof click is 'function'
         click.apply this, arguments
-      else if typeof selector is 'string'
-        Menu.sendActionToFirstResponder selector
+      else if typeof @selector is 'string'
+        Menu.sendActionToFirstResponder @selector
 
 module.exports = MenuItem
