@@ -22,6 +22,8 @@ public:
   BrowserContext();
   ~BrowserContext();
 
+  void Initialize();
+
   net::URLRequestContextGetter* CreateRequestContext(content::ProtocolHandlerMap*);
 
   PrefService* prefs() { return prefs_.get(); }

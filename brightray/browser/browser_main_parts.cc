@@ -22,6 +22,7 @@ BrowserMainParts::~BrowserMainParts() {
 
 void BrowserMainParts::PreMainMessageLoopRun() {
   browser_context_.reset(CreateBrowserContext());
+  browser_context_->Initialize();
 
   // These two objects are owned by devtools_http_handler_.
   auto delegate = new DevToolsDelegate;
