@@ -58,7 +58,7 @@ Menu.buildFromTemplate = (template) ->
 
     item.submenu = Menu.buildFromTemplate item.submenu if item.submenu?
     menuItem = new MenuItem(item)
-    menuItem[key] = value for key, value of item
+    menuItem[key] = value for key, value of item when not menuItem[key]?
 
     menu.append menuItem
 

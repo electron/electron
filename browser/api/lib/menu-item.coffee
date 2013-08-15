@@ -6,7 +6,7 @@ class MenuItem
   constructor: (options) ->
     Menu = require 'menu'
 
-    {click, selector, @type, @label, @sublabel, @accelerator, @enabled, @visible, @checked, @groupId, @submenu} = options
+    {click, @selector, @type, @label, @sublabel, @accelerator, @enabled, @visible, @checked, @groupId, @submenu} = options
 
     @type = 'submenu' if not @type? and @submenu?
     throw new Error('Invalid submenu') if @type is 'submenu' and @submenu?.constructor isnt Menu
