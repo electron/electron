@@ -86,7 +86,7 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
       title_(UTF8ToUTF16(title)),
       widget_(NULL),
       message_box_view_(NULL) {
-  DCHECK_GT(buttons.size(), 0);
+  DCHECK_GT(buttons.size(), 0u);
   set_owned_by_client();
 
   views::MessageBoxView::InitParams params(UTF8ToUTF16(title));
