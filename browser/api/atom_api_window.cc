@@ -446,6 +446,12 @@ v8::Handle<v8::Value> Window::BlurWebView(const v8::Arguments &args) {
 }
 
 // static
+v8::Handle<v8::Value> Window::IsWebViewFocused(const v8::Arguments& args) {
+  UNWRAP_WINDOW_AND_CHECK;
+  return v8::Boolean::New(self->window_->IsWebViewFocused());
+}
+
+// static
 v8::Handle<v8::Value> Window::RestartHangMonitorTimeout(
     const v8::Arguments &args) {
   UNWRAP_WINDOW_AND_CHECK;
@@ -690,6 +696,7 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "inspectElement", InspectElement);
   NODE_SET_PROTOTYPE_METHOD(t, "focusOnWebView", FocusOnWebView);
   NODE_SET_PROTOTYPE_METHOD(t, "blurWebView", BlurWebView);
+  NODE_SET_PROTOTYPE_METHOD(t, "isWebViewFocused", IsWebViewFocused);
   NODE_SET_PROTOTYPE_METHOD(t,
                             "restartHangMonitorTimeout",
                             RestartHangMonitorTimeout);

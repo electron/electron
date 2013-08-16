@@ -96,6 +96,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void InspectElement(int x, int y);
   virtual void FocusOnWebView();
   virtual void BlurWebView();
+  virtual bool IsWebViewFocused();
   virtual void RestartHangMonitorTimeout();
 
   // The same with closing a tab in a real browser.

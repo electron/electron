@@ -24,6 +24,7 @@
 #include "content/public/browser/notification_types.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_widget_host_view.h"
 #include "common/api/api_messages.h"
 #include "common/options_switches.h"
 #include "ipc/ipc_message_macros.h"
@@ -151,6 +152,10 @@ void NativeWindow::FocusOnWebView() {
 
 void NativeWindow::BlurWebView() {
   GetWebContents()->GetRenderViewHost()->Blur();
+}
+
+bool NativeWindow::IsWebViewFocused() {
+  return GetWebContents()->GetRenderViewHost()->GetView()->HasFocus();
 }
 
 void NativeWindow::RestartHangMonitorTimeout() {

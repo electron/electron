@@ -81,6 +81,7 @@ class Window : public EventEmitter,
   static v8::Handle<v8::Value> InspectElement(const v8::Arguments &args);
   static v8::Handle<v8::Value> FocusOnWebView(const v8::Arguments &args);
   static v8::Handle<v8::Value> BlurWebView(const v8::Arguments &args);
+  static v8::Handle<v8::Value> IsWebViewFocused(const v8::Arguments& args);
   static v8::Handle<v8::Value> RestartHangMonitorTimeout(
       const v8::Arguments &args);
 
