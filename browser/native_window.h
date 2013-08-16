@@ -12,8 +12,8 @@
 #include "browser/native_window_observer.h"
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
-#include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "vendor/brightray/browser/default_web_contents_delegate.h"
 
 namespace base {
 class DictionaryValue;
@@ -39,7 +39,7 @@ namespace atom {
 
 class AtomJavaScriptDialogManager;
 
-class NativeWindow : public content::WebContentsDelegate,
+class NativeWindow : public brightray::DefaultWebContentsDelegate,
                      public content::WebContentsObserver,
                      public content::NotificationObserver {
  public:
