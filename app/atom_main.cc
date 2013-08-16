@@ -12,21 +12,23 @@ int Start(int argc, char *argv[]);
 
 #if defined(OS_WIN)
 
-#include <stringapiset.h>  // NOLINT
+#include <windows.h>  // NOLINT
 
 #include "app/atom_main_delegate.h"
 #include "content/public/app/startup_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* wargv, int argc) {
-  if (argc > 1 && wcscmp(wargv[1], L"--atom-child_process-fork") == 0) {
+  const wchar_t* wargv1 = reinterpret_cast<const wchar_t*>(wargv[1]);
+  if (argc > 1 && wcscmp(wargv1, L"--atom-child_process-fork") == 0) {
     // Convert argv to to UTF8
     char** argv = new char*[argc];
     for (int i = 0; i < argc; i++) {
+      const wchar_t* wargvi = reinterpret_cast<const wchar_t*>(wargv[i]);
       // Compute the size of the required buffer
       DWORD size = WideCharToMultiByte(CP_UTF8,
                                        0,
-                                       wargv[i],
+                                       wargvi,
                                        -1,
                                        NULL,
                                        0,
@@ -41,7 +43,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* wargv, int argc) {
       argv[i] = new char[size];
       DWORD result = WideCharToMultiByte(CP_UTF8,
                                          0,
-                                         wargv[i],
+                                         wargvi,
                                          -1,
                                          argv[i],
                                          size,
