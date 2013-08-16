@@ -16,8 +16,11 @@ def main():
 
   coffee = os.path.join(SOURCE_ROOT, 'node_modules', 'coffee-script', 'bin',
                         'coffee')
-  subprocess.check_call(['node', coffee, '-c', '-o', output_dir, input_file])
-
+  if sys.platform in ['win32', 'cygwin']:
+    subprocess.check_call(['node', coffee, '-c', '-o', output_dir, input_file],
+                          executable='C:/Program Files/nodejs/node.exe')
+  else:
+    subprocess.check_call(['node', coffee, '-c', '-o', output_dir, input_file])
 
 if __name__ == '__main__':
   sys.exit(main())
