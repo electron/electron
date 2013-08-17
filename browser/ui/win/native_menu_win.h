@@ -43,6 +43,10 @@ class NativeMenuWin : public MenuWrapper {
   virtual void RemoveMenuListener(views::MenuListener* listener) OVERRIDE;
   virtual void SetMinimumWidth(int width) OVERRIDE;
 
+  // Flag to create a window menu instead of popup menu.
+  void set_create_as_window_menu(bool flag) { create_as_window_menu_ = flag; }
+  bool create_as_window_menu() const { return create_as_window_menu_; }
+
  private:
   // IMPORTANT: Note about indices.
   //            Functions in this class deal in two index spaces:
@@ -160,6 +164,9 @@ class NativeMenuWin : public MenuWrapper {
   // has a menu open, because our hook function that receives keyboard
   // events doesn't have a mechanism to get a user data pointer.
   static NativeMenuWin* open_native_menu_win_;
+
+  // Create as window menu.
+  bool create_as_window_menu_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeMenuWin);
 };
