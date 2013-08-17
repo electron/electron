@@ -4,7 +4,7 @@
 
 #include "browser/api/atom_api_menu_win.h"
 
-#include "ui/views/controls/menu/menu_2.h"
+#include "browser/ui/win/menu_2.h"
 #include "ui/gfx/point.h"
 
 namespace atom {
@@ -19,7 +19,7 @@ MenuWin::~MenuWin() {
 }
 
 void MenuWin::Popup(NativeWindow* native_window) {
-  menu_.reset(new views::Menu2(model_.get()));
+  menu_.reset(new atom::Menu2(model_.get()));
   menu_->RunContextMenuAt(gfx::Point(0, 0));
 }
 

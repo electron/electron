@@ -7,11 +7,9 @@
 
 #include "browser/api/atom_api_menu.h"
 
-namespace views {
-class Menu2;
-}
-
 namespace atom {
+
+class Menu2;
 
 namespace api {
 
@@ -24,7 +22,7 @@ class MenuWin : public Menu {
   virtual void Popup(NativeWindow* window) OVERRIDE;
 
  private:
-  scoped_ptr<views::Menu2> menu_;
+  scoped_ptr<atom::Menu2> menu_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuWin);
 };
