@@ -14,34 +14,47 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/string16.h"
-#include "browser/ui/win/menu_wrapper.h"
+
+namespace gfx {
+class Point;
+}
 
 namespace ui {
 class MenuModel;
 }
 
+namespace views {
+class MenuInsertionDelegateWin;
+class MenuListener;
+}
+
 namespace atom {
 
-// A Windows implementation of MenuWrapper.
-// TODO(beng): rename to MenuWin once the old class is dead.
-class NativeMenuWin : public MenuWrapper {
+class NativeMenuWin {
  public:
+  // All of the possible actions that can result from RunMenuAt.
+  enum MenuAction {
+    MENU_ACTION_NONE,      // Menu cancelled, or never opened.
+    MENU_ACTION_SELECTED,  // An item was selected.
+    MENU_ACTION_PREVIOUS,  // User wants to navigate to the previous menu.
+    MENU_ACTION_NEXT,      // User wants to navigate to the next menu.
+  };
+
   // Construct a NativeMenuWin, with a model and delegate. If |system_menu_for|
   // is non-NULL, the NativeMenuWin wraps the system menu for that window.
   // The caller owns the model and the delegate.
   NativeMenuWin(ui::MenuModel* model, HWND system_menu_for);
   virtual ~NativeMenuWin();
 
-  // Overridden from MenuWrapper:
-  virtual void RunMenuAt(const gfx::Point& point, int alignment) OVERRIDE;
-  virtual void CancelMenu() OVERRIDE;
-  virtual void Rebuild(views::MenuInsertionDelegateWin* delegate) OVERRIDE;
-  virtual void UpdateStates() OVERRIDE;
-  virtual HMENU GetNativeMenu() const OVERRIDE;
-  virtual MenuAction GetMenuAction() const OVERRIDE;
-  virtual void AddMenuListener(views::MenuListener* listener) OVERRIDE;
-  virtual void RemoveMenuListener(views::MenuListener* listener) OVERRIDE;
-  virtual void SetMinimumWidth(int width) OVERRIDE;
+  void RunMenuAt(const gfx::Point& point, int alignment);
+  void CancelMenu() ;
+  void Rebuild(views::MenuInsertionDelegateWin* delegate) ;
+  void UpdateStates() ;
+  HMENU GetNativeMenu() const ;
+  MenuAction GetMenuAction() const ;
+  void AddMenuListener(views::MenuListener* listener) ;
+  void RemoveMenuListener(views::MenuListener* listener) ;
+  void SetMinimumWidth(int width) ;
 
   // Flag to create a window menu instead of popup menu.
   void set_create_as_window_menu(bool flag) { create_as_window_menu_ = flag; }

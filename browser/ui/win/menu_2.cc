@@ -13,9 +13,10 @@ using namespace views;  // NOLINT
 
 namespace atom {
 
-Menu2::Menu2(ui::MenuModel* model)
+Menu2::Menu2(ui::MenuModel* model, bool as_window_menu)
     : model_(model),
-      wrapper_(MenuWrapper::CreateWrapper(model)) {
+      wrapper_(new NativeMenuWin(model, NULL)) {
+  wrapper_->set_create_as_window_menu(as_window_menu);
   Rebuild();
 }
 
@@ -45,7 +46,7 @@ void Menu2::UpdateStates() {
   wrapper_->UpdateStates();
 }
 
-MenuWrapper::MenuAction Menu2::GetMenuAction() const {
+NativeMenuWin::MenuAction Menu2::GetMenuAction() const {
   return wrapper_->GetMenuAction();
 }
 

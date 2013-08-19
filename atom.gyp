@@ -110,7 +110,6 @@
       'browser/ui/nsalert_synchronous_sheet_mac.mm',
       'browser/ui/win/menu_2.cc',
       'browser/ui/win/menu_2.h',
-      'browser/ui/win/menu_wrapper.h',
       'browser/ui/win/native_menu_win.cc',
       'browser/ui/win/native_menu_win.h',
       'browser/window_list.cc',

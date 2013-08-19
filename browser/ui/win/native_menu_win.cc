@@ -156,7 +156,7 @@ class NativeMenuWin::MenuHostWindow {
 
     // Only notify the model if it didn't already send out notification.
     // See comment in MenuMessageHook for details.
-    if (root_menu->menu_action_ == MenuWrapper::MENU_ACTION_NONE)
+    if (root_menu->menu_action_ == MENU_ACTION_NONE)
       model->ActivatedAt(position);
   }
 
@@ -756,14 +756,6 @@ void NativeMenuWin::CreateHostWindow() {
   // exist wrapping submenus.
   if (!host_window_.get())
     host_window_.reset(new MenuHostWindow(this));
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// MenuWrapper, public:
-
-// static
-MenuWrapper* MenuWrapper::CreateWrapper(ui::MenuModel* model) {
-  return new NativeMenuWin(model, NULL);
 }
 
 }  // namespace atom

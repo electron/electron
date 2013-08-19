@@ -8,7 +8,7 @@
 
 #include "base/basictypes.h"
 #include "base/memory/scoped_ptr.h"
-#include "browser/ui/win/menu_wrapper.h"
+#include "browser/ui/win/native_menu_win.h"
 #include "ui/gfx/native_widget_types.h"
 
 namespace gfx {
@@ -41,7 +41,7 @@ class Menu2 {
   // from the constructor. EG:
   //   MyClass : menu_(this) {}
   // is likely to have problems.
-  explicit Menu2(ui::MenuModel* model);
+  explicit Menu2(ui::MenuModel* model, bool as_window_menu = false);
   virtual ~Menu2();
 
   // Runs the menu at the specified point. This method blocks until done.
@@ -67,7 +67,7 @@ class Menu2 {
   // Get the result of the last call to RunMenuAt to determine whether an
   // item was selected, the user navigated to a next or previous menu, or
   // nothing.
-  MenuWrapper::MenuAction GetMenuAction() const;
+  NativeMenuWin::MenuAction GetMenuAction() const;
 
   // Add a listener to receive a callback when the menu opens.
   void AddMenuListener(views::MenuListener* listener);
@@ -85,7 +85,7 @@ class Menu2 {
   ui::MenuModel* model_;
 
   // The object that actually implements the menu.
-  scoped_ptr<MenuWrapper> wrapper_;
+  scoped_ptr<NativeMenuWin> wrapper_;
 
   DISALLOW_COPY_AND_ASSIGN(Menu2);
 };
