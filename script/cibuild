@@ -1,0 +1,8 @@
+#!/usr/bin/env python
+
+import os
+import subprocess
+
+
+test = os.path.join(os.path.dirname(__file__), 'test.py')
+subprocess.check_call([test, '--ci'])

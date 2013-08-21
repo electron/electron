@@ -17,7 +17,7 @@ def main():
   else:
     atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Debug', 'atom.exe')
 
-  subprocess.check_call([atom_shell, 'spec'])
+  subprocess.check_call([atom_shell, 'spec'] + sys.argv[1:])
 
 
 if __name__ == '__main__':

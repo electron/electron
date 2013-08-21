@@ -15,6 +15,21 @@
 
   require('coffee-script'); // Supports .coffee tests.
 
+  // Rediret all output to browser.
+  var ipc = require('ipc');
+  global.__defineGetter__('console', function() {
+    return {
+      log: function() {
+        args = Array.prototype.slice.call(arguments);
+        ipc.sendChannel('console.log', args);
+      },
+      error: function() {
+        args = Array.prototype.slice.call(arguments);
+        ipc.sendChannel('console.error', args);
+      },
+    }
+  });
+
   var Mocha = require('mocha');
 
   var mocha = new Mocha();
@@ -23,6 +38,14 @@
   var query = Mocha.utils.parseQuery(window.location.search || '');
   if (query.grep) mocha.grep(query.grep);
   if (query.invert) mocha.invert();
+
+  // Check if we are running in CI.
+  var argv = require('remote').process.argv;
+  var isCi = false;
+  if (argv[1] == '--ci') {
+    isCi = true;
+    mocha.reporter('tap');
+  }
 
   // Read all test files.
   var walker = require('walkdir').walk(__dirname);
@@ -33,8 +56,10 @@
   });
 
   walker.on('end', function() {
-    mocha.run(function() {
+    var runner = mocha.run(function() {
       Mocha.utils.highlightTags('code');
+      if (isCi)
+        ipc.sendChannel('process.exit', runner.failures);
     });
   });
 })();
