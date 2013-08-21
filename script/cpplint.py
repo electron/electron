@@ -41,7 +41,7 @@ def list_files(directories, filters):
 def call_cpplint(files):
   cpplint = os.path.join(SOURCE_ROOT, 'vendor', 'depot_tools', 'cpplint.py')
   rules = '--filter=-build/header_guard,-build/include_what_you_use'
-  subprocess.call([sys.executable, cpplint, rules] + files)
+  subprocess.check_call([sys.executable, cpplint, rules] + files)
 
 
 if __name__ == '__main__':
