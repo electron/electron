@@ -28,9 +28,10 @@ HEADERS_DIRS = [
   'deps/v8',
   'deps/zlib',
   'deps/uv',
-  'tools',
 ]
 HEADERS_FILES = [
+  'common.gypi',
+  'config.gypi',
 ]
 
 
@@ -66,6 +67,8 @@ def copy_headers():
         if extension not in HEADERS_SUFFIX:
           continue
         copy_source_file(os.path.join(dirpath, filename))
+  for other_file in HEADERS_FILES:
+    copy_source_file(os.path.join(NODE_DIR, other_file))
 
 
 def copy_license():
