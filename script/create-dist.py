@@ -84,7 +84,7 @@ def create_version():
 
 def create_zip():
   print "Zipping distribution..."
-  zip_file = os.path.join(SOURCE_ROOT, 'atom-shell.zip')
+  zip_file = os.path.join(SOURCE_ROOT, 'dist', 'atom-shell.zip')
   safe_unlink(zip_file)
 
   with scoped_cwd(DIST_DIR):

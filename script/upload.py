@@ -11,6 +11,7 @@ from lib.util import *
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
 
 
 def main():
@@ -49,11 +50,11 @@ def dist_newer_than_head():
 
 
 def upload():
-  os.chdir(SOURCE_ROOT)
+  os.chdir(DIST_DIR)
   bucket, access_key, secret_key = s3_config()
 
   version = get_atom_shell_version()
-  s3put(bucket, access_key, secret_key, SOURCE_ROOT,
+  s3put(bucket, access_key, secret_key, DIST_DIR,
         'atom-shell/{0}'.format(version), glob.glob('atom-shell*.zip'))
 
   update_version(bucket, access_key, secret_key)
