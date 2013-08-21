@@ -8,6 +8,16 @@
 
 <script type="text/javascript" charset="utf-8">
 (function() {
+  // Check if we are running in CI.
+  var argv = require('remote').process.argv;
+  var isCi = argv[1] == '--ci';
+
+  if (!isCi) {
+    var win = require('remote').getCurrentWindow();
+    win.show();
+    win.focus();
+  }
+
   // Show DevTools.
   document.oncontextmenu = function(e) {
     require('remote').getCurrentWindow().inspectElement(e.clientX, e.clientY);
@@ -33,19 +43,11 @@
   var Mocha = require('mocha');
 
   var mocha = new Mocha();
-  mocha.ui('bdd').reporter('html');
+  mocha.ui('bdd').reporter(isCi ? 'tap' : 'html');
 
   var query = Mocha.utils.parseQuery(window.location.search || '');
   if (query.grep) mocha.grep(query.grep);
   if (query.invert) mocha.invert();
-
-  // Check if we are running in CI.
-  var argv = require('remote').process.argv;
-  var isCi = false;
-  if (argv[1] == '--ci') {
-    isCi = true;
-    mocha.reporter('tap');
-  }
 
   // Read all test files.
   var walker = require('walkdir').walk(__dirname);

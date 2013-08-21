@@ -33,9 +33,9 @@ app.on('window-all-closed', function() {
 app.on('finish-launching', function() {
   window = new BrowserWindow({
     title: 'atom-shell tests',
+    show: false,
     width: 800,
     height: 600
   });
   window.loadUrl('file://' + __dirname + '/index.html');
-  window.focus();
 });
