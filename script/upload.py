@@ -55,7 +55,9 @@ def upload():
 
   version = get_atom_shell_version()
   s3put(bucket, access_key, secret_key, DIST_DIR,
-        'atom-shell/{0}'.format(version), glob.glob('atom-shell*.zip'))
+        'atom-shell/{0}'.format(version), ['atom-shell.zip'])
+  s3put(bucket, access_key, secret_key, DIST_DIR,
+        'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
 
   update_version(bucket, access_key, secret_key)
 
