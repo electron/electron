@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tarfile
 
 from lib.util import *
 
@@ -13,7 +14,8 @@ from lib.util import *
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
 NODE_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'node')
-DIST_HEADERS_DIR = os.path.join(DIST_DIR, 'node-{0}'.format(get_atom_shell_version()))
+DIST_HEADERS_NAME = 'node-{0}'.format(get_atom_shell_version())
+DIST_HEADERS_DIR = os.path.join(DIST_DIR, DIST_HEADERS_NAME)
 
 BUNDLE_NAME = 'Atom.app'
 BUNDLE_DIR = os.path.join(SOURCE_ROOT, 'out', 'Release', BUNDLE_NAME)
@@ -39,12 +41,13 @@ def main():
   rm_rf(DIST_DIR)
   os.makedirs(DIST_DIR)
 
-  force_build()
-  copy_binaries()
+  # force_build()
+  # copy_binaries()
   copy_headers()
   copy_license()
   create_version()
-  create_zip()
+  # create_zip()
+  create_header_tarball()
 
 
 def force_build():
@@ -90,6 +93,13 @@ def create_zip():
   with scoped_cwd(DIST_DIR):
     files = ['Atom.app', 'LICENSE', 'version']
     subprocess.check_call(['zip', '-r', '-y', zip_file] + files)
+
+
+def create_header_tarball():
+  with scoped_cwd(DIST_DIR):
+    tarball = tarfile.open(name=DIST_HEADERS_DIR + '.tar.gz', mode='w:gz')
+    tarball.add(DIST_HEADERS_NAME)
+    tarball.close()
 
 
 def copy_source_file(source):
