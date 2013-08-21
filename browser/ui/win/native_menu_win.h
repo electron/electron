@@ -47,14 +47,14 @@ class NativeMenuWin {
   virtual ~NativeMenuWin();
 
   void RunMenuAt(const gfx::Point& point, int alignment);
-  void CancelMenu() ;
-  void Rebuild(views::MenuInsertionDelegateWin* delegate) ;
-  void UpdateStates() ;
-  HMENU GetNativeMenu() const ;
-  MenuAction GetMenuAction() const ;
-  void AddMenuListener(views::MenuListener* listener) ;
-  void RemoveMenuListener(views::MenuListener* listener) ;
-  void SetMinimumWidth(int width) ;
+  void CancelMenu();
+  void Rebuild(views::MenuInsertionDelegateWin* delegate);
+  void UpdateStates();
+  HMENU GetNativeMenu() const;
+  MenuAction GetMenuAction() const;
+  void AddMenuListener(views::MenuListener* listener);
+  void RemoveMenuListener(views::MenuListener* listener);
+  void SetMinimumWidth(int width);
 
   // Flag to create a window menu instead of popup menu.
   void set_create_as_window_menu(bool flag) { create_as_window_menu_ = flag; }
