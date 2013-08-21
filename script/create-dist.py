@@ -41,12 +41,12 @@ def main():
   rm_rf(DIST_DIR)
   os.makedirs(DIST_DIR)
 
-  # force_build()
-  # copy_binaries()
+  force_build()
+  copy_binaries()
   copy_headers()
   copy_license()
   create_version()
-  # create_zip()
+  create_zip()
   create_header_tarball()
 
 

@@ -40,7 +40,7 @@ def dist_newer_than_head():
     try:
       head_time = subprocess.check_output(['git', 'log', '--pretty=format:%at',
                                            '-n', '1']).strip()
-      dist_time = os.path.getmtime(os.path.join(SOURCE_ROOT, 'atom-shell.zip'))
+      dist_time = os.path.getmtime(os.path.join(DIST_DIR, 'atom-shell.zip'))
     except OSError as e:
       if e.errno != errno.ENOENT:
         raise
