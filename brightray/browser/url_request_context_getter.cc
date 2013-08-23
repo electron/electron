@@ -40,12 +40,12 @@ URLRequestContextGetter::URLRequestContextGetter(
     const base::FilePath& base_path,
     base::MessageLoop* io_loop,
     base::MessageLoop* file_loop,
-    scoped_ptr<NetworkDelegate> network_delegate,
+    base::Callback<scoped_ptr<NetworkDelegate>(void)> network_delegate_factory,
     content::ProtocolHandlerMap* protocol_handlers)
     : base_path_(base_path),
       io_loop_(io_loop),
       file_loop_(file_loop),
-      network_delegate_(network_delegate.Pass()) {
+      network_delegate_factory_(network_delegate_factory) {
   // Must first be created on the UI thread.
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
 
@@ -67,6 +67,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
   if (!url_request_context_.get()) {
     url_request_context_.reset(new net::URLRequestContext());
+    network_delegate_ = network_delegate_factory_.Run().Pass();
     url_request_context_->set_network_delegate(network_delegate_.get());
     storage_.reset(
         new net::URLRequestContextStorage(url_request_context_.get()));

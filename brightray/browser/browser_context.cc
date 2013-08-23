@@ -106,7 +106,7 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
       GetPath(),
       io_loop,
       file_loop,
-      CreateNetworkDelegate().Pass(),
+      base::Bind(&BrowserContext::CreateNetworkDelegate, base::Unretained(this)),
       protocol_handlers);
   resource_context_->set_url_request_context_getter(url_request_getter_.get());
   return url_request_getter_.get();

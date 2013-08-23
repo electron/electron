@@ -5,6 +5,7 @@
 #ifndef BRIGHTRAY_BROWSER_URL_REQUEST_CONTEXT_GETTER_H_
 #define BRIGHTRAY_BROWSER_URL_REQUEST_CONTEXT_GETTER_H_
 
+#include "base/callback.h"
 #include "base/files/file_path.h"
 #include "base/memory/scoped_ptr.h"
 #include "content/public/browser/content_browser_client.h"
@@ -30,7 +31,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
       const base::FilePath& base_path,
       base::MessageLoop* io_loop,
       base::MessageLoop* file_loop,
-      scoped_ptr<NetworkDelegate>,
+      base::Callback<scoped_ptr<NetworkDelegate>(void)>,
       content::ProtocolHandlerMap*);
   virtual ~URLRequestContextGetter();
 
@@ -44,6 +45,8 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   base::FilePath base_path_;
   base::MessageLoop* io_loop_;
   base::MessageLoop* file_loop_;
+
+  base::Callback<scoped_ptr<NetworkDelegate>(void)> network_delegate_factory_;
 
   scoped_ptr<net::ProxyConfigService> proxy_config_service_;
   scoped_ptr<NetworkDelegate> network_delegate_;
