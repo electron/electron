@@ -30,8 +30,8 @@ namespace brightray {
 
 URLRequestContextGetter::URLRequestContextGetter(
     const base::FilePath& base_path,
-    MessageLoop* io_loop,
-    MessageLoop* file_loop,
+    base::MessageLoop* io_loop,
+    base::MessageLoop* file_loop,
     scoped_ptr<NetworkDelegate> network_delegate,
     content::ProtocolHandlerMap* protocol_handlers)
     : base_path_(base_path),
