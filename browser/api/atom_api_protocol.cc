@@ -41,9 +41,10 @@ class AdapterRequestJob : public net::URLRequestJob {
  protected:
   virtual void Start() OVERRIDE {
     DCHECK(!real_job_);
-    real_job_ = new net::URLRequestErrorJob(
-        request(), network_delegate(), net::ERR_NOT_IMPLEMENTED);
-    real_job_->Start();
+    content::BrowserThread::PostTask(
+        content::BrowserThread::UI,
+        FROM_HERE,
+        base::Bind(&AdapterRequestJob::GetJobTypeInUI, base::Unretained(this)));
   }
 
   virtual void Kill() OVERRIDE {
@@ -94,9 +95,19 @@ class AdapterRequestJob : public net::URLRequestJob {
   };
 
   void GetJobTypeInUI() {
+    DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
+    content::BrowserThread::PostTask(
+        content::BrowserThread::IO,
+        FROM_HERE,
+        base::Bind(&AdapterRequestJob::CreateJobAndStart,
+                   base::Unretained(this)));
   }
 
   void CreateJobAndStart() {
+    DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
+    real_job_ = new net::URLRequestErrorJob(
+        request(), network_delegate(), net::ERR_NOT_IMPLEMENTED);
+    real_job_->Start();
   }
 
   scoped_refptr<net::URLRequestJob> real_job_;
@@ -141,7 +152,7 @@ v8::Handle<v8::Value> Protocol::RegisterProtocol(const v8::Arguments& args) {
       node::node_isolate, v8::Handle<v8::Function>::Cast(args[1]));
 
   content::BrowserThread::PostTask(content::BrowserThread::IO,
-                                   FROM_HERE, 
+                                   FROM_HERE,
                                    base::Bind(&RegisterProtocolInIO, scheme));
 
   return v8::Undefined();
@@ -158,7 +169,7 @@ v8::Handle<v8::Value> Protocol::UnregisterProtocol(const v8::Arguments& args) {
   handlers_.erase(it);
 
   content::BrowserThread::PostTask(content::BrowserThread::IO,
-                                   FROM_HERE, 
+                                   FROM_HERE,
                                    base::Bind(&UnregisterProtocolInIO, scheme));
 
   return v8::Undefined();
