@@ -5,6 +5,9 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_PROTOCOL_H_
 #define ATOM_BROWSER_API_ATOM_API_PROTOCOL_H_
 
+#include <string>
+#include <map>
+
 #include "base/basictypes.h"
 #include "v8/include/v8.h"
 
@@ -19,6 +22,12 @@ class Protocol {
  private:
   static v8::Handle<v8::Value> RegisterProtocol(const v8::Arguments& args);
   static v8::Handle<v8::Value> UnregisterProtocol(const v8::Arguments& args);
+
+  static void RegisterProtocolInIO(const std::string& scheme);
+  static void UnregisterProtocolInIO(const std::string& scheme);
+
+  typedef std::map<std::string, v8::Persistent<v8::Function>> HandlersMap;
+  static HandlersMap handlers_;
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(Protocol);
 };
