@@ -8,7 +8,10 @@
 #include "content/public/browser/browser_thread.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
+#include "net/url_request/url_request_error_job.h"
+#include "net/url_request/url_request_file_job.h"
 #include "net/url_request/url_request_job_factory_impl.h"
+#include "net/url_request/url_request_simple_job.h"
 #include "vendor/node/src/node.h"
 
 namespace atom {
@@ -28,6 +31,85 @@ net::URLRequestJobFactoryImpl* GetRequestJobFactory() {
   return job_factory;
 }
 
+// Ask JS which type of job it wants, and then delegate corresponding methods.
+class AdapterRequestJob : public net::URLRequestJob {
+ public:
+  AdapterRequestJob(net::URLRequest* request,
+                    net::NetworkDelegate* network_delegate)
+      : URLRequestJob(request, network_delegate) {}
+
+ protected:
+  virtual void Start() OVERRIDE {
+    DCHECK(!real_job_);
+    real_job_ = new net::URLRequestErrorJob(
+        request(), network_delegate(), net::ERR_NOT_IMPLEMENTED);
+    real_job_->Start();
+  }
+
+  virtual void Kill() OVERRIDE {
+    DCHECK(real_job_);
+    real_job_->Kill();
+  }
+
+  virtual bool ReadRawData(net::IOBuffer* buf,
+                           int buf_size,
+                           int *bytes_read) OVERRIDE {
+    DCHECK(real_job_);
+    // The ReadRawData is a protected method.
+    switch (type_) {
+      case FILE_JOB:
+        return static_cast<net::URLRequestFileJob*>(real_job_.get())->
+            ReadRawData(buf, buf_size, bytes_read);
+      default:
+        return net::URLRequestJob::ReadRawData(buf, buf_size, bytes_read);
+    }
+  }
+
+  virtual bool IsRedirectResponse(GURL* location,
+                                  int* http_status_code) OVERRIDE {
+    DCHECK(real_job_);
+    return real_job_->IsRedirectResponse(location, http_status_code);
+  }
+
+  virtual net::Filter* SetupFilter() const OVERRIDE {
+    DCHECK(real_job_);
+    return real_job_->SetupFilter();
+  }
+
+  virtual bool GetMimeType(std::string* mime_type) const OVERRIDE {
+    DCHECK(real_job_);
+    return real_job_->GetMimeType(mime_type);
+  }
+
+  virtual bool GetCharset(std::string* charset) OVERRIDE {
+    DCHECK(real_job_);
+    return real_job_->GetCharset(charset);
+  }
+
+ private:
+  enum JOB_TYPE {
+    ERROR_JOB,
+    STRING_JOB,
+    FILE_JOB,
+  };
+
+  void GetJobTypeInUI() {
+  }
+
+  void CreateJobAndStart() {
+  }
+
+  scoped_refptr<net::URLRequestJob> real_job_;
+
+  JOB_TYPE type_;
+
+  DISALLOW_COPY_AND_ASSIGN(AdapterRequestJob);
+};
+
+// Always return the same AdapterRequestJob for all requests, because the
+// content API needs the ProtocolHandler to return a job immediately, and
+// getting the real job from the JS requires asynchronous calls, so we have
+// to create an adapter job first.
 class AdapterProtocolHandler
     : public net::URLRequestJobFactory::ProtocolHandler {
  public:
@@ -35,7 +117,7 @@ class AdapterProtocolHandler
   virtual net::URLRequestJob* MaybeCreateJob(
       net::URLRequest* request,
       net::NetworkDelegate* network_delegate) const OVERRIDE {
-    return NULL;
+    return new AdapterRequestJob(request, network_delegate);
   }
 
  private:
