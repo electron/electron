@@ -20,6 +20,9 @@ namespace api {
 
 namespace {
 
+typedef std::map<std::string, v8::Persistent<v8::Function>> HandlersMap;
+static HandlersMap g_handlers;
+
 net::URLRequestJobFactoryImpl* GetRequestJobFactory() {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
   // Get the job factory.
@@ -96,6 +99,26 @@ class AdapterRequestJob : public net::URLRequestJob {
 
   void GetJobTypeInUI() {
     DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
+
+    // Call the JS handler.
+    v8::HandleScope scope;
+    v8::Handle<v8::Value> argv[] = {
+      v8::String::New(request()->url().spec().c_str()),
+      v8::String::New(request()->referrer().c_str()),
+    };
+    v8::Handle<v8::Value> result = g_handlers[request()->url().scheme()]->Call(
+        v8::Context::GetCurrent()->Global(), arraysize(argv), argv);
+
+    // Determine the type of the job we are going to create.
+    if (result->IsString()) {
+      type_ = STRING_JOB;
+      string_ = *v8::String::Utf8Value(result);
+    } else {
+      type_ = ERROR_JOB;
+      error_code_ = ERR_NOT_IMPLEMENTED;
+    }
+
+    // Go back to the IO thread.
     content::BrowserThread::PostTask(
         content::BrowserThread::IO,
         FROM_HERE,
@@ -113,6 +136,9 @@ class AdapterRequestJob : public net::URLRequestJob {
   scoped_refptr<net::URLRequestJob> real_job_;
 
   JOB_TYPE type_;
+  int error_code_;
+  std::string string_;
+  base::FilePath file_path_;
 
   DISALLOW_COPY_AND_ASSIGN(AdapterRequestJob);
 };
@@ -137,18 +163,16 @@ class AdapterProtocolHandler
 
 }  // namespace
 
-Protocol::HandlersMap Protocol::handlers_;
-
 // static
 v8::Handle<v8::Value> Protocol::RegisterProtocol(const v8::Arguments& args) {
   std::string scheme(*v8::String::Utf8Value(args[0]));
-  if (handlers_.find(scheme) != handlers_.end())
+  if (g_handlers.find(scheme) != g_handlers.end())
     return node::ThrowError("The scheme is already registered");
 
   // Store the handler in a map.
   if (!args[1]->IsFunction())
     return node::ThrowError("Handler must be a function");
-  handlers_[scheme] = v8::Persistent<v8::Function>::New(
+  g_handlers[scheme] = v8::Persistent<v8::Function>::New(
       node::node_isolate, v8::Handle<v8::Function>::Cast(args[1]));
 
   content::BrowserThread::PostTask(content::BrowserThread::IO,
@@ -163,10 +187,10 @@ v8::Handle<v8::Value> Protocol::UnregisterProtocol(const v8::Arguments& args) {
   std::string scheme(*v8::String::Utf8Value(args[0]));
 
   // Erase the handler from map.
-  HandlersMap::iterator it(handlers_.find(scheme));
-  if (it == handlers_.end())
+  HandlersMap::iterator it(g_handlers.find(scheme));
+  if (it == g_handlers.end())
     return node::ThrowError("The scheme has not been registered");
-  handlers_.erase(it);
+  g_handlers.erase(it);
 
   content::BrowserThread::PostTask(content::BrowserThread::IO,
                                    FROM_HERE,

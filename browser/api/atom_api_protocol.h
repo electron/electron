@@ -26,9 +26,6 @@ class Protocol {
   static void RegisterProtocolInIO(const std::string& scheme);
   static void UnregisterProtocolInIO(const std::string& scheme);
 
-  typedef std::map<std::string, v8::Persistent<v8::Function>> HandlersMap;
-  static HandlersMap handlers_;
-
   DISALLOW_IMPLICIT_CONSTRUCTORS(Protocol);
 };
 
