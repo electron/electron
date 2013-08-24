@@ -4,6 +4,7 @@
 
 #include "browser/api/atom_api_protocol.h"
 
+#include "base/memory/weak_ptr.h"
 #include "browser/atom_browser_context.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/url_request/url_request_context.h"
@@ -39,7 +40,9 @@ class AdapterRequestJob : public net::URLRequestJob {
  public:
   AdapterRequestJob(net::URLRequest* request,
                     net::NetworkDelegate* network_delegate)
-      : URLRequestJob(request, network_delegate) {}
+      : URLRequestJob(request, network_delegate),
+        weak_factory_(this) {
+  }
 
  protected:
   virtual void Start() OVERRIDE {
@@ -47,7 +50,8 @@ class AdapterRequestJob : public net::URLRequestJob {
     content::BrowserThread::PostTask(
         content::BrowserThread::UI,
         FROM_HERE,
-        base::Bind(&AdapterRequestJob::GetJobTypeInUI, base::Unretained(this)));
+        base::Bind(&AdapterRequestJob::GetJobTypeInUI,
+                   weak_factory_.GetWeakPtr()));
   }
 
   virtual void Kill() OVERRIDE {
@@ -112,10 +116,10 @@ class AdapterRequestJob : public net::URLRequestJob {
     // Determine the type of the job we are going to create.
     if (result->IsString()) {
       type_ = STRING_JOB;
-      string_ = *v8::String::Utf8Value(result);
+      data_ = *v8::String::Utf8Value(result);
     } else {
       type_ = ERROR_JOB;
-      error_code_ = ERR_NOT_IMPLEMENTED;
+      error_code_ = net::ERR_NOT_IMPLEMENTED;
     }
 
     // Go back to the IO thread.
@@ -123,7 +127,7 @@ class AdapterRequestJob : public net::URLRequestJob {
         content::BrowserThread::IO,
         FROM_HERE,
         base::Bind(&AdapterRequestJob::CreateJobAndStart,
-                   base::Unretained(this)));
+                   weak_factory_.GetWeakPtr()));
   }
 
   void CreateJobAndStart() {
@@ -137,8 +141,12 @@ class AdapterRequestJob : public net::URLRequestJob {
 
   JOB_TYPE type_;
   int error_code_;
-  std::string string_;
   base::FilePath file_path_;
+  std::string mime_type_;
+  std::string charset_;
+  std::string data_;
+
+  base::WeakPtrFactory<AdapterRequestJob> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(AdapterRequestJob);
 };
