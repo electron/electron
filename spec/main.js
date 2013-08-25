@@ -41,6 +41,10 @@ app.on('will-finish-launching', function() {
   protocol.registerProtocol('atom-string', function(url) {
     return url;
   });
+
+  protocol.registerProtocol('atom-string-job', function(url) {
+    return new protocol.RequestStringJob({mimeType: 'text/html', data: url});
+  });
 });
 
 app.on('finish-launching', function() {

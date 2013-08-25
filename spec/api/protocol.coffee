@@ -11,7 +11,9 @@ describe 'protocol API', ->
       protocol.unregisterProtocol 'test1'
 
     it 'calls the callback when scheme is visited', (done) ->
-      protocol.registerProtocol 'test2', -> done()
+      protocol.registerProtocol 'test2', (url) ->
+        assert.equal url, 'test2://test2'
+        done()
       $.get 'test2://test2', ->
       protocol.unregisterProtocol 'test2'
 
@@ -28,4 +30,13 @@ describe 'protocol API', ->
           assert.equal data, 'atom-string://something'
           done()
         error: (xhr, errorType, error) ->
-          console.log xhr, errorType, error
+          assert false, 'Got error: ' + errorType + ' ' + error
+
+    it 'returns RequestStringJob should send string', (done) ->
+      $.ajax
+        url: 'atom-string-job://something'
+        success: (data) ->
+          assert.equal data, 'atom-string-job://something'
+          done()
+        error: (xhr, errorType, error) ->
+          assert false, 'Got error: ' + errorType + ' ' + error
