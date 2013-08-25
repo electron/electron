@@ -25,21 +25,23 @@
   }
 
   require('coffee-script'); // Supports .coffee tests.
+  var ipc = require('ipc');
 
   // Rediret all output to browser.
-  var ipc = require('ipc');
-  global.__defineGetter__('console', function() {
-    return {
-      log: function() {
-        args = Array.prototype.slice.call(arguments);
-        ipc.sendChannel('console.log', args);
-      },
-      error: function() {
-        args = Array.prototype.slice.call(arguments);
-        ipc.sendChannel('console.error', args);
-      },
-    }
-  });
+  if (isCi) {
+    global.__defineGetter__('console', function() {
+      return {
+        log: function() {
+          args = Array.prototype.slice.call(arguments);
+          ipc.sendChannel('console.log', args);
+        },
+        error: function() {
+          args = Array.prototype.slice.call(arguments);
+          ipc.sendChannel('console.error', args);
+        },
+      }
+    });
+  }
 
   var Mocha = require('mocha');
 
