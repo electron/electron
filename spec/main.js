@@ -34,23 +34,6 @@ app.on('window-all-closed', function() {
   app.terminate();
 });
 
-app.on('will-finish-launching', function() {
-  // Reigster some protocols, used by the protocol spec.
-  // FIXME(zcbenz): move this to somewhere else.
-  var protocol = require('protocol');
-  protocol.registerProtocol('atom-string', function(url) {
-    return url;
-  });
-
-  protocol.registerProtocol('atom-string-job', function(url) {
-    return new protocol.RequestStringJob({mimeType: 'text/html', data: url});
-  });
-
-  protocol.registerProtocol('atom-file-job', function(url) {
-    return new protocol.RequestFileJob(url.substr(16));
-  });
-});
-
 app.on('finish-launching', function() {
   window = new BrowserWindow({
     title: 'atom-shell tests',

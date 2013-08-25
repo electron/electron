@@ -1,6 +1,7 @@
 assert = require 'assert'
 ipc = require 'ipc'
-protocol = require('remote').require 'protocol'
+remote = require 'remote'
+protocol = remote.require 'protocol'
 
 describe 'protocol API', ->
   describe 'protocol.registerProtocol', ->
@@ -24,29 +25,47 @@ describe 'protocol API', ->
 
   describe 'registered protocol callback', ->
     it 'returns string should send the string as request content', (done) ->
+      handler = remote.createFunctionWithReturnValue 'valar morghulis'
+      protocol.registerProtocol 'atom-string', handler
+
       $.ajax
-        url: 'atom-string://something'
+        url: 'atom-string://fake-host'
         success: (data) ->
-          assert.equal data, 'atom-string://something'
+          assert.equal data, handler()
+          protocol.unregisterProtocol 'atom-string'
           done()
         error: (xhr, errorType, error) ->
           assert false, 'Got error: ' + errorType + ' ' + error
+          protocol.unregisterProtocol 'atom-string'
 
     it 'returns RequestStringJob should send string', (done) ->
+      data = 'valar morghulis'
+      job = new protocol.RequestStringJob(mimeType: 'text/html', data: data)
+      handler = remote.createFunctionWithReturnValue job
+      protocol.registerProtocol 'atom-string-job', handler
+
       $.ajax
-        url: 'atom-string-job://something'
-        success: (data) ->
-          assert.equal data, 'atom-string-job://something'
+        url: 'atom-string-job://fake-host'
+        success: (response) ->
+          assert.equal response, data
+          protocol.unregisterProtocol 'atom-string-job'
           done()
         error: (xhr, errorType, error) ->
           assert false, 'Got error: ' + errorType + ' ' + error
+          protocol.unregisterProtocol 'atom-string-job'
 
     it 'returns RequestFileJob should send file', (done) ->
+      job = new protocol.RequestFileJob(__filename)
+      handler = remote.createFunctionWithReturnValue job
+      protocol.registerProtocol 'atom-file-job', handler
+
       $.ajax
         url: 'atom-file-job://' + __filename
         success: (data) ->
           content = require('fs').readFileSync __filename
           assert.equal data, String(content)
+          protocol.unregisterProtocol 'atom-file-job'
           done()
         error: (xhr, errorType, error) ->
           assert false, 'Got error: ' + errorType + ' ' + error
+          protocol.unregisterProtocol 'atom-file-job'
