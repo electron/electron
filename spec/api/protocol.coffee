@@ -45,7 +45,8 @@ describe 'protocol API', ->
       $.ajax
         url: 'atom-file-job://' + __filename
         success: (data) ->
-          console.log data
+          content = require('fs').readFileSync __filename
+          assert.equal data, String(content)
           done()
         error: (xhr, errorType, error) ->
           assert false, 'Got error: ' + errorType + ' ' + error
