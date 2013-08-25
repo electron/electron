@@ -104,6 +104,16 @@ ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, processId, routingId, id, args) ->
   catch e
     event.result = errorToMeta e
 
+ipc.on 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', (event, processId, routingId, id, method, args) ->
+  try
+    args = unwrapArgs processId, routingId, args
+    constructor = objectsRegistry.get(id)[method]
+    # Call new with array of arguments.
+    obj = new (Function::bind.apply(constructor, [null].concat(args)))
+    event.result = valueToMeta processId, routingId, obj
+  catch e
+    event.result = errorToMeta e
+
 ipc.on 'ATOM_BROWSER_MEMBER_CALL', (event, processId, routingId, id, method, args) ->
   try
     args = unwrapArgs processId, routingId, args

@@ -35,6 +35,11 @@ describe 'ipc', ->
       # Restore.
       property.property = 1127
 
+    it 'can construct an object from its member', ->
+      call = remote.require path.join(fixtures, 'module', 'call.js')
+      obj = new call.constructor
+      assert.equal obj.test, 'test'
+
   describe 'remote value in browser', ->
     it 'keeps its constructor name for objects', ->
       buf = new Buffer('test')

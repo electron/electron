@@ -58,10 +58,17 @@ metaToValue = (meta) ->
       for member in meta.members
         do (member) ->
           if member.type is 'function'
-            ret[member.name] = ->
-              # Call member function.
-              ret = ipc.sendChannelSync 'ATOM_BROWSER_MEMBER_CALL', meta.id, member.name, wrapArgs(arguments)
-              metaToValue ret
+            ret[member.name] =
+            class RemoteMemberFunction
+              constructor: ->
+                if @constructor is RemoteMemberFunction
+                  # Constructor call.
+                  obj = ipc.sendChannelSync 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', meta.id, member.name, wrapArgs(arguments)
+                  return metaToValue obj
+                else
+                  # Call member function.
+                  ret = ipc.sendChannelSync 'ATOM_BROWSER_MEMBER_CALL', meta.id, member.name, wrapArgs(arguments)
+                  return metaToValue ret
           else
             ret.__defineSetter__ member.name, (value) ->
               # Set member data.
