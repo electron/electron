@@ -35,6 +35,38 @@ net::URLRequestJobFactoryImpl* GetRequestJobFactory() {
   return job_factory;
 }
 
+class URLRequestStringJob : public net::URLRequestSimpleJob {
+ public:
+  URLRequestStringJob(net::URLRequest* request,
+                      net::NetworkDelegate* network_delegate,
+                      const std::string& mime_type,
+                      const std::string& charset,
+                      const std::string& data)
+      : net::URLRequestSimpleJob(request, network_delegate),
+        mime_type_(mime_type),
+        charset_(charset),
+        data_(data) {
+  }
+
+  // URLRequestSimpleJob:
+  virtual int GetData(std::string* mime_type,
+                      std::string* charset,
+                      std::string* data,
+                      const net::CompletionCallback& callback) const OVERRIDE {
+    *mime_type = mime_type_;
+    *charset = charset_;
+    *data = data_;
+    return net::OK;
+  }
+
+ private:
+  std::string mime_type_;
+  std::string charset_;
+  std::string data_;
+
+  DISALLOW_COPY_AND_ASSIGN(URLRequestStringJob);
+};
+
 // Ask JS which type of job it wants, and then delegate corresponding methods.
 class AdapterRequestJob : public net::URLRequestJob {
  public:
@@ -45,6 +77,7 @@ class AdapterRequestJob : public net::URLRequestJob {
   }
 
  protected:
+  // net::URLRequestJob:
   virtual void Start() OVERRIDE {
     DCHECK(!real_job_);
     content::BrowserThread::PostTask(
@@ -65,8 +98,8 @@ class AdapterRequestJob : public net::URLRequestJob {
     DCHECK(real_job_);
     // The ReadRawData is a protected method.
     switch (type_) {
-      case FILE_JOB:
-        return static_cast<net::URLRequestFileJob*>(real_job_.get())->
+      case REQUEST_STRING_JOB:
+        return static_cast<URLRequestStringJob*>(real_job_.get())->
             ReadRawData(buf, buf_size, bytes_read);
       default:
         return net::URLRequestJob::ReadRawData(buf, buf_size, bytes_read);
@@ -96,9 +129,9 @@ class AdapterRequestJob : public net::URLRequestJob {
 
  private:
   enum JOB_TYPE {
-    ERROR_JOB,
-    STRING_JOB,
-    FILE_JOB,
+    REQUEST_ERROR_JOB,
+    REQUEST_STRING_JOB,
+    REQUEST_FILE_JOB,
   };
 
   void GetJobTypeInUI() {
@@ -115,36 +148,72 @@ class AdapterRequestJob : public net::URLRequestJob {
 
     // Determine the type of the job we are going to create.
     if (result->IsString()) {
-      type_ = STRING_JOB;
-      data_ = *v8::String::Utf8Value(result);
-    } else {
-      type_ = ERROR_JOB;
-      error_code_ = net::ERR_NOT_IMPLEMENTED;
+      std::string data = *v8::String::Utf8Value(result);
+      content::BrowserThread::PostTask(
+          content::BrowserThread::IO,
+          FROM_HERE,
+          base::Bind(&AdapterRequestJob::CreateStringJobAndStart,
+                     weak_factory_.GetWeakPtr(),
+                     "text/plain",
+                     "UTF-8",
+                     data));
+      return;
+    } else if (result->IsObject()) {
+      v8::Handle<v8::Object> obj = result->ToObject();
+      std::string name = *v8::String::Utf8Value(obj->GetConstructorName());
+      if (name == "RequestStringJob") {
+        std::string mime_type = *v8::String::Utf8Value(obj->Get(
+            v8::String::New("mimeType")));
+        std::string charset = *v8::String::Utf8Value(obj->Get(
+            v8::String::New("charset")));
+        std::string data = *v8::String::Utf8Value(obj->Get(
+            v8::String::New("data")));
+
+        content::BrowserThread::PostTask(
+            content::BrowserThread::IO,
+            FROM_HERE,
+            base::Bind(&AdapterRequestJob::CreateStringJobAndStart,
+                       weak_factory_.GetWeakPtr(),
+                       mime_type,
+                       charset,
+                       data));
+        return;
+      }
     }
 
-    // Go back to the IO thread.
+    // Fallback to the not implemented error.
     content::BrowserThread::PostTask(
         content::BrowserThread::IO,
         FROM_HERE,
-        base::Bind(&AdapterRequestJob::CreateJobAndStart,
-                   weak_factory_.GetWeakPtr()));
+        base::Bind(&AdapterRequestJob::CreateErrorJobAndStart,
+                   weak_factory_.GetWeakPtr(),
+                   net::ERR_NOT_IMPLEMENTED));
   }
 
-  void CreateJobAndStart() {
+  void CreateErrorJobAndStart(int error_code) {
     DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
+
+    type_ = REQUEST_ERROR_JOB;
     real_job_ = new net::URLRequestErrorJob(
-        request(), network_delegate(), net::ERR_NOT_IMPLEMENTED);
+        request(), network_delegate(), error_code);
+    real_job_->Start();
+  }
+
+  void CreateStringJobAndStart(const std::string& mime_type,
+                               const std::string& charset,
+                               const std::string& data) {
+    DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
+
+    type_ = REQUEST_STRING_JOB;
+    real_job_ = new URLRequestStringJob(
+        request(), network_delegate(), mime_type, charset, data);
     real_job_->Start();
   }
 
   scoped_refptr<net::URLRequestJob> real_job_;
 
+  // Type of the delegated url request job.
   JOB_TYPE type_;
-  int error_code_;
-  base::FilePath file_path_;
-  std::string mime_type_;
-  std::string charset_;
-  std::string data_;
 
   base::WeakPtrFactory<AdapterRequestJob> weak_factory_;
 

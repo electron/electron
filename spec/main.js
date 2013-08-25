@@ -22,12 +22,25 @@ ipc.on('process.exit', function(pid, rid, code) {
   process.exit(code);
 });
 
+ipc.on('eval', function(ev, pid, rid, script) {
+  ev.result = eval(script);
+});
+
 process.on('uncaughtException', function() {
   window.openDevTools();
 });
 
 app.on('window-all-closed', function() {
   app.terminate();
+});
+
+app.on('will-finish-launching', function() {
+  // Reigster some protocols, used by the protocol spec.
+  // FIXME(zcbenz): move this to somewhere else.
+  var protocol = require('protocol');
+  protocol.registerProtocol('atom-string', function(url) {
+    return url;
+  });
 });
 
 app.on('finish-launching', function() {

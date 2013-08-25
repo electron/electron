@@ -1,4 +1,5 @@
 assert = require 'assert'
+ipc = require 'ipc'
 protocol = require('remote').require 'protocol'
 
 describe 'protocol API', ->
@@ -18,3 +19,13 @@ describe 'protocol API', ->
     it 'throws error when scheme does not exist', ->
       unregister = -> protocol.unregisterProtocol 'test3'
       assert.throws unregister, /The scheme has not been registered/
+
+  describe 'registered protocol callback', ->
+    it 'returns string should send the string as request content', (done) ->
+      $.ajax
+        url: 'atom-string://something'
+        success: (data) ->
+          assert.equal data, 'atom-string://something'
+          done()
+        error: (xhr, errorType, error) ->
+          console.log xhr, errorType, error
