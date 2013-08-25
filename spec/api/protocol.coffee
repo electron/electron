@@ -13,9 +13,9 @@ describe 'protocol API', ->
     it 'calls the callback when scheme is visited', (done) ->
       protocol.registerProtocol 'test2', (url) ->
         assert.equal url, 'test2://test2'
+        protocol.unregisterProtocol 'test2'
         done()
       $.get 'test2://test2', ->
-      protocol.unregisterProtocol 'test2'
 
   describe 'protocol.unregisterProtocol', ->
     it 'throws error when scheme does not exist', ->
@@ -37,6 +37,15 @@ describe 'protocol API', ->
         url: 'atom-string-job://something'
         success: (data) ->
           assert.equal data, 'atom-string-job://something'
+          done()
+        error: (xhr, errorType, error) ->
+          assert false, 'Got error: ' + errorType + ' ' + error
+
+    it 'returns RequestFileJob should send file', (done) ->
+      $.ajax
+        url: 'atom-file-job://' + __filename
+        success: (data) ->
+          console.log data
           done()
         error: (xhr, errorType, error) ->
           assert false, 'Got error: ' + errorType + ' ' + error

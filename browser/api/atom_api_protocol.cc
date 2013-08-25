@@ -101,6 +101,9 @@ class AdapterRequestJob : public net::URLRequestJob {
       case REQUEST_STRING_JOB:
         return static_cast<URLRequestStringJob*>(real_job_.get())->
             ReadRawData(buf, buf_size, bytes_read);
+      case REQUEST_FILE_JOB:
+        return static_cast<net::URLRequestFileJob*>(real_job_.get())->
+            ReadRawData(buf, buf_size, bytes_read);
       default:
         return net::URLRequestJob::ReadRawData(buf, buf_size, bytes_read);
     }
@@ -178,6 +181,17 @@ class AdapterRequestJob : public net::URLRequestJob {
                        charset,
                        data));
         return;
+      } else if (name == "RequestFileJob") {
+        base::FilePath path = base::FilePath::FromUTF8Unsafe(
+            *v8::String::Utf8Value(obj->Get(v8::String::New("path"))));
+
+        content::BrowserThread::PostTask(
+            content::BrowserThread::IO,
+            FROM_HERE,
+            base::Bind(&AdapterRequestJob::CreateFileJobAndStart,
+                       weak_factory_.GetWeakPtr(),
+                       path));
+        return;
       }
     }
 
@@ -207,6 +221,14 @@ class AdapterRequestJob : public net::URLRequestJob {
     type_ = REQUEST_STRING_JOB;
     real_job_ = new URLRequestStringJob(
         request(), network_delegate(), mime_type, charset, data);
+    real_job_->Start();
+  }
+
+  void CreateFileJobAndStart(const base::FilePath& path) {
+    DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
+
+    type_ = REQUEST_FILE_JOB;
+    real_job_ = new net::URLRequestFileJob(request(), network_delegate(), path);
     real_job_->Start();
   }
 

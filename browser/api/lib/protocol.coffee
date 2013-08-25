@@ -9,3 +9,7 @@ class RequestStringJob
     @mimeType = mimeType ? 'text/plain'
     @charset = charset ? 'UTF-8'
     @data = String data
+
+module.exports.RequestFileJob =
+class RequestFileJob
+  constructor: (@path) ->
