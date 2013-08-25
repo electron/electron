@@ -16,7 +16,14 @@ describe 'ipc', ->
       a = remote.require path.join(fixtures, 'module', 'id.js')
       assert.equal a.id, 1127
 
-  describe 'remote object', ->
+  describe 'remote.createFunctionWithReturnValue', ->
+    it 'should be called in browser synchronously', ->
+      buf = new Buffer('test')
+      call = remote.require path.join(fixtures, 'module', 'call.js')
+      result = call.call remote.createFunctionWithReturnValue(buf)
+      assert.equal result.constructor.name, 'Buffer'
+
+  describe 'remote object in renderer', ->
     it 'can change its properties', ->
       property = remote.require path.join(fixtures, 'module', 'property.js')
       assert.equal property.property, 1127
@@ -27,6 +34,12 @@ describe 'ipc', ->
 
       # Restore.
       property.property = 1127
+
+  describe 'remote value in browser', ->
+    it 'keeps its constructor name for objects', ->
+      buf = new Buffer('test')
+      print_name = remote.require path.join(fixtures, 'module', 'print_name.js')
+      assert.equal print_name.print(buf), 'Buffer'
 
   describe 'ipc.send', ->
     it 'should work when sending an object containing id property', (done) ->

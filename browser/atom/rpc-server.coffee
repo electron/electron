@@ -44,10 +44,13 @@ unwrapArgs = (processId, routingId, args) ->
       when 'remote-object' then objectsRegistry.get meta.id
       when 'array' then unwrapArgs processId, routingId, meta.value
       when 'object'
-        ret = {}
+        ret = v8Util.createObjectWithName meta.name
         for member in meta.members
           ret[member.name] = metaToValue(member.value)
         ret
+      when 'function-with-return-value'
+        returnValue = metaToValue meta.value
+        -> returnValue
       when 'function'
         ret = ->
           ipc.sendChannel processId, routingId, 'ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(processId, routingId, arguments)

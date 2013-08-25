@@ -13,9 +13,11 @@ wrapArgs = (args) ->
     else if value? and typeof value is 'object' and v8Util.getHiddenValue value, 'atomId'
       type: 'remote-object', id: v8Util.getHiddenValue value, 'atomId'
     else if value? and typeof value is 'object'
-      ret = type: 'object', members: []
+      ret = type: 'object', name: value.constructor.name, members: []
       ret.members.push(name: prop, value: valueToMeta(field)) for prop, field of value
       ret
+    else if typeof value is 'function' and v8Util.getHiddenValue value, 'returnValue'
+      type: 'function-with-return-value', value: valueToMeta(value())
     else if typeof value is 'function'
       type: 'function', id: callbacksRegistry.add(value)
     else
@@ -121,3 +123,9 @@ processCache = null
 exports.__defineGetter__ 'process', ->
   processCache = exports.getGlobal('process') unless processCache?
   processCache
+
+# Create a funtion that will return the specifed value when called in browser.
+exports.createFunctionWithReturnValue = (returnValue) ->
+  func = -> returnValue
+  v8Util.setHiddenValue func, 'returnValue', true
+  func
