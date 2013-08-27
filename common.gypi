@@ -24,6 +24,8 @@
     'node_use_openssl': 'true',
     'node_use_perfctr': 'false',
     'node_use_systemtap': 'false',
+    'component%': 'static_library',
+    'v8_postmortem_support%': 'false',
   },
   # Settings to compile node under Windows.
   'target_defaults': {
@@ -56,6 +58,11 @@
         'xcode_settings': {
           'GCC_TREAT_WARNINGS_AS_ERRORS': 'NO'
         },
+      }],
+      ['_target_name=="node"', {
+        'include_dirs': [
+          'vendor/brightray/vendor/download/libchromiumcontent/src/v8/include',
+        ],
       }],
     ],
     'msvs_cygwin_shell': 0, # Strangely setting it to 1 would make building under cygwin fail.
