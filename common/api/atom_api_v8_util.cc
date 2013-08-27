@@ -3,7 +3,9 @@
 // found in the LICENSE file.
 
 #include "common/api/object_life_monitor.h"
+#include "v8/include/v8-profiler.h"
 #include "vendor/node/src/node.h"
+#include "vendor/node/src/node_internals.h"
 
 namespace atom {
 
@@ -44,6 +46,12 @@ v8::Handle<v8::Value> SetDestructor(const v8::Arguments& args) {
   return v8::Undefined();
 }
 
+v8::Handle<v8::Value> TakeHeapSnapshot(const v8::Arguments& args) {
+  node::node_isolate->GetHeapProfiler()->TakeHeapSnapshot(
+      v8::String::New("test"));
+  return v8::Undefined();
+}
+
 }  // namespace
 
 void InitializeV8Util(v8::Handle<v8::Object> target) {
@@ -52,6 +60,7 @@ void InitializeV8Util(v8::Handle<v8::Object> target) {
   NODE_SET_METHOD(target, "setHiddenValue", SetHiddenValue);
   NODE_SET_METHOD(target, "getObjectHash", GetObjectHash);
   NODE_SET_METHOD(target, "setDestructor", SetDestructor);
+  NODE_SET_METHOD(target, "takeHeapSnapshot", TakeHeapSnapshot);
 }
 
 }  // namespace api
