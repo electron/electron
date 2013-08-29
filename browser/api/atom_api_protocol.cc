@@ -14,6 +14,7 @@
 #include "net/url_request/url_request_job_factory_impl.h"
 #include "net/url_request/url_request_simple_job.h"
 #include "vendor/node/src/node.h"
+#include "vendor/node/src/node_internals.h"
 
 namespace atom {
 
@@ -21,8 +22,22 @@ namespace api {
 
 namespace {
 
+// Remember the protocol module object.
+v8::Persistent<v8::Object> g_protocol_object;
+
 typedef std::map<std::string, v8::Persistent<v8::Function>> HandlersMap;
 static HandlersMap g_handlers;
+
+// Emit an event for the protocol module.
+void EmitEventInUI(const std::string& event, const std::string& parameter) {
+  v8::HandleScope scope;
+
+  v8::Local<v8::Value> argv[] = {
+    v8::String::New(event.data(), event.size()),
+    v8::String::New(parameter.data(), parameter.size()),
+  };
+  node::MakeCallback(g_protocol_object, "emit", arraysize(argv), argv);
+}
 
 net::URLRequestJobFactoryImpl* GetRequestJobFactory() {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
@@ -309,6 +324,12 @@ void Protocol::RegisterProtocolInIO(const std::string& scheme) {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
   net::URLRequestJobFactoryImpl* job_factory(GetRequestJobFactory());
   job_factory->SetProtocolHandler(scheme, new AdapterProtocolHandler);
+
+  content::BrowserThread::PostTask(content::BrowserThread::UI,
+                                   FROM_HERE,
+                                   base::Bind(&EmitEventInUI,
+                                              "registered",
+                                              scheme));
 }
 
 // static
@@ -316,10 +337,19 @@ void Protocol::UnregisterProtocolInIO(const std::string& scheme) {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
   net::URLRequestJobFactoryImpl* job_factory(GetRequestJobFactory());
   job_factory->SetProtocolHandler(scheme, NULL);
+
+  content::BrowserThread::PostTask(content::BrowserThread::UI,
+                                   FROM_HERE,
+                                   base::Bind(&EmitEventInUI,
+                                              "unregistered",
+                                              scheme));
 }
 
 // static
 void Protocol::Initialize(v8::Handle<v8::Object> target) {
+  g_protocol_object = v8::Persistent<v8::Object>::New(
+      node::node_isolate, target);
+
   node::SetMethod(target, "registerProtocol", RegisterProtocol);
   node::SetMethod(target, "unregisterProtocol", UnregisterProtocol);
   node::SetMethod(target, "isHandledProtocol", IsHandledProtocol);

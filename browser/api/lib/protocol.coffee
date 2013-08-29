@@ -1,8 +1,7 @@
-bindings = process.atomBinding 'protocol'
+protocol = process.atomBinding 'protocol'
 EventEmitter = require('events').EventEmitter
 
-protocol = new EventEmitter
-protocol[key] = value for key, value of bindings
+protocol[key] = value for key, value of EventEmitter.prototype
 
 protocol.RequestStringJob =
 class RequestStringJob
