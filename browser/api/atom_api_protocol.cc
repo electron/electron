@@ -299,6 +299,12 @@ v8::Handle<v8::Value> Protocol::UnregisterProtocol(const v8::Arguments& args) {
 }
 
 // static
+v8::Handle<v8::Value> Protocol::IsHandledProtocol(const v8::Arguments& args) {
+  return v8::Boolean::New(net::URLRequest::IsHandledProtocol(
+      *v8::String::Utf8Value(args[0])));
+}
+
+// static
 void Protocol::RegisterProtocolInIO(const std::string& scheme) {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
   net::URLRequestJobFactoryImpl* job_factory(GetRequestJobFactory());
@@ -316,6 +322,7 @@ void Protocol::UnregisterProtocolInIO(const std::string& scheme) {
 void Protocol::Initialize(v8::Handle<v8::Object> target) {
   node::SetMethod(target, "registerProtocol", RegisterProtocol);
   node::SetMethod(target, "unregisterProtocol", UnregisterProtocol);
+  node::SetMethod(target, "isHandledProtocol", IsHandledProtocol);
 }
 
 }  // namespace api
