@@ -6,11 +6,17 @@
 * [node.js](http://nodejs.org/)
 * [git](http://git-scm.com)
 
-The instructions bellow are executed under [cygwin](http://www.cygwin.com), but it's not a requirement, you can also build atom-shell under Windows's console or other terminals. 
+The instructions bellow are executed under [cygwin](http://www.cygwin.com),
+but it's not a requirement, you can also build atom-shell under Windows's
+console or other terminals.
 
-The building of atom-shell is done entirely with command line scripts, so you can use any editor you like to develop atom-shell, but it also means you can not use Visual Studio for the development. Support of building with Visual Studio will come in future.
+The building of atom-shell is done entirely with command line scripts, so you
+can use any editor you like to develop atom-shell, but it also means you can
+not use Visual Studio for the development. Support of building with Visual
+Studio will come in future.
 
-**Note:** Even though Visual Studio is not used for building, it's still required because we need the build toolchains it provided.
+**Note:** Even though Visual Studio is not used for building, it's still
+**required because we need the build toolchains it provided.
 
 ## Getting the code
 
@@ -20,7 +26,9 @@ $ git clone https://github.com/atom/atom-shell.git
 
 ## Bootstrapping
 
-The bootstrap script will download all necessary build dependencies and create build project files. Notice that we're using `ninja` to build atom-shell so there is no Visual Studio project generated.
+The bootstrap script will download all necessary build dependencies and create
+build project files. Notice that we're using `ninja` to build atom-shell so
+there is no Visual Studio project generated.
 
 ```bash
 $ cd atom-shell

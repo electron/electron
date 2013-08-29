@@ -25,7 +25,8 @@ Open the given file in the desktop's default manner.
 
 * `url` String
 
-Open the given external protocol URL in the desktop's default manner. (For example, mailto: URLs in the default mail user agent.)
+Open the given external protocol URL in the desktop's default manner. (For
+example, mailto: URLs in the default mail user agent.)
 
 ## shell.moveItemToTrash(fullPath)
 

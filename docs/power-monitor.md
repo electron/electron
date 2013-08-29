@@ -1,6 +1,7 @@
 ## Synopsis
 
-The `power-monitor` module is used to monitor the power state change, you can only use it on the browser side.
+The `power-monitor` module is used to monitor the power state change, you can
+only use it on the browser side.
 
 An example is:
 
