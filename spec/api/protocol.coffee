@@ -12,9 +12,9 @@ describe 'protocol API', ->
       protocol.unregisterProtocol 'test1'
 
     it 'calls the callback when scheme is visited', (done) ->
-      protocol.registerProtocol 'test2', (url, referrer) ->
-        assert.equal url, 'test2://test2'
-        assert.equal referrer, window.location.toString()
+      protocol.registerProtocol 'test2', (request) ->
+        assert.equal request.url, 'test2://test2'
+        assert.equal request.referrer, window.location.toString()
         protocol.unregisterProtocol 'test2'
         done()
       $.get 'test2://test2', ->

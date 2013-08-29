@@ -39,6 +39,19 @@ void EmitEventInUI(const std::string& event, const std::string& parameter) {
   node::MakeCallback(g_protocol_object, "emit", arraysize(argv), argv);
 }
 
+// Convert the URLRequest object to V8 object.
+v8::Handle<v8::Object> ConvertURLRequestToV8Object(
+    const net::URLRequest* request) {
+  v8::Local<v8::Object> obj = v8::Object::New();
+  obj->Set(v8::String::New("method"),
+           v8::String::New(request->method().c_str()));
+  obj->Set(v8::String::New("url"),
+           v8::String::New(request->url().spec().c_str()));
+  obj->Set(v8::String::New("referrer"),
+           v8::String::New(request->referrer().c_str()));
+  return obj;
+}
+
 net::URLRequestJobFactoryImpl* GetRequestJobFactory() {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
   // Get the job factory.
@@ -158,8 +171,7 @@ class AdapterRequestJob : public net::URLRequestJob {
     // Call the JS handler.
     v8::HandleScope scope;
     v8::Handle<v8::Value> argv[] = {
-      v8::String::New(request()->url().spec().c_str()),
-      v8::String::New(request()->referrer().c_str()),
+      ConvertURLRequestToV8Object(request()),
     };
     v8::Handle<v8::Value> result = g_handlers[request()->url().scheme()]->Call(
         v8::Context::GetCurrent()->Global(), arraysize(argv), argv);
