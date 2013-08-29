@@ -13,8 +13,7 @@ void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
     const string16& message_text,
     bool is_reload,
     const DialogClosedCallback& callback) {
-
-  bool prevent_reload = message_text.empty() ||
+  bool prevent_reload = !message_text.empty() ||
                         message_text == ASCIIToUTF16("false");
   callback.Run(!prevent_reload, message_text);
 }
