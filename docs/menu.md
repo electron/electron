@@ -1,8 +1,11 @@
 ## Synopsis
 
-The `Menu` class is used to create native menus that can be used as application menu and context menu. Each menu is consisted of multiple menu items, and each menu item can have a submenu.
+The `Menu` class is used to create native menus that can be used as
+application menu and context menu. Each menu is consisted of multiple menu
+items, and each menu item can have a submenu.
 
-An example of creating a menu dynamically and show it when user right clicks the page:
+An example of creating a menu dynamically and show it when user right clicks
+the page:
 
 ```javascript
 var Menu = require('menu');
@@ -156,7 +159,9 @@ Sets `menu` as the application menu.
 
 * `action` String
 
-Sends the `action` to the first responder of application, this is used for emulating default Cocoa menu behaviors, usually you would just use the `selector` property of `MenuItem`.
+Sends the `action` to the first responder of application, this is used for
+emulating default Cocoa menu behaviors, usually you would just use the
+`selector` property of `MenuItem`.
 
 **Note:** This method is OS X only.
 
@@ -164,9 +169,11 @@ Sends the `action` to the first responder of application, this is used for emula
 
 * `template` Array
 
-Generally, the `template` is just an array of `options` for constructing `MenuItem`, the usage can be referenced above.
+Generally, the `template` is just an array of `options` for constructing
+`MenuItem`, the usage can be referenced above.
 
-You can also attach other fields to element of the `template`, and they will become properties of the constructed menu items.
+You can also attach other fields to element of the `template`, and they will
+become properties of the constructed menu items.
 
 ### Menu.popup(browserWindow)
 

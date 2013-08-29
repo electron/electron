@@ -12,7 +12,9 @@ $ git clone https://github.com/atom/atom-shell.git
 
 ## Bootstrapping
 
-The bootstrap script will download all necessary build dependencies and create build project files. Notice that we're using `ninja` to build `atom-shell` so there is no Xcode project generated.
+The bootstrap script will download all necessary build dependencies and create
+build project files. Notice that we're using `ninja` to build `atom-shell` so
+there is no Xcode project generated.
 
 ```bash
 $ cd atom-shell

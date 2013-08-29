@@ -1,6 +1,9 @@
 ## Synopsis
 
-The `atom-delegate` returns the delegate object for Chrome Content API. The atom-shell would call methods of the delegate object when the corresponding C++ code is called. Developers can override methods of it to control the underlying behaviour of the browser.
+The `atom-delegate` returns the delegate object for Chrome Content API. The
+atom-shell would call methods of the delegate object when the corresponding
+C++ code is called. Developers can override methods of it to control the
+underlying behaviour of the browser.
 
 An example of creating a new window when the browser is initialized:
 
@@ -24,4 +27,5 @@ delegate.browserMainParts.preMainMessageLoopRun = function() {
 
 ## atom-delegate.browserMainParts.preMainMessageLoopRun()
 
-Called when atom-shell has done everything initialization and ready for creating browser windows.
+Called when atom-shell has done everything initialization and ready for
+creating browser windows.
