@@ -14,7 +14,7 @@ describe 'window module', ->
         if (!isLoading)
           w.close()
       w.on 'destroyed', ->
-        test = path.join(fixtures, 'api', 'test')
+        test = path.join(fixtures, 'api', 'unload')
         content = fs.readFileSync(test)
         fs.unlinkSync(test)
         assert.equal String(content), 'unload'
@@ -41,8 +41,10 @@ describe 'window module', ->
           assert.equal isLoading, true
         else if count == 1
           assert.equal isLoading, false
+          w.close()
           done()
         else
+          w.close()
           assert false
 
         ++count
