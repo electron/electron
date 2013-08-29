@@ -21,7 +21,7 @@ describe 'window module', ->
         done()
       w.loadUrl 'file://' + path.join(fixtures, 'api', 'unload.html')
 
-  describe 'window.close()', ->
+  xdescribe 'window.close()', ->
     it 'should emit unload handler', (done) ->
       w = new BrowserWindow(show: false)
       w.on 'destroyed', ->
