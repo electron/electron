@@ -1,6 +1,10 @@
-module.exports = process.atomBinding 'protocol'
+bindings = process.atomBinding 'protocol'
+EventEmitter = require('events').EventEmitter
 
-module.exports.RequestStringJob =
+protocol = new EventEmitter
+protocol[key] = value for key, value of bindings
+
+protocol.RequestStringJob =
 class RequestStringJob
   constructor: ({mimeType, charset, data}) ->
     if typeof data isnt 'string' and not data instanceof Buffer
@@ -10,6 +14,8 @@ class RequestStringJob
     @charset = charset ? 'UTF-8'
     @data = String data
 
-module.exports.RequestFileJob =
+protocol.RequestFileJob =
 class RequestFileJob
   constructor: (@path) ->
+
+module.exports = protocol
