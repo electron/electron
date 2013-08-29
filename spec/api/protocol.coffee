@@ -72,7 +72,7 @@ describe 'protocol API', ->
           protocol.unregisterProtocol 'atom-file-job'
 
   describe 'protocol.isHandledProtocol', ->
-    it 'returns true if the scheme can be handled', (done) ->
+    it 'returns true if the scheme can be handled', ->
       assert.equal protocol.isHandledProtocol('file'), true
       assert.equal protocol.isHandledProtocol('http'), true
       assert.equal protocol.isHandledProtocol('https'), true
