@@ -70,3 +70,10 @@ describe 'protocol API', ->
         error: (xhr, errorType, error) ->
           assert false, 'Got error: ' + errorType + ' ' + error
           protocol.unregisterProtocol 'atom-file-job'
+
+  describe 'protocol.isHandledProtocol', ->
+    it 'returns true if the scheme can be handled', (done) ->
+      assert.equal protocol.isHandledProtocol('file'), true
+      assert.equal protocol.isHandledProtocol('http'), true
+      assert.equal protocol.isHandledProtocol('https'), true
+      assert.equal protocol.isHandledProtocol('atom'), false
