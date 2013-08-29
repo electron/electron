@@ -35,6 +35,7 @@ class Window : public EventEmitter,
   // Implementations of NativeWindowObserver.
   virtual void OnPageTitleUpdated(bool* prevent_default,
                                   const std::string& title) OVERRIDE;
+  virtual void OnLoadingStateChanged(bool is_loading) OVERRIDE;
   virtual void WillCloseWindow(bool* prevent_default) OVERRIDE;
   virtual void OnWindowClosed() OVERRIDE;
   virtual void OnWindowBlur() OVERRIDE;

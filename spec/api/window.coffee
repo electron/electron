@@ -31,3 +31,19 @@ describe 'window module', ->
         assert.equal String(content), 'close'
         done()
       w.loadUrl 'file://' + path.join(fixtures, 'api', 'close.html')
+
+  describe 'BrowserWindow.loadUrl(url)', ->
+    it 'should emit loading-state-changed event', (done) ->
+      w = new BrowserWindow(show: false)
+      count = 0
+      w.on 'loading-state-changed', (event, isLoading) ->
+        if count == 0
+          assert.equal isLoading, true
+        else if count == 1
+          assert.equal isLoading, false
+          done()
+        else
+          assert false
+
+        ++count
+      w.loadUrl 'about:blank'

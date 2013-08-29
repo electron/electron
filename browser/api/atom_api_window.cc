@@ -56,6 +56,12 @@ void Window::OnPageTitleUpdated(bool* prevent_default,
   *prevent_default = Emit("page-title-updated", &args);
 }
 
+void Window::OnLoadingStateChanged(bool is_loading) {
+  base::ListValue args;
+  args.AppendBoolean(is_loading);
+  Emit("loading-state-changed", &args);
+}
+
 void Window::WillCloseWindow(bool* prevent_default) {
   *prevent_default = Emit("close");
 }

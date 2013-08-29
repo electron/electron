@@ -17,7 +17,7 @@ class NativeWindowObserver {
   virtual void OnPageTitleUpdated(bool* prevent_default,
                                   const std::string& title) {}
 
-  // Called when the window is starting or is done loading a resource.
+  // Called when the window is starting or is done loading a page.
   virtual void OnLoadingStateChanged(bool is_loading) {}
 
   // Called when the window is gonna closed.

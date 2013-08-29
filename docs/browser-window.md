@@ -45,6 +45,13 @@ Creates a new `BrowserWindow` with native properties set by the `options`. Usual
 
 Emitted when the document changed its title, calling `event.preventDefault()` would prevent the native window's title to change.
 
+### Event: 'loading-state-changed'
+
+* `event` Event
+* `isLoading` Boolean
+
+Emitted when the window is starting or is done loading a page.
+
 ### Event: 'close'
 
 * `event` Event
