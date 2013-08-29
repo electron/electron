@@ -142,6 +142,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual bool CanOverscrollContent() const OVERRIDE;
   virtual void ActivateContents(content::WebContents* contents) OVERRIDE;
   virtual void DeactivateContents(content::WebContents* contents) OVERRIDE;
+  virtual void LoadingStateChanged(content::WebContents* source) OVERRIDE;
   virtual void MoveContents(content::WebContents* source,
                             const gfx::Rect& pos) OVERRIDE;
   virtual void CloseContents(content::WebContents* source) OVERRIDE;

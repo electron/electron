@@ -250,6 +250,13 @@ void NativeWindow::DeactivateContents(content::WebContents* contents) {
   BlurWebView();
 }
 
+void NativeWindow::LoadingStateChanged(content::WebContents* source) {
+  bool is_loading = source->IsLoading();
+  FOR_EACH_OBSERVER(NativeWindowObserver,
+                    observers_,
+                    OnLoadingStateChanged(is_loading));
+}
+
 void NativeWindow::MoveContents(content::WebContents* source,
                                 const gfx::Rect& pos) {
   SetPosition(pos.origin());
