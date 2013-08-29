@@ -1,6 +1,7 @@
 ## Synopsis
 
-The `BrowserWindow` class gives you ability to create a browser window, an example is:
+The `BrowserWindow` class gives you ability to create a browser window, an
+example is:
 
 ```javascript
 var BrowserWindow = require('browser-window');
@@ -18,7 +19,8 @@ win.show();
 
 ## Class: BrowserWindow
 
-`BrowserWindow` is an [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
+`BrowserWindow` is an
+[EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
 
 ### new BrowserWindow(options)
 
@@ -37,13 +39,16 @@ win.show();
   * `title` String - Default window title
   * `show` Boolean - Whether window should be shown when created
 
-Creates a new `BrowserWindow` with native properties set by the `options`. Usually you only need to set the `width` and `height`, other properties will have decent default values.
+Creates a new `BrowserWindow` with native properties set by the `options`.
+Usually you only need to set the `width` and `height`, other properties will
+have decent default values.
 
 ### Event: 'page-title-updated'
 
 * `event` Event
 
-Emitted when the document changed its title, calling `event.preventDefault()` would prevent the native window's title to change.
+Emitted when the document changed its title, calling `event.preventDefault()`
+would prevent the native window's title to change.
 
 ### Event: 'loading-state-changed'
 
@@ -56,9 +61,14 @@ Emitted when the window is starting or is done loading a page.
 
 * `event` Event
 
-Emitted when the window is going to be closed. It's emitted before the `beforeunload` and `unload` event of DOM, calling `event.preventDefault()` would cancel the close.
+Emitted when the window is going to be closed. It's emitted before the
+`beforeunload` and `unload` event of DOM, calling `event.preventDefault()`
+would cancel the close.
 
-Usually you would want to use the `beforeunload` handler to decide whether the window should be closed, which will also be called when the window is reloaded. In atom-shell, returning an empty string or `false` would cancel the close. An example is:
+Usually you would want to use the `beforeunload` handler to decide whether the
+window should be closed, which will also be called when the window is
+reloaded. In atom-shell, returning an empty string or `false` would cancel the
+close. An example is:
 
 ```javascript
 window.onbeforeunload = function(e) {
@@ -74,11 +84,14 @@ window.onbeforeunload = function(e) {
 
 ### Event: 'closed'
 
-Emitted when the window is closed. At the time of this event, window is not destroyed yet so you can still do some operations to the window (but you shouldn't!).
+Emitted when the window is closed. At the time of this event, window is not
+destroyed yet so you can still do some operations to the window (but you
+shouldn't!).
 
 ### Event: 'destroyed'
 
-Emitted when the memory taken by the native window is released. Usually you should dereference the javascript object when received this event.
+Emitted when the memory taken by the native window is released. Usually you
+should dereference the javascript object when received this event.
 
 ### Class Method: BrowserWindow.getFocusedWindow()
 
@@ -95,11 +108,16 @@ Find a window according to its `processId` and `routingId`.
 
 Destroy the window and free the memory without closing it.
 
-**Note:** Usually you should always call `Window.close()` to close the window, which will emit `beforeunload` and `unload` events for DOM. Only use `Window.destroy()` when the window gets into a very bad state and you want to force closing it.
+**Note:** Usually you should always call `Window.close()` to close the window,
+**which will emit `beforeunload` and `unload` events for DOM. Only use
+**`Window.destroy()` when the window gets into a very bad state and you want
+**to force closing it.
 
 ### BrowserWindow.close()
 
-Try to close the window, this has the same effect with user manually clicking the close button of the window. The web page may cancel the close though, see the [close event](window#event-close).
+Try to close the window, this has the same effect with user manually clicking
+the close button of the window. The web page may cancel the close though, see
+the [close event](window#event-close).
 
 ### BrowserWindow.focus()
 
@@ -127,7 +145,8 @@ Unmaximizes the window.
 
 ### BrowserWindow.minimize()
 
-Minimizes the window. On some platforms the minimized window will be shown in the Dock.
+Minimizes the window. On some platforms the minimized window will be shown in
+the Dock.
 
 ### BrowserWindow.restore()
 
@@ -190,7 +209,9 @@ Returns whether the window can be manually resized by user.
 
 * `flag` Boolean
 
-Sets whether the window should show always on top of other windows. After setting this, the window is still a normal window, not a toolbox window which can not be focused on.
+Sets whether the window should show always on top of other windows. After
+setting this, the window is still a normal window, not a toolbox window which
+can not be focused on.
 
 ### BrowserWindow.isAlwaysOnTop()
 
@@ -221,7 +242,8 @@ Changes the title of native window to `title`.
 
 Returns the title of the native window.
 
-**Note:** The title of web page can be different from the title of the native window.
+**Note:** The title of web page can be different from the title of the native
+**window.
 
 ### BrowserWindow.flashFlame()
 
@@ -268,7 +290,8 @@ Returns whether web page is still loading resources.
 
 ### BrowserWindow.isWaitingForResponse()
 
-Returns whether web page is waiting for a first-response for the main resource of the page.
+Returns whether web page is waiting for a first-response for the main resource
+of the page.
 
 ### BrowserWindow.stop()
 
@@ -276,17 +299,20 @@ Stops any pending navigation.
 
 ### BrowserWindow.getProcessId()
 
-Returns window's process ID. The process ID and routing ID can be used together to locate a window.
+Returns window's process ID. The process ID and routing ID can be used
+together to locate a window.
 
 ### BrowserWindow.getRoutingId()
 
-Returns window's routing ID. The process ID and routing ID can be used together to locate a window.
+Returns window's routing ID. The process ID and routing ID can be used
+together to locate a window.
 
 ### BrowserWindow.loadUrl(url)
 
 * `url` URL
 
-Loads the `url` in the window, the `url` must contains the protocol prefix, e.g. the `http://` or `file://`.
+Loads the `url` in the window, the `url` must contains the protocol prefix,
+e.g. the `http://` or `file://`.
 
 ### BrowserWindow.getUrl()
 
