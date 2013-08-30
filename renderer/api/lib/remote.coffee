@@ -31,8 +31,7 @@ metaToValue = (meta) ->
     when 'value' then meta.value
     when 'array' then (metaToValue(el) for el in meta.members)
     when 'error'
-      console.log meta.stack
-      throw new Error(meta.message)
+      throw new Error("#{meta.message}\n#{meta.stack}")
     else
       if meta.type is 'function'
         # A shadow class to represent the remote function object.
