@@ -153,7 +153,7 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
 // registered handler doesn't want to deal with the request.
 class CustomProtocolHandler : public ProtocolHandler {
  public:
-  CustomProtocolHandler(ProtocolHandler* protocol_handler = NULL)
+  explicit CustomProtocolHandler(ProtocolHandler* protocol_handler = NULL)
       : protocol_handler_(protocol_handler) {
   }
 
