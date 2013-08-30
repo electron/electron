@@ -61,6 +61,8 @@
       'browser/api/atom_api_window.h',
       'browser/api/atom_browser_bindings.cc',
       'browser/api/atom_browser_bindings.h',
+      'browser/atom_url_request_job_factory.cc',
+      'browser/atom_url_request_job_factory.h',
       'browser/auto_updater.cc',
       'browser/auto_updater.h',
       'browser/auto_updater_delegate.cc',

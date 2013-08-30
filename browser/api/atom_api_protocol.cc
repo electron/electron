@@ -6,12 +6,12 @@
 
 #include "base/memory/weak_ptr.h"
 #include "browser/atom_browser_context.h"
+#include "browser/atom_url_request_job_factory.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
 #include "net/url_request/url_request_error_job.h"
 #include "net/url_request/url_request_file_job.h"
-#include "net/url_request/url_request_job_factory_impl.h"
 #include "net/url_request/url_request_simple_job.h"
 #include "vendor/node/src/node.h"
 #include "vendor/node/src/node_internals.h"
@@ -22,7 +22,7 @@ namespace api {
 
 namespace {
 
-// Remember the protocol module object.
+// The protocol module object.
 v8::Persistent<v8::Object> g_protocol_object;
 
 // Registered protocol handlers.
@@ -53,15 +53,13 @@ v8::Handle<v8::Object> ConvertURLRequestToV8Object(
   return obj;
 }
 
-net::URLRequestJobFactoryImpl* GetRequestJobFactory() {
+// Get the job factory.
+AtomURLRequestJobFactory* GetRequestJobFactory() {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
-  // Get the job factory.
-  net::URLRequestJobFactoryImpl* job_factory =
-      static_cast<net::URLRequestJobFactoryImpl*>(
-          const_cast<net::URLRequestJobFactory*>(
-              static_cast<content::BrowserContext*>(AtomBrowserContext::Get())->
-                  GetRequestContext()->GetURLRequestContext()->job_factory()));
-  return job_factory;
+  return static_cast<AtomURLRequestJobFactory*>(
+      const_cast<net::URLRequestJobFactory*>(
+          static_cast<content::BrowserContext*>(AtomBrowserContext::Get())->
+              GetRequestContext()->GetURLRequestContext()->job_factory()));
 }
 
 class URLRequestStringJob : public net::URLRequestSimpleJob {
@@ -345,7 +343,7 @@ v8::Handle<v8::Value> Protocol::UninterceptProtocol(const v8::Arguments& args) {
 // static
 void Protocol::RegisterProtocolInIO(const std::string& scheme) {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
-  net::URLRequestJobFactoryImpl* job_factory(GetRequestJobFactory());
+  AtomURLRequestJobFactory* job_factory(GetRequestJobFactory());
   job_factory->SetProtocolHandler(scheme, new AdapterProtocolHandler);
 
   content::BrowserThread::PostTask(content::BrowserThread::UI,
@@ -358,7 +356,7 @@ void Protocol::RegisterProtocolInIO(const std::string& scheme) {
 // static
 void Protocol::UnregisterProtocolInIO(const std::string& scheme) {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
-  net::URLRequestJobFactoryImpl* job_factory(GetRequestJobFactory());
+  AtomURLRequestJobFactory* job_factory(GetRequestJobFactory());
   job_factory->SetProtocolHandler(scheme, NULL);
 
   content::BrowserThread::PostTask(content::BrowserThread::UI,
@@ -371,7 +369,7 @@ void Protocol::UnregisterProtocolInIO(const std::string& scheme) {
 // static
 void Protocol::InterceptProtocolInIO(const std::string& scheme) {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
-  net::URLRequestJobFactoryImpl* job_factory(GetRequestJobFactory());
+  AtomURLRequestJobFactory* job_factory(GetRequestJobFactory());
   job_factory->SetProtocolHandler(scheme, new AdapterProtocolHandler);
 }
 
@@ -381,6 +379,7 @@ void Protocol::UninterceptProtocolInIO(const std::string& scheme) {
 
 // static
 void Protocol::Initialize(v8::Handle<v8::Object> target) {
+  // Remember the protocol object, used for emitting event later.
   g_protocol_object = v8::Persistent<v8::Object>::New(
       node::node_isolate, target);
 
