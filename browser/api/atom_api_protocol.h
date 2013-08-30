@@ -24,8 +24,14 @@ class Protocol {
   static v8::Handle<v8::Value> UnregisterProtocol(const v8::Arguments& args);
   static v8::Handle<v8::Value> IsHandledProtocol(const v8::Arguments& args);
 
+  static v8::Handle<v8::Value> InterceptProtocol(const v8::Arguments& args);
+  static v8::Handle<v8::Value> UninterceptProtocol(const v8::Arguments& args);
+
   static void RegisterProtocolInIO(const std::string& scheme);
   static void UnregisterProtocolInIO(const std::string& scheme);
+
+  static void InterceptProtocolInIO(const std::string& scheme);
+  static void UninterceptProtocolInIO(const std::string& scheme);
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(Protocol);
 };

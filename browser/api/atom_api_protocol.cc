@@ -25,6 +25,7 @@ namespace {
 // Remember the protocol module object.
 v8::Persistent<v8::Object> g_protocol_object;
 
+// Registered protocol handlers.
 typedef std::map<std::string, v8::Persistent<v8::Function>> HandlersMap;
 static HandlersMap g_handlers;
 
@@ -332,6 +333,16 @@ v8::Handle<v8::Value> Protocol::IsHandledProtocol(const v8::Arguments& args) {
 }
 
 // static
+v8::Handle<v8::Value> Protocol::InterceptProtocol(const v8::Arguments& args) {
+  return v8::Undefined();
+}
+
+// static
+v8::Handle<v8::Value> Protocol::UninterceptProtocol(const v8::Arguments& args) {
+  return v8::Undefined();
+}
+
+// static
 void Protocol::RegisterProtocolInIO(const std::string& scheme) {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
   net::URLRequestJobFactoryImpl* job_factory(GetRequestJobFactory());
@@ -355,6 +366,17 @@ void Protocol::UnregisterProtocolInIO(const std::string& scheme) {
                                    base::Bind(&EmitEventInUI,
                                               "unregistered",
                                               scheme));
+}
+
+// static
+void Protocol::InterceptProtocolInIO(const std::string& scheme) {
+  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
+  net::URLRequestJobFactoryImpl* job_factory(GetRequestJobFactory());
+  job_factory->SetProtocolHandler(scheme, new AdapterProtocolHandler);
+}
+
+// static
+void Protocol::UninterceptProtocolInIO(const std::string& scheme) {
 }
 
 // static
