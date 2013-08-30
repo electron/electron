@@ -7,12 +7,12 @@
 #include "base/memory/weak_ptr.h"
 #include "browser/atom_browser_context.h"
 #include "browser/net/atom_url_request_job_factory.h"
+#include "browser/net/url_request_string_job.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
 #include "net/url_request/url_request_error_job.h"
 #include "net/url_request/url_request_file_job.h"
-#include "net/url_request/url_request_simple_job.h"
 #include "vendor/node/src/node.h"
 #include "vendor/node/src/node_internals.h"
 
@@ -63,38 +63,6 @@ AtomURLRequestJobFactory* GetRequestJobFactory() {
           static_cast<content::BrowserContext*>(AtomBrowserContext::Get())->
               GetRequestContext()->GetURLRequestContext()->job_factory()));
 }
-
-class URLRequestStringJob : public net::URLRequestSimpleJob {
- public:
-  URLRequestStringJob(net::URLRequest* request,
-                      net::NetworkDelegate* network_delegate,
-                      const std::string& mime_type,
-                      const std::string& charset,
-                      const std::string& data)
-      : net::URLRequestSimpleJob(request, network_delegate),
-        mime_type_(mime_type),
-        charset_(charset),
-        data_(data) {
-  }
-
-  // URLRequestSimpleJob:
-  virtual int GetData(std::string* mime_type,
-                      std::string* charset,
-                      std::string* data,
-                      const net::CompletionCallback& callback) const OVERRIDE {
-    *mime_type = mime_type_;
-    *charset = charset_;
-    *data = data_;
-    return net::OK;
-  }
-
- private:
-  std::string mime_type_;
-  std::string charset_;
-  std::string data_;
-
-  DISALLOW_COPY_AND_ASSIGN(URLRequestStringJob);
-};
 
 // Ask JS which type of job it wants, and then delegate corresponding methods.
 class AdapterRequestJob : public net::URLRequestJob {

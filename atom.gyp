@@ -99,6 +99,8 @@
       'browser/native_window_observer.h',
       'browser/net/atom_url_request_job_factory.cc',
       'browser/net/atom_url_request_job_factory.h',
+      'browser/net/url_request_string_job.cc',
+      'browser/net/url_request_string_job.h',
       'browser/ui/accelerator_util.cc',
       'browser/ui/accelerator_util.h',
       'browser/ui/accelerator_util_mac.mm',
