@@ -12,6 +12,8 @@
 
 namespace atom {
 
+typedef net::URLRequestJobFactory::ProtocolHandler ProtocolHandler;
+
 AtomURLRequestJobFactory::AtomURLRequestJobFactory() {}
 
 AtomURLRequestJobFactory::~AtomURLRequestJobFactory() {
@@ -37,6 +39,19 @@ bool AtomURLRequestJobFactory::SetProtocolHandler(
     return false;
   protocol_handler_map_[scheme] = protocol_handler;
   return true;
+}
+
+ProtocolHandler* AtomURLRequestJobFactory::InterceptProtocol(
+    const std::string& scheme,
+    ProtocolHandler* protocol_handler) {
+  DCHECK(CalledOnValidThread());
+  DCHECK(protocol_handler);
+
+  if (!ContainsKey(protocol_handler_map_, scheme))
+    return NULL;
+  ProtocolHandler* original_protocol_handler = protocol_handler_map_[scheme];
+  protocol_handler_map_[scheme] = protocol_handler;
+  return original_protocol_handler;
 }
 
 net::URLRequestJob* AtomURLRequestJobFactory::MaybeCreateJobWithProtocolHandler(

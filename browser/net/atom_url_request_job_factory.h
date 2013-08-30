@@ -26,6 +26,11 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
   bool SetProtocolHandler(const std::string& scheme,
                           ProtocolHandler* protocol_handler);
 
+  // Intercepts the ProtocolHandler for a scheme. Returns the original protocol
+  // handler on success, otherwise returns NULL.
+  ProtocolHandler* InterceptProtocol(const std::string& scheme,
+                                     ProtocolHandler* protocol_handler);
+
   // URLRequestJobFactory implementation
   virtual net::URLRequestJob* MaybeCreateJobWithProtocolHandler(
       const std::string& scheme,
