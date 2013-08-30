@@ -52,16 +52,8 @@ class AdapterRequestJob : public net::URLRequestJob {
   void CreateJobFromProtocolHandlerAndStart();
 
  private:
-  enum JOB_TYPE {
-    REQUEST_ERROR_JOB,
-    REQUEST_STRING_JOB,
-    REQUEST_FILE_JOB,
-  };
-
+  // The delegated request job.
   scoped_refptr<net::URLRequestJob> real_job_;
-
-  // Type of the delegated url request job.
-  JOB_TYPE type_;
 
   // Default protocol handler.
   ProtocolHandler* protocol_handler_;

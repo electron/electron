@@ -38,17 +38,7 @@ bool AdapterRequestJob::ReadRawData(net::IOBuffer* buf,
                                     int buf_size,
                                     int *bytes_read) {
   DCHECK(real_job_);
-  // The ReadRawData is a protected method.
-  switch (type_) {
-    case REQUEST_STRING_JOB:
-      return static_cast<URLRequestStringJob*>(real_job_.get())->
-          ReadRawData(buf, buf_size, bytes_read);
-    case REQUEST_FILE_JOB:
-      return static_cast<net::URLRequestFileJob*>(real_job_.get())->
-          ReadRawData(buf, buf_size, bytes_read);
-    default:
-      return net::URLRequestJob::ReadRawData(buf, buf_size, bytes_read);
-  }
+  return real_job_->ReadRawData(buf, buf_size, bytes_read);
 }
 
 bool AdapterRequestJob::IsRedirectResponse(GURL* location,
@@ -79,7 +69,6 @@ base::WeakPtr<AdapterRequestJob> AdapterRequestJob::GetWeakPtr() {
 void AdapterRequestJob::CreateErrorJobAndStart(int error_code) {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
 
-  type_ = REQUEST_ERROR_JOB;
   real_job_ = new net::URLRequestErrorJob(
       request(), network_delegate(), error_code);
   real_job_->Start();
@@ -90,7 +79,6 @@ void AdapterRequestJob::CreateStringJobAndStart(const std::string& mime_type,
                                                 const std::string& data) {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
 
-  type_ = REQUEST_STRING_JOB;
   real_job_ = new URLRequestStringJob(
       request(), network_delegate(), mime_type, charset, data);
   real_job_->Start();
@@ -99,7 +87,6 @@ void AdapterRequestJob::CreateStringJobAndStart(const std::string& mime_type,
 void AdapterRequestJob::CreateFileJobAndStart(const base::FilePath& path) {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
 
-  type_ = REQUEST_FILE_JOB;
   real_job_ = new net::URLRequestFileJob(request(), network_delegate(), path);
   real_job_->Start();
 }
