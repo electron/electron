@@ -291,7 +291,8 @@ class AdapterProtocolHandler
 // static
 v8::Handle<v8::Value> Protocol::RegisterProtocol(const v8::Arguments& args) {
   std::string scheme(*v8::String::Utf8Value(args[0]));
-  if (net::URLRequest::IsHandledProtocol(scheme))
+  if (g_handlers.find(scheme) != g_handlers.end() ||
+      net::URLRequest::IsHandledProtocol(scheme))
     return node::ThrowError("The scheme is already registered");
 
   // Store the handler in a map.

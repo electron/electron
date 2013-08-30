@@ -5,11 +5,14 @@ protocol = remote.require 'protocol'
 
 describe 'protocol API', ->
   describe 'protocol.registerProtocol', ->
-    it 'throws error when scheme is already registered', ->
+    it 'throws error when scheme is already registered', (done) ->
       register = -> protocol.registerProtocol('test1', ->)
+      protocol.once 'registered', (scheme) ->
+        assert.equal scheme, 'test1'
+        assert.throws register, /The scheme is already registered/
+        protocol.unregisterProtocol 'test1'
+        done()
       register()
-      assert.throws register, /The scheme is already registered/
-      protocol.unregisterProtocol 'test1'
 
     it 'calls the callback when scheme is visited', (done) ->
       protocol.registerProtocol 'test2', (request) ->
