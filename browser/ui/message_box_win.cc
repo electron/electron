@@ -195,7 +195,10 @@ void MessageDialog::Layout() {
   int x = bounds.width();
   int height = buttons_[0]->GetPreferredSize().height() +
                views::kRelatedControlVerticalSpacing;
-  for (size_t i = 0; i < buttons_.size(); ++i) {
+
+  // NB: We iterate through the buttons backwards here because
+  // Mac and Windows buttons are laid out in opposite order.
+  for (int i = buttons_.size() - 1; i >= 0; --i) {
     gfx::Size size = buttons_[i]->GetPreferredSize();
     x -= size.width() + views::kRelatedButtonHSpacing;
 
