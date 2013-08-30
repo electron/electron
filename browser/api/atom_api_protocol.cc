@@ -4,15 +4,12 @@
 
 #include "browser/api/atom_api_protocol.h"
 
-#include "base/memory/weak_ptr.h"
 #include "browser/atom_browser_context.h"
+#include "browser/net/adapter_request_job.h"
 #include "browser/net/atom_url_request_job_factory.h"
-#include "browser/net/url_request_string_job.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
-#include "net/url_request/url_request_error_job.h"
-#include "net/url_request/url_request_file_job.h"
 #include "vendor/node/src/node.h"
 #include "vendor/node/src/node_internals.h"
 
@@ -64,79 +61,16 @@ AtomURLRequestJobFactory* GetRequestJobFactory() {
               GetRequestContext()->GetURLRequestContext()->job_factory()));
 }
 
-// Ask JS which type of job it wants, and then delegate corresponding methods.
-class AdapterRequestJob : public net::URLRequestJob {
+class CustomProtocolRequestJob : public AdapterRequestJob {
  public:
-  AdapterRequestJob(ProtocolHandler* protocol_handler,
-                    net::URLRequest* request,
-                    net::NetworkDelegate* network_delegate)
-      : URLRequestJob(request, network_delegate),
-        protocol_handler_(protocol_handler),
-        weak_factory_(this) {
+  CustomProtocolRequestJob(ProtocolHandler* protocol_handler,
+                           net::URLRequest* request,
+                           net::NetworkDelegate* network_delegate)
+      : AdapterRequestJob(protocol_handler, request, network_delegate) {
   }
 
- protected:
-  // net::URLRequestJob:
-  virtual void Start() OVERRIDE {
-    DCHECK(!real_job_);
-    content::BrowserThread::PostTask(
-        content::BrowserThread::UI,
-        FROM_HERE,
-        base::Bind(&AdapterRequestJob::GetJobTypeInUI,
-                   weak_factory_.GetWeakPtr()));
-  }
-
-  virtual void Kill() OVERRIDE {
-    DCHECK(real_job_);
-    real_job_->Kill();
-  }
-
-  virtual bool ReadRawData(net::IOBuffer* buf,
-                           int buf_size,
-                           int *bytes_read) OVERRIDE {
-    DCHECK(real_job_);
-    // The ReadRawData is a protected method.
-    switch (type_) {
-      case REQUEST_STRING_JOB:
-        return static_cast<URLRequestStringJob*>(real_job_.get())->
-            ReadRawData(buf, buf_size, bytes_read);
-      case REQUEST_FILE_JOB:
-        return static_cast<net::URLRequestFileJob*>(real_job_.get())->
-            ReadRawData(buf, buf_size, bytes_read);
-      default:
-        return net::URLRequestJob::ReadRawData(buf, buf_size, bytes_read);
-    }
-  }
-
-  virtual bool IsRedirectResponse(GURL* location,
-                                  int* http_status_code) OVERRIDE {
-    DCHECK(real_job_);
-    return real_job_->IsRedirectResponse(location, http_status_code);
-  }
-
-  virtual net::Filter* SetupFilter() const OVERRIDE {
-    DCHECK(real_job_);
-    return real_job_->SetupFilter();
-  }
-
-  virtual bool GetMimeType(std::string* mime_type) const OVERRIDE {
-    DCHECK(real_job_);
-    return real_job_->GetMimeType(mime_type);
-  }
-
-  virtual bool GetCharset(std::string* charset) OVERRIDE {
-    DCHECK(real_job_);
-    return real_job_->GetCharset(charset);
-  }
-
- private:
-  enum JOB_TYPE {
-    REQUEST_ERROR_JOB,
-    REQUEST_STRING_JOB,
-    REQUEST_FILE_JOB,
-  };
-
-  void GetJobTypeInUI() {
+  // AdapterRequestJob:
+  virtual void GetJobTypeInUI() OVERRIDE {
     DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
 
     // Call the JS handler.
@@ -154,7 +88,7 @@ class AdapterRequestJob : public net::URLRequestJob {
           content::BrowserThread::IO,
           FROM_HERE,
           base::Bind(&AdapterRequestJob::CreateStringJobAndStart,
-                     weak_factory_.GetWeakPtr(),
+                     GetWeakPtr(),
                      "text/plain",
                      "UTF-8",
                      data));
@@ -174,7 +108,7 @@ class AdapterRequestJob : public net::URLRequestJob {
             content::BrowserThread::IO,
             FROM_HERE,
             base::Bind(&AdapterRequestJob::CreateStringJobAndStart,
-                       weak_factory_.GetWeakPtr(),
+                       GetWeakPtr(),
                        mime_type,
                        charset,
                        data));
@@ -187,106 +121,54 @@ class AdapterRequestJob : public net::URLRequestJob {
             content::BrowserThread::IO,
             FROM_HERE,
             base::Bind(&AdapterRequestJob::CreateFileJobAndStart,
-                       weak_factory_.GetWeakPtr(),
+                       GetWeakPtr(),
                        path));
         return;
       }
     }
 
     // Try the default protocol handler if we have.
-    if (protocol_handler_)
+    if (default_protocol_handler())
       content::BrowserThread::PostTask(
           content::BrowserThread::IO,
           FROM_HERE,
           base::Bind(&AdapterRequestJob::CreateJobFromProtocolHandlerAndStart,
-                     weak_factory_.GetWeakPtr(),
-                     protocol_handler_));
+                     GetWeakPtr()));
 
     // Fallback to the not implemented error.
     content::BrowserThread::PostTask(
         content::BrowserThread::IO,
         FROM_HERE,
         base::Bind(&AdapterRequestJob::CreateErrorJobAndStart,
-                   weak_factory_.GetWeakPtr(),
+                   GetWeakPtr(),
                    net::ERR_NOT_IMPLEMENTED));
   }
-
-  void CreateErrorJobAndStart(int error_code) {
-    DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
-
-    type_ = REQUEST_ERROR_JOB;
-    real_job_ = new net::URLRequestErrorJob(
-        request(), network_delegate(), error_code);
-    real_job_->Start();
-  }
-
-  void CreateStringJobAndStart(const std::string& mime_type,
-                               const std::string& charset,
-                               const std::string& data) {
-    DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
-
-    type_ = REQUEST_STRING_JOB;
-    real_job_ = new URLRequestStringJob(
-        request(), network_delegate(), mime_type, charset, data);
-    real_job_->Start();
-  }
-
-  void CreateFileJobAndStart(const base::FilePath& path) {
-    DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
-
-    type_ = REQUEST_FILE_JOB;
-    real_job_ = new net::URLRequestFileJob(request(), network_delegate(), path);
-    real_job_->Start();
-  }
-
-  void CreateJobFromProtocolHandlerAndStart(ProtocolHandler* protocol_handler) {
-    DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
-    DCHECK(protocol_handler_);
-    real_job_ = protocol_handler->MaybeCreateJob(request(),
-                                                 network_delegate());
-    if (!real_job_)
-      CreateErrorJobAndStart(net::ERR_NOT_IMPLEMENTED);
-    else
-      real_job_->Start();
-  }
-
-  scoped_refptr<net::URLRequestJob> real_job_;
-
-  // Type of the delegated url request job.
-  JOB_TYPE type_;
-
-  // Default protocol handler.
-  ProtocolHandler* protocol_handler_;
-
-  base::WeakPtrFactory<AdapterRequestJob> weak_factory_;
-
-  DISALLOW_COPY_AND_ASSIGN(AdapterRequestJob);
 };
 
-// Always return the same AdapterRequestJob for all requests, because the
-// content API needs the ProtocolHandler to return a job immediately, and
+// Always return the same CustomProtocolRequestJob for all requests, because
+// the content API needs the ProtocolHandler to return a job immediately, and
 // getting the real job from the JS requires asynchronous calls, so we have
 // to create an adapter job first.
 // Users can also pass an extra ProtocolHandler as the fallback one when
 // registered handler doesn't want to deal with the request.
-class AdapterProtocolHandler : public ProtocolHandler {
+class CustomProtocolHandler : public ProtocolHandler {
  public:
-  AdapterProtocolHandler(ProtocolHandler* protocol_handler = NULL)
+  CustomProtocolHandler(ProtocolHandler* protocol_handler = NULL)
       : protocol_handler_(protocol_handler) {
   }
 
   virtual net::URLRequestJob* MaybeCreateJob(
       net::URLRequest* request,
       net::NetworkDelegate* network_delegate) const OVERRIDE {
-    return new AdapterRequestJob(protocol_handler_.get(),
-                                 request,
-                                 network_delegate);
+    return new CustomProtocolRequestJob(protocol_handler_.get(),
+                                        request,
+                                        network_delegate);
   }
 
  private:
   scoped_ptr<ProtocolHandler> protocol_handler_;
 
-  DISALLOW_COPY_AND_ASSIGN(AdapterProtocolHandler);
+  DISALLOW_COPY_AND_ASSIGN(CustomProtocolHandler);
 };
 
 }  // namespace
@@ -356,7 +238,7 @@ v8::Handle<v8::Value> Protocol::UninterceptProtocol(const v8::Arguments& args) {
 void Protocol::RegisterProtocolInIO(const std::string& scheme) {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
   AtomURLRequestJobFactory* job_factory(GetRequestJobFactory());
-  job_factory->SetProtocolHandler(scheme, new AdapterProtocolHandler);
+  job_factory->SetProtocolHandler(scheme, new CustomProtocolHandler);
 
   content::BrowserThread::PostTask(content::BrowserThread::UI,
                                    FROM_HERE,

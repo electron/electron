@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "net/url_request/url_request_simple_job.h"
-
 #ifndef ATOM_BROWSER_NET_URL_REQUEST_STRING_JOB_H_
 #define ATOM_BROWSER_NET_URL_REQUEST_STRING_JOB_H_
+
+#include "net/url_request/url_request_simple_job.h"
 
 namespace atom {
 
