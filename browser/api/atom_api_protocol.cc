@@ -20,6 +20,8 @@ namespace atom {
 
 namespace api {
 
+typedef net::URLRequestJobFactory::ProtocolHandler ProtocolHandler;
+
 namespace {
 
 // The protocol module object.
@@ -97,9 +99,11 @@ class URLRequestStringJob : public net::URLRequestSimpleJob {
 // Ask JS which type of job it wants, and then delegate corresponding methods.
 class AdapterRequestJob : public net::URLRequestJob {
  public:
-  AdapterRequestJob(net::URLRequest* request,
+  AdapterRequestJob(ProtocolHandler* protocol_handler,
+                    net::URLRequest* request,
                     net::NetworkDelegate* network_delegate)
       : URLRequestJob(request, network_delegate),
+        protocol_handler_(protocol_handler),
         weak_factory_(this) {
   }
 
@@ -221,6 +225,15 @@ class AdapterRequestJob : public net::URLRequestJob {
       }
     }
 
+    // Try the default protocol handler if we have.
+    if (protocol_handler_)
+      content::BrowserThread::PostTask(
+          content::BrowserThread::IO,
+          FROM_HERE,
+          base::Bind(&AdapterRequestJob::CreateJobFromProtocolHandlerAndStart,
+                     weak_factory_.GetWeakPtr(),
+                     protocol_handler_));
+
     // Fallback to the not implemented error.
     content::BrowserThread::PostTask(
         content::BrowserThread::IO,
@@ -258,10 +271,24 @@ class AdapterRequestJob : public net::URLRequestJob {
     real_job_->Start();
   }
 
+  void CreateJobFromProtocolHandlerAndStart(ProtocolHandler* protocol_handler) {
+    DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
+    DCHECK(protocol_handler_);
+    real_job_ = protocol_handler->MaybeCreateJob(request(),
+                                                 network_delegate());
+    if (!real_job_)
+      CreateErrorJobAndStart(net::ERR_NOT_IMPLEMENTED);
+    else
+      real_job_->Start();
+  }
+
   scoped_refptr<net::URLRequestJob> real_job_;
 
   // Type of the delegated url request job.
   JOB_TYPE type_;
+
+  // Default protocol handler.
+  ProtocolHandler* protocol_handler_;
 
   base::WeakPtrFactory<AdapterRequestJob> weak_factory_;
 
@@ -272,17 +299,25 @@ class AdapterRequestJob : public net::URLRequestJob {
 // content API needs the ProtocolHandler to return a job immediately, and
 // getting the real job from the JS requires asynchronous calls, so we have
 // to create an adapter job first.
-class AdapterProtocolHandler
-    : public net::URLRequestJobFactory::ProtocolHandler {
+// Users can also pass an extra ProtocolHandler as the fallback one when
+// registered handler doesn't want to deal with the request.
+class AdapterProtocolHandler : public ProtocolHandler {
  public:
-  AdapterProtocolHandler() {}
+  AdapterProtocolHandler(ProtocolHandler* protocol_handler = NULL)
+      : protocol_handler_(protocol_handler) {
+  }
+
   virtual net::URLRequestJob* MaybeCreateJob(
       net::URLRequest* request,
       net::NetworkDelegate* network_delegate) const OVERRIDE {
-    return new AdapterRequestJob(request, network_delegate);
+    return new AdapterRequestJob(protocol_handler_.get(),
+                                 request,
+                                 network_delegate);
   }
 
  private:
+  scoped_ptr<ProtocolHandler> protocol_handler_;
+
   DISALLOW_COPY_AND_ASSIGN(AdapterProtocolHandler);
 };
 
@@ -333,6 +368,14 @@ v8::Handle<v8::Value> Protocol::IsHandledProtocol(const v8::Arguments& args) {
 
 // static
 v8::Handle<v8::Value> Protocol::InterceptProtocol(const v8::Arguments& args) {
+  std::string scheme(*v8::String::Utf8Value(args[0]));
+  if (scheme == "https" || scheme == "http")
+    return node::ThrowError("Intercepting http protocol is not supported.");
+
+  content::BrowserThread::PostTask(content::BrowserThread::IO,
+                                   FROM_HERE,
+                                   base::Bind(&UnregisterProtocolInIO, scheme));
+
   return v8::Undefined();
 }
 
@@ -370,12 +413,11 @@ void Protocol::UnregisterProtocolInIO(const std::string& scheme) {
 // static
 void Protocol::InterceptProtocolInIO(const std::string& scheme) {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
-  AtomURLRequestJobFactory* job_factory(GetRequestJobFactory());
-  job_factory->SetProtocolHandler(scheme, new AdapterProtocolHandler);
 }
 
 // static
 void Protocol::UninterceptProtocolInIO(const std::string& scheme) {
+  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
 }
 
 // static
