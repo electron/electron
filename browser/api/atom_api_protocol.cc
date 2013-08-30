@@ -6,7 +6,7 @@
 
 #include "base/memory/weak_ptr.h"
 #include "browser/atom_browser_context.h"
-#include "browser/atom_url_request_job_factory.h"
+#include "browser/net/atom_url_request_job_factory.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"

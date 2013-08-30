@@ -5,7 +5,7 @@
 #include "browser/atom_browser_client.h"
 
 #include "browser/atom_browser_main_parts.h"
-#include "browser/atom_url_request_job_factory.h"
+#include "browser/net/atom_url_request_job_factory.h"
 #include "content/public/common/url_constants.h"
 #include "net/url_request/data_protocol_handler.h"
 #include "net/url_request/file_protocol_handler.h"

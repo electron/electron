@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_ATOM_URL_REQUEST_URL_REQUEST_JOB_FACTORY_H_
-#define ATOM_BROWSER_ATOM_URL_REQUEST_URL_REQUEST_JOB_FACTORY_H_
+#ifndef ATOM_BROWSER_NET_ATOM_URL_REQUEST_URL_REQUEST_JOB_FACTORY_H_
+#define ATOM_BROWSER_NET_ATOM_URL_REQUEST_URL_REQUEST_JOB_FACTORY_H_
 
 #include <map>
 #include <vector>
@@ -44,4 +44,4 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_ATOM_URL_REQUEST_URL_REQUEST_JOB_FACTORY_H_
+#endif  // ATOM_BROWSER_NET_ATOM_URL_REQUEST_URL_REQUEST_JOB_FACTORY_H_

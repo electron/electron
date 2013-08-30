@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "browser/atom_url_request_job_factory.h"
+#include "browser/net/atom_url_request_job_factory.h"
 
 #include "base/stl_util.h"
 #include "googleurl/src/gurl.h"
