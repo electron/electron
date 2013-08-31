@@ -17,8 +17,32 @@ NODE_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'node')
 DIST_HEADERS_NAME = 'node-{0}'.format(get_atom_shell_version())
 DIST_HEADERS_DIR = os.path.join(DIST_DIR, DIST_HEADERS_NAME)
 
-BUNDLE_NAME = 'Atom.app'
-BUNDLE_DIR = os.path.join(SOURCE_ROOT, 'out', 'Release', BUNDLE_NAME)
+TARGET_PLATFORM = {
+  'cygwin': 'win32',
+  'darwin': 'darwin',
+  'linux2': 'linux',
+  'win32': 'win32',
+}[sys.platform]
+
+TARGET_BINARIES = {
+  'darwin': [
+  ],
+  'win32': [
+    'atom.exe',
+    'chromiumcontent.dll',
+    'content_shell.pak',
+    'icudt.dll',
+    'libGLESv2.dll',
+  ],
+}
+TARGET_DIRECTORIES = {
+  'darwin': [
+    'Atom.app',
+  ],
+  'win32': [
+    'resources',
+  ],
+}
 
 HEADERS_SUFFIX = [
   '.h',
@@ -55,8 +79,15 @@ def force_build():
 
 
 def copy_binaries():
-  shutil.copytree(BUNDLE_DIR, os.path.join(DIST_DIR, BUNDLE_NAME),
-                  symlinks=True)
+  out_dir = os.path.join(SOURCE_ROOT, 'out', 'Release')
+
+  for binary in TARGET_BINARIES[TARGET_PLATFORM]:
+    shutil.copy2(os.path.join(out_dir, binary), DIST_DIR)
+
+  for directory in TARGET_DIRECTORIES[TARGET_PLATFORM]:
+    shutil.copytree(os.path.join(out_dir, directory),
+                    os.path.join(DIST_DIR, directory),
+                    symlinks=True)
 
 
 def copy_headers():
