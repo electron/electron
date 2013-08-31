@@ -129,13 +129,14 @@ def create_version():
 
 
 def create_zip():
-  print "Zipping distribution..."
   zip_file = os.path.join(SOURCE_ROOT, 'dist', 'atom-shell.zip')
   safe_unlink(zip_file)
 
   with scoped_cwd(DIST_DIR):
-    files = ['Atom.app', 'LICENSE', 'version']
-    subprocess.check_call(['zip', '-r', '-y', zip_file] + files)
+    files = TARGET_BINARIES[TARGET_PLATFORM] +  \
+            TARGET_DIRECTORIES[TARGET_PLATFORM] + \
+            ['LICENSE', 'version']
+    make_zip(zip_file, files)
 
 
 def create_header_tarball():
