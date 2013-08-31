@@ -19,7 +19,7 @@ TARGET_PLATFORM = {
 }[sys.platform]
 
 ATOM_SHELL_VRESION = get_atom_shell_version()
-NODE_VERSION = 'v0.8.15'
+NODE_VERSION = 'v0.10.15'
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
@@ -64,10 +64,18 @@ def dist_newer_than_head():
 def upload(bucket, access_key, secret_key, version=ATOM_SHELL_VRESION):
   os.chdir(DIST_DIR)
 
-  s3put(bucket, access_key, secret_key, DIST_DIR,
-        'atom-shell/{0}'.format(version), [DIST_NAME])
+  # s3put(bucket, access_key, secret_key, DIST_DIR,
+  #       'atom-shell/{0}'.format(version), [DIST_NAME])
   s3put(bucket, access_key, secret_key, DIST_DIR,
         'atom-shell/dist/{0}'.format(NODE_VERSION), glob.glob('node-*.tar.gz'))
+
+  if TARGET_PLATFORM == 'win32':
+    out_dir = os.path.join(SOURCE_ROOT, 'out', 'Release')
+    node_lib = os.path.join(out_dir, 'node.lib')
+    s3put(bucket, access_key, secret_key, out_dir,
+          'atom-shell/dist/{0}'.format(NODE_VERSION), [node_lib])
+    s3put(bucket, access_key, secret_key, out_dir,
+          'atom-shell/dist/{0}/x64'.format(NODE_VERSION), [node_lib])
 
 
 def update_version(bucket, access_key, secret_key):
