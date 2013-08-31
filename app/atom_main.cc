@@ -21,7 +21,7 @@ int Start(int argc, char *argv[]);
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   int argc = 0;
-  wchar_t** wargv = ::CommandLineToArgvW(cmd, &argc);
+  wchar_t** wargv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
   if (argc > 1 && wcscmp(wargv[1], L"--atom-child_process-fork") == 0) {
     // Convert argv to to UTF8
     char** argv = new char*[argc];
