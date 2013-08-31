@@ -34,6 +34,7 @@ TARGET_BINARIES = {
     'atom.exe',
     'chromiumcontent.dll',
     'content_shell.pak',
+    'ffmpegsumo.dll',
     'icudt.dll',
     'libGLESv2.dll',
   ],
