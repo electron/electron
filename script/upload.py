@@ -24,24 +24,10 @@ DIST_NAME = 'atom-shell-{0}-{1}.zip'.format(get_atom_shell_version(),
 
 
 def main():
-  try:
-    ensure_s3put()
-    if not dist_newer_than_head():
-      create_dist = os.path.join(SOURCE_ROOT, 'script', 'create-dist.py')
-      subprocess.check_call([sys.executable, create_dist])
-    upload()
-  except AssertionError as e:
-    return e.message
-
-
-def ensure_s3put():
-  output = ''
-  try:
-    output = subprocess.check_output(['s3put', '--help'])
-  except OSError as e:
-    if e.errno != errno.ENOENT:
-      raise
-  assert 'multipart' in output, 'Error: Please install boto and filechunkio'
+  if not dist_newer_than_head():
+    create_dist = os.path.join(SOURCE_ROOT, 'script', 'create-dist.py')
+    subprocess.check_call([sys.executable, create_dist])
+  upload()
 
 
 def dist_newer_than_head():
