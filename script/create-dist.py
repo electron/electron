@@ -27,7 +27,6 @@ HEADERS_SUFFIX = [
 HEADERS_DIRS = [
   'src',
   'deps/http_parser',
-  'deps/v8',
   'deps/zlib',
   'deps/uv',
 ]
@@ -62,6 +61,7 @@ def copy_binaries():
 
 def copy_headers():
   os.mkdir(DIST_HEADERS_DIR)
+  # Copy standard node headers from node. repository.
   for include_path in HEADERS_DIRS:
     abs_path = os.path.join(NODE_DIR, include_path)
     for dirpath, dirnames, filenames in os.walk(abs_path):
@@ -71,7 +71,19 @@ def copy_headers():
           continue
         copy_source_file(os.path.join(dirpath, filename))
   for other_file in HEADERS_FILES:
-    copy_source_file(os.path.join(NODE_DIR, other_file))
+    copy_source_file(source = os.path.join(NODE_DIR, other_file))
+
+  # Copy V8 headers from chromium's repository.
+  src = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor', 'download',
+                    'libchromiumcontent', 'src')
+  for dirpath, dirnames, filenames in os.walk(os.path.join(src, 'v8')):
+    for filename in filenames:
+      extension = os.path.splitext(filename)[1]
+      if extension not in HEADERS_SUFFIX:
+        continue
+      copy_source_file(source=os.path.join(dirpath, filename),
+                       start=src,
+                       destination=os.path.join(DIST_HEADERS_DIR, 'deps'))
 
 
 def copy_license():
@@ -102,11 +114,11 @@ def create_header_tarball():
     tarball.close()
 
 
-def copy_source_file(source):
-  relative = os.path.relpath(source, start=NODE_DIR)
-  destination = os.path.join(DIST_HEADERS_DIR, relative)
-  safe_mkdir(os.path.dirname(destination))
-  shutil.copy2(source, destination)
+def copy_source_file(source, start=NODE_DIR, destination=DIST_HEADERS_DIR):
+  relative = os.path.relpath(source, start=start)
+  final_destination = os.path.join(destination, relative)
+  safe_mkdir(os.path.dirname(final_destination))
+  shutil.copy2(source, final_destination)
 
 
 if __name__ == '__main__':
