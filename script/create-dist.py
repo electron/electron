@@ -12,11 +12,12 @@ from lib.util import *
 
 
 ATOM_SHELL_VRESION = get_atom_shell_version()
+NODE_VERSION = 'v0.8.15'
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
 NODE_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'node')
-DIST_HEADERS_NAME = 'node-{0}'.format(ATOM_SHELL_VRESION)
+DIST_HEADERS_NAME = 'node-{0}'.format(NODE_VERSION)
 DIST_HEADERS_DIR = os.path.join(DIST_DIR, DIST_HEADERS_NAME)
 
 TARGET_PLATFORM = {

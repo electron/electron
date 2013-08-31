@@ -19,6 +19,7 @@ TARGET_PLATFORM = {
 }[sys.platform]
 
 ATOM_SHELL_VRESION = get_atom_shell_version()
+NODE_VERSION = 'v0.8.15'
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
@@ -66,7 +67,7 @@ def upload(bucket, access_key, secret_key, version=ATOM_SHELL_VRESION):
   s3put(bucket, access_key, secret_key, DIST_DIR,
         'atom-shell/{0}'.format(version), [DIST_NAME])
   s3put(bucket, access_key, secret_key, DIST_DIR,
-        'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
+        'atom-shell/dist/{0}'.format(NODE_VERSION), glob.glob('node-*.tar.gz'))
 
 
 def update_version(bucket, access_key, secret_key):
