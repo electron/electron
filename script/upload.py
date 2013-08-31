@@ -10,8 +10,17 @@ import tempfile
 from lib.util import *
 
 
+TARGET_PLATFORM = {
+  'cygwin': 'win32',
+  'darwin': 'darwin',
+  'linux2': 'linux',
+  'win32': 'win32',
+}[sys.platform]
+
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
+DIST_NAME = 'atom-shell-{0}-{1}.zip'.format(get_atom_shell_version(),
+                                            TARGET_PLATFORM)
 
 
 def main():
@@ -40,7 +49,7 @@ def dist_newer_than_head():
     try:
       head_time = subprocess.check_output(['git', 'log', '--pretty=format:%at',
                                            '-n', '1']).strip()
-      dist_time = os.path.getmtime(os.path.join(DIST_DIR, 'atom-shell.zip'))
+      dist_time = os.path.getmtime(os.path.join(DIST_DIR, DIST_NAME))
     except OSError as e:
       if e.errno != errno.ENOENT:
         raise
@@ -55,7 +64,7 @@ def upload():
 
   version = get_atom_shell_version()
   s3put(bucket, access_key, secret_key, DIST_DIR,
-        'atom-shell/{0}'.format(version), ['atom-shell.zip'])
+        'atom-shell/{0}'.format(version), [DIST_NAME])
   s3put(bucket, access_key, secret_key, DIST_DIR,
         'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
 

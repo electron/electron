@@ -11,10 +11,12 @@ import tarfile
 from lib.util import *
 
 
+ATOM_SHELL_VRESION = get_atom_shell_version()
+
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
 NODE_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'node')
-DIST_HEADERS_NAME = 'node-{0}'.format(get_atom_shell_version())
+DIST_HEADERS_NAME = 'node-{0}'.format(ATOM_SHELL_VRESION)
 DIST_HEADERS_DIR = os.path.join(DIST_DIR, DIST_HEADERS_NAME)
 
 TARGET_PLATFORM = {
@@ -125,12 +127,13 @@ def copy_license():
 def create_version():
   version_path = os.path.join(SOURCE_ROOT, 'dist', 'version')
   with open(version_path, 'w') as version_file:
-    version_file.write(get_atom_shell_version())
+    version_file.write(ATOM_SHELL_VRESION)
 
 
 def create_zip():
-  zip_file = os.path.join(SOURCE_ROOT, 'dist', 'atom-shell.zip')
-  safe_unlink(zip_file)
+  dist_name = 'atom-shell-{0}-{1}.zip'.format(ATOM_SHELL_VRESION,
+                                              TARGET_PLATFORM)
+  zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
     files = TARGET_BINARIES[TARGET_PLATFORM] +  \
