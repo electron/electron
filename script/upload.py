@@ -64,12 +64,17 @@ def dist_newer_than_head():
 def upload(bucket, access_key, secret_key, version=ATOM_SHELL_VRESION):
   os.chdir(DIST_DIR)
 
-  # s3put(bucket, access_key, secret_key, DIST_DIR,
-  #       'atom-shell/{0}'.format(version), [DIST_NAME])
+  s3put(bucket, access_key, secret_key, DIST_DIR,
+        'atom-shell/{0}'.format(version), [DIST_NAME])
   s3put(bucket, access_key, secret_key, DIST_DIR,
         'atom-shell/dist/{0}'.format(NODE_VERSION), glob.glob('node-*.tar.gz'))
 
   if TARGET_PLATFORM == 'win32':
+    # Generate the node.lib.
+    build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
+    subprocess.check_call([sys.executable, build, '-c', 'Release',
+                          '-t', 'generate_node_lib'])
+
     out_dir = os.path.join(SOURCE_ROOT, 'out', 'Release')
     node_lib = os.path.join(out_dir, 'node.lib')
     s3put(bucket, access_key, secret_key, out_dir,
