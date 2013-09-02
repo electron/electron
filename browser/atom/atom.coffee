@@ -1,11 +1,17 @@
 fs = require 'fs'
 path = require 'path'
 
-# Redirect node's console to use our own implementations, since node can not
-# handle output when running as GUI program.
 if process.platform is 'win32'
+  # Redirect node's console to use our own implementations, since node can not
+  # handle output when running as GUI program.
   console.log = console.error = console.warn = process.log
   process.stdout.write = process.stderr.write = process.log
+
+  # Always returns EOF for stdin stream.
+  Readable = require('stream').Readable
+  stdin = new Readable
+  stdin.push null
+  process.__defineGetter__ 'stdin', -> stdin
 
 # Provide default Content API implementations.
 atom = {}
