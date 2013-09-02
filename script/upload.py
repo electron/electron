@@ -44,7 +44,7 @@ def parse_args():
   parser = argparse.ArgumentParser(description='upload distribution file')
   parser.add_argument('-n', '--no-update-version',
                       help='Do not update the latest version file',
-                      action='store_false')
+                      action='store_true')
   return parser.parse_args()
 
 
