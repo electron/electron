@@ -22,6 +22,7 @@ ATOM_SHELL_VRESION = get_atom_shell_version()
 NODE_VERSION = 'v0.10.15'
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'Release')
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
 DIST_NAME = 'atom-shell-{0}-{1}.zip'.format(ATOM_SHELL_VRESION, TARGET_PLATFORM)
 
@@ -75,12 +76,16 @@ def upload(bucket, access_key, secret_key, version=ATOM_SHELL_VRESION):
     subprocess.check_call([sys.executable, build, '-c', 'Release',
                           '-t', 'generate_node_lib'])
 
-    out_dir = os.path.join(SOURCE_ROOT, 'out', 'Release')
-    node_lib = os.path.join(out_dir, 'node.lib')
-    s3put(bucket, access_key, secret_key, out_dir,
+    # Upload the 32bit node.lib.
+    node_lib = os.path.join(OUT_DIR, 'node.lib')
+    s3put(bucket, access_key, secret_key, OUT_DIR,
           'atom-shell/dist/{0}'.format(NODE_VERSION), [node_lib])
-    s3put(bucket, access_key, secret_key, out_dir,
-          'atom-shell/dist/{0}/x64'.format(NODE_VERSION), [node_lib])
+
+    # Upload the fake 64bit node.lib.
+    touch_x64_node_lib()
+    node_lib = os.path.join(OUT_DIR, 'x64', 'node.lib')
+    s3put(bucket, access_key, secret_key, OUT_DIR,
+          'atom-shell/dist/{0}'.format(NODE_VERSION), [node_lib])
 
 
 def update_version(bucket, access_key, secret_key):
@@ -112,6 +117,13 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
   ] + files
 
   subprocess.check_call(args)
+
+
+def touch_x64_node_lib():
+  x64_dir = os.path.join(OUT_DIR, 'x64')
+  safe_mkdir(x64_dir)
+  with open(os.path.join(x64_dir, 'node.lib'), 'w+') as node_lib:
+    node_lib.write('Invalid library')
 
 
 if __name__ == '__main__':
