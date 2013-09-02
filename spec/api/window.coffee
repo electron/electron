@@ -44,8 +44,10 @@ describe 'window module', ->
 
     it 'should emit beforeunload handler', (done) ->
       w = new BrowserWindow(show: false)
-      w.on 'onbeforeunload', done
-      w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-true.html')
+      w.on 'onbeforeunload', ->
+        w.destroy()
+        done()
+      w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html')
 
   describe 'BrowserWindow.loadUrl(url)', ->
     it 'should emit loading-state-changed event', (done) ->
@@ -84,4 +86,4 @@ describe 'window module', ->
       w.on 'onbeforeunload', ->
         w.destroy()
         done()
-      w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html')
+      w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-string.html')
