@@ -1,0 +1,13 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  window.onbeforeunload = function() {
+    setImmediate(function() {
+      require('remote').getCurrentWindow().emit('onbeforeunload');
+    });
+    return false;
+  }
+  window.close();
+</script>
+</body>
+</html>

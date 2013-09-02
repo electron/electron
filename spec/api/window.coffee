@@ -21,16 +21,31 @@ describe 'window module', ->
         done()
       w.loadUrl 'file://' + path.join(fixtures, 'api', 'unload.html')
 
-  xdescribe 'window.close()', ->
-    it 'should emit unload handler', (done) ->
+    it 'should emit beforeunload handler', (done) ->
       w = new BrowserWindow(show: false)
-      w.on 'destroyed', ->
+      w.on 'onbeforeunload', ->
+        w.destroy()
+        done()
+      w.on 'loading-state-changed', (event, isLoading) ->
+        if (!isLoading)
+          w.close()
+      w.loadUrl 'file://' + path.join(fixtures, 'api', 'beforeunload-false.html')
+
+  describe 'window.close()', ->
+    xit 'should emit unload handler', (done) ->
+      w = new BrowserWindow(show: false)
+      w.on 'closed', ->
         test = path.join(fixtures, 'api', 'close')
         content = fs.readFileSync(test)
         fs.unlinkSync(test)
         assert.equal String(content), 'close'
         done()
       w.loadUrl 'file://' + path.join(fixtures, 'api', 'close.html')
+
+    it 'should emit beforeunload handler', (done) ->
+      w = new BrowserWindow(show: false)
+      w.on 'onbeforeunload', done
+      w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-true.html')
 
   describe 'BrowserWindow.loadUrl(url)', ->
     it 'should emit loading-state-changed event', (done) ->
@@ -49,3 +64,24 @@ describe 'window module', ->
 
         ++count
       w.loadUrl 'about:blank'
+
+  describe 'beforeunload handler', ->
+    it 'returning true would not prevent close', (done) ->
+      w = new BrowserWindow(show: false)
+      w.on 'closed', ->
+        done()
+      w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-true.html')
+
+    it 'returning false would prevent close', (done) ->
+      w = new BrowserWindow(show: false)
+      w.on 'onbeforeunload', ->
+        w.destroy()
+        done()
+      w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html')
+
+    it 'returning non-empty string would prevent close', (done) ->
+      w = new BrowserWindow(show: false)
+      w.on 'onbeforeunload', ->
+        w.destroy()
+        done()
+      w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html')
