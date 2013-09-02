@@ -2,9 +2,9 @@
 <body>
 <script type="text/javascript" charset="utf-8">
   window.onbeforeunload = function() {
-    setImmediate(function() {
+    setTimeout(function() {
       require('remote').getCurrentWindow().emit('onbeforeunload');
-    });
+    }, 0);
     return 'string';
   }
   window.close();
