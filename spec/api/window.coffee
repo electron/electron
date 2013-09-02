@@ -74,6 +74,12 @@ describe 'window module', ->
         done()
       w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-true.html')
 
+    it 'returning non-empty string would not prevent close', (done) ->
+      w = new BrowserWindow(show: false)
+      w.on 'closed', ->
+        done()
+      w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-string.html')
+
     it 'returning false would prevent close', (done) ->
       w = new BrowserWindow(show: false)
       w.on 'onbeforeunload', ->
@@ -81,9 +87,9 @@ describe 'window module', ->
         done()
       w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html')
 
-    it 'returning non-empty string would prevent close', (done) ->
+    it 'returning empty string would prevent close', (done) ->
       w = new BrowserWindow(show: false)
       w.on 'onbeforeunload', ->
         w.destroy()
         done()
-      w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-string.html')
+      w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-empty-string.html')
