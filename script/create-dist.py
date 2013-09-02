@@ -11,14 +11,42 @@ import tarfile
 from lib.util import *
 
 
+ATOM_SHELL_VRESION = get_atom_shell_version()
+NODE_VERSION = 'v0.10.15'
+
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
 NODE_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'node')
-DIST_HEADERS_NAME = 'node-{0}'.format(get_atom_shell_version())
+DIST_HEADERS_NAME = 'node-{0}'.format(NODE_VERSION)
 DIST_HEADERS_DIR = os.path.join(DIST_DIR, DIST_HEADERS_NAME)
 
-BUNDLE_NAME = 'Atom.app'
-BUNDLE_DIR = os.path.join(SOURCE_ROOT, 'out', 'Release', BUNDLE_NAME)
+TARGET_PLATFORM = {
+  'cygwin': 'win32',
+  'darwin': 'darwin',
+  'linux2': 'linux',
+  'win32': 'win32',
+}[sys.platform]
+
+TARGET_BINARIES = {
+  'darwin': [
+  ],
+  'win32': [
+    'atom.exe',
+    'chromiumcontent.dll',
+    'content_shell.pak',
+    'ffmpegsumo.dll',
+    'icudt.dll',
+    'libGLESv2.dll',
+  ],
+}
+TARGET_DIRECTORIES = {
+  'darwin': [
+    'Atom.app',
+  ],
+  'win32': [
+    'resources',
+  ],
+}
 
 HEADERS_SUFFIX = [
   '.h',
@@ -27,7 +55,6 @@ HEADERS_SUFFIX = [
 HEADERS_DIRS = [
   'src',
   'deps/http_parser',
-  'deps/v8',
   'deps/zlib',
   'deps/uv',
 ]
@@ -56,12 +83,20 @@ def force_build():
 
 
 def copy_binaries():
-  shutil.copytree(BUNDLE_DIR, os.path.join(DIST_DIR, BUNDLE_NAME),
-                  symlinks=True)
+  out_dir = os.path.join(SOURCE_ROOT, 'out', 'Release')
+
+  for binary in TARGET_BINARIES[TARGET_PLATFORM]:
+    shutil.copy2(os.path.join(out_dir, binary), DIST_DIR)
+
+  for directory in TARGET_DIRECTORIES[TARGET_PLATFORM]:
+    shutil.copytree(os.path.join(out_dir, directory),
+                    os.path.join(DIST_DIR, directory),
+                    symlinks=True)
 
 
 def copy_headers():
   os.mkdir(DIST_HEADERS_DIR)
+  # Copy standard node headers from node. repository.
   for include_path in HEADERS_DIRS:
     abs_path = os.path.join(NODE_DIR, include_path)
     for dirpath, dirnames, filenames in os.walk(abs_path):
@@ -71,7 +106,19 @@ def copy_headers():
           continue
         copy_source_file(os.path.join(dirpath, filename))
   for other_file in HEADERS_FILES:
-    copy_source_file(os.path.join(NODE_DIR, other_file))
+    copy_source_file(source = os.path.join(NODE_DIR, other_file))
+
+  # Copy V8 headers from chromium's repository.
+  src = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor', 'download',
+                    'libchromiumcontent', 'src')
+  for dirpath, dirnames, filenames in os.walk(os.path.join(src, 'v8')):
+    for filename in filenames:
+      extension = os.path.splitext(filename)[1]
+      if extension not in HEADERS_SUFFIX:
+        continue
+      copy_source_file(source=os.path.join(dirpath, filename),
+                       start=src,
+                       destination=os.path.join(DIST_HEADERS_DIR, 'deps'))
 
 
 def copy_license():
@@ -82,17 +129,19 @@ def copy_license():
 def create_version():
   version_path = os.path.join(SOURCE_ROOT, 'dist', 'version')
   with open(version_path, 'w') as version_file:
-    version_file.write(get_atom_shell_version())
+    version_file.write(ATOM_SHELL_VRESION)
 
 
 def create_zip():
-  print "Zipping distribution..."
-  zip_file = os.path.join(SOURCE_ROOT, 'dist', 'atom-shell.zip')
-  safe_unlink(zip_file)
+  dist_name = 'atom-shell-{0}-{1}.zip'.format(ATOM_SHELL_VRESION,
+                                              TARGET_PLATFORM)
+  zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
-    files = ['Atom.app', 'LICENSE', 'version']
-    subprocess.check_call(['zip', '-r', '-y', zip_file] + files)
+    files = TARGET_BINARIES[TARGET_PLATFORM] +  \
+            TARGET_DIRECTORIES[TARGET_PLATFORM] + \
+            ['LICENSE', 'version']
+    make_zip(zip_file, files)
 
 
 def create_header_tarball():
@@ -102,11 +151,11 @@ def create_header_tarball():
     tarball.close()
 
 
-def copy_source_file(source):
-  relative = os.path.relpath(source, start=NODE_DIR)
-  destination = os.path.join(DIST_HEADERS_DIR, relative)
-  safe_mkdir(os.path.dirname(destination))
-  shutil.copy2(source, destination)
+def copy_source_file(source, start=NODE_DIR, destination=DIST_HEADERS_DIR):
+  relative = os.path.relpath(source, start=start)
+  final_destination = os.path.join(destination, relative)
+  safe_mkdir(os.path.dirname(final_destination))
+  shutil.copy2(source, final_destination)
 
 
 if __name__ == '__main__':

@@ -20,7 +20,7 @@ def main():
   args = parse_args()
   for config in args.configuration:
     build_path = os.path.join('out', config)
-    subprocess.call([ninja, '-C', build_path])
+    subprocess.call([ninja, '-C', build_path, args.target])
 
 
 def parse_args():
@@ -29,6 +29,10 @@ def parse_args():
                       help='Build with Release or Debug configuration',
                       nargs='+',
                       default=CONFIGURATIONS,
+                      required=False)
+  parser.add_argument('-t', '--target',
+                      help='Build specified target',
+                      default='atom',
                       required=False)
   return parser.parse_args()
 
