@@ -25,6 +25,8 @@ bool AtomURLRequestJobFactory::SetProtocolHandler(
     ProtocolHandler* protocol_handler) {
   DCHECK(CalledOnValidThread());
 
+  base::AutoLock locked(lock_);
+
   if (!protocol_handler) {
     ProtocolHandlerMap::iterator it = protocol_handler_map_.find(scheme);
     if (it == protocol_handler_map_.end())
@@ -41,12 +43,13 @@ bool AtomURLRequestJobFactory::SetProtocolHandler(
   return true;
 }
 
-ProtocolHandler* AtomURLRequestJobFactory::InterceptProtocol(
+ProtocolHandler* AtomURLRequestJobFactory::ReplaceProtocol(
     const std::string& scheme,
     ProtocolHandler* protocol_handler) {
   DCHECK(CalledOnValidThread());
   DCHECK(protocol_handler);
 
+  base::AutoLock locked(lock_);
   if (!ContainsKey(protocol_handler_map_, scheme))
     return NULL;
   ProtocolHandler* original_protocol_handler = protocol_handler_map_[scheme];
@@ -54,11 +57,30 @@ ProtocolHandler* AtomURLRequestJobFactory::InterceptProtocol(
   return original_protocol_handler;
 }
 
+ProtocolHandler* AtomURLRequestJobFactory::GetProtocolHandler(
+    const std::string& scheme) const {
+  DCHECK(CalledOnValidThread());
+
+  base::AutoLock locked(lock_);
+  ProtocolHandlerMap::const_iterator it = protocol_handler_map_.find(scheme);
+  if (it == protocol_handler_map_.end())
+    return NULL;
+  return it->second;
+}
+
+bool AtomURLRequestJobFactory::HasProtocolHandler(
+    const std::string& scheme) const {
+  base::AutoLock locked(lock_);
+  return ContainsKey(protocol_handler_map_, scheme);
+}
+
 net::URLRequestJob* AtomURLRequestJobFactory::MaybeCreateJobWithProtocolHandler(
     const std::string& scheme,
     net::URLRequest* request,
     net::NetworkDelegate* network_delegate) const {
   DCHECK(CalledOnValidThread());
+
+  base::AutoLock locked(lock_);
   ProtocolHandlerMap::const_iterator it = protocol_handler_map_.find(scheme);
   if (it == protocol_handler_map_.end())
     return NULL;
@@ -68,7 +90,7 @@ net::URLRequestJob* AtomURLRequestJobFactory::MaybeCreateJobWithProtocolHandler(
 bool AtomURLRequestJobFactory::IsHandledProtocol(
     const std::string& scheme) const {
   DCHECK(CalledOnValidThread());
-  return ContainsKey(protocol_handler_map_, scheme) ||
+  return HasProtocolHandler(scheme) ||
       net::URLRequest::IsHandledProtocol(scheme);
 }
 

@@ -4,6 +4,7 @@
 
 #include "browser/api/atom_api_protocol.h"
 
+#include "base/stl_util.h"
 #include "browser/atom_browser_context.h"
 #include "browser/net/adapter_request_job.h"
 #include "browser/net/atom_url_request_job_factory.h"
@@ -54,7 +55,6 @@ v8::Handle<v8::Object> ConvertURLRequestToV8Object(
 
 // Get the job factory.
 AtomURLRequestJobFactory* GetRequestJobFactory() {
-  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
   return static_cast<AtomURLRequestJobFactory*>(
       const_cast<net::URLRequestJobFactory*>(
           static_cast<content::BrowserContext*>(AtomBrowserContext::Get())->
@@ -128,12 +128,14 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
     }
 
     // Try the default protocol handler if we have.
-    if (default_protocol_handler())
+    if (default_protocol_handler()) {
       content::BrowserThread::PostTask(
           content::BrowserThread::IO,
           FROM_HERE,
           base::Bind(&AdapterRequestJob::CreateJobFromProtocolHandlerAndStart,
                      GetWeakPtr()));
+      return;
+    }
 
     // Fallback to the not implemented error.
     content::BrowserThread::PostTask(
@@ -164,6 +166,12 @@ class CustomProtocolHandler : public ProtocolHandler {
                                         request,
                                         network_delegate);
   }
+
+  ProtocolHandler* ReleaseDefaultProtocolHandler() {
+    return protocol_handler_.release();
+  }
+
+  ProtocolHandler* original_handler() { return protocol_handler_.get(); }
 
  private:
   scoped_ptr<ProtocolHandler> protocol_handler_;
@@ -219,18 +227,38 @@ v8::Handle<v8::Value> Protocol::IsHandledProtocol(const v8::Arguments& args) {
 // static
 v8::Handle<v8::Value> Protocol::InterceptProtocol(const v8::Arguments& args) {
   std::string scheme(*v8::String::Utf8Value(args[0]));
-  if (scheme == "https" || scheme == "http")
-    return node::ThrowError("Intercepting http protocol is not supported.");
+  if (!GetRequestJobFactory()->HasProtocolHandler(scheme))
+    return node::ThrowError("Cannot intercept procotol");
+
+  if (ContainsKey(g_handlers, scheme))
+    return node::ThrowError("Cannot intercept custom procotols");
+
+  // Store the handler in a map.
+  if (!args[1]->IsFunction())
+    return node::ThrowError("Handler must be a function");
+  g_handlers[scheme] = v8::Persistent<v8::Function>::New(
+      node::node_isolate, v8::Handle<v8::Function>::Cast(args[1]));
 
   content::BrowserThread::PostTask(content::BrowserThread::IO,
                                    FROM_HERE,
-                                   base::Bind(&UnregisterProtocolInIO, scheme));
-
+                                   base::Bind(&InterceptProtocolInIO, scheme));
   return v8::Undefined();
 }
 
 // static
 v8::Handle<v8::Value> Protocol::UninterceptProtocol(const v8::Arguments& args) {
+  std::string scheme(*v8::String::Utf8Value(args[0]));
+
+  // Erase the handler from map.
+  HandlersMap::iterator it(g_handlers.find(scheme));
+  if (it == g_handlers.end())
+    return node::ThrowError("The scheme has not been registered");
+  g_handlers.erase(it);
+
+  content::BrowserThread::PostTask(content::BrowserThread::IO,
+                                   FROM_HERE,
+                                   base::Bind(&UninterceptProtocolInIO,
+                                              scheme));
   return v8::Undefined();
 }
 
@@ -263,11 +291,39 @@ void Protocol::UnregisterProtocolInIO(const std::string& scheme) {
 // static
 void Protocol::InterceptProtocolInIO(const std::string& scheme) {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
+  AtomURLRequestJobFactory* job_factory(GetRequestJobFactory());
+  ProtocolHandler* original_handler = job_factory->GetProtocolHandler(scheme);
+  job_factory->ReplaceProtocol(scheme,
+                               new CustomProtocolHandler(original_handler));
+
+  content::BrowserThread::PostTask(content::BrowserThread::UI,
+                                   FROM_HERE,
+                                   base::Bind(&EmitEventInUI,
+                                              "intercepted",
+                                              scheme));
 }
 
 // static
 void Protocol::UninterceptProtocolInIO(const std::string& scheme) {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
+  AtomURLRequestJobFactory* job_factory(GetRequestJobFactory());
+
+  // Check if the protocol handler is intercepted.
+  CustomProtocolHandler* handler = static_cast<CustomProtocolHandler*>(
+      job_factory->GetProtocolHandler(scheme));
+  if (!handler->original_handler())
+    return;
+
+  // Reset the protocol handler to the orignal one and delete current
+  // protocol handler.
+  ProtocolHandler* original_handler = handler->ReleaseDefaultProtocolHandler();
+  delete job_factory->ReplaceProtocol(scheme, original_handler);
+
+  content::BrowserThread::PostTask(content::BrowserThread::UI,
+                                   FROM_HERE,
+                                   base::Bind(&EmitEventInUI,
+                                              "unintercepted",
+                                              scheme));
 }
 
 // static
@@ -279,6 +335,8 @@ void Protocol::Initialize(v8::Handle<v8::Object> target) {
   node::SetMethod(target, "registerProtocol", RegisterProtocol);
   node::SetMethod(target, "unregisterProtocol", UnregisterProtocol);
   node::SetMethod(target, "isHandledProtocol", IsHandledProtocol);
+  node::SetMethod(target, "interceptProtocol", InterceptProtocol);
+  node::SetMethod(target, "uninterceptProtocol", UninterceptProtocol);
 }
 
 }  // namespace api

@@ -96,7 +96,7 @@ void AdapterRequestJob::CreateJobFromProtocolHandlerAndStart() {
   DCHECK(protocol_handler_);
   real_job_ = protocol_handler_->MaybeCreateJob(request(),
                                                 network_delegate());
-  if (!real_job_)
+  if (!real_job_.get())
     CreateErrorJobAndStart(net::ERR_NOT_IMPLEMENTED);
   else
     real_job_->Start();

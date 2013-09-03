@@ -11,6 +11,7 @@
 
 #include "base/basictypes.h"
 #include "base/compiler_specific.h"
+#include "base/synchronization/lock.h"
 #include "net/url_request/url_request_job_factory.h"
 
 namespace atom {
@@ -28,8 +29,14 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
 
   // Intercepts the ProtocolHandler for a scheme. Returns the original protocol
   // handler on success, otherwise returns NULL.
-  ProtocolHandler* InterceptProtocol(const std::string& scheme,
+  ProtocolHandler* ReplaceProtocol(const std::string& scheme,
                                      ProtocolHandler* protocol_handler);
+
+  // Returns the protocol handler registered with scheme.
+  ProtocolHandler* GetProtocolHandler(const std::string& scheme) const;
+
+  // Whether the protocol handler is registered by the job factory.
+  bool HasProtocolHandler(const std::string& scheme) const;
 
   // URLRequestJobFactory implementation
   virtual net::URLRequestJob* MaybeCreateJobWithProtocolHandler(
@@ -43,6 +50,8 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
   typedef std::map<std::string, ProtocolHandler*> ProtocolHandlerMap;
 
   ProtocolHandlerMap protocol_handler_map_;
+
+  mutable base::Lock lock_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomURLRequestJobFactory);
 };
