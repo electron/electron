@@ -293,6 +293,16 @@ void Protocol::InterceptProtocolInIO(const std::string& scheme) {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
   AtomURLRequestJobFactory* job_factory(GetRequestJobFactory());
   ProtocolHandler* original_handler = job_factory->GetProtocolHandler(scheme);
+  if (original_handler == NULL) {
+    content::BrowserThread::PostTask(
+        content::BrowserThread::UI,
+        FROM_HERE,
+        base::Bind(&EmitEventInUI,
+                   "error",
+                   "There is no protocol handler to intercpet"));
+    return;
+  }
+
   job_factory->ReplaceProtocol(scheme,
                                new CustomProtocolHandler(original_handler));
 
@@ -311,8 +321,15 @@ void Protocol::UninterceptProtocolInIO(const std::string& scheme) {
   // Check if the protocol handler is intercepted.
   CustomProtocolHandler* handler = static_cast<CustomProtocolHandler*>(
       job_factory->GetProtocolHandler(scheme));
-  if (!handler->original_handler())
+  if (handler->original_handler() == NULL) {
+    content::BrowserThread::PostTask(
+        content::BrowserThread::UI,
+        FROM_HERE,
+        base::Bind(&EmitEventInUI,
+                   "error",
+                   "The protocol is not intercpeted"));
     return;
+  }
 
   // Reset the protocol handler to the orignal one and delete current
   // protocol handler.
