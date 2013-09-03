@@ -31,6 +31,7 @@ Browser side modules:
 * [menu](menu.md)
 * [menu-item](menu-item.md)
 * [power-monitor](power-monitor.md)
+* [protocol](protocol.md)
 
 Common modules:
 
