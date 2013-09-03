@@ -7,6 +7,10 @@
 
 #include "brightray/browser/browser_client.h"
 
+namespace net {
+class URLRequestContextStorage;
+}
+
 namespace atom {
 
 class AtomBrowserClient : public brightray::BrowserClient {
@@ -15,6 +19,9 @@ class AtomBrowserClient : public brightray::BrowserClient {
   virtual ~AtomBrowserClient();
 
  protected:
+  net::URLRequestContextGetter* CreateRequestContext(
+      content::BrowserContext* browser_context,
+      content::ProtocolHandlerMap* protocol_handlers) OVERRIDE;
   virtual void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
                                    const GURL& url,
                                    WebPreferences* prefs) OVERRIDE;
@@ -26,6 +33,8 @@ class AtomBrowserClient : public brightray::BrowserClient {
  private:
   virtual brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
       const content::MainFunctionParams&) OVERRIDE;
+
+  scoped_ptr<net::URLRequestContextStorage> storage_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
 };

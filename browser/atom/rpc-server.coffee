@@ -44,10 +44,13 @@ unwrapArgs = (processId, routingId, args) ->
       when 'remote-object' then objectsRegistry.get meta.id
       when 'array' then unwrapArgs processId, routingId, meta.value
       when 'object'
-        ret = {}
+        ret = v8Util.createObjectWithName meta.name
         for member in meta.members
           ret[member.name] = metaToValue(member.value)
         ret
+      when 'function-with-return-value'
+        returnValue = metaToValue meta.value
+        -> returnValue
       when 'function'
         ret = ->
           ipc.sendChannel processId, routingId, 'ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(processId, routingId, arguments)
@@ -98,6 +101,16 @@ ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, processId, routingId, id, args) ->
     func = objectsRegistry.get id
     ret = func.apply global, args
     event.result = valueToMeta processId, routingId, ret
+  catch e
+    event.result = errorToMeta e
+
+ipc.on 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', (event, processId, routingId, id, method, args) ->
+  try
+    args = unwrapArgs processId, routingId, args
+    constructor = objectsRegistry.get(id)[method]
+    # Call new with array of arguments.
+    obj = new (Function::bind.apply(constructor, [null].concat(args)))
+    event.result = valueToMeta processId, routingId, obj
   catch e
     event.result = errorToMeta e
 
