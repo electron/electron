@@ -13,9 +13,11 @@ wrapArgs = (args) ->
     else if value? and typeof value is 'object' and v8Util.getHiddenValue value, 'atomId'
       type: 'remote-object', id: v8Util.getHiddenValue value, 'atomId'
     else if value? and typeof value is 'object'
-      ret = type: 'object', members: []
+      ret = type: 'object', name: value.constructor.name, members: []
       ret.members.push(name: prop, value: valueToMeta(field)) for prop, field of value
       ret
+    else if typeof value is 'function' and v8Util.getHiddenValue value, 'returnValue'
+      type: 'function-with-return-value', value: valueToMeta(value())
     else if typeof value is 'function'
       type: 'function', id: callbacksRegistry.add(value)
     else
@@ -29,8 +31,7 @@ metaToValue = (meta) ->
     when 'value' then meta.value
     when 'array' then (metaToValue(el) for el in meta.members)
     when 'error'
-      console.log meta.stack
-      throw new Error(meta.message)
+      throw new Error("#{meta.message}\n#{meta.stack}")
     else
       if meta.type is 'function'
         # A shadow class to represent the remote function object.
@@ -56,10 +57,17 @@ metaToValue = (meta) ->
       for member in meta.members
         do (member) ->
           if member.type is 'function'
-            ret[member.name] = ->
-              # Call member function.
-              ret = ipc.sendChannelSync 'ATOM_BROWSER_MEMBER_CALL', meta.id, member.name, wrapArgs(arguments)
-              metaToValue ret
+            ret[member.name] =
+            class RemoteMemberFunction
+              constructor: ->
+                if @constructor is RemoteMemberFunction
+                  # Constructor call.
+                  obj = ipc.sendChannelSync 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', meta.id, member.name, wrapArgs(arguments)
+                  return metaToValue obj
+                else
+                  # Call member function.
+                  ret = ipc.sendChannelSync 'ATOM_BROWSER_MEMBER_CALL', meta.id, member.name, wrapArgs(arguments)
+                  return metaToValue ret
           else
             ret.__defineSetter__ member.name, (value) ->
               # Set member data.
@@ -121,3 +129,9 @@ processCache = null
 exports.__defineGetter__ 'process', ->
   processCache = exports.getGlobal('process') unless processCache?
   processCache
+
+# Create a funtion that will return the specifed value when called in browser.
+exports.createFunctionWithReturnValue = (returnValue) ->
+  func = -> returnValue
+  v8Util.setHiddenValue func, 'returnValue', true
+  func
