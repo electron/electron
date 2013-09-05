@@ -12,7 +12,7 @@ from lib.util import *
 
 
 ATOM_SHELL_VRESION = get_atom_shell_version()
-NODE_VERSION = 'v0.10.15'
+NODE_VERSION = 'v0.10.18'
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
