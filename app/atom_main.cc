@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "content/public/app/content_main.h"
@@ -72,10 +73,9 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 #include "app/atom_library_main.h"
 
 int main(int argc, const char* argv[]) {
-  if (argc > 1 && strcmp(argv[1], "--atom-child_process-fork") == 0) {
-    argv[1] = argv[0];
-    return node::Start(argc - 1, const_cast<char**>(argv + 1));
-  }
+  char* node_indicator = getenv("ATOM_SHELL_INTERNAL_RUN_AS_NODE");
+  if (node_indicator != NULL && strcmp(node_indicator, "1") == 0)
+    return node::Start(argc, const_cast<char**>(argv));
 
   return AtomMain(argc, argv);
 }
