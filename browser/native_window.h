@@ -165,6 +165,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
                        const content::NotificationSource& source,
                        const content::NotificationDetails& details) OVERRIDE;
 
+  // Whether window has standard frame.
+  bool has_frame_;
+
  private:
   void RendererUnresponsiveDelayed();
 

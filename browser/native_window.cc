@@ -39,10 +39,13 @@ namespace atom {
 NativeWindow::NativeWindow(content::WebContents* web_contents,
                            base::DictionaryValue* options)
     : content::WebContentsObserver(web_contents),
+      has_frame_(true),
       is_closed_(false),
       not_responding_(false),
       inspectable_web_contents_(
           brightray::InspectableWebContents::Create(web_contents)) {
+  options->GetBoolean(switches::kFrame, &has_frame_);
+
   web_contents->SetDelegate(this);
 
   WindowList::AddWindow(this);
