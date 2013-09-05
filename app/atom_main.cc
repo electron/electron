@@ -23,7 +23,8 @@ int Start(int argc, char *argv[]);
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   int argc = 0;
   wchar_t** wargv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
-  if (argc > 1 && wcscmp(wargv[1], L"--atom-child_process-fork") == 0) {
+  char* node_indicator = getenv("ATOM_SHELL_INTERNAL_RUN_AS_NODE");
+  if (node_indicator != NULL && strcmp(node_indicator, "1") == 0)
     // Convert argv to to UTF8
     char** argv = new char*[argc];
     for (int i = 0; i < argc; i++) {
@@ -58,8 +59,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
       }
     }
     // Now that conversion is done, we can finally start.
-    argv[1] = argv[0];
-    return node::Start(argc - 1, argv + 1);
+    return node::Start(argc, argv);
   }
 
   sandbox::SandboxInterfaceInfo sandbox_info = {0};
