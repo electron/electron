@@ -1,5 +1,6 @@
 assert = require 'assert'
 ipc = require 'ipc'
+path = require 'path'
 remote = require 'remote'
 protocol = remote.require 'protocol'
 
@@ -113,7 +114,8 @@ describe 'protocol API', ->
             free()
             assert false, 'Got error: ' + errorType + ' ' + error
       protocol.interceptProtocol targetScheme, (request) ->
-        assert.equal request.url, "#{targetScheme}://#{__filename}"
+        pathInUrl = path.normalize request.url.substr(8)
+        assert.equal pathInUrl, __filename
 
     it 'can override original protocol handler', (done) ->
       handler = remote.createFunctionWithReturnValue 'valar morghulis'
