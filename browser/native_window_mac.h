@@ -10,6 +10,8 @@
 #include "base/memory/scoped_ptr.h"
 #include "browser/native_window.h"
 
+class SkRegion;
+
 namespace atom {
 
 class NativeWindowMac : public NativeWindow {
@@ -52,9 +54,15 @@ class NativeWindowMac : public NativeWindow {
   virtual bool IsKiosk() OVERRIDE;
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
 
+  void NotifyWindowBlur() { NativeWindow::NotifyWindowBlur(); }
+
+  // Called to handle a mouse event.
+  void HandleMouseEvent(NSEvent* event);
+
   NSWindow*& window() { return window_; }
 
-  void NotifyWindowBlur() { NativeWindow::NotifyWindowBlur(); }
+  bool use_system_drag() const { return use_system_drag_; }
+  SkRegion* draggable_region() const { return draggable_region_.get(); }
 
  protected:
   virtual void UpdateDraggableRegions(
@@ -68,12 +76,34 @@ class NativeWindowMac : public NativeWindow {
  private:
   void InstallView();
   void UninstallView();
+  void InstallDraggableRegionViews();
+  void UpdateDraggableRegionsForSystemDrag(
+      const std::vector<DraggableRegion>& regions,
+      const DraggableRegion* draggable_area);
+  void UpdateDraggableRegionsForCustomDrag(
+      const std::vector<DraggableRegion>& regions);
 
   NSWindow* window_;
 
   bool is_kiosk_;
 
   NSInteger attention_request_id_;  // identifier from requestUserAttention
+
+  // Indicates whether system drag or custom drag should be used, depending on
+  // the complexity of draggable regions.
+  bool use_system_drag_;
+
+  // For system drag, the whole window is draggable and the non-draggable areas
+  // have to been explicitly excluded.
+  std::vector<gfx::Rect> system_drag_exclude_areas_;
+
+  // For custom drag, the whole window is non-draggable and the draggable region
+  // has to been explicitly provided.
+  scoped_ptr<SkRegion> draggable_region_;  // used in custom drag.
+
+  // Mouse location since the last mouse event, in screen coordinates. This is
+  // used in custom drag to compute the window movement.
+  NSPoint last_mouse_location_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);
 };
