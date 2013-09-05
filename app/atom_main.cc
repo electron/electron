@@ -17,14 +17,18 @@ int Start(int argc, char *argv[]);
 #include <shellapi.h>  // NOLINT
 
 #include "app/atom_main_delegate.h"
+#include "base/environment.h"
 #include "content/public/app/startup_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   int argc = 0;
   wchar_t** wargv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
-  char* node_indicator = getenv("ATOM_SHELL_INTERNAL_RUN_AS_NODE");
-  if (node_indicator != NULL && strcmp(node_indicator, "1") == 0)
+
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  std::string node_indicator;
+  if (env->GetVar("ATOM_SHELL_INTERNAL_RUN_AS_NODE", &node_indicator) &&
+      node_indicator == "1") {
     // Convert argv to to UTF8
     char** argv = new char*[argc];
     for (int i = 0; i < argc; i++) {
