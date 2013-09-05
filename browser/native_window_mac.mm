@@ -324,6 +324,10 @@ gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
   return window();
 }
 
+void NativeWindowMac::UpdateDraggableRegions(
+    const std::vector<DraggableRegion>& regions) {
+}
+
 void NativeWindowMac::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {

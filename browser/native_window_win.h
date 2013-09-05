@@ -61,6 +61,9 @@ class NativeWindowWin : public NativeWindow,
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
 
  protected:
+  virtual void UpdateDraggableRegions(
+      const std::vector<DraggableRegion>& regions) OVERRIDE;
+
   // Overridden from content::WebContentsDelegate:
   virtual void HandleKeyboardEvent(
       content::WebContents*,

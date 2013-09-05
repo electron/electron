@@ -57,6 +57,9 @@ class NativeWindowMac : public NativeWindow {
   void NotifyWindowBlur() { NativeWindow::NotifyWindowBlur(); }
 
  protected:
+  virtual void UpdateDraggableRegions(
+      const std::vector<DraggableRegion>& regions) OVERRIDE;
+
   // Implementations of content::WebContentsDelegate.
   virtual void HandleKeyboardEvent(
       content::WebContents*,

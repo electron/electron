@@ -221,6 +221,10 @@ gfx::NativeWindow NativeWindowWin::GetNativeWindow() {
   return window_->GetNativeView();
 }
 
+void NativeWindowWin::UpdateDraggableRegions(
+    const std::vector<DraggableRegion>& regions) {
+}
+
 void NativeWindowWin::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {

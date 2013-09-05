@@ -298,6 +298,8 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   IPC_BEGIN_MESSAGE_MAP(NativeWindow, message)
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message_Sync, OnRendererMessageSync)
+    IPC_MESSAGE_HANDLER(AtomViewHostMsg_UpdateDraggableRegions,
+                        UpdateDraggableRegions)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
