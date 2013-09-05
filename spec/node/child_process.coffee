@@ -12,3 +12,10 @@ describe 'child_process', ->
         assert.equal msg, 'message'
         done()
       child.send 'message'
+
+    it 'should work in forked process', (done) ->
+      child = child_process.fork path.join(fixtures, 'module', 'fork_ping.js')
+      child.on 'message', (msg) ->
+        assert.equal msg, 'message'
+        done()
+      child.send 'message'
