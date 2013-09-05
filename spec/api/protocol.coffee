@@ -114,8 +114,11 @@ describe 'protocol API', ->
             free()
             assert false, 'Got error: ' + errorType + ' ' + error
       protocol.interceptProtocol targetScheme, (request) ->
-        pathInUrl = path.normalize request.url.substr(8)
-        assert.equal pathInUrl, __filename
+        if process.platform is 'win32'
+          pathInUrl = path.normalize request.url.substr(8)
+          assert.equal pathInUrl, __filename
+        else
+          assert.equal request.url, "#{targetScheme}://#{__filename}"
 
     it 'can override original protocol handler', (done) ->
       handler = remote.createFunctionWithReturnValue 'valar morghulis'
