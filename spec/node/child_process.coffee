@@ -19,3 +19,12 @@ describe 'child_process', ->
         assert.equal msg, 'message'
         done()
       child.send 'message'
+
+    it 'should work in forked process when options.env is specifed', (done) ->
+      child = child_process.fork path.join(fixtures, 'module', 'fork_ping.js'),
+                                 [],
+                                 env: {test: 'somevar'}
+      child.on 'message', (msg) ->
+        assert.equal msg, 'message'
+        done()
+      child.send 'message'
