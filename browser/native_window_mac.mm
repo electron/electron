@@ -435,17 +435,18 @@ bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {
 }
 
 void NativeWindowMac::HandleMouseEvent(NSEvent* event) {
+  NSPoint current_mouse_location =
+      [window() convertBaseToScreen:[event locationInWindow]];
+
   if ([event type] == NSLeftMouseDown) {
-    last_mouse_location_ =
-        [window() convertBaseToScreen:[event locationInWindow]];
-  } else if ([event type] == NSLeftMouseDragged) {
-    NSPoint current_mouse_location =
-        [window() convertBaseToScreen:[event locationInWindow]];
     NSPoint frame_origin = [window() frame].origin;
-    frame_origin.x += current_mouse_location.x - last_mouse_location_.x;
-    frame_origin.y += current_mouse_location.y - last_mouse_location_.y;
-    [window() setFrameOrigin:frame_origin];
-    last_mouse_location_ = current_mouse_location;
+    last_mouse_offset_ = NSMakePoint(
+        frame_origin.x - current_mouse_location.x,
+        frame_origin.y - current_mouse_location.y);
+  } else if ([event type] == NSLeftMouseDragged) {
+    [window() setFrameOrigin:NSMakePoint(
+        current_mouse_location.x + last_mouse_offset_.x,
+        current_mouse_location.y + last_mouse_offset_.y)];
   }
 }
 

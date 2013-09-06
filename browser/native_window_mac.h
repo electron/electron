@@ -98,7 +98,7 @@ class NativeWindowMac : public NativeWindow {
 
   // Mouse location since the last mouse event, in screen coordinates. This is
   // used in custom drag to compute the window movement.
-  NSPoint last_mouse_location_;
+  NSPoint last_mouse_offset_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);
 };
