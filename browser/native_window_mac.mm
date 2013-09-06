@@ -154,10 +154,7 @@
 }
 
 - (NSView*)hitTest:(NSPoint)aPoint {
-  if (shellWindow_->use_system_drag())
-    return nil;
-  if (!shellWindow_->draggable_region() ||
-      !shellWindow_->draggable_region()->contains(aPoint.x, aPoint.y)) {
+  if (!shellWindow_->IsWithinDraggableRegion(aPoint)) {
     return nil;
   }
   return self;
@@ -179,8 +176,7 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
                                  base::DictionaryValue* options)
     : NativeWindow(web_contents, options),
       is_kiosk_(false),
-      attention_request_id_(0),
-      use_system_drag_(true) {
+      attention_request_id_(0) {
   int width, height;
   options->GetInteger(switches::kWidth, &width);
   options->GetInteger(switches::kHeight, &height);
@@ -221,13 +217,6 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
 
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
   [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-
-  // By default, the whole frameless window is not draggable.
-  if (!has_frame_) {
-    gfx::Rect window_bounds(
-        0, 0, NSWidth(cocoa_bounds), NSHeight(cocoa_bounds));
-    system_drag_exclude_areas_.push_back(window_bounds);
-  }
 
   InstallView();
 }
@@ -434,6 +423,17 @@ gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
   return window();
 }
 
+bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {
+  if (!draggable_region_)
+    return false;
+  NSView* webView = web_contents()->GetView()->GetNativeView();
+  NSInteger webViewHeight = NSHeight([webView bounds]);
+  // |draggable_region_| is stored in local platform-indepdent coordiate system
+  // while |point| is in local Cocoa coordinate system. Do the conversion
+  // to match these two.
+  return draggable_region_->contains(point.x, webViewHeight - point.y);
+}
+
 void NativeWindowMac::HandleMouseEvent(NSEvent* event) {
   if ([event type] == NSLeftMouseDown) {
     last_mouse_location_ =
@@ -455,37 +455,7 @@ void NativeWindowMac::UpdateDraggableRegions(
   if (has_frame_)
     return;
 
-  // To use system drag, the window has to be marked as draggable with
-  // non-draggable areas being excluded via overlapping views.
-  // 1) If no draggable area is provided, the window is not draggable at all.
-  // 2) If only one draggable area is given, as this is the most common
-  //    case, use the system drag. The non-draggable areas that are opposite of
-  //    the draggable area are computed.
-  // 3) Otherwise, use the custom drag. As such, we lose the capability to
-  //    support some features like snapping into other space.
-
-  // Determine how to perform the drag by counting the number of draggable
-  // areas.
-  const DraggableRegion* draggable_area = NULL;
-  use_system_drag_ = true;
-  for (std::vector<DraggableRegion>::const_iterator iter = regions.begin();
-       iter != regions.end();
-       ++iter) {
-    if (iter->draggable) {
-      // If more than one draggable area is found, use custom drag.
-      if (draggable_area) {
-        use_system_drag_ = false;
-        break;
-      }
-      draggable_area = &(*iter);
-    }
-  }
-
-  if (use_system_drag_)
-    UpdateDraggableRegionsForSystemDrag(regions, draggable_area);
-  else
-    UpdateDraggableRegionsForCustomDrag(regions);
-
+  UpdateDraggableRegionsForCustomDrag(regions);
   InstallDraggableRegionViews();
 }
 
@@ -504,14 +474,10 @@ void NativeWindowMac::HandleKeyboardEvent(
 
 void NativeWindowMac::InstallView() {
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
-  NSView* web_view = GetWebContents()->GetView()->GetNativeView();
   if (has_frame_) {
     [view setFrame:[[window() contentView] bounds]];
     [[window() contentView] addSubview:view];
   } else {
-    DCHECK([web_view respondsToSelector:@selector(setMouseDownCanMoveWindow:)]);
-    [web_view setMouseDownCanMoveWindow:YES];
-
     NSView* frameView = [[window() contentView] superview];
     [view setFrame:[frameView bounds]];
     [frameView addSubview:view];
@@ -520,13 +486,11 @@ void NativeWindowMac::InstallView() {
     [[window() standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
     [[window() standardWindowButton:NSWindowCloseButton] setHidden:YES];
     [[window() standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
-
-    InstallDraggableRegionViews();
   }
 }
 
 void NativeWindowMac::UninstallView() {
-  NSView* view = GetWebContents()->GetView()->GetNativeView();
+  NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
   [view removeFromSuperview];
 }
 
@@ -564,74 +528,6 @@ void NativeWindowMac::InstallDraggableRegionViews() {
   }
 }
 
-void NativeWindowMac::UpdateDraggableRegionsForSystemDrag(
-    const std::vector<DraggableRegion>& regions,
-    const DraggableRegion* draggable_area) {
-  NSView* web_view = GetWebContents()->GetView()->GetNativeView();
-  NSInteger web_view_width = NSWidth([web_view bounds]);
-  NSInteger web_view_height = NSHeight([web_view bounds]);
-
-  system_drag_exclude_areas_.clear();
-
-  // The whole window is not draggable if no draggable area is given.
-  if (!draggable_area) {
-    gfx::Rect window_bounds(0, 0, web_view_width, web_view_height);
-    system_drag_exclude_areas_.push_back(window_bounds);
-    return;
-  }
-
-  // Otherwise, there is only one draggable area. Compute non-draggable areas
-  // that are the opposite of the given draggable area, combined with the
-  // remaining provided non-draggable areas.
-
-  // Copy all given non-draggable areas.
-  for (std::vector<DraggableRegion>::const_iterator iter = regions.begin();
-       iter != regions.end();
-       ++iter) {
-    if (!iter->draggable)
-      system_drag_exclude_areas_.push_back(iter->bounds);
-  }
-
-  gfx::Rect draggable_bounds = draggable_area->bounds;
-  gfx::Rect non_draggable_bounds;
-
-  // Add the non-draggable area above the given draggable area.
-  if (draggable_bounds.y() > 0) {
-    non_draggable_bounds.SetRect(0,
-                                 0,
-                                 web_view_width,
-                                 draggable_bounds.y() - 1);
-    system_drag_exclude_areas_.push_back(non_draggable_bounds);
-  }
-
-  // Add the non-draggable area below the given draggable area.
-  if (draggable_bounds.bottom() < web_view_height) {
-    non_draggable_bounds.SetRect(0,
-                                 draggable_bounds.bottom() + 1,
-                                 web_view_width,
-                                 web_view_height - draggable_bounds.bottom());
-    system_drag_exclude_areas_.push_back(non_draggable_bounds);
-  }
-
-  // Add the non-draggable area to the left of the given draggable area.
-  if (draggable_bounds.x() > 0) {
-    non_draggable_bounds.SetRect(0,
-                                 draggable_bounds.y(),
-                                 draggable_bounds.x() - 1,
-                                 draggable_bounds.height());
-    system_drag_exclude_areas_.push_back(non_draggable_bounds);
-  }
-
-  // Add the non-draggable area to the right of the given draggable area.
-  if (draggable_bounds.right() < web_view_width) {
-    non_draggable_bounds.SetRect(draggable_bounds.right() + 1,
-                                 draggable_bounds.y(),
-                                 web_view_width - draggable_bounds.right(),
-                                 draggable_bounds.height());
-    system_drag_exclude_areas_.push_back(non_draggable_bounds);
-  }
-}
-
 void NativeWindowMac::UpdateDraggableRegionsForCustomDrag(
     const std::vector<DraggableRegion>& regions) {
   // We still need one ControlRegionView to cover the whole window such that
@@ -658,7 +554,6 @@ void NativeWindowMac::UpdateDraggableRegionsForCustomDrag(
   }
   draggable_region_.reset(draggable_region);
 }
-
 
 // static
 NativeWindow* NativeWindow::Create(content::WebContents* web_contents,

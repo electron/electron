@@ -56,12 +56,14 @@ class NativeWindowMac : public NativeWindow {
 
   void NotifyWindowBlur() { NativeWindow::NotifyWindowBlur(); }
 
+  // Returns true if |point| in local Cocoa coordinate system falls within
+  // the draggable region.
+  bool IsWithinDraggableRegion(NSPoint point) const;
+
   // Called to handle a mouse event.
   void HandleMouseEvent(NSEvent* event);
 
   NSWindow*& window() { return window_; }
-
-  bool use_system_drag() const { return use_system_drag_; }
   SkRegion* draggable_region() const { return draggable_region_.get(); }
 
  protected:
@@ -77,9 +79,6 @@ class NativeWindowMac : public NativeWindow {
   void InstallView();
   void UninstallView();
   void InstallDraggableRegionViews();
-  void UpdateDraggableRegionsForSystemDrag(
-      const std::vector<DraggableRegion>& regions,
-      const DraggableRegion* draggable_area);
   void UpdateDraggableRegionsForCustomDrag(
       const std::vector<DraggableRegion>& regions);
 
@@ -88,10 +87,6 @@ class NativeWindowMac : public NativeWindow {
   bool is_kiosk_;
 
   NSInteger attention_request_id_;  // identifier from requestUserAttention
-
-  // Indicates whether system drag or custom drag should be used, depending on
-  // the complexity of draggable regions.
-  bool use_system_drag_;
 
   // For system drag, the whole window is draggable and the non-draggable areas
   // have to been explicitly excluded.
