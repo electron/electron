@@ -56,7 +56,7 @@ selection on dragging area like this:
 }
 ```
 
-##Context menu
+## Context menu
 
 On some platforms, the draggable area would be treated as non-client frame, so
 when you right click on it a system menu would be popuped. To make context menu
