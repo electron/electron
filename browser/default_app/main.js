@@ -9,6 +9,7 @@ if (argv._.length > 0) {
     require(path.resolve(argv._[0]));
   } catch(e) {
     if (e.code == 'MODULE_NOT_FOUND') {
+      console.error(e.stack);
       console.error('Specified app is invalid');
       process.exit(1);
     } else {
