@@ -223,6 +223,26 @@ gfx::NativeWindow NativeWindowWin::GetNativeWindow() {
 
 void NativeWindowWin::UpdateDraggableRegions(
     const std::vector<DraggableRegion>& regions) {
+  if (has_frame_)
+    return;
+
+  SkRegion* draggable_region = new SkRegion;
+
+  // By default, the whole window is non-draggable. We need to explicitly
+  // include those draggable regions.
+  for (std::vector<extensions::DraggableRegion>::const_iterator iter =
+           regions.begin();
+       iter != regions.end(); ++iter) {
+    const extensions::DraggableRegion& region = *iter;
+    draggable_region->op(
+        region.bounds.x(),
+        region.bounds.y(),
+        region.bounds.right(),
+        region.bounds.bottom(),
+        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
+  }
+
+  draggable_region_.reset(draggable_region);
 }
 
 void NativeWindowWin::HandleKeyboardEvent(
