@@ -1,3 +1,5 @@
+# Source code directory structure
+
 ## Overview
 
 The source code of atom-shell is separated into a few parts, and we are mostly
@@ -13,6 +15,7 @@ to understand the source code better.
   program.
 * **browser** - The frontend including the main window, UI, and all browser
   side things. This talks to the renderer to manage web pages.
+  * **ui** - Implementation of UI stuff for different platforms.
   * **atom** - Initializes the javascript environment of browser.
   * **default_app** - The default page to show when atom-shell is started
     without providing an app.

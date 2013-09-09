@@ -1,4 +1,4 @@
-## Synopsis
+# protocol
 
 The `protocol` module can register a new protocol or intercept an existing
 protocol, so you can custom the response to the requests for vairous protocols.

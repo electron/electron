@@ -1,3 +1,5 @@
+# Coding style
+
 ## C++ and Python
 
 For C++ and Python, we just follow Chromium's [Coding

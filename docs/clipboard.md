@@ -1,4 +1,4 @@
-## Synopsis
+# clipboard
 
 An example of writing a string to clipboard:
 

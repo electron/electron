@@ -1,4 +1,4 @@
-## Synopsis
+# dialog
 
 The `dialog` module provides functions to show system dialogs, so web
 applications can get the same user experience with native applications.

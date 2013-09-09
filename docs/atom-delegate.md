@@ -1,4 +1,4 @@
-## Synopsis
+# atom-delegate
 
 The `atom-delegate` returns the delegate object for Chrome Content API. The
 atom-shell would call methods of the delegate object when the corresponding

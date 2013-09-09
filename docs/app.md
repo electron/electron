@@ -1,4 +1,4 @@
-## Synopsis
+# app
 
 The `app` module is responsible for controlling the application's life time.
 

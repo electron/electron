@@ -1,4 +1,4 @@
-## Synopsis
+# ipc (renderer)
 
 The `ipc` module provides a few methods so you can send synchronous and
 asynchronous messages to the browser, and also receive messages sent from

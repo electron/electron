@@ -1,4 +1,4 @@
-## Synopsis
+# auto-updater
 
 `auto-updater` module is a simple wrap around the Sparkle framework, it
 provides auto update service for the application.

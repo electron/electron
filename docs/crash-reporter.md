@@ -1,4 +1,4 @@
-## Synopsis
+# crash-reporter
 
 An example of automatically submitting crash reporters to remote server:
 

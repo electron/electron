@@ -1,4 +1,4 @@
-## Synopsis
+# menu
 
 The `Menu` class is used to create native menus that can be used as
 application menu and context menu. Each menu is consisted of multiple menu

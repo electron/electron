@@ -1,4 +1,4 @@
-## Synopsis
+# ipc (browser)
 
 The `ipc` module allows developers to send asynchronous messages to renderers.
 To avoid possible dead-locks, it's not allowed to send synchronous messages in

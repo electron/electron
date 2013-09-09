@@ -1,3 +1,5 @@
+# Quick start
+
 ## Introduction
 
 Generally, atom-shell lets you create a web-based desktop application in pure

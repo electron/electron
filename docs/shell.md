@@ -1,4 +1,4 @@
-## Synopsis
+# shell
 
 The `shell` module provides functions related to desktop integration.
 

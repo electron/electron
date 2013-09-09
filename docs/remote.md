@@ -1,4 +1,4 @@
-## Synopsis
+# remote
 
 It's common that the developers want to use modules in browsers from the
 renderer, like closing current window, opening file dialogs, etc. Instead of

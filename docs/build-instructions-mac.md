@@ -1,3 +1,5 @@
+# Build instructions (Mac)
+
 ## Prerequisites
 
 * Mac OS X >= 10.7
