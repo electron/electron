@@ -5,7 +5,7 @@ A frameless window is a window that has no chrome.
 ## Create a frameless window
 
 To create a frameless window, you only need to specify `frame` to `false` in
-[BrowserWindow](browser-window.md)'s `options`:
+[BrowserWindow](api/browser/browser-window.md)'s `options`:
 
 
 ```javascript
