@@ -84,6 +84,8 @@ class NativeWindowWin : public NativeWindow,
       views::Widget* widget) OVERRIDE;
 
  private:
+  void OnViewWasResized();
+
   scoped_ptr<views::Widget> window_;
   views::WebView* web_view_;  // managed by window_.
 
