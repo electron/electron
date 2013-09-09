@@ -60,7 +60,12 @@ class NativeWindowWin : public NativeWindow,
   virtual bool IsKiosk() OVERRIDE;
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
 
+  SkRegion* draggable_region() { return draggable_region_.get(); }
+
  protected:
+  virtual void UpdateDraggableRegions(
+      const std::vector<DraggableRegion>& regions) OVERRIDE;
+
   // Overridden from content::WebContentsDelegate:
   virtual void HandleKeyboardEvent(
       content::WebContents*,
@@ -79,8 +84,12 @@ class NativeWindowWin : public NativeWindow,
       views::Widget* widget) OVERRIDE;
 
  private:
+  void OnViewWasResized();
+
   scoped_ptr<views::Widget> window_;
   views::WebView* web_view_;  // managed by window_.
+
+  scoped_ptr<SkRegion> draggable_region_;
 
   bool resizable_;
   string16 title_;

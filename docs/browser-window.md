@@ -1,4 +1,4 @@
-## Synopsis
+# browser-window
 
 The `BrowserWindow` class gives you ability to create a browser window, an
 example is:
@@ -14,6 +14,10 @@ win.on('destroyed', function() {
 win.loadUrl('https://github.com');
 win.show();
 ```
+
+You can also create a window without chrome by using
+[Frameless Window](frameless-window.md) API.
+
 
 **Note:** Be careful not to use `window` as the variable name.
 
@@ -38,6 +42,8 @@ win.show();
   * `kiosk` Boolean - The kiosk mode
   * `title` String - Default window title
   * `show` Boolean - Whether window should be shown when created
+  * `frame` Boolean - Specify `false` to create a
+    [Frameless Window](frameless-window.md)
 
 Creates a new `BrowserWindow` with native properties set by the `options`.
 Usually you only need to set the `width` and `height`, other properties will

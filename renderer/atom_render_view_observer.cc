@@ -12,6 +12,8 @@
 #include "ipc/ipc_message_macros.h"
 #include "renderer/api/atom_renderer_bindings.h"
 #include "renderer/atom_renderer_client.h"
+#include "third_party/WebKit/Source/WebKit/chromium/public/WebDocument.h"
+#include "third_party/WebKit/Source/WebKit/chromium/public/WebDraggableRegion.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
 #include "v8/include/v8.h"
 
@@ -74,6 +76,19 @@ void AtomRenderViewObserver::DidClearWindowObject(WebFrame* frame) {
 void AtomRenderViewObserver::FrameWillClose(WebFrame* frame) {
   std::vector<WebFrame*>& vec = web_frames();
   vec.erase(std::remove(vec.begin(), vec.end(), frame), vec.end());
+}
+
+void AtomRenderViewObserver::DraggableRegionsChanged(WebKit::WebFrame* frame) {
+  WebKit::WebVector<WebKit::WebDraggableRegion> webregions =
+      frame->document().draggableRegions();
+  std::vector<DraggableRegion> regions;
+  for (size_t i = 0; i < webregions.size(); ++i) {
+    DraggableRegion region;
+    region.bounds = webregions[i].bounds;
+    region.draggable = webregions[i].draggable;
+    regions.push_back(region);
+  }
+  Send(new AtomViewHostMsg_UpdateDraggableRegions(routing_id(), regions));
 }
 
 bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
