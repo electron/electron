@@ -139,6 +139,8 @@
       'common/api/atom_extensions.h',
       'common/api/object_life_monitor.cc',
       'common/api/object_life_monitor.h',
+      'common/draggable_region.cc',
+      'common/draggable_region.h',
       'common/node_bindings.cc',
       'common/node_bindings.h',
       'common/node_bindings_mac.cc',

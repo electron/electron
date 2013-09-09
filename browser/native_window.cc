@@ -39,10 +39,13 @@ namespace atom {
 NativeWindow::NativeWindow(content::WebContents* web_contents,
                            base::DictionaryValue* options)
     : content::WebContentsObserver(web_contents),
+      has_frame_(true),
       is_closed_(false),
       not_responding_(false),
       inspectable_web_contents_(
           brightray::InspectableWebContents::Create(web_contents)) {
+  options->GetBoolean(switches::kFrame, &has_frame_);
+
   web_contents->SetDelegate(this);
 
   WindowList::AddWindow(this);
@@ -298,6 +301,8 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   IPC_BEGIN_MESSAGE_MAP(NativeWindow, message)
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message_Sync, OnRendererMessageSync)
+    IPC_MESSAGE_HANDLER(AtomViewHostMsg_UpdateDraggableRegions,
+                        UpdateDraggableRegions)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 

@@ -38,6 +38,7 @@ class Size;
 namespace atom {
 
 class AtomJavaScriptDialogManager;
+struct DraggableRegion;
 
 class NativeWindow : public brightray::DefaultWebContentsDelegate,
                      public content::WebContentsObserver,
@@ -125,6 +126,10 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   void NotifyWindowClosed();
   void NotifyWindowBlur();
 
+  // Called when the window needs to update its draggable region.
+  virtual void UpdateDraggableRegions(
+      const std::vector<DraggableRegion>& regions) = 0;
+
   // Implementations of content::WebContentsDelegate.
   virtual void WebContentsCreated(content::WebContents* source_contents,
                                   int64 source_frame_id,
@@ -159,6 +164,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void Observe(int type,
                        const content::NotificationSource& source,
                        const content::NotificationDetails& details) OVERRIDE;
+
+  // Whether window has standard frame.
+  bool has_frame_;
 
  private:
   void RendererUnresponsiveDelayed();

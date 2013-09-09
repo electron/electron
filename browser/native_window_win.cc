@@ -6,8 +6,14 @@
 
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
+#include "common/draggable_region.h"
 #include "common/options_switches.h"
 #include "content/public/browser/native_web_keyboard_event.h"
+#include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_widget_host_view.h"
+#include "content/public/browser/web_contents.h"
+#include "content/public/browser/web_contents_view.h"
+#include "ui/gfx/path.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/client_view.h"
@@ -16,6 +22,9 @@
 namespace atom {
 
 namespace {
+
+const int kResizeInsideBoundsSize = 5;
+const int kResizeAreaCornerSize = 16;
 
 class NativeWindowClientView : public views::ClientView {
  public:
@@ -60,6 +69,99 @@ class NativeWindowFrameView : public views::NativeFrameView {
   DISALLOW_COPY_AND_ASSIGN(NativeWindowFrameView);
 };
 
+class NativeWindowFramelessView : public views::NonClientFrameView {
+ public:
+  explicit NativeWindowFramelessView(views::Widget* frame,
+                                     NativeWindowWin* shell)
+      : frame_(frame),
+        shell_(shell) {
+  }
+  virtual ~NativeWindowFramelessView() {}
+
+  // views::NonClientFrameView implementations:
+  virtual gfx::Rect NativeWindowFramelessView::GetBoundsForClientView() const
+      OVERRIDE {
+    return bounds();
+  }
+
+  virtual gfx::Rect NativeWindowFramelessView::GetWindowBoundsForClientBounds(
+        const gfx::Rect& client_bounds) const OVERRIDE {
+    gfx::Rect window_bounds = client_bounds;
+    // Enforce minimum size (1, 1) in case that client_bounds is passed with
+    // empty size. This could occur when the frameless window is being
+    // initialized.
+    if (window_bounds.IsEmpty()) {
+      window_bounds.set_width(1);
+      window_bounds.set_height(1);
+    }
+    return window_bounds;
+  }
+
+  virtual int NonClientHitTest(const gfx::Point& point) OVERRIDE {
+    if (frame_->IsFullscreen())
+      return HTCLIENT;
+
+    // Check the frame first, as we allow a small area overlapping the contents
+    // to be used for resize handles.
+    bool can_ever_resize = frame_->widget_delegate() ?
+        frame_->widget_delegate()->CanResize() :
+        false;
+    // Don't allow overlapping resize handles when the window is maximized or
+    // fullscreen, as it can't be resized in those states.
+    int resize_border =
+        frame_->IsMaximized() || frame_->IsFullscreen() ? 0 :
+        kResizeInsideBoundsSize;
+    int frame_component = GetHTComponentForFrame(point,
+                                                 resize_border,
+                                                 resize_border,
+                                                 kResizeAreaCornerSize,
+                                                 kResizeAreaCornerSize,
+                                                 can_ever_resize);
+    if (frame_component != HTNOWHERE)
+      return frame_component;
+
+    // Check for possible draggable region in the client area for the frameless
+    // window.
+    if (shell_->draggable_region() &&
+        shell_->draggable_region()->contains(point.x(), point.y()))
+      return HTCAPTION;
+
+    int client_component = frame_->client_view()->NonClientHitTest(point);
+    if (client_component != HTNOWHERE)
+      return client_component;
+
+    // Caption is a safe default.
+    return HTCAPTION;
+  }
+
+  virtual void GetWindowMask(const gfx::Size& size,
+                             gfx::Path* window_mask) OVERRIDE {}
+  virtual void ResetWindowControls() OVERRIDE {}
+  virtual void UpdateWindowIcon() OVERRIDE {}
+  virtual void UpdateWindowTitle() OVERRIDE {}
+
+  // views::View implementations:
+  virtual gfx::Size NativeWindowFramelessView::GetPreferredSize() OVERRIDE {
+    gfx::Size pref = frame_->client_view()->GetPreferredSize();
+    gfx::Rect bounds(0, 0, pref.width(), pref.height());
+    return frame_->non_client_view()->GetWindowBoundsForClientBounds(
+        bounds).size();
+  }
+
+  virtual gfx::Size GetMinimumSize() OVERRIDE {
+    return shell_->GetMinimumSize();
+  }
+
+  virtual gfx::Size GetMaximumSize() OVERRIDE {
+    return shell_->GetMaximumSize();
+  }
+
+ private:
+  views::Widget* frame_;
+  NativeWindowWin* shell_;
+
+  DISALLOW_COPY_AND_ASSIGN(NativeWindowFramelessView);
+};
 
 }  // namespace
 
@@ -71,6 +173,7 @@ NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
       resizable_(true) {
   views::Widget::InitParams params(views::Widget::InitParams::TYPE_WINDOW);
   params.delegate = this;
+  params.remove_standard_frame = !has_frame_;
   params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
   window_->set_frame_type(views::Widget::FRAME_TYPE_FORCE_NATIVE);
   window_->Init(params);
@@ -83,6 +186,7 @@ NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
   window_->CenterWindow(size);
 
   web_view_->SetWebContents(web_contents);
+  OnViewWasResized();
 }
 
 NativeWindowWin::~NativeWindowWin() {
@@ -221,6 +325,30 @@ gfx::NativeWindow NativeWindowWin::GetNativeWindow() {
   return window_->GetNativeView();
 }
 
+void NativeWindowWin::UpdateDraggableRegions(
+    const std::vector<DraggableRegion>& regions) {
+  if (has_frame_)
+    return;
+
+  SkRegion* draggable_region = new SkRegion;
+
+  // By default, the whole window is non-draggable. We need to explicitly
+  // include those draggable regions.
+  for (std::vector<DraggableRegion>::const_iterator iter = regions.begin();
+       iter != regions.end(); ++iter) {
+    const DraggableRegion& region = *iter;
+    draggable_region->op(
+        region.bounds.x(),
+        region.bounds.y(),
+        region.bounds.right(),
+        region.bounds.bottom(),
+        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
+  }
+
+  draggable_region_.reset(draggable_region);
+  OnViewWasResized();
+}
+
 void NativeWindowWin::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
@@ -264,7 +392,40 @@ views::ClientView* NativeWindowWin::CreateClientView(views::Widget* widget) {
 
 views::NonClientFrameView* NativeWindowWin::CreateNonClientFrameView(
     views::Widget* widget) {
-  return new NativeWindowFrameView(widget, this);
+  if (has_frame_)
+    return new NativeWindowFrameView(widget, this);
+
+  return new NativeWindowFramelessView(widget, this);
+}
+ 
+void NativeWindowWin::OnViewWasResized() {
+  // Set the window shape of the RWHV.
+  gfx::Size sz = web_view_->size();
+  int height = sz.height(), width = sz.width();
+  gfx::Path path;
+  path.addRect(0, 0, width, height);
+  SetWindowRgn(web_contents()->GetView()->GetNativeView(),
+               path.CreateNativeRegion(),
+               1);
+
+  SkRegion* rgn = new SkRegion;
+  if (!window_->IsFullscreen() && !window_->IsMaximized()) {
+    if (draggable_region())
+      rgn->op(*draggable_region(), SkRegion::kUnion_Op);
+
+    if (!has_frame_ && CanResize()) {
+      rgn->op(0, 0, width, kResizeInsideBoundsSize, SkRegion::kUnion_Op);
+      rgn->op(0, 0, kResizeInsideBoundsSize, height, SkRegion::kUnion_Op);
+      rgn->op(width - kResizeInsideBoundsSize, 0, width, height,
+          SkRegion::kUnion_Op);
+      rgn->op(0, height - kResizeInsideBoundsSize, width, height,
+          SkRegion::kUnion_Op);
+    }
+  }
+
+  content::WebContents* web_contents = GetWebContents();
+  if (web_contents->GetRenderViewHost()->GetView())
+    web_contents->GetRenderViewHost()->GetView()->SetClickthroughRegion(rgn);
 }
 
 // static
