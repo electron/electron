@@ -1,11 +1,12 @@
 # Frameless window
 
-A frameless window is a window that has no chrome.
+A frameless window is a window that has no chrome, you can find a demo at
+[atom/frameless-window-demo](https://github.com/atom/frameless-window-demo).
 
 ## Create a frameless window
 
 To create a frameless window, you only need to specify `frame` to `false` in
-[BrowserWindow](api/browser/browser-window.md)'s `options`:
+[BrowserWindow](browser-window.md)'s `options`:
 
 
 ```javascript
