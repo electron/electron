@@ -1,4 +1,4 @@
-## Synopsis
+# browser-window
 
 The `BrowserWindow` class gives you ability to create a browser window, an
 example is:
