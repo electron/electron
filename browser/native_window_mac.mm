@@ -78,6 +78,8 @@
 
 @end
 
+static CGFloat const AtomWindowCornerRadius = 5.0;
+
 @interface AtomNSWindow : AtomEventProcessingWindow {
  @protected
   atom::NativeWindowMac* shell_;
@@ -102,6 +104,24 @@
 
 @end
 
+@interface AtomFramelessView : NSView
+@end
+
+@implementation AtomFramelessView
+- (void)drawRect:(NSRect) rect {
+  NSBezierPath * shadowPath = [NSBezierPath bezierPathWithRoundedRect:NSInsetRect([self bounds], 0.5, 0.5)
+                                   xRadius:AtomWindowCornerRadius
+                                   yRadius:AtomWindowCornerRadius];
+
+  [[NSColor blackColor] set];
+  [shadowPath fill];
+
+  [[NSColor colorWithCalibratedRed: 0.0 green: 0.0 blue: 0.0 alpha:0.7] set];
+  [shadowPath stroke];
+  [shadowPath addClip];
+}
+@end
+
 @interface AtomFramelessNSWindow : AtomNSWindow
 - (void)drawCustomFrameRect:(NSRect)rect forView:(NSView*)view;
 @end
@@ -110,16 +130,6 @@
 
 - (void)drawCustomFrameRect:(NSRect)rect forView:(NSView*)view {
   [[NSBezierPath bezierPathWithRect:rect] addClip];
-  [[NSColor clearColor] set];
-  NSRectFill(rect);
-
-  // Set up our clip.
-  CGFloat cornerRadius = 40.0;
-  // if ([view respondsToSelector:@selector(roundedCornerRadius)])
-  //   cornerRadius = [view roundedCornerRadius];
-  [[NSBezierPath bezierPathWithRoundedRect:[view bounds]
-                                   xRadius:cornerRadius
-                                   yRadius:cornerRadius] addClip];
   [[NSColor clearColor] set];
   NSRectFill(rect);
 }
@@ -208,10 +218,12 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
   } else {
     atomWindow = [[AtomFramelessNSWindow alloc]
         initWithContentRect:cocoa_bounds
-                  styleMask:style_mask
+                  styleMask:NSBorderlessWindowMask | NSClosableWindowMask |
+                            NSMiniaturizableWindowMask | NSResizableWindowMask
                     backing:NSBackingStoreBuffered
                       defer:YES];
-    [atomWindow setBottomCornerRounded:YES];
+    [atomWindow setOpaque:NO];
+    [atomWindow setBackgroundColor:[NSColor clearColor]];
   }
 
   [atomWindow setShell:this];
@@ -412,7 +424,7 @@ void NativeWindowMac::SetKiosk(bool kiosk) {
   if (kiosk) {
     NSApplicationPresentationOptions options =
         NSApplicationPresentationHideDock +
-        NSApplicationPresentationHideMenuBar + 
+        NSApplicationPresentationHideMenuBar +
         NSApplicationPresentationDisableAppleMenu +
         NSApplicationPresentationDisableProcessSwitching +
         NSApplicationPresentationDisableForceQuit +
@@ -494,9 +506,17 @@ void NativeWindowMac::InstallView() {
   } else {
     NSView* frameView = [[window() contentView] superview];
     [view setFrame:[frameView bounds]];
-    [frameView addSubview:view];
+
+    AtomFramelessView * shadowView = [[AtomFramelessView alloc] initWithFrame: [frameView bounds]];
+
+    [frameView addSubview:shadowView];
+    [shadowView addSubview:view];
+
 
     ClipWebView();
+    //
+    // [window() setHasShadow: NO];
+    // [window() setHasShadow: YES];
 
     [[window() standardWindowButton:NSWindowZoomButton] setHidden:YES];
     [[window() standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
@@ -513,13 +533,12 @@ void NativeWindowMac::UninstallView() {
 void NativeWindowMac::ClipWebView() {
   NSView* view = GetWebContents()->GetView()->GetNativeView();
 
-  CGFloat cornerRadius = 40.0;
   // if ([view respondsToSelector:@selector(roundedCornerRadius)])
   //   cornerRadius = [view roundedCornerRadius];
 
   view.wantsLayer = YES;
   view.layer.masksToBounds = YES;
-  view.layer.cornerRadius = cornerRadius;
+  view.layer.cornerRadius = AtomWindowCornerRadius;
 }
 
 void NativeWindowMac::InstallDraggableRegionViews() {
