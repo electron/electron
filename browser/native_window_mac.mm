@@ -115,9 +115,6 @@ static CGFloat const AtomWindowCornerRadius = 5.0;
 
   [[NSColor blackColor] set];
   [shadowPath fill];
-
-  [[NSColor colorWithCalibratedRed: 0.0 green: 0.0 blue: 0.0 alpha:0.7] set];
-  [shadowPath stroke];
   [shadowPath addClip];
 }
 @end
@@ -505,10 +502,12 @@ void NativeWindowMac::InstallView() {
     [[window() contentView] addSubview:view];
   } else {
     NSView* frameView = [[window() contentView] superview];
-    [view setFrame:[frameView bounds]];
 
     AtomFramelessView * shadowView = [[AtomFramelessView alloc] initWithFrame: [frameView bounds]];
+    [shadowView setAutoresizesSubviews:YES];
+    [shadowView setAutoresizingMask: NSViewWidthSizable | NSViewHeightSizable];
 
+    [view setFrame:[shadowView bounds]];
     [frameView addSubview:shadowView];
     [shadowView addSubview:view];
 
