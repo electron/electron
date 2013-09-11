@@ -28,10 +28,6 @@
 - (void)setBottomCornerRounded:(BOOL)rounded;
 @end
 
-@interface NSView (WebContentsView)
-- (void)setMouseDownCanMoveWindow:(BOOL)can_move;
-@end
-
 @interface NSView (PrivateMethods)
 - (CGFloat)roundedCornerRadius;
 @end
@@ -53,6 +49,11 @@
 
 - (void)windowDidResignMain:(NSNotification*)notification {
   shell_->NotifyWindowBlur();
+}
+
+- (void)windowDidResize:(NSNotification*)otification {
+  if (!shell_->has_frame())
+    shell_->ClipWebView();
 }
 
 - (void)windowWillClose:(NSNotification*)notification {
@@ -78,7 +79,7 @@
 @end
 
 @interface AtomNSWindow : AtomEventProcessingWindow {
- @private
+ @protected
   atom::NativeWindowMac* shell_;
 }
 - (void)setShell:(atom::NativeWindowMac*)shell;
@@ -113,32 +114,30 @@
   NSRectFill(rect);
 
   // Set up our clip.
-  CGFloat cornerRadius = 4.0;
-  if ([view respondsToSelector:@selector(roundedCornerRadius)])
-    cornerRadius = [view roundedCornerRadius];
+  CGFloat cornerRadius = 40.0;
+  // if ([view respondsToSelector:@selector(roundedCornerRadius)])
+  //   cornerRadius = [view roundedCornerRadius];
   [[NSBezierPath bezierPathWithRoundedRect:[view bounds]
                                    xRadius:cornerRadius
                                    yRadius:cornerRadius] addClip];
-  [[NSColor whiteColor] set];
+  [[NSColor clearColor] set];
   NSRectFill(rect);
 }
 
-+ (NSRect)frameRectForContentRect:(NSRect)contentRect
-                        styleMask:(NSUInteger)mask {
-  return contentRect;
+- (BOOL)canBecomeKeyWindow {
+  return YES;
 }
 
-+ (NSRect)contentRectForFrameRect:(NSRect)frameRect
-                        styleMask:(NSUInteger)mask {
-  return frameRect;
+- (BOOL)hasShadow {
+  return YES;
 }
 
-- (NSRect)frameRectForContentRect:(NSRect)contentRect {
-  return contentRect;
+- (void)keyDown:(NSEvent*)event {
+  [self redispatchKeyEvent:event];
 }
 
-- (NSRect)contentRectForFrameRect:(NSRect)frameRect {
-  return frameRect;
+- (void)keyUp:(NSEvent *)event {
+  [self redispatchKeyEvent:event];
 }
 
 @end
@@ -195,23 +194,29 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
       (NSHeight(main_screen_rect) - height) / 2,
       width,
       height);
+
+  AtomNSWindow* atomWindow;
   NSUInteger style_mask = NSTitledWindowMask | NSClosableWindowMask |
                           NSMiniaturizableWindowMask | NSResizableWindowMask |
                           NSTexturedBackgroundWindowMask;
-  AtomNSWindow* atom_window = has_frame_ ?
-    [[AtomNSWindow alloc]
-      initWithContentRect:cocoa_bounds
-                styleMask:style_mask
-                  backing:NSBackingStoreBuffered
-                    defer:YES] :
-    [[AtomFramelessNSWindow alloc]
-      initWithContentRect:cocoa_bounds
-                styleMask:style_mask
-                  backing:NSBackingStoreBuffered
-                    defer:YES];
-  [atom_window setShell:this];
+  if (has_frame_) {
+    atomWindow = [[AtomNSWindow alloc]
+        initWithContentRect:cocoa_bounds
+                  styleMask:style_mask
+                    backing:NSBackingStoreBuffered
+                      defer:YES];
+  } else {
+    atomWindow = [[AtomFramelessNSWindow alloc]
+        initWithContentRect:cocoa_bounds
+                  styleMask:style_mask
+                    backing:NSBackingStoreBuffered
+                      defer:YES];
+    [atomWindow setBottomCornerRounded:YES];
+  }
 
-  window_ = atom_window;
+  [atomWindow setShell:this];
+  window_ = atomWindow;
+
   [window() setDelegate:[[AtomNSWindowDelegate alloc] initWithShell:this]];
 
   // Disable fullscreen button when 'fullscreen' is specified to false.
@@ -434,7 +439,7 @@ gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
 bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {
   if (!draggable_region_)
     return false;
-  NSView* webView = web_contents()->GetView()->GetNativeView();
+  NSView* webView = GetWebContents()->GetView()->GetNativeView();
   NSInteger webViewHeight = NSHeight([webView bounds]);
   // |draggable_region_| is stored in local platform-indepdent coordiate system
   // while |point| is in local Cocoa coordinate system. Do the conversion
@@ -491,6 +496,8 @@ void NativeWindowMac::InstallView() {
     [view setFrame:[frameView bounds]];
     [frameView addSubview:view];
 
+    ClipWebView();
+
     [[window() standardWindowButton:NSWindowZoomButton] setHidden:YES];
     [[window() standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
     [[window() standardWindowButton:NSWindowCloseButton] setHidden:YES];
@@ -501,6 +508,18 @@ void NativeWindowMac::InstallView() {
 void NativeWindowMac::UninstallView() {
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
   [view removeFromSuperview];
+}
+
+void NativeWindowMac::ClipWebView() {
+  NSView* view = GetWebContents()->GetView()->GetNativeView();
+
+  CGFloat cornerRadius = 40.0;
+  // if ([view respondsToSelector:@selector(roundedCornerRadius)])
+  //   cornerRadius = [view roundedCornerRadius];
+
+  view.wantsLayer = YES;
+  view.layer.masksToBounds = YES;
+  view.layer.cornerRadius = cornerRadius;
 }
 
 void NativeWindowMac::InstallDraggableRegionViews() {

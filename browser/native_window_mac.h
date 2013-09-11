@@ -63,6 +63,9 @@ class NativeWindowMac : public NativeWindow {
   // Called to handle a mouse event.
   void HandleMouseEvent(NSEvent* event);
 
+  // Clip web view to rounded corner.
+  void ClipWebView();
+
   NSWindow*& window() { return window_; }
   SkRegion* draggable_region() const { return draggable_region_.get(); }
 
