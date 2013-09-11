@@ -14,6 +14,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 #import "browser/atom_event_processing_window.h"
+#import "browser/ui/cocoa/custom_frame_view.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "common/draggable_region.h"
@@ -203,7 +204,7 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
                 styleMask:style_mask
                   backing:NSBackingStoreBuffered
                     defer:YES] :
-    [[AtomNSWindow alloc]
+    [[AtomFramelessNSWindow alloc]
       initWithContentRect:cocoa_bounds
                 styleMask:style_mask
                   backing:NSBackingStoreBuffered
