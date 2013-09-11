@@ -67,6 +67,13 @@
   return NO;
 }
 
+- (void)windowDidExitFullScreen:(NSNotification*)notification {
+  if (!shell_->has_frame()) {
+    NSWindow* window = shell_->GetNativeWindow();
+    [[window standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
+  }
+}
+
 @end
 
 @interface AtomNSWindow : AtomEventProcessingWindow {

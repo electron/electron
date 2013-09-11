@@ -115,6 +115,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
     observers_.RemoveObserver(obs);
   }
 
+  bool has_frame() const { return has_frame_; }
+
  protected:
   explicit NativeWindow(content::WebContents* web_contents,
                         base::DictionaryValue* options);
