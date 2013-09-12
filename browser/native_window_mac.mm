@@ -24,9 +24,7 @@
 #include "content/public/browser/web_contents_view.h"
 #include "content/public/browser/render_view_host.h"
 
-@interface NSWindow (NSPrivateApis)
-- (void)setBottomCornerRounded:(BOOL)rounded;
-@end
+static const CGFloat kAtomWindowCornerRadius = 4.0;
 
 @interface NSView (PrivateMethods)
 - (CGFloat)roundedCornerRadius;
@@ -78,8 +76,6 @@
 
 @end
 
-static CGFloat const AtomWindowCornerRadius = 4.0;
-
 @interface AtomNSWindow : AtomEventProcessingWindow {
  @protected
   atom::NativeWindowMac* shell_;
@@ -114,26 +110,6 @@ static CGFloat const AtomWindowCornerRadius = 4.0;
   [[NSBezierPath bezierPathWithRect:rect] addClip];
   [[NSColor clearColor] set];
   NSRectFill(rect);
-}
-
-- (BOOL)canBecomeKeyWindow {
-  return YES;
-}
-
-- (BOOL)canBecomeMainWindow {
-  return YES;
-}
-
-- (BOOL)hasShadow {
-  return YES;
-}
-
-- (void)keyDown:(NSEvent*)event {
-  [self redispatchKeyEvent:event];
-}
-
-- (void)keyUp:(NSEvent *)event {
-  [self redispatchKeyEvent:event];
 }
 
 @end
@@ -204,8 +180,7 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
   } else {
     atomWindow = [[AtomFramelessNSWindow alloc]
         initWithContentRect:cocoa_bounds
-                  styleMask:NSTitledWindowMask | NSClosableWindowMask |
-                            NSMiniaturizableWindowMask | NSResizableWindowMask
+                  styleMask:style_mask
                     backing:NSBackingStoreBuffered
                       defer:YES];
     [atomWindow setOpaque:NO];
@@ -491,10 +466,8 @@ void NativeWindowMac::InstallView() {
     [[window() contentView] addSubview:view];
   } else {
     NSView* frameView = [[window() contentView] superview];
-
     [view setFrame:[frameView bounds]];
     [frameView addSubview:view];
-
 
     ClipWebView();
 
@@ -513,12 +486,9 @@ void NativeWindowMac::UninstallView() {
 void NativeWindowMac::ClipWebView() {
   NSView* view = GetWebContents()->GetView()->GetNativeView();
 
-  // if ([view respondsToSelector:@selector(roundedCornerRadius)])
-  //   cornerRadius = [view roundedCornerRadius];
-
   view.wantsLayer = YES;
   view.layer.masksToBounds = YES;
-  view.layer.cornerRadius = AtomWindowCornerRadius;
+  view.layer.cornerRadius = kAtomWindowCornerRadius;
 }
 
 void NativeWindowMac::InstallDraggableRegionViews() {
