@@ -17,6 +17,14 @@ class AtomMainDelegate : public brightray::MainDelegate {
  protected:
   virtual bool BasicStartupComplete(int* exit_code) OVERRIDE;
   virtual void PreSandboxStartup() OVERRIDE;
+  virtual void InitializeResourceBundle();
+
+#if defined(OS_MACOSX)
+  virtual base::FilePath GetResourcesPakFilePath();
+  virtual void OverrideChildProcessPath();
+  virtual void OverrideFrameworkBundlePath();
+  virtual void SetProcessName();
+#endif
 
  private:
   virtual content::ContentBrowserClient* CreateContentBrowserClient() OVERRIDE;

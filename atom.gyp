@@ -33,6 +33,7 @@
     'lib_sources': [
       'app/atom_main_delegate.cc',
       'app/atom_main_delegate.h',
+      'app/atom_main_delegate_mac.mm',
       'browser/api/atom_api_app.cc',
       'browser/api/atom_api_app.h',
       'browser/api/atom_api_auto_updater.cc',

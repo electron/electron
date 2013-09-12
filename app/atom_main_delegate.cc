@@ -9,27 +9,7 @@
 #include "browser/atom_browser_client.h"
 #include "content/public/common/content_switches.h"
 #include "renderer/atom_renderer_client.h"
-
-#if defined(OS_MACOSX)
-
-#include "base/mac/bundle_locations.h"
-#include "base/path_service.h"
-#include "content/public/common/content_paths.h"
-
-namespace brightray {
-base::FilePath MainApplicationBundlePath();
-}
-
-namespace {
-
-base::FilePath GetFrameworksPath() {
-  return brightray::MainApplicationBundlePath().Append("Contents")
-                                               .Append("Frameworks");
-}
-
-}  // namespace
-
-#endif  // defined(OS_MACOSX)
+#include "ui/base/resource/resource_bundle.h"
 
 namespace atom {
 
@@ -59,21 +39,29 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 }
 
 void AtomMainDelegate::PreSandboxStartup() {
-  brightray::MainDelegate::PreSandboxStartup();
-
 #if defined(OS_MACOSX)
-  // Override the path to helper process, since third party users may want to
-  // change the application name.
-  base::FilePath helper_path = GetFrameworksPath().Append("Atom Helper.app")
-                                                  .Append("Contents")
-                                                  .Append("MacOS")
-                                                  .Append("Atom Helper");
-  PathService::Override(content::CHILD_PROCESS_EXE, helper_path);
-#endif  // defined(OS_MACOSX)
+  OverrideChildProcessPath();
+  OverrideFrameworkBundlePath();
+  SetProcessName();
+#endif
+  InitializeResourceBundle();
 
   // Disable renderer sandbox for most of node's functions.
   CommandLine* command_line = CommandLine::ForCurrentProcess();
   command_line->AppendSwitch(switches::kNoSandbox);
+}
+
+void AtomMainDelegate::InitializeResourceBundle() {
+  base::FilePath path;
+#if defined(OS_MACOSX)
+  path = GetResourcesPakFilePath();
+#else
+  base::FilePath pak_dir;
+  PathService::Get(base::DIR_MODULE, &pak_dir);
+  path = pak_dir.Append(FILE_PATH_LITERAL("content_shell.pak"));
+#endif
+
+  ui::ResourceBundle::InitSharedInstanceWithPakPath(path);
 }
 
 content::ContentBrowserClient* AtomMainDelegate::CreateContentBrowserClient() {
