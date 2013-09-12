@@ -100,20 +100,6 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 
 @end
 
-@interface AtomFramelessNSWindow : AtomNSWindow
-- (void)drawCustomFrameRect:(NSRect)rect forView:(NSView*)view;
-@end
-
-@implementation AtomFramelessNSWindow
-
-- (void)drawCustomFrameRect:(NSRect)rect forView:(NSView*)view {
-  [[NSBezierPath bezierPathWithRect:rect] addClip];
-  [[NSColor clearColor] set];
-  NSRectFill(rect);
-}
-
-@end
-
 @interface ControlRegionView : NSView {
  @private
   atom::NativeWindowMac* shellWindow_;  // Weak; owns self.
@@ -168,24 +154,14 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
       height);
 
   AtomNSWindow* atomWindow;
-  NSUInteger style_mask = NSTitledWindowMask | NSClosableWindowMask |
-                          NSMiniaturizableWindowMask | NSResizableWindowMask |
-                          NSTexturedBackgroundWindowMask;
-  if (has_frame_) {
-    atomWindow = [[AtomNSWindow alloc]
-        initWithContentRect:cocoa_bounds
-                  styleMask:style_mask
-                    backing:NSBackingStoreBuffered
-                      defer:YES];
-  } else {
-    atomWindow = [[AtomFramelessNSWindow alloc]
-        initWithContentRect:cocoa_bounds
-                  styleMask:style_mask
-                    backing:NSBackingStoreBuffered
-                      defer:YES];
-    [atomWindow setOpaque:NO];
-    [atomWindow setBackgroundColor:[NSColor clearColor]];
-  }
+
+  atomWindow = [[AtomNSWindow alloc]
+      initWithContentRect:cocoa_bounds
+                styleMask:NSTitledWindowMask | NSClosableWindowMask |
+                            NSMiniaturizableWindowMask | NSResizableWindowMask |
+                            NSTexturedBackgroundWindowMask
+                  backing:NSBackingStoreBuffered
+                    defer:YES];
 
   [atomWindow setShell:this];
   window_ = atomWindow;
