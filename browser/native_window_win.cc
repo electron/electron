@@ -397,7 +397,7 @@ views::NonClientFrameView* NativeWindowWin::CreateNonClientFrameView(
 
   return new NativeWindowFramelessView(widget, this);
 }
- 
+
 void NativeWindowWin::OnViewWasResized() {
   // Set the window shape of the RWHV.
   gfx::Size sz = web_view_->size();
