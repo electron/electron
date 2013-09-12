@@ -12,6 +12,7 @@ IGNORE_FILES = [
   'browser/atom_application_delegate_mac.h',
   'browser/native_window_mac.h',
   'browser/ui/atom_menu_controller_mac.h',
+  'browser/ui/cocoa/custom_frame_view.h',
   'browser/ui/nsalert_synchronous_sheet_mac.h',
   'common/api/api_messages.cc',
   'common/api/api_messages.h',
