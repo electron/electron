@@ -78,7 +78,7 @@
 
 @end
 
-static CGFloat const AtomWindowCornerRadius = 5.0;
+static CGFloat const AtomWindowCornerRadius = 4.0;
 
 @interface AtomNSWindow : AtomEventProcessingWindow {
  @protected
@@ -104,21 +104,6 @@ static CGFloat const AtomWindowCornerRadius = 5.0;
 
 @end
 
-@interface AtomFramelessView : NSView
-@end
-
-@implementation AtomFramelessView
-- (void)drawRect:(NSRect) rect {
-  NSBezierPath * shadowPath = [NSBezierPath bezierPathWithRoundedRect:NSInsetRect([self bounds], 0.5, 0.5)
-                                   xRadius:AtomWindowCornerRadius
-                                   yRadius:AtomWindowCornerRadius];
-
-  [[NSColor blackColor] set];
-  [shadowPath fill];
-  [shadowPath addClip];
-}
-@end
-
 @interface AtomFramelessNSWindow : AtomNSWindow
 - (void)drawCustomFrameRect:(NSRect)rect forView:(NSView*)view;
 @end
@@ -132,6 +117,10 @@ static CGFloat const AtomWindowCornerRadius = 5.0;
 }
 
 - (BOOL)canBecomeKeyWindow {
+  return YES;
+}
+
+- (BOOL)canBecomeMainWindow {
   return YES;
 }
 
@@ -197,8 +186,8 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
 
   NSRect main_screen_rect = [[[NSScreen screens] objectAtIndex:0] frame];
   NSRect cocoa_bounds = NSMakeRect(
-      (NSWidth(main_screen_rect) - width) / 2,
-      (NSHeight(main_screen_rect) - height) / 2,
+      round((NSWidth(main_screen_rect) - width) / 2) ,
+      round((NSHeight(main_screen_rect) - height) / 2),
       width,
       height);
 
@@ -215,7 +204,7 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
   } else {
     atomWindow = [[AtomFramelessNSWindow alloc]
         initWithContentRect:cocoa_bounds
-                  styleMask:NSBorderlessWindowMask | NSClosableWindowMask |
+                  styleMask:NSTitledWindowMask | NSClosableWindowMask |
                             NSMiniaturizableWindowMask | NSResizableWindowMask
                     backing:NSBackingStoreBuffered
                       defer:YES];
@@ -503,19 +492,11 @@ void NativeWindowMac::InstallView() {
   } else {
     NSView* frameView = [[window() contentView] superview];
 
-    AtomFramelessView * shadowView = [[AtomFramelessView alloc] initWithFrame: [frameView bounds]];
-    [shadowView setAutoresizesSubviews:YES];
-    [shadowView setAutoresizingMask: NSViewWidthSizable | NSViewHeightSizable];
-
-    [view setFrame:[shadowView bounds]];
-    [frameView addSubview:shadowView];
-    [shadowView addSubview:view];
+    [view setFrame:[frameView bounds]];
+    [frameView addSubview:view];
 
 
     ClipWebView();
-    //
-    // [window() setHasShadow: NO];
-    // [window() setHasShadow: YES];
 
     [[window() standardWindowButton:NSWindowZoomButton] setHidden:YES];
     [[window() standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
