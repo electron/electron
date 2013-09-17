@@ -10,6 +10,7 @@
 #include "content/public/common/content_switches.h"
 #include "renderer/atom_renderer_client.h"
 #include "ui/base/resource/resource_bundle.h"
+#include "base/path_service.h"
 
 namespace atom {
 
