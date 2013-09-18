@@ -137,6 +137,7 @@ class FileDialog {
  public:
   FileDialog(const base::FilePath& default_path,
              const std::string title,
+             int options,
              const std::vector<std::wstring>& file_ext,
              const std::vector<std::wstring>& desc_ext)
       : file_ext_(file_ext),
@@ -150,7 +151,7 @@ class FileDialog {
 
     dialog_.reset(new T(
         file_part.c_str(),
-        FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_OVERWRITEPROMPT,
+        options,
         NULL,
         filters.data(),
         filters.size()));
@@ -217,6 +218,7 @@ bool ShowSaveDialog(atom::NativeWindow* window,
   FileDialog<CShellFileSaveDialog> save_dialog(
       default_path,
       title,
+      FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_OVERWRITEPROMPT,
       file_ext,
       std::vector<std::wstring>());
   if (!save_dialog.Show(window))
