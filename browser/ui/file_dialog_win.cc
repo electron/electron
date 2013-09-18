@@ -14,7 +14,6 @@
 #include "base/strings/string_split.h"
 #include "base/utf_string_conversions.h"
 #include "base/win/registry.h"
-#include "base/win/windows_version.h"
 #include "browser/native_window.h"
 
 namespace file_dialog {
@@ -176,56 +175,6 @@ std::wstring AppendExtensionIfNeeded(
   return return_value;
 }
 
-// Enforce visible dialog box.
-UINT_PTR CALLBACK SaveAsDialogHook(HWND dialog, UINT message,
-                                   WPARAM wparam, LPARAM lparam) {
-  static const UINT kPrivateMessage = 0x2F3F;
-  switch (message) {
-    case WM_INITDIALOG: {
-      // Do nothing here. Just post a message to defer actual processing.
-      PostMessage(dialog, kPrivateMessage, 0, 0);
-      return TRUE;
-    }
-    case kPrivateMessage: {
-      // The dialog box is the parent of the current handle.
-      HWND real_dialog = GetParent(dialog);
-
-      // Retrieve the final size.
-      RECT dialog_rect;
-      GetWindowRect(real_dialog, &dialog_rect);
-
-      // Verify that the upper left corner is visible.
-      POINT point = { dialog_rect.left, dialog_rect.top };
-      HMONITOR monitor1 = MonitorFromPoint(point, MONITOR_DEFAULTTONULL);
-      point.x = dialog_rect.right;
-      point.y = dialog_rect.bottom;
-
-      // Verify that the lower right corner is visible.
-      HMONITOR monitor2 = MonitorFromPoint(point, MONITOR_DEFAULTTONULL);
-      if (monitor1 && monitor2)
-        return 0;
-
-      // Some part of the dialog box is not visible, fix it by moving is to the
-      // client rect position of the browser window.
-      HWND parent_window = GetParent(real_dialog);
-      if (!parent_window)
-        return 0;
-      WINDOWINFO parent_info;
-      parent_info.cbSize = sizeof(WINDOWINFO);
-      GetWindowInfo(parent_window, &parent_info);
-      SetWindowPos(real_dialog, NULL,
-                   parent_info.rcClient.left,
-                   parent_info.rcClient.top,
-                   0, 0,  // Size.
-                   SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOSIZE |
-                   SWP_NOZORDER);
-
-      return 0;
-    }
-  }
-  return 0;
-}
-
 }  // namespace
 
 bool ShowOpenDialog(const std::string& title,
@@ -294,13 +243,6 @@ bool ShowSaveDialog(atom::NativeWindow* window,
                   OFN_NOCHANGEDIR | OFN_PATHMUSTEXIST;
   save_as.lpstrDefExt = NULL;  // default extension, ignored for now.
   save_as.lCustData = NULL;
-
-  if (base::win::GetVersion() < base::win::VERSION_VISTA) {
-    // The save as on Windows XP remembers its last position,
-    // and if the screen resolution changed, it will be off screen.
-    save_as.Flags |= OFN_ENABLEHOOK;
-    save_as.lpfnHook = &SaveAsDialogHook;
-  }
 
   // Must be NULL or 0.
   save_as.pvReserved = NULL;
