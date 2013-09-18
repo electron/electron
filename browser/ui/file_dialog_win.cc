@@ -64,17 +64,17 @@ static bool GetRegistryDescriptionFromExtension(const std::wstring& file_ext,
 // from the registry. If the file extension does not exist in the registry, it
 // will be omitted from the filter, as it is likely a bogus extension.
 void FormatFilterForExtensions(
-    const std::vector<std::wstring>& file_ext,
-    bool include_all_files,
+    std::vector<std::wstring>* file_ext,
     std::vector<std::wstring>* ext_desc,
+    bool include_all_files,
     std::vector<COMDLG_FILTERSPEC>* file_types) {
-  DCHECK(file_ext.size() >= ext_desc->size());
+  DCHECK(file_ext->size() >= ext_desc->size());
 
-  if (file_ext.empty())
+  if (file_ext->empty())
     include_all_files = true;
 
-  for (size_t i = 0; i < file_ext.size(); ++i) {
-    std::wstring ext = file_ext[i];
+  for (size_t i = 0; i < file_ext->size(); ++i) {
+    std::wstring ext = (*file_ext)[i];
     std::wstring desc;
     if (i < ext_desc->size())
       desc = (*ext_desc)[i];
@@ -113,13 +113,19 @@ void FormatFilterForExtensions(
       ext_desc->push_back(desc);
     }
 
-    COMDLG_FILTERSPEC spec = { (*ext_desc)[i].c_str(), file_ext[i].c_str() };
+    COMDLG_FILTERSPEC spec = { (*ext_desc)[i].c_str(), (*file_ext)[i].c_str() };
     file_types->push_back(spec);
   }
 
   if (include_all_files) {
     // TODO(zcbenz): Should be localized.
-    COMDLG_FILTERSPEC spec = { L"All Files (*.*)", L"*.*" };
+    ext_desc->push_back(L"All Files (*.*)");
+    file_ext->push_back(L"*.*");
+
+    COMDLG_FILTERSPEC spec = {
+      (*ext_desc)[ext_desc->size() - 1].c_str(),
+      (*file_ext)[file_ext->size() - 1].c_str(),
+    };
     file_types->push_back(spec);
   }
 }
@@ -136,7 +142,7 @@ class FileDialog {
       : file_ext_(file_ext),
         desc_ext_(desc_ext) {
     std::vector<COMDLG_FILTERSPEC> filters;
-    FormatFilterForExtensions(file_ext_, true, &desc_ext_, &filters);
+    FormatFilterForExtensions(&file_ext_, &desc_ext_, true, &filters);
 
     std::wstring file_part;
     if (!IsDirectory(default_path))
@@ -162,6 +168,8 @@ class FileDialog {
   T* GetDialog() { return dialog_.get(); }
 
   IFileDialog* GetPtr() const { return dialog_->GetPtr(); }
+
+  const std::vector<std::wstring> file_ext() const { return file_ext_; }
 
  private:
   // Set up the initial directory for the dialog.
@@ -218,6 +226,22 @@ bool ShowSaveDialog(atom::NativeWindow* window,
   HRESULT hr = save_dialog.GetDialog()->GetFilePath(file_name, MAX_PATH);
   if (FAILED(hr))
     return false;
+
+  // Append extension according to selected filter.
+  UINT filter_index = 1;
+  save_dialog.GetPtr()->GetFileTypeIndex(&filter_index);
+  std::wstring selected_filter = save_dialog.file_ext()[filter_index - 1];
+  if (selected_filter != L"*.*") {
+    std::wstring result = file_name;
+    std::wstring extension = selected_filter.substr(2);
+    if (!EndsWith(result, extension, false)) {
+      if (result[result.length() - 1] != L'.')
+        result.push_back(L'.');
+      result.append(extension);
+      *path = base::FilePath(result);
+      return true;
+    }
+  }
 
   *path = base::FilePath(file_name);
   return true;
