@@ -124,6 +124,69 @@ void FormatFilterForExtensions(
   }
 }
 
+// Generic class to delegate common open/save dialog's behaviours, users need to
+// call interface methods via GetPtr().
+template <typename T>
+class FileDialog {
+ public:
+  FileDialog(const base::FilePath& default_path,
+             const std::string title,
+             const std::vector<std::wstring>& file_ext,
+             const std::vector<std::wstring>& desc_ext)
+      : file_ext_(file_ext),
+        desc_ext_(desc_ext) {
+    std::vector<COMDLG_FILTERSPEC> filters;
+    FormatFilterForExtensions(file_ext_, true, &desc_ext_, &filters);
+
+    std::wstring file_part;
+    if (!IsDirectory(default_path))
+      file_part = default_path.BaseName().value();
+
+    dialog_.reset(new T(
+        file_part.c_str(),
+        FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_OVERWRITEPROMPT,
+        NULL,
+        filters.data(),
+        filters.size()));
+
+    if (!title.empty())
+      GetPtr()->SetTitle(UTF8ToUTF16(title).c_str());
+
+    SetDefaultFolder(default_path);
+  }
+
+  bool Show(atom::NativeWindow* window) {
+    return dialog_->DoModal(window->GetNativeWindow()) == IDOK;
+  }
+
+  T* GetDialog() { return dialog_.get(); }
+
+  IFileDialog* GetPtr() const { return dialog_->GetPtr(); }
+
+ private:
+  // Set up the initial directory for the dialog.
+  void SetDefaultFolder(const base::FilePath file_path) {
+    std::wstring directory = IsDirectory(file_path) ?
+        file_path.value() :
+        file_path.DirName().value();
+
+    ATL::CComPtr<IShellItem> folder_item;
+    HRESULT hr = SHCreateItemFromParsingName(directory.c_str(),
+                                             NULL,
+                                             IID_PPV_ARGS(&folder_item));
+    if (SUCCEEDED(hr))
+      GetPtr()->SetDefaultFolder(folder_item);
+  }
+
+  scoped_ptr<T> dialog_;
+
+  std::vector<std::wstring> file_ext_;
+  std::vector<std::wstring> desc_ext_;
+  std::vector<COMDLG_FILTERSPEC> filters_;
+
+  DISALLOW_COPY_AND_ASSIGN(FileDialog);
+};
+
 }  // namespace
 
 bool ShowOpenDialog(const std::string& title,
@@ -137,67 +200,22 @@ bool ShowSaveDialog(atom::NativeWindow* window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     base::FilePath* path) {
-  HRESULT hr;
-
-  std::vector<std::wstring> file_ext;
-  std::vector<std::wstring> desc_ext;
-  std::vector<COMDLG_FILTERSPEC> filters;
-
   // TODO(zcbenz): Accept custom filters from caller.
+  std::vector<std::wstring> file_ext;
   std::wstring extension = default_path.Extension();
   if (!extension.empty())
     file_ext.push_back(extension.insert(0, L"*"));
-  desc_ext.reserve(file_ext.size() + 1);
-  FormatFilterForExtensions(file_ext, true, &desc_ext, &filters);
 
-  std::wstring file_part = default_path.BaseName().value();
-  // If the default_path is a root directory, file_part will be '\', and the
-  // call to GetSaveFileName below will fail.
-  if (file_part.size() == 1 && file_part[0] == L'\\')
-    file_part.clear();
-
-  // The size of the in/out buffer in number of characters we pass to win32
-  // GetSaveFileName.  From MSDN "The buffer must be large enough to store the
-  // path and file name string or strings, including the terminating NULL
-  // character.  ... The buffer should be at least 256 characters long.".
-  // _IsValidPathComDlg does a copy expecting at most MAX_PATH, otherwise will
-  // result in an error of FNERR_INVALIDFILENAME.  So we should only pass the
-  // API a buffer of at most MAX_PATH.
-  wchar_t file_name[MAX_PATH];
-  base::wcslcpy(file_name, file_part.c_str(), arraysize(file_name));
-
-  CShellFileSaveDialog save_dialog(
-      file_name,
-      FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_OVERWRITEPROMPT,
-      NULL,
-      filters.data(),
-      filters.size());
-
-  // Set dialog's title if specified.
-  if (!title.empty())
-    save_dialog.GetPtr()->SetTitle(UTF8ToUTF16(title).c_str());
-
-  // Set up the initial directory for the dialog.
-  std::wstring directory;
-  if (IsDirectory(default_path)) {
-    directory = default_path.value();
-    file_part.clear();
-  } else {
-    directory = default_path.DirName().value();
-  }
-
-  ATL::CComPtr<IShellItem> folder_item;
-  hr = SHCreateItemFromParsingName(directory.c_str(),
-                                   NULL,
-                                   IID_PPV_ARGS(&folder_item));
-  if (SUCCEEDED(hr))
-    save_dialog.GetPtr()->SetDefaultFolder(folder_item);
-
-  // Show the save as dialog.
-  if (save_dialog.DoModal(window->GetNativeWindow()) == IDCANCEL)
+  FileDialog<CShellFileSaveDialog> save_dialog(
+      default_path,
+      title,
+      file_ext,
+      std::vector<std::wstring>());
+  if (!save_dialog.Show(window))
     return false;
 
-  hr = save_dialog.GetFilePath(file_name, MAX_PATH);
+  wchar_t file_name[MAX_PATH];
+  HRESULT hr = save_dialog.GetDialog()->GetFilePath(file_name, MAX_PATH);
   if (FAILED(hr))
     return false;
 
