@@ -233,11 +233,10 @@ bool ShowSaveDialog(atom::NativeWindow* window,
   std::wstring selected_filter = save_dialog.file_ext()[filter_index - 1];
   if (selected_filter != L"*.*") {
     std::wstring result = file_name;
-    std::wstring extension = selected_filter.substr(2);
-    if (!EndsWith(result, extension, false)) {
+    if (!EndsWith(result, selected_filter.substr(1), false)) {
       if (result[result.length() - 1] != L'.')
         result.push_back(L'.');
-      result.append(extension);
+      result.append(selected_filter.substr(2));
       *path = base::FilePath(result);
       return true;
     }
