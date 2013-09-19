@@ -162,8 +162,8 @@ class FileDialog {
     SetDefaultFolder(default_path);
   }
 
-  bool Show(atom::NativeWindow* window) {
-    return dialog_->DoModal(window->GetNativeWindow()) == IDOK;
+  bool Show(HWND window) {
+    return dialog_->DoModal(window) == IDOK;
   }
 
   T* GetDialog() { return dialog_.get(); }
@@ -202,7 +202,49 @@ bool ShowOpenDialog(const std::string& title,
                     const base::FilePath& default_path,
                     int properties,
                     std::vector<base::FilePath>* paths) {
-  return false;
+  int options = FOS_FORCEFILESYSTEM | FOS_FILEMUSTEXIST;
+  if (properties & FILE_DIALOG_OPEN_DIRECTORY)
+    options |= FOS_PICKFOLDERS;
+  if (properties & FILE_DIALOG_MULTI_SELECTIONS)
+    options |= FOS_ALLOWMULTISELECT;
+
+  FileDialog<CShellFileOpenDialog> open_dialog(
+      default_path,
+      title,
+      options,
+      std::vector<std::wstring>(),
+      std::vector<std::wstring>());
+  if (!open_dialog.Show(::GetActiveWindow()))
+    return false;
+
+  ATL::CComPtr<IShellItemArray> items;
+  HRESULT hr = static_cast<IFileOpenDialog*>(open_dialog.GetPtr())->GetResults(
+      &items);
+  if (FAILED(hr))
+    return false;
+
+  ATL::CComPtr<IShellItem> item;
+  DWORD count = 0;
+  hr = items->GetCount(&count);
+  if (FAILED(hr))
+    return false;
+
+  paths->reserve(count);
+  for (DWORD i = 0; i < count; ++i) {
+    hr = items->GetItemAt(i, &item);
+    if (FAILED(hr))
+      return false;
+
+    wchar_t file_name[MAX_PATH];
+    hr = CShellFileOpenDialog::GetFileNameFromShellItem(
+        item, SIGDN_FILESYSPATH, file_name, MAX_PATH);
+    if (FAILED(hr))
+      return false;
+
+    paths->push_back(base::FilePath(file_name));
+  }
+
+  return true;
 }
 
 bool ShowSaveDialog(atom::NativeWindow* window,
@@ -221,7 +263,7 @@ bool ShowSaveDialog(atom::NativeWindow* window,
       FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_OVERWRITEPROMPT,
       file_ext,
       std::vector<std::wstring>());
-  if (!save_dialog.Show(window))
+  if (!save_dialog.Show(window->GetNativeWindow()))
     return false;
 
   wchar_t file_name[MAX_PATH];
