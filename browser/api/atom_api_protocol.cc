@@ -7,10 +7,10 @@
 #include "base/stl_util.h"
 #include "browser/atom_browser_context.h"
 #include "browser/net/adapter_request_job.h"
+#include "browser/net/atom_url_request_context_getter.h"
 #include "browser/net/atom_url_request_job_factory.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/url_request/url_request_context.h"
-#include "net/url_request/url_request_context_getter.h"
 #include "vendor/node/src/node.h"
 #include "vendor/node/src/node_internals.h"
 
@@ -55,10 +55,7 @@ v8::Handle<v8::Object> ConvertURLRequestToV8Object(
 
 // Get the job factory.
 AtomURLRequestJobFactory* GetRequestJobFactory() {
-  return static_cast<AtomURLRequestJobFactory*>(
-      const_cast<net::URLRequestJobFactory*>(
-          static_cast<content::BrowserContext*>(AtomBrowserContext::Get())->
-              GetRequestContext()->GetURLRequestContext()->job_factory()));
+  return AtomBrowserContext::Get()->url_request_context_getter()->job_factory();
 }
 
 class CustomProtocolRequestJob : public AdapterRequestJob {

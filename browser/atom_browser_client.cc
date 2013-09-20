@@ -4,14 +4,9 @@
 
 #include "browser/atom_browser_client.h"
 
+#include "browser/atom_browser_context.h"
 #include "browser/atom_browser_main_parts.h"
-#include "browser/net/atom_url_request_job_factory.h"
-#include "content/public/common/url_constants.h"
-#include "net/url_request/data_protocol_handler.h"
-#include "net/url_request/file_protocol_handler.h"
-#include "net/url_request/url_request_context.h"
-#include "net/url_request/url_request_context_storage.h"
-#include "vendor/brightray/browser/url_request_context_getter.h"
+#include "browser/net/atom_url_request_context_getter.h"
 #include "webkit/glue/webpreferences.h"
 
 namespace atom {
@@ -25,31 +20,8 @@ AtomBrowserClient::~AtomBrowserClient() {
 net::URLRequestContextGetter* AtomBrowserClient::CreateRequestContext(
     content::BrowserContext* browser_context,
     content::ProtocolHandlerMap* protocol_handlers) {
-  content::ProtocolHandlerMap preset_handlers;
-  std::swap(preset_handlers, *protocol_handlers);
-
-  // Create our implementaton of job factory.
-  AtomURLRequestJobFactory* job_factory = new AtomURLRequestJobFactory;
-  content::ProtocolHandlerMap::iterator it;
-  for (it = preset_handlers.begin(); it != preset_handlers.end(); ++it)
-    job_factory->SetProtocolHandler(it->first, it->second.release());
-  job_factory->SetProtocolHandler(chrome::kDataScheme,
-                                  new net::DataProtocolHandler);
-  job_factory->SetProtocolHandler(chrome::kFileScheme,
-                                  new net::FileProtocolHandler);
-
-  // Go through default procedure.
-  net::URLRequestContextGetter* request_context_getter =
-      brightray::BrowserClient::CreateRequestContext(browser_context,
-                                                     protocol_handlers);
-  net::URLRequestContext* request_context =
-      request_context_getter->GetURLRequestContext();
-
-  // Replace default job factory.
-  storage_.reset(new net::URLRequestContextStorage(request_context));
-  storage_->set_job_factory(job_factory);
-
-  return request_context_getter;
+  return static_cast<AtomBrowserContext*>(browser_context)->
+      CreateRequestContext(protocol_handlers);
 }
 
 void AtomBrowserClient::OverrideWebkitPrefs(

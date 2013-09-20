@@ -100,6 +100,8 @@
       'browser/native_window_observer.h',
       'browser/net/adapter_request_job.cc',
       'browser/net/adapter_request_job.h',
+      'browser/net/atom_url_request_context_getter.cc',
+      'browser/net/atom_url_request_context_getter.h',
       'browser/net/atom_url_request_job_factory.cc',
       'browser/net/atom_url_request_job_factory.h',
       'browser/net/url_request_string_job.cc',

@@ -10,14 +10,34 @@
 
 namespace atom {
 
+class AtomResourceContext;
+class AtomURLRequestContextGetter;
+
 class AtomBrowserContext : public brightray::BrowserContext {
  public:
   AtomBrowserContext();
   virtual ~AtomBrowserContext();
 
+  // Returns the browser context singleton.
   static AtomBrowserContext* Get();
 
+  // Creates or returns the request context.
+  AtomURLRequestContextGetter* CreateRequestContext(
+      content::ProtocolHandlerMap*);
+
+  AtomURLRequestContextGetter* url_request_context_getter() const {
+    DCHECK(url_request_getter_);
+    return url_request_getter_.get();
+  }
+
+ protected:
+  // content::BrowserContext implementations:
+  virtual content::ResourceContext* GetResourceContext() OVERRIDE;
+
  private:
+  scoped_ptr<AtomResourceContext> resource_context_;
+  scoped_refptr<AtomURLRequestContextGetter> url_request_getter_;
+
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);
 };
 

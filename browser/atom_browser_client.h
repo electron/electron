@@ -7,10 +7,6 @@
 
 #include "brightray/browser/browser_client.h"
 
-namespace net {
-class URLRequestContextStorage;
-}
-
 namespace atom {
 
 class AtomBrowserClient : public brightray::BrowserClient {
@@ -33,8 +29,6 @@ class AtomBrowserClient : public brightray::BrowserClient {
  private:
   virtual brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
       const content::MainFunctionParams&) OVERRIDE;
-
-  scoped_ptr<net::URLRequestContextStorage> storage_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
 };
