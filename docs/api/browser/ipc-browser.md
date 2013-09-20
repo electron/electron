@@ -18,7 +18,7 @@ Emitted when renderer sent a message to the browser.
 * `routingId` Integer
 
 Emitted when renderer sent a synchronous message to the browser. The receiver
-should store the result in `event.result`.
+should store the result in `event.returnValue`.
 
 **Note:** Due to the limitation of `EventEmitter`, returning value in the
 event handler has no effect, so we have to store the result by using the

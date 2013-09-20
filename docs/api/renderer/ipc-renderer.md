@@ -30,7 +30,7 @@ An example of sending synchronous message from renderer to browser:
 // In browser:
 var ipc = require('ipc');
 ipc.on('browser-data-request', function(event, processId, routingId, message) {
-  event.result = 'THIS SOME DATA FROM THE BROWSER';
+  event.returnValue = 'THIS SOME DATA FROM THE BROWSER';
 });
 ```
 
