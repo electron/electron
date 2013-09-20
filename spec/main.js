@@ -35,6 +35,9 @@ app.on('window-all-closed', function() {
 });
 
 app.on('finish-launching', function() {
+  // Test if using protocol module would crash.
+  require('protocol').registerProtocol('test-if-crashes', function() {});
+
   window = new BrowserWindow({
     title: 'atom-shell tests',
     show: false,

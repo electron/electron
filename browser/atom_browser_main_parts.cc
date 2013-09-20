@@ -75,6 +75,11 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 
   node_bindings_->RunMessageLoop();
 
+  // Make sure the url request job factory is created before the
+  // will-finish-launching event.
+  static_cast<content::BrowserContext*>(AtomBrowserContext::Get())->
+      GetRequestContext();
+
 #if !defined(OS_MACOSX)
   // The corresponding call in OS X is in AtomApplicationDelegate.
   Browser::Get()->WillFinishLaunching();
