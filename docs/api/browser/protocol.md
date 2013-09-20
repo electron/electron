@@ -14,6 +14,9 @@ protocol.registerProtocol('atom', function(request) {
 });
 ```
 
+**Note:** This module can only be used after the `will-finish-launching` event
+was emitted.
+
 ## protocol.registerProtocol(scheme, handler)
 
 * `scheme` String
