@@ -10,7 +10,6 @@
 #include "common/api/atom_bindings.h"
 
 namespace base {
-class DictionaryValue;
 class ListValue;
 }
 
@@ -35,7 +34,7 @@ class AtomBrowserBindings : public AtomBindings {
                              int routing_id,
                              const std::string& channel,
                              const base::ListValue& args,
-                             base::DictionaryValue* result);
+                             std::string* result);
 
   // The require('atom').browserMainParts object.
   v8::Handle<v8::Object> browser_main_parts() {

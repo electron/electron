@@ -28,7 +28,7 @@ IPC_MESSAGE_ROUTED2(AtomViewHostMsg_Message,
 IPC_SYNC_MESSAGE_ROUTED2_1(AtomViewHostMsg_Message_Sync,
                            std::string /* channel */,
                            ListValue /* arguments */,
-                           DictionaryValue /* result */)
+                           std::string /* result (in JSON) */)
 
 IPC_MESSAGE_ROUTED2(AtomViewMsg_Message,
                     std::string /* channel */,

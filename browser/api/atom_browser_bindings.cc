@@ -8,6 +8,7 @@
 
 #include "base/logging.h"
 #include "base/values.h"
+#include "browser/api/atom_api_event.h"
 #include "common/v8_value_converter_impl.h"
 #include "content/public/browser/browser_thread.h"
 #include "vendor/node/src/node.h"
@@ -74,7 +75,7 @@ void AtomBrowserBindings::OnRendererMessageSync(
     int routing_id,
     const std::string& channel,
     const base::ListValue& args,
-    base::DictionaryValue* result) {
+    std::string* result) {
   v8::HandleScope scope;
 
   v8::Handle<v8::Context> context = v8::Context::GetCurrent();
@@ -101,11 +102,7 @@ void AtomBrowserBindings::OnRendererMessageSync(
   }
 
   node::MakeCallback(node::process, "emit", arguments.size(), &arguments[0]);
-
-  scoped_ptr<base::Value> base_event(converter->FromV8Value(event, context));
-  DCHECK(base_event && base_event->IsType(base::Value::TYPE_DICTIONARY));
-
-  result->Swap(static_cast<base::DictionaryValue*>(base_event.get()));
+  *result = api::Event::GetReturnValue(event);
 }
 
 }  // namespace atom

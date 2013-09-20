@@ -300,7 +300,8 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(NativeWindow, message)
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
-    IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message_Sync, OnRendererMessageSync)
+    IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
+                                    OnRendererMessageSync)
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_UpdateDraggableRegions,
                         UpdateDraggableRegions)
     IPC_MESSAGE_UNHANDLED(handled = false)
@@ -351,13 +352,17 @@ void NativeWindow::OnRendererMessage(const std::string& channel,
 
 void NativeWindow::OnRendererMessageSync(const std::string& channel,
                                          const base::ListValue& args,
-                                         base::DictionaryValue* result) {
+                                         IPC::Message* reply_msg) {
+  std::string json;
   AtomBrowserMainParts::Get()->atom_bindings()->OnRendererMessageSync(
       GetWebContents()->GetRenderProcessHost()->GetID(),
       GetWebContents()->GetRoutingID(),
       channel,
       args,
-      result);
+      &json);
+
+  AtomViewHostMsg_Message_Sync::WriteReplyParams(reply_msg, json);
+  Send(reply_msg);
 }
 
 }  // namespace atom
