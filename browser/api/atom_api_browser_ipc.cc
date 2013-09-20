@@ -6,6 +6,7 @@
 
 #include "base/values.h"
 #include "common/api/api_messages.h"
+#include "common/string16_conversions.h"
 #include "common/v8_value_converter_impl.h"
 #include "content/public/browser/render_view_host.h"
 #include "vendor/node/src/node.h"
@@ -25,7 +26,7 @@ v8::Handle<v8::Value> BrowserIPC::Send(const v8::Arguments &args) {
   if (!args[0]->IsString() || !args[1]->IsNumber() || !args[2]->IsNumber())
     return node::ThrowTypeError("Bad argument");
 
-  std::string channel(*v8::String::Utf8Value(args[0]));
+  string16 channel(V8ValueToUTF16(args[0]));
   int process_id = args[1]->IntegerValue();
   int routing_id = args[2]->IntegerValue();
 

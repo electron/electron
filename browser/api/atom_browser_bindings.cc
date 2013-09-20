@@ -9,6 +9,7 @@
 #include "base/logging.h"
 #include "base/values.h"
 #include "browser/api/atom_api_event.h"
+#include "common/string16_conversions.h"
 #include "common/v8_value_converter_impl.h"
 #include "content/public/browser/browser_thread.h"
 #include "vendor/node/src/node.h"
@@ -43,7 +44,7 @@ void AtomBrowserBindings::AfterLoad() {
 
 void AtomBrowserBindings::OnRendererMessage(int process_id,
                                             int routing_id,
-                                            const std::string& channel,
+                                            const string16& channel,
                                             const base::ListValue& args) {
   v8::HandleScope scope;
 
@@ -54,7 +55,7 @@ void AtomBrowserBindings::OnRendererMessage(int process_id,
   // process.emit(channel, 'message', process_id, routing_id);
   std::vector<v8::Handle<v8::Value>> arguments;
   arguments.reserve(3 + args.GetSize());
-  arguments.push_back(v8::String::New(channel.c_str(), channel.size()));
+  arguments.push_back(UTF16ToV8Value(channel));
   const base::Value* value;
   if (args.Get(0, &value))
     arguments.push_back(converter->ToV8Value(value, context));
@@ -73,9 +74,9 @@ void AtomBrowserBindings::OnRendererMessage(int process_id,
 void AtomBrowserBindings::OnRendererMessageSync(
     int process_id,
     int routing_id,
-    const std::string& channel,
+    const string16& channel,
     const base::ListValue& args,
-    std::string* result) {
+    string16* result) {
   v8::HandleScope scope;
 
   v8::Handle<v8::Context> context = v8::Context::GetCurrent();
@@ -87,7 +88,7 @@ void AtomBrowserBindings::OnRendererMessageSync(
   // process.emit(channel, 'sync-message', event, process_id, routing_id);
   std::vector<v8::Handle<v8::Value>> arguments;
   arguments.reserve(3 + args.GetSize());
-  arguments.push_back(v8::String::New(channel.c_str(), channel.size()));
+  arguments.push_back(UTF16ToV8Value(channel));
   const base::Value* value;
   if (args.Get(0, &value))
     arguments.push_back(converter->ToV8Value(value, context));

@@ -6,6 +6,7 @@
 
 #include "base/values.h"
 #include "browser/native_window.h"
+#include "common/string16_conversions.h"
 #include "common/v8_value_converter_impl.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/web_contents.h"
@@ -26,15 +27,6 @@ using node::ObjectWrap;
 namespace atom {
 
 namespace api {
-
-namespace {
-
-// Converts string16 to V8 String.
-v8::Handle<v8::String> UTF16ToV8String(const string16& s) {
-  return v8::String::New(reinterpret_cast<const uint16_t*>(s.data()), s.size());
-}
-
-}  // namespace
 
 Window::Window(v8::Handle<v8::Object> wrapper, base::DictionaryValue* options)
     : EventEmitter(wrapper),
@@ -473,7 +465,7 @@ v8::Handle<v8::Value> Window::GetPageTitle(const v8::Arguments &args) {
 
   string16 title = self->window_->GetWebContents()->GetTitle();
 
-  return UTF16ToV8String(title);
+  return UTF16ToV8Value(title);
 }
 
 // static

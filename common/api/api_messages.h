@@ -4,8 +4,7 @@
 
 // Multiply-included file, no traditional include guard.
 
-#include <string>
-
+#include "base/string16.h"
 #include "base/values.h"
 #include "common/draggable_region.h"
 #include "content/public/common/common_param_traits.h"
@@ -22,16 +21,16 @@ IPC_STRUCT_TRAITS_BEGIN(atom::DraggableRegion)
 IPC_STRUCT_TRAITS_END()
 
 IPC_MESSAGE_ROUTED2(AtomViewHostMsg_Message,
-                    std::string /* channel */,
+                    string16 /* channel */,
                     ListValue /* arguments */)
 
 IPC_SYNC_MESSAGE_ROUTED2_1(AtomViewHostMsg_Message_Sync,
-                           std::string /* channel */,
+                           string16 /* channel */,
                            ListValue /* arguments */,
-                           std::string /* result (in JSON) */)
+                           string16 /* result (in JSON) */)
 
 IPC_MESSAGE_ROUTED2(AtomViewMsg_Message,
-                    std::string /* channel */,
+                    string16 /* channel */,
                     ListValue /* arguments */)
 
 // Sent by the renderer when the draggable regions are updated.

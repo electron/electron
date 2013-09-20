@@ -35,7 +35,7 @@ class AtomRenderViewObserver : content::RenderViewObserver {
   virtual void DraggableRegionsChanged(WebKit::WebFrame* frame) OVERRIDE;
   virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
 
-  void OnBrowserMessage(const std::string& channel,
+  void OnBrowserMessage(const string16& channel,
                         const base::ListValue& args);
 
   scoped_ptr<AtomRendererBindings> atom_bindings_;

@@ -5,9 +5,8 @@
 #ifndef ATOM_BROWSER_ATOM_API_EVENT_H_
 #define ATOM_BROWSER_ATOM_API_EVENT_H_
 
-#include <string>
-
 #include "base/basictypes.h"
+#include "base/string16.h"
 #include "vendor/node/src/node_object_wrap.h"
 
 namespace atom {
@@ -22,7 +21,7 @@ class Event : public node::ObjectWrap {
   static v8::Handle<v8::Object> CreateV8Object();
 
   // Get JSON string of the event.returnValue from a Event object.
-  static std::string GetReturnValue(v8::Handle<v8::Object> event);
+  static string16 GetReturnValue(v8::Handle<v8::Object> event);
 
   // Accessor to return handle_, this follows Google C++ Style.
   v8::Persistent<v8::Object>& handle() { return handle_; }

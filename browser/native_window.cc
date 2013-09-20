@@ -341,7 +341,7 @@ void NativeWindow::Observe(int type,
   }
 }
 
-void NativeWindow::OnRendererMessage(const std::string& channel,
+void NativeWindow::OnRendererMessage(const string16& channel,
                                      const base::ListValue& args) {
   AtomBrowserMainParts::Get()->atom_bindings()->OnRendererMessage(
       GetWebContents()->GetRenderProcessHost()->GetID(),
@@ -350,10 +350,10 @@ void NativeWindow::OnRendererMessage(const std::string& channel,
       args);
 }
 
-void NativeWindow::OnRendererMessageSync(const std::string& channel,
+void NativeWindow::OnRendererMessageSync(const string16& channel,
                                          const base::ListValue& args,
                                          IPC::Message* reply_msg) {
-  std::string json;
+  string16 json;
   AtomBrowserMainParts::Get()->atom_bindings()->OnRendererMessageSync(
       GetWebContents()->GetRenderProcessHost()->GetID(),
       GetWebContents()->GetRoutingID(),

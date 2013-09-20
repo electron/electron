@@ -177,10 +177,10 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
  private:
   void RendererUnresponsiveDelayed();
 
-  void OnRendererMessage(const std::string& channel,
+  void OnRendererMessage(const string16& channel,
                          const base::ListValue& args);
 
-  void OnRendererMessageSync(const std::string& channel,
+  void OnRendererMessageSync(const string16& channel,
                              const base::ListValue& args,
                              IPC::Message* reply_msg);
 

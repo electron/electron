@@ -4,6 +4,8 @@
 
 #include "browser/api/atom_api_event.h"
 
+#include "common/string16_conversions.h"
+
 using node::node_isolate;
 
 namespace atom {
@@ -40,10 +42,10 @@ v8::Handle<v8::Object> Event::CreateV8Object() {
 }
 
 // static
-std::string Event::GetReturnValue(v8::Handle<v8::Object> event) {
+string16 Event::GetReturnValue(v8::Handle<v8::Object> event) {
   v8::HandleScope scope;
   v8::Local<v8::Value> json = event->Get(v8::String::New("returnValue"));
-  return *v8::String::Utf8Value(json);
+  return V8ValueToUTF16(json);
 }
 
 v8::Handle<v8::Value> Event::New(const v8::Arguments &args) {
