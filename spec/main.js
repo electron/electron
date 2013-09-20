@@ -23,7 +23,7 @@ ipc.on('process.exit', function(pid, rid, code) {
 });
 
 ipc.on('eval', function(ev, pid, rid, script) {
-  ev.result = eval(script);
+  ev.returnValue = eval(script);
 });
 
 process.on('uncaughtException', function() {
