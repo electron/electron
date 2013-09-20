@@ -75,6 +75,7 @@ ipc.on 'ATOM_BROWSER_GLOBAL', (event, processId, routingId, name) ->
 
 ipc.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (event, processId, routingId) ->
   objectsRegistry.clear processId, routingId
+  event.returnValue = null
 
 ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event, processId, routingId) ->
   try
@@ -127,6 +128,7 @@ ipc.on 'ATOM_BROWSER_MEMBER_SET', (event, processId, routingId, id, name, value)
   try
     obj = objectsRegistry.get id
     obj[name] = value
+    event.returnValue = null
   catch e
     event.returnValue = errorToMeta e
 
