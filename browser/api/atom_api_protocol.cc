@@ -29,6 +29,9 @@ v8::Persistent<v8::Object> g_protocol_object;
 typedef std::map<std::string, v8::Persistent<v8::Function>> HandlersMap;
 static HandlersMap g_handlers;
 
+static const char* kEarlyUseProtocolError = "This method can only be used"
+    "after the application has finished launching.";
+
 // Emit an event for the protocol module.
 void EmitEventInUI(const std::string& event, const std::string& parameter) {
   v8::HandleScope scope;
@@ -185,6 +188,9 @@ v8::Handle<v8::Value> Protocol::RegisterProtocol(const v8::Arguments& args) {
       net::URLRequest::IsHandledProtocol(scheme))
     return node::ThrowError("The scheme is already registered");
 
+  if (AtomBrowserContext::Get()->url_request_context_getter() == NULL)
+    return node::ThrowError(kEarlyUseProtocolError);
+
   // Store the handler in a map.
   if (!args[1]->IsFunction())
     return node::ThrowError("Handler must be a function");
@@ -201,6 +207,9 @@ v8::Handle<v8::Value> Protocol::RegisterProtocol(const v8::Arguments& args) {
 // static
 v8::Handle<v8::Value> Protocol::UnregisterProtocol(const v8::Arguments& args) {
   std::string scheme(*v8::String::Utf8Value(args[0]));
+
+  if (AtomBrowserContext::Get()->url_request_context_getter() == NULL)
+    return node::ThrowError(kEarlyUseProtocolError);
 
   // Erase the handler from map.
   HandlersMap::iterator it(g_handlers.find(scheme));
@@ -230,6 +239,9 @@ v8::Handle<v8::Value> Protocol::InterceptProtocol(const v8::Arguments& args) {
   if (ContainsKey(g_handlers, scheme))
     return node::ThrowError("Cannot intercept custom procotols");
 
+  if (AtomBrowserContext::Get()->url_request_context_getter() == NULL)
+    return node::ThrowError(kEarlyUseProtocolError);
+
   // Store the handler in a map.
   if (!args[1]->IsFunction())
     return node::ThrowError("Handler must be a function");
@@ -245,6 +257,9 @@ v8::Handle<v8::Value> Protocol::InterceptProtocol(const v8::Arguments& args) {
 // static
 v8::Handle<v8::Value> Protocol::UninterceptProtocol(const v8::Arguments& args) {
   std::string scheme(*v8::String::Utf8Value(args[0]));
+
+  if (AtomBrowserContext::Get()->url_request_context_getter() == NULL)
+    return node::ThrowError(kEarlyUseProtocolError);
 
   // Erase the handler from map.
   HandlersMap::iterator it(g_handlers.find(scheme));
