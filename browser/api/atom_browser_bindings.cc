@@ -76,7 +76,7 @@ void AtomBrowserBindings::OnRendererMessageSync(
     int routing_id,
     const string16& channel,
     const base::ListValue& args,
-    IPC::Sender* sender,
+    NativeWindow* sender,
     IPC::Message* message) {
   v8::HandleScope scope;
 

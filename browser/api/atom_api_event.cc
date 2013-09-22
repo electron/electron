@@ -4,9 +4,9 @@
 
 #include "browser/api/atom_api_event.h"
 
+#include "browser/native_window.h"
 #include "common/api/api_messages.h"
 #include "common/string16_conversions.h"
-#include "ipc/ipc_sender.h"
 
 using node::node_isolate;
 
@@ -23,6 +23,8 @@ Event::Event()
 }
 
 Event::~Event() {
+  if (sender_)
+    sender_->RemoveObserver(this);
 }
 
 // static
@@ -46,11 +48,18 @@ v8::Handle<v8::Object> Event::CreateV8Object() {
   return scope.Close(v8_event);
 }
 
-void Event::SetSenderAndMessage(IPC::Sender* sender, IPC::Message* message) {
+void Event::SetSenderAndMessage(NativeWindow* sender, IPC::Message* message) {
   DCHECK(!sender_);
   DCHECK(!message_);
   sender_ = sender;
   message_ = message;
+
+  sender_->AddObserver(this);
+}
+
+void Event::OnWindowClosed() {
+  sender_ = NULL;
+  message_ = NULL;
 }
 
 // static
@@ -78,7 +87,7 @@ v8::Handle<v8::Value> Event::SendReply(const v8::Arguments& args) {
   if (event == NULL)
     return node::ThrowError("Event is already destroyed");
 
-  if (event->sender_ == NULL)
+  if (event->message_ == NULL)
     return node::ThrowError("Can only send reply to synchronous events once");
 
   string16 json = V8ValueToUTF16(args[0]);
@@ -86,7 +95,6 @@ v8::Handle<v8::Value> Event::SendReply(const v8::Arguments& args) {
   AtomViewHostMsg_Message_Sync::WriteReplyParams(event->message_, json);
   event->sender_->Send(event->message_);
 
-  event->sender_ = NULL;
   event->message_ = NULL;
   return v8::Undefined();
 }

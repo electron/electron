@@ -6,19 +6,23 @@
 #define ATOM_BROWSER_ATOM_API_EVENT_H_
 
 #include "base/basictypes.h"
+#include "base/compiler_specific.h"
 #include "base/string16.h"
+#include "browser/native_window_observer.h"
 #include "vendor/node/src/node_object_wrap.h"
 
 namespace IPC {
 class Message;
-class Sender;
 }
 
 namespace atom {
 
+class NativeWindow;
+
 namespace api {
 
-class Event : public node::ObjectWrap {
+class Event : public node::ObjectWrap,
+              public NativeWindowObserver {
  public:
   virtual ~Event();
 
@@ -26,7 +30,7 @@ class Event : public node::ObjectWrap {
   static v8::Handle<v8::Object> CreateV8Object();
 
   // Pass the sender and message to be replied.
-  void SetSenderAndMessage(IPC::Sender* sender, IPC::Message* message);
+  void SetSenderAndMessage(NativeWindow* sender, IPC::Message* message);
 
   // Accessor to return handle_, this follows Google C++ Style.
   v8::Persistent<v8::Object>& handle() { return handle_; }
@@ -37,6 +41,9 @@ class Event : public node::ObjectWrap {
  protected:
   Event();
 
+  // NativeWindowObserver implementations:
+  virtual void OnWindowClosed() OVERRIDE;
+
  private:
   static v8::Handle<v8::Value> New(const v8::Arguments& args);
 
@@ -46,7 +53,7 @@ class Event : public node::ObjectWrap {
   static v8::Persistent<v8::FunctionTemplate> constructor_template_;
 
   // Replyer for the synchronous messages.
-  IPC::Sender* sender_;
+  NativeWindow* sender_;
   IPC::Message* message_;
 
   bool prevent_default_;
