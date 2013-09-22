@@ -76,14 +76,17 @@ void AtomBrowserBindings::OnRendererMessageSync(
     int routing_id,
     const string16& channel,
     const base::ListValue& args,
-    string16* result) {
+    IPC::Sender* sender,
+    IPC::Message* message) {
   v8::HandleScope scope;
 
   v8::Handle<v8::Context> context = v8::Context::GetCurrent();
 
   scoped_ptr<V8ValueConverter> converter(new V8ValueConverterImpl());
 
-  v8::Handle<v8::Object> event = v8::Object::New();
+  // Create the event object.
+  v8::Handle<v8::Object> event = api::Event::CreateV8Object();
+  api::Event::Unwrap<api::Event>(event)->SetSenderAndMessage(sender, message);
 
   // process.emit(channel, 'sync-message', event, process_id, routing_id);
   std::vector<v8::Handle<v8::Value>> arguments;
@@ -103,7 +106,6 @@ void AtomBrowserBindings::OnRendererMessageSync(
   }
 
   node::MakeCallback(node::process, "emit", arguments.size(), &arguments[0]);
-  *result = api::Event::GetReturnValue(event);
 }
 
 }  // namespace atom

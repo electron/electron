@@ -353,16 +353,13 @@ void NativeWindow::OnRendererMessage(const string16& channel,
 void NativeWindow::OnRendererMessageSync(const string16& channel,
                                          const base::ListValue& args,
                                          IPC::Message* reply_msg) {
-  string16 json;
   AtomBrowserMainParts::Get()->atom_bindings()->OnRendererMessageSync(
       GetWebContents()->GetRenderProcessHost()->GetID(),
       GetWebContents()->GetRoutingID(),
       channel,
       args,
-      &json);
-
-  AtomViewHostMsg_Message_Sync::WriteReplyParams(reply_msg, json);
-  Send(reply_msg);
+      this,
+      reply_msg);
 }
 
 }  // namespace atom

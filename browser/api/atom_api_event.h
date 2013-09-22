@@ -9,6 +9,11 @@
 #include "base/string16.h"
 #include "vendor/node/src/node_object_wrap.h"
 
+namespace IPC {
+class Message;
+class Sender;
+}
+
 namespace atom {
 
 namespace api {
@@ -23,6 +28,9 @@ class Event : public node::ObjectWrap {
   // Get JSON string of the event.returnValue from a Event object.
   static string16 GetReturnValue(v8::Handle<v8::Object> event);
 
+  // Pass the sender and message to be replied.
+  void SetSenderAndMessage(IPC::Sender* sender, IPC::Message* message);
+
   // Accessor to return handle_, this follows Google C++ Style.
   v8::Persistent<v8::Object>& handle() { return handle_; }
 
@@ -33,10 +41,16 @@ class Event : public node::ObjectWrap {
   Event();
 
  private:
-  static v8::Handle<v8::Value> New(const v8::Arguments &args);
-  static v8::Handle<v8::Value> PreventDefault(const v8::Arguments &args);
+  static v8::Handle<v8::Value> New(const v8::Arguments& args);
+
+  static v8::Handle<v8::Value> PreventDefault(const v8::Arguments& args);
+  static v8::Handle<v8::Value> SendReply(const v8::Arguments& args);
 
   static v8::Persistent<v8::FunctionTemplate> constructor_template_;
+
+  // Replyer for the synchronous messages.
+  IPC::Sender* sender_;
+  IPC::Message* message_;
 
   bool prevent_default_;
 

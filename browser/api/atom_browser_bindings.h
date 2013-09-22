@@ -12,6 +12,11 @@ namespace base {
 class ListValue;
 }
 
+namespace IPC {
+class Message;
+class Sender;
+}
+
 namespace atom {
 
 class AtomBrowserBindings : public AtomBindings {
@@ -33,7 +38,8 @@ class AtomBrowserBindings : public AtomBindings {
                              int routing_id,
                              const string16& channel,
                              const base::ListValue& args,
-                             string16* result);
+                             IPC::Sender* sender,
+                             IPC::Message* message);
 
   // The require('atom').browserMainParts object.
   v8::Handle<v8::Object> browser_main_parts() {
