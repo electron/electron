@@ -6,6 +6,7 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include "base/callback.h"
 #include "base/strings/sys_string_conversions.h"
 #include "browser/native_window.h"
 #include "browser/ui/nsalert_synchronous_sheet_mac.h"
@@ -44,6 +45,17 @@ int ShowMessageBox(NativeWindow* parent_window,
     return [alert runModalSheetForWindow:parent_window->GetNativeWindow()];
   else
     return [alert runModal];
+}
+
+void ShowMessageBox(NativeWindow* parent_window,
+                    MessageBoxType type,
+                    const std::vector<std::string>& buttons,
+                    const std::string& title,
+                    const std::string& message,
+                    const std::string& detail,
+                    const MessageBoxCallback& callback) {
+  callback.Run(ShowMessageBox(
+      parent_window, type, buttons, title, message, detail));
 }
 
 }  // namespace atom

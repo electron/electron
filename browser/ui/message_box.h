@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include "base/callback_forward.h"
+
 namespace atom {
 
 class NativeWindow;
@@ -18,12 +20,22 @@ enum MessageBoxType {
   MESSAGE_BOX_TYPE_WARNING
 };
 
+typedef base::Callback<void(int)> MessageBoxCallback;
+
 int ShowMessageBox(NativeWindow* parent_window,
                    MessageBoxType type,
                    const std::vector<std::string>& buttons,
                    const std::string& title,
                    const std::string& message,
                    const std::string& detail);
+
+void ShowMessageBox(NativeWindow* parent_window,
+                    MessageBoxType type,
+                    const std::vector<std::string>& buttons,
+                    const std::string& title,
+                    const std::string& message,
+                    const std::string& detail,
+                    const MessageBoxCallback& callback);
 
 }  // namespace atom
 

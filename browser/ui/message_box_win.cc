@@ -4,6 +4,7 @@
 
 #include "browser/ui/message_box.h"
 
+#include "base/callback.h"
 #include "base/message_loop.h"
 #include "base/run_loop.h"
 #include "base/string_util.h"
@@ -251,6 +252,17 @@ int ShowMessageBox(NativeWindow* parent_window,
   } else {
     return dialog.result();
   }
+}
+
+void ShowMessageBox(NativeWindow* parent_window,
+                    MessageBoxType type,
+                    const std::vector<std::string>& buttons,
+                    const std::string& title,
+                    const std::string& message,
+                    const std::string& detail,
+                    const MessageBoxCallback& callback) {
+  callback.Run(ShowMessageBox(
+      parent_window, type, buttons, title, message, detail));
 }
 
 }  // namespace atom
