@@ -46,14 +46,6 @@ v8::Handle<v8::Object> Event::CreateV8Object() {
   return scope.Close(v8_event);
 }
 
-// static
-string16 Event::GetReturnValue(v8::Handle<v8::Object> event) {
-  v8::HandleScope scope;
-  v8::Local<v8::Value> json = event->Get(v8::String::New("returnValue"));
-  return V8ValueToUTF16(json);
-}
-
-
 void Event::SetSenderAndMessage(IPC::Sender* sender, IPC::Message* message) {
   DCHECK(!sender_);
   DCHECK(!message_);
@@ -87,13 +79,15 @@ v8::Handle<v8::Value> Event::SendReply(const v8::Arguments& args) {
     return node::ThrowError("Event is already destroyed");
 
   if (event->sender_ == NULL)
-    return node::ThrowError("Can only send reply to synchronous events");
+    return node::ThrowError("Can only send reply to synchronous events once");
 
-  string16 json = GetReturnValue(args.This());
+  string16 json = V8ValueToUTF16(args[0]);
 
   AtomViewHostMsg_Message_Sync::WriteReplyParams(event->message_, json);
   event->sender_->Send(event->message_);
 
+  event->sender_ = NULL;
+  event->message_ = NULL;
   return v8::Undefined();
 }
 

@@ -25,9 +25,6 @@ class Event : public node::ObjectWrap {
   // Create a V8 Event object.
   static v8::Handle<v8::Object> CreateV8Object();
 
-  // Get JSON string of the event.returnValue from a Event object.
-  static string16 GetReturnValue(v8::Handle<v8::Object> event);
-
   // Pass the sender and message to be replied.
   void SetSenderAndMessage(IPC::Sender* sender, IPC::Message* message);
 

@@ -15,15 +15,10 @@ class Ipc extends EventEmitter
     process.on 'ATOM_INTERNAL_MESSAGE', (args...) =>
       @emit(args...)
     process.on 'ATOM_INTERNAL_MESSAGE_SYNC', (channel, event, args...) =>
-      returnValue = null
-      get = -> returnValue
-      set = (value) ->
-        throw new Error('returnValue can be only set once') if returnValue?
-        returnValue = JSON.stringify(value)
-        event.sendReply()
+      set = (value) -> event.sendReply JSON.stringify(value)
 
-      Object.defineProperty event, 'returnValue', {get, set}
-      Object.defineProperty event, 'result', {get, set}
+      Object.defineProperty event, 'returnValue', {set}
+      Object.defineProperty event, 'result', {set}
 
       @emit(channel, event, args...)
 
