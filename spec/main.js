@@ -26,6 +26,10 @@ ipc.on('eval', function(ev, pid, rid, script) {
   ev.returnValue = eval(script);
 });
 
+ipc.on('echo', function(ev, pid, rid, msg) {
+  ev.returnValue = msg;
+});
+
 process.on('uncaughtException', function() {
   window.openDevTools();
 });
