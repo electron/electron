@@ -180,7 +180,7 @@ v8::Handle<v8::Value> ShowOpenDialog(const v8::Arguments &args) {
         title,
         default_path,
         properties,
-        base::Bind(&CallV8Function2<const std::vector<base::FilePath>>,
+        base::Bind(&CallV8Function2<const std::vector<base::FilePath>&>,
                    callback));
     return v8::Undefined();
   }
@@ -202,17 +202,33 @@ v8::Handle<v8::Value> ShowSaveDialog(const v8::Arguments &args) {
     native_window = window->window();
   }
 
+  v8::Persistent<v8::Function> callback;
+  if (args[3]->IsFunction()) {
+    callback = v8::Persistent<v8::Function>::New(
+        node_isolate,
+        v8::Local<v8::Function>::Cast(args[3]));
+  }
+
   std::string title(*v8::String::Utf8Value(args[0]));
   base::FilePath default_path(V8ValueToFilePath(args[1]));
 
-  base::FilePath path;
-  if (!file_dialog::ShowSaveDialog(native_window,
-                                   title,
-                                   default_path,
-                                   &path))
-    return v8::Undefined();
+  if (callback.IsEmpty()) {
+    base::FilePath path;
+    if (!file_dialog::ShowSaveDialog(native_window,
+                                     title,
+                                     default_path,
+                                     &path))
+      return v8::Undefined();
 
-  return scope.Close(ToV8Value(path));
+    return scope.Close(ToV8Value(path));
+  } else {
+    file_dialog::ShowSaveDialog(
+        native_window,
+        title,
+        default_path,
+        base::Bind(&CallV8Function2<const base::FilePath&>, callback));
+    return v8::Undefined();
+  }
 }
 
 }  // namespace api
