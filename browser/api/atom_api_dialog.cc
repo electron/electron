@@ -52,18 +52,12 @@ void Initialize(v8::Handle<v8::Object> target) {
 v8::Handle<v8::Value> ShowMessageBox(const v8::Arguments &args) {
   v8::HandleScope scope;
 
-  if (!args[0]->IsNumber() ||  // type
-      !args[1]->IsArray() ||   // buttons
-      !args[2]->IsString() ||  // title
-      !args[3]->IsString() ||  // message
-      !args[4]->IsString())    // detail
+  int type;
+  std::vector<std::string> buttons;
+  std::string title, message, detail;
+  if (!FromV8Arguments(args, &type, &buttons, &title, &message, &detail))
     return node::ThrowTypeError("Bad argument");
 
-  int type = FromV8Value(args[0]);
-  std::vector<std::string> buttons = FromV8Value(args[1]);
-  std::string title = FromV8Value(args[2]);
-  std::string message = FromV8Value(args[3]);
-  std::string detail = FromV8Value(args[4]);
   NativeWindow* native_window = FromV8Value(args[5]);
   v8::Persistent<v8::Function> callback = FromV8Value(args[6]);
 
@@ -92,14 +86,12 @@ v8::Handle<v8::Value> ShowMessageBox(const v8::Arguments &args) {
 v8::Handle<v8::Value> ShowOpenDialog(const v8::Arguments &args) {
   v8::HandleScope scope;
 
-  if (!args[0]->IsString() ||  // title
-      !args[1]->IsString() ||  // default_path
-      !args[2]->IsNumber())    // properties
+  std::string title;
+  base::FilePath default_path;
+  int properties;
+  if (!FromV8Arguments(args, &title, &default_path, &properties))
     return node::ThrowTypeError("Bad argument");
 
-  std::string title = FromV8Value(args[0]);
-  base::FilePath default_path = FromV8Value(args[1]);
-  int properties = FromV8Value(args[2]);
   NativeWindow* native_window = FromV8Value(args[3]);
   v8::Persistent<v8::Function> callback = FromV8Value(args[4]);
 
@@ -132,12 +124,11 @@ v8::Handle<v8::Value> ShowOpenDialog(const v8::Arguments &args) {
 v8::Handle<v8::Value> ShowSaveDialog(const v8::Arguments &args) {
   v8::HandleScope scope;
 
-  if (!args[0]->IsString() ||  // title
-      !args[1]->IsString())    // default_path
+  std::string title;
+  base::FilePath default_path;
+  if (!FromV8Arguments(args, &title, &default_path))
     return node::ThrowTypeError("Bad argument");
 
-  std::string title = FromV8Value(args[0]);
-  base::FilePath default_path = FromV8Value(args[1]);
   NativeWindow* native_window = FromV8Value(args[2]);
   v8::Persistent<v8::Function> callback = FromV8Value(args[3]);
 
