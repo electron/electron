@@ -4,15 +4,11 @@
 
 #include "browser/api/atom_api_dialog.h"
 
-#include <string>
-
 #include "base/bind.h"
-#include "base/utf_string_conversions.h"
-#include "base/values.h"
-#include "browser/api/atom_api_window.h"
 #include "browser/native_window.h"
 #include "browser/ui/file_dialog.h"
 #include "browser/ui/message_box.h"
+#include "common/v8_conversions.h"
 #include "vendor/node/src/node_internals.h"
 
 using node::node_isolate;
@@ -22,62 +18,6 @@ namespace atom {
 namespace api {
 
 namespace {
-
-// Trick to overload functions by return value's type.
-struct FromV8Value {
-  explicit FromV8Value(v8::Handle<v8::Value> value) : value_(value) {}
-
-  operator std::string() {
-    return *v8::String::Utf8Value(value_);
-  }
-
-  operator int() {
-    return value_->IntegerValue();
-  }
-
-  operator base::FilePath() {
-    return base::FilePath::FromUTF8Unsafe(FromV8Value(value_));
-  }
-
-  operator atom::NativeWindow*() {
-    if (value_->IsObject()) {
-      Window* window = Window::Unwrap<Window>(value_->ToObject());
-      if (window && window->window())
-        return window->window();
-    }
-    return NULL;
-  }
-
-  operator v8::Persistent<v8::Function>() {
-    return value_->IsFunction() ?
-      v8::Persistent<v8::Function>::New(
-          node_isolate,
-          v8::Handle<v8::Function>::Cast(value_)) :
-      v8::Persistent<v8::Function>();
-  }
-
-  v8::Handle<v8::Value> value_;
-};
-
-v8::Handle<v8::Value> ToV8Value(const base::FilePath& path) {
-  std::string path_string(path.AsUTF8Unsafe());
-  return v8::String::New(path_string.data(), path_string.size());
-}
-
-v8::Handle<v8::Value> ToV8Value(void* whatever) {
-  return v8::Undefined();
-}
-
-v8::Handle<v8::Value> ToV8Value(int code) {
-  return v8::Integer::New(code);
-}
-
-v8::Handle<v8::Value> ToV8Value(const std::vector<base::FilePath>& paths) {
-  v8::Handle<v8::Array> result = v8::Array::New(paths.size());
-  for (size_t i = 0; i < paths.size(); ++i)
-    result->Set(i, ToV8Value(paths[i]));
-  return result;
-}
 
 template<typename T>
 void CallV8Function(v8::Persistent<v8::Function> callback, T arg) {
@@ -119,28 +59,27 @@ v8::Handle<v8::Value> ShowMessageBox(const v8::Arguments &args) {
       !args[4]->IsString())    // detail
     return node::ThrowTypeError("Bad argument");
 
-  NativeWindow* native_window = FromV8Value(args[5]);
-  v8::Persistent<v8::Function> callback = FromV8Value(args[6]);
-
-  MessageBoxType type = (MessageBoxType)(args[0]->IntegerValue());
-
-  std::vector<std::string> buttons;
-  v8::Handle<v8::Array> v8_buttons = v8::Handle<v8::Array>::Cast(args[1]);
-  for (uint32_t i = 0; i < v8_buttons->Length(); ++i)
-    buttons.push_back(FromV8Value(v8_buttons->Get(i)));
-
+  int type = FromV8Value(args[0]);
+  std::vector<std::string> buttons = FromV8Value(args[1]);
   std::string title = FromV8Value(args[2]);
   std::string message = FromV8Value(args[3]);
   std::string detail = FromV8Value(args[4]);
+  NativeWindow* native_window = FromV8Value(args[5]);
+  v8::Persistent<v8::Function> callback = FromV8Value(args[6]);
 
   if (callback.IsEmpty()) {
     int chosen = atom::ShowMessageBox(
-        native_window, type, buttons, title, message, detail);
+        native_window,
+        (MessageBoxType)type,
+        buttons,
+        title,
+        message,
+        detail);
     return scope.Close(v8::Integer::New(chosen));
   } else {
     atom::ShowMessageBox(
         native_window,
-        type,
+        (MessageBoxType)type,
         buttons,
         title,
         message,
@@ -158,12 +97,11 @@ v8::Handle<v8::Value> ShowOpenDialog(const v8::Arguments &args) {
       !args[2]->IsNumber())    // properties
     return node::ThrowTypeError("Bad argument");
 
-  NativeWindow* native_window = FromV8Value(args[3]);
-  v8::Persistent<v8::Function> callback = FromV8Value(args[4]);
-
   std::string title = FromV8Value(args[0]);
   base::FilePath default_path = FromV8Value(args[1]);
   int properties = FromV8Value(args[2]);
+  NativeWindow* native_window = FromV8Value(args[3]);
+  v8::Persistent<v8::Function> callback = FromV8Value(args[4]);
 
   if (callback.IsEmpty()) {
     std::vector<base::FilePath> paths;
@@ -198,11 +136,10 @@ v8::Handle<v8::Value> ShowSaveDialog(const v8::Arguments &args) {
       !args[1]->IsString())    // default_path
     return node::ThrowTypeError("Bad argument");
 
-  NativeWindow* native_window = FromV8Value(args[2]);
-  v8::Persistent<v8::Function> callback = FromV8Value(args[3]);
-
   std::string title = FromV8Value(args[0]);
   base::FilePath default_path = FromV8Value(args[1]);
+  NativeWindow* native_window = FromV8Value(args[2]);
+  v8::Persistent<v8::Function> callback = FromV8Value(args[3]);
 
   if (callback.IsEmpty()) {
     base::FilePath path;
