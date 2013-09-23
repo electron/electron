@@ -143,4 +143,26 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
   return true;
 }
 
+void ShowSaveDialog(atom::NativeWindow* parent_window,
+                    const std::string& title,
+                    const base::FilePath& default_path,
+                    const SaveDialogCallback& c) {
+  NSSavePanel* dialog = [NSSavePanel savePanel];
+
+  SetupDialog(dialog, title, default_path);
+
+  __block SaveDialogCallback callback = c;
+
+  NSWindow* window = parent_window ? parent_window->GetNativeWindow() : NULL;
+  [dialog beginSheetModalForWindow:window
+                 completionHandler:^(NSInteger chosen) {
+    if (chosen == NSFileHandlingPanelCancelButton) {
+      callback.Run(false, base::FilePath());
+    } else {
+      std::string path = base::SysNSStringToUTF8([[dialog URL] path]);
+      callback.Run(true, base::FilePath(path));
+    }
+  }];
+}
+
 }  // namespace file_dialog

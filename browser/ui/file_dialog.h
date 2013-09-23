@@ -25,7 +25,10 @@ enum FileDialogProperty {
 };
 
 typedef base::Callback<void(
-    bool result, std::vector<base::FilePath> paths)> OpenDialogCallback;
+    bool result, const std::vector<base::FilePath>& paths)> OpenDialogCallback;
+
+typedef base::Callback<void(
+    bool result, const base::FilePath& path)> SaveDialogCallback;
 
 bool ShowOpenDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
@@ -43,6 +46,11 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     base::FilePath* path);
+
+void ShowSaveDialog(atom::NativeWindow* parent_window,
+                    const std::string& title,
+                    const base::FilePath& default_path,
+                    const SaveDialogCallback& callback);
 
 }  // namespace file_dialog
 
