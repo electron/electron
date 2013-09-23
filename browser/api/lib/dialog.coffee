@@ -31,16 +31,21 @@ module.exports =
                            window,
                            callback
 
-  showSaveDialog: (window, options) ->
-    throw new TypeError('Invalid window') unless window?.constructor is BrowserWindow
+  showSaveDialog: (window, options, callback) ->
+    unless window?.constructor is BrowserWindow
+      # Shift.
+      callback = options
+      options = window
+      window = null
 
     options ?= title: 'Save'
     options.title ?= ''
     options.defaultPath ?= ''
 
-    binding.showSaveDialog window,
-                           String(options.title),
-                           String(options.defaultPath)
+    binding.showSaveDialog String(options.title),
+                           String(options.defaultPath),
+                           window,
+                           callback
 
   showMessageBox: (window, options, callback) ->
     unless window?.constructor is BrowserWindow

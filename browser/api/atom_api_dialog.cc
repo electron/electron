@@ -189,20 +189,24 @@ v8::Handle<v8::Value> ShowOpenDialog(const v8::Arguments &args) {
 v8::Handle<v8::Value> ShowSaveDialog(const v8::Arguments &args) {
   v8::HandleScope scope;
 
-  if (!args[0]->IsObject() ||  // window
-      !args[1]->IsString() ||  // title
-      !args[2]->IsString())    // default_path
+  if (!args[0]->IsString() ||  // title
+      !args[1]->IsString())    // default_path
     return node::ThrowTypeError("Bad argument");
 
-  Window* window = Window::Unwrap<Window>(args[0]->ToObject());
-  if (!window || !window->window())
-    return node::ThrowError("Invalid window");
+  NativeWindow* native_window = NULL;
+  if (args[2]->IsObject()) {
+    Window* window = Window::Unwrap<Window>(args[2]->ToObject());
+    if (!window || !window->window())
+      return node::ThrowError("Invalid window");
 
-  std::string title(*v8::String::Utf8Value(args[1]));
-  base::FilePath default_path(V8ValueToFilePath(args[2]));
+    native_window = window->window();
+  }
+
+  std::string title(*v8::String::Utf8Value(args[0]));
+  base::FilePath default_path(V8ValueToFilePath(args[1]));
 
   base::FilePath path;
-  if (!file_dialog::ShowSaveDialog(window->window(),
+  if (!file_dialog::ShowSaveDialog(native_window,
                                    title,
                                    default_path,
                                    &path))
