@@ -38,6 +38,7 @@ void SetupDialog(NSSavePanel* dialog,
   if (default_filename)
     [dialog setNameFieldStringValue:default_filename];
 
+  [dialog setCanSelectHiddenExtension:YES];
   [dialog setAllowsOtherFileTypes:YES];
 }
 
@@ -49,6 +50,25 @@ void SetupDialogForProperties(NSOpenPanel* dialog, int properties) {
     [dialog setCanCreateDirectories:YES];
   if (properties & FILE_DIALOG_MULTI_SELECTIONS)
     [dialog setAllowsMultipleSelection:YES];
+}
+
+// Run modal dialog with parent window and return user's choice.
+int RunModalDialog(NSSavePanel* dialog, atom::NativeWindow* parent_window) {
+  __block int chosen = NSFileHandlingPanelCancelButton;
+  if (parent_window == NULL) {
+    chosen = [dialog runModal];
+  } else {
+    NSWindow* window = parent_window->GetNativeWindow();
+
+    [dialog beginSheetModalForWindow:window
+                   completionHandler:^(NSInteger c) {
+      chosen = c;
+      [NSApp stopModal];
+    }];
+    [NSApp runModalForWindow:window];
+  }
+
+  return chosen;
 }
 
 void ReadDialogPaths(NSOpenPanel* dialog, std::vector<base::FilePath>* paths) {
@@ -71,21 +91,7 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
   SetupDialog(dialog, title, default_path);
   SetupDialogForProperties(dialog, properties);
 
-  __block int chosen = -1;
-
-  if (parent_window == NULL) {
-    chosen = [dialog runModal];
-  } else {
-    NSWindow* window = parent_window->GetNativeWindow();
-
-    [dialog beginSheetModalForWindow:window
-                   completionHandler:^(NSInteger c) {
-      chosen = c;
-      [NSApp stopModal];
-    }];
-    [NSApp runModalForWindow:window];
-  }
-
+  int chosen = RunModalDialog(dialog, parent_window);
   if (chosen == NSFileHandlingPanelCancelButton)
     return false;
 
@@ -129,23 +135,7 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
 
   SetupDialog(dialog, title, default_path);
 
-  [dialog setCanSelectHiddenExtension:YES];
-
-  __block int chosen = -1;
-
-  if (parent_window == NULL) {
-    chosen = [dialog runModal];
-  } else {
-    NSWindow* window = parent_window->GetNativeWindow();
-
-    [dialog beginSheetModalForWindow:window
-                   completionHandler:^(NSInteger c) {
-      chosen = c;
-      [NSApp stopModal];
-    }];
-    [NSApp runModalForWindow:window];
-  }
-
+  int chosen = RunModalDialog(dialog, parent_window);
   if (chosen == NSFileHandlingPanelCancelButton || ![[dialog URL] isFileURL])
     return false;
 
