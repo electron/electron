@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/callback_forward.h"
 #include "base/files/file_path.h"
 
 namespace atom {
@@ -23,11 +24,20 @@ enum FileDialogProperty {
   FILE_DIALOG_CREATE_DIRECTORY = 8,
 };
 
+typedef base::Callback<void(
+    bool result, std::vector<base::FilePath> paths)> OpenDialogCallback;
+
 bool ShowOpenDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     int properties,
                     std::vector<base::FilePath>* paths);
+
+void ShowOpenDialog(atom::NativeWindow* parent_window,
+                    const std::string& title,
+                    const base::FilePath& default_path,
+                    int properties,
+                    const OpenDialogCallback& callback);
 
 bool ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,

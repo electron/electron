@@ -41,6 +41,23 @@ void SetupDialog(NSSavePanel* dialog,
   [dialog setAllowsOtherFileTypes:YES];
 }
 
+void SetupDialogForProperties(NSOpenPanel* dialog, int properties) {
+  [dialog setCanChooseFiles:(properties & FILE_DIALOG_OPEN_FILE)];
+  if (properties & FILE_DIALOG_OPEN_DIRECTORY)
+    [dialog setCanChooseDirectories:YES];
+  if (properties & FILE_DIALOG_CREATE_DIRECTORY)
+    [dialog setCanCreateDirectories:YES];
+  if (properties & FILE_DIALOG_MULTI_SELECTIONS)
+    [dialog setAllowsMultipleSelection:YES];
+}
+
+void ReadDialogPaths(NSOpenPanel* dialog, std::vector<base::FilePath>* paths) {
+  NSArray* urls = [dialog URLs];
+  for (NSURL* url in urls)
+    if ([url isFileURL])
+      paths->push_back(base::FilePath(base::SysNSStringToUTF8([url path])));
+}
+
 }  // namespace
 
 bool ShowOpenDialog(atom::NativeWindow* parent_window,
@@ -52,14 +69,7 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
   NSOpenPanel* dialog = [NSOpenPanel openPanel];
 
   SetupDialog(dialog, title, default_path);
-
-  [dialog setCanChooseFiles:(properties & FILE_DIALOG_OPEN_FILE)];
-  if (properties & FILE_DIALOG_OPEN_DIRECTORY)
-    [dialog setCanChooseDirectories:YES];
-  if (properties & FILE_DIALOG_CREATE_DIRECTORY)
-    [dialog setCanCreateDirectories:YES];
-  if (properties & FILE_DIALOG_MULTI_SELECTIONS)
-    [dialog setAllowsMultipleSelection:YES];
+  SetupDialogForProperties(dialog, properties);
 
   __block int chosen = -1;
 
@@ -79,12 +89,35 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
   if (chosen == NSFileHandlingPanelCancelButton)
     return false;
 
-  NSArray* urls = [dialog URLs];
-  for (NSURL* url in urls)
-    if ([url isFileURL])
-      paths->push_back(base::FilePath(base::SysNSStringToUTF8([url path])));
-
+  ReadDialogPaths(dialog, paths);
   return true;
+}
+
+void ShowOpenDialog(atom::NativeWindow* parent_window,
+                    const std::string& title,
+                    const base::FilePath& default_path,
+                    int properties,
+                    const OpenDialogCallback& c) {
+  NSOpenPanel* dialog = [NSOpenPanel openPanel];
+
+  SetupDialog(dialog, title, default_path);
+  SetupDialogForProperties(dialog, properties);
+
+  // Duplicate the callback object here since c is a reference and gcd would
+  // only store the pointer, by duplication we can force gcd to store a copy.
+  __block OpenDialogCallback callback = c;
+
+  NSWindow* window = parent_window ? parent_window->GetNativeWindow() : NULL;
+  [dialog beginSheetModalForWindow:window
+                 completionHandler:^(NSInteger chosen) {
+    if (chosen == NSFileHandlingPanelCancelButton) {
+      callback.Run(false, std::vector<base::FilePath>());
+    } else {
+      std::vector<base::FilePath> paths;
+      ReadDialogPaths(dialog, &paths);
+      callback.Run(true, paths);
+    }
+  }];
 }
 
 bool ShowSaveDialog(atom::NativeWindow* window,
