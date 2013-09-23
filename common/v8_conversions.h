@@ -12,7 +12,7 @@
 #include "browser/api/atom_api_window.h"
 #include "v8/include/v8.h"
 
-// Trick to overload functions by return value's type.
+// Convert V8 value to arbitrary supported types.
 struct FromV8Value {
   explicit FromV8Value(v8::Handle<v8::Value> value) : value_(value) {}
 
@@ -58,6 +58,7 @@ struct FromV8Value {
   v8::Handle<v8::Value> value_;
 };
 
+// Convert arbitrary supported native type to V8 value.
 inline v8::Handle<v8::Value> ToV8Value(const base::FilePath& path) {
   std::string path_string(path.AsUTF8Unsafe());
   return v8::String::New(path_string.data(), path_string.size());
@@ -71,12 +72,124 @@ inline v8::Handle<v8::Value> ToV8Value(int code) {
   return v8::Integer::New(code);
 }
 
-inline
 v8::Handle<v8::Value> ToV8Value(const std::vector<base::FilePath>& paths) {
   v8::Handle<v8::Array> result = v8::Array::New(paths.size());
   for (size_t i = 0; i < paths.size(); ++i)
     result->Set(i, ToV8Value(paths[i]));
   return result;
+}
+
+// Check if a V8 Value is of specified type.
+template<class T> inline
+bool V8ValueCanBeConvertedTo(v8::Handle<v8::Value> value) {
+  return false;
+}
+
+template<> inline
+bool V8ValueCanBeConvertedTo<int>(v8::Handle<v8::Value> value) {
+  return value->IsNumber();
+}
+
+template<> inline
+bool V8ValueCanBeConvertedTo<std::string>(v8::Handle<v8::Value> value) {
+  return value->IsString();
+}
+
+template<> inline
+bool V8ValueCanBeConvertedTo<base::FilePath>(v8::Handle<v8::Value> value) {
+  return V8ValueCanBeConvertedTo<std::string>(value);
+}
+
+template<> inline
+bool V8ValueCanBeConvertedTo<std::vector<std::string>>(
+    v8::Handle<v8::Value> value) {
+  return value->IsArray();
+}
+
+template<>
+bool V8ValueCanBeConvertedTo<atom::NativeWindow*>(v8::Handle<v8::Value> value) {
+  using atom::api::Window;
+  if (value->IsObject()) {
+    Window* window = Window::Unwrap<Window>(value->ToObject());
+    if (window && window->window())
+      return true;
+  }
+  return false;
+}
+
+template<> inline
+bool V8ValueCanBeConvertedTo<v8::Persistent<v8::Function>>(
+    v8::Handle<v8::Value> value) {
+  return value->IsFunction();
+}
+
+// Check and convert V8's Arguments to native types.
+template<typename T1, int index = 0>
+bool FromV8Arguments(const v8::Arguments& args, T1* value) {
+  if (!V8ValueCanBeConvertedTo<T1>(args[index]))
+    return false;
+  *value = static_cast<const T1&>(FromV8Value(args[index]));
+  return true;
+}
+
+template<typename T1, typename T2>
+bool FromV8Arguments(const v8::Arguments& args, T1* a1, T2* a2) {
+  return FromV8Arguments<T1>(args, a1) && FromV8Arguments<T2, 1>(args, a2);
+}
+
+template<typename T1, typename T2, typename T3>
+bool FromV8Arguments(const v8::Arguments& args, T1* a1, T2* a2, T3* a3) {
+  return FromV8Arguments<T1, T2>(args, a1, a2) &&
+         FromV8Arguments<T3, 2>(args, a3);
+}
+
+template<typename T1, typename T2, typename T3, typename T4>
+bool FromV8Arguments(const v8::Arguments& args,
+                     T1* a1,
+                     T2* a2,
+                     T3* a3,
+                     T4* a4) {
+  return FromV8Arguments<T1, T2, T3>(args, a1, a2, a3) &&
+         FromV8Arguments<T4, 3>(args, a4);
+}
+
+template<typename T1, typename T2, typename T3, typename T4, typename T5>
+bool FromV8Arguments(const v8::Arguments& args,
+                     T1* a1,
+                     T2* a2,
+                     T3* a3,
+                     T4* a4,
+                     T5* a5) {
+  return FromV8Arguments<T1, T2, T3, T4>(args, a1, a2, a3, a4) &&
+         FromV8Arguments<T5, 4>(args, a5);
+}
+
+template<typename T1, typename T2, typename T3, typename T4, typename T5,
+    typename T6>
+bool FromV8Arguments(const v8::Arguments& args,
+                     T1* a1,
+                     T2* a2,
+                     T3* a3,
+                     T4* a4,
+                     T5* a5,
+                     T6* a6) {
+  return FromV8Arguments<T1, T2, T3, T4, T5>(args, a1, a2, a3, a4, a5) &&
+         FromV8Arguments<T6, 5>(args, a6);
+}
+
+template<typename T1, typename T2, typename T3, typename T4, typename T5,
+    typename T6, typename T7>
+bool FromV8Arguments(const v8::Arguments& args,
+                     T1* a1,
+                     T2* a2,
+                     T3* a3,
+                     T4* a4,
+                     T5* a5,
+                     T6* a6,
+                     T7* a7) {
+  return
+      FromV8Arguments<T1, T2, T3, T4, T5, T6>(args, a1, a2, a3, a4, a5, a6) &&
+      FromV8Arguments<T7, 6>(args, a7);
 }
 
 #endif  // COMMON_V8_CONVERSIONS_H_
