@@ -7,7 +7,13 @@ fileDialogProperties =
 messageBoxTypes = ['none', 'info', 'warning']
 
 module.exports =
-  showOpenDialog: (options) ->
+  showOpenDialog: (window, options, callback) ->
+    if window? and window.constructor isnt BrowserWindow
+      # Shift.
+      callback = options
+      options = window
+      window = null
+
     options = title: 'Open', properties: ['openFile'] unless options?
     options.properties = options.properties ? ['openFile']
     throw new TypeError('Properties need to be array') unless Array.isArray options.properties
@@ -19,7 +25,10 @@ module.exports =
     options.title = options.title ? ''
     options.defaultPath = options.defaultPath ? ''
 
-    binding.showOpenDialog options.title, options.defaultPath, properties
+    binding.showOpenDialog options.title,
+                           options.defaultPath,
+                           properties,
+                           window
 
   showSaveDialog: (window, options) ->
     throw new TypeError('Invalid window') unless window?.constructor is BrowserWindow

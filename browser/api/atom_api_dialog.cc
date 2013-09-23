@@ -119,12 +119,21 @@ v8::Handle<v8::Value> ShowOpenDialog(const v8::Arguments &args) {
       !args[2]->IsNumber())    // properties
     return node::ThrowTypeError("Bad argument");
 
+  NativeWindow* native_window = NULL;
+  if (args[3]->IsObject()) {
+    Window* window = Window::Unwrap<Window>(args[3]->ToObject());
+    if (!window || !window->window())
+      return node::ThrowError("Invalid window");
+
+    native_window = window->window();
+  }
+
   std::string title(*v8::String::Utf8Value(args[0]));
   base::FilePath default_path(V8ValueToFilePath(args[1]));
   int properties = args[2]->IntegerValue();
 
   std::vector<base::FilePath> paths;
-  if (!file_dialog::ShowOpenDialog(NULL,
+  if (!file_dialog::ShowOpenDialog(native_window,
                                    title,
                                    default_path,
                                    properties,
