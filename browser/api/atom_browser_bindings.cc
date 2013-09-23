@@ -55,7 +55,7 @@ void AtomBrowserBindings::OnRendererMessage(int process_id,
   // process.emit(channel, 'message', process_id, routing_id);
   std::vector<v8::Handle<v8::Value>> arguments;
   arguments.reserve(3 + args.GetSize());
-  arguments.push_back(UTF16ToV8Value(channel));
+  arguments.push_back(ToV8Value(channel));
   const base::Value* value;
   if (args.Get(0, &value))
     arguments.push_back(converter->ToV8Value(value, context));
@@ -91,7 +91,7 @@ void AtomBrowserBindings::OnRendererMessageSync(
   // process.emit(channel, 'sync-message', event, process_id, routing_id);
   std::vector<v8::Handle<v8::Value>> arguments;
   arguments.reserve(3 + args.GetSize());
-  arguments.push_back(UTF16ToV8Value(channel));
+  arguments.push_back(ToV8Value(channel));
   const base::Value* value;
   if (args.Get(0, &value))
     arguments.push_back(converter->ToV8Value(value, context));

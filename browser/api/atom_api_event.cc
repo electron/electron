@@ -90,7 +90,7 @@ v8::Handle<v8::Value> Event::SendReply(const v8::Arguments& args) {
   if (event->message_ == NULL)
     return node::ThrowError("Can only send reply to synchronous events once");
 
-  string16 json = V8ValueToUTF16(args[0]);
+  string16 json = FromV8Value(args[0]);
 
   AtomViewHostMsg_Message_Sync::WriteReplyParams(event->message_, json);
   event->sender_->Send(event->message_);

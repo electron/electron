@@ -71,7 +71,7 @@ void AtomRendererBindings::OnBrowserMessage(const string16& channel,
 
   std::vector<v8::Handle<v8::Value>> arguments;
   arguments.reserve(1 + args.GetSize());
-  arguments.push_back(UTF16ToV8Value(channel));
+  arguments.push_back(ToV8Value(channel));
 
   for (size_t i = 0; i < args.GetSize(); i++) {
     const base::Value* value;

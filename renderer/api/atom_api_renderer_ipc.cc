@@ -48,7 +48,7 @@ v8::Handle<v8::Value> RendererIPC::Send(const v8::Arguments &args) {
   if (!args[0]->IsString())
     return node::ThrowTypeError("Bad argument");
 
-  string16 channel(V8ValueToUTF16(args[0]));
+  string16 channel = FromV8Value(args[0]);
   RenderView* render_view = GetCurrentRenderView();
 
   // Convert Arguments to Array, so we can use V8ValueConverter to convert it
@@ -82,7 +82,7 @@ v8::Handle<v8::Value> RendererIPC::SendSync(const v8::Arguments &args) {
     return node::ThrowTypeError("Bad argument");
 
   v8::Handle<v8::Context> context = v8::Context::GetCurrent();
-  string16 channel(V8ValueToUTF16(args[0]));
+  string16 channel = FromV8Value(args[0]);
 
   // Convert Arguments to Array, so we can use V8ValueConverter to convert it
   // to ListValue.
@@ -110,7 +110,7 @@ v8::Handle<v8::Value> RendererIPC::SendSync(const v8::Arguments &args) {
   if (!success)
     return node::ThrowError("Unable to send AtomViewHostMsg_Message_Sync");
 
-  return scope.Close(UTF16ToV8Value(json));
+  return scope.Close(ToV8Value(json));
 }
 
 // static

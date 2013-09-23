@@ -4,9 +4,9 @@
 
 #include "browser/api/atom_api_menu.h"
 
-#include "browser/api/atom_api_window.h"
 #include "browser/ui/accelerator_util.h"
 #include "common/string16_conversions.h"
+#include "common/v8_conversions.h"
 
 #define UNWRAP_MEMNU_AND_CHECK \
   Menu* self = ObjectWrap::Unwrap<Menu>(args.This()); \
@@ -100,18 +100,18 @@ bool Menu::IsItemForCommandIdDynamic(int command_id) const {
 
 string16 Menu::GetLabelForCommandId(int command_id) const {
   v8::HandleScope scope;
-  return V8ValueToUTF16(CallDelegate(v8::False(),
-                                     handle(),
-                                     "getLabelForCommandId",
-                                     command_id));
+  return FromV8Value(CallDelegate(v8::False(),
+                                  handle(),
+                                  "getLabelForCommandId",
+                                  command_id));
 }
 
 string16 Menu::GetSublabelForCommandId(int command_id) const {
   v8::HandleScope scope;
-  return V8ValueToUTF16(CallDelegate(v8::False(),
-                                     handle(),
-                                     "getSubLabelForCommandId",
-                                     command_id));
+  return FromV8Value(CallDelegate(v8::False(),
+                                  handle(),
+                                  "getSubLabelForCommandId",
+                                  command_id));
 }
 
 void Menu::ExecuteCommand(int command_id, int event_flags) {
@@ -141,10 +141,10 @@ v8::Handle<v8::Value> Menu::InsertItem(const v8::Arguments &args) {
   int index = args[0]->IntegerValue();
 
   if (index < 0)
-    self->model_->AddItem(args[1]->IntegerValue(), V8ValueToUTF16(args[2]));
+    self->model_->AddItem(args[1]->IntegerValue(), FromV8Value(args[2]));
   else
     self->model_->InsertItemAt(
-        index, args[1]->IntegerValue(), V8ValueToUTF16(args[2]));
+        index, args[1]->IntegerValue(), FromV8Value(args[2]));
 
   return v8::Undefined();
 }
@@ -160,9 +160,9 @@ v8::Handle<v8::Value> Menu::InsertCheckItem(const v8::Arguments &args) {
   int command_id = args[1]->IntegerValue();
 
   if (index < 0)
-    self->model_->AddCheckItem(command_id, V8ValueToUTF16(args[2]));
+    self->model_->AddCheckItem(command_id, FromV8Value(args[2]));
   else
-    self->model_->InsertCheckItemAt(index, command_id, V8ValueToUTF16(args[2]));
+    self->model_->InsertCheckItemAt(index, command_id, FromV8Value(args[2]));
 
   return v8::Undefined();
 }
@@ -182,10 +182,10 @@ v8::Handle<v8::Value> Menu::InsertRadioItem(const v8::Arguments &args) {
   int group_id = args[3]->IntegerValue();
 
   if (index < 0)
-    self->model_->AddRadioItem(command_id, V8ValueToUTF16(args[2]), group_id);
+    self->model_->AddRadioItem(command_id, FromV8Value(args[2]), group_id);
   else
     self->model_->InsertRadioItemAt(
-        index, command_id, V8ValueToUTF16(args[2]), group_id);
+        index, command_id, FromV8Value(args[2]), group_id);
 
   return v8::Undefined();
 }
@@ -226,10 +226,10 @@ v8::Handle<v8::Value> Menu::InsertSubMenu(const v8::Arguments &args) {
 
   if (index < 0)
     self->model_->AddSubMenu(
-        command_id, V8ValueToUTF16(args[2]), submenu->model_.get());
+        command_id, FromV8Value(args[2]), submenu->model_.get());
   else
     self->model_->InsertSubMenuAt(
-        index, command_id, V8ValueToUTF16(args[2]), submenu->model_.get());
+        index, command_id, FromV8Value(args[2]), submenu->model_.get());
 
   return v8::Undefined();
 }
@@ -253,7 +253,7 @@ v8::Handle<v8::Value> Menu::SetSublabel(const v8::Arguments &args) {
   if (!args[0]->IsNumber() || !args[1]->IsString())
     return node::ThrowTypeError("Bad argument");
 
-  self->model_->SetSublabel(args[0]->IntegerValue(), V8ValueToUTF16(args[1]));
+  self->model_->SetSublabel(args[0]->IntegerValue(), FromV8Value(args[1]));
 
   return v8::Undefined();
 }
@@ -291,14 +291,14 @@ v8::Handle<v8::Value> Menu::GetCommandIdAt(const v8::Arguments &args) {
 v8::Handle<v8::Value> Menu::GetLabelAt(const v8::Arguments &args) {
   UNWRAP_MEMNU_AND_CHECK;
   int index = args[0]->IntegerValue();
-  return UTF16ToV8Value(self->model_->GetLabelAt(index));
+  return ToV8Value(self->model_->GetLabelAt(index));
 }
 
 // static
 v8::Handle<v8::Value> Menu::GetSublabelAt(const v8::Arguments &args) {
   UNWRAP_MEMNU_AND_CHECK;
   int index = args[0]->IntegerValue();
-  return UTF16ToV8Value(self->model_->GetSublabelAt(index));
+  return ToV8Value(self->model_->GetSublabelAt(index));
 }
 
 // static

@@ -465,7 +465,7 @@ v8::Handle<v8::Value> Window::GetPageTitle(const v8::Arguments &args) {
 
   string16 title = self->window_->GetWebContents()->GetTitle();
 
-  return UTF16ToV8Value(title);
+  return ToV8Value(title);
 }
 
 // static

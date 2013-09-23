@@ -72,6 +72,7 @@ inline v8::Handle<v8::Value> ToV8Value(int code) {
   return v8::Integer::New(code);
 }
 
+inline
 v8::Handle<v8::Value> ToV8Value(const std::vector<base::FilePath>& paths) {
   v8::Handle<v8::Array> result = v8::Array::New(paths.size());
   for (size_t i = 0; i < paths.size(); ++i)
@@ -106,7 +107,7 @@ bool V8ValueCanBeConvertedTo<std::vector<std::string>>(
   return value->IsArray();
 }
 
-template<>
+template<> inline
 bool V8ValueCanBeConvertedTo<atom::NativeWindow*>(v8::Handle<v8::Value> value) {
   using atom::api::Window;
   if (value->IsObject()) {
@@ -124,7 +125,7 @@ bool V8ValueCanBeConvertedTo<v8::Persistent<v8::Function>>(
 }
 
 // Check and convert V8's Arguments to native types.
-template<typename T1, int index = 0>
+template<typename T1, int index = 0> inline
 bool FromV8Arguments(const v8::Arguments& args, T1* value) {
   if (!V8ValueCanBeConvertedTo<T1>(args[index]))
     return false;
@@ -132,18 +133,18 @@ bool FromV8Arguments(const v8::Arguments& args, T1* value) {
   return true;
 }
 
-template<typename T1, typename T2>
+template<typename T1, typename T2> inline
 bool FromV8Arguments(const v8::Arguments& args, T1* a1, T2* a2) {
   return FromV8Arguments<T1>(args, a1) && FromV8Arguments<T2, 1>(args, a2);
 }
 
-template<typename T1, typename T2, typename T3>
+template<typename T1, typename T2, typename T3> inline
 bool FromV8Arguments(const v8::Arguments& args, T1* a1, T2* a2, T3* a3) {
   return FromV8Arguments<T1, T2>(args, a1, a2) &&
          FromV8Arguments<T3, 2>(args, a3);
 }
 
-template<typename T1, typename T2, typename T3, typename T4>
+template<typename T1, typename T2, typename T3, typename T4> inline
 bool FromV8Arguments(const v8::Arguments& args,
                      T1* a1,
                      T2* a2,
@@ -153,7 +154,7 @@ bool FromV8Arguments(const v8::Arguments& args,
          FromV8Arguments<T4, 3>(args, a4);
 }
 
-template<typename T1, typename T2, typename T3, typename T4, typename T5>
+template<typename T1, typename T2, typename T3, typename T4, typename T5> inline
 bool FromV8Arguments(const v8::Arguments& args,
                      T1* a1,
                      T2* a2,
@@ -165,7 +166,7 @@ bool FromV8Arguments(const v8::Arguments& args,
 }
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5,
-    typename T6>
+    typename T6> inline
 bool FromV8Arguments(const v8::Arguments& args,
                      T1* a1,
                      T2* a2,
@@ -178,7 +179,7 @@ bool FromV8Arguments(const v8::Arguments& args,
 }
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5,
-    typename T6, typename T7>
+    typename T6, typename T7> inline
 bool FromV8Arguments(const v8::Arguments& args,
                      T1* a1,
                      T2* a2,

@@ -26,7 +26,7 @@ v8::Handle<v8::Value> BrowserIPC::Send(const v8::Arguments &args) {
   if (!args[0]->IsString() || !args[1]->IsNumber() || !args[2]->IsNumber())
     return node::ThrowTypeError("Bad argument");
 
-  string16 channel(V8ValueToUTF16(args[0]));
+  string16 channel(FromV8Value(args[0]));
   int process_id = args[1]->IntegerValue();
   int routing_id = args[2]->IntegerValue();
 
