@@ -23,12 +23,13 @@ enum FileDialogProperty {
   FILE_DIALOG_CREATE_DIRECTORY = 8,
 };
 
-bool ShowOpenDialog(const std::string& title,
+bool ShowOpenDialog(atom::NativeWindow* parent_window,
+                    const std::string& title,
                     const base::FilePath& default_path,
                     int properties,
                     std::vector<base::FilePath>* paths);
 
-bool ShowSaveDialog(atom::NativeWindow* window,
+bool ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     base::FilePath* path);

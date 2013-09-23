@@ -124,7 +124,11 @@ v8::Handle<v8::Value> ShowOpenDialog(const v8::Arguments &args) {
   int properties = args[2]->IntegerValue();
 
   std::vector<base::FilePath> paths;
-  if (!file_dialog::ShowOpenDialog(title, default_path, properties, &paths))
+  if (!file_dialog::ShowOpenDialog(NULL,
+                                   title,
+                                   default_path,
+                                   properties,
+                                   &paths))
     return v8::Undefined();
 
   v8::Handle<v8::Array> result = v8::Array::New(paths.size());

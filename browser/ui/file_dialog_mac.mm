@@ -43,7 +43,8 @@ void SetupDialog(NSSavePanel* dialog,
 
 }  // namespace
 
-bool ShowOpenDialog(const std::string& title,
+bool ShowOpenDialog(atom::NativeWindow* parent_window,
+                    const std::string& title,
                     const base::FilePath& default_path,
                     int properties,
                     std::vector<base::FilePath>* paths) {
@@ -60,7 +61,22 @@ bool ShowOpenDialog(const std::string& title,
   if (properties & FILE_DIALOG_MULTI_SELECTIONS)
     [dialog setAllowsMultipleSelection:YES];
 
-  if ([dialog runModal] == NSFileHandlingPanelCancelButton)
+  __block int chosen = -1;
+
+  if (parent_window == NULL) {
+    chosen = [dialog runModal];
+  } else {
+    NSWindow* window = parent_window->GetNativeWindow();
+
+    [dialog beginSheetModalForWindow:window
+                   completionHandler:^(NSInteger c) {
+      chosen = c;
+      [NSApp stopModal];
+    }];
+    [NSApp runModalForWindow:window];
+  }
+
+  if (chosen == NSFileHandlingPanelCancelButton)
     return false;
 
   NSArray* urls = [dialog URLs];
