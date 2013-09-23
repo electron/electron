@@ -6,12 +6,16 @@
 
 #include <string>
 
+#include "base/bind.h"
 #include "base/utf_string_conversions.h"
 #include "base/values.h"
 #include "browser/api/atom_api_window.h"
 #include "browser/native_window.h"
 #include "browser/ui/file_dialog.h"
 #include "browser/ui/message_box.h"
+#include "vendor/node/src/node_internals.h"
+
+using node::node_isolate;
 
 namespace atom {
 
@@ -24,9 +28,23 @@ base::FilePath V8ValueToFilePath(v8::Handle<v8::Value> path) {
   return base::FilePath::FromUTF8Unsafe(path_string);
 }
 
-v8::Handle<v8::Value> FilePathToV8Value(const base::FilePath path) {
+v8::Handle<v8::Value> ToV8Value(const base::FilePath& path) {
   std::string path_string(path.AsUTF8Unsafe());
   return v8::String::New(path_string.data(), path_string.size());
+}
+
+v8::Handle<v8::Value> ToV8Value(int code) {
+  return v8::Integer::New(code);
+}
+
+template<typename T>
+void CallV8Function(v8::Persistent<v8::Function> callback, T arg) {
+  DCHECK(!callback.IsEmpty());
+
+  v8::HandleScope scope;
+  v8::Handle<v8::Value> value = ToV8Value(arg);
+  callback->Call(callback, 1, &value);
+  callback.Dispose(node_isolate);
 }
 
 void Initialize(v8::Handle<v8::Object> target) {
@@ -58,6 +76,13 @@ v8::Handle<v8::Value> ShowMessageBox(const v8::Arguments &args) {
     native_window = window->window();
   }
 
+  v8::Persistent<v8::Function> callback;
+  if (args[6]->IsFunction()) {
+    callback = v8::Persistent<v8::Function>::New(
+        node_isolate,
+        v8::Local<v8::Function>::Cast(args[6]));
+  }
+
   MessageBoxType type = (MessageBoxType)(args[0]->IntegerValue());
 
   std::vector<std::string> buttons;
@@ -69,9 +94,21 @@ v8::Handle<v8::Value> ShowMessageBox(const v8::Arguments &args) {
   std::string message(*v8::String::Utf8Value(args[3]));
   std::string detail(*v8::String::Utf8Value(args[4]));
 
-  int chosen = atom::ShowMessageBox(
-      native_window, type, buttons, title, message, detail);
-  return scope.Close(v8::Integer::New(chosen));
+  if (callback.IsEmpty()) {
+    int chosen = atom::ShowMessageBox(
+        native_window, type, buttons, title, message, detail);
+    return scope.Close(v8::Integer::New(chosen));
+  } else {
+    atom::ShowMessageBox(
+        native_window,
+        type,
+        buttons,
+        title,
+        message,
+        detail,
+        base::Bind(&CallV8Function<int>, callback));
+    return v8::Undefined();
+  }
 }
 
 v8::Handle<v8::Value> ShowOpenDialog(const v8::Arguments &args) {
@@ -92,7 +129,7 @@ v8::Handle<v8::Value> ShowOpenDialog(const v8::Arguments &args) {
 
   v8::Handle<v8::Array> result = v8::Array::New(paths.size());
   for (size_t i = 0; i < paths.size(); ++i)
-    result->Set(i, FilePathToV8Value(paths[i]));
+    result->Set(i, ToV8Value(paths[i]));
 
   return scope.Close(result);
 }
@@ -119,7 +156,7 @@ v8::Handle<v8::Value> ShowSaveDialog(const v8::Arguments &args) {
                                    &path))
     return v8::Undefined();
 
-  return scope.Close(FilePathToV8Value(path));
+  return scope.Close(ToV8Value(path));
 }
 
 }  // namespace api

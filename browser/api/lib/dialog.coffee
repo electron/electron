@@ -30,8 +30,10 @@ module.exports =
 
     binding.showSaveDialog window, options.title, options.defaultPath
 
-  showMessageBox: (window, options) ->
+  showMessageBox: (window, options, callback) ->
     if window? and window.constructor isnt BrowserWindow
+      # Shift.
+      callback = options
       options = window
       window = null
 
@@ -51,4 +53,5 @@ module.exports =
                            String(options.title),
                            String(options.message),
                            String(options.detail),
-                           window
+                           window,
+                           callback

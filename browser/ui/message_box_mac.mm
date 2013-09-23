@@ -103,7 +103,14 @@ void ShowMessageBox(NativeWindow* parent_window,
                     const MessageBoxCallback& callback) {
   NSAlert* alert = CreateNSAlert(
       parent_window, type, buttons, title, message, detail);
-  [[ModalDelegate alloc] initWithCallback:callback andAlert:alert];
+  ModalDelegate* delegate = [[ModalDelegate alloc] initWithCallback:callback
+                                                           andAlert:alert];
+
+  NSWindow* window = parent_window ? parent_window->GetNativeWindow() : nil;
+  [alert beginSheetModalForWindow:window
+                    modalDelegate:delegate
+                   didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
+                      contextInfo:nil];
 }
 
 }  // namespace atom
