@@ -20,7 +20,7 @@ enum MessageBoxType {
   MESSAGE_BOX_TYPE_WARNING
 };
 
-typedef base::Callback<void(int)> MessageBoxCallback;
+typedef base::Callback<void(int code)> MessageBoxCallback;
 
 int ShowMessageBox(NativeWindow* parent_window,
                    MessageBoxType type,
