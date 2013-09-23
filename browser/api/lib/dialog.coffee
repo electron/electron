@@ -28,7 +28,8 @@ module.exports =
     binding.showOpenDialog String(options.title),
                            String(options.defaultPath),
                            properties,
-                           window
+                           window,
+                           callback
 
   showSaveDialog: (window, options) ->
     throw new TypeError('Invalid window') unless window?.constructor is BrowserWindow

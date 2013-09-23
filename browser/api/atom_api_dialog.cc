@@ -33,8 +33,19 @@ v8::Handle<v8::Value> ToV8Value(const base::FilePath& path) {
   return v8::String::New(path_string.data(), path_string.size());
 }
 
+v8::Handle<v8::Value> ToV8Value(void*) {
+  return v8::Undefined();
+}
+
 v8::Handle<v8::Value> ToV8Value(int code) {
   return v8::Integer::New(code);
+}
+
+v8::Handle<v8::Value> ToV8Value(const std::vector<base::FilePath>& paths) {
+  v8::Handle<v8::Array> result = v8::Array::New(paths.size());
+  for (size_t i = 0; i < paths.size(); ++i)
+    result->Set(i, ToV8Value(paths[i]));
+  return result;
 }
 
 template<typename T>
@@ -45,6 +56,16 @@ void CallV8Function(v8::Persistent<v8::Function> callback, T arg) {
   v8::Handle<v8::Value> value = ToV8Value(arg);
   callback->Call(callback, 1, &value);
   callback.Dispose(node_isolate);
+}
+
+template<typename T>
+void CallV8Function2(v8::Persistent<v8::Function> callback,
+                     bool result,
+                     T arg) {
+  if (result)
+    return CallV8Function<T>(callback, arg);
+  else
+    return CallV8Function<void*>(callback, NULL);
 }
 
 void Initialize(v8::Handle<v8::Object> target) {
@@ -128,23 +149,41 @@ v8::Handle<v8::Value> ShowOpenDialog(const v8::Arguments &args) {
     native_window = window->window();
   }
 
+  v8::Persistent<v8::Function> callback;
+  if (args[4]->IsFunction()) {
+    callback = v8::Persistent<v8::Function>::New(
+        node_isolate,
+        v8::Local<v8::Function>::Cast(args[4]));
+  }
+
   std::string title(*v8::String::Utf8Value(args[0]));
   base::FilePath default_path(V8ValueToFilePath(args[1]));
   int properties = args[2]->IntegerValue();
 
-  std::vector<base::FilePath> paths;
-  if (!file_dialog::ShowOpenDialog(native_window,
-                                   title,
-                                   default_path,
-                                   properties,
-                                   &paths))
+  if (callback.IsEmpty()) {
+    std::vector<base::FilePath> paths;
+    if (!file_dialog::ShowOpenDialog(native_window,
+                                     title,
+                                     default_path,
+                                     properties,
+                                     &paths))
+      return v8::Undefined();
+
+    v8::Handle<v8::Array> result = v8::Array::New(paths.size());
+    for (size_t i = 0; i < paths.size(); ++i)
+      result->Set(i, ToV8Value(paths[i]));
+
+    return scope.Close(result);
+  } else {
+    file_dialog::ShowOpenDialog(
+        native_window,
+        title,
+        default_path,
+        properties,
+        base::Bind(&CallV8Function2<const std::vector<base::FilePath>>,
+                   callback));
     return v8::Undefined();
-
-  v8::Handle<v8::Array> result = v8::Array::New(paths.size());
-  for (size_t i = 0; i < paths.size(); ++i)
-    result->Set(i, ToV8Value(paths[i]));
-
-  return scope.Close(result);
+  }
 }
 
 v8::Handle<v8::Value> ShowSaveDialog(const v8::Arguments &args) {
