@@ -7,6 +7,7 @@
 #include "base/values.h"
 #include "base/command_line.h"
 #include "browser/browser.h"
+#include "common/v8_conversions.h"
 #include "vendor/node/src/node.h"
 
 namespace atom {
@@ -111,14 +112,14 @@ v8::Handle<v8::Value> App::GetVersion(const v8::Arguments &args) {
 v8::Handle<v8::Value> App::AppendSwitch(const v8::Arguments &args) {
   v8::HandleScope scope;
 
-  if (!args[0]->IsString())
+  std::string switch_string;
+  if (!FromV8Arguments(args, &switch_string))
     return node::ThrowError("Bad argument");
 
-  std::string switch_string(*v8::String::Utf8Value(args[0]));
   if (args.Length() == 1) {
     CommandLine::ForCurrentProcess()->AppendSwitch(switch_string);
   } else {
-    std::string value(*v8::String::Utf8Value(args[1]));
+    std::string value = FromV8Value(args[1]);
     CommandLine::ForCurrentProcess()->AppendSwitchASCII(
         switch_string, value);
   }
@@ -130,10 +131,10 @@ v8::Handle<v8::Value> App::AppendSwitch(const v8::Arguments &args) {
 v8::Handle<v8::Value> App::AppendArgument(const v8::Arguments &args) {
   v8::HandleScope scope;
 
-  if (!args[0]->IsString())
+  std::string value;
+  if (!FromV8Arguments(args, &value))
     return node::ThrowError("Bad argument");
 
-  std::string value(*v8::String::Utf8Value(args[0]));
   CommandLine::ForCurrentProcess()->AppendArg(value);
 
   return v8::Undefined();
@@ -143,7 +144,7 @@ v8::Handle<v8::Value> App::AppendArgument(const v8::Arguments &args) {
 
 // static
 v8::Handle<v8::Value> App::DockBounce(const v8::Arguments& args) {
-  std::string type(*v8::String::Utf8Value(args[0]));
+  std::string type = FromV8Value(args[0]);
   int request_id = -1;
 
   if (type == "critical")
@@ -158,21 +159,20 @@ v8::Handle<v8::Value> App::DockBounce(const v8::Arguments& args) {
 
 // static
 v8::Handle<v8::Value> App::DockCancelBounce(const v8::Arguments& args) {
-  Browser::Get()->DockCancelBounce(args[0]->IntegerValue());
+  Browser::Get()->DockCancelBounce(FromV8Value(args[0]));
   return v8::Undefined();
 }
 
 // static
 v8::Handle<v8::Value> App::DockSetBadgeText(const v8::Arguments& args) {
-  std::string label(*v8::String::Utf8Value(args[0]));
-  Browser::Get()->DockSetBadgeText(label);
+  Browser::Get()->DockSetBadgeText(FromV8Value(args[0]));
   return v8::Undefined();
 }
 
 // static
 v8::Handle<v8::Value> App::DockGetBadgeText(const v8::Arguments& args) {
   std::string text(Browser::Get()->DockGetBadgeText());
-  return v8::String::New(text.data(), text.size());
+  return ToV8Value(text);
 }
 
 #endif  // defined(OS_MACOSX)

@@ -8,6 +8,7 @@
 
 #include "base/logging.h"
 #include "base/values.h"
+#include "common/v8_conversions.h"
 #include "content/public/renderer/render_view.h"
 #include "content/public/renderer/v8_value_converter.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
@@ -51,7 +52,7 @@ void AtomRendererBindings::BindToFrame(WebFrame* frame) {
   AtomBindings::BindTo(GetProcessObject(context));
 }
 
-void AtomRendererBindings::OnBrowserMessage(const std::string& channel,
+void AtomRendererBindings::OnBrowserMessage(const string16& channel,
                                             const base::ListValue& args) {
   if (!render_view_->GetWebView())
     return;
@@ -70,7 +71,7 @@ void AtomRendererBindings::OnBrowserMessage(const std::string& channel,
 
   std::vector<v8::Handle<v8::Value>> arguments;
   arguments.reserve(1 + args.GetSize());
-  arguments.push_back(v8::String::New(channel.c_str(), channel.size()));
+  arguments.push_back(ToV8Value(channel));
 
   for (size_t i = 0; i < args.GetSize(); i++) {
     const base::Value* value;

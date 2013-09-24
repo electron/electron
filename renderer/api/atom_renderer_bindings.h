@@ -5,9 +5,9 @@
 #ifndef ATOM_RENDERER_API_ATOM_RENDERER_BINDINGS_H_
 #define ATOM_RENDERER_API_ATOM_RENDERER_BINDINGS_H_
 
-#include <string>
-
 #include "common/api/atom_bindings.h"
+
+#include "base/string16.h"
 
 namespace base {
 class ListValue;
@@ -32,7 +32,7 @@ class AtomRendererBindings : public AtomBindings {
   void BindToFrame(WebKit::WebFrame* frame);
 
   // Dispatch messages from browser.
-  void OnBrowserMessage(const std::string& channel,
+  void OnBrowserMessage(const string16& channel,
                         const base::ListValue& args);
 
  private:

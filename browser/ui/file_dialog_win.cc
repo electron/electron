@@ -162,7 +162,8 @@ class FileDialog {
     SetDefaultFolder(default_path);
   }
 
-  bool Show(HWND window) {
+  bool Show(atom::NativeWindow* parent_window) {
+    HWND window = parent_window ? parent_window->GetNativeWindow() : NULL;
     return dialog_->DoModal(window) == IDOK;
   }
 
@@ -198,7 +199,8 @@ class FileDialog {
 
 }  // namespace
 
-bool ShowOpenDialog(const std::string& title,
+bool ShowOpenDialog(atom::NativeWindow* parent_window,
+                    const std::string& title,
                     const base::FilePath& default_path,
                     int properties,
                     std::vector<base::FilePath>* paths) {
@@ -214,7 +216,7 @@ bool ShowOpenDialog(const std::string& title,
       options,
       std::vector<std::wstring>(),
       std::vector<std::wstring>());
-  if (!open_dialog.Show(::GetActiveWindow()))
+  if (!open_dialog.Show(parent_window))
     return false;
 
   ATL::CComPtr<IShellItemArray> items;
@@ -247,7 +249,21 @@ bool ShowOpenDialog(const std::string& title,
   return true;
 }
 
-bool ShowSaveDialog(atom::NativeWindow* window,
+void ShowOpenDialog(atom::NativeWindow* parent_window,
+                    const std::string& title,
+                    const base::FilePath& default_path,
+                    int properties,
+                    const OpenDialogCallback& callback) {
+  std::vector<base::FilePath> paths;
+  bool result = ShowOpenDialog(parent_window,
+                               title,
+                               default_path,
+                               properties,
+                               &paths);
+  callback.Run(result, paths);
+}
+
+bool ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     base::FilePath* path) {
@@ -263,7 +279,7 @@ bool ShowSaveDialog(atom::NativeWindow* window,
       FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_OVERWRITEPROMPT,
       file_ext,
       std::vector<std::wstring>());
-  if (!save_dialog.Show(window->GetNativeWindow()))
+  if (!save_dialog.Show(parent_window))
     return false;
 
   wchar_t file_name[MAX_PATH];
@@ -288,6 +304,15 @@ bool ShowSaveDialog(atom::NativeWindow* window,
 
   *path = base::FilePath(file_name);
   return true;
+}
+
+void ShowSaveDialog(atom::NativeWindow* parent_window,
+                    const std::string& title,
+                    const base::FilePath& default_path,
+                    const SaveDialogCallback& callback) {
+  base::FilePath path;
+  bool result = ShowSaveDialog(parent_window, title, default_path, &path);
+  callback.Run(result, path);
 }
 
 }  // namespace file_dialog

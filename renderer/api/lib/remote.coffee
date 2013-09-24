@@ -72,6 +72,7 @@ metaToValue = (meta) ->
             ret.__defineSetter__ member.name, (value) ->
               # Set member data.
               ipc.sendChannelSync 'ATOM_BROWSER_MEMBER_SET', meta.id, member.name, value
+              value
 
             ret.__defineGetter__ member.name, ->
               # Get member data.

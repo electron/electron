@@ -5,6 +5,7 @@
 #include "browser/api/atom_api_crash_reporter.h"
 
 #include "browser/crash_reporter.h"
+#include "common/v8_conversions.h"
 #include "vendor/node/src/node.h"
 #include "vendor/node/src/node_internals.h"
 
@@ -14,22 +15,20 @@ namespace api {
 
 // static
 v8::Handle<v8::Value> CrashReporter::SetCompanyName(const v8::Arguments &args) {
-  std::string name(*v8::String::Utf8Value(args[0]));
-  crash_reporter::CrashReporter::SetCompanyName(name);
+  crash_reporter::CrashReporter::SetCompanyName(FromV8Value(args[0]));
   return v8::Undefined();
 }
 
 // static
 v8::Handle<v8::Value> CrashReporter::SetSubmissionURL(
     const v8::Arguments &args) {
-  std::string url(*v8::String::Utf8Value(args[0]));
-  crash_reporter::CrashReporter::SetSubmissionURL(url);
+  crash_reporter::CrashReporter::SetSubmissionURL(FromV8Value(args[0]));
   return v8::Undefined();
 }
 
 // static
 v8::Handle<v8::Value> CrashReporter::SetAutoSubmit(const v8::Arguments &args) {
-  crash_reporter::CrashReporter::SetAutoSubmit(args[0]->BooleanValue());
+  crash_reporter::CrashReporter::SetAutoSubmit(FromV8Value(args[0]));
   return v8::Undefined();
 }
 

@@ -61,28 +61,40 @@ unwrapArgs = (processId, routingId, args) ->
 
   args.map metaToValue
 
+# Call a function and send reply asynchronously if it's a an asynchronous
+# style function and the caller didn't pass a callback.
+callFunction = (event, processId, routingId, func, caller, args) ->
+  if v8Util.getHiddenValue(func, 'asynchronous') and typeof args[args.length - 1] isnt 'function'
+    args.push (ret) ->
+      event.returnValue = valueToMeta processId, routingId, ret
+    func.apply caller, args
+  else
+    ret = func.apply caller, args
+    event.returnValue = valueToMeta processId, routingId, ret
+
 ipc.on 'ATOM_BROWSER_REQUIRE', (event, processId, routingId, module) ->
   try
-    event.result = valueToMeta processId, routingId, require(module)
+    event.returnValue = valueToMeta processId, routingId, require(module)
   catch e
-    event.result = errorToMeta e
+    event.returnValue = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_GLOBAL', (event, processId, routingId, name) ->
   try
-    event.result = valueToMeta processId, routingId, global[name]
+    event.returnValue = valueToMeta processId, routingId, global[name]
   catch e
-    event.result = errorToMeta e
+    event.returnValue = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (event, processId, routingId) ->
   objectsRegistry.clear processId, routingId
+  event.returnValue = null
 
 ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event, processId, routingId) ->
   try
     BrowserWindow = require 'browser-window'
     window = BrowserWindow.fromProcessIdAndRoutingId processId, routingId
-    event.result = valueToMeta processId, routingId, window
+    event.returnValue = valueToMeta processId, routingId, window
   catch e
-    event.result = errorToMeta e
+    event.returnValue = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_CONSTRUCTOR', (event, processId, routingId, id, args) ->
   try
@@ -91,18 +103,17 @@ ipc.on 'ATOM_BROWSER_CONSTRUCTOR', (event, processId, routingId, id, args) ->
     # Call new with array of arguments.
     # http://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
     obj = new (Function::bind.apply(constructor, [null].concat(args)))
-    event.result = valueToMeta processId, routingId, obj
+    event.returnValue = valueToMeta processId, routingId, obj
   catch e
-    event.result = errorToMeta e
+    event.returnValue = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, processId, routingId, id, args) ->
   try
     args = unwrapArgs processId, routingId, args
     func = objectsRegistry.get id
-    ret = func.apply global, args
-    event.result = valueToMeta processId, routingId, ret
+    callFunction event, processId, routingId, func, global, args
   catch e
-    event.result = errorToMeta e
+    event.returnValue = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', (event, processId, routingId, id, method, args) ->
   try
@@ -110,32 +121,32 @@ ipc.on 'ATOM_BROWSER_MEMBER_CONSTRUCTOR', (event, processId, routingId, id, meth
     constructor = objectsRegistry.get(id)[method]
     # Call new with array of arguments.
     obj = new (Function::bind.apply(constructor, [null].concat(args)))
-    event.result = valueToMeta processId, routingId, obj
+    event.returnValue = valueToMeta processId, routingId, obj
   catch e
-    event.result = errorToMeta e
+    event.returnValue = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_MEMBER_CALL', (event, processId, routingId, id, method, args) ->
   try
     args = unwrapArgs processId, routingId, args
     obj = objectsRegistry.get id
-    ret = obj[method].apply(obj, args)
-    event.result = valueToMeta processId, routingId, ret
+    callFunction event, processId, routingId, obj[method], obj, args
   catch e
-    event.result = errorToMeta e
+    event.returnValue = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_MEMBER_SET', (event, processId, routingId, id, name, value) ->
   try
     obj = objectsRegistry.get id
     obj[name] = value
+    event.returnValue = null
   catch e
-    event.result = errorToMeta e
+    event.returnValue = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_MEMBER_GET', (event, processId, routingId, id, name) ->
   try
     obj = objectsRegistry.get id
-    event.result = valueToMeta processId, routingId, obj[name]
+    event.returnValue = valueToMeta processId, routingId, obj[name]
   catch e
-    event.result = errorToMeta e
+    event.returnValue = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_DEREFERENCE', (processId, routingId, storeId) ->
   objectsRegistry.remove processId, routingId, storeId

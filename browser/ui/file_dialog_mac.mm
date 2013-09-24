@@ -38,20 +38,11 @@ void SetupDialog(NSSavePanel* dialog,
   if (default_filename)
     [dialog setNameFieldStringValue:default_filename];
 
+  [dialog setCanSelectHiddenExtension:YES];
   [dialog setAllowsOtherFileTypes:YES];
 }
 
-}  // namespace
-
-bool ShowOpenDialog(const std::string& title,
-                    const base::FilePath& default_path,
-                    int properties,
-                    std::vector<base::FilePath>* paths) {
-  DCHECK(paths);
-  NSOpenPanel* dialog = [NSOpenPanel openPanel];
-
-  SetupDialog(dialog, title, default_path);
-
+void SetupDialogForProperties(NSOpenPanel* dialog, int properties) {
   [dialog setCanChooseFiles:(properties & FILE_DIALOG_OPEN_FILE)];
   if (properties & FILE_DIALOG_OPEN_DIRECTORY)
     [dialog setCanChooseDirectories:YES];
@@ -59,49 +50,119 @@ bool ShowOpenDialog(const std::string& title,
     [dialog setCanCreateDirectories:YES];
   if (properties & FILE_DIALOG_MULTI_SELECTIONS)
     [dialog setAllowsMultipleSelection:YES];
+}
 
-  if ([dialog runModal] == NSFileHandlingPanelCancelButton)
-    return false;
+// Run modal dialog with parent window and return user's choice.
+int RunModalDialog(NSSavePanel* dialog, atom::NativeWindow* parent_window) {
+  __block int chosen = NSFileHandlingPanelCancelButton;
+  if (parent_window == NULL) {
+    chosen = [dialog runModal];
+  } else {
+    NSWindow* window = parent_window->GetNativeWindow();
 
+    [dialog beginSheetModalForWindow:window
+                   completionHandler:^(NSInteger c) {
+      chosen = c;
+      [NSApp stopModal];
+    }];
+    [NSApp runModalForWindow:window];
+  }
+
+  return chosen;
+}
+
+void ReadDialogPaths(NSOpenPanel* dialog, std::vector<base::FilePath>* paths) {
   NSArray* urls = [dialog URLs];
   for (NSURL* url in urls)
     if ([url isFileURL])
       paths->push_back(base::FilePath(base::SysNSStringToUTF8([url path])));
+}
 
+}  // namespace
+
+bool ShowOpenDialog(atom::NativeWindow* parent_window,
+                    const std::string& title,
+                    const base::FilePath& default_path,
+                    int properties,
+                    std::vector<base::FilePath>* paths) {
+  DCHECK(paths);
+  NSOpenPanel* dialog = [NSOpenPanel openPanel];
+
+  SetupDialog(dialog, title, default_path);
+  SetupDialogForProperties(dialog, properties);
+
+  int chosen = RunModalDialog(dialog, parent_window);
+  if (chosen == NSFileHandlingPanelCancelButton)
+    return false;
+
+  ReadDialogPaths(dialog, paths);
   return true;
 }
 
-bool ShowSaveDialog(atom::NativeWindow* window,
+void ShowOpenDialog(atom::NativeWindow* parent_window,
+                    const std::string& title,
+                    const base::FilePath& default_path,
+                    int properties,
+                    const OpenDialogCallback& c) {
+  NSOpenPanel* dialog = [NSOpenPanel openPanel];
+
+  SetupDialog(dialog, title, default_path);
+  SetupDialogForProperties(dialog, properties);
+
+  // Duplicate the callback object here since c is a reference and gcd would
+  // only store the pointer, by duplication we can force gcd to store a copy.
+  __block OpenDialogCallback callback = c;
+
+  NSWindow* window = parent_window ? parent_window->GetNativeWindow() : NULL;
+  [dialog beginSheetModalForWindow:window
+                 completionHandler:^(NSInteger chosen) {
+    if (chosen == NSFileHandlingPanelCancelButton) {
+      callback.Run(false, std::vector<base::FilePath>());
+    } else {
+      std::vector<base::FilePath> paths;
+      ReadDialogPaths(dialog, &paths);
+      callback.Run(true, paths);
+    }
+  }];
+}
+
+bool ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     base::FilePath* path) {
-  DCHECK(window);
   DCHECK(path);
   NSSavePanel* dialog = [NSSavePanel savePanel];
 
   SetupDialog(dialog, title, default_path);
 
-  [dialog setCanSelectHiddenExtension:YES];
+  int chosen = RunModalDialog(dialog, parent_window);
+  if (chosen == NSFileHandlingPanelCancelButton || ![[dialog URL] isFileURL])
+    return false;
 
-  __block bool result = false;
-  __block base::FilePath ret_path;
-  [dialog beginSheetModalForWindow:window->GetNativeWindow()
+  *path = base::FilePath(base::SysNSStringToUTF8([[dialog URL] path]));
+  return true;
+}
+
+void ShowSaveDialog(atom::NativeWindow* parent_window,
+                    const std::string& title,
+                    const base::FilePath& default_path,
+                    const SaveDialogCallback& c) {
+  NSSavePanel* dialog = [NSSavePanel savePanel];
+
+  SetupDialog(dialog, title, default_path);
+
+  __block SaveDialogCallback callback = c;
+
+  NSWindow* window = parent_window ? parent_window->GetNativeWindow() : NULL;
+  [dialog beginSheetModalForWindow:window
                  completionHandler:^(NSInteger chosen) {
-    if (chosen == NSFileHandlingPanelCancelButton ||
-        ![[dialog URL] isFileURL]) {
-      result = false;
+    if (chosen == NSFileHandlingPanelCancelButton) {
+      callback.Run(false, base::FilePath());
     } else {
-      result = true;
-      ret_path = base::FilePath(base::SysNSStringToUTF8([[dialog URL] path]));
+      std::string path = base::SysNSStringToUTF8([[dialog URL] path]);
+      callback.Run(true, base::FilePath(path));
     }
-
-    [NSApp stopModal];
   }];
-
-  [NSApp runModalForWindow:window->GetNativeWindow()];
-
-  *path = ret_path;
-  return result;
 }
 
 }  // namespace file_dialog

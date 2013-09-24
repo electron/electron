@@ -35,6 +35,10 @@ class Rect;
 class Size;
 }
 
+namespace IPC {
+class Message;
+}
+
 namespace atom {
 
 class AtomJavaScriptDialogManager;
@@ -173,12 +177,12 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
  private:
   void RendererUnresponsiveDelayed();
 
-  void OnRendererMessage(const std::string& channel,
+  void OnRendererMessage(const string16& channel,
                          const base::ListValue& args);
 
-  void OnRendererMessageSync(const std::string& channel,
+  void OnRendererMessageSync(const string16& channel,
                              const base::ListValue& args,
-                             base::DictionaryValue* result);
+                             IPC::Message* reply_msg);
 
   // Notification manager.
   content::NotificationRegistrar registrar_;

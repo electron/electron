@@ -6,6 +6,7 @@
 
 #include "base/values.h"
 #include "common/api/api_messages.h"
+#include "common/v8_conversions.h"
 #include "content/public/renderer/render_view.h"
 #include "content/public/renderer/v8_value_converter.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
@@ -47,8 +48,7 @@ v8::Handle<v8::Value> RendererIPC::Send(const v8::Arguments &args) {
   if (!args[0]->IsString())
     return node::ThrowTypeError("Bad argument");
 
-  std::string channel(*v8::String::Utf8Value(args[0]));
-
+  string16 channel = FromV8Value(args[0]);
   RenderView* render_view = GetCurrentRenderView();
 
   // Convert Arguments to Array, so we can use V8ValueConverter to convert it
@@ -82,7 +82,7 @@ v8::Handle<v8::Value> RendererIPC::SendSync(const v8::Arguments &args) {
     return node::ThrowTypeError("Bad argument");
 
   v8::Handle<v8::Context> context = v8::Context::GetCurrent();
-  std::string channel(*v8::String::Utf8Value(args[0]));
+  string16 channel = FromV8Value(args[0]);
 
   // Convert Arguments to Array, so we can use V8ValueConverter to convert it
   // to ListValue.
@@ -97,12 +97,12 @@ v8::Handle<v8::Value> RendererIPC::SendSync(const v8::Arguments &args) {
 
   RenderView* render_view = GetCurrentRenderView();
 
-  base::DictionaryValue result;
+  string16 json;
   IPC::SyncMessage* message = new AtomViewHostMsg_Message_Sync(
       render_view->GetRoutingID(),
       channel,
       *static_cast<base::ListValue*>(arguments.get()),
-      &result);
+      &json);
   // Enable the UI thread in browser to receive messages.
   message->EnableMessagePumping();
   bool success = render_view->Send(message);
@@ -110,7 +110,7 @@ v8::Handle<v8::Value> RendererIPC::SendSync(const v8::Arguments &args) {
   if (!success)
     return node::ThrowError("Unable to send AtomViewHostMsg_Message_Sync");
 
-  return scope.Close(converter->ToV8Value(&result, context));
+  return scope.Close(ToV8Value(json));
 }
 
 // static
