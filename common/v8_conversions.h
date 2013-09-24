@@ -157,8 +157,8 @@ bool V8ValueCanBeConvertedTo<v8::Persistent<v8::Function>>(
 }
 
 // Check and convert V8's Arguments to native types.
-template<typename T1, int index = 0> inline
-bool FromV8Arguments(const v8::Arguments& args, T1* value) {
+template<typename T1> inline
+bool FromV8Arguments(const v8::Arguments& args, T1* value, int index = 0) {
   if (!V8ValueCanBeConvertedTo<T1>(args[index]))
     return false;
   *value = static_cast<const T1&>(FromV8Value(args[index]));
@@ -167,13 +167,13 @@ bool FromV8Arguments(const v8::Arguments& args, T1* value) {
 
 template<typename T1, typename T2> inline
 bool FromV8Arguments(const v8::Arguments& args, T1* a1, T2* a2) {
-  return FromV8Arguments<T1>(args, a1) && FromV8Arguments<T2, 1>(args, a2);
+  return FromV8Arguments<T1>(args, a1) && FromV8Arguments<T2>(args, a2, 1);
 }
 
 template<typename T1, typename T2, typename T3> inline
 bool FromV8Arguments(const v8::Arguments& args, T1* a1, T2* a2, T3* a3) {
   return FromV8Arguments<T1, T2>(args, a1, a2) &&
-         FromV8Arguments<T3, 2>(args, a3);
+         FromV8Arguments<T3>(args, a3, 2);
 }
 
 template<typename T1, typename T2, typename T3, typename T4> inline
@@ -183,7 +183,7 @@ bool FromV8Arguments(const v8::Arguments& args,
                      T3* a3,
                      T4* a4) {
   return FromV8Arguments<T1, T2, T3>(args, a1, a2, a3) &&
-         FromV8Arguments<T4, 3>(args, a4);
+         FromV8Arguments<T4>(args, a4, 3);
 }
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5> inline
@@ -194,7 +194,7 @@ bool FromV8Arguments(const v8::Arguments& args,
                      T4* a4,
                      T5* a5) {
   return FromV8Arguments<T1, T2, T3, T4>(args, a1, a2, a3, a4) &&
-         FromV8Arguments<T5, 4>(args, a5);
+         FromV8Arguments<T5>(args, a5, 4);
 }
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5,
@@ -207,7 +207,7 @@ bool FromV8Arguments(const v8::Arguments& args,
                      T5* a5,
                      T6* a6) {
   return FromV8Arguments<T1, T2, T3, T4, T5>(args, a1, a2, a3, a4, a5) &&
-         FromV8Arguments<T6, 5>(args, a6);
+         FromV8Arguments<T6>(args, a6, 5);
 }
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5,
@@ -222,7 +222,7 @@ bool FromV8Arguments(const v8::Arguments& args,
                      T7* a7) {
   return
       FromV8Arguments<T1, T2, T3, T4, T5, T6>(args, a1, a2, a3, a4, a5, a6) &&
-      FromV8Arguments<T7, 6>(args, a7);
+      FromV8Arguments<T7>(args, a7, 6);
 }
 
 #endif  // COMMON_V8_CONVERSIONS_H_
