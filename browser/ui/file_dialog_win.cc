@@ -249,6 +249,20 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
   return true;
 }
 
+void ShowOpenDialog(atom::NativeWindow* parent_window,
+                    const std::string& title,
+                    const base::FilePath& default_path,
+                    int properties,
+                    const OpenDialogCallback& callback) {
+  std::vector<base::FilePath> paths;
+  bool result = ShowOpenDialog(parent_window,
+                               title,
+                               default_path,
+                               properties,
+                               &paths);
+  callback.Run(result, paths);
+}
+
 bool ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
@@ -290,6 +304,15 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
 
   *path = base::FilePath(file_name);
   return true;
+}
+
+void ShowSaveDialog(atom::NativeWindow* parent_window,
+                    const std::string& title,
+                    const base::FilePath& default_path,
+                    const SaveDialogCallback& callback) {
+  base::FilePath path;
+  bool result = ShowSaveDialog(parent_window, title, default_path, &path);
+  callback.Run(result, path);
 }
 
 }  // namespace file_dialog
