@@ -4,6 +4,7 @@
 
 #include "browser/ui/message_box.h"
 
+#include "base/callback.h"
 #include "base/message_loop.h"
 #include "base/run_loop.h"
 #include "base/string_util.h"
@@ -38,7 +39,14 @@ class MessageDialog : public base::MessageLoop::Dispatcher,
                 const std::string& detail);
   virtual ~MessageDialog();
 
-  int result() const { return result_; }
+  void Show();
+
+  int GetResult() const;
+
+  void set_callback(const MessageBoxCallback& callback) {
+    delete_on_close_ = true;
+    callback_ = callback;
+  }
 
  private:
   // Overridden from MessageLoop::Dispatcher:
@@ -63,11 +71,13 @@ class MessageDialog : public base::MessageLoop::Dispatcher,
                              const ui::Event& event) OVERRIDE;
 
   bool should_close_;
+  bool delete_on_close_;
   int result_;
   string16 title_;
   views::Widget* widget_;
   views::MessageBoxView* message_box_view_;
   std::vector<views::LabelButton*> buttons_;
+  MessageBoxCallback callback_;
 
   DISALLOW_COPY_AND_ASSIGN(MessageDialog);
 };
@@ -82,6 +92,7 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
                              const std::string& message,
                              const std::string& detail)
     : should_close_(false),
+      delete_on_close_(false),
       result_(-1),
       title_(UTF8ToUTF16(title)),
       widget_(NULL),
@@ -124,10 +135,28 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
 
   set_background(views::Background::CreateSolidBackground(
         skia::COLORREFToSkColor(GetSysColor(COLOR_WINDOW))));
-  widget_->Show();
 }
 
 MessageDialog::~MessageDialog() {
+}
+
+void MessageDialog::Show() {
+  widget_->Show();
+}
+
+int MessageDialog::GetResult() const {
+  // When the dialog is closed without choosing anything, we think the user
+  // chose 'Cancel', otherwise we think the default behavior is chosen.
+  if (result_ == -1) {
+    for (size_t i = 0; i < buttons_.size(); ++i)
+      if (LowerCaseEqualsASCII(buttons_[i]->GetText(), "cancel")) {
+        return i;
+      }
+
+    return 0;
+  } else {
+    return result_;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -145,6 +174,11 @@ string16 MessageDialog::GetWindowTitle() const {
 
 void MessageDialog::WindowClosing() {
   should_close_ = true;
+
+  if (delete_on_close_) {
+    callback_.Run(GetResult());
+    base::MessageLoop::current()->DeleteSoon(FROM_HERE, this);
+  }
 }
 
 views::Widget* MessageDialog::GetWidget() {
@@ -232,6 +266,7 @@ int ShowMessageBox(NativeWindow* parent_window,
                    const std::string& message,
                    const std::string& detail) {
   MessageDialog dialog(parent_window, type, buttons, title, message, detail);
+  dialog.Show();
   {
     base::MessageLoop::ScopedNestableTaskAllower allow(
         base::MessageLoopForUI::current());
@@ -239,18 +274,21 @@ int ShowMessageBox(NativeWindow* parent_window,
     run_loop.Run();
   }
 
-  // When the dialog is closed without choosing anything, we think the user
-  // chose 'Cancel', otherwise we think the default behavior is chosen.
-  if (dialog.result() == -1) {
-    for (size_t i = 0; i < buttons.size(); ++i)
-      if (LowerCaseEqualsASCII(buttons[i], "cancel")) {
-        return i;
-      }
+  return dialog.GetResult();
+}
 
-    return 0;
-  } else {
-    return dialog.result();
-  }
+void ShowMessageBox(NativeWindow* parent_window,
+                    MessageBoxType type,
+                    const std::vector<std::string>& buttons,
+                    const std::string& title,
+                    const std::string& message,
+                    const std::string& detail,
+                    const MessageBoxCallback& callback) {
+  // The dialog would be deleted when the dialog is closed.
+  MessageDialog* dialog = new MessageDialog(
+      parent_window, type, buttons, title, message, detail);
+  dialog->set_callback(callback);
+  dialog->Show();
 }
 
 }  // namespace atom

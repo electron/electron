@@ -101,7 +101,7 @@ bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
   return handled;
 }
 
-void AtomRenderViewObserver::OnBrowserMessage(const std::string& channel,
+void AtomRenderViewObserver::OnBrowserMessage(const string16& channel,
                                               const base::ListValue& args) {
   atom_bindings()->OnBrowserMessage(channel, args);
 }

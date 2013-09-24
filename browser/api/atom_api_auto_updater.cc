@@ -6,6 +6,7 @@
 
 #include "base/values.h"
 #include "browser/auto_updater.h"
+#include "common/v8_conversions.h"
 
 namespace atom {
 
@@ -56,7 +57,7 @@ v8::Handle<v8::Value> AutoUpdater::New(const v8::Arguments &args) {
 
 // static
 v8::Handle<v8::Value> AutoUpdater::SetFeedURL(const v8::Arguments &args) {
-  auto_updater::AutoUpdater::SetFeedURL(*v8::String::Utf8Value(args[0]));
+  auto_updater::AutoUpdater::SetFeedURL(FromV8Value(args[0]));
   return v8::Undefined();
 }
 

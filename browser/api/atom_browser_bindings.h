@@ -5,16 +5,20 @@
 #ifndef ATOM_BROWSER_API_ATOM_BROWSER_BINDINGS_
 #define ATOM_BROWSER_API_ATOM_BROWSER_BINDINGS_
 
-#include <string>
-
+#include "base/string16.h"
 #include "common/api/atom_bindings.h"
 
 namespace base {
-class DictionaryValue;
 class ListValue;
 }
 
+namespace IPC {
+class Message;
+}
+
 namespace atom {
+
+class NativeWindow;
 
 class AtomBrowserBindings : public AtomBindings {
  public:
@@ -27,15 +31,16 @@ class AtomBrowserBindings : public AtomBindings {
   // Called when received a message from renderer.
   void OnRendererMessage(int process_id,
                          int routing_id,
-                         const std::string& channel,
+                         const string16& channel,
                          const base::ListValue& args);
 
   // Called when received a synchronous message from renderer.
   void OnRendererMessageSync(int process_id,
                              int routing_id,
-                             const std::string& channel,
+                             const string16& channel,
                              const base::ListValue& args,
-                             base::DictionaryValue* result);
+                             NativeWindow* sender,
+                             IPC::Message* message);
 
   // The require('atom').browserMainParts object.
   v8::Handle<v8::Object> browser_main_parts() {

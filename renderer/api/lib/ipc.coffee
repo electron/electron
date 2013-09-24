@@ -16,9 +16,11 @@ class Ipc extends EventEmitter
     ipc.send('ATOM_INTERNAL_MESSAGE', args...)
 
   sendSync: (args...) ->
-    ipc.sendSync('ATOM_INTERNAL_MESSAGE_SYNC', 'sync-message', args...).result
+    msg = ipc.sendSync('ATOM_INTERNAL_MESSAGE_SYNC', 'sync-message', args...)
+    JSON.parse(msg)
 
   sendChannelSync: (args...) ->
-    ipc.sendSync('ATOM_INTERNAL_MESSAGE_SYNC', args...).result
+    msg = ipc.sendSync('ATOM_INTERNAL_MESSAGE_SYNC', args...)
+    JSON.parse(msg)
 
 module.exports = new Ipc

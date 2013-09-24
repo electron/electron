@@ -9,6 +9,7 @@
 #include "browser/net/adapter_request_job.h"
 #include "browser/net/atom_url_request_context_getter.h"
 #include "browser/net/atom_url_request_job_factory.h"
+#include "common/v8_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/url_request/url_request_context.h"
 #include "vendor/node/src/node.h"
@@ -36,9 +37,9 @@ static const char* kEarlyUseProtocolError = "This method can only be used"
 void EmitEventInUI(const std::string& event, const std::string& parameter) {
   v8::HandleScope scope;
 
-  v8::Local<v8::Value> argv[] = {
-    v8::String::New(event.data(), event.size()),
-    v8::String::New(parameter.data(), parameter.size()),
+  v8::Handle<v8::Value> argv[] = {
+    ToV8Value(event),
+    ToV8Value(parameter),
   };
   node::MakeCallback(g_protocol_object, "emit", arraysize(argv), argv);
 }
@@ -83,7 +84,7 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
 
     // Determine the type of the job we are going to create.
     if (result->IsString()) {
-      std::string data = *v8::String::Utf8Value(result);
+      std::string data = FromV8Value(result);
       content::BrowserThread::PostTask(
           content::BrowserThread::IO,
           FROM_HERE,
@@ -95,14 +96,12 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
       return;
     } else if (result->IsObject()) {
       v8::Handle<v8::Object> obj = result->ToObject();
-      std::string name = *v8::String::Utf8Value(obj->GetConstructorName());
+      std::string name = FromV8Value(obj->GetConstructorName());
       if (name == "RequestStringJob") {
-        std::string mime_type = *v8::String::Utf8Value(obj->Get(
+        std::string mime_type = FromV8Value(obj->Get(
             v8::String::New("mimeType")));
-        std::string charset = *v8::String::Utf8Value(obj->Get(
-            v8::String::New("charset")));
-        std::string data = *v8::String::Utf8Value(obj->Get(
-            v8::String::New("data")));
+        std::string charset = FromV8Value(obj->Get(v8::String::New("charset")));
+        std::string data = FromV8Value(obj->Get(v8::String::New("data")));
 
         content::BrowserThread::PostTask(
             content::BrowserThread::IO,
@@ -114,8 +113,7 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
                        data));
         return;
       } else if (name == "RequestFileJob") {
-        base::FilePath path = base::FilePath::FromUTF8Unsafe(
-            *v8::String::Utf8Value(obj->Get(v8::String::New("path"))));
+        base::FilePath path = FromV8Value(obj->Get(v8::String::New("path")));
 
         content::BrowserThread::PostTask(
             content::BrowserThread::IO,
@@ -183,7 +181,11 @@ class CustomProtocolHandler : public ProtocolHandler {
 
 // static
 v8::Handle<v8::Value> Protocol::RegisterProtocol(const v8::Arguments& args) {
-  std::string scheme(*v8::String::Utf8Value(args[0]));
+  std::string scheme;
+  v8::Persistent<v8::Function> callback;
+  if (!FromV8Arguments(args, &scheme, &callback))
+    return node::ThrowTypeError("Bad argument");
+
   if (g_handlers.find(scheme) != g_handlers.end() ||
       net::URLRequest::IsHandledProtocol(scheme))
     return node::ThrowError("The scheme is already registered");
@@ -192,10 +194,7 @@ v8::Handle<v8::Value> Protocol::RegisterProtocol(const v8::Arguments& args) {
     return node::ThrowError(kEarlyUseProtocolError);
 
   // Store the handler in a map.
-  if (!args[1]->IsFunction())
-    return node::ThrowError("Handler must be a function");
-  g_handlers[scheme] = v8::Persistent<v8::Function>::New(
-      node::node_isolate, v8::Handle<v8::Function>::Cast(args[1]));
+  g_handlers[scheme] = callback;
 
   content::BrowserThread::PostTask(content::BrowserThread::IO,
                                    FROM_HERE,
@@ -206,7 +205,9 @@ v8::Handle<v8::Value> Protocol::RegisterProtocol(const v8::Arguments& args) {
 
 // static
 v8::Handle<v8::Value> Protocol::UnregisterProtocol(const v8::Arguments& args) {
-  std::string scheme(*v8::String::Utf8Value(args[0]));
+  std::string scheme;
+  if (!FromV8Arguments(args, &scheme))
+    return node::ThrowTypeError("Bad argument");
 
   if (AtomBrowserContext::Get()->url_request_context_getter() == NULL)
     return node::ThrowError(kEarlyUseProtocolError);
@@ -226,13 +227,16 @@ v8::Handle<v8::Value> Protocol::UnregisterProtocol(const v8::Arguments& args) {
 
 // static
 v8::Handle<v8::Value> Protocol::IsHandledProtocol(const v8::Arguments& args) {
-  return v8::Boolean::New(net::URLRequest::IsHandledProtocol(
-      *v8::String::Utf8Value(args[0])));
+  return ToV8Value(net::URLRequest::IsHandledProtocol(FromV8Value(args[0])));
 }
 
 // static
 v8::Handle<v8::Value> Protocol::InterceptProtocol(const v8::Arguments& args) {
-  std::string scheme(*v8::String::Utf8Value(args[0]));
+  std::string scheme;
+  v8::Persistent<v8::Function> callback;
+  if (!FromV8Arguments(args, &scheme, &callback))
+    return node::ThrowTypeError("Bad argument");
+
   if (!GetRequestJobFactory()->HasProtocolHandler(scheme))
     return node::ThrowError("Cannot intercept procotol");
 
@@ -243,10 +247,7 @@ v8::Handle<v8::Value> Protocol::InterceptProtocol(const v8::Arguments& args) {
     return node::ThrowError(kEarlyUseProtocolError);
 
   // Store the handler in a map.
-  if (!args[1]->IsFunction())
-    return node::ThrowError("Handler must be a function");
-  g_handlers[scheme] = v8::Persistent<v8::Function>::New(
-      node::node_isolate, v8::Handle<v8::Function>::Cast(args[1]));
+  g_handlers[scheme] = callback;
 
   content::BrowserThread::PostTask(content::BrowserThread::IO,
                                    FROM_HERE,
@@ -256,7 +257,9 @@ v8::Handle<v8::Value> Protocol::InterceptProtocol(const v8::Arguments& args) {
 
 // static
 v8::Handle<v8::Value> Protocol::UninterceptProtocol(const v8::Arguments& args) {
-  std::string scheme(*v8::String::Utf8Value(args[0]));
+  std::string scheme;
+  if (!FromV8Arguments(args, &scheme))
+    return node::ThrowTypeError("Bad argument");
 
   if (AtomBrowserContext::Get()->url_request_context_getter() == NULL)
     return node::ThrowError(kEarlyUseProtocolError);

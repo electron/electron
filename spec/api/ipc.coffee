@@ -49,7 +49,12 @@ describe 'ipc', ->
   describe 'ipc.send', ->
     it 'should work when sending an object containing id property', (done) ->
       obj = id: 1, name: 'ly'
-      ipc.on 'message', (message) ->
+      ipc.once 'message', (message) ->
         assert.deepEqual message, obj
         done()
       ipc.send obj
+
+  describe 'ipc.sendSync', ->
+    it 'can be replied by setting event.returnValue', ->
+      msg = ipc.sendChannelSync 'echo', 'test'
+      assert.equal msg, 'test'

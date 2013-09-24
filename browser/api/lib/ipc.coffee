@@ -14,8 +14,13 @@ class Ipc extends EventEmitter
   constructor: ->
     process.on 'ATOM_INTERNAL_MESSAGE', (args...) =>
       @emit(args...)
-    process.on 'ATOM_INTERNAL_MESSAGE_SYNC', (args...) =>
-      @emit(args...)
+    process.on 'ATOM_INTERNAL_MESSAGE_SYNC', (channel, event, args...) =>
+      set = (value) -> event.sendReply JSON.stringify(value)
+
+      Object.defineProperty event, 'returnValue', {set}
+      Object.defineProperty event, 'result', {set}
+
+      @emit(channel, event, args...)
 
   send: (processId, routingId, args...) ->
     @sendChannel(processId, routingId, 'message', args...)

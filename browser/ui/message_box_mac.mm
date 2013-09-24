@@ -6,20 +6,53 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include "base/callback.h"
 #include "base/strings/sys_string_conversions.h"
 #include "browser/native_window.h"
 #include "browser/ui/nsalert_synchronous_sheet_mac.h"
 
+@interface ModalDelegate : NSObject {
+ @private
+  atom::MessageBoxCallback callback_;
+  NSAlert* alert_;
+}
+- (id)initWithCallback:(const atom::MessageBoxCallback&)callback
+              andAlert:(NSAlert*)alert;
+@end
+
+@implementation ModalDelegate
+
+- (id)initWithCallback:(const atom::MessageBoxCallback&)callback
+              andAlert:(NSAlert*)alert {
+  if ((self = [super init])) {
+    callback_ = callback;
+    alert_ = alert;
+  }
+  return self;
+}
+
+- (void)alertDidEnd:(NSAlert*)alert
+         returnCode:(NSInteger)returnCode
+        contextInfo:(void*)contextInfo {
+  callback_.Run(returnCode);
+  [alert_ release];
+  [self release];
+}
+
+@end
+
 namespace atom {
 
-int ShowMessageBox(NativeWindow* parent_window,
-                   MessageBoxType type,
-                   const std::vector<std::string>& buttons,
-                   const std::string& title,
-                   const std::string& message,
-                   const std::string& detail) {
+namespace {
+
+NSAlert* CreateNSAlert(NativeWindow* parent_window,
+                       MessageBoxType type,
+                       const std::vector<std::string>& buttons,
+                       const std::string& title,
+                       const std::string& message,
+                       const std::string& detail) {
   // Ignore the title; it's the window title on other platforms and ignorable.
-  NSAlert* alert = [[[NSAlert alloc] init] autorelease];
+  NSAlert* alert = [[NSAlert alloc] init];
   [alert setMessageText:base::SysUTF8ToNSString(message)];
   [alert setInformativeText:base::SysUTF8ToNSString(detail)];
 
@@ -40,10 +73,44 @@ int ShowMessageBox(NativeWindow* parent_window,
     [button setTag:i];
   }
 
+  return alert;
+}
+
+}  // namespace
+
+int ShowMessageBox(NativeWindow* parent_window,
+                   MessageBoxType type,
+                   const std::vector<std::string>& buttons,
+                   const std::string& title,
+                   const std::string& message,
+                   const std::string& detail) {
+  NSAlert* alert = CreateNSAlert(
+      parent_window, type, buttons, title, message, detail);
+  [alert autorelease];
+
   if (parent_window)
     return [alert runModalSheetForWindow:parent_window->GetNativeWindow()];
   else
     return [alert runModal];
+}
+
+void ShowMessageBox(NativeWindow* parent_window,
+                    MessageBoxType type,
+                    const std::vector<std::string>& buttons,
+                    const std::string& title,
+                    const std::string& message,
+                    const std::string& detail,
+                    const MessageBoxCallback& callback) {
+  NSAlert* alert = CreateNSAlert(
+      parent_window, type, buttons, title, message, detail);
+  ModalDelegate* delegate = [[ModalDelegate alloc] initWithCallback:callback
+                                                           andAlert:alert];
+
+  NSWindow* window = parent_window ? parent_window->GetNativeWindow() : nil;
+  [alert beginSheetModalForWindow:window
+                    modalDelegate:delegate
+                   didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
+                      contextInfo:nil];
 }
 
 }  // namespace atom
