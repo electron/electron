@@ -6,7 +6,7 @@
 
 #include "browser/native_window.h"
 #include "common/api/api_messages.h"
-#include "common/string16_conversions.h"
+#include "common/v8_conversions.h"
 
 using node::node_isolate;
 

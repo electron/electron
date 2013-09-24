@@ -5,7 +5,6 @@
 #include "browser/api/atom_api_menu.h"
 
 #include "browser/ui/accelerator_util.h"
-#include "common/string16_conversions.h"
 #include "common/v8_conversions.h"
 
 #define UNWRAP_MEMNU_AND_CHECK \
@@ -83,7 +82,7 @@ bool Menu::GetAcceleratorForCommandId(int command_id,
                                                 "getAcceleratorForCommandId",
                                                 command_id);
   if (shortcut->IsString()) {
-    std::string shortcut_str(*v8::String::Utf8Value(shortcut));
+    std::string shortcut_str = FromV8Value(shortcut);
     return accelerator_util::StringToAccelerator(shortcut_str, accelerator);
   }
 
@@ -135,16 +134,15 @@ v8::Handle<v8::Value> Menu::New(const v8::Arguments &args) {
 v8::Handle<v8::Value> Menu::InsertItem(const v8::Arguments &args) {
   UNWRAP_MEMNU_AND_CHECK;
 
-  if (!args[0]->IsNumber() || !args[1]->IsNumber() || !args[2]->IsString())
+  int index, command_id;
+  string16 label;
+  if (!FromV8Arguments(args, &index, &command_id, &label))
     return node::ThrowTypeError("Bad argument");
 
-  int index = args[0]->IntegerValue();
-
   if (index < 0)
-    self->model_->AddItem(args[1]->IntegerValue(), FromV8Value(args[2]));
+    self->model_->AddItem(command_id, label);
   else
-    self->model_->InsertItemAt(
-        index, args[1]->IntegerValue(), FromV8Value(args[2]));
+    self->model_->InsertItemAt(index, command_id, label);
 
   return v8::Undefined();
 }
@@ -153,16 +151,15 @@ v8::Handle<v8::Value> Menu::InsertItem(const v8::Arguments &args) {
 v8::Handle<v8::Value> Menu::InsertCheckItem(const v8::Arguments &args) {
   UNWRAP_MEMNU_AND_CHECK;
 
-  if (!args[0]->IsNumber() || !args[1]->IsNumber() || !args[2]->IsString())
+  int index, command_id;
+  string16 label;
+  if (!FromV8Arguments(args, &index, &command_id, &label))
     return node::ThrowTypeError("Bad argument");
 
-  int index = args[0]->IntegerValue();
-  int command_id = args[1]->IntegerValue();
-
   if (index < 0)
-    self->model_->AddCheckItem(command_id, FromV8Value(args[2]));
+    self->model_->AddCheckItem(command_id, label);
   else
-    self->model_->InsertCheckItemAt(index, command_id, FromV8Value(args[2]));
+    self->model_->InsertCheckItemAt(index, command_id, label);
 
   return v8::Undefined();
 }
@@ -171,21 +168,15 @@ v8::Handle<v8::Value> Menu::InsertCheckItem(const v8::Arguments &args) {
 v8::Handle<v8::Value> Menu::InsertRadioItem(const v8::Arguments &args) {
   UNWRAP_MEMNU_AND_CHECK;
 
-  if (!args[0]->IsNumber() ||
-      !args[1]->IsNumber() ||
-      !args[2]->IsString() ||
-      !args[3]->IsNumber())
+  int index, command_id, group_id;
+  string16 label;
+  if (!FromV8Arguments(args, &index, &command_id, &label, &group_id))
     return node::ThrowTypeError("Bad argument");
 
-  int index = args[0]->IntegerValue();
-  int command_id = args[1]->IntegerValue();
-  int group_id = args[3]->IntegerValue();
-
   if (index < 0)
-    self->model_->AddRadioItem(command_id, FromV8Value(args[2]), group_id);
+    self->model_->AddRadioItem(command_id, label, group_id);
   else
-    self->model_->InsertRadioItemAt(
-        index, command_id, FromV8Value(args[2]), group_id);
+    self->model_->InsertRadioItemAt(index, command_id, label, group_id);
 
   return v8::Undefined();
 }
@@ -194,10 +185,9 @@ v8::Handle<v8::Value> Menu::InsertRadioItem(const v8::Arguments &args) {
 v8::Handle<v8::Value> Menu::InsertSeparator(const v8::Arguments &args) {
   UNWRAP_MEMNU_AND_CHECK;
 
-  if (!args[0]->IsNumber())
+  int index;
+  if (!FromV8Arguments(args, &index))
     return node::ThrowTypeError("Bad argument");
-
-  int index = args[0]->IntegerValue();
 
   if (index < 0)
     self->model_->AddSeparator(ui::NORMAL_SEPARATOR);
@@ -211,25 +201,20 @@ v8::Handle<v8::Value> Menu::InsertSeparator(const v8::Arguments &args) {
 v8::Handle<v8::Value> Menu::InsertSubMenu(const v8::Arguments &args) {
   UNWRAP_MEMNU_AND_CHECK;
 
-  if (!args[0]->IsNumber() ||
-      !args[1]->IsNumber() ||
-      !args[2]->IsString() ||
-      !args[3]->IsObject())
+  int index, command_id;
+  string16 label;
+  if (!FromV8Arguments(args, &index, &command_id, &label))
     return node::ThrowTypeError("Bad argument");
 
   Menu* submenu = ObjectWrap::Unwrap<Menu>(args[3]->ToObject());
   if (!submenu)
     return node::ThrowTypeError("The submenu is already destroyed");
 
-  int index = args[0]->IntegerValue();
-  int command_id = args[1]->IntegerValue();
-
   if (index < 0)
-    self->model_->AddSubMenu(
-        command_id, FromV8Value(args[2]), submenu->model_.get());
+    self->model_->AddSubMenu(command_id, label, submenu->model_.get());
   else
     self->model_->InsertSubMenuAt(
-        index, command_id, FromV8Value(args[2]), submenu->model_.get());
+        index, command_id, label, submenu->model_.get());
 
   return v8::Undefined();
 }
@@ -238,7 +223,9 @@ v8::Handle<v8::Value> Menu::InsertSubMenu(const v8::Arguments &args) {
 v8::Handle<v8::Value> Menu::SetIcon(const v8::Arguments &args) {
   UNWRAP_MEMNU_AND_CHECK;
 
-  if (!args[0]->IsNumber() || !args[1]->IsString())
+  int index;
+  base::FilePath path;
+  if (!FromV8Arguments(args, &index, &path))
     return node::ThrowTypeError("Bad argument");
 
   // FIXME use webkit_glue's image decoder here.
@@ -250,10 +237,12 @@ v8::Handle<v8::Value> Menu::SetIcon(const v8::Arguments &args) {
 v8::Handle<v8::Value> Menu::SetSublabel(const v8::Arguments &args) {
   UNWRAP_MEMNU_AND_CHECK;
 
-  if (!args[0]->IsNumber() || !args[1]->IsString())
+  int index;
+  string16 label;
+  if (!FromV8Arguments(args, &index, &label))
     return node::ThrowTypeError("Bad argument");
 
-  self->model_->SetSublabel(args[0]->IntegerValue(), FromV8Value(args[1]));
+  self->model_->SetSublabel(index, label);
 
   return v8::Undefined();
 }
@@ -324,11 +313,11 @@ v8::Handle<v8::Value> Menu::IsVisibleAt(const v8::Arguments &args) {
 v8::Handle<v8::Value> Menu::Popup(const v8::Arguments &args) {
   UNWRAP_MEMNU_AND_CHECK;
 
-  Window* window = Window::Unwrap<Window>(args[0]->ToObject());
-  if (!window)
-    return node::ThrowTypeError("Invalid window");
+  atom::NativeWindow* window;
+  if (!FromV8Arguments(args, &window))
+    return node::ThrowTypeError("Bad argument");
 
-  self->Popup(window->window());
+  self->Popup(window);
   return v8::Undefined();
 }
 

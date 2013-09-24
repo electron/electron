@@ -8,6 +8,7 @@
 #include "base/mac/scoped_sending_event.h"
 #include "base/strings/sys_string_conversions.h"
 #include "browser/native_window.h"
+#include "common/v8_conversions.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
 
@@ -95,10 +96,10 @@ v8::Handle<v8::Value> Menu::SendActionToFirstResponder(
     const v8::Arguments &args) {
   v8::HandleScope scope;
 
-  if (!args[0]->IsString())
+  std::string action;
+  if (!FromV8Arguments(args, &action))
     return node::ThrowTypeError("Bad argument");
 
-  std::string action(*v8::String::Utf8Value(args[0]));
   MenuMac::SendActionToFirstResponder(action);
 
   return v8::Undefined();

@@ -157,7 +157,6 @@
       'common/platform_util.h',
       'common/platform_util_mac.mm',
       'common/platform_util_win.cc',
-      'common/string16_conversions.h',
       'common/v8_conversions.h',
       'common/v8_value_converter_impl.cc',
       'common/v8_value_converter_impl.h',

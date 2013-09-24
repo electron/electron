@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/string16.h"
 #include "browser/api/atom_api_window.h"
 #include "v8/include/v8.h"
 
@@ -16,12 +17,21 @@
 struct FromV8Value {
   explicit FromV8Value(v8::Handle<v8::Value> value) : value_(value) {}
 
+  operator int() {
+    return value_->IntegerValue();
+  }
+
+  operator bool() {
+    return value_->BooleanValue();
+  }
+
   operator std::string() {
     return *v8::String::Utf8Value(value_);
   }
 
-  operator int() {
-    return value_->IntegerValue();
+  operator string16() {
+    v8::String::Value s(value_);
+    return string16(reinterpret_cast<const char16*>(*s), s.length());
   }
 
   operator base::FilePath() {
@@ -59,6 +69,22 @@ struct FromV8Value {
 };
 
 // Convert arbitrary supported native type to V8 value.
+inline v8::Handle<v8::Value> ToV8Value(int i) {
+  return v8::Integer::New(i);
+}
+
+inline v8::Handle<v8::Value> ToV8Value(bool b) {
+  return v8::Boolean::New(b);
+}
+
+inline v8::Handle<v8::Value> ToV8Value(const std::string& s) {
+  return v8::String::New(s.data(), s.size());
+}
+
+inline v8::Handle<v8::Value> ToV8Value(const string16& s) {
+  return v8::String::New(reinterpret_cast<const uint16_t*>(s.data()), s.size());
+}
+
 inline v8::Handle<v8::Value> ToV8Value(const base::FilePath& path) {
   std::string path_string(path.AsUTF8Unsafe());
   return v8::String::New(path_string.data(), path_string.size());
@@ -66,10 +92,6 @@ inline v8::Handle<v8::Value> ToV8Value(const base::FilePath& path) {
 
 inline v8::Handle<v8::Value> ToV8Value(void* whatever) {
   return v8::Undefined();
-}
-
-inline v8::Handle<v8::Value> ToV8Value(int code) {
-  return v8::Integer::New(code);
 }
 
 inline
@@ -92,8 +114,18 @@ bool V8ValueCanBeConvertedTo<int>(v8::Handle<v8::Value> value) {
 }
 
 template<> inline
+bool V8ValueCanBeConvertedTo<bool>(v8::Handle<v8::Value> value) {
+  return value->IsBoolean();
+}
+
+template<> inline
 bool V8ValueCanBeConvertedTo<std::string>(v8::Handle<v8::Value> value) {
   return value->IsString();
+}
+
+template<> inline
+bool V8ValueCanBeConvertedTo<string16>(v8::Handle<v8::Value> value) {
+  return V8ValueCanBeConvertedTo<std::string>(value);
 }
 
 template<> inline
