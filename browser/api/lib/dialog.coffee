@@ -1,4 +1,5 @@
 binding = process.atomBinding 'dialog'
+v8Util = process.atomBinding 'v8_util'
 BrowserWindow = require 'browser-window'
 
 fileDialogProperties =
@@ -72,3 +73,6 @@ module.exports =
                            String(options.detail),
                            window,
                            callback
+
+# Mark standard asynchronous functions.
+v8Util.setHiddenValue f, 'asynchronous', true for k, f of module.exports

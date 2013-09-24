@@ -61,6 +61,17 @@ unwrapArgs = (processId, routingId, args) ->
 
   args.map metaToValue
 
+# Call a function and send reply asynchronously if it's a an asynchronous
+# style function and the caller didn't pass a callback.
+callFunction = (event, processId, routingId, func, caller, args) ->
+  if v8Util.getHiddenValue(func, 'asynchronous') and typeof args[args.length - 1] isnt 'function'
+    args.push (ret) ->
+      event.returnValue = valueToMeta processId, routingId, ret
+    func.apply caller, args
+  else
+    ret = func.apply caller, args
+    event.returnValue = valueToMeta processId, routingId, ret
+
 ipc.on 'ATOM_BROWSER_REQUIRE', (event, processId, routingId, module) ->
   try
     event.returnValue = valueToMeta processId, routingId, require(module)
@@ -100,8 +111,7 @@ ipc.on 'ATOM_BROWSER_FUNCTION_CALL', (event, processId, routingId, id, args) ->
   try
     args = unwrapArgs processId, routingId, args
     func = objectsRegistry.get id
-    ret = func.apply global, args
-    event.returnValue = valueToMeta processId, routingId, ret
+    callFunction event, processId, routingId, func, global, args
   catch e
     event.returnValue = errorToMeta e
 
@@ -119,8 +129,7 @@ ipc.on 'ATOM_BROWSER_MEMBER_CALL', (event, processId, routingId, id, method, arg
   try
     args = unwrapArgs processId, routingId, args
     obj = objectsRegistry.get id
-    ret = obj[method].apply(obj, args)
-    event.returnValue = valueToMeta processId, routingId, ret
+    callFunction event, processId, routingId, obj[method], obj, args
   catch e
     event.returnValue = errorToMeta e
 
