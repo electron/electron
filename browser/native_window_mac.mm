@@ -157,8 +157,8 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
   atomWindow = [[AtomNSWindow alloc]
       initWithContentRect:cocoa_bounds
                 styleMask:NSTitledWindowMask | NSClosableWindowMask |
-                            NSMiniaturizableWindowMask | NSResizableWindowMask |
-                            NSTexturedBackgroundWindowMask
+                          NSMiniaturizableWindowMask | NSResizableWindowMask |
+                          NSTexturedBackgroundWindowMask
                   backing:NSBackingStoreBuffered
                     defer:YES];
 
