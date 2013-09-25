@@ -112,8 +112,6 @@
       'browser/ui/accelerator_util_win.cc',
       'browser/ui/atom_menu_controller_mac.h',
       'browser/ui/atom_menu_controller_mac.mm',
-      'browser/ui/cocoa/custom_frame_view.h',
-      'browser/ui/cocoa/custom_frame_view.mm',
       'browser/ui/file_dialog.h',
       'browser/ui/file_dialog_mac.mm',
       'browser/ui/file_dialog_win.cc',
