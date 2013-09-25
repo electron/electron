@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_ATOM_EVENT_PROCESSING_WINDOW_H_
-#define ATOM_BROWSER_ATOM_EVENT_PROCESSING_WINDOW_H_
+#ifndef ATOM_BROWSER_UI_ATOM_EVENT_PROCESSING_WINDOW_H_
+#define ATOM_BROWSER_UI_ATOM_EVENT_PROCESSING_WINDOW_H_
 
 #import <Cocoa/Cocoa.h>
 
@@ -29,4 +29,4 @@
 - (BOOL)performKeyEquivalent:(NSEvent*)theEvent;
 @end
 
-#endif  // ATOM_BROWSER_ATOM_EVENT_PROCESSING_WINDOW_H_
+#endif  // ATOM_BROWSER_UI_ATOM_EVENT_PROCESSING_WINDOW_H_

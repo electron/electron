@@ -13,7 +13,7 @@
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
-#import "browser/atom_event_processing_window.h"
+#import "browser/ui/atom_event_processing_window.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "common/draggable_region.h"

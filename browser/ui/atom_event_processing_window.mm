@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#import "browser/atom_event_processing_window.h"
+#import "browser/ui/atom_event_processing_window.h"
 
 #include "base/logging.h"
 #import "content/public/browser/render_widget_host_view_mac_base.h"
