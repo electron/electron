@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import json
 import requests
 
 GITHUB_URL = 'https://api.github.com'
@@ -15,10 +16,16 @@ class GitHub:
     url = '%s%s' % (GITHUB_URL, path)
     if not 'headers' in kw:
       kw['headers'] = dict()
-    kw['headers']['Authorization'] = self._authorization
-    kw['headers']['Accept'] = 'application/vnd.github.manifold-preview'
+    headers = kw['headers']
+    headers['Authorization'] = self._authorization
+    headers['Accept'] = 'application/vnd.github.manifold-preview'
+    if 'data' in kw:
+      kw['data'] = json.dumps(kw['data'])
 
-    return getattr(requests, method)(url, **kw)
+    r = getattr(requests, method)(url, **kw).json()
+    if 'message' in r:
+      raise Exception(json.dumps(r, indent=2, separators=(',', ': ')))
+    return r
 
 
 class _Executable:
@@ -28,7 +35,7 @@ class _Executable:
     self._path = path
 
   def __call__(self, **kw):
-    return self._gh._http(self._method, self._path, **kw).json()
+    return self._gh._http(self._method, self._path, **kw)
 
 
 class _Callable(object):
