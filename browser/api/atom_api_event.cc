@@ -96,7 +96,8 @@ v8::Handle<v8::Value> Event::SendReply(const v8::Arguments& args) {
   AtomViewHostMsg_Message_Sync::WriteReplyParams(event->message_, json);
   event->sender_->Send(event->message_);
 
-  event->message_ = NULL;
+  delete event;
+
   return v8::Undefined();
 }
 
