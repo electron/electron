@@ -16,6 +16,7 @@ class GitHub:
     if not 'headers' in kw:
       kw['headers'] = dict()
     kw['headers']['Authorization'] = self._authorization
+    kw['headers']['Accept'] = 'application/vnd.github.manifold-preview'
 
     return getattr(requests, method)(url, **kw)
 
