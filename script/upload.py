@@ -4,11 +4,13 @@ import argparse
 import errno
 import glob
 import os
+import requests
 import subprocess
 import sys
 import tempfile
 
 from lib.util import *
+from lib.github import GitHub
 
 
 TARGET_PLATFORM = {
@@ -18,6 +20,7 @@ TARGET_PLATFORM = {
   'win32': 'win32',
 }[sys.platform]
 
+ATOM_SHELL_REPO = 'atom/atom-shell'
 ATOM_SHELL_VRESION = get_atom_shell_version()
 NODE_VERSION = 'v0.10.18'
 
@@ -34,14 +37,17 @@ def main():
     create_dist = os.path.join(SOURCE_ROOT, 'script', 'create-dist.py')
     subprocess.check_call([sys.executable, create_dist])
 
-  bucket, access_key, secret_key = s3_config()
-  upload(bucket, access_key, secret_key)
-  if not args.no_update_version:
-    update_version(bucket, access_key, secret_key)
+  github = GitHub(auth_token())
+  print create_or_get_release_draft(github, args.version)
+  # upload(auth_token)
+  # if not args.no_update_version:
+  #   update_version(auth_token)
 
 
 def parse_args():
   parser = argparse.ArgumentParser(description='upload distribution file')
+  parser.add_argument('-v', '--version', help='Specify the version',
+                      default=ATOM_SHELL_VRESION)
   parser.add_argument('-n', '--no-update-version',
                       help='Do not update the latest version file',
                       action='store_true')
@@ -62,7 +68,30 @@ def dist_newer_than_head():
   return dist_time > int(head_time)
 
 
-def upload(bucket, access_key, secret_key, version=ATOM_SHELL_VRESION):
+def create_or_get_release_draft(github, tag):
+  releases = github.repos(ATOM_SHELL_REPO).releases.get()
+  for release in releases:
+    if release['tag_name'] == tag:
+      return release['id']
+
+  return create_release_draft(github, tag)
+
+
+def create_release_draft(github, tag):
+  name = 'atom-shell %s' % tag
+  body = ''
+
+  print 'Please enter content for the %s release note:' % name
+  for line in sys.stdin:
+    body += line
+
+  data = dict(tag_name=tag, target_commitish=tag, name=name, body=body,
+              draft=True)
+  r = github.repos(ATOM_SHELL_REPO).releases.post(data=data)
+  return r['id']
+
+
+def upload(auth_token, version=ATOM_SHELL_VRESION):
   os.chdir(DIST_DIR)
 
   s3put(bucket, access_key, secret_key, DIST_DIR,
@@ -88,21 +117,18 @@ def upload(bucket, access_key, secret_key, version=ATOM_SHELL_VRESION):
           'atom-shell/dist/{0}'.format(NODE_VERSION), [node_lib])
 
 
-def update_version(bucket, access_key, secret_key):
+def update_version(auth_token):
   prefix = os.path.join(SOURCE_ROOT, 'dist')
   version = os.path.join(prefix, 'version')
   s3put(bucket, access_key, secret_key, prefix, 'atom-shell', [version])
 
 
-def s3_config():
-  config = (os.environ.get('ATOM_SHELL_S3_BUCKET', ''),
-            os.environ.get('ATOM_SHELL_S3_ACCESS_KEY', ''),
-            os.environ.get('ATOM_SHELL_S3_SECRET_KEY', ''))
-  message = ('Error: Please set the $ATOM_SHELL_S3_BUCKET, '
-             '$ATOM_SHELL_S3_ACCESS_KEY, and '
-             '$ATOM_SHELL_S3_SECRET_KEY environment variables')
-  assert all(len(c) for c in config), message
-  return config
+def auth_token():
+  token = os.environ.get('ATOM_SHELL_GITHUB_TOKEN')
+  message = ('Error: Please set the $ATOM_SHELL_GITHUB_TOKEN '
+             'environment variable, which is your personal token')
+  assert token, message
+  return token
 
 
 def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
