@@ -1,26 +1,38 @@
 #!/usr/bin/env python
 
 import json
+import re
 import requests
 
 GITHUB_URL = 'https://api.github.com'
+GITHUB_UPLOAD_ASSET_URL = 'https://uploads.github.com'
 
 class GitHub:
   def __init__(self, access_token):
     self._authorization = 'token %s' % access_token
 
+    pattern = '^/repos/{0}/{0}/releases/{1}/assets$'.format('[^/]+', '[0-9]+')
+    self._releases_upload_api_pattern = re.compile(pattern)
+
   def __getattr__(self, attr):
     return _Callable(self, '/%s' % attr)
 
   def _http(self, method, path, **kw):
-    url = '%s%s' % (GITHUB_URL, path)
     if not 'headers' in kw:
       kw['headers'] = dict()
     headers = kw['headers']
     headers['Authorization'] = self._authorization
     headers['Accept'] = 'application/vnd.github.manifold-preview'
+
+    # Data are sent in JSON format.
     if 'data' in kw:
       kw['data'] = json.dumps(kw['data'])
+
+    # Switch to a different domain for the releases uploading API.
+    if self._releases_upload_api_pattern.match(path):
+      url = '%s%s' % (GITHUB_UPLOAD_ASSET_URL, path)
+    else:
+      url = '%s%s' % (GITHUB_URL, path)
 
     r = getattr(requests, method)(url, **kw).json()
     if 'message' in r:
