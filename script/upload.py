@@ -69,9 +69,11 @@ def dist_newer_than_head():
 
 
 def create_or_get_release_draft(github, tag):
+  name = 'atom-shell %s' % tag
   releases = github.repos(ATOM_SHELL_REPO).releases.get()
   for release in releases:
-    if release['tag_name'] == tag:
+    # The untagged commit doesn't have a matching tag_name, so also check name.
+    if release['tag_name'] == tag or release['name'] == name:
       return release['id']
 
   return create_release_draft(github, tag)
