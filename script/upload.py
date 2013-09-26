@@ -41,6 +41,8 @@ def main():
   github = GitHub(auth_token())
   release_id = create_or_get_release_draft(github, args.version)
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, DIST_NAME))
+  if not args.no_publish_release:
+    publish_release(github, release_id)
 
   # Upload node's headers to S3.
   bucket, access_key, secret_key = s3_config()
@@ -51,8 +53,8 @@ def parse_args():
   parser = argparse.ArgumentParser(description='upload distribution file')
   parser.add_argument('-v', '--version', help='Specify the version',
                       default=ATOM_SHELL_VRESION)
-  parser.add_argument('-n', '--no-update-version',
-                      help='Do not update the latest version file',
+  parser.add_argument('-n', '--no-publish-release',
+                      help='Do not publish the release',
                       action='store_true')
   return parser.parse_args()
 
@@ -102,6 +104,11 @@ def upload_atom_shell(github, release_id, file_path):
   files = {'file': open(file_path, 'rb')}
   github.repos(ATOM_SHELL_REPO).releases(release_id).assets.post(
       params=params, headers=headers, files=files, verify=False)
+
+
+def publish_release(github, release_id):
+  data = dict(draft=False)
+  github.repos(ATOM_SHELL_REPO).releases(release_id).patch(data=data)
 
 
 def upload_node(bucket, access_key, secret_key, version):
@@ -158,7 +165,7 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
     '--grant', 'public-read'
   ] + files
 
-  subprocess.check_call(args)
+  subprocess.check_output(args)
 
 
 def touch_x64_node_lib():
