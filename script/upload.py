@@ -38,7 +38,8 @@ def main():
     subprocess.check_call([sys.executable, create_dist])
 
   github = GitHub(auth_token())
-  print create_or_get_release_draft(github, args.version)
+  release_id = create_or_get_release_draft(github, args.version)
+  upload_asset(github, release_id, os.path.join(DIST_DIR, DIST_NAME))
   # upload(auth_token)
   # if not args.no_update_version:
   #   update_version(auth_token)
@@ -91,6 +92,14 @@ def create_release_draft(github, tag):
               draft=True)
   r = github.repos(ATOM_SHELL_REPO).releases.post(data=data)
   return r['id']
+
+
+def upload_asset(github, release_id, file_path):
+  params = {'name': os.path.basename(file_path)}
+  headers = {'Content-Type': 'application/zip'}
+  files = {'file': open(file_path, 'rb')}
+  github.repos(ATOM_SHELL_REPO).releases(release_id).assets.post(
+      params=params, headers=headers, files=files, verify=False)
 
 
 def upload(auth_token, version=ATOM_SHELL_VRESION):
