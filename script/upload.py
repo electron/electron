@@ -37,12 +37,14 @@ def main():
     create_dist = os.path.join(SOURCE_ROOT, 'script', 'create-dist.py')
     subprocess.check_output([sys.executable, create_dist])
 
+  # Upload atom-shell with GitHub Releases API.
   github = GitHub(auth_token())
   release_id = create_or_get_release_draft(github, args.version)
-  upload_asset(github, release_id, os.path.join(DIST_DIR, DIST_NAME))
-  # upload(auth_token)
-  # if not args.no_update_version:
-  #   update_version(auth_token)
+  upload_atom_shell(github, release_id, os.path.join(DIST_DIR, DIST_NAME))
+
+  # Upload node's headers to S3.
+  bucket, access_key, secret_key = s3_config()
+  upload_node(bucket, access_key, secret_key, NODE_VERSION)
 
 
 def parse_args():
@@ -94,7 +96,7 @@ def create_release_draft(github, tag):
   return r['id']
 
 
-def upload_asset(github, release_id, file_path):
+def upload_atom_shell(github, release_id, file_path):
   params = {'name': os.path.basename(file_path)}
   headers = {'Content-Type': 'application/zip'}
   files = {'file': open(file_path, 'rb')}
@@ -102,13 +104,11 @@ def upload_asset(github, release_id, file_path):
       params=params, headers=headers, files=files, verify=False)
 
 
-def upload(auth_token, version=ATOM_SHELL_VRESION):
+def upload_node(bucket, access_key, secret_key, version):
   os.chdir(DIST_DIR)
 
   s3put(bucket, access_key, secret_key, DIST_DIR,
-        'atom-shell/{0}'.format(version), [DIST_NAME])
-  s3put(bucket, access_key, secret_key, DIST_DIR,
-        'atom-shell/dist/{0}'.format(NODE_VERSION), glob.glob('node-*.tar.gz'))
+        'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
 
   if TARGET_PLATFORM == 'win32':
     # Generate the node.lib.
@@ -119,19 +119,13 @@ def upload(auth_token, version=ATOM_SHELL_VRESION):
     # Upload the 32bit node.lib.
     node_lib = os.path.join(OUT_DIR, 'node.lib')
     s3put(bucket, access_key, secret_key, OUT_DIR,
-          'atom-shell/dist/{0}'.format(NODE_VERSION), [node_lib])
+          'atom-shell/dist/{0}'.format(version), [node_lib])
 
     # Upload the fake 64bit node.lib.
     touch_x64_node_lib()
     node_lib = os.path.join(OUT_DIR, 'x64', 'node.lib')
     s3put(bucket, access_key, secret_key, OUT_DIR,
-          'atom-shell/dist/{0}'.format(NODE_VERSION), [node_lib])
-
-
-def update_version(auth_token):
-  prefix = os.path.join(SOURCE_ROOT, 'dist')
-  version = os.path.join(prefix, 'version')
-  s3put(bucket, access_key, secret_key, prefix, 'atom-shell', [version])
+          'atom-shell/dist/{0}'.format(version), [node_lib])
 
 
 def auth_token():
@@ -140,6 +134,17 @@ def auth_token():
              'environment variable, which is your personal token')
   assert token, message
   return token
+
+
+def s3_config():
+  config = (os.environ.get('ATOM_SHELL_S3_BUCKET', ''),
+            os.environ.get('ATOM_SHELL_S3_ACCESS_KEY', ''),
+            os.environ.get('ATOM_SHELL_S3_SECRET_KEY', ''))
+  message = ('Error: Please set the $ATOM_SHELL_S3_BUCKET, '
+             '$ATOM_SHELL_S3_ACCESS_KEY, and '
+             '$ATOM_SHELL_S3_SECRET_KEY environment variables')
+  assert all(len(c) for c in config), message
+  return config
 
 
 def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
