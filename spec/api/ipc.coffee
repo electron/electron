@@ -2,6 +2,9 @@ assert = require 'assert'
 ipc = require 'ipc'
 path = require 'path'
 remote = require 'remote'
+BrowserWindow = remote.require 'browser-window'
+
+fixtures = path.resolve __dirname, '..', 'fixtures'
 
 describe 'ipc', ->
   fixtures = path.join __dirname, '..', 'fixtures'
@@ -58,3 +61,13 @@ describe 'ipc', ->
     it 'can be replied by setting event.returnValue', ->
       msg = ipc.sendChannelSync 'echo', 'test'
       assert.equal msg, 'test'
+
+    it 'does not crash when reply is not sent and both browser and event are destroyed', (done) ->
+      w = new BrowserWindow(show: false)
+      remote.require('ipc').once 'send-sync-message', (event) ->
+        event.returnValue = null
+
+        w.destroy()
+        event.destroy()
+        done()
+      w.loadUrl 'file://' + path.join(fixtures, 'api', 'send-sync-message.html')

@@ -23,7 +23,7 @@ Event::Event()
 }
 
 Event::~Event() {
-  if (sender_)
+  if (sender_ != NULL)
     sender_->RemoveObserver(this);
 }
 
@@ -40,6 +40,7 @@ v8::Handle<v8::Object> Event::CreateV8Object() {
 
     NODE_SET_PROTOTYPE_METHOD(t, "preventDefault", PreventDefault);
     NODE_SET_PROTOTYPE_METHOD(t, "sendReply", SendReply);
+    NODE_SET_PROTOTYPE_METHOD(t, "destroy", Destroy);
   }
 
   v8::Handle<v8::Object> v8_event =
@@ -87,8 +88,8 @@ v8::Handle<v8::Value> Event::SendReply(const v8::Arguments& args) {
   if (event == NULL)
     return node::ThrowError("Event is already destroyed");
 
-  if (event->message_ == NULL)
-    return node::ThrowError("Can only send reply to synchronous events once");
+  if (event->message_ == NULL || event->sender_ == NULL)
+    return node::ThrowError("Can only send reply to synchronous events");
 
   string16 json = FromV8Value(args[0]);
 
@@ -96,6 +97,12 @@ v8::Handle<v8::Value> Event::SendReply(const v8::Arguments& args) {
   event->sender_->Send(event->message_);
 
   event->message_ = NULL;
+  return v8::Undefined();
+}
+
+// static
+v8::Handle<v8::Value> Event::Destroy(const v8::Arguments& args) {
+  delete Unwrap<Event>(args.This());
   return v8::Undefined();
 }
 
