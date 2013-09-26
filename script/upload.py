@@ -35,7 +35,7 @@ def main():
 
   if not dist_newer_than_head():
     create_dist = os.path.join(SOURCE_ROOT, 'script', 'create-dist.py')
-    subprocess.check_call([sys.executable, create_dist])
+    subprocess.check_output([sys.executable, create_dist])
 
   github = GitHub(auth_token())
   release_id = create_or_get_release_draft(github, args.version)
@@ -113,8 +113,8 @@ def upload(auth_token, version=ATOM_SHELL_VRESION):
   if TARGET_PLATFORM == 'win32':
     # Generate the node.lib.
     build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
-    subprocess.check_call([sys.executable, build, '-c', 'Release',
-                          '-t', 'generate_node_lib'])
+    subprocess.check_output([sys.executable, build, '-c', 'Release',
+                             '-t', 'generate_node_lib'])
 
     # Upload the 32bit node.lib.
     node_lib = os.path.join(OUT_DIR, 'node.lib')
