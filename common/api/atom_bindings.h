@@ -24,6 +24,7 @@ class AtomBindings {
   static v8::Handle<v8::Value> Crash(const v8::Arguments& args);
   static v8::Handle<v8::Value> ActivateUVLoop(const v8::Arguments& args);
   static v8::Handle<v8::Value> Log(const v8::Arguments& args);
+  static v8::Handle<v8::Value> GetCurrentStackTrace(const v8::Arguments& args);
 
   DISALLOW_COPY_AND_ASSIGN(AtomBindings);
 };

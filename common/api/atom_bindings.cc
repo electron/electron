@@ -7,15 +7,33 @@
 #include "base/debug/debugger.h"
 #include "base/logging.h"
 #include "common/atom_version.h"
+#include "common/v8_conversions.h"
 #include "vendor/node/src/node.h"
 
 namespace atom {
 
 namespace {
 
+static int kMaxCallStackSize = 200;  // Same with WebKit.
+
 static uv_async_t dummy_uv_handle;
 
 void UvNoOp(uv_async_t* handle, int status) {
+}
+
+v8::Handle<v8::Object> DumpStackFrame(v8::Handle<v8::StackFrame> stack_frame) {
+  v8::Local<v8::Object> result = v8::Object::New();
+  result->Set(ToV8Value("line"), ToV8Value(stack_frame->GetLineNumber()));
+  result->Set(ToV8Value("column"), ToV8Value(stack_frame->GetColumn()));
+
+  v8::Handle<v8::String> script = stack_frame->GetScriptName();
+  if (!script.IsEmpty())
+    result->Set(ToV8Value("script"), script);
+
+  v8::Handle<v8::String> function = stack_frame->GetScriptNameOrSourceURL();
+  if (!function.IsEmpty())
+    result->Set(ToV8Value("function"), function);
+  return result;
 }
 
 }  // namespace
@@ -37,6 +55,7 @@ void AtomBindings::BindTo(v8::Handle<v8::Object> process) {
   node::SetMethod(process, "crash", Crash);
   node::SetMethod(process, "activateUvLoop", ActivateUVLoop);
   node::SetMethod(process, "log", Log);
+  node::SetMethod(process, "getCurrentStackTrace", GetCurrentStackTrace);
 
   process->Get(v8::String::New("versions"))->ToObject()->
     Set(v8::String::New("atom-shell"), v8::String::New(ATOM_VERSION_STRING));
@@ -109,6 +128,25 @@ v8::Handle<v8::Value> AtomBindings::Log(const v8::Arguments& args) {
 
   logging::LogMessage("CONSOLE", 0, 0).stream() << message;
   return v8::Undefined();
+}
+
+// static
+v8::Handle<v8::Value> AtomBindings::GetCurrentStackTrace(
+    const v8::Arguments& args) {
+  v8::HandleScope scope;
+
+  int stack_limit = kMaxCallStackSize;
+  FromV8Arguments(args, &stack_limit);
+
+  v8::Local<v8::StackTrace> stack_trace = v8::StackTrace::CurrentStackTrace(
+      stack_limit, v8::StackTrace::kDetailed);
+
+  int frame_count = stack_trace->GetFrameCount();
+  v8::Local<v8::Array> result = v8::Array::New(frame_count);
+  for (int i = 0; i < frame_count; ++i)
+    result->Set(i, DumpStackFrame(stack_trace->GetFrame(i)));
+
+  return scope.Close(result);
 }
 
 }  // namespace atom
