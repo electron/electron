@@ -77,6 +77,10 @@ inline v8::Handle<v8::Value> ToV8Value(bool b) {
   return v8::Boolean::New(b);
 }
 
+inline v8::Handle<v8::Value> ToV8Value(const char* s) {
+  return v8::String::New(s);
+}
+
 inline v8::Handle<v8::Value> ToV8Value(const std::string& s) {
   return v8::String::New(s.data(), s.size());
 }

@@ -4,11 +4,13 @@ import argparse
 import errno
 import glob
 import os
+import requests
 import subprocess
 import sys
 import tempfile
 
 from lib.util import *
+from lib.github import GitHub
 
 
 TARGET_PLATFORM = {
@@ -18,6 +20,7 @@ TARGET_PLATFORM = {
   'win32': 'win32',
 }[sys.platform]
 
+ATOM_SHELL_REPO = 'atom/atom-shell'
 ATOM_SHELL_VRESION = get_atom_shell_version()
 NODE_VERSION = 'v0.10.18'
 
@@ -32,18 +35,26 @@ def main():
 
   if not dist_newer_than_head():
     create_dist = os.path.join(SOURCE_ROOT, 'script', 'create-dist.py')
-    subprocess.check_call([sys.executable, create_dist])
+    subprocess.check_output([sys.executable, create_dist])
 
+  # Upload atom-shell with GitHub Releases API.
+  github = GitHub(auth_token())
+  release_id = create_or_get_release_draft(github, args.version)
+  upload_atom_shell(github, release_id, os.path.join(DIST_DIR, DIST_NAME))
+  if not args.no_publish_release:
+    publish_release(github, release_id)
+
+  # Upload node's headers to S3.
   bucket, access_key, secret_key = s3_config()
-  upload(bucket, access_key, secret_key)
-  if not args.no_update_version:
-    update_version(bucket, access_key, secret_key)
+  upload_node(bucket, access_key, secret_key, NODE_VERSION)
 
 
 def parse_args():
   parser = argparse.ArgumentParser(description='upload distribution file')
-  parser.add_argument('-n', '--no-update-version',
-                      help='Do not update the latest version file',
+  parser.add_argument('-v', '--version', help='Specify the version',
+                      default=ATOM_SHELL_VRESION)
+  parser.add_argument('-n', '--no-publish-release',
+                      help='Do not publish the release',
                       action='store_true')
   return parser.parse_args()
 
@@ -62,36 +73,88 @@ def dist_newer_than_head():
   return dist_time > int(head_time)
 
 
-def upload(bucket, access_key, secret_key, version=ATOM_SHELL_VRESION):
+def get_text_with_editor():
+  editor = os.environ.get('EDITOR','nano')
+  initial_message = '\n# Please enter the body of your release note.'
+
+  t = tempfile.NamedTemporaryFile(suffix='.tmp', delete=False)
+  t.write(initial_message)
+  t.close()
+  subprocess.call([editor, t.name])
+
+  text = ''
+  for line in open(t.name, 'r'):
+    if len(line) == 0 or line[0] != '#':
+      text += line
+
+  os.unlink(t.name)
+  return text
+
+def create_or_get_release_draft(github, tag):
+  name = 'atom-shell %s' % tag
+  releases = github.repos(ATOM_SHELL_REPO).releases.get()
+  for release in releases:
+    # The untagged commit doesn't have a matching tag_name, so also check name.
+    if release['tag_name'] == tag or release['name'] == name:
+      return release['id']
+
+  return create_release_draft(github, tag)
+
+
+def create_release_draft(github, tag):
+  name = 'atom-shell %s' % tag
+  body = get_text_with_editor()
+  print body
+
+  data = dict(tag_name=tag, target_commitish=tag, name=name, body=body,
+              draft=True)
+  r = github.repos(ATOM_SHELL_REPO).releases.post(data=data)
+  return r['id']
+
+
+def upload_atom_shell(github, release_id, file_path):
+  params = {'name': os.path.basename(file_path)}
+  headers = {'Content-Type': 'application/zip'}
+  files = {'file': open(file_path, 'rb')}
+  github.repos(ATOM_SHELL_REPO).releases(release_id).assets.post(
+      params=params, headers=headers, files=files, verify=False)
+
+
+def publish_release(github, release_id):
+  data = dict(draft=False)
+  github.repos(ATOM_SHELL_REPO).releases(release_id).patch(data=data)
+
+
+def upload_node(bucket, access_key, secret_key, version):
   os.chdir(DIST_DIR)
 
   s3put(bucket, access_key, secret_key, DIST_DIR,
-        'atom-shell/{0}'.format(version), [DIST_NAME])
-  s3put(bucket, access_key, secret_key, DIST_DIR,
-        'atom-shell/dist/{0}'.format(NODE_VERSION), glob.glob('node-*.tar.gz'))
+        'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
 
   if TARGET_PLATFORM == 'win32':
     # Generate the node.lib.
     build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
-    subprocess.check_call([sys.executable, build, '-c', 'Release',
-                          '-t', 'generate_node_lib'])
+    subprocess.check_output([sys.executable, build, '-c', 'Release',
+                             '-t', 'generate_node_lib'])
 
     # Upload the 32bit node.lib.
     node_lib = os.path.join(OUT_DIR, 'node.lib')
     s3put(bucket, access_key, secret_key, OUT_DIR,
-          'atom-shell/dist/{0}'.format(NODE_VERSION), [node_lib])
+          'atom-shell/dist/{0}'.format(version), [node_lib])
 
     # Upload the fake 64bit node.lib.
     touch_x64_node_lib()
     node_lib = os.path.join(OUT_DIR, 'x64', 'node.lib')
     s3put(bucket, access_key, secret_key, OUT_DIR,
-          'atom-shell/dist/{0}'.format(NODE_VERSION), [node_lib])
+          'atom-shell/dist/{0}'.format(version), [node_lib])
 
 
-def update_version(bucket, access_key, secret_key):
-  prefix = os.path.join(SOURCE_ROOT, 'dist')
-  version = os.path.join(prefix, 'version')
-  s3put(bucket, access_key, secret_key, prefix, 'atom-shell', [version])
+def auth_token():
+  token = os.environ.get('ATOM_SHELL_GITHUB_TOKEN')
+  message = ('Error: Please set the $ATOM_SHELL_GITHUB_TOKEN '
+             'environment variable, which is your personal token')
+  assert token, message
+  return token
 
 
 def s3_config():
@@ -116,7 +179,7 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
     '--grant', 'public-read'
   ] + files
 
-  subprocess.check_call(args)
+  subprocess.check_output(args)
 
 
 def touch_x64_node_lib():
