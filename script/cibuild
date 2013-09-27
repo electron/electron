@@ -12,6 +12,7 @@ def main():
   run_script('bootstrap.py')
   run_script('cpplint.py')
   run_script('pylint.py')
+  run_script('coffeelint.py')
   run_script('build.py')
   run_script('test.py', ['--ci'])
   run_script('create-dist.py')
