@@ -13,7 +13,7 @@ def main():
 
   pylint = os.path.join(SOURCE_ROOT, 'vendor', 'depot_tools', 'pylint.py')
   settings = ['--rcfile=vendor/depot_tools/pylintrc']
-  pys = glob.glob('script/*.py') + [os.path.join('script', 'lib')]
+  pys = glob.glob('script/*.py')
   subprocess.check_call([sys.executable, pylint] + settings + pys,
                         env=dict(PYTHONPATH='script'))
 
