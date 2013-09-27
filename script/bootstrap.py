@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
 import argparse
-import errno
 import os
 import subprocess
 import sys
 
-from lib.util import *
+from lib.util import scoped_cwd
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -68,7 +67,7 @@ def update_apm():
 
 def update_node_modules():
   for dirname in ['.', 'browser/default_app', 'spec']:
-    update_node_modules_for_dir(dirname);
+    update_node_modules_for_dir(dirname)
 
 
 def update_node_modules_for_dir(dirname):

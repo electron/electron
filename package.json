@@ -9,7 +9,8 @@
     "walkdir": "*",
     "unzip": "*",
     "d3": "*",
-    "int64-native": "*"
+    "int64-native": "*",
+    "coffeelint": "*"
   },
 
   "private": true,

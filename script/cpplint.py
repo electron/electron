@@ -31,7 +31,7 @@ def main():
 def list_files(directories, filters):
   matches = []
   for directory in directories:
-    for root, dirs, filenames, in os.walk(directory):
+    for root, _, filenames, in os.walk(directory):
       for f in filters:
         for filename in fnmatch.filter(filenames, f):
           matches.append(os.path.join(root, filename))

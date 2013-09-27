@@ -4,12 +4,11 @@ import argparse
 import errno
 import glob
 import os
-import requests
 import subprocess
 import sys
 import tempfile
 
-from lib.util import *
+from lib.util import get_atom_shell_version, scoped_cwd, safe_mkdir
 from lib.github import GitHub
 
 

@@ -26,7 +26,7 @@ atom.browserMainParts =
 global.__atom = atom
 
 # Add browser/api/lib to require's search paths,
-# which contains javascript part of Atom's built-in libraries.  
+# which contains javascript part of Atom's built-in libraries.
 globalPaths = require('module').globalPaths
 globalPaths.push path.join process.resourcesPath, 'browser', 'api', 'lib'
 
@@ -38,11 +38,11 @@ process.on 'uncaughtException', (error) ->
   # Show error in GUI.
   message = error.stack ? "#{error.name}: #{error.message}"
   require('dialog').showMessageBox
-      type: 'warning'
-      title: 'An javascript error occured in the browser'
-      message: 'uncaughtException'
-      detail: message
-      buttons: ['OK']
+    type: 'warning'
+    title: 'An javascript error occured in the browser'
+    message: 'uncaughtException'
+    detail: message
+    buttons: ['OK']
 
 # Load the RPC server.
 require './rpc-server.js'
