@@ -73,6 +73,23 @@ def dist_newer_than_head():
   return dist_time > int(head_time)
 
 
+def get_text_with_editor():
+  editor = os.environ.get('EDITOR','nano')
+  initial_message = '\n# Please enter the body of your release note.'
+
+  t = tempfile.NamedTemporaryFile(suffix='.tmp', delete=False)
+  t.write(initial_message)
+  t.close()
+  subprocess.call([editor, t.name])
+
+  text = ''
+  for line in open(t.name, 'r'):
+    if len(line) == 0 or line[0] != '#':
+      text += line
+
+  os.unlink(t.name)
+  return text
+
 def create_or_get_release_draft(github, tag):
   name = 'atom-shell %s' % tag
   releases = github.repos(ATOM_SHELL_REPO).releases.get()
@@ -86,11 +103,8 @@ def create_or_get_release_draft(github, tag):
 
 def create_release_draft(github, tag):
   name = 'atom-shell %s' % tag
-  body = ''
-
-  print 'Please enter content for the %s release note:' % name
-  for line in sys.stdin:
-    body += line
+  body = get_text_with_editor()
+  print body
 
   data = dict(tag_name=tag, target_commitish=tag, name=name, body=body,
               draft=True)
