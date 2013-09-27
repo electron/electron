@@ -17,7 +17,7 @@ class GitHub:
   def __getattr__(self, attr):
     return _Callable(self, '/%s' % attr)
 
-  def _http(self, method, path, **kw):
+  def send(self, method, path, **kw):
     if not 'headers' in kw:
       kw['headers'] = dict()
     headers = kw['headers']
@@ -47,7 +47,7 @@ class _Executable:
     self._path = path
 
   def __call__(self, **kw):
-    return self._gh._http(self._method, self._path, **kw)
+    return self._gh.send(self._method, self._path, **kw)
 
 
 class _Callable(object):

@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
+import os
 import subprocess
 import sys
-
-from lib.util import *
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))

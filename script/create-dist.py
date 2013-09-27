@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 
-import errno
-import glob
 import os
 import shutil
 import subprocess
 import sys
 import tarfile
 
-from lib.util import *
+from lib.util import scoped_cwd, rm_rf, get_atom_shell_version, make_zip, \
+                     safe_mkdir
 
 
 ATOM_SHELL_VRESION = get_atom_shell_version()
@@ -79,7 +78,7 @@ def main():
 
 def force_build():
   build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
-  subprocess.check_call([sys.executable, build, '-c', 'Release']);
+  subprocess.check_call([sys.executable, build, '-c', 'Release'])
 
 
 def copy_binaries():
@@ -99,7 +98,7 @@ def copy_headers():
   # Copy standard node headers from node. repository.
   for include_path in HEADERS_DIRS:
     abs_path = os.path.join(NODE_DIR, include_path)
-    for dirpath, dirnames, filenames in os.walk(abs_path):
+    for dirpath, _, filenames in os.walk(abs_path):
       for filename in filenames:
         extension = os.path.splitext(filename)[1]
         if extension not in HEADERS_SUFFIX:
@@ -111,7 +110,7 @@ def copy_headers():
   # Copy V8 headers from chromium's repository.
   src = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor', 'download',
                     'libchromiumcontent', 'src')
-  for dirpath, dirnames, filenames in os.walk(os.path.join(src, 'v8')):
+  for dirpath, _, filenames in os.walk(os.path.join(src, 'v8')):
     for filename in filenames:
       extension = os.path.splitext(filename)[1]
       if extension not in HEADERS_SUFFIX:
@@ -122,8 +121,7 @@ def copy_headers():
 
 
 def copy_license():
-  license = os.path.join(SOURCE_ROOT, 'LICENSE')
-  shutil.copy2(license, DIST_DIR)
+  shutil.copy2(os.path.join(SOURCE_ROOT, 'LICENSE'), DIST_DIR)
 
 
 def create_version():
