@@ -4,8 +4,6 @@ import os
 import subprocess
 import sys
 
-from lib.util import *
-
 
 SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))
 
@@ -21,6 +19,7 @@ def main():
                           executable='C:/Program Files/nodejs/node.exe')
   else:
     subprocess.check_call(['node', coffee, '-c', '-o', output_dir, input_file])
+
 
 if __name__ == '__main__':
   sys.exit(main())

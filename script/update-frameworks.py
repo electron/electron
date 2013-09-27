@@ -3,11 +3,11 @@
 import sys
 import os
 
-from lib.util import *
+from lib.util import safe_mkdir, extract_zip, tempdir, download
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-FRAMEWORKS_URL='https://gh-contractor-zcbenz.s3.amazonaws.com/frameworks'
+FRAMEWORKS_URL = 'https://gh-contractor-zcbenz.s3.amazonaws.com/frameworks'
 
 
 def main():
