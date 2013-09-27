@@ -10,6 +10,7 @@
     "unzip": "*",
     "d3": "*",
     "int64-native": "*"
+    "coffeelint": "*"
   },
 
   "private": true,
