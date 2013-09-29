@@ -10,6 +10,7 @@
 #include "browser/atom_browser_context.h"
 #include "browser/browser.h"
 #include "common/node_bindings.h"
+#include "net/proxy/proxy_resolver_v8.h"
 #include "vendor/node/src/node.h"
 #include "vendor/node/src/node_internals.h"
 
@@ -85,6 +86,15 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   Browser::Get()->WillFinishLaunching();
   Browser::Get()->DidFinishLaunching();
 #endif
+}
+
+int AtomBrowserMainParts::PreCreateThreads() {
+#if defined(OS_WIN)
+  net::ProxyResolverV8::CreateIsolate();
+#else
+  net::ProxyResolverV8::RememberDefaultIsolate();
+#endif
+  return 0;
 }
 
 }  // namespace atom
