@@ -84,8 +84,17 @@ net::URLRequestContext* AtomURLRequestContextGetter::GetURLRequestContext() {
 
     scoped_ptr<net::HostResolver> host_resolver(
         net::HostResolver::CreateDefaultResolver(NULL));
+    net::DhcpProxyScriptFetcherFactory dhcp_factory;
 
     storage_->set_cert_verifier(net::CertVerifier::CreateDefault());
+    storage_->set_proxy_service(
+        net::CreateProxyServiceUsingV8ProxyResolver(
+            proxy_config_service_.release(),
+            new net::ProxyScriptFetcherImpl(url_request_context_.get()),
+            dhcp_factory.Create(url_request_context_.get()),
+            host_resolver.get(),
+            NULL,
+            url_request_context_->network_delegate()));
     storage_->set_ssl_config_service(new net::SSLConfigServiceDefaults);
     storage_->set_http_auth_handler_factory(
         net::HttpAuthHandlerFactory::CreateDefault(host_resolver.get()));
@@ -121,16 +130,6 @@ net::URLRequestContext* AtomURLRequestContextGetter::GetURLRequestContext() {
     storage_->set_host_resolver(host_resolver.Pass());
     network_session_params.host_resolver =
         url_request_context_->host_resolver();
-
-    net::DhcpProxyScriptFetcherFactory dhcp_factory;
-    storage_->set_proxy_service(
-        net::CreateProxyServiceUsingV8ProxyResolver(
-            proxy_config_service_.release(),
-            new net::ProxyScriptFetcherImpl(url_request_context_.get()),
-            dhcp_factory.Create(url_request_context_.get()),
-            url_request_context_->host_resolver(),
-            NULL,
-            url_request_context_->network_delegate()));
 
     net::HttpCache* main_cache = new net::HttpCache(
         network_session_params, main_backend);
