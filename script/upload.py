@@ -108,8 +108,7 @@ def create_release_draft(github, tag):
     sys.stderr.write('Quit due to empty release note.\n')
     sys.exit(0)
 
-  data = dict(tag_name=tag, target_commitish=tag, name=name, body=body,
-              draft=True)
+  data = dict(tag_name=tag, name=name, body=body, draft=True)
   r = github.repos(ATOM_SHELL_REPO).releases.post(data=data)
   return r['id']
 
