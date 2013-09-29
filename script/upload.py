@@ -131,7 +131,7 @@ def upload_node(bucket, access_key, secret_key, version):
 
   # TODO(zcbenz): Remove me when Atom starts to use Releases API.
   s3put(bucket, access_key, secret_key, DIST_DIR,
-        'atom-shell/{0}'.format(version), [DIST_NAME])
+        'atom-shell/{0}'.format(ATOM_SHELL_VRESION), [DIST_NAME])
 
   s3put(bucket, access_key, secret_key, DIST_DIR,
         'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
