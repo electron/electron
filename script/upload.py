@@ -130,6 +130,10 @@ def publish_release(github, release_id):
 def upload_node(bucket, access_key, secret_key, version):
   os.chdir(DIST_DIR)
 
+  # TODO(zcbenz): Remove me when Atom starts to use Releases API.
+  s3put(bucket, access_key, secret_key, DIST_DIR,
+        'atom-shell/{0}'.format(version), [DIST_NAME])
+
   s3put(bucket, access_key, secret_key, DIST_DIR,
         'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
 
