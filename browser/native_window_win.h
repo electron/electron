@@ -12,12 +12,18 @@
 #include "ui/gfx/size.h"
 #include "ui/views/widget/widget_delegate.h"
 
+namespace ui {
+class MenuModel;
+}
+
 namespace views {
 class WebView;
 class Widget;
 }
 
 namespace atom {
+
+class Menu2;
 
 class NativeWindowWin : public NativeWindow,
                         public views::WidgetDelegate {
@@ -60,6 +66,9 @@ class NativeWindowWin : public NativeWindow,
   virtual bool IsKiosk() OVERRIDE;
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
 
+  // Set the native window menu.
+  void SetMenu(ui::MenuModel* menu_model);
+
   SkRegion* draggable_region() { return draggable_region_.get(); }
 
  protected:
@@ -88,6 +97,9 @@ class NativeWindowWin : public NativeWindow,
 
   scoped_ptr<views::Widget> window_;
   views::WebView* web_view_;  // managed by window_.
+
+  // The window menu.
+  scoped_ptr<atom::Menu2> menu_;
 
   scoped_ptr<SkRegion> draggable_region_;
 

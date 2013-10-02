@@ -159,6 +159,8 @@ app.on('finish-launching', function() {
 
   if (process.platform == 'darwin')
     Menu.setApplicationMenu(menu);
+  else
+    mainWindow.setMenu(menu);
 
   ipc.on('message', function(processId, routingId, type) {
     console.log(type);

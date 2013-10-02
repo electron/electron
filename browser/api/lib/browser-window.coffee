@@ -17,6 +17,14 @@ BrowserWindow::toggleDevTools = ->
 BrowserWindow::restart = ->
   @loadUrl(@getUrl())
 
+BrowserWindow::setMenu = (menu) ->
+  throw new Error('BrowserWindow.setMenu is only available on Windows') unless process.platform is 'win32'
+
+  throw new TypeError('Invalid menu') unless menu?.constructor?.name is 'Menu'
+
+  @menu = menu  # Keep a reference of menu in case of GC.
+  @menu.attachToWindow this
+
 BrowserWindow.getFocusedWindow = ->
   windows = objectsRegistry.getAllWindows()
   return window for window in windows when window.isFocused()

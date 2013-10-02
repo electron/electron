@@ -6,6 +6,7 @@
 
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
+#include "browser/ui/win/menu_2.h"
 #include "common/draggable_region.h"
 #include "common/options_switches.h"
 #include "content/public/browser/native_web_keyboard_event.h"
@@ -323,6 +324,11 @@ bool NativeWindowWin::IsKiosk() {
 
 gfx::NativeWindow NativeWindowWin::GetNativeWindow() {
   return window_->GetNativeView();
+}
+
+void NativeWindowWin::SetMenu(ui::MenuModel* menu_model) {
+  menu_.reset(new atom::Menu2(menu_model, true));
+  ::SetMenu(GetNativeWindow(), menu_->GetNativeMenu());
 }
 
 void NativeWindowWin::UpdateDraggableRegions(
