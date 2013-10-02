@@ -89,11 +89,8 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 }
 
 int AtomBrowserMainParts::PreCreateThreads() {
-#if defined(OS_WIN)
-  net::ProxyResolverV8::CreateIsolate();
-#else
+  // TODO(zcbenz): Calling CreateIsolate() on Windows when updated to Chrome30.
   net::ProxyResolverV8::RememberDefaultIsolate();
-#endif
   return 0;
 }
 
