@@ -8,6 +8,7 @@
 #include "browser/ui/win/menu_2.h"
 #include "common/v8_conversions.h"
 #include "ui/gfx/point.h"
+#include "ui/gfx/screen.h"
 
 namespace atom {
 
@@ -21,8 +22,9 @@ MenuWin::~MenuWin() {
 }
 
 void MenuWin::Popup(NativeWindow* native_window) {
+  gfx::Point cursor = gfx::Screen::GetNativeScreen()->GetCursorScreenPoint();
   menu_.reset(new atom::Menu2(model_.get()));
-  menu_->RunContextMenuAt(gfx::Point(0, 0));
+  menu_->RunContextMenuAt(cursor);
 }
 
 // static
