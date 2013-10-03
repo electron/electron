@@ -36,6 +36,14 @@ def main():
     create_dist = os.path.join(SOURCE_ROOT, 'script', 'create-dist.py')
     subprocess.check_output([sys.executable, create_dist])
 
+  build_version = get_atom_shell_build_version()
+  if not ATOM_SHELL_VRESION.startswith(build_version):
+    error = 'Tag name ({0}) should match build version ({1})\n'.format(
+        ATOM_SHELL_VRESION, build_version)
+    sys.stderr.write(error)
+    sys.stderr.flush()
+    return 1
+
   # Upload atom-shell with GitHub Releases API.
   github = GitHub(auth_token())
   release_id = create_or_get_release_draft(github, args.version)
@@ -56,6 +64,16 @@ def parse_args():
                       help='Do not publish the release',
                       action='store_true')
   return parser.parse_args()
+
+
+def get_atom_shell_build_version():
+  if sys.platform == 'darwin':
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Debug', 'Atom.app',
+                              'Contents', 'MacOS', 'Atom')
+  else:
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Debug', 'atom.exe')
+
+  return subprocess.check_output([atom_shell, '--version']).strip()
 
 
 def dist_newer_than_head():

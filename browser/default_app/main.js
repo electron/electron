@@ -26,7 +26,7 @@ if (argv._.length > 0) {
     }
   }
 } else if (argv.version) {
-  console.log(process.versions['atom-shell']);
+  console.log('v' + process.versions['atom-shell']);
   process.exit(0);
 } else {
   require('./default_app.js');
