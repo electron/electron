@@ -56,6 +56,9 @@ class NativeMenuWin {
   void RemoveMenuListener(views::MenuListener* listener);
   void SetMinimumWidth(int width);
 
+  // Called by user to generate a menu command event.
+  void OnMenuCommand(int position, HMENU menu);
+
   // Flag to create a window menu instead of popup menu.
   void set_create_as_window_menu(bool flag) { create_as_window_menu_ = flag; }
   bool create_as_window_menu() const { return create_as_window_menu_; }

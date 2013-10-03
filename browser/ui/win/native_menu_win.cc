@@ -92,6 +92,20 @@ class NativeMenuWin::MenuHostWindow {
     DestroyWindow(hwnd_);
   }
 
+  // Called when the user selects a specific item.
+  void OnMenuCommand(int position, HMENU menu) {
+    NativeMenuWin* menu_win = GetNativeMenuWinFromHMENU(menu);
+    ui::MenuModel* model = menu_win->model_;
+    NativeMenuWin* root_menu = menu_win;
+    while (root_menu->parent_)
+      root_menu = root_menu->parent_;
+
+    // Only notify the model if it didn't already send out notification.
+    // See comment in MenuMessageHook for details.
+    if (root_menu->menu_action_ == MENU_ACTION_NONE)
+      model->ActivatedAt(position);
+  }
+
   HWND hwnd() const { return hwnd_; }
 
  private:
@@ -144,20 +158,6 @@ class NativeMenuWin::MenuHostWindow {
 
   NativeMenuWin::ItemData* GetItemData(ULONG_PTR item_data) {
     return reinterpret_cast<NativeMenuWin::ItemData*>(item_data);
-  }
-
-  // Called when the user selects a specific item.
-  void OnMenuCommand(int position, HMENU menu) {
-    NativeMenuWin* menu_win = GetNativeMenuWinFromHMENU(menu);
-    ui::MenuModel* model = menu_win->model_;
-    NativeMenuWin* root_menu = menu_win;
-    while (root_menu->parent_)
-      root_menu = root_menu->parent_;
-
-    // Only notify the model if it didn't already send out notification.
-    // See comment in MenuMessageHook for details.
-    if (root_menu->menu_action_ == MENU_ACTION_NONE)
-      model->ActivatedAt(position);
   }
 
   // Called as the user moves their mouse or arrows through the contents of the
@@ -527,6 +527,10 @@ void NativeMenuWin::RemoveMenuListener(MenuListener* listener) {
 
 void NativeMenuWin::SetMinimumWidth(int width) {
   NOTIMPLEMENTED();
+}
+
+void NativeMenuWin::OnMenuCommand(int position, HMENU menu) {
+  host_window_->OnMenuCommand(position, menu);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

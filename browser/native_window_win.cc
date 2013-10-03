@@ -7,6 +7,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "browser/ui/win/menu_2.h"
+#include "browser/ui/win/native_menu_win.h"
 #include "common/draggable_region.h"
 #include "common/options_switches.h"
 #include "content/public/browser/native_web_keyboard_event.h"
@@ -17,6 +18,7 @@
 #include "ui/gfx/path.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/widget/widget.h"
+#include "ui/views/widget/native_widget_win.h"
 #include "ui/views/window/client_view.h"
 #include "ui/views/window/native_frame_view.h"
 
@@ -26,6 +28,35 @@ namespace {
 
 const int kResizeInsideBoundsSize = 5;
 const int kResizeAreaCornerSize = 16;
+
+// Wrapper of NativeWidgetWin to handle WM_MENUCOMMAND messages, which are
+// triggered by window menus.
+class MenuCommandNativeWidget : public views::NativeWidgetWin {
+ public:
+  explicit MenuCommandNativeWidget(NativeWindowWin* delegate)
+      : views::NativeWidgetWin(delegate->window()),
+        delegate_(delegate) {}
+  virtual ~MenuCommandNativeWidget() {}
+
+ protected:
+  virtual bool PreHandleMSG(UINT message,
+                            WPARAM w_param,
+                            LPARAM l_param,
+                            LRESULT* result) OVERRIDE {
+    if (message == WM_MENUCOMMAND) {
+      delegate_->OnMenuCommand(w_param, reinterpret_cast<HMENU>(l_param));
+      *result = 0;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+ private:
+  NativeWindowWin* delegate_;
+
+  DISALLOW_COPY_AND_ASSIGN(MenuCommandNativeWidget);
+};
 
 class NativeWindowClientView : public views::ClientView {
  public:
@@ -174,6 +205,7 @@ NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
       resizable_(true) {
   views::Widget::InitParams params(views::Widget::InitParams::TYPE_WINDOW);
   params.delegate = this;
+  params.native_widget = new MenuCommandNativeWidget(this);
   params.remove_standard_frame = !has_frame_;
   params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
   window_->set_frame_type(views::Widget::FRAME_TYPE_FORCE_NATIVE);
@@ -324,6 +356,11 @@ bool NativeWindowWin::IsKiosk() {
 
 gfx::NativeWindow NativeWindowWin::GetNativeWindow() {
   return window_->GetNativeView();
+}
+
+void NativeWindowWin::OnMenuCommand(int position, HMENU menu) {
+  DCHECK(menu_);
+  menu_->wrapper()->OnMenuCommand(position, menu);
 }
 
 void NativeWindowWin::SetMenu(ui::MenuModel* menu_model) {

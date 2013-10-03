@@ -66,9 +66,12 @@ class NativeWindowWin : public NativeWindow,
   virtual bool IsKiosk() OVERRIDE;
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
 
+  void OnMenuCommand(int position, HMENU menu);
+
   // Set the native window menu.
   void SetMenu(ui::MenuModel* menu_model);
 
+  views::Widget* window() const { return window_.get(); }
   SkRegion* draggable_region() { return draggable_region_.get(); }
 
  protected:
