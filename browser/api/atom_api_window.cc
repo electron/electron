@@ -156,6 +156,12 @@ v8::Handle<v8::Value> Window::Hide(const v8::Arguments &args) {
 }
 
 // static
+v8::Handle<v8::Value> Window::IsVisible(const v8::Arguments& args) {
+  UNWRAP_WINDOW_AND_CHECK;
+  return ToV8Value(self->window_->IsVisible());
+}
+
+// static
 v8::Handle<v8::Value> Window::Maximize(const v8::Arguments &args) {
   UNWRAP_WINDOW_AND_CHECK;
 
@@ -671,6 +677,7 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "isFocused", IsFocused);
   NODE_SET_PROTOTYPE_METHOD(t, "show", Show);
   NODE_SET_PROTOTYPE_METHOD(t, "hide", Hide);
+  NODE_SET_PROTOTYPE_METHOD(t, "isVisible", IsVisible);
   NODE_SET_PROTOTYPE_METHOD(t, "maximize", Maximize);
   NODE_SET_PROTOTYPE_METHOD(t, "unmaximize", Unmaximize);
   NODE_SET_PROTOTYPE_METHOD(t, "minimize", Minimize);

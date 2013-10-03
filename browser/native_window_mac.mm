@@ -229,6 +229,10 @@ void NativeWindowMac::Hide() {
   [window() orderOut:nil];
 }
 
+bool NativeWindowMac::IsVisible() {
+  return [window() isVisible];
+}
+
 void NativeWindowMac::Maximize() {
   [window() zoom:nil];
 }

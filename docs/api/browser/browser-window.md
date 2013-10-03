@@ -141,6 +141,10 @@ Shows the window.
 
 Hides the window.
 
+### BrowserWindow.isVisible()
+
+Returns whether the window is visible to the user.
+
 ### BrowserWindow.maximize()
 
 Maximizes the window.

@@ -53,6 +53,7 @@ class Window : public EventEmitter,
   static v8::Handle<v8::Value> IsFocused(const v8::Arguments &args);
   static v8::Handle<v8::Value> Show(const v8::Arguments &args);
   static v8::Handle<v8::Value> Hide(const v8::Arguments &args);
+  static v8::Handle<v8::Value> IsVisible(const v8::Arguments &args);
   static v8::Handle<v8::Value> Maximize(const v8::Arguments &args);
   static v8::Handle<v8::Value> Unmaximize(const v8::Arguments &args);
   static v8::Handle<v8::Value> Minimize(const v8::Arguments &args);
