@@ -67,6 +67,14 @@ describe 'window module', ->
         ++count
       w.loadUrl 'about:blank'
 
+  describe 'BrowserWindow.focus()', ->
+    it 'does not make the window become visible', ->
+      w = new BrowserWindow(show: false)
+      assert.equal w.isVisible(), false
+      w.focus()
+      assert.equal w.isVisible(), false
+      w.close()
+
   describe 'beforeunload handler', ->
     it 'returning true would not prevent close', (done) ->
       w = new BrowserWindow(show: false)
