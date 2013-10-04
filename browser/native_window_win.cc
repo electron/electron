@@ -401,6 +401,23 @@ void NativeWindowWin::HandleKeyboardEvent(
                 event.os_event.wParam, event.os_event.lParam);
 }
 
+void NativeWindowWin::Layout() {
+  DCHECK(web_view_);
+  web_view_->SetBounds(0, 0, width(), height());
+  OnViewWasResized();
+}
+
+void NativeWindowWin::ViewHierarchyChanged(bool is_add,
+                                           views::View* parent,
+                                           views::View* child) {
+  if (is_add && child == this)
+    AddChildView(web_view_);
+}
+
+void NativeWindowWin::DeleteDelegate() {
+  // Do nothing, window is managed by users.
+}
+
 bool NativeWindowWin::CanResize() const {
   return resizable_;
 }
@@ -430,7 +447,7 @@ const views::Widget* NativeWindowWin::GetWidget() const {
 }
 
 views::ClientView* NativeWindowWin::CreateClientView(views::Widget* widget) {
-  return new NativeWindowClientView(widget, web_view_, this);
+  return new NativeWindowClientView(widget, this, this);
 }
 
 views::NonClientFrameView* NativeWindowWin::CreateNonClientFrameView(

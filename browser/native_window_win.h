@@ -26,7 +26,7 @@ namespace atom {
 class Menu2;
 
 class NativeWindowWin : public NativeWindow,
-                        public views::WidgetDelegate {
+                        public views::WidgetDelegateView {
  public:
   explicit NativeWindowWin(content::WebContents* web_contents,
                            base::DictionaryValue* options);
@@ -83,7 +83,14 @@ class NativeWindowWin : public NativeWindow,
       content::WebContents*,
       const content::NativeWebKeyboardEvent&) OVERRIDE;
 
+  // Overridden from views::View:
+  virtual void Layout() OVERRIDE;
+  virtual void ViewHierarchyChanged(bool is_add,
+                                    views::View* parent,
+                                    views::View* child) OVERRIDE;
+
   // Overridden from views::WidgetDelegate:
+  virtual void DeleteDelegate() OVERRIDE;
   virtual bool CanResize() const OVERRIDE;
   virtual bool CanMaximize() const OVERRIDE;
   virtual string16 GetWindowTitle() const OVERRIDE;
