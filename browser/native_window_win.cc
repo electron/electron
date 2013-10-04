@@ -61,21 +61,17 @@ class MenuCommandNativeWidget : public views::NativeWidgetWin {
 class NativeWindowClientView : public views::ClientView {
  public:
   NativeWindowClientView(views::Widget* widget,
-                         views::View* contents_view,
-                         NativeWindowWin* shell)
-      : views::ClientView(widget, contents_view),
-        shell_(shell) {
+                         NativeWindowWin* contents_view)
+      : views::ClientView(widget, contents_view) {
   }
   virtual ~NativeWindowClientView() {}
 
   virtual bool CanClose() OVERRIDE {
-    shell_->CloseWebContents();
+    static_cast<NativeWindowWin*>(contents_view())->CloseWebContents();
     return false;
   }
 
  private:
-  NativeWindowWin* shell_;
-
   DISALLOW_COPY_AND_ASSIGN(NativeWindowClientView);
 };
 
@@ -447,7 +443,7 @@ const views::Widget* NativeWindowWin::GetWidget() const {
 }
 
 views::ClientView* NativeWindowWin::CreateClientView(views::Widget* widget) {
-  return new NativeWindowClientView(widget, this, this);
+  return new NativeWindowClientView(widget, this);
 }
 
 views::NonClientFrameView* NativeWindowWin::CreateNonClientFrameView(
