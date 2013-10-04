@@ -4,8 +4,10 @@
 
 #include "browser/native_window_win.h"
 
+#include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
+#include "browser/api/atom_api_menu.h"
 #include "browser/ui/win/menu_2.h"
 #include "browser/ui/win/native_menu_win.h"
 #include "common/draggable_region.h"
@@ -16,6 +18,7 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
 #include "ui/gfx/path.h"
+#include "ui/base/models/simple_menu_model.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/widget/native_widget_win.h"
@@ -362,6 +365,7 @@ void NativeWindowWin::OnMenuCommand(int position, HMENU menu) {
 void NativeWindowWin::SetMenu(ui::MenuModel* menu_model) {
   menu_.reset(new atom::Menu2(menu_model, true));
   ::SetMenu(GetNativeWindow(), menu_->GetNativeMenu());
+  RegisterAccelerators();
 }
 
 void NativeWindowWin::UpdateDraggableRegions(
@@ -391,6 +395,16 @@ void NativeWindowWin::UpdateDraggableRegions(
 void NativeWindowWin::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
+  if (event.type == WebKit::WebInputEvent::KeyUp) {
+    ui::Accelerator accelerator(
+        static_cast<ui::KeyboardCode>(event.windowsKeyCode),
+        content::GetModifiersFromNativeWebKeyboardEvent(event));
+
+    if (GetFocusManager()->ProcessAccelerator(accelerator)) {
+      return;
+    }
+  }
+
   // Any unhandled keyboard/character messages should be defproced.
   // This allows stuff like F10, etc to work correctly.
   DefWindowProc(event.os_event.hwnd, event.os_event.message,
@@ -408,6 +422,17 @@ void NativeWindowWin::ViewHierarchyChanged(bool is_add,
                                            views::View* child) {
   if (is_add && child == this)
     AddChildView(web_view_);
+}
+
+bool NativeWindowWin::AcceleratorPressed(
+    const ui::Accelerator& accelerator) {
+  if (ContainsKey(accelerator_table_, accelerator)) {
+    const MenuItem& item = accelerator_table_[accelerator];
+    item.model->ActivatedAt(item.position);
+    return true;
+  } else {
+    return false;
+  }
 }
 
 void NativeWindowWin::DeleteDelegate() {
@@ -482,6 +507,44 @@ void NativeWindowWin::OnViewWasResized() {
   content::WebContents* web_contents = GetWebContents();
   if (web_contents->GetRenderViewHost()->GetView())
     web_contents->GetRenderViewHost()->GetView()->SetClickthroughRegion(rgn);
+}
+
+void NativeWindowWin::RegisterAccelerators() {
+  views::FocusManager* focus_manager = GetFocusManager();
+  accelerator_table_.clear();
+  focus_manager->UnregisterAccelerators(this);
+
+  GenerateAcceleratorTable();
+  for (AcceleratorTable::const_iterator iter = accelerator_table_.begin();
+       iter != accelerator_table_.end(); ++iter) {
+    focus_manager->RegisterAccelerator(
+        iter->first, ui::AcceleratorManager::kNormalPriority, this);
+  }
+}
+
+void NativeWindowWin::GenerateAcceleratorTable() {
+  DCHECK(menu_);
+  ui::SimpleMenuModel* model = static_cast<ui::SimpleMenuModel*>(
+      menu_->model());
+  FillAcceleratorTable(&accelerator_table_, model);
+}
+
+void NativeWindowWin::FillAcceleratorTable(AcceleratorTable* table,
+                                           ui::MenuModel* model) {
+  int count = model->GetItemCount();
+  for (int i = 0; i < count; ++i) {
+    ui::MenuModel::ItemType type = model->GetTypeAt(i);
+    if (type == ui::MenuModel::TYPE_SUBMENU) {
+      ui::MenuModel* submodel = model->GetSubmenuModelAt(i);
+      FillAcceleratorTable(table, submodel);
+    } else {
+      ui::Accelerator accelerator;
+      if (model->GetAcceleratorAt(i, &accelerator)) {
+        MenuItem item = { i, model };
+        (*table)[accelerator] = item;
+      }
+    }
+  }
 }
 
 // static

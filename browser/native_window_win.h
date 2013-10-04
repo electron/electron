@@ -88,6 +88,7 @@ class NativeWindowWin : public NativeWindow,
   virtual void ViewHierarchyChanged(bool is_add,
                                     views::View* parent,
                                     views::View* child) OVERRIDE;
+  virtual bool AcceleratorPressed(const ui::Accelerator& accelerator) OVERRIDE;
 
   // Overridden from views::WidgetDelegate:
   virtual void DeleteDelegate() OVERRIDE;
@@ -103,13 +104,29 @@ class NativeWindowWin : public NativeWindow,
       views::Widget* widget) OVERRIDE;
 
  private:
+  typedef struct { int position; ui::MenuModel* model; } MenuItem;
+  typedef std::map<ui::Accelerator, MenuItem> AcceleratorTable;
+
   void OnViewWasResized();
+
+  // Register accelerators supported by the menu model.
+  void RegisterAccelerators();
+
+  // Generate a table that contains memu model's accelerators and command ids.
+  void GenerateAcceleratorTable();
+
+  // Helper to fill the accelerator table from the model.
+  void FillAcceleratorTable(AcceleratorTable* table,
+                            ui::MenuModel* model);
 
   scoped_ptr<views::Widget> window_;
   views::WebView* web_view_;  // managed by window_.
 
   // The window menu.
   scoped_ptr<atom::Menu2> menu_;
+
+  // Map from accelerator to menu item's command id.
+  AcceleratorTable accelerator_table_;
 
   scoped_ptr<SkRegion> draggable_region_;
 
