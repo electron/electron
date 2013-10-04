@@ -23,5 +23,5 @@
 
 ## Notes on accelerator
 
-On OS X, the `Ctrl` would automatically translated to `Command`, if you really
-want `Ctrl` on OS X, you should use `MacCtrl`.
+On Linux and Windows, the `Command` would be translated to `Ctrl`, so usually
+you can use `Command` for most of the commands.
