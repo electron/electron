@@ -439,6 +439,10 @@ void NativeWindowWin::DeleteDelegate() {
   // Do nothing, window is managed by users.
 }
 
+views::View* NativeWindowWin::GetInitiallyFocusedView() {
+  return web_view_;
+}
+
 bool NativeWindowWin::CanResize() const {
   return resizable_;
 }

@@ -92,6 +92,7 @@ class NativeWindowWin : public NativeWindow,
 
   // Overridden from views::WidgetDelegate:
   virtual void DeleteDelegate() OVERRIDE;
+  virtual views::View* GetInitiallyFocusedView() OVERRIDE;
   virtual bool CanResize() const OVERRIDE;
   virtual bool CanMaximize() const OVERRIDE;
   virtual string16 GetWindowTitle() const OVERRIDE;
