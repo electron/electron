@@ -79,6 +79,10 @@ code will not run.
 
 Returns the version of current bundle or executable.
 
+## app.getBrowserWindows()
+
+Returns an array of all browser windows.
+
 ## app.commandLine.appendSwitch(switch, [value])
 
 Append a switch [with optional value] to Chromium's command line.

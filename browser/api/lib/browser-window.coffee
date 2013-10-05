@@ -1,6 +1,6 @@
 EventEmitter = require('events').EventEmitter
+app = require 'app'
 v8Util = process.atomBinding 'v8_util'
-objectsRegistry = require '../../atom/objects-registry.js'
 
 BrowserWindow = process.atomBinding('window').BrowserWindow
 BrowserWindow::__proto__ = EventEmitter.prototype
@@ -26,11 +26,11 @@ BrowserWindow::setMenu = (menu) ->
   @menu.attachToWindow this
 
 BrowserWindow.getFocusedWindow = ->
-  windows = objectsRegistry.getAllWindows()
+  windows = app.getBrowserWindows()
   return window for window in windows when window.isFocused()
 
 BrowserWindow.fromProcessIdAndRoutingId = (processId, routingId) ->
-  windows = objectsRegistry.getAllWindows()
+  windows = app.getBrowserWindows()
   return window for window in windows when window.getProcessId() == processId and
                                            window.getRoutingId() == routingId
 

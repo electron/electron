@@ -1,4 +1,5 @@
 bindings = process.atomBinding 'app'
+objectsRegistry = require '../../atom/objects-registry.js'
 EventEmitter = require('events').EventEmitter
 
 Application = bindings.Application
@@ -8,6 +9,9 @@ app = new Application
 
 app.getHomeDir = ->
   process.env[if process.platform is 'win32' then 'USERPROFILE' else 'HOME']
+
+app.getBrowserWindows = ->
+  objectsRegistry.getAllWindows()
 
 app.commandLine =
   appendSwitch: bindings.appendSwitch,
