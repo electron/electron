@@ -39,7 +39,7 @@ class ObjectsStore
     key = "#{processId}_#{routingId}"
     delete @stores[key]
 
-class ObjectsRegistry
+class ObjectsRegistry extends EventEmitter
   constructor: ->
     # Objects in weak map will be not referenced (so we won't leak memory), and
     # every object created in browser will have a unique id in weak map.
@@ -84,6 +84,7 @@ class ObjectsRegistry
 
   # Clear all references to objects from renderer view.
   clear: (processId, routingId) ->
+    @emit "release-renderer-view-#{processId}-#{routingId}"
     ObjectsStore.releaseForRenderView processId, routingId
 
   # Return an array of all browser windows.
