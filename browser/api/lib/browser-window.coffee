@@ -5,6 +5,12 @@ v8Util = process.atomBinding 'v8_util'
 BrowserWindow = process.atomBinding('window').BrowserWindow
 BrowserWindow::__proto__ = EventEmitter.prototype
 
+BrowserWindow::_init = ->
+  # Simulate the application menu on platforms other than OS X.
+  if process.platform isnt 'darwin'
+    menu = app.getApplicationMenu()
+    @setMenu menu if menu?
+
 BrowserWindow::toggleDevTools = ->
   opened = v8Util.getHiddenValue this, 'devtoolsOpened'
   if opened

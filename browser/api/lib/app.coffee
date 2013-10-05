@@ -15,6 +15,9 @@ app.getBrowserWindows = ->
 app.setApplicationMenu = (menu) ->
   require('menu').setApplicationMenu menu
 
+app.getApplicationMenu = ->
+  require('menu').getApplicationMenu()
+
 app.commandLine =
   appendSwitch: bindings.appendSwitch,
   appendArgument: bindings.appendArgument

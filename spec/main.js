@@ -76,6 +76,9 @@ app.on('finish-launching', function() {
     },
   ];
 
+  var menu = Menu.buildFromTemplate(template);
+  app.setApplicationMenu(menu);
+
   // Test if using protocol module would crash.
   require('protocol').registerProtocol('test-if-crashes', function() {});
 
@@ -86,7 +89,4 @@ app.on('finish-launching', function() {
     height: 600
   });
   window.loadUrl('file://' + __dirname + '/index.html');
-
-  var menu = Menu.buildFromTemplate(template);
-  app.setApplicationMenu(menu);
 });

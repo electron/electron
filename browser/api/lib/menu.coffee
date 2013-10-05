@@ -55,6 +55,8 @@ Menu.setApplicationMenu = (menu) ->
     windows = app.getBrowserWindows()
     w.setMenu menu for w in windows
 
+Menu.getApplicationMenu = -> applicationMenu
+
 Menu.sendActionToFirstResponder = bindings.sendActionToFirstResponder
 
 Menu.buildFromTemplate = (template) ->
