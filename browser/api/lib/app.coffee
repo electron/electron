@@ -13,6 +13,9 @@ app.getHomeDir = ->
 app.getBrowserWindows = ->
   objectsRegistry.getAllWindows()
 
+app.setApplicationMenu = (menu) ->
+  require('menu').setApplicationMenu menu
+
 app.commandLine =
   appendSwitch: bindings.appendSwitch,
   appendArgument: bindings.appendArgument
