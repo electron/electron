@@ -43,8 +43,10 @@ Menu::insert = (pos, item) ->
   @items.splice pos, 0, item
   @commandsMap[item.commandId] = item
 
+applicationMenu = null
 Menu.setApplicationMenu = (menu) ->
   throw new TypeError('Invalid menu') unless menu?.constructor is Menu
+  applicationMenu = menu  # Keep a reference.
   bindings.setApplicationMenu menu
 
 Menu.sendActionToFirstResponder = bindings.sendActionToFirstResponder
