@@ -1,6 +1,7 @@
 var app = require('app');
 var ipc = require('ipc');
 var BrowserWindow = require('browser-window');
+var Menu = require('menu');
 
 var window = null;
 
@@ -39,6 +40,42 @@ app.on('window-all-closed', function() {
 });
 
 app.on('finish-launching', function() {
+  var template = [
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'Open',
+          accelerator: 'Command+O',
+        },
+        {
+          label: 'Close',
+          accelerator: 'Command+W',
+          click: function(item, window) { window.close(); }
+        },
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        {
+          label: 'Reload',
+          accelerator: 'Command+R',
+          click: function(item, window) { window.restart(); }
+        },
+        {
+          label: 'Enter Fullscreen',
+          click: function(item, window) { window.setFullScreen(true); }
+        },
+        {
+          label: 'Toggle DevTools',
+          accelerator: 'Alt+Command+I',
+          click: function(item, window) { window.toggleDevTools(); }
+        },
+      ]
+    },
+  ];
+
   // Test if using protocol module would crash.
   require('protocol').registerProtocol('test-if-crashes', function() {});
 
@@ -49,4 +86,7 @@ app.on('finish-launching', function() {
     height: 600
   });
   window.loadUrl('file://' + __dirname + '/index.html');
+
+  var menu = Menu.buildFromTemplate(template);
+  app.setApplicationMenu(menu);
 });

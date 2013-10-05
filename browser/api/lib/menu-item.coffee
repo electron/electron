@@ -1,3 +1,5 @@
+BrowserWindow = require 'browser-window'
+
 nextCommandId = 0
 
 class MenuItem
@@ -26,7 +28,7 @@ class MenuItem
     @commandId = ++nextCommandId
     @click = =>
       if typeof click is 'function'
-        click.apply this, arguments
+        click this, BrowserWindow.getFocusedWindow()
       else if typeof @selector is 'string'
         Menu.sendActionToFirstResponder @selector
 
