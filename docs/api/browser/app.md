@@ -83,8 +83,8 @@ Returns the version of current bundle or executable.
 
 Append a switch [with optional value] to Chromium's command line.
 
-**Note:** This will not affect `process.argv`, and is mainly used by
-**developers to control some low-level Chromium behaviors.
+**Note:** This will not affect `process.argv`, and is mainly used by developers
+to control some low-level Chromium behaviors.
 
 ## app.commandLine.appendArgument(value)
 
