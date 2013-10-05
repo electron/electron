@@ -1,5 +1,4 @@
 bindings = process.atomBinding 'app'
-objectsRegistry = require '../../atom/objects-registry.js'
 EventEmitter = require('events').EventEmitter
 
 Application = bindings.Application
@@ -11,7 +10,7 @@ app.getHomeDir = ->
   process.env[if process.platform is 'win32' then 'USERPROFILE' else 'HOME']
 
 app.getBrowserWindows = ->
-  objectsRegistry.getAllWindows()
+  require('../../atom/objects-registry.js').getAllWindows()
 
 app.setApplicationMenu = (menu) ->
   require('menu').setApplicationMenu menu
