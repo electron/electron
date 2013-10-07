@@ -87,7 +87,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext()
     storage_->set_ssl_config_service(new net::SSLConfigServiceDefaults);
     storage_->set_http_auth_handler_factory(
         net::HttpAuthHandlerFactory::CreateDefault(host_resolver.get()));
-    storage_->set_http_server_properties(new net::HttpServerPropertiesImpl);
+    scoped_ptr<net::HttpServerProperties> server_properties(new net::HttpServerPropertiesImpl);
+    storage_->set_http_server_properties(server_properties.Pass());
 
     base::FilePath cache_path = base_path_.Append(FILE_PATH_LITERAL("Cache"));
     net::HttpCache::DefaultBackend* main_backend =
