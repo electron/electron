@@ -35,7 +35,7 @@ protected:
   // Subclasses should override this to provide a custom NetworkDelegate implementation.
   virtual scoped_ptr<NetworkDelegate> CreateNetworkDelegate();
 
-  virtual base::FilePath GetPath() OVERRIDE;
+  virtual base::FilePath GetPath() const OVERRIDE;
 
 private:
   class ResourceContext;

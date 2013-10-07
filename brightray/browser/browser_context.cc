@@ -51,6 +51,18 @@ BrowserContext::BrowserContext() : resource_context_(new ResourceContext) {
 }
 
 void BrowserContext::Initialize() {
+  base::FilePath path;
+#if defined(OS_LINUX)
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  path = base::nix::GetXDGDirectory(env.get(),
+                                    base::nix::kXdgConfigHomeEnvVar,
+                                    base::nix::kDotConfigDir);
+#else
+  CHECK(PathService::Get(base::DIR_APP_DATA, &path));
+#endif
+
+  path_ = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
   PrefServiceBuilder builder;
   builder.WithUserFilePrefs(prefs_path,
@@ -86,21 +98,7 @@ scoped_ptr<NetworkDelegate> BrowserContext::CreateNetworkDelegate() {
   return make_scoped_ptr(new NetworkDelegate).Pass();
 }
 
-base::FilePath BrowserContext::GetPath() {
-  if (!path_.empty())
-    return path_;
-
-  base::FilePath path;
-#if defined(OS_LINUX)
-  scoped_ptr<base::Environment> env(base::Environment::Create());
-  path = base::nix::GetXDGDirectory(env.get(),
-                                    base::nix::kXdgConfigHomeEnvVar,
-                                    base::nix::kDotConfigDir);
-#else
-  CHECK(PathService::Get(base::DIR_APP_DATA, &path));
-#endif
-
-  path_ = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+base::FilePath BrowserContext::GetPath() const {
   return path_;
 }
 
