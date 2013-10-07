@@ -123,6 +123,15 @@ void InspectableWebContentsImpl::AddFileSystem() {
 void InspectableWebContentsImpl::RemoveFileSystem(const std::string& file_system_path) {
 }
 
+void InspectableWebContentsImpl::IndexPath(int request_id, const std::string& file_system_path) {
+}
+
+void InspectableWebContentsImpl::StopIndexing(int request_id) {
+}
+
+void InspectableWebContentsImpl::SearchInPath(int request_id, const std::string& file_system_path, const std::string& query) {
+}
+
 void InspectableWebContentsImpl::InspectedContentsClosing() {
 }
 
