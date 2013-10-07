@@ -126,6 +126,10 @@ net::URLRequestContextGetter* BrowserContext::GetMediaRequestContextForStoragePa
   return GetRequestContext();
 }
 
+void BrowserContext::RequestMIDISysExPermission(int render_process_id, int render_view_id, const GURL& requesting_frame, const MIDISysExPermissionCallback& callback) {
+  callback.Run(false);
+}
+
 content::ResourceContext* BrowserContext::GetResourceContext() {
   return resource_context_.get();
 }
