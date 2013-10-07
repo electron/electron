@@ -44,6 +44,16 @@ private:
     return getter_->GetURLRequestContext();
   }
 
+  // FIXME: We should probably allow clients to override this to implement more restrictive policies.
+  virtual bool AllowMicAccess(const GURL& origin) OVERRIDE {
+    return true;
+  }
+  
+  // FIXME: We should probably allow clients to override this to implement more restrictive policies.
+  virtual bool AllowCameraAccess(const GURL& origin) OVERRIDE {
+    return true;
+  }
+
   URLRequestContextGetter* getter_;
 };
 
