@@ -5,7 +5,7 @@
 #include "browser/url_request_context_getter.h"
 
 #include "network_delegate.h"
-#include "base/string_util.h"
+#include "base/strings/string_util.h"
 #include "base/threading/worker_pool.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cookie_store_factory.h"

@@ -5,7 +5,7 @@
 
 #import "browser/notification_presenter_mac.h"
 
-#import "base/stringprintf.h"
+#import "base/strings/stringprintf.h"
 #import "base/strings/sys_string_conversions.h"
 #import "content/public/browser/render_view_host.h"
 #import "content/public/common/show_desktop_notification_params.h"
