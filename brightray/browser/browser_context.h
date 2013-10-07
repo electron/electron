@@ -51,7 +51,6 @@ private:
   virtual content::ResourceContext* GetResourceContext() OVERRIDE;
   virtual content::DownloadManagerDelegate* GetDownloadManagerDelegate() OVERRIDE;
   virtual content::GeolocationPermissionContext* GetGeolocationPermissionContext() OVERRIDE;
-  virtual content::SpeechRecognitionPreferences* GetSpeechRecognitionPreferences() OVERRIDE;
   virtual quota::SpecialStoragePolicy* GetSpecialStoragePolicy() OVERRIDE;
 
   base::FilePath path_;

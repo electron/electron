@@ -140,10 +140,6 @@ content::GeolocationPermissionContext* BrowserContext::GetGeolocationPermissionC
   return nullptr;
 }
 
-content::SpeechRecognitionPreferences* BrowserContext::GetSpeechRecognitionPreferences() {
-  return nullptr;
-}
-
 quota::SpecialStoragePolicy* BrowserContext::GetSpecialStoragePolicy() {
   return nullptr;
 }
