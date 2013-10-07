@@ -56,7 +56,7 @@ struct NotificationID {
   int notification_id;
 };
 
-scoped_nsobject<NSUserNotification> CreateUserNotification(
+base::scoped_nsobject<NSUserNotification> CreateUserNotification(
     const content::ShowDesktopNotificationHostMsgParams& params,
     int render_process_id,
     int render_view_id) {
@@ -65,7 +65,7 @@ scoped_nsobject<NSUserNotification> CreateUserNotification(
   notification.informativeText = base::SysUTF16ToNSString(params.body);
   notification.userInfo = NotificationID(render_process_id, render_view_id, params.notification_id).GetUserInfo();
 
-  return scoped_nsobject<NSUserNotification>(notification);
+  return base::scoped_nsobject<NSUserNotification>(notification);
 }
 
 }
