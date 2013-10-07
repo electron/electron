@@ -101,6 +101,9 @@ v8::Handle<v8::Value> Window::New(const v8::Arguments &args) {
 
   new Window(args.This(), static_cast<base::DictionaryValue*>(options.get()));
 
+  // Give js code a chance to do initialization.
+  node::MakeCallback(args.This(), "_init", 0, NULL);
+
   return args.This();
 }
 
