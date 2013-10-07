@@ -12,7 +12,7 @@
 
 #include "base/prefs/pref_registry_simple.h"
 #include "base/prefs/pref_service.h"
-#include "base/stringprintf.h"
+#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_client_host.h"
@@ -121,6 +121,15 @@ void InspectableWebContentsImpl::AddFileSystem() {
 }
 
 void InspectableWebContentsImpl::RemoveFileSystem(const std::string& file_system_path) {
+}
+
+void InspectableWebContentsImpl::IndexPath(int request_id, const std::string& file_system_path) {
+}
+
+void InspectableWebContentsImpl::StopIndexing(int request_id) {
+}
+
+void InspectableWebContentsImpl::SearchInPath(int request_id, const std::string& file_system_path, const std::string& query) {
 }
 
 void InspectableWebContentsImpl::InspectedContentsClosing() {

@@ -5,7 +5,7 @@
 #include "browser/url_request_context_getter.h"
 
 #include "network_delegate.h"
-#include "base/string_util.h"
+#include "base/strings/string_util.h"
 #include "base/threading/worker_pool.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cookie_store_factory.h"
@@ -87,7 +87,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext()
     storage_->set_ssl_config_service(new net::SSLConfigServiceDefaults);
     storage_->set_http_auth_handler_factory(
         net::HttpAuthHandlerFactory::CreateDefault(host_resolver.get()));
-    storage_->set_http_server_properties(new net::HttpServerPropertiesImpl);
+    scoped_ptr<net::HttpServerProperties> server_properties(new net::HttpServerPropertiesImpl);
+    storage_->set_http_server_properties(server_properties.Pass());
 
     base::FilePath cache_path = base_path_.Append(FILE_PATH_LITERAL("Cache"));
     net::HttpCache::DefaultBackend* main_backend =

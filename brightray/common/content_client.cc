@@ -6,8 +6,8 @@
 
 #include "common/application_info.h"
 
-#include "base/stringprintf.h"
-#include "base/string_util.h"
+#include "base/strings/stringprintf.h"
+#include "base/strings/string_util.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "webkit/common/user_agent/user_agent_util.h"
 

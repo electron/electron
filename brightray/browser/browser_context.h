@@ -35,7 +35,7 @@ protected:
   // Subclasses should override this to provide a custom NetworkDelegate implementation.
   virtual scoped_ptr<NetworkDelegate> CreateNetworkDelegate();
 
-  virtual base::FilePath GetPath() OVERRIDE;
+  virtual base::FilePath GetPath() const OVERRIDE;
 
 private:
   class ResourceContext;
@@ -48,10 +48,10 @@ private:
   virtual net::URLRequestContextGetter* GetMediaRequestContext() OVERRIDE;
   virtual net::URLRequestContextGetter* GetMediaRequestContextForRenderProcess(int renderer_child_id) OVERRIDE;
   virtual net::URLRequestContextGetter* GetMediaRequestContextForStoragePartition(const base::FilePath& partition_path, bool in_memory);
+  virtual void RequestMIDISysExPermission(int render_process_id, int render_view_id, const GURL& requesting_frame, const MIDISysExPermissionCallback&) OVERRIDE;
   virtual content::ResourceContext* GetResourceContext() OVERRIDE;
   virtual content::DownloadManagerDelegate* GetDownloadManagerDelegate() OVERRIDE;
   virtual content::GeolocationPermissionContext* GetGeolocationPermissionContext() OVERRIDE;
-  virtual content::SpeechRecognitionPreferences* GetSpeechRecognitionPreferences() OVERRIDE;
   virtual quota::SpecialStoragePolicy* GetSpecialStoragePolicy() OVERRIDE;
 
   base::FilePath path_;

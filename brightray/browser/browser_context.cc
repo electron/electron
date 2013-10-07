@@ -44,6 +44,16 @@ private:
     return getter_->GetURLRequestContext();
   }
 
+  // FIXME: We should probably allow clients to override this to implement more restrictive policies.
+  virtual bool AllowMicAccess(const GURL& origin) OVERRIDE {
+    return true;
+  }
+  
+  // FIXME: We should probably allow clients to override this to implement more restrictive policies.
+  virtual bool AllowCameraAccess(const GURL& origin) OVERRIDE {
+    return true;
+  }
+
   URLRequestContextGetter* getter_;
 };
 
@@ -51,6 +61,18 @@ BrowserContext::BrowserContext() : resource_context_(new ResourceContext) {
 }
 
 void BrowserContext::Initialize() {
+  base::FilePath path;
+#if defined(OS_LINUX)
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  path = base::nix::GetXDGDirectory(env.get(),
+                                    base::nix::kXdgConfigHomeEnvVar,
+                                    base::nix::kDotConfigDir);
+#else
+  CHECK(PathService::Get(base::DIR_APP_DATA, &path));
+#endif
+
+  path_ = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
   PrefServiceBuilder builder;
   builder.WithUserFilePrefs(prefs_path,
@@ -86,21 +108,7 @@ scoped_ptr<NetworkDelegate> BrowserContext::CreateNetworkDelegate() {
   return make_scoped_ptr(new NetworkDelegate).Pass();
 }
 
-base::FilePath BrowserContext::GetPath() {
-  if (!path_.empty())
-    return path_;
-
-  base::FilePath path;
-#if defined(OS_LINUX)
-  scoped_ptr<base::Environment> env(base::Environment::Create());
-  path = base::nix::GetXDGDirectory(env.get(),
-                                    base::nix::kXdgConfigHomeEnvVar,
-                                    base::nix::kDotConfigDir);
-#else
-  CHECK(PathService::Get(base::DIR_APP_DATA, &path));
-#endif
-
-  path_ = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+base::FilePath BrowserContext::GetPath() const {
   return path_;
 }
 
@@ -128,6 +136,10 @@ net::URLRequestContextGetter* BrowserContext::GetMediaRequestContextForStoragePa
   return GetRequestContext();
 }
 
+void BrowserContext::RequestMIDISysExPermission(int render_process_id, int render_view_id, const GURL& requesting_frame, const MIDISysExPermissionCallback& callback) {
+  callback.Run(false);
+}
+
 content::ResourceContext* BrowserContext::GetResourceContext() {
   return resource_context_.get();
 }
@@ -139,10 +151,6 @@ content::DownloadManagerDelegate* BrowserContext::GetDownloadManagerDelegate() {
 }
 
 content::GeolocationPermissionContext* BrowserContext::GetGeolocationPermissionContext() {
-  return nullptr;
-}
-
-content::SpeechRecognitionPreferences* BrowserContext::GetSpeechRecognitionPreferences() {
   return nullptr;
 }
 
