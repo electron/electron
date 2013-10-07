@@ -18,12 +18,14 @@ class MediaStreamDevicesController {
 
   virtual ~MediaStreamDevicesController();
 
+  // Accept or deny the request based on the default policy.
   bool TakeAction();
 
- private:
+  // Explicitly accept or deny the request.
   void Accept();
   void Deny();
 
+ private:
   // The original request for access to devices.
   const content::MediaStreamRequest request_;
 
