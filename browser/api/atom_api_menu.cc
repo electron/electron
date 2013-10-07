@@ -351,6 +351,10 @@ void Menu::Initialize(v8::Handle<v8::Object> target) {
 
   NODE_SET_PROTOTYPE_METHOD(t, "popup", Popup);
 
+#if defined(OS_WIN)
+  NODE_SET_PROTOTYPE_METHOD(t, "attachToWindow", AttachToWindow);
+#endif
+
   target->Set(v8::String::NewSymbol("Menu"), t->GetFunction());
 
 #if defined(OS_MACOSX)

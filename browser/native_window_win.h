@@ -12,6 +12,10 @@
 #include "ui/gfx/size.h"
 #include "ui/views/widget/widget_delegate.h"
 
+namespace ui {
+class MenuModel;
+}
+
 namespace views {
 class WebView;
 class Widget;
@@ -19,8 +23,10 @@ class Widget;
 
 namespace atom {
 
+class Menu2;
+
 class NativeWindowWin : public NativeWindow,
-                        public views::WidgetDelegate {
+                        public views::WidgetDelegateView {
  public:
   explicit NativeWindowWin(content::WebContents* web_contents,
                            base::DictionaryValue* options);
@@ -61,6 +67,12 @@ class NativeWindowWin : public NativeWindow,
   virtual bool IsKiosk() OVERRIDE;
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
 
+  void OnMenuCommand(int position, HMENU menu);
+
+  // Set the native window menu.
+  void SetMenu(ui::MenuModel* menu_model);
+
+  views::Widget* window() const { return window_.get(); }
   SkRegion* draggable_region() { return draggable_region_.get(); }
 
  protected:
@@ -72,7 +84,16 @@ class NativeWindowWin : public NativeWindow,
       content::WebContents*,
       const content::NativeWebKeyboardEvent&) OVERRIDE;
 
+  // Overridden from views::View:
+  virtual void Layout() OVERRIDE;
+  virtual void ViewHierarchyChanged(bool is_add,
+                                    views::View* parent,
+                                    views::View* child) OVERRIDE;
+  virtual bool AcceleratorPressed(const ui::Accelerator& accelerator) OVERRIDE;
+
   // Overridden from views::WidgetDelegate:
+  virtual void DeleteDelegate() OVERRIDE;
+  virtual views::View* GetInitiallyFocusedView() OVERRIDE;
   virtual bool CanResize() const OVERRIDE;
   virtual bool CanMaximize() const OVERRIDE;
   virtual string16 GetWindowTitle() const OVERRIDE;
@@ -85,10 +106,29 @@ class NativeWindowWin : public NativeWindow,
       views::Widget* widget) OVERRIDE;
 
  private:
+  typedef struct { int position; ui::MenuModel* model; } MenuItem;
+  typedef std::map<ui::Accelerator, MenuItem> AcceleratorTable;
+
   void OnViewWasResized();
+
+  // Register accelerators supported by the menu model.
+  void RegisterAccelerators();
+
+  // Generate a table that contains memu model's accelerators and command ids.
+  void GenerateAcceleratorTable();
+
+  // Helper to fill the accelerator table from the model.
+  void FillAcceleratorTable(AcceleratorTable* table,
+                            ui::MenuModel* model);
 
   scoped_ptr<views::Widget> window_;
   views::WebView* web_view_;  // managed by window_.
+
+  // The window menu.
+  scoped_ptr<atom::Menu2> menu_;
+
+  // Map from accelerator to menu item's command id.
+  AcceleratorTable accelerator_table_;
 
   scoped_ptr<SkRegion> draggable_region_;
 

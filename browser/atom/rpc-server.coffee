@@ -52,9 +52,15 @@ unwrapArgs = (processId, routingId, args) ->
         returnValue = metaToValue meta.value
         -> returnValue
       when 'function'
+        rendererReleased = false
+        objectsRegistry.once "release-renderer-view-#{processId}-#{routingId}", ->
+          rendererReleased = true
+
         ret = ->
+          throw new Error('Calling a callback of released renderer view') if rendererReleased
           ipc.sendChannel processId, routingId, 'ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(processId, routingId, arguments)
         v8Util.setDestructor ret, ->
+          return if rendererReleased
           ipc.sendChannel processId, routingId, 'ATOM_RENDERER_RELEASE_CALLBACK', meta.id
         ret
       else throw new TypeError("Unknown type: #{meta.type}")

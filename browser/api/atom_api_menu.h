@@ -68,7 +68,9 @@ class Menu : public EventEmitter,
 
   static v8::Handle<v8::Value> Popup(const v8::Arguments &args);
 
-#if defined(OS_MACOSX)
+#if defined(OS_WIN)
+  static v8::Handle<v8::Value> AttachToWindow(const v8::Arguments &args);
+#elif defined(OS_MACOSX)
   static v8::Handle<v8::Value> SetApplicationMenu(const v8::Arguments &args);
   static v8::Handle<v8::Value> SendActionToFirstResponder(
       const v8::Arguments &args);

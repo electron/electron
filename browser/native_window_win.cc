@@ -4,8 +4,12 @@
 
 #include "browser/native_window_win.h"
 
+#include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
+#include "browser/api/atom_api_menu.h"
+#include "browser/ui/win/menu_2.h"
+#include "browser/ui/win/native_menu_win.h"
 #include "common/draggable_region.h"
 #include "common/options_switches.h"
 #include "content/public/browser/native_web_keyboard_event.h"
@@ -14,8 +18,10 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
 #include "ui/gfx/path.h"
+#include "ui/base/models/simple_menu_model.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/widget/widget.h"
+#include "ui/views/widget/native_widget_win.h"
 #include "ui/views/window/client_view.h"
 #include "ui/views/window/native_frame_view.h"
 
@@ -26,24 +32,49 @@ namespace {
 const int kResizeInsideBoundsSize = 5;
 const int kResizeAreaCornerSize = 16;
 
+// Wrapper of NativeWidgetWin to handle WM_MENUCOMMAND messages, which are
+// triggered by window menus.
+class MenuCommandNativeWidget : public views::NativeWidgetWin {
+ public:
+  explicit MenuCommandNativeWidget(NativeWindowWin* delegate)
+      : views::NativeWidgetWin(delegate->window()),
+        delegate_(delegate) {}
+  virtual ~MenuCommandNativeWidget() {}
+
+ protected:
+  virtual bool PreHandleMSG(UINT message,
+                            WPARAM w_param,
+                            LPARAM l_param,
+                            LRESULT* result) OVERRIDE {
+    if (message == WM_MENUCOMMAND) {
+      delegate_->OnMenuCommand(w_param, reinterpret_cast<HMENU>(l_param));
+      *result = 0;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+ private:
+  NativeWindowWin* delegate_;
+
+  DISALLOW_COPY_AND_ASSIGN(MenuCommandNativeWidget);
+};
+
 class NativeWindowClientView : public views::ClientView {
  public:
   NativeWindowClientView(views::Widget* widget,
-                         views::View* contents_view,
-                         NativeWindowWin* shell)
-      : views::ClientView(widget, contents_view),
-        shell_(shell) {
+                         NativeWindowWin* contents_view)
+      : views::ClientView(widget, contents_view) {
   }
   virtual ~NativeWindowClientView() {}
 
   virtual bool CanClose() OVERRIDE {
-    shell_->CloseWebContents();
+    static_cast<NativeWindowWin*>(contents_view())->CloseWebContents();
     return false;
   }
 
  private:
-  NativeWindowWin* shell_;
-
   DISALLOW_COPY_AND_ASSIGN(NativeWindowClientView);
 };
 
@@ -173,6 +204,7 @@ NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
       resizable_(true) {
   views::Widget::InitParams params(views::Widget::InitParams::TYPE_WINDOW);
   params.delegate = this;
+  params.native_widget = new MenuCommandNativeWidget(this);
   params.remove_standard_frame = !has_frame_;
   params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
   window_->set_frame_type(views::Widget::FRAME_TYPE_FORCE_NATIVE);
@@ -329,6 +361,17 @@ gfx::NativeWindow NativeWindowWin::GetNativeWindow() {
   return window_->GetNativeView();
 }
 
+void NativeWindowWin::OnMenuCommand(int position, HMENU menu) {
+  DCHECK(menu_);
+  menu_->wrapper()->OnMenuCommand(position, menu);
+}
+
+void NativeWindowWin::SetMenu(ui::MenuModel* menu_model) {
+  menu_.reset(new atom::Menu2(menu_model, true));
+  ::SetMenu(GetNativeWindow(), menu_->GetNativeMenu());
+  RegisterAccelerators();
+}
+
 void NativeWindowWin::UpdateDraggableRegions(
     const std::vector<DraggableRegion>& regions) {
   if (has_frame_)
@@ -356,10 +399,52 @@ void NativeWindowWin::UpdateDraggableRegions(
 void NativeWindowWin::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
+  if (event.type == WebKit::WebInputEvent::KeyUp) {
+    ui::Accelerator accelerator(
+        static_cast<ui::KeyboardCode>(event.windowsKeyCode),
+        content::GetModifiersFromNativeWebKeyboardEvent(event));
+
+    if (GetFocusManager()->ProcessAccelerator(accelerator)) {
+      return;
+    }
+  }
+
   // Any unhandled keyboard/character messages should be defproced.
   // This allows stuff like F10, etc to work correctly.
   DefWindowProc(event.os_event.hwnd, event.os_event.message,
                 event.os_event.wParam, event.os_event.lParam);
+}
+
+void NativeWindowWin::Layout() {
+  DCHECK(web_view_);
+  web_view_->SetBounds(0, 0, width(), height());
+  OnViewWasResized();
+}
+
+void NativeWindowWin::ViewHierarchyChanged(bool is_add,
+                                           views::View* parent,
+                                           views::View* child) {
+  if (is_add && child == this)
+    AddChildView(web_view_);
+}
+
+bool NativeWindowWin::AcceleratorPressed(
+    const ui::Accelerator& accelerator) {
+  if (ContainsKey(accelerator_table_, accelerator)) {
+    const MenuItem& item = accelerator_table_[accelerator];
+    item.model->ActivatedAt(item.position);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+void NativeWindowWin::DeleteDelegate() {
+  // Do nothing, window is managed by users.
+}
+
+views::View* NativeWindowWin::GetInitiallyFocusedView() {
+  return web_view_;
 }
 
 bool NativeWindowWin::CanResize() const {
@@ -391,7 +476,7 @@ const views::Widget* NativeWindowWin::GetWidget() const {
 }
 
 views::ClientView* NativeWindowWin::CreateClientView(views::Widget* widget) {
-  return new NativeWindowClientView(widget, web_view_, this);
+  return new NativeWindowClientView(widget, this);
 }
 
 views::NonClientFrameView* NativeWindowWin::CreateNonClientFrameView(
@@ -430,6 +515,44 @@ void NativeWindowWin::OnViewWasResized() {
   content::WebContents* web_contents = GetWebContents();
   if (web_contents->GetRenderViewHost()->GetView())
     web_contents->GetRenderViewHost()->GetView()->SetClickthroughRegion(rgn);
+}
+
+void NativeWindowWin::RegisterAccelerators() {
+  views::FocusManager* focus_manager = GetFocusManager();
+  accelerator_table_.clear();
+  focus_manager->UnregisterAccelerators(this);
+
+  GenerateAcceleratorTable();
+  for (AcceleratorTable::const_iterator iter = accelerator_table_.begin();
+       iter != accelerator_table_.end(); ++iter) {
+    focus_manager->RegisterAccelerator(
+        iter->first, ui::AcceleratorManager::kNormalPriority, this);
+  }
+}
+
+void NativeWindowWin::GenerateAcceleratorTable() {
+  DCHECK(menu_);
+  ui::SimpleMenuModel* model = static_cast<ui::SimpleMenuModel*>(
+      menu_->model());
+  FillAcceleratorTable(&accelerator_table_, model);
+}
+
+void NativeWindowWin::FillAcceleratorTable(AcceleratorTable* table,
+                                           ui::MenuModel* model) {
+  int count = model->GetItemCount();
+  for (int i = 0; i < count; ++i) {
+    ui::MenuModel::ItemType type = model->GetTypeAt(i);
+    if (type == ui::MenuModel::TYPE_SUBMENU) {
+      ui::MenuModel* submodel = model->GetSubmenuModelAt(i);
+      FillAcceleratorTable(table, submodel);
+    } else {
+      ui::Accelerator accelerator;
+      if (model->GetAcceleratorAt(i, &accelerator)) {
+        MenuItem item = { i, model };
+        (*table)[accelerator] = item;
+      }
+    }
+  }
 }
 
 // static

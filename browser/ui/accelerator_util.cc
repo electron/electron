@@ -15,10 +15,9 @@ namespace accelerator_util {
 
 namespace {
 
-// For Mac, we convert "Ctrl" to "Command" and "MacCtrl" to "Ctrl". Other
-// platforms leave the shortcut untouched.
+// Convert "Command" to "Ctrl" on non-Mac
 std::string NormalizeShortcutSuggestion(const std::string& suggestion) {
-#if !defined(OS_MACOSX)
+#if defined(OS_MACOSX)
   return suggestion;
 #endif
 
@@ -26,9 +25,7 @@ std::string NormalizeShortcutSuggestion(const std::string& suggestion) {
   std::vector<std::string> tokens;
   base::SplitString(suggestion, '+', &tokens);
   for (size_t i = 0; i < tokens.size(); i++) {
-    if (tokens[i] == "Ctrl")
-      tokens[i] = "Command";
-    else if (tokens[i] == "MacCtrl")
+    if (tokens[i] == "Command")
       tokens[i] = "Ctrl";
   }
   return JoinString(tokens, '+');

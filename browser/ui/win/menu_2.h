@@ -77,6 +77,7 @@ class Menu2 {
 
   // Accessors.
   ui::MenuModel* model() const { return model_; }
+  NativeMenuWin* wrapper() const { return wrapper_.get(); }
 
   // Sets the minimum width of the menu.
   void SetMinimumWidth(int width);
