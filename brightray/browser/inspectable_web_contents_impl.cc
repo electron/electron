@@ -58,6 +58,12 @@ content::WebContents* InspectableWebContentsImpl::GetWebContents() const {
 void InspectableWebContentsImpl::ShowDevTools() {
   if (!devtools_web_contents_) {
     devtools_web_contents_.reset(content::WebContents::Create(content::WebContents::CreateParams(web_contents_->GetBrowserContext())));
+
+#if defined(OS_MACOSX)
+    // Work around http://crbug.com/279472.
+    devtools_web_contents_->GetView()->SetAllowOverlappingViews(true);
+#endif
+
     Observe(devtools_web_contents_.get());
     devtools_web_contents_->SetDelegate(this);
 
