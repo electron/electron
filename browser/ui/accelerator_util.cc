@@ -57,22 +57,56 @@ bool StringToAccelerator(const std::string& description,
     } else if (tokens[i] == "Shift") {
       modifiers |= ui::EF_SHIFT_DOWN;
     } else if (tokens[i].size() == 1) {
+      char token = tokens[i][0];
+
       if (key != ui::VKEY_UNKNOWN) {
         // Multiple key assignments.
         key = ui::VKEY_UNKNOWN;
-        break;
+        return false;
       }
-      if (tokens[i][0] >= 'A' && tokens[i][0] <= 'Z') {
-        key = static_cast<ui::KeyboardCode>(ui::VKEY_A + (tokens[i][0] - 'A'));
-      } else if (tokens[i][0] >= '0' && tokens[i][0] <= '9') {
-        key = static_cast<ui::KeyboardCode>(ui::VKEY_0 + (tokens[i][0] - '0'));
-      } else if (tokens[i][0] >= '+' && tokens[i][0] <= '.') {
+      if (token >= 'A' && token <= 'Z') {
+        key = static_cast<ui::KeyboardCode>(ui::VKEY_A + (token - 'A'));
+      } else if (token >= '0' && token <= '9') {
+        key = static_cast<ui::KeyboardCode>(ui::VKEY_0 + (token - '0'));
+      } else if (token >= '*' && token <= '/') {
+        // *+,-./
         key = static_cast<ui::KeyboardCode>(
-            ui::VKEY_OEM_PLUS + (tokens[i][0] - '+'));
+            ui::VKEY_MULTIPLY + (token - '*'));
       } else {
-        LOG(WARNING) << "Invalid accelerator character: " << tokens[i];
-        key = ui::VKEY_UNKNOWN;
-        break;
+        switch (token) {
+          case ':':
+          case ';':
+            key = ui::VKEY_OEM_1;
+            break;
+          case '?':
+          case '/':
+            key = ui::VKEY_OEM_2;
+            break;
+          case '~':
+          case '`':
+            key = ui::VKEY_OEM_3;
+            break;
+          case '{':
+          case '[':
+            key = ui::VKEY_OEM_4;
+            break;
+          case '|':
+          case '\\':
+            key = ui::VKEY_OEM_5;
+            break;
+          case '}':
+          case ']':
+            key = ui::VKEY_OEM_6;
+            break;
+          case '\"':
+          case '\'':
+            key = ui::VKEY_OEM_7;
+            break;
+          default:
+            LOG(WARNING) << "Invalid accelerator character: " << tokens[i];
+            key = ui::VKEY_UNKNOWN;
+            return false;
+        }
       }
     } else {
       LOG(WARNING) << "Invalid accelerator token: " << tokens[i];
