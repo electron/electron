@@ -42,7 +42,17 @@ app.on('window-all-closed', function() {
 app.on('finish-launching', function() {
   var template = [
     {
-      label: 'File',
+      label: 'Atom',
+      submenu: [
+        {
+          label: 'Quit',
+          accelerator: 'Command+Q',
+          click: function(item, window) { app.quit(); }
+        },
+      ],
+    },
+    {
+      label: 'Window',
       submenu: [
         {
           label: 'Open',
