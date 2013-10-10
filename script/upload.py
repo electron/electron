@@ -68,10 +68,10 @@ def parse_args():
 
 def get_atom_shell_build_version():
   if sys.platform == 'darwin':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Debug', 'Atom.app',
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Release', 'Atom.app',
                               'Contents', 'MacOS', 'Atom')
   else:
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Debug', 'atom.exe')
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Release', 'atom.exe')
 
   return subprocess.check_output([atom_shell, '--version']).strip()
 
