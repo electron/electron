@@ -134,9 +134,10 @@ def create_release_draft(github, tag):
 def upload_atom_shell(github, release_id, file_path):
   params = {'name': os.path.basename(file_path)}
   headers = {'Content-Type': 'application/zip'}
-  files = {'file': open(file_path, 'rb')}
-  github.repos(ATOM_SHELL_REPO).releases(release_id).assets.post(
-      params=params, headers=headers, files=files, verify=False)
+  with open(file_path, 'rb') as f:
+    data = f.read()
+    github.repos(ATOM_SHELL_REPO).releases(release_id).assets.post(
+        params=params, headers=headers, data=data, verify=False)
 
 
 def publish_release(github, release_id):
@@ -146,10 +147,6 @@ def publish_release(github, release_id):
 
 def upload_node(bucket, access_key, secret_key, version):
   os.chdir(DIST_DIR)
-
-  # TODO(zcbenz): Remove me when Atom starts to use Releases API.
-  s3put(bucket, access_key, secret_key, DIST_DIR,
-        'atom-shell/{0}'.format(ATOM_SHELL_VRESION), [DIST_NAME])
 
   s3put(bucket, access_key, secret_key, DIST_DIR,
         'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))

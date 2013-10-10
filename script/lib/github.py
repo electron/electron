@@ -24,15 +24,14 @@ class GitHub:
     headers['Authorization'] = self._authorization
     headers['Accept'] = 'application/vnd.github.manifold-preview'
 
-    # Data are sent in JSON format.
-    if 'data' in kw:
-      kw['data'] = json.dumps(kw['data'])
-
     # Switch to a different domain for the releases uploading API.
     if self._releases_upload_api_pattern.match(path):
       url = '%s%s' % (GITHUB_UPLOAD_ASSET_URL, path)
     else:
       url = '%s%s' % (GITHUB_URL, path)
+      # Data are sent in JSON format.
+      if 'data' in kw:
+        kw['data'] = json.dumps(kw['data'])
 
     r = getattr(requests, method)(url, **kw).json()
     if 'message' in r:
