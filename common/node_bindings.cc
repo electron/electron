@@ -7,7 +7,9 @@
 #include "base/command_line.h"
 #include "base/logging.h"
 #include "base/message_loop.h"
+#include "common/v8_conversions.h"
 #include "content/public/browser/browser_thread.h"
+#include "net/base/escape.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebDocument.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
 #include "vendor/node/src/node.h"
@@ -116,9 +118,12 @@ void NodeBindings::BindTo(WebKit::WebFrame* frame) {
 
   // Run the script of cefode.js.
   std::string script_path(GURL(frame->document().url()).path());
+  script_path = net::UnescapeURLComponent(
+      script_path,
+      net::UnescapeRule::SPACES | net::UnescapeRule::URL_SPECIAL_CHARS);
   v8::Handle<v8::Value> args[2] = {
     v8::Local<v8::Value>::New(node::process),
-    v8::String::New(script_path.c_str(), script_path.size())
+    ToV8Value(script_path),
   };
   v8::Local<v8::Function>::Cast(result)->Call(context->Global(), 2, args);
 }
