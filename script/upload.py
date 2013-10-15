@@ -135,9 +135,8 @@ def upload_atom_shell(github, release_id, file_path):
   params = {'name': os.path.basename(file_path)}
   headers = {'Content-Type': 'application/zip'}
   with open(file_path, 'rb') as f:
-    data = f.read()
     github.repos(ATOM_SHELL_REPO).releases(release_id).assets.post(
-        params=params, headers=headers, data=data, verify=False)
+        params=params, headers=headers, data=f, verify=False)
 
 
 def publish_release(github, release_id):
