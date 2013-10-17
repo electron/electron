@@ -154,9 +154,11 @@ int EventFlagsFromNSEvent(NSEvent* event) {
     [submenu setTitle:[item title]];
     [item setSubmenu:submenu];
 
-    // Hack to set window menu.
+    // Hack to set window and help menu.
     if ([[item title] isEqualToString:@"Window"] && [submenu numberOfItems] > 0)
       [NSApp setWindowsMenu:submenu];
+    else if ([[item title] isEqualToString:@"Help"])
+      [NSApp setHelpMenu:submenu];
   } else {
     // The MenuModel works on indexes so we can't just set the command id as the
     // tag like we do in other menus. Also set the represented object to be

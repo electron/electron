@@ -84,6 +84,10 @@ app.on('finish-launching', function() {
         },
       ]
     },
+    {
+      label: 'Help',
+      submenu: [],
+    }
   ];
 
   var menu = Menu.buildFromTemplate(template);
