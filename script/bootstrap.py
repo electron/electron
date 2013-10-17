@@ -66,7 +66,7 @@ def update_apm():
 
 
 def update_node_modules():
-  for dirname in ['.', 'browser/default_app', 'spec']:
+  for dirname in ['browser/default_app', '.']:
     update_node_modules_for_dir(dirname)
 
 

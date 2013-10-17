@@ -1,16 +1,16 @@
 {
-  "name"    : "atom",
-  "version" : "0.1.0",
+  "name"    : "atom-shell",
+  "version" : "0.6.2",
 
-  "dependencies": {
-    "coffee-script": "1.6.2",
+  "devDependencies": {
+    "coffee-script": "~1.6.3",
+    "coffeelint": "~0.6.1",
+    "mocha": "~1.13.0",
+    "walkdir": "~0.0.7",
 
-    "mocha": "*",
-    "walkdir": "*",
-    "unzip": "*",
-    "d3": "*",
-    "int64-native": "*",
-    "coffeelint": "*"
+    "unzip": "~0.1.9",
+    "d3": "~3.3.8",
+    "int64-native": "~0.2.0"
   },
 
   "private": true,
