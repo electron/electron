@@ -15,22 +15,6 @@ namespace accelerator_util {
 
 namespace {
 
-// Convert "Command" to "Ctrl" on non-Mac.
-std::string NormalizeShortcutSuggestion(const std::string& suggestion) {
-#if defined(OS_MACOSX)
-  return suggestion;
-#endif
-
-  std::string key;
-  std::vector<std::string> tokens;
-  base::SplitString(suggestion, '+', &tokens);
-  for (size_t i = 0; i < tokens.size(); i++) {
-    if (tokens[i] == "command")
-      tokens[i] = "ctrl";
-  }
-  return JoinString(tokens, '+');
-}
-
 // Return key code of the char.
 ui::KeyboardCode KeyboardCodeFromCharCode(char c, bool* shifted) {
   *shifted = false;
@@ -104,7 +88,6 @@ bool StringToAccelerator(const std::string& description,
     return false;
   }
   std::string shortcut(StringToLowerASCII(description));
-  shortcut = NormalizeShortcutSuggestion(shortcut);
 
   std::vector<std::string> tokens;
   base::SplitString(shortcut, '+', &tokens);
@@ -127,7 +110,13 @@ bool StringToAccelerator(const std::string& description,
     } else if (tokens[i] == "ctrl") {
       modifiers |= ui::EF_CONTROL_DOWN;
     } else if (tokens[i] == "command") {
+      // The "Command" would be translated to "Ctrl" on platforms other than
+      // OS X.
+#if defined(OS_MACOSX)
       modifiers |= ui::EF_COMMAND_DOWN;
+#else
+      modifiers |= ui::EF_CONTROL_DOWN;
+#endif
     } else if (tokens[i] == "alt") {
       modifiers |= ui::EF_ALT_DOWN;
     } else if (tokens[i] == "shift") {
