@@ -15,7 +15,7 @@ namespace accelerator_util {
 
 namespace {
 
-// Convert "Command" to "Ctrl" on non-Mac
+// Convert "Command" to "Ctrl" on non-Mac.
 std::string NormalizeShortcutSuggestion(const std::string& suggestion) {
 #if defined(OS_MACOSX)
   return suggestion;
@@ -25,16 +25,84 @@ std::string NormalizeShortcutSuggestion(const std::string& suggestion) {
   std::vector<std::string> tokens;
   base::SplitString(suggestion, '+', &tokens);
   for (size_t i = 0; i < tokens.size(); i++) {
-    if (tokens[i] == "Command")
-      tokens[i] = "Ctrl";
+    if (LowerCaseEqualsASCII(tokens[i], "command"))
+      tokens[i] = "ctrl";
   }
   return JoinString(tokens, '+');
+}
+
+// Return key code of the char.
+ui::KeyboardCode KeyboardCodeFromCharCode(char c, bool* shifted) {
+  *shifted = false;
+  switch (c) {
+    case 8: case 0x7F: return ui::VKEY_BACK;
+    case 9: return ui::VKEY_TAB;
+    case 0xD: case 3: return ui::VKEY_RETURN;
+    case 0x1B: return ui::VKEY_ESCAPE;
+    case ' ': return ui::VKEY_SPACE;
+
+    case 'A': case 'a': return ui::VKEY_A;
+    case 'B': case 'b': return ui::VKEY_B;
+    case 'C': case 'c': return ui::VKEY_C;
+    case 'D': case 'd': return ui::VKEY_D;
+    case 'E': case 'e': return ui::VKEY_E;
+    case 'F': case 'f': return ui::VKEY_F;
+    case 'G': case 'g': return ui::VKEY_G;
+    case 'H': case 'h': return ui::VKEY_H;
+    case 'I': case 'i': return ui::VKEY_I;
+    case 'J': case 'j': return ui::VKEY_J;
+    case 'K': case 'k': return ui::VKEY_K;
+    case 'L': case 'l': return ui::VKEY_L;
+    case 'M': case 'm': return ui::VKEY_M;
+    case 'N': case 'n': return ui::VKEY_N;
+    case 'O': case 'o': return ui::VKEY_O;
+    case 'P': case 'p': return ui::VKEY_P;
+    case 'Q': case 'q': return ui::VKEY_Q;
+    case 'R': case 'r': return ui::VKEY_R;
+    case 'S': case 's': return ui::VKEY_S;
+    case 'T': case 't': return ui::VKEY_T;
+    case 'U': case 'u': return ui::VKEY_U;
+    case 'V': case 'v': return ui::VKEY_V;
+    case 'W': case 'w': return ui::VKEY_W;
+    case 'X': case 'x': return ui::VKEY_X;
+    case 'Y': case 'y': return ui::VKEY_Y;
+    case 'Z': case 'z': return ui::VKEY_Z;
+
+    case ')': *shifted = true; case '0': return ui::VKEY_0;
+    case '!': *shifted = true; case '1': return ui::VKEY_1;
+    case '@': *shifted = true; case '2': return ui::VKEY_2;
+    case '#': *shifted = true; case '3': return ui::VKEY_3;
+    case '$': *shifted = true; case '4': return ui::VKEY_4;
+    case '%': *shifted = true; case '5': return ui::VKEY_5;
+    case '^': *shifted = true; case '6': return ui::VKEY_6;
+    case '&': *shifted = true; case '7': return ui::VKEY_7;
+    case '*': *shifted = true; case '8': return ui::VKEY_8;
+    case '(': *shifted = true; case '9': return ui::VKEY_9;
+
+    case ':': *shifted = true; case ';': return ui::VKEY_OEM_1;
+    case '+': *shifted = true; case '=': return ui::VKEY_OEM_PLUS;
+    case '<': *shifted = true; case ',': return ui::VKEY_OEM_COMMA;
+    case '_': *shifted = true; case '-': return ui::VKEY_OEM_MINUS;
+    case '>': *shifted = true; case '.': return ui::VKEY_OEM_PERIOD;
+    case '?': *shifted = true; case '/': return ui::VKEY_OEM_2;
+    case '~': *shifted = true; case '`': return ui::VKEY_OEM_3;
+    case '{': *shifted = true; case '[': return ui::VKEY_OEM_4;
+    case '|': *shifted = true; case '\\': return ui::VKEY_OEM_5;
+    case '}': *shifted = true; case ']': return ui::VKEY_OEM_6;
+    case '"': *shifted = true; case '\'': return ui::VKEY_OEM_7;
+
+    default: return ui::VKEY_UNKNOWN;
+  }
 }
 
 }  // namespace
 
 bool StringToAccelerator(const std::string& description,
                          ui::Accelerator* accelerator) {
+  if (!IsStringASCII(description)) {
+    LOG(ERROR) << "The accelerator string can only contain ASCII characters";
+    return false;
+  }
   std::string shortcut(NormalizeShortcutSuggestion(description));
 
   std::vector<std::string> tokens;
@@ -48,65 +116,28 @@ bool StringToAccelerator(const std::string& description,
   int modifiers = ui::EF_NONE;
   ui::KeyboardCode key = ui::VKEY_UNKNOWN;
   for (size_t i = 0; i < tokens.size(); i++) {
-    if (tokens[i] == "Ctrl") {
+    if (LowerCaseEqualsASCII(tokens[i], "ctrl")) {
       modifiers |= ui::EF_CONTROL_DOWN;
-    } else if (tokens[i] == "Command") {
+    } else if (LowerCaseEqualsASCII(tokens[i], "command")) {
       modifiers |= ui::EF_COMMAND_DOWN;
-    } else if (tokens[i] == "Alt") {
+    } else if (LowerCaseEqualsASCII(tokens[i], "alt")) {
       modifiers |= ui::EF_ALT_DOWN;
-    } else if (tokens[i] == "Shift") {
+    } else if (LowerCaseEqualsASCII(tokens[i], "shift")) {
       modifiers |= ui::EF_SHIFT_DOWN;
     } else if (tokens[i].size() == 1) {
-      char token = tokens[i][0];
-
       if (key != ui::VKEY_UNKNOWN) {
         // Multiple key assignments.
         key = ui::VKEY_UNKNOWN;
         return false;
       }
-      if (token >= 'A' && token <= 'Z') {
-        key = static_cast<ui::KeyboardCode>(ui::VKEY_A + (token - 'A'));
-      } else if (token >= '0' && token <= '9') {
-        key = static_cast<ui::KeyboardCode>(ui::VKEY_0 + (token - '0'));
-      } else if (token >= '*' && token <= '/') {
-        // *+,-./
-        key = static_cast<ui::KeyboardCode>(
-            ui::VKEY_MULTIPLY + (token - '*'));
-      } else {
-        switch (token) {
-          case ':':
-          case ';':
-            key = ui::VKEY_OEM_1;
-            break;
-          case '?':
-          case '/':
-            key = ui::VKEY_OEM_2;
-            break;
-          case '~':
-          case '`':
-            key = ui::VKEY_OEM_3;
-            break;
-          case '{':
-          case '[':
-            key = ui::VKEY_OEM_4;
-            break;
-          case '|':
-          case '\\':
-            key = ui::VKEY_OEM_5;
-            break;
-          case '}':
-          case ']':
-            key = ui::VKEY_OEM_6;
-            break;
-          case '\"':
-          case '\'':
-            key = ui::VKEY_OEM_7;
-            break;
-          default:
-            LOG(WARNING) << "Invalid accelerator character: " << tokens[i];
-            key = ui::VKEY_UNKNOWN;
-            return false;
-        }
+
+      bool shifted = false;
+      key = KeyboardCodeFromCharCode(tokens[i][0], &shifted);
+      if (key == ui::VKEY_UNKNOWN) {
+        LOG(WARNING) << "Invalid accelerator token: " << tokens[i];
+        return false;
+      } else if (shifted) {
+        modifiers |= ui::EF_SHIFT_DOWN;
       }
     } else {
       LOG(WARNING) << "Invalid accelerator token: " << tokens[i];
