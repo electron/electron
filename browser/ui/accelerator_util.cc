@@ -25,7 +25,7 @@ std::string NormalizeShortcutSuggestion(const std::string& suggestion) {
   std::vector<std::string> tokens;
   base::SplitString(suggestion, '+', &tokens);
   for (size_t i = 0; i < tokens.size(); i++) {
-    if (LowerCaseEqualsASCII(tokens[i], "command"))
+    if (tokens[i] == "command")
       tokens[i] = "ctrl";
   }
   return JoinString(tokens, '+');
@@ -41,32 +41,32 @@ ui::KeyboardCode KeyboardCodeFromCharCode(char c, bool* shifted) {
     case 0x1B: return ui::VKEY_ESCAPE;
     case ' ': return ui::VKEY_SPACE;
 
-    case 'A': case 'a': return ui::VKEY_A;
-    case 'B': case 'b': return ui::VKEY_B;
-    case 'C': case 'c': return ui::VKEY_C;
-    case 'D': case 'd': return ui::VKEY_D;
-    case 'E': case 'e': return ui::VKEY_E;
-    case 'F': case 'f': return ui::VKEY_F;
-    case 'G': case 'g': return ui::VKEY_G;
-    case 'H': case 'h': return ui::VKEY_H;
-    case 'I': case 'i': return ui::VKEY_I;
-    case 'J': case 'j': return ui::VKEY_J;
-    case 'K': case 'k': return ui::VKEY_K;
-    case 'L': case 'l': return ui::VKEY_L;
-    case 'M': case 'm': return ui::VKEY_M;
-    case 'N': case 'n': return ui::VKEY_N;
-    case 'O': case 'o': return ui::VKEY_O;
-    case 'P': case 'p': return ui::VKEY_P;
-    case 'Q': case 'q': return ui::VKEY_Q;
-    case 'R': case 'r': return ui::VKEY_R;
-    case 'S': case 's': return ui::VKEY_S;
-    case 'T': case 't': return ui::VKEY_T;
-    case 'U': case 'u': return ui::VKEY_U;
-    case 'V': case 'v': return ui::VKEY_V;
-    case 'W': case 'w': return ui::VKEY_W;
-    case 'X': case 'x': return ui::VKEY_X;
-    case 'Y': case 'y': return ui::VKEY_Y;
-    case 'Z': case 'z': return ui::VKEY_Z;
+    case 'a': return ui::VKEY_A;
+    case 'b': return ui::VKEY_B;
+    case 'c': return ui::VKEY_C;
+    case 'd': return ui::VKEY_D;
+    case 'e': return ui::VKEY_E;
+    case 'f': return ui::VKEY_F;
+    case 'g': return ui::VKEY_G;
+    case 'h': return ui::VKEY_H;
+    case 'i': return ui::VKEY_I;
+    case 'j': return ui::VKEY_J;
+    case 'k': return ui::VKEY_K;
+    case 'l': return ui::VKEY_L;
+    case 'm': return ui::VKEY_M;
+    case 'n': return ui::VKEY_N;
+    case 'o': return ui::VKEY_O;
+    case 'p': return ui::VKEY_P;
+    case 'q': return ui::VKEY_Q;
+    case 'r': return ui::VKEY_R;
+    case 's': return ui::VKEY_S;
+    case 't': return ui::VKEY_T;
+    case 'u': return ui::VKEY_U;
+    case 'v': return ui::VKEY_V;
+    case 'w': return ui::VKEY_W;
+    case 'x': return ui::VKEY_X;
+    case 'y': return ui::VKEY_Y;
+    case 'z': return ui::VKEY_Z;
 
     case ')': *shifted = true; case '0': return ui::VKEY_0;
     case '!': *shifted = true; case '1': return ui::VKEY_1;
@@ -103,7 +103,8 @@ bool StringToAccelerator(const std::string& description,
     LOG(ERROR) << "The accelerator string can only contain ASCII characters";
     return false;
   }
-  std::string shortcut(NormalizeShortcutSuggestion(description));
+  std::string shortcut(StringToLowerASCII(description));
+  shortcut = NormalizeShortcutSuggestion(shortcut);
 
   std::vector<std::string> tokens;
   base::SplitString(shortcut, '+', &tokens);
@@ -116,13 +117,13 @@ bool StringToAccelerator(const std::string& description,
   int modifiers = ui::EF_NONE;
   ui::KeyboardCode key = ui::VKEY_UNKNOWN;
   for (size_t i = 0; i < tokens.size(); i++) {
-    if (LowerCaseEqualsASCII(tokens[i], "ctrl")) {
+    if (tokens[i] == "ctrl") {
       modifiers |= ui::EF_CONTROL_DOWN;
-    } else if (LowerCaseEqualsASCII(tokens[i], "command")) {
+    } else if (tokens[i] == "command") {
       modifiers |= ui::EF_COMMAND_DOWN;
-    } else if (LowerCaseEqualsASCII(tokens[i], "alt")) {
+    } else if (tokens[i] == "alt") {
       modifiers |= ui::EF_ALT_DOWN;
-    } else if (LowerCaseEqualsASCII(tokens[i], "shift")) {
+    } else if (tokens[i] == "shift") {
       modifiers |= ui::EF_SHIFT_DOWN;
     } else if (tokens[i].size() == 1) {
       if (key != ui::VKEY_UNKNOWN) {
