@@ -4,6 +4,8 @@
 
 #include "browser/ui/accelerator_util.h"
 
+#include <stdio.h>
+
 #include <string>
 
 #include "base/string_util.h"
@@ -14,6 +16,13 @@
 namespace accelerator_util {
 
 namespace {
+
+// The sscanf is deprecated in Windows.
+#if defined(OS_WIN)
+#define SSCANF sscanf_s
+#else
+#define SSCANF sscanf
+#endif
 
 // Return key code of the char.
 ui::KeyboardCode KeyboardCodeFromCharCode(char c, bool* shifted) {
@@ -161,6 +170,15 @@ bool StringToAccelerator(const std::string& description,
       key = ui::VKEY_MEDIA_STOP;
     } else if (tokens[i] == "mediaplaypause") {
       key = ui::VKEY_MEDIA_PLAY_PAUSE;
+    } else if (tokens[i].size() > 1 && tokens[i][0] == 'f') {
+      // F1 - F24.
+      int n;
+      if (SSCANF(tokens[i].c_str(), "f%d", &n) == 1 && n > 0 && n < 25) {
+        key = static_cast<ui::KeyboardCode>(ui::VKEY_F1 + n - 1);
+      } else {
+        LOG(WARNING) << tokens[i] << "is not available on keyboard";
+        return false;
+      }
     } else {
       LOG(WARNING) << "Invalid accelerator token: " << tokens[i];
       return false;
