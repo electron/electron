@@ -132,6 +132,8 @@ bool StringToAccelerator(const std::string& description,
       modifiers |= ui::EF_SHIFT_DOWN;
     } else if (tokens[i] == "tab") {
       key = ui::VKEY_TAB;
+    } else if (tokens[i] == "space") {
+      key = ui::VKEY_SPACE;
     } else if (tokens[i] == "backspace") {
       key = ui::VKEY_BACK;
     } else if (tokens[i] == "delete") {
