@@ -117,6 +117,8 @@ bool StringToAccelerator(const std::string& description,
   int modifiers = ui::EF_NONE;
   ui::KeyboardCode key = ui::VKEY_UNKNOWN;
   for (size_t i = 0; i < tokens.size(); i++) {
+    // We use straight comparing instead of map because the accelerator tends
+    // to be correct and usually only uses few special tokens.
     if (tokens[i].size() == 1) {
       bool shifted = false;
       key = KeyboardCodeFromCharCode(tokens[i][0], &shifted);
@@ -130,6 +132,46 @@ bool StringToAccelerator(const std::string& description,
       modifiers |= ui::EF_ALT_DOWN;
     } else if (tokens[i] == "shift") {
       modifiers |= ui::EF_SHIFT_DOWN;
+    } else if (tokens[i] == "tab") {
+      key = ui::VKEY_TAB;
+    } else if (tokens[i] == "backspace") {
+      key = ui::VKEY_BACK;
+    } else if (tokens[i] == "delete") {
+      key = ui::VKEY_DELETE;
+    } else if (tokens[i] == "enter" || tokens[i] == "return") {
+      key = ui::VKEY_RETURN;
+    } else if (tokens[i] == "up") {
+      key = ui::VKEY_UP;
+    } else if (tokens[i] == "down") {
+      key = ui::VKEY_DOWN;
+    } else if (tokens[i] == "left") {
+      key = ui::VKEY_LEFT;
+    } else if (tokens[i] == "right") {
+      key = ui::VKEY_RIGHT;
+    } else if (tokens[i] == "home") {
+      key = ui::VKEY_HOME;
+    } else if (tokens[i] == "end") {
+      key = ui::VKEY_END;
+    } else if (tokens[i] == "pagedown") {
+      key = ui::VKEY_PRIOR;
+    } else if (tokens[i] == "pageup") {
+      key = ui::VKEY_NEXT;
+    } else if (tokens[i] == "esc") {
+      key = ui::VKEY_ESCAPE;
+    } else if (tokens[i] == "volumemute") {
+      key = ui::VKEY_VOLUME_MUTE;
+    } else if (tokens[i] == "volumeup") {
+      key = ui::VKEY_VOLUME_UP;
+    } else if (tokens[i] == "volumedown") {
+      key = ui::VKEY_VOLUME_DOWN;
+    } else if (tokens[i] == "medianexttrack") {
+      key = ui::VKEY_MEDIA_NEXT_TRACK;
+    } else if (tokens[i] == "mediaprevioustrack") {
+      key = ui::VKEY_MEDIA_PREV_TRACK;
+    } else if (tokens[i] == "mediastop") {
+      key = ui::VKEY_MEDIA_STOP;
+    } else if (tokens[i] == "mediaplaypause") {
+      key = ui::VKEY_MEDIA_PLAY_PAUSE;
     } else {
       LOG(WARNING) << "Invalid accelerator token: " << tokens[i];
       return false;
