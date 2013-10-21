@@ -1,6 +1,6 @@
 {
   "name"    : "atom-shell",
-  "version" : "0.6.2",
+  "version" : "0.6.3",
 
   "devDependencies": {
     "coffee-script": "~1.6.3",
