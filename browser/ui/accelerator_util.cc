@@ -117,7 +117,12 @@ bool StringToAccelerator(const std::string& description,
   int modifiers = ui::EF_NONE;
   ui::KeyboardCode key = ui::VKEY_UNKNOWN;
   for (size_t i = 0; i < tokens.size(); i++) {
-    if (tokens[i] == "ctrl") {
+    if (tokens[i].size() == 1) {
+      bool shifted = false;
+      key = KeyboardCodeFromCharCode(tokens[i][0], &shifted);
+      if (shifted)
+        modifiers |= ui::EF_SHIFT_DOWN;
+    } else if (tokens[i] == "ctrl") {
       modifiers |= ui::EF_CONTROL_DOWN;
     } else if (tokens[i] == "command") {
       modifiers |= ui::EF_COMMAND_DOWN;
@@ -125,25 +130,15 @@ bool StringToAccelerator(const std::string& description,
       modifiers |= ui::EF_ALT_DOWN;
     } else if (tokens[i] == "shift") {
       modifiers |= ui::EF_SHIFT_DOWN;
-    } else if (tokens[i].size() == 1) {
-      if (key != ui::VKEY_UNKNOWN) {
-        // Multiple key assignments.
-        key = ui::VKEY_UNKNOWN;
-        return false;
-      }
-
-      bool shifted = false;
-      key = KeyboardCodeFromCharCode(tokens[i][0], &shifted);
-      if (key == ui::VKEY_UNKNOWN) {
-        LOG(WARNING) << "Invalid accelerator token: " << tokens[i];
-        return false;
-      } else if (shifted) {
-        modifiers |= ui::EF_SHIFT_DOWN;
-      }
     } else {
       LOG(WARNING) << "Invalid accelerator token: " << tokens[i];
       return false;
     }
+  }
+
+  if (key == ui::VKEY_UNKNOWN) {
+    LOG(WARNING) << "The accelerator doesn't contain a valid key";
+    return false;
   }
 
   *accelerator = ui::Accelerator(key, modifiers);
