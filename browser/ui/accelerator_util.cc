@@ -17,13 +17,6 @@ namespace accelerator_util {
 
 namespace {
 
-// The sscanf is deprecated in Windows.
-#if defined(OS_WIN)
-#define SSCANF sscanf_s
-#else
-#define SSCANF sscanf
-#endif
-
 // Return key code of the char.
 ui::KeyboardCode KeyboardCodeFromCharCode(char c, bool* shifted) {
   *shifted = false;
@@ -175,7 +168,7 @@ bool StringToAccelerator(const std::string& description,
     } else if (tokens[i].size() > 1 && tokens[i][0] == 'f') {
       // F1 - F24.
       int n;
-      if (SSCANF(tokens[i].c_str(), "f%d", &n) == 1 && n > 0 && n < 25) {
+      if (base::StringToInt(tokens[i].c_str() + 1, &n)) {
         key = static_cast<ui::KeyboardCode>(ui::VKEY_F1 + n - 1);
       } else {
         LOG(WARNING) << tokens[i] << "is not available on keyboard";
