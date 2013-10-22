@@ -93,10 +93,6 @@ bool StringToAccelerator(const std::string& description,
 
   std::vector<std::string> tokens;
   base::SplitString(shortcut, '+', &tokens);
-  if (tokens.size() < 2 || tokens.size() > 4) {
-    LOG(WARNING) << "Invalid accelerator description: " << description;
-    return false;
-  }
 
   // Now, parse it into an accelerator.
   int modifiers = ui::EF_NONE;
