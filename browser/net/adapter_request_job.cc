@@ -30,8 +30,8 @@ void AdapterRequestJob::Start() {
 }
 
 void AdapterRequestJob::Kill() {
-  DCHECK(real_job_);
-  real_job_->Kill();
+  if (real_job_)  // Kill could happen when real_job_ is created.
+    real_job_->Kill();
 }
 
 bool AdapterRequestJob::ReadRawData(net::IOBuffer* buf,
