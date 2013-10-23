@@ -23,6 +23,10 @@ void BrowserMainParts::PreMainMessageLoopRun() {
   content::WebUIControllerFactory::RegisterFactory(web_ui_controller_factory_.get());
 }
 
+void BrowserMainParts::PostMainMessageLoopRun() {
+  browser_context_.reset();
+}
+
 BrowserContext* BrowserMainParts::CreateBrowserContext() {
   return new BrowserContext;
 }

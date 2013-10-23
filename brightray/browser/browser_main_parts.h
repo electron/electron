@@ -31,6 +31,7 @@ protected:
 #endif
 
   virtual void PreMainMessageLoopRun() OVERRIDE;
+  virtual void PostMainMessageLoopRun() OVERRIDE;
 
 private:
   scoped_ptr<BrowserContext> browser_context_;
