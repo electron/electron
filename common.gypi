@@ -6,6 +6,12 @@
         'clang': 1,
         'mac_sdk%': '<!(python tools/mac/find_sdk.py 10.8)',
       }],
+      ['OS=="win" and (MSVS_VERSION=="2012e" or MSVS_VERSION=="2010e")', {
+        'msvs_express': 1,
+        'windows_driver_kit_path%': 'C:/WinDDK/7600.16385.1',
+      },{
+        'msvs_express': 0,
+      }],
     ],
     # Reflects node's config.gypi.
     'python': 'python',
@@ -67,6 +73,12 @@
       4819,  # The file contains a character that cannot be represented in the current code page
     ],
     'msvs_settings': {
+      'VCCLCompilerTool': {
+        # Programs that use the Standard C++ library must be compiled with C++
+        # exception handling enabled.
+        # http://support.microsoft.com/kb/154419
+        'ExceptionHandling': 1,
+      },
       'VCLinkerTool': {
         'AdditionalOptions': [
           # ATL 8.0 included in WDK 7.1 makes the linker to generate following
@@ -117,18 +129,32 @@
         },
       },
     }],  # clang==1
-    # Windows specific settings.
-    ['OS=="win"', {
+    # Using Visual Studio Express.
+    ['msvs_express==1', {
       'target_defaults': {
+        'defines!': [
+          '_SECURE_ATL',
+        ],
         'msvs_settings': {
-          'VCCLCompilerTool': {
-            # Programs that use the Standard C++ library must be compiled with C++
-            # exception handling enabled.
-            # http://support.microsoft.com/kb/154419
-            'ExceptionHandling': 1,
+          'VCLibrarianTool': {
+            'AdditionalLibraryDirectories': [
+              '<(windows_driver_kit_path)/lib/ATL/i386',
+            ],
+          },
+          'VCLinkerTool': {
+            'AdditionalLibraryDirectories': [
+              '<(windows_driver_kit_path)/lib/ATL/i386',
+            ],
+            'AdditionalDependencies': [
+              'atlthunk.lib',
+            ],
           },
         },
+        'msvs_system_include_dirs': [
+          '<(windows_driver_kit_path)/inc/atl71',
+          '<(windows_driver_kit_path)/inc/mfc42',
+        ],
       },
-    }],  # OS=="win"
+    }],  # msvs_express==1
   ],
 }
