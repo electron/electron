@@ -26,7 +26,7 @@ not use Visual Studio for the development. Support of building with Visual
 Studio will come in future.
 
 **Note:** Even though Visual Studio is not used for building, it's still
-**required because we need the build toolchains it provided.
+**required** because we need the build toolchains it provided.
 
 ## Getting the code
 
