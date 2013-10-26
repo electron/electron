@@ -31,6 +31,7 @@ TARGET_BINARIES = {
   ],
   'win32': [
     'atom.exe',
+    'atom.exe.pdb',
     'chromiumcontent.dll',
     'content_shell.pak',
     'ffmpegsumo.dll',
