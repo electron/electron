@@ -136,10 +136,9 @@ def create_zip():
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
-    files = TARGET_BINARIES[TARGET_PLATFORM] +  \
-            TARGET_DIRECTORIES[TARGET_PLATFORM] + \
-            ['LICENSE', 'version']
-    make_zip(zip_file, files)
+    files = TARGET_BINARIES[TARGET_PLATFORM] +  ['LICENSE', 'version']
+    dirs = TARGET_DIRECTORIES[TARGET_PLATFORM]
+    make_zip(zip_file, files, dirs)
 
 
 def create_header_tarball():

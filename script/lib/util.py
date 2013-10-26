@@ -64,14 +64,19 @@ def extract_zip(zip_path, destination):
     with zipfile.ZipFile(zip_path) as z:
       z.extractall(destination)
 
-def make_zip(zip_file_path, files):
+def make_zip(zip_file_path, files, dirs):
   safe_unlink(zip_file_path)
   if sys.platform == 'darwin':
+    files += dirs
     subprocess.check_call(['zip', '-r', '-y', zip_file_path] + files)
   else:
     zip_file = zipfile.ZipFile(zip_file_path, "w")
     for filename in files:
       zip_file.write(filename, filename)
+    for dirname in dirs:
+      for root, _, filenames in os.walk(dirname):
+        for f in filenames:
+          zip_file.write(os.path.join(root, f))
     zip_file.close()
 
 
