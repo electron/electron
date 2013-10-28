@@ -63,6 +63,16 @@
           'GCC_TREAT_WARNINGS_AS_ERRORS': 'NO'
         },
       }],
+      ['_target_name=="libuv"', {
+        'conditions': [
+          ['OS=="win"', {
+            # Expose libuv's symbols.
+            'defines': [
+              'BUILDING_UV_SHARED=1',
+            ],
+          }],  # OS=="win"
+        ],
+      }],
     ],
     'msvs_cygwin_shell': 0, # Strangely setting it to 1 would make building under cygwin fail.
     'msvs_disabled_warnings': [
