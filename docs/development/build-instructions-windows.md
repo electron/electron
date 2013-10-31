@@ -5,7 +5,7 @@
 * Windows 7 or later
 * Visual Studio 2010 Express or Profissional
   * Make sure "X64 Compilers and Tools" are installed if you use the
-    Profissional edition
+    Profissional edition.
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
 * [node.js](http://nodejs.org/)
 * [git](http://git-scm.com)
@@ -14,7 +14,9 @@ If you are using Visual Studio 2010 __Express__ then you also need following
 softwares:
 
 * [WDK](http://www.microsoft.com/en-us/download/details.aspx?id=11800)
+  * `Build Environments` is required.
 * [Windows 7 SDK](http://www.microsoft.com/en-us/download/details.aspx?id=8279)
+  * `Windows Headers` and `Visual C++ Compilers` are required.
 
 The instructions bellow are executed under [cygwin](http://www.cygwin.com),
 but it's not a requirement, you can also build atom-shell under Windows's
