@@ -16,6 +16,6 @@
   "private": true,
 
   "scripts": {
-    "preinstall": "true"
+    "preinstall": "node -e 'process.exit(0)'"
   }
 }
