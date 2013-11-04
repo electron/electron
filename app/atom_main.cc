@@ -4,6 +4,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <io.h>
+#include <fcntl.h>
 
 #include "content/public/app/content_main.h"
 
@@ -21,9 +24,47 @@ int Start(int argc, char *argv[]);
 #include "content/public/app/startup_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
 
+/*
+ * An alternate way to skin the same cat
+
+void ConnectStdioToConsole()
+{
+  int hCrt;
+  AllocConsole();
+
+  HANDLE handle_out = GetStdHandle(STD_OUTPUT_HANDLE);
+  hCrt = _open_osfhandle((long) handle_out, _O_TEXT);
+  FILE* hf_out = _fdopen(hCrt, "w");
+  setvbuf(hf_out, NULL, _IONBF, 1);
+  *stdout = *hf_out;
+
+  HANDLE handle_err = GetStdHandle(STD_ERROR_HANDLE);
+  hCrt = _open_osfhandle((long) handle_err, _O_TEXT);
+  FILE* hf_err = _fdopen(hCrt, "w");
+  setvbuf(hf_err, NULL, _IONBF, 1);
+  *stderr = *hf_err;
+
+
+  HANDLE handle_in = GetStdHandle(STD_INPUT_HANDLE);
+  hCrt = _open_osfhandle((long) handle_in, _O_TEXT);
+  FILE* hf_in = _fdopen(hCrt, "r");
+  setvbuf(hf_in, NULL, _IONBF, 128);
+  *stdin = *hf_in;
+}
+*/
+
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   int argc = 0;
   wchar_t** wargv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
+
+  // Attach to the parent console if we've got one so that stdio works
+  if (GetConsoleWindow()) {
+    AllocConsole() ;
+    AttachConsole(GetCurrentProcessId());
+    freopen("CON", "w", stdout);
+    freopen("CON", "w", stderr);
+    freopen("CON", "r", stdin);
+  }
 
   scoped_ptr<base::Environment> env(base::Environment::Create());
   std::string node_indicator;
