@@ -12,13 +12,7 @@ BrowserWindow::_init = ->
     @setMenu menu if menu?
 
 BrowserWindow::toggleDevTools = ->
-  opened = v8Util.getHiddenValue this, 'devtoolsOpened'
-  if opened
-    @closeDevTools()
-    v8Util.setHiddenValue this, 'devtoolsOpened', false
-  else
-    @openDevTools()
-    v8Util.setHiddenValue this, 'devtoolsOpened', true
+  if @isDevToolsOpened() then @closeDevTools() else @openDevTools()
 
 BrowserWindow::restart = ->
   @loadUrl(@getUrl())

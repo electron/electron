@@ -99,6 +99,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual bool IsClosed() const { return is_closed_; }
   virtual void OpenDevTools();
   virtual void CloseDevTools();
+  virtual bool IsDevToolsOpened();
   virtual void InspectElement(int x, int y);
   virtual void FocusOnWebView();
   virtual void BlurWebView();

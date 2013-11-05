@@ -141,6 +141,10 @@ void NativeWindow::CloseDevTools() {
   inspectable_web_contents()->GetView()->CloseDevTools();
 }
 
+bool NativeWindow::IsDevToolsOpened() {
+  return inspectable_web_contents()->IsDevToolsOpened();
+}
+
 void NativeWindow::InspectElement(int x, int y) {
   OpenDevTools();
   content::RenderViewHost* rvh = GetWebContents()->GetRenderViewHost();
