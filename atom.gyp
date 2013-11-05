@@ -4,6 +4,7 @@
     'product_name': 'Atom',
     'app_sources': [
       'app/atom_main.cc',
+      'app/atom_main.h',
     ],
     'bundle_sources': [
       'browser/mac/atom.icns',

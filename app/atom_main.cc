@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "app/atom_main.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -20,8 +22,6 @@
 #else  // defined(OS_WIN)
 #include "app/atom_library_main.h"
 #endif  // defined(OS_MACOSX) || defined(OS_LINUX)
-
-#include "content/public/app/content_main.h"
 
 // Declaration of node::Start.
 namespace node {
