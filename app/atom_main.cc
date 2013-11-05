@@ -4,6 +4,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <io.h>
+#include <fcntl.h>
 
 #include "content/public/app/content_main.h"
 
@@ -21,9 +24,18 @@ int Start(int argc, char *argv[]);
 #include "content/public/app/startup_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
 
+
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   int argc = 0;
   wchar_t** wargv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
+
+  // Attach to the parent console if we've got one so that stdio works
+  AttachConsole(ATTACH_PARENT_PROCESS);
+
+  FILE* dontcare;
+  freopen_s(&dontcare, "CON", "w", stdout);
+  freopen_s(&dontcare, "CON", "w", stderr);
+  freopen_s(&dontcare, "CON", "r", stdin);
 
   scoped_ptr<base::Environment> env(base::Environment::Create());
   std::string node_indicator;
