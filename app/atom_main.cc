@@ -4,26 +4,31 @@
 
 #include <stdlib.h>
 #include <string.h>
+
+#if defined(OS_WIN)
 #include <stdio.h>
 #include <io.h>
 #include <fcntl.h>
 
-#include "content/public/app/content_main.h"
-
-namespace node {
-int Start(int argc, char *argv[]);
-}
-
-#if defined(OS_WIN)
-
-#include <windows.h>  // NOLINT
-#include <shellapi.h>  // NOLINT
+#include <windows.h>
+#include <shellapi.h>
 
 #include "app/atom_main_delegate.h"
 #include "base/environment.h"
 #include "content/public/app/startup_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
+#else  // defined(OS_WIN)
+#include "app/atom_library_main.h"
+#endif  // defined(OS_MACOSX) || defined(OS_LINUX)
 
+#include "content/public/app/content_main.h"
+
+// Declaration of node::Start.
+namespace node {
+int Start(int argc, char *argv[]);
+}
+
+#if defined(OS_WIN)
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   int argc = 0;
@@ -86,8 +91,6 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 
 #else  // defined(OS_WIN)
 
-#include "app/atom_library_main.h"
-
 int main(int argc, const char* argv[]) {
   char* node_indicator = getenv("ATOM_SHELL_INTERNAL_RUN_AS_NODE");
   if (node_indicator != NULL && strcmp(node_indicator, "1") == 0)
@@ -96,4 +99,4 @@ int main(int argc, const char* argv[]) {
   return AtomMain(argc, argv);
 }
 
-#endif
+#endif  // defined(OS_MACOSX) || defined(OS_LINUX)
