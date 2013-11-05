@@ -29,6 +29,10 @@ void InspectableWebContentsViewMac::CloseDevTools() {
   [view_ setDevToolsVisible:NO];
 }
 
+bool InspectableWebContentsViewMac::IsDevToolsOpened() {
+  return [view_ isDevToolsVisible];
+}
+
 bool InspectableWebContentsViewMac::SetDockSide(const std::string& side) {
   return [view_ setDockSide:side];
 }
