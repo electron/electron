@@ -6,6 +6,9 @@ import subprocess
 import sys
 
 
+SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+
+
 def main():
   if len(sys.argv) != 2:
     print 'Usage: bump-version.py version'
@@ -16,8 +19,10 @@ def main():
     version = version[1:]
   versions = parse_version(version)
 
-  os.chdir(os.path.dirname(os.path.dirname(__file__)))
+  os.chdir(SOURCE_ROOT)
   update_package_json(version)
+  update_win_rc(version, versions)
+  update_version_h(versions)
 
 
 def parse_version(version):
@@ -37,6 +42,49 @@ def update_package_json(version):
     if pattern.match(lines[i]):
       lines[i] = '  "version": "{0}",\n'.format(version)
       with open('package.json', 'w') as f:
+        f.write(''.join(lines))
+      return
+
+
+def update_win_rc(version, versions):
+  pattern_fv = re.compile(' FILEVERSION [0-9,]+')
+  pattern_pv = re.compile(' PRODUCTVERSION [0-9,]+')
+  pattern_fvs = re.compile(' *VALUE "FileVersion", "[0-9.]+"')
+  pattern_pvs = re.compile(' *VALUE "ProductVersion", "[0-9.]+"')
+
+  win_rc = os.path.join('app', 'win', 'atom.rc')
+  with open(win_rc, 'r') as f:
+    lines = f.readlines()
+
+  versions = [str(v) for v in versions]
+  for i in range(0, len(lines)):
+    line = lines[i]
+    if pattern_fv.match(line):
+      lines[i] = ' FILEVERSION {0}\r\n'.format(','.join(versions))
+    elif pattern_pv.match(line):
+      lines[i] = ' PRODUCTVERSION {0}\r\n'.format(','.join(versions))
+    elif pattern_fvs.match(line):
+      lines[i] = '            VALUE "FileVersion", "{0}"\r\n'.format(version)
+    elif pattern_pvs.match(line):
+      lines[i] = '            VALUE "ProductVersion", "{0}"\r\n'.format(version)
+
+  with open(win_rc, 'w') as f:
+    f.write(''.join(lines))
+
+
+def update_version_h(versions):
+  version_h = os.path.join('common', 'atom_version.h')
+  with open(version_h, 'r') as f:
+    lines = f.readlines()
+
+  for i in range(0, len(lines)):
+    line = lines[i]
+    if 'ATOM_MAJOR_VERSION' in line:
+      lines[i] = '#define ATOM_MAJOR_VERSION {0}\n'.format(versions[0])
+      lines[i + 1] = '#define ATOM_MINOR_VERSION {0}\n'.format(versions[1])
+      lines[i + 2] = '#define ATOM_PATCH_VERSION {0}\n'.format(versions[1])
+
+      with open(version_h, 'w') as f:
         f.write(''.join(lines))
       return
 
