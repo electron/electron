@@ -176,6 +176,7 @@
       ['OS=="win"', {
         'app_sources': [
           'app/win/resource.h',
+          'app/win/atom.ico',
           'app/win/atom.rc',
           '<(libchromiumcontent_src_dir)/content/app/startup_helper_win.cc',
         ],
