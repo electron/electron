@@ -23,6 +23,7 @@ def main():
   update_package_json(version)
   update_win_rc(version, versions)
   update_version_h(versions)
+  update_info_plist(version)
 
 
 def parse_version(version):
@@ -85,6 +86,21 @@ def update_version_h(versions):
       lines[i + 2] = '#define ATOM_PATCH_VERSION {0}\n'.format(versions[1])
 
       with open(version_h, 'w') as f:
+        f.write(''.join(lines))
+      return
+
+
+def update_info_plist(version):
+  info_plist = os.path.join('browser', 'mac', 'Info.plist')
+  with open(info_plist, 'r') as f:
+    lines = f.readlines()
+
+  for i in range(0, len(lines)):
+    line = lines[i]
+    if 'CFBundleVersion' in line:
+      lines[i + 1] = '  <string>{0}</string>\n'.format(version)
+
+      with open(info_plist, 'w') as f:
         f.write(''.join(lines))
       return
 
