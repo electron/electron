@@ -224,7 +224,7 @@ NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
   OnViewWasResized();
 
   if (g_exe_icon == NULL)
-    g_exe_icon = ::LoadImage(GetModuleHandle(NULL), L"IDR_MAINFRAME",
+    g_exe_icon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(1),
                              IMAGE_ICON, 0, 0, 0);
   ::SendMessage(window_->GetNativeWindow(),
                 WM_SETICON,
