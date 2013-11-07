@@ -24,6 +24,7 @@ def main():
   update_win_rc(version, versions)
   update_version_h(versions)
   update_info_plist(version)
+  tag_version(version)
 
 
 def parse_version(version):
@@ -103,6 +104,12 @@ def update_info_plist(version):
       with open(info_plist, 'w') as f:
         f.write(''.join(lines))
       return
+
+
+def tag_version(version):
+  subprocess.check_call(['git', 'commit', '-a', '-m',
+                         'Bump v{0}.'.format(version)])
+  subprocess.check_call(['git', 'tag', 'v{0}'.format(version)])
 
 
 if __name__ == '__main__':
