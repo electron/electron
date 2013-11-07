@@ -24,7 +24,7 @@ InspectableWebContentsViewLinux::~InspectableWebContentsViewLinux() {
 
 gfx::NativeView InspectableWebContentsViewLinux::GetNativeView() const {
 	// TODO
-	fprintf(stderr, "InspectableWebContentsViewLinux::~GetNativeView\n");
+	fprintf(stderr, "InspectableWebContentsViewLinux::GetNativeView\n");
 	return NULL;
 }
 
