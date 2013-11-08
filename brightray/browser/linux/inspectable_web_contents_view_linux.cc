@@ -13,34 +13,32 @@ InspectableWebContentsView* CreateInspectableContentsView(InspectableWebContents
 
 InspectableWebContentsViewLinux::InspectableWebContentsViewLinux(InspectableWebContentsImpl* inspectable_web_contents)
     : inspectable_web_contents_(inspectable_web_contents) {
-	// TODO
-	fprintf(stderr, "InspectableWebContentsViewLinux::InspectableWebContentsViewLinux\n");
+  // TODO
+  fprintf(stderr, "InspectableWebContentsViewLinux::InspectableWebContentsViewLinux\n");
 }
 
 InspectableWebContentsViewLinux::~InspectableWebContentsViewLinux() {
-	// TODO
-	fprintf(stderr, "InspectableWebContentsViewLinux::~InspectableWebContentsViewLinux\n");
+  // TODO
+  fprintf(stderr, "InspectableWebContentsViewLinux::~InspectableWebContentsViewLinux\n");
 }
 
 gfx::NativeView InspectableWebContentsViewLinux::GetNativeView() const {
-	// TODO
-	fprintf(stderr, "InspectableWebContentsViewLinux::GetNativeView\n");
-	return NULL;
+  return inspectable_web_contents_->GetWebContents()->GetView()->GetNativeView();
 }
 
 void InspectableWebContentsViewLinux::ShowDevTools() {
-	// TODO
-	fprintf(stderr, "InspectableWebContentsViewLinux::ShowDevTools\n");
+  // TODO
+  fprintf(stderr, "InspectableWebContentsViewLinux::ShowDevTools\n");
 }
 
 void InspectableWebContentsViewLinux::CloseDevTools() {
-	// TODO
-	fprintf(stderr, "InspectableWebContentsViewLinux::CloseDevTools\n");
+  // TODO
+  fprintf(stderr, "InspectableWebContentsViewLinux::CloseDevTools\n");
 }
 
 bool InspectableWebContentsViewLinux::SetDockSide(const std::string& side) {
-	// TODO
-	fprintf(stderr, "InspectableWebContentsViewLinux::SetDockSide\n");
+  // TODO
+  fprintf(stderr, "InspectableWebContentsViewLinux::SetDockSide\n");
   return false;
 }
 
