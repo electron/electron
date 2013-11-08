@@ -392,8 +392,7 @@
                 '<(RULE_INPUT_PATH)',
                 '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
               ],
-            }],  # OS=="mac"
-            ['OS=="win"', {
+            },{  # OS=="mac"
               'outputs': [
                 '<(PRODUCT_DIR)/resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
               ],
@@ -403,7 +402,7 @@
                 '<(RULE_INPUT_PATH)',
                 '<(PRODUCT_DIR)/resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
               ],
-            }],  # OS=="win"
+            }],  # OS=="win" or OS=="linux"
           ],
         },
       ],
