@@ -4,7 +4,6 @@
     'conditions': [
       ['OS=="mac"', {
         'clang': 1,
-        'mac_sdk%': '<!(python tools/mac/find_sdk.py 10.8)',
       }],
       ['OS=="win" and (MSVS_VERSION=="2012e" or MSVS_VERSION=="2010e")', {
         'msvs_express': 1,
@@ -134,7 +133,6 @@
             '-fcolor-diagnostics',
           ],
 
-          'SDKROOT': 'macosx<(mac_sdk)',     # -isysroot
           'GCC_C_LANGUAGE_STANDARD': 'c99',  # -std=c99
         },
       },
