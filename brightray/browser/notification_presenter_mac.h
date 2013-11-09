@@ -8,7 +8,7 @@
 
 #import "browser/notification_presenter.h"
 
-#import "base/memory/scoped_nsobject.h"
+#import "base/mac/scoped_nsobject.h"
 #import <map>
 
 @class BRYUserNotificationCenterDelegate;
@@ -30,8 +30,8 @@ class NotificationPresenterMac : public NotificationPresenter {
       int notification_id) OVERRIDE;
 
  private:
-  std::map<std::string, scoped_nsobject<NSUserNotification>> notification_map_;
-  scoped_nsobject<BRYUserNotificationCenterDelegate> delegate_;
+  std::map<std::string, base::scoped_nsobject<NSUserNotification>> notification_map_;
+  base::scoped_nsobject<BRYUserNotificationCenterDelegate> delegate_;
 };
 
 }

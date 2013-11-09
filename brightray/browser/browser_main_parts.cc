@@ -5,10 +5,7 @@
 #include "browser/browser_main_parts.h"
 
 #include "browser/browser_context.h"
-#include "browser/devtools_delegate.h"
-
-#include "content/public/browser/devtools_http_handler.h"
-#include "net/socket/tcp_listen_socket.h"
+#include "browser/web_ui_controller_factory.h"
 
 namespace brightray {
 
@@ -16,18 +13,18 @@ BrowserMainParts::BrowserMainParts() {
 }
 
 BrowserMainParts::~BrowserMainParts() {
-  devtools_http_handler_->Stop();
-  devtools_http_handler_ = nullptr;
 }
 
 void BrowserMainParts::PreMainMessageLoopRun() {
   browser_context_.reset(CreateBrowserContext());
+  browser_context_->Initialize();
 
-  // These two objects are owned by devtools_http_handler_.
-  auto delegate = new DevToolsDelegate;
-  auto factory = new net::TCPListenSocketFactory("127.0.0.1", 0);
+  web_ui_controller_factory_.reset(new WebUIControllerFactory(browser_context_.get()));
+  content::WebUIControllerFactory::RegisterFactory(web_ui_controller_factory_.get());
+}
 
-  devtools_http_handler_ = content::DevToolsHttpHandler::Start(factory, std::string(), delegate);
+void BrowserMainParts::PostMainMessageLoopRun() {
+  browser_context_.reset();
 }
 
 BrowserContext* BrowserMainParts::CreateBrowserContext() {

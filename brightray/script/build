@@ -6,9 +6,7 @@ import sys
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-GYP = {
-    'win32': 'gyp.bat',
-}.get(sys.platform, 'gyp')
+GYP = os.path.join(SOURCE_ROOT, 'vendor', 'gyp', 'gyp_main.py')
 
 
 def main():
@@ -17,7 +15,7 @@ def main():
 
 
 def run_gyp():
-    return subprocess.call([GYP, '--depth', '.', 'brightray.gyp'])
+    return subprocess.call([sys.executable, GYP, '--depth', '.', 'brightray.gyp'])
 
 
 def build():

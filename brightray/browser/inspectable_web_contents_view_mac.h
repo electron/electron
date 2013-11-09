@@ -3,7 +3,7 @@
 
 #import "browser/inspectable_web_contents_view.h"
 
-#import "base/memory/scoped_nsobject.h"
+#import "base/mac/scoped_nsobject.h"
 
 @class BRYInspectableWebContentsView;
 
@@ -26,7 +26,7 @@ private:
   // Owns us.
   InspectableWebContentsImpl* inspectable_web_contents_;
   
-  scoped_nsobject<BRYInspectableWebContentsView> view_;
+  base::scoped_nsobject<BRYInspectableWebContentsView> view_;
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewMac);
 };

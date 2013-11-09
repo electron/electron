@@ -60,11 +60,16 @@ private:
   virtual void RequestFileSystems() OVERRIDE;
   virtual void AddFileSystem() OVERRIDE;
   virtual void RemoveFileSystem(const std::string& file_system_path) OVERRIDE;
+  virtual void IndexPath(int request_id, const std::string& file_system_path) OVERRIDE;
+  virtual void StopIndexing(int request_id) OVERRIDE;
+  virtual void SearchInPath(int request_id,
+                            const std::string& file_system_path,
+                            const std::string& query) OVERRIDE;
   virtual void InspectedContentsClosing() OVERRIDE;
   
   // content::WebContentsObserver
   
-  virtual void RenderViewCreated(content::RenderViewHost*) OVERRIDE;
+  virtual void AboutToNavigateRenderView(content::RenderViewHost* render_view_host) OVERRIDE;
   virtual void DidFinishLoad(int64 frame_id,
                              const GURL& validated_url,
                              bool is_main_frame,

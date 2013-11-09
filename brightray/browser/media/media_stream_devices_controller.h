@@ -5,6 +5,8 @@
 #ifndef BRIGHTRAY_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_
 #define BRIGHTRAY_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_
 
+#include <string>
+
 #include "content/public/browser/web_contents_delegate.h"
 
 namespace brightray {
@@ -16,14 +18,10 @@ class MediaStreamDevicesController {
 
   virtual ~MediaStreamDevicesController();
 
-  // Public method to be called before creating the MediaStreamInfoBarDelegate.
-  // This function will check the content settings exceptions and take the
-  // corresponding action on exception which matches the request.
+  // Accept or deny the request based on the default policy.
   bool TakeAction();
 
-  // Public methods to be called by MediaStreamInfoBarDelegate;
-  bool has_audio() const { return microphone_requested_; }
-  bool has_video() const { return webcam_requested_; }
+  // Explicitly accept or deny the request.
   void Accept();
   void Deny();
 
@@ -41,6 +39,6 @@ class MediaStreamDevicesController {
   DISALLOW_COPY_AND_ASSIGN(MediaStreamDevicesController);
 };
 
-}  // namespace brightray
+} // namespace brightray
 
 #endif  // BRIGHTRAY_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_

@@ -21,7 +21,7 @@
           '<(libchromiumcontent_include_dir)/third_party/skia/include/config',
           # For SkMatrix.h.
           '<(libchromiumcontent_include_dir)/third_party/skia/include/core',
-          '<(libchromiumcontent_include_dir)/third_party/icu/public/common',
+          '<(libchromiumcontent_include_dir)/third_party/icu/source/common',
         ],
       },
       'sources': [
@@ -35,8 +35,8 @@
         'browser/default_web_contents_delegate.cc',
         'browser/default_web_contents_delegate.h',
         'browser/default_web_contents_delegate_mac.mm',
-        'browser/devtools_delegate.cc',
-        'browser/devtools_delegate.h',
+        'browser/devtools_ui.cc',
+        'browser/devtools_ui.h',
         'browser/download_manager_delegate.cc',
         'browser/download_manager_delegate.h',
         'browser/inspectable_web_contents.cc',
@@ -68,6 +68,8 @@
         'browser/win/devtools_window.h',
         'browser/win/inspectable_web_contents_view_win.cc',
         'browser/win/inspectable_web_contents_view_win.h',
+        'browser/web_ui_controller_factory.cc',
+        'browser/web_ui_controller_factory.h',
         'common/application_info.h',
         'common/application_info_mac.mm',
         'common/application_info_win.cc',

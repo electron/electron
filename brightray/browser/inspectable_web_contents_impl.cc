@@ -12,8 +12,8 @@
 
 #include "base/prefs/pref_registry_simple.h"
 #include "base/prefs/pref_service.h"
-#include "base/stringprintf.h"
-#include "base/utf_string_conversions.h"
+#include "base/strings/stringprintf.h"
+#include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_client_host.h"
 #include "content/public/browser/devtools_http_handler.h"
@@ -25,6 +25,7 @@ namespace brightray {
 
 namespace {
 
+const char kChromeUIDevToolsURL[] = "chrome-devtools://devtools/devtools.html";
 const char kDockSidePref[] = "brightray.devtools.dockside";
 
 }
@@ -58,15 +59,21 @@ content::WebContents* InspectableWebContentsImpl::GetWebContents() const {
 void InspectableWebContentsImpl::ShowDevTools() {
   if (!devtools_web_contents_) {
     devtools_web_contents_.reset(content::WebContents::Create(content::WebContents::CreateParams(web_contents_->GetBrowserContext())));
+
+#if defined(OS_MACOSX)
+    // Work around http://crbug.com/279472.
+    devtools_web_contents_->GetView()->SetAllowOverlappingViews(true);
+#endif
+
     Observe(devtools_web_contents_.get());
     devtools_web_contents_->SetDelegate(this);
 
     agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(web_contents_->GetRenderViewHost());
     frontend_host_.reset(content::DevToolsClientHost::CreateDevToolsFrontendHost(devtools_web_contents_.get(), this));
+    content::DevToolsManager::GetInstance()->RegisterDevToolsClientHostFor(agent_host_, frontend_host_.get());
 
-    auto handler = BrowserClient::Get()->browser_main_parts()->devtools_http_handler();
-    auto url = handler->GetFrontendURL(nullptr);
-    devtools_web_contents_->GetController().LoadURL(url, content::Referrer(), content::PAGE_TRANSITION_AUTO_TOPLEVEL, std::string());
+    GURL devtools_url(kChromeUIDevToolsURL);
+    devtools_web_contents_->GetController().LoadURL(devtools_url, content::Referrer(), content::PAGE_TRANSITION_AUTO_TOPLEVEL, std::string());
   }
 
   view_->SetDockSide(dock_side_);
@@ -123,12 +130,20 @@ void InspectableWebContentsImpl::AddFileSystem() {
 void InspectableWebContentsImpl::RemoveFileSystem(const std::string& file_system_path) {
 }
 
+void InspectableWebContentsImpl::IndexPath(int request_id, const std::string& file_system_path) {
+}
+
+void InspectableWebContentsImpl::StopIndexing(int request_id) {
+}
+
+void InspectableWebContentsImpl::SearchInPath(int request_id, const std::string& file_system_path, const std::string& query) {
+}
+
 void InspectableWebContentsImpl::InspectedContentsClosing() {
 }
 
-void InspectableWebContentsImpl::RenderViewCreated(content::RenderViewHost* render_view_host) {
+void InspectableWebContentsImpl::AboutToNavigateRenderView(content::RenderViewHost* render_view_host) {
   content::DevToolsClientHost::SetupDevToolsFrontendClient(web_contents()->GetRenderViewHost());
-  content::DevToolsManager::GetInstance()->RegisterDevToolsClientHostFor(agent_host_, frontend_host_.get());
 }
 
 void InspectableWebContentsImpl::DidFinishLoad(int64, const GURL&, bool is_main_frame, content::RenderViewHost*) {
