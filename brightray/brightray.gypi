@@ -177,6 +177,7 @@
       ['OS=="linux"', {
         'cflags_cc': [
           '-std=gnu++11',
+          '-fno-rtti',
         ],
       }],
     ],
