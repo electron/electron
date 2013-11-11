@@ -39,10 +39,16 @@ NodeBindings::NodeBindings(bool is_browser)
 }
 
 NodeBindings::~NodeBindings() {
-  // Clear uv.
+  // Quit the embed thread.
   embed_closed_ = true;
+  uv_sem_post(&embed_sem_);
   WakeupEmbedThread();
+
+  // Wait for everything to be done.
   uv_thread_join(&embed_thread_);
+  message_loop_->RunUntilIdle();
+
+  // Clear uv.
   uv_sem_destroy(&embed_sem_);
   uv_timer_stop(&idle_timer_);
 }
