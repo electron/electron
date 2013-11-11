@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "base/file_util.h"
 #include "base/message_loop.h"
 #include "base/utf_string_conversions.h"
 #include "base/values.h"
@@ -31,6 +32,7 @@
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
+#include "webkit/glue/image_decoder.h"
 
 using content::NavigationEntry;
 
@@ -45,6 +47,12 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       inspectable_web_contents_(
           brightray::InspectableWebContents::Create(web_contents)) {
   options->GetBoolean(switches::kFrame, &has_frame_);
+
+  std::string icon;
+  if (options->GetString(switches::kIcon, &icon)) {
+    if (!SetIcon(icon))
+      LOG(ERROR) << "Failed to set icon to " << icon;
+  }
 
   web_contents->SetDelegate(this);
 
@@ -167,6 +175,27 @@ bool NativeWindow::IsWebViewFocused() {
 
 void NativeWindow::RestartHangMonitorTimeout() {
   GetWebContents()->GetRenderViewHost()->RestartHangMonitorTimeout();
+}
+
+bool NativeWindow::SetIcon(const std::string& str_path) {
+  base::FilePath path = base::FilePath::FromUTF8Unsafe(str_path);
+
+  // Read the file from disk.
+  std::string file_contents;
+  if (path.empty() || !file_util::ReadFileToString(path, &file_contents))
+    return false;
+
+  // Decode the bitmap using WebKit's image decoder.
+  const unsigned char* data =
+      reinterpret_cast<const unsigned char*>(file_contents.data());
+  webkit_glue::ImageDecoder decoder;
+  scoped_ptr<SkBitmap> decoded(new SkBitmap());
+  *decoded = decoder.Decode(data, file_contents.length());
+  if (decoded->empty())
+    return false;  // Unable to decode.
+
+  icon_ = gfx::Image::CreateFrom1xBitmap(*decoded.release());
+  return true;
 }
 
 void NativeWindow::CloseWebContents() {

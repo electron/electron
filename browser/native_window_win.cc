@@ -4,7 +4,6 @@
 
 #include "browser/native_window_win.h"
 
-#include "app/win/resource.h"
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
@@ -32,8 +31,6 @@ namespace {
 
 const int kResizeInsideBoundsSize = 5;
 const int kResizeAreaCornerSize = 16;
-
-HANDLE g_exe_icon = NULL;
 
 // Wrapper of NativeWidgetWin to handle WM_MENUCOMMAND messages, which are
 // triggered by window menus.
@@ -220,16 +217,10 @@ NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
   gfx::Size size(width, height);
   window_->CenterWindow(size);
 
+  window_->UpdateWindowIcon();
+
   web_view_->SetWebContents(web_contents);
   OnViewWasResized();
-
-  if (g_exe_icon == NULL)
-    g_exe_icon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(1),
-                             IMAGE_ICON, 0, 0, 0);
-  ::SendMessage(window_->GetNativeWindow(),
-                WM_SETICON,
-                static_cast<WPARAM>(ICON_BIG),
-                reinterpret_cast<LPARAM>(g_exe_icon));
 }
 
 NativeWindowWin::~NativeWindowWin() {
@@ -474,8 +465,15 @@ bool NativeWindowWin::ShouldHandleSystemCommands() const {
   return true;
 }
 
-bool NativeWindowWin::ShouldShowWindowIcon() const {
-  return true;
+gfx::ImageSkia NativeWindowWin::GetWindowAppIcon() {
+  if (icon_.IsEmpty())
+    return gfx::ImageSkia();
+  else
+    return *icon_.ToImageSkia();
+}
+
+gfx::ImageSkia NativeWindowWin::GetWindowIcon() {
+  return GetWindowAppIcon();
 }
 
 views::Widget* NativeWindowWin::GetWidget() {

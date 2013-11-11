@@ -13,6 +13,7 @@
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "ui/gfx/image/image.h"
 #include "vendor/brightray/browser/default_web_contents_delegate.h"
 
 namespace base {
@@ -105,6 +106,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void BlurWebView();
   virtual bool IsWebViewFocused();
   virtual void RestartHangMonitorTimeout();
+  virtual bool SetIcon(const std::string& path);
 
   // The same with closing a tab in a real browser.
   //
@@ -175,6 +177,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   // Whether window has standard frame.
   bool has_frame_;
+
+  // Window icon.
+  gfx::Image icon_;
 
  private:
   void RendererUnresponsiveDelayed();

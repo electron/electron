@@ -98,7 +98,8 @@ class NativeWindowWin : public NativeWindow,
   virtual bool CanMaximize() const OVERRIDE;
   virtual string16 GetWindowTitle() const OVERRIDE;
   virtual bool ShouldHandleSystemCommands() const OVERRIDE;
-  virtual bool ShouldShowWindowIcon() const OVERRIDE;
+  virtual gfx::ImageSkia GetWindowAppIcon() OVERRIDE;
+  virtual gfx::ImageSkia GetWindowIcon() OVERRIDE;
   virtual views::Widget* GetWidget() OVERRIDE;
   virtual const views::Widget* GetWidget() const OVERRIDE;
   virtual views::ClientView* CreateClientView(views::Widget* widget) OVERRIDE;
