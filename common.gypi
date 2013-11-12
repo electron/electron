@@ -59,7 +59,17 @@
           },
         },
         'xcode_settings': {
-          'GCC_TREAT_WARNINGS_AS_ERRORS': 'NO'
+          'GCC_TREAT_WARNINGS_AS_ERRORS': 'NO',
+          'WARNING_CFLAGS': [
+            '-Wno-parentheses-equality',
+            '-Wno-unused-function',
+            '-Wno-sometimes-uninitialized',
+            '-Wno-pointer-sign',
+            '-Wno-string-plus-int',
+            '-Wno-unused-variable',
+            '-Wno-deprecated-declarations',
+            '-Wno-return-type',
+          ],
         },
       }],
       ['_target_name=="libuv"', {
@@ -71,6 +81,14 @@
             ],
           }],  # OS=="win"
         ],
+      }],
+      ['_target_name.startswith("breakpad") or _target_name in ["crash_report_sender"]', {
+        'xcode_settings': {
+          'WARNING_CFLAGS': [
+            '-Wno-deprecated-declarations',
+            '-Wno-unused-function',
+          ],
+        },
       }],
     ],
     'msvs_cygwin_shell': 0, # Strangely setting it to 1 would make building under cygwin fail.
