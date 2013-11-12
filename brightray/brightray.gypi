@@ -178,6 +178,7 @@
         'cflags_cc': [
           '-std=gnu++11',
           '-fno-rtti',
+          '<!@(pkg-config --cflags gtk+-2.0)',
         ],
       }],
     ],
