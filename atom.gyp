@@ -340,6 +340,15 @@
               '<(atom_source_root)/<(libchromiumcontent_library_dir)/chromiumviews.lib',
             ],
           },
+          'dependencies': [
+            'vendor/breakpad/breakpad.gyp:breakpad_handler',
+            'vendor/breakpad/breakpad.gyp:breakpad_sender',
+          ],
+        }],
+        ['OS=="mac"', {
+          'dependencies': [
+            'vendor/breakpad/breakpad.gyp:breakpad',
+          ],
         }],
       ],
     },
