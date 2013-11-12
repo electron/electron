@@ -180,6 +180,11 @@
           '-fno-rtti',
           '<!@(pkg-config --cflags gtk+-2.0)',
         ],
+      }, {
+        'sources/': [
+          ['exclude', '/linux/'],
+          ['exclude', '_linux\.(cc|h)$'],
+        ],
       }],
     ],
   },
