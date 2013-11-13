@@ -187,9 +187,6 @@
       '-change',
       '@loader_path/../Frameworks/Sparkle.framework/Versions/A/Sparkle',
       '@rpath/Sparkle.framework/Versions/A/Sparkle',
-      '-change',
-      '@executable_path/../Frameworks/Quincy.framework/Versions/A/Quincy',
-      '@rpath/Quincy.framework/Versions/A/Quincy',
       '${BUILT_PRODUCTS_DIR}/${EXECUTABLE_PATH}'
     ],
     'atom_source_root': '<!(python tools/atom_source_root.py)',
@@ -251,7 +248,6 @@
                 '<(PRODUCT_DIR)/<(product_name) Helper.app',
                 '<(PRODUCT_DIR)/<(product_name).framework',
                 'frameworks/Sparkle.framework',
-                'frameworks/Quincy.framework',
               ],
             },
             {
@@ -418,7 +414,6 @@
             'libraries': [
               '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
               'frameworks/Sparkle.framework',
-              'frameworks/Quincy.framework',
             ],
           },
           'mac_bundle': 1,
