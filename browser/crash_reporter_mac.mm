@@ -4,7 +4,8 @@
 
 #include "browser/crash_reporter.h"
 
-#include "base/logging.h"
+#include "browser/browser.h"
+#include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "common/atom_version.h"
 #import "vendor/breakpad/src/client/apple/Framework/BreakpadDefines.h"
@@ -16,14 +17,31 @@ namespace {
 
 class ScopedCrashReporter {
  public:
-  ScopedCrashReporter() {
+  ScopedCrashReporter() : is_browser_(!base::mac::IsBackgroundOnlyProcess()) {
     NSMutableDictionary* parameters =
         [NSMutableDictionary dictionaryWithCapacity:4];
     [parameters setValue:@"Atom-Shell" forKey:@BREAKPAD_PRODUCT];
     [parameters setValue:@"GitHub, Inc" forKey:@BREAKPAD_VENDOR];
+
+    // Use application's version for crashes in browser.
+    if (is_browser_) {
+      std::string version = atom::Browser::Get()->GetVersion();
+      [parameters setValue:base::SysUTF8ToNSString(version)
+                    forKey:@BREAKPAD_VERSION];
+    } else {
+      [parameters setValue:@ATOM_VERSION_STRING forKey:@BREAKPAD_VERSION];
+    }
+
+    // Report all crashes (important for testing the crash reporter).
     [parameters setValue:@"0" forKey:@BREAKPAD_REPORT_INTERVAL];
-    [parameters setValue:@ATOM_VERSION_STRING forKey:@BREAKPAD_VERSION];
-    // Use my server as /dev/null for now.
+
+    // Let the crash reporter log everything in Console.app.
+    [parameters setValue:@"NO" forKey:@BREAKPAD_SEND_AND_EXIT];
+
+    // Send the report by default.
+    [parameters setValue:@"YES" forKey:@BREAKPAD_SKIP_CONFIRM];
+
+    // Use my server as /dev/null if not specified.
     [parameters setValue:@"http://54.249.141.255" forKey:@BREAKPAD_URL];
 
     breakpad_ = BreakpadCreate(parameters);
@@ -45,6 +63,7 @@ class ScopedCrashReporter {
 
  private:
   BreakpadRef breakpad_;
+  bool is_browser_;
 
   static ScopedCrashReporter* g_scoped_crash_reporter_;
 
