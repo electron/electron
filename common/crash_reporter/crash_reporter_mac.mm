@@ -20,15 +20,16 @@ class ScopedCrashReporter {
   ScopedCrashReporter() : is_browser_(!base::mac::IsBackgroundOnlyProcess()) {
     NSMutableDictionary* parameters =
         [NSMutableDictionary dictionaryWithCapacity:4];
-    [parameters setValue:@"Atom-Shell" forKey:@BREAKPAD_PRODUCT];
     [parameters setValue:@"GitHub, Inc" forKey:@BREAKPAD_VENDOR];
 
-    // Use application's version for crashes in browser.
     if (is_browser_) {
+      [parameters setValue:@"Atom-Shell" forKey:@BREAKPAD_PRODUCT];
+      // Use application's version for crashes in browser.
       std::string version = atom::Browser::Get()->GetVersion();
       [parameters setValue:base::SysUTF8ToNSString(version)
                     forKey:@BREAKPAD_VERSION];
     } else {
+      [parameters setValue:@"Atom-Shell Renderer" forKey:@BREAKPAD_PRODUCT];
       [parameters setValue:@ATOM_VERSION_STRING forKey:@BREAKPAD_VERSION];
     }
 
@@ -48,6 +49,8 @@ class ScopedCrashReporter {
   }
 
   ~ScopedCrashReporter() { if (breakpad_) BreakpadRelease(breakpad_); }
+
+  bool is_browser() const { return is_browser_; }
 
   void SetKey(const std::string& key, const std::string& value) {
     BreakpadSetKeyValue(breakpad_,
