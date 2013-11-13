@@ -17,6 +17,7 @@ class CrashReporter {
   static void Initialize(v8::Handle<v8::Object> target);
 
  private:
+  static v8::Handle<v8::Value> SetProductName(const v8::Arguments &args);
   static v8::Handle<v8::Value> SetCompanyName(const v8::Arguments &args);
   static v8::Handle<v8::Value> SetSubmissionURL(const v8::Arguments &args);
   static v8::Handle<v8::Value> SetAutoSubmit(const v8::Arguments &args);

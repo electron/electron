@@ -78,6 +78,16 @@ ScopedCrashReporter* ScopedCrashReporter::g_scoped_crash_reporter_ = NULL;
 }  // namespace
 
 // static
+void CrashReporter::SetProductName(const std::string& name) {
+  ScopedCrashReporter* reporter = ScopedCrashReporter::Get();
+  if (reporter->is_browser())
+    ScopedCrashReporter::Get()->SetKey(BREAKPAD_PRODUCT_DISPLAY, name);
+  else
+    ScopedCrashReporter::Get()->SetKey(BREAKPAD_PRODUCT_DISPLAY,
+                                       name + " Renderer");
+}
+
+// static
 void CrashReporter::SetCompanyName(const std::string& name) {
   ScopedCrashReporter::Get()->SetKey(BREAKPAD_VENDOR, name);
 }

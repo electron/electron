@@ -13,6 +13,7 @@ namespace crash_reporter {
 
 class CrashReporter {
  public:
+  static void SetProductName(const std::string& name);
   static void SetCompanyName(const std::string& name);
   static void SetSubmissionURL(const std::string& url);
   static void SetAutoSubmit(bool yes);
