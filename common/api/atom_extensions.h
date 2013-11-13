@@ -11,7 +11,6 @@ NODE_EXT_LIST_START
 // Module names start with `atom_browser_` can only be used by browser process.
 NODE_EXT_LIST_ITEM(atom_browser_app)
 NODE_EXT_LIST_ITEM(atom_browser_auto_updater)
-NODE_EXT_LIST_ITEM(atom_browser_crash_reporter)
 NODE_EXT_LIST_ITEM(atom_browser_dialog)
 NODE_EXT_LIST_ITEM(atom_browser_ipc)
 NODE_EXT_LIST_ITEM(atom_browser_menu)
@@ -26,6 +25,7 @@ NODE_EXT_LIST_ITEM(atom_renderer_ipc)
 // Module names start with `atom_common_` can be used by both browser and
 // renderer processes.
 NODE_EXT_LIST_ITEM(atom_common_clipboard)
+NODE_EXT_LIST_ITEM(atom_common_crash_reporter)
 NODE_EXT_LIST_ITEM(atom_common_id_weak_map)
 NODE_EXT_LIST_ITEM(atom_common_shell)
 NODE_EXT_LIST_ITEM(atom_common_v8_util)

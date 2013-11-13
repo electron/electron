@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "browser/crash_reporter.h"
+#include "common/crash_reporter/crash_reporter.h"
 
 namespace crash_reporter {
 

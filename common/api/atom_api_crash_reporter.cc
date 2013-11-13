@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "browser/api/atom_api_crash_reporter.h"
+#include "common/api/atom_api_crash_reporter.h"
 
-#include "browser/crash_reporter.h"
+#include "common/crash_reporter/crash_reporter.h"
 #include "common/v8_conversions.h"
 #include "vendor/node/src/node.h"
 #include "vendor/node/src/node_internals.h"
@@ -43,4 +43,4 @@ void CrashReporter::Initialize(v8::Handle<v8::Object> target) {
 
 }  // namespace atom
 
-NODE_MODULE(atom_browser_crash_reporter, atom::api::CrashReporter::Initialize)
+NODE_MODULE(atom_common_crash_reporter, atom::api::CrashReporter::Initialize)
