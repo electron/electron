@@ -14,36 +14,22 @@ namespace atom {
 namespace api {
 
 // static
-v8::Handle<v8::Value> CrashReporter::SetProductName(const v8::Arguments& args) {
-  crash_reporter::CrashReporter::SetProductName(FromV8Value(args[0]));
-  return v8::Undefined();
-}
+v8::Handle<v8::Value> CrashReporter::Start(const v8::Arguments& args) {
+  std::string product_name, company_name, submit_url;
+  bool auto_submit, skip_system;
+  if (!FromV8Arguments(args, &product_name, &company_name, &submit_url,
+                       &auto_submit, &skip_system))
+    return node::ThrowTypeError("Bad argument");
 
-// static
-v8::Handle<v8::Value> CrashReporter::SetCompanyName(const v8::Arguments& args) {
-  crash_reporter::CrashReporter::SetCompanyName(FromV8Value(args[0]));
-  return v8::Undefined();
-}
+  crash_reporter::CrashReporter::GetInstance()->Start(
+      product_name, company_name, submit_url, auto_submit, skip_system);
 
-// static
-v8::Handle<v8::Value> CrashReporter::SetSubmissionURL(
-    const v8::Arguments& args) {
-  crash_reporter::CrashReporter::SetSubmissionURL(FromV8Value(args[0]));
-  return v8::Undefined();
-}
-
-// static
-v8::Handle<v8::Value> CrashReporter::SetAutoSubmit(const v8::Arguments& args) {
-  crash_reporter::CrashReporter::SetAutoSubmit(FromV8Value(args[0]));
   return v8::Undefined();
 }
 
 // static
 void CrashReporter::Initialize(v8::Handle<v8::Object> target) {
-  node::SetMethod(target, "setProductName", SetProductName);
-  node::SetMethod(target, "setCompanyName", SetCompanyName);
-  node::SetMethod(target, "setSubmissionUrl", SetSubmissionURL);
-  node::SetMethod(target, "setAutoSubmit", SetAutoSubmit);
+  node::SetMethod(target, "start", Start);
 }
 
 }  // namespace api

@@ -13,13 +13,29 @@ namespace crash_reporter {
 
 class CrashReporter {
  public:
-  static void SetProductName(const std::string& name);
-  static void SetCompanyName(const std::string& name);
-  static void SetSubmissionURL(const std::string& url);
-  static void SetAutoSubmit(bool yes);
+  static CrashReporter* GetInstance();
+
+  void Start(std::string product_name,
+             const std::string& company_name,
+             const std::string& submit_url,
+             bool auto_submit,
+             bool skip_system_crash_handler);
+
+ protected:
+  CrashReporter();
+  virtual ~CrashReporter();
+
+  virtual void InitBreakpad(const std::string& product_name,
+                            const std::string& version,
+                            const std::string& company_name,
+                            const std::string& submit_url,
+                            bool auto_submit,
+                            bool skip_system_crash_handler) = 0;
+
+  bool is_browser_;
 
  private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(CrashReporter);
+  DISALLOW_COPY_AND_ASSIGN(CrashReporter);
 };
 
 }  // namespace crash_reporter
