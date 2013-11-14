@@ -48,6 +48,17 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
   [parameters setValue:@"0" forKey:@BREAKPAD_REPORT_INTERVAL];
 
   breakpad_ = BreakpadCreate(parameters);
+
+  for (StringMap::const_iterator iter = upload_parameters_.begin();
+       iter != upload_parameters_.end(); ++iter) {
+    BreakpadAddUploadParameter(breakpad_,
+                               base::SysUTF8ToNSString(iter->first),
+                               base::SysUTF8ToNSString(iter->second));
+  }
+}
+
+void CrashReporterMac::SetUploadParameters() {
+  upload_parameters_["platform"] = "darwin";
 }
 
 // static

@@ -5,6 +5,7 @@
 #ifndef ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_H_
 #define ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_H_
 
+#include <map>
 #include <string>
 
 #include "base/basictypes.h"
@@ -31,7 +32,10 @@ class CrashReporter {
                             const std::string& submit_url,
                             bool auto_submit,
                             bool skip_system_crash_handler) = 0;
+  virtual void SetUploadParameters();
 
+  typedef std::map<std::string, std::string> StringMap;
+  StringMap upload_parameters_;
   bool is_browser_;
 
  private:

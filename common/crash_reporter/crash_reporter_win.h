@@ -22,6 +22,7 @@ class CrashReporterWin : public CrashReporter {
                             const std::string& submit_url,
                             bool auto_submit,
                             bool skip_system_crash_handler) OVERRIDE;
+  virtual void SetUploadParameters() OVERRIDE;
 
  private:
   friend struct DefaultSingletonTraits<CrashReporterWin>;

@@ -25,6 +25,10 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
                                     bool skip_system_crash_handler) {
 }
 
+void CrashReporterWin::SetUploadParameters() {
+  upload_parameters_["platform"] = "win32";
+}
+
 // static
 CrashReporterWin* CrashReporterWin::GetInstance() {
   return Singleton<CrashReporterWin>::get();

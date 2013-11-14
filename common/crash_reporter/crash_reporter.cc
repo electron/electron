@@ -12,9 +12,9 @@
 namespace crash_reporter {
 
 CrashReporter::CrashReporter() {
-  const CommandLine& command = *CommandLine::ForCurrentProcess();
-  std::string type = command.GetSwitchValueASCII(switches::kProcessType);
-  is_browser_ = type.empty();
+  SetUploadParameters();
+
+  is_browser_ = upload_parameters_["process_type"].empty();
 }
 
 CrashReporter::~CrashReporter() {
@@ -40,6 +40,14 @@ void CrashReporter::Start(std::string product_name,
 
   InitBreakpad(product_name, version, company_name, submit_url, auto_submit,
                skip_system_crash_handler);
+}
+
+void CrashReporter::SetUploadParameters() {
+  const CommandLine& command = *CommandLine::ForCurrentProcess();
+  std::string type = command.GetSwitchValueASCII(switches::kProcessType);
+
+  upload_parameters_["process_type"] = type;
+  upload_parameters_["atom_shell_version"] = ATOM_VERSION_STRING;
 }
 
 }  // namespace crash_reporter
