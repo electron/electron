@@ -145,6 +145,7 @@
       'common/crash_reporter/crash_reporter_mac.h',
       'common/crash_reporter/crash_reporter_mac.mm',
       'common/crash_reporter/crash_reporter_win.cc',
+      'common/crash_reporter/crash_reporter_win.h',
       'common/draggable_region.cc',
       'common/draggable_region.h',
       'common/node_bindings.cc',
