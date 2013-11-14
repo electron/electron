@@ -1,0 +1,14 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+var crashReporter = require('crash-reporter');
+crashReporter.start({
+  submitUrl: 'http://127.0.0.1:901007',
+  autoSubmit: true,
+  ignoreSystemCrashHandler: true
+});
+
+setImmediate(function() { process.crash(); });
+</script>
+</body>
+</html>
