@@ -1,7 +1,7 @@
 binding = process.atomBinding 'crash_reporter'
 
 class CrashReporter
-  start: (options) ->
+  start: (options={}) ->
     {productName, companyName, submitUrl, autoSubmit, ignoreSystemCrashHandler} = options
 
     productName ?= 'Atom-Shell'
