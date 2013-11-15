@@ -82,10 +82,11 @@
           }],  # OS=="win"
         ],
       }],
-      ['_target_name.startswith("breakpad") or _target_name in ["crash_report_sender"]', {
+      ['_target_name.startswith("breakpad") or _target_name in ["crash_report_sender", "dump_syms"]', {
         'xcode_settings': {
           'WARNING_CFLAGS': [
             '-Wno-deprecated-declarations',
+            '-Wno-unused-private-field',
             '-Wno-unused-function',
           ],
         },
@@ -124,6 +125,9 @@
           '/ignore:4049',
         ],
       },
+    },
+    'xcode_settings': {
+      'DEBUG_INFORMATION_FORMAT': 'dwarf-with-dsym',
     },
   },
   'conditions': [

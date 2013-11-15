@@ -306,7 +306,7 @@
           ],
         }],  # OS=="win"
       ],
-    },
+    },  # target <(project_name)
     {
       'target_name': '<(project_name)_lib',
       'type': 'static_library',
@@ -350,7 +350,7 @@
           ],
         }],
       ],
-    },
+    },  # target <(product_name)_lib
     {
       'target_name': 'generated_sources',
       'type': 'none',
@@ -390,7 +390,40 @@
           ],
         },
       ],
-    },
+    },  # target generated_sources
+    {
+      'target_name': '<(project_name)_dump_symbols',
+      'type': 'none',
+      'dependencies': [
+        '<(project_name)',
+      ],
+      'conditions': [
+        ['OS=="mac"', {
+          'dependencies': [
+            'vendor/breakpad/breakpad.gyp:dump_syms',
+          ],
+          'actions': [
+            {
+              'action_name': 'Dump Symbols',
+              'inputs': [
+                '<(PRODUCT_DIR)/<(product_name).app/Contents/MacOS/<(product_name)',
+              ],
+              'outputs': [
+                '<(PRODUCT_DIR)/<(product_name).breakpad.syms',
+              ],
+              'action': [
+                'tools/mac/generate_breakpad_symbols.py',
+                '--build-dir=<(PRODUCT_DIR)',
+                '--binary=<(PRODUCT_DIR)/<(product_name).app/Contents/MacOS/<(product_name)',
+                '--symbols-dir=<(PRODUCT_DIR)/<(product_name).breakpad.syms',
+                '--clear',
+                '--jobs=16',
+              ],
+            },
+          ],
+        }],  # OS=="mac"
+      ],
+    },  # target <(project_name>_dump_symbols
   ],
   'conditions': [
     ['OS=="mac"', {
