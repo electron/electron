@@ -15,11 +15,11 @@ InspectableWebContentsView* CreateInspectableContentsView(InspectableWebContents
 }
 
 InspectableWebContentsViewLinux::InspectableWebContentsViewLinux(InspectableWebContentsImpl* inspectable_web_contents)
-    : inspectable_web_contents_(inspectable_web_contents), devtools_window(NULL) {
+    : inspectable_web_contents_(inspectable_web_contents), devtools_window_(NULL) {
 }
 
 InspectableWebContentsViewLinux::~InspectableWebContentsViewLinux() {
-  if (devtools_window) gtk_widget_destroy(devtools_window);
+  if (devtools_window_) gtk_widget_destroy(devtools_window_);
 }
 
 #if 0  // some utility functions to debug GTK window hierarchies
@@ -72,14 +72,14 @@ gfx::NativeView InspectableWebContentsViewLinux::GetNativeView() const {
       into the unassigned state.
    ShowDevTools() and is responsible for transitioning from any one of these
    states to the three visible states, 2-4, as indicated by the contents of the
-   'dockside' variable.  The helper functions ShowDevToolsInWindow and
+   'dockside_' variable.  The helper functions ShowDevToolsInWindow and
    ShowDevToolsInPane focus on transitioning to states 2 and 3+4, respectively.
    These helper functions are responsible for the entire transition, including
    cleaning up any extraneous containers from the old state.
 
    Hiding the dev tools is taken care of by CloseDevTools (from paned states
    3+4 to invisible state 5) or by the "delete-event" signal on the
-   devtools_window (from window state 2 to 5).
+   devtools_window_ (from window state 2 to 5).
 
    Remember that GTK does reference counting, so a view with no refs and no
    parent will be freed.  Views that have a ref but no parents will lose their
@@ -94,18 +94,18 @@ void InspectableWebContentsViewLinux::ShowDevTools() {
   GtkWidget *parent = gtk_widget_get_parent(devtools);
 
   DLOG(INFO) << base::StringPrintf("InspectableWebContentsViewLinux::ShowDevTools - parent=%s@%p window=%p dockside=\"%s\"",
-    g_type_name_from_instance((GTypeInstance*)parent), parent, devtools_window, dockside.c_str());
+    g_type_name_from_instance((GTypeInstance*)parent), parent, devtools_window_, dockside_.c_str());
 
   if (!parent || GTK_IS_PANED(parent)) {
-    if (dockside == "undocked")    ShowDevToolsInWindow();
-    else if (dockside == "bottom") ShowDevToolsInPane(true);
-    else if (dockside == "right")  ShowDevToolsInPane(false);
+    if (dockside_ == "undocked")    ShowDevToolsInWindow();
+    else if (dockside_ == "bottom") ShowDevToolsInPane(true);
+    else if (dockside_ == "right")  ShowDevToolsInPane(false);
   }
   else {
-    DCHECK(parent == devtools_window);
-    if (dockside == "undocked")    gtk_widget_show_all(parent);
-    else if (dockside == "bottom") ShowDevToolsInPane(true);
-    else if (dockside == "right")  ShowDevToolsInPane(false);
+    DCHECK(parent == devtools_window_);
+    if (dockside_ == "undocked")    gtk_widget_show_all(parent);
+    else if (dockside_ == "bottom") ShowDevToolsInPane(true);
+    else if (dockside_ == "right")  ShowDevToolsInPane(false);
   }
 }
 
@@ -114,7 +114,7 @@ void InspectableWebContentsViewLinux::CloseDevTools() {
   GtkWidget *parent = gtk_widget_get_parent(devtools);
 
   DLOG(INFO) << base::StringPrintf("InspectableWebContentsViewLinux::CloseDevTools - parent=%s@%p window=%p dockside=\"%s\"",
-    g_type_name_from_instance((GTypeInstance*)parent), parent, devtools_window, dockside.c_str());
+    g_type_name_from_instance((GTypeInstance*)parent), parent, devtools_window_, dockside_.c_str());
 
   if (!parent) {
     return;  // Not visible -> nothing to do
@@ -123,15 +123,15 @@ void InspectableWebContentsViewLinux::CloseDevTools() {
     GtkWidget *browser = GetBrowserWindow();
     GtkWidget *view = GetNativeView();
 
-    if (!devtools_window) MakeDevToolsWindow();
-    gtk_widget_reparent(devtools, devtools_window);
+    if (!devtools_window_) MakeDevToolsWindow();
+    gtk_widget_reparent(devtools, devtools_window_);
     g_object_ref(parent);
     gtk_container_remove(GTK_CONTAINER(browser), parent);
     gtk_widget_reparent(view, browser);
     g_object_unref(parent);
   }
   else {
-    DCHECK(parent == devtools_window);
+    DCHECK(parent == devtools_window_);
     gtk_widget_hide(parent);
   }
 }
@@ -139,9 +139,9 @@ void InspectableWebContentsViewLinux::CloseDevTools() {
 bool InspectableWebContentsViewLinux::SetDockSide(const std::string& side) {
   DLOG(INFO) << "InspectableWebContentsViewLinux::SetDockSide: \"" << side << "\"";
   if (side != "undocked" && side != "bottom" && side != "right") return false;  // unsupported display location
-  if (dockside == side) return true;  // no change from current location
+  if (dockside_ == side) return true;  // no change from current location
 
-  dockside = side;
+  dockside_ = side;
 
   // If devtools already has a parent, then we're being asked to move it.
   GtkWidget *devtools = inspectable_web_contents()->devtools_web_contents()->GetView()->GetNativeView();
@@ -156,13 +156,13 @@ void InspectableWebContentsViewLinux::ShowDevToolsInWindow() {
   GtkWidget *devtools = inspectable_web_contents()->devtools_web_contents()->GetView()->GetNativeView();
   GtkWidget *parent = gtk_widget_get_parent(devtools);
 
-  if (!devtools_window) MakeDevToolsWindow();
+  if (!devtools_window_) MakeDevToolsWindow();
   if (!parent) {
-    gtk_container_add(GTK_CONTAINER(devtools_window), devtools);
+    gtk_container_add(GTK_CONTAINER(devtools_window_), devtools);
   }
-  else if (parent != devtools_window) {
+  else if (parent != devtools_window_) {
     DCHECK(GTK_IS_PANED(parent));
-    gtk_widget_reparent(devtools, devtools_window);
+    gtk_widget_reparent(devtools, devtools_window_);
 
     // Remove the pane.
     GtkWidget *view = GetNativeView();
@@ -173,15 +173,15 @@ void InspectableWebContentsViewLinux::ShowDevToolsInWindow() {
     gtk_container_add(GTK_CONTAINER(browser), view);
     g_object_unref(view);
   }
-  gtk_widget_show_all(devtools_window);
+  gtk_widget_show_all(devtools_window_);
 }
 
 void InspectableWebContentsViewLinux::MakeDevToolsWindow() {
-  DCHECK(!devtools_window);
-  devtools_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_window_set_title(GTK_WINDOW(devtools_window), "Developer Tools");
-  gtk_window_set_default_size(GTK_WINDOW(devtools_window), 800, 600);
-  g_signal_connect(GTK_OBJECT(devtools_window), "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), this);
+  DCHECK(!devtools_window_);
+  devtools_window_ = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_title(GTK_WINDOW(devtools_window_), "Developer Tools");
+  gtk_window_set_default_size(GTK_WINDOW(devtools_window_), 800, 600);
+  g_signal_connect(GTK_OBJECT(devtools_window_), "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), this);
 }
 
 void InspectableWebContentsViewLinux::ShowDevToolsInPane(bool on_bottom) {
@@ -213,14 +213,14 @@ void InspectableWebContentsViewLinux::ShowDevToolsInPane(bool on_bottom) {
     gtk_container_remove(GTK_CONTAINER(browser), parent);
   }
   else {
-    DCHECK(parent == devtools_window);
+    DCHECK(parent == devtools_window_);
     g_object_ref(view);
-    gtk_container_remove(GTK_CONTAINER(devtools_window), devtools);
+    gtk_container_remove(GTK_CONTAINER(devtools_window_), devtools);
     gtk_container_remove(GTK_CONTAINER(browser), view);
     gtk_paned_add1(GTK_PANED(pane), view);
     gtk_paned_add2(GTK_PANED(pane), devtools);
     g_object_unref(view);
-    gtk_widget_hide(devtools_window);
+    gtk_widget_hide(devtools_window_);
   }
   gtk_container_add(GTK_CONTAINER(browser), pane);
   gtk_widget_show_all(pane);
