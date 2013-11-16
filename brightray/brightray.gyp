@@ -90,7 +90,6 @@
           'link_settings': {
             'libraries': [
               '<(brightray_source_root)/<(libchromiumcontent_library_dir)/libchromiumcontent.so',
-              '<(brightray_source_root)/<(libchromiumcontent_library_dir)/libencryptor.a',
             ],
           },
         }],
