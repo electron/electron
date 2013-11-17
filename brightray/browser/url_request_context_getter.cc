@@ -4,7 +4,10 @@
 
 #include "browser/url_request_context_getter.h"
 
-#include "network_delegate.h"
+#include <algorithm>
+
+#include "browser/network_delegate.h"
+
 #include "base/strings/string_util.h"
 #include "base/threading/worker_pool.h"
 #include "content/public/browser/browser_thread.h"
@@ -43,7 +46,8 @@ URLRequestContextGetter::URLRequestContextGetter(
 
   std::swap(protocol_handlers_, *protocol_handlers);
 
-  proxy_config_service_.reset(net::ProxyService::CreateSystemProxyConfigService(io_loop_->message_loop_proxy(), file_loop_));
+  proxy_config_service_.reset(net::ProxyService::CreateSystemProxyConfigService(
+      io_loop_->message_loop_proxy(), file_loop_));
 }
 
 URLRequestContextGetter::~URLRequestContextGetter() {
@@ -53,8 +57,7 @@ net::HostResolver* URLRequestContextGetter::host_resolver() {
   return url_request_context_->host_resolver();
 }
 
-net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext()
-{
+net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
 
   if (!url_request_context_.get()) {
@@ -87,7 +90,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext()
     storage_->set_ssl_config_service(new net::SSLConfigServiceDefaults);
     storage_->set_http_auth_handler_factory(
         net::HttpAuthHandlerFactory::CreateDefault(host_resolver.get()));
-    scoped_ptr<net::HttpServerProperties> server_properties(new net::HttpServerPropertiesImpl);
+    scoped_ptr<net::HttpServerProperties> server_properties(
+        new net::HttpServerPropertiesImpl);
     storage_->set_http_server_properties(server_properties.Pass());
 
     base::FilePath cache_path = base_path_.Append(FILE_PATH_LITERAL("Cache"));
@@ -130,21 +134,25 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext()
         new net::URLRequestJobFactoryImpl());
     for (auto it = protocol_handlers_.begin(),
         end = protocol_handlers_.end(); it != end; ++it) {
-      bool set_protocol = job_factory->SetProtocolHandler(it->first, it->second.release());
+      bool set_protocol = job_factory->SetProtocolHandler(
+          it->first, it->second.release());
       DCHECK(set_protocol);
     }
     protocol_handlers_.clear();
-    job_factory->SetProtocolHandler(chrome::kDataScheme, new net::DataProtocolHandler);
-    job_factory->SetProtocolHandler(chrome::kFileScheme, new net::FileProtocolHandler);
+    job_factory->SetProtocolHandler(
+        chrome::kDataScheme, new net::DataProtocolHandler);
+    job_factory->SetProtocolHandler(
+        chrome::kFileScheme, new net::FileProtocolHandler);
     storage_->set_job_factory(job_factory.release());
   }
 
   return url_request_context_.get();
 }
 
-scoped_refptr<base::SingleThreadTaskRunner> URLRequestContextGetter::GetNetworkTaskRunner() const
-{
-  return content::BrowserThread::GetMessageLoopProxyForThread(content::BrowserThread::IO);
+scoped_refptr<base::SingleThreadTaskRunner>
+    URLRequestContextGetter::GetNetworkTaskRunner() const {
+  return content::BrowserThread::GetMessageLoopProxyForThread(
+      content::BrowserThread::IO);
 }
 
-}
+}  // namespace brightray
