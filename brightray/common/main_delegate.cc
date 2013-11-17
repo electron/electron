@@ -53,8 +53,10 @@ void MainDelegate::InitializeResourceBundle() {
 
   std::vector<base::FilePath> pak_paths;
   AddPakPaths(&pak_paths);
-  for (auto it = pak_paths.begin(), end = pak_paths.end(); it != end; ++it)
-    ui::ResourceBundle::GetSharedInstance().AddDataPackFromPath(*it, ui::SCALE_FACTOR_NONE);
+  for (auto it = pak_paths.begin(), end = pak_paths.end(); it != end; ++it) {
+    ui::ResourceBundle::GetSharedInstance().AddDataPackFromPath(
+        *it, ui::SCALE_FACTOR_NONE);
+  }
 }
 
 }  // namespace brightray
