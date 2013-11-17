@@ -18,4 +18,4 @@ void DefaultWebContentsDelegate::RequestMediaAccessPermission(
   controller.TakeAction();
 }
 
-}
+}  // namespace brightray
