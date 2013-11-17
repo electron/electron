@@ -2,7 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "network_delegate.h"
+#include "browser/network_delegate.h"
+
+#include <string>
 
 #include "net/base/net_errors.h"
 
@@ -102,4 +104,4 @@ void NetworkDelegate::OnRequestWaitStateChange(
     RequestWaitState waiting) {
 }
 
-}
+}  // namespace brightray
