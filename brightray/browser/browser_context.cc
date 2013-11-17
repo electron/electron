@@ -99,9 +99,9 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
     content::ProtocolHandlerMap* protocol_handlers) {
   DCHECK(!url_request_getter_);
   auto io_loop = content::BrowserThread::UnsafeGetMessageLoopForThread(
-      content::BrowserThread::IO),
+      content::BrowserThread::IO);
   auto file_loop = content::BrowserThread::UnsafeGetMessageLoopForThread(
-      content::BrowserThread::FILE),
+      content::BrowserThread::FILE);
   url_request_getter_ = new URLRequestContextGetter(
       GetPath(),
       io_loop,
