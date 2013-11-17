@@ -14,7 +14,7 @@ class BrowserMainParts;
 class NotificationPresenter;
 
 class BrowserClient : public content::ContentBrowserClient {
-public:
+ public:
   static BrowserClient* Get();
 
   BrowserClient();
@@ -24,17 +24,21 @@ public:
   BrowserMainParts* browser_main_parts() { return browser_main_parts_; }
   NotificationPresenter* notification_presenter();
 
-protected:
-  // Subclasses should override this to provide their own BrowserMainParts implementation. The
-  // lifetime of the returned instance is managed by the caller.
-  virtual BrowserMainParts* OverrideCreateBrowserMainParts(const content::MainFunctionParams&);
+ protected:
+  // Subclasses should override this to provide their own BrowserMainParts
+  // implementation. The lifetime of the returned instance is managed by the
+  // caller.
+  virtual BrowserMainParts* OverrideCreateBrowserMainParts(
+      const content::MainFunctionParams&);
 
-  // Subclasses that override this (e.g., to provide their own protocol handlers) should call this
-  // implementation after doing their own work.
-  virtual net::URLRequestContextGetter* CreateRequestContext(content::BrowserContext*, content::ProtocolHandlerMap*) OVERRIDE;
+  // Subclasses that override this (e.g., to provide their own protocol
+  // handlers) should call this implementation after doing their own work.
+  virtual net::URLRequestContextGetter* CreateRequestContext(
+      content::BrowserContext*, content::ProtocolHandlerMap*) OVERRIDE;
 
-private:
-  virtual content::BrowserMainParts* CreateBrowserMainParts(const content::MainFunctionParams&) OVERRIDE;
+ private:
+  virtual content::BrowserMainParts* CreateBrowserMainParts(
+      const content::MainFunctionParams&) OVERRIDE;
   virtual void ShowDesktopNotification(
       const content::ShowDesktopNotificationHostMsgParams&,
       int render_process_id,
@@ -52,6 +56,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(BrowserClient);
 };
 
-}
+}  // namespace brightray
 
 #endif
