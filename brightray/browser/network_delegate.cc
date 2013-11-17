@@ -4,8 +4,6 @@
 
 #include "browser/network_delegate.h"
 
-#include <string>
-
 #include "net/base/net_errors.h"
 
 namespace brightray {

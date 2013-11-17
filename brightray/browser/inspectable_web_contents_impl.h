@@ -8,8 +8,6 @@
 
 #include "browser/inspectable_web_contents.h"
 
-#include <string>
-
 #include "content/public/browser/devtools_frontend_host_delegate.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"

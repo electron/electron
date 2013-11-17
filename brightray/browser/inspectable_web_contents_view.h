@@ -1,8 +1,6 @@
 #ifndef BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_VIEW_H_
 #define BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_VIEW_H_
 
-#include <string>
-
 #include "ui/gfx/native_widget_types.h"
 
 namespace brightray {

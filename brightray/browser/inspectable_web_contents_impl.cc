@@ -5,8 +5,6 @@
 
 #include "browser/inspectable_web_contents_impl.h"
 
-#include <string>
-
 #include "browser/browser_client.h"
 #include "browser/browser_context.h"
 #include "browser/browser_main_parts.h"

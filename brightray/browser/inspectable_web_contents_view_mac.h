@@ -3,8 +3,6 @@
 
 #include "browser/inspectable_web_contents_view.h"
 
-#include <string>
-
 #include "base/mac/scoped_nsobject.h"
 
 @class BRYInspectableWebContentsView;

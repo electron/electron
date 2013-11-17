@@ -7,8 +7,6 @@
 
 #include "net/base/network_delegate.h"
 
-#include <string>
-
 namespace brightray {
 
 class NetworkDelegate : public net::NetworkDelegate {
