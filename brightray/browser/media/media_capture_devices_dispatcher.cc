@@ -181,4 +181,4 @@ void MediaCaptureDevicesDispatcher::UpdateVideoDevicesOnUIThread(
   video_devices_ = devices;
 }
 
-} // namespace brightray
+}  // namespace brightray

@@ -159,4 +159,4 @@ void MediaStreamDevicesController::Deny() {
   cb.Run(content::MediaStreamDevices(), scoped_ptr<content::MediaStreamUI>());
 }
 
-} // namespace brightray
+}  // namespace brightray
