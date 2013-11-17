@@ -8,6 +8,8 @@
 
 #include "browser/inspectable_web_contents.h"
 
+#include <string>
+
 #include "content/public/browser/devtools_frontend_host_delegate.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -28,10 +30,10 @@ class InspectableWebContentsImpl :
     content::DevToolsFrontendHostDelegate,
     content::WebContentsObserver,
     content::WebContentsDelegate {
-public:
-  static void RegisterPrefs(PrefRegistrySimple*);
+ public:
+  static void RegisterPrefs(PrefRegistrySimple* pref_registry);
 
-  InspectableWebContentsImpl(content::WebContents*);
+  explicit InspectableWebContentsImpl(content::WebContents*);
   virtual ~InspectableWebContentsImpl();
 
   virtual InspectableWebContentsView* GetView() const OVERRIDE;
@@ -39,13 +41,15 @@ public:
 
   virtual void ShowDevTools() OVERRIDE;
 
-  content::WebContents* devtools_web_contents() { return devtools_web_contents_.get(); }
+  content::WebContents* devtools_web_contents() {
+    return devtools_web_contents_.get();
+  }
 
-private:
+ private:
   void UpdateFrontendDockSide();
 
   // content::DevToolsFrontendHostDelegate
-  
+
   virtual void ActivateWindow() OVERRIDE;
   virtual void ChangeAttachedWindowHeight(unsigned height) OVERRIDE;
   virtual void CloseWindow() OVERRIDE;
@@ -60,16 +64,18 @@ private:
   virtual void RequestFileSystems() OVERRIDE;
   virtual void AddFileSystem() OVERRIDE;
   virtual void RemoveFileSystem(const std::string& file_system_path) OVERRIDE;
-  virtual void IndexPath(int request_id, const std::string& file_system_path) OVERRIDE;
+  virtual void IndexPath(int request_id,
+                         const std::string& file_system_path) OVERRIDE;
   virtual void StopIndexing(int request_id) OVERRIDE;
   virtual void SearchInPath(int request_id,
                             const std::string& file_system_path,
                             const std::string& query) OVERRIDE;
   virtual void InspectedContentsClosing() OVERRIDE;
-  
+
   // content::WebContentsObserver
-  
-  virtual void AboutToNavigateRenderView(content::RenderViewHost* render_view_host) OVERRIDE;
+
+  virtual void AboutToNavigateRenderView(
+      content::RenderViewHost* render_view_host) OVERRIDE;
   virtual void DidFinishLoad(int64 frame_id,
                              const GURL& validated_url,
                              bool is_main_frame,
@@ -77,9 +83,10 @@ private:
   virtual void WebContentsDestroyed(content::WebContents*) OVERRIDE;
 
   // content::WebContentsDelegate
-  
-  virtual void HandleKeyboardEvent(content::WebContents*, const content::NativeWebKeyboardEvent&) OVERRIDE;
-  
+
+  virtual void HandleKeyboardEvent(
+      content::WebContents*, const content::NativeWebKeyboardEvent&) OVERRIDE;
+
   scoped_ptr<content::WebContents> web_contents_;
   scoped_ptr<content::DevToolsClientHost> frontend_host_;
   scoped_ptr<content::WebContents> devtools_web_contents_;
