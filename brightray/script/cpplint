@@ -28,7 +28,7 @@ def list_files(directories, filters):
 
 
 def cpplint(files):
-  rules = '--filter=-build/header_guard'
+  rules = '--filter=-build/header_guard,-legal/copyright'
   return subprocess.call([sys.executable, CPPLINT, rules] + files)
 
 
