@@ -37,6 +37,6 @@ class WebUIControllerFactory : public content::WebUIControllerFactory {
   DISALLOW_COPY_AND_ASSIGN(WebUIControllerFactory);
 };
 
-}
+}  // namespace brightray
 
 #endif

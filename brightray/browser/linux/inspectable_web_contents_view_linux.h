@@ -49,6 +49,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewLinux);
 };
 
-}
+}  // namespace brightray
 
 #endif

@@ -234,4 +234,4 @@ GtkWidget *InspectableWebContentsViewLinux::GetBrowserWindow() {
   return browser;
 }
 
-}
+}  // namespace brightray

@@ -20,6 +20,6 @@ class DevToolsUI : public content::WebUIController {
   DISALLOW_COPY_AND_ASSIGN(DevToolsUI);
 };
 
-}
+}  // namespace brightray
 
 #endif

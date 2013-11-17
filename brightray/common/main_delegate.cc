@@ -57,4 +57,4 @@ void MainDelegate::InitializeResourceBundle() {
     ui::ResourceBundle::GetSharedInstance().AddDataPackFromPath(*it, ui::SCALE_FACTOR_NONE);
 }
 
-}
+}  // namespace brightray

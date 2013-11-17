@@ -37,4 +37,4 @@ gfx::Image& ContentClient::GetNativeImageNamed(int resource_id) const {
   return ui::ResourceBundle::GetSharedInstance().GetNativeImageNamed(resource_id);
 }
 
-}
+}  // namespace brightray

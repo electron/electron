@@ -16,6 +16,6 @@ public:
   virtual bool SetDockSide(const std::string& side) = 0;
 };
 
-}
+}  // namespace brightray
 
 #endif

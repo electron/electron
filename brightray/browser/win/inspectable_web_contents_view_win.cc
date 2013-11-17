@@ -56,4 +56,4 @@ bool InspectableWebContentsViewWin::SetDockSide(const std::string& side) {
   return false;
 }
 
-}
+}  // namespace brightray

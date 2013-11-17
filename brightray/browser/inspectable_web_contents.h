@@ -22,6 +22,6 @@ public:
   virtual void ShowDevTools() = 0;
 };
 
-}
+}  // namespace brightray
 
 #endif

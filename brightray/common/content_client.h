@@ -24,6 +24,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(ContentClient);
 };
 
-}
+}  // namespace brightray
 
 #endif

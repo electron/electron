@@ -31,6 +31,6 @@ class DevToolsWindow : public ui::WindowImpl, public base::SupportsWeakPtr<DevTo
   DISALLOW_COPY_AND_ASSIGN(DevToolsWindow);
 };
 
-}
+}  // namespace brightray
 
 #endif

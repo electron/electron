@@ -34,6 +34,6 @@ class NotificationPresenterMac : public NotificationPresenter {
   base::scoped_nsobject<BRYUserNotificationCenterDelegate> delegate_;
 };
 
-}
+}  // namespace brightray
 
 #endif

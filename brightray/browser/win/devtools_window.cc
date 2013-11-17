@@ -44,4 +44,4 @@ LRESULT DevToolsWindow::OnSize(UINT, WPARAM, LPARAM, BOOL&) {
   return 0;
 }
 
-}
+}  // namespace brightray

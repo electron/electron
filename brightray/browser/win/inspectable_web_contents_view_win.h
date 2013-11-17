@@ -32,6 +32,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewWin);
 };
 
-}
+}  // namespace brightray
 
 #endif

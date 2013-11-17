@@ -16,4 +16,4 @@ std::string GetApplicationVersion() {
   return UTF16ToUTF8(info->product_version());
 }
 
-}
+}  // namespace brightray

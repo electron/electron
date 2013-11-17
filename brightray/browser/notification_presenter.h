@@ -23,6 +23,6 @@ class NotificationPresenter {
       int notification_id) = 0;
 };
 
-}
+}  // namespace brightray
 
 #endif

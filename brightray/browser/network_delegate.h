@@ -37,6 +37,6 @@ class NetworkDelegate : public net::NetworkDelegate {
   DISALLOW_COPY_AND_ASSIGN(NetworkDelegate);
 };
 
-}
+}  // namespace brightray
 
 #endif

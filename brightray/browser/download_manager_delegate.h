@@ -14,6 +14,6 @@ class DownloadManagerDelegate : public content::DownloadManagerDelegate {
   DISALLOW_COPY_AND_ASSIGN(DownloadManagerDelegate);
 };
 
-}
+}  // namespace brightray
 
 #endif

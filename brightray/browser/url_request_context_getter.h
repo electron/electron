@@ -53,6 +53,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(URLRequestContextGetter);
 };
 
-}
+}  // namespace brightray
 
 #endif
