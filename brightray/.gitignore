@@ -7,3 +7,9 @@
 
 # Vim
 *.swp
+
+# Linux
+Makefile
+*.Makefile
+*.mk
+out/

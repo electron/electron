@@ -46,6 +46,8 @@
         'browser/inspectable_web_contents_view.h',
         'browser/inspectable_web_contents_view_mac.h',
         'browser/inspectable_web_contents_view_mac.mm',
+        'browser/linux/inspectable_web_contents_view_linux.h',
+        'browser/linux/inspectable_web_contents_view_linux.cc',
         'browser/mac/bry_application.h',
         'browser/mac/bry_application.mm',
         'browser/mac/bry_inspectable_web_contents_view.h',
@@ -81,6 +83,16 @@
         'common/main_delegate_mac.mm',
       ],
       'conditions': [
+        ['OS=="linux"', {
+          'cflags': [
+            '-fno-rtti',
+          ],
+          'link_settings': {
+            'libraries': [
+              '<(brightray_source_root)/<(libchromiumcontent_library_dir)/libchromiumcontent.so',
+            ],
+          },
+        }],
         ['OS=="mac"', {
           'link_settings': {
             'libraries': [
