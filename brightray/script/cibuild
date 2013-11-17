@@ -18,8 +18,8 @@ def main():
 
     url = 'https://{0}.s3.amazonaws.com/libchromiumcontent'.format(os.environ['JANKY_ARTIFACTS_S3_BUCKET'])
     return (run_script('bootstrap', url) or
-            run_script('cpplint') or
-            run_script('build'))
+            run_script('build') or
+            run_script('cpplint'))
 
 
 def copy_to_environment(credentials_file):
