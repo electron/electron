@@ -5,6 +5,8 @@
 
 #include "browser/inspectable_web_contents_impl.h"
 
+#include <string>
+
 #include "browser/browser_client.h"
 #include "browser/browser_context.h"
 #include "browser/browser_main_parts.h"
@@ -31,15 +33,18 @@ const char kDockSidePref[] = "brightray.devtools.dockside";
 }
 
 // Implemented separately on each platform.
-InspectableWebContentsView* CreateInspectableContentsView(InspectableWebContentsImpl*);
+InspectableWebContentsView* CreateInspectableContentsView(
+    InspectableWebContentsImpl* inspectable_web_contents_impl);
 
 void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
   registry->RegisterStringPref(kDockSidePref, "bottom");
 }
 
-InspectableWebContentsImpl::InspectableWebContentsImpl(content::WebContents* web_contents)
+InspectableWebContentsImpl::InspectableWebContentsImpl(
+    content::WebContents* web_contents)
     : web_contents_(web_contents) {
-  auto context = static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
+  auto context = static_cast<BrowserContext*>(
+      web_contents_->GetBrowserContext());
   dock_side_ = context->prefs()->GetString(kDockSidePref);
 
   view_.reset(CreateInspectableContentsView(this));
@@ -58,7 +63,9 @@ content::WebContents* InspectableWebContentsImpl::GetWebContents() const {
 
 void InspectableWebContentsImpl::ShowDevTools() {
   if (!devtools_web_contents_) {
-    devtools_web_contents_.reset(content::WebContents::Create(content::WebContents::CreateParams(web_contents_->GetBrowserContext())));
+    auto create_params = content::WebContents::CreateParams(
+        web_contents_->GetBrowserContext());
+    devtools_web_contents_.reset(content::WebContents::Create(create_params));
 
 #if defined(OS_MACOSX)
     // Work around http://crbug.com/279472.
@@ -68,12 +75,20 @@ void InspectableWebContentsImpl::ShowDevTools() {
     Observe(devtools_web_contents_.get());
     devtools_web_contents_->SetDelegate(this);
 
-    agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(web_contents_->GetRenderViewHost());
-    frontend_host_.reset(content::DevToolsClientHost::CreateDevToolsFrontendHost(devtools_web_contents_.get(), this));
-    content::DevToolsManager::GetInstance()->RegisterDevToolsClientHostFor(agent_host_, frontend_host_.get());
+    agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(
+        web_contents_->GetRenderViewHost());
+    frontend_host_.reset(
+        content::DevToolsClientHost::CreateDevToolsFrontendHost(
+            devtools_web_contents_.get(), this));
+    content::DevToolsManager::GetInstance()->RegisterDevToolsClientHostFor(
+        agent_host_, frontend_host_.get());
 
     GURL devtools_url(kChromeUIDevToolsURL);
-    devtools_web_contents_->GetController().LoadURL(devtools_url, content::Referrer(), content::PAGE_TRANSITION_AUTO_TOPLEVEL, std::string());
+    devtools_web_contents_->GetController().LoadURL(
+        devtools_url,
+        content::Referrer(),
+        content::PAGE_TRANSITION_AUTO_TOPLEVEL,
+        std::string());
   }
 
   view_->SetDockSide(dock_side_);
@@ -81,8 +96,10 @@ void InspectableWebContentsImpl::ShowDevTools() {
 }
 
 void InspectableWebContentsImpl::UpdateFrontendDockSide() {
-  auto javascript = base::StringPrintf("InspectorFrontendAPI.setDockSide(\"%s\")", dock_side_.c_str());
-  devtools_web_contents_->GetRenderViewHost()->ExecuteJavascriptInWebFrame(string16(), ASCIIToUTF16(javascript));
+  auto javascript = base::StringPrintf(
+      "InspectorFrontendAPI.setDockSide(\"%s\")", dock_side_.c_str());
+  devtools_web_contents_->GetRenderViewHost()->ExecuteJavascriptInWebFrame(
+      string16(), ASCIIToUTF16(javascript));
 }
 
 void InspectableWebContentsImpl::ActivateWindow() {
@@ -106,7 +123,8 @@ void InspectableWebContentsImpl::SetDockSide(const std::string& side) {
 
   dock_side_ = side;
 
-  auto context = static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
+  auto context = static_cast<BrowserContext*>(
+      web_contents_->GetBrowserContext());
   context->prefs()->SetString(kDockSidePref, side);
 
   UpdateFrontendDockSide();
@@ -115,10 +133,12 @@ void InspectableWebContentsImpl::SetDockSide(const std::string& side) {
 void InspectableWebContentsImpl::OpenInNewTab(const std::string& url) {
 }
 
-void InspectableWebContentsImpl::SaveToFile(const std::string& url, const std::string& content, bool save_as) {
+void InspectableWebContentsImpl::SaveToFile(
+    const std::string& url, const std::string& content, bool save_as) {
 }
 
-void InspectableWebContentsImpl::AppendToFile(const std::string& url, const std::string& content) {
+void InspectableWebContentsImpl::AppendToFile(
+    const std::string& url, const std::string& content) {
 }
 
 void InspectableWebContentsImpl::RequestFileSystems() {
@@ -127,26 +147,36 @@ void InspectableWebContentsImpl::RequestFileSystems() {
 void InspectableWebContentsImpl::AddFileSystem() {
 }
 
-void InspectableWebContentsImpl::RemoveFileSystem(const std::string& file_system_path) {
+void InspectableWebContentsImpl::RemoveFileSystem(
+    const std::string& file_system_path) {
 }
 
-void InspectableWebContentsImpl::IndexPath(int request_id, const std::string& file_system_path) {
+void InspectableWebContentsImpl::IndexPath(
+    int request_id, const std::string& file_system_path) {
 }
 
 void InspectableWebContentsImpl::StopIndexing(int request_id) {
 }
 
-void InspectableWebContentsImpl::SearchInPath(int request_id, const std::string& file_system_path, const std::string& query) {
+void InspectableWebContentsImpl::SearchInPath(
+    int request_id,
+    const std::string& file_system_path,
+    const std::string& query) {
 }
 
 void InspectableWebContentsImpl::InspectedContentsClosing() {
 }
 
-void InspectableWebContentsImpl::AboutToNavigateRenderView(content::RenderViewHost* render_view_host) {
-  content::DevToolsClientHost::SetupDevToolsFrontendClient(web_contents()->GetRenderViewHost());
+void InspectableWebContentsImpl::AboutToNavigateRenderView(
+    content::RenderViewHost* render_view_host) {
+  content::DevToolsClientHost::SetupDevToolsFrontendClient(
+      web_contents()->GetRenderViewHost());
 }
 
-void InspectableWebContentsImpl::DidFinishLoad(int64, const GURL&, bool is_main_frame, content::RenderViewHost*) {
+void InspectableWebContentsImpl::DidFinishLoad(int64 frame_id,
+                                               const GURL& validated_url,
+                                               bool is_main_frame,
+                                               content::RenderViewHost*) {
   if (!is_main_frame)
     return;
 
@@ -154,16 +184,19 @@ void InspectableWebContentsImpl::DidFinishLoad(int64, const GURL&, bool is_main_
 }
 
 void InspectableWebContentsImpl::WebContentsDestroyed(content::WebContents*) {
-  content::DevToolsManager::GetInstance()->ClientHostClosing(frontend_host_.get());
+  content::DevToolsManager::GetInstance()->ClientHostClosing(
+      frontend_host_.get());
   Observe(nullptr);
   agent_host_ = nullptr;
   frontend_host_.reset();
 }
 
-void InspectableWebContentsImpl::HandleKeyboardEvent(content::WebContents* source, const content::NativeWebKeyboardEvent& event) {
+void InspectableWebContentsImpl::HandleKeyboardEvent(
+    content::WebContents* source,
+    const content::NativeWebKeyboardEvent& event) {
   auto delegate = web_contents_->GetDelegate();
   if (delegate)
     delegate->HandleKeyboardEvent(source, event);
 }
 
-}
+}  // namespace brightray
