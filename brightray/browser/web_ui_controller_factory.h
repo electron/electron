@@ -15,11 +15,11 @@ class BrowserContext;
 
 class WebUIControllerFactory : public content::WebUIControllerFactory {
  public:
-  WebUIControllerFactory(BrowserContext* browser_context);
+  explicit WebUIControllerFactory(BrowserContext* browser_context);
   virtual ~WebUIControllerFactory();
 
-  virtual content::WebUI::TypeID GetWebUIType(content::BrowserContext* browser_context,
-                                              const GURL& url) const OVERRIDE;
+  virtual content::WebUI::TypeID GetWebUIType(
+      content::BrowserContext* browser_context, const GURL& url) const OVERRIDE;
   virtual bool UseWebUIForURL(content::BrowserContext* browser_context,
                               const GURL& url) const OVERRIDE;
   virtual bool UseWebUIBindingsForURL(content::BrowserContext* browser_context,
