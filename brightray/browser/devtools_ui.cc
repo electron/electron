@@ -90,12 +90,12 @@ class BundledDataSource : public content::URLDataSource {
   DISALLOW_COPY_AND_ASSIGN(BundledDataSource);
 };
 
-}
+}  // namespace
 
 DevToolsUI::DevToolsUI(BrowserContext* browser_context, content::WebUI* web_ui)
-   : WebUIController(web_ui) {
+    : WebUIController(web_ui) {
   web_ui->SetBindings(0);
   content::URLDataSource::Add(browser_context, new BundledDataSource());
 }
 
-}
+}  // namespace brightray
