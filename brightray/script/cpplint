@@ -13,7 +13,7 @@ CPPLINT = os.path.join(SOURCE_ROOT, 'vendor', 'google-styleguide', 'trunk', 'cpp
 def main():
   os.chdir(SOURCE_ROOT)
   files = list_files(['browser', 'common'],
-                     ['*.cc', '*.mm', '*.h'])
+                     ['*.cc', '*.h'])
   return cpplint(files)
 
 
