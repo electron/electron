@@ -6,7 +6,8 @@
 
 namespace brightray {
 
-InspectableWebContents* InspectableWebContents::Create(const content::WebContents::CreateParams& create_params) {
+InspectableWebContents* InspectableWebContents::Create(
+    const content::WebContents::CreateParams& create_params) {
   auto contents = content::WebContents::Create(create_params);
 #if defined(OS_MACOSX)
   // Work around http://crbug.com/279472.
@@ -16,8 +17,9 @@ InspectableWebContents* InspectableWebContents::Create(const content::WebContent
   return Create(contents);
 }
 
-InspectableWebContents* InspectableWebContents::Create(content::WebContents* web_contents) {
+InspectableWebContents* InspectableWebContents::Create(
+    content::WebContents* web_contents) {
   return new InspectableWebContentsImpl(web_contents);
 }
 
-}
+}  // namespace brightray
