@@ -22,19 +22,23 @@ ContentClient::~ContentClient() {
 std::string ContentClient::GetProduct() const {
   auto name = GetApplicationName();
   RemoveChars(name, kWhitespaceASCII, &name);
-  return base::StringPrintf("%s/%s", name.c_str(), GetApplicationVersion().c_str());
+  return base::StringPrintf("%s/%s",
+      name.c_str(), GetApplicationVersion().c_str());
 }
 
 std::string ContentClient::GetUserAgent() const {
   return webkit_glue::BuildUserAgentFromProduct(GetProduct());
 }
 
-base::StringPiece ContentClient::GetDataResource(int resource_id, ui::ScaleFactor scale_factor) const {
-  return ui::ResourceBundle::GetSharedInstance().GetRawDataResourceForScale(resource_id, scale_factor);
+base::StringPiece ContentClient::GetDataResource(
+    int resource_id, ui::ScaleFactor scale_factor) const {
+  return ui::ResourceBundle::GetSharedInstance().GetRawDataResourceForScale(
+      resource_id, scale_factor);
 }
 
 gfx::Image& ContentClient::GetNativeImageNamed(int resource_id) const {
-  return ui::ResourceBundle::GetSharedInstance().GetNativeImageNamed(resource_id);
+  return ui::ResourceBundle::GetSharedInstance().GetNativeImageNamed(
+      resource_id);
 }
 
 }  // namespace brightray
