@@ -56,4 +56,4 @@ content::WebUIController* WebUIControllerFactory::CreateWebUIControllerForURL(
   return NULL;
 }
 
-}
+}  // namespace brightray
