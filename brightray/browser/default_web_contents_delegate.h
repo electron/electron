@@ -5,22 +5,24 @@
 
 namespace brightray {
 
-// This class provides some sane default behaviors to any content::WebContents instance (e.g.,
-// keyboard shortcut handling on Mac).
+// This class provides some sane default behaviors to any content::WebContents
+// instance (e.g., keyboard shortcut handling on Mac).
 class DefaultWebContentsDelegate : public content::WebContentsDelegate {
-public:
+ public:
   DefaultWebContentsDelegate();
   ~DefaultWebContentsDelegate();
 
-protected:
-  virtual void RequestMediaAccessPermission(content::WebContents*,
-                                            const content::MediaStreamRequest&,
-                                            const content::MediaResponseCallback&) OVERRIDE;
+ protected:
+  virtual void RequestMediaAccessPermission(
+      content::WebContents*,
+      const content::MediaStreamRequest&,
+      const content::MediaResponseCallback&) OVERRIDE;
 #if defined(OS_MACOSX)
-  virtual void HandleKeyboardEvent(content::WebContents*, const content::NativeWebKeyboardEvent&) OVERRIDE;
+  virtual void HandleKeyboardEvent(
+      content::WebContents*, const content::NativeWebKeyboardEvent&) OVERRIDE;
 #endif
 };
 
-}
+}  // namespace brightray
 
 #endif
