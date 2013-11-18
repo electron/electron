@@ -27,6 +27,8 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'Release')
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
 DIST_NAME = 'atom-shell-{0}-{1}.zip'.format(ATOM_SHELL_VRESION, TARGET_PLATFORM)
+SYMBOLS_NAME = 'atom-shell-{0}-{1}-symbols.zip'.format(ATOM_SHELL_VRESION,
+                                                       TARGET_PLATFORM)
 
 
 def main():
@@ -48,6 +50,7 @@ def main():
   github = GitHub(auth_token())
   release_id = create_or_get_release_draft(github, args.version)
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, DIST_NAME))
+  upload_atom_shell(github, release_id, os.path.join(DIST_DIR, SYMBOLS_NAME))
   if not args.no_publish_release:
     publish_release(github, release_id)
 
