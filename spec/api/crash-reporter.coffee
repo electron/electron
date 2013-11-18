@@ -13,7 +13,7 @@ describe 'crash-reporter module', ->
     server = http.createServer (req, res) ->
       form = new formidable.IncomingForm()
       form.parse req, (error, fields, files) ->
-        assert.equal fields['atom_shell_version'], process.versions['atom-shell']
+        assert.equal fields['ver'], process.versions['atom-shell']
         assert.equal fields['process_type'], 'renderer'
         assert.equal files['upload_file_minidump']['name'], 'minidump.dmp'
 

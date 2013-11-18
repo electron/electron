@@ -25,21 +25,10 @@ void CrashReporter::Start(std::string product_name,
                           const std::string& submit_url,
                           bool auto_submit,
                           bool skip_system_crash_handler) {
-  std::string version;
-  if (is_browser_) {
-    // Use application's version for crashes in browser.
-    version = atom::Browser::Get()->GetVersion();
-  } else {
-    // Just use atom-shell's version in renderer, since we can not get
-    // application's version here.
-    version = ATOM_VERSION_STRING;
-
-    // Append "Renderer" for the renderer.
-    product_name += " Renderer";
-  }
-
-  InitBreakpad(product_name, version, company_name, submit_url, auto_submit,
-               skip_system_crash_handler);
+  // Append "Renderer" for the renderer.
+  product_name += " Renderer";
+  InitBreakpad(product_name, ATOM_VERSION_STRING, company_name, submit_url,
+               auto_submit, skip_system_crash_handler);
 }
 
 void CrashReporter::SetUploadParameters() {
@@ -47,7 +36,6 @@ void CrashReporter::SetUploadParameters() {
   std::string type = command.GetSwitchValueASCII(switches::kProcessType);
 
   upload_parameters_["process_type"] = type;
-  upload_parameters_["atom_shell_version"] = ATOM_VERSION_STRING;
 }
 
 }  // namespace crash_reporter
