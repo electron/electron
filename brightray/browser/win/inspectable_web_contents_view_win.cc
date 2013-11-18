@@ -15,11 +15,13 @@ const int kWindowInset = 100;
 
 }
 
-InspectableWebContentsView* CreateInspectableContentsView(InspectableWebContentsImpl* inspectable_web_contents) {
+InspectableWebContentsView* CreateInspectableContentsView(
+    InspectableWebContentsImpl* inspectable_web_contents) {
   return new InspectableWebContentsViewWin(inspectable_web_contents);
 }
 
-InspectableWebContentsViewWin::InspectableWebContentsViewWin(InspectableWebContentsImpl* inspectable_web_contents)
+InspectableWebContentsViewWin::InspectableWebContentsViewWin(
+    InspectableWebContentsImpl* inspectable_web_contents)
     : inspectable_web_contents_(inspectable_web_contents) {
 }
 
@@ -29,7 +31,8 @@ InspectableWebContentsViewWin::~InspectableWebContentsViewWin() {
 }
 
 gfx::NativeView InspectableWebContentsViewWin::GetNativeView() const {
-  return inspectable_web_contents_->GetWebContents()->GetView()->GetNativeView();
+  auto web_contents = inspectable_web_contents_->GetWebContents();
+  return web_contents->GetView()->GetNativeView();
 }
 
 void InspectableWebContentsViewWin::ShowDevTools() {
@@ -41,7 +44,9 @@ void InspectableWebContentsViewWin::ShowDevTools() {
   auto contents_view = inspectable_web_contents_->GetWebContents()->GetView();
   auto size = contents_view->GetContainerSize();
   size.Enlarge(-kWindowInset, -kWindowInset);
-  ui::CenterAndSizeWindow(contents_view->GetNativeView(), devtools_window_->hwnd(), size);
+  ui::CenterAndSizeWindow(contents_view->GetNativeView(),
+                          devtools_window_->hwnd(),
+                          size);
 
   ShowWindow(devtools_window_->hwnd(), SW_SHOWNORMAL);
 }
@@ -56,4 +61,4 @@ bool InspectableWebContentsViewWin::SetDockSide(const std::string& side) {
   return false;
 }
 
-}
+}  // namespace brightray

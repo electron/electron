@@ -25,7 +25,7 @@ namespace brightray {
 class NetworkDelegate;
 
 class URLRequestContextGetter : public net::URLRequestContextGetter {
-public:
+ public:
   URLRequestContextGetter(
       const base::FilePath& base_path,
       base::MessageLoop* io_loop,
@@ -37,8 +37,9 @@ public:
   net::HostResolver* host_resolver();
   virtual net::URLRequestContext* GetURLRequestContext() OVERRIDE;
 
-private:
-  virtual scoped_refptr<base::SingleThreadTaskRunner> GetNetworkTaskRunner() const OVERRIDE;
+ private:
+  virtual scoped_refptr<base::SingleThreadTaskRunner>
+      GetNetworkTaskRunner() const OVERRIDE;
 
   base::FilePath base_path_;
   base::MessageLoop* io_loop_;
@@ -53,6 +54,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(URLRequestContextGetter);
 };
 
-}
+}  // namespace brightray
 
 #endif

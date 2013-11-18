@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+import fnmatch
+import os
+import subprocess
+import sys
+
+
+SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+CPPLINT = os.path.join(SOURCE_ROOT, 'vendor', 'google-styleguide', 'trunk', 'cpplint', 'cpplint.py')
+
+IGNORED_FILES = [
+    os.path.join('browser', 'mac', 'bry_inspectable_web_contents_view_private.h'),
+]
+
+FILTERS = [
+  '-build/header_guard',
+  '-build/include_what_you_use',
+  '-legal/copyright',
+  # cpplint doesn't like the BOOL& parameters that ui::WindowImpl uses.
+  '-runtime/references',
+]
+
+
+def main():
+  os.chdir(SOURCE_ROOT)
+  files = list_files(['browser', 'common'],
+                     ['*.cc', '*.h'])
+  return cpplint(set(files) - set(IGNORED_FILES))
+
+
+def list_files(directories, filters):
+  matches = []
+  for directory in directories:
+    for root, _, filenames, in os.walk(directory):
+      for f in filters:
+        for filename in fnmatch.filter(filenames, f):
+          matches.append(os.path.join(root, filename))
+  return matches
+
+
+def cpplint(files):
+  return subprocess.call([sys.executable, CPPLINT, '--filter=' + ','.join(FILTERS)] + list(files))
+
+
+if __name__ == '__main__':
+  sys.exit(main())

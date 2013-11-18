@@ -6,7 +6,7 @@
 namespace brightray {
 
 class InspectableWebContentsView {
-public:
+ public:
   virtual ~InspectableWebContentsView() {}
 
   virtual gfx::NativeView GetNativeView() const = 0;
@@ -16,6 +16,6 @@ public:
   virtual bool SetDockSide(const std::string& side) = 0;
 };
 
-}
+}  // namespace brightray
 
 #endif

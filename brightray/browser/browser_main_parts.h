@@ -15,15 +15,15 @@ class BrowserContext;
 class WebUIControllerFactory;
 
 class BrowserMainParts : public content::BrowserMainParts {
-public:
+ public:
   BrowserMainParts();
   ~BrowserMainParts();
 
   BrowserContext* browser_context() { return browser_context_.get(); }
 
-protected:
-  // Subclasses should override this to provide their own BrowserContxt implementation. The caller
-  // takes ownership of the returned object.
+ protected:
+  // Subclasses should override this to provide their own BrowserContxt
+  // implementation. The caller takes ownership of the returned object.
   virtual BrowserContext* CreateBrowserContext();
 
 #if defined(OS_MACOSX)
@@ -33,13 +33,13 @@ protected:
   virtual void PreMainMessageLoopRun() OVERRIDE;
   virtual void PostMainMessageLoopRun() OVERRIDE;
 
-private:
+ private:
   scoped_ptr<BrowserContext> browser_context_;
   scoped_ptr<WebUIControllerFactory> web_ui_controller_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserMainParts);
 };
 
-}
+}  // namespace brightray
 
 #endif

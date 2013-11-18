@@ -6,8 +6,8 @@
 
 #import <Foundation/Foundation.h>
 
-// base/mac/foundation_util.h contains an incompatible declaration of NSSearchPathDirectory,
-// so here we #define it to be something else.
+// base/mac/foundation_util.h contains an incompatible declaration of
+// NSSearchPathDirectory, so here we #define it to be something else.
 #define NSSearchPathDirectory NSSearchPathDirectory___PRE_10_8
 #import "base/mac/foundation_util.h"
 #undef NSSearchPathDirectory

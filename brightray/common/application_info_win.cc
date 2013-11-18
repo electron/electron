@@ -7,13 +7,17 @@
 namespace brightray {
 
 std::string GetApplicationName() {
-  auto info = make_scoped_ptr(FileVersionInfo::CreateFileVersionInfoForModule(GetModuleHandle(nullptr)));
+  auto module = GetModuleHandle(nullptr);
+  auto info = make_scoped_ptr(
+      FileVersionInfo::CreateFileVersionInfoForModule(module));
   return UTF16ToUTF8(info->product_name());
 }
 
 std::string GetApplicationVersion() {
-  auto info = make_scoped_ptr(FileVersionInfo::CreateFileVersionInfoForModule(GetModuleHandle(nullptr)));
+  auto module = GetModuleHandle(nullptr);
+  auto info = make_scoped_ptr(
+      FileVersionInfo::CreateFileVersionInfoForModule(module));
   return UTF16ToUTF8(info->product_version());
 }
 
-}
+}  // namespace brightray

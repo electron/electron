@@ -30,10 +30,12 @@ class NotificationPresenterMac : public NotificationPresenter {
       int notification_id) OVERRIDE;
 
  private:
-  std::map<std::string, base::scoped_nsobject<NSUserNotification>> notification_map_;
+  typedef std::map<std::string, base::scoped_nsobject<NSUserNotification>>
+      NotificationMap;
+  NotificationMap notification_map_;
   base::scoped_nsobject<BRYUserNotificationCenterDelegate> delegate_;
 };
 
-}
+}  // namespace brightray
 
 #endif

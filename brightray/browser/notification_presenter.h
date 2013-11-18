@@ -9,7 +9,7 @@ namespace brightray {
 
 class NotificationPresenter {
  public:
-  virtual ~NotificationPresenter() {};
+  virtual ~NotificationPresenter() {}
 
   static NotificationPresenter* Create();
 
@@ -23,6 +23,6 @@ class NotificationPresenter {
       int notification_id) = 0;
 };
 
-}
+}  // namespace brightray
 
 #endif

@@ -10,8 +10,9 @@ namespace brightray {
 class InspectableWebContentsImpl;
 
 class InspectableWebContentsViewLinux : public InspectableWebContentsView {
-public:
-  InspectableWebContentsViewLinux(InspectableWebContentsImpl*);
+ public:
+  explicit InspectableWebContentsViewLinux(
+      InspectableWebContentsImpl* inspectable_web_contents_impl);
   ~InspectableWebContentsViewLinux();
 
   virtual gfx::NativeView GetNativeView() const OVERRIDE;
@@ -19,9 +20,11 @@ public:
   virtual void CloseDevTools() OVERRIDE;
   virtual bool SetDockSide(const std::string& side) OVERRIDE;
 
-  InspectableWebContentsImpl* inspectable_web_contents() { return inspectable_web_contents_; }
+  InspectableWebContentsImpl* inspectable_web_contents() {
+    return inspectable_web_contents_;
+  }
 
-private:
+ private:
   // Show the dev tools in their own window.  If they're already shown
   // somewhere else, remove them cleanly and take any GtkPaned out of the
   // window.
@@ -49,6 +52,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewLinux);
 };
 
-}
+}  // namespace brightray
 
 #endif

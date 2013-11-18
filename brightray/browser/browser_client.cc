@@ -42,18 +42,23 @@ NotificationPresenter* BrowserClient::notification_presenter() {
   return notification_presenter_.get();
 }
 
-BrowserMainParts* BrowserClient::OverrideCreateBrowserMainParts(const content::MainFunctionParams&) {
+BrowserMainParts* BrowserClient::OverrideCreateBrowserMainParts(
+    const content::MainFunctionParams&) {
   return new BrowserMainParts;
 }
 
-content::BrowserMainParts* BrowserClient::CreateBrowserMainParts(const content::MainFunctionParams& parameters) {
+content::BrowserMainParts* BrowserClient::CreateBrowserMainParts(
+    const content::MainFunctionParams& parameters) {
   DCHECK(!browser_main_parts_);
   browser_main_parts_ = OverrideCreateBrowserMainParts(parameters);
   return browser_main_parts_;
 }
 
-net::URLRequestContextGetter* BrowserClient::CreateRequestContext(content::BrowserContext* browser_context, content::ProtocolHandlerMap* protocol_handlers) {
-  return static_cast<BrowserContext*>(browser_context)->CreateRequestContext(protocol_handlers);
+net::URLRequestContextGetter* BrowserClient::CreateRequestContext(
+    content::BrowserContext* browser_context,
+    content::ProtocolHandlerMap* protocol_handlers) {
+  auto context = static_cast<BrowserContext*>(browser_context);
+  return context->CreateRequestContext(protocol_handlers);
 }
 
 void BrowserClient::ShowDesktopNotification(
@@ -74,11 +79,12 @@ void BrowserClient::CancelDesktopNotification(
   auto presenter = notification_presenter();
   if (!presenter)
     return;
-  presenter->CancelNotification(render_process_id, render_view_id, notification_id);
+  presenter->CancelNotification(
+      render_process_id, render_view_id, notification_id);
 }
 
 content::MediaObserver* BrowserClient::GetMediaObserver() {
   return MediaCaptureDevicesDispatcher::GetInstance();
 }
 
-}
+}  // namespace brightray

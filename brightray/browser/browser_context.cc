@@ -2,11 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "browser_context.h"
+#include "browser/browser_context.h"
 
 #include "browser/download_manager_delegate.h"
 #include "browser/inspectable_web_contents_impl.h"
 #include "browser/network_delegate.h"
+#include "browser/url_request_context_getter.h"
 #include "common/application_info.h"
 
 #include "base/environment.h"
@@ -19,7 +20,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_context.h"
 #include "content/public/browser/storage_partition.h"
-#include "url_request_context_getter.h"
 
 #if defined(OS_LINUX)
 #include "base/nix/xdg_util.h"
@@ -28,28 +28,30 @@
 namespace brightray {
 
 class BrowserContext::ResourceContext : public content::ResourceContext {
-public:
+ public:
   ResourceContext() : getter_(nullptr) {}
 
   void set_url_request_context_getter(URLRequestContextGetter* getter) {
     getter_ = getter;
   }
 
-private:
+ private:
   virtual net::HostResolver* GetHostResolver() OVERRIDE {
     return getter_->host_resolver();
   }
-  
+
   virtual net::URLRequestContext* GetRequestContext() OVERRIDE {
     return getter_->GetURLRequestContext();
   }
 
-  // FIXME: We should probably allow clients to override this to implement more restrictive policies.
+  // FIXME: We should probably allow clients to override this to implement more
+  // restrictive policies.
   virtual bool AllowMicAccess(const GURL& origin) OVERRIDE {
     return true;
   }
-  
-  // FIXME: We should probably allow clients to override this to implement more restrictive policies.
+
+  // FIXME: We should probably allow clients to override this to implement more
+  // restrictive policies.
   virtual bool AllowCameraAccess(const GURL& origin) OVERRIDE {
     return true;
   }
@@ -76,7 +78,8 @@ void BrowserContext::Initialize() {
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
   PrefServiceBuilder builder;
   builder.WithUserFilePrefs(prefs_path,
-      JsonPrefStore::GetTaskRunnerForFile(prefs_path, content::BrowserThread::GetBlockingPool()));
+      JsonPrefStore::GetTaskRunnerForFile(
+          prefs_path, content::BrowserThread::GetBlockingPool()));
 
   auto registry = make_scoped_refptr(new PrefRegistrySimple);
   RegisterInternalPrefs(registry);
@@ -92,12 +95,17 @@ void BrowserContext::RegisterInternalPrefs(PrefRegistrySimple* registry) {
   InspectableWebContentsImpl::RegisterPrefs(registry);
 }
 
-net::URLRequestContextGetter* BrowserContext::CreateRequestContext(content::ProtocolHandlerMap* protocol_handlers) {
+net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
+    content::ProtocolHandlerMap* protocol_handlers) {
   DCHECK(!url_request_getter_);
+  auto io_loop = content::BrowserThread::UnsafeGetMessageLoopForThread(
+      content::BrowserThread::IO);
+  auto file_loop = content::BrowserThread::UnsafeGetMessageLoopForThread(
+      content::BrowserThread::FILE);
   url_request_getter_ = new URLRequestContextGetter(
       GetPath(),
-      content::BrowserThread::UnsafeGetMessageLoopForThread(content::BrowserThread::IO),
-      content::BrowserThread::UnsafeGetMessageLoopForThread(content::BrowserThread::FILE),
+      io_loop,
+      file_loop,
       CreateNetworkDelegate().Pass(),
       protocol_handlers);
   resource_context_->set_url_request_context_getter(url_request_getter_.get());
@@ -120,7 +128,8 @@ net::URLRequestContextGetter* BrowserContext::GetRequestContext() {
   return GetDefaultStoragePartition(this)->GetURLRequestContext();
 }
 
-net::URLRequestContextGetter* BrowserContext::GetRequestContextForRenderProcess(int renderer_child_id) {
+net::URLRequestContextGetter* BrowserContext::GetRequestContextForRenderProcess(
+    int renderer_child_id) {
   return GetRequestContext();
 }
 
@@ -128,15 +137,24 @@ net::URLRequestContextGetter* BrowserContext::GetMediaRequestContext() {
   return GetRequestContext();
 }
 
-net::URLRequestContextGetter* BrowserContext::GetMediaRequestContextForRenderProcess(int renderer_child_id) {
+net::URLRequestContextGetter*
+    BrowserContext::GetMediaRequestContextForRenderProcess(
+        int renderer_child_id) {
   return GetRequestContext();
 }
 
-net::URLRequestContextGetter* BrowserContext::GetMediaRequestContextForStoragePartition(const base::FilePath& partition_path, bool in_memory) {
+net::URLRequestContextGetter*
+    BrowserContext::GetMediaRequestContextForStoragePartition(
+        const base::FilePath& partition_path,
+        bool in_memory) {
   return GetRequestContext();
 }
 
-void BrowserContext::RequestMIDISysExPermission(int render_process_id, int render_view_id, const GURL& requesting_frame, const MIDISysExPermissionCallback& callback) {
+void BrowserContext::RequestMIDISysExPermission(
+    int render_process_id,
+    int render_view_id,
+    const GURL& requesting_frame,
+    const MIDISysExPermissionCallback& callback) {
   callback.Run(false);
 }
 
@@ -150,7 +168,8 @@ content::DownloadManagerDelegate* BrowserContext::GetDownloadManagerDelegate() {
   return download_manager_delegate_.get();
 }
 
-content::GeolocationPermissionContext* BrowserContext::GetGeolocationPermissionContext() {
+content::GeolocationPermissionContext*
+    BrowserContext::GetGeolocationPermissionContext() {
   return nullptr;
 }
 
@@ -158,4 +177,4 @@ quota::SpecialStoragePolicy* BrowserContext::GetSpecialStoragePolicy() {
   return nullptr;
 }
 
-}
+}  // namespace brightray

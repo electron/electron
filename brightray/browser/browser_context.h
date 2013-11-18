@@ -18,41 +18,54 @@ class NetworkDelegate;
 class URLRequestContextGetter;
 
 class BrowserContext : public content::BrowserContext {
-public:
+ public:
   BrowserContext();
   ~BrowserContext();
 
   void Initialize();
 
-  net::URLRequestContextGetter* CreateRequestContext(content::ProtocolHandlerMap*);
+  net::URLRequestContextGetter* CreateRequestContext(
+      content::ProtocolHandlerMap*);
 
   PrefService* prefs() { return prefs_.get(); }
 
-protected:
+ protected:
   // Subclasses should override this to register custom preferences.
-  virtual void RegisterPrefs(PrefRegistrySimple*) {}
+  virtual void RegisterPrefs(PrefRegistrySimple* pref_registry) {}
 
-  // Subclasses should override this to provide a custom NetworkDelegate implementation.
+  // Subclasses should override this to provide a custom NetworkDelegate
+  // implementation.
   virtual scoped_ptr<NetworkDelegate> CreateNetworkDelegate();
 
   virtual base::FilePath GetPath() const OVERRIDE;
 
-private:
+ private:
   class ResourceContext;
 
-  void RegisterInternalPrefs(PrefRegistrySimple*);
+  void RegisterInternalPrefs(PrefRegistrySimple* pref_registry);
 
   virtual bool IsOffTheRecord() const OVERRIDE;
   virtual net::URLRequestContextGetter* GetRequestContext() OVERRIDE;
-  virtual net::URLRequestContextGetter* GetRequestContextForRenderProcess(int renderer_child_id);
+  virtual net::URLRequestContextGetter* GetRequestContextForRenderProcess(
+      int renderer_child_id);
   virtual net::URLRequestContextGetter* GetMediaRequestContext() OVERRIDE;
-  virtual net::URLRequestContextGetter* GetMediaRequestContextForRenderProcess(int renderer_child_id) OVERRIDE;
-  virtual net::URLRequestContextGetter* GetMediaRequestContextForStoragePartition(const base::FilePath& partition_path, bool in_memory);
-  virtual void RequestMIDISysExPermission(int render_process_id, int render_view_id, const GURL& requesting_frame, const MIDISysExPermissionCallback&) OVERRIDE;
+  virtual net::URLRequestContextGetter* GetMediaRequestContextForRenderProcess(
+      int renderer_child_id) OVERRIDE;
+  virtual net::URLRequestContextGetter*
+      GetMediaRequestContextForStoragePartition(
+          const base::FilePath& partition_path, bool in_memory);
+  virtual void RequestMIDISysExPermission(
+      int render_process_id,
+      int render_view_id,
+      const GURL& requesting_frame,
+      const MIDISysExPermissionCallback&) OVERRIDE;
   virtual content::ResourceContext* GetResourceContext() OVERRIDE;
-  virtual content::DownloadManagerDelegate* GetDownloadManagerDelegate() OVERRIDE;
-  virtual content::GeolocationPermissionContext* GetGeolocationPermissionContext() OVERRIDE;
-  virtual quota::SpecialStoragePolicy* GetSpecialStoragePolicy() OVERRIDE;
+  virtual content::DownloadManagerDelegate*
+      GetDownloadManagerDelegate() OVERRIDE;
+  virtual content::GeolocationPermissionContext*
+      GetGeolocationPermissionContext() OVERRIDE;
+  virtual quota::SpecialStoragePolicy*
+      GetSpecialStoragePolicy() OVERRIDE;
 
   base::FilePath path_;
   scoped_ptr<ResourceContext> resource_context_;
@@ -63,6 +76,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(BrowserContext);
 };
 
-}
+}  // namespace brightray
 
 #endif

@@ -8,10 +8,12 @@ namespace brightray {
 class InspectableWebContentsView;
 
 class InspectableWebContents {
-public:
-  static InspectableWebContents* Create(const content::WebContents::CreateParams&);
+ public:
+  static InspectableWebContents* Create(
+      const content::WebContents::CreateParams&);
 
-  // The returned InspectableWebContents takes ownership of the passed-in WebContents.
+  // The returned InspectableWebContents takes ownership of the passed-in
+  // WebContents.
   static InspectableWebContents* Create(content::WebContents*);
 
   virtual ~InspectableWebContents() {}
@@ -22,6 +24,6 @@ public:
   virtual void ShowDevTools() = 0;
 };
 
-}
+}  // namespace brightray
 
 #endif

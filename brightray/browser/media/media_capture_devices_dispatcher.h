@@ -97,6 +97,6 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
   DISALLOW_COPY_AND_ASSIGN(MediaCaptureDevicesDispatcher);
 };
 
-} // namespace brightray
+}  // namespace brightray
 
 #endif  // BRIGHTRAY_BROWSER_MEDIA_MEDIA_CAPTURE_DEVICES_DISPATCHER_H_

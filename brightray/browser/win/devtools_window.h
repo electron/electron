@@ -8,9 +8,11 @@ namespace brightray {
 
 class InspectableWebContentsViewWin;
 
-class DevToolsWindow : public ui::WindowImpl, public base::SupportsWeakPtr<DevToolsWindow> {
+class DevToolsWindow : public ui::WindowImpl,
+                       public base::SupportsWeakPtr<DevToolsWindow> {
  public:
-  static DevToolsWindow* Create(InspectableWebContentsViewWin*);
+  static DevToolsWindow* Create(
+      InspectableWebContentsViewWin* inspectable_web_contents_view_win);
 
   BEGIN_MSG_MAP_EX(DevToolsWindow)
     MESSAGE_HANDLER(WM_CREATE, OnCreate)
@@ -19,7 +21,8 @@ class DevToolsWindow : public ui::WindowImpl, public base::SupportsWeakPtr<DevTo
   END_MSG_MAP()
 
  private:
-  DevToolsWindow(InspectableWebContentsViewWin*);
+  explicit DevToolsWindow(
+      InspectableWebContentsViewWin* inspectable_web_contents_view_win);
   ~DevToolsWindow();
 
   LRESULT OnCreate(UINT message, WPARAM, LPARAM, BOOL& handled);
@@ -31,6 +34,6 @@ class DevToolsWindow : public ui::WindowImpl, public base::SupportsWeakPtr<DevTo
   DISALLOW_COPY_AND_ASSIGN(DevToolsWindow);
 };
 
-}
+}  // namespace brightray
 
 #endif
