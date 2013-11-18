@@ -69,11 +69,13 @@ def main():
   os.makedirs(DIST_DIR)
 
   force_build()
+  create_symbols()
   copy_binaries()
   copy_headers()
   copy_license()
   create_version()
-  create_zip()
+  create_dist_zip()
+  create_symbols_zip()
   create_header_tarball()
 
 
@@ -131,7 +133,20 @@ def create_version():
     version_file.write(ATOM_SHELL_VRESION)
 
 
-def create_zip():
+def create_symbols():
+  out_dir = os.path.join(SOURCE_ROOT, 'out', 'Release')
+
+  build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
+  subprocess.check_output([sys.executable, build, '-c', 'Release',
+                           '-t', 'atom_dump_symbols'])
+
+  directory = 'atom-shell.breakpad.syms'
+  shutil.copytree(os.path.join(out_dir, directory),
+                  os.path.join(DIST_DIR, directory),
+                  symlinks=True)
+
+
+def create_dist_zip():
   dist_name = 'atom-shell-{0}-{1}.zip'.format(ATOM_SHELL_VRESION,
                                               TARGET_PLATFORM)
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
@@ -139,6 +154,17 @@ def create_zip():
   with scoped_cwd(DIST_DIR):
     files = TARGET_BINARIES[TARGET_PLATFORM] +  ['LICENSE', 'version']
     dirs = TARGET_DIRECTORIES[TARGET_PLATFORM]
+    make_zip(zip_file, files, dirs)
+
+
+def create_symbols_zip():
+  dist_name = 'atom-shell-{0}-{1}-symbols.zip'.format(ATOM_SHELL_VRESION,
+                                                      TARGET_PLATFORM)
+  zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
+
+  with scoped_cwd(DIST_DIR):
+    files = ['LICENSE', 'version']
+    dirs = ['atom-shell.breakpad.syms']
     make_zip(zip_file, files, dirs)
 
 
