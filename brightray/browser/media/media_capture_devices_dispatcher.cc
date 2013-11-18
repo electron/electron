@@ -28,7 +28,7 @@ const content::MediaStreamDevice* FindDeviceWithId(
     }
   }
   return NULL;
-};
+}
 
 }  // namespace
 
@@ -153,7 +153,6 @@ void MediaCaptureDevicesDispatcher::OnMediaRequestStateChanged(
     const content::MediaStreamDevice& device,
     content::MediaRequestState state) {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
-
 }
 
 void MediaCaptureDevicesDispatcher::OnAudioStreamPlayingChanged(
@@ -175,7 +174,7 @@ void MediaCaptureDevicesDispatcher::UpdateAudioDevicesOnUIThread(
 }
 
 void MediaCaptureDevicesDispatcher::UpdateVideoDevicesOnUIThread(
-    const content::MediaStreamDevices& devices){
+    const content::MediaStreamDevices& devices) {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
   devices_enumerated_ = true;
   video_devices_ = devices;
