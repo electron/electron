@@ -13,6 +13,14 @@ IGNORED_FILES = [
     'browser/mac/bry_inspectable_web_contents_view_private.h',
 ]
 
+FILTERS = [
+  '-build/header_guard',
+  '-build/include_what_you_use',
+  '-legal/copyright',
+  # cpplint doesn't like the BOOL& parameters that ui::WindowImpl uses.
+  '-runtime/references',
+]
+
 
 def main():
   os.chdir(SOURCE_ROOT)
@@ -32,8 +40,7 @@ def list_files(directories, filters):
 
 
 def cpplint(files):
-  rules = '--filter=-build/header_guard,-build/include_what_you_use,-legal/copyright'
-  return subprocess.call([sys.executable, CPPLINT, rules] + list(files))
+  return subprocess.call([sys.executable, CPPLINT, '--filter=' + ','.join(FILTERS)] + list(files))
 
 
 if __name__ == '__main__':
