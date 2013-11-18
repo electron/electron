@@ -53,8 +53,9 @@ struct FromV8Value {
     v8::Handle<v8::Object> v8_dict = value_->ToObject();
     v8::Handle<v8::Array> v8_keys = v8_dict->GetOwnPropertyNames();
     for (uint32_t i = 0; i < v8_keys->Length(); ++i) {
-      std::string key = FromV8Value(v8_keys->Get(i));
-      dict[key] = std::string(FromV8Value(v8_dict->Get(i)));
+      v8::Handle<v8::Value> v8_key = v8_keys->Get(i);
+      std::string key = FromV8Value(v8_key);
+      dict[key] = std::string(FromV8Value(v8_dict->Get(v8_key)));
     }
 
     return dict;

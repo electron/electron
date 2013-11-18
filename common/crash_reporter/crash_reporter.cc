@@ -36,6 +36,9 @@ void CrashReporter::Start(std::string product_name,
 void CrashReporter::SetUploadParameters(const StringMap& parameters) {
   upload_parameters_ = parameters;
   upload_parameters_["process_type"] = is_browser_ ? "browser" : "renderer";
+
+  // Setting platform dependent parameters.
+  SetUploadParameters();
 }
 
 }  // namespace crash_reporter
