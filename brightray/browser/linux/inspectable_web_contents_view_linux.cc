@@ -31,7 +31,7 @@ static void dump_one(GtkWidget *wat, int indent) {
   gtk_widget_get_allocation(wat, &alloc);
   fprintf(stderr, "%*s[%p] %s @%d,%d %dx%d",
     indent, "", wat,
-    g_type_name_from_instance(static_cast<GTypeInstance*>(wat)),
+    g_type_name_from_instance(reinterpret_cast<GTypeInstance*>(wat)),
     alloc.x, alloc.y, alloc.width, alloc.height);
   if (GTK_IS_WINDOW(wat)) {
     fprintf(stderr, " - \"%s\"", gtk_window_get_title(GTK_WINDOW(wat)));
@@ -106,7 +106,7 @@ void InspectableWebContentsViewLinux::ShowDevTools() {
   DLOG(INFO) << base::StringPrintf(
       "InspectableWebContentsViewLinux::ShowDevTools - " \
       "parent=%s@%p window=%p dockside=\"%s\"",
-      g_type_name_from_instance(static_cast<GTypeInstance*>(parent)),
+      g_type_name_from_instance(reinterpret_cast<GTypeInstance*>(parent)),
       parent,
       devtools_window_,
       dockside_.c_str());
@@ -132,7 +132,7 @@ void InspectableWebContentsViewLinux::CloseDevTools() {
   DLOG(INFO) << base::StringPrintf(
       "InspectableWebContentsViewLinux::CloseDevTools - " \
       "parent=%s@%p window=%p dockside=\"%s\"",
-      g_type_name_from_instance(static_cast<GTypeInstance*>(parent)),
+      g_type_name_from_instance(reinterpret_cast<GTypeInstance*>(parent)),
       parent,
       devtools_window_,
       dockside_.c_str());
