@@ -12,8 +12,9 @@ class DevToolsWindow;
 class InspectableWebContentsImpl;
 
 class InspectableWebContentsViewWin : public InspectableWebContentsView {
-public:
-  InspectableWebContentsViewWin(InspectableWebContentsImpl*);
+ public:
+  explicit InspectableWebContentsViewWin(
+      InspectableWebContentsImpl* inspectable_web_contents_impl);
   ~InspectableWebContentsViewWin();
 
   virtual gfx::NativeView GetNativeView() const OVERRIDE;
@@ -21,9 +22,11 @@ public:
   virtual void CloseDevTools() OVERRIDE;
   virtual bool SetDockSide(const std::string& side) OVERRIDE;
 
-  InspectableWebContentsImpl* inspectable_web_contents() { return inspectable_web_contents_; }
+  InspectableWebContentsImpl* inspectable_web_contents() {
+    return inspectable_web_contents_;
+  }
 
-private:
+ private:
   // Owns us.
   InspectableWebContentsImpl* inspectable_web_contents_;
 
