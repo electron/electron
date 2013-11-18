@@ -11,14 +11,15 @@
 namespace brightray {
 
 class ContentClient : public content::ContentClient {
-public:
+ public:
   ContentClient();
   ~ContentClient();
 
-private:
+ private:
   virtual std::string GetProduct() const OVERRIDE;
   virtual std::string GetUserAgent() const OVERRIDE;
-  virtual base::StringPiece GetDataResource(int resource_id, ui::ScaleFactor) const OVERRIDE;
+  virtual base::StringPiece GetDataResource(int resource_id,
+                                            ui::ScaleFactor) const OVERRIDE;
   virtual gfx::Image& GetNativeImageNamed(int resource_id) const OVERRIDE;
 
   DISALLOW_COPY_AND_ASSIGN(ContentClient);
