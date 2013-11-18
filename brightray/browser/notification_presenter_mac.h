@@ -30,8 +30,8 @@ class NotificationPresenterMac : public NotificationPresenter {
       int notification_id) OVERRIDE;
 
  private:
-  typedef NotificationMap std::map<std::string,
-                                   base::scoped_nsobject<NSUserNotification>>;
+  typedef std::map<std::string, base::scoped_nsobject<NSUserNotification>>
+      NotificationMap;
   NotificationMap notification_map_;
   base::scoped_nsobject<BRYUserNotificationCenterDelegate> delegate_;
 };
