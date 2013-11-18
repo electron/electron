@@ -14,13 +14,16 @@ namespace crash_reporter {
 
 class CrashReporter {
  public:
+  typedef std::map<std::string, std::string> StringMap;
+
   static CrashReporter* GetInstance();
 
   void Start(std::string product_name,
              const std::string& company_name,
              const std::string& submit_url,
              bool auto_submit,
-             bool skip_system_crash_handler);
+             bool skip_system_crash_handler,
+             const StringMap& extra_parameters);
 
  protected:
   CrashReporter();
@@ -32,13 +35,14 @@ class CrashReporter {
                             const std::string& submit_url,
                             bool auto_submit,
                             bool skip_system_crash_handler) = 0;
-  virtual void SetUploadParameters();
+  virtual void SetUploadParameters() = 0;
 
-  typedef std::map<std::string, std::string> StringMap;
   StringMap upload_parameters_;
   bool is_browser_;
 
  private:
+  void SetUploadParameters(const StringMap& parameters);
+
   DISALLOW_COPY_AND_ASSIGN(CrashReporter);
 };
 

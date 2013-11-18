@@ -12,9 +12,8 @@
 namespace crash_reporter {
 
 CrashReporter::CrashReporter() {
-  SetUploadParameters();
-
-  is_browser_ = upload_parameters_["process_type"].empty();
+  const CommandLine& command = *CommandLine::ForCurrentProcess();
+  is_browser_ = command.GetSwitchValueASCII(switches::kProcessType).empty();
 }
 
 CrashReporter::~CrashReporter() {
@@ -24,18 +23,19 @@ void CrashReporter::Start(std::string product_name,
                           const std::string& company_name,
                           const std::string& submit_url,
                           bool auto_submit,
-                          bool skip_system_crash_handler) {
+                          bool skip_system_crash_handler,
+                          const StringMap& extra_parameters) {
+  SetUploadParameters(extra_parameters);
+
   // Append "Renderer" for the renderer.
   product_name += " Renderer";
   InitBreakpad(product_name, ATOM_VERSION_STRING, company_name, submit_url,
                auto_submit, skip_system_crash_handler);
 }
 
-void CrashReporter::SetUploadParameters() {
-  const CommandLine& command = *CommandLine::ForCurrentProcess();
-  std::string type = command.GetSwitchValueASCII(switches::kProcessType);
-
-  upload_parameters_["process_type"] = type;
+void CrashReporter::SetUploadParameters(const StringMap& parameters) {
+  upload_parameters_ = parameters;
+  upload_parameters_["process_type"] = is_browser_ ? "browser" : "renderer";
 }
 
 }  // namespace crash_reporter

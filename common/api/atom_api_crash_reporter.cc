@@ -17,12 +17,13 @@ namespace api {
 v8::Handle<v8::Value> CrashReporter::Start(const v8::Arguments& args) {
   std::string product_name, company_name, submit_url;
   bool auto_submit, skip_system;
+  std::map<std::string, std::string> dict;
   if (!FromV8Arguments(args, &product_name, &company_name, &submit_url,
-                       &auto_submit, &skip_system))
+                       &auto_submit, &skip_system, &dict))
     return node::ThrowTypeError("Bad argument");
 
   crash_reporter::CrashReporter::GetInstance()->Start(
-      product_name, company_name, submit_url, auto_submit, skip_system);
+      product_name, company_name, submit_url, auto_submit, skip_system, dict);
 
   return v8::Undefined();
 }
