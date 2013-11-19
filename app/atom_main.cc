@@ -34,15 +34,19 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   int argc = 0;
   wchar_t** wargv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
 
-  // Attach to the parent console if we've got one so that stdio works
-  AttachConsole(ATTACH_PARENT_PROCESS);
-
-  FILE* dontcare;
-  freopen_s(&dontcare, "CON", "w", stdout);
-  freopen_s(&dontcare, "CON", "w", stderr);
-  freopen_s(&dontcare, "CON", "r", stdin);
-
   scoped_ptr<base::Environment> env(base::Environment::Create());
+
+  // Make output work in console if we are not in cygiwn.
+  std::string os;
+  if (env->GetVar("OS", &os) && os != "cygwin") {
+    AttachConsole(ATTACH_PARENT_PROCESS);
+
+    FILE* dontcare;
+    freopen_s(&dontcare, "CON", "w", stdout);
+    freopen_s(&dontcare, "CON", "w", stderr);
+    freopen_s(&dontcare, "CON", "r", stdin);
+  }
+
   std::string node_indicator;
   if (env->GetVar("ATOM_SHELL_INTERNAL_RUN_AS_NODE", &node_indicator) &&
       node_indicator == "1") {
