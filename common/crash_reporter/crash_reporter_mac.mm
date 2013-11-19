@@ -34,7 +34,7 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
   NSMutableDictionary* parameters =
       [NSMutableDictionary dictionaryWithCapacity:4];
 
-  [parameters setValue:base::SysUTF8ToNSString(product_name)
+  [parameters setValue:@"atom-shell"
                 forKey:@BREAKPAD_PRODUCT];
   [parameters setValue:base::SysUTF8ToNSString(product_name)
                 forKey:@BREAKPAD_PRODUCT_DISPLAY];
