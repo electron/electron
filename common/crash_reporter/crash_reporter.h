@@ -18,7 +18,7 @@ class CrashReporter {
 
   static CrashReporter* GetInstance();
 
-  void Start(std::string product_name,
+  void Start(const std::string& product_name,
              const std::string& company_name,
              const std::string& submit_url,
              bool auto_submit,

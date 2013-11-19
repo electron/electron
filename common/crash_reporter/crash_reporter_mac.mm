@@ -28,11 +28,16 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
   if (breakpad_ != NULL)
     BreakpadRelease(breakpad_);
 
+  std::string display_name = is_browser_ ? product_name :
+                                           product_name + " Renderer";
+
   NSMutableDictionary* parameters =
       [NSMutableDictionary dictionaryWithCapacity:4];
 
   [parameters setValue:base::SysUTF8ToNSString(product_name)
                 forKey:@BREAKPAD_PRODUCT];
+  [parameters setValue:base::SysUTF8ToNSString(product_name)
+                forKey:@BREAKPAD_PRODUCT_DISPLAY];
   [parameters setValue:base::SysUTF8ToNSString(version)
                 forKey:@BREAKPAD_VERSION];
   [parameters setValue:base::SysUTF8ToNSString(company_name)

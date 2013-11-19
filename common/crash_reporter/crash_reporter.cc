@@ -19,7 +19,7 @@ CrashReporter::CrashReporter() {
 CrashReporter::~CrashReporter() {
 }
 
-void CrashReporter::Start(std::string product_name,
+void CrashReporter::Start(const std::string& product_name,
                           const std::string& company_name,
                           const std::string& submit_url,
                           bool auto_submit,
@@ -27,8 +27,6 @@ void CrashReporter::Start(std::string product_name,
                           const StringMap& extra_parameters) {
   SetUploadParameters(extra_parameters);
 
-  // Append "Renderer" for the renderer.
-  product_name += " Renderer";
   InitBreakpad(product_name, ATOM_VERSION_STRING, company_name, submit_url,
                auto_submit, skip_system_crash_handler);
 }
