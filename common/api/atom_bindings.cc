@@ -4,7 +4,6 @@
 
 #include "common/api/atom_bindings.h"
 
-#include "base/debug/debugger.h"
 #include "base/logging.h"
 #include "common/atom_version.h"
 #include "common/v8_conversions.h"
@@ -17,6 +16,8 @@ namespace {
 static int kMaxCallStackSize = 200;  // Same with WebKit.
 
 static uv_async_t dummy_uv_handle;
+
+struct DummyClass { bool crash; };
 
 void UvNoOp(uv_async_t* handle, int status) {
 }
@@ -110,7 +111,7 @@ v8::Handle<v8::Value> AtomBindings::Binding(const v8::Arguments& args) {
 
 // static
 v8::Handle<v8::Value> AtomBindings::Crash(const v8::Arguments& args) {
-  base::debug::BreakDebugger();
+  static_cast<DummyClass*>(NULL)->crash = true;
   return v8::Undefined();
 }
 
