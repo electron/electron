@@ -4,9 +4,9 @@ class CrashReporter
   start: (options={}) ->
     {productName, companyName, submitUrl, autoSubmit, ignoreSystemCrashHandler, extra} = options
 
-    productName ?= 'Atom-Shell'
+    productName ?= 'atom-shell'
     companyName ?= 'GitHub, Inc'
-    submitUrl ?= 'http://54.249.141.25'
+    submitUrl ?= 'http://54.249.141.25:1127/post'
     autoSubmit ?= true
     ignoreSystemCrashHandler ?= false
     extra ?= {}
