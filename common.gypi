@@ -186,5 +186,16 @@
         ],
       },
     }],  # msvs_express==1
+    # The breakdpad on Windows assumes Debug_x64 and Release_x64 configurations.
+    ['OS=="win"', {
+      'target_defaults': {
+        'configurations': {
+          'Debug_x64': {
+          },
+          'Release_x64': {
+          },
+        },
+      },
+    }],  # OS=="win"
   ],
 }
