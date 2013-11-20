@@ -108,13 +108,7 @@ bool StringToAccelerator(const std::string& description,
     } else if (tokens[i] == "ctrl") {
       modifiers |= ui::EF_CONTROL_DOWN;
     } else if (tokens[i] == "command") {
-      // The "Command" would be translated to "Ctrl" on platforms other than
-      // OS X.
-#if defined(OS_MACOSX)
       modifiers |= ui::EF_COMMAND_DOWN;
-#else
-      modifiers |= ui::EF_CONTROL_DOWN;
-#endif
     } else if (tokens[i] == "alt") {
       modifiers |= ui::EF_ALT_DOWN;
     } else if (tokens[i] == "shift") {
