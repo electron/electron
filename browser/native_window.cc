@@ -200,14 +200,12 @@ bool NativeWindow::SetIcon(const std::string& str_path) {
 }
 
 void NativeWindow::CapturePage(const gfx::Rect& rect,
-                               const base::FilePath& path,
                                const CapturePageCallback& callback) {
   GetWebContents()->GetRenderViewHost()->CopyFromBackingStore(
       rect,
       gfx::Size(),
       base::Bind(&NativeWindow::OnCapturePageDone,
                  base::Unretained(this),
-                 path,
                  callback));
 }
 
@@ -387,27 +385,13 @@ void NativeWindow::Observe(int type,
   }
 }
 
-void NativeWindow::OnCapturePageDone(const base::FilePath& filename,
-                                     const CapturePageCallback& callback,
+void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
                                      bool succeed,
                                      const SkBitmap& bitmap) {
-  if (!succeed) {
-    callback.Run(false);
-    return;
-  }
-
   std::vector<unsigned char> data;
-  bool encoded = gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, true, &data);
-  if (!encoded) {
-    callback.Run(false);
-    return;
-  }
-
-  int written = file_util::WriteFile(
-      filename,
-      reinterpret_cast<const char*>(&data[0]),
-      data.size());
-  callback.Run(written > 0);
+  if (succeed)
+    gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, true, &data);
+  callback.Run(data);
 }
 
 void NativeWindow::OnRendererMessage(const string16& channel,
