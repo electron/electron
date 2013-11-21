@@ -29,6 +29,7 @@
 #include "common/api/api_messages.h"
 #include "common/options_switches.h"
 #include "ipc/ipc_message_macros.h"
+#include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
@@ -196,6 +197,18 @@ bool NativeWindow::SetIcon(const std::string& str_path) {
 
   icon_ = gfx::Image::CreateFrom1xBitmap(*decoded.release());
   return true;
+}
+
+void NativeWindow::CapturePage(const gfx::Rect& rect,
+                               const base::FilePath& path,
+                               const CapturePageCallback& callback) {
+  GetWebContents()->GetRenderViewHost()->CopyFromBackingStore(
+      rect,
+      gfx::Size(),
+      base::Bind(&NativeWindow::OnCapturePageDone,
+                 base::Unretained(this),
+                 path,
+                 callback));
 }
 
 void NativeWindow::CloseWebContents() {
@@ -372,6 +385,29 @@ void NativeWindow::Observe(int type,
         SetTitle(text);
     }
   }
+}
+
+void NativeWindow::OnCapturePageDone(const base::FilePath& filename,
+                                     const CapturePageCallback& callback,
+                                     bool succeed,
+                                     const SkBitmap& bitmap) {
+  if (!succeed) {
+    callback.Run(false);
+    return;
+  }
+
+  std::vector<unsigned char> data;
+  bool encoded = gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, true, &data);
+  if (!encoded) {
+    callback.Run(false);
+    return;
+  }
+
+  int written = file_util::WriteFile(
+      filename,
+      reinterpret_cast<const char*>(&data[0]),
+      data.size());
+  callback.Run(written > 0);
 }
 
 void NativeWindow::OnRendererMessage(const string16& channel,
