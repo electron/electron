@@ -290,6 +290,23 @@ Starts inspecting element at position (`x`, `y`).
 
 ### BrowserWindow.restartHangMonitorTimeout()
 
+### BrowserWindow.capturePage([rect, ]callback)
+
+* `rect` Object - The area of page to be captured
+  * `x`
+  * `y`
+  * `width`
+  * `height`
+* `callback` Function
+
+Captures the snapshot of page within `rect`, upon completion `callback` would be
+called with `callback(image)`, the `image` is a `Buffer` that stores the PNG
+encoded data of the snapshot. Omitting the `rect` would capture the whole
+visible page.
+
+You can write received `image` directly to a `.png` file, or you can base64
+encode it and use data URL to embed the image in HTML.
+
 ### BrowserWindow.getPageTitle()
 
 Returns the title of web page.
