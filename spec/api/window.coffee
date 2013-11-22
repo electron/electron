@@ -75,6 +75,13 @@ describe 'window module', ->
       assert.equal w.isVisible(), false
       w.close()
 
+  describe 'BrowserWindow.capturePage(rect, callback)', ->
+    it 'calls the callback with a Buffer', ->
+      w = new BrowserWindow(show: false)
+      w.capturePage {x: 0, y: 0, width: 100, height: 100}, (image) ->
+        assert.equal image.constructor.name, 'SlowBuffer'
+        w.close()
+
   describe 'beforeunload handler', ->
     it 'returning true would not prevent close', (done) ->
       w = new BrowserWindow(show: false)

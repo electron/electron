@@ -23,5 +23,4 @@
 
 ## Notes on accelerator
 
-On Linux and Windows, the `Command` would be translated to `Ctrl`, so usually
-you can use `Command` for most of the commands.
+On Linux and Windows, the `Command` key would not have any effect.

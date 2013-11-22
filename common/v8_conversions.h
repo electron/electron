@@ -12,6 +12,7 @@
 #include "base/files/file_path.h"
 #include "base/string16.h"
 #include "browser/api/atom_api_window.h"
+#include "ui/gfx/rect.h"
 #include "v8/include/v8.h"
 
 // Convert V8 value to arbitrary supported types.
@@ -37,6 +38,20 @@ struct FromV8Value {
 
   operator base::FilePath() {
     return base::FilePath::FromUTF8Unsafe(FromV8Value(value_));
+  }
+
+  operator gfx::Rect() {
+    v8::Handle<v8::Object> rect = value_->ToObject();
+    v8::Handle<v8::Value> x = rect->Get(v8::String::New("x"));
+    v8::Handle<v8::Value> y = rect->Get(v8::String::New("y"));
+    v8::Handle<v8::Value> width = rect->Get(v8::String::New("width"));
+    v8::Handle<v8::Value> height = rect->Get(v8::String::New("height"));
+    if (!x->IsNumber() || !y->IsNumber() ||
+        !width->IsNumber() || !height->IsNumber())
+      return gfx::Rect();
+    else
+      return gfx::Rect(x->IntegerValue(), y->IntegerValue(),
+                       width->IntegerValue(), height->IntegerValue());
   }
 
   operator std::vector<std::string>() {
@@ -72,11 +87,9 @@ struct FromV8Value {
   }
 
   operator v8::Persistent<v8::Function>() {
-    return value_->IsFunction() ?
-      v8::Persistent<v8::Function>::New(
-          node::node_isolate,
-          v8::Handle<v8::Function>::Cast(value_)) :
-      v8::Persistent<v8::Function>();
+    return v8::Persistent<v8::Function>::New(
+        node::node_isolate,
+        v8::Handle<v8::Function>::Cast(value_));
   }
 
   v8::Handle<v8::Value> value_;
@@ -149,6 +162,11 @@ bool V8ValueCanBeConvertedTo<string16>(v8::Handle<v8::Value> value) {
 template<> inline
 bool V8ValueCanBeConvertedTo<base::FilePath>(v8::Handle<v8::Value> value) {
   return V8ValueCanBeConvertedTo<std::string>(value);
+}
+
+template<> inline
+bool V8ValueCanBeConvertedTo<gfx::Rect>(v8::Handle<v8::Value> value) {
+  return value->IsObject();
 }
 
 template<> inline

@@ -49,6 +49,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
                      public content::WebContentsObserver,
                      public content::NotificationObserver {
  public:
+  typedef base::Callback<void(const std::vector<unsigned char>& buffer)>
+      CapturePageCallback;
+
   virtual ~NativeWindow();
 
   // Create window with existing WebContents.
@@ -107,6 +110,11 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual bool IsWebViewFocused();
   virtual void RestartHangMonitorTimeout();
   virtual bool SetIcon(const std::string& path);
+
+  // Captures the page with |rect|, |callback| would be called when capturing is
+  // done.
+  virtual void CapturePage(const gfx::Rect& rect,
+                           const CapturePageCallback& callback);
 
   // The same with closing a tab in a real browser.
   //
@@ -183,6 +191,11 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
  private:
   void RendererUnresponsiveDelayed();
+
+  // Called when CapturePage has done.
+  void OnCapturePageDone(const CapturePageCallback& callback,
+                         bool succeed,
+                         const SkBitmap& bitmap);
 
   void OnRendererMessage(const string16& channel,
                          const base::ListValue& args);
