@@ -87,7 +87,7 @@ void Window::OnCapturePageDone(v8::Persistent<v8::Function> callback,
                                const std::vector<unsigned char>& data) {
   v8::HandleScope scope;
 
-  // TODO Use new Buffer API when we updated to node v0.12.x.
+  // TODO(zcbenz): Use new Buffer API when we updated to node v0.12.x.
   node::Buffer* buffer = node::Buffer::New(
       reinterpret_cast<const char*>(data.data()),
       data.size());
@@ -501,7 +501,8 @@ v8::Handle<v8::Value> Window::CapturePage(const v8::Arguments& args) {
 
   gfx::Rect rect;
   v8::Persistent<v8::Function> callback;
-  if (!FromV8Arguments(args, &rect, &callback))
+  if (!FromV8Arguments(args, &rect, &callback) &&
+      !FromV8Arguments(args, &callback))
     return node::ThrowTypeError("Bad argument");
 
   self->window_->CapturePage(rect, base::Bind(&Window::OnCapturePageDone,
