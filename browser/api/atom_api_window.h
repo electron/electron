@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_WINDOW_H_
 #define ATOM_BROWSER_API_ATOM_API_WINDOW_H_
 
+#include <vector>
+
 #include "base/memory/scoped_ptr.h"
 #include "browser/api/atom_api_event_emitter.h"
 #include "browser/native_window_observer.h"
@@ -87,6 +89,7 @@ class Window : public EventEmitter,
   static v8::Handle<v8::Value> IsWebViewFocused(const v8::Arguments& args);
   static v8::Handle<v8::Value> RestartHangMonitorTimeout(
       const v8::Arguments &args);
+  static v8::Handle<v8::Value> CapturePage(const v8::Arguments& args);
 
   // APIs for WebContents.
   static v8::Handle<v8::Value> GetPageTitle(const v8::Arguments &args);
@@ -109,6 +112,10 @@ class Window : public EventEmitter,
   static v8::Handle<v8::Value> GoToOffset(const v8::Arguments &args);
   static v8::Handle<v8::Value> Reload(const v8::Arguments &args);
   static v8::Handle<v8::Value> ReloadIgnoringCache(const v8::Arguments &args);
+
+  // Called when capturePage is done.
+  void OnCapturePageDone(v8::Persistent<v8::Function> callback,
+                         const std::vector<unsigned char>& data);
 
   scoped_ptr<NativeWindow> window_;
 

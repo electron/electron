@@ -29,6 +29,7 @@
 #include "common/api/api_messages.h"
 #include "common/options_switches.h"
 #include "ipc/ipc_message_macros.h"
+#include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
@@ -196,6 +197,16 @@ bool NativeWindow::SetIcon(const std::string& str_path) {
 
   icon_ = gfx::Image::CreateFrom1xBitmap(*decoded.release());
   return true;
+}
+
+void NativeWindow::CapturePage(const gfx::Rect& rect,
+                               const CapturePageCallback& callback) {
+  GetWebContents()->GetRenderViewHost()->CopyFromBackingStore(
+      rect,
+      gfx::Size(),
+      base::Bind(&NativeWindow::OnCapturePageDone,
+                 base::Unretained(this),
+                 callback));
 }
 
 void NativeWindow::CloseWebContents() {
@@ -372,6 +383,15 @@ void NativeWindow::Observe(int type,
         SetTitle(text);
     }
   }
+}
+
+void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
+                                     bool succeed,
+                                     const SkBitmap& bitmap) {
+  std::vector<unsigned char> data;
+  if (succeed)
+    gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, true, &data);
+  callback.Run(data);
 }
 
 void NativeWindow::OnRendererMessage(const string16& channel,
