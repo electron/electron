@@ -14,6 +14,7 @@
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
+#include "vendor/node/src/node_buffer.h"
 
 using content::V8ValueConverter;
 using content::NavigationController;
@@ -80,6 +81,20 @@ void Window::OnRendererResponsive() {
 
 void Window::OnRendererCrashed() {
   Emit("crashed");
+}
+
+void Window::OnCapturePageDone(v8::Persistent<v8::Function> callback,
+                               const std::vector<unsigned char>& data) {
+  v8::HandleScope scope;
+
+  // TODO Use new Buffer API when we updated to node v0.12.x.
+  node::Buffer* buffer = node::Buffer::New(
+      reinterpret_cast<const char*>(data.data()),
+      data.size());
+
+  v8::Handle<v8::Value> arg = buffer->handle_;
+  callback->Call(v8::Context::GetCurrent()->Global(), 1, &arg);
+  callback.Dispose(v8::Isolate::GetCurrent());
 }
 
 // static
@@ -481,6 +496,22 @@ v8::Handle<v8::Value> Window::RestartHangMonitorTimeout(
 }
 
 // static
+v8::Handle<v8::Value> Window::CapturePage(const v8::Arguments& args) {
+  UNWRAP_WINDOW_AND_CHECK;
+
+  gfx::Rect rect;
+  v8::Persistent<v8::Function> callback;
+  if (!FromV8Arguments(args, &rect, &callback))
+    return node::ThrowTypeError("Bad argument");
+
+  self->window_->CapturePage(rect, base::Bind(&Window::OnCapturePageDone,
+                                              base::Unretained(self),
+                                              callback));
+
+  return v8::Undefined();
+}
+
+// static
 v8::Handle<v8::Value> Window::GetPageTitle(const v8::Arguments &args) {
   UNWRAP_WINDOW_AND_CHECK;
 
@@ -721,6 +752,7 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t,
                             "restartHangMonitorTimeout",
                             RestartHangMonitorTimeout);
+  NODE_SET_PROTOTYPE_METHOD(t, "capturePage", CapturePage);
 
   NODE_SET_PROTOTYPE_METHOD(t, "getPageTitle", GetPageTitle);
   NODE_SET_PROTOTYPE_METHOD(t, "isLoading", IsLoading);
