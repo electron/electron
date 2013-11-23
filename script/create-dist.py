@@ -164,11 +164,6 @@ def download_libchromiumcontent_symbols(url):
                           'download')
   subprocess.check_call([sys.executable, download, '-f', '-s', url, target_dir])
 
-  if sys.platform == 'darwin':
-    shutil.copytree(symbols_path,
-                    os.path.join(OUT_DIR, symbols_name),
-                    symlinks=True)
-
 
 def create_symbols():
   build = os.path.join(SOURCE_ROOT, 'script', 'build.py')

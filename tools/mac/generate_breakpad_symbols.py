@@ -59,19 +59,20 @@ def FindBundlePart(full_path):
     return ''
 
 
-def GetDSYMBundle(build_dir, binary_path):
+def GetDSYMBundle(options, binary_path):
   """Finds the .dSYM bundle to the binary."""
   if binary_path[0] == '/' or binary_path == '':
     return binary_path
 
   filename = FindBundlePart(binary_path)
+  search_dirs = [options.build_dir, options.libchromiumcontent_dir]
   if filename.endswith(('.dylib', '.framework', '.app')):
-    dsym_path = os.path.join(build_dir, filename) + '.dSYM'
+    for directory in search_dirs:
+      dsym_path = os.path.join(directory, filename) + '.dSYM'
+      if os.path.exists(dsym_path):
+        return dsym_path
 
-  if dsym_path != None and os.path.exists(dsym_path):
-    return dsym_path
-  else:
-    return binary_path
+  return binary_path
 
 
 def Resolve(path, exe_path, loader_path, rpaths):
@@ -176,7 +177,7 @@ def GenerateSymbols(options, binaries):
           print "Generating symbols for %s" % binary
 
       if sys.platform == 'darwin':
-        binary = GetDSYMBundle(options.build_dir, binary)
+        binary = GetDSYMBundle(options, binary)
 
       syms = GetCommandOutput([GetDumpSymsBinary(options.build_dir), '-r', '-c',
                                binary])
@@ -208,6 +209,8 @@ def main():
                     help='The build output directory.')
   parser.add_option('', '--symbols-dir', default='',
                     help='The directory where to write the symbols file.')
+  parser.add_option('', '--libchromiumcontent-dir', default='',
+                    help='The directory where libchromiumcontent is downloaded.')
   parser.add_option('', '--binary', default='',
                     help='The path of the binary to generate symbols for.')
   parser.add_option('', '--clear', default=False, action='store_true',
@@ -226,6 +229,10 @@ def main():
 
   if not options.build_dir:
     print "Required option --build-dir missing."
+    return 1
+
+  if not options.libchromiumcontent_dir:
+    print "Required option --libchromiumcontent-dir missing."
     return 1
 
   if not options.binary:

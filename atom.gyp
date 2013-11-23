@@ -422,6 +422,7 @@
                 '--build-dir=<(PRODUCT_DIR)',
                 '--binary=<(PRODUCT_DIR)/<(product_name).app/Contents/MacOS/<(product_name)',
                 '--symbols-dir=<(PRODUCT_DIR)/Atom-Shell.breakpad.syms',
+                '--libchromiumcontent-dir=<(libchromiumcontent_library_dir)',
                 '--clear',
                 '--jobs=16',
               ],
