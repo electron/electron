@@ -10,19 +10,23 @@
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/logging.h"
+#include "base/string_util.h"
 #include "common/crash_reporter/win/crash_service.h"
 
 namespace crash_service {
 
 namespace {
 
+const char kApplicationName[] = "application-name";
+const wchar_t kPipeNameFormat[] = L"\\\\.\\pipe\\$1CrashService";
 const wchar_t kStandardLogFile[] = L"operation_log.txt";
 
-bool GetCrashServiceDirectory(base::FilePath* dir) {
+bool GetCrashServiceDirectory(const std::wstring& application_name,
+                              base::FilePath* dir) {
   base::FilePath temp_dir;
   if (!file_util::GetTempDir(&temp_dir))
     return false;
-  temp_dir = temp_dir.Append(L"atom_crashes");
+  temp_dir = temp_dir.Append(application_name + L" Crashes");
   if (!file_util::PathExists(temp_dir)) {
     if (!file_util::CreateDirectory(temp_dir))
       return false;
@@ -33,14 +37,24 @@ bool GetCrashServiceDirectory(base::FilePath* dir) {
 
 }  // namespace.
 
-int Main(const wchar_t* cmd_line) {
+int Main(const wchar_t* cmd) {
   // Initialize all Chromium things.
   base::AtExitManager exit_manager;
   CommandLine::Init(0, NULL);
+  CommandLine& cmd_line = *CommandLine::ForCurrentProcess();
+
+  // Use the application's name as pipe name and output directory.
+  if (!cmd_line.HasSwitch(kApplicationName)) {
+    LOG(ERROR) << "Application's name must be specified with --"
+               << kApplicationName;
+    return 1;
+  }
+  std::wstring application_name = cmd_line.GetSwitchValueNative(
+      kApplicationName);
 
   // We use/create a directory under the user's temp folder, for logging.
   base::FilePath operating_dir;
-  GetCrashServiceDirectory(&operating_dir);
+  GetCrashServiceDirectory(application_name, &operating_dir);
   base::FilePath log_file = operating_dir.Append(kStandardLogFile);
 
   // Logging out to a file.
@@ -52,11 +66,20 @@ int Main(const wchar_t* cmd_line) {
       logging::DISABLE_DCHECK_FOR_NON_OFFICIAL_RELEASE_BUILDS);
   logging::SetLogItems(true, false, true, false);
 
-  VLOG(1) << "Session start. cmdline is [" << cmd_line << "]";
+  VLOG(1) << "Session start. cmdline is [" << cmd << "]";
+
+  // Setting the crash reporter.
+  string16 pipe_name = ReplaceStringPlaceholders(kPipeNameFormat,
+                                                 application_name,
+                                                 NULL);
+  cmd_line.AppendSwitch("no-window");
+  cmd_line.AppendSwitchASCII("max-reports", "128");
+  cmd_line.AppendSwitchASCII("reporter", "atom-shell-crash-service");
+  cmd_line.AppendSwitchNative("pipe-name", pipe_name);
 
   breakpad::CrashService crash_service;
   if (!crash_service.Initialize(operating_dir, operating_dir))
-    return 1;
+    return 2;
 
   VLOG(1) << "Ready to process crash requests";
 

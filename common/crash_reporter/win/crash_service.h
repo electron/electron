@@ -64,6 +64,9 @@ class CrashService {
   // Override the name of the Windows named pipe on which we will
   // listen for crash dump request messages.
   static const char kPipeName[];
+  // --reporter-url=<string>
+  // Override the URL to which crash reports will be sent to.
+  static const char kReporterURL[];
 
   // Returns number of crash dumps handled.
   int requests_handled() const {
@@ -109,6 +112,9 @@ class CrashService {
 
   // the extra tag sent to the server with each dump.
   std::wstring reporter_tag_;
+
+  // receiver URL of crash reports.
+  std::wstring reporter_url_;
 
   // clients serviced statistics:
   int requests_handled_;

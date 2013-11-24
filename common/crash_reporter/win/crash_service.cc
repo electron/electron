@@ -24,7 +24,7 @@ namespace {
 
 const wchar_t kTestPipeName[] = L"\\\\.\\pipe\\ChromeCrashServices";
 
-const wchar_t kCrashReportURL[] = L"https://clients2.google.com/cr/report";
+const wchar_t kGoogleReportURL[] = L"https://clients2.google.com/cr/report";
 const wchar_t kCheckPointFile[] = L"crash_checkpoint.txt";
 
 typedef std::map<std::wstring, std::wstring> CrashMap;
@@ -150,6 +150,7 @@ const char CrashService::kNoWindow[]          = "no-window";
 const char CrashService::kReporterTag[]       = "reporter";
 const char CrashService::kDumpsDir[]          = "dumps-dir";
 const char CrashService::kPipeName[]          = "pipe-name";
+const char CrashService::kReporterURL[]       = "reporter-url";
 
 CrashService::CrashService()
     : sender_(NULL),
@@ -194,10 +195,6 @@ bool CrashService::Initialize(const base::FilePath& operating_dir,
   // Allow the global pipe name to be overridden for better testability.
   if (cmd_line.HasSwitch(kPipeName))
     pipe_name = cmd_line.GetSwitchValueNative(kPipeName);
-
-#ifdef _WIN64
-  pipe_name += L"-x64";
-#endif
 
   if (max_reports > 0) {
     // Create the http sender object.
@@ -248,13 +245,17 @@ bool CrashService::Initialize(const base::FilePath& operating_dir,
   if (cmd_line.HasSwitch(kReporterTag))
     reporter_tag_ = cmd_line.GetSwitchValueNative(kReporterTag);
 
+  reporter_url_ = kGoogleReportURL;
+  if (cmd_line.HasSwitch(kReporterURL))
+    reporter_url_ = cmd_line.GetSwitchValueNative(kReporterURL);
+
   // Log basic information.
   VLOG(1) << "pipe name is " << pipe_name
           << "\ndumps at " << dumps_path_to_use.value();
 
   if (sender_) {
     VLOG(1) << "checkpoint is " << checkpoint_path.value()
-            << "\nserver is " << kCrashReportURL
+            << "\nserver is " << reporter_url_
             << "\nmaximum " << sender_->max_reports_per_day() << " reports/day"
             << "\nreporter is " << reporter_tag_;
   }
@@ -406,8 +407,10 @@ DWORD CrashService::AsyncSendDump(void* context) {
       base::AutoLock lock(info->self->sending_);
       VLOG(1) << "trying to send report for pid = " << info->pid;
       google_breakpad::ReportResult send_result
-          = info->self->sender_->SendCrashReport(kCrashReportURL, info->map,
-                                                 info->dump_path, &report_id);
+          = info->self->sender_->SendCrashReport(info->self->reporter_url_,
+                                                 info->map,
+                                                 info->dump_path,
+                                                 &report_id);
       switch (send_result) {
         case google_breakpad::RESULT_FAILED:
           report_id = L"<network issue>";
