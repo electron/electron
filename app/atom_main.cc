@@ -17,6 +17,7 @@
 
 #include "app/atom_main_delegate.h"
 #include "base/environment.h"
+#include "common/crash_reporter/win/crash_service_main.h"
 #include "content/public/app/startup_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
 #else  // defined(OS_WIN)
@@ -47,7 +48,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     freopen_s(&dontcare, "CON", "r", stdin);
   }
 
-  std::string node_indicator;
+  std::string node_indicator, crash_service_indicator;
   if (env->GetVar("ATOM_SHELL_INTERNAL_RUN_AS_NODE", &node_indicator) &&
       node_indicator == "1") {
     // Convert argv to to UTF8
@@ -85,6 +86,10 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     }
     // Now that conversion is done, we can finally start.
     return node::Start(argc, argv);
+  } else if (env->GetVar("ATOM_SHELL_INTERNAL_CRASH_SERVICE",
+                         &crash_service_indicator) &&
+      crash_service_indicator == "1") {
+    return crash_service::Main(cmd);
   }
 
   sandbox::SandboxInterfaceInfo sandbox_info = {0};
