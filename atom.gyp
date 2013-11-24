@@ -420,7 +420,7 @@
                 'tools/mac/generate_breakpad_symbols.py',
                 '--build-dir=<(PRODUCT_DIR)',
                 '--binary=<(PRODUCT_DIR)/<(product_name).app/Contents/MacOS/<(product_name)',
-                '--symbols-dir=<(PRODUCT_DIR)/atom-shell.breakpad.syms',
+                '--symbols-dir=<(PRODUCT_DIR)/Atom-Shell.breakpad.syms',
                 '--clear',
                 '--jobs=16',
               ],
