@@ -1,3 +1,4 @@
+{spawn} = require 'child_process'
 binding = process.atomBinding 'crash_reporter'
 
 class CrashReporter
@@ -10,6 +11,14 @@ class CrashReporter
     autoSubmit ?= true
     ignoreSystemCrashHandler ?= false
     extra ?= {}
+
+    if process.platform isnt 'darwin'
+      args = [
+        "--reporter-url=#{submitUrl}",
+        "--application-name=#{productName}"
+      ]
+      env = ATOM_SHELL_INTERNAL_CRASH_SERVICE: 1
+      spawn process.execPath, args, {env}
 
     binding.start productName, companyName, submitUrl, autoSubmit, ignoreSystemCrashHandler, extra
 
