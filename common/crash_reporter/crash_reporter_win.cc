@@ -53,7 +53,6 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
   if (waiting_event != INVALID_HANDLE_VALUE)
     WaitForSingleObject(waiting_event, 1000);
 
-  google_breakpad::CustomClientInfo custom_info = { NULL, 0 };
   breakpad_.reset(new google_breakpad::ExceptionHandler(
       temp_dir.value(),
       FilterCallback,
@@ -62,7 +61,7 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
       google_breakpad::ExceptionHandler::HANDLER_ALL,
       kSmallDumpType,
       pipe_name.c_str(),
-      &custom_info));
+      GetCustomInfo(product_name, version, company_name)));
 
   if (!breakpad_->IsOutOfProcess())
     LOG(ERROR) << "Cannot initialize out-of-process crash handler";
@@ -91,6 +90,30 @@ bool CrashReporterWin::MinidumpCallback(const wchar_t* dump_path,
     return true;
   else
     return false;
+}
+
+google_breakpad::CustomClientInfo* CrashReporterWin::GetCustomInfo(
+    const std::string& product_name,
+    const std::string& version,
+    const std::string& company_name) {
+  custom_info_entries_.clear();
+  custom_info_entries_.reserve(2 + upload_parameters_.size());
+
+  custom_info_entries_.push_back(google_breakpad::CustomInfoEntry(
+      L"prod", UTF8ToWide(product_name).c_str()));
+  custom_info_entries_.push_back(google_breakpad::CustomInfoEntry(
+      L"ver", UTF8ToWide(version).c_str()));
+
+  for (StringMap::const_iterator iter = upload_parameters_.begin();
+       iter != upload_parameters_.end(); ++iter) {
+    custom_info_entries_.push_back(google_breakpad::CustomInfoEntry(
+        UTF8ToWide(iter->first).c_str(),
+        UTF8ToWide(iter->second).c_str()));
+  }
+
+  custom_info_.entries = &custom_info_entries_.front();
+  custom_info_.count = custom_info_entries_.size();
+  return &custom_info_;
 }
 
 // static

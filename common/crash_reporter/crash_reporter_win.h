@@ -43,6 +43,16 @@ class CrashReporterWin : public CrashReporter {
                                MDRawAssertionInfo* assertion,
                                bool succeeded);
 
+  // Returns the custom info structure based on parameters.
+  google_breakpad::CustomClientInfo* GetCustomInfo(
+      const std::string& product_name,
+      const std::string& version,
+      const std::string& company_name);
+
+  // Custom information to be passed to crash handler.
+  std::vector<google_breakpad::CustomInfoEntry> custom_info_entries_;
+  google_breakpad::CustomClientInfo custom_info_;
+
   bool skip_system_crash_handler_;
   scoped_ptr<google_breakpad::ExceptionHandler> breakpad_;
 
