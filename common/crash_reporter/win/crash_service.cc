@@ -270,12 +270,10 @@ bool CrashService::Initialize(const base::FilePath& operating_dir,
   if (security_attributes.lpSecurityDescriptor)
     LocalFree(security_attributes.lpSecurityDescriptor);
 
-  // This is throwaway code. We don't need to sync with the browser process
-  // once Google Update is updated to a version supporting OOP crash handling.
   // Create or open an event to signal the browser process that the crash
   // service is initialized.
   HANDLE running_event =
-      ::CreateEventW(NULL, TRUE, TRUE, L"g_chrome_crash_svc");
+      ::CreateEventW(NULL, TRUE, TRUE, L"g_atom_shell_crash_service");
   // If the browser already had the event open, the CreateEvent call did not
   // signal it. We need to do it manually.
   ::SetEvent(running_event);

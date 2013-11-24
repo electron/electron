@@ -7,8 +7,6 @@
 #include "base/at_exit.h"
 #include "base/command_line.h"
 #include "base/file_util.h"
-#include "base/files/file_path.h"
-#include "base/path_service.h"
 #include "base/logging.h"
 #include "base/string_util.h"
 #include "common/crash_reporter/win/crash_service.h"
@@ -18,7 +16,8 @@ namespace crash_service {
 namespace {
 
 const char kApplicationName[] = "application-name";
-const wchar_t kPipeNameFormat[] = L"\\\\.\\pipe\\$1CrashService";
+
+const wchar_t kPipeNameFormat[] = L"\\\\.\\pipe\\$1 Crash Service";
 const wchar_t kStandardLogFile[] = L"operation_log.txt";
 
 bool GetCrashServiceDirectory(const std::wstring& application_name,
