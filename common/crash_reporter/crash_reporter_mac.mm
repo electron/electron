@@ -49,6 +49,11 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
   // Report all crashes (important for testing the crash reporter).
   [parameters setValue:@"0" forKey:@BREAKPAD_REPORT_INTERVAL];
 
+  // Put dump files under "/tmp/ProductName Crashes".
+  std::string dump_dir = "/tmp/" + product_name + " Crashes";
+  [parameters setValue:base::SysUTF8ToNSString(dump_dir)
+                forKey:@BREAKPAD_DUMP_DIRECTORY];
+
   breakpad_ = BreakpadCreate(parameters);
 
   for (StringMap::const_iterator iter = upload_parameters_.begin();
