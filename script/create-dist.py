@@ -150,9 +150,9 @@ def create_version():
 
 def download_libchromiumcontent_symbols(url):
   if sys.platform == 'darwin':
-    return
-
-  symbols_name = 'libchromiumcontent.dll.pdb'
+    symbols_name = 'libchromiumcontent.dylib.dSYM'
+  else:
+    symbols_name = 'libchromiumcontent.dll.pdb'
   symbols_path = os.path.join(OUT_DIR, symbols_name)
   if os.path.exists(symbols_path):
     return
