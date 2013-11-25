@@ -2,6 +2,7 @@
   'variables': {
     'project_name': 'atom',
     'product_name': 'Atom',
+    'framework_name': 'Atom Framework',
     'app_sources': [
       'app/atom_main.cc',
       'app/atom_main.h',
@@ -253,7 +254,7 @@
               'destination': '<(PRODUCT_DIR)/<(product_name).app/Contents/Frameworks',
               'files': [
                 '<(PRODUCT_DIR)/<(product_name) Helper.app',
-                '<(PRODUCT_DIR)/<(product_name).framework',
+                '<(PRODUCT_DIR)/<(framework_name).framework',
                 'frameworks/Sparkle.framework',
               ],
             },
@@ -435,7 +436,7 @@
       'targets': [
         {
           'target_name': '<(project_name)_framework',
-          'product_name': '<(product_name)',
+          'product_name': '<(framework_name)',
           'type': 'shared_library',
           'dependencies': [
             '<(project_name)_lib',
@@ -466,7 +467,7 @@
             'LIBRARY_SEARCH_PATHS': [
               '<(libchromiumcontent_library_dir)',
             ],
-            'LD_DYLIB_INSTALL_NAME': '@rpath/<(product_name).framework/<(product_name)',
+            'LD_DYLIB_INSTALL_NAME': '@rpath/<(framework_name).framework/<(framework_name)',
             'LD_RUNPATH_SEARCH_PATHS': [
               '@loader_path/Libraries',
             ],
@@ -476,14 +477,14 @@
           },
           'copies': [
             {
-              'destination': '<(PRODUCT_DIR)/<(product_name).framework/Versions/A/Libraries',
+              'destination': '<(PRODUCT_DIR)/<(framework_name).framework/Versions/A/Libraries',
               'files': [
                 '<(libchromiumcontent_library_dir)/ffmpegsumo.so',
                 '<(libchromiumcontent_library_dir)/libchromiumcontent.dylib',
               ],
             },
             {
-              'destination': '<(PRODUCT_DIR)/<(product_name).framework/Versions/A/Resources',
+              'destination': '<(PRODUCT_DIR)/<(framework_name).framework/Versions/A/Resources',
               'files': [
                 '<(PRODUCT_DIR)/Inspector',
                 '<(PRODUCT_DIR)/crash_report_sender.app',
@@ -501,7 +502,7 @@
               'postbuild_name': 'Add symlinks for framework subdirectories',
               'action': [
                 'tools/mac/create-framework-subdir-symlinks.sh',
-                '<(product_name)',
+                '<(framework_name)',
                 'Libraries',
                 'Frameworks',
               ],

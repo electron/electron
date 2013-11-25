@@ -34,7 +34,7 @@ base::FilePath AtomMainDelegate::GetResourcesPakFilePath() {
 
 void AtomMainDelegate::OverrideFrameworkBundlePath() {
   base::mac::SetOverrideFrameworkBundlePath(
-      GetFrameworksPath().Append("Atom.framework"));
+      GetFrameworksPath().Append("Atom Framework.framework"));
 }
 
 void AtomMainDelegate::OverrideChildProcessPath() {
