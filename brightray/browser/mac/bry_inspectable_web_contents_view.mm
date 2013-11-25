@@ -6,6 +6,7 @@
 
 #import "content/public/browser/render_widget_host_view.h"
 #import "content/public/browser/web_contents_view.h"
+#import "ui/base/cocoa/underlay_opengl_hosting_window.h"
 
 using namespace brightray;
 
@@ -130,8 +131,8 @@ void SetActive(content::WebContents* web_contents, bool active) {
 - (void)moveToWindow {
   if (!_private->window) {
     auto styleMask = NSTitledWindowMask | NSClosableWindowMask | NSMiniaturizableWindowMask | NSResizableWindowMask | NSTexturedBackgroundWindowMask | NSUnifiedTitleAndToolbarWindowMask;
-    auto contentRect = [NSWindow contentRectForFrameRect:devtoolsWindowFrame(_private->splitView) styleMask:styleMask];
-    _private->window = [[NSWindow alloc] initWithContentRect:contentRect styleMask:styleMask backing:NSBackingStoreBuffered defer:YES];
+    auto contentRect = [UnderlayOpenGLHostingWindow contentRectForFrameRect:devtoolsWindowFrame(_private->splitView) styleMask:styleMask];
+    _private->window = [[UnderlayOpenGLHostingWindow alloc] initWithContentRect:contentRect styleMask:styleMask backing:NSBackingStoreBuffered defer:YES];
     _private->window.delegate = self;
     _private->window.releasedWhenClosed = NO;
     _private->window.title = @"Developer Tools";
