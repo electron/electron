@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import os
 import shutil
 import subprocess
@@ -12,9 +13,11 @@ from lib.util import scoped_cwd, rm_rf, get_atom_shell_version, make_zip, \
 
 ATOM_SHELL_VRESION = get_atom_shell_version()
 NODE_VERSION = 'v0.10.18'
+BASE_URL = 'https://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent'
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
+OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'Release')
 NODE_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'node')
 DIST_HEADERS_NAME = 'node-{0}'.format(NODE_VERSION)
 DIST_HEADERS_DIR = os.path.join(DIST_DIR, DIST_HEADERS_NAME)
@@ -68,7 +71,10 @@ def main():
   rm_rf(DIST_DIR)
   os.makedirs(DIST_DIR)
 
+  args = parse_args()
+
   force_build()
+  download_libchromiumcontent_symbols(args.url)
   create_symbols()
   copy_binaries()
   copy_headers()
@@ -79,19 +85,28 @@ def main():
   create_header_tarball()
 
 
+def parse_args():
+  parser = argparse.ArgumentParser(description='Create distributions')
+  parser.add_argument('-u', '--url',
+                      help='The base URL from which to download '
+                      'libchromiumcontent (i.e., the URL you passed to '
+                      'libchromiumcontent\'s script/upload script',
+                      default=BASE_URL,
+                      required=False)
+  return parser.parse_args()
+
+
 def force_build():
   build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
   subprocess.check_call([sys.executable, build, '-c', 'Release'])
 
 
 def copy_binaries():
-  out_dir = os.path.join(SOURCE_ROOT, 'out', 'Release')
-
   for binary in TARGET_BINARIES[TARGET_PLATFORM]:
-    shutil.copy2(os.path.join(out_dir, binary), DIST_DIR)
+    shutil.copy2(os.path.join(OUT_DIR, binary), DIST_DIR)
 
   for directory in TARGET_DIRECTORIES[TARGET_PLATFORM]:
-    shutil.copytree(os.path.join(out_dir, directory),
+    shutil.copytree(os.path.join(OUT_DIR, directory),
                     os.path.join(DIST_DIR, directory),
                     symlinks=True)
 
@@ -133,15 +148,33 @@ def create_version():
     version_file.write(ATOM_SHELL_VRESION)
 
 
-def create_symbols():
-  out_dir = os.path.join(SOURCE_ROOT, 'out', 'Release')
+def download_libchromiumcontent_symbols(url):
+  if sys.platform == 'darwin':
+    return
 
+  symbols_name = 'libchromiumcontent.dll.pdb'
+  symbols_path = os.path.join(OUT_DIR, symbols_name)
+  if os.path.exists(symbols_path):
+    return
+
+  brightray_dir = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor')
+  target_dir = os.path.join(brightray_dir, 'download', 'libchromiumcontent')
+  download = os.path.join(brightray_dir, 'libchromiumcontent', 'script',
+                          'download')
+  subprocess.check_call([sys.executable, download, '-f', '-s', url, target_dir])
+
+  shutil.copytree(os.path.join(target_dir, 'Release', symbols_name),
+                  symbols_path,
+                  symlinks=True)
+
+
+def create_symbols():
   build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
   subprocess.check_output([sys.executable, build, '-c', 'Release',
                            '-t', 'atom_dump_symbols'])
 
-  directory = 'atom-shell.breakpad.syms'
-  shutil.copytree(os.path.join(out_dir, directory),
+  directory = 'Atom-Shell.breakpad.syms'
+  shutil.copytree(os.path.join(OUT_DIR, directory),
                   os.path.join(DIST_DIR, directory),
                   symlinks=True)
 
@@ -164,7 +197,7 @@ def create_symbols_zip():
 
   with scoped_cwd(DIST_DIR):
     files = ['LICENSE', 'version']
-    dirs = ['atom-shell.breakpad.syms']
+    dirs = ['Atom-Shell.breakpad.syms']
     make_zip(zip_file, files, dirs)
 
 
