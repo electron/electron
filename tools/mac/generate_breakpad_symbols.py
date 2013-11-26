@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-# Copyright 2013 The Chromium Authors. All rights reserved.
+# Copyright (c) 2013 GitHub, Inc. All rights reserved.
+# Copyright (c) 2013 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -171,8 +172,8 @@ def GenerateSymbols(options, binaries):
       binary = queue.get()
 
       if options.verbose:
-          with print_lock:
-              print "Generating symbols for %s" % binary
+        with print_lock:
+          print "Generating symbols for %s" % binary
 
       if sys.platform == 'darwin':
         binary = GetDSYMBundle(options.build_dir, binary)

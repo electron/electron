@@ -152,20 +152,22 @@ def download_libchromiumcontent_symbols(url):
   if sys.platform == 'darwin':
     symbols_name = 'libchromiumcontent.dylib.dSYM'
   else:
-    symbols_name = 'libchromiumcontent.dll.pdb'
-  symbols_path = os.path.join(OUT_DIR, symbols_name)
-  if os.path.exists(symbols_path):
-    return
+    symbols_name = 'chromiumcontent.dll.pdb'
 
   brightray_dir = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor')
   target_dir = os.path.join(brightray_dir, 'download', 'libchromiumcontent')
+  symbols_path = os.path.join(target_dir, 'Release', symbols_name)
+  if os.path.exists(symbols_path):
+    return
+
   download = os.path.join(brightray_dir, 'libchromiumcontent', 'script',
                           'download')
   subprocess.check_call([sys.executable, download, '-f', '-s', url, target_dir])
 
-  shutil.copytree(os.path.join(target_dir, 'Release', symbols_name),
-                  symbols_path,
-                  symlinks=True)
+  if sys.platform == 'darwin':
+    shutil.copytree(symbols_path,
+                    os.path.join(OUT_DIR, symbols_name),
+                    symlinks=True)
 
 
 def create_symbols():
