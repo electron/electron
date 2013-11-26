@@ -18,14 +18,6 @@ softwares:
 * [Windows 7 SDK](http://www.microsoft.com/en-us/download/details.aspx?id=8279)
   * `Windows Headers` and `Visual C++ Compilers` are required.
 
-If you want to dump breakpad symbols you also need to do this (you are free to
-skip this step if you don't know what it is):
-
-1. Get a copy of `msdia80.dll` and put it in
-   `C:\Program Files\Common Files\Microsoft Shared\VC\`.
-2. As Administrator, run:
-   `regsvr32 "C:\Program Files\Common Files\Microsoft Shared\VC\msdia80.dll"`.
-
 The instructions bellow are executed under [cygwin](http://www.cygwin.com),
 but it's not a requirement, you can also build atom-shell under Windows's
 console or other terminals.

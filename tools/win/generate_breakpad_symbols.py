@@ -47,6 +47,13 @@ def mkdir_p(path):
     else: raise
 
 
+def RegisterRequiredDll():
+  register = os.path.join(os.path.dirname(__file__), 'register_msdia80_dll.js')
+  node = os.path.join(SOURCE_ROOT, 'out', 'Release', 'atom.exe')
+  os.environ['ATOM_SHELL_INTERNAL_RUN_AS_NODE'] = '1'
+  subprocess.check_call([node, register]);
+
+
 def GenerateSymbols(options, binaries):
   """Dumps the symbols of binary and places them in the given directory."""
 
@@ -118,6 +125,7 @@ def main():
   for directory in directories:
     pdbs += glob.glob(os.path.join(directory, '*.pdb'))
 
+  RegisterRequiredDll();
   GenerateSymbols(options, pdbs)
 
   return 0
