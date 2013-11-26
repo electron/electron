@@ -49,6 +49,30 @@ def GetDumpSymsBinary(build_dir=None):
   return dump_syms_bin
 
 
+def FindBundlePart(full_path):
+  if full_path.endswith(('.dylib', '.framework', '.app')):
+    return os.path.basename(full_path)
+  elif full_path != '' and full_path != '/':
+    return FindBundlePart(os.path.dirname(full_path))
+  else:
+    return ''
+
+
+def GetDSYMBundle(build_dir, binary_path):
+  """Finds the .dSYM bundle to the binary."""
+  if binary_path[0] == '/' or binary_path == '':
+    return binary_path
+
+  filename = FindBundlePart(binary_path)
+  if filename.endswith(('.dylib', '.framework', '.app')):
+    dsym_path = os.path.join(build_dir, filename) + '.dSYM'
+
+  if dsym_path != None and os.path.exists(dsym_path):
+    return dsym_path
+  else:
+    return binary_path
+
+
 def Resolve(path, exe_path, loader_path, rpaths):
   """Resolve a dyld path.
 
@@ -150,7 +174,10 @@ def GenerateSymbols(options, binaries):
           with print_lock:
               print "Generating symbols for %s" % binary
 
-      syms = GetCommandOutput([GetDumpSymsBinary(options.build_dir), '-r',
+      if sys.platform == 'darwin':
+        binary = GetDSYMBundle(options.build_dir, binary)
+
+      syms = GetCommandOutput([GetDumpSymsBinary(options.build_dir), '-r', '-c',
                                binary])
       module_line = re.match("MODULE [^ ]+ [^ ]+ ([0-9A-F]+) (.*)\n", syms)
       output_path = os.path.join(options.symbols_dir, module_line.group(2),
