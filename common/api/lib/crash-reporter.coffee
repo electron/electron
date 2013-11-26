@@ -12,6 +12,14 @@ class CrashReporter
     ignoreSystemCrashHandler ?= false
     extra ?= {}
 
+    extra._productName ?= productName
+    extra._companyName ?= companyName
+    extra._version ?=
+      if process.__atom_type is 'browser'
+        require('app').getVersion()
+      else
+        require('remote').require('app').getVersion()
+
     start = -> binding.start productName, companyName, submitUrl, autoSubmit, ignoreSystemCrashHandler, extra
 
     if process.platform is 'darwin'

@@ -19,6 +19,9 @@ describe 'crash-reporter module', ->
         assert.equal fields['platform'], process.platform
         assert.equal fields['extra1'], 'extra1'
         assert.equal fields['extra2'], 'extra2'
+        assert.equal fields['_productName'], 'Zombies'
+        assert.equal fields['_companyName'], 'Umbrella Corporation'
+        assert.equal fields['_version'], require('remote').require('app').getVersion()
         assert files['upload_file_minidump']['name']?
 
         w.destroy()
