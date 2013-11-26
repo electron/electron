@@ -24,7 +24,7 @@ skip this step if you don't know what it is):
 1. Get a copy of `msdia80.dll` and put it in
    `C:\Program Files\Common Files\Microsoft Shared\VC\`.
 2. As Administrator, run:
-   `regsvr32 c:\Program Files\Common Files\Microsoft Shared\VC\msdia80.dll`.
+   `regsvr32 "C:\Program Files\Common Files\Microsoft Shared\VC\msdia80.dll"`.
 
 The instructions bellow are executed under [cygwin](http://www.cygwin.com),
 but it's not a requirement, you can also build atom-shell under Windows's
