@@ -90,6 +90,8 @@
           'link_settings': {
             'libraries': [
               '<(brightray_source_root)/<(libchromiumcontent_library_dir)/libchromiumcontent.so',
+              '-lpthread',
+              '<!@(pkg-config --libs gtk+-2.0)',
             ],
           },
         }],
