@@ -6,6 +6,11 @@
 * [Xcode](https://developer.apple.com/technologies/tools/)
 * [node.js](http://nodejs.org)
 
+If you are using the python downloaded by Homebrew, you also need to install
+following python modules:
+
+* pyobjc
+
 ## Getting the code
 
 ```bash
