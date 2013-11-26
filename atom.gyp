@@ -415,7 +415,7 @@
                 '<(PRODUCT_DIR)/<(product_name).app/Contents/MacOS/<(product_name)',
               ],
               'outputs': [
-                '<(PRODUCT_DIR)/<(product_name).breakpad.syms',
+                '<(PRODUCT_DIR)/Atom-Shell.breakpad.syms',
               ],
               'action': [
                 'tools/mac/generate_breakpad_symbols.py',
@@ -428,6 +428,26 @@
             },
           ],
         }],  # OS=="mac"
+        ['OS=="win"', {
+          'actions': [
+            {
+              'action_name': 'Dump Symbols',
+              'inputs': [
+                '<(PRODUCT_DIR)/<(project_name).exe',
+              ],
+              'outputs': [
+                '<(PRODUCT_DIR)/Atom-Shell.breakpad.syms',
+              ],
+              'action': [
+                'tools/win/generate_breakpad_symbols.py',
+                '--symbols-dir=<(PRODUCT_DIR)/Atom-Shell.breakpad.syms',
+                '--jobs=16',
+                '<(PRODUCT_DIR)',
+                '<(libchromiumcontent_library_dir)',
+              ],
+            },
+          ],
+        }],  # OS=="win"
       ],
     },  # target <(project_name>_dump_symbols
   ],
