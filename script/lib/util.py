@@ -59,7 +59,7 @@ def extract_tarball(tarball_path, member, destination):
 def extract_zip(zip_path, destination):
   if sys.platform == 'darwin':
     # Use unzip command on Mac to keep symbol links in zip file work.
-    subprocess.check_call(['unzip', zip_path, '-d', destination])
+    subprocess.check_output(['unzip', zip_path, '-d', destination])
   else:
     with zipfile.ZipFile(zip_path) as z:
       z.extractall(destination)
@@ -68,7 +68,7 @@ def make_zip(zip_file_path, files, dirs):
   safe_unlink(zip_file_path)
   if sys.platform == 'darwin':
     files += dirs
-    subprocess.check_call(['zip', '-r', '-y', zip_file_path] + files)
+    subprocess.check_output(['zip', '-r', '-y', zip_file_path] + files)
   else:
     zip_file = zipfile.ZipFile(zip_file_path, "w", zipfile.ZIP_DEFLATED)
     for filename in files:

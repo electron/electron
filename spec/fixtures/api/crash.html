@@ -1,0 +1,20 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+var crashReporter = require('crash-reporter');
+crashReporter.start({
+  productName: 'Zombies',
+  companyName: 'Umbrella Corporation',
+  submitUrl: 'http://127.0.0.1:1127',
+  autoSubmit: true,
+  ignoreSystemCrashHandler: true,
+  extra: {
+    'extra1': 'extra1',
+    'extra2': 'extra2',
+  }
+});
+
+setImmediate(function() { process.crash(); });
+</script>
+</body>
+</html>

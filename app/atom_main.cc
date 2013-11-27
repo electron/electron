@@ -17,6 +17,7 @@
 
 #include "app/atom_main_delegate.h"
 #include "base/environment.h"
+#include "common/crash_reporter/win/crash_service_main.h"
 #include "content/public/app/startup_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
 #else  // defined(OS_WIN)
@@ -34,16 +35,20 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   int argc = 0;
   wchar_t** wargv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
 
-  // Attach to the parent console if we've got one so that stdio works
-  AttachConsole(ATTACH_PARENT_PROCESS);
-
-  FILE* dontcare;
-  freopen_s(&dontcare, "CON", "w", stdout);
-  freopen_s(&dontcare, "CON", "w", stderr);
-  freopen_s(&dontcare, "CON", "r", stdin);
-
   scoped_ptr<base::Environment> env(base::Environment::Create());
-  std::string node_indicator;
+
+  // Make output work in console if we are not in cygiwn.
+  std::string os;
+  if (env->GetVar("OS", &os) && os != "cygwin") {
+    AttachConsole(ATTACH_PARENT_PROCESS);
+
+    FILE* dontcare;
+    freopen_s(&dontcare, "CON", "w", stdout);
+    freopen_s(&dontcare, "CON", "w", stderr);
+    freopen_s(&dontcare, "CON", "r", stdin);
+  }
+
+  std::string node_indicator, crash_service_indicator;
   if (env->GetVar("ATOM_SHELL_INTERNAL_RUN_AS_NODE", &node_indicator) &&
       node_indicator == "1") {
     // Convert argv to to UTF8
@@ -81,6 +86,10 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     }
     // Now that conversion is done, we can finally start.
     return node::Start(argc, argv);
+  } else if (env->GetVar("ATOM_SHELL_INTERNAL_CRASH_SERVICE",
+                         &crash_service_indicator) &&
+      crash_service_indicator == "1") {
+    return crash_service::Main(cmd);
   }
 
   sandbox::SandboxInterfaceInfo sandbox_info = {0};

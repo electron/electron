@@ -59,7 +59,17 @@
           },
         },
         'xcode_settings': {
-          'GCC_TREAT_WARNINGS_AS_ERRORS': 'NO'
+          'GCC_TREAT_WARNINGS_AS_ERRORS': 'NO',
+          'WARNING_CFLAGS': [
+            '-Wno-parentheses-equality',
+            '-Wno-unused-function',
+            '-Wno-sometimes-uninitialized',
+            '-Wno-pointer-sign',
+            '-Wno-string-plus-int',
+            '-Wno-unused-variable',
+            '-Wno-deprecated-declarations',
+            '-Wno-return-type',
+          ],
         },
       }],
       ['_target_name=="libuv"', {
@@ -71,6 +81,15 @@
             ],
           }],  # OS=="win"
         ],
+      }],
+      ['_target_name.startswith("breakpad") or _target_name in ["crash_report_sender", "dump_syms"]', {
+        'xcode_settings': {
+          'WARNING_CFLAGS': [
+            '-Wno-deprecated-declarations',
+            '-Wno-unused-private-field',
+            '-Wno-unused-function',
+          ],
+        },
       }],
     ],
     'msvs_cygwin_shell': 0, # Strangely setting it to 1 would make building under cygwin fail.
@@ -106,6 +125,9 @@
           '/ignore:4049',
         ],
       },
+    },
+    'xcode_settings': {
+      'DEBUG_INFORMATION_FORMAT': 'dwarf-with-dsym',
     },
   },
   'conditions': [
@@ -164,5 +186,16 @@
         ],
       },
     }],  # msvs_express==1
+    # The breakdpad on Windows assumes Debug_x64 and Release_x64 configurations.
+    ['OS=="win"', {
+      'target_defaults': {
+        'configurations': {
+          'Debug_x64': {
+          },
+          'Release_x64': {
+          },
+        },
+      },
+    }],  # OS=="win"
   ],
 }

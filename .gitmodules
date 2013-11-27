@@ -13,3 +13,6 @@
 [submodule "vendor/apm"]
 	path = vendor/apm
 	url = https://github.com/atom/apm.git
+[submodule "vendor/breakpad"]
+	path = vendor/breakpad
+	url = https://github.com/atom/chromium-breakpad.git

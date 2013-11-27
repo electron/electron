@@ -5,6 +5,7 @@
 #ifndef COMMON_V8_CONVERSIONS_H_
 #define COMMON_V8_CONVERSIONS_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -60,6 +61,19 @@ struct FromV8Value {
       array.push_back(FromV8Value(v8_array->Get(i)));
 
     return array;
+  }
+
+  operator std::map<std::string, std::string>() {
+    std::map<std::string, std::string> dict;
+    v8::Handle<v8::Object> v8_dict = value_->ToObject();
+    v8::Handle<v8::Array> v8_keys = v8_dict->GetOwnPropertyNames();
+    for (uint32_t i = 0; i < v8_keys->Length(); ++i) {
+      v8::Handle<v8::Value> v8_key = v8_keys->Get(i);
+      std::string key = FromV8Value(v8_key);
+      dict[key] = std::string(FromV8Value(v8_dict->Get(v8_key)));
+    }
+
+    return dict;
   }
 
   operator atom::NativeWindow*() {
@@ -159,6 +173,12 @@ template<> inline
 bool V8ValueCanBeConvertedTo<std::vector<std::string>>(
     v8::Handle<v8::Value> value) {
   return value->IsArray();
+}
+
+template<> inline
+bool V8ValueCanBeConvertedTo<std::map<std::string, std::string>>(
+    v8::Handle<v8::Value> value) {
+  return value->IsObject();
 }
 
 template<> inline

@@ -4,11 +4,17 @@ import os
 import subprocess
 import sys
 
+from lib.util import rm_rf
+
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
 def main():
+  rm_rf(os.path.join(SOURCE_ROOT, 'out'))
+  rm_rf(os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor', 'download',
+                     'libchromiumcontent'))
+
   run_script('bootstrap.py')
   run_script('cpplint.py')
   run_script('pylint.py')

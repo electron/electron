@@ -13,7 +13,6 @@ FRAMEWORKS_URL = 'https://gh-contractor-zcbenz.s3.amazonaws.com/frameworks'
 def main():
   os.chdir(SOURCE_ROOT)
   safe_mkdir('frameworks')
-  download_and_unzip('Quincy')
   download_and_unzip('Sparkle')
 
 

@@ -25,7 +25,6 @@ Browser side modules:
 * [atom-delegate](api/browser/atom-delegate.md)
 * [auto-updater](api/browser/auto-updater.md)
 * [browser-window](api/browser/browser-window.md)
-* [crash-reporter](api/browser/crash-reporter.md)
 * [dialog](api/browser/dialog.md)
 * [ipc (browser)](api/browser/ipc-browser.md)
 * [menu](api/browser/menu.md)
@@ -36,4 +35,5 @@ Browser side modules:
 Common modules:
 
 * [clipboard](api/common/clipboard.md)
+* [crash-reporter](api/common/crash-reporter.md)
 * [shell](api/common/shell.md)

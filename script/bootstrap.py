@@ -58,7 +58,7 @@ def bootstrap_brightray(url):
 def update_apm():
   ## NB: Without this, subprocess incorrectly searches for npm.exe
   npm_cmd = 'npm'
-  if sys.platform == 'win32':
+  if sys.platform in ['win32', 'cygwin']:
     npm_cmd += '.cmd'
 
   with scoped_cwd(os.path.join('vendor', 'apm')):

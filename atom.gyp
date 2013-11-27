@@ -2,6 +2,7 @@
   'variables': {
     'project_name': 'atom',
     'product_name': 'Atom',
+    'framework_name': 'Atom Framework',
     'app_sources': [
       'app/atom_main.cc',
       'app/atom_main.h',
@@ -14,7 +15,6 @@
       'browser/api/lib/atom-delegate.coffee',
       'browser/api/lib/auto-updater.coffee',
       'browser/api/lib/browser-window.coffee',
-      'browser/api/lib/crash-reporter.coffee',
       'browser/api/lib/dialog.coffee',
       'browser/api/lib/ipc.coffee',
       'browser/api/lib/menu.coffee',
@@ -26,6 +26,7 @@
       'browser/atom/rpc-server.coffee',
       'common/api/lib/callbacks-registry.coffee',
       'common/api/lib/clipboard.coffee',
+      'common/api/lib/crash-reporter.coffee',
       'common/api/lib/id-weak-map.coffee',
       'common/api/lib/shell.coffee',
       'renderer/api/lib/ipc.coffee',
@@ -41,8 +42,6 @@
       'browser/api/atom_api_auto_updater.h',
       'browser/api/atom_api_browser_ipc.cc',
       'browser/api/atom_api_browser_ipc.h',
-      'browser/api/atom_api_crash_reporter.h',
-      'browser/api/atom_api_crash_reporter.cc',
       'browser/api/atom_api_dialog.cc',
       'browser/api/atom_api_dialog.h',
       'browser/api/atom_api_event.cc',
@@ -87,9 +86,6 @@
       'browser/browser_mac.mm',
       'browser/browser_win.cc',
       'browser/browser_observer.h',
-      'browser/crash_reporter.h',
-      'browser/crash_reporter_mac.mm',
-      'browser/crash_reporter_win.cc',
       'browser/native_window.cc',
       'browser/native_window.h',
       'browser/native_window_mac.h',
@@ -132,6 +128,8 @@
       'common/api/api_messages.h',
       'common/api/atom_api_clipboard.cc',
       'common/api/atom_api_clipboard.h',
+      'common/api/atom_api_crash_reporter.cc',
+      'common/api/atom_api_crash_reporter.h',
       'common/api/atom_api_id_weak_map.cc',
       'common/api/atom_api_id_weak_map.h',
       'common/api/atom_api_shell.cc',
@@ -143,6 +141,16 @@
       'common/api/atom_extensions.h',
       'common/api/object_life_monitor.cc',
       'common/api/object_life_monitor.h',
+      'common/crash_reporter/crash_reporter.cc',
+      'common/crash_reporter/crash_reporter.h',
+      'common/crash_reporter/crash_reporter_mac.h',
+      'common/crash_reporter/crash_reporter_mac.mm',
+      'common/crash_reporter/crash_reporter_win.cc',
+      'common/crash_reporter/crash_reporter_win.h',
+      'common/crash_reporter/win/crash_service.cc',
+      'common/crash_reporter/win/crash_service.h',
+      'common/crash_reporter/win/crash_service_main.cc',
+      'common/crash_reporter/win/crash_service_main.h',
       'common/draggable_region.cc',
       'common/draggable_region.h',
       'common/node_bindings.cc',
@@ -187,9 +195,6 @@
       '-change',
       '@loader_path/../Frameworks/Sparkle.framework/Versions/A/Sparkle',
       '@rpath/Sparkle.framework/Versions/A/Sparkle',
-      '-change',
-      '@executable_path/../Frameworks/Quincy.framework/Versions/A/Quincy',
-      '@rpath/Quincy.framework/Versions/A/Quincy',
       '${BUILT_PRODUCTS_DIR}/${EXECUTABLE_PATH}'
     ],
     'atom_source_root': '<!(python tools/atom_source_root.py)',
@@ -249,9 +254,8 @@
               'destination': '<(PRODUCT_DIR)/<(product_name).app/Contents/Frameworks',
               'files': [
                 '<(PRODUCT_DIR)/<(product_name) Helper.app',
-                '<(PRODUCT_DIR)/<(product_name).framework',
+                '<(PRODUCT_DIR)/<(framework_name).framework',
                 'frameworks/Sparkle.framework',
-                'frameworks/Quincy.framework',
               ],
             },
             {
@@ -307,7 +311,7 @@
           ],
         }],  # OS=="win"
       ],
-    },
+    },  # target <(project_name)
     {
       'target_name': '<(project_name)_lib',
       'type': 'static_library',
@@ -337,12 +341,22 @@
               '-limm32.lib',
               '-loleacc.lib',
               '-lComdlg32.lib',
+              '-lWininet.lib',
               '<(atom_source_root)/<(libchromiumcontent_library_dir)/chromiumviews.lib',
             ],
           },
+          'dependencies': [
+            'vendor/breakpad/breakpad.gyp:breakpad_handler',
+            'vendor/breakpad/breakpad.gyp:breakpad_sender',
+          ],
+        }],
+        ['OS=="mac"', {
+          'dependencies': [
+            'vendor/breakpad/breakpad.gyp:breakpad',
+          ],
         }],
       ],
-    },
+    },  # target <(product_name)_lib
     {
       'target_name': 'generated_sources',
       'type': 'none',
@@ -382,14 +396,67 @@
           ],
         },
       ],
-    },
+    },  # target generated_sources
+    {
+      'target_name': '<(project_name)_dump_symbols',
+      'type': 'none',
+      'dependencies': [
+        '<(project_name)',
+      ],
+      'conditions': [
+        ['OS=="mac"', {
+          'dependencies': [
+            'vendor/breakpad/breakpad.gyp:dump_syms',
+          ],
+          'actions': [
+            {
+              'action_name': 'Dump Symbols',
+              'inputs': [
+                '<(PRODUCT_DIR)/<(product_name).app/Contents/MacOS/<(product_name)',
+              ],
+              'outputs': [
+                '<(PRODUCT_DIR)/Atom-Shell.breakpad.syms',
+              ],
+              'action': [
+                'tools/mac/generate_breakpad_symbols.py',
+                '--build-dir=<(PRODUCT_DIR)',
+                '--binary=<(PRODUCT_DIR)/<(product_name).app/Contents/MacOS/<(product_name)',
+                '--symbols-dir=<(PRODUCT_DIR)/Atom-Shell.breakpad.syms',
+                '--clear',
+                '--jobs=16',
+              ],
+            },
+          ],
+        }],  # OS=="mac"
+        ['OS=="win"', {
+          'actions': [
+            {
+              'action_name': 'Dump Symbols',
+              'inputs': [
+                '<(PRODUCT_DIR)/<(project_name).exe',
+              ],
+              'outputs': [
+                '<(PRODUCT_DIR)/Atom-Shell.breakpad.syms',
+              ],
+              'action': [
+                'tools/win/generate_breakpad_symbols.py',
+                '--symbols-dir=<(PRODUCT_DIR)/Atom-Shell.breakpad.syms',
+                '--jobs=16',
+                '<(PRODUCT_DIR)',
+                '<(libchromiumcontent_library_dir)',
+              ],
+            },
+          ],
+        }],  # OS=="win"
+      ],
+    },  # target <(project_name>_dump_symbols
   ],
   'conditions': [
     ['OS=="mac"', {
       'targets': [
         {
           'target_name': '<(project_name)_framework',
-          'product_name': '<(product_name)',
+          'product_name': '<(framework_name)',
           'type': 'shared_library',
           'dependencies': [
             '<(project_name)_lib',
@@ -409,7 +476,6 @@
             'libraries': [
               '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
               'frameworks/Sparkle.framework',
-              'frameworks/Quincy.framework',
             ],
           },
           'mac_bundle': 1,
@@ -421,7 +487,7 @@
             'LIBRARY_SEARCH_PATHS': [
               '<(libchromiumcontent_library_dir)',
             ],
-            'LD_DYLIB_INSTALL_NAME': '@rpath/<(product_name).framework/<(product_name)',
+            'LD_DYLIB_INSTALL_NAME': '@rpath/<(framework_name).framework/<(framework_name)',
             'LD_RUNPATH_SEARCH_PATHS': [
               '@loader_path/Libraries',
             ],
@@ -431,10 +497,17 @@
           },
           'copies': [
             {
-              'destination': '<(PRODUCT_DIR)/<(product_name).framework/Versions/A/Libraries',
+              'destination': '<(PRODUCT_DIR)/<(framework_name).framework/Versions/A/Libraries',
               'files': [
                 '<(libchromiumcontent_library_dir)/ffmpegsumo.so',
                 '<(libchromiumcontent_library_dir)/libchromiumcontent.dylib',
+              ],
+            },
+            {
+              'destination': '<(PRODUCT_DIR)/<(framework_name).framework/Versions/A/Resources',
+              'files': [
+                '<(PRODUCT_DIR)/Inspector',
+                '<(PRODUCT_DIR)/crash_report_sender.app',
               ],
             },
           ],
@@ -449,7 +522,7 @@
               'postbuild_name': 'Add symlinks for framework subdirectories',
               'action': [
                 'tools/mac/create-framework-subdir-symlinks.sh',
-                '<(product_name)',
+                '<(framework_name)',
                 'Libraries',
                 'Frameworks',
               ],
