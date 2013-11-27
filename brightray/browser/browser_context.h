@@ -22,7 +22,7 @@ class BrowserContext : public content::BrowserContext {
   BrowserContext();
   ~BrowserContext();
 
-  void Initialize();
+  virtual void Initialize();
 
   net::URLRequestContextGetter* CreateRequestContext(
       content::ProtocolHandlerMap*);
