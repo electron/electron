@@ -7,7 +7,7 @@ class CrashReporter
 
     productName ?= 'Atom-Shell'
     companyName ?= 'GitHub, Inc'
-    submitUrl ?= 'http://54.249.141.25:1127/post'
+    submitUrl ?= 'http://54.249.141.255:1127/post'
     autoSubmit ?= true
     ignoreSystemCrashHandler ?= false
     extra ?= {}
