@@ -79,7 +79,7 @@ def GenerateSymbols(options, binaries):
       output_path = os.path.join(options.symbols_dir, module_line.group(2),
                                  module_line.group(1))
       mkdir_p(output_path)
-      symbol_file = "%s.sym" % module_line.group(2)
+      symbol_file = "%s.sym" % module_line.group(2)[:-4]  # strip .pdb
       f = open(os.path.join(output_path, symbol_file), 'w')
       f.write(syms)
       f.close()
@@ -123,7 +123,8 @@ def main():
 
   pdbs = []
   for directory in directories:
-    pdbs += glob.glob(os.path.join(directory, '*.pdb'))
+    pdbs += glob.glob(os.path.join(directory, '*.exe.pdb'))
+    pdbs += glob.glob(os.path.join(directory, '*.dll.pdb'))
 
   RegisterRequiredDll();
   GenerateSymbols(options, pdbs)
