@@ -47,7 +47,7 @@ app.on('finish-launching', function() {
       submenu: [
         {
           label: 'Quit',
-          accelerator: 'Command+Q',
+          accelerator: 'CommandOrControl+Q',
           click: function(item, window) { app.quit(); }
         },
       ],
@@ -57,11 +57,11 @@ app.on('finish-launching', function() {
       submenu: [
         {
           label: 'Open',
-          accelerator: 'Command+O',
+          accelerator: 'CommandOrControl+O',
         },
         {
           label: 'Close',
-          accelerator: 'Command+W',
+          accelerator: 'CommandOrControl+W',
           click: function(item, window) { window.close(); }
         },
       ]
@@ -71,7 +71,7 @@ app.on('finish-launching', function() {
       submenu: [
         {
           label: 'Reload',
-          accelerator: 'Command+R',
+          accelerator: 'CommandOrControl+R',
           click: function(item, window) { window.restart(); }
         },
         {
@@ -80,7 +80,7 @@ app.on('finish-launching', function() {
         },
         {
           label: 'Toggle DevTools',
-          accelerator: 'Alt+Command+I',
+          accelerator: 'Alt+CommandOrControl+I',
           click: function(item, window) { window.toggleDevTools(); }
         },
       ]
