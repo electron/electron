@@ -105,9 +105,9 @@ bool StringToAccelerator(const std::string& description,
       key = KeyboardCodeFromCharCode(tokens[i][0], &shifted);
       if (shifted)
         modifiers |= ui::EF_SHIFT_DOWN;
-    } else if (tokens[i] == "ctrl") {
+    } else if (tokens[i] == "ctrl" || tokens[i] == "control") {
       modifiers |= ui::EF_CONTROL_DOWN;
-    } else if (tokens[i] == "command") {
+    } else if (tokens[i] == "cmd" || tokens[i] == "command") {
       modifiers |= ui::EF_COMMAND_DOWN;
     } else if (tokens[i] == "commandorcontrol" || tokens[i] == "cmdorctrl") {
 #if defined(OS_MACOSX)
