@@ -53,16 +53,40 @@ app.on('finish-launching', function() {
       ],
     },
     {
-      label: 'Window',
+      label: 'Edit',
       submenu: [
         {
-          label: 'Open',
-          accelerator: 'CommandOrControl+O',
+          label: 'Undo',
+          accelerator: 'CommandOrControl+Z',
+          selector: 'undo:',
         },
         {
-          label: 'Close',
-          accelerator: 'CommandOrControl+W',
-          click: function(item, window) { window.close(); }
+          label: 'Redo',
+          accelerator: 'CommandOrControl+Shift+Z',
+          selector: 'redo:',
+        },
+        {
+          type: 'separator',
+        },
+        {
+          label: 'Cut',
+          accelerator: 'CommandOrControl+X',
+          selector: 'cut:',
+        },
+        {
+          label: 'Copy',
+          accelerator: 'CommandOrControl+C',
+          selector: 'copy:',
+        },
+        {
+          label: 'Paste',
+          accelerator: 'CommandOrControl+V',
+          selector: 'paste:',
+        },
+        {
+          label: 'Select All',
+          accelerator: 'CommandOrControl+A',
+          selector: 'selectAll:',
         },
       ]
     },
@@ -82,6 +106,20 @@ app.on('finish-launching', function() {
           label: 'Toggle DevTools',
           accelerator: 'Alt+CommandOrControl+I',
           click: function(item, window) { window.toggleDevTools(); }
+        },
+      ]
+    },
+    {
+      label: 'Window',
+      submenu: [
+        {
+          label: 'Open',
+          accelerator: 'CommandOrControl+O',
+        },
+        {
+          label: 'Close',
+          accelerator: 'CommandOrControl+W',
+          click: function(item, window) { window.close(); }
         },
       ]
     },
