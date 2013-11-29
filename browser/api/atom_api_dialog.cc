@@ -59,9 +59,8 @@ v8::Handle<v8::Value> ShowMessageBox(const v8::Arguments &args) {
     return node::ThrowTypeError("Bad argument");
 
   NativeWindow* native_window = FromV8Value(args[5]);
-  v8::Persistent<v8::Function> callback = FromV8Value(args[6]);
 
-  if (callback.IsEmpty()) {
+  if (!args[6]->IsFunction()) {
     int chosen = atom::ShowMessageBox(
         native_window,
         (MessageBoxType)type,
@@ -71,6 +70,7 @@ v8::Handle<v8::Value> ShowMessageBox(const v8::Arguments &args) {
         detail);
     return scope.Close(v8::Integer::New(chosen));
   } else {
+    v8::Persistent<v8::Function> callback = FromV8Value(args[6]);
     atom::ShowMessageBox(
         native_window,
         (MessageBoxType)type,
@@ -93,9 +93,8 @@ v8::Handle<v8::Value> ShowOpenDialog(const v8::Arguments &args) {
     return node::ThrowTypeError("Bad argument");
 
   NativeWindow* native_window = FromV8Value(args[3]);
-  v8::Persistent<v8::Function> callback = FromV8Value(args[4]);
 
-  if (callback.IsEmpty()) {
+  if (!args[4]->IsFunction()) {
     std::vector<base::FilePath> paths;
     if (!file_dialog::ShowOpenDialog(native_window,
                                      title,
@@ -110,6 +109,7 @@ v8::Handle<v8::Value> ShowOpenDialog(const v8::Arguments &args) {
 
     return scope.Close(result);
   } else {
+    v8::Persistent<v8::Function> callback = FromV8Value(args[4]);
     file_dialog::ShowOpenDialog(
         native_window,
         title,
@@ -130,9 +130,8 @@ v8::Handle<v8::Value> ShowSaveDialog(const v8::Arguments &args) {
     return node::ThrowTypeError("Bad argument");
 
   NativeWindow* native_window = FromV8Value(args[2]);
-  v8::Persistent<v8::Function> callback = FromV8Value(args[3]);
 
-  if (callback.IsEmpty()) {
+  if (!args[3]->IsFunction()) {
     base::FilePath path;
     if (!file_dialog::ShowSaveDialog(native_window,
                                      title,
@@ -142,6 +141,7 @@ v8::Handle<v8::Value> ShowSaveDialog(const v8::Arguments &args) {
 
     return scope.Close(ToV8Value(path));
   } else {
+    v8::Persistent<v8::Function> callback = FromV8Value(args[3]);
     file_dialog::ShowSaveDialog(
         native_window,
         title,
