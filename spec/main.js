@@ -1,5 +1,6 @@
 var app = require('app');
 var ipc = require('ipc');
+var dialog = require('dialog');
 var BrowserWindow = require('browser-window');
 var Menu = require('menu');
 
@@ -103,4 +104,13 @@ app.on('finish-launching', function() {
     height: 600
   });
   window.loadUrl('file://' + __dirname + '/index.html');
+  window.on('unresponsive', function() {
+    var chosen = dialog.showMessageBox(window, {
+      type: 'warning',
+      buttons: ['Close', 'Keep Waiting'],
+      message: 'Window is not responsing',
+      detail: 'The window is not responding. Would you like to force close it or just keep waiting?'
+    });
+    if (chosen == 0) window.destroy();
+  });
 });
