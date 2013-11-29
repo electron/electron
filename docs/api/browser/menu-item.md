@@ -23,4 +23,7 @@
 
 ## Notes on accelerator
 
-On Linux and Windows, the `Command` key would not have any effect.
+On Linux and Windows, the `Command` key would not have any effect, you can
+use `CommandOrControl` which represents `Command` on OS X and `Control` on
+Linux and Windows to define some accelerators, you can also use its short
+alias `CmdOrCtrl`.
