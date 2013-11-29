@@ -8,6 +8,7 @@
 #include "base/basictypes.h"
 #include "base/compiler_specific.h"
 #include "base/memory/scoped_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "browser/native_window_observer.h"
 #include "content/public/browser/notification_registrar.h"
@@ -215,6 +216,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   // The window is not responding.
   bool not_responding_;
+
+  base::WeakPtrFactory<NativeWindow> weak_factory_;
 
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
