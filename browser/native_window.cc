@@ -45,6 +45,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       has_frame_(true),
       is_closed_(false),
       not_responding_(false),
+      weak_factory_(this),
       inspectable_web_contents_(
           brightray::InspectableWebContents::Create(web_contents)) {
   options->GetBoolean(switches::kFrame, &has_frame_);
@@ -205,7 +206,7 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
       rect,
       gfx::Size(),
       base::Bind(&NativeWindow::OnCapturePageDone,
-                 base::Unretained(this),
+                 weak_factory_.GetWeakPtr(),
                  callback));
 }
 
@@ -220,6 +221,12 @@ void NativeWindow::CloseWebContents() {
   }
 
   content::WebContents* web_contents(GetWebContents());
+
+  // Assume the window is not responding if it doesn't cancel the close and is
+  // not closed in 500ms, in this way we can quickly show the unresponsive
+  // dialog when the window is busy executing some script withouth waiting for
+  // the unresponsive timeout.
+  RendererUnresponsive(web_contents);
 
   if (web_contents->NeedToFireBeforeUnload())
     web_contents->GetRenderViewHost()->FirePageBeforeUnload(false);
@@ -277,6 +284,9 @@ void NativeWindow::BeforeUnloadFired(content::WebContents* tab,
 
   if (!proceed)
     WindowList::WindowCloseCancelled(this);
+
+  // When the "beforeunload" callback is fired the window is certainly live.
+  not_responding_ = false;
 }
 
 void NativeWindow::RequestToLockMouse(content::WebContents* web_contents,
@@ -319,6 +329,9 @@ void NativeWindow::CloseContents(content::WebContents* source) {
   CloseImmediately();
 
   NotifyWindowClosed();
+
+  // Do not sent "unresponsive" event after window is closed.
+  not_responding_ = false;
 }
 
 bool NativeWindow::IsPopupOrPanel(const content::WebContents* source) const {
@@ -331,8 +344,8 @@ void NativeWindow::RendererUnresponsive(content::WebContents* source) {
   base::MessageLoop::current()->PostDelayedTask(
       FROM_HERE,
       base::Bind(&NativeWindow::RendererUnresponsiveDelayed,
-                 base::Unretained(this)),
-      base::TimeDelta::FromSeconds(1));
+                 weak_factory_.GetWeakPtr()),
+      base::TimeDelta::FromMilliseconds(500));
 }
 
 void NativeWindow::RendererResponsive(content::WebContents* source) {
