@@ -35,6 +35,8 @@
         'browser/default_web_contents_delegate.cc',
         'browser/default_web_contents_delegate.h',
         'browser/default_web_contents_delegate_mac.mm',
+        'browser/devtools_embedder_message_dispatcher.cc',
+        'browser/devtools_embedder_message_dispatcher.h',
         'browser/devtools_ui.cc',
         'browser/devtools_ui.h',
         'browser/download_manager_delegate.cc',
