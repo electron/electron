@@ -11,7 +11,6 @@
 
 #include "base/command_line.h"
 #include "base/mac/bundle_locations.h"
-#include "base/mac/mac_util.h"
 #include "base/path_service.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
@@ -46,23 +45,6 @@ void MainDelegate::OverrideChildProcessPath() {
     .Append(GetApplicationName() + " Helper");
 
   PathService::Override(content::CHILD_PROCESS_EXE, helper_path);
-}
-
-void MainDelegate::SetProcessName() {
-  const auto& command_line = *CommandLine::ForCurrentProcess();
-  auto process_type = command_line.GetSwitchValueASCII(switches::kProcessType);
-  std::string suffix;
-  if (process_type == switches::kRendererProcess)
-    suffix = "Renderer";
-  else if (process_type == switches::kPluginProcess || process_type == switches::kPpapiPluginProcess)
-    suffix = "Plug-In Host";
-  else if (process_type == switches::kUtilityProcess)
-    suffix = "Utility";
-  else
-    return;
-
-  auto name = base::SysUTF8ToNSString(base::StringPrintf("%s %s", GetApplicationName().c_str(), suffix.c_str()));
-  base::mac::SetProcessName(base::mac::NSToCFCast(name));
 }
 
 }

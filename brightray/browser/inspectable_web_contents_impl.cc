@@ -61,6 +61,9 @@ content::WebContents* InspectableWebContentsImpl::GetWebContents() const {
 
 void InspectableWebContentsImpl::ShowDevTools() {
   if (!devtools_web_contents_) {
+    embedder_message_dispatcher_.reset(
+        new DevToolsEmbedderMessageDispatcher(this));
+
     auto create_params = content::WebContents::CreateParams(
         web_contents_->GetBrowserContext());
     devtools_web_contents_.reset(content::WebContents::Create(create_params));
@@ -101,9 +104,6 @@ void InspectableWebContentsImpl::UpdateFrontendDockSide() {
 }
 
 void InspectableWebContentsImpl::ActivateWindow() {
-}
-
-void InspectableWebContentsImpl::ChangeAttachedWindowHeight(unsigned height) {
 }
 
 void InspectableWebContentsImpl::CloseWindow() {
@@ -160,6 +160,11 @@ void InspectableWebContentsImpl::SearchInPath(
     int request_id,
     const std::string& file_system_path,
     const std::string& query) {
+}
+
+void InspectableWebContentsImpl::DispatchOnEmbedder(
+    const std::string& message) {
+  embedder_message_dispatcher_->Dispatch(message);
 }
 
 void InspectableWebContentsImpl::InspectedContentsClosing() {

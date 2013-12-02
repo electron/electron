@@ -9,6 +9,7 @@
 #include "browser/network_delegate.h"
 
 #include "base/strings/string_util.h"
+#include "base/threading/sequenced_worker_pool.h"
 #include "base/threading/worker_pool.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cookie_store_factory.h"
@@ -68,6 +69,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     storage_->set_cookie_store(content::CreatePersistentCookieStore(
         base_path_.Append(FILE_PATH_LITERAL("Cookies")),
         false,
+        nullptr,
         nullptr,
         nullptr));
     storage_->set_server_bound_cert_service(new net::ServerBoundCertService(
@@ -142,7 +144,11 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     job_factory->SetProtocolHandler(
         chrome::kDataScheme, new net::DataProtocolHandler);
     job_factory->SetProtocolHandler(
-        chrome::kFileScheme, new net::FileProtocolHandler);
+        chrome::kFileScheme,
+        new net::FileProtocolHandler(
+            content::BrowserThread::GetBlockingPool()->
+                GetTaskRunnerWithShutdownBehavior(
+                    base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
     storage_->set_job_factory(job_factory.release());
   }
 

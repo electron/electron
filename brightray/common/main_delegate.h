@@ -42,7 +42,6 @@ class MainDelegate : public content::ContentMainDelegate {
   static base::FilePath GetResourcesPakFilePath();
   static void OverrideChildProcessPath();
   static void OverrideFrameworkBundlePath();
-  static void SetProcessName();
 #endif
 
   scoped_ptr<ContentClient> content_client_;

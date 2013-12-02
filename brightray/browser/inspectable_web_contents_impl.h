@@ -8,6 +8,8 @@
 
 #include "browser/inspectable_web_contents.h"
 
+#include "browser/devtools_embedder_message_dispatcher.h"
+
 #include "content/public/browser/devtools_frontend_host_delegate.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -27,7 +29,8 @@ class InspectableWebContentsImpl :
     public InspectableWebContents,
     content::DevToolsFrontendHostDelegate,
     content::WebContentsObserver,
-    content::WebContentsDelegate {
+    content::WebContentsDelegate,
+    DevToolsEmbedderMessageDispatcher::Delegate {
  public:
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
 
@@ -46,10 +49,9 @@ class InspectableWebContentsImpl :
  private:
   void UpdateFrontendDockSide();
 
-  // content::DevToolsFrontendHostDelegate
+  // DevToolsEmbedderMessageDispacher::Delegate
 
   virtual void ActivateWindow() OVERRIDE;
-  virtual void ChangeAttachedWindowHeight(unsigned height) OVERRIDE;
   virtual void CloseWindow() OVERRIDE;
   virtual void MoveWindow(int x, int y) OVERRIDE;
   virtual void SetDockSide(const std::string& side) OVERRIDE;
@@ -68,6 +70,10 @@ class InspectableWebContentsImpl :
   virtual void SearchInPath(int request_id,
                             const std::string& file_system_path,
                             const std::string& query) OVERRIDE;
+
+  // content::DevToolsFrontendHostDelegate
+
+  virtual void DispatchOnEmbedder(const std::string& message) OVERRIDE;
   virtual void InspectedContentsClosing() OVERRIDE;
 
   // content::WebContentsObserver
@@ -91,6 +97,8 @@ class InspectableWebContentsImpl :
   scoped_ptr<InspectableWebContentsView> view_;
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
   std::string dock_side_;
+
+  scoped_ptr<DevToolsEmbedderMessageDispatcher> embedder_message_dispatcher_;
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsImpl);
 };
