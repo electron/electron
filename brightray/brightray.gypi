@@ -31,7 +31,7 @@
   'target_defaults': {
     'xcode_settings': {
       'ALWAYS_SEARCH_USER_PATHS': 'NO',
-      'ARCHS': '$(ARCHS_STANDARD_32_BIT)',
+      'ARCHS': '$(ARCHS_STANDARD_64_BIT)',
       'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++11',
       'CLANG_CXX_LIBRARY': 'libstdc++',
       'COMBINE_HIDPI_IMAGES': 'YES',
