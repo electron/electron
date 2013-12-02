@@ -5,7 +5,7 @@
 #include "browser/win/devtools_window.h"
 
 #include "content/public/browser/web_contents_view.h"
-#include "ui/base/win/hwnd_util.h"
+#include "ui/gfx/win/hwnd_util.h"
 
 namespace brightray {
 
@@ -44,9 +44,9 @@ void InspectableWebContentsViewWin::ShowDevTools() {
   auto contents_view = inspectable_web_contents_->GetWebContents()->GetView();
   auto size = contents_view->GetContainerSize();
   size.Enlarge(-kWindowInset, -kWindowInset);
-  ui::CenterAndSizeWindow(contents_view->GetNativeView(),
-                          devtools_window_->hwnd(),
-                          size);
+  gfx::CenterAndSizeWindow(contents_view->GetNativeView(),
+                           devtools_window_->hwnd(),
+                           size);
 
   ShowWindow(devtools_window_->hwnd(), SW_SHOWNORMAL);
 }

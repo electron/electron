@@ -2,13 +2,13 @@
 #define BRIGHTRAY_BROWSER_WIN_DEVTOOLS_WINDOW_H_
 
 #include "base/memory/weak_ptr.h"
-#include "ui/base/win/window_impl.h"
+#include "ui/gfx/win/window_impl.h"
 
 namespace brightray {
 
 class InspectableWebContentsViewWin;
 
-class DevToolsWindow : public ui::WindowImpl,
+class DevToolsWindow : public gfx::WindowImpl,
                        public base::SupportsWeakPtr<DevToolsWindow> {
  public:
   static DevToolsWindow* Create(
