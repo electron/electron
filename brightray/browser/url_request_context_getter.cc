@@ -70,6 +70,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         base_path_.Append(FILE_PATH_LITERAL("Cookies")),
         false,
         nullptr,
+        nullptr,
         nullptr));
     storage_->set_server_bound_cert_service(new net::ServerBoundCertService(
         new net::DefaultServerBoundCertStore(NULL),
