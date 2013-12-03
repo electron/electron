@@ -17,6 +17,7 @@ class FilePath;
 
 namespace brightray {
 
+class BrowserClient;
 class ContentClient;
 
 class MainDelegate : public content::ContentMainDelegate {
@@ -29,6 +30,10 @@ class MainDelegate : public content::ContentMainDelegate {
   // implementation.
   virtual scoped_ptr<ContentClient> CreateContentClient();
 
+  // Subclasses can override this to provide their own BrowserClient
+  // implementation.
+  virtual scoped_ptr<BrowserClient> CreateBrowserClient();
+
   // Subclasses can override this to provide additional .pak files to be
   // included in the ui::ResourceBundle.
   virtual void AddPakPaths(std::vector<base::FilePath>* pak_paths) {}
@@ -37,6 +42,8 @@ class MainDelegate : public content::ContentMainDelegate {
   virtual void PreSandboxStartup() OVERRIDE;
 
  private:
+  virtual content::ContentBrowserClient* CreateContentBrowserClient() OVERRIDE;
+
   void InitializeResourceBundle();
 #if defined(OS_MACOSX)
   static base::FilePath GetResourcesPakFilePath();
@@ -45,6 +52,7 @@ class MainDelegate : public content::ContentMainDelegate {
 #endif
 
   scoped_ptr<ContentClient> content_client_;
+  scoped_ptr<BrowserClient> browser_client_;
 
   DISALLOW_COPY_AND_ASSIGN(MainDelegate);
 };

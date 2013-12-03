@@ -58,4 +58,13 @@ void MainDelegate::InitializeResourceBundle() {
   }
 }
 
+content::ContentBrowserClient* MainDelegate::CreateContentBrowserClient() {
+  browser_client_ = CreateBrowserClient().Pass();
+  return browser_client_.get();
+}
+
+scoped_ptr<BrowserClient> MainDelegate::CreateBrowserClient() {
+  return make_scoped_ptr(new BrowserClient).Pass();
+}
+
 }  // namespace brightray
