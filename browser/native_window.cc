@@ -348,11 +348,12 @@ bool NativeWindow::IsPopupOrPanel(const content::WebContents* source) const {
 }
 
 void NativeWindow::RendererUnresponsive(content::WebContents* source) {
-  LOG(ERROR) << "NativeWindow::RendererUnresponsive";
   window_unresposive_closure_.Cancel();
-  FOR_EACH_OBSERVER(NativeWindowObserver,
-                    observers_,
-                    OnRendererUnresponsive());
+
+  if (!HasModalDialog())
+    FOR_EACH_OBSERVER(NativeWindowObserver,
+                      observers_,
+                      OnRendererUnresponsive());
 }
 
 void NativeWindow::RendererResponsive(content::WebContents* source) {
