@@ -1,6 +1,6 @@
 # Atom Shell
 
-Native layer for the [Atom](https://github.com/github/atom).
+Native layer for the [Atom editor](https://github.com/atom/atom).
 
 ## Features
 
