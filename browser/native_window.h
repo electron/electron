@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_NATIVE_WINDOW_H_
 
 #include "base/basictypes.h"
+#include "base/cancelable_callback.h"
 #include "base/compiler_specific.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
@@ -192,8 +193,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   gfx::Image icon_;
 
  private:
-  void RendererUnresponsiveDelayed();
-
   // Called when CapturePage has done.
   void OnCapturePageDone(const CapturePageCallback& callback,
                          bool succeed,
@@ -215,8 +214,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // The windows has been closed.
   bool is_closed_;
 
-  // The window is not responding.
-  bool not_responding_;
+  // Closure that would be called when window is unresponsive when closing,
+  // it should be cancelled when we can prove that the window is responsive.
+  base::CancelableClosure window_unresposive_closure_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_;
 
