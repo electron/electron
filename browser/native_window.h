@@ -114,6 +114,10 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void RestartHangMonitorTimeout();
   virtual bool SetIcon(const std::string& path);
 
+  // Returns the process handle of render process, useful for killing the
+  // render process manually
+  virtual base::ProcessHandle GetRenderProcessHandle();
+
   // Captures the page with |rect|, |callback| would be called when capturing is
   // done.
   virtual void CapturePage(const gfx::Rect& rect,

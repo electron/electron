@@ -199,6 +199,10 @@ bool NativeWindow::SetIcon(const std::string& str_path) {
   return true;
 }
 
+base::ProcessHandle NativeWindow::GetRenderProcessHandle() {
+  return GetWebContents()->GetRenderProcessHost()->GetHandle();
+}
+
 void NativeWindow::CapturePage(const gfx::Rect& rect,
                                const CapturePageCallback& callback) {
   GetWebContents()->GetRenderViewHost()->CopyFromBackingStore(
