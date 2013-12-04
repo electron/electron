@@ -99,6 +99,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void FlashFrame(bool flash) = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
+  virtual bool HasModalDialog() = 0;
   virtual gfx::NativeWindow GetNativeWindow() = 0;
 
   virtual bool IsClosed() const { return is_closed_; }

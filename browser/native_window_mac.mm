@@ -387,6 +387,10 @@ bool NativeWindowMac::IsKiosk() {
   return is_kiosk_;
 }
 
+bool NativeWindowMac::HasModalDialog() {
+  return [window() attachedSheet] != nil;
+}
+
 gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
   return window();
 }
