@@ -4,6 +4,7 @@
 
 #include "browser/api/atom_api_window.h"
 
+#include "base/process_util.h"
 #include "base/values.h"
 #include "browser/native_window.h"
 #include "common/v8_conversions.h"
@@ -126,7 +127,14 @@ v8::Handle<v8::Value> Window::New(const v8::Arguments &args) {
 v8::Handle<v8::Value> Window::Destroy(const v8::Arguments &args) {
   UNWRAP_WINDOW_AND_CHECK;
 
+  base::ProcessHandle handle = self->window_->GetRenderProcessHandle();
   delete self;
+
+  // Check if the render process is terminated, it could happen that the render
+  // became a zombie.
+  if (!base::WaitForSingleProcess(handle,
+                                  base::TimeDelta::FromMilliseconds(500)))
+    base::KillProcess(handle, 0, true);
 
   return v8::Undefined();
 }

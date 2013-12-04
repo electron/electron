@@ -53,6 +53,7 @@ class NativeWindowMac : public NativeWindow {
   virtual void FlashFrame(bool flash) OVERRIDE;
   virtual void SetKiosk(bool kiosk) OVERRIDE;
   virtual bool IsKiosk() OVERRIDE;
+  virtual bool HasModalDialog() OVERRIDE;
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
 
   void NotifyWindowBlur() { NativeWindow::NotifyWindowBlur(); }

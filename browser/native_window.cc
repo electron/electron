@@ -44,7 +44,6 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
     : content::WebContentsObserver(web_contents),
       has_frame_(true),
       is_closed_(false),
-      not_responding_(false),
       weak_factory_(this),
       inspectable_web_contents_(
           brightray::InspectableWebContents::Create(web_contents)) {
@@ -200,6 +199,10 @@ bool NativeWindow::SetIcon(const std::string& str_path) {
   return true;
 }
 
+base::ProcessHandle NativeWindow::GetRenderProcessHandle() {
+  return GetWebContents()->GetRenderProcessHost()->GetHandle();
+}
+
 void NativeWindow::CapturePage(const gfx::Rect& rect,
                                const CapturePageCallback& callback) {
   GetWebContents()->GetRenderViewHost()->CopyFromBackingStore(
@@ -226,7 +229,16 @@ void NativeWindow::CloseWebContents() {
   // not closed in 500ms, in this way we can quickly show the unresponsive
   // dialog when the window is busy executing some script withouth waiting for
   // the unresponsive timeout.
-  RendererUnresponsive(web_contents);
+  if (window_unresposive_closure_.IsCancelled()) {
+    window_unresposive_closure_.Reset(
+        base::Bind(&NativeWindow::RendererUnresponsive,
+                   weak_factory_.GetWeakPtr(),
+                   web_contents));
+    base::MessageLoop::current()->PostDelayedTask(
+        FROM_HERE,
+        window_unresposive_closure_.callback(),
+        base::TimeDelta::FromMilliseconds(500));
+  }
 
   if (web_contents->NeedToFireBeforeUnload())
     web_contents->GetRenderViewHost()->FirePageBeforeUnload(false);
@@ -286,7 +298,7 @@ void NativeWindow::BeforeUnloadFired(content::WebContents* tab,
     WindowList::WindowCloseCancelled(this);
 
   // When the "beforeunload" callback is fired the window is certainly live.
-  not_responding_ = false;
+  window_unresposive_closure_.Cancel();
 }
 
 void NativeWindow::RequestToLockMouse(content::WebContents* web_contents,
@@ -331,7 +343,7 @@ void NativeWindow::CloseContents(content::WebContents* source) {
   NotifyWindowClosed();
 
   // Do not sent "unresponsive" event after window is closed.
-  not_responding_ = false;
+  window_unresposive_closure_.Cancel();
 }
 
 bool NativeWindow::IsPopupOrPanel(const content::WebContents* source) const {
@@ -340,16 +352,16 @@ bool NativeWindow::IsPopupOrPanel(const content::WebContents* source) const {
 }
 
 void NativeWindow::RendererUnresponsive(content::WebContents* source) {
-  not_responding_ = true;
-  base::MessageLoop::current()->PostDelayedTask(
-      FROM_HERE,
-      base::Bind(&NativeWindow::RendererUnresponsiveDelayed,
-                 weak_factory_.GetWeakPtr()),
-      base::TimeDelta::FromMilliseconds(500));
+  window_unresposive_closure_.Cancel();
+
+  if (!HasModalDialog())
+    FOR_EACH_OBSERVER(NativeWindowObserver,
+                      observers_,
+                      OnRendererUnresponsive());
 }
 
 void NativeWindow::RendererResponsive(content::WebContents* source) {
-  not_responding_ = false;
+  window_unresposive_closure_.Cancel();
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
 }
 
@@ -369,13 +381,6 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
 
 void NativeWindow::RenderViewGone(base::TerminationStatus status) {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererCrashed());
-}
-
-void NativeWindow::RendererUnresponsiveDelayed() {
-  if (not_responding_)
-    FOR_EACH_OBSERVER(NativeWindowObserver,
-                      observers_,
-                      OnRendererUnresponsive());
 }
 
 void NativeWindow::Observe(int type,

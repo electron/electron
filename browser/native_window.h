@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_NATIVE_WINDOW_H_
 
 #include "base/basictypes.h"
+#include "base/cancelable_callback.h"
 #include "base/compiler_specific.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
@@ -99,6 +100,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void FlashFrame(bool flash) = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
+  virtual bool HasModalDialog() = 0;
   virtual gfx::NativeWindow GetNativeWindow() = 0;
 
   virtual bool IsClosed() const { return is_closed_; }
@@ -111,6 +113,10 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual bool IsWebViewFocused();
   virtual void RestartHangMonitorTimeout();
   virtual bool SetIcon(const std::string& path);
+
+  // Returns the process handle of render process, useful for killing the
+  // render process manually
+  virtual base::ProcessHandle GetRenderProcessHandle();
 
   // Captures the page with |rect|, |callback| would be called when capturing is
   // done.
@@ -191,8 +197,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   gfx::Image icon_;
 
  private:
-  void RendererUnresponsiveDelayed();
-
   // Called when CapturePage has done.
   void OnCapturePageDone(const CapturePageCallback& callback,
                          bool succeed,
@@ -214,8 +218,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // The windows has been closed.
   bool is_closed_;
 
-  // The window is not responding.
-  bool not_responding_;
+  // Closure that would be called when window is unresponsive when closing,
+  // it should be cancelled when we can prove that the window is responsive.
+  base::CancelableClosure window_unresposive_closure_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_;
 
