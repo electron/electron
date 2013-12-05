@@ -80,6 +80,9 @@ class Browser : public WindowListObserver {
   // Returns the version of application bundle or executable file.
   std::string GetExecutableFileVersion() const;
 
+  // Returns the name of application bundle or executable file.
+  std::string GetExecutableFileProductName() const;
+
   // Send the will-quit message and then terminate the application.
   void NotifyAndTerminate();
 

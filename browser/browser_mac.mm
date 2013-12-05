@@ -25,6 +25,12 @@ std::string Browser::GetExecutableFileVersion() const {
   return base::SysNSStringToUTF8(version);
 }
 
+std::string Browser::GetExecutableFileProductName() const {
+  NSDictionary* infoDictionary = base::mac::OuterBundle().infoDictionary;
+  NSString *version = [infoDictionary objectForKey:@"CFBundleName"];
+  return base::SysNSStringToUTF8(version);
+}
+
 void Browser::CancelQuit() {
   [[AtomApplication sharedApplication] replyToApplicationShouldTerminate:NO];
 }

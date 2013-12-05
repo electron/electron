@@ -48,7 +48,13 @@ void Browser::SetVersion(const std::string& version) {
 }
 
 std::string Browser::GetName() const {
-  return name_override_.empty() ? "Atom-Shell" : name_override_;
+  if (name_override_.empty()) {
+    std::string name = GetExecutableFileProductName();
+    if (!name.empty())
+      return name;
+  }
+
+  return name_override_;
 }
 
 void Browser::SetName(const std::string& name) {
