@@ -11,7 +11,11 @@
 
 #include "base/files/file_path.h"
 #include "base/string16.h"
+#include "base/template_util.h"
+#include "base/values.h"
 #include "browser/api/atom_api_window.h"
+#include "common/swap_or_assign.h"
+#include "content/public/renderer/v8_value_converter.h"
 #include "googleurl/src/gurl.h"
 #include "ui/gfx/rect.h"
 #include "v8/include/v8.h"
@@ -58,6 +62,13 @@ struct FromV8Value {
     else
       return gfx::Rect(x->IntegerValue(), y->IntegerValue(),
                        width->IntegerValue(), height->IntegerValue());
+  }
+
+  operator scoped_ptr<base::Value>() {
+    scoped_ptr<content::V8ValueConverter> converter(
+        content::V8ValueConverter::create());
+    return scoped_ptr<base::Value>(
+        converter->FromV8Value(value_, v8::Context::GetCurrent()));
   }
 
   operator std::vector<std::string>() {
@@ -185,6 +196,12 @@ bool V8ValueCanBeConvertedTo<gfx::Rect>(v8::Handle<v8::Value> value) {
 }
 
 template<> inline
+bool V8ValueCanBeConvertedTo<scoped_ptr<base::Value>>(
+    v8::Handle<v8::Value> value) {
+  return value->IsObject();
+}
+
+template<> inline
 bool V8ValueCanBeConvertedTo<std::vector<std::string>>(
     v8::Handle<v8::Value> value) {
   return value->IsArray();
@@ -218,7 +235,8 @@ template<typename T1> inline
 bool FromV8Arguments(const v8::Arguments& args, T1* value, int index = 0) {
   if (!V8ValueCanBeConvertedTo<T1>(args[index]))
     return false;
-  *value = static_cast<const T1&>(FromV8Value(args[index]));
+  internal::SwapOrAssign(*value,
+                         static_cast<const T1&>(FromV8Value(args[index])));
   return true;
 }
 
