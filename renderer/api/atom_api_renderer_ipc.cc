@@ -4,11 +4,9 @@
 
 #include "renderer/api/atom_api_renderer_ipc.h"
 
-#include "base/values.h"
 #include "common/api/api_messages.h"
 #include "common/v8_conversions.h"
 #include "content/public/renderer/render_view.h"
-#include "content/public/renderer/v8_value_converter.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebView.h"
 #include "vendor/node/src/node.h"
@@ -26,7 +24,6 @@ namespace {
 
 RenderView* GetCurrentRenderView() {
   WebFrame* frame = WebFrame::frameForCurrentContext();
-  DCHECK(frame);
   if (!frame)
     return NULL;
 
@@ -34,9 +31,7 @@ RenderView* GetCurrentRenderView() {
   if (!view)
     return NULL;  // can happen during closing.
 
-  RenderView* render_view = RenderView::FromWebView(view);
-  DCHECK(render_view);
-  return render_view;
+  return RenderView::FromWebView(view);
 }
 
 }  // namespace
@@ -46,22 +41,13 @@ v8::Handle<v8::Value> RendererIPC::Send(const v8::Arguments &args) {
   v8::HandleScope scope;
 
   string16 channel;
-  if (!FromV8Arguments(args, &channel))
+  scoped_ptr<base::Value> arguments;
+  if (!FromV8Arguments(args, &channel, &arguments))
     return node::ThrowTypeError("Bad argument");
 
   RenderView* render_view = GetCurrentRenderView();
-
-  // Convert Arguments to Array, so we can use V8ValueConverter to convert it
-  // to ListValue.
-  v8::Local<v8::Array> v8_args = v8::Array::New(args.Length() - 1);
-  for (int i = 0; i < args.Length() - 1; ++i)
-    v8_args->Set(i, args[i + 1]);
-
-  scoped_ptr<V8ValueConverter> converter(V8ValueConverter::create());
-  scoped_ptr<base::Value> arguments(
-      converter->FromV8Value(v8_args, v8::Context::GetCurrent()));
-
-  DCHECK(arguments && arguments->IsType(base::Value::TYPE_LIST));
+  if (render_view == NULL)
+    return v8::Undefined();
 
   bool success = render_view->Send(new AtomViewHostMsg_Message(
       render_view->GetRoutingID(),
@@ -79,22 +65,13 @@ v8::Handle<v8::Value> RendererIPC::SendSync(const v8::Arguments &args) {
   v8::HandleScope scope;
 
   string16 channel;
-  if (!FromV8Arguments(args, &channel))
+  scoped_ptr<base::Value> arguments;
+  if (!FromV8Arguments(args, &channel, &arguments))
     return node::ThrowTypeError("Bad argument");
 
-  // Convert Arguments to Array, so we can use V8ValueConverter to convert it
-  // to ListValue.
-  v8::Local<v8::Array> v8_args = v8::Array::New(args.Length() - 1);
-  for (int i = 0; i < args.Length() - 1; ++i)
-    v8_args->Set(i, args[i + 1]);
-
-  scoped_ptr<V8ValueConverter> converter(V8ValueConverter::create());
-  scoped_ptr<base::Value> arguments(
-      converter->FromV8Value(v8_args, v8::Context::GetCurrent()));
-
-  DCHECK(arguments && arguments->IsType(base::Value::TYPE_LIST));
-
   RenderView* render_view = GetCurrentRenderView();
+  if (render_view == NULL)
+    return v8::Undefined();
 
   string16 json;
   IPC::SyncMessage* message = new AtomViewHostMsg_Message_Sync(
