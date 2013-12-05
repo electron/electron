@@ -101,11 +101,7 @@ v8::Handle<v8::Value> App::Focus(const v8::Arguments &args) {
 
 // static
 v8::Handle<v8::Value> App::GetVersion(const v8::Arguments &args) {
-  v8::HandleScope scope;
-
-  std::string version(Browser::Get()->GetVersion());
-
-  return v8::String::New(version.data(), version.size());
+  return ToV8Value(Browser::Get()->GetVersion());
 }
 
 // static
@@ -123,11 +119,7 @@ v8::Handle<v8::Value> App::SetVersion(const v8::Arguments &args) {
 
 // static
 v8::Handle<v8::Value> App::GetName(const v8::Arguments &args) {
-  v8::HandleScope scope;
-
-  std::string name(Browser::Get()->GetName());
-
-  return v8::String::New(name.data(), version.size());
+  return ToV8Value(Browser::Get()->GetName());
 }
 
 // static
@@ -179,7 +171,10 @@ v8::Handle<v8::Value> App::AppendArgument(const v8::Arguments &args) {
 
 // static
 v8::Handle<v8::Value> App::DockBounce(const v8::Arguments& args) {
-  std::string type = FromV8Value(args[0]);
+  std::string type;
+  if (!FromV8Arguments(args, &type))
+    return node::ThrowError("Bad argument");
+
   int request_id = -1;
 
   if (type == "critical")
@@ -189,7 +184,7 @@ v8::Handle<v8::Value> App::DockBounce(const v8::Arguments& args) {
   else
     return node::ThrowTypeError("Invalid bounce type");
 
-  return v8::Integer::New(request_id);
+  return ToV8Value(request_id);
 }
 
 // static
