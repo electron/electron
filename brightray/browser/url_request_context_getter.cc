@@ -19,7 +19,11 @@
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_cache.h"
 #include "net/http/http_server_properties_impl.h"
+#include "net/proxy/dhcp_proxy_script_fetcher_factory.h"
+#include "net/proxy/proxy_config_service.h"
+#include "net/proxy/proxy_script_fetcher_impl.h"
 #include "net/proxy/proxy_service.h"
+#include "net/proxy/proxy_service_v8.h"
 #include "net/ssl/default_server_bound_cert_store.h"
 #include "net/ssl/server_bound_cert_service.h"
 #include "net/ssl/ssl_config_service_defaults.h"
@@ -83,12 +87,6 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         net::HostResolver::CreateDefaultResolver(NULL));
 
     storage_->set_cert_verifier(net::CertVerifier::CreateDefault());
-    // TODO(jam): use v8 if possible, look at chrome code.
-    storage_->set_proxy_service(
-        net::ProxyService::CreateUsingSystemProxyResolver(
-        proxy_config_service_.release(),
-        0,
-        NULL));
     storage_->set_ssl_config_service(new net::SSLConfigServiceDefaults);
     storage_->set_http_auth_handler_factory(
         net::HttpAuthHandlerFactory::CreateDefault(host_resolver.get()));
@@ -127,6 +125,16 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     storage_->set_host_resolver(host_resolver.Pass());
     network_session_params.host_resolver =
         url_request_context_->host_resolver();
+
+    net::DhcpProxyScriptFetcherFactory dhcp_factory;
+    storage_->set_proxy_service(
+        net::CreateProxyServiceUsingV8ProxyResolver(
+            proxy_config_service_.release(),
+            new net::ProxyScriptFetcherImpl(url_request_context_.get()),
+            dhcp_factory.Create(url_request_context_.get()),
+            url_request_context_->host_resolver(),
+            NULL,
+            url_request_context_->network_delegate()));
 
     net::HttpCache* main_cache = new net::HttpCache(
         network_session_params, main_backend);

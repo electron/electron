@@ -32,6 +32,7 @@ class BrowserMainParts : public content::BrowserMainParts {
 
   virtual void PreMainMessageLoopRun() OVERRIDE;
   virtual void PostMainMessageLoopRun() OVERRIDE;
+  virtual int PreCreateThreads() OVERRIDE;
 
  private:
   scoped_ptr<BrowserContext> browser_context_;

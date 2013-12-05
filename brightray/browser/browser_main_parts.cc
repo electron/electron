@@ -6,6 +6,7 @@
 
 #include "browser/browser_context.h"
 #include "browser/web_ui_controller_factory.h"
+#include "net/proxy/proxy_resolver_v8.h"
 
 namespace brightray {
 
@@ -27,6 +28,15 @@ void BrowserMainParts::PreMainMessageLoopRun() {
 
 void BrowserMainParts::PostMainMessageLoopRun() {
   browser_context_.reset();
+}
+
+int BrowserMainParts::PreCreateThreads() {
+#if defined(OS_WIN)
+  net::ProxyResolverV8::CreateIsolate();
+#else
+  net::ProxyResolverV8::RememberDefaultIsolate();
+#endif
+  return 0;
 }
 
 BrowserContext* BrowserMainParts::CreateBrowserContext() {
