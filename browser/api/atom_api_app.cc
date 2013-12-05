@@ -109,6 +109,19 @@ v8::Handle<v8::Value> App::GetVersion(const v8::Arguments &args) {
 }
 
 // static
+v8::Handle<v8::Value> App::SetVersion(const v8::Arguments &args) {
+  v8::HandleScope scope;
+
+  std::string version;
+  if (!FromV8Arguments(args, &version))
+    return node::ThrowError("Bad argument");
+
+  Browser::Get()->SetVersion(version);
+
+  return v8::Undefined();
+}
+
+// static
 v8::Handle<v8::Value> App::AppendSwitch(const v8::Arguments &args) {
   v8::HandleScope scope;
 
@@ -190,6 +203,7 @@ void App::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "terminate", Terminate);
   NODE_SET_PROTOTYPE_METHOD(t, "focus", Focus);
   NODE_SET_PROTOTYPE_METHOD(t, "getVersion", GetVersion);
+  NODE_SET_PROTOTYPE_METHOD(t, "setVersion", SetVersion);
 
   target->Set(v8::String::NewSymbol("Application"), t->GetFunction());
 

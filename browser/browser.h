@@ -31,7 +31,10 @@ class Browser : public WindowListObserver {
   void Focus();
 
   // Returns the version of the executable (or bundle).
-  std::string GetVersion();
+  std::string GetVersion() const;
+
+  // Overrides the application version.
+  void SetVersion(const std::string& version);
 
 #if defined(OS_MACOSX)
   // Bounce the dock icon.
@@ -68,6 +71,9 @@ class Browser : public WindowListObserver {
   bool is_quiting() const { return is_quiting_; }
 
  protected:
+  // Returns the version of application bundle or executable file.
+  std::string GetExecutableFileVersion() const;
+
   // Send the will-quit message and then terminate the application.
   void NotifyAndTerminate();
 
@@ -83,6 +89,8 @@ class Browser : public WindowListObserver {
 
   // Observers of the browser.
   ObserverList<BrowserObserver> observers_;
+
+  std::string version_override_;
 
   DISALLOW_COPY_AND_ASSIGN(Browser);
 };

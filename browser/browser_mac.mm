@@ -19,7 +19,7 @@ void Browser::Focus() {
   [[AtomApplication sharedApplication] activateIgnoringOtherApps:YES];
 }
 
-std::string Browser::GetVersion() {
+std::string Browser::GetExecutableFileVersion() const {
   NSDictionary* infoDictionary = base::mac::OuterBundle().infoDictionary;
   NSString *version = [infoDictionary objectForKey:@"CFBundleVersion"];
   return base::SysNSStringToUTF8(version);

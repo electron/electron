@@ -33,6 +33,20 @@ void Browser::Quit() {
   window_list->CloseAllWindows();
 }
 
+std::string Browser::GetVersion() const {
+  if (version_override_.empty()) {
+    std::string version = GetExecutableFileVersion();
+    if (!version.empty())
+      return version;
+  }
+
+  return version_override_;
+}
+
+void Browser::SetVersion(const std::string& version) {
+  version_override_ = version;
+}
+
 bool Browser::OpenFile(const std::string& file_path) {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(BrowserObserver,

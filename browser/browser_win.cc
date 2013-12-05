@@ -43,7 +43,7 @@ void Browser::Focus() {
   EnumWindows(&WindowsEnumerationHandler, reinterpret_cast<LPARAM>(&pid));
 }
 
-std::string Browser::GetVersion() {
+std::string Browser::GetExecutableFileVersion() const {
   base::FilePath path;
   if (PathService::Get(base::FILE_EXE, &path)) {
     scoped_ptr<FileVersionInfo> version_info(
