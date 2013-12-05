@@ -12,6 +12,7 @@
 #include "base/files/file_path.h"
 #include "base/string16.h"
 #include "browser/api/atom_api_window.h"
+#include "googleurl/src/gurl.h"
 #include "ui/gfx/rect.h"
 #include "v8/include/v8.h"
 
@@ -34,6 +35,11 @@ struct FromV8Value {
   operator string16() {
     v8::String::Value s(value_);
     return string16(reinterpret_cast<const char16*>(*s), s.length());
+  }
+
+  operator GURL() {
+    std::string str = FromV8Value(value_);
+    return GURL(str);
   }
 
   operator base::FilePath() {
@@ -116,6 +122,10 @@ inline v8::Handle<v8::Value> ToV8Value(const string16& s) {
   return v8::String::New(reinterpret_cast<const uint16_t*>(s.data()), s.size());
 }
 
+inline v8::Handle<v8::Value> ToV8Value(const GURL& url) {
+  return ToV8Value(url.spec());
+}
+
 inline v8::Handle<v8::Value> ToV8Value(const base::FilePath& path) {
   std::string path_string(path.AsUTF8Unsafe());
   return v8::String::New(path_string.data(), path_string.size());
@@ -156,6 +166,11 @@ bool V8ValueCanBeConvertedTo<std::string>(v8::Handle<v8::Value> value) {
 
 template<> inline
 bool V8ValueCanBeConvertedTo<string16>(v8::Handle<v8::Value> value) {
+  return V8ValueCanBeConvertedTo<std::string>(value);
+}
+
+template<> inline
+bool V8ValueCanBeConvertedTo<GURL>(v8::Handle<v8::Value> value) {
   return V8ValueCanBeConvertedTo<std::string>(value);
 }
 
