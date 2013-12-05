@@ -59,5 +59,15 @@ catch error
   packagePath = path.join process.resourcesPath, 'browser', 'default_app'
   packageJson = JSON.parse(fs.readFileSync(path.join(packagePath, 'package.json')))
 
+# Set application's version.
+app = require 'app'
+app.setVersion packageJson.version if packageJson.version?
+
+# Set application's name.
+if packageJson.productName?
+  app.setName packageJson.productName
+else if packageJson.name?
+  app.setName packageJson.name
+
 # Finally load app's main.js and transfer control to C++.
 require path.join(packagePath, packageJson.main)
