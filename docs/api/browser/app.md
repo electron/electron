@@ -84,14 +84,12 @@ be returned.
 ## app.getName()
 
 Returns current application's name, the name in `package.json` would be
-preferred.
+used.
 
-## app.setName(name)
-
-* `name` String
-
-Set application's name to `name`, usually the name in `package.json` is a short
-lowercased name, the `name` set here should be full and capitalized.
+Usually the `name` field of `package.json` is a short lowercased name, according
+to the spec of npm modules. So usually you should also specify a `productName`
+field, which is your application's full capitalized name, and it will be
+preferred over `name` by atom-shell.
 
 ## app.getBrowserWindows()
 
