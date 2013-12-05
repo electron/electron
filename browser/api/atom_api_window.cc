@@ -576,16 +576,17 @@ v8::Handle<v8::Value> Window::IsCrashed(const v8::Arguments &args) {
 v8::Handle<v8::Value> Window::LoadURL(const v8::Arguments &args) {
   UNWRAP_WINDOW_AND_CHECK;
 
-  std::string url;
+  GURL url;
   if (!FromV8Arguments(args, &url))
     return node::ThrowTypeError("Bad argument");
 
   NavigationController& controller =
       self->window_->GetWebContents()->GetController();
-  controller.LoadURL(GURL(url),
-                     content::Referrer(),
-                     content::PAGE_TRANSITION_AUTO_TOPLEVEL,
-                     std::string());
+
+  content::NavigationController::LoadURLParams params(url);
+  params.transition_type = content::PAGE_TRANSITION_TYPED;
+  params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
+  controller.LoadURLWithParams(params);
 
   return v8::Undefined();
 }
@@ -596,9 +597,9 @@ v8::Handle<v8::Value> Window::GetURL(const v8::Arguments &args) {
 
   NavigationController& controller =
       self->window_->GetWebContents()->GetController();
-  std::string url;
+  GURL url;
   if (controller.GetActiveEntry())
-    url = controller.GetActiveEntry()->GetVirtualURL().spec();
+    url = controller.GetActiveEntry()->GetVirtualURL();
 
   return ToV8Value(url);
 }
