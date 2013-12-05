@@ -33,6 +33,34 @@ void Browser::Quit() {
   window_list->CloseAllWindows();
 }
 
+std::string Browser::GetVersion() const {
+  if (version_override_.empty()) {
+    std::string version = GetExecutableFileVersion();
+    if (!version.empty())
+      return version;
+  }
+
+  return version_override_;
+}
+
+void Browser::SetVersion(const std::string& version) {
+  version_override_ = version;
+}
+
+std::string Browser::GetName() const {
+  if (name_override_.empty()) {
+    std::string name = GetExecutableFileProductName();
+    if (!name.empty())
+      return name;
+  }
+
+  return name_override_;
+}
+
+void Browser::SetName(const std::string& name) {
+  name_override_ = name;
+}
+
 bool Browser::OpenFile(const std::string& file_path) {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(BrowserObserver,

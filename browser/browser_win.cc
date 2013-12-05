@@ -12,6 +12,7 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/path_service.h"
 #include "base/strings/utf_string_conversions.h"
+#include "common/atom_version.h"
 
 namespace atom {
 
@@ -43,7 +44,7 @@ void Browser::Focus() {
   EnumWindows(&WindowsEnumerationHandler, reinterpret_cast<LPARAM>(&pid));
 }
 
-std::string Browser::GetVersion() {
+std::string Browser::GetExecutableFileVersion() const {
   base::FilePath path;
   if (PathService::Get(base::FILE_EXE, &path)) {
     scoped_ptr<FileVersionInfo> version_info(
@@ -51,7 +52,18 @@ std::string Browser::GetVersion() {
     return UTF16ToUTF8(version_info->product_version());
   }
 
-  return "";
+  return ATOM_VERSION_STRING;
+}
+
+std::string Browser::GetExecutableFileProductName() const {
+  base::FilePath path;
+  if (PathService::Get(base::FILE_EXE, &path)) {
+    scoped_ptr<FileVersionInfo> version_info(
+        FileVersionInfo::CreateFileVersionInfo(path));
+    return UTF16ToUTF8(version_info->product_name());
+  }
+
+  return "Atom-Shell";
 }
 
 void Browser::CancelQuit() {

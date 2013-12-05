@@ -77,7 +77,19 @@ code will not run.
 
 ## app.getVersion()
 
-Returns the version of current bundle or executable.
+Returns the version of loaded application, if no version is found in
+application's `package.json`, the version of current bundle or executable would
+be returned.
+
+## app.getName()
+
+Returns current application's name, the name in `package.json` would be
+used.
+
+Usually the `name` field of `package.json` is a short lowercased name, according
+to the spec of npm modules. So usually you should also specify a `productName`
+field, which is your application's full capitalized name, and it will be
+preferred over `name` by atom-shell.
 
 ## app.getBrowserWindows()
 
