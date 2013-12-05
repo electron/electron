@@ -36,6 +36,12 @@ class Browser : public WindowListObserver {
   // Overrides the application version.
   void SetVersion(const std::string& version);
 
+  // Returns the application's name, default is just Atom-Shell.
+  std::string GetName() const;
+
+  // Overrides the application name.
+  void SetName(const std::string& name);
+
 #if defined(OS_MACOSX)
   // Bounce the dock icon.
   enum BounceType {
@@ -91,6 +97,7 @@ class Browser : public WindowListObserver {
   ObserverList<BrowserObserver> observers_;
 
   std::string version_override_;
+  std::string name_override_;
 
   DISALLOW_COPY_AND_ASSIGN(Browser);
 };

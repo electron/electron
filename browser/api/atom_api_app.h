@@ -41,6 +41,8 @@ class App : public EventEmitter,
   static v8::Handle<v8::Value> Focus(const v8::Arguments &args);
   static v8::Handle<v8::Value> GetVersion(const v8::Arguments &args);
   static v8::Handle<v8::Value> SetVersion(const v8::Arguments &args);
+  static v8::Handle<v8::Value> GetName(const v8::Arguments &args);
+  static v8::Handle<v8::Value> SetName(const v8::Arguments &args);
   static v8::Handle<v8::Value> AppendSwitch(const v8::Arguments &args);
   static v8::Handle<v8::Value> AppendArgument(const v8::Arguments &args);
 

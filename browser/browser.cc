@@ -47,6 +47,14 @@ void Browser::SetVersion(const std::string& version) {
   version_override_ = version;
 }
 
+std::string Browser::GetName() const {
+  return name_override_.empty() ? "Atom-Shell" : name_override_;
+}
+
+void Browser::SetName(const std::string& name) {
+  name_override_ = name;
+}
+
 bool Browser::OpenFile(const std::string& file_path) {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(BrowserObserver,

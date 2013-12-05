@@ -122,6 +122,28 @@ v8::Handle<v8::Value> App::SetVersion(const v8::Arguments &args) {
 }
 
 // static
+v8::Handle<v8::Value> App::GetName(const v8::Arguments &args) {
+  v8::HandleScope scope;
+
+  std::string name(Browser::Get()->GetName());
+
+  return v8::String::New(name.data(), version.size());
+}
+
+// static
+v8::Handle<v8::Value> App::SetName(const v8::Arguments &args) {
+  v8::HandleScope scope;
+
+  std::string name;
+  if (!FromV8Arguments(args, &name))
+    return node::ThrowError("Bad argument");
+
+  Browser::Get()->SetName(name);
+
+  return v8::Undefined();
+}
+
+// static
 v8::Handle<v8::Value> App::AppendSwitch(const v8::Arguments &args) {
   v8::HandleScope scope;
 
@@ -204,6 +226,8 @@ void App::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "focus", Focus);
   NODE_SET_PROTOTYPE_METHOD(t, "getVersion", GetVersion);
   NODE_SET_PROTOTYPE_METHOD(t, "setVersion", SetVersion);
+  NODE_SET_PROTOTYPE_METHOD(t, "getName", GetName);
+  NODE_SET_PROTOTYPE_METHOD(t, "setName", SetName);
 
   target->Set(v8::String::NewSymbol("Application"), t->GetFunction());
 
