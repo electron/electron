@@ -77,7 +77,21 @@ code will not run.
 
 ## app.getVersion()
 
-Returns the version of current bundle or executable.
+Returns the version of loaded application, if no version is found in
+application's `package.json`, the version of current bundle or executable would
+be returned.
+
+## app.getName()
+
+Returns current application's name, the name in `package.json` would be
+preferred.
+
+## app.setName(name)
+
+* `name` String
+
+Set application's name to `name`, usually the name in `package.json` is a short
+lowercased name, the `name` set here should be full and capitalized.
 
 ## app.getBrowserWindows()
 
