@@ -45,10 +45,10 @@ RenderView* GetCurrentRenderView() {
 v8::Handle<v8::Value> RendererIPC::Send(const v8::Arguments &args) {
   v8::HandleScope scope;
 
-  if (!args[0]->IsString())
+  string16 channel;
+  if (!FromV8Arguments(args, &channel))
     return node::ThrowTypeError("Bad argument");
 
-  string16 channel = FromV8Value(args[0]);
   RenderView* render_view = GetCurrentRenderView();
 
   // Convert Arguments to Array, so we can use V8ValueConverter to convert it
@@ -78,11 +78,9 @@ v8::Handle<v8::Value> RendererIPC::Send(const v8::Arguments &args) {
 v8::Handle<v8::Value> RendererIPC::SendSync(const v8::Arguments &args) {
   v8::HandleScope scope;
 
-  if (!args[0]->IsString())
+  string16 channel;
+  if (!FromV8Arguments(args, &channel))
     return node::ThrowTypeError("Bad argument");
-
-  v8::Handle<v8::Context> context = v8::Context::GetCurrent();
-  string16 channel = FromV8Value(args[0]);
 
   // Convert Arguments to Array, so we can use V8ValueConverter to convert it
   // to ListValue.
@@ -91,7 +89,8 @@ v8::Handle<v8::Value> RendererIPC::SendSync(const v8::Arguments &args) {
     v8_args->Set(i, args[i + 1]);
 
   scoped_ptr<V8ValueConverter> converter(V8ValueConverter::create());
-  scoped_ptr<base::Value> arguments(converter->FromV8Value(v8_args, context));
+  scoped_ptr<base::Value> arguments(
+      converter->FromV8Value(v8_args, v8::Context::GetCurrent()));
 
   DCHECK(arguments && arguments->IsType(base::Value::TYPE_LIST));
 
