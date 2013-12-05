@@ -8,6 +8,7 @@
 
 #include "base/file_util.h"
 #include "base/message_loop.h"
+#include "base/stringprintf.h"
 #include "base/utf_string_conversions.h"
 #include "base/values.h"
 #include "brightray/browser/inspectable_web_contents.h"
@@ -16,6 +17,7 @@
 #include "browser/atom_browser_context.h"
 #include "browser/atom_browser_main_parts.h"
 #include "browser/atom_javascript_dialog_manager.h"
+#include "browser/browser.h"
 #include "browser/window_list.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/invalidate_type.h"
@@ -26,7 +28,9 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
+#include "content/public/common/renderer_preferences.h"
 #include "common/api/api_messages.h"
+#include "common/atom_version.h"
 #include "common/options_switches.h"
 #include "ipc/ipc_message_macros.h"
 #include "ui/gfx/codec/png_codec.h"
@@ -34,6 +38,7 @@
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
 #include "webkit/glue/image_decoder.h"
+#include "webkit/user_agent/user_agent_util.h"
 
 using content::NavigationEntry;
 
@@ -58,6 +63,15 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
   web_contents->SetDelegate(this);
 
   WindowList::AddWindow(this);
+
+  // Override the user agent to contain application and atom-shell's version.
+  Browser* browser = Browser::Get();
+  std::string product_name = base::StringPrintf(
+      "%s/%s Atom-Shell/" ATOM_VERSION_STRING,
+      browser->GetName().c_str(),
+      browser->GetVersion().c_str());
+  web_contents->GetMutableRendererPrefs()->user_agent_override =
+      webkit_glue::BuildUserAgentFromProduct(product_name);
 
   // Get notified of title updated message.
   registrar_.Add(this, content::NOTIFICATION_WEB_CONTENTS_TITLE_UPDATED,
