@@ -8,7 +8,7 @@ sendWrap = (channel, processId, routingId, args...) ->
     processId = window.getProcessId()
     routingId = window.getRoutingId()
 
-  send channel, processId, routingId, args...
+  send channel, processId, routingId, [args...]
 
 class Ipc extends EventEmitter
   constructor: ->

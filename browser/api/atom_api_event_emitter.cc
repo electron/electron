@@ -7,10 +7,8 @@
 #include <vector>
 
 #include "base/logging.h"
-#include "base/memory/scoped_ptr.h"
-#include "base/values.h"
 #include "browser/api/atom_api_event.h"
-#include "common/v8_value_converter_impl.h"
+#include "common/v8_conversions.h"
 #include "vendor/node/src/node.h"
 #include "vendor/node/src/node_internals.h"
 
@@ -49,7 +47,7 @@ bool EventEmitter::Emit(const std::string& name, base::ListValue* args) {
   // Generate arguments for calling handle.emit.
   std::vector<v8::Handle<v8::Value>> v8_args;
   v8_args.reserve(args->GetSize() + 2);
-  v8_args.push_back(v8::String::New(name.c_str(), name.size()));
+  v8_args.push_back(ToV8Value(name));
   v8_args.push_back(v8_event);
   for (size_t i = 0; i < args->GetSize(); i++) {
     base::Value* value = NULL;

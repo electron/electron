@@ -12,7 +12,6 @@
 #include "vendor/node/src/node.h"
 
 using content::RenderView;
-using content::V8ValueConverter;
 using WebKit::WebFrame;
 using WebKit::WebView;
 

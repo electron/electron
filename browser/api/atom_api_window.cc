@@ -5,19 +5,15 @@
 #include "browser/api/atom_api_window.h"
 
 #include "base/process_util.h"
-#include "base/values.h"
 #include "browser/native_window.h"
 #include "common/v8_conversions.h"
-#include "common/v8_value_converter_impl.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/render_process_host.h"
 #include "ui/gfx/point.h"
-#include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
 #include "vendor/node/src/node_buffer.h"
 
-using content::V8ValueConverter;
 using content::NavigationController;
 using node::ObjectWrap;
 
@@ -105,15 +101,12 @@ v8::Handle<v8::Value> Window::New(const v8::Arguments &args) {
   if (!args.IsConstructCall())
     return node::ThrowError("Require constructor call");
 
-  if (!args[0]->IsObject())
-    return node::ThrowTypeError("Need options creating Window");
-
-  scoped_ptr<V8ValueConverter> converter(new V8ValueConverterImpl());
-  scoped_ptr<base::Value> options(
-      converter->FromV8Value(args[0], v8::Context::GetCurrent()));
+  scoped_ptr<base::Value> options;
+  if (!FromV8Arguments(args, &options))
+    return node::ThrowTypeError("Bad argument");
 
   if (!options || !options->IsType(base::Value::TYPE_DICTIONARY))
-    return node::ThrowTypeError("Invalid options");
+    return node::ThrowTypeError("Options must be dictionary");
 
   new Window(args.This(), static_cast<base::DictionaryValue*>(options.get()));
 
