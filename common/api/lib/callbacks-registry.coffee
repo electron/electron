@@ -1,15 +1,19 @@
 module.exports =
 class CallbacksRegistry
   constructor: ->
-    @nextId = 0
+    @emptyFunc = -> throw new Error "Browser trying to call a non-exist callback
+      in renderer, this usually happens when renderer code forgot to release
+      a callback installed on objects in browser when renderer was going to be
+      unloaded or released."
     @callbacks = {}
 
   add: (callback) ->
-    @callbacks[++@nextId] = callback
-    @nextId
+    id = Math.random().toString()
+    @callbacks[id] = callback
+    id
 
   get: (id) ->
-    @callbacks[id]
+    @callbacks[id] ? ->
 
   call: (id, args...) ->
     @get(id).call global, args...
