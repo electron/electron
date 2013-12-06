@@ -1,7 +1,7 @@
 <html>
 <head>
   <meta name="referrer" content="always">
-  <link href="../node_modules/mocha/mocha.css" rel="stylesheet">
+  <link href="../../node_modules/mocha/mocha.css" rel="stylesheet">
   <script src="jquery-2.0.3.min.js"></script>
 </head>
 <body>
@@ -54,10 +54,12 @@
   if (query.invert) mocha.invert();
 
   // Read all test files.
-  var walker = require('walkdir').walk(__dirname);
+  var walker = require('walkdir').walk(require('path').dirname(__dirname), {
+    no_recurse: true
+  });
 
   walker.on('file', function(file) {
-    if (/.coffee$/.test(file))
+    if (/-spec.coffee$/.test(file))
       mocha.addFile(file);
   });
 

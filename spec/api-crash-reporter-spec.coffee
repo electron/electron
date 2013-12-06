@@ -1,13 +1,14 @@
-assert = require 'assert'
-path = require 'path'
-http = require 'http'
-remote = require 'remote'
+assert     = require 'assert'
+path       = require 'path'
+http       = require 'http'
+remote     = require 'remote'
 formidable = require 'formidable'
+
 BrowserWindow = remote.require 'browser-window'
 
-fixtures = path.resolve __dirname, '..', 'fixtures'
-
 describe 'crash-reporter module', ->
+  fixtures = path.resolve __dirname, 'fixtures'
+
   it 'should send minidump when renderer crashes', (done) ->
     w = new BrowserWindow(show: false)
     server = http.createServer (req, res) ->

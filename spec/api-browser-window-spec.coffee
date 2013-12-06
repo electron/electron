@@ -1,12 +1,13 @@
 assert = require 'assert'
-fs = require 'fs'
-path = require 'path'
+fs     = require 'fs'
+path   = require 'path'
 remote = require 'remote'
+
 BrowserWindow = remote.require 'browser-window'
 
-fixtures = path.resolve __dirname, '..', 'fixtures'
+describe 'browser-window module', ->
+  fixtures = path.resolve __dirname, 'fixtures'
 
-describe 'window module', ->
   describe 'BrowserWindow.close()', ->
     it 'should emit unload handler', (done) ->
       w = new BrowserWindow(show: false)

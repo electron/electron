@@ -1,9 +1,10 @@
-assert= require 'assert'
+assert = require 'assert'
 remote = require 'remote'
-Menu = remote.require 'menu'
+
+Menu     = remote.require 'menu'
 MenuItem = remote.require 'menu-item'
 
-describe 'Menu API', ->
+describe 'menu module', ->
   describe 'Menu.buildFromTemplate', ->
     it 'should be able to attach extra fields', ->
       menu = Menu.buildFromTemplate [label: 'text', extra: 'field']

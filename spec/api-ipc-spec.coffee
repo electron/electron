@@ -1,13 +1,12 @@
 assert = require 'assert'
-ipc = require 'ipc'
-path = require 'path'
+ipc    = require 'ipc'
+path   = require 'path'
 remote = require 'remote'
+
 BrowserWindow = remote.require 'browser-window'
 
-fixtures = path.resolve __dirname, '..', 'fixtures'
-
-describe 'ipc', ->
-  fixtures = path.join __dirname, '..', 'fixtures'
+describe 'ipc module', ->
+  fixtures = path.join __dirname, 'fixtures'
 
   describe 'remote.require', ->
     it 'should returns same object for the same module', ->

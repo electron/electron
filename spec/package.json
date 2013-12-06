@@ -1,5 +1,5 @@
 {
   "name": "atom-shell-specs",
-  "main": "main.js",
+  "main": "static/main.js",
   "version": "0.1.0"
 }

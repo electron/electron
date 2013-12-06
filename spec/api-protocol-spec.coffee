@@ -1,10 +1,10 @@
-assert = require 'assert'
-ipc = require 'ipc'
-path = require 'path'
-remote = require 'remote'
+assert   = require 'assert'
+ipc      = require 'ipc'
+path     = require 'path'
+remote   = require 'remote'
 protocol = remote.require 'protocol'
 
-describe 'protocol API', ->
+describe 'protocol module', ->
   describe 'protocol.registerProtocol', ->
     it 'throws error when scheme is already registered', (done) ->
       register = -> protocol.registerProtocol('test1', ->)
