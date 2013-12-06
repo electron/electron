@@ -11,6 +11,7 @@ describe 'app module', ->
       assert.equal app.getVersion(), '0.1.0'
       app.setVersion 'test-version'
       assert.equal app.getVersion(), 'test-version'
+      app.setVersion '0.1.0'
 
   describe 'app.getName()', ->
     it 'returns the name field of package.json', ->
@@ -21,3 +22,4 @@ describe 'app module', ->
       assert.equal app.getName(), 'atom-shell-default-app'
       app.setName 'test-name'
       assert.equal app.getName(), 'test-name'
+      app.setName 'atom-shell-default-app'

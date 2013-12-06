@@ -80,7 +80,6 @@ callFunction = (event, processId, routingId, func, caller, args) ->
 
 # Send by BrowserWindow when its render view is deleted.
 process.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (processId, routingId) ->
-  console.log 'ATOM_BROWSER_RELEASE_RENDER_VIEW', processId, routingId
   objectsRegistry.clear processId, routingId
 
 ipc.on 'ATOM_BROWSER_REQUIRE', (event, processId, routingId, module) ->
