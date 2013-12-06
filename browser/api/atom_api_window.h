@@ -43,6 +43,7 @@ class Window : public EventEmitter,
   virtual void OnWindowBlur() OVERRIDE;
   virtual void OnRendererUnresponsive() OVERRIDE;
   virtual void OnRendererResponsive() OVERRIDE;
+  virtual void OnRenderViewDeleted() OVERRIDE;
   virtual void OnRendererCrashed() OVERRIDE;
 
  private:

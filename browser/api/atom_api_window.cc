@@ -76,6 +76,10 @@ void Window::OnRendererResponsive() {
   Emit("responsive");
 }
 
+void Window::OnRenderViewDeleted() {
+  Emit("render-view-deleted");
+}
+
 void Window::OnRendererCrashed() {
   Emit("crashed");
 }
