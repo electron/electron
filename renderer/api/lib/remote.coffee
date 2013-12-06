@@ -2,7 +2,6 @@ ipc = require 'ipc'
 CallbacksRegistry = require 'callbacks-registry'
 v8Util = process.atomBinding 'v8_util'
 
-currentContextExist = true
 callbacksRegistry = new CallbacksRegistry
 
 # Convert the arguments object into an array of meta data.
@@ -82,7 +81,6 @@ metaToValue = (meta) ->
       # Track delegate object's life time, and tell the browser to clean up
       # when the object is GCed.
       v8Util.setDestructor ret, ->
-        return unless currentContextExist
         ipc.sendChannel 'ATOM_BROWSER_DEREFERENCE', meta.storeId
 
       # Remember object's id.
@@ -97,11 +95,6 @@ ipc.on 'ATOM_RENDERER_CALLBACK', (id, args) ->
 # A callback in browser is released.
 ipc.on 'ATOM_RENDERER_RELEASE_CALLBACK', (id) ->
   callbacksRegistry.remove id
-
-# Release all resources of current render view when it's going to be unloaded.
-window.addEventListener 'unload', (event) ->
-  currentContextExist = false
-  ipc.sendChannelSync 'ATOM_BROWSER_RELEASE_RENDER_VIEW'
 
 # Get remote module.
 # (Just like node's require, the modules are cached permanently, note that this

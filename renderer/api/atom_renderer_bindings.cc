@@ -7,10 +7,8 @@
 #include <vector>
 
 #include "base/logging.h"
-#include "base/values.h"
 #include "common/v8_conversions.h"
 #include "content/public/renderer/render_view.h"
-#include "content/public/renderer/v8_value_converter.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
 #include "third_party/WebKit/Source/WebKit/chromium/public/WebView.h"
 #include "vendor/node/src/node.h"

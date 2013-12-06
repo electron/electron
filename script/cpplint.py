@@ -16,6 +16,7 @@ IGNORE_FILES = [
   'common/api/api_messages.cc',
   'common/api/api_messages.h',
   'common/atom_version.h',
+  'common/swap_or_assign.h',
 ]
 
 SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))

@@ -11,6 +11,11 @@ BrowserWindow::_init = ->
     menu = app.getApplicationMenu()
     @setMenu menu if menu?
 
+  # Tell the rpc server that a render view has been deleted and we need to
+  # release all objects owned by it.
+  @on 'render-view-deleted', (event, processId, routingId) ->
+    process.emit 'ATOM_BROWSER_RELEASE_RENDER_VIEW', processId, routingId
+
 BrowserWindow::toggleDevTools = ->
   if @isDevToolsOpened() then @closeDevTools() else @openDevTools()
 

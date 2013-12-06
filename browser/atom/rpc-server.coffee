@@ -78,6 +78,10 @@ callFunction = (event, processId, routingId, func, caller, args) ->
     ret = func.apply caller, args
     event.returnValue = valueToMeta processId, routingId, ret
 
+# Send by BrowserWindow when its render view is deleted.
+process.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (processId, routingId) ->
+  objectsRegistry.clear processId, routingId
+
 ipc.on 'ATOM_BROWSER_REQUIRE', (event, processId, routingId, module) ->
   try
     event.returnValue = valueToMeta processId, routingId, require(module)
@@ -89,10 +93,6 @@ ipc.on 'ATOM_BROWSER_GLOBAL', (event, processId, routingId, name) ->
     event.returnValue = valueToMeta processId, routingId, global[name]
   catch e
     event.returnValue = errorToMeta e
-
-ipc.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (event, processId, routingId) ->
-  objectsRegistry.clear processId, routingId
-  event.returnValue = null
 
 ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event, processId, routingId) ->
   try
