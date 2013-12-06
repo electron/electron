@@ -271,7 +271,10 @@ void NativeWindow::NotifyWindowClosed() {
   // The OnRenderViewDeleted is not called when the WebContents is destroyed
   // directly (e.g. when closing the window), so we make sure it's always
   // emitted to users by sending it before window is closed..
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRenderViewDeleted());
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnRenderViewDeleted(
+                        GetWebContents()->GetRenderProcessHost()->GetID(),
+                        GetWebContents()->GetRoutingID()));
 
   is_closed_ = true;
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowClosed());
@@ -398,8 +401,10 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   return handled;
 }
 
-void NativeWindow::RenderViewDeleted(content::RenderViewHost*) {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRenderViewDeleted());
+void NativeWindow::RenderViewDeleted(content::RenderViewHost* rvh) {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnRenderViewDeleted(rvh->GetProcess()->GetID(),
+                                        rvh->GetRoutingID()));
 }
 
 void NativeWindow::RenderViewGone(base::TerminationStatus status) {

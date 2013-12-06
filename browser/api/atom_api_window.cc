@@ -76,8 +76,11 @@ void Window::OnRendererResponsive() {
   Emit("responsive");
 }
 
-void Window::OnRenderViewDeleted() {
-  Emit("render-view-deleted");
+void Window::OnRenderViewDeleted(int process_id, int routing_id) {
+  base::ListValue args;
+  args.AppendInteger(process_id);
+  args.AppendInteger(routing_id);
+  Emit("render-view-deleted", &args);
 }
 
 void Window::OnRendererCrashed() {

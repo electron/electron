@@ -36,7 +36,7 @@ class NativeWindowObserver {
   virtual void OnRendererResponsive() {}
 
   // Called when a render view has been deleted.
-  virtual void OnRenderViewDeleted() {}
+  virtual void OnRenderViewDeleted(int process_id, int routing_id) {}
 
   // Called when renderer has crashed.
   virtual void OnRendererCrashed() {}
