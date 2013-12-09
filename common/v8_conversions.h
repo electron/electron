@@ -237,7 +237,7 @@ bool FromV8Arguments(const v8::Arguments& args, T1* value, int index = 0) {
   if (!V8ValueCanBeConvertedTo<T1>(args[index]))
     return false;
   internal::SwapOrAssign(*value,
-                         static_cast<const T1&>(FromV8Value(args[index])));
+                         FromV8Value(args[index]).operator T1());
   return true;
 }
 
