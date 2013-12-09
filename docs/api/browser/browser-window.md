@@ -288,8 +288,6 @@ Starts inspecting element at position (`x`, `y`).
 
 ### BrowserWindow.blurWebView()
 
-### BrowserWindow.restartHangMonitorTimeout()
-
 ### BrowserWindow.capturePage([rect, ]callback)
 
 * `rect` Object - The area of page to be captured

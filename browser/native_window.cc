@@ -188,10 +188,6 @@ bool NativeWindow::IsWebViewFocused() {
   return GetWebContents()->GetRenderViewHost()->GetView()->HasFocus();
 }
 
-void NativeWindow::RestartHangMonitorTimeout() {
-  GetWebContents()->GetRenderViewHost()->RestartHangMonitorTimeout();
-}
-
 bool NativeWindow::SetIcon(const std::string& str_path) {
   base::FilePath path = base::FilePath::FromUTF8Unsafe(str_path);
 

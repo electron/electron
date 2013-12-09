@@ -108,10 +108,11 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void CloseDevTools();
   virtual bool IsDevToolsOpened();
   virtual void InspectElement(int x, int y);
+
   virtual void FocusOnWebView();
   virtual void BlurWebView();
   virtual bool IsWebViewFocused();
-  virtual void RestartHangMonitorTimeout();
+
   virtual bool SetIcon(const std::string& path);
 
   // Returns the process handle of render process, useful for killing the
