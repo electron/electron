@@ -29,7 +29,7 @@ void InspectableWebContentsViewMac::CloseDevTools() {
   [view_ setDevToolsVisible:NO];
 }
 
-bool InspectableWebContentsViewMac::IsDevToolsOpened() {
+bool InspectableWebContentsViewMac::IsDevToolsViewShowing() {
   return [view_ isDevToolsVisible];
 }
 

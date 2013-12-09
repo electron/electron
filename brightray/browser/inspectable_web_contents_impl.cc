@@ -96,8 +96,8 @@ void InspectableWebContentsImpl::ShowDevTools() {
   view_->ShowDevTools();
 }
 
-bool InspectableWebContentsImpl::IsDevToolsOpened() {
-  return devtools_web_contents_ && view_->IsDevToolsOpened();
+bool InspectableWebContentsImpl::IsDevToolsViewShowing() {
+  return devtools_web_contents_ && view_->IsDevToolsViewShowing();
 }
 
 void InspectableWebContentsImpl::UpdateFrontendDockSide() {

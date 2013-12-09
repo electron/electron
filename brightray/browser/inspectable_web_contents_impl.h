@@ -41,7 +41,7 @@ class InspectableWebContentsImpl :
   virtual content::WebContents* GetWebContents() const OVERRIDE;
 
   virtual void ShowDevTools() OVERRIDE;
-  virtual bool IsDevToolsOpened() OVERRIDE;
+  virtual bool IsDevToolsViewShowing() OVERRIDE;
 
   content::WebContents* devtools_web_contents() {
     return devtools_web_contents_.get();

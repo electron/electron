@@ -166,7 +166,7 @@ void InspectableWebContentsViewLinux::CloseDevTools() {
   }
 }
 
-bool InspectableWebContentsViewLinux::IsDevToolsOpened() {
+bool InspectableWebContentsViewLinux::IsDevToolsViewShowing() {
   auto devtools_web_contents =
       inspectable_web_contents()->devtools_web_contents();
   GtkWidget* devtools = devtools_web_contents->GetView()->GetNativeView();

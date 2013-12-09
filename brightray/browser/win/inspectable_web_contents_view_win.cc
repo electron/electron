@@ -57,7 +57,7 @@ void InspectableWebContentsViewWin::CloseDevTools() {
   SendMessage(devtools_window_->hwnd(), WM_CLOSE, 0, 0);
 }
 
-bool InspectableWebContentsViewWin::IsDevToolsOpened() {
+bool InspectableWebContentsViewWin::IsDevToolsViewShowing() {
   return devtools_window_;
 }
 
