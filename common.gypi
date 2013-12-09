@@ -13,6 +13,7 @@
       }],
     ],
     # Reflects node's config.gypi.
+    'component%': 'static_library',
     'python': 'python',
     'node_install_npm': 'false',
     'node_prefix': '',
@@ -29,6 +30,7 @@
     'node_use_openssl': 'true',
     'node_use_perfctr': 'false',
     'node_use_systemtap': 'false',
+    'v8_postmortem_support': 'false',
   },
   # Settings to compile node under Windows.
   'target_defaults': {
@@ -71,6 +73,11 @@
             '-Wno-return-type',
           ],
         },
+      }],
+      ['_target_name=="node"', {
+        'include_dirs': [
+          'vendor/brightray/vendor/download/libchromiumcontent/src/v8/include',
+        ],
       }],
       ['_target_name=="libuv"', {
         'conditions': [

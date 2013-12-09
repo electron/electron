@@ -326,6 +326,8 @@
       'include_dirs': [
         '.',
         'vendor',
+        # The `node.h` is using `#include"v8.h"`.
+        'vendor/brightray/vendor/download/libchromiumcontent/src/v8/include',
       ],
       'direct_dependent_settings': {
         'include_dirs': [
