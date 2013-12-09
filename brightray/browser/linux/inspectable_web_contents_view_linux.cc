@@ -167,7 +167,10 @@ void InspectableWebContentsViewLinux::CloseDevTools() {
 }
 
 bool InspectableWebContentsViewLinux::IsDevToolsOpened() {
-  return devtools_window_ && IsWidgetAncestryVisible(devtools_window_);
+  auto devtools_web_contents =
+      inspectable_web_contents()->devtools_web_contents();
+  GtkWidget* devtools = devtools_web_contents->GetView()->GetNativeView();
+  return IsWidgetAncestryVisible(devtools);
 }
 
 bool InspectableWebContentsViewLinux::SetDockSide(const std::string& side) {
