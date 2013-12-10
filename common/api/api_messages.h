@@ -4,7 +4,7 @@
 
 // Multiply-included file, no traditional include guard.
 
-#include "base/string16.h"
+#include "base/strings/string16.h"
 #include "base/values.h"
 #include "common/draggable_region.h"
 #include "content/public/common/common_param_traits.h"

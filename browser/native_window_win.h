@@ -5,7 +5,7 @@
 #ifndef ATOM_BROWSER_NATIVE_WINDOW_WIN_H_
 #define ATOM_BROWSER_NATIVE_WINDOW_WIN_H_
 
-#include "base/string16.h"
+#include "base/strings/string16.h"
 
 #include "base/memory/scoped_ptr.h"
 #include "browser/native_window.h"

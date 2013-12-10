@@ -5,7 +5,7 @@
 #ifndef ATOM_BROWSER_API_ATOM_BROWSER_BINDINGS_
 #define ATOM_BROWSER_API_ATOM_BROWSER_BINDINGS_
 
-#include "base/string16.h"
+#include "base/strings/string16.h"
 #include "common/api/atom_bindings.h"
 
 namespace base {

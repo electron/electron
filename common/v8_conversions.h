@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "base/files/file_path.h"
-#include "base/string16.h"
+#include "base/strings/string16.h"
 #include "base/template_util.h"
 #include "base/values.h"
 #include "browser/api/atom_api_window.h"

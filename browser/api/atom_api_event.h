@@ -7,7 +7,7 @@
 
 #include "base/basictypes.h"
 #include "base/compiler_specific.h"
-#include "base/string16.h"
+#include "base/strings/string16.h"
 #include "browser/native_window_observer.h"
 #include "vendor/node/src/node_object_wrap.h"
 
