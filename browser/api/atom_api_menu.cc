@@ -119,7 +119,7 @@ void Menu::ExecuteCommand(int command_id, int event_flags) {
 }
 
 // static
-v8::Handle<v8::Value> Menu::New(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::New(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   if (!args.IsConstructCall())
@@ -131,7 +131,7 @@ v8::Handle<v8::Value> Menu::New(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Menu::InsertItem(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::InsertItem(const v8::Arguments& args) {
   UNWRAP_MEMNU_AND_CHECK;
 
   int index, command_id;
@@ -148,7 +148,7 @@ v8::Handle<v8::Value> Menu::InsertItem(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Menu::InsertCheckItem(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::InsertCheckItem(const v8::Arguments& args) {
   UNWRAP_MEMNU_AND_CHECK;
 
   int index, command_id;
@@ -165,7 +165,7 @@ v8::Handle<v8::Value> Menu::InsertCheckItem(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Menu::InsertRadioItem(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::InsertRadioItem(const v8::Arguments& args) {
   UNWRAP_MEMNU_AND_CHECK;
 
   int index, command_id, group_id;
@@ -182,7 +182,7 @@ v8::Handle<v8::Value> Menu::InsertRadioItem(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Menu::InsertSeparator(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::InsertSeparator(const v8::Arguments& args) {
   UNWRAP_MEMNU_AND_CHECK;
 
   int index;
@@ -198,7 +198,7 @@ v8::Handle<v8::Value> Menu::InsertSeparator(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Menu::InsertSubMenu(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::InsertSubMenu(const v8::Arguments& args) {
   UNWRAP_MEMNU_AND_CHECK;
 
   int index, command_id;
@@ -220,7 +220,7 @@ v8::Handle<v8::Value> Menu::InsertSubMenu(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Menu::SetIcon(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::SetIcon(const v8::Arguments& args) {
   UNWRAP_MEMNU_AND_CHECK;
 
   int index;
@@ -234,7 +234,7 @@ v8::Handle<v8::Value> Menu::SetIcon(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Menu::SetSublabel(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::SetSublabel(const v8::Arguments& args) {
   UNWRAP_MEMNU_AND_CHECK;
 
   int index;
@@ -248,7 +248,7 @@ v8::Handle<v8::Value> Menu::SetSublabel(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Menu::Clear(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::Clear(const v8::Arguments& args) {
   UNWRAP_MEMNU_AND_CHECK;
 
   self->model_->Clear();
@@ -257,60 +257,60 @@ v8::Handle<v8::Value> Menu::Clear(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Menu::GetIndexOfCommandId(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::GetIndexOfCommandId(const v8::Arguments& args) {
   UNWRAP_MEMNU_AND_CHECK;
   int index = args[0]->IntegerValue();
   return v8::Integer::New(self->model_->GetIndexOfCommandId(index));
 }
 
 // static
-v8::Handle<v8::Value> Menu::GetItemCount(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::GetItemCount(const v8::Arguments& args) {
   UNWRAP_MEMNU_AND_CHECK;
   return v8::Integer::New(self->model_->GetItemCount());
 }
 
 // static
-v8::Handle<v8::Value> Menu::GetCommandIdAt(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::GetCommandIdAt(const v8::Arguments& args) {
   UNWRAP_MEMNU_AND_CHECK;
   int index = args[0]->IntegerValue();
   return v8::Integer::New(self->model_->GetCommandIdAt(index));
 }
 
 // static
-v8::Handle<v8::Value> Menu::GetLabelAt(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::GetLabelAt(const v8::Arguments& args) {
   UNWRAP_MEMNU_AND_CHECK;
   int index = args[0]->IntegerValue();
   return ToV8Value(self->model_->GetLabelAt(index));
 }
 
 // static
-v8::Handle<v8::Value> Menu::GetSublabelAt(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::GetSublabelAt(const v8::Arguments& args) {
   UNWRAP_MEMNU_AND_CHECK;
   int index = args[0]->IntegerValue();
   return ToV8Value(self->model_->GetSublabelAt(index));
 }
 
 // static
-v8::Handle<v8::Value> Menu::IsItemCheckedAt(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::IsItemCheckedAt(const v8::Arguments& args) {
   UNWRAP_MEMNU_AND_CHECK;
   int index = args[0]->IntegerValue();
   return v8::Boolean::New(self->model_->IsItemCheckedAt(index));
 }
 
 // static
-v8::Handle<v8::Value> Menu::IsEnabledAt(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::IsEnabledAt(const v8::Arguments& args) {
   UNWRAP_MEMNU_AND_CHECK;
   return v8::Boolean::New(self->model_->IsEnabledAt(args[0]->IntegerValue()));
 }
 
 // static
-v8::Handle<v8::Value> Menu::IsVisibleAt(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::IsVisibleAt(const v8::Arguments& args) {
   UNWRAP_MEMNU_AND_CHECK;
   return v8::Boolean::New(self->model_->IsVisibleAt(args[0]->IntegerValue()));
 }
 
 // static
-v8::Handle<v8::Value> Menu::Popup(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::Popup(const v8::Arguments& args) {
   UNWRAP_MEMNU_AND_CHECK;
 
   atom::NativeWindow* window;

@@ -44,7 +44,7 @@ void AutoUpdater::ReadyForUpdateOnQuit(const std::string& version,
 }
 
 // static
-v8::Handle<v8::Value> AutoUpdater::New(const v8::Arguments &args) {
+v8::Handle<v8::Value> AutoUpdater::New(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   if (!args.IsConstructCall())
@@ -56,14 +56,14 @@ v8::Handle<v8::Value> AutoUpdater::New(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> AutoUpdater::SetFeedURL(const v8::Arguments &args) {
+v8::Handle<v8::Value> AutoUpdater::SetFeedURL(const v8::Arguments& args) {
   auto_updater::AutoUpdater::SetFeedURL(FromV8Value(args[0]));
   return v8::Undefined();
 }
 
 // static
 v8::Handle<v8::Value> AutoUpdater::SetAutomaticallyChecksForUpdates(
-      const v8::Arguments &args) {
+      const v8::Arguments& args) {
   auto_updater::AutoUpdater::SetAutomaticallyChecksForUpdates(
       args[0]->BooleanValue());
   return v8::Undefined();
@@ -71,34 +71,34 @@ v8::Handle<v8::Value> AutoUpdater::SetAutomaticallyChecksForUpdates(
 
 // static
 v8::Handle<v8::Value> AutoUpdater::SetAutomaticallyDownloadsUpdates(
-      const v8::Arguments &args) {
+      const v8::Arguments& args) {
   auto_updater::AutoUpdater::SetAutomaticallyDownloadsUpdates(
       args[0]->BooleanValue());
   return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> AutoUpdater::CheckForUpdates(const v8::Arguments &args) {
+v8::Handle<v8::Value> AutoUpdater::CheckForUpdates(const v8::Arguments& args) {
   auto_updater::AutoUpdater::CheckForUpdates();
   return v8::Undefined();
 }
 
 // static
 v8::Handle<v8::Value> AutoUpdater::CheckForUpdatesInBackground(
-      const v8::Arguments &args) {
+      const v8::Arguments& args) {
   auto_updater::AutoUpdater::CheckForUpdatesInBackground();
   return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> AutoUpdater::ContinueUpdate(const v8::Arguments &args) {
+v8::Handle<v8::Value> AutoUpdater::ContinueUpdate(const v8::Arguments& args) {
   AutoUpdater* self = AutoUpdater::Unwrap<AutoUpdater>(args.This());
   self->continue_update_.Run();
   return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> AutoUpdater::QuitAndInstall(const v8::Arguments &args) {
+v8::Handle<v8::Value> AutoUpdater::QuitAndInstall(const v8::Arguments& args) {
   AutoUpdater* self = AutoUpdater::Unwrap<AutoUpdater>(args.This());
   self->quit_and_install_.Run();
   return v8::Undefined();

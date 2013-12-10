@@ -52,7 +52,7 @@ void App::OnFinishLaunching() {
 }
 
 // static
-v8::Handle<v8::Value> App::New(const v8::Arguments &args) {
+v8::Handle<v8::Value> App::New(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   if (!args.IsConstructCall())
@@ -64,7 +64,7 @@ v8::Handle<v8::Value> App::New(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> App::Quit(const v8::Arguments &args) {
+v8::Handle<v8::Value> App::Quit(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   Browser::Get()->Quit();
@@ -73,7 +73,7 @@ v8::Handle<v8::Value> App::Quit(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> App::Exit(const v8::Arguments &args) {
+v8::Handle<v8::Value> App::Exit(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   exit(args[0]->IntegerValue());
@@ -82,7 +82,7 @@ v8::Handle<v8::Value> App::Exit(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> App::Terminate(const v8::Arguments &args) {
+v8::Handle<v8::Value> App::Terminate(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   Browser::Get()->Terminate();
@@ -91,7 +91,7 @@ v8::Handle<v8::Value> App::Terminate(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> App::Focus(const v8::Arguments &args) {
+v8::Handle<v8::Value> App::Focus(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   Browser::Get()->Focus();
@@ -100,12 +100,12 @@ v8::Handle<v8::Value> App::Focus(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> App::GetVersion(const v8::Arguments &args) {
+v8::Handle<v8::Value> App::GetVersion(const v8::Arguments& args) {
   return ToV8Value(Browser::Get()->GetVersion());
 }
 
 // static
-v8::Handle<v8::Value> App::SetVersion(const v8::Arguments &args) {
+v8::Handle<v8::Value> App::SetVersion(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   std::string version;
@@ -118,12 +118,12 @@ v8::Handle<v8::Value> App::SetVersion(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> App::GetName(const v8::Arguments &args) {
+v8::Handle<v8::Value> App::GetName(const v8::Arguments& args) {
   return ToV8Value(Browser::Get()->GetName());
 }
 
 // static
-v8::Handle<v8::Value> App::SetName(const v8::Arguments &args) {
+v8::Handle<v8::Value> App::SetName(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   std::string name;
@@ -136,7 +136,7 @@ v8::Handle<v8::Value> App::SetName(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> App::AppendSwitch(const v8::Arguments &args) {
+v8::Handle<v8::Value> App::AppendSwitch(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   std::string switch_string;
@@ -155,7 +155,7 @@ v8::Handle<v8::Value> App::AppendSwitch(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> App::AppendArgument(const v8::Arguments &args) {
+v8::Handle<v8::Value> App::AppendArgument(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   std::string value;

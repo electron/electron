@@ -33,18 +33,18 @@ class App : public EventEmitter,
   virtual void OnFinishLaunching() OVERRIDE;
 
  private:
-  static v8::Handle<v8::Value> New(const v8::Arguments &args);
+  static v8::Handle<v8::Value> New(const v8::Arguments& args);
 
-  static v8::Handle<v8::Value> Quit(const v8::Arguments &args);
-  static v8::Handle<v8::Value> Exit(const v8::Arguments &args);
-  static v8::Handle<v8::Value> Terminate(const v8::Arguments &args);
-  static v8::Handle<v8::Value> Focus(const v8::Arguments &args);
-  static v8::Handle<v8::Value> GetVersion(const v8::Arguments &args);
-  static v8::Handle<v8::Value> SetVersion(const v8::Arguments &args);
-  static v8::Handle<v8::Value> GetName(const v8::Arguments &args);
-  static v8::Handle<v8::Value> SetName(const v8::Arguments &args);
-  static v8::Handle<v8::Value> AppendSwitch(const v8::Arguments &args);
-  static v8::Handle<v8::Value> AppendArgument(const v8::Arguments &args);
+  static v8::Handle<v8::Value> Quit(const v8::Arguments& args);
+  static v8::Handle<v8::Value> Exit(const v8::Arguments& args);
+  static v8::Handle<v8::Value> Terminate(const v8::Arguments& args);
+  static v8::Handle<v8::Value> Focus(const v8::Arguments& args);
+  static v8::Handle<v8::Value> GetVersion(const v8::Arguments& args);
+  static v8::Handle<v8::Value> SetVersion(const v8::Arguments& args);
+  static v8::Handle<v8::Value> GetName(const v8::Arguments& args);
+  static v8::Handle<v8::Value> SetName(const v8::Arguments& args);
+  static v8::Handle<v8::Value> AppendSwitch(const v8::Arguments& args);
+  static v8::Handle<v8::Value> AppendArgument(const v8::Arguments& args);
 
 #if defined(OS_MACOSX)
   static v8::Handle<v8::Value> DockBounce(const v8::Arguments& args);

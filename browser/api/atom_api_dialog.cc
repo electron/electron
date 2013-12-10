@@ -49,7 +49,7 @@ void Initialize(v8::Handle<v8::Object> target) {
 
 }  // namespace
 
-v8::Handle<v8::Value> ShowMessageBox(const v8::Arguments &args) {
+v8::Handle<v8::Value> ShowMessageBox(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   int type;
@@ -83,7 +83,7 @@ v8::Handle<v8::Value> ShowMessageBox(const v8::Arguments &args) {
   }
 }
 
-v8::Handle<v8::Value> ShowOpenDialog(const v8::Arguments &args) {
+v8::Handle<v8::Value> ShowOpenDialog(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   std::string title;
@@ -121,7 +121,7 @@ v8::Handle<v8::Value> ShowOpenDialog(const v8::Arguments &args) {
   }
 }
 
-v8::Handle<v8::Value> ShowSaveDialog(const v8::Arguments &args) {
+v8::Handle<v8::Value> ShowSaveDialog(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   std::string title;

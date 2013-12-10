@@ -14,7 +14,7 @@ namespace atom {
 namespace api {
 
 // static
-v8::Handle<v8::Value> Clipboard::Has(const v8::Arguments &args) {
+v8::Handle<v8::Value> Clipboard::Has(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   if (!args[0]->IsString())
@@ -30,7 +30,7 @@ v8::Handle<v8::Value> Clipboard::Has(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Clipboard::Read(const v8::Arguments &args) {
+v8::Handle<v8::Value> Clipboard::Read(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   if (!args[0]->IsString())
@@ -48,7 +48,7 @@ v8::Handle<v8::Value> Clipboard::Read(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Clipboard::ReadText(const v8::Arguments &args) {
+v8::Handle<v8::Value> Clipboard::ReadText(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
@@ -60,7 +60,7 @@ v8::Handle<v8::Value> Clipboard::ReadText(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Clipboard::WriteText(const v8::Arguments &args) {
+v8::Handle<v8::Value> Clipboard::WriteText(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   if (!args[0]->IsString())
@@ -78,7 +78,7 @@ v8::Handle<v8::Value> Clipboard::WriteText(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Clipboard::Clear(const v8::Arguments &args) {
+v8::Handle<v8::Value> Clipboard::Clear(const v8::Arguments& args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   clipboard->Clear(ui::Clipboard::BUFFER_STANDARD);
 

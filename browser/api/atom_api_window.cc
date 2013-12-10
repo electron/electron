@@ -102,7 +102,7 @@ void Window::OnCapturePageDone(v8::Persistent<v8::Function> callback,
 }
 
 // static
-v8::Handle<v8::Value> Window::New(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::New(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   if (!args.IsConstructCall())
@@ -124,7 +124,7 @@ v8::Handle<v8::Value> Window::New(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::Destroy(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::Destroy(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   base::ProcessHandle handle = self->window_->GetRenderProcessHandle();
@@ -140,7 +140,7 @@ v8::Handle<v8::Value> Window::Destroy(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::Close(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::Close(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   self->window_->Close();
@@ -149,7 +149,7 @@ v8::Handle<v8::Value> Window::Close(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::Focus(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::Focus(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   self->window_->Focus(args[0]->IsBoolean() ? args[0]->BooleanValue(): true);
@@ -158,13 +158,13 @@ v8::Handle<v8::Value> Window::Focus(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::IsFocused(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::IsFocused(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
   return ToV8Value(self->window_->IsFocused());
 }
 
 // static
-v8::Handle<v8::Value> Window::Show(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::Show(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   self->window_->Show();
@@ -173,7 +173,7 @@ v8::Handle<v8::Value> Window::Show(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::Hide(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::Hide(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   self->window_->Hide();
@@ -188,7 +188,7 @@ v8::Handle<v8::Value> Window::IsVisible(const v8::Arguments& args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::Maximize(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::Maximize(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   self->window_->Maximize();
@@ -197,7 +197,7 @@ v8::Handle<v8::Value> Window::Maximize(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::Unmaximize(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::Unmaximize(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   self->window_->Unmaximize();
@@ -206,7 +206,7 @@ v8::Handle<v8::Value> Window::Unmaximize(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::Minimize(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::Minimize(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   self->window_->Minimize();
@@ -215,7 +215,7 @@ v8::Handle<v8::Value> Window::Minimize(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::Restore(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::Restore(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   self->window_->Restore();
@@ -224,7 +224,7 @@ v8::Handle<v8::Value> Window::Restore(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::SetFullscreen(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::SetFullscreen(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   bool fs;
@@ -236,14 +236,14 @@ v8::Handle<v8::Value> Window::SetFullscreen(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::IsFullscreen(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::IsFullscreen(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   return ToV8Value(self->window_->IsFullscreen());
 }
 
 // static
-v8::Handle<v8::Value> Window::SetSize(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::SetSize(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   int width, height;
@@ -255,7 +255,7 @@ v8::Handle<v8::Value> Window::SetSize(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::GetSize(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::GetSize(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   gfx::Size size = self->window_->GetSize();
@@ -267,7 +267,7 @@ v8::Handle<v8::Value> Window::GetSize(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::SetMinimumSize(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::SetMinimumSize(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   int width, height;
@@ -279,7 +279,7 @@ v8::Handle<v8::Value> Window::SetMinimumSize(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::GetMinimumSize(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::GetMinimumSize(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   gfx::Size size = self->window_->GetMinimumSize();
@@ -291,7 +291,7 @@ v8::Handle<v8::Value> Window::GetMinimumSize(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::SetMaximumSize(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::SetMaximumSize(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
 
@@ -304,7 +304,7 @@ v8::Handle<v8::Value> Window::SetMaximumSize(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::GetMaximumSize(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::GetMaximumSize(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   gfx::Size size = self->window_->GetMaximumSize();
@@ -316,7 +316,7 @@ v8::Handle<v8::Value> Window::GetMaximumSize(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::SetResizable(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::SetResizable(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   bool resizable;
@@ -328,14 +328,14 @@ v8::Handle<v8::Value> Window::SetResizable(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::IsResizable(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::IsResizable(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   return ToV8Value(self->window_->IsResizable());
 }
 
 // static
-v8::Handle<v8::Value> Window::SetAlwaysOnTop(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::SetAlwaysOnTop(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   bool top;
@@ -347,14 +347,14 @@ v8::Handle<v8::Value> Window::SetAlwaysOnTop(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::IsAlwaysOnTop(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::IsAlwaysOnTop(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   return ToV8Value(self->window_->IsAlwaysOnTop());
 }
 
 // static
-v8::Handle<v8::Value> Window::Center(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::Center(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   self->window_->Center();
@@ -363,7 +363,7 @@ v8::Handle<v8::Value> Window::Center(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::SetPosition(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::SetPosition(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   int x, y;
@@ -375,7 +375,7 @@ v8::Handle<v8::Value> Window::SetPosition(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::GetPosition(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::GetPosition(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   gfx::Point pos = self->window_->GetPosition();
@@ -387,7 +387,7 @@ v8::Handle<v8::Value> Window::GetPosition(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::SetTitle(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::SetTitle(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   std::string title;
@@ -399,13 +399,13 @@ v8::Handle<v8::Value> Window::SetTitle(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::GetTitle(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::GetTitle(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
   return ToV8Value(self->window_->GetTitle());
 }
 
 // static
-v8::Handle<v8::Value> Window::FlashFrame(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::FlashFrame(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   self->window_->FlashFrame(
@@ -415,7 +415,7 @@ v8::Handle<v8::Value> Window::FlashFrame(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::SetKiosk(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::SetKiosk(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   bool kiosk;
@@ -427,14 +427,14 @@ v8::Handle<v8::Value> Window::SetKiosk(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::IsKiosk(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::IsKiosk(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   return ToV8Value(self->window_->IsKiosk());
 }
 
 // static
-v8::Handle<v8::Value> Window::OpenDevTools(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::OpenDevTools(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   self->window_->OpenDevTools();
@@ -443,7 +443,7 @@ v8::Handle<v8::Value> Window::OpenDevTools(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::CloseDevTools(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::CloseDevTools(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   self->window_->CloseDevTools();
@@ -470,7 +470,7 @@ v8::Handle<v8::Value> Window::InspectElement(const v8::Arguments& args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::FocusOnWebView(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::FocusOnWebView(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   self->window_->FocusOnWebView();
@@ -479,7 +479,7 @@ v8::Handle<v8::Value> Window::FocusOnWebView(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::BlurWebView(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::BlurWebView(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   self->window_->BlurWebView();
@@ -511,28 +511,28 @@ v8::Handle<v8::Value> Window::CapturePage(const v8::Arguments& args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::GetPageTitle(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::GetPageTitle(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   return ToV8Value(self->window_->GetWebContents()->GetTitle());
 }
 
 // static
-v8::Handle<v8::Value> Window::IsLoading(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::IsLoading(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   return ToV8Value(self->window_->GetWebContents()->IsLoading());
 }
 
 // static
-v8::Handle<v8::Value> Window::IsWaitingForResponse(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::IsWaitingForResponse(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   return ToV8Value(self->window_->GetWebContents()->IsWaitingForResponse());
 }
 
 // static
-v8::Handle<v8::Value> Window::Stop(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::Stop(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   self->window_->GetWebContents()->Stop();
@@ -541,14 +541,14 @@ v8::Handle<v8::Value> Window::Stop(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::GetRoutingID(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::GetRoutingID(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   return ToV8Value(self->window_->GetWebContents()->GetRoutingID());
 }
 
 // static
-v8::Handle<v8::Value> Window::GetProcessID(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::GetProcessID(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   return ToV8Value(
@@ -556,14 +556,14 @@ v8::Handle<v8::Value> Window::GetProcessID(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::IsCrashed(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::IsCrashed(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   return ToV8Value(self->window_->GetWebContents()->IsCrashed());
 }
 
 // static
-v8::Handle<v8::Value> Window::LoadURL(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::LoadURL(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   GURL url;
@@ -582,7 +582,7 @@ v8::Handle<v8::Value> Window::LoadURL(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::GetURL(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::GetURL(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   NavigationController& controller =
@@ -595,7 +595,7 @@ v8::Handle<v8::Value> Window::GetURL(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::CanGoBack(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::CanGoBack(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   NavigationController& controller =
@@ -605,7 +605,7 @@ v8::Handle<v8::Value> Window::CanGoBack(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::CanGoForward(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::CanGoForward(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   NavigationController& controller =
@@ -615,7 +615,7 @@ v8::Handle<v8::Value> Window::CanGoForward(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::CanGoToOffset(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::CanGoToOffset(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   int offset;
@@ -629,7 +629,7 @@ v8::Handle<v8::Value> Window::CanGoToOffset(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::GoBack(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::GoBack(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   NavigationController& controller =
@@ -640,7 +640,7 @@ v8::Handle<v8::Value> Window::GoBack(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::GoForward(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::GoForward(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   NavigationController& controller =
@@ -651,7 +651,7 @@ v8::Handle<v8::Value> Window::GoForward(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::GoToIndex(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::GoToIndex(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   int index;
@@ -666,7 +666,7 @@ v8::Handle<v8::Value> Window::GoToIndex(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::GoToOffset(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::GoToOffset(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   int offset;
@@ -681,7 +681,7 @@ v8::Handle<v8::Value> Window::GoToOffset(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::Reload(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::Reload(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   NavigationController& controller =
@@ -692,7 +692,7 @@ v8::Handle<v8::Value> Window::Reload(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Window::ReloadIgnoringCache(const v8::Arguments &args) {
+v8::Handle<v8::Value> Window::ReloadIgnoringCache(const v8::Arguments& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   NavigationController& controller =

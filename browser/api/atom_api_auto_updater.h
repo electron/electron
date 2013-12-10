@@ -31,19 +31,19 @@ class AutoUpdater : public EventEmitter,
       const base::Closure& quit_and_install) OVERRIDE;
 
  private:
-  static v8::Handle<v8::Value> New(const v8::Arguments &args);
+  static v8::Handle<v8::Value> New(const v8::Arguments& args);
 
-  static v8::Handle<v8::Value> SetFeedURL(const v8::Arguments &args);
+  static v8::Handle<v8::Value> SetFeedURL(const v8::Arguments& args);
   static v8::Handle<v8::Value> SetAutomaticallyChecksForUpdates(
-      const v8::Arguments &args);
+      const v8::Arguments& args);
   static v8::Handle<v8::Value> SetAutomaticallyDownloadsUpdates(
-      const v8::Arguments &args);
-  static v8::Handle<v8::Value> CheckForUpdates(const v8::Arguments &args);
+      const v8::Arguments& args);
+  static v8::Handle<v8::Value> CheckForUpdates(const v8::Arguments& args);
   static v8::Handle<v8::Value> CheckForUpdatesInBackground(
-      const v8::Arguments &args);
+      const v8::Arguments& args);
 
-  static v8::Handle<v8::Value> ContinueUpdate(const v8::Arguments &args);
-  static v8::Handle<v8::Value> QuitAndInstall(const v8::Arguments &args);
+  static v8::Handle<v8::Value> ContinueUpdate(const v8::Arguments& args);
+  static v8::Handle<v8::Value> QuitAndInstall(const v8::Arguments& args);
 
   base::Closure continue_update_;
   base::Closure quit_and_install_;

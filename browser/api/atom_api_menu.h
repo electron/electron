@@ -44,36 +44,36 @@ class Menu : public EventEmitter,
   scoped_ptr<ui::SimpleMenuModel> model_;
 
  private:
-  static v8::Handle<v8::Value> New(const v8::Arguments &args);
+  static v8::Handle<v8::Value> New(const v8::Arguments& args);
 
-  static v8::Handle<v8::Value> InsertItem(const v8::Arguments &args);
-  static v8::Handle<v8::Value> InsertCheckItem(const v8::Arguments &args);
-  static v8::Handle<v8::Value> InsertRadioItem(const v8::Arguments &args);
-  static v8::Handle<v8::Value> InsertSeparator(const v8::Arguments &args);
-  static v8::Handle<v8::Value> InsertSubMenu(const v8::Arguments &args);
+  static v8::Handle<v8::Value> InsertItem(const v8::Arguments& args);
+  static v8::Handle<v8::Value> InsertCheckItem(const v8::Arguments& args);
+  static v8::Handle<v8::Value> InsertRadioItem(const v8::Arguments& args);
+  static v8::Handle<v8::Value> InsertSeparator(const v8::Arguments& args);
+  static v8::Handle<v8::Value> InsertSubMenu(const v8::Arguments& args);
 
-  static v8::Handle<v8::Value> SetIcon(const v8::Arguments &args);
-  static v8::Handle<v8::Value> SetSublabel(const v8::Arguments &args);
+  static v8::Handle<v8::Value> SetIcon(const v8::Arguments& args);
+  static v8::Handle<v8::Value> SetSublabel(const v8::Arguments& args);
 
-  static v8::Handle<v8::Value> Clear(const v8::Arguments &args);
+  static v8::Handle<v8::Value> Clear(const v8::Arguments& args);
 
-  static v8::Handle<v8::Value> GetIndexOfCommandId(const v8::Arguments &args);
-  static v8::Handle<v8::Value> GetItemCount(const v8::Arguments &args);
-  static v8::Handle<v8::Value> GetCommandIdAt(const v8::Arguments &args);
-  static v8::Handle<v8::Value> GetLabelAt(const v8::Arguments &args);
-  static v8::Handle<v8::Value> GetSublabelAt(const v8::Arguments &args);
-  static v8::Handle<v8::Value> IsItemCheckedAt(const v8::Arguments &args);
-  static v8::Handle<v8::Value> IsEnabledAt(const v8::Arguments &args);
-  static v8::Handle<v8::Value> IsVisibleAt(const v8::Arguments &args);
+  static v8::Handle<v8::Value> GetIndexOfCommandId(const v8::Arguments& args);
+  static v8::Handle<v8::Value> GetItemCount(const v8::Arguments& args);
+  static v8::Handle<v8::Value> GetCommandIdAt(const v8::Arguments& args);
+  static v8::Handle<v8::Value> GetLabelAt(const v8::Arguments& args);
+  static v8::Handle<v8::Value> GetSublabelAt(const v8::Arguments& args);
+  static v8::Handle<v8::Value> IsItemCheckedAt(const v8::Arguments& args);
+  static v8::Handle<v8::Value> IsEnabledAt(const v8::Arguments& args);
+  static v8::Handle<v8::Value> IsVisibleAt(const v8::Arguments& args);
 
-  static v8::Handle<v8::Value> Popup(const v8::Arguments &args);
+  static v8::Handle<v8::Value> Popup(const v8::Arguments& args);
 
 #if defined(OS_WIN)
-  static v8::Handle<v8::Value> AttachToWindow(const v8::Arguments &args);
+  static v8::Handle<v8::Value> AttachToWindow(const v8::Arguments& args);
 #elif defined(OS_MACOSX)
-  static v8::Handle<v8::Value> SetApplicationMenu(const v8::Arguments &args);
+  static v8::Handle<v8::Value> SetApplicationMenu(const v8::Arguments& args);
   static v8::Handle<v8::Value> SendActionToFirstResponder(
-      const v8::Arguments &args);
+      const v8::Arguments& args);
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(Menu);

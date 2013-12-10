@@ -34,7 +34,7 @@ bool V8ValueToFilePath(v8::Handle<v8::Value> value, base::FilePath* path) {
 }  // namespace
 
 // static
-v8::Handle<v8::Value> Shell::ShowItemInFolder(const v8::Arguments &args) {
+v8::Handle<v8::Value> Shell::ShowItemInFolder(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   base::FilePath file_path;
@@ -46,7 +46,7 @@ v8::Handle<v8::Value> Shell::ShowItemInFolder(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Shell::OpenItem(const v8::Arguments &args) {
+v8::Handle<v8::Value> Shell::OpenItem(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   base::FilePath file_path;
@@ -58,7 +58,7 @@ v8::Handle<v8::Value> Shell::OpenItem(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Shell::OpenExternal(const v8::Arguments &args) {
+v8::Handle<v8::Value> Shell::OpenExternal(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   if (!args[0]->IsString())
@@ -69,7 +69,7 @@ v8::Handle<v8::Value> Shell::OpenExternal(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Shell::MoveItemToTrash(const v8::Arguments &args) {
+v8::Handle<v8::Value> Shell::MoveItemToTrash(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   base::FilePath file_path;
@@ -81,7 +81,7 @@ v8::Handle<v8::Value> Shell::MoveItemToTrash(const v8::Arguments &args) {
 }
 
 // static
-v8::Handle<v8::Value> Shell::Beep(const v8::Arguments &args) {
+v8::Handle<v8::Value> Shell::Beep(const v8::Arguments& args) {
   platform_util::Beep();
   return v8::Undefined();
 }

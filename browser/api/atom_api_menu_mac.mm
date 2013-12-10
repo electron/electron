@@ -71,7 +71,7 @@ void MenuMac::SendActionToFirstResponder(const std::string& action) {
 }
 
 // static
-v8::Handle<v8::Value> Menu::SetApplicationMenu(const v8::Arguments &args) {
+v8::Handle<v8::Value> Menu::SetApplicationMenu(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   if (!args[0]->IsObject())
@@ -93,7 +93,7 @@ v8::Handle<v8::Value> Menu::SetApplicationMenu(const v8::Arguments &args) {
 
 // static
 v8::Handle<v8::Value> Menu::SendActionToFirstResponder(
-    const v8::Arguments &args) {
+    const v8::Arguments& args) {
   v8::HandleScope scope;
 
   std::string action;

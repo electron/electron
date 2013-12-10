@@ -11,9 +11,9 @@ namespace atom {
 
 namespace api {
 
-v8::Handle<v8::Value> ShowMessageBox(const v8::Arguments &args);
-v8::Handle<v8::Value> ShowOpenDialog(const v8::Arguments &args);
-v8::Handle<v8::Value> ShowSaveDialog(const v8::Arguments &args);
+v8::Handle<v8::Value> ShowMessageBox(const v8::Arguments& args);
+v8::Handle<v8::Value> ShowOpenDialog(const v8::Arguments& args);
+v8::Handle<v8::Value> ShowSaveDialog(const v8::Arguments& args);
 
 }  // namespace api
 

@@ -17,8 +17,8 @@ class RendererIPC {
   static void Initialize(v8::Handle<v8::Object> target);
 
  private:
-  static v8::Handle<v8::Value> Send(const v8::Arguments &args);
-  static v8::Handle<v8::Value> SendSync(const v8::Arguments &args);
+  static v8::Handle<v8::Value> Send(const v8::Arguments& args);
+  static v8::Handle<v8::Value> SendSync(const v8::Arguments& args);
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(RendererIPC);
 };

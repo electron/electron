@@ -18,7 +18,7 @@ namespace atom {
 namespace api {
 
 // static
-v8::Handle<v8::Value> BrowserIPC::Send(const v8::Arguments &args) {
+v8::Handle<v8::Value> BrowserIPC::Send(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   string16 channel;
