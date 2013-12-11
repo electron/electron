@@ -29,11 +29,6 @@ class EventEmitter : public node::ObjectWrap {
   bool Emit(const std::string& name);
   bool Emit(const std::string& name, base::ListValue* args);
 
-  // The handle() of ObjectWrap doesn't provide the const version.
-  inline v8::Local<v8::Object> handle() const {
-    return const_cast<EventEmitter*>(this)->handle();
-  }
-
  protected:
   explicit EventEmitter(v8::Handle<v8::Object> wrapper);
 

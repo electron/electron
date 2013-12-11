@@ -54,7 +54,7 @@ Menu::~Menu() {
 bool Menu::IsCommandIdChecked(int command_id) const {
   v8::HandleScope handle_scope(node_isolate);
   return CallDelegate(v8::False(),
-                      handle(),
+                      const_cast<Menu*>(this)->handle(),
                       "isCommandIdChecked",
                       command_id)->BooleanValue();
 }
@@ -62,7 +62,7 @@ bool Menu::IsCommandIdChecked(int command_id) const {
 bool Menu::IsCommandIdEnabled(int command_id) const {
   v8::HandleScope handle_scope(node_isolate);
   return CallDelegate(v8::True(),
-                      handle(),
+                      const_cast<Menu*>(this)->handle(),
                       "isCommandIdEnabled",
                       command_id)->BooleanValue();
 }
@@ -70,7 +70,7 @@ bool Menu::IsCommandIdEnabled(int command_id) const {
 bool Menu::IsCommandIdVisible(int command_id) const {
   v8::HandleScope handle_scope(node_isolate);
   return CallDelegate(v8::True(),
-                      handle(),
+                      const_cast<Menu*>(this)->handle(),
                       "isCommandIdVisible",
                       command_id)->BooleanValue();
 }
@@ -93,7 +93,7 @@ bool Menu::GetAcceleratorForCommandId(int command_id,
 bool Menu::IsItemForCommandIdDynamic(int command_id) const {
   v8::HandleScope handle_scope(node_isolate);
   return CallDelegate(v8::False(),
-                      handle(),
+                      const_cast<Menu*>(this)->handle(),
                       "isItemForCommandIdDynamic",
                       command_id)->BooleanValue();
 }
@@ -101,7 +101,7 @@ bool Menu::IsItemForCommandIdDynamic(int command_id) const {
 string16 Menu::GetLabelForCommandId(int command_id) const {
   v8::HandleScope handle_scope(node_isolate);
   return FromV8Value(CallDelegate(v8::False(),
-                                  handle(),
+                                  const_cast<Menu*>(this)->handle(),
                                   "getLabelForCommandId",
                                   command_id));
 }
@@ -109,7 +109,7 @@ string16 Menu::GetLabelForCommandId(int command_id) const {
 string16 Menu::GetSublabelForCommandId(int command_id) const {
   v8::HandleScope handle_scope(node_isolate);
   return FromV8Value(CallDelegate(v8::False(),
-                                  handle(),
+                                  const_cast<Menu*>(this)->handle(),
                                   "getSubLabelForCommandId",
                                   command_id));
 }
