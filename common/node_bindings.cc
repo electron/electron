@@ -6,21 +6,33 @@
 
 #include "base/command_line.h"
 #include "base/logging.h"
-#include "base/message_loop.h"
-#include "common/v8_conversions.h"
+#include "base/message_loop/message_loop.h"
+#include "common/v8/native_type_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/escape.h"
-#include "third_party/WebKit/Source/WebKit/chromium/public/WebDocument.h"
-#include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
-#include "vendor/node/src/node.h"
-#include "vendor/node/src/node_internals.h"
+#include "third_party/WebKit/public/web/WebDocument.h"
+#include "third_party/WebKit/public/web/WebFrame.h"
 #include "vendor/node/src/node_javascript.h"
 
 #if defined(OS_WIN)
 #include "base/strings/utf_string_conversions.h"
 #endif
 
+#include "common/v8/node_common.h"
+
 using content::BrowserThread;
+
+namespace node {
+void Init(int* argc,
+          const char** argv,
+          int* exec_argc,
+          const char*** exec_argv);
+Environment* CreateEnvironment(v8::Isolate* isolate,
+                               int argc,
+                               const char* const* argv,
+                               int exec_argc,
+                               const char* const* exec_argv);
+}
 
 namespace atom {
 
@@ -30,6 +42,8 @@ void UvNoOp(uv_async_t* handle, int status) {
 }
 
 }  // namespace
+
+node::Environment* global_env = NULL;
 
 NodeBindings::NodeBindings(bool is_browser)
     : is_browser_(is_browser),
@@ -61,14 +75,14 @@ void NodeBindings::Initialize() {
   utf8_str_argv.reserve(str_argv.size());
 #endif
 
-  // Convert string vector to char* array.
-  std::vector<char*> argv(str_argv.size(), NULL);
+  // Convert string vector to const char* array.
+  std::vector<const char*> args(str_argv.size(), NULL);
   for (size_t i = 0; i < str_argv.size(); ++i) {
 #if defined(OS_WIN)
     utf8_str_argv.push_back(UTF16ToUTF8(str_argv[i]));
-    argv[i] = const_cast<char*>(utf8_str_argv[i].c_str());
+    args[i] = utf8_str_argv[i].c_str();
 #else
-    argv[i] = const_cast<char*>(str_argv[i].c_str());
+    args[i] = str_argv[i].c_str();
 #endif
   }
 
@@ -81,33 +95,30 @@ void NodeBindings::Initialize() {
   node::g_upstream_node_mode = false;
 
   // Init node.
-  node::Init(argv.size(), &argv[0]);
+  int argc = args.size();
+  const char** argv = &args[0];
+  int exec_argc;
+  const char** exec_argv;
+  node::Init(&argc, argv, &exec_argc, &exec_argv);
   v8::V8::Initialize();
 
-  // Load node.js.
-  v8::HandleScope scope;
-  node::g_context = v8::Persistent<v8::Context>::New(
-      node::node_isolate, v8::Context::New(node::node_isolate));
+  // Create environment (setup process object and load node.js).
+  global_env = node::CreateEnvironment(node_isolate, argc, argv, argc, argv);
+
+  // Set the process.__atom_type.
   {
-    v8::Context::Scope context_scope(node::g_context);
-    v8::Handle<v8::Object> process = node::SetupProcessObject(
-        argv.size(), &argv[0]);
+    v8::Context::Scope context_scope(global_env->context());
+    v8::HandleScope handle_scope(global_env->isolate());
 
     // Tell node.js we are in browser or renderer.
     v8::Handle<v8::String> type =
         is_browser_ ? v8::String::New("browser") : v8::String::New("renderer");
-    process->Set(v8::String::New("__atom_type"), type);
+    global_env->process_object()->Set(v8::String::New("__atom_type"), type);
   }
 }
 
-void NodeBindings::Load() {
-  v8::HandleScope scope;
-  v8::Context::Scope context_scope(node::g_context);
-  node::Load(node::process);
-}
-
 void NodeBindings::BindTo(WebKit::WebFrame* frame) {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(node_isolate);
 
   v8::Handle<v8::Context> context = frame->mainWorldScriptContext();
   if (context.IsEmpty())
@@ -116,7 +127,7 @@ void NodeBindings::BindTo(WebKit::WebFrame* frame) {
   v8::Context::Scope scope(context);
 
   // Erase security token.
-  context->SetSecurityToken(node::g_context->GetSecurityToken());
+  context->SetSecurityToken(global_env->context()->GetSecurityToken());
 
   // Evaluate cefode.js.
   v8::Handle<v8::Script> script = node::CompileCefodeMainSource();
@@ -128,7 +139,7 @@ void NodeBindings::BindTo(WebKit::WebFrame* frame) {
       script_path,
       net::UnescapeRule::SPACES | net::UnescapeRule::URL_SPECIAL_CHARS);
   v8::Handle<v8::Value> args[2] = {
-    v8::Local<v8::Value>::New(node::process),
+    global_env->process_object(),
     ToV8Value(script_path),
   };
   v8::Local<v8::Function>::Cast(result)->Call(context->Global(), 2, args);
@@ -160,8 +171,8 @@ void NodeBindings::UvRunOnce() {
   DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
 
   // Enter node context while dealing with uv events.
-  v8::HandleScope scope;
-  v8::Context::Scope context_scope(node::g_context);
+  v8::HandleScope handle_scope(node_isolate);
+  v8::Context::Scope context_scope(global_env->context());
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, (uv_run_mode)(UV_RUN_ONCE | UV_RUN_NOWAIT));

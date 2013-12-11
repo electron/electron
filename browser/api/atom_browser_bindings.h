@@ -7,6 +7,7 @@
 
 #include "base/strings/string16.h"
 #include "common/api/atom_bindings.h"
+#include "common/v8/scoped_persistent.h"
 
 namespace base {
 class ListValue;
@@ -44,11 +45,11 @@ class AtomBrowserBindings : public AtomBindings {
 
   // The require('atom').browserMainParts object.
   v8::Handle<v8::Object> browser_main_parts() {
-    return browser_main_parts_;
+    return browser_main_parts_.NewHandle();
   }
 
  private:
-  v8::Persistent<v8::Object> browser_main_parts_;
+  ScopedPersistent<v8::Object> browser_main_parts_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserBindings);
 };

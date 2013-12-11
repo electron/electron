@@ -33,6 +33,14 @@ class AtomResourceContext : public content::ResourceContext {
     return getter_->GetURLRequestContext();
   }
 
+  virtual bool AllowMicAccess(const GURL& origin) OVERRIDE {
+    return true;
+  }
+
+  virtual bool AllowCameraAccess(const GURL& origin) OVERRIDE {
+    return true;
+  }
+
  private:
   AtomURLRequestContextGetter* getter_;
 

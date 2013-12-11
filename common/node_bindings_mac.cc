@@ -9,8 +9,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
-#include "vendor/node/src/node.h"
-#include "vendor/node/src/node_internals.h"
+#include "common/v8/node_common.h"
 
 namespace atom {
 

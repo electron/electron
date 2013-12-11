@@ -6,7 +6,6 @@
 #include "browser/net/atom_url_request_job_factory.h"
 
 #include "base/stl_util.h"
-#include "googleurl/src/gurl.h"
 #include "net/base/load_flags.h"
 #include "net/url_request/url_request.h"
 
@@ -100,6 +99,11 @@ bool AtomURLRequestJobFactory::IsHandledURL(const GURL& url) const {
     return true;
   }
   return IsHandledProtocol(url.scheme());
+}
+
+bool AtomURLRequestJobFactory::IsSafeRedirectTarget(
+    const GURL& location) const {
+  return IsHandledURL(location);
 }
 
 }  // namespace atom

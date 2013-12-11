@@ -3,9 +3,11 @@
 // found in the LICENSE file.
 
 #include "common/api/object_life_monitor.h"
+
+#include "common/v8/native_type_conversions.h"
 #include "v8/include/v8-profiler.h"
-#include "vendor/node/src/node.h"
-#include "vendor/node/src/node_internals.h"
+
+#include "common/v8/node_common.h"
 
 namespace atom {
 
@@ -13,48 +15,39 @@ namespace api {
 
 namespace {
 
-v8::Handle<v8::Value> DummyNew(const v8::Arguments& args) {
-  return args.This();
-}
-
-v8::Handle<v8::Value> CreateObjectWithName(const v8::Arguments& args) {
-  v8::HandleScope scope;
-
-  v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(DummyNew);
+void CreateObjectWithName(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New();
   t->SetClassName(args[0]->ToString());
-
-  return scope.Close(t->GetFunction()->NewInstance());
+  args.GetReturnValue().Set(t->GetFunction()->NewInstance());
 }
 
-v8::Handle<v8::Value> GetHiddenValue(const v8::Arguments& args) {
-  return args[0]->ToObject()->GetHiddenValue(args[1]->ToString());
+void GetHiddenValue(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  args.GetReturnValue().Set(
+      args[0]->ToObject()->GetHiddenValue(args[1]->ToString()));
 }
 
-v8::Handle<v8::Value> SetHiddenValue(const v8::Arguments& args) {
+void SetHiddenValue(const v8::FunctionCallbackInfo<v8::Value>& args) {
   args[0]->ToObject()->SetHiddenValue(args[1]->ToString(), args[2]);
-  return v8::Undefined();
 }
 
-v8::Handle<v8::Value> GetObjectHash(const v8::Arguments& args) {
-  v8::HandleScope handle_scope;
-  return handle_scope.Close(v8::Integer::New(
-      args[0]->ToObject()->GetIdentityHash()));
+void GetObjectHash(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  args.GetReturnValue().Set(args[0]->ToObject()->GetIdentityHash());
 }
 
-v8::Handle<v8::Value> SetDestructor(const v8::Arguments& args) {
+void SetDestructor(const v8::FunctionCallbackInfo<v8::Value>& args) {
   ObjectLifeMonitor::BindTo(args[0]->ToObject(), args[1]);
-  return v8::Undefined();
 }
 
-v8::Handle<v8::Value> TakeHeapSnapshot(const v8::Arguments& args) {
+void TakeHeapSnapshot(const v8::FunctionCallbackInfo<v8::Value>& args) {
   node::node_isolate->GetHeapProfiler()->TakeHeapSnapshot(
       v8::String::New("test"));
-  return v8::Undefined();
 }
 
 }  // namespace
 
 void InitializeV8Util(v8::Handle<v8::Object> target) {
+  v8::HandleScope handle_scope(node_isolate);
+
   NODE_SET_METHOD(target, "createObjectWithName", CreateObjectWithName);
   NODE_SET_METHOD(target, "getHiddenValue", GetHiddenValue);
   NODE_SET_METHOD(target, "setHiddenValue", SetHiddenValue);

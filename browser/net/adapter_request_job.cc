@@ -4,6 +4,7 @@
 
 #include "browser/net/adapter_request_job.h"
 
+#include "base/threading/sequenced_worker_pool.h"
 #include "browser/net/url_request_string_job.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/net_errors.h"
@@ -87,7 +88,13 @@ void AdapterRequestJob::CreateStringJobAndStart(const std::string& mime_type,
 void AdapterRequestJob::CreateFileJobAndStart(const base::FilePath& path) {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
 
-  real_job_ = new net::URLRequestFileJob(request(), network_delegate(), path);
+  real_job_ = new net::URLRequestFileJob(
+      request(),
+      network_delegate(),
+      path,
+      content::BrowserThread::GetBlockingPool()->
+          GetTaskRunnerWithShutdownBehavior(
+              base::SequencedWorkerPool::SKIP_ON_SHUTDOWN));
   real_job_->Start();
 }
 

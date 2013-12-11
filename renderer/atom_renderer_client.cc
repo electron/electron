@@ -6,7 +6,8 @@
 
 #include "common/node_bindings.h"
 #include "renderer/atom_render_view_observer.h"
-#include "vendor/node/src/node_internals.h"
+
+#include "common/v8/node_common.h"
 
 namespace webkit {
 extern void SetGetNodeContext(v8::Handle<v8::Context> (*)());
@@ -17,7 +18,7 @@ namespace atom {
 namespace {
 
 v8::Handle<v8::Context> GetNodeContext() {
-  return node::g_context;
+  return global_env->context();
 }
 
 }  // namespace
@@ -35,7 +36,6 @@ void AtomRendererClient::RenderThreadStarted() {
   // Interact with dirty workarounds of extra node context in WebKit.
   webkit::SetGetNodeContext(GetNodeContext);
 
-  node_bindings_->Load();
   node_bindings_->PrepareMessageLoop();
   node_bindings_->RunMessageLoop();
 }

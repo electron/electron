@@ -5,7 +5,8 @@
 #include "browser/api/atom_api_menu.h"
 
 #include "browser/ui/accelerator_util.h"
-#include "common/v8_conversions.h"
+#include "common/v8/node_common.h"
+#include "common/v8/native_type_conversions.h"
 
 #define UNWRAP_MEMNU_AND_CHECK \
   Menu* self = ObjectWrap::Unwrap<Menu>(args.This()); \
@@ -23,7 +24,7 @@ v8::Handle<v8::Value> CallDelegate(v8::Handle<v8::Value> default_value,
                                    v8::Handle<v8::Object> menu,
                                    const char* method,
                                    int command_id) {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(node_isolate);
 
   v8::Handle<v8::Value> delegate = menu->Get(v8::String::New("delegate"));
   if (!delegate->IsObject())
@@ -36,7 +37,7 @@ v8::Handle<v8::Value> CallDelegate(v8::Handle<v8::Value> default_value,
 
   v8::Handle<v8::Value> argv = v8::Integer::New(command_id);
 
-  return scope.Close(
+  return handle_scope.Close(
       function->Call(v8::Context::GetCurrent()->Global(), 1, &argv));
 }
 
@@ -51,7 +52,7 @@ Menu::~Menu() {
 }
 
 bool Menu::IsCommandIdChecked(int command_id) const {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(node_isolate);
   return CallDelegate(v8::False(),
                       handle(),
                       "isCommandIdChecked",
@@ -59,7 +60,7 @@ bool Menu::IsCommandIdChecked(int command_id) const {
 }
 
 bool Menu::IsCommandIdEnabled(int command_id) const {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(node_isolate);
   return CallDelegate(v8::True(),
                       handle(),
                       "isCommandIdEnabled",
@@ -67,7 +68,7 @@ bool Menu::IsCommandIdEnabled(int command_id) const {
 }
 
 bool Menu::IsCommandIdVisible(int command_id) const {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(node_isolate);
   return CallDelegate(v8::True(),
                       handle(),
                       "isCommandIdVisible",
@@ -76,7 +77,7 @@ bool Menu::IsCommandIdVisible(int command_id) const {
 
 bool Menu::GetAcceleratorForCommandId(int command_id,
                                       ui::Accelerator* accelerator) {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(node_isolate);
   v8::Handle<v8::Value> shortcut = CallDelegate(v8::Undefined(),
                                                 handle(),
                                                 "getAcceleratorForCommandId",
@@ -90,7 +91,7 @@ bool Menu::GetAcceleratorForCommandId(int command_id,
 }
 
 bool Menu::IsItemForCommandIdDynamic(int command_id) const {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(node_isolate);
   return CallDelegate(v8::False(),
                       handle(),
                       "isItemForCommandIdDynamic",
@@ -98,7 +99,7 @@ bool Menu::IsItemForCommandIdDynamic(int command_id) const {
 }
 
 string16 Menu::GetLabelForCommandId(int command_id) const {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(node_isolate);
   return FromV8Value(CallDelegate(v8::False(),
                                   handle(),
                                   "getLabelForCommandId",
@@ -106,7 +107,7 @@ string16 Menu::GetLabelForCommandId(int command_id) const {
 }
 
 string16 Menu::GetSublabelForCommandId(int command_id) const {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(node_isolate);
   return FromV8Value(CallDelegate(v8::False(),
                                   handle(),
                                   "getSubLabelForCommandId",
@@ -114,24 +115,22 @@ string16 Menu::GetSublabelForCommandId(int command_id) const {
 }
 
 void Menu::ExecuteCommand(int command_id, int event_flags) {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(node_isolate);
   CallDelegate(v8::False(), handle(), "executeCommand", command_id);
 }
 
 // static
-v8::Handle<v8::Value> Menu::New(const v8::Arguments& args) {
-  v8::HandleScope scope;
+void Menu::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::HandleScope handle_scope(args.GetIsolate());
 
   if (!args.IsConstructCall())
     return node::ThrowError("Require constructor call");
 
   Menu::Create(args.This());
-
-  return args.This();
 }
 
 // static
-v8::Handle<v8::Value> Menu::InsertItem(const v8::Arguments& args) {
+void Menu::InsertItem(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_MEMNU_AND_CHECK;
 
   int index, command_id;
@@ -143,12 +142,10 @@ v8::Handle<v8::Value> Menu::InsertItem(const v8::Arguments& args) {
     self->model_->AddItem(command_id, label);
   else
     self->model_->InsertItemAt(index, command_id, label);
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Menu::InsertCheckItem(const v8::Arguments& args) {
+void Menu::InsertCheckItem(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_MEMNU_AND_CHECK;
 
   int index, command_id;
@@ -160,12 +157,10 @@ v8::Handle<v8::Value> Menu::InsertCheckItem(const v8::Arguments& args) {
     self->model_->AddCheckItem(command_id, label);
   else
     self->model_->InsertCheckItemAt(index, command_id, label);
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Menu::InsertRadioItem(const v8::Arguments& args) {
+void Menu::InsertRadioItem(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_MEMNU_AND_CHECK;
 
   int index, command_id, group_id;
@@ -177,12 +172,10 @@ v8::Handle<v8::Value> Menu::InsertRadioItem(const v8::Arguments& args) {
     self->model_->AddRadioItem(command_id, label, group_id);
   else
     self->model_->InsertRadioItemAt(index, command_id, label, group_id);
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Menu::InsertSeparator(const v8::Arguments& args) {
+void Menu::InsertSeparator(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_MEMNU_AND_CHECK;
 
   int index;
@@ -193,12 +186,10 @@ v8::Handle<v8::Value> Menu::InsertSeparator(const v8::Arguments& args) {
     self->model_->AddSeparator(ui::NORMAL_SEPARATOR);
   else
     self->model_->InsertSeparatorAt(index, ui::NORMAL_SEPARATOR);
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Menu::InsertSubMenu(const v8::Arguments& args) {
+void Menu::InsertSubMenu(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_MEMNU_AND_CHECK;
 
   int index, command_id;
@@ -215,12 +206,10 @@ v8::Handle<v8::Value> Menu::InsertSubMenu(const v8::Arguments& args) {
   else
     self->model_->InsertSubMenuAt(
         index, command_id, label, submenu->model_.get());
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Menu::SetIcon(const v8::Arguments& args) {
+void Menu::SetIcon(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_MEMNU_AND_CHECK;
 
   int index;
@@ -229,12 +218,10 @@ v8::Handle<v8::Value> Menu::SetIcon(const v8::Arguments& args) {
     return node::ThrowTypeError("Bad argument");
 
   // FIXME use webkit_glue's image decoder here.
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Menu::SetSublabel(const v8::Arguments& args) {
+void Menu::SetSublabel(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_MEMNU_AND_CHECK;
 
   int index;
@@ -243,74 +230,71 @@ v8::Handle<v8::Value> Menu::SetSublabel(const v8::Arguments& args) {
     return node::ThrowTypeError("Bad argument");
 
   self->model_->SetSublabel(index, label);
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Menu::Clear(const v8::Arguments& args) {
+void Menu::Clear(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_MEMNU_AND_CHECK;
-
   self->model_->Clear();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Menu::GetIndexOfCommandId(const v8::Arguments& args) {
+void Menu::GetIndexOfCommandId(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_MEMNU_AND_CHECK;
-  int index = args[0]->IntegerValue();
-  return v8::Integer::New(self->model_->GetIndexOfCommandId(index));
+  int index = FromV8Value(args[0]);
+  args.GetReturnValue().Set(self->model_->GetIndexOfCommandId(index));
 }
 
 // static
-v8::Handle<v8::Value> Menu::GetItemCount(const v8::Arguments& args) {
+void Menu::GetItemCount(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_MEMNU_AND_CHECK;
-  return v8::Integer::New(self->model_->GetItemCount());
+  args.GetReturnValue().Set(self->model_->GetItemCount());
 }
 
 // static
-v8::Handle<v8::Value> Menu::GetCommandIdAt(const v8::Arguments& args) {
+void Menu::GetCommandIdAt(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_MEMNU_AND_CHECK;
-  int index = args[0]->IntegerValue();
-  return v8::Integer::New(self->model_->GetCommandIdAt(index));
+  int index = FromV8Value(args[0]);
+  args.GetReturnValue().Set(self->model_->GetCommandIdAt(index));
 }
 
 // static
-v8::Handle<v8::Value> Menu::GetLabelAt(const v8::Arguments& args) {
+void Menu::GetLabelAt(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_MEMNU_AND_CHECK;
-  int index = args[0]->IntegerValue();
-  return ToV8Value(self->model_->GetLabelAt(index));
+  int index = FromV8Value(args[0]);
+  args.GetReturnValue().Set(ToV8Value(self->model_->GetLabelAt(index)));
 }
 
 // static
-v8::Handle<v8::Value> Menu::GetSublabelAt(const v8::Arguments& args) {
+void Menu::GetSublabelAt(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_MEMNU_AND_CHECK;
-  int index = args[0]->IntegerValue();
-  return ToV8Value(self->model_->GetSublabelAt(index));
+  int index = FromV8Value(args[0]);
+  args.GetReturnValue().Set(ToV8Value(self->model_->GetSublabelAt(index)));
 }
 
 // static
-v8::Handle<v8::Value> Menu::IsItemCheckedAt(const v8::Arguments& args) {
+void Menu::IsItemCheckedAt(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_MEMNU_AND_CHECK;
-  int index = args[0]->IntegerValue();
-  return v8::Boolean::New(self->model_->IsItemCheckedAt(index));
+  int index = FromV8Value(args[0]);
+  args.GetReturnValue().Set(self->model_->IsItemCheckedAt(index));
 }
 
 // static
-v8::Handle<v8::Value> Menu::IsEnabledAt(const v8::Arguments& args) {
+void Menu::IsEnabledAt(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_MEMNU_AND_CHECK;
-  return v8::Boolean::New(self->model_->IsEnabledAt(args[0]->IntegerValue()));
+  int index = FromV8Value(args[0]);
+  args.GetReturnValue().Set(self->model_->IsEnabledAt(index));
 }
 
 // static
-v8::Handle<v8::Value> Menu::IsVisibleAt(const v8::Arguments& args) {
+void Menu::IsVisibleAt(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_MEMNU_AND_CHECK;
-  return v8::Boolean::New(self->model_->IsVisibleAt(args[0]->IntegerValue()));
+  int index = FromV8Value(args[0]);
+  args.GetReturnValue().Set(self->model_->IsVisibleAt(index));
 }
 
 // static
-v8::Handle<v8::Value> Menu::Popup(const v8::Arguments& args) {
+void Menu::Popup(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_MEMNU_AND_CHECK;
 
   atom::NativeWindow* window;
@@ -318,12 +302,11 @@ v8::Handle<v8::Value> Menu::Popup(const v8::Arguments& args) {
     return node::ThrowTypeError("Bad argument");
 
   self->Popup(window);
-  return v8::Undefined();
 }
 
 // static
 void Menu::Initialize(v8::Handle<v8::Object> target) {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(node_isolate);
 
   v8::Local<v8::FunctionTemplate> t(v8::FunctionTemplate::New(Menu::New));
   t->InstanceTemplate()->SetInternalFieldCount(1);

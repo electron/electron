@@ -11,6 +11,7 @@
 #define BASE_MAC_FOUNDATION_UTIL_H_
 
 #include "base/mac/mac_util.h"
+#include "base/mac/scoped_nsobject.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 #import "browser/ui/atom_event_processing_window.h"
@@ -490,7 +491,7 @@ void NativeWindowMac::InstallDraggableRegionViews() {
   // Note that [webView subviews] returns the view's mutable internal array and
   // it should be copied to avoid mutating the original array while enumerating
   // it.
-  scoped_nsobject<NSArray> subviews([[webView subviews] copy]);
+  base::scoped_nsobject<NSArray> subviews([[webView subviews] copy]);
   for (NSView* subview in subviews.get())
     if ([subview isKindOfClass:[ControlRegionView class]])
       [subview removeFromSuperview];
@@ -501,7 +502,7 @@ void NativeWindowMac::InstallDraggableRegionViews() {
            system_drag_exclude_areas_.begin();
        iter != system_drag_exclude_areas_.end();
        ++iter) {
-    scoped_nsobject<NSView> controlRegion(
+    base::scoped_nsobject<NSView> controlRegion(
         [[ControlRegionView alloc] initWithShellWindow:this]);
     [controlRegion setFrame:NSMakeRect(iter->x(),
                                        webViewHeight - iter->bottom(),

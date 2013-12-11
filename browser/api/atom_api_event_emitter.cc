@@ -8,9 +8,8 @@
 
 #include "base/logging.h"
 #include "browser/api/atom_api_event.h"
-#include "common/v8_conversions.h"
-#include "vendor/node/src/node.h"
-#include "vendor/node/src/node_internals.h"
+#include "common/v8/node_common.h"
+#include "common/v8/native_type_conversions.h"
 
 namespace atom {
 
@@ -24,7 +23,8 @@ EventEmitter::EventEmitter(v8::Handle<v8::Object> wrapper) {
       v8::String::New("ATOM_BROWSER_INTERNAL_NEW"),
       wrapper,
   };
-  node::MakeCallback(node::process, "emit", 2, args);
+  node::Environment* env = node::Environment::GetCurrent(node_isolate);
+  node::MakeCallback(env->process_object(), "emit", 2, args);
 }
 
 EventEmitter::~EventEmitter() {
@@ -36,7 +36,7 @@ bool EventEmitter::Emit(const std::string& name) {
 }
 
 bool EventEmitter::Emit(const std::string& name, base::ListValue* args) {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(node_isolate);
 
   v8::Handle<v8::Context> context = v8::Context::GetCurrent();
   scoped_ptr<content::V8ValueConverter> converter(new V8ValueConverterImpl);

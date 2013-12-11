@@ -4,15 +4,13 @@
 
 #include "browser/atom_browser_main_parts.h"
 
-#include "base/power_monitor/power_monitor.h"
 #include "browser/api/atom_browser_bindings.h"
 #include "browser/atom_browser_client.h"
 #include "browser/atom_browser_context.h"
 #include "browser/browser.h"
 #include "common/node_bindings.h"
-#include "net/proxy/proxy_resolver_v8.h"
-#include "vendor/node/src/node.h"
-#include "vendor/node/src/node_internals.h"
+
+#include "common/v8/node_common.h"
 
 namespace atom {
 
@@ -43,19 +41,14 @@ brightray::BrowserContext* AtomBrowserMainParts::CreateBrowserContext() {
 void AtomBrowserMainParts::PostEarlyInitialization() {
   brightray::BrowserMainParts::PostEarlyInitialization();
 
-#if defined(OS_MACOSX)
-  base::PowerMonitor::AllocateSystemIOPorts();
-#endif
+  v8::HandleScope handle_scope(node_isolate);
 
   node_bindings_->Initialize();
 
   // Wrap whole process in one global context.
-  node::g_context->Enter();
+  global_env->context()->Enter();
 
-  atom_bindings_->BindTo(node::process);
-
-  node_bindings_->Load();
-
+  atom_bindings_->BindTo(global_env->process_object());
   atom_bindings_->AfterLoad();
 }
 
@@ -65,8 +58,8 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   brightray::BrowserMainParts::PreMainMessageLoopRun();
 
   {
-    v8::HandleScope scope;
-    v8::Context::Scope context_scope(node::g_context);
+    v8::HandleScope handle_scope(node_isolate);
+    v8::Context::Scope context_scope(global_env->context());
 
     v8::Handle<v8::Value> args;
     node::MakeCallback(atom_bindings_->browser_main_parts(),
@@ -86,12 +79,6 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   Browser::Get()->WillFinishLaunching();
   Browser::Get()->DidFinishLaunching();
 #endif
-}
-
-int AtomBrowserMainParts::PreCreateThreads() {
-  // TODO(zcbenz): Calling CreateIsolate() on Windows when updated to Chrome30.
-  net::ProxyResolverV8::RememberDefaultIsolate();
-  return 0;
 }
 
 }  // namespace atom

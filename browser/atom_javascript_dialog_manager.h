@@ -26,7 +26,9 @@ class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
       const string16& message_text,
       bool is_reload,
       const DialogClosedCallback& callback) OVERRIDE;
-  virtual void ResetJavaScriptState(
+  virtual void CancelActiveAndPendingDialogs(
+      content::WebContents* web_contents) OVERRIDE {}
+  virtual void WebContentsDestroyed(
       content::WebContents* web_contents) OVERRIDE {}
 };
 

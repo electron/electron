@@ -6,7 +6,7 @@
 
 #include "browser/native_window_win.h"
 #include "browser/ui/win/menu_2.h"
-#include "common/v8_conversions.h"
+#include "common/v8/native_type_conversions.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/screen.h"
 
@@ -28,8 +28,8 @@ void MenuWin::Popup(NativeWindow* native_window) {
 }
 
 // static
-v8::Handle<v8::Value> Menu::AttachToWindow(const v8::Arguments& args) {
-  v8::HandleScope scope;
+void Menu::AttachToWindow(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::HandleScope handle_scope(args.GetIsolate());
 
   Menu* self = ObjectWrap::Unwrap<Menu>(args.This());
   if (self == NULL)

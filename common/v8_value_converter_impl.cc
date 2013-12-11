@@ -36,10 +36,14 @@ void V8ValueConverterImpl::SetStripNullFromObjects(bool val) {
   strip_null_from_objects_ = val;
 }
 
+void V8ValueConverterImpl::SetStrategy(Strategy* strategy) {
+  // Ignore any strategy.
+}
+
 v8::Handle<v8::Value> V8ValueConverterImpl::ToV8Value(
     const base::Value* value, v8::Handle<v8::Context> context) const {
   v8::Context::Scope context_scope(context);
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   return handle_scope.Close(ToV8ValueImpl(value));
 }
 
@@ -47,7 +51,7 @@ Value* V8ValueConverterImpl::FromV8Value(
     v8::Handle<v8::Value> val,
     v8::Handle<v8::Context> context) const {
   v8::Context::Scope context_scope(context);
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   HashToHandleMap unique_map;
   return FromV8ValueImpl(val, &unique_map);
 }

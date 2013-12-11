@@ -6,15 +6,14 @@
 
 #include "browser/native_window.h"
 #include "common/api/api_messages.h"
-#include "common/v8_conversions.h"
-
-using node::node_isolate;
+#include "common/v8/node_common.h"
+#include "common/v8/native_type_conversions.h"
 
 namespace atom {
 
 namespace api {
 
-v8::Persistent<v8::FunctionTemplate> Event::constructor_template_;
+ScopedPersistent<v8::Function> Event::constructor_template_;
 
 Event::Event()
     : sender_(NULL),
@@ -29,24 +28,20 @@ Event::~Event() {
 
 // static
 v8::Handle<v8::Object> Event::CreateV8Object() {
-  v8::HandleScope scope;
-
   if (constructor_template_.IsEmpty()) {
     v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(New);
-    constructor_template_ = v8::Persistent<v8::FunctionTemplate>::New(
-        node_isolate, t);
-    constructor_template_->InstanceTemplate()->SetInternalFieldCount(1);
-    constructor_template_->SetClassName(v8::String::NewSymbol("Event"));
+    t->InstanceTemplate()->SetInternalFieldCount(1);
+    t->SetClassName(v8::String::NewSymbol("Event"));
 
     NODE_SET_PROTOTYPE_METHOD(t, "preventDefault", PreventDefault);
     NODE_SET_PROTOTYPE_METHOD(t, "sendReply", SendReply);
     NODE_SET_PROTOTYPE_METHOD(t, "destroy", Destroy);
+
+    constructor_template_.reset(t->GetFunction());
   }
 
-  v8::Handle<v8::Object> v8_event =
-      constructor_template_->GetFunction()->NewInstance(0, NULL);
-
-  return scope.Close(v8_event);
+  v8::Handle<v8::Function> t = constructor_template_.NewHandle(node_isolate);
+  return t->NewInstance(0, NULL);
 }
 
 void Event::SetSenderAndMessage(NativeWindow* sender, IPC::Message* message) {
@@ -64,26 +59,22 @@ void Event::OnWindowClosed() {
 }
 
 // static
-v8::Handle<v8::Value> Event::New(const v8::Arguments& args) {
+void Event::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Event* event = new Event;
   event->Wrap(args.This());
-
-  return args.This();
 }
 
 // static
-v8::Handle<v8::Value> Event::PreventDefault(const v8::Arguments& args) {
+void Event::PreventDefault(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Event* event = Unwrap<Event>(args.This());
   if (event == NULL)
     return node::ThrowError("Event is already destroyed");
 
   event->prevent_default_ = true;
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Event::SendReply(const v8::Arguments& args) {
+void Event::SendReply(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Event* event = Unwrap<Event>(args.This());
   if (event == NULL)
     return node::ThrowError("Event is already destroyed");
@@ -97,14 +88,11 @@ v8::Handle<v8::Value> Event::SendReply(const v8::Arguments& args) {
   event->sender_->Send(event->message_);
 
   delete event;
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Event::Destroy(const v8::Arguments& args) {
+void Event::Destroy(const v8::FunctionCallbackInfo<v8::Value>& args) {
   delete Unwrap<Event>(args.This());
-  return v8::Undefined();
 }
 
 }  // namespace api

@@ -165,7 +165,9 @@
       'common/platform_util_mac.mm',
       'common/platform_util_win.cc',
       'common/swap_or_assign.h',
-      'common/v8_conversions.h',
+      'common/v8/node_common.h',
+      'common/v8/scoped_persistent.h',
+      'common/v8/native_type_conversions.h',
       'common/v8_value_converter_impl.cc',
       'common/v8_value_converter_impl.h',
       'renderer/api/atom_api_renderer_ipc.cc',
@@ -328,6 +330,8 @@
         'vendor',
         # The `node.h` is using `#include"v8.h"`.
         'vendor/brightray/vendor/download/libchromiumcontent/src/v8/include',
+        # The `node.h` is using `#include"ares.h"`.
+        'vendor/node/deps/cares/include',
       ],
       'direct_dependent_settings': {
         'include_dirs': [

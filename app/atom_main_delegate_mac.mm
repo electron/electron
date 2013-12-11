@@ -45,22 +45,4 @@ void AtomMainDelegate::OverrideChildProcessPath() {
   PathService::Override(content::CHILD_PROCESS_EXE, helper_path);
 }
 
-void AtomMainDelegate::SetProcessName() {
-  const auto& command_line = *CommandLine::ForCurrentProcess();
-  auto process_type = command_line.GetSwitchValueASCII(switches::kProcessType);
-  std::string suffix;
-  if (process_type == switches::kRendererProcess)
-    suffix = "Renderer";
-  else if (process_type == switches::kPluginProcess ||
-           process_type == switches::kPpapiPluginProcess)
-    suffix = "Plug-In Host";
-  else if (process_type == switches::kUtilityProcess)
-    suffix = "Utility";
-  else
-    return;
-
-  base::mac::SetProcessName(base::mac::NSToCFCast(base::SysUTF8ToNSString(
-      brightray::GetApplicationName() + " " + suffix)));
-}
-
 }  // namespace atom

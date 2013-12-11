@@ -133,7 +133,7 @@ int EventFlagsFromNSEvent(NSEvent* event) {
             fromModel:(ui::MenuModel*)model {
   string16 label16 = model->GetLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
-  scoped_nsobject<NSMenuItem> item(
+  base::scoped_nsobject<NSMenuItem> item(
       [[NSMenuItem alloc] initWithTitle:label
                                  action:@selector(itemSelected:)
                           keyEquivalent:@""]);

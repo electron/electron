@@ -17,11 +17,11 @@ class Shell {
   static void Initialize(v8::Handle<v8::Object> target);
 
  private:
-  static v8::Handle<v8::Value> ShowItemInFolder(const v8::Arguments& args);
-  static v8::Handle<v8::Value> OpenItem(const v8::Arguments& args);
-  static v8::Handle<v8::Value> OpenExternal(const v8::Arguments& args);
-  static v8::Handle<v8::Value> MoveItemToTrash(const v8::Arguments& args);
-  static v8::Handle<v8::Value> Beep(const v8::Arguments& args);
+  static void ShowItemInFolder(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void OpenItem(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void OpenExternal(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void MoveItemToTrash(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void Beep(const v8::FunctionCallbackInfo<v8::Value>& args);
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(Shell);
 };

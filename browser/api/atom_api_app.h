@@ -33,24 +33,24 @@ class App : public EventEmitter,
   virtual void OnFinishLaunching() OVERRIDE;
 
  private:
-  static v8::Handle<v8::Value> New(const v8::Arguments& args);
+  static void New(const v8::FunctionCallbackInfo<v8::Value>& args);
 
-  static v8::Handle<v8::Value> Quit(const v8::Arguments& args);
-  static v8::Handle<v8::Value> Exit(const v8::Arguments& args);
-  static v8::Handle<v8::Value> Terminate(const v8::Arguments& args);
-  static v8::Handle<v8::Value> Focus(const v8::Arguments& args);
-  static v8::Handle<v8::Value> GetVersion(const v8::Arguments& args);
-  static v8::Handle<v8::Value> SetVersion(const v8::Arguments& args);
-  static v8::Handle<v8::Value> GetName(const v8::Arguments& args);
-  static v8::Handle<v8::Value> SetName(const v8::Arguments& args);
-  static v8::Handle<v8::Value> AppendSwitch(const v8::Arguments& args);
-  static v8::Handle<v8::Value> AppendArgument(const v8::Arguments& args);
+  static void Quit(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void Exit(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void Terminate(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void Focus(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void GetVersion(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void SetVersion(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void GetName(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void SetName(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void AppendSwitch(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void AppendArgument(const v8::FunctionCallbackInfo<v8::Value>& args);
 
 #if defined(OS_MACOSX)
-  static v8::Handle<v8::Value> DockBounce(const v8::Arguments& args);
-  static v8::Handle<v8::Value> DockCancelBounce(const v8::Arguments& args);
-  static v8::Handle<v8::Value> DockSetBadgeText(const v8::Arguments& args);
-  static v8::Handle<v8::Value> DockGetBadgeText(const v8::Arguments& args);
+  static void DockBounce(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void DockCancelBounce(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void DockSetBadgeText(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void DockGetBadgeText(const v8::FunctionCallbackInfo<v8::Value>& args);
 #endif  // defined(OS_MACOSX)
 
   DISALLOW_COPY_AND_ASSIGN(App);

@@ -24,7 +24,7 @@ void SetupDialog(NSSavePanel* dialog,
   NSString* default_dir = nil;
   NSString* default_filename = nil;
   if (!default_path.empty()) {
-    if (file_util::DirectoryExists(default_path)) {
+    if (base::DirectoryExists(default_path)) {
       default_dir = base::SysUTF8ToNSString(default_path.value());
     } else {
       default_dir = base::SysUTF8ToNSString(default_path.DirName().value());

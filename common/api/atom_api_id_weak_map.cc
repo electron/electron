@@ -5,7 +5,11 @@
 
 #include "common/api/atom_api_id_weak_map.h"
 
+#include <algorithm>
+
 #include "base/logging.h"
+#include "common/v8/native_type_conversions.h"
+#include "common/v8/node_common.h"
 
 namespace atom {
 
@@ -16,29 +20,17 @@ IDWeakMap::IDWeakMap()
 }
 
 IDWeakMap::~IDWeakMap() {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-
-  auto copied_map = map_;
-  for (auto el = copied_map.begin(); el != copied_map.end(); ++el)
-    Erase(isolate, el->first);
 }
 
 bool IDWeakMap::Has(int key) const {
   return map_.find(key) != map_.end();
 }
 
-void IDWeakMap::Erase(v8::Isolate* isolate, int key) {
-  if (!Has(key)) {
+void IDWeakMap::Erase(int key) {
+  if (Has(key))
+    map_.erase(key);
+  else
     LOG(WARNING) << "Object with key " << key << " is being GCed for twice.";
-    return;
-  }
-
-  v8::Persistent<v8::Value> value = map_[key];
-  value.ClearWeak(isolate);
-  value.Dispose(isolate);
-  value.Clear();
-
-  map_.erase(key);
 }
 
 int IDWeakMap::GetNextID() {
@@ -47,104 +39,93 @@ int IDWeakMap::GetNextID() {
 
 // static
 void IDWeakMap::WeakCallback(v8::Isolate* isolate,
-                             v8::Persistent<v8::Value> value,
-                             void *data) {
-  v8::HandleScope scope;
-
-  IDWeakMap* obj = static_cast<IDWeakMap*>(data);
-  int key = value->ToObject()->GetHiddenValue(
-      v8::String::New("IDWeakMapKey"))->IntegerValue();
-
-  obj->Erase(isolate, key);
+                             v8::Persistent<v8::Object>* value,
+                             IDWeakMap* self) {
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Object> local = v8::Local<v8::Object>::New(isolate, *value);
+  self->Erase(
+      FromV8Value(local->GetHiddenValue(v8::String::New("IDWeakMapKey"))));
 }
 
 // static
-v8::Handle<v8::Value> IDWeakMap::New(const v8::Arguments& args) {
-  IDWeakMap* obj = new IDWeakMap();
-  obj->Wrap(args.This());
-  return args.This();
+void IDWeakMap::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  (new IDWeakMap)->Wrap(args.This());
 }
 
 // static
-v8::Handle<v8::Value> IDWeakMap::Add(const v8::Arguments& args) {
+void IDWeakMap::Add(const v8::FunctionCallbackInfo<v8::Value>& args) {
   if (!args[0]->IsObject())
     return node::ThrowTypeError("Bad argument");
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  IDWeakMap* obj = ObjectWrap::Unwrap<IDWeakMap>(args.This());
-  int key = obj->GetNextID();
+  IDWeakMap* self = Unwrap<IDWeakMap>(args.This());
 
-  v8::Handle<v8::Value> v8_key = v8::Integer::New(key);
-  v8::Persistent<v8::Value> value =
-      v8::Persistent<v8::Value>::New(isolate, args[0]);
+  int key = self->GetNextID();
+  v8::Local<v8::Object> v8_value = args[0]->ToObject();
+  v8_value->SetHiddenValue(v8::String::New("IDWeakMapKey"), ToV8Value(key));
 
-  value->ToObject()->SetHiddenValue(v8::String::New("IDWeakMapKey"), v8_key);
-  value.MakeWeak(isolate, obj, WeakCallback);
-  obj->map_[key] = value;
+  RefCountedV8Object& value = self->map_[key];
+  value->reset(v8_value);
+  value->MakeWeak(self, WeakCallback);
 
-  return v8_key;
+  args.GetReturnValue().Set(key);
 }
 
 // static
-v8::Handle<v8::Value> IDWeakMap::Get(const v8::Arguments& args) {
-  if (!args[0]->IsNumber())
+void IDWeakMap::Get(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  int key;
+  if (!FromV8Arguments(args, &key))
     return node::ThrowTypeError("Bad argument");
 
-  IDWeakMap* obj = ObjectWrap::Unwrap<IDWeakMap>(args.This());
-
-  int key = args[0]->IntegerValue();
-  if (!obj->Has(key))
+  IDWeakMap* self = Unwrap<IDWeakMap>(args.This());
+  if (!self->Has(key))
     return node::ThrowError("Invalid key");
 
-  return obj->map_[key];
+  args.GetReturnValue().Set(self->map_[key]->NewHandle());
 }
 
 // static
-v8::Handle<v8::Value> IDWeakMap::Has(const v8::Arguments& args) {
-  if (!args[0]->IsNumber())
+void IDWeakMap::Has(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  int key;
+  if (!FromV8Arguments(args, &key))
     return node::ThrowTypeError("Bad argument");
 
-  IDWeakMap* obj = ObjectWrap::Unwrap<IDWeakMap>(args.This());
-
-  int key = args[0]->IntegerValue();
-  return v8::Boolean::New(obj->Has(key));
+  IDWeakMap* self = Unwrap<IDWeakMap>(args.This());
+  args.GetReturnValue().Set(self->Has(key));
 }
 
 // static
-v8::Handle<v8::Value> IDWeakMap::Keys(const v8::Arguments& args) {
-  IDWeakMap* obj = ObjectWrap::Unwrap<IDWeakMap>(args.This());
+void IDWeakMap::Keys(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  IDWeakMap* self = Unwrap<IDWeakMap>(args.This());
 
-  v8::Handle<v8::Array> keys = v8::Array::New(obj->map_.size());
+  v8::Local<v8::Array> keys = v8::Array::New(self->map_.size());
 
   int i = 0;
-  for (auto el = obj->map_.begin(); el != obj->map_.end(); ++el) {
-    keys->Set(i, v8::Integer::New(el->first));
+  for (auto el = self->map_.begin(); el != self->map_.end(); ++el) {
+    keys->Set(i, ToV8Value(el->first));
     ++i;
   }
 
-  return keys;
+  args.GetReturnValue().Set(keys);
 }
 
 // static
-v8::Handle<v8::Value> IDWeakMap::Remove(const v8::Arguments& args) {
-  if (!args[0]->IsNumber())
+void IDWeakMap::Remove(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  int key;
+  if (!FromV8Arguments(args, &key))
     return node::ThrowTypeError("Bad argument");
 
-  IDWeakMap* obj = ObjectWrap::Unwrap<IDWeakMap>(args.This());
-
-  int key = args[0]->IntegerValue();
-  if (!obj->Has(key))
+  IDWeakMap* self = Unwrap<IDWeakMap>(args.This());
+  if (!self->Has(key))
     return node::ThrowError("Invalid key");
 
-  obj->Erase(v8::Isolate::GetCurrent(), key);
-  return v8::Undefined();
+  self->Erase(key);
 }
 
 // static
 void IDWeakMap::Initialize(v8::Handle<v8::Object> target) {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(node_isolate);
 
-  v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(IDWeakMap::New);
+  v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(New);
   t->InstanceTemplate()->SetInternalFieldCount(1);
   t->SetClassName(v8::String::NewSymbol("IDWeakMap"));
 

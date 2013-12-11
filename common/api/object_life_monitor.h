@@ -7,7 +7,7 @@
 #define ATOM_COMMON_API_OBJECT_LIFE_MONITOR_H_
 
 #include "base/basictypes.h"
-#include "v8/include/v8.h"
+#include "common/v8/scoped_persistent.h"
 
 namespace atom {
 
@@ -18,13 +18,12 @@ class ObjectLifeMonitor {
 
  private:
   ObjectLifeMonitor();
-  virtual ~ObjectLifeMonitor();
 
   static void WeakCallback(v8::Isolate* isolate,
-                           v8::Persistent<v8::Value> value,
-                           void *data);
+                           v8::Persistent<v8::Object>* value,
+                           ObjectLifeMonitor* self);
 
-  v8::Persistent<v8::Object> handle_;
+  ScopedPersistent<v8::Object> handle_;
 
   DISALLOW_COPY_AND_ASSIGN(ObjectLifeMonitor);
 };

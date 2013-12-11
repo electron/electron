@@ -24,11 +24,8 @@ class NodeBindings {
 
   virtual ~NodeBindings();
 
-  // Setup V8, libuv and the process object.
+  // Setup V8, libuv and the process object, then load the node.js script.
   virtual void Initialize();
-
-  // Load node.js main script.
-  virtual void Load();
 
   // Load cefode.js script under web frame.
   virtual void BindTo(WebKit::WebFrame* frame);

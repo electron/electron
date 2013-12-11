@@ -31,6 +31,7 @@ class V8ValueConverterImpl : public content::V8ValueConverter {
   virtual void SetRegExpAllowed(bool val) OVERRIDE;
   virtual void SetFunctionAllowed(bool val) OVERRIDE;
   virtual void SetStripNullFromObjects(bool val) OVERRIDE;
+  virtual void SetStrategy(Strategy* strategy) OVERRIDE;
   virtual v8::Handle<v8::Value> ToV8Value(
       const base::Value* value,
       v8::Handle<v8::Context> context) const OVERRIDE;

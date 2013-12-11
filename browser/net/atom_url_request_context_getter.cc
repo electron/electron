@@ -4,7 +4,8 @@
 
 #include "browser/net/atom_url_request_context_getter.h"
 
-#include "base/string_util.h"
+#include "base/strings/string_util.h"
+#include "base/threading/sequenced_worker_pool.h"
 #include "base/threading/worker_pool.h"
 #include "browser/net/atom_url_request_job_factory.h"
 #include "content/public/browser/browser_thread.h"
@@ -36,8 +37,8 @@ using content::BrowserThread;
 
 AtomURLRequestContextGetter::AtomURLRequestContextGetter(
     const base::FilePath& base_path,
-    MessageLoop* io_loop,
-    MessageLoop* file_loop,
+    base::MessageLoop* io_loop,
+    base::MessageLoop* file_loop,
     scoped_ptr<brightray::NetworkDelegate> network_delegate,
     content::ProtocolHandlerMap* protocol_handlers)
     : base_path_(base_path),
@@ -74,6 +75,7 @@ net::URLRequestContext* AtomURLRequestContextGetter::GetURLRequestContext() {
         base_path_.Append(FILE_PATH_LITERAL("Cookies")),
         false,
         nullptr,
+        nullptr,
         nullptr));
     storage_->set_server_bound_cert_service(new net::ServerBoundCertService(
         new net::DefaultServerBoundCertStore(NULL),
@@ -98,7 +100,9 @@ net::URLRequestContext* AtomURLRequestContextGetter::GetURLRequestContext() {
     storage_->set_ssl_config_service(new net::SSLConfigServiceDefaults);
     storage_->set_http_auth_handler_factory(
         net::HttpAuthHandlerFactory::CreateDefault(host_resolver.get()));
-    storage_->set_http_server_properties(new net::HttpServerPropertiesImpl);
+    scoped_ptr<net::HttpServerProperties> server_properties(
+        new net::HttpServerPropertiesImpl);
+    storage_->set_http_server_properties(server_properties.Pass());
 
     base::FilePath cache_path = base_path_.Append(FILE_PATH_LITERAL("Cache"));
     net::HttpCache::DefaultBackend* main_backend =
@@ -147,10 +151,15 @@ net::URLRequestContext* AtomURLRequestContextGetter::GetURLRequestContext() {
     }
     protocol_handlers_.clear();
 
+    scoped_ptr<net::FileProtocolHandler> file_protocol_handler(
+        new net::FileProtocolHandler(
+            content::BrowserThread::GetBlockingPool()->
+                GetTaskRunnerWithShutdownBehavior(
+                    base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
     job_factory_->SetProtocolHandler(chrome::kDataScheme,
                                      new net::DataProtocolHandler);
     job_factory_->SetProtocolHandler(chrome::kFileScheme,
-                                     new net::FileProtocolHandler);
+                                     file_protocol_handler.release());
     storage_->set_job_factory(job_factory_);
   }
 

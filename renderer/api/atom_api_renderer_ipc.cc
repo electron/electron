@@ -5,11 +5,12 @@
 #include "renderer/api/atom_api_renderer_ipc.h"
 
 #include "common/api/api_messages.h"
-#include "common/v8_conversions.h"
+#include "common/v8/native_type_conversions.h"
 #include "content/public/renderer/render_view.h"
-#include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
-#include "third_party/WebKit/Source/WebKit/chromium/public/WebView.h"
-#include "vendor/node/src/node.h"
+#include "third_party/WebKit/public/web/WebFrame.h"
+#include "third_party/WebKit/public/web/WebView.h"
+
+#include "common/v8/node_common.h"
 
 using content::RenderView;
 using WebKit::WebFrame;
@@ -36,9 +37,7 @@ RenderView* GetCurrentRenderView() {
 }  // namespace
 
 // static
-v8::Handle<v8::Value> RendererIPC::Send(const v8::Arguments& args) {
-  v8::HandleScope scope;
-
+void RendererIPC::Send(const v8::FunctionCallbackInfo<v8::Value>& args) {
   string16 channel;
   scoped_ptr<base::Value> arguments;
   if (!FromV8Arguments(args, &channel, &arguments))
@@ -46,7 +45,7 @@ v8::Handle<v8::Value> RendererIPC::Send(const v8::Arguments& args) {
 
   RenderView* render_view = GetCurrentRenderView();
   if (render_view == NULL)
-    return v8::Undefined();
+    return;
 
   bool success = render_view->Send(new AtomViewHostMsg_Message(
       render_view->GetRoutingID(),
@@ -55,14 +54,10 @@ v8::Handle<v8::Value> RendererIPC::Send(const v8::Arguments& args) {
 
   if (!success)
     return node::ThrowError("Unable to send AtomViewHostMsg_Message");
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> RendererIPC::SendSync(const v8::Arguments& args) {
-  v8::HandleScope scope;
-
+void RendererIPC::SendSync(const v8::FunctionCallbackInfo<v8::Value>& args) {
   string16 channel;
   scoped_ptr<base::Value> arguments;
   if (!FromV8Arguments(args, &channel, &arguments))
@@ -70,7 +65,7 @@ v8::Handle<v8::Value> RendererIPC::SendSync(const v8::Arguments& args) {
 
   RenderView* render_view = GetCurrentRenderView();
   if (render_view == NULL)
-    return v8::Undefined();
+    return;
 
   string16 json;
   IPC::SyncMessage* message = new AtomViewHostMsg_Message_Sync(
@@ -85,13 +80,15 @@ v8::Handle<v8::Value> RendererIPC::SendSync(const v8::Arguments& args) {
   if (!success)
     return node::ThrowError("Unable to send AtomViewHostMsg_Message_Sync");
 
-  return scope.Close(ToV8Value(json));
+  args.GetReturnValue().Set(ToV8Value(json));
 }
 
 // static
 void RendererIPC::Initialize(v8::Handle<v8::Object> target) {
-  node::SetMethod(target, "send", Send);
-  node::SetMethod(target, "sendSync", SendSync);
+  v8::HandleScope handle_scope(node_isolate);
+
+  NODE_SET_METHOD(target, "send", Send);
+  NODE_SET_METHOD(target, "sendSync", SendSync);
 }
 
 }  // namespace api

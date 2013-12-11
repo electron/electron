@@ -7,8 +7,9 @@
 #include "base/values.h"
 #include "base/command_line.h"
 #include "browser/browser.h"
-#include "common/v8_conversions.h"
-#include "vendor/node/src/node.h"
+#include "common/v8/native_type_conversions.h"
+
+#include "common/v8/node_common.h"
 
 namespace atom {
 
@@ -52,93 +53,65 @@ void App::OnFinishLaunching() {
 }
 
 // static
-v8::Handle<v8::Value> App::New(const v8::Arguments& args) {
-  v8::HandleScope scope;
+void App::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::HandleScope scope(args.GetIsolate());
 
   if (!args.IsConstructCall())
     return node::ThrowError("Require constructor call");
 
   new App(args.This());
-
-  return args.This();
 }
 
 // static
-v8::Handle<v8::Value> App::Quit(const v8::Arguments& args) {
-  v8::HandleScope scope;
-
+void App::Quit(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Browser::Get()->Quit();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> App::Exit(const v8::Arguments& args) {
-  v8::HandleScope scope;
-
+void App::Exit(const v8::FunctionCallbackInfo<v8::Value>& args) {
   exit(args[0]->IntegerValue());
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> App::Terminate(const v8::Arguments& args) {
-  v8::HandleScope scope;
-
+void App::Terminate(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Browser::Get()->Terminate();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> App::Focus(const v8::Arguments& args) {
-  v8::HandleScope scope;
-
+void App::Focus(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Browser::Get()->Focus();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> App::GetVersion(const v8::Arguments& args) {
-  return ToV8Value(Browser::Get()->GetVersion());
+void App::GetVersion(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  args.GetReturnValue().Set(ToV8Value(Browser::Get()->GetVersion()));
 }
 
 // static
-v8::Handle<v8::Value> App::SetVersion(const v8::Arguments& args) {
-  v8::HandleScope scope;
-
+void App::SetVersion(const v8::FunctionCallbackInfo<v8::Value>& args) {
   std::string version;
   if (!FromV8Arguments(args, &version))
     return node::ThrowError("Bad argument");
 
   Browser::Get()->SetVersion(version);
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> App::GetName(const v8::Arguments& args) {
-  return ToV8Value(Browser::Get()->GetName());
+void App::GetName(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  return args.GetReturnValue().Set(ToV8Value(Browser::Get()->GetName()));
 }
 
 // static
-v8::Handle<v8::Value> App::SetName(const v8::Arguments& args) {
-  v8::HandleScope scope;
-
+void App::SetName(const v8::FunctionCallbackInfo<v8::Value>& args) {
   std::string name;
   if (!FromV8Arguments(args, &name))
     return node::ThrowError("Bad argument");
 
   Browser::Get()->SetName(name);
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> App::AppendSwitch(const v8::Arguments& args) {
-  v8::HandleScope scope;
-
+void App::AppendSwitch(const v8::FunctionCallbackInfo<v8::Value>& args) {
   std::string switch_string;
   if (!FromV8Arguments(args, &switch_string))
     return node::ThrowError("Bad argument");
@@ -150,27 +123,21 @@ v8::Handle<v8::Value> App::AppendSwitch(const v8::Arguments& args) {
     CommandLine::ForCurrentProcess()->AppendSwitchASCII(
         switch_string, value);
   }
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> App::AppendArgument(const v8::Arguments& args) {
-  v8::HandleScope scope;
-
+void App::AppendArgument(const v8::FunctionCallbackInfo<v8::Value>& args) {
   std::string value;
   if (!FromV8Arguments(args, &value))
     return node::ThrowError("Bad argument");
 
   CommandLine::ForCurrentProcess()->AppendArg(value);
-
-  return v8::Undefined();
 }
 
 #if defined(OS_MACOSX)
 
 // static
-v8::Handle<v8::Value> App::DockBounce(const v8::Arguments& args) {
+void App::DockBounce(const v8::FunctionCallbackInfo<v8::Value>& args) {
   std::string type;
   if (!FromV8Arguments(args, &type))
     return node::ThrowError("Bad argument");
@@ -184,34 +151,32 @@ v8::Handle<v8::Value> App::DockBounce(const v8::Arguments& args) {
   else
     return node::ThrowTypeError("Invalid bounce type");
 
-  return ToV8Value(request_id);
+  args.GetReturnValue().Set(request_id);
 }
 
 // static
-v8::Handle<v8::Value> App::DockCancelBounce(const v8::Arguments& args) {
+void App::DockCancelBounce(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Browser::Get()->DockCancelBounce(FromV8Value(args[0]));
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> App::DockSetBadgeText(const v8::Arguments& args) {
+void App::DockSetBadgeText(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Browser::Get()->DockSetBadgeText(FromV8Value(args[0]));
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> App::DockGetBadgeText(const v8::Arguments& args) {
+void App::DockGetBadgeText(const v8::FunctionCallbackInfo<v8::Value>& args) {
   std::string text(Browser::Get()->DockGetBadgeText());
-  return ToV8Value(text);
+  args.GetReturnValue().Set(ToV8Value(text));
 }
 
 #endif  // defined(OS_MACOSX)
 
 // static
 void App::Initialize(v8::Handle<v8::Object> target) {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
-  v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(App::New);
+  v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(New);
   t->InstanceTemplate()->SetInternalFieldCount(1);
   t->SetClassName(v8::String::NewSymbol("Application"));
 

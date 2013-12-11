@@ -6,7 +6,12 @@
 
 #include "base/values.h"
 #include "browser/auto_updater.h"
-#include "common/v8_conversions.h"
+#include "common/v8/native_type_conversions.h"
+
+#undef CHECK
+#undef DISALLOW_COPY_AND_ASSIGN
+#include "vendor/node/src/node.h"
+#include "vendor/node/src/node_internals.h"
 
 namespace atom {
 
@@ -44,69 +49,63 @@ void AutoUpdater::ReadyForUpdateOnQuit(const std::string& version,
 }
 
 // static
-v8::Handle<v8::Value> AutoUpdater::New(const v8::Arguments& args) {
-  v8::HandleScope scope;
+void AutoUpdater::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::HandleScope handle_scope(args.GetIsolate());
 
   if (!args.IsConstructCall())
     return node::ThrowError("Require constructor call");
 
   new AutoUpdater(args.This());
-
-  return args.This();
 }
 
 // static
-v8::Handle<v8::Value> AutoUpdater::SetFeedURL(const v8::Arguments& args) {
+void AutoUpdater::SetFeedURL(const v8::FunctionCallbackInfo<v8::Value>& args) {
   auto_updater::AutoUpdater::SetFeedURL(FromV8Value(args[0]));
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> AutoUpdater::SetAutomaticallyChecksForUpdates(
-      const v8::Arguments& args) {
+void AutoUpdater::SetAutomaticallyChecksForUpdates(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
   auto_updater::AutoUpdater::SetAutomaticallyChecksForUpdates(
-      args[0]->BooleanValue());
-  return v8::Undefined();
+      FromV8Value(args[0]));
 }
 
 // static
-v8::Handle<v8::Value> AutoUpdater::SetAutomaticallyDownloadsUpdates(
-      const v8::Arguments& args) {
+void AutoUpdater::SetAutomaticallyDownloadsUpdates(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
   auto_updater::AutoUpdater::SetAutomaticallyDownloadsUpdates(
-      args[0]->BooleanValue());
-  return v8::Undefined();
+      FromV8Value(args[0]));
 }
 
 // static
-v8::Handle<v8::Value> AutoUpdater::CheckForUpdates(const v8::Arguments& args) {
+void AutoUpdater::CheckForUpdates(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
   auto_updater::AutoUpdater::CheckForUpdates();
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> AutoUpdater::CheckForUpdatesInBackground(
-      const v8::Arguments& args) {
+void AutoUpdater::CheckForUpdatesInBackground(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
   auto_updater::AutoUpdater::CheckForUpdatesInBackground();
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> AutoUpdater::ContinueUpdate(const v8::Arguments& args) {
+void AutoUpdater::ContinueUpdate(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
   AutoUpdater* self = AutoUpdater::Unwrap<AutoUpdater>(args.This());
   self->continue_update_.Run();
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> AutoUpdater::QuitAndInstall(const v8::Arguments& args) {
+void AutoUpdater::QuitAndInstall(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
   AutoUpdater* self = AutoUpdater::Unwrap<AutoUpdater>(args.This());
   self->quit_and_install_.Run();
-  return v8::Undefined();
 }
 
 // static
 void AutoUpdater::Initialize(v8::Handle<v8::Object> target) {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8::Local<v8::FunctionTemplate> t(
       v8::FunctionTemplate::New(AutoUpdater::New));

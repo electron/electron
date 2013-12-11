@@ -20,11 +20,12 @@ class AtomBindings {
   virtual void BindTo(v8::Handle<v8::Object> process);
 
  private:
-  static v8::Handle<v8::Value> Binding(const v8::Arguments& args);
-  static v8::Handle<v8::Value> Crash(const v8::Arguments& args);
-  static v8::Handle<v8::Value> ActivateUVLoop(const v8::Arguments& args);
-  static v8::Handle<v8::Value> Log(const v8::Arguments& args);
-  static v8::Handle<v8::Value> GetCurrentStackTrace(const v8::Arguments& args);
+  static void Binding(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void Crash(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void ActivateUVLoop(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void Log(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void GetCurrentStackTrace(
+      const v8::FunctionCallbackInfo<v8::Value>& args);
 
   DISALLOW_COPY_AND_ASSIGN(AtomBindings);
 };

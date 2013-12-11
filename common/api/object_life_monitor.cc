@@ -10,42 +10,29 @@ namespace atom {
 // static
 void ObjectLifeMonitor::BindTo(v8::Handle<v8::Object> target,
                                v8::Handle<v8::Value> destructor) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
   target->SetHiddenValue(v8::String::New("destructor"), destructor);
 
   ObjectLifeMonitor* olm = new ObjectLifeMonitor();
-  olm->handle_ = v8::Persistent<v8::Object>::New(isolate, target);
-  olm->handle_.MakeWeak(isolate, olm, WeakCallback);
+  olm->handle_.reset(target);
+  olm->handle_.MakeWeak(olm, WeakCallback);
 }
 
 ObjectLifeMonitor::ObjectLifeMonitor() {
 }
 
-ObjectLifeMonitor::~ObjectLifeMonitor() {
-  if (!handle_.IsEmpty()) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    handle_.ClearWeak(isolate);
-    handle_.Dispose(isolate);
-    handle_.Clear();
-  }
-}
-
 // static
 void ObjectLifeMonitor::WeakCallback(v8::Isolate* isolate,
-                                     v8::Persistent<v8::Value> value,
-                                     void *data) {
+                                     v8::Persistent<v8::Object>* value,
+                                     ObjectLifeMonitor* self) {
   // destructor.call(object, object);
   {
-    v8::HandleScope scope;
-
-    v8::Local<v8::Object> obj = value->ToObject();
-    v8::Local<v8::Value> args[] = { obj };
+    v8::HandleScope handle_scope(isolate);
+    v8::Local<v8::Object> obj = self->handle_.NewHandle();
     v8::Local<v8::Function>::Cast(obj->GetHiddenValue(
-        v8::String::New("destructor")))->Call(obj, 1, args);
+        v8::String::New("destructor")))->Call(obj, 0, NULL);
   }
 
-  ObjectLifeMonitor* obj = static_cast<ObjectLifeMonitor*>(data);
-  delete obj;
+  delete self;
 }
 
 }  // namespace atom

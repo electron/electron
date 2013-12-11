@@ -12,9 +12,9 @@
 #include "ipc/ipc_message_macros.h"
 #include "renderer/api/atom_renderer_bindings.h"
 #include "renderer/atom_renderer_client.h"
-#include "third_party/WebKit/Source/WebKit/chromium/public/WebDocument.h"
-#include "third_party/WebKit/Source/WebKit/chromium/public/WebDraggableRegion.h"
-#include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
+#include "third_party/WebKit/public/web/WebDocument.h"
+#include "third_party/WebKit/public/web/WebDraggableRegion.h"
+#include "third_party/WebKit/public/web/WebFrame.h"
 #include "v8/include/v8.h"
 
 using WebKit::WebFrame;

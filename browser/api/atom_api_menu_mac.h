@@ -21,7 +21,7 @@ class MenuMac : public Menu {
  protected:
   virtual void Popup(NativeWindow* window) OVERRIDE;
 
-  scoped_nsobject<AtomMenuController> menu_controller_;
+  base::scoped_nsobject<AtomMenuController> menu_controller_;
 
  private:
   friend class Menu;

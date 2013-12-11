@@ -7,9 +7,9 @@
 #include <string>
 
 #include "base/file_util.h"
-#include "base/message_loop.h"
-#include "base/stringprintf.h"
-#include "base/utf_string_conversions.h"
+#include "base/message_loop/message_loop.h"
+#include "base/strings/stringprintf.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
@@ -37,8 +37,7 @@
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
-#include "webkit/glue/image_decoder.h"
-#include "webkit/user_agent/user_agent_util.h"
+#include "webkit/common/user_agent/user_agent_util.h"
 
 using content::NavigationEntry;
 
@@ -165,7 +164,7 @@ void NativeWindow::CloseDevTools() {
 }
 
 bool NativeWindow::IsDevToolsOpened() {
-  return inspectable_web_contents()->IsDevToolsOpened();
+  return inspectable_web_contents()->IsDevToolsViewShowing();
 }
 
 void NativeWindow::InspectElement(int x, int y) {
@@ -193,15 +192,14 @@ bool NativeWindow::SetIcon(const std::string& str_path) {
 
   // Read the file from disk.
   std::string file_contents;
-  if (path.empty() || !file_util::ReadFileToString(path, &file_contents))
+  if (path.empty() || !base::ReadFileToString(path, &file_contents))
     return false;
 
   // Decode the bitmap using WebKit's image decoder.
   const unsigned char* data =
       reinterpret_cast<const unsigned char*>(file_contents.data());
-  webkit_glue::ImageDecoder decoder;
   scoped_ptr<SkBitmap> decoded(new SkBitmap());
-  *decoded = decoder.Decode(data, file_contents.length());
+  gfx::PNGCodec::Decode(data, file_contents.length(), decoded.get());
   if (decoded->empty())
     return false;  // Unable to decode.
 
@@ -383,6 +381,21 @@ void NativeWindow::RendererResponsive(content::WebContents* source) {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
 }
 
+void NativeWindow::RenderViewDeleted(content::RenderViewHost* rvh) {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnRenderViewDeleted(rvh->GetProcess()->GetID(),
+                                        rvh->GetRoutingID()));
+}
+
+void NativeWindow::RenderProcessGone(base::TerminationStatus status) {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererCrashed());
+}
+
+void NativeWindow::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
+  // Do nothing, we override this method just to avoid compilation error since
+  // there are two virtual functions named BeforeUnloadFired.
+}
+
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(NativeWindow, message)
@@ -395,16 +408,6 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   IPC_END_MESSAGE_MAP()
 
   return handled;
-}
-
-void NativeWindow::RenderViewDeleted(content::RenderViewHost* rvh) {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnRenderViewDeleted(rvh->GetProcess()->GetID(),
-                                        rvh->GetRoutingID()));
-}
-
-void NativeWindow::RenderViewGone(base::TerminationStatus status) {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererCrashed());
 }
 
 void NativeWindow::Observe(int type,
