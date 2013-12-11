@@ -96,6 +96,10 @@ void InspectableWebContentsImpl::ShowDevTools() {
   view_->ShowDevTools();
 }
 
+bool InspectableWebContentsImpl::IsDevToolsViewShowing() {
+  return devtools_web_contents_ && view_->IsDevToolsViewShowing();
+}
+
 void InspectableWebContentsImpl::UpdateFrontendDockSide() {
   auto javascript = base::StringPrintf(
       "InspectorFrontendAPI.setDockSide(\"%s\")", dock_side_.c_str());

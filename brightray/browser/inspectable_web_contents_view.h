@@ -13,6 +13,7 @@ class InspectableWebContentsView {
 
   virtual void ShowDevTools() = 0;
   virtual void CloseDevTools() = 0;
+  virtual bool IsDevToolsViewShowing() = 0;
   virtual bool SetDockSide(const std::string& side) = 0;
 };
 

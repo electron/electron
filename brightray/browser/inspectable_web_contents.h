@@ -22,6 +22,7 @@ class InspectableWebContents {
   virtual content::WebContents* GetWebContents() const = 0;
 
   virtual void ShowDevTools() = 0;
+  virtual bool IsDevToolsViewShowing() = 0;
 };
 
 }  // namespace brightray

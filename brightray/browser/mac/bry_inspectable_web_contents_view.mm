@@ -112,6 +112,10 @@ void SetActive(content::WebContents* web_contents, bool active) {
   [_private->splitView adjustSubviews];
 }
 
+- (BOOL)isDevToolsVisible {
+  return _private->visible;
+}
+
 - (BOOL)setDockSide:(const std::string&)side {
   if (side == "right") {
     _private->splitView.vertical = YES;

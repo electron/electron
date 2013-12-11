@@ -57,6 +57,10 @@ void InspectableWebContentsViewWin::CloseDevTools() {
   SendMessage(devtools_window_->hwnd(), WM_CLOSE, 0, 0);
 }
 
+bool InspectableWebContentsViewWin::IsDevToolsViewShowing() {
+  return devtools_window_;
+}
+
 bool InspectableWebContentsViewWin::SetDockSide(const std::string& side) {
   return false;
 }

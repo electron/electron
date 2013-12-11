@@ -10,6 +10,17 @@
 
 namespace brightray {
 
+namespace {
+
+bool IsWidgetAncestryVisible(GtkWidget* widget) {
+  GtkWidget* parent = widget;
+  while (parent && gtk_widget_get_visible(parent))
+    parent = gtk_widget_get_parent(parent);
+  return !parent;
+}
+
+}
+
 InspectableWebContentsView* CreateInspectableContentsView(
     InspectableWebContentsImpl* inspectable_web_contents) {
   return new InspectableWebContentsViewLinux(inspectable_web_contents);
@@ -153,6 +164,13 @@ void InspectableWebContentsViewLinux::CloseDevTools() {
     DCHECK(parent == devtools_window_);
     gtk_widget_hide(parent);
   }
+}
+
+bool InspectableWebContentsViewLinux::IsDevToolsViewShowing() {
+  auto devtools_web_contents =
+      inspectable_web_contents()->devtools_web_contents();
+  GtkWidget* devtools = devtools_web_contents->GetView()->GetNativeView();
+  return IsWidgetAncestryVisible(devtools);
 }
 
 bool InspectableWebContentsViewLinux::SetDockSide(const std::string& side) {

@@ -8,6 +8,7 @@ class InspectableWebContentsViewMac;
 
 - (instancetype)initWithInspectableWebContentsViewMac:(brightray::InspectableWebContentsViewMac *)inspectableWebContentsView;
 - (void)setDevToolsVisible:(BOOL)visible;
+- (BOOL)isDevToolsVisible;
 - (BOOL)setDockSide:(const std::string&)side;
 
 @end
