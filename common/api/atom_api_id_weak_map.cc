@@ -63,9 +63,8 @@ void IDWeakMap::Add(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Local<v8::Object> v8_value = args[0]->ToObject();
   v8_value->SetHiddenValue(v8::String::New("IDWeakMapKey"), ToV8Value(key));
 
-  RefCountedV8Object& value = self->map_[key];
-  value->reset(v8_value);
-  value->MakeWeak(self, WeakCallback);
+  self->map_[key] = new RefCountedPersistent<v8::Object>(v8_value);
+  self->map_[key]->MakeWeak(self, WeakCallback);
 
   args.GetReturnValue().Set(key);
 }

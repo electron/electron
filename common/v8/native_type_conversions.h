@@ -226,7 +226,7 @@ bool V8ValueCanBeConvertedTo<atom::NativeWindow*>(v8::Handle<v8::Value> value) {
 }
 
 template<> inline
-bool V8ValueCanBeConvertedTo<v8::Persistent<v8::Function>>(
+bool V8ValueCanBeConvertedTo<atom::RefCountedV8Function>(
     v8::Handle<v8::Value> value) {
   return value->IsFunction();
 }
