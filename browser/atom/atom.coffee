@@ -1,6 +1,11 @@
 fs = require 'fs'
 path = require 'path'
 
+# Restore the proces.argv.
+process.__atom_type = 'browser'
+process.resourcesPath = path.resolve process.argv[1], '..', '..', '..'
+process.argv.splice 1, 1
+
 if process.platform is 'win32'
   # Redirect node's console to use our own implementations, since node can not
   # handle output when running as GUI program.
@@ -33,41 +38,44 @@ globalPaths.push path.join process.resourcesPath, 'browser', 'api', 'lib'
 # And also common/api/lib
 globalPaths.push path.join process.resourcesPath, 'common', 'api', 'lib'
 
-# Don't quit on fatal error.
-process.on 'uncaughtException', (error) ->
-  # Show error in GUI.
-  message = error.stack ? "#{error.name}: #{error.message}"
-  require('dialog').showMessageBox
-    type: 'warning'
-    title: 'An javascript error occured in the browser'
-    message: 'uncaughtException'
-    detail: message
-    buttons: ['OK']
+# Do loading in next tick since we still need some initialize work before
+# native bindings can work.
+setImmediate ->
+  # Don't quit on fatal error.
+  process.on 'uncaughtException', (error) ->
+    # Show error in GUI.
+    message = error.stack ? "#{error.name}: #{error.message}"
+    require('dialog').showMessageBox
+      type: 'warning'
+      title: 'An javascript error occured in the browser'
+      message: 'uncaughtException'
+      detail: message
+      buttons: ['OK']
 
-# Load the RPC server.
-require './rpc-server.js'
+  # Load the RPC server.
+  require './rpc-server.js'
 
-# Now we try to load app's package.json.
-packageJson = null
+  # Now we try to load app's package.json.
+  packageJson = null
 
-packagePath = path.join process.resourcesPath, 'app'
-try
-  # First we try to load process.resourcesPath/app
-  packageJson = JSON.parse(fs.readFileSync(path.join(packagePath, 'package.json')))
-catch error
-  # If not found then we load browser/default_app
-  packagePath = path.join process.resourcesPath, 'browser', 'default_app'
-  packageJson = JSON.parse(fs.readFileSync(path.join(packagePath, 'package.json')))
+  packagePath = path.join process.resourcesPath, 'app'
+  try
+    # First we try to load process.resourcesPath/app
+    packageJson = JSON.parse(fs.readFileSync(path.join(packagePath, 'package.json')))
+  catch error
+    # If not found then we load browser/default_app
+    packagePath = path.join process.resourcesPath, 'browser', 'default_app'
+    packageJson = JSON.parse(fs.readFileSync(path.join(packagePath, 'package.json')))
 
-# Set application's version.
-app = require 'app'
-app.setVersion packageJson.version if packageJson.version?
+  # Set application's version.
+  app = require 'app'
+  app.setVersion packageJson.version if packageJson.version?
 
-# Set application's name.
-if packageJson.productName?
-  app.setName packageJson.productName
-else if packageJson.name?
-  app.setName packageJson.name
+  # Set application's name.
+  if packageJson.productName?
+    app.setName packageJson.productName
+  else if packageJson.name?
+    app.setName packageJson.name
 
-# Finally load app's main.js and transfer control to C++.
-require path.join(packagePath, packageJson.main)
+  # Finally load app's main.js and transfer control to C++.
+  require path.join(packagePath, packageJson.main)

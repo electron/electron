@@ -4,9 +4,13 @@
 
 #include "common/node_bindings.h"
 
+#include <limits.h>  // PATH_MAX
+
 #include "base/command_line.h"
 #include "base/logging.h"
 #include "base/message_loop/message_loop.h"
+#include "base/base_paths.h"
+#include "base/path_service.h"
 #include "common/v8/native_type_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/escape.h"
@@ -22,6 +26,7 @@
 
 using content::BrowserThread;
 
+// Forward declaration of internal node functions.
 namespace node {
 void Init(int* argc,
           const char** argv,
@@ -86,9 +91,29 @@ void NodeBindings::Initialize() {
 #endif
   }
 
-  // Init idle GC.
-  uv_timer_init(uv_default_loop(), &idle_timer_);
-  uv_timer_start(&idle_timer_, IdleCallback, 5000, 5000);
+  // Feed node the path to initialization script.
+  base::FilePath exec_path(str_argv[0]);
+  PathService::Get(base::FILE_EXE, &exec_path);
+  base::FilePath resources_path =
+#if defined(OS_MACOSX)
+      is_browser_ ? exec_path.DirName().DirName().Append("Resources") :
+                    exec_path.DirName().DirName().DirName().DirName().DirName()
+                             .Append("Resources");
+#else
+      exec_path.DirName().Append("resources");
+#endif
+  base::FilePath script_path =
+      resources_path.AppendASCII("browser")
+                    .AppendASCII("atom")
+                    .AppendASCII(is_browser_ ? "atom.js" : "atom-renderer.js");
+  std::string script_path_str = script_path.AsUTF8Unsafe();
+  args.insert(args.begin() + 1, script_path_str.c_str());
+
+  // Init idle GC for browser.
+  if (is_browser_) {
+    uv_timer_init(uv_default_loop(), &idle_timer_);
+    uv_timer_start(&idle_timer_, IdleCallback, 5000, 5000);
+  }
 
   // Open node's error reporting system for browser process.
   node::g_standalone_mode = is_browser_;
@@ -104,17 +129,6 @@ void NodeBindings::Initialize() {
 
   // Create environment (setup process object and load node.js).
   global_env = node::CreateEnvironment(node_isolate, argc, argv, argc, argv);
-
-  // Set the process.__atom_type.
-  {
-    v8::Context::Scope context_scope(global_env->context());
-    v8::HandleScope handle_scope(global_env->isolate());
-
-    // Tell node.js we are in browser or renderer.
-    v8::Handle<v8::String> type =
-        is_browser_ ? v8::String::New("browser") : v8::String::New("renderer");
-    global_env->process_object()->Set(v8::String::New("__atom_type"), type);
-  }
 }
 
 void NodeBindings::BindTo(WebKit::WebFrame* frame) {

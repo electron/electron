@@ -41,8 +41,6 @@ brightray::BrowserContext* AtomBrowserMainParts::CreateBrowserContext() {
 void AtomBrowserMainParts::PostEarlyInitialization() {
   brightray::BrowserMainParts::PostEarlyInitialization();
 
-  v8::HandleScope handle_scope(node_isolate);
-
   node_bindings_->Initialize();
 
   // Wrap whole process in one global context.

@@ -22,6 +22,7 @@
       'browser/api/lib/power-monitor.coffee',
       'browser/api/lib/protocol.coffee',
       'browser/atom/atom.coffee',
+      'browser/atom/atom-renderer.coffee',
       'browser/atom/objects-registry.coffee',
       'browser/atom/rpc-server.coffee',
       'common/api/lib/callbacks-registry.coffee',
