@@ -7,10 +7,12 @@
 
 #import <Cocoa/Cocoa.h>
 
+#import "ui/base/cocoa/underlay_opengl_hosting_window.h"
+
 // Override NSWindow to access unhandled keyboard events (for command
 // processing); subclassing NSWindow is the only method to do
 // this.
-@interface AtomEventProcessingWindow : NSWindow {
+@interface AtomEventProcessingWindow : UnderlayOpenGLHostingWindow {
  @private
   BOOL redispatchingEvent_;
   BOOL eventHandled_;
