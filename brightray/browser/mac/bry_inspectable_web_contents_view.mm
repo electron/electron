@@ -10,27 +10,14 @@
 
 using namespace brightray;
 
-@interface GraySplitView : NSSplitView {
-  BOOL dividerHidden_;
-}
-@property(assign, nonatomic) BOOL dividerHidden;
+@interface GraySplitView : NSSplitView
 - (NSColor*)dividerColor;
-- (CGFloat)dividerThickness;
 @end
 
-
 @implementation GraySplitView
-
-@synthesize dividerHidden = dividerHidden_;
-
 - (NSColor*)dividerColor {
   return [NSColor darkGrayColor];
 }
-
-- (CGFloat)dividerThickness {
-  return dividerHidden_ ? 0 : [super dividerThickness];
-}
-
 @end
 
 
