@@ -2,7 +2,8 @@
 
 @class BRYInspectableWebContentsViewPrivate;
 
-@interface BRYInspectableWebContentsView : NSView <NSWindowDelegate> {
+@interface BRYInspectableWebContentsView
+    : NSView<NSWindowDelegate, NSSplitViewDelegate> {
 @private
   BRYInspectableWebContentsViewPrivate *_private;
 }
