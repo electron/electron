@@ -10,10 +10,21 @@
 
 using namespace brightray;
 
+@interface GraySplitView : NSSplitView
+- (NSColor*)dividerColor;
+@end
+
+@implementation GraySplitView
+- (NSColor*)dividerColor {
+  return [NSColor darkGrayColor];
+}
+@end
+
+
 @interface BRYInspectableWebContentsViewPrivate : NSObject {
 @public
   InspectableWebContentsViewMac *inspectableWebContentsView;
-  NSSplitView *splitView;
+  GraySplitView *splitView;
   NSWindow *window;
   BOOL visible;
 }
@@ -45,7 +56,8 @@ void SetActive(content::WebContents* web_contents, bool active) {
 
   _private = [[BRYInspectableWebContentsViewPrivate alloc] init];
   _private->inspectableWebContentsView = inspectableWebContentsView;
-  _private->splitView = [[NSSplitView alloc] init];
+  _private->splitView = [[GraySplitView alloc] init];
+  _private->splitView.delegate = self;
 
   [self addSubview:_private->splitView];
   _private->splitView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
@@ -205,6 +217,12 @@ void SetActive(content::WebContents* web_contents, bool active) {
 
   [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(windowDidBecomeKey:) name:NSWindowDidBecomeKeyNotification object:newWindow];
   [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(windowDidResignKey:) name:NSWindowDidResignKeyNotification object:newWindow];
+}
+
+#pragma mark - NSSplitViewDelegate
+
+-(void)splitViewWillResizeSubviews:(NSNotification *)notification {
+  [[_private->splitView window] disableScreenUpdatesUntilFlush];
 }
 
 #pragma mark - NSWindowDelegate
