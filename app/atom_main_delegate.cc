@@ -46,9 +46,14 @@ void AtomMainDelegate::PreSandboxStartup() {
 #endif
   InitializeResourceBundle();
 
-  // Disable renderer sandbox for most of node's functions.
   CommandLine* command_line = CommandLine::ForCurrentProcess();
+
+  // Disable renderer sandbox for most of node's functions.
   command_line->AppendSwitch(switches::kNoSandbox);
+
+  // Disable accelerated compositing since it caused a lot of troubles (black
+  // devtools, screen flashes) and needed lots of effort to make it right.
+  command_line->AppendSwitch(switches::kDisableAcceleratedCompositing);
 }
 
 void AtomMainDelegate::InitializeResourceBundle() {
