@@ -329,6 +329,10 @@
       'include_dirs': [
         '.',
         'vendor',
+        # Include directories for uv and node.
+        'vendor/node/src',
+        'vendor/node/deps/http_parser',
+        'vendor/node/deps/uv/include',
         # The `node.h` is using `#include"v8.h"`.
         'vendor/brightray/vendor/download/libchromiumcontent/src/v8/include',
         # The `node.h` is using `#include"ares.h"`.
