@@ -3,9 +3,9 @@
 ## Prerequisites
 
 * Windows 7 or later
-* Visual Studio 2010 Express or Profissional
+* Visual Studio 2010 Express or Professional
   * Make sure "X64 Compilers and Tools" are installed if you use the
-    Profissional edition.
+    Professional edition.
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
 * [node.js](http://nodejs.org/)
 * [git](http://git-scm.com)
