@@ -460,7 +460,8 @@ void Window::IsLoading(const v8::FunctionCallbackInfo<v8::Value>& args) {
 }
 
 // static
-void Window::IsWaitingForResponse(const v8::FunctionCallbackInfo<v8::Value>& args) {
+void Window::IsWaitingForResponse(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
   args.GetReturnValue().Set(
       self->window_->GetWebContents()->IsWaitingForResponse());
@@ -610,7 +611,8 @@ void Window::Reload(const v8::FunctionCallbackInfo<v8::Value>& args) {
 }
 
 // static
-void Window::ReloadIgnoringCache(const v8::FunctionCallbackInfo<v8::Value>& args) {
+void Window::ReloadIgnoringCache(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   NavigationController& controller =

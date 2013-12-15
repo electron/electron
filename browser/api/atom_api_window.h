@@ -94,7 +94,8 @@ class Window : public EventEmitter,
   // APIs for WebContents.
   static void GetPageTitle(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void IsLoading(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void IsWaitingForResponse(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void IsWaitingForResponse(
+      const v8::FunctionCallbackInfo<v8::Value>& args);
   static void Stop(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void GetRoutingID(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void GetProcessID(const v8::FunctionCallbackInfo<v8::Value>& args);
@@ -111,7 +112,8 @@ class Window : public EventEmitter,
   static void GoToIndex(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void GoToOffset(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void Reload(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void ReloadIgnoringCache(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void ReloadIgnoringCache(
+      const v8::FunctionCallbackInfo<v8::Value>& args);
 
   // Called when capturePage is done.
   void OnCapturePageDone(const RefCountedV8Function& callback,

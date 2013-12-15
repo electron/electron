@@ -57,7 +57,8 @@ class Menu : public EventEmitter,
 
   static void Clear(const v8::FunctionCallbackInfo<v8::Value>& args);
 
-  static void GetIndexOfCommandId(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void GetIndexOfCommandId(
+      const v8::FunctionCallbackInfo<v8::Value>& args);
   static void GetItemCount(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void GetCommandIdAt(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void GetLabelAt(const v8::FunctionCallbackInfo<v8::Value>& args);

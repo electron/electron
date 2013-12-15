@@ -239,7 +239,8 @@ void Menu::Clear(const v8::FunctionCallbackInfo<v8::Value>& args) {
 }
 
 // static
-void Menu::GetIndexOfCommandId(const v8::FunctionCallbackInfo<v8::Value>& args) {
+void Menu::GetIndexOfCommandId(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_MEMNU_AND_CHECK;
   int index = FromV8Value(args[0]);
   args.GetReturnValue().Set(self->model_->GetIndexOfCommandId(index));
