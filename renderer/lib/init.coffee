@@ -37,3 +37,11 @@ if window.location.protocol is 'file:'
 else
   global.__filename = __filename
   global.__dirname = __dirname
+
+# Redirect window.onerror to uncaughtException.
+window.onerror = (error) ->
+  if global.process.listeners('uncaughtException').length > 0
+    global.process.emit 'uncaughtException', error
+    true
+  else
+    false
