@@ -1,4 +1,5 @@
-path = require 'path'
+path   = require 'path'
+timers = require 'timers'
 Module = require 'module'
 
 # Expose information of current process.
@@ -21,6 +22,10 @@ globalPaths.push path.join(process.resourcesPath, 'app')
 # Expose global variables.
 global.require = require
 global.module = module
+global.setImmediate = ->
+  process.activateUvLoop()
+  timers.setImmediate.apply this, arguments
+global.clearImmediate = timers.clearImmediate
 
 # Set the __filename to the path of html file if it's file:// protocol.
 if window.location.protocol is 'file:'
