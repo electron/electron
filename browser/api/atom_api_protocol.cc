@@ -188,7 +188,7 @@ void Protocol::RegisterProtocol(
     return node::ThrowTypeError("Bad argument");
 
   if (g_handlers.find(scheme) != g_handlers.end() ||
-      net::URLRequest::IsHandledProtocol(scheme))
+      GetRequestJobFactory()->IsHandledProtocol(scheme))
     return node::ThrowError("The scheme is already registered");
 
   if (AtomBrowserContext::Get()->url_request_context_getter() == NULL)
@@ -226,8 +226,11 @@ void Protocol::UnregisterProtocol(
 // static
 void Protocol::IsHandledProtocol(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
-  std::string scheme = FromV8Value(args[0]);
-  args.GetReturnValue().Set(net::URLRequest::IsHandledProtocol(scheme));
+  std::string scheme;
+  if (!FromV8Arguments(args, &scheme))
+    return node::ThrowTypeError("Bad argument");
+
+  args.GetReturnValue().Set(GetRequestJobFactory()->IsHandledProtocol(scheme));
 }
 
 // static
@@ -361,7 +364,7 @@ void Protocol::UninterceptProtocolInIO(const std::string& scheme) {
 // static
 void Protocol::Initialize(v8::Handle<v8::Object> target) {
   // Remember the protocol object, used for emitting event later.
-  g_protocol_object.reset(v8::Object::New());
+  g_protocol_object.reset(target);
 
   NODE_SET_METHOD(target, "registerProtocol", RegisterProtocol);
   NODE_SET_METHOD(target, "unregisterProtocol", UnregisterProtocol);
