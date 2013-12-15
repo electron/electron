@@ -2,7 +2,7 @@ assert = require 'assert'
 fs     = require 'fs'
 path   = require 'path'
 
-describe 'third-party modules', ->
+describe 'third-party module', ->
   fixtures = path.join __dirname, 'fixtures'
 
   describe 'd3', ->
