@@ -41,6 +41,8 @@ class ObjectsStore
 
 class ObjectsRegistry extends EventEmitter
   constructor: ->
+    @setMaxListeners Number.MAX_VALUE
+
     # Objects in weak map will be not referenced (so we won't leak memory), and
     # every object created in browser will have a unique id in weak map.
     @objectsWeakMap = new IDWeakMap
