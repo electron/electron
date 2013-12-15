@@ -4,16 +4,12 @@
 
 #include "common/node_bindings.h"
 
-#include <limits.h>  // PATH_MAX
-
 #include "base/command_line.h"
-#include "base/logging.h"
 #include "base/message_loop/message_loop.h"
 #include "base/base_paths.h"
 #include "base/path_service.h"
 #include "common/v8/native_type_conversions.h"
 #include "content/public/browser/browser_thread.h"
-#include "vendor/node/src/node_javascript.h"
 
 #if defined(OS_WIN)
 #include "base/strings/utf_string_conversions.h"
