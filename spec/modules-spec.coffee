@@ -10,7 +10,7 @@ describe 'third-party modules', ->
       require 'd3'
       done()
 
-  describe 'unzip', ->
+  xdescribe 'unzip', ->
     unzip = require 'unzip'
 
     it 'fires close event', (done) ->
