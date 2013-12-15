@@ -13,9 +13,6 @@
 #include "base/path_service.h"
 #include "common/v8/native_type_conversions.h"
 #include "content/public/browser/browser_thread.h"
-#include "net/base/escape.h"
-#include "third_party/WebKit/public/web/WebDocument.h"
-#include "third_party/WebKit/public/web/WebFrame.h"
 #include "vendor/node/src/node_javascript.h"
 
 #if defined(OS_WIN)
@@ -28,23 +25,41 @@ using content::BrowserThread;
 
 // Forward declaration of internal node functions.
 namespace node {
-void Init(int* argc,
-          const char** argv,
-          int* exec_argc,
-          const char*** exec_argv);
-Environment* CreateEnvironment(v8::Isolate* isolate,
-                               int argc,
-                               const char* const* argv,
-                               int exec_argc,
-                               const char* const* exec_argv);
+void Init(int*, const char**, int*, const char***);
+void Load(Environment* env);
+void SetupProcessObject(Environment*, int, const char* const*, int,
+                        const char* const*);
 }
 
 namespace atom {
 
 namespace {
 
+// Empty callback for async handle.
 void UvNoOp(uv_async_t* handle, int status) {
 }
+
+// Convert the given vector to an array of C-strings. The strings in the
+// returned vector are only guaranteed valid so long as the vector of strings
+// is not modified.
+scoped_ptr<const char*[]> StringVectorToArgArray(
+    const std::vector<std::string>& vector) {
+  scoped_ptr<const char*[]> array(new const char*[vector.size()]);
+  for (size_t i = 0; i < vector.size(); ++i)
+    array[i] = vector[i].c_str();
+  return array.Pass();
+}
+
+#if defined(OS_WIN)
+std::vector<std::string> String16VectorToStringVector(
+    const std::vector<string16>& vector) {
+  std::vector<std::string> utf8_vector;
+  utf8_vector.reserve(vector.size());
+  for (size_t i = 0; i < vector.size(); ++i)
+    utf8_vector.push_back(UTF16ToUTF8(vector[i]));
+  return utf8_vector;
+}
+#endif
 
 }  // namespace
 
@@ -73,42 +88,6 @@ NodeBindings::~NodeBindings() {
 }
 
 void NodeBindings::Initialize() {
-  CommandLine::StringVector str_argv = CommandLine::ForCurrentProcess()->argv();
-
-#if defined(OS_WIN)
-  std::vector<std::string> utf8_str_argv;
-  utf8_str_argv.reserve(str_argv.size());
-#endif
-
-  // Convert string vector to const char* array.
-  std::vector<const char*> args(str_argv.size(), NULL);
-  for (size_t i = 0; i < str_argv.size(); ++i) {
-#if defined(OS_WIN)
-    utf8_str_argv.push_back(UTF16ToUTF8(str_argv[i]));
-    args[i] = utf8_str_argv[i].c_str();
-#else
-    args[i] = str_argv[i].c_str();
-#endif
-  }
-
-  // Feed node the path to initialization script.
-  base::FilePath exec_path(str_argv[0]);
-  PathService::Get(base::FILE_EXE, &exec_path);
-  base::FilePath resources_path =
-#if defined(OS_MACOSX)
-      is_browser_ ? exec_path.DirName().DirName().Append("Resources") :
-                    exec_path.DirName().DirName().DirName().DirName().DirName()
-                             .Append("Resources");
-#else
-      exec_path.DirName().Append("resources");
-#endif
-  base::FilePath script_path =
-      resources_path.AppendASCII("browser")
-                    .AppendASCII("atom")
-                    .AppendASCII(is_browser_ ? "atom.js" : "atom-renderer.js");
-  std::string script_path_str = script_path.AsUTF8Unsafe();
-  args.insert(args.begin() + 1, script_path_str.c_str());
-
   // Init idle GC for browser.
   if (is_browser_) {
     uv_timer_init(uv_default_loop(), &idle_timer_);
@@ -120,43 +99,76 @@ void NodeBindings::Initialize() {
   node::g_upstream_node_mode = false;
 
   // Init node.
-  int argc = args.size();
-  const char** argv = &args[0];
-  int exec_argc;
-  const char** exec_argv;
-  node::Init(&argc, argv, &exec_argc, &exec_argv);
-  v8::V8::Initialize();
-
-  // Create environment (setup process object and load node.js).
-  global_env = node::CreateEnvironment(node_isolate, argc, argv, argc, argv);
+  // (we assume it would not node::Init would not modify the parameters under
+  // embedded mode).
+  node::Init(NULL, NULL, NULL, NULL);
 }
 
-void NodeBindings::BindTo(WebKit::WebFrame* frame) {
-  v8::HandleScope handle_scope(node_isolate);
+node::Environment* NodeBindings::CreateEnvironment(
+    v8::Handle<v8::Context> context) {
+  std::vector<std::string> args =
+#if defined(OS_WIN)
+      String16VectorToStringVector(CommandLine::ForCurrentProcess()->argv());
+#else
+      CommandLine::ForCurrentProcess()->argv();
+#endif
 
-  v8::Handle<v8::Context> context = frame->mainWorldScriptContext();
-  if (context.IsEmpty())
-    return;
+  // Feed node the path to initialization script.
+  base::FilePath exec_path(args[0]);
+  PathService::Get(base::FILE_EXE, &exec_path);
+  base::FilePath resources_path =
+#if defined(OS_MACOSX)
+      is_browser_ ? exec_path.DirName().DirName().Append("Resources") :
+                    exec_path.DirName().DirName().DirName().DirName().DirName()
+                             .Append("Resources");
+#else
+      exec_path.DirName().Append("resources");
+#endif
+  base::FilePath script_path =
+      resources_path.AppendASCII(is_browser_ ? "browser" : "renderer")
+                    .AppendASCII("lib")
+                    .AppendASCII("init.js");
+  std::string script_path_str = script_path.AsUTF8Unsafe();
+  args.insert(args.begin() + 1, script_path_str.c_str());
 
-  v8::Context::Scope scope(context);
+  // Convert string vector to const char* array.
+  scoped_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
 
-  // Erase security token.
-  context->SetSecurityToken(global_env->context()->GetSecurityToken());
+  // Construct the parameters that passed to node::CreateEnvironment:
+  v8::Isolate* isolate = context->GetIsolate();
+  int argc = args.size();
+  const char** argv = c_argv.get();
+  int exec_argc = 0;
+  const char** exec_argv = NULL;
 
-  // Evaluate cefode.js.
-  v8::Handle<v8::Script> script = node::CompileCefodeMainSource();
-  v8::Local<v8::Value> result = script->Run();
+  using namespace v8;  // NOLINT
+  using namespace node;  // NOLINT
 
-  // Run the script of cefode.js.
-  std::string script_path(GURL(frame->document().url()).path());
-  script_path = net::UnescapeURLComponent(
-      script_path,
-      net::UnescapeRule::SPACES | net::UnescapeRule::URL_SPECIAL_CHARS);
-  v8::Handle<v8::Value> args[2] = {
-    global_env->process_object(),
-    ToV8Value(script_path),
-  };
-  v8::Local<v8::Function>::Cast(result)->Call(context->Global(), 2, args);
+  // Following code are stripped from node::CreateEnvironment in node.cc:
+  HandleScope handle_scope(isolate);
+
+  Environment* env = Environment::New(context);
+
+  uv_check_init(env->event_loop(), env->immediate_check_handle());
+  uv_unref(
+      reinterpret_cast<uv_handle_t*>(env->immediate_check_handle()));
+  uv_idle_init(env->event_loop(), env->immediate_idle_handle());
+
+  uv_prepare_init(env->event_loop(), env->idle_prepare_handle());
+  uv_check_init(env->event_loop(), env->idle_check_handle());
+  uv_unref(reinterpret_cast<uv_handle_t*>(env->idle_prepare_handle()));
+  uv_unref(reinterpret_cast<uv_handle_t*>(env->idle_check_handle()));
+
+  Local<FunctionTemplate> process_template = FunctionTemplate::New();
+  process_template->SetClassName(FIXED_ONE_BYTE_STRING(isolate, "process"));
+
+  Local<Object> process_object = process_template->GetFunction()->NewInstance();
+  env->set_process_object(process_object);
+
+  SetupProcessObject(env, argc, argv, exec_argc, exec_argv);
+  Load(env);
+
+  return env;
 }
 
 void NodeBindings::PrepareMessageLoop() {

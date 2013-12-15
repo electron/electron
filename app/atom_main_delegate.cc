@@ -54,6 +54,9 @@ void AtomMainDelegate::PreSandboxStartup() {
   // Disable accelerated compositing since it caused a lot of troubles (black
   // devtools, screen flashes) and needed lots of effort to make it right.
   command_line->AppendSwitch(switches::kDisableAcceleratedCompositing);
+
+  // Add a flag to mark the end of switches added by atom-shell.
+  command_line->AppendSwitch("no-more-switches");
 }
 
 void AtomMainDelegate::InitializeResourceBundle() {

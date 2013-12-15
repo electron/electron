@@ -28,7 +28,6 @@ class AtomRenderViewObserver : content::RenderViewObserver {
   virtual ~AtomRenderViewObserver();
 
   virtual void DidClearWindowObject(WebKit::WebFrame*) OVERRIDE;
-  virtual void FrameWillClose(WebKit::WebFrame*) OVERRIDE;
 
  private:
   // content::RenderViewObserver implementation.

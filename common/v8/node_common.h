@@ -5,7 +5,7 @@
 #ifndef ATOM_COMMON_V8_NODE_COMMON_H_
 #define ATOM_COMMON_V8_NODE_COMMON_H_
 
-// Common helper for using node APIs.
+// Include common headers for using node APIs.
 
 #undef CHECK
 #undef DISALLOW_COPY_AND_ASSIGN
@@ -16,6 +16,8 @@ using node::node_isolate;
 
 namespace atom {
 // Defined in node_bindings.cc.
+// For renderer it's created in atom_renderer_client.cc.
+// For browser it's created in atom_browser_main_parts.cc.
 extern node::Environment* global_env;
 }
 

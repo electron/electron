@@ -2,18 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef RAVE_COMMON_NODE_BINDINGS_
-#define RAVE_COMMON_NODE_BINDINGS_
+#ifndef ATOM_COMMON_NODE_BINDINGS_H_
+#define ATOM_COMMON_NODE_BINDINGS_H_
 
 #include "base/basictypes.h"
+#include "v8/include/v8.h"
 #include "vendor/node/deps/uv/include/uv.h"
-
-namespace WebKit {
-class WebFrame;
-}
 
 namespace base {
 class MessageLoop;
+}
+
+namespace node {
+class Environment;
 }
 
 namespace atom {
@@ -24,11 +25,11 @@ class NodeBindings {
 
   virtual ~NodeBindings();
 
-  // Setup V8, libuv and the process object, then load the node.js script.
+  // Setup V8, libuv.
   virtual void Initialize();
 
-  // Load cefode.js script under web frame.
-  virtual void BindTo(WebKit::WebFrame* frame);
+  // Create the environment and load node.js.
+  virtual node::Environment* CreateEnvironment(v8::Handle<v8::Context> context);
 
   // Prepare for message loop integration.
   virtual void PrepareMessageLoop();
@@ -87,4 +88,4 @@ class NodeBindings {
 
 }  // namespace atom
 
-#endif  // RAVE_COMMON_NODE_BINDINGS_
+#endif  // ATOM_COMMON_NODE_BINDINGS_H_

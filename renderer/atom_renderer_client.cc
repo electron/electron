@@ -9,19 +9,7 @@
 
 #include "common/v8/node_common.h"
 
-namespace webkit {
-extern void SetGetNodeContext(v8::Handle<v8::Context> (*)());
-}
-
 namespace atom {
-
-namespace {
-
-v8::Handle<v8::Context> GetNodeContext() {
-  return global_env->context();
-}
-
-}  // namespace
 
 AtomRendererClient::AtomRendererClient()
     : node_bindings_(NodeBindings::Create(false)) {
@@ -32,12 +20,15 @@ AtomRendererClient::~AtomRendererClient() {
 
 void AtomRendererClient::RenderThreadStarted() {
   node_bindings_->Initialize();
-
-  // Interact with dirty workarounds of extra node context in WebKit.
-  webkit::SetGetNodeContext(GetNodeContext);
-
   node_bindings_->PrepareMessageLoop();
-  node_bindings_->RunMessageLoop();
+
+  DCHECK(!global_env);
+
+  // Create a default empty environment which would be used when we need to
+  // run V8 code out of a window context (like running a uv callback).
+  v8::HandleScope handle_scope(node_isolate);
+  v8::Local<v8::Context> context = v8::Context::New(node_isolate);
+  global_env = node::Environment::New(context);
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {

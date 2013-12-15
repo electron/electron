@@ -43,9 +43,19 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 
   node_bindings_->Initialize();
 
-  // Wrap whole process in one global context.
-  global_env->context()->Enter();
+  v8::V8::Initialize();
 
+  // Create context.
+  v8::HandleScope handle_scope(node_isolate);
+  v8::Local<v8::Context> context = v8::Context::New(node_isolate);
+
+  // Wrap whole process in one global context.
+  context->Enter();
+
+  // Create the global environment.
+  global_env = node_bindings_->CreateEnvironment(context);
+
+  // Add atom-shell extended APIs.
   atom_bindings_->BindTo(global_env->process_object());
   atom_bindings_->AfterLoad();
 }

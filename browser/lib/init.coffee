@@ -1,9 +1,12 @@
 fs = require 'fs'
 path = require 'path'
 
-# Restore the proces.argv.
+# Expose information of current process.
 process.__atom_type = 'browser'
 process.resourcesPath = path.resolve process.argv[1], '..', '..', '..'
+
+# We modified the original process.argv to let node.js load the atom.js,
+# we need to restore it here.
 process.argv.splice 1, 1
 
 if process.platform is 'win32'

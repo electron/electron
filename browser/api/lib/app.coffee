@@ -10,7 +10,7 @@ app.getHomeDir = ->
   process.env[if process.platform is 'win32' then 'USERPROFILE' else 'HOME']
 
 app.getBrowserWindows = ->
-  require('../../atom/objects-registry.js').getAllWindows()
+  require('../../lib/objects-registry.js').getAllWindows()
 
 app.setApplicationMenu = (menu) ->
   require('menu').setApplicationMenu menu
