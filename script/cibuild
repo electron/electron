@@ -12,6 +12,7 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 def main():
   rm_rf(os.path.join(SOURCE_ROOT, 'out'))
+  rm_rf(os.path.join(SOURCE_ROOT, 'node_modules'))
   rm_rf(os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor', 'download',
                      'libchromiumcontent'))
 
