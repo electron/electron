@@ -7,12 +7,11 @@
     "coffeelint": "~0.6.1",
     "mocha": "~1.13.0",
     "walkdir": "~0.0.7",
-    "runas": "~0.2.0",
+    "runas": "0.3.0",
 
     "formidable": "~1.0.14",
     "unzip": "~0.1.9",
-    "d3": "~3.3.8",
-    "int64-native": "~0.2.0"
+    "time": "0.10.0"
   },
 
   "private": true,

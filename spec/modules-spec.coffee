@@ -5,11 +5,6 @@ path   = require 'path'
 describe 'third-party module', ->
   fixtures = path.join __dirname, 'fixtures'
 
-  describe 'd3', ->
-    it 'can be required', (done) ->
-      require 'd3'
-      done()
-
   xdescribe 'unzip', ->
     unzip = require 'unzip'
 
@@ -18,21 +13,16 @@ describe 'third-party module', ->
         .pipe(unzip.Parse())
         .on('close', done)
 
-  describe 'int64-native', ->
+  describe 'time', ->
     it 'can be required in renderer', ->
-      Int64 = require 'int64-native'
-      x = new Int64()
-      y = new Int64(42)
-      z = new Int64(0xfedcba98, 0x76543210)
-      w = new Int64('fedcba9876543210')
-      assert.equal x.toString(), '0000000000000000'
-      assert.equal y.toString(), '000000000000002a'
-      assert.equal z.toString(), 'fedcba9876543210'
-      assert.equal w.toString(), 'fedcba9876543210'
+      time = require 'time'
+      now = new time.Date()
+      now.setTimezone 'America/Los_Angeles'
+      assert.equal now.getTimezone(), 'America/Los_Angeles'
 
     it 'can be required in node binary', (done) ->
-      int64_native = path.join fixtures, 'module', 'int64_native.js'
-      child = require('child_process').fork int64_native
+      time = path.join fixtures, 'module', 'time.js'
+      child = require('child_process').fork time
       child.on 'message', (msg) ->
         assert.equal msg, 'ok'
         done()
