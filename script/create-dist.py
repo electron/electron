@@ -59,6 +59,8 @@ HEADERS_DIRS = [
   'deps/http_parser',
   'deps/zlib',
   'deps/uv',
+  'deps/npm',
+  'deps/mdb_v8',
 ]
 HEADERS_FILES = [
   'common.gypi',
