@@ -12,7 +12,7 @@ from lib.util import scoped_cwd, rm_rf, get_atom_shell_version, make_zip, \
 
 
 ATOM_SHELL_VRESION = get_atom_shell_version()
-NODE_VERSION = 'v0.10.18'
+NODE_VERSION = 'v0.11.9'
 BASE_URL = 'https://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent'
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
