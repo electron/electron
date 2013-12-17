@@ -13,16 +13,13 @@ describe 'third-party module', ->
         .pipe(unzip.Parse())
         .on('close', done)
 
-  describe 'time', ->
+  describe 'runas', ->
     it 'can be required in renderer', ->
-      time = require 'time'
-      now = new time.Date()
-      now.setTimezone 'America/Los_Angeles'
-      assert.equal now.getTimezone(), 'America/Los_Angeles'
+      require 'runas'
 
     it 'can be required in node binary', (done) ->
-      time = path.join fixtures, 'module', 'time.js'
-      child = require('child_process').fork time
+      runas = path.join fixtures, 'module', 'runas.js'
+      child = require('child_process').fork runas
       child.on 'message', (msg) ->
         assert.equal msg, 'ok'
         done()

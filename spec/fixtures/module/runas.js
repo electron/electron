@@ -2,5 +2,5 @@ process.on('uncaughtException', function(err) {
   process.send(err.message);
 });
 
-require('time');
+require('runas');
 process.send('ok');
