@@ -10,6 +10,8 @@
 #include "ui/gfx/point.h"
 #include "ui/gfx/screen.h"
 
+#include "common/v8/node_common.h"
+
 namespace atom {
 
 namespace api {
@@ -40,8 +42,6 @@ void Menu::AttachToWindow(const v8::FunctionCallbackInfo<v8::Value>& args) {
     return node::ThrowTypeError("Bad argument");
 
   static_cast<NativeWindowWin*>(native_window)->SetMenu(self->model_.get());
-
-  return v8::Undefined();
 }
 
 // static
