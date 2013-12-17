@@ -39,7 +39,11 @@ global.clearImmediate = timers.clearImmediate
 
 # Set the __filename to the path of html file if it's file:// protocol.
 if window.location.protocol is 'file:'
-  global.__filename = window.location.pathname
+  global.__filename =
+    if process.platform is 'win32'
+      window.location.pathname.substr 1
+    else
+      window.location.pathname
   global.__dirname = path.dirname global.__filename
 
   # Also search for module under the html file.
