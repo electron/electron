@@ -116,7 +116,7 @@ describe 'protocol module', ->
       protocol.interceptProtocol targetScheme, (request) ->
         if process.platform is 'win32'
           pathInUrl = path.normalize request.url.substr(8)
-          assert.equal pathInUrl, __filename
+          assert.equal pathInUrl.toLowerCase(), __filename.toLowerCase()
         else
           assert.equal request.url, "#{targetScheme}://#{__filename}"
 
