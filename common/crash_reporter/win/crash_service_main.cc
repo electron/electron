@@ -8,7 +8,7 @@
 #include "base/command_line.h"
 #include "base/file_util.h"
 #include "base/logging.h"
-#include "base/string_util.h"
+#include "base/strings/string_util.h"
 #include "common/crash_reporter/win/crash_service.h"
 
 namespace crash_service {
@@ -26,7 +26,7 @@ bool GetCrashServiceDirectory(const std::wstring& application_name,
   if (!file_util::GetTempDir(&temp_dir))
     return false;
   temp_dir = temp_dir.Append(application_name + L" Crashes");
-  if (!file_util::PathExists(temp_dir)) {
+  if (!base::PathExists(temp_dir)) {
     if (!file_util::CreateDirectory(temp_dir))
       return false;
   }
@@ -56,14 +56,14 @@ int Main(const wchar_t* cmd) {
   GetCrashServiceDirectory(application_name, &operating_dir);
   base::FilePath log_file = operating_dir.Append(kStandardLogFile);
 
-  // Logging out to a file.
-  logging::InitLogging(
-      log_file.value().c_str(),
-      logging::LOG_TO_BOTH_FILE_AND_SYSTEM_DEBUG_LOG ,
-      logging::LOCK_LOG_FILE,
-      logging::DELETE_OLD_LOG_FILE,
-      logging::DISABLE_DCHECK_FOR_NON_OFFICIAL_RELEASE_BUILDS);
-  logging::SetLogItems(true, false, true, false);
+  // Logging to stderr (to help with debugging failures on the
+  // buildbots) and to a file.
+  logging::LoggingSettings settings;
+  settings.logging_dest = logging::LOG_TO_ALL;
+  settings.log_file = log_file.value().c_str();
+  logging::InitLogging(settings);
+  // Logging with pid, tid and timestamp.
+  logging::SetLogItems(true, true, true, false);
 
   VLOG(1) << "Session start. cmdline is [" << cmd << "]";
 

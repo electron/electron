@@ -110,7 +110,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 #endif
 
   // Feed node the path to initialization script.
-  base::FilePath exec_path(args[0]);
+  base::FilePath exec_path(CommandLine::ForCurrentProcess()->argv()[0]);
   PathService::Get(base::FILE_EXE, &exec_path);
   base::FilePath resources_path =
 #if defined(OS_MACOSX)
@@ -118,7 +118,7 @@ node::Environment* NodeBindings::CreateEnvironment(
                     exec_path.DirName().DirName().DirName().DirName().DirName()
                              .Append("Resources");
 #else
-      exec_path.DirName().Append("resources");
+      exec_path.DirName().AppendASCII("resources");
 #endif
   base::FilePath script_path =
       resources_path.AppendASCII(is_browser_ ? "browser" : "renderer")

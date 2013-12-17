@@ -8,10 +8,7 @@
 #include "browser/auto_updater.h"
 #include "common/v8/native_type_conversions.h"
 
-#undef CHECK
-#undef DISALLOW_COPY_AND_ASSIGN
-#include "vendor/node/src/node.h"
-#include "vendor/node/src/node_internals.h"
+#include "common/v8/node_common.h"
 
 namespace atom {
 

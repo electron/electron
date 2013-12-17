@@ -12,9 +12,9 @@
 #include "content/public/browser/render_process_host.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/size.h"
-#include "vendor/node/src/node_buffer.h"
 
 #include "common/v8/node_common.h"
+#include "vendor/node/src/node_buffer.h"
 
 using content::NavigationController;
 using node::ObjectWrap;

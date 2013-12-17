@@ -23,17 +23,20 @@ AtomMainDelegate::~AtomMainDelegate() {
 bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   // Disable logging out to debug.log on Windows
 #if defined(OS_WIN)
-  logging::InitLogging(
-      L"debug.log",
+  logging::LoggingSettings settings;
 #if defined(DEBUG)
-      logging::LOG_TO_BOTH_FILE_AND_SYSTEM_DEBUG_LOG ,
+  settings.logging_dest = logging::LOG_TO_ALL;
+  settings.log_file = L"debug.log";
+  settings.lock_log = logging::LOCK_LOG_FILE;
+  settings.delete_old = logging::DELETE_OLD_LOG_FILE;
 #else
-      logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG,
-#endif  // defined(NDEBUG)
-      logging::LOCK_LOG_FILE,
-      logging::DELETE_OLD_LOG_FILE,
-      logging::DISABLE_DCHECK_FOR_NON_OFFICIAL_RELEASE_BUILDS);
-  logging::SetLogItems(true, false, true, false);
+  settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
+#endif
+  settings.dcheck_state =
+      logging::DISABLE_DCHECK_FOR_NON_OFFICIAL_RELEASE_BUILDS;
+  logging::InitLogging(settings);
+  // Logging with pid, tid and timestamp.
+  logging::SetLogItems(true, true, true, false);
 #endif  // defined(OS_WIN)
 
   return brightray::MainDelegate::BasicStartupComplete(exit_code);

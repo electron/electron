@@ -43,6 +43,7 @@
           4189,  #
           4131,  # uses old-style declarator
           4133,  # incompatible types
+          4146,  # unary minus operator applied to unsigned type, result still unsigned
           4152,  # function/data pointer conversion in expression
           4206,  # translation unit is empty
           4204,  # non-constant aggregate initializer
@@ -53,6 +54,7 @@
           4505,  # unreferenced local function has been removed
           4701,  # potentially uninitialized local variable 'sizew' used
           4706,  # assignment within conditional expression
+          4804,  #  unsafe use of type 'bool' in operation
           4996,  #
         ],
         'msvs_settings': {
