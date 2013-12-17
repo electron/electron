@@ -9,6 +9,7 @@
 #include "browser/atom_browser_context.h"
 #include "browser/browser.h"
 #include "common/node_bindings.h"
+#include "net/proxy/proxy_resolver_v8.h"
 
 #include "common/v8/node_common.h"
 
@@ -49,32 +50,20 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   v8::HandleScope handle_scope(node_isolate);
   v8::Local<v8::Context> context = v8::Context::New(node_isolate);
 
-  // Wrap whole process in one global context.
-  context->Enter();
-
   // Create the global environment.
   global_env = node_bindings_->CreateEnvironment(context);
 
+  // Wrap whole process in one global context.
+  context->Enter();
+
   // Add atom-shell extended APIs.
   atom_bindings_->BindTo(global_env->process_object());
-  atom_bindings_->AfterLoad();
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
-  node_bindings_->PrepareMessageLoop();
-
   brightray::BrowserMainParts::PreMainMessageLoopRun();
 
-  {
-    v8::HandleScope handle_scope(node_isolate);
-    v8::Context::Scope context_scope(global_env->context());
-
-    v8::Handle<v8::Value> args;
-    node::MakeCallback(atom_bindings_->browser_main_parts(),
-                       "preMainMessageLoopRun",
-                       0, &args);
-  }
-
+  node_bindings_->PrepareMessageLoop();
   node_bindings_->RunMessageLoop();
 
   // Make sure the url request job factory is created before the
@@ -87,6 +76,16 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   Browser::Get()->WillFinishLaunching();
   Browser::Get()->DidFinishLaunching();
 #endif
+}
+
+int AtomBrowserMainParts::PreCreateThreads() {
+  // Note that we are overriding the PreCreateThreads of brightray, since we
+  // are integrating node in browser, we can just be sure that an V8 instance
+  // would be prepared, while the ProxyResolverV8::CreateIsolate() would
+  // try to create a V8 isolate, which messed everything on Windows, so we
+  // have to override and call RememberDefaultIsolate on Windows instead.
+  net::ProxyResolverV8::RememberDefaultIsolate();
+  return 0;
 }
 
 }  // namespace atom

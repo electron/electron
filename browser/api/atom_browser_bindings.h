@@ -26,9 +26,6 @@ class AtomBrowserBindings : public AtomBindings {
   AtomBrowserBindings();
   virtual ~AtomBrowserBindings();
 
-  // Called when the node.js main script has been loaded.
-  virtual void AfterLoad();
-
   // Called when received a message from renderer.
   void OnRendererMessage(int process_id,
                          int routing_id,

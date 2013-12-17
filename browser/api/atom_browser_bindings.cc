@@ -23,20 +23,6 @@ AtomBrowserBindings::AtomBrowserBindings() {
 AtomBrowserBindings::~AtomBrowserBindings() {
 }
 
-void AtomBrowserBindings::AfterLoad() {
-  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
-
-  v8::HandleScope handle_scope(node_isolate);
-
-  v8::Handle<v8::Object> global = global_env->context()->Global();
-  v8::Handle<v8::Object> atom = global->Get(ToV8Value("__atom"))->ToObject();
-  DCHECK(!atom.IsEmpty());
-
-  browser_main_parts_.reset(
-      atom->Get(ToV8Value("browserMainParts"))->ToObject());
-  DCHECK(!browser_main_parts_.IsEmpty());
-}
-
 void AtomBrowserBindings::OnRendererMessage(int process_id,
                                             int routing_id,
                                             const string16& channel,

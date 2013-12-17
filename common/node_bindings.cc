@@ -142,6 +142,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   // Following code are stripped from node::CreateEnvironment in node.cc:
   HandleScope handle_scope(isolate);
+  Context::Scope context_scope(context);
 
   Environment* env = Environment::New(context);
 
