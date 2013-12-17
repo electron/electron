@@ -40,14 +40,7 @@ class AtomBrowserBindings : public AtomBindings {
                              NativeWindow* sender,
                              IPC::Message* message);
 
-  // The require('atom').browserMainParts object.
-  v8::Handle<v8::Object> browser_main_parts() {
-    return browser_main_parts_.NewHandle();
-  }
-
  private:
-  ScopedPersistent<v8::Object> browser_main_parts_;
-
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserBindings);
 };
 

@@ -21,18 +21,6 @@ if process.platform is 'win32'
   stdin.push null
   process.__defineGetter__ 'stdin', -> stdin
 
-# Provide default Content API implementations.
-atom = {}
-
-atom.browserMainParts =
-  preMainMessageLoopRun: ->
-    # This is the start of the whole application, usually we should initialize
-    # the main window here.
-
-# Store atom object in global scope, apps can just override methods of it to
-# implement various logics.
-global.__atom = atom
-
 # Add browser/api/lib to require's search paths,
 # which contains javascript part of Atom's built-in libraries.
 globalPaths = require('module').globalPaths

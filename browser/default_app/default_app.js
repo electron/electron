@@ -1,6 +1,5 @@
 var app = require('app');
 var dialog = require('dialog');
-var delegate = require('atom-delegate');
 var ipc = require('ipc');
 var Menu = require('menu');
 var MenuItem = require('menu-item');
