@@ -64,6 +64,8 @@
         'browser/notification_presenter.h',
         'browser/notification_presenter_mac.h',
         'browser/notification_presenter_mac.mm',
+        'browser/linux/notification_presenter_linux.h',
+        'browser/linux/notification_presenter_linux.cc',
         'browser/url_request_context_getter.cc',
         'browser/url_request_context_getter.h',
         'browser/win/devtools_window.cc',
@@ -93,7 +95,7 @@
             'libraries': [
               '<(brightray_source_root)/<(libchromiumcontent_library_dir)/libchromiumcontent.so',
               '-lpthread',
-              '<!@(pkg-config --libs gtk+-2.0)',
+              '<!@(pkg-config --libs gtk+-2.0 libnotify)',
             ],
           },
         }],
