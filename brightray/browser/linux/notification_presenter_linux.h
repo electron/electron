@@ -6,12 +6,11 @@
 #ifndef BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_LINUX_H_
 #define BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_LINUX_H_
 
+#include <libnotify/notify.h>
+#include <map>
+
 #include "base/compiler_specific.h"
 #include "browser/notification_presenter.h"
-
-#include <libnotify/notify.h>
-
-#include <map>
 
 namespace brightray {
 
