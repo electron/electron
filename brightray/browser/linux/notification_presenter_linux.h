@@ -17,6 +17,9 @@ namespace brightray {
 
 class NotificationPresenterLinux : public NotificationPresenter {
  public:
+  NotificationPresenterLinux();
+  ~NotificationPresenterLinux();
+
   virtual void ShowNotification(
       const content::ShowDesktopNotificationHostMsgParams&,
       int render_process_id,
@@ -26,9 +29,10 @@ class NotificationPresenterLinux : public NotificationPresenter {
       int render_view_id,
       int notification_id) OVERRIDE;
 
+  void RemoveNotification(NotifyNotification *former_notification);
+
  private:
-  typedef std::map<std::string, NotifyNotification*> NotificationMap;
-  NotificationMap notification_map_;
+  GList *notifications_;
 };
 
 }  // namespace brightray
