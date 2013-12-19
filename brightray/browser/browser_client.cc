@@ -35,7 +35,7 @@ BrowserContext* BrowserClient::browser_context() {
 }
 
 NotificationPresenter* BrowserClient::notification_presenter() {
-#if defined(OS_MACOSX)
+#if defined(OS_MACOSX) || defined(OS_LINUX)
   if (!notification_presenter_)
     notification_presenter_.reset(NotificationPresenter::Create());
 #endif
