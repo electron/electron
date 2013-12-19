@@ -32,6 +32,8 @@ void closed_cb(NotifyNotification *notification, NotificationPresenterLinux *obj
   int render_process_id = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(notification), kRenderProcessIDKey));
   int render_view_id    = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(notification), kRenderViewIDKey));
   int notification_id   = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(notification), kNotificationIDKey));
+  auto host = content::RenderViewHost::FromID(render_process_id, render_view_id);
+  if (host) host->DesktopNotificationPostClose(notification_id, false);
   LOG(INFO) << "closed_cb: process=" << render_process_id
             << " view=" << render_view_id
             << " notification=" << notification_id
