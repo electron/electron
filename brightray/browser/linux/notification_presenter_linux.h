@@ -29,9 +29,16 @@ class NotificationPresenterLinux : public NotificationPresenter {
       int render_view_id,
       int notification_id) OVERRIDE;
 
-  void RemoveNotification(NotifyNotification *former_notification);
+  void RemoveNotification(NotifyNotification *notification);
 
  private:
+  // A list of all open NotifyNotification objects.
+  // We do lookups here both by NotifyNotification object (when the user
+  // clicks a notification) and by the <process,view,notification> ID
+  // tuple (when the browser asks to dismiss a notification).  So it's not
+  // a map.
+  // Entries in this list count as refs, so removal from this list should
+  // always go with g_object_unref().
   GList *notifications_;
 };
 

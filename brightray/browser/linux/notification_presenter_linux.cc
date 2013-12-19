@@ -28,27 +28,21 @@ void log_and_clear_error(GError *error, const char *context) {
   }
 }
 
-void closed_cb(NotifyNotification *notification, NotificationPresenterLinux *obj) {
+void NotificationClosedCallback(NotifyNotification *notification, NotificationPresenterLinux *obj) {
   int render_process_id = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(notification), kRenderProcessIDKey));
   int render_view_id    = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(notification), kRenderViewIDKey));
   int notification_id   = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(notification), kNotificationIDKey));
+
   auto host = content::RenderViewHost::FromID(render_process_id, render_view_id);
   if (host) host->DesktopNotificationPostClose(notification_id, false);
-  LOG(INFO) << "closed_cb: process=" << render_process_id
-            << " view=" << render_view_id
-            << " notification=" << notification_id
-            << " reason=" << notify_notification_get_closed_reason(notification);
   obj->RemoveNotification(notification);
 }
 
-void action_cb(NotifyNotification *notification, const char *action, NotificationPresenterLinux *obj) {
+void NotificationViewCallback(NotifyNotification *notification, const char *action, NotificationPresenterLinux *obj) {
   int render_process_id = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(notification), kRenderProcessIDKey));
   int render_view_id    = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(notification), kRenderViewIDKey));
   int notification_id   = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(notification), kNotificationIDKey));
-  LOG(INFO) << "action_cb: process=" << render_process_id
-            << " view=" << render_view_id
-            << " notification=" << notification_id
-            << " action=\"" << action << '"';
+
   auto host = content::RenderViewHost::FromID(render_process_id, render_view_id);
   if (host) host->DesktopNotificationPostClick(notification_id);
   obj->RemoveNotification(notification);
@@ -66,6 +60,7 @@ NotificationPresenter* NotificationPresenter::Create() {
 NotificationPresenterLinux::NotificationPresenterLinux() : notifications_(NULL) { }
 
 NotificationPresenterLinux::~NotificationPresenterLinux() {
+  // unref any outstanding notifications, and then free the list.
   if (notifications_) {
     for (GList *p = notifications_; p != NULL; p = p->next) {
       g_object_unref(G_OBJECT(p->data));
@@ -78,20 +73,16 @@ void NotificationPresenterLinux::ShowNotification(
     const content::ShowDesktopNotificationHostMsgParams& params,
     int render_process_id,
     int render_view_id) {
-  LOG(INFO) << "ShowNotification: process=" << render_process_id
-            << " view=" << render_view_id
-            << " notification=" << params.notification_id
-            << " title=\"" << params.title << '"'
-            << " body=\"" << params.body << '"';
-
   std::string title = base::UTF16ToUTF8(params.title);
   std::string body = base::UTF16ToUTF8(params.body);
   NotifyNotification *notification = notify_notification_new(title.c_str(), body.c_str(), NULL);
   g_object_set_data(G_OBJECT(notification), kRenderProcessIDKey, GINT_TO_POINTER(render_process_id));
   g_object_set_data(G_OBJECT(notification), kRenderViewIDKey,    GINT_TO_POINTER(render_view_id));
   g_object_set_data(G_OBJECT(notification), kNotificationIDKey,  GINT_TO_POINTER(params.notification_id));
-  g_signal_connect(notification, "closed", G_CALLBACK(closed_cb), this);
-  notify_notification_add_action(notification, "default", "View", (NotifyActionCallback)action_cb, this, NULL);
+  g_signal_connect(notification, "closed",
+    G_CALLBACK(NotificationClosedCallback), this);
+  notify_notification_add_action(notification, "default", "View",
+    (NotifyActionCallback)NotificationViewCallback, this, NULL);
 
   notifications_ = g_list_append(notifications_, notification);
 
@@ -110,10 +101,6 @@ void NotificationPresenterLinux::CancelNotification(
     int render_process_id,
     int render_view_id,
     int notification_id) {
-  LOG(INFO) << "CancelNotification: process=" << render_process_id
-            << " view=" << render_view_id
-            << " notification=" << notification_id;
-
   NotifyNotification *notification = NULL;
   for (GList *p = notifications_; p != NULL; p = p->next) {
     if (render_process_id == GPOINTER_TO_INT(g_object_get_data(G_OBJECT(p->data), kRenderProcessIDKey))
@@ -139,9 +126,9 @@ void NotificationPresenterLinux::CancelNotification(
   host->DesktopNotificationPostClose(notification_id, false);
 }
 
-void NotificationPresenterLinux::RemoveNotification(NotifyNotification *former_notification) {
-  notifications_ = g_list_remove(notifications_, former_notification);
-  g_object_unref(former_notification);
+void NotificationPresenterLinux::RemoveNotification(NotifyNotification *notification) {
+  notifications_ = g_list_remove(notifications_, notification);
+  g_object_unref(notification);
 }
 
 }
