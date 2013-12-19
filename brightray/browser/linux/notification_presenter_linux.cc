@@ -22,19 +22,28 @@ const char *kRenderViewIDKey = "RenderViewID";
 const char *kNotificationIDKey = "NotificationID";
 
 void log_and_clear_error(GError *error, const char *context) {
-  if (error) {
-    LOG(ERROR) << context
-               << ": domain=" << error->domain
-               << " code=" << error->code
-               << " message=\"" << error->message << '"';
-    g_error_free(error);
-  }
+  if (!error) return;
+
+  LOG(ERROR) << context
+             << ": domain=" << error->domain
+             << " code=" << error->code
+             << " message=\"" << error->message << '"';
+  g_error_free(error);
 }
 
+int GetObjectInt(NotifyNotification *noti, const char *key) {
+  return GPOINTER_TO_INT(g_object_get_data(G_OBJECT(noti), key));
+}
+
+void SetObjectInt(NotifyNotification *noti, const char *key, int value) {
+  g_object_set_data(G_OBJECT(noti), key, GINT_TO_POINTER(value));
+}
+
+
 void NotificationClosedCallback(NotifyNotification *noti, NotificationPresenterLinux *obj) {
-  int render_process_id = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(noti), kRenderProcessIDKey));
-  int render_view_id    = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(noti), kRenderViewIDKey));
-  int notification_id   = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(noti), kNotificationIDKey));
+  int render_process_id = GetObjectInt(noti, kRenderProcessIDKey);
+  int render_view_id    = GetObjectInt(noti, kRenderViewIDKey);
+  int notification_id   = GetObjectInt(noti, kNotificationIDKey);
 
   auto host = content::RenderViewHost::FromID(render_process_id, render_view_id);
   if (host) host->DesktopNotificationPostClose(notification_id, false);
@@ -43,9 +52,9 @@ void NotificationClosedCallback(NotifyNotification *noti, NotificationPresenterL
 
 void NotificationViewCallback(NotifyNotification *noti, const char *action,
     NotificationPresenterLinux *obj) {
-  int render_process_id = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(noti), kRenderProcessIDKey));
-  int render_view_id    = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(noti), kRenderViewIDKey));
-  int notification_id   = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(noti), kNotificationIDKey));
+  int render_process_id = GetObjectInt(noti, kRenderProcessIDKey);
+  int render_view_id    = GetObjectInt(noti, kRenderViewIDKey);
+  int notification_id   = GetObjectInt(noti, kNotificationIDKey);
 
   auto host = content::RenderViewHost::FromID(render_process_id, render_view_id);
   if (host) host->DesktopNotificationPostClick(notification_id);
@@ -61,16 +70,16 @@ NotificationPresenter* NotificationPresenter::Create() {
   return new NotificationPresenterLinux;
 }
 
-NotificationPresenterLinux::NotificationPresenterLinux() : notifications_(NULL) { }
+NotificationPresenterLinux::NotificationPresenterLinux() : notifications_(nullptr) { }
 
 NotificationPresenterLinux::~NotificationPresenterLinux() {
   // unref any outstanding notifications, and then free the list.
-  if (notifications_) {
-    for (GList *p = notifications_; p != NULL; p = p->next) {
-      g_object_unref(G_OBJECT(p->data));
-    }
-    g_list_free(notifications_);
+  if (!notifications_) return;
+
+  for (GList *p = notifications_; p != nullptr; p = p->next) {
+    g_object_unref(G_OBJECT(p->data));
   }
+  g_list_free(notifications_);
 }
 
 void NotificationPresenterLinux::ShowNotification(
@@ -79,18 +88,18 @@ void NotificationPresenterLinux::ShowNotification(
     int render_view_id) {
   std::string title = base::UTF16ToUTF8(params.title);
   std::string body = base::UTF16ToUTF8(params.body);
-  NotifyNotification *noti = notify_notification_new(title.c_str(), body.c_str(), NULL);
-  g_object_set_data(G_OBJECT(noti), kRenderProcessIDKey, GINT_TO_POINTER(render_process_id));
-  g_object_set_data(G_OBJECT(noti), kRenderViewIDKey,    GINT_TO_POINTER(render_view_id));
-  g_object_set_data(G_OBJECT(noti), kNotificationIDKey,  GINT_TO_POINTER(params.notification_id));
+  NotifyNotification *noti = notify_notification_new(title.c_str(), body.c_str(), nullptr);
+  SetObjectInt(noti, kRenderProcessIDKey, render_process_id);
+  SetObjectInt(noti, kRenderViewIDKey,    render_view_id);
+  SetObjectInt(noti, kNotificationIDKey,  params.notification_id);
   g_signal_connect(noti, "closed",
     G_CALLBACK(NotificationClosedCallback), this);
   notify_notification_add_action(noti, "default", "View",
-    (NotifyActionCallback)NotificationViewCallback, this, NULL);
+    (NotifyActionCallback)NotificationViewCallback, this, nullptr);
 
   notifications_ = g_list_append(notifications_, noti);
 
-  GError *error = NULL;
+  GError *error = nullptr;
   notify_notification_show(noti, &error);
   log_and_clear_error(error, "notify_notification_show");
 
@@ -105,11 +114,11 @@ void NotificationPresenterLinux::CancelNotification(
     int render_process_id,
     int render_view_id,
     int notification_id) {
-  NotifyNotification *noti = NULL;
-  for (GList *p = notifications_; p != NULL; p = p->next) {
-    int rpid = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(noti), kRenderProcessIDKey));
-    int rvid = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(noti), kRenderViewIDKey));
-    int nid  = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(noti), kNotificationIDKey));
+  NotifyNotification *noti = nullptr;
+  for (GList *p = notifications_; p != nullptr; p = p->next) {
+    int rpid = GetObjectInt(noti, kRenderProcessIDKey);
+    int rvid = GetObjectInt(noti, kRenderViewIDKey);
+    int nid  = GetObjectInt(noti, kNotificationIDKey);
     if (render_process_id == rpid && render_view_id == rvid && notification_id == nid) {
       noti = reinterpret_cast<NotifyNotification*>(p->data);
       notifications_ = g_list_delete_link(notifications_, p);
@@ -119,7 +128,7 @@ void NotificationPresenterLinux::CancelNotification(
   if (!noti)
     return;
 
-  GError *error = NULL;
+  GError *error = nullptr;
   notify_notification_close(noti, &error);
   log_and_clear_error(error, "notify_notification_close");
   g_object_unref(noti);

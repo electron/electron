@@ -19,6 +19,9 @@ class NotificationPresenterLinux : public NotificationPresenter {
   NotificationPresenterLinux();
   ~NotificationPresenterLinux();
 
+  void RemoveNotification(NotifyNotification *notification);
+
+ private:
   virtual void ShowNotification(
       const content::ShowDesktopNotificationHostMsgParams&,
       int render_process_id,
@@ -28,9 +31,6 @@ class NotificationPresenterLinux : public NotificationPresenter {
       int render_view_id,
       int notification_id) OVERRIDE;
 
-  void RemoveNotification(NotifyNotification *notification);
-
- private:
   // A list of all open NotifyNotification objects.
   // We do lookups here both by NotifyNotification object (when the user
   // clicks a notification) and by the <process,view,notification> ID
