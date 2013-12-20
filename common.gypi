@@ -35,7 +35,7 @@
   # Settings to compile node under Windows.
   'target_defaults': {
     'target_conditions': [
-      ['_target_name in ["libuv", "http_parser", "cares", "openssl", "node", "zlib"]', {
+      ['_target_name in ["libuv", "http_parser", "cares", "openssl", "node_lib", "zlib"]', {
         'msvs_disabled_warnings': [
           4013,  # 'free' undefined; assuming extern returning int
           4054,  #
@@ -76,7 +76,7 @@
           ],
         },
       }],
-      ['_target_name=="node"', {
+      ['_target_name in ["node_lib", "atom_lib"]', {
         'include_dirs': [
           'vendor/brightray/vendor/download/libchromiumcontent/src/v8/include',
         ],

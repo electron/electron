@@ -320,7 +320,7 @@
       'type': 'static_library',
       'dependencies': [
         'vendor/brightray/brightray.gyp:brightray',
-        'vendor/node/node.gyp:node',
+        'vendor/node/node.gyp:node_lib',
       ],
       'sources': [
         '<@(lib_sources)',
