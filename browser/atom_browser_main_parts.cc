@@ -11,6 +11,10 @@
 #include "common/node_bindings.h"
 #include "net/proxy/proxy_resolver_v8.h"
 
+#if defined(OS_WIN)
+#include "ui/gfx/win/dpi.h"
+#endif
+
 #include "common/v8/node_common.h"
 
 namespace atom {
@@ -85,6 +89,11 @@ int AtomBrowserMainParts::PreCreateThreads() {
   // try to create a V8 isolate, which messed everything on Windows, so we
   // have to override and call RememberDefaultIsolate on Windows instead.
   net::ProxyResolverV8::RememberDefaultIsolate();
+
+#if defined(OS_WIN)
+  gfx::EnableHighDPISupport();
+#endif
+
   return 0;
 }
 
