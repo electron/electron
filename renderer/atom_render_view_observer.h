@@ -5,7 +5,6 @@
 #ifndef ATOM_RENDERER_ATOM_RENDER_VIEW_OBSERVER_
 #define ATOM_RENDERER_ATOM_RENDER_VIEW_OBSERVER_
 
-#include "base/memory/scoped_ptr.h"
 #include "content/public/renderer/render_view_observer.h"
 
 namespace base {
@@ -14,20 +13,15 @@ class ListValue;
 
 namespace atom {
 
-class AtomRendererBindings;
 class AtomRendererClient;
 
-class AtomRenderViewObserver : content::RenderViewObserver {
+class AtomRenderViewObserver : public content::RenderViewObserver {
  public:
   explicit AtomRenderViewObserver(content::RenderView* render_view,
                                   AtomRendererClient* renderer_client);
 
-  AtomRendererBindings* atom_bindings() const { return atom_bindings_.get(); }
-
  protected:
   virtual ~AtomRenderViewObserver();
-
-  virtual void DidClearWindowObject(WebKit::WebFrame*) OVERRIDE;
 
  private:
   // content::RenderViewObserver implementation.
@@ -36,8 +30,6 @@ class AtomRenderViewObserver : content::RenderViewObserver {
 
   void OnBrowserMessage(const string16& channel,
                         const base::ListValue& args);
-
-  scoped_ptr<AtomRendererBindings> atom_bindings_;
 
   // Weak reference to renderer client.
   AtomRendererClient* renderer_client_;

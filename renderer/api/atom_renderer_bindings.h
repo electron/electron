@@ -25,19 +25,18 @@ namespace atom {
 
 class AtomRendererBindings : public AtomBindings {
  public:
-  explicit AtomRendererBindings(content::RenderView* render_view);
+  AtomRendererBindings();
   virtual ~AtomRendererBindings();
 
   // Call BindTo for process object of the frame.
   void BindToFrame(WebKit::WebFrame* frame);
 
   // Dispatch messages from browser.
-  void OnBrowserMessage(const string16& channel,
+  void OnBrowserMessage(content::RenderView* render_view,
+                        const string16& channel,
                         const base::ListValue& args);
 
  private:
-  content::RenderView* render_view_;
-
   DISALLOW_COPY_AND_ASSIGN(AtomRendererBindings);
 };
 

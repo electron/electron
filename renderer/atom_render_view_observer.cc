@@ -5,12 +5,11 @@
 #include "renderer/atom_render_view_observer.h"
 
 #include "common/api/api_messages.h"
-#include "common/node_bindings.h"
 #include "ipc/ipc_message_macros.h"
 #include "renderer/api/atom_renderer_bindings.h"
 #include "renderer/atom_renderer_client.h"
-#include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebDraggableRegion.h"
+#include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
 
 #include "common/v8/node_common.h"
@@ -23,34 +22,10 @@ AtomRenderViewObserver::AtomRenderViewObserver(
     content::RenderView* render_view,
     AtomRendererClient* renderer_client)
     : content::RenderViewObserver(render_view),
-      atom_bindings_(new AtomRendererBindings(render_view)),
       renderer_client_(renderer_client) {
 }
 
 AtomRenderViewObserver::~AtomRenderViewObserver() {
-}
-
-void AtomRenderViewObserver::DidClearWindowObject(WebFrame* frame) {
-  // Get the context.
-  v8::HandleScope handle_scope(node_isolate);
-  v8::Handle<v8::Context> context = frame->mainWorldScriptContext();
-  if (context.IsEmpty())
-    return;
-
-  v8::Context::Scope scope(context);
-
-  // Check the existance of process object to prevent duplicate initialization.
-  if (context->Global()->Has(v8::String::New("process")))
-    return;
-
-  // Give the node loop a run to make sure everything is ready.
-  renderer_client_->node_bindings()->RunMessageLoop();
-
-  // Setup node environment for each window.
-  renderer_client_->node_bindings()->CreateEnvironment(context);
-
-  // Add atom-shell extended APIs.
-  atom_bindings()->BindToFrame(frame);
 }
 
 void AtomRenderViewObserver::DraggableRegionsChanged(WebKit::WebFrame* frame) {
@@ -78,7 +53,8 @@ bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
 
 void AtomRenderViewObserver::OnBrowserMessage(const string16& channel,
                                               const base::ListValue& args) {
-  atom_bindings()->OnBrowserMessage(channel, args);
+  renderer_client_->atom_bindings()->OnBrowserMessage(
+      render_view(), channel, args);
 }
 
 }  // namespace atom
