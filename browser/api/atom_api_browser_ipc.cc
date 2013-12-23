@@ -10,7 +10,6 @@
 #include "content/public/browser/render_view_host.h"
 
 using content::RenderViewHost;
-using content::V8ValueConverter;
 
 namespace atom {
 

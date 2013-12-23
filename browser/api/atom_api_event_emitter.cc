@@ -39,7 +39,7 @@ bool EventEmitter::Emit(const std::string& name, base::ListValue* args) {
   v8::HandleScope handle_scope(node_isolate);
 
   v8::Handle<v8::Context> context = v8::Context::GetCurrent();
-  scoped_ptr<content::V8ValueConverter> converter(new V8ValueConverterImpl);
+  scoped_ptr<V8ValueConverter> converter(new V8ValueConverter);
 
   v8::Handle<v8::Object> v8_event = Event::CreateV8Object();
   Event* event = Event::Unwrap<Event>(v8_event);

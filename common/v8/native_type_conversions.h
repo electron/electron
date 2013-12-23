@@ -16,7 +16,7 @@
 #include "browser/api/atom_api_window.h"
 #include "common/swap_or_assign.h"
 #include "common/v8/scoped_persistent.h"
-#include "common/v8_value_converter_impl.h"
+#include "common/v8/v8_value_converter.h"
 #include "content/public/renderer/v8_value_converter.h"
 #include "ui/gfx/rect.h"
 #include "url/gurl.h"
@@ -66,8 +66,7 @@ struct FromV8Value {
   }
 
   operator scoped_ptr<base::Value>() {
-    scoped_ptr<content::V8ValueConverter> converter(
-        new atom::V8ValueConverterImpl);
+    scoped_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
     return scoped_ptr<base::Value>(
         converter->FromV8Value(value_, v8::Context::GetCurrent()));
   }

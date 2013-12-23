@@ -11,8 +11,6 @@
 
 #include "common/v8/node_common.h"
 
-using content::V8ValueConverter;
-
 namespace atom {
 
 namespace {
@@ -60,7 +58,7 @@ void AtomRendererBindings::OnBrowserMessage(content::RenderView* render_view,
   v8::Context::Scope context_scope(context);
 
   v8::Handle<v8::Object> process = GetProcessObject(context);
-  scoped_ptr<V8ValueConverter> converter(V8ValueConverter::create());
+  scoped_ptr<V8ValueConverter> converter(new V8ValueConverter);
 
   std::vector<v8::Handle<v8::Value>> arguments;
   arguments.reserve(1 + args.GetSize());

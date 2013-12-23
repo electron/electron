@@ -13,8 +13,6 @@
 
 #include "common/v8/node_common.h"
 
-using content::V8ValueConverter;
-
 namespace atom {
 
 AtomBrowserBindings::AtomBrowserBindings() {
@@ -29,7 +27,7 @@ void AtomBrowserBindings::OnRendererMessage(int process_id,
                                             const base::ListValue& args) {
   v8::HandleScope handle_scope(node_isolate);
 
-  scoped_ptr<V8ValueConverter> converter(new V8ValueConverterImpl());
+  scoped_ptr<V8ValueConverter> converter(new V8ValueConverter);
 
   // process.emit(channel, 'message', process_id, routing_id);
   std::vector<v8::Handle<v8::Value>> arguments;
@@ -62,7 +60,7 @@ void AtomBrowserBindings::OnRendererMessageSync(
     IPC::Message* message) {
   v8::HandleScope handle_scope(node_isolate);
 
-  scoped_ptr<V8ValueConverter> converter(new V8ValueConverterImpl());
+  scoped_ptr<V8ValueConverter> converter(new V8ValueConverter);
 
   // Create the event object.
   v8::Handle<v8::Object> event = api::Event::CreateV8Object();
