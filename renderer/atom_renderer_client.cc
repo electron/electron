@@ -57,9 +57,17 @@ void AtomRendererClient::DidCreateScriptContext(WebKit::WebFrame* frame,
   atom_bindings_->BindToFrame(frame);
 }
 
-void AtomRendererClient::WillReleaseScriptContext(WebKit::WebFrame* frame,
-                                                  v8::Handle<v8::Context>,
-                                                  int world_id) {
+void AtomRendererClient::WillReleaseScriptContext(
+    WebKit::WebFrame* frame,
+    v8::Handle<v8::Context> context,
+    int world_id) {
+  node::Environment* env = node::Environment::GetCurrent(context);
+  if (env == NULL) {
+    LOG(ERROR) << "Encounter a non-node context when releasing script context";
+    return;
+  }
+
+  env->Dispose();
 }
 
 }  // namespace atom
