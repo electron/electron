@@ -35,9 +35,10 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   settings.dcheck_state =
       logging::DISABLE_DCHECK_FOR_NON_OFFICIAL_RELEASE_BUILDS;
   logging::InitLogging(settings);
-  // Logging with pid, tid and timestamp.
-  logging::SetLogItems(true, true, true, false);
 #endif  // defined(OS_WIN)
+
+  // Logging with pid and timestamp.
+  logging::SetLogItems(true, false, true, false);
 
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
