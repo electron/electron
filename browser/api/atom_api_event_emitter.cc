@@ -8,8 +8,9 @@
 
 #include "base/logging.h"
 #include "browser/api/atom_api_event.h"
-#include "common/v8/node_common.h"
 #include "common/v8/native_type_conversions.h"
+
+#include "common/v8/node_common.h"
 
 namespace atom {
 
@@ -17,14 +18,6 @@ namespace api {
 
 EventEmitter::EventEmitter(v8::Handle<v8::Object> wrapper) {
   Wrap(wrapper);
-
-  // process.emit('ATOM_BROWSER_INTERNAL_NEW', this).
-  v8::Handle<v8::Value> args[] = {
-      v8::String::New("ATOM_BROWSER_INTERNAL_NEW"),
-      wrapper,
-  };
-  node::Environment* env = node::Environment::GetCurrent(node_isolate);
-  node::MakeCallback(env->process_object(), "emit", 2, args);
 }
 
 EventEmitter::~EventEmitter() {

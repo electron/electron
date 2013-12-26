@@ -1,4 +1,3 @@
-BrowserWindow = require 'browser-window'
 EventEmitter = require('events').EventEmitter
 IDWeakMap = require 'id-weak-map'
 v8Util = process.atomBinding 'v8_util'
@@ -51,13 +50,6 @@ class ObjectsRegistry extends EventEmitter
       v8Util.setHiddenValue obj, 'atomId', id
       id
 
-    # Remember all windows in the weak map.
-    @windowsWeakMap = new IDWeakMap
-    process.on 'ATOM_BROWSER_INTERNAL_NEW', (obj) =>
-      if obj.constructor is BrowserWindow
-        id = @windowsWeakMap.add obj
-        obj.on 'destroyed', => @windowsWeakMap.remove id
-
   # Register a new object, the object would be kept referenced until you release
   # it explicitly.
   add: (processId, routingId, obj) ->
@@ -88,10 +80,5 @@ class ObjectsRegistry extends EventEmitter
   clear: (processId, routingId) ->
     @emit "release-renderer-view-#{processId}-#{routingId}"
     ObjectsStore.releaseForRenderView processId, routingId
-
-  # Return an array of all browser windows.
-  getAllWindows: ->
-    keys = @windowsWeakMap.keys()
-    @windowsWeakMap.get key for key in keys
 
 module.exports = new ObjectsRegistry

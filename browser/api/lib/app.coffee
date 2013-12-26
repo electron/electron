@@ -1,5 +1,7 @@
-bindings = process.atomBinding 'app'
+BrowserWindow = require 'browser-window'
 EventEmitter = require('events').EventEmitter
+
+bindings = process.atomBinding 'app'
 
 Application = bindings.Application
 Application::__proto__ = EventEmitter.prototype
@@ -8,9 +10,6 @@ app = new Application
 
 app.getHomeDir = ->
   process.env[if process.platform is 'win32' then 'USERPROFILE' else 'HOME']
-
-app.getBrowserWindows = ->
-  require('../../lib/objects-registry.js').getAllWindows()
 
 app.setApplicationMenu = (menu) ->
   require('menu').setApplicationMenu menu
@@ -24,7 +23,7 @@ app.commandLine =
 
 if process.platform is 'darwin'
   app.dock =
-    bounce: (type = 'informational') -> bindings.dockBounce type
+    bounce: (type='informational') -> bindings.dockBounce type
     cancelBounce: bindings.dockCancelBounce
     setBadge: bindings.dockSetBadgeText
     getBadge: bindings.dockGetBadgeText
