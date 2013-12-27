@@ -26,10 +26,14 @@ def update_gyp():
   python = sys.executable
   if sys.platform == 'cygwin':
     python = os.path.join('vendor', 'python_26', 'python.exe')
+  arch = 'ia32'
+  if sys.platform == 'darwin':
+    arch = 'x64'
   subprocess.call([python, gyp,
                    '-f', 'ninja', '--depth', '.', 'atom.gyp',
                    '-Icommon.gypi', '-Ivendor/brightray/brightray.gypi',
-                   '-Dtarget_arch=ia32', '-Dlibrary=static_library'])
+                   '-Dtarget_arch={0}'.format(arch),
+                   '-Dlibrary=static_library'])
 
 
 if __name__ == '__main__':
