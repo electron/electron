@@ -66,7 +66,7 @@ app.on('window-all-closed', function() {
 
 // This method will be called when atom-shell has done everything
 // initialization and ready for creating browser windows.
-app.on('finish-launching', function() {
+app.on('ready', function() {
   // Create the browser window,
   mainWindow = new Window({ width: 800, height: 600 });
   // and load the index.html of the app.

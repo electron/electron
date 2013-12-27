@@ -40,7 +40,7 @@ app.on('window-all-closed', function() {
   app.terminate();
 });
 
-app.on('finish-launching', function() {
+app.on('ready', function() {
   var template = [
     {
       label: 'Atom',

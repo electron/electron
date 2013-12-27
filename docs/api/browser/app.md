@@ -13,11 +13,17 @@ app.on('window-all-closed', function() {
 
 ## Event: will-finish-launching
 
-Setup crash reporter and auto updater here.
+Emitted when application has done basic startup. On Windows and Linux it is the
+same with `ready` event, on OS X this event represents the
+`applicationWillFinishLaunching` message of `NSApplication`, usually you would
+setup listeners to `open-file` and `open-url` events here, and start the crash
+reporter and auto updater.
 
-## Event: finish-launching
+Under most cases you should just do everything in `ready` event.
 
-Do final startup like creating browser window here.
+## Event: ready
+
+Emitted when atom-shell has done everything initializaiton.
 
 ## Event: window-all-closed
 

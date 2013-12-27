@@ -49,7 +49,7 @@ void App::OnWillFinishLaunching() {
 }
 
 void App::OnFinishLaunching() {
-  Emit("finish-launching");
+  Emit("ready");
 }
 
 // static
