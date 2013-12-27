@@ -59,3 +59,10 @@ window.onerror = (error) ->
     true
   else
     false
+
+# Override default window.open.
+window.open = (url) ->
+  BrowserWindow = require('remote').require 'browser-window'
+  browser = new BrowserWindow width: 800, height: 600
+  browser.loadUrl url
+  browser
