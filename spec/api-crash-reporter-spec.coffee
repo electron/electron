@@ -13,7 +13,9 @@ describe 'crash-reporter module', ->
     w = new BrowserWindow(show: false)
     server = http.createServer (req, res) ->
       form = new formidable.IncomingForm()
+      process.throwDeprecation = false
       form.parse req, (error, fields, files) ->
+        process.throwDeprecation = true
         assert.equal fields['prod'], 'Atom-Shell'
         assert.equal fields['ver'], process.versions['atom-shell']
         assert.equal fields['process_type'], 'renderer'

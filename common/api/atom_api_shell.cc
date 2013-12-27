@@ -8,91 +8,65 @@
 
 #include "base/files/file_path.h"
 #include "common/platform_util.h"
-#include "googleurl/src/gurl.h"
-#include "vendor/node/src/node.h"
+#include "common/v8/native_type_conversions.h"
+#include "url/gurl.h"
+
+#include "common/v8/node_common.h"
 
 namespace atom {
 
 namespace api {
 
-namespace {
-
-bool V8ValueToFilePath(v8::Handle<v8::Value> value, base::FilePath* path) {
-  if (!value->IsString())
-    return false;
-
-  std::string file_path_string(*v8::String::Utf8Value(value));
-  base::FilePath file_path = base::FilePath::FromUTF8Unsafe(file_path_string);
-
-  if (file_path.empty())
-    return false;
-
-  *path = file_path;
-  return true;
-}
-
-}  // namespace
-
 // static
-v8::Handle<v8::Value> Shell::ShowItemInFolder(const v8::Arguments &args) {
-  v8::HandleScope scope;
-
+void Shell::ShowItemInFolder(const v8::FunctionCallbackInfo<v8::Value>& args) {
   base::FilePath file_path;
-  if (!V8ValueToFilePath(args[0], &file_path))
+  if (!FromV8Arguments(args, &file_path))
     return node::ThrowTypeError("Bad argument");
 
   platform_util::ShowItemInFolder(file_path);
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Shell::OpenItem(const v8::Arguments &args) {
-  v8::HandleScope scope;
-
+void Shell::OpenItem(const v8::FunctionCallbackInfo<v8::Value>& args) {
   base::FilePath file_path;
-  if (!V8ValueToFilePath(args[0], &file_path))
+  if (!FromV8Arguments(args, &file_path))
     return node::ThrowTypeError("Bad argument");
 
   platform_util::OpenItem(file_path);
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Shell::OpenExternal(const v8::Arguments &args) {
-  v8::HandleScope scope;
-
-  if (!args[0]->IsString())
+void Shell::OpenExternal(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  GURL url;
+  if (!FromV8Arguments(args, &url))
     return node::ThrowTypeError("Bad argument");
 
-  platform_util::OpenExternal(GURL(*v8::String::Utf8Value(args[0])));
-  return v8::Undefined();
+  platform_util::OpenExternal(url);
 }
 
 // static
-v8::Handle<v8::Value> Shell::MoveItemToTrash(const v8::Arguments &args) {
-  v8::HandleScope scope;
-
+void Shell::MoveItemToTrash(const v8::FunctionCallbackInfo<v8::Value>& args) {
   base::FilePath file_path;
-  if (!V8ValueToFilePath(args[0], &file_path))
+  if (!FromV8Arguments(args, &file_path))
     return node::ThrowTypeError("Bad argument");
 
   platform_util::MoveItemToTrash(file_path);
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Shell::Beep(const v8::Arguments &args) {
+void Shell::Beep(const v8::FunctionCallbackInfo<v8::Value>& args) {
   platform_util::Beep();
-  return v8::Undefined();
 }
 
 // static
 void Shell::Initialize(v8::Handle<v8::Object> target) {
-  node::SetMethod(target, "showItemInFolder", ShowItemInFolder);
-  node::SetMethod(target, "openItem", OpenItem);
-  node::SetMethod(target, "openExternal", OpenExternal);
-  node::SetMethod(target, "moveItemToTrash", MoveItemToTrash);
-  node::SetMethod(target, "beep", Beep);
+  v8::HandleScope handle_scope(node_isolate);
+
+  NODE_SET_METHOD(target, "showItemInFolder", ShowItemInFolder);
+  NODE_SET_METHOD(target, "openItem", OpenItem);
+  NODE_SET_METHOD(target, "openExternal", OpenExternal);
+  NODE_SET_METHOD(target, "moveItemToTrash", MoveItemToTrash);
+  NODE_SET_METHOD(target, "beep", Beep);
 }
 
 }  // namespace api

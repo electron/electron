@@ -23,18 +23,22 @@ AtomMainDelegate::~AtomMainDelegate() {
 bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   // Disable logging out to debug.log on Windows
 #if defined(OS_WIN)
-  logging::InitLogging(
-      L"debug.log",
+  logging::LoggingSettings settings;
 #if defined(DEBUG)
-      logging::LOG_TO_BOTH_FILE_AND_SYSTEM_DEBUG_LOG ,
+  settings.logging_dest = logging::LOG_TO_ALL;
+  settings.log_file = L"debug.log";
+  settings.lock_log = logging::LOCK_LOG_FILE;
+  settings.delete_old = logging::DELETE_OLD_LOG_FILE;
 #else
-      logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG,
-#endif  // defined(NDEBUG)
-      logging::LOCK_LOG_FILE,
-      logging::DELETE_OLD_LOG_FILE,
-      logging::DISABLE_DCHECK_FOR_NON_OFFICIAL_RELEASE_BUILDS);
-  logging::SetLogItems(true, false, true, false);
+  settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
+#endif
+  settings.dcheck_state =
+      logging::DISABLE_DCHECK_FOR_NON_OFFICIAL_RELEASE_BUILDS;
+  logging::InitLogging(settings);
 #endif  // defined(OS_WIN)
+
+  // Logging with pid and timestamp.
+  logging::SetLogItems(true, false, true, false);
 
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
@@ -43,13 +47,20 @@ void AtomMainDelegate::PreSandboxStartup() {
 #if defined(OS_MACOSX)
   OverrideChildProcessPath();
   OverrideFrameworkBundlePath();
-  SetProcessName();
 #endif
   InitializeResourceBundle();
 
-  // Disable renderer sandbox for most of node's functions.
   CommandLine* command_line = CommandLine::ForCurrentProcess();
+
+  // Disable renderer sandbox for most of node's functions.
   command_line->AppendSwitch(switches::kNoSandbox);
+
+  // Disable accelerated compositing since it caused a lot of troubles (black
+  // devtools, screen flashes) and needed lots of effort to make it right.
+  command_line->AppendSwitch(switches::kDisableAcceleratedCompositing);
+
+  // Add a flag to mark the end of switches added by atom-shell.
+  command_line->AppendSwitch("no-more-switches");
 }
 
 void AtomMainDelegate::InitializeResourceBundle() {

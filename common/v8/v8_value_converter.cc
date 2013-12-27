@@ -2,57 +2,56 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "common/v8_value_converter_impl.h"
+#include "common/v8/v8_value_converter.h"
 
 #include <string>
 
 #include "base/logging.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/values.h"
-#include "v8/include/v8.h"
 
 namespace atom {
 
-V8ValueConverterImpl::V8ValueConverterImpl()
+V8ValueConverter::V8ValueConverter()
     : date_allowed_(false),
       reg_exp_allowed_(false),
       function_allowed_(false),
       strip_null_from_objects_(false),
       avoid_identity_hash_for_testing_(false) {}
 
-void V8ValueConverterImpl::SetDateAllowed(bool val) {
+void V8ValueConverter::SetDateAllowed(bool val) {
   date_allowed_ = val;
 }
 
-void V8ValueConverterImpl::SetRegExpAllowed(bool val) {
+void V8ValueConverter::SetRegExpAllowed(bool val) {
   reg_exp_allowed_ = val;
 }
 
-void V8ValueConverterImpl::SetFunctionAllowed(bool val) {
+void V8ValueConverter::SetFunctionAllowed(bool val) {
   function_allowed_ = val;
 }
 
-void V8ValueConverterImpl::SetStripNullFromObjects(bool val) {
+void V8ValueConverter::SetStripNullFromObjects(bool val) {
   strip_null_from_objects_ = val;
 }
 
-v8::Handle<v8::Value> V8ValueConverterImpl::ToV8Value(
+v8::Handle<v8::Value> V8ValueConverter::ToV8Value(
     const base::Value* value, v8::Handle<v8::Context> context) const {
   v8::Context::Scope context_scope(context);
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   return handle_scope.Close(ToV8ValueImpl(value));
 }
 
-Value* V8ValueConverterImpl::FromV8Value(
+Value* V8ValueConverter::FromV8Value(
     v8::Handle<v8::Value> val,
     v8::Handle<v8::Context> context) const {
   v8::Context::Scope context_scope(context);
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   HashToHandleMap unique_map;
   return FromV8ValueImpl(val, &unique_map);
 }
 
-v8::Handle<v8::Value> V8ValueConverterImpl::ToV8ValueImpl(
+v8::Handle<v8::Value> V8ValueConverter::ToV8ValueImpl(
      const base::Value* value) const {
   CHECK(value);
   switch (value->GetType()) {
@@ -95,7 +94,7 @@ v8::Handle<v8::Value> V8ValueConverterImpl::ToV8ValueImpl(
   }
 }
 
-v8::Handle<v8::Value> V8ValueConverterImpl::ToV8Array(
+v8::Handle<v8::Value> V8ValueConverter::ToV8Array(
     const base::ListValue* val) const {
   v8::Handle<v8::Array> result(v8::Array::New(val->GetSize()));
 
@@ -115,7 +114,7 @@ v8::Handle<v8::Value> V8ValueConverterImpl::ToV8Array(
   return result;
 }
 
-v8::Handle<v8::Value> V8ValueConverterImpl::ToV8Object(
+v8::Handle<v8::Value> V8ValueConverter::ToV8Object(
     const base::DictionaryValue* val) const {
   v8::Handle<v8::Object> result(v8::Object::New());
 
@@ -136,7 +135,7 @@ v8::Handle<v8::Value> V8ValueConverterImpl::ToV8Object(
   return result;
 }
 
-Value* V8ValueConverterImpl::FromV8ValueImpl(v8::Handle<v8::Value> val,
+Value* V8ValueConverter::FromV8ValueImpl(v8::Handle<v8::Value> val,
     HashToHandleMap* unique_map) const {
   CHECK(!val.IsEmpty());
 
@@ -196,7 +195,7 @@ Value* V8ValueConverterImpl::FromV8ValueImpl(v8::Handle<v8::Value> val,
   return NULL;
 }
 
-Value* V8ValueConverterImpl::FromV8Array(v8::Handle<v8::Array> val,
+Value* V8ValueConverter::FromV8Array(v8::Handle<v8::Array> val,
     HashToHandleMap* unique_map) const {
   if (!UpdateAndCheckUniqueness(unique_map, val))
     return base::Value::CreateNullValue();
@@ -233,7 +232,7 @@ Value* V8ValueConverterImpl::FromV8Array(v8::Handle<v8::Array> val,
   return result;
 }
 
-Value* V8ValueConverterImpl::FromV8Object(
+Value* V8ValueConverter::FromV8Object(
     v8::Handle<v8::Object> val,
     HashToHandleMap* unique_map) const {
   if (!UpdateAndCheckUniqueness(unique_map, val))
@@ -310,7 +309,7 @@ Value* V8ValueConverterImpl::FromV8Object(
   return result.release();
 }
 
-bool V8ValueConverterImpl::UpdateAndCheckUniqueness(
+bool V8ValueConverter::UpdateAndCheckUniqueness(
     HashToHandleMap* map,
     v8::Handle<v8::Object> handle) const {
   typedef HashToHandleMap::const_iterator Iterator;

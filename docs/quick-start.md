@@ -53,7 +53,6 @@ every piece of the app. An example of `main.js` is:
 
 ```javascript
 var app = require('app');  // Module to control application life.
-var delegate = require('atom_delegate');  // Delegate of Content API.
 var Window = require('window');  // Module to create native browser window.
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -67,7 +66,7 @@ app.on('window-all-closed', function() {
 
 // This method will be called when atom-shell has done everything
 // initialization and ready for creating browser windows.
-delegate.browserMainParts.preMainMessageLoopRun = function() {
+app.on('ready', function() {
   // Create the browser window,
   mainWindow = new Window({ width: 800, height: 600 });
   // and load the index.html of the app.
@@ -89,7 +88,7 @@ delegate.browserMainParts.preMainMessageLoopRun = function() {
     // when you should delete the corresponding element.
     mainWindow = null;
   });
-}
+});
 ```
 
 Finally the `index.html` is the web page you want to show, in fact you

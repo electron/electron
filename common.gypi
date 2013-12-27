@@ -13,6 +13,7 @@
       }],
     ],
     # Reflects node's config.gypi.
+    'component%': 'static_library',
     'python': 'python',
     'node_install_npm': 'false',
     'node_prefix': '',
@@ -29,11 +30,12 @@
     'node_use_openssl': 'true',
     'node_use_perfctr': 'false',
     'node_use_systemtap': 'false',
+    'v8_postmortem_support': 'false',
   },
   # Settings to compile node under Windows.
   'target_defaults': {
     'target_conditions': [
-      ['_target_name in ["libuv", "http_parser", "cares", "openssl", "node", "zlib"]', {
+      ['_target_name in ["libuv", "http_parser", "cares", "openssl", "node_lib", "zlib"]', {
         'msvs_disabled_warnings': [
           4013,  # 'free' undefined; assuming extern returning int
           4054,  #
@@ -41,6 +43,7 @@
           4189,  #
           4131,  # uses old-style declarator
           4133,  # incompatible types
+          4146,  # unary minus operator applied to unsigned type, result still unsigned
           4152,  # function/data pointer conversion in expression
           4206,  # translation unit is empty
           4204,  # non-constant aggregate initializer
@@ -51,6 +54,7 @@
           4505,  # unreferenced local function has been removed
           4701,  # potentially uninitialized local variable 'sizew' used
           4706,  # assignment within conditional expression
+          4804,  #  unsafe use of type 'bool' in operation
           4996,  #
         ],
         'msvs_settings': {
@@ -71,6 +75,11 @@
             '-Wno-return-type',
           ],
         },
+      }],
+      ['_target_name in ["node_lib", "atom_lib"]', {
+        'include_dirs': [
+          'vendor/brightray/vendor/download/libchromiumcontent/src/v8/include',
+        ],
       }],
       ['_target_name=="libuv"', {
         'conditions': [

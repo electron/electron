@@ -22,7 +22,7 @@ def update_frameworks():
 
 
 def update_gyp():
-  gyp = os.path.join('vendor', 'gyp', 'gyp_main.py')
+  gyp = os.path.join('vendor', 'brightray', 'vendor', 'gyp', 'gyp_main.py')
   python = sys.executable
   if sys.platform == 'cygwin':
     python = os.path.join('vendor', 'python_26', 'python.exe')

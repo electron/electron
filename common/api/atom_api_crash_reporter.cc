@@ -5,16 +5,16 @@
 #include "common/api/atom_api_crash_reporter.h"
 
 #include "common/crash_reporter/crash_reporter.h"
-#include "common/v8_conversions.h"
-#include "vendor/node/src/node.h"
-#include "vendor/node/src/node_internals.h"
+#include "common/v8/native_type_conversions.h"
+
+#include "common/v8/node_common.h"
 
 namespace atom {
 
 namespace api {
 
 // static
-v8::Handle<v8::Value> CrashReporter::Start(const v8::Arguments& args) {
+void CrashReporter::Start(const v8::FunctionCallbackInfo<v8::Value>& args) {
   std::string product_name, company_name, submit_url;
   bool auto_submit, skip_system;
   std::map<std::string, std::string> dict;
@@ -24,13 +24,11 @@ v8::Handle<v8::Value> CrashReporter::Start(const v8::Arguments& args) {
 
   crash_reporter::CrashReporter::GetInstance()->Start(
       product_name, company_name, submit_url, auto_submit, skip_system, dict);
-
-  return v8::Undefined();
 }
 
 // static
 void CrashReporter::Initialize(v8::Handle<v8::Object> target) {
-  node::SetMethod(target, "start", Start);
+  NODE_SET_METHOD(target, "start", Start);
 }
 
 }  // namespace api

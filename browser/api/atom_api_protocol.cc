@@ -9,11 +9,11 @@
 #include "browser/net/adapter_request_job.h"
 #include "browser/net/atom_url_request_context_getter.h"
 #include "browser/net/atom_url_request_job_factory.h"
-#include "common/v8_conversions.h"
+#include "common/v8/native_type_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/url_request/url_request_context.h"
-#include "vendor/node/src/node.h"
-#include "vendor/node/src/node_internals.h"
+
+#include "common/v8/node_common.h"
 
 namespace atom {
 
@@ -24,10 +24,10 @@ typedef net::URLRequestJobFactory::ProtocolHandler ProtocolHandler;
 namespace {
 
 // The protocol module object.
-v8::Persistent<v8::Object> g_protocol_object;
+ScopedPersistent<v8::Object> g_protocol_object;
 
 // Registered protocol handlers.
-typedef std::map<std::string, v8::Persistent<v8::Function>> HandlersMap;
+typedef std::map<std::string, RefCountedV8Function> HandlersMap;
 static HandlersMap g_handlers;
 
 static const char* kEarlyUseProtocolError = "This method can only be used"
@@ -35,25 +35,23 @@ static const char* kEarlyUseProtocolError = "This method can only be used"
 
 // Emit an event for the protocol module.
 void EmitEventInUI(const std::string& event, const std::string& parameter) {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(node_isolate);
 
   v8::Handle<v8::Value> argv[] = {
-    ToV8Value(event),
-    ToV8Value(parameter),
+      ToV8Value(event),
+      ToV8Value(parameter),
   };
-  node::MakeCallback(g_protocol_object, "emit", arraysize(argv), argv);
+  node::MakeCallback(g_protocol_object.NewHandle(node_isolate),
+                     "emit", 2, argv);
 }
 
 // Convert the URLRequest object to V8 object.
 v8::Handle<v8::Object> ConvertURLRequestToV8Object(
     const net::URLRequest* request) {
   v8::Local<v8::Object> obj = v8::Object::New();
-  obj->Set(v8::String::New("method"),
-           v8::String::New(request->method().c_str()));
-  obj->Set(v8::String::New("url"),
-           v8::String::New(request->url().spec().c_str()));
-  obj->Set(v8::String::New("referrer"),
-           v8::String::New(request->referrer().c_str()));
+  obj->Set(ToV8Value("method"), ToV8Value(request->method()));
+  obj->Set(ToV8Value("url"), ToV8Value(request->url().spec()));
+  obj->Set(ToV8Value("referrer"), ToV8Value(request->referrer()));
   return obj;
 }
 
@@ -74,13 +72,15 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
   virtual void GetJobTypeInUI() OVERRIDE {
     DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
 
+    v8::HandleScope handle_scope(node_isolate);
+
     // Call the JS handler.
-    v8::HandleScope scope;
     v8::Handle<v8::Value> argv[] = {
       ConvertURLRequestToV8Object(request()),
     };
-    v8::Handle<v8::Value> result = g_handlers[request()->url().scheme()]->Call(
-        v8::Context::GetCurrent()->Global(), arraysize(argv), argv);
+    RefCountedV8Function callback = g_handlers[request()->url().scheme()];
+    v8::Handle<v8::Value> result = callback->NewHandle(node_isolate)->Call(
+        v8::Context::GetCurrent()->Global(), 1, argv);
 
     // Determine the type of the job we are going to create.
     if (result->IsString()) {
@@ -180,14 +180,15 @@ class CustomProtocolHandler : public ProtocolHandler {
 }  // namespace
 
 // static
-v8::Handle<v8::Value> Protocol::RegisterProtocol(const v8::Arguments& args) {
+void Protocol::RegisterProtocol(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
   std::string scheme;
-  v8::Persistent<v8::Function> callback;
+  RefCountedV8Function callback;
   if (!FromV8Arguments(args, &scheme, &callback))
     return node::ThrowTypeError("Bad argument");
 
   if (g_handlers.find(scheme) != g_handlers.end() ||
-      net::URLRequest::IsHandledProtocol(scheme))
+      GetRequestJobFactory()->IsHandledProtocol(scheme))
     return node::ThrowError("The scheme is already registered");
 
   if (AtomBrowserContext::Get()->url_request_context_getter() == NULL)
@@ -199,12 +200,11 @@ v8::Handle<v8::Value> Protocol::RegisterProtocol(const v8::Arguments& args) {
   content::BrowserThread::PostTask(content::BrowserThread::IO,
                                    FROM_HERE,
                                    base::Bind(&RegisterProtocolInIO, scheme));
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Protocol::UnregisterProtocol(const v8::Arguments& args) {
+void Protocol::UnregisterProtocol(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
   std::string scheme;
   if (!FromV8Arguments(args, &scheme))
     return node::ThrowTypeError("Bad argument");
@@ -221,19 +221,23 @@ v8::Handle<v8::Value> Protocol::UnregisterProtocol(const v8::Arguments& args) {
   content::BrowserThread::PostTask(content::BrowserThread::IO,
                                    FROM_HERE,
                                    base::Bind(&UnregisterProtocolInIO, scheme));
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Protocol::IsHandledProtocol(const v8::Arguments& args) {
-  return ToV8Value(net::URLRequest::IsHandledProtocol(FromV8Value(args[0])));
-}
-
-// static
-v8::Handle<v8::Value> Protocol::InterceptProtocol(const v8::Arguments& args) {
+void Protocol::IsHandledProtocol(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
   std::string scheme;
-  v8::Persistent<v8::Function> callback;
+  if (!FromV8Arguments(args, &scheme))
+    return node::ThrowTypeError("Bad argument");
+
+  args.GetReturnValue().Set(GetRequestJobFactory()->IsHandledProtocol(scheme));
+}
+
+// static
+void Protocol::InterceptProtocol(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
+  std::string scheme;
+  RefCountedV8Function callback;
   if (!FromV8Arguments(args, &scheme, &callback))
     return node::ThrowTypeError("Bad argument");
 
@@ -252,11 +256,11 @@ v8::Handle<v8::Value> Protocol::InterceptProtocol(const v8::Arguments& args) {
   content::BrowserThread::PostTask(content::BrowserThread::IO,
                                    FROM_HERE,
                                    base::Bind(&InterceptProtocolInIO, scheme));
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Protocol::UninterceptProtocol(const v8::Arguments& args) {
+void Protocol::UninterceptProtocol(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
   std::string scheme;
   if (!FromV8Arguments(args, &scheme))
     return node::ThrowTypeError("Bad argument");
@@ -274,7 +278,6 @@ v8::Handle<v8::Value> Protocol::UninterceptProtocol(const v8::Arguments& args) {
                                    FROM_HERE,
                                    base::Bind(&UninterceptProtocolInIO,
                                               scheme));
-  return v8::Undefined();
 }
 
 // static
@@ -361,14 +364,13 @@ void Protocol::UninterceptProtocolInIO(const std::string& scheme) {
 // static
 void Protocol::Initialize(v8::Handle<v8::Object> target) {
   // Remember the protocol object, used for emitting event later.
-  g_protocol_object = v8::Persistent<v8::Object>::New(
-      node::node_isolate, target);
+  g_protocol_object.reset(target);
 
-  node::SetMethod(target, "registerProtocol", RegisterProtocol);
-  node::SetMethod(target, "unregisterProtocol", UnregisterProtocol);
-  node::SetMethod(target, "isHandledProtocol", IsHandledProtocol);
-  node::SetMethod(target, "interceptProtocol", InterceptProtocol);
-  node::SetMethod(target, "uninterceptProtocol", UninterceptProtocol);
+  NODE_SET_METHOD(target, "registerProtocol", RegisterProtocol);
+  NODE_SET_METHOD(target, "unregisterProtocol", UnregisterProtocol);
+  NODE_SET_METHOD(target, "isHandledProtocol", IsHandledProtocol);
+  NODE_SET_METHOD(target, "interceptProtocol", InterceptProtocol);
+  NODE_SET_METHOD(target, "uninterceptProtocol", UninterceptProtocol);
 }
 
 }  // namespace api

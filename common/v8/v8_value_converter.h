@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_V8_VALUE_CONVERTER_IMPL_H_
-#define ATOM_COMMON_V8_VALUE_CONVERTER_IMPL_H_
+#ifndef ATOM_COMMON_V8_V8_VALUE_CONVERTER_H_
+#define ATOM_COMMON_V8_V8_VALUE_CONVERTER_H_
 
 #include <map>
 
 #include "base/basictypes.h"
 #include "base/compiler_specific.h"
-#include "content/public/renderer/v8_value_converter.h"
+#include "v8/include/v8.h"
 
 namespace base {
 class BinaryValue;
@@ -20,26 +20,20 @@ class Value;
 
 namespace atom {
 
-// The content::V8ValueConverter depends on WebKit, we get rid of the WebKit
-// dependency by removing support of binary data.
-class V8ValueConverterImpl : public content::V8ValueConverter {
+class V8ValueConverter {
  public:
-  V8ValueConverterImpl();
+  V8ValueConverter();
 
-  // V8ValueConverter implementation.
-  virtual void SetDateAllowed(bool val) OVERRIDE;
-  virtual void SetRegExpAllowed(bool val) OVERRIDE;
-  virtual void SetFunctionAllowed(bool val) OVERRIDE;
-  virtual void SetStripNullFromObjects(bool val) OVERRIDE;
-  virtual v8::Handle<v8::Value> ToV8Value(
-      const base::Value* value,
-      v8::Handle<v8::Context> context) const OVERRIDE;
-  virtual base::Value* FromV8Value(
-      v8::Handle<v8::Value> value,
-      v8::Handle<v8::Context> context) const OVERRIDE;
+  void SetDateAllowed(bool val);
+  void SetRegExpAllowed(bool val);
+  void SetFunctionAllowed(bool val);
+  void SetStripNullFromObjects(bool val);
+  v8::Handle<v8::Value> ToV8Value(const base::Value* value,
+                                  v8::Handle<v8::Context> context) const;
+  base::Value* FromV8Value(v8::Handle<v8::Value> value,
+                           v8::Handle<v8::Context> context) const;
 
  private:
-  friend class ScopedAvoidIdentityHashForTesting;
   typedef std::multimap<int, v8::Handle<v8::Object> > HashToHandleMap;
 
   v8::Handle<v8::Value> ToV8ValueImpl(const base::Value* value) const;
@@ -78,9 +72,9 @@ class V8ValueConverterImpl : public content::V8ValueConverter {
 
   bool avoid_identity_hash_for_testing_;
 
-  DISALLOW_COPY_AND_ASSIGN(V8ValueConverterImpl);
+  DISALLOW_COPY_AND_ASSIGN(V8ValueConverter);
 };
 
 }  // namespace atom
 
-#endif  // ATOM_COMMON_V8_VALUE_CONVERTER_IMPL_H_
+#endif  // ATOM_COMMON_V8_V8_VALUE_CONVERTER_H_

@@ -6,8 +6,9 @@
 
 #include "base/logging.h"
 #include "common/atom_version.h"
-#include "common/v8_conversions.h"
-#include "vendor/node/src/node.h"
+#include "common/v8/native_type_conversions.h"
+
+#include "common/v8/node_common.h"
 
 namespace atom {
 
@@ -50,22 +51,20 @@ AtomBindings::~AtomBindings() {
 }
 
 void AtomBindings::BindTo(v8::Handle<v8::Object> process) {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(node_isolate);
 
-  node::SetMethod(process, "atomBinding", Binding);
-  node::SetMethod(process, "crash", Crash);
-  node::SetMethod(process, "activateUvLoop", ActivateUVLoop);
-  node::SetMethod(process, "log", Log);
-  node::SetMethod(process, "getCurrentStackTrace", GetCurrentStackTrace);
+  NODE_SET_METHOD(process, "atomBinding", Binding);
+  NODE_SET_METHOD(process, "crash", Crash);
+  NODE_SET_METHOD(process, "activateUvLoop", ActivateUVLoop);
+  NODE_SET_METHOD(process, "log", Log);
+  NODE_SET_METHOD(process, "getCurrentStackTrace", GetCurrentStackTrace);
 
   process->Get(v8::String::New("versions"))->ToObject()->
     Set(v8::String::New("atom-shell"), v8::String::New(ATOM_VERSION_STRING));
 }
 
 // static
-v8::Handle<v8::Value> AtomBindings::Binding(const v8::Arguments& args) {
-  v8::HandleScope scope;
-
+void AtomBindings::Binding(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Local<v8::String> module = args[0]->ToString();
   v8::String::Utf8Value module_v(module);
   node::node_module_struct* modp;
@@ -93,7 +92,7 @@ v8::Handle<v8::Value> AtomBindings::Binding(const v8::Arguments& args) {
 
   if (binding_cache->Has(module)) {
     exports = binding_cache->Get(module)->ToObject();
-    return scope.Close(exports);
+    return args.GetReturnValue().Set(exports);
   }
 
   if ((modp = GetBuiltinModule(*module_v, is_browser)) != NULL) {
@@ -102,39 +101,36 @@ v8::Handle<v8::Value> AtomBindings::Binding(const v8::Arguments& args) {
     // only exports.
     modp->register_func(exports, v8::Undefined());
     binding_cache->Set(module, exports);
-    return scope.Close(exports);
+    return args.GetReturnValue().Set(exports);
   }
 
-  return v8::ThrowException(v8::Exception::Error(
-      v8::String::New("No such module")));
+  return node::ThrowError("No such module");
 }
 
 // static
-v8::Handle<v8::Value> AtomBindings::Crash(const v8::Arguments& args) {
+void AtomBindings::Crash(const v8::FunctionCallbackInfo<v8::Value>& args) {
   static_cast<DummyClass*>(NULL)->crash = true;
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> AtomBindings::ActivateUVLoop(const v8::Arguments& args) {
+void AtomBindings::ActivateUVLoop(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
   uv_async_send(&dummy_uv_handle);
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> AtomBindings::Log(const v8::Arguments& args) {
+void AtomBindings::Log(const v8::FunctionCallbackInfo<v8::Value>& args) {
   std::string message;
   for (int i = 0; i < args.Length(); ++i)
     message += *v8::String::Utf8Value(args[i]);
 
   logging::LogMessage("CONSOLE", 0, 0).stream() << message;
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> AtomBindings::GetCurrentStackTrace(
-    const v8::Arguments& args) {
-  v8::HandleScope scope;
+void AtomBindings::GetCurrentStackTrace(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::HandleScope handle_scope(args.GetIsolate());
 
   int stack_limit = kMaxCallStackSize;
   FromV8Arguments(args, &stack_limit);
@@ -147,7 +143,7 @@ v8::Handle<v8::Value> AtomBindings::GetCurrentStackTrace(
   for (int i = 0; i < frame_count; ++i)
     result->Set(i, DumpStackFrame(stack_trace->GetFrame(i)));
 
-  return scope.Close(result);
+  args.GetReturnValue().Set(result);
 }
 
 }  // namespace atom

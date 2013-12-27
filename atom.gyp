@@ -12,7 +12,6 @@
     ],
     'coffee_sources': [
       'browser/api/lib/app.coffee',
-      'browser/api/lib/atom-delegate.coffee',
       'browser/api/lib/auto-updater.coffee',
       'browser/api/lib/browser-window.coffee',
       'browser/api/lib/dialog.coffee',
@@ -21,14 +20,15 @@
       'browser/api/lib/menu-item.coffee',
       'browser/api/lib/power-monitor.coffee',
       'browser/api/lib/protocol.coffee',
-      'browser/atom/atom.coffee',
-      'browser/atom/objects-registry.coffee',
-      'browser/atom/rpc-server.coffee',
+      'browser/lib/init.coffee',
+      'browser/lib/objects-registry.coffee',
+      'browser/lib/rpc-server.coffee',
       'common/api/lib/callbacks-registry.coffee',
       'common/api/lib/clipboard.coffee',
       'common/api/lib/crash-reporter.coffee',
       'common/api/lib/id-weak-map.coffee',
       'common/api/lib/shell.coffee',
+      'renderer/lib/init.coffee',
       'renderer/api/lib/ipc.coffee',
       'renderer/api/lib/remote.coffee',
     ],
@@ -165,9 +165,11 @@
       'common/platform_util_mac.mm',
       'common/platform_util_win.cc',
       'common/swap_or_assign.h',
-      'common/v8_conversions.h',
-      'common/v8_value_converter_impl.cc',
-      'common/v8_value_converter_impl.h',
+      'common/v8/node_common.h',
+      'common/v8/scoped_persistent.h',
+      'common/v8/native_type_conversions.h',
+      'common/v8/v8_value_converter.cc',
+      'common/v8/v8_value_converter.h',
       'renderer/api/atom_api_renderer_ipc.cc',
       'renderer/api/atom_api_renderer_ipc.h',
       'renderer/api/atom_renderer_bindings.cc',
@@ -318,7 +320,7 @@
       'type': 'static_library',
       'dependencies': [
         'vendor/brightray/brightray.gyp:brightray',
-        'vendor/node/node.gyp:node',
+        'vendor/node/node.gyp:node_lib',
       ],
       'sources': [
         '<@(lib_sources)',
@@ -326,6 +328,14 @@
       'include_dirs': [
         '.',
         'vendor',
+        # Include directories for uv and node.
+        'vendor/node/src',
+        'vendor/node/deps/http_parser',
+        'vendor/node/deps/uv/include',
+        # The `node.h` is using `#include"v8.h"`.
+        'vendor/brightray/vendor/download/libchromiumcontent/src/v8/include',
+        # The `node.h` is using `#include"ares.h"`.
+        'vendor/node/deps/cares/include',
       ],
       'direct_dependent_settings': {
         'include_dirs': [

@@ -77,10 +77,11 @@ describe 'browser-window module', ->
       w.close()
 
   describe 'BrowserWindow.capturePage(rect, callback)', ->
-    it 'calls the callback with a Buffer', ->
+    it 'calls the callback with a Buffer', (done) ->
       w = new BrowserWindow(show: false)
       w.capturePage {x: 0, y: 0, width: 100, height: 100}, (image) ->
-        assert.equal image.constructor.name, 'SlowBuffer'
+        assert.equal image.constructor.name, 'Buffer'
+        done()
         w.close()
 
   describe 'beforeunload handler', ->

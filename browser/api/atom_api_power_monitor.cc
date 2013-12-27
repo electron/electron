@@ -5,6 +5,9 @@
 #include "browser/api/atom_api_power_monitor.h"
 
 #include "base/power_monitor/power_monitor.h"
+#include "base/power_monitor/power_monitor_device_source.h"
+
+#include "common/v8/node_common.h"
 
 namespace atom {
 
@@ -35,20 +38,22 @@ void PowerMonitor::OnResume() {
 }
 
 // static
-v8::Handle<v8::Value> PowerMonitor::New(const v8::Arguments& args) {
-  v8::HandleScope scope;
+void PowerMonitor::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::HandleScope handle_scope(args.GetIsolate());
 
   if (!args.IsConstructCall())
     return node::ThrowError("Require constructor call");
 
   new PowerMonitor(args.This());
-
-  return args.This();
 }
 
 // static
 void PowerMonitor::Initialize(v8::Handle<v8::Object> target) {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(node_isolate);
+
+#if defined(OS_MACOSX)
+  base::PowerMonitorDeviceSource::AllocateSystemIOPorts();
+#endif
 
   v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(
       PowerMonitor::New);

@@ -4,7 +4,7 @@
 
 #include "browser/atom_javascript_dialog_manager.h"
 
-#include "base/utf_string_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 
 namespace atom {
 

@@ -1,9 +1,7 @@
 BrowserWindow = require 'browser-window'
 EventEmitter = require('events').EventEmitter
-IDWeakMap = require 'id-weak-map'
 MenuItem = require 'menu-item'
 
-app = require 'app'
 bindings = process.atomBinding 'menu'
 
 Menu = bindings.Menu
@@ -52,7 +50,7 @@ Menu.setApplicationMenu = (menu) ->
   if process.platform is 'darwin'
     bindings.setApplicationMenu menu
   else
-    windows = app.getBrowserWindows()
+    windows = BrowserWindow.getAllWindows()
     w.setMenu menu for w in windows
 
 Menu.getApplicationMenu = -> applicationMenu

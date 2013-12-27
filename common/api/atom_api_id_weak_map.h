@@ -9,6 +9,7 @@
 #include <map>
 
 #include "base/basictypes.h"
+#include "common/v8/scoped_persistent.h"
 #include "vendor/node/src/node_object_wrap.h"
 
 namespace atom {
@@ -24,23 +25,22 @@ class IDWeakMap : public node::ObjectWrap {
   virtual ~IDWeakMap();
 
   bool Has(int key) const;
-  void Erase(v8::Isolate* isolate, int key);
+  void Erase(int key);
   int GetNextID();
 
   static void WeakCallback(v8::Isolate* isolate,
-                           v8::Persistent<v8::Value> value,
-                           void *data);
+                           v8::Persistent<v8::Object>* value,
+                           IDWeakMap* self);
 
-  static v8::Handle<v8::Value> New(const v8::Arguments& args);
-  static v8::Handle<v8::Value> Add(const v8::Arguments& args);
-  static v8::Handle<v8::Value> Get(const v8::Arguments& args);
-  static v8::Handle<v8::Value> Has(const v8::Arguments& args);
-  static v8::Handle<v8::Value> Keys(const v8::Arguments& args);
-  static v8::Handle<v8::Value> Remove(const v8::Arguments& args);
+  static void New(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void Add(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void Get(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void Has(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void Keys(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void Remove(const v8::FunctionCallbackInfo<v8::Value>& args);
 
   int next_id_;
-
-  std::map<int, v8::Persistent<v8::Value>> map_;
+  std::map<int, RefCountedV8Object> map_;
 
   DISALLOW_COPY_AND_ASSIGN(IDWeakMap);
 };

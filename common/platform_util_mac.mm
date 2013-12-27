@@ -12,7 +12,7 @@
 #include "base/mac/mac_logging.h"
 #include "base/mac/scoped_aedesc.h"
 #include "base/strings/sys_string_conversions.h"
-#include "googleurl/src/gurl.h"
+#include "url/gurl.h"
 
 namespace platform_util {
 

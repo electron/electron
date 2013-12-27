@@ -7,7 +7,7 @@
 #include "browser/atom_browser_context.h"
 #include "browser/atom_browser_main_parts.h"
 #include "browser/net/atom_url_request_context_getter.h"
-#include "webkit/glue/webpreferences.h"
+#include "webkit/common/webpreferences.h"
 
 namespace atom {
 

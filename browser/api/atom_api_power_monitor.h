@@ -29,7 +29,7 @@ class PowerMonitor : public EventEmitter,
   virtual void OnResume() OVERRIDE;
 
  private:
-  static v8::Handle<v8::Value> New(const v8::Arguments &args);
+  static void New(const v8::FunctionCallbackInfo<v8::Value>& args);
 
   DISALLOW_COPY_AND_ASSIGN(PowerMonitor);
 };

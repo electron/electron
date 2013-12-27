@@ -23,7 +23,6 @@ class AtomMainDelegate : public brightray::MainDelegate {
   virtual base::FilePath GetResourcesPakFilePath();
   virtual void OverrideChildProcessPath();
   virtual void OverrideFrameworkBundlePath();
-  virtual void SetProcessName();
 #endif
 
  private:

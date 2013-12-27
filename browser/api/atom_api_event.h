@@ -7,8 +7,9 @@
 
 #include "base/basictypes.h"
 #include "base/compiler_specific.h"
-#include "base/string16.h"
+#include "base/strings/string16.h"
 #include "browser/native_window_observer.h"
+#include "common/v8/scoped_persistent.h"
 #include "vendor/node/src/node_object_wrap.h"
 
 namespace IPC {
@@ -32,9 +33,6 @@ class Event : public node::ObjectWrap,
   // Pass the sender and message to be replied.
   void SetSenderAndMessage(NativeWindow* sender, IPC::Message* message);
 
-  // Accessor to return handle_, this follows Google C++ Style.
-  v8::Persistent<v8::Object>& handle() { return handle_; }
-
   // Whether event.preventDefault() is called.
   bool prevent_default() const { return prevent_default_; }
 
@@ -45,13 +43,13 @@ class Event : public node::ObjectWrap,
   virtual void OnWindowClosed() OVERRIDE;
 
  private:
-  static v8::Handle<v8::Value> New(const v8::Arguments& args);
+  static void New(const v8::FunctionCallbackInfo<v8::Value>& args);
 
-  static v8::Handle<v8::Value> PreventDefault(const v8::Arguments& args);
-  static v8::Handle<v8::Value> SendReply(const v8::Arguments& args);
-  static v8::Handle<v8::Value> Destroy(const v8::Arguments& args);
+  static void PreventDefault(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void SendReply(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void Destroy(const v8::FunctionCallbackInfo<v8::Value>& args);
 
-  static v8::Persistent<v8::FunctionTemplate> constructor_template_;
+  static ScopedPersistent<v8::Function> constructor_template_;
 
   // Replyer for the synchronous messages.
   NativeWindow* sender_;

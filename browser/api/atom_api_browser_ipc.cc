@@ -5,22 +5,18 @@
 #include "browser/api/atom_api_browser_ipc.h"
 
 #include "common/api/api_messages.h"
-#include "common/v8_conversions.h"
+#include "common/v8/node_common.h"
+#include "common/v8/native_type_conversions.h"
 #include "content/public/browser/render_view_host.h"
-#include "vendor/node/src/node.h"
-#include "vendor/node/src/node_internals.h"
 
 using content::RenderViewHost;
-using content::V8ValueConverter;
 
 namespace atom {
 
 namespace api {
 
 // static
-v8::Handle<v8::Value> BrowserIPC::Send(const v8::Arguments &args) {
-  v8::HandleScope scope;
-
+void BrowserIPC::Send(const v8::FunctionCallbackInfo<v8::Value>& args) {
   string16 channel;
   int process_id, routing_id;
   scoped_ptr<base::Value> arguments;
@@ -34,17 +30,15 @@ v8::Handle<v8::Value> BrowserIPC::Send(const v8::Arguments &args) {
   if (!render_view_host)
     return node::ThrowError("Invalid render view host");
 
-  render_view_host->Send(new AtomViewMsg_Message(
+  args.GetReturnValue().Set(render_view_host->Send(new AtomViewMsg_Message(
       routing_id,
       channel,
-      *static_cast<base::ListValue*>(arguments.get())));
-
-  return v8::Undefined();
+      *static_cast<base::ListValue*>(arguments.get()))));
 }
 
 // static
 void BrowserIPC::Initialize(v8::Handle<v8::Object> target) {
-  node::SetMethod(target, "send", Send);
+  NODE_SET_METHOD(target, "send", Send);
 }
 
 }  // namespace api

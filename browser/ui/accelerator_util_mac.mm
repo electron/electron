@@ -6,7 +6,7 @@
 
 #include "ui/base/accelerators/accelerator.h"
 #import "ui/base/accelerators/platform_accelerator_cocoa.h"
-#import "ui/base/keycodes/keyboard_code_conversion_mac.h"
+#import "ui/events/keycodes/keyboard_code_conversion_mac.h"
 
 namespace accelerator_util {
 

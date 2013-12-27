@@ -2,13 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_RENDERER_ATOM_RENDERER_CLIENT_
-#define ATOM_RENDERER_ATOM_RENDERER_CLIENT_
+#ifndef ATOM_RENDERER_ATOM_RENDERER_CLIENT_H_
+#define ATOM_RENDERER_ATOM_RENDERER_CLIENT_H_
 
 #include "content/public/renderer/content_renderer_client.h"
 
 namespace atom {
 
+class AtomRendererBindings;
 class NodeBindings;
 
 class AtomRendererClient : public content::ContentRendererClient {
@@ -16,17 +17,25 @@ class AtomRendererClient : public content::ContentRendererClient {
   AtomRendererClient();
   virtual ~AtomRendererClient();
 
-  NodeBindings* node_bindings() const { return node_bindings_.get(); }
+  AtomRendererBindings* atom_bindings() const { return atom_bindings_.get(); }
 
  private:
   virtual void RenderThreadStarted() OVERRIDE;
   virtual void RenderViewCreated(content::RenderView*) OVERRIDE;
+  virtual void DidCreateScriptContext(WebKit::WebFrame* frame,
+                                      v8::Handle<v8::Context> context,
+                                      int extension_group,
+                                      int world_id) OVERRIDE;
+  virtual void WillReleaseScriptContext(WebKit::WebFrame* frame,
+                                        v8::Handle<v8::Context>,
+                                        int world_id) OVERRIDE;
 
   scoped_ptr<NodeBindings> node_bindings_;
+  scoped_ptr<AtomRendererBindings> atom_bindings_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
 };
 
 }  // namespace atom
 
-#endif  // ATOM_RENDERER_ATOM_RENDERER_CLIENT_
+#endif  // ATOM_RENDERER_ATOM_RENDERER_CLIENT_H_

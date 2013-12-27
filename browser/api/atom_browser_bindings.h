@@ -5,8 +5,9 @@
 #ifndef ATOM_BROWSER_API_ATOM_BROWSER_BINDINGS_
 #define ATOM_BROWSER_API_ATOM_BROWSER_BINDINGS_
 
-#include "base/string16.h"
+#include "base/strings/string16.h"
 #include "common/api/atom_bindings.h"
+#include "common/v8/scoped_persistent.h"
 
 namespace base {
 class ListValue;
@@ -25,9 +26,6 @@ class AtomBrowserBindings : public AtomBindings {
   AtomBrowserBindings();
   virtual ~AtomBrowserBindings();
 
-  // Called when the node.js main script has been loaded.
-  virtual void AfterLoad();
-
   // Called when received a message from renderer.
   void OnRendererMessage(int process_id,
                          int routing_id,
@@ -42,14 +40,7 @@ class AtomBrowserBindings : public AtomBindings {
                              NativeWindow* sender,
                              IPC::Message* message);
 
-  // The require('atom').browserMainParts object.
-  v8::Handle<v8::Object> browser_main_parts() {
-    return browser_main_parts_;
-  }
-
  private:
-  v8::Persistent<v8::Object> browser_main_parts_;
-
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserBindings);
 };
 

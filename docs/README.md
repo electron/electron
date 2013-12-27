@@ -22,7 +22,6 @@ Renderer side modules:
 Browser side modules:
 
 * [app](api/browser/app.md)
-* [atom-delegate](api/browser/atom-delegate.md)
 * [auto-updater](api/browser/auto-updater.md)
 * [browser-window](api/browser/browser-window.md)
 * [dialog](api/browser/dialog.md)

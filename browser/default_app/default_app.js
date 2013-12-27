@@ -1,6 +1,5 @@
 var app = require('app');
 var dialog = require('dialog');
-var delegate = require('atom-delegate');
 var ipc = require('ipc');
 var Menu = require('menu');
 var MenuItem = require('menu-item');
@@ -18,7 +17,7 @@ app.on('open-url', function(event, url) {
   dialog.showMessageBox({message: url, buttons: ['OK']});
 });
 
-app.on('finish-launching', function() {
+app.on('ready', function() {
   app.commandLine.appendSwitch('js-flags', '--harmony_collections');
 
   mainWindow = new BrowserWindow({ width: 800, height: 600 });

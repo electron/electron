@@ -4,78 +4,28 @@
 
 #include "renderer/atom_render_view_observer.h"
 
-#include <algorithm>
-#include <vector>
-
 #include "common/api/api_messages.h"
-#include "common/node_bindings.h"
 #include "ipc/ipc_message_macros.h"
 #include "renderer/api/atom_renderer_bindings.h"
 #include "renderer/atom_renderer_client.h"
-#include "third_party/WebKit/Source/WebKit/chromium/public/WebDocument.h"
-#include "third_party/WebKit/Source/WebKit/chromium/public/WebDraggableRegion.h"
-#include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
-#include "v8/include/v8.h"
+#include "third_party/WebKit/public/web/WebDraggableRegion.h"
+#include "third_party/WebKit/public/web/WebDocument.h"
+#include "third_party/WebKit/public/web/WebFrame.h"
+
+#include "common/v8/node_common.h"
 
 using WebKit::WebFrame;
 
-namespace webkit {
-extern void SetGetFirstWindowContext(v8::Handle<v8::Context> (*)());
-extern void SetIsValidWindowContext(bool (*)(v8::Handle<v8::Context>));
-}
-
 namespace atom {
-
-namespace {
-
-std::vector<WebFrame*>& web_frames() {
-  CR_DEFINE_STATIC_LOCAL(std::vector<WebFrame*>, frames, ());
-  return frames;
-}
-
-v8::Handle<v8::Context> GetFirstWindowContext() {
-  if (web_frames().size() == 0)
-    return v8::Handle<v8::Context>();
-
-  return web_frames()[0]->mainWorldScriptContext();
-}
-
-bool IsValidWindowContext(v8::Handle<v8::Context> context) {
-  size_t size = web_frames().size();
-  for (size_t i = 0; i < size; ++i)
-    if (web_frames()[i]->mainWorldScriptContext() == context)
-      return true;
-
-  return false;
-}
-
-}  // namespace
 
 AtomRenderViewObserver::AtomRenderViewObserver(
     content::RenderView* render_view,
     AtomRendererClient* renderer_client)
     : content::RenderViewObserver(render_view),
-      atom_bindings_(new AtomRendererBindings(render_view)),
       renderer_client_(renderer_client) {
-  // Interact with dirty workarounds of extra node context in WebKit.
-  webkit::SetGetFirstWindowContext(GetFirstWindowContext);
-  webkit::SetIsValidWindowContext(IsValidWindowContext);
 }
 
 AtomRenderViewObserver::~AtomRenderViewObserver() {
-}
-
-void AtomRenderViewObserver::DidClearWindowObject(WebFrame* frame) {
-  // Remember the web frame.
-  web_frames().push_back(frame);
-
-  renderer_client_->node_bindings()->BindTo(frame);
-  atom_bindings()->BindToFrame(frame);
-}
-
-void AtomRenderViewObserver::FrameWillClose(WebFrame* frame) {
-  std::vector<WebFrame*>& vec = web_frames();
-  vec.erase(std::remove(vec.begin(), vec.end(), frame), vec.end());
 }
 
 void AtomRenderViewObserver::DraggableRegionsChanged(WebKit::WebFrame* frame) {
@@ -103,7 +53,8 @@ bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
 
 void AtomRenderViewObserver::OnBrowserMessage(const string16& channel,
                                               const base::ListValue& args) {
-  atom_bindings()->OnBrowserMessage(channel, args);
+  renderer_client_->atom_bindings()->OnBrowserMessage(
+      render_view(), channel, args);
 }
 
 }  // namespace atom

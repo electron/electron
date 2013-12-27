@@ -4,18 +4,12 @@
 
 #include "renderer/api/atom_renderer_bindings.h"
 
-#include <vector>
-
-#include "base/logging.h"
-#include "common/v8_conversions.h"
+#include "common/v8/native_type_conversions.h"
 #include "content/public/renderer/render_view.h"
-#include "third_party/WebKit/Source/WebKit/chromium/public/WebFrame.h"
-#include "third_party/WebKit/Source/WebKit/chromium/public/WebView.h"
-#include "vendor/node/src/node.h"
+#include "third_party/WebKit/public/web/WebFrame.h"
+#include "third_party/WebKit/public/web/WebView.h"
 
-using content::RenderView;
-using content::V8ValueConverter;
-using WebKit::WebFrame;
+#include "common/v8/node_common.h"
 
 namespace atom {
 
@@ -31,41 +25,40 @@ v8::Handle<v8::Object> GetProcessObject(v8::Handle<v8::Context> context) {
 
 }  // namespace
 
-AtomRendererBindings::AtomRendererBindings(RenderView* render_view)
-    : render_view_(render_view) {
+AtomRendererBindings::AtomRendererBindings() {
 }
 
 AtomRendererBindings::~AtomRendererBindings() {
 }
 
-void AtomRendererBindings::BindToFrame(WebFrame* frame) {
-  v8::HandleScope handle_scope;
+void AtomRendererBindings::BindToFrame(WebKit::WebFrame* frame) {
+  v8::HandleScope handle_scope(node_isolate);
 
   v8::Handle<v8::Context> context = frame->mainWorldScriptContext();
   if (context.IsEmpty())
     return;
 
   v8::Context::Scope scope(context);
-
   AtomBindings::BindTo(GetProcessObject(context));
 }
 
-void AtomRendererBindings::OnBrowserMessage(const string16& channel,
+void AtomRendererBindings::OnBrowserMessage(content::RenderView* render_view,
+                                            const string16& channel,
                                             const base::ListValue& args) {
-  if (!render_view_->GetWebView())
+  if (!render_view->GetWebView())
     return;
 
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(node_isolate);
 
   v8::Local<v8::Context> context =
-      render_view_->GetWebView()->mainFrame()->mainWorldScriptContext();
+      render_view->GetWebView()->mainFrame()->mainWorldScriptContext();
   if (context.IsEmpty())
     return;
 
   v8::Context::Scope context_scope(context);
 
   v8::Handle<v8::Object> process = GetProcessObject(context);
-  scoped_ptr<V8ValueConverter> converter(V8ValueConverter::create());
+  scoped_ptr<V8ValueConverter> converter(new V8ValueConverter);
 
   std::vector<v8::Handle<v8::Value>> arguments;
   arguments.reserve(1 + args.GetSize());

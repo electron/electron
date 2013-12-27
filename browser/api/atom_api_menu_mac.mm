@@ -4,11 +4,12 @@
 
 #import "browser/api/atom_api_menu_mac.h"
 
-#include "base/message_loop.h"
 #include "base/mac/scoped_sending_event.h"
+#include "base/message_loop/message_loop.h"
 #include "base/strings/sys_string_conversions.h"
 #include "browser/native_window.h"
-#include "common/v8_conversions.h"
+#include "common/v8/node_common.h"
+#include "common/v8/native_type_conversions.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
 
@@ -24,7 +25,7 @@ MenuMac::~MenuMac() {
 }
 
 void MenuMac::Popup(NativeWindow* native_window) {
-  scoped_nsobject<AtomMenuController> menu_controller(
+  base::scoped_nsobject<AtomMenuController> menu_controller(
       [[AtomMenuController alloc] initWithModel:model_.get()]);
 
   NSWindow* window = native_window->GetNativeWindow();
@@ -46,7 +47,8 @@ void MenuMac::Popup(NativeWindow* native_window) {
 
   {
     // Make sure events can be pumped while the menu is up.
-    MessageLoop::ScopedNestableTaskAllower allow(MessageLoop::current());
+    base::MessageLoop::ScopedNestableTaskAllower allow(
+        base::MessageLoop::current());
 
     // One of the events that could be pumped is |window.close()|.
     // User-initiated event-tracking loops protect against this by
@@ -71,8 +73,8 @@ void MenuMac::SendActionToFirstResponder(const std::string& action) {
 }
 
 // static
-v8::Handle<v8::Value> Menu::SetApplicationMenu(const v8::Arguments &args) {
-  v8::HandleScope scope;
+void Menu::SetApplicationMenu(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::HandleScope handle_scope(args.GetIsolate());
 
   if (!args[0]->IsObject())
     return node::ThrowTypeError("Bad argument");
@@ -81,28 +83,24 @@ v8::Handle<v8::Value> Menu::SetApplicationMenu(const v8::Arguments &args) {
   if (!menu)
     return node::ThrowError("Menu is destroyed");
 
-  scoped_nsobject<AtomMenuController> menu_controller(
+  base::scoped_nsobject<AtomMenuController> menu_controller(
       [[AtomMenuController alloc] initWithModel:menu->model_.get()]);
   [NSApp setMainMenu:[menu_controller menu]];
 
   // Ensure the menu_controller_ is destroyed after main menu is set.
   menu_controller.swap(menu->menu_controller_);
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Menu::SendActionToFirstResponder(
-    const v8::Arguments &args) {
-  v8::HandleScope scope;
+void Menu::SendActionToFirstResponder(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::HandleScope handle_scope(args.GetIsolate());
 
   std::string action;
   if (!FromV8Arguments(args, &action))
     return node::ThrowTypeError("Bad argument");
 
   MenuMac::SendActionToFirstResponder(action);
-
-  return v8::Undefined();
 }
 
 // static

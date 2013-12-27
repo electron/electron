@@ -6,92 +6,81 @@
 
 #include <string>
 
+#include "common/v8/native_type_conversions.h"
 #include "ui/base/clipboard/clipboard.h"
-#include "vendor/node/src/node.h"
+
+#include "common/v8/node_common.h"
 
 namespace atom {
 
 namespace api {
 
 // static
-v8::Handle<v8::Value> Clipboard::Has(const v8::Arguments &args) {
-  v8::HandleScope scope;
-
-  if (!args[0]->IsString())
+void Clipboard::Has(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  std::string format_string;
+  if (!FromV8Arguments(args, &format_string))
     return node::ThrowTypeError("Bad argument");
 
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-
-  std::string format_string(*v8::String::Utf8Value(args[0]));
   ui::Clipboard::FormatType format(ui::Clipboard::GetFormatType(format_string));
 
-  return scope.Close(v8::Boolean::New(
-      clipboard->IsFormatAvailable(format, ui::Clipboard::BUFFER_STANDARD)));
+  args.GetReturnValue().Set(
+      clipboard->IsFormatAvailable(format, ui::Clipboard::BUFFER_STANDARD));
 }
 
 // static
-v8::Handle<v8::Value> Clipboard::Read(const v8::Arguments &args) {
-  v8::HandleScope scope;
-
-  if (!args[0]->IsString())
+void Clipboard::Read(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  std::string format_string;
+  if (!FromV8Arguments(args, &format_string))
     return node::ThrowTypeError("Bad argument");
 
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-
-  std::string format_string(*v8::String::Utf8Value(args[0]));
   ui::Clipboard::FormatType format(ui::Clipboard::GetFormatType(format_string));
 
   std::string data;
   clipboard->ReadData(format, &data);
 
-  return scope.Close(v8::String::New(data.c_str(), data.size()));
+  args.GetReturnValue().Set(ToV8Value(data));
 }
 
 // static
-v8::Handle<v8::Value> Clipboard::ReadText(const v8::Arguments &args) {
-  v8::HandleScope scope;
-
+void Clipboard::ReadText(const v8::FunctionCallbackInfo<v8::Value>& args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
 
   std::string data;
   clipboard->ReadAsciiText(ui::Clipboard::BUFFER_STANDARD, &data);
 
-  return scope.Close(v8::String::New(data.c_str(), data.size()));
+  args.GetReturnValue().Set(ToV8Value(data));
 }
 
 // static
-v8::Handle<v8::Value> Clipboard::WriteText(const v8::Arguments &args) {
-  v8::HandleScope scope;
-
-  if (!args[0]->IsString())
+void Clipboard::WriteText(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  std::string text;
+  if (!FromV8Arguments(args, &text))
     return node::ThrowTypeError("Bad argument");
-
-  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  std::string text(*v8::String::Utf8Value(args[0]));
 
   ui::Clipboard::ObjectMap object_map;
   object_map[ui::Clipboard::CBF_TEXT].push_back(
       std::vector<char>(text.begin(), text.end()));
-  clipboard->WriteObjects(ui::Clipboard::BUFFER_STANDARD, object_map, NULL);
 
-  return v8::Undefined();
+  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
+  clipboard->WriteObjects(ui::Clipboard::BUFFER_STANDARD, object_map);
 }
 
 // static
-v8::Handle<v8::Value> Clipboard::Clear(const v8::Arguments &args) {
-  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  clipboard->Clear(ui::Clipboard::BUFFER_STANDARD);
-
-  return v8::Undefined();
+void Clipboard::Clear(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  ui::Clipboard::GetForCurrentThread()->Clear(ui::Clipboard::BUFFER_STANDARD);
 }
 
 // static
 void Clipboard::Initialize(v8::Handle<v8::Object> target) {
-  node::SetMethod(target, "has", Has);
-  node::SetMethod(target, "read", Read);
-  node::SetMethod(target, "readText", ReadText);
-  node::SetMethod(target, "writeText", WriteText);
-  node::SetMethod(target, "clear", Clear);
+  v8::HandleScope handle_scope(node_isolate);
+
+  NODE_SET_METHOD(target, "has", Has);
+  NODE_SET_METHOD(target, "read", Read);
+  NODE_SET_METHOD(target, "readText", ReadText);
+  NODE_SET_METHOD(target, "writeText", WriteText);
+  NODE_SET_METHOD(target, "clear", Clear);
 }
 
 }  // namespace api

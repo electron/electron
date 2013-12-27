@@ -5,10 +5,10 @@
 #include "browser/ui/message_box.h"
 
 #include "base/callback.h"
-#include "base/message_loop.h"
+#include "base/message_loop/message_loop.h"
 #include "base/run_loop.h"
-#include "base/string_util.h"
-#include "base/utf_string_conversions.h"
+#include "base/strings/string_util.h"
+#include "base/strings/utf_string_conversions.h"
 #include "browser/native_window.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/views/controls/button/label_button.h"

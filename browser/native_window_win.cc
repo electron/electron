@@ -439,10 +439,9 @@ void NativeWindowWin::Layout() {
   OnViewWasResized();
 }
 
-void NativeWindowWin::ViewHierarchyChanged(bool is_add,
-                                           views::View* parent,
-                                           views::View* child) {
-  if (is_add && child == this)
+void NativeWindowWin::ViewHierarchyChanged(
+  const ViewHierarchyChangedDetails& details) {
+  if (details.is_add && details.child == this)
     AddChildView(web_view_);
 }
 

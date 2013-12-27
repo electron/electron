@@ -5,9 +5,10 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "base/string_util.h"
-#include "vendor/node/src/node.h"
+#include "base/strings/string_util.h"
 #include "vendor/node/src/node_version.h"
+
+#include "common/v8/node_common.h"
 
 namespace atom {
 

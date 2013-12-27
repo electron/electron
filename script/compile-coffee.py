@@ -6,6 +6,10 @@ import sys
 
 
 SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))
+WINDOWS_NODE_PATHs = [
+  'C:/Program Files/nodejs/node.exe',
+  'C:/Program Files (x86)/nodejs/node.exe',
+]
 
 
 def main():
@@ -15,10 +19,21 @@ def main():
   coffee = os.path.join(SOURCE_ROOT, 'node_modules', 'coffee-script', 'bin',
                         'coffee')
   if sys.platform in ['win32', 'cygwin']:
+    node = find_node()
+    if not node:
+      print 'Node.js is required for building atom-shell'
+      return 1
     subprocess.check_call(['node', coffee, '-c', '-o', output_dir, input_file],
-                          executable='C:/Program Files/nodejs/node.exe')
+                          executable=node)
   else:
     subprocess.check_call(['node', coffee, '-c', '-o', output_dir, input_file])
+
+
+def find_node():
+  for path in WINDOWS_NODE_PATHs:
+    if os.path.exists(path):
+      return path
+  return None
 
 
 if __name__ == '__main__':

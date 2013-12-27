@@ -184,7 +184,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   // Implementations of content::WebContentsObserver.
   virtual void RenderViewDeleted(content::RenderViewHost*) OVERRIDE;
-  virtual void RenderViewGone(base::TerminationStatus status) OVERRIDE;
+  virtual void RenderProcessGone(base::TerminationStatus status) OVERRIDE;
+  virtual void BeforeUnloadFired(const base::TimeTicks& proceed_time) OVERRIDE;
   virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
 
   // Implementations of content::NotificationObserver

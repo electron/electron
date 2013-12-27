@@ -3,7 +3,7 @@ child_process = require 'child_process'
 fs            = require 'fs'
 path          = require 'path'
 
-describe 'node features', ->
+describe 'node feature', ->
   describe 'child_process', ->
     fixtures = path.join __dirname, 'fixtures'
 

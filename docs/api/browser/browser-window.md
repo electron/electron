@@ -99,6 +99,10 @@ shouldn't!).
 Emitted when the memory taken by the native window is released. Usually you
 should dereference the javascript object when received this event.
 
+### Class Method: BrowserWindow.getAllWindows()
+
+Returns an array of all opened browser windows.
+
 ### Class Method: BrowserWindow.getFocusedWindow()
 
 Returns the window that is focused in this application.

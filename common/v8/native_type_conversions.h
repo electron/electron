@@ -2,24 +2,24 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef COMMON_V8_CONVERSIONS_H_
-#define COMMON_V8_CONVERSIONS_H_
+#ifndef ATOM_COMMON_V8_NATIVE_TYPE_CONVERSIONS_H_
+#define ATOM_COMMON_V8_NATIVE_TYPE_CONVERSIONS_H_
 
 #include <map>
 #include <string>
 #include <vector>
 
 #include "base/files/file_path.h"
-#include "base/string16.h"
+#include "base/strings/string16.h"
 #include "base/template_util.h"
 #include "base/values.h"
 #include "browser/api/atom_api_window.h"
 #include "common/swap_or_assign.h"
-#include "common/v8_value_converter_impl.h"
+#include "common/v8/scoped_persistent.h"
+#include "common/v8/v8_value_converter.h"
 #include "content/public/renderer/v8_value_converter.h"
-#include "googleurl/src/gurl.h"
 #include "ui/gfx/rect.h"
-#include "v8/include/v8.h"
+#include "url/gurl.h"
 
 // Convert V8 value to arbitrary supported types.
 struct FromV8Value {
@@ -66,8 +66,7 @@ struct FromV8Value {
   }
 
   operator scoped_ptr<base::Value>() {
-    scoped_ptr<content::V8ValueConverter> converter(
-        new atom::V8ValueConverterImpl);
+    scoped_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
     return scoped_ptr<base::Value>(
         converter->FromV8Value(value_, v8::Context::GetCurrent()));
   }
@@ -104,10 +103,10 @@ struct FromV8Value {
     return NULL;
   }
 
-  operator v8::Persistent<v8::Function>() {
-    return v8::Persistent<v8::Function>::New(
-        node::node_isolate,
-        v8::Handle<v8::Function>::Cast(value_));
+  operator atom::RefCountedV8Function() {
+    v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(value_);
+    return atom::RefCountedV8Function(
+        new atom::RefCountedPersistent<v8::Function>(func));
   }
 
   v8::Handle<v8::Value> value_;
@@ -226,14 +225,16 @@ bool V8ValueCanBeConvertedTo<atom::NativeWindow*>(v8::Handle<v8::Value> value) {
 }
 
 template<> inline
-bool V8ValueCanBeConvertedTo<v8::Persistent<v8::Function>>(
+bool V8ValueCanBeConvertedTo<atom::RefCountedV8Function>(
     v8::Handle<v8::Value> value) {
   return value->IsFunction();
 }
 
 // Check and convert V8's Arguments to native types.
 template<typename T1> inline
-bool FromV8Arguments(const v8::Arguments& args, T1* value, int index = 0) {
+bool FromV8Arguments(const v8::FunctionCallbackInfo<v8::Value>& args,
+                     T1* value,
+                     int index = 0) {
   if (!V8ValueCanBeConvertedTo<T1>(args[index]))
     return false;
   internal::SwapOrAssign(*value,
@@ -242,18 +243,23 @@ bool FromV8Arguments(const v8::Arguments& args, T1* value, int index = 0) {
 }
 
 template<typename T1, typename T2> inline
-bool FromV8Arguments(const v8::Arguments& args, T1* a1, T2* a2) {
+bool FromV8Arguments(const v8::FunctionCallbackInfo<v8::Value>& args,
+                     T1* a1,
+                     T2* a2) {
   return FromV8Arguments<T1>(args, a1) && FromV8Arguments<T2>(args, a2, 1);
 }
 
 template<typename T1, typename T2, typename T3> inline
-bool FromV8Arguments(const v8::Arguments& args, T1* a1, T2* a2, T3* a3) {
+bool FromV8Arguments(const v8::FunctionCallbackInfo<v8::Value>& args,
+                     T1* a1,
+                     T2* a2,
+                     T3* a3) {
   return FromV8Arguments<T1, T2>(args, a1, a2) &&
          FromV8Arguments<T3>(args, a3, 2);
 }
 
 template<typename T1, typename T2, typename T3, typename T4> inline
-bool FromV8Arguments(const v8::Arguments& args,
+bool FromV8Arguments(const v8::FunctionCallbackInfo<v8::Value>& args,
                      T1* a1,
                      T2* a2,
                      T3* a3,
@@ -263,7 +269,7 @@ bool FromV8Arguments(const v8::Arguments& args,
 }
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5> inline
-bool FromV8Arguments(const v8::Arguments& args,
+bool FromV8Arguments(const v8::FunctionCallbackInfo<v8::Value>& args,
                      T1* a1,
                      T2* a2,
                      T3* a3,
@@ -275,7 +281,7 @@ bool FromV8Arguments(const v8::Arguments& args,
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5,
     typename T6> inline
-bool FromV8Arguments(const v8::Arguments& args,
+bool FromV8Arguments(const v8::FunctionCallbackInfo<v8::Value>& args,
                      T1* a1,
                      T2* a2,
                      T3* a3,
@@ -288,7 +294,7 @@ bool FromV8Arguments(const v8::Arguments& args,
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5,
     typename T6, typename T7> inline
-bool FromV8Arguments(const v8::Arguments& args,
+bool FromV8Arguments(const v8::FunctionCallbackInfo<v8::Value>& args,
                      T1* a1,
                      T2* a2,
                      T3* a3,
@@ -301,4 +307,4 @@ bool FromV8Arguments(const v8::Arguments& args,
       FromV8Arguments<T7>(args, a7, 6);
 }
 
-#endif  // COMMON_V8_CONVERSIONS_H_
+#endif  // ATOM_COMMON_V8_NATIVE_TYPE_CONVERSIONS_H_

@@ -4,14 +4,16 @@
 
 #include "browser/api/atom_api_window.h"
 
-#include "base/process_util.h"
+#include "base/process/kill.h"
 #include "browser/native_window.h"
-#include "common/v8_conversions.h"
+#include "common/v8/native_type_conversions.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/render_process_host.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/size.h"
+
+#include "common/v8/node_common.h"
 #include "vendor/node/src/node_buffer.h"
 
 using content::NavigationController;
@@ -87,23 +89,20 @@ void Window::OnRendererCrashed() {
   Emit("crashed");
 }
 
-void Window::OnCapturePageDone(v8::Persistent<v8::Function> callback,
+void Window::OnCapturePageDone(const RefCountedV8Function& callback,
                                const std::vector<unsigned char>& data) {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(node_isolate);
 
-  // TODO(zcbenz): Use new Buffer API when we updated to node v0.12.x.
-  node::Buffer* buffer = node::Buffer::New(
+  v8::Local<v8::Value> buffer = node::Buffer::New(
       reinterpret_cast<const char*>(data.data()),
       data.size());
-
-  v8::Handle<v8::Value> arg = buffer->handle_;
-  callback->Call(v8::Context::GetCurrent()->Global(), 1, &arg);
-  callback.Dispose(v8::Isolate::GetCurrent());
+  callback->NewHandle(node_isolate)->Call(
+      v8::Context::GetCurrent()->Global(), 1, &buffer);
 }
 
 // static
-v8::Handle<v8::Value> Window::New(const v8::Arguments &args) {
-  v8::HandleScope scope;
+void Window::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  v8::HandleScope handle_scope(args.GetIsolate());
 
   if (!args.IsConstructCall())
     return node::ThrowError("Require constructor call");
@@ -119,12 +118,10 @@ v8::Handle<v8::Value> Window::New(const v8::Arguments &args) {
 
   // Give js code a chance to do initialization.
   node::MakeCallback(args.This(), "_init", 0, NULL);
-
-  return args.This();
 }
 
 // static
-v8::Handle<v8::Value> Window::Destroy(const v8::Arguments &args) {
+void Window::Destroy(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   base::ProcessHandle handle = self->window_->GetRenderProcessHandle();
@@ -135,96 +132,70 @@ v8::Handle<v8::Value> Window::Destroy(const v8::Arguments &args) {
   if (!base::WaitForSingleProcess(handle,
                                   base::TimeDelta::FromMilliseconds(500)))
     base::KillProcess(handle, 0, true);
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::Close(const v8::Arguments &args) {
+void Window::Close(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
   self->window_->Close();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::Focus(const v8::Arguments &args) {
+void Window::Focus(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
   self->window_->Focus(args[0]->IsBoolean() ? args[0]->BooleanValue(): true);
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::IsFocused(const v8::Arguments &args) {
+void Window::IsFocused(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-  return ToV8Value(self->window_->IsFocused());
+  args.GetReturnValue().Set(self->window_->IsFocused());
 }
 
 // static
-v8::Handle<v8::Value> Window::Show(const v8::Arguments &args) {
+void Window::Show(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
   self->window_->Show();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::Hide(const v8::Arguments &args) {
+void Window::Hide(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
   self->window_->Hide();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::IsVisible(const v8::Arguments& args) {
+void Window::IsVisible(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-  return ToV8Value(self->window_->IsVisible());
+  return args.GetReturnValue().Set(self->window_->IsVisible());
 }
 
 // static
-v8::Handle<v8::Value> Window::Maximize(const v8::Arguments &args) {
+void Window::Maximize(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
   self->window_->Maximize();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::Unmaximize(const v8::Arguments &args) {
+void Window::Unmaximize(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
   self->window_->Unmaximize();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::Minimize(const v8::Arguments &args) {
+void Window::Minimize(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
   self->window_->Minimize();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::Restore(const v8::Arguments &args) {
+void Window::Restore(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
   self->window_->Restore();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::SetFullscreen(const v8::Arguments &args) {
+void Window::SetFullscreen(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   bool fs;
@@ -232,18 +203,16 @@ v8::Handle<v8::Value> Window::SetFullscreen(const v8::Arguments &args) {
     return node::ThrowTypeError("Bad argument");
 
   self->window_->SetFullscreen(fs);
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::IsFullscreen(const v8::Arguments &args) {
+void Window::IsFullscreen(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
-  return ToV8Value(self->window_->IsFullscreen());
+  args.GetReturnValue().Set(self->window_->IsFullscreen());
 }
 
 // static
-v8::Handle<v8::Value> Window::SetSize(const v8::Arguments &args) {
+void Window::SetSize(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   int width, height;
@@ -251,11 +220,10 @@ v8::Handle<v8::Value> Window::SetSize(const v8::Arguments &args) {
     return node::ThrowTypeError("Bad argument");
 
   self->window_->SetSize(gfx::Size(width, height));
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::GetSize(const v8::Arguments &args) {
+void Window::GetSize(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   gfx::Size size = self->window_->GetSize();
@@ -263,11 +231,11 @@ v8::Handle<v8::Value> Window::GetSize(const v8::Arguments &args) {
   ret->Set(0, ToV8Value(size.width()));
   ret->Set(1, ToV8Value(size.height()));
 
-  return ret;
+  args.GetReturnValue().Set(ret);
 }
 
 // static
-v8::Handle<v8::Value> Window::SetMinimumSize(const v8::Arguments &args) {
+void Window::SetMinimumSize(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   int width, height;
@@ -275,11 +243,10 @@ v8::Handle<v8::Value> Window::SetMinimumSize(const v8::Arguments &args) {
     return node::ThrowTypeError("Bad argument");
 
   self->window_->SetMinimumSize(gfx::Size(width, height));
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::GetMinimumSize(const v8::Arguments &args) {
+void Window::GetMinimumSize(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   gfx::Size size = self->window_->GetMinimumSize();
@@ -287,24 +254,22 @@ v8::Handle<v8::Value> Window::GetMinimumSize(const v8::Arguments &args) {
   ret->Set(0, ToV8Value(size.width()));
   ret->Set(1, ToV8Value(size.height()));
 
-  return ret;
+  args.GetReturnValue().Set(ret);
 }
 
 // static
-v8::Handle<v8::Value> Window::SetMaximumSize(const v8::Arguments &args) {
+void Window::SetMaximumSize(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
 
   int width, height;
   if (!FromV8Arguments(args, &width, &height))
     return node::ThrowTypeError("Bad argument");
 
   self->window_->SetMaximumSize(gfx::Size(width, height));
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::GetMaximumSize(const v8::Arguments &args) {
+void Window::GetMaximumSize(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   gfx::Size size = self->window_->GetMaximumSize();
@@ -312,11 +277,11 @@ v8::Handle<v8::Value> Window::GetMaximumSize(const v8::Arguments &args) {
   ret->Set(0, ToV8Value(size.width()));
   ret->Set(1, ToV8Value(size.height()));
 
-  return ret;
+  args.GetReturnValue().Set(ret);
 }
 
 // static
-v8::Handle<v8::Value> Window::SetResizable(const v8::Arguments &args) {
+void Window::SetResizable(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   bool resizable;
@@ -324,18 +289,16 @@ v8::Handle<v8::Value> Window::SetResizable(const v8::Arguments &args) {
     return node::ThrowTypeError("Bad argument");
 
   self->window_->SetResizable(resizable);
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::IsResizable(const v8::Arguments &args) {
+void Window::IsResizable(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
-  return ToV8Value(self->window_->IsResizable());
+  args.GetReturnValue().Set(self->window_->IsResizable());
 }
 
 // static
-v8::Handle<v8::Value> Window::SetAlwaysOnTop(const v8::Arguments &args) {
+void Window::SetAlwaysOnTop(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   bool top;
@@ -343,27 +306,22 @@ v8::Handle<v8::Value> Window::SetAlwaysOnTop(const v8::Arguments &args) {
     return node::ThrowTypeError("Bad argument");
 
   self->window_->SetAlwaysOnTop(top);
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::IsAlwaysOnTop(const v8::Arguments &args) {
+void Window::IsAlwaysOnTop(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
-  return ToV8Value(self->window_->IsAlwaysOnTop());
+  args.GetReturnValue().Set(self->window_->IsAlwaysOnTop());
 }
 
 // static
-v8::Handle<v8::Value> Window::Center(const v8::Arguments &args) {
+void Window::Center(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
   self->window_->Center();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::SetPosition(const v8::Arguments &args) {
+void Window::SetPosition(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   int x, y;
@@ -371,11 +329,10 @@ v8::Handle<v8::Value> Window::SetPosition(const v8::Arguments &args) {
     return node::ThrowTypeError("Bad argument");
 
   self->window_->SetPosition(gfx::Point(x, y));
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::GetPosition(const v8::Arguments &args) {
+void Window::GetPosition(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   gfx::Point pos = self->window_->GetPosition();
@@ -383,11 +340,11 @@ v8::Handle<v8::Value> Window::GetPosition(const v8::Arguments &args) {
   ret->Set(0, ToV8Value(pos.x()));
   ret->Set(1, ToV8Value(pos.y()));
 
-  return ret;
+  args.GetReturnValue().Set(ret);
 }
 
 // static
-v8::Handle<v8::Value> Window::SetTitle(const v8::Arguments &args) {
+void Window::SetTitle(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   std::string title;
@@ -395,27 +352,23 @@ v8::Handle<v8::Value> Window::SetTitle(const v8::Arguments &args) {
     return node::ThrowTypeError("Bad argument");
 
   self->window_->SetTitle(title);
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::GetTitle(const v8::Arguments &args) {
+void Window::GetTitle(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-  return ToV8Value(self->window_->GetTitle());
+  args.GetReturnValue().Set(ToV8Value(self->window_->GetTitle()));
 }
 
 // static
-v8::Handle<v8::Value> Window::FlashFrame(const v8::Arguments &args) {
+void Window::FlashFrame(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
   self->window_->FlashFrame(
       args[0]->IsBoolean() ? args[0]->BooleanValue(): true);
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::SetKiosk(const v8::Arguments &args) {
+void Window::SetKiosk(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   bool kiosk;
@@ -423,42 +376,34 @@ v8::Handle<v8::Value> Window::SetKiosk(const v8::Arguments &args) {
     return node::ThrowTypeError("Bad argument");
 
   self->window_->SetKiosk(kiosk);
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::IsKiosk(const v8::Arguments &args) {
+void Window::IsKiosk(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
-  return ToV8Value(self->window_->IsKiosk());
+  args.GetReturnValue().Set(self->window_->IsKiosk());
 }
 
 // static
-v8::Handle<v8::Value> Window::OpenDevTools(const v8::Arguments &args) {
+void Window::OpenDevTools(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
   self->window_->OpenDevTools();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::CloseDevTools(const v8::Arguments &args) {
+void Window::CloseDevTools(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
   self->window_->CloseDevTools();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::IsDevToolsOpened(const v8::Arguments& args) {
+void Window::IsDevToolsOpened(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-  return ToV8Value(self->window_->IsDevToolsOpened());
+  args.GetReturnValue().Set(self->window_->IsDevToolsOpened());
 }
 
 // static
-v8::Handle<v8::Value> Window::InspectElement(const v8::Arguments& args) {
+void Window::InspectElement(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   int x, y;
@@ -466,39 +411,32 @@ v8::Handle<v8::Value> Window::InspectElement(const v8::Arguments& args) {
     return node::ThrowTypeError("Bad argument");
 
   self->window_->InspectElement(x, y);
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::FocusOnWebView(const v8::Arguments &args) {
+void Window::FocusOnWebView(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
   self->window_->FocusOnWebView();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::BlurWebView(const v8::Arguments &args) {
+void Window::BlurWebView(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
   self->window_->BlurWebView();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::IsWebViewFocused(const v8::Arguments& args) {
+void Window::IsWebViewFocused(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-  return ToV8Value(self->window_->IsWebViewFocused());
+  args.GetReturnValue().Set(self->window_->IsWebViewFocused());
 }
 
 // static
-v8::Handle<v8::Value> Window::CapturePage(const v8::Arguments& args) {
+void Window::CapturePage(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   gfx::Rect rect;
-  v8::Persistent<v8::Function> callback;
+  RefCountedV8Function callback;
   if (!FromV8Arguments(args, &rect, &callback) &&
       !FromV8Arguments(args, &callback))
     return node::ThrowTypeError("Bad argument");
@@ -506,64 +444,57 @@ v8::Handle<v8::Value> Window::CapturePage(const v8::Arguments& args) {
   self->window_->CapturePage(rect, base::Bind(&Window::OnCapturePageDone,
                                               base::Unretained(self),
                                               callback));
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::GetPageTitle(const v8::Arguments &args) {
+void Window::GetPageTitle(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
-  return ToV8Value(self->window_->GetWebContents()->GetTitle());
+  args.GetReturnValue().Set(ToV8Value(
+      self->window_->GetWebContents()->GetTitle()));
 }
 
 // static
-v8::Handle<v8::Value> Window::IsLoading(const v8::Arguments &args) {
+void Window::IsLoading(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
-  return ToV8Value(self->window_->GetWebContents()->IsLoading());
+  args.GetReturnValue().Set(self->window_->GetWebContents()->IsLoading());
 }
 
 // static
-v8::Handle<v8::Value> Window::IsWaitingForResponse(const v8::Arguments &args) {
+void Window::IsWaitingForResponse(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
-  return ToV8Value(self->window_->GetWebContents()->IsWaitingForResponse());
+  args.GetReturnValue().Set(
+      self->window_->GetWebContents()->IsWaitingForResponse());
 }
 
 // static
-v8::Handle<v8::Value> Window::Stop(const v8::Arguments &args) {
+void Window::Stop(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
   self->window_->GetWebContents()->Stop();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::GetRoutingID(const v8::Arguments &args) {
+void Window::GetRoutingID(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
-  return ToV8Value(self->window_->GetWebContents()->GetRoutingID());
+  args.GetReturnValue().Set(self->window_->GetWebContents()->GetRoutingID());
 }
 
 // static
-v8::Handle<v8::Value> Window::GetProcessID(const v8::Arguments &args) {
+void Window::GetProcessID(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
-  return ToV8Value(
+  args.GetReturnValue().Set(
       self->window_->GetWebContents()->GetRenderProcessHost()->GetID());
 }
 
 // static
-v8::Handle<v8::Value> Window::IsCrashed(const v8::Arguments &args) {
+void Window::IsCrashed(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-
-  return ToV8Value(self->window_->GetWebContents()->IsCrashed());
+  args.GetReturnValue().Set(self->window_->GetWebContents()->IsCrashed());
 }
 
 // static
-v8::Handle<v8::Value> Window::LoadURL(const v8::Arguments &args) {
+void Window::LoadURL(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   GURL url;
@@ -577,12 +508,10 @@ v8::Handle<v8::Value> Window::LoadURL(const v8::Arguments &args) {
   params.transition_type = content::PAGE_TRANSITION_TYPED;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
   controller.LoadURLWithParams(params);
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::GetURL(const v8::Arguments &args) {
+void Window::GetURL(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   NavigationController& controller =
@@ -591,31 +520,31 @@ v8::Handle<v8::Value> Window::GetURL(const v8::Arguments &args) {
   if (controller.GetActiveEntry())
     url = controller.GetActiveEntry()->GetVirtualURL();
 
-  return ToV8Value(url);
+  args.GetReturnValue().Set(ToV8Value(url));
 }
 
 // static
-v8::Handle<v8::Value> Window::CanGoBack(const v8::Arguments &args) {
+void Window::CanGoBack(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   NavigationController& controller =
       self->window_->GetWebContents()->GetController();
 
-  return ToV8Value(controller.CanGoBack());
+  args.GetReturnValue().Set(controller.CanGoBack());
 }
 
 // static
-v8::Handle<v8::Value> Window::CanGoForward(const v8::Arguments &args) {
+void Window::CanGoForward(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   NavigationController& controller =
       self->window_->GetWebContents()->GetController();
 
-  return ToV8Value(controller.CanGoForward());
+  args.GetReturnValue().Set(controller.CanGoForward());
 }
 
 // static
-v8::Handle<v8::Value> Window::CanGoToOffset(const v8::Arguments &args) {
+void Window::CanGoToOffset(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   int offset;
@@ -625,33 +554,29 @@ v8::Handle<v8::Value> Window::CanGoToOffset(const v8::Arguments &args) {
   NavigationController& controller =
       self->window_->GetWebContents()->GetController();
 
-  return ToV8Value(controller.CanGoToOffset(offset));
+  args.GetReturnValue().Set(controller.CanGoToOffset(offset));
 }
 
 // static
-v8::Handle<v8::Value> Window::GoBack(const v8::Arguments &args) {
+void Window::GoBack(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   NavigationController& controller =
       self->window_->GetWebContents()->GetController();
   controller.GoBack();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::GoForward(const v8::Arguments &args) {
+void Window::GoForward(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   NavigationController& controller =
       self->window_->GetWebContents()->GetController();
   controller.GoForward();
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::GoToIndex(const v8::Arguments &args) {
+void Window::GoToIndex(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   int index;
@@ -661,12 +586,10 @@ v8::Handle<v8::Value> Window::GoToIndex(const v8::Arguments &args) {
   NavigationController& controller =
       self->window_->GetWebContents()->GetController();
   controller.GoToIndex(index);
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::GoToOffset(const v8::Arguments &args) {
+void Window::GoToOffset(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   int offset;
@@ -676,36 +599,31 @@ v8::Handle<v8::Value> Window::GoToOffset(const v8::Arguments &args) {
   NavigationController& controller =
       self->window_->GetWebContents()->GetController();
   controller.GoToOffset(offset);
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::Reload(const v8::Arguments &args) {
+void Window::Reload(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   NavigationController& controller =
       self->window_->GetWebContents()->GetController();
   controller.Reload(args[0]->IsBoolean() ? args[0]->BooleanValue(): false);
-
-  return v8::Undefined();
 }
 
 // static
-v8::Handle<v8::Value> Window::ReloadIgnoringCache(const v8::Arguments &args) {
+void Window::ReloadIgnoringCache(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   NavigationController& controller =
       self->window_->GetWebContents()->GetController();
   controller.ReloadIgnoringCache(
       args[0]->IsBoolean() ? args[0]->BooleanValue(): false);
-
-  return v8::Undefined();
 }
 
 // static
 void Window::Initialize(v8::Handle<v8::Object> target) {
-  v8::HandleScope scope;
+  v8::HandleScope handle_scope(node_isolate);
 
   v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(Window::New);
   t->InstanceTemplate()->SetInternalFieldCount(1);

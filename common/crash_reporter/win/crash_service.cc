@@ -350,7 +350,7 @@ void CrashService::OnClientDumpRequest(void* context,
     file_util::CreateDirectoryW(alternate_dump_location);
     alternate_dump_location = alternate_dump_location.Append(
         dump_location.BaseName());
-    file_util::Move(dump_location, alternate_dump_location);
+    base::Move(dump_location, alternate_dump_location);
     dump_location = alternate_dump_location;
   }
 

@@ -8,8 +8,8 @@
 
 #import <Cocoa/Cocoa.h>
 
-#include "base/memory/scoped_nsobject.h"
-#include "base/string16.h"
+#include "base/mac/scoped_nsobject.h"
+#include "base/strings/string16.h"
 
 namespace ui {
 class MenuModel;
@@ -24,7 +24,7 @@ class MenuModel;
 @interface AtomMenuController : NSObject<NSMenuDelegate> {
  @protected
   ui::MenuModel* model_;  // weak
-  scoped_nsobject<NSMenu> menu_;
+  base::scoped_nsobject<NSMenu> menu_;
   BOOL isMenuOpen_;
 }
 

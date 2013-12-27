@@ -17,11 +17,11 @@ class Clipboard {
   static void Initialize(v8::Handle<v8::Object> target);
 
  private:
-  static v8::Handle<v8::Value> Has(const v8::Arguments &args);
-  static v8::Handle<v8::Value> Read(const v8::Arguments &args);
-  static v8::Handle<v8::Value> ReadText(const v8::Arguments &args);
-  static v8::Handle<v8::Value> WriteText(const v8::Arguments &args);
-  static v8::Handle<v8::Value> Clear(const v8::Arguments &args);
+  static void Has(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void Read(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void ReadText(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void WriteText(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void Clear(const v8::FunctionCallbackInfo<v8::Value>& args);
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(Clipboard);
 };
