@@ -9,7 +9,7 @@
 #define ATOM_MINOR_VERSION 8
 #define ATOM_PATCH_VERSION 0
 
-#define ATOM_VERSION_IS_RELEASE 0
+#define ATOM_VERSION_IS_RELEASE 1
 
 #ifndef ATOM_TAG
 # define ATOM_TAG ""
