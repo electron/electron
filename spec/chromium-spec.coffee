@@ -1,3 +1,5 @@
+assert = require 'assert'
+
 describe 'chromium feature', ->
   describe 'heap snapshot', ->
     it 'does not crash', ->
@@ -13,3 +15,9 @@ describe 'chromium feature', ->
       navigator.webkitGetUserMedia audio: true, video: false,
         -> done()
         -> done()
+
+  describe 'window.open', ->
+    it 'returns a BrowserWindow object', ->
+      b = window.open 'about:blank', 'test', 'show=no'
+      assert.equal b.constructor.name, 'BrowserWindow'
+      b.destroy()

@@ -4,6 +4,7 @@
 
 #include "browser/api/atom_api_window.h"
 
+#include "base/bind.h"
 #include "base/process/kill.h"
 #include "browser/native_window.h"
 #include "common/v8/native_type_conversions.h"
@@ -127,11 +128,12 @@ void Window::Destroy(const v8::FunctionCallbackInfo<v8::Value>& args) {
   base::ProcessHandle handle = self->window_->GetRenderProcessHandle();
   delete self;
 
-  // Check if the render process is terminated, it could happen that the render
-  // became a zombie.
-  if (!base::WaitForSingleProcess(handle,
-                                  base::TimeDelta::FromMilliseconds(500)))
-    base::KillProcess(handle, 0, true);
+  // Make sure the renderer process is terminated, it could happen that the
+  // renderer process became a zombie.
+  base::MessageLoop::current()->PostDelayedTask(
+      FROM_HERE,
+      base::Bind(base::IgnoreResult(base::KillProcess), 0, false, handle),
+      base::TimeDelta::FromMilliseconds(5000));
 }
 
 // static

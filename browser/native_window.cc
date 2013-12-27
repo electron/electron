@@ -280,24 +280,6 @@ void NativeWindow::NotifyWindowBlur() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowBlur());
 }
 
-// Window opened by window.open.
-void NativeWindow::WebContentsCreated(
-    content::WebContents* source_contents,
-    int64 source_frame_id,
-    const string16& frame_name,
-    const GURL& target_url,
-    content::WebContents* new_contents) {
-  LOG(WARNING) << "Please use node-style Window API to create window, "
-                  "using window.open has very strict constrains.";
-
-  scoped_ptr<base::DictionaryValue> options(new base::DictionaryValue);
-  options->SetInteger(switches::kWidth, 800);
-  options->SetInteger(switches::kHeight, 600);
-
-  NativeWindow* window = Create(new_contents, options.get());
-  window->InitFromOptions(options.get());
-}
-
 content::JavaScriptDialogManager* NativeWindow::GetJavaScriptDialogManager() {
   if (!dialog_manager_)
     dialog_manager_.reset(new AtomJavaScriptDialogManager);
