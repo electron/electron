@@ -21,6 +21,10 @@ EventEmitter::EventEmitter(v8::Handle<v8::Object> wrapper) {
 }
 
 EventEmitter::~EventEmitter() {
+  // Clear the aligned pointer, it should have been done by ObjectWrap but
+  // somehow node v0.11.x changed this behaviour.
+  v8::HandleScope handle_scope(node_isolate);
+  handle()->SetAlignedPointerInInternalField(0, NULL);
 }
 
 bool EventEmitter::Emit(const std::string& name) {
