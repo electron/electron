@@ -9,18 +9,6 @@ process.resourcesPath = path.resolve process.argv[1], '..', '..', '..'
 # we need to restore it here.
 process.argv.splice 1, 1
 
-if process.platform is 'win32'
-  # Redirect node's console to use our own implementations, since node can not
-  # handle output when running as GUI program.
-  console.log = console.error = console.warn = process.log
-  process.stdout.write = process.stderr.write = process.log
-
-  # Always returns EOF for stdin stream.
-  Readable = require('stream').Readable
-  stdin = new Readable
-  stdin.push null
-  process.__defineGetter__ 'stdin', -> stdin
-
 # Add browser/api/lib to require's search paths,
 # which contains javascript part of Atom's built-in libraries.
 globalPaths = require('module').globalPaths
@@ -32,6 +20,18 @@ globalPaths.push path.join process.resourcesPath, 'common', 'api', 'lib'
 # Do loading in next tick since we still need some initialize work before
 # native bindings can work.
 setImmediate ->
+  if process.platform is 'win32'
+    # Redirect node's console to use our own implementations, since node can not
+    # handle console output when running as GUI program.
+    console.log = console.error = console.warn = process.log
+    process.stdout.write = process.stderr.write = process.log
+
+    # Always returns EOF for stdin stream.
+    Readable = require('stream').Readable
+    stdin = new Readable
+    stdin.push null
+    process.__defineGetter__ 'stdin', -> stdin
+
   # Don't quit on fatal error.
   process.on 'uncaughtException', (error) ->
     # Show error in GUI.
