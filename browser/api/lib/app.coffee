@@ -1,4 +1,3 @@
-BrowserWindow = require 'browser-window'
 EventEmitter = require('events').EventEmitter
 
 bindings = process.atomBinding 'app'
