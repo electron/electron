@@ -132,7 +132,7 @@ void Window::Destroy(const v8::FunctionCallbackInfo<v8::Value>& args) {
   // renderer process became a zombie.
   base::MessageLoop::current()->PostDelayedTask(
       FROM_HERE,
-      base::Bind(base::IgnoreResult(base::KillProcess), 0, false, handle),
+      base::Bind(base::IgnoreResult(base::KillProcess), handle, 0, false),
       base::TimeDelta::FromMilliseconds(5000));
 }
 
