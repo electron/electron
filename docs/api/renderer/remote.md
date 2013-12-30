@@ -81,6 +81,53 @@ when `close` event was emitted exceptions would happen in browser process.
 So generally, unless you are clear what you are doing, you should always avoid
 passing callbacks to browser process.
 
+## Remote buffer
+
+An instance of node's `Buffer` is an object, so when you got a `Buffer` from
+browser process, what you got was indeed a remote object (let's call it remote
+buffer), and everything would just follow the rules of remote objects.
+
+However you should remember that though a remote buffer behaves like the real
+`Buffer`, it's not a `Buffer` at all. If you pass a remote buffer to node APIs
+that accepting `Buffer`, you should assume the remote buffer would be treated
+like a normal object, instead of a `Buffer`.
+
+For example you can call `BrowserWindow.capturePage` in renderer process, which
+returns a `Buffer` by calling passed callback:
+
+```javascript
+var remote = require('remote');
+var fs = require('fs');
+remote.getCurrentWindow().capturePage(function(buf) {
+  fs.writeFile('/tmp/screenshot.png', buf, function(err) {
+    console.log(err);
+  });
+});
+```
+
+But you may be surprised to find that the file written was corrupted. This is
+because when you called `fs.writeFile`, you thought `buf` was a `Buffer`, but
+indeed it was a remote buffer, and it would be converted to string before it was
+written to file. Since `buf` contained binary data and could not be represented
+by UTF-8 encoded string, the written file would be corrupted.
+
+The workaround is to write the `buf` in browser process, where it is a real
+`Buffer`:
+
+```javascript
+var remote = require('remote');
+remote.getCurrentWindow().capturePage(function(buf) {
+  remote.require('fs').writeFile('/tmp/screenshot.png', buf, function(err) {
+    console.log(err);
+  });
+});
+```
+
+The same thing could happen for all native types, but usually it would just
+throw a type error. The `Buffer` deserves your special attention because it
+can be converted to string and APIs accepting `Buffer` usually accept string
+too, and data corruption only happens when it contains binary data.
+
 ## remote.require(module)
 
 * `module` String
