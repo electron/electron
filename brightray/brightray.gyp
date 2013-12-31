@@ -88,7 +88,7 @@
       ],
       'conditions': [
         ['OS=="linux"', {
-          'cflags': [
+          'cflags_cc': [
             '-fno-rtti',
           ],
           'link_settings': {

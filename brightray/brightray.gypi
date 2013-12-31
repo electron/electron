@@ -8,6 +8,9 @@
     'mac_deployment_target%': '10.8',
     'mac_sdkroot%': 'macosx',
 
+    # Build with clang under Linux.
+    'linux_clang%': 1,
+
     'win_release_RuntimeLibrary%': '2', # /MD (nondebug DLL)
     'win_debug_RuntimeLibrary%': '3', # /MTd (debug DLL)
 
@@ -176,7 +179,6 @@
       }],
       ['OS=="linux"', {
         'cflags_cc': [
-          '-std=gnu++11',
           '-fno-rtti',
           '<!@(pkg-config --cflags gtk+-2.0)',
         ],
@@ -189,7 +191,7 @@
     ],
   },
   'conditions': [
-    ['OS=="linux"', {
+    ['OS=="linux" and linux_clang==1', {
       'make_global_settings': [
         ['CC', '/usr/bin/clang'],
         ['CXX', '/usr/bin/clang++'],
@@ -198,6 +200,11 @@
         ['CXX.host', '$(CXX)'],
         ['LINK.host', '$(LINK)'],
       ],
+      'target_defaults': {
+        'cflags_cc': [
+          '-std=gnu++11',
+        ],
+      },
     }],
     ['OS=="win"', {
       'target_defaults': {
