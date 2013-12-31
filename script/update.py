@@ -32,6 +32,7 @@ def update_gyp():
   subprocess.call([python, gyp,
                    '-f', 'ninja', '--depth', '.', 'atom.gyp',
                    '-Icommon.gypi', '-Ivendor/brightray/brightray.gypi',
+                   '-Dlinux_clang=0',  # Disable brightray's clang setting
                    '-Dtarget_arch={0}'.format(arch),
                    '-Dlibrary=static_library'])
 

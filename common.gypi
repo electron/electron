@@ -2,7 +2,7 @@
   'variables': {
     'clang': 0,
     'conditions': [
-      ['OS=="mac"', {
+      ['OS=="mac" or OS=="linux"', {
         'clang': 1,
       }],
       ['OS=="win" and (MSVS_VERSION=="2012e" or MSVS_VERSION=="2010e")', {
@@ -152,7 +152,9 @@
       ],
       'target_defaults': {
         'cflags_cc': [
-          '-std=c++11',
+          # Use gnu++11 instead of c++11 here, see:
+          # https://code.google.com/p/chromium/issues/detail?id=224515
+          '-std=gnu++11',
         ],
         'xcode_settings': {
           'CC': '/usr/bin/clang',
