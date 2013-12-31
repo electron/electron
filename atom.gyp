@@ -153,6 +153,7 @@
       'common/crash_reporter/win/crash_service_main.h',
       'common/draggable_region.cc',
       'common/draggable_region.h',
+      'common/linux/application_info.cc',
       'common/node_bindings.cc',
       'common/node_bindings.h',
       'common/node_bindings_mac.cc',
