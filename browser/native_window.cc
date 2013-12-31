@@ -213,8 +213,11 @@ base::ProcessHandle NativeWindow::GetRenderProcessHandle() {
 
 void NativeWindow::CapturePage(const gfx::Rect& rect,
                                const CapturePageCallback& callback) {
+  gfx::Rect flipped_y_rect = rect;
+  flipped_y_rect.set_y(-rect.y());
+
   GetWebContents()->GetRenderViewHost()->CopyFromBackingStore(
-      rect,
+      flipped_y_rect,
       gfx::Size(),
       base::Bind(&NativeWindow::OnCapturePageDone,
                  weak_factory_.GetWeakPtr(),
