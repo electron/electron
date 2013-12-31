@@ -75,6 +75,20 @@
             '-Wno-return-type',
           ],
         },
+        'conditions': [
+          ['OS=="linux"', {
+            'cflags': [
+              '-Wno-parentheses-equality',
+              '-Wno-unused-function',
+              '-Wno-sometimes-uninitialized',
+              '-Wno-pointer-sign',
+              '-Wno-string-plus-int',
+              '-Wno-unused-variable',
+              '-Wno-deprecated-declarations',
+              '-Wno-return-type',
+            ],
+          }],
+        ],
       }],
       ['_target_name in ["node_lib", "atom_lib"]', {
         'include_dirs': [
