@@ -163,6 +163,7 @@
       'common/options_switches.cc',
       'common/options_switches.h',
       'common/platform_util.h',
+      'common/platform_util_linux.cc',
       'common/platform_util_mac.mm',
       'common/platform_util_win.cc',
       'common/swap_or_assign.h',
