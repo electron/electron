@@ -309,6 +309,10 @@ visible page.
 You can write received `image` directly to a `.png` file, or you can base64
 encode it and use data URL to embed the image in HTML.
 
+**Note:** Be sure to read documents on remote buffer in
+[remote](../renderer/remote.md) if you are going to use this API in renderer
+process.
+
 ### BrowserWindow.getPageTitle()
 
 Returns the title of web page.
