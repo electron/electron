@@ -20,9 +20,12 @@
 #include "common/crash_reporter/win/crash_service_main.h"
 #include "content/public/app/startup_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
-#else  // defined(OS_WIN)
+#elif defined(OS_LINUX)  // defined(OS_WIN)
+#include "app/atom_main_delegate.h"  // NOLINT
+#include "content/public/app/content_main.h"
+#else  // defined(OS_LINUX)
 #include "app/atom_library_main.h"
-#endif  // defined(OS_MACOSX) || defined(OS_LINUX)
+#endif  // defined(OS_MACOSX)
 
 // Declaration of node::Start.
 namespace node {
@@ -98,7 +101,18 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   return content::ContentMain(instance, &sandbox_info, &delegate);
 }
 
-#else  // defined(OS_WIN)
+#elif defined(OS_LINUX)  // defined(OS_WIN)
+
+int main(int argc, const char* argv[]) {
+  char* node_indicator = getenv("ATOM_SHELL_INTERNAL_RUN_AS_NODE");
+  if (node_indicator != NULL && strcmp(node_indicator, "1") == 0)
+    return node::Start(argc, const_cast<char**>(argv));
+
+  atom::AtomMainDelegate delegate;
+  return content::ContentMain(argc, argv, &delegate);
+}
+
+#else  // defined(OS_LINUX)
 
 int main(int argc, const char* argv[]) {
   char* node_indicator = getenv("ATOM_SHELL_INTERNAL_RUN_AS_NODE");
@@ -108,4 +122,4 @@ int main(int argc, const char* argv[]) {
   return AtomMain(argc, argv);
 }
 
-#endif  // defined(OS_MACOSX) || defined(OS_LINUX)
+#endif  // defined(OS_MACOSX)
