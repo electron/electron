@@ -179,6 +179,7 @@
       }],
       ['OS=="linux"', {
         'cflags_cc': [
+          '-std=gnu++11',
           '-fno-rtti',
           '<!@(pkg-config --cflags gtk+-2.0)',
         ],
@@ -200,11 +201,6 @@
         ['CXX.host', '$(CXX)'],
         ['LINK.host', '$(LINK)'],
       ],
-      'target_defaults': {
-        'cflags_cc': [
-          '-std=gnu++11',
-        ],
-      },
     }],
     ['OS=="win"', {
       'target_defaults': {
