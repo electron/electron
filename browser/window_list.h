@@ -19,13 +19,16 @@ class WindowListObserver;
 class WindowList {
  public:
   typedef std::vector<NativeWindow*> WindowVector;
+  typedef WindowVector::iterator iterator;
   typedef WindowVector::const_iterator const_iterator;
-  typedef WindowVector::const_reverse_iterator const_reverse_iterator;
 
   // Windows are added to the list before they have constructed windows,
   // so the |window()| member function may return NULL.
   const_iterator begin() const { return windows_.begin(); }
   const_iterator end() const { return windows_.end(); }
+
+  iterator begin() { return windows_.begin(); }
+  iterator end() { return windows_.end(); }
 
   bool empty() const { return windows_.empty(); }
   size_t size() const { return windows_.size(); }

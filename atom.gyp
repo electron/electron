@@ -84,6 +84,7 @@
       'browser/atom_javascript_dialog_manager.h',
       'browser/browser.cc',
       'browser/browser.h',
+      'browser/browser_linux.cc',
       'browser/browser_mac.mm',
       'browser/browser_win.cc',
       'browser/browser_observer.h',
