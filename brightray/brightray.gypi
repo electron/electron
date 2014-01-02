@@ -8,6 +8,9 @@
     'mac_deployment_target%': '10.8',
     'mac_sdkroot%': 'macosx',
 
+    # Build with clang under Linux.
+    'linux_clang%': 1,
+
     'win_release_RuntimeLibrary%': '2', # /MD (nondebug DLL)
     'win_debug_RuntimeLibrary%': '3', # /MTd (debug DLL)
 
@@ -189,7 +192,7 @@
     ],
   },
   'conditions': [
-    ['OS=="linux"', {
+    ['OS=="linux" and linux_clang==1', {
       'make_global_settings': [
         ['CC', '/usr/bin/clang'],
         ['CXX', '/usr/bin/clang++'],
