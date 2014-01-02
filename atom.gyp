@@ -66,6 +66,7 @@
       'browser/auto_updater.h',
       'browser/auto_updater_delegate.cc',
       'browser/auto_updater_delegate.h',
+      'browser/auto_updater_linux.cc',
       'browser/auto_updater_mac.mm',
       'browser/auto_updater_win.cc',
       'browser/atom_application_mac.h',
