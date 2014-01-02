@@ -103,6 +103,7 @@
       'browser/net/url_request_string_job.h',
       'browser/ui/accelerator_util.cc',
       'browser/ui/accelerator_util.h',
+      'browser/ui/accelerator_util_gtk.cc',
       'browser/ui/accelerator_util_mac.mm',
       'browser/ui/accelerator_util_win.cc',
       'browser/ui/atom_event_processing_window.h',
