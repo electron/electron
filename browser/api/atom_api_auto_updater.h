@@ -7,8 +7,8 @@
 
 #include "base/callback.h"
 #include "base/memory/scoped_ptr.h"
-#include "browser/api/atom_api_event_emitter.h"
 #include "browser/auto_updater_delegate.h"
+#include "common/api/atom_api_event_emitter.h"
 
 namespace atom {
 

@@ -27,6 +27,7 @@ NODE_EXT_LIST_ITEM(atom_renderer_ipc)
 NODE_EXT_LIST_ITEM(atom_common_clipboard)
 NODE_EXT_LIST_ITEM(atom_common_crash_reporter)
 NODE_EXT_LIST_ITEM(atom_common_id_weak_map)
+NODE_EXT_LIST_ITEM(atom_common_screen)
 NODE_EXT_LIST_ITEM(atom_common_shell)
 NODE_EXT_LIST_ITEM(atom_common_v8_util)
 
