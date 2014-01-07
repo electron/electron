@@ -6,7 +6,7 @@
 #define ATOM_BROWSER_API_ATOM_API_MENU_H_
 
 #include "base/memory/scoped_ptr.h"
-#include "browser/api/atom_api_event_emitter.h"
+#include "common/api/atom_api_event_emitter.h"
 #include "ui/base/models/simple_menu_model.h"
 
 namespace atom {

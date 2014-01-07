@@ -8,8 +8,8 @@
 #include <vector>
 
 #include "base/memory/scoped_ptr.h"
-#include "browser/api/atom_api_event_emitter.h"
 #include "browser/native_window_observer.h"
+#include "common/api/atom_api_event_emitter.h"
 #include "common/v8/scoped_persistent.h"
 
 namespace base {
