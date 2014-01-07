@@ -18,6 +18,7 @@
 #include "common/v8/scoped_persistent.h"
 #include "common/v8/v8_value_converter.h"
 #include "content/public/renderer/v8_value_converter.h"
+#include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "url/gurl.h"
 
@@ -152,6 +153,13 @@ v8::Handle<v8::Value> ToV8Value(const std::vector<base::FilePath>& paths) {
   for (size_t i = 0; i < paths.size(); ++i)
     result->Set(i, ToV8Value(paths[i]));
   return result;
+}
+
+inline v8::Handle<v8::Value> ToV8Value(const gfx::Point& point) {
+  v8::Handle<v8::Object> obj = v8::Object::New();
+  obj->Set(ToV8Value("x"), ToV8Value(point.x()));
+  obj->Set(ToV8Value("y"), ToV8Value(point.y()));
+  return obj;
 }
 
 // Check if a V8 Value is of specified type.
