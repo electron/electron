@@ -46,6 +46,9 @@ if window.location.protocol is 'file:'
       window.location.pathname
   global.__dirname = path.dirname global.__filename
 
+  # Set module's filename so relative require can work as expected.
+  module.filename = global.__filename
+
   # Also search for module under the html file.
   module.paths = module.paths.concat Module._nodeModulePaths(global.__dirname)
 else
