@@ -29,6 +29,8 @@ class Screen : public EventEmitter {
 
   static void GetCursorScreenPoint(
       const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void GetPrimaryDisplay(
+      const v8::FunctionCallbackInfo<v8::Value>& args);
 
   gfx::Screen* screen_;
 

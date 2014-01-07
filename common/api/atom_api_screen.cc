@@ -18,6 +18,20 @@ namespace atom {
 
 namespace api {
 
+namespace {
+
+v8::Handle<v8::Object> DisplayToV8Value(const gfx::Display& display) {
+  v8::Handle<v8::Object> obj = v8::Object::New();
+  obj->Set(ToV8Value("bounds"), ToV8Value(display.bounds()));
+  obj->Set(ToV8Value("workArea"), ToV8Value(display.work_area()));
+  obj->Set(ToV8Value("size"), ToV8Value(display.size()));
+  obj->Set(ToV8Value("workAreaSize"), ToV8Value(display.work_area_size()));
+  obj->Set(ToV8Value("scaleFactor"), ToV8Value(display.device_scale_factor()));
+  return obj;
+}
+
+}  // namespace
+
 Screen::Screen(v8::Handle<v8::Object> wrapper)
     : EventEmitter(wrapper),
       screen_(gfx::Screen::GetNativeScreen()) {
@@ -44,6 +58,14 @@ void Screen::GetCursorScreenPoint(
 }
 
 // static
+void Screen::GetPrimaryDisplay(
+      const v8::FunctionCallbackInfo<v8::Value>& args) {
+  UNWRAP_SCREEN_AND_CHECK;
+  gfx::Display display = self->screen_->GetPrimaryDisplay();
+  args.GetReturnValue().Set(DisplayToV8Value(display));
+}
+
+// static
 void Screen::Initialize(v8::Handle<v8::Object> target) {
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
@@ -52,6 +74,7 @@ void Screen::Initialize(v8::Handle<v8::Object> target) {
   t->SetClassName(v8::String::NewSymbol("Screen"));
 
   NODE_SET_PROTOTYPE_METHOD(t, "getCursorScreenPoint", GetCursorScreenPoint);
+  NODE_SET_PROTOTYPE_METHOD(t, "getPrimaryDisplay", GetPrimaryDisplay);
 
   target->Set(v8::String::NewSymbol("Screen"), t->GetFunction());
 }
