@@ -20,6 +20,7 @@
 #include "content/public/renderer/v8_value_converter.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
+#include "ui/gfx/size.h"
 #include "url/gurl.h"
 
 // Convert V8 value to arbitrary supported types.
@@ -122,6 +123,14 @@ inline v8::Handle<v8::Value> ToV8Value(bool b) {
   return v8::Boolean::New(b);
 }
 
+inline v8::Handle<v8::Value> ToV8Value(float f) {
+  return v8::Number::New(f);
+}
+
+inline v8::Handle<v8::Value> ToV8Value(double f) {
+  return v8::Number::New(f);
+}
+
 inline v8::Handle<v8::Value> ToV8Value(const char* s) {
   return v8::String::New(s);
 }
@@ -159,6 +168,22 @@ inline v8::Handle<v8::Value> ToV8Value(const gfx::Point& point) {
   v8::Handle<v8::Object> obj = v8::Object::New();
   obj->Set(ToV8Value("x"), ToV8Value(point.x()));
   obj->Set(ToV8Value("y"), ToV8Value(point.y()));
+  return obj;
+}
+
+inline v8::Handle<v8::Value> ToV8Value(const gfx::Rect& rect) {
+  v8::Handle<v8::Object> obj = v8::Object::New();
+  obj->Set(ToV8Value("x"), ToV8Value(rect.x()));
+  obj->Set(ToV8Value("y"), ToV8Value(rect.y()));
+  obj->Set(ToV8Value("width"), ToV8Value(rect.width()));
+  obj->Set(ToV8Value("height"), ToV8Value(rect.height()));
+  return obj;
+}
+
+inline v8::Handle<v8::Value> ToV8Value(const gfx::Size& size) {
+  v8::Handle<v8::Object> obj = v8::Object::New();
+  obj->Set(ToV8Value("width"), ToV8Value(size.width()));
+  obj->Set(ToV8Value("height"), ToV8Value(size.height()));
   return obj;
 }
 
