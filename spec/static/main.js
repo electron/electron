@@ -138,7 +138,6 @@ app.on('ready', function() {
   window = new BrowserWindow({
     title: 'atom-shell tests',
     show: false,
-    frame: false,
     width: 800,
     height: 600
   });
