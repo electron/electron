@@ -35,4 +35,5 @@ Common modules:
 
 * [clipboard](api/common/clipboard.md)
 * [crash-reporter](api/common/crash-reporter.md)
+* [screen](api/common/screen.md)
 * [shell](api/common/shell.md)
