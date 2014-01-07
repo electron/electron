@@ -12,6 +12,7 @@
     ],
     'coffee_sources': [
       'browser/api/lib/app.coffee',
+      'browser/api/lib/atom-delegate.coffee',
       'browser/api/lib/auto-updater.coffee',
       'browser/api/lib/browser-window.coffee',
       'browser/api/lib/dialog.coffee',
