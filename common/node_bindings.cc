@@ -65,7 +65,8 @@ NodeBindings::NodeBindings(bool is_browser)
     : is_browser_(is_browser),
       message_loop_(NULL),
       uv_loop_(uv_default_loop()),
-      embed_closed_(false) {
+      embed_closed_(false),
+      weak_factory_(this) {
 }
 
 NodeBindings::~NodeBindings() {
@@ -76,7 +77,6 @@ NodeBindings::~NodeBindings() {
 
   // Wait for everything to be done.
   uv_thread_join(&embed_thread_);
-  message_loop_->RunUntilIdle();
 
   // Clear uv.
   uv_sem_destroy(&embed_sem_);
@@ -209,7 +209,7 @@ void NodeBindings::UvRunOnce() {
 void NodeBindings::WakeupMainThread() {
   DCHECK(message_loop_);
   message_loop_->PostTask(FROM_HERE, base::Bind(&NodeBindings::UvRunOnce,
-                                                base::Unretained(this)));
+                                                weak_factory_.GetWeakPtr()));
 }
 
 void NodeBindings::WakeupEmbedThread() {

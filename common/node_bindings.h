@@ -6,6 +6,7 @@
 #define ATOM_COMMON_NODE_BINDINGS_H_
 
 #include "base/basictypes.h"
+#include "base/memory/weak_ptr.h"
 #include "v8/include/v8.h"
 #include "vendor/node/deps/uv/include/uv.h"
 
@@ -82,6 +83,8 @@ class NodeBindings {
 
   // Semaphore to wait for main loop in the embed thread.
   uv_sem_t embed_sem_;
+
+  base::WeakPtrFactory<NodeBindings> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(NodeBindings);
 };
