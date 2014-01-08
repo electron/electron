@@ -220,11 +220,20 @@ void NodeBindings::WakeupEmbedThread() {
 void NodeBindings::EmbedThreadRunner(void *arg) {
   NodeBindings* self = static_cast<NodeBindings*>(arg);
 
-  while (!self->embed_closed_) {
+  while (true) {
     // Wait for the main loop to deal with events.
     uv_sem_wait(&self->embed_sem_);
+    if (self->embed_closed_)
+      break;
 
+    // Wait for something to happen in uv loop.
+    // Note that the PollEvents() is implemented by derived classes, so when
+    // this class is being destructed the PollEvents() would not be available
+    // anymore. Because of it we must make sure we only invoke PollEvents()
+    // when this class is alive.
     self->PollEvents();
+    if (self->embed_closed_)
+      break;
 
     // Deal with event in main thread.
     self->WakeupMainThread();
