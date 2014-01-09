@@ -66,6 +66,7 @@ NodeBindings::NodeBindings(bool is_browser)
       message_loop_(NULL),
       uv_loop_(uv_default_loop()),
       embed_closed_(false),
+      uv_env_(NULL),
       weak_factory_(this) {
 }
 
@@ -193,9 +194,13 @@ void NodeBindings::RunMessageLoop() {
 void NodeBindings::UvRunOnce() {
   DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
 
-  // Enter node context while dealing with uv events.
   v8::HandleScope handle_scope(node_isolate);
-  v8::Context::Scope context_scope(global_env->context());
+
+  // Enter node context while dealing with uv events, by default the global
+  // env would be used unless user specified another one (this happens for
+  // renderer process, which wraps the uv loop with web page context).
+  node::Environment* env = get_uv_env() ? get_uv_env() : global_env;
+  v8::Context::Scope context_scope(env->context());
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, (uv_run_mode)(UV_RUN_ONCE | UV_RUN_NOWAIT));

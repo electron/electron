@@ -51,10 +51,13 @@ void AtomRendererClient::DidCreateScriptContext(WebKit::WebFrame* frame,
   node_bindings_->RunMessageLoop();
 
   // Setup node environment for each window.
-  node_bindings_->CreateEnvironment(context);
+  node::Environment* env = node_bindings_->CreateEnvironment(context);
 
   // Add atom-shell extended APIs.
   atom_bindings_->BindToFrame(frame);
+
+  // Make uv loop being wrapped by window context.
+  node_bindings_->set_uv_env(env);
 }
 
 void AtomRendererClient::WillReleaseScriptContext(
@@ -66,6 +69,9 @@ void AtomRendererClient::WillReleaseScriptContext(
     LOG(ERROR) << "Encounter a non-node context when releasing script context";
     return;
   }
+
+  if (env == node_bindings_->get_uv_env())
+    node_bindings_->set_uv_env(NULL);
 
   env->Dispose();
 }
