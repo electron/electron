@@ -4,6 +4,8 @@
 
 #include "renderer/atom_renderer_client.h"
 
+#include <algorithm>
+
 #include "common/node_bindings.h"
 #include "renderer/api/atom_renderer_bindings.h"
 #include "renderer/atom_render_view_observer.h"
@@ -51,10 +53,17 @@ void AtomRendererClient::DidCreateScriptContext(WebKit::WebFrame* frame,
   node_bindings_->RunMessageLoop();
 
   // Setup node environment for each window.
-  node_bindings_->CreateEnvironment(context);
+  node::Environment* env = node_bindings_->CreateEnvironment(context);
 
   // Add atom-shell extended APIs.
   atom_bindings_->BindToFrame(frame);
+
+  // Store the created environment.
+  web_page_envs_.push_back(env);
+
+  // Make uv loop being wrapped by window context.
+  if (node_bindings_->get_uv_env() == NULL)
+    node_bindings_->set_uv_env(env);
 }
 
 void AtomRendererClient::WillReleaseScriptContext(
@@ -67,7 +76,18 @@ void AtomRendererClient::WillReleaseScriptContext(
     return;
   }
 
+  // Clear the environment.
   env->Dispose();
+  web_page_envs_.erase(
+      std::remove(web_page_envs_.begin(), web_page_envs_.end(), env),
+      web_page_envs_.end());
+
+  // Wrap the uv loop with another environment.
+  if (env == node_bindings_->get_uv_env()) {
+    node::Environment* env = web_page_envs_.size() > 0 ? web_page_envs_[0] :
+                                                         NULL;
+    node_bindings_->set_uv_env(env);
+  }
 }
 
 }  // namespace atom

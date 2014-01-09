@@ -38,6 +38,10 @@ class NodeBindings {
   // Do message loop integration.
   virtual void RunMessageLoop();
 
+  // Gets/sets the environment to wrap uv loop.
+  void set_uv_env(node::Environment* env) { uv_env_ = env; }
+  node::Environment* get_uv_env() const { return uv_env_; }
+
  protected:
   explicit NodeBindings(bool is_browser);
 
@@ -83,6 +87,9 @@ class NodeBindings {
 
   // Semaphore to wait for main loop in the embed thread.
   uv_sem_t embed_sem_;
+
+  // Environment that to wrap the uv loop.
+  node::Environment* uv_env_;
 
   base::WeakPtrFactory<NodeBindings> weak_factory_;
 

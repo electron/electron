@@ -16,11 +16,27 @@ namespace {
 
 static int kMaxCallStackSize = 200;  // Same with WebKit.
 
-static uv_async_t dummy_uv_handle;
+// Async handle to wake up uv loop.
+static uv_async_t g_dummy_uv_handle;
 
+// Async handle to execute the stored v8 callback.
+static uv_async_t g_callback_uv_handle;
+
+// Stored v8 callback, to be called by the async handler.
+RefCountedV8Function g_v8_callback;
+
+// Dummy class type that used for crashing the program.
 struct DummyClass { bool crash; };
 
+// Dummy async handler that does nothing.
 void UvNoOp(uv_async_t* handle, int status) {
+}
+
+// Async handler to execute the stored v8 callback.
+void UvOnCallback(uv_async_t* handle, int status) {
+  v8::HandleScope handle_scope(node_isolate);
+  v8::Handle<v8::Object> global = v8::Context::GetCurrent()->Global();
+  g_v8_callback->NewHandle()->Call(global, 0, NULL);
 }
 
 v8::Handle<v8::Object> DumpStackFrame(v8::Handle<v8::StackFrame> stack_frame) {
@@ -44,7 +60,8 @@ v8::Handle<v8::Object> DumpStackFrame(v8::Handle<v8::StackFrame> stack_frame) {
 node::node_module_struct* GetBuiltinModule(const char *name, bool is_browser);
 
 AtomBindings::AtomBindings() {
-  uv_async_init(uv_default_loop(), &dummy_uv_handle, UvNoOp);
+  uv_async_init(uv_default_loop(), &g_dummy_uv_handle, UvNoOp);
+  uv_async_init(uv_default_loop(), &g_callback_uv_handle, UvOnCallback);
 }
 
 AtomBindings::~AtomBindings() {
@@ -58,6 +75,7 @@ void AtomBindings::BindTo(v8::Handle<v8::Object> process) {
   NODE_SET_METHOD(process, "activateUvLoop", ActivateUVLoop);
   NODE_SET_METHOD(process, "log", Log);
   NODE_SET_METHOD(process, "getCurrentStackTrace", GetCurrentStackTrace);
+  NODE_SET_METHOD(process, "scheduleCallback", ScheduleCallback);
 
   process->Get(v8::String::New("versions"))->ToObject()->
     Set(v8::String::New("atom-shell"), v8::String::New(ATOM_VERSION_STRING));
@@ -115,7 +133,7 @@ void AtomBindings::Crash(const v8::FunctionCallbackInfo<v8::Value>& args) {
 // static
 void AtomBindings::ActivateUVLoop(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
-  uv_async_send(&dummy_uv_handle);
+  uv_async_send(&g_dummy_uv_handle);
 }
 
 // static
@@ -144,6 +162,14 @@ void AtomBindings::GetCurrentStackTrace(
     result->Set(i, DumpStackFrame(stack_trace->GetFrame(i)));
 
   args.GetReturnValue().Set(result);
+}
+
+// static
+void AtomBindings::ScheduleCallback(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
+  if (!FromV8Arguments(args, &g_v8_callback))
+    return node::ThrowTypeError("Bad arguments");
+  uv_async_send(&g_callback_uv_handle);
 }
 
 }  // namespace atom

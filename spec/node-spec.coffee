@@ -37,6 +37,11 @@ describe 'node feature', ->
         fs.readFile __filename, ->
           setTimeout done, 0
 
+    describe 'setTimeout in pure uv callback', ->
+      it 'does not crash', (done) ->
+        process.scheduleCallback ->
+          setTimeout done, 0
+
     describe 'throw error in node context', ->
       it 'gets caught', (done) ->
         error = new Error('boo!')
