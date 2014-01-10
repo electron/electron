@@ -21,7 +21,7 @@ TARGET_PLATFORM = {
 
 ATOM_SHELL_REPO = 'atom/atom-shell'
 ATOM_SHELL_VRESION = get_atom_shell_version()
-NODE_VERSION = 'v0.11.9'
+NODE_VERSION = 'v0.11.10'
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'Release')
