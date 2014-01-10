@@ -30,3 +30,13 @@ describe 'third-party module', ->
           watcher.close()
           done()
         fs.writeFileSync file, 'content2'
+
+  describe 'q', ->
+    Q = require 'q'
+
+    describe 'Q.when', ->
+      it 'emits the fullfil callback', (done) ->
+        Q(true).then (val) ->
+          assert.equal val, true
+          console.log 'test'
+          done()
