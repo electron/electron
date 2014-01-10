@@ -77,10 +77,18 @@ void AtomRendererClient::WillReleaseScriptContext(
   }
 
   // Clear the environment.
-  env->Dispose();
   web_page_envs_.erase(
       std::remove(web_page_envs_.begin(), web_page_envs_.end(), env),
       web_page_envs_.end());
+
+  // Notice that we are not disposing the environment object here, because there
+  // may still be pending uv operations in the uv loop, and when they got done
+  // they would be needing the original environment.
+  // So we are leaking the environment object here, just like Chrome leaking the
+  // memory :) . Since it's only leaked when refreshing or unloading, so as long
+  // as we make sure renderer process is restared then the memory would not be
+  // leaked.
+  // env->Dispose();
 
   // Wrap the uv loop with another environment.
   if (env == node_bindings_->get_uv_env()) {
