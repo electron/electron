@@ -40,7 +40,7 @@ class NodeBindings {
 
   // Gets/sets the environment to wrap uv loop.
   void set_uv_env(node::Environment* env) { uv_env_ = env; }
-  node::Environment* get_uv_env() const { return uv_env_; }
+  node::Environment* uv_env() const { return uv_env_; }
 
  protected:
   explicit NodeBindings(bool is_browser);

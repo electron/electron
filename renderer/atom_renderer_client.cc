@@ -62,7 +62,7 @@ void AtomRendererClient::DidCreateScriptContext(WebKit::WebFrame* frame,
   web_page_envs_.push_back(env);
 
   // Make uv loop being wrapped by window context.
-  if (node_bindings_->get_uv_env() == NULL)
+  if (node_bindings_->uv_env() == NULL)
     node_bindings_->set_uv_env(env);
 }
 
@@ -91,7 +91,7 @@ void AtomRendererClient::WillReleaseScriptContext(
   // env->Dispose();
 
   // Wrap the uv loop with another environment.
-  if (env == node_bindings_->get_uv_env()) {
+  if (env == node_bindings_->uv_env()) {
     node::Environment* env = web_page_envs_.size() > 0 ? web_page_envs_[0] :
                                                          NULL;
     node_bindings_->set_uv_env(env);
