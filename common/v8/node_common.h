@@ -8,6 +8,8 @@
 // Include common headers for using node APIs.
 
 #undef CHECK
+#undef CHECK_EQ
+#undef CHECK_NE
 #undef DISALLOW_COPY_AND_ASSIGN
 #include "vendor/node/src/env.h"
 #include "vendor/node/src/env-inl.h"
