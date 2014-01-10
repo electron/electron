@@ -17,7 +17,7 @@ namespace {
 static int kMaxCallStackSize = 200;  // Same with WebKit.
 
 // Async handle to wake up uv loop.
-static uv_async_t g_dummy_uv_handle;
+static uv_async_t g_next_tick_uv_handle;
 
 // Async handle to execute the stored v8 callback.
 static uv_async_t g_callback_uv_handle;
@@ -28,8 +28,22 @@ RefCountedV8Function g_v8_callback;
 // Dummy class type that used for crashing the program.
 struct DummyClass { bool crash; };
 
-// Dummy async handler that does nothing.
-void UvNoOp(uv_async_t* handle, int status) {
+// Async handler to call next process.nextTick callbacks.
+void UvCallNextTick(uv_async_t* handle, int status) {
+  node::Environment* env = node::Environment::GetCurrent(node_isolate);
+  node::Environment::TickInfo* tick_info = env->tick_info();
+
+  if (tick_info->in_tick())
+    return;
+
+  if (tick_info->length() == 0) {
+    tick_info->set_index(0);
+    return;
+  }
+
+  tick_info->set_in_tick(true);
+  env->tick_callback_function()->Call(env->process_object(), 0, NULL);
+  tick_info->set_in_tick(false);
 }
 
 // Async handler to execute the stored v8 callback.
@@ -60,7 +74,7 @@ v8::Handle<v8::Object> DumpStackFrame(v8::Handle<v8::StackFrame> stack_frame) {
 node::node_module_struct* GetBuiltinModule(const char *name, bool is_browser);
 
 AtomBindings::AtomBindings() {
-  uv_async_init(uv_default_loop(), &g_dummy_uv_handle, UvNoOp);
+  uv_async_init(uv_default_loop(), &g_next_tick_uv_handle, UvCallNextTick);
   uv_async_init(uv_default_loop(), &g_callback_uv_handle, UvOnCallback);
 }
 
@@ -133,7 +147,7 @@ void AtomBindings::Crash(const v8::FunctionCallbackInfo<v8::Value>& args) {
 // static
 void AtomBindings::ActivateUVLoop(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
-  uv_async_send(&g_dummy_uv_handle);
+  uv_async_send(&g_next_tick_uv_handle);
 }
 
 // static
