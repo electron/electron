@@ -199,7 +199,7 @@ void NodeBindings::UvRunOnce() {
   // Enter node context while dealing with uv events, by default the global
   // env would be used unless user specified another one (this happens for
   // renderer process, which wraps the uv loop with web page context).
-  node::Environment* env = get_uv_env() ? get_uv_env() : global_env;
+  node::Environment* env = uv_env() ? uv_env() : global_env;
   v8::Context::Scope context_scope(env->context());
 
   // Deal with uv events.
