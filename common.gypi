@@ -35,7 +35,7 @@
   # Settings to compile node under Windows.
   'target_defaults': {
     'target_conditions': [
-      ['_target_name in ["libuv", "http_parser", "cares", "openssl", "node_lib", "zlib"]', {
+      ['_target_name in ["libuv", "http_parser", "cares", "openssl", "openssl-cli", "node_lib", "zlib"]', {
         'msvs_disabled_warnings': [
           4013,  # 'free' undefined; assuming extern returning int
           4054,  #
@@ -54,8 +54,8 @@
           4505,  # unreferenced local function has been removed
           4701,  # potentially uninitialized local variable 'sizew' used
           4706,  # assignment within conditional expression
-          4804,  #  unsafe use of type 'bool' in operation
-          4996,  #
+          4804,  # unsafe use of type 'bool' in operation
+          4996,  # this function or variable may be unsafe.
         ],
         'msvs_settings': {
           'VCCLCompilerTool': {
