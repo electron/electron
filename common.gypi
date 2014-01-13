@@ -49,6 +49,7 @@
           4204,  # non-constant aggregate initializer
           4214,  # bit field types other than int
           4232,  # address of dllimport 'free' is not static, identity not guaranteed
+          4291,  # no matching operator delete found
           4295,  # array is too small to include a terminating null character
           4389,  # '==' : signed/unsigned mismatch
           4505,  # unreferenced local function has been removed
