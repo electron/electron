@@ -37,6 +37,13 @@ process.nextTick = wrapWithActivateUvLoop process.nextTick
 global.setImmediate = wrapWithActivateUvLoop timers.setImmediate
 global.clearImmediate = timers.clearImmediate
 
+# The child_process module also needs to activate the uv loop to make the ipc
+# channel setup.
+# TODO(zcbenz): Find out why this is needed.
+childProcess = require 'child_process'
+childProcess.spawn = wrapWithActivateUvLoop childProcess.spawn
+childProcess.fork = wrapWithActivateUvLoop childProcess.fork
+
 # Set the __filename to the path of html file if it's file:// protocol.
 if window.location.protocol is 'file:'
   global.__filename =
