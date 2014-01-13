@@ -30,6 +30,7 @@
       'common/api/lib/id-weak-map.coffee',
       'common/api/lib/screen.coffee',
       'common/api/lib/shell.coffee',
+      'common/lib/init.coffee',
       'renderer/lib/init.coffee',
       'renderer/api/lib/ipc.coffee',
       'renderer/api/lib/remote.coffee',

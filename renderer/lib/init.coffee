@@ -1,5 +1,4 @@
 path   = require 'path'
-timers = require 'timers'
 Module = require 'module'
 
 # Expose information of current process.
@@ -14,35 +13,15 @@ process.argv.splice 1, 1
 # of Atom's built-in libraries.
 globalPaths = Module.globalPaths
 globalPaths.push path.join(process.resourcesPath, 'renderer', 'api', 'lib')
-# And also common/api/lib.
-globalPaths.push path.join(process.resourcesPath, 'common', 'api', 'lib')
 # And also app.
 globalPaths.push path.join(process.resourcesPath, 'app')
+
+# Import common settings.
+require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init.js')
 
 # Expose global variables.
 global.require = require
 global.module = module
-
-# setImmediate and process.nextTick makes use of uv_check and uv_prepare to
-# run the callbacks, however since we only run uv loop on requests, the
-# callbacks wouldn't be called until something else activated the uv loop,
-# which would delay the callbacks for arbitrary long time. So we should
-# initiatively activate the uv loop once setImmediate and process.nextTick is
-# called.
-wrapWithActivateUvLoop = (func) ->
-  ->
-    process.activateUvLoop()
-    func.apply this, arguments
-process.nextTick = wrapWithActivateUvLoop process.nextTick
-global.setImmediate = wrapWithActivateUvLoop timers.setImmediate
-global.clearImmediate = timers.clearImmediate
-
-# The child_process module also needs to activate the uv loop to make the ipc
-# channel setup.
-# TODO(zcbenz): Find out why this is needed.
-childProcess = require 'child_process'
-childProcess.spawn = wrapWithActivateUvLoop childProcess.spawn
-childProcess.fork = wrapWithActivateUvLoop childProcess.fork
 
 # Set the __filename to the path of html file if it's file:// protocol.
 if window.location.protocol is 'file:'
