@@ -283,6 +283,30 @@ void NativeWindow::NotifyWindowBlur() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowBlur());
 }
 
+// In atom-shell all reloads and navigations started by renderer process would
+// be redirected to this method, so we can have precise control of how we
+// would open the url (in our case, is to restart the renderer process). See
+// AtomRendererClient::ShouldFork for how this is done.
+content::WebContents* NativeWindow::OpenURLFromTab(
+    content::WebContents* source,
+    const content::OpenURLParams& params) {
+  if (params.disposition != CURRENT_TAB)
+      return NULL;
+
+  content::NavigationController::LoadURLParams load_url_params(params.url);
+  load_url_params.referrer = params.referrer;
+  load_url_params.transition_type = params.transition;
+  load_url_params.extra_headers = params.extra_headers;
+  load_url_params.should_replace_current_entry =
+      params.should_replace_current_entry;
+  load_url_params.is_renderer_initiated = params.is_renderer_initiated;
+  load_url_params.transferred_global_request_id =
+      params.transferred_global_request_id;
+
+  source->GetController().LoadURLWithParams(load_url_params);
+  return source;
+}
+
 content::JavaScriptDialogManager* NativeWindow::GetJavaScriptDialogManager() {
   if (!dialog_manager_)
     dialog_manager_.reset(new AtomJavaScriptDialogManager);

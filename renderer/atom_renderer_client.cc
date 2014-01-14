@@ -98,4 +98,14 @@ void AtomRendererClient::WillReleaseScriptContext(
   }
 }
 
+bool AtomRendererClient::ShouldFork(WebKit::WebFrame* frame,
+                                    const GURL& url,
+                                    const std::string& http_method,
+                                    bool is_initial_navigation,
+                                    bool is_server_redirect,
+                                    bool* send_referrer) {
+  // Handle all the navigations and reloads in browser.
+  return true;
+}
+
 }  // namespace atom
