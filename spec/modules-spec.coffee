@@ -38,5 +38,4 @@ describe 'third-party module', ->
       it 'emits the fullfil callback', (done) ->
         Q(true).then (val) ->
           assert.equal val, true
-          console.log 'test'
           done()
