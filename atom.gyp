@@ -151,6 +151,8 @@
       'common/api/object_life_monitor.h',
       'common/crash_reporter/crash_reporter.cc',
       'common/crash_reporter/crash_reporter.h',
+      'common/crash_reporter/crash_reporter_linux.cc',
+      'common/crash_reporter/crash_reporter_linux.h',
       'common/crash_reporter/crash_reporter_mac.h',
       'common/crash_reporter/crash_reporter_mac.mm',
       'common/crash_reporter/crash_reporter_win.cc',
