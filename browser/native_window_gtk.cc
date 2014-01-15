@@ -5,10 +5,13 @@
 #include "browser/native_window_gtk.h"
 
 #include "base/values.h"
+#include "browser/ui/gtk/gtk_window_util.h"
+#include "common/draggable_region.h"
 #include "common/options_switches.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
 #include "content/public/common/renderer_preferences.h"
+#include "ui/base/x/x11_util.h"
 #include "ui/gfx/gtk_util.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/skia_utils_gtk.h"
@@ -28,7 +31,7 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
                                  base::DictionaryValue* options)
     : NativeWindow(web_contents, options),
       window_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))),
-      fullscreen_(false),
+      state_(GDK_WINDOW_STATE_WITHDRAWN),
       is_always_on_top_(false) {
   gtk_container_add(GTK_CONTAINER(window_),
                     GetWebContents()->GetView()->GetNativeView());
@@ -38,16 +41,29 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
   options->GetInteger(switches::kHeight, &height);
   gtk_window_set_default_size(window_, width, height);
 
-  if (!has_frame_)
-    gtk_window_set_decorated(window_, false);
-
   if (!icon_.IsEmpty())
     gtk_window_set_icon(window_, icon_.ToGdkPixbuf());
+
+  // In some (older) versions of compiz, raising top-level windows when they
+  // are partially off-screen causes them to get snapped back on screen, not
+  // always even on the current virtual desktop.  If we are running under
+  // compiz, suppress such raises, as they are not necessary in compiz anyway.
+  if (ui::GuessWindowManager() == ui::WM_COMPIZ)
+    suppress_window_raise_ = true;
 
   g_signal_connect(window_, "delete-event",
                    G_CALLBACK(OnWindowDeleteEventThunk), this);
   g_signal_connect(window_, "focus-out-event",
                    G_CALLBACK(OnFocusOutThunk), this);
+
+  if (!has_frame_) {
+    gtk_window_set_decorated(window_, false);
+
+    g_signal_connect(window_, "motion-notify-event",
+                     G_CALLBACK(OnMouseMoveEventThunk), this);
+    g_signal_connect(window_, "button-press-event",
+                     G_CALLBACK(OnButtonPressThunk), this);
+  }
 
   SetWebKitColorStyle();
 }
@@ -111,7 +127,6 @@ void NativeWindowGtk::Restore() {
 }
 
 void NativeWindowGtk::SetFullscreen(bool fullscreen) {
-  fullscreen_ = fullscreen;
   if (fullscreen)
     gtk_window_fullscreen(window_);
   else
@@ -119,7 +134,7 @@ void NativeWindowGtk::SetFullscreen(bool fullscreen) {
 }
 
 bool NativeWindowGtk::IsFullscreen() {
-  return fullscreen_;
+  return state_ & GDK_WINDOW_STATE_FULLSCREEN;
 }
 
 void NativeWindowGtk::SetSize(const gfx::Size& size) {
@@ -238,6 +253,27 @@ gfx::NativeWindow NativeWindowGtk::GetNativeWindow() {
 
 void NativeWindowGtk::UpdateDraggableRegions(
     const std::vector<DraggableRegion>& regions) {
+  // Draggable region is not supported for non-frameless window.
+  if (has_frame_)
+    return;
+
+  SkRegion draggable_region;
+
+  // By default, the whole window is non-draggable. We need to explicitly
+  // include those draggable regions.
+  for (std::vector<DraggableRegion>::const_iterator iter =
+           regions.begin();
+       iter != regions.end(); ++iter) {
+    const DraggableRegion& region = *iter;
+    draggable_region.op(
+        region.bounds.x(),
+        region.bounds.y(),
+        region.bounds.right(),
+        region.bounds.bottom(),
+        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
+  }
+
+  draggable_region_ = draggable_region;
 }
 
 void NativeWindowGtk::SetWebKitColorStyle() {
@@ -269,6 +305,20 @@ void NativeWindowGtk::SetWebKitColorStyle() {
       0;
 }
 
+bool NativeWindowGtk::IsMaximized() const {
+  return state_ & GDK_WINDOW_STATE_MAXIMIZED;
+}
+
+bool NativeWindowGtk::GetWindowEdge(int x, int y, GdkWindowEdge* edge) {
+  if (has_frame_)
+    return false;
+
+  if (IsMaximized() || IsFullscreen())
+    return false;
+
+  return gtk_window_util::GetWindowEdge(GetSize(), 0, x, y, edge);
+}
+
 gboolean NativeWindowGtk::OnWindowDeleteEvent(GtkWidget* widget,
                                               GdkEvent* event) {
   Close();
@@ -277,6 +327,93 @@ gboolean NativeWindowGtk::OnWindowDeleteEvent(GtkWidget* widget,
 
 gboolean NativeWindowGtk::OnFocusOut(GtkWidget* window, GdkEventFocus*) {
   NotifyWindowBlur();
+  return FALSE;
+}
+
+gboolean NativeWindowGtk::OnWindowState(GtkWidget* window,
+                                        GdkEventWindowState* event) {
+  state_ = event->new_window_state;
+  return FALSE;
+}
+
+gboolean NativeWindowGtk::OnMouseMoveEvent(GtkWidget* widget,
+                                           GdkEventMotion* event) {
+  if (!IsResizable())
+    return FALSE;
+
+  int win_x, win_y;
+  GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(window_));
+  gdk_window_get_origin(gdk_window, &win_x, &win_y);
+  gfx::Point point(static_cast<int>(event->x_root - win_x),
+                   static_cast<int>(event->y_root - win_y));
+
+  // Update the cursor if we're on the custom frame border.
+  GdkWindowEdge edge;
+  bool has_hit_edge = GetWindowEdge(point.x(), point.y(), &edge);
+  GdkCursorType new_cursor = GDK_LAST_CURSOR;
+  if (has_hit_edge)
+    new_cursor = gtk_window_util::GdkWindowEdgeToGdkCursorType(edge);
+
+  GdkCursorType last_cursor = GDK_LAST_CURSOR;
+  if (frame_cursor_)
+    last_cursor = frame_cursor_->type;
+
+  if (last_cursor != new_cursor) {
+    frame_cursor_ = has_hit_edge ? gfx::GetCursor(new_cursor) : NULL;
+    gdk_window_set_cursor(gtk_widget_get_window(GTK_WIDGET(window_)),
+                          frame_cursor_);
+  }
+  return FALSE;
+}
+
+gboolean NativeWindowGtk::OnButtonPress(GtkWidget* widget,
+                                        GdkEventButton* event) {
+  // Make the button press coordinate relative to the browser window.
+  int win_x, win_y;
+  GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(window_));
+  gdk_window_get_origin(gdk_window, &win_x, &win_y);
+
+  bool resizable = IsResizable();
+  GdkWindowEdge edge;
+  gfx::Point point(static_cast<int>(event->x_root - win_x),
+                   static_cast<int>(event->y_root - win_y));
+  bool has_hit_edge = resizable && GetWindowEdge(point.x(), point.y(), &edge);
+  bool has_hit_titlebar = !draggable_region_.isEmpty() &&
+      draggable_region_.contains(event->x, event->y);
+
+  if (event->button == 1) {
+    if (GDK_BUTTON_PRESS == event->type) {
+      // Raise the window after a click on either the titlebar or the border to
+      // match the behavior of most window managers, unless that behavior has
+      // been suppressed.
+      if ((has_hit_titlebar || has_hit_edge) && !suppress_window_raise_)
+        gdk_window_raise(GTK_WIDGET(widget)->window);
+
+      if (has_hit_edge) {
+        gtk_window_begin_resize_drag(window_, edge, event->button,
+                                     static_cast<gint>(event->x_root),
+                                     static_cast<gint>(event->y_root),
+                                     event->time);
+        return TRUE;
+      } else if (has_hit_titlebar) {
+        return gtk_window_util::HandleTitleBarLeftMousePress(
+            window_, gfx::Rect(GetPosition(), GetSize()), event);
+      }
+    } else if (GDK_2BUTTON_PRESS == event->type) {
+      if (has_hit_titlebar && resizable) {
+        // Maximize/restore on double click.
+        if (IsMaximized())
+          gtk_window_unmaximize(window_);
+        else
+          gtk_window_maximize(window_);
+        return TRUE;
+      }
+    }
+  } else if (event->button == 2) {
+    if (has_hit_titlebar || has_hit_edge)
+      gdk_window_lower(gdk_window);
+    return TRUE;
+  }
   return FALSE;
 }
 

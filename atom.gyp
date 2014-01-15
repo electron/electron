@@ -123,6 +123,8 @@
       'browser/ui/message_box_win.cc',
       'browser/ui/nsalert_synchronous_sheet_mac.h',
       'browser/ui/nsalert_synchronous_sheet_mac.mm',
+      'browser/ui/gtk/gtk_window_util.cc',
+      'browser/ui/gtk/gtk_window_util.h',
       'browser/ui/win/menu_2.cc',
       'browser/ui/win/menu_2.h',
       'browser/ui/win/native_menu_win.cc',

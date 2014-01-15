@@ -8,6 +8,7 @@
 #include <gtk/gtk.h>
 
 #include "browser/native_window.h"
+#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/base/gtk/gtk_signal.h"
 #include "ui/gfx/size.h"
 
@@ -63,16 +64,42 @@ class NativeWindowGtk : public NativeWindow {
   // Set WebKit's style from current theme.
   void SetWebKitColorStyle();
 
+  // Whether window is maximized.
+  bool IsMaximized() const;
+
+  // If the point (|x|, |y|) is within the resize border area of the window,
+  // returns true and sets |edge| to the appropriate GdkWindowEdge value.
+  // Otherwise, returns false.
+  bool GetWindowEdge(int x, int y, GdkWindowEdge* edge);
+
   CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnWindowDeleteEvent,
                        GdkEvent*);
   CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnFocusOut, GdkEventFocus*);
+  CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnWindowState,
+                       GdkEventWindowState*);
+  CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnMouseMoveEvent,
+                       GdkEventMotion*);
+  CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnButtonPress,
+                       GdkEventButton*);
 
   GtkWindow* window_;
 
-  bool fullscreen_;
+  GdkWindowState state_;
   bool is_always_on_top_;
   gfx::Size minimum_size_;
   gfx::Size maximum_size_;
+
+  // The region is treated as title bar, can be dragged to move
+  // and double clicked to maximize.
+  SkRegion draggable_region_;
+
+  // If true, don't call gdk_window_raise() when we get a click in the title
+  // bar or window border.  This is to work around a compiz bug.
+  bool suppress_window_raise_;
+
+  // The current window cursor.  We set it to a resize cursor when over the
+  // custom frame border.  We set it to NULL if we want the default cursor.
+  GdkCursor* frame_cursor_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowGtk);
 };
