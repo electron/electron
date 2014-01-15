@@ -8,8 +8,10 @@
 #include "common/options_switches.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
+#include "content/public/common/renderer_preferences.h"
 #include "ui/gfx/gtk_util.h"
 #include "ui/gfx/rect.h"
+#include "ui/gfx/skia_utils_gtk.h"
 
 namespace atom {
 
@@ -44,6 +46,8 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
 
   g_signal_connect(window_, "delete-event",
                    G_CALLBACK(OnWindowDeleteEventThunk), this);
+  g_signal_connect(window_, "focus-out-event",
+                   G_CALLBACK(OnFocusOutThunk), this);
 
   SetWebKitColorStyle();
 }
@@ -269,6 +273,11 @@ gboolean NativeWindowGtk::OnWindowDeleteEvent(GtkWidget* widget,
                                               GdkEvent* event) {
   Close();
   return TRUE;
+}
+
+gboolean NativeWindowGtk::OnFocusOut(GtkWidget* window, GdkEventFocus*) {
+  NotifyWindowBlur();
+  return FALSE;
 }
 
 // static
