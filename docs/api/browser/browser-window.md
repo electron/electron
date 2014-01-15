@@ -99,6 +99,22 @@ shouldn't!).
 Emitted when the memory taken by the native window is released. Usually you
 should dereference the javascript object when received this event.
 
+### Event: 'unresponsive'
+
+Emiited when the web page becomes unresponsive.
+
+### Event: 'responsive'
+
+Emitted when the unresponsive web page becomes responsive again.
+
+### Event: 'crashed'
+
+Emitted when the renderer process is crashed.
+
+### Event: 'blur'
+
+Emiited when window loses focus.
+
 ### Class Method: BrowserWindow.getAllWindows()
 
 Returns an array of all opened browser windows.
