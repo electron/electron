@@ -91,6 +91,8 @@
       'browser/browser_observer.h',
       'browser/native_window.cc',
       'browser/native_window.h',
+      'browser/native_window_gtk.cc',
+      'browser/native_window_gtk.h',
       'browser/native_window_mac.h',
       'browser/native_window_mac.mm',
       'browser/native_window_win.cc',
