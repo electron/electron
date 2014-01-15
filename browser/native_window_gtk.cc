@@ -8,9 +8,19 @@
 #include "common/options_switches.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
+#include "ui/gfx/gtk_util.h"
 #include "ui/gfx/rect.h"
 
 namespace atom {
+
+namespace {
+
+// Dividing GTK's cursor blink cycle time (in milliseconds) by this value yields
+// an appropriate value for content::RendererPreferences::caret_blink_interval.
+// This matches the logic in the WebKit GTK port.
+const double kGtkCursorBlinkCycleFactor = 2000.0;
+
+}  // namespace
 
 NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
                                  base::DictionaryValue* options)
@@ -34,6 +44,8 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
 
   g_signal_connect(window_, "delete-event",
                    G_CALLBACK(OnWindowDeleteEventThunk), this);
+
+  SetWebKitColorStyle();
 }
 
 NativeWindowGtk::~NativeWindowGtk() {
@@ -222,6 +234,35 @@ gfx::NativeWindow NativeWindowGtk::GetNativeWindow() {
 
 void NativeWindowGtk::UpdateDraggableRegions(
     const std::vector<DraggableRegion>& regions) {
+}
+
+void NativeWindowGtk::SetWebKitColorStyle() {
+  content::RendererPreferences* prefs =
+      GetWebContents()->GetMutableRendererPrefs();
+  GtkStyle* frame_style = gtk_rc_get_style(GTK_WIDGET(window_));
+  prefs->focus_ring_color =
+      gfx::GdkColorToSkColor(frame_style->bg[GTK_STATE_SELECTED]);
+  prefs->thumb_active_color = SkColorSetRGB(244, 244, 244);
+  prefs->thumb_inactive_color = SkColorSetRGB(234, 234, 234);
+  prefs->track_color = SkColorSetRGB(211, 211, 211);
+
+  GtkWidget* url_entry = gtk_entry_new();
+  GtkStyle* entry_style = gtk_rc_get_style(url_entry);
+  prefs->active_selection_bg_color =
+      gfx::GdkColorToSkColor(entry_style->base[GTK_STATE_SELECTED]);
+  prefs->active_selection_fg_color =
+      gfx::GdkColorToSkColor(entry_style->text[GTK_STATE_SELECTED]);
+  prefs->inactive_selection_bg_color =
+      gfx::GdkColorToSkColor(entry_style->base[GTK_STATE_ACTIVE]);
+  prefs->inactive_selection_fg_color =
+      gfx::GdkColorToSkColor(entry_style->text[GTK_STATE_ACTIVE]);
+  gtk_widget_destroy(url_entry);
+
+  const base::TimeDelta cursor_blink_time = gfx::GetCursorBlinkCycle();
+  prefs->caret_blink_interval =
+      cursor_blink_time.InMilliseconds() ?
+      cursor_blink_time.InMilliseconds() / kGtkCursorBlinkCycleFactor :
+      0;
 }
 
 gboolean NativeWindowGtk::OnWindowDeleteEvent(GtkWidget* widget,

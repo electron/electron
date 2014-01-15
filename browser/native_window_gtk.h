@@ -60,6 +60,9 @@ class NativeWindowGtk : public NativeWindow {
       const std::vector<DraggableRegion>& regions) OVERRIDE;
 
  private:
+  // Set WebKit's style from current theme.
+  void SetWebKitColorStyle();
+
   CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnWindowDeleteEvent,
                        GdkEvent*);
 
