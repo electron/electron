@@ -142,7 +142,7 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
     : NativeWindow(web_contents, options),
       is_kiosk_(false),
       attention_request_id_(0) {
-  int width, height;
+  int width = 800, height = 600;
   options->GetInteger(switches::kWidth, &width);
   options->GetInteger(switches::kHeight, &height);
 

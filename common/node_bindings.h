@@ -6,6 +6,7 @@
 #define ATOM_COMMON_NODE_BINDINGS_H_
 
 #include "base/basictypes.h"
+#include "base/memory/weak_ptr.h"
 #include "v8/include/v8.h"
 #include "vendor/node/deps/uv/include/uv.h"
 
@@ -36,6 +37,10 @@ class NodeBindings {
 
   // Do message loop integration.
   virtual void RunMessageLoop();
+
+  // Gets/sets the environment to wrap uv loop.
+  void set_uv_env(node::Environment* env) { uv_env_ = env; }
+  node::Environment* uv_env() const { return uv_env_; }
 
  protected:
   explicit NodeBindings(bool is_browser);
@@ -82,6 +87,11 @@ class NodeBindings {
 
   // Semaphore to wait for main loop in the embed thread.
   uv_sem_t embed_sem_;
+
+  // Environment that to wrap the uv loop.
+  node::Environment* uv_env_;
+
+  base::WeakPtrFactory<NodeBindings> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(NodeBindings);
 };

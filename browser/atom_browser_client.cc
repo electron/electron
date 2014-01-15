@@ -50,8 +50,8 @@ bool AtomBrowserClient::ShouldSwapProcessesForNavigation(
     content::SiteInstance* site_instance,
     const GURL& current_url,
     const GURL& new_url) {
-  // Restart renderer process if navigating to the same url.
-  return current_url == new_url;
+  // Restart renderer process for all navigations.
+  return true;
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(

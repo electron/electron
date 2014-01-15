@@ -65,7 +65,9 @@ NodeBindings::NodeBindings(bool is_browser)
     : is_browser_(is_browser),
       message_loop_(NULL),
       uv_loop_(uv_default_loop()),
-      embed_closed_(false) {
+      embed_closed_(false),
+      uv_env_(NULL),
+      weak_factory_(this) {
 }
 
 NodeBindings::~NodeBindings() {
@@ -76,7 +78,6 @@ NodeBindings::~NodeBindings() {
 
   // Wait for everything to be done.
   uv_thread_join(&embed_thread_);
-  message_loop_->RunUntilIdle();
 
   // Clear uv.
   uv_sem_destroy(&embed_sem_);
@@ -193,9 +194,13 @@ void NodeBindings::RunMessageLoop() {
 void NodeBindings::UvRunOnce() {
   DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
 
-  // Enter node context while dealing with uv events.
   v8::HandleScope handle_scope(node_isolate);
-  v8::Context::Scope context_scope(global_env->context());
+
+  // Enter node context while dealing with uv events, by default the global
+  // env would be used unless user specified another one (this happens for
+  // renderer process, which wraps the uv loop with web page context).
+  node::Environment* env = uv_env() ? uv_env() : global_env;
+  v8::Context::Scope context_scope(env->context());
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, (uv_run_mode)(UV_RUN_ONCE | UV_RUN_NOWAIT));
@@ -209,7 +214,7 @@ void NodeBindings::UvRunOnce() {
 void NodeBindings::WakeupMainThread() {
   DCHECK(message_loop_);
   message_loop_->PostTask(FROM_HERE, base::Bind(&NodeBindings::UvRunOnce,
-                                                base::Unretained(this)));
+                                                weak_factory_.GetWeakPtr()));
 }
 
 void NodeBindings::WakeupEmbedThread() {
@@ -220,11 +225,20 @@ void NodeBindings::WakeupEmbedThread() {
 void NodeBindings::EmbedThreadRunner(void *arg) {
   NodeBindings* self = static_cast<NodeBindings*>(arg);
 
-  while (!self->embed_closed_) {
+  while (true) {
     // Wait for the main loop to deal with events.
     uv_sem_wait(&self->embed_sem_);
+    if (self->embed_closed_)
+      break;
 
+    // Wait for something to happen in uv loop.
+    // Note that the PollEvents() is implemented by derived classes, so when
+    // this class is being destructed the PollEvents() would not be available
+    // anymore. Because of it we must make sure we only invoke PollEvents()
+    // when this class is alive.
     self->PollEvents();
+    if (self->embed_closed_)
+      break;
 
     // Deal with event in main thread.
     self->WakeupMainThread();

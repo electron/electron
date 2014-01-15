@@ -17,8 +17,9 @@
 #include "common/swap_or_assign.h"
 #include "common/v8/scoped_persistent.h"
 #include "common/v8/v8_value_converter.h"
-#include "content/public/renderer/v8_value_converter.h"
+#include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
+#include "ui/gfx/size.h"
 #include "url/gurl.h"
 
 // Convert V8 value to arbitrary supported types.
@@ -71,8 +72,9 @@ struct FromV8Value {
         converter->FromV8Value(value_, v8::Context::GetCurrent()));
   }
 
-  operator std::vector<std::string>() {
-    std::vector<std::string> array;
+  template<class T>
+  operator std::vector<T>() {
+    std::vector<T> array;
     v8::Handle<v8::Array> v8_array = v8::Handle<v8::Array>::Cast(value_);
     for (uint32_t i = 0; i < v8_array->Length(); ++i)
       array.push_back(FromV8Value(v8_array->Get(i)));
@@ -80,14 +82,15 @@ struct FromV8Value {
     return array;
   }
 
-  operator std::map<std::string, std::string>() {
-    std::map<std::string, std::string> dict;
+  template<class K, class V>
+  operator std::map<K, V>() {
+    std::map<K, V> dict;
     v8::Handle<v8::Object> v8_dict = value_->ToObject();
     v8::Handle<v8::Array> v8_keys = v8_dict->GetOwnPropertyNames();
     for (uint32_t i = 0; i < v8_keys->Length(); ++i) {
       v8::Handle<v8::Value> v8_key = v8_keys->Get(i);
-      std::string key = FromV8Value(v8_key);
-      dict[key] = std::string(FromV8Value(v8_dict->Get(v8_key)));
+      K key = FromV8Value(v8_key);
+      dict[key] = V(FromV8Value(v8_dict->Get(v8_key)));
     }
 
     return dict;
@@ -121,6 +124,14 @@ inline v8::Handle<v8::Value> ToV8Value(bool b) {
   return v8::Boolean::New(b);
 }
 
+inline v8::Handle<v8::Value> ToV8Value(float f) {
+  return v8::Number::New(f);
+}
+
+inline v8::Handle<v8::Value> ToV8Value(double f) {
+  return v8::Number::New(f);
+}
+
 inline v8::Handle<v8::Value> ToV8Value(const char* s) {
   return v8::String::New(s);
 }
@@ -146,12 +157,35 @@ inline v8::Handle<v8::Value> ToV8Value(void* whatever) {
   return v8::Undefined();
 }
 
-inline
-v8::Handle<v8::Value> ToV8Value(const std::vector<base::FilePath>& paths) {
-  v8::Handle<v8::Array> result = v8::Array::New(paths.size());
-  for (size_t i = 0; i < paths.size(); ++i)
-    result->Set(i, ToV8Value(paths[i]));
+template<class T> inline
+v8::Handle<v8::Value> ToV8Value(const std::vector<T>& arr) {
+  v8::Handle<v8::Array> result = v8::Array::New(arr.size());
+  for (size_t i = 0; i < arr.size(); ++i)
+    result->Set(i, ToV8Value(arr[i]));
   return result;
+}
+
+inline v8::Handle<v8::Value> ToV8Value(const gfx::Point& point) {
+  v8::Handle<v8::Object> obj = v8::Object::New();
+  obj->Set(ToV8Value("x"), ToV8Value(point.x()));
+  obj->Set(ToV8Value("y"), ToV8Value(point.y()));
+  return obj;
+}
+
+inline v8::Handle<v8::Value> ToV8Value(const gfx::Rect& rect) {
+  v8::Handle<v8::Object> obj = v8::Object::New();
+  obj->Set(ToV8Value("x"), ToV8Value(rect.x()));
+  obj->Set(ToV8Value("y"), ToV8Value(rect.y()));
+  obj->Set(ToV8Value("width"), ToV8Value(rect.width()));
+  obj->Set(ToV8Value("height"), ToV8Value(rect.height()));
+  return obj;
+}
+
+inline v8::Handle<v8::Value> ToV8Value(const gfx::Size& size) {
+  v8::Handle<v8::Object> obj = v8::Object::New();
+  obj->Set(ToV8Value("width"), ToV8Value(size.width()));
+  obj->Set(ToV8Value("height"), ToV8Value(size.height()));
+  return obj;
 }
 
 // Check if a V8 Value is of specified type.

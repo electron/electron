@@ -1,4 +1,4 @@
-fs = require 'fs'
+fs   = require 'fs'
 path = require 'path'
 
 # Expose information of current process.
@@ -14,12 +14,12 @@ process.argv.splice 1, 1
 globalPaths = require('module').globalPaths
 globalPaths.push path.join process.resourcesPath, 'browser', 'api', 'lib'
 
-# And also common/api/lib
-globalPaths.push path.join process.resourcesPath, 'common', 'api', 'lib'
-
 # Do loading in next tick since we still need some initialize work before
 # native bindings can work.
 setImmediate ->
+  # Import common settings.
+  require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init.js')
+
   if process.platform is 'win32'
     # Redirect node's console to use our own implementations, since node can not
     # handle console output when running as GUI program.

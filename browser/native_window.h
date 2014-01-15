@@ -157,6 +157,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
       const std::vector<DraggableRegion>& regions) = 0;
 
   // Implementations of content::WebContentsDelegate.
+  virtual content::WebContents* OpenURLFromTab(
+      content::WebContents* source,
+      const content::OpenURLParams& params) OVERRIDE;
   virtual content::JavaScriptDialogManager*
       GetJavaScriptDialogManager() OVERRIDE;
   virtual void BeforeUnloadFired(content::WebContents* tab,

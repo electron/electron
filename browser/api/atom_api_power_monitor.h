@@ -5,10 +5,9 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_POWER_MONITOR_H_
 #define ATOM_BROWSER_API_ATOM_API_POWER_MONITOR_H_
 
-#include "browser/api/atom_api_event_emitter.h"
-
 #include "base/compiler_specific.h"
 #include "base/power_monitor/power_observer.h"
+#include "common/api/atom_api_event_emitter.h"
 
 namespace atom {
 

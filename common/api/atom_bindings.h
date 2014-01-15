@@ -26,6 +26,7 @@ class AtomBindings {
   static void Log(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void GetCurrentStackTrace(
       const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void ScheduleCallback(const v8::FunctionCallbackInfo<v8::Value>& args);
 
   DISALLOW_COPY_AND_ASSIGN(AtomBindings);
 };
