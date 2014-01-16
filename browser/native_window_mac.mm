@@ -14,7 +14,7 @@
 #include "base/mac/scoped_nsobject.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
-#import "browser/ui/atom_event_processing_window.h"
+#import "browser/ui/cocoa/event_processing_window.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "common/draggable_region.h"
@@ -76,7 +76,7 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 
 @end
 
-@interface AtomNSWindow : AtomEventProcessingWindow {
+@interface AtomNSWindow : EventProcessingWindow {
  @protected
   atom::NativeWindowMac* shell_;
 }
@@ -440,9 +440,9 @@ void NativeWindowMac::HandleKeyboardEvent(
       event.type == content::NativeWebKeyboardEvent::Char)
     return;
 
-  AtomEventProcessingWindow* event_window =
-      static_cast<AtomEventProcessingWindow*>(window());
-  DCHECK([event_window isKindOfClass:[AtomEventProcessingWindow class]]);
+  EventProcessingWindow* event_window =
+      static_cast<EventProcessingWindow*>(window());
+  DCHECK([event_window isKindOfClass:[EventProcessingWindow class]]);
   [event_window redispatchKeyEvent:event.os_event];
 }
 
