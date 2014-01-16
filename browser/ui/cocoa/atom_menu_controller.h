@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_ATOM_MENU_CONTROLLER_MAC_H_
-#define ATOM_BROWSER_UI_ATOM_MENU_CONTROLLER_MAC_H_
+#ifndef ATOM_BROWSER_UI_COCOA_ATOM_MENU_CONTROLLER_H_
+#define ATOM_BROWSER_UI_COCOA_ATOM_MENU_CONTROLLER_H_
 
 #import <Cocoa/Cocoa.h>
 
@@ -69,4 +69,4 @@ class MenuModel;
 - (NSMenu*)menuFromModel:(ui::MenuModel*)model;
 @end
 
-#endif  // ATOM_BROWSER_UI_ATOM_MENU_CONTROLLER_MAC_H_
+#endif  // ATOM_BROWSER_UI_COCOA_ATOM_MENU_CONTROLLER_H_

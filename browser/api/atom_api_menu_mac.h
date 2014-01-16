@@ -7,7 +7,7 @@
 
 #include "browser/api/atom_api_menu.h"
 
-#import "browser/ui/atom_menu_controller_mac.h"
+#import "browser/ui/cocoa/atom_menu_controller.h"
 
 namespace atom {
 

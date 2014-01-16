@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#import "browser/ui/atom_menu_controller_mac.h"
+#import "browser/ui/cocoa/atom_menu_controller.h"
 
 #include "base/logging.h"
 #include "base/strings/sys_string_conversions.h"
