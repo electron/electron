@@ -9,17 +9,20 @@
 
 #include "base/callback_forward.h"
 
+namespace base {
+class Time;
+}
+
 namespace auto_updater {
 
 class AutoUpdaterDelegate {
  public:
-  // The application is going to relaunch to install update.
-  virtual void WillInstallUpdate(const std::string& version,
-                                 const base::Closure& install);
-
-  // User has chosen to update on quit.
-  virtual void ReadyForUpdateOnQuit(const std::string& version,
-                                    const base::Closure& quit_and_install);
+  // There is a new update which has been downloaded.
+  virtual void OnUpdateDownloaded(const std::string& release_notes,
+                                  const std::string& release_name,
+                                  const base::Time& release_date,
+                                  const std::string& update_url,
+                                  const base::Closure& quit_and_install) {}
 
  protected:
   virtual ~AutoUpdaterDelegate() {}

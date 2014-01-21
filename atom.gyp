@@ -65,7 +65,6 @@
       'browser/api/atom_browser_bindings.h',
       'browser/auto_updater.cc',
       'browser/auto_updater.h',
-      'browser/auto_updater_delegate.cc',
       'browser/auto_updater_delegate.h',
       'browser/auto_updater_mac.mm',
       'browser/auto_updater_win.cc',

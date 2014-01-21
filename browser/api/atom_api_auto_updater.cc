@@ -4,6 +4,7 @@
 
 #include "browser/api/atom_api_auto_updater.h"
 
+#include "base/time/time.h"
 #include "base/values.h"
 #include "browser/auto_updater.h"
 #include "common/v8/native_type_conversions.h"
@@ -17,32 +18,25 @@ namespace api {
 AutoUpdater::AutoUpdater(v8::Handle<v8::Object> wrapper)
     : EventEmitter(wrapper) {
   auto_updater::AutoUpdater::SetDelegate(this);
-  auto_updater::AutoUpdater::Init();
 }
 
 AutoUpdater::~AutoUpdater() {
   auto_updater::AutoUpdater::SetDelegate(NULL);
 }
 
-void AutoUpdater::WillInstallUpdate(const std::string& version,
-                                    const base::Closure& install) {
-  continue_update_ = install;
-
-  base::ListValue args;
-  args.AppendString(version);
-  bool prevent_default = Emit("will-install-update-raw", &args);
-
-  if (!prevent_default)
-    install.Run();
-}
-
-void AutoUpdater::ReadyForUpdateOnQuit(const std::string& version,
-                                       const base::Closure& quit_and_install) {
+void AutoUpdater::OnUpdateDownloaded(const std::string& release_notes,
+                                     const std::string& release_name,
+                                     const base::Time& release_date,
+                                     const std::string& update_url,
+                                     const base::Closure& quit_and_install) {
   quit_and_install_ = quit_and_install;
 
   base::ListValue args;
-  args.AppendString(version);
-  Emit("ready-for-update-on-quit-raw", &args);
+  args.AppendString(release_notes);
+  args.AppendString(release_name);
+  args.AppendDouble(release_date.ToJsTime());
+  args.AppendString(update_url);
+  Emit("update-downloaded-raw", &args);
 }
 
 // static
@@ -61,36 +55,9 @@ void AutoUpdater::SetFeedURL(const v8::FunctionCallbackInfo<v8::Value>& args) {
 }
 
 // static
-void AutoUpdater::SetAutomaticallyChecksForUpdates(
-    const v8::FunctionCallbackInfo<v8::Value>& args) {
-  auto_updater::AutoUpdater::SetAutomaticallyChecksForUpdates(
-      FromV8Value(args[0]));
-}
-
-// static
-void AutoUpdater::SetAutomaticallyDownloadsUpdates(
-    const v8::FunctionCallbackInfo<v8::Value>& args) {
-  auto_updater::AutoUpdater::SetAutomaticallyDownloadsUpdates(
-      FromV8Value(args[0]));
-}
-
-// static
 void AutoUpdater::CheckForUpdates(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
   auto_updater::AutoUpdater::CheckForUpdates();
-}
-
-// static
-void AutoUpdater::CheckForUpdatesInBackground(
-    const v8::FunctionCallbackInfo<v8::Value>& args) {
-  auto_updater::AutoUpdater::CheckForUpdatesInBackground();
-}
-
-// static
-void AutoUpdater::ContinueUpdate(
-    const v8::FunctionCallbackInfo<v8::Value>& args) {
-  AutoUpdater* self = AutoUpdater::Unwrap<AutoUpdater>(args.This());
-  self->continue_update_.Run();
 }
 
 // static
@@ -110,18 +77,7 @@ void AutoUpdater::Initialize(v8::Handle<v8::Object> target) {
   t->SetClassName(v8::String::NewSymbol("AutoUpdater"));
 
   NODE_SET_PROTOTYPE_METHOD(t, "setFeedUrl", SetFeedURL);
-  NODE_SET_PROTOTYPE_METHOD(t,
-                            "setAutomaticallyChecksForUpdates",
-                            SetAutomaticallyChecksForUpdates);
-  NODE_SET_PROTOTYPE_METHOD(t,
-                            "setAutomaticallyDownloadsUpdates",
-                            SetAutomaticallyDownloadsUpdates);
   NODE_SET_PROTOTYPE_METHOD(t, "checkForUpdates", CheckForUpdates);
-  NODE_SET_PROTOTYPE_METHOD(t,
-                            "checkForUpdatesInBackground",
-                            CheckForUpdatesInBackground);
-
-  NODE_SET_PROTOTYPE_METHOD(t, "continueUpdate", ContinueUpdate);
   NODE_SET_PROTOTYPE_METHOD(t, "quitAndInstall", QuitAndInstall);
 
   target->Set(v8::String::NewSymbol("AutoUpdater"), t->GetFunction());

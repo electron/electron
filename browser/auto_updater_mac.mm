@@ -4,104 +4,59 @@
 
 #include "browser/auto_updater.h"
 
+#import <ReactiveCocoa/RACCommand.h>
+#import <ReactiveCocoa/RACSignal.h>
 #import <Squirrel/Squirrel.h>
 
 #include "base/bind.h"
-#include "base/memory/scoped_ptr.h"
+#include "base/time/time.h"
 #include "base/strings/sys_string_conversions.h"
 #include "browser/auto_updater_delegate.h"
 
-using auto_updater::AutoUpdaterDelegate;
+namespace auto_updater {
 
 namespace {
 
-struct NSInvocationDeleter {
-  inline void operator()(NSInvocation* invocation) const {
-    [invocation release];
-  }
-};
+// The gloal SQRLUpdater object.
+static SQRLUpdater* g_updater = nil;
 
-typedef scoped_ptr<NSInvocation, NSInvocationDeleter> ScopedNSInvocation;
-
-// We are passing the NSInvocation as scoped_ptr, because we want to make sure
-// whether or not the callback is called, the NSInvocation should always be
-// released, the only way to ensure it is to use scoped_ptr.
-// void CallNSInvocation(ScopedNSInvocation invocation) {
-//   [invocation.get() invoke];
-// }
+static void RelaunchToInstallUpdate() {
+  if (g_updater != nil)
+    [g_updater relaunchToInstallUpdate];
+}
 
 }  // namespace
 
-// @interface SUUpdaterDelegate : NSObject {
-// }
-// @end
-//
-// @implementation SUUpdaterDelegate
-//
-// - (BOOL)updater:(SUUpdater*)updater
-//         shouldPostponeRelaunchForUpdate:(SUAppcastItem*)update
-//         untilInvoking:(NSInvocation*)invocation {
-//   AutoUpdaterDelegate* delegate = auto_updater::AutoUpdater::GetDelegate();
-//   if (!delegate)
-//     return NO;
-//
-//   std::string version(base::SysNSStringToUTF8([update versionString]));
-//   ScopedNSInvocation invocation_ptr([invocation retain]);
-//   delegate->WillInstallUpdate(
-//       version,
-//       base::Bind(&CallNSInvocation, base::Passed(invocation_ptr.Pass())));
-//
-//   return YES;
-// }
-//
-// - (void)updater:(SUUpdater*)updater
-//         willInstallUpdateOnQuit:(SUAppcastItem*)update
-//         immediateInstallationInvocation:(NSInvocation*)invocation {
-//   AutoUpdaterDelegate* delegate = auto_updater::AutoUpdater::GetDelegate();
-//   if (!delegate)
-//     return;
-//
-//   std::string version(base::SysNSStringToUTF8([update versionString]));
-//   ScopedNSInvocation invocation_ptr([invocation retain]);
-//   delegate->ReadyForUpdateOnQuit(
-//       version,
-//       base::Bind(&CallNSInvocation, base::Passed(invocation_ptr.Pass())));
-// }
-//
-// @end
-
-namespace auto_updater {
-
 // static
-void AutoUpdater::Init() {
-  // SUUpdaterDelegate* delegate = [[SUUpdaterDelegate alloc] init];
-  // [[SUUpdater sharedUpdater] setDelegate:delegate];
-}
+void AutoUpdater::SetFeedURL(const std::string& feed) {
+  if (g_updater == nil) {
+    // Initialize the SQRLUpdater.
+    NSURL* url = [NSURL URLWithString:base::SysUTF8ToNSString(feed)];
+    NSURLRequest* urlRequest = [NSURLRequest requestWithURL:url];
+    g_updater = [[SQRLUpdater alloc] initWithUpdateRequest:urlRequest];
 
-// static
-void AutoUpdater::SetFeedURL(const std::string& url) {
-  // NSString* url_str(base::SysUTF8ToNSString(url));
-  // [[SUUpdater sharedUpdater] setFeedURL:[NSURL URLWithString:url_str]];
-}
+    // Subscribe to events.
+    [g_updater.updates subscribeNext:^(SQRLDownloadedUpdate* downloadedUpdate) {
+       AutoUpdaterDelegate* delegate = GetDelegate();
+       if (!delegate)
+         return;
 
-// static
-void AutoUpdater::SetAutomaticallyChecksForUpdates(bool yes) {
-  // [[SUUpdater sharedUpdater] setAutomaticallyChecksForUpdates:yes];
-}
-
-// static
-void AutoUpdater::SetAutomaticallyDownloadsUpdates(bool yes) {
-  // [[SUUpdater sharedUpdater] setAutomaticallyDownloadsUpdates:yes];
+       SQRLUpdate* update = downloadedUpdate.update;
+       delegate->OnUpdateDownloaded(
+           base::SysNSStringToUTF8(update.releaseNotes),
+           base::SysNSStringToUTF8(update.releaseName),
+           base::Time::FromDoubleT(update.releaseDate.timeIntervalSince1970),
+           base::SysNSStringToUTF8(update.updateURL.absoluteString),
+           base::Bind(RelaunchToInstallUpdate));
+    }];
+  }
 }
 
 // static
 void AutoUpdater::CheckForUpdates() {
-  // [[SUUpdater sharedUpdater] checkForUpdates:nil];
-}
-
-// static
-void AutoUpdater::CheckForUpdatesInBackground() {
-  // [[SUUpdater sharedUpdater] checkForUpdatesInBackground];
+  if (g_updater != nil) {
+    [g_updater.checkForUpdatesCommand execute:nil];
+  }
 }
 
 }  // namespace auto_updater

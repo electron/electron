@@ -24,28 +24,23 @@ class AutoUpdater : public EventEmitter,
  protected:
   explicit AutoUpdater(v8::Handle<v8::Object> wrapper);
 
-  virtual void WillInstallUpdate(const std::string& version,
-                                 const base::Closure& install) OVERRIDE;
-  virtual void ReadyForUpdateOnQuit(
-      const std::string& version,
+  // AutoUpdaterDelegate implementations.
+  virtual void OnUpdateDownloaded(
+      const std::string& release_notes,
+      const std::string& release_name,
+      const base::Time& release_date,
+      const std::string& update_url,
       const base::Closure& quit_and_install) OVERRIDE;
 
  private:
   static void New(const v8::FunctionCallbackInfo<v8::Value>& args);
 
   static void SetFeedURL(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void SetAutomaticallyChecksForUpdates(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void SetAutomaticallyDownloadsUpdates(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
   static void CheckForUpdates(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void CheckForUpdatesInBackground(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
 
   static void ContinueUpdate(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void QuitAndInstall(const v8::FunctionCallbackInfo<v8::Value>& args);
 
-  base::Closure continue_update_;
   base::Closure quit_and_install_;
 
   DISALLOW_COPY_AND_ASSIGN(AutoUpdater);
