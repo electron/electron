@@ -24,6 +24,16 @@ AutoUpdater::~AutoUpdater() {
   auto_updater::AutoUpdater::SetDelegate(NULL);
 }
 
+void AutoUpdater::OnError(const std::string& error) {
+  base::ListValue args;
+  args.AppendString(error);
+  Emit("error", &args);
+}
+
+void AutoUpdater::OnUpdateNotAvailable() {
+  Emit("update-not-available");
+}
+
 void AutoUpdater::OnUpdateDownloaded(const std::string& release_notes,
                                      const std::string& release_name,
                                      const base::Time& release_date,

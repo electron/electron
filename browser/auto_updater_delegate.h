@@ -17,6 +17,12 @@ namespace auto_updater {
 
 class AutoUpdaterDelegate {
  public:
+  // An error happened.
+  virtual void OnError(const std::string& error) {}
+
+  // There is no available update.
+  virtual void OnUpdateNotAvailable() {}
+
   // There is a new update which has been downloaded.
   virtual void OnUpdateDownloaded(const std::string& release_notes,
                                   const std::string& release_name,

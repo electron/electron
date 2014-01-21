@@ -25,6 +25,8 @@ class AutoUpdater : public EventEmitter,
   explicit AutoUpdater(v8::Handle<v8::Object> wrapper);
 
   // AutoUpdaterDelegate implementations.
+  virtual void OnError(const std::string& error) OVERRIDE;
+  virtual void OnUpdateNotAvailable() OVERRIDE;
   virtual void OnUpdateDownloaded(
       const std::string& release_notes,
       const std::string& release_name,
