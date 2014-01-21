@@ -207,5 +207,14 @@
         },
       },
     }],  # OS=="win"
+    # The breakdpad on Mac assumes Release_Base configuration.
+    ['OS=="mac"', {
+      'target_defaults': {
+        'configurations': {
+          'Release_Base': {
+          },
+        },
+      },
+    }],  # OS=="mac"
   ],
 }
