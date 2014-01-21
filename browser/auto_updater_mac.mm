@@ -26,7 +26,7 @@ struct NSInvocationDeleter {
 typedef scoped_ptr<NSInvocation, NSInvocationDeleter> ScopedNSInvocation;
 
 // We are passing the NSInvocation as scoped_ptr, because we want to make sure
-// whether or not the callback is called, the NSInvocation should alwasy be
+// whether or not the callback is called, the NSInvocation should always be
 // released, the only way to ensure it is to use scoped_ptr.
 void CallNSInvocation(ScopedNSInvocation invocation) {
   [invocation.get() invoke];
