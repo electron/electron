@@ -199,11 +199,12 @@
       }],  # OS=="win"
     ],
     'fix_framework_link_command': [
-      'install_name_tool',
-      '-change',
-      '@loader_path/../Frameworks/Sparkle.framework/Versions/A/Sparkle',
-      '@rpath/Sparkle.framework/Versions/A/Sparkle',
-      '${BUILT_PRODUCTS_DIR}/${EXECUTABLE_PATH}'
+      # TODO: I have no idea if this is needed for Squirrel
+      # 'install_name_tool',
+      # '-change',
+      # '@loader_path/../Frameworks/Sparkle.framework/Versions/A/Sparkle',
+      # '@rpath/Sparkle.framework/Versions/A/Sparkle',
+      # '${BUILT_PRODUCTS_DIR}/${EXECUTABLE_PATH}'
     ],
     'atom_source_root': '<!(python tools/atom_source_root.py)',
   },
@@ -263,7 +264,9 @@
               'files': [
                 '<(PRODUCT_DIR)/<(product_name) Helper.app',
                 '<(PRODUCT_DIR)/<(framework_name).framework',
-                'frameworks/Sparkle.framework',
+                'frameworks/Squirrel.framework',
+                'frameworks/ReactiveCocoa.framework',
+                'frameworks/Mantle.framework',
               ],
             },
             {
@@ -494,7 +497,9 @@
           'link_settings': {
             'libraries': [
               '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
-              'frameworks/Sparkle.framework',
+              'frameworks/Squirrel.framework',
+              'frameworks/ReactiveCocoa.framework',
+              'frameworks/Mantle.framework',
             ],
           },
           'mac_bundle': 1,
