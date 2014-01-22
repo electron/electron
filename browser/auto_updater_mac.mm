@@ -21,8 +21,11 @@ namespace {
 static SQRLUpdater* g_updater = nil;
 
 static void RelaunchToInstallUpdate() {
-  if (g_updater != nil)
-    [g_updater relaunchToInstallUpdate];
+  [[g_updater relaunchToInstallUpdate] subscribeError:^(NSError* error) {
+    AutoUpdaterDelegate* delegate = AutoUpdater::GetDelegate();
+    if (delegate)
+      delegate->OnError(base::SysNSStringToUTF8(error.localizedDescription));
+  }];
 }
 
 }  // namespace
@@ -67,9 +70,7 @@ void AutoUpdater::SetFeedURL(const std::string& feed) {
 
 // static
 void AutoUpdater::CheckForUpdates() {
-  if (g_updater != nil) {
-    [g_updater.checkForUpdatesCommand execute:nil];
-  }
+  [g_updater.checkForUpdatesCommand execute:nil];
 }
 
 }  // namespace auto_updater
