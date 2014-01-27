@@ -102,7 +102,7 @@ void AutoUpdater::QuitAndInstall(
 
 // static
 void AutoUpdater::Initialize(v8::Handle<v8::Object> target) {
-  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  v8::HandleScope handle_scope(node_isolate);
 
   v8::Local<v8::FunctionTemplate> t(
       v8::FunctionTemplate::New(AutoUpdater::New));
