@@ -34,8 +34,6 @@ void CallV8Function2(const RefCountedV8Function& callback, bool result, T arg) {
 }
 
 void Initialize(v8::Handle<v8::Object> target) {
-  v8::HandleScope handle_scope(node_isolate);
-
   NODE_SET_METHOD(target, "showMessageBox", ShowMessageBox);
   NODE_SET_METHOD(target, "showOpenDialog", ShowOpenDialog);
   NODE_SET_METHOD(target, "showSaveDialog", ShowSaveDialog);

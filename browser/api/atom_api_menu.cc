@@ -121,8 +121,6 @@ void Menu::ExecuteCommand(int command_id, int event_flags) {
 
 // static
 void Menu::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::HandleScope handle_scope(args.GetIsolate());
-
   if (!args.IsConstructCall())
     return node::ThrowError("Require constructor call");
 
@@ -307,8 +305,6 @@ void Menu::Popup(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 // static
 void Menu::Initialize(v8::Handle<v8::Object> target) {
-  v8::HandleScope handle_scope(node_isolate);
-
   v8::Local<v8::FunctionTemplate> t(v8::FunctionTemplate::New(Menu::New));
   t->InstanceTemplate()->SetInternalFieldCount(1);
   t->SetClassName(v8::String::NewSymbol("Menu"));

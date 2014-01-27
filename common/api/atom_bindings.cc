@@ -90,8 +90,6 @@ AtomBindings::~AtomBindings() {
 }
 
 void AtomBindings::BindTo(v8::Handle<v8::Object> process) {
-  v8::HandleScope handle_scope(node_isolate);
-
   NODE_SET_METHOD(process, "atomBinding", Binding);
   NODE_SET_METHOD(process, "crash", Crash);
   NODE_SET_METHOD(process, "activateUvLoop", ActivateUVLoop);
@@ -170,8 +168,6 @@ void AtomBindings::Log(const v8::FunctionCallbackInfo<v8::Value>& args) {
 // static
 void AtomBindings::GetCurrentStackTrace(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::HandleScope handle_scope(args.GetIsolate());
-
   int stack_limit = kMaxCallStackSize;
   FromV8Arguments(args, &stack_limit);
 

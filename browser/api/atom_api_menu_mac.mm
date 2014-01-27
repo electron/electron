@@ -74,8 +74,6 @@ void MenuMac::SendActionToFirstResponder(const std::string& action) {
 
 // static
 void Menu::SetApplicationMenu(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::HandleScope handle_scope(args.GetIsolate());
-
   if (!args[0]->IsObject())
     return node::ThrowTypeError("Bad argument");
 
@@ -94,8 +92,6 @@ void Menu::SetApplicationMenu(const v8::FunctionCallbackInfo<v8::Value>& args) {
 // static
 void Menu::SendActionToFirstResponder(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::HandleScope handle_scope(args.GetIsolate());
-
   std::string action;
   if (!FromV8Arguments(args, &action))
     return node::ThrowTypeError("Bad argument");

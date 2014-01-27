@@ -74,8 +74,6 @@ void Clipboard::Clear(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 // static
 void Clipboard::Initialize(v8::Handle<v8::Object> target) {
-  v8::HandleScope handle_scope(node_isolate);
-
   NODE_SET_METHOD(target, "has", Has);
   NODE_SET_METHOD(target, "read", Read);
   NODE_SET_METHOD(target, "readText", ReadText);

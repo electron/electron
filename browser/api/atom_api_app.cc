@@ -174,8 +174,6 @@ void App::DockGetBadgeText(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 // static
 void App::Initialize(v8::Handle<v8::Object> target) {
-  v8::HandleScope handle_scope(node_isolate);
-
   v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(New);
   t->InstanceTemplate()->SetInternalFieldCount(1);
   t->SetClassName(v8::String::NewSymbol("Application"));
