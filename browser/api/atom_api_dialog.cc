@@ -19,7 +19,9 @@ namespace {
 
 template<typename T>
 void CallV8Function(const RefCountedV8Function& callback, T arg) {
+  v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
+
   v8::Handle<v8::Value> value = ToV8Value(arg);
   callback->NewHandle(node_isolate)->Call(
       v8::Context::GetCurrent()->Global(), 1, &value);

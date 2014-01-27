@@ -92,6 +92,7 @@ void Window::OnRendererCrashed() {
 
 void Window::OnCapturePageDone(const RefCountedV8Function& callback,
                                const std::vector<unsigned char>& data) {
+  v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
 
   v8::Local<v8::Value> buffer = node::Buffer::New(

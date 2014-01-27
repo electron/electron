@@ -35,6 +35,7 @@ static const char* kEarlyUseProtocolError = "This method can only be used"
 
 // Emit an event for the protocol module.
 void EmitEventInUI(const std::string& event, const std::string& parameter) {
+  v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
 
   v8::Handle<v8::Value> argv[] = {
@@ -72,6 +73,7 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
   virtual void GetJobTypeInUI() OVERRIDE {
     DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
 
+    v8::Locker locker(node_isolate);
     v8::HandleScope handle_scope(node_isolate);
 
     // Call the JS handler.
