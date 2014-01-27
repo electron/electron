@@ -24,6 +24,7 @@ v8::Handle<v8::Value> CallDelegate(v8::Handle<v8::Value> default_value,
                                    v8::Handle<v8::Object> menu,
                                    const char* method,
                                    int command_id) {
+  v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
 
   v8::Handle<v8::Value> delegate = menu->Get(v8::String::New("delegate"));
@@ -52,6 +53,7 @@ Menu::~Menu() {
 }
 
 bool Menu::IsCommandIdChecked(int command_id) const {
+  v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
   return CallDelegate(v8::False(),
                       const_cast<Menu*>(this)->handle(),
@@ -60,6 +62,7 @@ bool Menu::IsCommandIdChecked(int command_id) const {
 }
 
 bool Menu::IsCommandIdEnabled(int command_id) const {
+  v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
   return CallDelegate(v8::True(),
                       const_cast<Menu*>(this)->handle(),
@@ -68,6 +71,7 @@ bool Menu::IsCommandIdEnabled(int command_id) const {
 }
 
 bool Menu::IsCommandIdVisible(int command_id) const {
+  v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
   return CallDelegate(v8::True(),
                       const_cast<Menu*>(this)->handle(),
@@ -77,6 +81,7 @@ bool Menu::IsCommandIdVisible(int command_id) const {
 
 bool Menu::GetAcceleratorForCommandId(int command_id,
                                       ui::Accelerator* accelerator) {
+  v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
   v8::Handle<v8::Value> shortcut = CallDelegate(v8::Undefined(),
                                                 handle(),
@@ -91,6 +96,7 @@ bool Menu::GetAcceleratorForCommandId(int command_id,
 }
 
 bool Menu::IsItemForCommandIdDynamic(int command_id) const {
+  v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
   return CallDelegate(v8::False(),
                       const_cast<Menu*>(this)->handle(),
@@ -99,6 +105,7 @@ bool Menu::IsItemForCommandIdDynamic(int command_id) const {
 }
 
 string16 Menu::GetLabelForCommandId(int command_id) const {
+  v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
   return FromV8Value(CallDelegate(v8::False(),
                                   const_cast<Menu*>(this)->handle(),
@@ -107,6 +114,7 @@ string16 Menu::GetLabelForCommandId(int command_id) const {
 }
 
 string16 Menu::GetSublabelForCommandId(int command_id) const {
+  v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
   return FromV8Value(CallDelegate(v8::False(),
                                   const_cast<Menu*>(this)->handle(),
@@ -115,14 +123,13 @@ string16 Menu::GetSublabelForCommandId(int command_id) const {
 }
 
 void Menu::ExecuteCommand(int command_id, int event_flags) {
+  v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
   CallDelegate(v8::False(), handle(), "executeCommand", command_id);
 }
 
 // static
 void Menu::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::HandleScope handle_scope(args.GetIsolate());
-
   if (!args.IsConstructCall())
     return node::ThrowError("Require constructor call");
 
@@ -307,8 +314,6 @@ void Menu::Popup(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 // static
 void Menu::Initialize(v8::Handle<v8::Object> target) {
-  v8::HandleScope handle_scope(node_isolate);
-
   v8::Local<v8::FunctionTemplate> t(v8::FunctionTemplate::New(Menu::New));
   t->InstanceTemplate()->SetInternalFieldCount(1);
   t->SetClassName(v8::String::NewSymbol("Menu"));

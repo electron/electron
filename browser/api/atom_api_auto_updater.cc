@@ -47,8 +47,6 @@ void AutoUpdater::ReadyForUpdateOnQuit(const std::string& version,
 
 // static
 void AutoUpdater::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::HandleScope handle_scope(args.GetIsolate());
-
   if (!args.IsConstructCall())
     return node::ThrowError("Require constructor call");
 
@@ -102,8 +100,6 @@ void AutoUpdater::QuitAndInstall(
 
 // static
 void AutoUpdater::Initialize(v8::Handle<v8::Object> target) {
-  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
-
   v8::Local<v8::FunctionTemplate> t(
       v8::FunctionTemplate::New(AutoUpdater::New));
   t->InstanceTemplate()->SetInternalFieldCount(1);

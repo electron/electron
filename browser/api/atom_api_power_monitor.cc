@@ -39,8 +39,6 @@ void PowerMonitor::OnResume() {
 
 // static
 void PowerMonitor::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::HandleScope handle_scope(args.GetIsolate());
-
   if (!args.IsConstructCall())
     return node::ThrowError("Require constructor call");
 
@@ -49,8 +47,6 @@ void PowerMonitor::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 // static
 void PowerMonitor::Initialize(v8::Handle<v8::Object> target) {
-  v8::HandleScope handle_scope(node_isolate);
-
 #if defined(OS_MACOSX)
   base::PowerMonitorDeviceSource::AllocateSystemIOPorts();
 #endif

@@ -46,8 +46,6 @@ void TakeHeapSnapshot(const v8::FunctionCallbackInfo<v8::Value>& args) {
 }  // namespace
 
 void InitializeV8Util(v8::Handle<v8::Object> target) {
-  v8::HandleScope handle_scope(node_isolate);
-
   NODE_SET_METHOD(target, "createObjectWithName", CreateObjectWithName);
   NODE_SET_METHOD(target, "getHiddenValue", GetHiddenValue);
   NODE_SET_METHOD(target, "setHiddenValue", SetHiddenValue);

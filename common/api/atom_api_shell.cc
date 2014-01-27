@@ -60,8 +60,6 @@ void Shell::Beep(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 // static
 void Shell::Initialize(v8::Handle<v8::Object> target) {
-  v8::HandleScope handle_scope(node_isolate);
-
   NODE_SET_METHOD(target, "showItemInFolder", ShowItemInFolder);
   NODE_SET_METHOD(target, "openItem", OpenItem);
   NODE_SET_METHOD(target, "openExternal", OpenExternal);
