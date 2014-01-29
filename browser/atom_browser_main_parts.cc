@@ -51,6 +51,7 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   v8::V8::Initialize();
 
   // Create context.
+  v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
   v8::Local<v8::Context> context = v8::Context::New(node_isolate);
 

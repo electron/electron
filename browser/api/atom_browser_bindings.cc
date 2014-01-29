@@ -25,6 +25,7 @@ void AtomBrowserBindings::OnRendererMessage(int process_id,
                                             int routing_id,
                                             const string16& channel,
                                             const base::ListValue& args) {
+  v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
 
   scoped_ptr<V8ValueConverter> converter(new V8ValueConverter);
@@ -58,6 +59,7 @@ void AtomBrowserBindings::OnRendererMessageSync(
     const base::ListValue& args,
     NativeWindow* sender,
     IPC::Message* message) {
+  v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
 
   scoped_ptr<V8ValueConverter> converter(new V8ValueConverter);

@@ -31,8 +31,6 @@ void MenuWin::Popup(NativeWindow* native_window) {
 
 // static
 void Menu::AttachToWindow(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::HandleScope handle_scope(args.GetIsolate());
-
   Menu* self = ObjectWrap::Unwrap<Menu>(args.This());
   if (self == NULL)
     return node::ThrowError("Menu is already destroyed");
