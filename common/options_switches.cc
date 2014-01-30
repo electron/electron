@@ -31,6 +31,8 @@ const char kKiosk[] = "kiosk";
 // Make windows stays on the top of all other windows.
 const char kAlwaysOnTop[] = "always-on-top";
 
+const char kIframeSecurity[] = "iframe-security";
+
 }  // namespace switches
 
 }  // namespace atom

@@ -140,6 +140,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   }
 
   bool has_frame() const { return has_frame_; }
+  std::string iframe_security() const { return iframe_security_; }
 
  protected:
   explicit NativeWindow(content::WebContents* web_contents,
@@ -218,6 +219,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   // The windows has been closed.
   bool is_closed_;
+
+  // The security token of iframe.
+  std::string iframe_security_;
 
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.

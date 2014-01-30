@@ -26,6 +26,7 @@ extern const char kResizable[];
 extern const char kFullscreen[];
 extern const char kKiosk[];
 extern const char kAlwaysOnTop[];
+extern const char kIframeSecurity[];
 
 }  // namespace switches
 

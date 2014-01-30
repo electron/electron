@@ -4,9 +4,15 @@
 
 #include "browser/atom_browser_client.h"
 
+#include "base/command_line.h"
 #include "browser/atom_browser_context.h"
 #include "browser/atom_browser_main_parts.h"
+#include "browser/native_window.h"
 #include "browser/net/atom_url_request_context_getter.h"
+#include "browser/window_list.h"
+#include "common/options_switches.h"
+#include "content/public/browser/render_process_host.h"
+#include "content/public/browser/web_contents.h"
 #include "webkit/common/webpreferences.h"
 
 namespace atom {
@@ -52,6 +58,23 @@ bool AtomBrowserClient::ShouldSwapProcessesForNavigation(
     const GURL& new_url) {
   // Restart renderer process for all navigations.
   return true;
+}
+
+void AtomBrowserClient::AppendExtraCommandLineSwitches(
+    CommandLine* command_line,
+    int child_process_id) {
+  // Append --iframe-security to renderer process.
+  WindowList* list = WindowList::GetInstance();
+  for (WindowList::const_iterator iter = list->begin(); iter != list->end();
+       ++iter) {
+    NativeWindow* window = *iter;
+    int id = window->GetWebContents()->GetRenderProcessHost()->GetID();
+    if (id == child_process_id) {
+      command_line->AppendSwitchASCII(switches::kIframeSecurity,
+                                      window->iframe_security());
+      return;
+    }
+  }
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
