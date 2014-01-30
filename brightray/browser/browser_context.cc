@@ -89,6 +89,9 @@ void BrowserContext::Initialize() {
 }
 
 BrowserContext::~BrowserContext() {
+  content::BrowserThread::DeleteSoon(content::BrowserThread::IO,
+                                     FROM_HERE,
+                                     resource_context_.release());
 }
 
 void BrowserContext::RegisterInternalPrefs(PrefRegistrySimple* registry) {
