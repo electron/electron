@@ -66,7 +66,7 @@ void AtomMainDelegate::PreSandboxStartup() {
   command_line->AppendSwitch(switches::kDisableAcceleratedCompositing);
 
   // Add a flag to mark the end of switches added by atom-shell.
-  command_line->AppendSwitch("no-more-switches");
+  command_line->AppendSwitch("no-more-atom-shell-switches");
 }
 
 void AtomMainDelegate::InitializeResourceBundle() {

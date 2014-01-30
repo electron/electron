@@ -1,5 +1,4 @@
 var app = require('app');
-var dialog = require('dialog');
 var path = require('path');
 var optimist = require('optimist');
 
@@ -8,6 +7,10 @@ app.on('window-all-closed', function() {
   if (app.listeners('window-all-closed').length == 1)
     app.quit();
 });
+
+// Pick out switches appended by atom-shell.
+var endMark = process.argv.indexOf('--no-more-atom-shell-switches');
+process.execArgv = process.argv.splice(1, endMark)
 
 var argv = optimist(process.argv.slice(1)).argv;
 
