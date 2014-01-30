@@ -40,12 +40,12 @@ URLRequestContextGetter::URLRequestContextGetter(
     const base::FilePath& base_path,
     base::MessageLoop* io_loop,
     base::MessageLoop* file_loop,
-    scoped_ptr<NetworkDelegate> network_delegate,
+    base::Callback<scoped_ptr<NetworkDelegate>(void)> network_delegate_factory,
     content::ProtocolHandlerMap* protocol_handlers)
     : base_path_(base_path),
       io_loop_(io_loop),
       file_loop_(file_loop),
-      network_delegate_(network_delegate.Pass()) {
+      network_delegate_factory_(network_delegate_factory) {
   // Must first be created on the UI thread.
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
 
@@ -67,6 +67,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
   if (!url_request_context_.get()) {
     url_request_context_.reset(new net::URLRequestContext());
+    network_delegate_ = network_delegate_factory_.Run().Pass();
     url_request_context_->set_network_delegate(network_delegate_.get());
     storage_.reset(
         new net::URLRequestContextStorage(url_request_context_.get()));
@@ -97,6 +98,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
             url_request_context_->network_delegate()));
 
     storage_->set_cert_verifier(net::CertVerifier::CreateDefault());
+    storage_->set_transport_security_state(new net::TransportSecurityState);
     storage_->set_ssl_config_service(new net::SSLConfigServiceDefaults);
     storage_->set_http_auth_handler_factory(
         net::HttpAuthHandlerFactory::CreateDefault(host_resolver.get()));
@@ -117,6 +119,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     net::HttpNetworkSession::Params network_session_params;
     network_session_params.cert_verifier =
         url_request_context_->cert_verifier();
+    network_session_params.transport_security_state =
+        url_request_context_->transport_security_state();
     network_session_params.server_bound_cert_service =
         url_request_context_->server_bound_cert_service();
     network_session_params.proxy_service =
