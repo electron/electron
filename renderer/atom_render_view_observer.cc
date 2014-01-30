@@ -55,6 +55,9 @@ bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
 
 void AtomRenderViewObserver::OnBrowserMessage(const string16& channel,
                                               const base::ListValue& args) {
+  if (!render_view()->GetWebView())
+    return;
+
   WebKit::WebFrame* frame = render_view()->GetWebView()->mainFrame();
   if (!renderer_client_->IsNodeBindingEnabled(frame))
     return;

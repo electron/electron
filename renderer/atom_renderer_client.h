@@ -28,10 +28,11 @@ class AtomRendererClient : public content::ContentRendererClient {
   AtomRendererBindings* atom_bindings() const { return atom_bindings_.get(); }
 
  private:
-  enum IframeSecurity {
-    FULL,
-    MANUAL,
-    NONE,
+  enum NodeIntegration {
+    ALL,
+    EXCEPT_IFRAME,
+    MANUAL_ENABLE_IFRAME,
+    DISABLE,
   };
 
   virtual void RenderThreadStarted() OVERRIDE;
@@ -55,7 +56,11 @@ class AtomRendererClient : public content::ContentRendererClient {
   scoped_ptr<NodeBindings> node_bindings_;
   scoped_ptr<AtomRendererBindings> atom_bindings_;
 
-  IframeSecurity iframe_security_;
+  // The level of node integration we should support.
+  NodeIntegration node_integration_;
+
+  // The main frame.
+  WebKit::WebFrame* main_frame_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
 };

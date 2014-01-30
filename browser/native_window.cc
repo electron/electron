@@ -48,7 +48,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
     : content::WebContentsObserver(web_contents),
       has_frame_(true),
       is_closed_(false),
-      iframe_security_("full"),
+      node_integration_("all"),
       weak_factory_(this),
       inspectable_web_contents_(
           brightray::InspectableWebContents::Create(web_contents)) {
@@ -60,7 +60,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
     LOG(ERROR) << "Failed to set icon to " << icon;
 
   // Read iframe security before any navigation.
-  options->GetString(switches::kIframeSecurity, &iframe_security_);
+  options->GetString(switches::kNodeIntegration, &node_integration_);
 
   web_contents->SetDelegate(this);
 

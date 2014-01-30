@@ -18,13 +18,17 @@
 namespace atom {
 
 AtomRendererClient::AtomRendererClient()
-    : iframe_security_(FULL) {
-  std::string security = CommandLine::ForCurrentProcess()->
-      GetSwitchValueASCII(switches::kIframeSecurity);
-  if (security == "manual")
-    iframe_security_ = MANUAL;
-  else if (security == "none")
-    iframe_security_ = NONE;
+    : node_integration_(ALL),
+      main_frame_(NULL) {
+  // Translate the token.
+  std::string token = CommandLine::ForCurrentProcess()->
+      GetSwitchValueASCII(switches::kNodeIntegration);
+  if (token == "except-iframe")
+    node_integration_ = EXCEPT_IFRAME;
+  else if (token == "manual-enable-iframe")
+    node_integration_ = MANUAL_ENABLE_IFRAME;
+  else if (token == "disable")
+    node_integration_ = DISABLE;
 
   if (IsNodeBindingEnabled()) {
     node_bindings_.reset(NodeBindings::Create(false));
@@ -59,6 +63,10 @@ void AtomRendererClient::DidCreateScriptContext(WebKit::WebFrame* frame,
                                                 v8::Handle<v8::Context> context,
                                                 int extension_group,
                                                 int world_id) {
+  // The first web frame is the main frame.
+  if (main_frame_ == NULL)
+    main_frame_ = frame;
+
   if (!IsNodeBindingEnabled(frame))
     return;
 
@@ -131,11 +139,16 @@ bool AtomRendererClient::ShouldFork(WebKit::WebFrame* frame,
 }
 
 bool AtomRendererClient::IsNodeBindingEnabled(WebKit::WebFrame* frame) {
-  if (iframe_security_ == FULL)
+  if (node_integration_ == DISABLE)
     return false;
-  else if (iframe_security_ == MANUAL &&
+  // Node integration is enabled in main frame unless explictly disabled.
+  else if (frame == main_frame_)
+    return true;
+  else if (node_integration_ == MANUAL_ENABLE_IFRAME &&
            frame != NULL &&
            frame->uniqueName().utf8().find("-enable-node") == std::string::npos)
+    return false;
+  else if (node_integration_ == EXCEPT_IFRAME && frame != NULL)
     return false;
   else
     return true;

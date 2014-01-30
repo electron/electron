@@ -63,15 +63,15 @@ bool AtomBrowserClient::ShouldSwapProcessesForNavigation(
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
     CommandLine* command_line,
     int child_process_id) {
-  // Append --iframe-security to renderer process.
+  // Append --node-integration to renderer process.
   WindowList* list = WindowList::GetInstance();
   for (WindowList::const_iterator iter = list->begin(); iter != list->end();
        ++iter) {
     NativeWindow* window = *iter;
     int id = window->GetWebContents()->GetRenderProcessHost()->GetID();
     if (id == child_process_id) {
-      command_line->AppendSwitchASCII(switches::kIframeSecurity,
-                                      window->iframe_security());
+      command_line->AppendSwitchASCII(switches::kNodeIntegration,
+                                      window->node_integration());
       return;
     }
   }
