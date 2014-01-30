@@ -51,6 +51,12 @@ void AtomMainDelegate::PreSandboxStartup() {
   InitializeResourceBundle();
 
   CommandLine* command_line = CommandLine::ForCurrentProcess();
+  std::string process_type = command_line->GetSwitchValueASCII(
+      switches::kProcessType);
+
+  // Don't append arguments for renderer process.
+  if (process_type == switches::kRendererProcess)
+    return;
 
   // Disable renderer sandbox for most of node's functions.
   command_line->AppendSwitch(switches::kNoSandbox);
