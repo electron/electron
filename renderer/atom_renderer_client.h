@@ -23,9 +23,17 @@ class AtomRendererClient : public content::ContentRendererClient {
   AtomRendererClient();
   virtual ~AtomRendererClient();
 
+  bool IsNodeBindingEnabled(WebKit::WebFrame* frame = NULL);
+
   AtomRendererBindings* atom_bindings() const { return atom_bindings_.get(); }
 
  private:
+  enum IframeSecurity {
+    FULL,
+    MANUAL,
+    NONE,
+  };
+
   virtual void RenderThreadStarted() OVERRIDE;
   virtual void RenderViewCreated(content::RenderView*) OVERRIDE;
   virtual void DidCreateScriptContext(WebKit::WebFrame* frame,
@@ -46,6 +54,8 @@ class AtomRendererClient : public content::ContentRendererClient {
 
   scoped_ptr<NodeBindings> node_bindings_;
   scoped_ptr<AtomRendererBindings> atom_bindings_;
+
+  IframeSecurity iframe_security_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
 };
