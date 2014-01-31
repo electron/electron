@@ -27,6 +27,7 @@ class BrowserMainParts : public content::BrowserMainParts {
   virtual BrowserContext* CreateBrowserContext();
 
 #if defined(OS_MACOSX)
+  virtual void PreEarlyInitialization() OVERRIDE;
   virtual void PreMainMessageLoopStart() OVERRIDE;
 #endif
 
