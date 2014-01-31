@@ -12,12 +12,30 @@
 #include "browser/window_list.h"
 #include "common/options_switches.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "webkit/common/webpreferences.h"
 
 namespace atom {
 
-AtomBrowserClient::AtomBrowserClient() {
+namespace {
+
+struct FindByProcessId {
+  FindByProcessId(int child_process_id) : child_process_id_(child_process_id) {
+  }
+
+  bool operator() (NativeWindow* const window) {
+    int id = window->GetWebContents()->GetRenderProcessHost()->GetID();
+    return id == child_process_id_;
+  }
+
+  int child_process_id_;
+};
+
+}  // namespace
+
+AtomBrowserClient::AtomBrowserClient()
+    : dying_render_process_(NULL) {
 }
 
 AtomBrowserClient::~AtomBrowserClient() {
@@ -56,6 +74,9 @@ bool AtomBrowserClient::ShouldSwapProcessesForNavigation(
     content::SiteInstance* site_instance,
     const GURL& current_url,
     const GURL& new_url) {
+  if (site_instance->HasProcess())
+    dying_render_process_ = site_instance->GetProcess();
+
   // Restart renderer process for all navigations.
   return true;
 }
@@ -63,18 +84,30 @@ bool AtomBrowserClient::ShouldSwapProcessesForNavigation(
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
     CommandLine* command_line,
     int child_process_id) {
-  // Append --node-integration to renderer process.
   WindowList* list = WindowList::GetInstance();
-  for (WindowList::const_iterator iter = list->begin(); iter != list->end();
-       ++iter) {
-    NativeWindow* window = *iter;
-    int id = window->GetWebContents()->GetRenderProcessHost()->GetID();
-    if (id == child_process_id) {
-      command_line->AppendSwitchASCII(switches::kNodeIntegration,
-                                      window->node_integration());
-      return;
-    }
+  NativeWindow* window = NULL;
+
+  // Find the owner of this child process.
+  WindowList::const_iterator iter = std::find_if(
+      list->begin(), list->end(), FindByProcessId(child_process_id));
+  if (iter != list->end())
+    window = *iter;
+
+  // If the render process is a newly started one, which means the window still
+  // uses the old going-to-be-swapped render process, then we try to find the
+  // window from the swapped render process.
+  if (window == NULL && dying_render_process_ != NULL) {
+    child_process_id = dying_render_process_->GetID();
+    WindowList::const_iterator iter = std::find_if(
+        list->begin(), list->end(), FindByProcessId(child_process_id));
+    if (iter != list->end())
+      window = *iter;
   }
+
+  // Append --node-integration to renderer process.
+  if (window != NULL)
+    command_line->AppendSwitchASCII(switches::kNodeIntegration,
+                                    window->node_integration());
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
