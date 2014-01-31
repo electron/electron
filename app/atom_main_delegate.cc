@@ -51,6 +51,15 @@ void AtomMainDelegate::PreSandboxStartup() {
   InitializeResourceBundle();
 
   CommandLine* command_line = CommandLine::ForCurrentProcess();
+  std::string process_type = command_line->GetSwitchValueASCII(
+      switches::kProcessType);
+
+  // Don't append arguments for renderer process.
+  if (process_type == switches::kRendererProcess)
+    return;
+
+  // Add a flag to mark the start of switches added by atom-shell.
+  command_line->AppendSwitch("atom-shell-switches-start");
 
   // Disable renderer sandbox for most of node's functions.
   command_line->AppendSwitch(switches::kNoSandbox);
@@ -60,7 +69,7 @@ void AtomMainDelegate::PreSandboxStartup() {
   command_line->AppendSwitch(switches::kDisableAcceleratedCompositing);
 
   // Add a flag to mark the end of switches added by atom-shell.
-  command_line->AppendSwitch("no-more-switches");
+  command_line->AppendSwitch("atom-shell-switches-end");
 }
 
 void AtomMainDelegate::InitializeResourceBundle() {

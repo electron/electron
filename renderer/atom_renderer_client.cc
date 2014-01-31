@@ -6,23 +6,52 @@
 
 #include <algorithm>
 
+#include "base/command_line.h"
 #include "common/node_bindings.h"
+#include "common/options_switches.h"
 #include "renderer/api/atom_renderer_bindings.h"
 #include "renderer/atom_render_view_observer.h"
+#include "third_party/WebKit/public/web/WebFrame.h"
 
 #include "common/v8/node_common.h"
 
 namespace atom {
 
+namespace {
+
+const char* kExceptIframe = "except-iframe";
+const char* kManualEnableIframe = "manual-enable-iframe";
+const char* kDisable = "disable";
+const char* kEnableNodeIntegration = "enable-node-integration";
+
+}  // namespace
+
 AtomRendererClient::AtomRendererClient()
-    : node_bindings_(NodeBindings::Create(false)),
-      atom_bindings_(new AtomRendererBindings) {
+    : node_integration_(ALL),
+      main_frame_(NULL) {
+  // Translate the token.
+  std::string token = CommandLine::ForCurrentProcess()->
+      GetSwitchValueASCII(switches::kNodeIntegration);
+  if (token == kExceptIframe)
+    node_integration_ = EXCEPT_IFRAME;
+  else if (token == kManualEnableIframe)
+    node_integration_ = MANUAL_ENABLE_IFRAME;
+  else if (token == kDisable)
+    node_integration_ = DISABLE;
+
+  if (IsNodeBindingEnabled()) {
+    node_bindings_.reset(NodeBindings::Create(false));
+    atom_bindings_.reset(new AtomRendererBindings);
+  }
 }
 
 AtomRendererClient::~AtomRendererClient() {
 }
 
 void AtomRendererClient::RenderThreadStarted() {
+  if (!IsNodeBindingEnabled())
+    return;
+
   node_bindings_->Initialize();
   node_bindings_->PrepareMessageLoop();
 
@@ -43,6 +72,13 @@ void AtomRendererClient::DidCreateScriptContext(WebKit::WebFrame* frame,
                                                 v8::Handle<v8::Context> context,
                                                 int extension_group,
                                                 int world_id) {
+  // The first web frame is the main frame.
+  if (main_frame_ == NULL)
+    main_frame_ = frame;
+
+  if (!IsNodeBindingEnabled(frame))
+    return;
+
   v8::Context::Scope scope(context);
 
   // Check the existance of process object to prevent duplicate initialization.
@@ -70,6 +106,9 @@ void AtomRendererClient::WillReleaseScriptContext(
     WebKit::WebFrame* frame,
     v8::Handle<v8::Context> context,
     int world_id) {
+  if (!IsNodeBindingEnabled(frame))
+    return;
+
   node::Environment* env = node::Environment::GetCurrent(context);
   if (env == NULL) {
     LOG(ERROR) << "Encounter a non-node context when releasing script context";
@@ -106,6 +145,23 @@ bool AtomRendererClient::ShouldFork(WebKit::WebFrame* frame,
                                     bool* send_referrer) {
   // Handle all the navigations and reloads in browser.
   return true;
+}
+
+bool AtomRendererClient::IsNodeBindingEnabled(WebKit::WebFrame* frame) {
+  if (node_integration_ == DISABLE)
+    return false;
+  // Node integration is enabled in main frame unless explictly disabled.
+  else if (frame == main_frame_)
+    return true;
+  else if (node_integration_ == MANUAL_ENABLE_IFRAME &&
+           frame != NULL &&
+           frame->uniqueName().utf8().find(kEnableNodeIntegration)
+               == std::string::npos)
+    return false;
+  else if (node_integration_ == EXCEPT_IFRAME && frame != NULL)
+    return false;
+  else
+    return true;
 }
 
 }  // namespace atom

@@ -5,12 +5,12 @@ import os
 import subprocess
 import sys
 
+from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL
 from lib.util import scoped_cwd
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
-BASE_URL = 'https://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent'
 PYTHON_26_URL = 'https://chromium.googlesource.com/chromium/deps/python_26'
 
 
@@ -52,7 +52,8 @@ def update_submodules():
 
 def bootstrap_brightray(url):
   bootstrap = os.path.join(VENDOR_DIR, 'brightray', 'script', 'bootstrap')
-  subprocess.check_call([sys.executable, bootstrap, url])
+  subprocess.check_call([sys.executable, bootstrap, '--commit',
+                         LIBCHROMIUMCONTENT_COMMIT, url])
 
 
 def update_apm():

@@ -25,10 +25,15 @@ class AtomBrowserClient : public brightray::BrowserClient {
       content::SiteInstance* site_instance,
       const GURL& current_url,
       const GURL& new_url) OVERRIDE;
+  virtual void AppendExtraCommandLineSwitches(CommandLine* command_line,
+                                              int child_process_id) OVERRIDE;
 
  private:
   virtual brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
       const content::MainFunctionParams&) OVERRIDE;
+
+  // The render process which would be swapped out soon.
+  content::RenderProcessHost* dying_render_process_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
 };

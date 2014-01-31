@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 
+from lib.config import NODE_VERSION
 from lib.util import get_atom_shell_version, scoped_cwd, safe_mkdir
 from lib.github import GitHub
 
@@ -21,7 +22,6 @@ TARGET_PLATFORM = {
 
 ATOM_SHELL_REPO = 'atom/atom-shell'
 ATOM_SHELL_VRESION = get_atom_shell_version()
-NODE_VERSION = 'v0.11.10'
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'Release')

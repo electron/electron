@@ -18,9 +18,6 @@ win.show();
 You can also create a window without chrome by using
 [Frameless Window](frameless-window.md) API.
 
-
-**Note:** Be careful not to use `window` as the variable name.
-
 ## Class: BrowserWindow
 
 `BrowserWindow` is an
@@ -44,10 +41,30 @@ You can also create a window without chrome by using
   * `show` Boolean - Whether window should be shown when created
   * `frame` Boolean - Specify `false` to create a
     [Frameless Window](frameless-window.md)
+  * `node-integration` String - Can be `all`, `except-iframe`,
+    `manual-enable-iframe` or `disable`.
 
 Creates a new `BrowserWindow` with native properties set by the `options`.
 Usually you only need to set the `width` and `height`, other properties will
 have decent default values.
+
+By default the `node-integration` option is `all`, which means node integration
+is available to the main page and all its iframes. You can also set it to
+`except-iframe`, which would disable node integration in all iframes, or
+`manual-enable-iframe`, which is like `except-iframe`, but would enable iframes
+whose name is suffixed by `-enable-node-integration`. And setting to `disable`
+would disable the node integration in both the main page and its iframes.
+
+An example of enable node integration in iframe with `node-integration` set to
+`manual-enable-iframe`:
+
+```html
+<!-- iframe with node integration enabled -->
+<iframe name="gh-enable-node-integration" src="https://github.com"></iframe>
+
+<!-- iframe with node integration disabled -->
+<iframe src="http://jandan.net"></iframe>
+```
 
 ### Event: 'page-title-updated'
 
