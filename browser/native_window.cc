@@ -48,16 +48,19 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
     : content::WebContentsObserver(web_contents),
       has_frame_(true),
       is_closed_(false),
+      node_integration_("all"),
       weak_factory_(this),
       inspectable_web_contents_(
           brightray::InspectableWebContents::Create(web_contents)) {
   options->GetBoolean(switches::kFrame, &has_frame_);
 
+  // Read icon before window is created.
   std::string icon;
-  if (options->GetString(switches::kIcon, &icon)) {
-    if (!SetIcon(icon))
-      LOG(ERROR) << "Failed to set icon to " << icon;
-  }
+  if (options->GetString(switches::kIcon, &icon) && !SetIcon(icon))
+    LOG(ERROR) << "Failed to set icon to " << icon;
+
+  // Read iframe security before any navigation.
+  options->GetString(switches::kNodeIntegration, &node_integration_);
 
   web_contents->SetDelegate(this);
 
