@@ -17,17 +17,26 @@
 
 namespace atom {
 
+namespace {
+
+const char* kExceptIframe = "except-iframe";
+const char* kManualEnableIframe = "manual-enable-iframe";
+const char* kDisable = "disable";
+const char* kEnableNodeIntegration = "enable-node-integration";
+
+}  // namespace
+
 AtomRendererClient::AtomRendererClient()
     : node_integration_(ALL),
       main_frame_(NULL) {
   // Translate the token.
   std::string token = CommandLine::ForCurrentProcess()->
       GetSwitchValueASCII(switches::kNodeIntegration);
-  if (token == "except-iframe")
+  if (token == kExceptIframe)
     node_integration_ = EXCEPT_IFRAME;
-  else if (token == "manual-enable-iframe")
+  else if (token == kManualEnableIframe)
     node_integration_ = MANUAL_ENABLE_IFRAME;
-  else if (token == "disable")
+  else if (token == kDisable)
     node_integration_ = DISABLE;
 
   if (IsNodeBindingEnabled()) {
@@ -146,7 +155,8 @@ bool AtomRendererClient::IsNodeBindingEnabled(WebKit::WebFrame* frame) {
     return true;
   else if (node_integration_ == MANUAL_ENABLE_IFRAME &&
            frame != NULL &&
-           frame->uniqueName().utf8().find("-enable-node") == std::string::npos)
+           frame->uniqueName().utf8().find(kEnableNodeIntegration)
+               == std::string::npos)
     return false;
   else if (node_integration_ == EXCEPT_IFRAME && frame != NULL)
     return false;
