@@ -37,40 +37,40 @@ void AutoUpdater::SetFeedURL(const std::string& feed) {
     NSURL* url = [NSURL URLWithString:base::SysUTF8ToNSString(feed)];
     NSURLRequest* urlRequest = [NSURLRequest requestWithURL:url];
     g_updater = [[SQRLUpdater alloc] initWithUpdateRequest:urlRequest];
-
-    AutoUpdaterDelegate* delegate = GetDelegate();
-    if (!delegate)
-      return;
-
-    // Subscribe to events.
-    __block bool has_update = false;
-    [g_updater.updates subscribeNext:^(SQRLDownloadedUpdate* downloadedUpdate) {
-      has_update = true;
-
-      // There is a new update that has been downloaded.
-      SQRLUpdate* update = downloadedUpdate.update;
-      delegate->OnUpdateDownloaded(
-          base::SysNSStringToUTF8(update.releaseNotes),
-          base::SysNSStringToUTF8(update.releaseName),
-          base::Time::FromDoubleT(update.releaseDate.timeIntervalSince1970),
-          base::SysNSStringToUTF8(update.updateURL.absoluteString),
-          base::Bind(RelaunchToInstallUpdate));
-    } error:^(NSError* error) {
-      // Something wrong happened.
-      delegate->OnError(base::SysNSStringToUTF8(error.localizedDescription));
-    } completed:^() {
-      // When the completed event is sent with no update, then we know there
-      // is no update available.
-      if (!has_update)
-        delegate->OnUpdateNotAvailable();
-      has_update = false;
-    }];
   }
 }
 
 // static
 void AutoUpdater::CheckForUpdates() {
-  [g_updater.checkForUpdatesCommand execute:nil];
+  RACSignal* signal = [g_updater.checkForUpdatesCommand execute:nil];
+
+  AutoUpdaterDelegate* delegate = GetDelegate();
+  if (!delegate)
+    return;
+
+  // Subscribe to events.
+  __block bool has_update = false;
+  [signal subscribeNext:^(SQRLDownloadedUpdate* downloadedUpdate) {
+    has_update = true;
+
+    // There is a new update that has been downloaded.
+    SQRLUpdate* update = downloadedUpdate.update;
+    delegate->OnUpdateDownloaded(
+        base::SysNSStringToUTF8(update.releaseNotes),
+        base::SysNSStringToUTF8(update.releaseName),
+        base::Time::FromDoubleT(update.releaseDate.timeIntervalSince1970),
+        base::SysNSStringToUTF8(update.updateURL.absoluteString),
+        base::Bind(RelaunchToInstallUpdate));
+  } error:^(NSError* error) {
+    // Something wrong happened.
+    delegate->OnError(base::SysNSStringToUTF8(error.localizedDescription));
+  } completed:^() {
+    // When the completed event is sent with no update, then we know there
+    // is no update available.
+    if (!has_update)
+      delegate->OnUpdateNotAvailable();
+    has_update = false;
+  }];
 }
 
 }  // namespace auto_updater
