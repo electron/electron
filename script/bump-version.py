@@ -71,7 +71,7 @@ def update_win_rc(version, versions):
   pattern_fvs = re.compile(' *VALUE "FileVersion", "[0-9.]+"')
   pattern_pvs = re.compile(' *VALUE "ProductVersion", "[0-9.]+"')
 
-  win_rc = os.path.join('app', 'win', 'atom.rc')
+  win_rc = os.path.join('browser', 'resources', 'win', 'atom.rc')
   with open(win_rc, 'r') as f:
     lines = f.readlines()
 
@@ -109,7 +109,7 @@ def update_version_h(versions):
 
 
 def update_info_plist(version):
-  info_plist = os.path.join('browser', 'mac', 'Info.plist')
+  info_plist = os.path.join('browser', 'resources', 'mac', 'Info.plist')
   with open(info_plist, 'r') as f:
     lines = f.readlines()
 

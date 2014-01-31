@@ -8,7 +8,7 @@
       'app/atom_main.h',
     ],
     'bundle_sources': [
-      'browser/mac/atom.icns',
+      'browser/resources/mac/atom.icns',
     ],
     'coffee_sources': [
       'browser/api/lib/app.coffee',
@@ -191,9 +191,9 @@
     'conditions': [
       ['OS=="win"', {
         'app_sources': [
-          'app/win/resource.h',
-          'app/win/atom.ico',
-          'app/win/atom.rc',
+          'browser/resources/win/resource.h',
+          'browser/resources/win/atom.ico',
+          'browser/resources/win/atom.rc',
           '<(libchromiumcontent_src_dir)/content/app/startup_helper_win.cc',
         ],
       }],  # OS=="win"
@@ -249,7 +249,7 @@
             '<(project_name)_helper',
           ],
           'xcode_settings': {
-            'INFOPLIST_FILE': 'browser/mac/Info.plist',
+            'INFOPLIST_FILE': 'browser/resources/mac/Info.plist',
             'LD_RUNPATH_SEARCH_PATHS': [
               '@executable_path/../Frameworks',
             ],
@@ -499,11 +499,11 @@
           },
           'mac_bundle': 1,
           'mac_bundle_resources': [
-            'browser/mac/MainMenu.xib',
+            'common/resources/mac/MainMenu.xib',
             '<(libchromiumcontent_resources_dir)/content_shell.pak',
           ],
           'xcode_settings': {
-            'INFOPLIST_FILE': 'common/mac/Info.plist',
+            'INFOPLIST_FILE': 'common/resources/mac/Info.plist',
             'LIBRARY_SEARCH_PATHS': [
               '<(libchromiumcontent_library_dir)',
             ],
@@ -564,7 +564,7 @@
           ],
           'mac_bundle': 1,
           'xcode_settings': {
-            'INFOPLIST_FILE': 'renderer/mac/Info.plist',
+            'INFOPLIST_FILE': 'renderer/resources/mac/Info.plist',
             'LD_RUNPATH_SEARCH_PATHS': [
               '@executable_path/../../..',
             ],
