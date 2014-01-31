@@ -21,7 +21,8 @@ namespace atom {
 namespace {
 
 struct FindByProcessId {
-  FindByProcessId(int child_process_id) : child_process_id_(child_process_id) {
+  explicit FindByProcessId(int child_process_id)
+      : child_process_id_(child_process_id) {
   }
 
   bool operator() (NativeWindow* const window) {
