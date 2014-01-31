@@ -108,6 +108,8 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   if (window != NULL)
     command_line->AppendSwitchASCII(switches::kNodeIntegration,
                                     window->node_integration());
+
+  dying_render_process_ = NULL;
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
