@@ -503,6 +503,7 @@
             '<(libchromiumcontent_resources_dir)/content_shell.pak',
           ],
           'xcode_settings': {
+            'INFOPLIST_FILE': 'common/mac/Info.plist',
             'LIBRARY_SEARCH_PATHS': [
               '<(libchromiumcontent_library_dir)',
             ],
