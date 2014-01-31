@@ -58,6 +58,9 @@ void AtomMainDelegate::PreSandboxStartup() {
   if (process_type == switches::kRendererProcess)
     return;
 
+  // Add a flag to mark the start of switches added by atom-shell.
+  command_line->AppendSwitch("atom-shell-switches-start");
+
   // Disable renderer sandbox for most of node's functions.
   command_line->AppendSwitch(switches::kNoSandbox);
 
@@ -66,7 +69,7 @@ void AtomMainDelegate::PreSandboxStartup() {
   command_line->AppendSwitch(switches::kDisableAcceleratedCompositing);
 
   // Add a flag to mark the end of switches added by atom-shell.
-  command_line->AppendSwitch("no-more-atom-shell-switches");
+  command_line->AppendSwitch("atom-shell-switches-end");
 }
 
 void AtomMainDelegate::InitializeResourceBundle() {

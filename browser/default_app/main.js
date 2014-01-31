@@ -8,11 +8,7 @@ app.on('window-all-closed', function() {
     app.quit();
 });
 
-// Pick out switches appended by atom-shell.
-var endMark = process.argv.indexOf('--no-more-atom-shell-switches');
-process.execArgv = process.argv.splice(1, endMark)
-
-var argv = optimist(process.argv.slice(1)).argv;
+var argv = optimist(process.argv.slice(1)).boolean('ci').argv;
 
 // Start the specified app if there is one specified in command line, otherwise
 // start the default app.
