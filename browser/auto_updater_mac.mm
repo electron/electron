@@ -18,9 +18,9 @@ namespace auto_updater {
 namespace {
 
 // The gloal SQRLUpdater object.
-static SQRLUpdater* g_updater = nil;
+SQRLUpdater* g_updater = nil;
 
-static void RelaunchToInstallUpdate() {
+void RelaunchToInstallUpdate() {
   [[g_updater relaunchToInstallUpdate] subscribeError:^(NSError* error) {
     AutoUpdaterDelegate* delegate = AutoUpdater::GetDelegate();
     if (delegate)
