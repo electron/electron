@@ -7,14 +7,12 @@ import subprocess
 import sys
 import tarfile
 
+from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, NODE_VERSION
 from lib.util import scoped_cwd, rm_rf, get_atom_shell_version, make_zip, \
                      safe_mkdir
 
 
 ATOM_SHELL_VRESION = get_atom_shell_version()
-NODE_VERSION = 'v0.11.10'
-BASE_URL = 'https://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent'
-LIBCHROMIUMCONTENT_COMMIT = 'b27290717c08f8c6a58067d3c3725d68b4e6a2e5'
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')

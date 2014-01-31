@@ -5,14 +5,13 @@ import os
 import subprocess
 import sys
 
+from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL
 from lib.util import scoped_cwd
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
-BASE_URL = 'https://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent'
 PYTHON_26_URL = 'https://chromium.googlesource.com/chromium/deps/python_26'
-LIBCHROMIUMCONTENT_COMMIT = 'b27290717c08f8c6a58067d3c3725d68b4e6a2e5'
 
 
 def main():
