@@ -30,6 +30,14 @@ void AutoUpdater::OnError(const std::string& error) {
   Emit("error", &args);
 }
 
+void AutoUpdater::OnCheckingForUpdate() {
+  Emit("checking-for-update");
+}
+
+void AutoUpdater::OnUpdateAvailable() {
+  Emit("update-available");
+}
+
 void AutoUpdater::OnUpdateNotAvailable() {
   Emit("update-not-available");
 }

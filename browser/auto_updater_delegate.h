@@ -20,6 +20,12 @@ class AutoUpdaterDelegate {
   // An error happened.
   virtual void OnError(const std::string& error) {}
 
+  // Checking to see if there is an update
+  virtual void OnCheckingForUpdate() {}
+
+  // There is an update available and it is being downloaded
+  virtual void OnUpdateAvailable() {}
+
   // There is no available update.
   virtual void OnUpdateNotAvailable() {}
 

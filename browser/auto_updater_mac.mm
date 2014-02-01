@@ -6,6 +6,7 @@
 
 #import <ReactiveCocoa/RACCommand.h>
 #import <ReactiveCocoa/RACSignal.h>
+#import <ReactiveCocoa/NSObject+RACPropertySubscribing.h>
 #import <Squirrel/Squirrel.h>
 
 #include "base/bind.h"
@@ -63,6 +64,15 @@ void AutoUpdater::SetFeedURL(const std::string& feed) {
       if (!has_update)
         delegate->OnUpdateNotAvailable();
       has_update = false;
+    [[g_updater rac_valuesForKeyPath:@"state" observer:g_updater]
+      subscribeNext:^(NSNumber *stateNumber) {
+        int state = [stateNumber integerValue];
+        if (state == SQRLUpdaterStateCheckingForUpdate) {
+          delegate->OnCheckingForUpdate();
+        }
+        else if (state == SQRLUpdaterStateDownloadingUpdate) {
+          delegate->OnUpdateAvailable();
+        }
     }];
   }
 }

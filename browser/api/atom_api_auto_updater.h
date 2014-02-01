@@ -26,6 +26,8 @@ class AutoUpdater : public EventEmitter,
 
   // AutoUpdaterDelegate implementations.
   virtual void OnError(const std::string& error) OVERRIDE;
+  virtual void OnCheckingForUpdate() OVERRIDE;
+  virtual void OnUpdateAvailable() OVERRIDE;
   virtual void OnUpdateNotAvailable() OVERRIDE;
   virtual void OnUpdateDownloaded(
       const std::string& release_notes,
