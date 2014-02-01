@@ -45,25 +45,29 @@ void AutoUpdater::SetFeedURL(const std::string& feed) {
     if (!delegate)
       return;
 
+    __block SQRLUpdate* update = nil;
     // Subscribe to events.
-    __block bool has_update = false;
     [g_updater.updates subscribeNext:^(SQRLDownloadedUpdate* downloadedUpdate) {
-      has_update = true;
-
-      // There is a new update that has been downloaded.
-      SQRLUpdate* update = downloadedUpdate.update;
-      delegate->OnUpdateDownloaded(
+      update = downloadedUpdate.update;
+    } completed:^() {
+      if (update) {
+        // There is a new update that has been downloaded.
+        delegate->OnUpdateDownloaded(
           base::SysNSStringToUTF8(update.releaseNotes),
           base::SysNSStringToUTF8(update.releaseName),
           base::Time::FromDoubleT(update.releaseDate.timeIntervalSince1970),
           base::SysNSStringToUTF8(update.updateURL.absoluteString),
           base::Bind(RelaunchToInstallUpdate));
-    } completed:^() {
-      // When the completed event is sent with no update, then we know there
-      // is no update available.
-      if (!has_update)
+      }
+      else {
+        // When the completed event is sent with no update, then we know there
+        // is no update available.
         delegate->OnUpdateNotAvailable();
-      has_update = false;
+      }
+
+      update = nil;
+    }];
+
     [[g_updater rac_valuesForKeyPath:@"state" observer:g_updater]
       subscribeNext:^(NSNumber *stateNumber) {
         int state = [stateNumber integerValue];
@@ -90,5 +94,4 @@ void AutoUpdater::CheckForUpdates() {
     delegate->OnError(base::SysNSStringToUTF8(error.localizedDescription));
   }];
 }
-
 }  // namespace auto_updater
