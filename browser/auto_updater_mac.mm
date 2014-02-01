@@ -43,29 +43,6 @@ void AutoUpdater::SetFeedURL(const std::string& feed) {
     if (!delegate)
       return;
 
-    __block SQRLUpdate* update = nil;
-    // Subscribe to events.
-    [g_updater.updates subscribeNext:^(SQRLDownloadedUpdate* downloadedUpdate) {
-      update = downloadedUpdate.update;
-    } completed:^() {
-      if (update) {
-        // There is a new update that has been downloaded.
-        delegate->OnUpdateDownloaded(
-          base::SysNSStringToUTF8(update.releaseNotes),
-          base::SysNSStringToUTF8(update.releaseName),
-          base::Time::FromDoubleT(update.releaseDate.timeIntervalSince1970),
-          base::SysNSStringToUTF8(update.updateURL.absoluteString),
-          base::Bind(RelaunchToInstallUpdate));
-      }
-      else {
-        // When the completed event is sent with no update, then we know there
-        // is no update available.
-        delegate->OnUpdateNotAvailable();
-      }
-
-      update = nil;
-    }];
-
     [[g_updater rac_valuesForKeyPath:@"state" observer:g_updater]
       subscribeNext:^(NSNumber *stateNumber) {
         int state = [stateNumber integerValue];
@@ -81,15 +58,35 @@ void AutoUpdater::SetFeedURL(const std::string& feed) {
 
 // static
 void AutoUpdater::CheckForUpdates() {
-  RACSignal* signal = [g_updater.checkForUpdatesCommand execute:nil];
-
   AutoUpdaterDelegate* delegate = GetDelegate();
   if (!delegate)
     return;
 
-  [signal subscribeError:^(NSError* error) {
-    // Something wrong happened.
-    delegate->OnError(base::SysNSStringToUTF8(error.localizedDescription));
-  }];
+  [[[[g_updater.checkForUpdatesCommand
+      execute:nil]
+      // Send a `nil` after everything...
+      concat:[RACSignal return:nil]]
+      // But only take the first value. If an update is sent, we'll get that.
+      // Otherwise, we'll get our inserted `nil` value.
+      take:1]
+      subscribeNext:^(SQRLDownloadedUpdate *downloadedUpdate) {
+        if (downloadedUpdate) {
+          SQRLUpdate* update = downloadedUpdate.update;
+          // There is a new update that has been downloaded.
+          delegate->OnUpdateDownloaded(
+            base::SysNSStringToUTF8(update.releaseNotes),
+            base::SysNSStringToUTF8(update.releaseName),
+            base::Time::FromDoubleT(update.releaseDate.timeIntervalSince1970),
+            base::SysNSStringToUTF8(update.updateURL.absoluteString),
+            base::Bind(RelaunchToInstallUpdate));
+        }
+        else {
+          // When the completed event is sent with no update, then we know there
+          // is no update available.
+          delegate->OnUpdateNotAvailable();
+        }
+      } error:^(NSError *error) {
+        delegate->OnError(base::SysNSStringToUTF8(error.localizedDescription));
+      }];
 }
 }  // namespace auto_updater
