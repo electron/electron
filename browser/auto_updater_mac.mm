@@ -35,9 +35,7 @@ void RelaunchToInstallUpdate() {
 void AutoUpdater::SetFeedURL(const std::string& feed) {
   if (g_updater == nil) {
     // Initialize the SQRLUpdater.
-    NSString *version = NSBundle.mainBundle.sqrl_bundleVersion;
-    NSString *urlString = [NSString stringWithFormat:@"%@?version=%@", base::SysUTF8ToNSString(feed), version];
-    NSURL* url = [NSURL URLWithString:urlString];
+    NSURL* url = [NSURL URLWithString:base::SysUTF8ToNSString(feed)];
     NSURLRequest* urlRequest = [NSURLRequest requestWithURL:url];
     g_updater = [[SQRLUpdater alloc] initWithUpdateRequest:urlRequest];
 
