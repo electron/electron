@@ -48,8 +48,7 @@ void AutoUpdater::SetFeedURL(const std::string& feed) {
         int state = [stateNumber integerValue];
         if (state == SQRLUpdaterStateCheckingForUpdate) {
           delegate->OnCheckingForUpdate();
-        }
-        else if (state == SQRLUpdaterStateDownloadingUpdate) {
+        } else if (state == SQRLUpdaterStateDownloadingUpdate) {
           delegate->OnUpdateAvailable();
         }
     }];
@@ -79,8 +78,7 @@ void AutoUpdater::CheckForUpdates() {
             base::Time::FromDoubleT(update.releaseDate.timeIntervalSince1970),
             base::SysNSStringToUTF8(update.updateURL.absoluteString),
             base::Bind(RelaunchToInstallUpdate));
-        }
-        else {
+        } else {
           // When the completed event is sent with no update, then we know there
           // is no update available.
           delegate->OnUpdateNotAvailable();
