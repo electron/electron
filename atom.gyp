@@ -65,7 +65,6 @@
       'browser/api/atom_browser_bindings.h',
       'browser/auto_updater.cc',
       'browser/auto_updater.h',
-      'browser/auto_updater_delegate.cc',
       'browser/auto_updater_delegate.h',
       'browser/auto_updater_mac.mm',
       'browser/auto_updater_win.cc',
@@ -198,13 +197,6 @@
         ],
       }],  # OS=="win"
     ],
-    'fix_framework_link_command': [
-      'install_name_tool',
-      '-change',
-      '@loader_path/../Frameworks/Sparkle.framework/Versions/A/Sparkle',
-      '@rpath/Sparkle.framework/Versions/A/Sparkle',
-      '${BUILT_PRODUCTS_DIR}/${EXECUTABLE_PATH}'
-    ],
     'atom_source_root': '<!(python tools/atom_source_root.py)',
   },
   'target_defaults': {
@@ -263,7 +255,9 @@
               'files': [
                 '<(PRODUCT_DIR)/<(product_name) Helper.app',
                 '<(PRODUCT_DIR)/<(framework_name).framework',
-                'frameworks/Sparkle.framework',
+                'frameworks/Squirrel.framework',
+                'frameworks/ReactiveCocoa.framework',
+                'frameworks/Mantle.framework',
               ],
             },
             {
@@ -274,12 +268,6 @@
             },
           ],
           'postbuilds': [
-            {
-              'postbuild_name': 'Fix Framework Link',
-              'action': [
-                '<@(fix_framework_link_command)',
-              ],
-            },
             {
               # This postbuid step is responsible for creating the following
               # helpers:
@@ -494,7 +482,9 @@
           'link_settings': {
             'libraries': [
               '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
-              'frameworks/Sparkle.framework',
+              'frameworks/Squirrel.framework',
+              'frameworks/ReactiveCocoa.framework',
+              'frameworks/Mantle.framework',
             ],
           },
           'mac_bundle': 1,
@@ -533,12 +523,6 @@
           ],
           'postbuilds': [
             {
-              'postbuild_name': 'Fix Framework Link',
-              'action': [
-                '<@(fix_framework_link_command)',
-              ],
-            },
-            {
               'postbuild_name': 'Add symlinks for framework subdirectories',
               'action': [
                 'tools/mac/create-framework-subdir-symlinks.sh',
@@ -569,14 +553,6 @@
               '@executable_path/../../..',
             ],
           },
-          'postbuilds': [
-            {
-              'postbuild_name': 'Fix Framework Link',
-              'action': [
-                '<@(fix_framework_link_command)',
-              ],
-            },
-          ],
         },  # target helper
       ],
     }],  # OS==Mac
