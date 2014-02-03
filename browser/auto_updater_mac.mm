@@ -14,6 +14,8 @@
 #include "base/strings/sys_string_conversions.h"
 #include "browser/auto_updater_delegate.h"
 
+#include <iostream>
+
 namespace auto_updater {
 
 namespace {
