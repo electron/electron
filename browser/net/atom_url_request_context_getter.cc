@@ -39,13 +39,13 @@ AtomURLRequestContextGetter::AtomURLRequestContextGetter(
     const base::FilePath& base_path,
     base::MessageLoop* io_loop,
     base::MessageLoop* file_loop,
-    scoped_ptr<brightray::NetworkDelegate> network_delegate,
+    base::Callback<scoped_ptr<brightray::NetworkDelegate>(void)> factory,
     content::ProtocolHandlerMap* protocol_handlers)
     : base_path_(base_path),
       io_loop_(io_loop),
       file_loop_(file_loop),
       job_factory_(NULL),
-      network_delegate_(network_delegate.Pass()) {
+      network_delegate_factory_(factory) {
   // Must first be created on the UI thread.
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 
@@ -68,6 +68,7 @@ net::URLRequestContext* AtomURLRequestContextGetter::GetURLRequestContext() {
 
   if (!url_request_context_.get()) {
     url_request_context_.reset(new net::URLRequestContext());
+    network_delegate_ = network_delegate_factory_.Run().Pass();
     url_request_context_->set_network_delegate(network_delegate_.get());
     storage_.reset(
         new net::URLRequestContextStorage(url_request_context_.get()));
@@ -89,6 +90,7 @@ net::URLRequestContext* AtomURLRequestContextGetter::GetURLRequestContext() {
     net::DhcpProxyScriptFetcherFactory dhcp_factory;
 
     storage_->set_cert_verifier(net::CertVerifier::CreateDefault());
+    storage_->set_transport_security_state(new net::TransportSecurityState);
     storage_->set_proxy_service(
         net::CreateProxyServiceUsingV8ProxyResolver(
             proxy_config_service_.release(),
@@ -116,6 +118,8 @@ net::URLRequestContext* AtomURLRequestContextGetter::GetURLRequestContext() {
     net::HttpNetworkSession::Params network_session_params;
     network_session_params.cert_verifier =
         url_request_context_->cert_verifier();
+    network_session_params.transport_security_state =
+        url_request_context_->transport_security_state();
     network_session_params.server_bound_cert_service =
         url_request_context_->server_bound_cert_service();
     network_session_params.proxy_service =

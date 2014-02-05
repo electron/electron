@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_NET_ATOM_URL_REQUEST_CONTEXT_GETTER_H_
 #define ATOM_BROWSER_NET_ATOM_URL_REQUEST_CONTEXT_GETTER_H_
 
+#include "base/callback.h"
 #include "base/files/file_path.h"
 #include "base/memory/scoped_ptr.h"
 #include "content/public/browser/content_browser_client.h"
@@ -34,7 +35,7 @@ class AtomURLRequestContextGetter : public net::URLRequestContextGetter {
       const base::FilePath& base_path,
       base::MessageLoop* io_loop,
       base::MessageLoop* file_loop,
-      scoped_ptr<brightray::NetworkDelegate> network_delegate,
+      base::Callback<scoped_ptr<brightray::NetworkDelegate>(void)>,
       content::ProtocolHandlerMap* protocol_handlers);
 
   // net::URLRequestContextGetter implementations:
@@ -53,7 +54,10 @@ class AtomURLRequestContextGetter : public net::URLRequestContextGetter {
   base::FilePath base_path_;
   base::MessageLoop* io_loop_;
   base::MessageLoop* file_loop_;
+
   AtomURLRequestJobFactory* job_factory_;
+  base::Callback<scoped_ptr<brightray::NetworkDelegate>(void)>
+      network_delegate_factory_;
 
   scoped_ptr<net::ProxyConfigService> proxy_config_service_;
   scoped_ptr<brightray::NetworkDelegate> network_delegate_;

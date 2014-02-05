@@ -61,7 +61,8 @@ AtomURLRequestContextGetter* AtomBrowserContext::CreateRequestContext(
       GetPath(),
       BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
       BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::FILE),
-      CreateNetworkDelegate().Pass(),
+      base::Bind(&AtomBrowserContext::CreateNetworkDelegate,
+                 base::Unretained(this)),
       protocol_handlers);
 
   resource_context_->set_url_request_context_getter(url_request_getter_.get());
