@@ -417,7 +417,7 @@ void NativeWindowWin::UpdateDraggableRegions(
 void NativeWindowWin::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
-  if (event.type == WebKit::WebInputEvent::KeyUp) {
+  if (event.type == WebKit::WebInputEvent::RawKeyDown) {
     ui::Accelerator accelerator(
         static_cast<ui::KeyboardCode>(event.windowsKeyCode),
         content::GetModifiersFromNativeWebKeyboardEvent(event));
