@@ -54,6 +54,25 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   typedef base::Callback<void(const std::vector<unsigned char>& buffer)>
       CapturePageCallback;
 
+  class DialogScope {
+   public:
+    DialogScope(NativeWindow* window)
+        : window_(window) {
+      if (window_ != NULL)
+        window_->set_has_dialog_attached(true);
+    }
+
+    ~DialogScope() {
+      if (window_ != NULL)
+        window_->set_has_dialog_attached(false);
+    }
+
+   private:
+    NativeWindow* window_;
+
+    DISALLOW_COPY_AND_ASSIGN(DialogScope);
+  };
+
   virtual ~NativeWindow();
 
   // Create window with existing WebContents.
@@ -100,7 +119,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void FlashFrame(bool flash) = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
-  virtual bool HasModalDialog() = 0;
+  virtual bool HasModalDialog();
   virtual gfx::NativeWindow GetNativeWindow() = 0;
 
   virtual bool IsClosed() const { return is_closed_; }
@@ -141,6 +160,10 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   bool has_frame() const { return has_frame_; }
   std::string node_integration() const { return node_integration_; }
+
+  void set_has_dialog_attached(bool has_dialog_attached) {
+    has_dialog_attached_ = has_dialog_attached;
+  }
 
  protected:
   explicit NativeWindow(content::WebContents* web_contents,
@@ -222,6 +245,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   // The security token of iframe.
   std::string node_integration_;
+
+  // There is a dialog that has been attached to window.
+  bool has_dialog_attached_;
 
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.

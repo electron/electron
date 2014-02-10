@@ -76,6 +76,7 @@ class MessageDialog : public base::MessageLoop::Dispatcher,
   string16 title_;
   views::Widget* widget_;
   views::MessageBoxView* message_box_view_;
+  scoped_ptr<NativeWindow::DialogScope> dialog_scope_;
   std::vector<views::LabelButton*> buttons_;
   MessageBoxCallback callback_;
 
@@ -96,7 +97,8 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
       result_(-1),
       title_(UTF8ToUTF16(title)),
       widget_(NULL),
-      message_box_view_(NULL) {
+      message_box_view_(NULL),
+      dialog_scope_(new NativeWindow::DialogScope(parent_window)) {
   DCHECK_GT(buttons.size(), 0u);
   set_owned_by_client();
 
@@ -174,6 +176,7 @@ string16 MessageDialog::GetWindowTitle() const {
 
 void MessageDialog::WindowClosing() {
   should_close_ = true;
+  dialog_scope_.reset();
 
   if (delete_on_close_) {
     callback_.Run(GetResult());

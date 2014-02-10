@@ -163,6 +163,7 @@ class FileDialog {
   }
 
   bool Show(atom::NativeWindow* parent_window) {
+    atom::NativeWindow::DialogScope dialog_scope(parent_window);
     HWND window = parent_window ? parent_window->GetNativeWindow() : NULL;
     return dialog_->DoModal(window) == IDOK;
   }

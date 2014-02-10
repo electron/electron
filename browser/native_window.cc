@@ -49,6 +49,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       has_frame_(true),
       is_closed_(false),
       node_integration_("all"),
+      has_dialog_attached_(false),
       weak_factory_(this),
       inspectable_web_contents_(
           brightray::InspectableWebContents::Create(web_contents)) {
@@ -156,6 +157,10 @@ void NativeWindow::InitFromOptions(base::DictionaryValue* options) {
   options->GetBoolean(switches::kShow, &show);
   if (show)
     Show();
+}
+
+bool NativeWindow::HasModalDialog() {
+  return has_dialog_attached_;
 }
 
 void NativeWindow::OpenDevTools() {
