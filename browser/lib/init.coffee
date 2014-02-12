@@ -1,5 +1,6 @@
 fs   = require 'fs'
 path = require 'path'
+util = require 'util'
 
 # Expose information of current process.
 process.__atom_type = 'browser'
@@ -28,8 +29,10 @@ setImmediate ->
   if process.platform is 'win32'
     # Redirect node's console to use our own implementations, since node can not
     # handle console output when running as GUI program.
-    console.log = console.error = console.warn = process.log
-    process.stdout.write = process.stderr.write = process.log
+    print = (args...) ->
+      process.log util.format(args...)
+    console.log = console.error = console.warn = print
+    process.stdout.write = process.stderr.write = print
 
     # Always returns EOF for stdin stream.
     Readable = require('stream').Readable

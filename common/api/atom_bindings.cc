@@ -158,11 +158,8 @@ void AtomBindings::ActivateUVLoop(
 
 // static
 void AtomBindings::Log(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  std::string message;
-  for (int i = 0; i < args.Length(); ++i)
-    message += *v8::String::Utf8Value(args[i]);
-
-  logging::LogMessage("CONSOLE", 0, 0).stream() << message;
+  v8::String::Utf8Value str(args[0]);
+  logging::LogMessage("CONSOLE", 0, 0).stream() << *str;
 }
 
 // static
