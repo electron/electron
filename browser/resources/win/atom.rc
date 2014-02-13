@@ -50,8 +50,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,9,2,0
- PRODUCTVERSION 0,9,2,0
+ FILEVERSION 0,9,3,0
+ PRODUCTVERSION 0,9,3,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -68,12 +68,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "GitHub, Inc."
             VALUE "FileDescription", "Atom-Shell"
-            VALUE "FileVersion", "0.9.2"
+            VALUE "FileVersion", "0.9.3"
             VALUE "InternalName", "atom.exe"
             VALUE "LegalCopyright", "Copyright (C) 2013 GitHub, Inc. All rights reserved."
             VALUE "OriginalFilename", "atom.exe"
             VALUE "ProductName", "Atom-Shell"
-            VALUE "ProductVersion", "0.9.2"
+            VALUE "ProductVersion", "0.9.3"
         END
     END
     BLOCK "VarFileInfo"
