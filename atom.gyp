@@ -51,6 +51,8 @@
       'browser/api/atom_api_event.h',
       'browser/api/atom_api_menu.cc',
       'browser/api/atom_api_menu.h',
+      'browser/api/atom_api_menu_gtk.cc',
+      'browser/api/atom_api_menu_gtk.h',
       'browser/api/atom_api_menu_mac.h',
       'browser/api/atom_api_menu_mac.mm',
       'browser/api/atom_api_menu_win.cc',
