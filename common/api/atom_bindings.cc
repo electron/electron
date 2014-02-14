@@ -53,6 +53,13 @@ void UvOnCallback(uv_async_t* handle, int status) {
   g_v8_callback->NewHandle()->Call(global, 0, NULL);
 }
 
+// Called when there is a fatal error in V8, we just crash the process here so
+// we can get the stack trace.
+void FatalErrorCallback(const char* location, const char* message) {
+  LOG(ERROR) << "Fatal error in V8: " << location << " " << message;
+  static_cast<DummyClass*>(NULL)->crash = true;
+}
+
 v8::Handle<v8::Object> DumpStackFrame(v8::Handle<v8::StackFrame> stack_frame) {
   v8::Local<v8::Object> result = v8::Object::New();
   result->Set(ToV8Value("line"), ToV8Value(stack_frame->GetLineNumber()));
@@ -76,14 +83,13 @@ node::node_module_struct* GetBuiltinModule(const char *name, bool is_browser);
 AtomBindings::AtomBindings() {
   uv_async_init(uv_default_loop(), &g_next_tick_uv_handle, UvCallNextTick);
   uv_async_init(uv_default_loop(), &g_callback_uv_handle, UvOnCallback);
+  v8::V8::SetFatalErrorHandler(FatalErrorCallback);
 }
 
 AtomBindings::~AtomBindings() {
 }
 
 void AtomBindings::BindTo(v8::Handle<v8::Object> process) {
-  v8::HandleScope handle_scope(node_isolate);
-
   NODE_SET_METHOD(process, "atomBinding", Binding);
   NODE_SET_METHOD(process, "crash", Crash);
   NODE_SET_METHOD(process, "activateUvLoop", ActivateUVLoop);
@@ -152,18 +158,13 @@ void AtomBindings::ActivateUVLoop(
 
 // static
 void AtomBindings::Log(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  std::string message;
-  for (int i = 0; i < args.Length(); ++i)
-    message += *v8::String::Utf8Value(args[i]);
-
-  logging::LogMessage("CONSOLE", 0, 0).stream() << message;
+  v8::String::Utf8Value str(args[0]);
+  logging::LogMessage("CONSOLE", 0, 0).stream() << *str;
 }
 
 // static
 void AtomBindings::GetCurrentStackTrace(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::HandleScope handle_scope(args.GetIsolate());
-
   int stack_limit = kMaxCallStackSize;
   FromV8Arguments(args, &stack_limit);
 

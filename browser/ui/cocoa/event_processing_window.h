@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_ATOM_EVENT_PROCESSING_WINDOW_H_
-#define ATOM_BROWSER_UI_ATOM_EVENT_PROCESSING_WINDOW_H_
+#ifndef ATOM_BROWSER_UI_COCOA_EVENT_PROCESSING_WINDOW_H_
+#define ATOM_BROWSER_UI_COCOA_EVENT_PROCESSING_WINDOW_H_
 
 #import <Cocoa/Cocoa.h>
 
 // Override NSWindow to access unhandled keyboard events (for command
 // processing); subclassing NSWindow is the only method to do
 // this.
-@interface AtomEventProcessingWindow : NSWindow {
+@interface EventProcessingWindow : NSWindow {
  @private
   BOOL redispatchingEvent_;
   BOOL eventHandled_;
@@ -27,4 +27,4 @@
 - (BOOL)performKeyEquivalent:(NSEvent*)theEvent;
 @end
 
-#endif  // ATOM_BROWSER_UI_ATOM_EVENT_PROCESSING_WINDOW_H_
+#endif  // ATOM_BROWSER_UI_COCOA_EVENT_PROCESSING_WINDOW_H_

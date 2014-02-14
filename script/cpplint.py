@@ -6,13 +6,13 @@ import subprocess
 import sys
 
 IGNORE_FILES = [
-  'app/win/resource.h',
   'browser/atom_application_mac.h',
   'browser/atom_application_delegate_mac.h',
   'browser/native_window_mac.h',
-  'browser/ui/atom_event_processing_window.h',
-  'browser/ui/atom_menu_controller_mac.h',
-  'browser/ui/nsalert_synchronous_sheet_mac.h',
+  'browser/resources/win/resource.h',
+  'browser/ui/cocoa/event_processing_window.h',
+  'browser/ui/cocoa/atom_menu_controller.h',
+  'browser/ui/cocoa/nsalert_synchronous_sheet.h',
   'common/api/api_messages.cc',
   'common/api/api_messages.h',
   'common/atom_version.h',

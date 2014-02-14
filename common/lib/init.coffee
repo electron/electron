@@ -19,10 +19,3 @@ wrapWithActivateUvLoop = (func) ->
 process.nextTick = wrapWithActivateUvLoop process.nextTick
 global.setImmediate = wrapWithActivateUvLoop timers.setImmediate
 global.clearImmediate = timers.clearImmediate
-
-# The child_process module also needs to activate the uv loop to make the ipc
-# channel setup.
-# TODO(zcbenz): Find out why this is needed.
-childProcess = require 'child_process'
-childProcess.spawn = wrapWithActivateUvLoop childProcess.spawn
-childProcess.fork = wrapWithActivateUvLoop childProcess.fork

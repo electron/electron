@@ -7,13 +7,15 @@ from lib.util import safe_mkdir, extract_zip, tempdir, download
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-FRAMEWORKS_URL = 'https://gh-contractor-zcbenz.s3.amazonaws.com/frameworks'
+FRAMEWORKS_URL = 'http://atom-alpha.s3.amazonaws.com'
 
 
 def main():
   os.chdir(SOURCE_ROOT)
   safe_mkdir('frameworks')
-  download_and_unzip('Sparkle')
+  download_and_unzip('Mantle')
+  download_and_unzip('ReactiveCocoa')
+  download_and_unzip('Squirrel')
 
 
 def download_and_unzip(framework):

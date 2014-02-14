@@ -5,12 +5,14 @@
 #include "renderer/atom_render_view_observer.h"
 
 #include "common/api/api_messages.h"
+#include "content/public/renderer/render_view.h"
 #include "ipc/ipc_message_macros.h"
 #include "renderer/api/atom_renderer_bindings.h"
 #include "renderer/atom_renderer_client.h"
 #include "third_party/WebKit/public/web/WebDraggableRegion.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
+#include "third_party/WebKit/public/web/WebView.h"
 
 #include "common/v8/node_common.h"
 
@@ -53,6 +55,13 @@ bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
 
 void AtomRenderViewObserver::OnBrowserMessage(const string16& channel,
                                               const base::ListValue& args) {
+  if (!render_view()->GetWebView())
+    return;
+
+  WebKit::WebFrame* frame = render_view()->GetWebView()->mainFrame();
+  if (!renderer_client_->IsNodeBindingEnabled(frame))
+    return;
+
   renderer_client_->atom_bindings()->OnBrowserMessage(
       render_view(), channel, args);
 }

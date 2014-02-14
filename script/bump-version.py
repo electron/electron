@@ -5,34 +5,51 @@ import re
 import subprocess
 import sys
 
+from lib.util import get_atom_shell_version, scoped_cwd
+
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
 def main():
-  if len(sys.argv) != 2:
-    print 'Usage: bump-version.py version'
+  if len(sys.argv) != 2 or sys.argv[1] == '-h':
+    print 'Usage: bump-version.py [<version> | major | minor | patch]'
     return 1
 
-  version = sys.argv[1]
-  if version[0] == 'v':
-    version = version[1:]
-  versions = parse_version(version)
+  option = sys.argv[1]
+  increments = ['major', 'minor', 'patch', 'build']
+  if option in increments:
+    version = get_atom_shell_version()
+    versions = parse_version(version.split('-')[0])
+    versions = increase_version(versions, increments.index(option))
+  else:
+    versions = parse_version(option)
 
-  os.chdir(SOURCE_ROOT)
-  update_package_json(version)
-  update_win_rc(version, versions)
-  update_version_h(versions)
-  update_info_plist(version)
-  tag_version(version)
+  version = '.'.join(versions[:3])
+
+  with scoped_cwd(SOURCE_ROOT):
+    update_package_json(version)
+    update_win_rc(version, versions)
+    update_version_h(versions)
+    update_info_plist(version)
+    tag_version(version)
+    git_push()
 
 
 def parse_version(version):
+  if version[0] == 'v':
+    version = version[1:]
+
   vs = version.split('.')
   if len(vs) > 4:
     return vs[0:4]
   else:
-    return vs + [0] * (4 - len(vs))
+    return vs + ['0'] * (4 - len(vs))
+
+
+def increase_version(versions, index):
+  versions[index] = str(int(versions[index]) + 1)
+  return versions
 
 
 def update_package_json(version):
@@ -54,7 +71,7 @@ def update_win_rc(version, versions):
   pattern_fvs = re.compile(' *VALUE "FileVersion", "[0-9.]+"')
   pattern_pvs = re.compile(' *VALUE "ProductVersion", "[0-9.]+"')
 
-  win_rc = os.path.join('app', 'win', 'atom.rc')
+  win_rc = os.path.join('browser', 'resources', 'win', 'atom.rc')
   with open(win_rc, 'r') as f:
     lines = f.readlines()
 
@@ -92,7 +109,7 @@ def update_version_h(versions):
 
 
 def update_info_plist(version):
-  info_plist = os.path.join('browser', 'mac', 'Info.plist')
+  info_plist = os.path.join('browser', 'resources', 'mac', 'Info.plist')
   with open(info_plist, 'r') as f:
     lines = f.readlines()
 
@@ -110,6 +127,10 @@ def tag_version(version):
   subprocess.check_call(['git', 'commit', '-a', '-m',
                          'Bump v{0}.'.format(version)])
   subprocess.check_call(['git', 'tag', 'v{0}'.format(version)])
+
+
+def git_push():
+  subprocess.check_call(['git', 'push'])
 
 
 if __name__ == '__main__':

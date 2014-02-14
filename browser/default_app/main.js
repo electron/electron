@@ -1,5 +1,4 @@
 var app = require('app');
-var dialog = require('dialog');
 var path = require('path');
 var optimist = require('optimist');
 
@@ -9,7 +8,7 @@ app.on('window-all-closed', function() {
     app.quit();
 });
 
-var argv = optimist(process.argv.slice(1)).argv;
+var argv = optimist(process.argv.slice(1)).boolean('ci').argv;
 
 // Start the specified app if there is one specified in command line, otherwise
 // start the default app.

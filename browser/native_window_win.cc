@@ -194,17 +194,6 @@ class NativeWindowFramelessView : public views::NonClientFrameView {
   DISALLOW_COPY_AND_ASSIGN(NativeWindowFramelessView);
 };
 
-bool WindowHasModalDialog(HWND parent, HWND except, HWND after = NULL) {
-  HWND hwnd = ::FindWindowEx(parent, after, NULL, NULL);
-  if (hwnd != except &&
-      (::GetWindowLong(hwnd, GWL_STYLE) & (WS_VISIBLE | WS_POPUP)))
-    return true;
-  else if (hwnd == NULL)
-    return false;
-  else
-    return WindowHasModalDialog(parent, except, hwnd);
-}
-
 }  // namespace
 
 NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
@@ -370,11 +359,6 @@ bool NativeWindowWin::IsKiosk() {
   return IsFullscreen();
 }
 
-bool NativeWindowWin::HasModalDialog() {
-  return WindowHasModalDialog(GetNativeWindow(),
-                              GetWebContents()->GetView()->GetNativeView());
-}
-
 gfx::NativeWindow NativeWindowWin::GetNativeWindow() {
   return window_->GetNativeView();
 }
@@ -417,7 +401,7 @@ void NativeWindowWin::UpdateDraggableRegions(
 void NativeWindowWin::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
-  if (event.type == WebKit::WebInputEvent::KeyUp) {
+  if (event.type == WebKit::WebInputEvent::RawKeyDown) {
     ui::Accelerator accelerator(
         static_cast<ui::KeyboardCode>(event.windowsKeyCode),
         content::GetModifiersFromNativeWebKeyboardEvent(event));

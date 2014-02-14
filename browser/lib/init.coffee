@@ -1,5 +1,6 @@
 fs   = require 'fs'
 path = require 'path'
+util = require 'util'
 
 # Expose information of current process.
 process.__atom_type = 'browser'
@@ -8,6 +9,11 @@ process.resourcesPath = path.resolve process.argv[1], '..', '..', '..'
 # We modified the original process.argv to let node.js load the atom.js,
 # we need to restore it here.
 process.argv.splice 1, 1
+
+# Pick out switches appended by atom-shell.
+startMark = process.argv.indexOf '--atom-shell-switches-start'
+endMark = process.argv.indexOf '--atom-shell-switches-end'
+process.execArgv = process.argv.splice startMark, endMark - startMark + 1
 
 # Add browser/api/lib to require's search paths,
 # which contains javascript part of Atom's built-in libraries.
@@ -23,8 +29,10 @@ setImmediate ->
   if process.platform is 'win32'
     # Redirect node's console to use our own implementations, since node can not
     # handle console output when running as GUI program.
-    console.log = console.error = console.warn = process.log
-    process.stdout.write = process.stderr.write = process.log
+    print = (args...) ->
+      process.log util.format(args...)
+    console.log = console.error = console.warn = print
+    process.stdout.write = process.stderr.write = print
 
     # Always returns EOF for stdin stream.
     Readable = require('stream').Readable

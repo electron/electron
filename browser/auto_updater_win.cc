@@ -7,27 +7,11 @@
 namespace auto_updater {
 
 // static
-void AutoUpdater::Init() {
-}
-
-// static
 void AutoUpdater::SetFeedURL(const std::string& url) {
 }
 
 // static
-void AutoUpdater::SetAutomaticallyChecksForUpdates(bool yes) {
-}
-
-// static
-void AutoUpdater::SetAutomaticallyDownloadsUpdates(bool yes) {
-}
-
-// static
 void AutoUpdater::CheckForUpdates() {
-}
-
-// static
-void AutoUpdater::CheckForUpdatesInBackground() {
 }
 
 }  // namespace auto_updater

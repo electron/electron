@@ -194,6 +194,11 @@ void NodeBindings::RunMessageLoop() {
 void NodeBindings::UvRunOnce() {
   DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
 
+  // Use Locker in browser process.
+  scoped_ptr<v8::Locker> locker;
+  if (is_browser_)
+    locker.reset(new v8::Locker(node_isolate));
+
   v8::HandleScope handle_scope(node_isolate);
 
   // Enter node context while dealing with uv events, by default the global

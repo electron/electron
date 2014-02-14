@@ -9,7 +9,7 @@
 #include "base/callback.h"
 #include "base/strings/sys_string_conversions.h"
 #include "browser/native_window.h"
-#include "browser/ui/nsalert_synchronous_sheet_mac.h"
+#include "browser/ui/cocoa/nsalert_synchronous_sheet.h"
 
 @interface ModalDelegate : NSObject {
  @private

@@ -8,7 +8,7 @@
       'app/atom_main.h',
     ],
     'bundle_sources': [
-      'browser/mac/atom.icns',
+      'browser/resources/mac/atom.icns',
     ],
     'coffee_sources': [
       'browser/api/lib/app.coffee',
@@ -65,7 +65,6 @@
       'browser/api/atom_browser_bindings.h',
       'browser/auto_updater.cc',
       'browser/auto_updater.h',
-      'browser/auto_updater_delegate.cc',
       'browser/auto_updater_delegate.h',
       'browser/auto_updater_linux.cc',
       'browser/auto_updater_mac.mm',
@@ -111,18 +110,18 @@
       'browser/ui/accelerator_util_gtk.cc',
       'browser/ui/accelerator_util_mac.mm',
       'browser/ui/accelerator_util_win.cc',
-      'browser/ui/atom_event_processing_window.h',
-      'browser/ui/atom_event_processing_window.mm',
-      'browser/ui/atom_menu_controller_mac.h',
-      'browser/ui/atom_menu_controller_mac.mm',
+      'browser/ui/cocoa/atom_menu_controller.h',
+      'browser/ui/cocoa/atom_menu_controller.mm',
+      'browser/ui/cocoa/event_processing_window.h',
+      'browser/ui/cocoa/event_processing_window.mm',
+      'browser/ui/cocoa/nsalert_synchronous_sheet.h',
+      'browser/ui/cocoa/nsalert_synchronous_sheet.mm',
       'browser/ui/file_dialog.h',
       'browser/ui/file_dialog_mac.mm',
       'browser/ui/file_dialog_win.cc',
       'browser/ui/message_box.h',
       'browser/ui/message_box_mac.mm',
       'browser/ui/message_box_win.cc',
-      'browser/ui/nsalert_synchronous_sheet_mac.h',
-      'browser/ui/nsalert_synchronous_sheet_mac.mm',
       'browser/ui/gtk/gtk_window_util.cc',
       'browser/ui/gtk/gtk_window_util.h',
       'browser/ui/win/menu_2.cc',
@@ -202,19 +201,12 @@
     'conditions': [
       ['OS=="win"', {
         'app_sources': [
-          'app/win/resource.h',
-          'app/win/atom.ico',
-          'app/win/atom.rc',
+          'browser/resources/win/resource.h',
+          'browser/resources/win/atom.ico',
+          'browser/resources/win/atom.rc',
           '<(libchromiumcontent_src_dir)/content/app/startup_helper_win.cc',
         ],
       }],  # OS=="win"
-    ],
-    'fix_framework_link_command': [
-      'install_name_tool',
-      '-change',
-      '@loader_path/../Frameworks/Sparkle.framework/Versions/A/Sparkle',
-      '@rpath/Sparkle.framework/Versions/A/Sparkle',
-      '${BUILT_PRODUCTS_DIR}/${EXECUTABLE_PATH}'
     ],
     'atom_source_root': '<!(python tools/atom_source_root.py)',
   },
@@ -260,7 +252,7 @@
             '<(project_name)_helper',
           ],
           'xcode_settings': {
-            'INFOPLIST_FILE': 'browser/mac/Info.plist',
+            'INFOPLIST_FILE': 'browser/resources/mac/Info.plist',
             'LD_RUNPATH_SEARCH_PATHS': [
               '@executable_path/../Frameworks',
             ],
@@ -274,7 +266,9 @@
               'files': [
                 '<(PRODUCT_DIR)/<(product_name) Helper.app',
                 '<(PRODUCT_DIR)/<(framework_name).framework',
-                'frameworks/Sparkle.framework',
+                'frameworks/Squirrel.framework',
+                'frameworks/ReactiveCocoa.framework',
+                'frameworks/Mantle.framework',
               ],
             },
             {
@@ -285,12 +279,6 @@
             },
           ],
           'postbuilds': [
-            {
-              'postbuild_name': 'Fix Framework Link',
-              'action': [
-                '<@(fix_framework_link_command)',
-              ],
-            },
             {
               # This postbuid step is responsible for creating the following
               # helpers:
@@ -504,15 +492,18 @@
           'link_settings': {
             'libraries': [
               '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
-              'frameworks/Sparkle.framework',
+              'frameworks/Squirrel.framework',
+              'frameworks/ReactiveCocoa.framework',
+              'frameworks/Mantle.framework',
             ],
           },
           'mac_bundle': 1,
           'mac_bundle_resources': [
-            'browser/mac/MainMenu.xib',
+            'common/resources/mac/MainMenu.xib',
             '<(libchromiumcontent_resources_dir)/content_shell.pak',
           ],
           'xcode_settings': {
+            'INFOPLIST_FILE': 'common/resources/mac/Info.plist',
             'LIBRARY_SEARCH_PATHS': [
               '<(libchromiumcontent_library_dir)',
             ],
@@ -542,12 +533,6 @@
           ],
           'postbuilds': [
             {
-              'postbuild_name': 'Fix Framework Link',
-              'action': [
-                '<@(fix_framework_link_command)',
-              ],
-            },
-            {
               'postbuild_name': 'Add symlinks for framework subdirectories',
               'action': [
                 'tools/mac/create-framework-subdir-symlinks.sh',
@@ -573,19 +558,11 @@
           ],
           'mac_bundle': 1,
           'xcode_settings': {
-            'INFOPLIST_FILE': 'renderer/mac/Info.plist',
+            'INFOPLIST_FILE': 'renderer/resources/mac/Info.plist',
             'LD_RUNPATH_SEARCH_PATHS': [
               '@executable_path/../../..',
             ],
           },
-          'postbuilds': [
-            {
-              'postbuild_name': 'Fix Framework Link',
-              'action': [
-                '<@(fix_framework_link_command)',
-              ],
-            },
-          ],
         },  # target helper
       ],
     }],  # OS==Mac

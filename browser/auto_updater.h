@@ -19,13 +19,8 @@ class AutoUpdater {
   static AutoUpdaterDelegate* GetDelegate();
   static void SetDelegate(AutoUpdaterDelegate* delegate);
 
-  static void Init();
-
   static void SetFeedURL(const std::string& url);
-  static void SetAutomaticallyChecksForUpdates(bool yes);
-  static void SetAutomaticallyDownloadsUpdates(bool yes);
   static void CheckForUpdates();
-  static void CheckForUpdatesInBackground();
 
  private:
   static AutoUpdaterDelegate* delegate_;

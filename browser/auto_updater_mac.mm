@@ -4,106 +4,89 @@
 
 #include "browser/auto_updater.h"
 
-// Sparkle's headers are throwing compilation warnings, supress them.
-#pragma GCC diagnostic ignored "-Wmissing-method-return-type"
-#import <Sparkle/Sparkle.h>
+#import <ReactiveCocoa/RACCommand.h>
+#import <ReactiveCocoa/RACSignal.h>
+#import <ReactiveCocoa/NSObject+RACPropertySubscribing.h>
+#import <Squirrel/Squirrel.h>
 
 #include "base/bind.h"
-#include "base/memory/scoped_ptr.h"
+#include "base/time/time.h"
 #include "base/strings/sys_string_conversions.h"
 #include "browser/auto_updater_delegate.h"
 
-using auto_updater::AutoUpdaterDelegate;
+#include <iostream>
+
+namespace auto_updater {
 
 namespace {
 
-struct NSInvocationDeleter {
-  inline void operator()(NSInvocation* invocation) const {
-    [invocation release];
-  }
-};
+// The gloal SQRLUpdater object.
+SQRLUpdater* g_updater = nil;
 
-typedef scoped_ptr<NSInvocation, NSInvocationDeleter> ScopedNSInvocation;
-
-// We are passing the NSInvocation as scoped_ptr, because we want to make sure
-// whether or not the callback is called, the NSInvocation should alwasy be
-// released, the only way to ensure it is to use scoped_ptr.
-void CallNSInvocation(ScopedNSInvocation invocation) {
-  [invocation.get() invoke];
+void RelaunchToInstallUpdate() {
+  [[g_updater relaunchToInstallUpdate] subscribeError:^(NSError* error) {
+    AutoUpdaterDelegate* delegate = AutoUpdater::GetDelegate();
+    if (delegate)
+      delegate->OnError(base::SysNSStringToUTF8(error.localizedDescription));
+  }];
 }
 
 }  // namespace
 
-@interface SUUpdaterDelegate : NSObject {
-}
-@end
-
-@implementation SUUpdaterDelegate
-
-- (BOOL)updater:(SUUpdater*)updater
-        shouldPostponeRelaunchForUpdate:(SUAppcastItem*)update
-        untilInvoking:(NSInvocation*)invocation {
-  AutoUpdaterDelegate* delegate = auto_updater::AutoUpdater::GetDelegate();
-  if (!delegate)
-    return NO;
-
-  std::string version(base::SysNSStringToUTF8([update versionString]));
-  ScopedNSInvocation invocation_ptr([invocation retain]);
-  delegate->WillInstallUpdate(
-      version,
-      base::Bind(&CallNSInvocation, base::Passed(invocation_ptr.Pass())));
-
-  return YES;
-}
-
-- (void)updater:(SUUpdater*)updater
-        willInstallUpdateOnQuit:(SUAppcastItem*)update
-        immediateInstallationInvocation:(NSInvocation*)invocation {
-  AutoUpdaterDelegate* delegate = auto_updater::AutoUpdater::GetDelegate();
-  if (!delegate)
-    return;
-
-  std::string version(base::SysNSStringToUTF8([update versionString]));
-  ScopedNSInvocation invocation_ptr([invocation retain]);
-  delegate->ReadyForUpdateOnQuit(
-      version,
-      base::Bind(&CallNSInvocation, base::Passed(invocation_ptr.Pass())));
-}
-
-@end
-
-namespace auto_updater {
-
 // static
-void AutoUpdater::Init() {
-  SUUpdaterDelegate* delegate = [[SUUpdaterDelegate alloc] init];
-  [[SUUpdater sharedUpdater] setDelegate:delegate];
-}
+void AutoUpdater::SetFeedURL(const std::string& feed) {
+  if (g_updater == nil) {
+    // Initialize the SQRLUpdater.
+    NSURL* url = [NSURL URLWithString:base::SysUTF8ToNSString(feed)];
+    NSURLRequest* urlRequest = [NSURLRequest requestWithURL:url];
+    g_updater = [[SQRLUpdater alloc] initWithUpdateRequest:urlRequest];
 
-// static
-void AutoUpdater::SetFeedURL(const std::string& url) {
-  NSString* url_str(base::SysUTF8ToNSString(url));
-  [[SUUpdater sharedUpdater] setFeedURL:[NSURL URLWithString:url_str]];
-}
+    AutoUpdaterDelegate* delegate = GetDelegate();
+    if (!delegate)
+      return;
 
-// static
-void AutoUpdater::SetAutomaticallyChecksForUpdates(bool yes) {
-  [[SUUpdater sharedUpdater] setAutomaticallyChecksForUpdates:yes];
-}
-
-// static
-void AutoUpdater::SetAutomaticallyDownloadsUpdates(bool yes) {
-  [[SUUpdater sharedUpdater] setAutomaticallyDownloadsUpdates:yes];
+    [[g_updater rac_valuesForKeyPath:@"state" observer:g_updater]
+      subscribeNext:^(NSNumber *stateNumber) {
+        int state = [stateNumber integerValue];
+        if (state == SQRLUpdaterStateCheckingForUpdate) {
+          delegate->OnCheckingForUpdate();
+        } else if (state == SQRLUpdaterStateDownloadingUpdate) {
+          delegate->OnUpdateAvailable();
+        }
+    }];
+  }
 }
 
 // static
 void AutoUpdater::CheckForUpdates() {
-  [[SUUpdater sharedUpdater] checkForUpdates:nil];
-}
+  AutoUpdaterDelegate* delegate = GetDelegate();
+  if (!delegate)
+    return;
 
-// static
-void AutoUpdater::CheckForUpdatesInBackground() {
-  [[SUUpdater sharedUpdater] checkForUpdatesInBackground];
+  [[[[g_updater.checkForUpdatesCommand
+      execute:nil]
+      // Send a `nil` after everything...
+      concat:[RACSignal return:nil]]
+      // But only take the first value. If an update is sent, we'll get that.
+      // Otherwise, we'll get our inserted `nil` value.
+      take:1]
+      subscribeNext:^(SQRLDownloadedUpdate *downloadedUpdate) {
+        if (downloadedUpdate) {
+          SQRLUpdate* update = downloadedUpdate.update;
+          // There is a new update that has been downloaded.
+          delegate->OnUpdateDownloaded(
+            base::SysNSStringToUTF8(update.releaseNotes),
+            base::SysNSStringToUTF8(update.releaseName),
+            base::Time::FromDoubleT(update.releaseDate.timeIntervalSince1970),
+            base::SysNSStringToUTF8(update.updateURL.absoluteString),
+            base::Bind(RelaunchToInstallUpdate));
+        } else {
+          // When the completed event is sent with no update, then we know there
+          // is no update available.
+          delegate->OnUpdateNotAvailable();
+        }
+      } error:^(NSError *error) {
+        delegate->OnError(base::SysNSStringToUTF8(error.localizedDescription));
+      }];
 }
-
 }  // namespace auto_updater

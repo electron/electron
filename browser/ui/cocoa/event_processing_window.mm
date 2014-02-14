@@ -2,17 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#import "browser/ui/atom_event_processing_window.h"
+#import "browser/ui/cocoa/event_processing_window.h"
 
 #include "base/logging.h"
 #import "content/public/browser/render_widget_host_view_mac_base.h"
 
-@interface AtomEventProcessingWindow ()
+@interface EventProcessingWindow ()
 // Duplicate the given key event, but changing the associated window.
 - (NSEvent*)keyEventForWindow:(NSWindow*)window fromKeyEvent:(NSEvent*)event;
 @end
 
-@implementation AtomEventProcessingWindow
+@implementation EventProcessingWindow
 
 - (BOOL)redispatchKeyEvent:(NSEvent*)event {
   DCHECK(event);
@@ -103,4 +103,4 @@
   return NO;
 }
 
-@end  // AtomEventProcessingWindow
+@end  // EventProcessingWindow
