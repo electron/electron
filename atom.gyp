@@ -392,12 +392,22 @@
             'vendor/breakpad/breakpad.gyp:breakpad_handler',
             'vendor/breakpad/breakpad.gyp:breakpad_sender',
           ],
-        }],
+        }],  # OS=="win"
         ['OS=="mac"', {
           'dependencies': [
             'vendor/breakpad/breakpad.gyp:breakpad',
           ],
-        }],
+        }],  # OS=="mac"
+        ['OS=="linux"', {
+          'link_settings': {
+            # Make binary search for libraries under current directory, so we
+            # don't have to manually set $LD_LIBRARY_PATH:
+            # http://serverfault.com/questions/279068/cant-find-so-in-the-same-directory-as-the-executable
+            'ldflags': [
+              '-rpath \$$ORIGIN',
+            ],
+          },
+        }],  # OS=="linux"
       ],
     },  # target <(product_name)_lib
     {
