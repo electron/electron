@@ -177,6 +177,8 @@
       'common/linux/application_info.cc',
       'common/node_bindings.cc',
       'common/node_bindings.h',
+      'common/node_bindings_linux.cc',
+      'common/node_bindings_linux.h',
       'common/node_bindings_mac.cc',
       'common/node_bindings_mac.h',
       'common/node_bindings_win.cc',
@@ -325,6 +327,24 @@
             },
           ],
         }],  # OS=="win"
+        ['OS=="linux"', {
+          'copies': [
+            {
+              'destination': '<(PRODUCT_DIR)',
+              'files': [
+                '<(libchromiumcontent_library_dir)/libchromiumcontent.so',
+                '<(libchromiumcontent_library_dir)/libffmpegsumo.so',
+                '<(libchromiumcontent_resources_dir)/content_shell.pak',
+              ],
+            },
+            {
+              'destination': '<(PRODUCT_DIR)/resources/browser',
+              'files': [
+                'browser/default_app',
+              ]
+            },
+          ],
+        }],  # OS=="linux"
       ],
     },  # target <(project_name)
     {
