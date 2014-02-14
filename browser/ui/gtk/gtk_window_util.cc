@@ -143,8 +143,8 @@ bool HandleTitleBarLeftMousePress(
   // the call to gtk_window_maximize fails.  To work around this, we
   // keep track of the last click and if it's going to be a double click,
   // we don't call gtk_window_begin_move_drag.
-  DCHECK(event->type == GDK_BUTTON_PRESS);
-  DCHECK(event->button == 1);
+  DCHECK_EQ(event->type, GDK_BUTTON_PRESS);
+  DCHECK_EQ(event->button, 1);
 
   static GtkSettings* settings = gtk_settings_get_default();
   gint double_click_time = 250;
