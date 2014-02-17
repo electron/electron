@@ -80,7 +80,11 @@ void AutoUpdater::CheckForUpdates(
 void AutoUpdater::QuitAndInstall(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
   AutoUpdater* self = AutoUpdater::Unwrap<AutoUpdater>(args.This());
-  self->quit_and_install_.Run();
+
+  if (!self->quit_and_install_.is_null()) {
+    self->quit_and_install_.Run();
+    self->quit_and_install_.Reset();
+  }
 }
 
 // static
