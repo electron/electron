@@ -23,6 +23,6 @@ autoUpdater.quitAndInstall = ->
 
   # Tell all windows to remove beforeunload handler and then close itself.
   ipc = require 'ipc'
-  ipc.sendChannel win.getProcessId(), win.getRoutingId(), 'ATOM_SHELL_SILENT_CLOSE' for win in windows
+  ipc.sendChannel win, 'ATOM_SHELL_SILENT_CLOSE' for win in windows
 
 module.exports = autoUpdater
