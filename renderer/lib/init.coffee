@@ -50,6 +50,16 @@ window.onerror = (error) ->
   else
     false
 
+# Enable browser to close window silently.
+setTimeout ->
+  require('ipc').once 'ATOM_SHELL_SILENT_CLOSE', ->
+    window.onbeforeunload = null
+    window.close()
+
+# Override default window.close.
+window.close = ->
+  require('remote').getCurrentWindow().close()
+
 # Override default window.open.
 window.open = (url, name, features) ->
   options = {}
