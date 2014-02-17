@@ -9,6 +9,13 @@ autoUpdater.on 'update-downloaded-raw', (args...) ->
   @emit 'update-downloaded', args..., => @quitAndInstall()
 
 autoUpdater.quitAndInstall = ->
+  # If we don't have any window then quitAndInstall immediately.
+  BrowserWindow = require 'browser-window'
+  windows = BrowserWindow.getAllWindows()
+  if windows.length is 0
+    AutoUpdater::quitAndInstall.call this
+    return
+
   # Do the restart after all windows have been closed.
   app = require 'app'
   app.removeAllListeners 'window-all-closed'
@@ -16,7 +23,6 @@ autoUpdater.quitAndInstall = ->
 
   # Tell all windows to remove beforeunload handler and then close itself.
   ipc = require 'ipc'
-  BrowserWindow = require 'browser-window'
-  ipc.sendChannel win.getProcessId(), win.getRoutingId(), 'ATOM_SHELL_SILENT_CLOSE' for win in BrowserWindow.getAllWindows()
+  ipc.sendChannel win.getProcessId(), win.getRoutingId(), 'ATOM_SHELL_SILENT_CLOSE' for win in windows
 
 module.exports = autoUpdater
