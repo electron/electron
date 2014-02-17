@@ -56,7 +56,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   class DialogScope {
    public:
-    DialogScope(NativeWindow* window)
+    explicit DialogScope(NativeWindow* window)
         : window_(window) {
       if (window_ != NULL)
         window_->set_has_dialog_attached(true);

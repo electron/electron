@@ -36,6 +36,8 @@ def download(text, url, path):
     downloaded_size = 0
     block_size = 128
 
+    ci = os.environ.get('CI') == '1'
+
     while True:
       buf = web_file.read(block_size)
       if not buf:
@@ -44,11 +46,15 @@ def download(text, url, path):
       downloaded_size += len(buf)
       local_file.write(buf)
 
-      percent = downloaded_size * 100. / file_size
-      status = "\r%s  %10d  [%3.1f%%]" % (text, downloaded_size, percent)
-      print status,
+      if not ci:
+        percent = downloaded_size * 100. / file_size
+        status = "\r%s  %10d  [%3.1f%%]" % (text, downloaded_size, percent)
+        print status,
 
-    print
+    if ci:
+      print "%s done." % (text)
+    else:
+      print
 
 
 def extract_tarball(tarball_path, member, destination):
