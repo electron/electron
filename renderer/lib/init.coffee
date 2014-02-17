@@ -50,6 +50,11 @@ window.onerror = (error) ->
   else
     false
 
+# Override default window.close, see:
+# https://github.com/atom/atom-shell/issues/70
+window.close = ->
+  require('remote').getCurrentWindow().close()
+
 # Override default window.open.
 window.open = (url, name, features) ->
   options = {}

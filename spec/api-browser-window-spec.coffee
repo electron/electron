@@ -33,7 +33,7 @@ describe 'browser-window module', ->
       w.loadUrl 'file://' + path.join(fixtures, 'api', 'beforeunload-false.html')
 
   describe 'window.close()', ->
-    xit 'should emit unload handler', (done) ->
+    it 'should emit unload handler', (done) ->
       w = new BrowserWindow(show: false)
       w.on 'closed', ->
         test = path.join(fixtures, 'api', 'close')
