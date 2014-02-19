@@ -340,7 +340,7 @@ void Menu::Initialize(v8::Handle<v8::Object> target) {
 
   NODE_SET_PROTOTYPE_METHOD(t, "popup", Popup);
 
-#if defined(OS_WIN)
+#if defined(OS_WIN) || defined(TOOLKIT_GTK)
   NODE_SET_PROTOTYPE_METHOD(t, "attachToWindow", AttachToWindow);
 #endif
 
