@@ -34,7 +34,8 @@ BrowserWindow::restart = ->
   @loadUrl(@getUrl())
 
 BrowserWindow::setMenu = (menu) ->
-  throw new Error('BrowserWindow.setMenu is only available on Windows') unless process.platform is 'win32'
+  if process.platform is 'darwin'
+    throw new Error('BrowserWindow.setMenu is not available on OS X')
 
   throw new TypeError('Invalid menu') unless menu?.constructor?.name is 'Menu'
 
