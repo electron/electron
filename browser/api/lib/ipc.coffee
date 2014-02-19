@@ -5,6 +5,7 @@ sendWrap = (channel, processId, routingId, args...) ->
   BrowserWindow = require 'browser-window'
   if processId?.constructor is BrowserWindow
     window = processId
+    args = [routingId, args...]
     processId = window.getProcessId()
     routingId = window.getRoutingId()
 

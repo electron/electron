@@ -5,6 +5,7 @@
 #include "app/atom_main_delegate.h"
 
 #include "base/command_line.h"
+#include "base/debug/stack_trace.h"
 #include "base/logging.h"
 #include "browser/atom_browser_client.h"
 #include "content/public/common/content_switches.h"
@@ -39,6 +40,11 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 
   // Logging with pid and timestamp.
   logging::SetLogItems(true, false, true, false);
+
+  // Enable convient stack printing.
+#if defined(DEBUG)
+  base::debug::EnableInProcessStackDumping();
+#endif
 
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
