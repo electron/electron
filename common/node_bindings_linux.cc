@@ -21,4 +21,4 @@ NodeBindings* NodeBindings::Create(bool is_browser) {
   return new NodeBindingsLinux(is_browser);
 }
 
-}  // namespace at
+}  // namespace atom
