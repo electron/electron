@@ -54,7 +54,7 @@ Then you need to install `gcc-multilib` and `g++-multilib`, on Ubuntu you can do
 this:
 
 ```bash
-sudo apt-get install gcc-multilib g++-multilib
+$ sudo apt-get install gcc-multilib g++-multilib
 ```
 
 ## Tests

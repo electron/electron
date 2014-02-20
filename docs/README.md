@@ -3,7 +3,7 @@
 ## Guides
 
 * [Quick start](quick-start.md)
-* [Build native modules](build-native-modules.md)
+* [Use native modules](use-native-modules.md)
 
 ## Development
 
