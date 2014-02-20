@@ -60,8 +60,8 @@ void AtomMainDelegate::PreSandboxStartup() {
   std::string process_type = command_line->GetSwitchValueASCII(
       switches::kProcessType);
 
-  // Don't append arguments for renderer process.
-  if (process_type == switches::kRendererProcess)
+  // Only append arguments for browser process.
+  if (!process_type.empty())
     return;
 
   // Add a flag to mark the start of switches added by atom-shell.
