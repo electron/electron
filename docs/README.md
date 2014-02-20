@@ -11,6 +11,7 @@
 * [Source code directory structure](development/source-code-directory-structure.md)
 * [Build instructions (Mac)](development/build-instructions-mac.md)
 * [Build instructions (Windows)](development/build-instructions-windows.md)
+* [Build instructions (Linux)](development/build-instructions-linux.md)
 
 ## API References
 
