@@ -85,6 +85,7 @@
               '-Wno-pointer-sign',
               '-Wno-string-plus-int',
               '-Wno-unused-variable',
+              '-Wno-unused-value',
               '-Wno-deprecated-declarations',
               '-Wno-return-type',
             ],
