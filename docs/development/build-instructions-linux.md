@@ -3,7 +3,13 @@
 ## Prerequisites
 
 * [node.js](http://nodejs.org)
-* clang
+* clang and headers of GTK+ and libnotify
+
+On Ubuntu you could install the libraries via:
+
+```bash
+$ sudo apt-get install clang libgtk2.0-dev libnotify-dev
+```
 
 ## Getting the code
 
