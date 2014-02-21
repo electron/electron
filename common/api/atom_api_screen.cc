@@ -9,6 +9,11 @@
 
 #include "common/v8/node_common.h"
 
+#if defined(TOOLKIT_GTK)
+#include "base/command_line.h"
+#include "ui/gfx/gtk_util.h"
+#endif
+
 #define UNWRAP_SCREEN_AND_CHECK \
   Screen* self = ObjectWrap::Unwrap<Screen>(args.This()); \
   if (self == NULL) \
@@ -67,6 +72,10 @@ void Screen::GetPrimaryDisplay(
 
 // static
 void Screen::Initialize(v8::Handle<v8::Object> target) {
+#if defined(TOOLKIT_GTK)
+  gfx::GdkInitFromCommandLine(*CommandLine::ForCurrentProcess());
+#endif
+
   v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(New);
   t->InstanceTemplate()->SetInternalFieldCount(1);
   t->SetClassName(v8::String::NewSymbol("Screen"));
