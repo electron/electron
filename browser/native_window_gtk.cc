@@ -88,6 +88,9 @@ void NativeWindowGtk::Move(const gfx::Rect& pos) {
 }
 
 void NativeWindowGtk::Focus(bool focus) {
+  if (!IsVisible())
+    return;
+
   if (focus)
     gtk_window_present(window_);
   else
