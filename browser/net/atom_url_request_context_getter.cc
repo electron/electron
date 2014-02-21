@@ -66,6 +66,7 @@ AtomURLRequestContextGetter::~AtomURLRequestContextGetter() {
 net::URLRequestContext* AtomURLRequestContextGetter::GetURLRequestContext() {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
 
+  base::AutoLock auto_lock(lock_);
   if (!url_request_context_.get()) {
     url_request_context_.reset(new net::URLRequestContext());
     network_delegate_ = network_delegate_factory_.Run().Pass();

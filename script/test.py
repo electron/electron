@@ -14,8 +14,10 @@ def main():
   if sys.platform == 'darwin':
     atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Debug', 'Atom.app',
                               'Contents', 'MacOS', 'Atom')
-  else:
+  elif sys.platform == 'win32':
     atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Debug', 'atom.exe')
+  else:
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Debug', 'atom')
 
   subprocess.check_call([atom_shell, 'spec'] + sys.argv[1:])
 

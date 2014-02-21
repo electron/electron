@@ -51,6 +51,8 @@
       'browser/api/atom_api_event.h',
       'browser/api/atom_api_menu.cc',
       'browser/api/atom_api_menu.h',
+      'browser/api/atom_api_menu_gtk.cc',
+      'browser/api/atom_api_menu_gtk.h',
       'browser/api/atom_api_menu_mac.h',
       'browser/api/atom_api_menu_mac.mm',
       'browser/api/atom_api_menu_win.cc',
@@ -66,6 +68,7 @@
       'browser/auto_updater.cc',
       'browser/auto_updater.h',
       'browser/auto_updater_delegate.h',
+      'browser/auto_updater_linux.cc',
       'browser/auto_updater_mac.mm',
       'browser/auto_updater_win.cc',
       'browser/atom_application_mac.h',
@@ -83,11 +86,14 @@
       'browser/atom_javascript_dialog_manager.h',
       'browser/browser.cc',
       'browser/browser.h',
+      'browser/browser_linux.cc',
       'browser/browser_mac.mm',
       'browser/browser_win.cc',
       'browser/browser_observer.h',
       'browser/native_window.cc',
       'browser/native_window.h',
+      'browser/native_window_gtk.cc',
+      'browser/native_window_gtk.h',
       'browser/native_window_mac.h',
       'browser/native_window_mac.mm',
       'browser/native_window_win.cc',
@@ -103,6 +109,7 @@
       'browser/net/url_request_string_job.h',
       'browser/ui/accelerator_util.cc',
       'browser/ui/accelerator_util.h',
+      'browser/ui/accelerator_util_gtk.cc',
       'browser/ui/accelerator_util_mac.mm',
       'browser/ui/accelerator_util_win.cc',
       'browser/ui/cocoa/atom_menu_controller.h',
@@ -112,9 +119,17 @@
       'browser/ui/cocoa/nsalert_synchronous_sheet.h',
       'browser/ui/cocoa/nsalert_synchronous_sheet.mm',
       'browser/ui/file_dialog.h',
+      'browser/ui/file_dialog_gtk.cc',
       'browser/ui/file_dialog_mac.mm',
       'browser/ui/file_dialog_win.cc',
+      'browser/ui/gtk/gtk_custom_menu.cc',
+      'browser/ui/gtk/gtk_custom_menu.h',
+      'browser/ui/gtk/gtk_custom_menu_item.cc',
+      'browser/ui/gtk/gtk_custom_menu_item.h',
+      'browser/ui/gtk/gtk_window_util.cc',
+      'browser/ui/gtk/gtk_window_util.h',
       'browser/ui/message_box.h',
+      'browser/ui/message_box_gtk.cc',
       'browser/ui/message_box_mac.mm',
       'browser/ui/message_box_win.cc',
       'browser/ui/win/menu_2.cc',
@@ -147,6 +162,8 @@
       'common/api/object_life_monitor.h',
       'common/crash_reporter/crash_reporter.cc',
       'common/crash_reporter/crash_reporter.h',
+      'common/crash_reporter/crash_reporter_linux.cc',
+      'common/crash_reporter/crash_reporter_linux.h',
       'common/crash_reporter/crash_reporter_mac.h',
       'common/crash_reporter/crash_reporter_mac.mm',
       'common/crash_reporter/crash_reporter_win.cc',
@@ -157,8 +174,11 @@
       'common/crash_reporter/win/crash_service_main.h',
       'common/draggable_region.cc',
       'common/draggable_region.h',
+      'common/linux/application_info.cc',
       'common/node_bindings.cc',
       'common/node_bindings.h',
+      'common/node_bindings_linux.cc',
+      'common/node_bindings_linux.h',
       'common/node_bindings_mac.cc',
       'common/node_bindings_mac.h',
       'common/node_bindings_win.cc',
@@ -166,6 +186,7 @@
       'common/options_switches.cc',
       'common/options_switches.h',
       'common/platform_util.h',
+      'common/platform_util_linux.cc',
       'common/platform_util_mac.mm',
       'common/platform_util_win.cc',
       'common/swap_or_assign.h',
@@ -209,9 +230,8 @@
     ],
     'configurations': {
       'Debug': {
-        'defines': [
-          'DEBUG',
-        ],
+        'defines': [ 'DEBUG', '_DEBUG' ],
+        'cflags': [ '-g', '-O0' ],
       },
     },
   },
@@ -306,6 +326,24 @@
             },
           ],
         }],  # OS=="win"
+        ['OS=="linux"', {
+          'copies': [
+            {
+              'destination': '<(PRODUCT_DIR)',
+              'files': [
+                '<(libchromiumcontent_library_dir)/libchromiumcontent.so',
+                '<(libchromiumcontent_library_dir)/libffmpegsumo.so',
+                '<(libchromiumcontent_resources_dir)/content_shell.pak',
+              ],
+            },
+            {
+              'destination': '<(PRODUCT_DIR)/resources/browser',
+              'files': [
+                'browser/default_app',
+              ]
+            },
+          ],
+        }],  # OS=="linux"
       ],
     },  # target <(project_name)
     {
@@ -353,12 +391,24 @@
             'vendor/breakpad/breakpad.gyp:breakpad_handler',
             'vendor/breakpad/breakpad.gyp:breakpad_sender',
           ],
-        }],
+        }],  # OS=="win"
         ['OS=="mac"', {
           'dependencies': [
             'vendor/breakpad/breakpad.gyp:breakpad',
           ],
-        }],
+        }],  # OS=="mac"
+        ['OS=="linux"', {
+          'link_settings': {
+            'ldflags': [
+              # Make binary search for libraries under current directory, so we
+              # don't have to manually set $LD_LIBRARY_PATH:
+              # http://serverfault.com/questions/279068/cant-find-so-in-the-same-directory-as-the-executable
+              '-rpath \$$ORIGIN',
+              # Make native module dynamic loading work.
+              '-rdynamic',
+            ],
+          },
+        }],  # OS=="linux"
       ],
     },  # target <(product_name)_lib
     {
@@ -385,8 +435,7 @@
                 '<(RULE_INPUT_PATH)',
                 '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
               ],
-            }],  # OS=="mac"
-            ['OS=="win"', {
+            },{  # OS=="mac"
               'outputs': [
                 '<(PRODUCT_DIR)/resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
               ],
@@ -396,7 +445,7 @@
                 '<(RULE_INPUT_PATH)',
                 '<(PRODUCT_DIR)/resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
               ],
-            }],  # OS=="win"
+            }],  # OS=="win" or OS=="linux"
           ],
         },
       ],

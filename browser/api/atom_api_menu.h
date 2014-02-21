@@ -69,7 +69,7 @@ class Menu : public EventEmitter,
 
   static void Popup(const v8::FunctionCallbackInfo<v8::Value>& args);
 
-#if defined(OS_WIN)
+#if defined(OS_WIN) || defined(TOOLKIT_GTK)
   static void AttachToWindow(const v8::FunctionCallbackInfo<v8::Value>& args);
 #elif defined(OS_MACOSX)
   static void SetApplicationMenu(

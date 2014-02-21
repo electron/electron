@@ -3,7 +3,7 @@
 ## Guides
 
 * [Quick start](quick-start.md)
-* [Build native modules](build-native-modules.md)
+* [Use native modules](use-native-modules.md)
 
 ## Development
 
@@ -11,6 +11,7 @@
 * [Source code directory structure](development/source-code-directory-structure.md)
 * [Build instructions (Mac)](development/build-instructions-mac.md)
 * [Build instructions (Windows)](development/build-instructions-windows.md)
+* [Build instructions (Linux)](development/build-instructions-linux.md)
 
 ## API References
 

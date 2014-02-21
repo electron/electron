@@ -13,6 +13,8 @@ IGNORE_FILES = [
   'browser/ui/cocoa/event_processing_window.h',
   'browser/ui/cocoa/atom_menu_controller.h',
   'browser/ui/cocoa/nsalert_synchronous_sheet.h',
+  'browser/ui/gtk/gtk_custom_menu.cc',
+  'browser/ui/gtk/gtk_custom_menu_item.cc',
   'common/api/api_messages.cc',
   'common/api/api_messages.h',
   'common/atom_version.h',

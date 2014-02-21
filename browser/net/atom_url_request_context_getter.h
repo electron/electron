@@ -8,6 +8,7 @@
 #include "base/callback.h"
 #include "base/files/file_path.h"
 #include "base/memory/scoped_ptr.h"
+#include "base/synchronization/lock.h"
 #include "content/public/browser/content_browser_client.h"
 #include "net/url_request/url_request_context_getter.h"
 
@@ -58,6 +59,8 @@ class AtomURLRequestContextGetter : public net::URLRequestContextGetter {
   AtomURLRequestJobFactory* job_factory_;
   base::Callback<scoped_ptr<brightray::NetworkDelegate>(void)>
       network_delegate_factory_;
+
+  base::Lock lock_;
 
   scoped_ptr<net::ProxyConfigService> proxy_config_service_;
   scoped_ptr<brightray::NetworkDelegate> network_delegate_;

@@ -2,7 +2,7 @@
   'variables': {
     'clang': 0,
     'conditions': [
-      ['OS=="mac"', {
+      ['OS=="mac" or OS=="linux"', {
         'clang': 1,
       }],
       ['OS=="win" and (MSVS_VERSION=="2012e" or MSVS_VERSION=="2010e")', {
@@ -76,6 +76,21 @@
             '-Wno-return-type',
           ],
         },
+        'conditions': [
+          ['OS=="linux"', {
+            'cflags': [
+              '-Wno-parentheses-equality',
+              '-Wno-unused-function',
+              '-Wno-sometimes-uninitialized',
+              '-Wno-pointer-sign',
+              '-Wno-string-plus-int',
+              '-Wno-unused-variable',
+              '-Wno-unused-value',
+              '-Wno-deprecated-declarations',
+              '-Wno-return-type',
+            ],
+          }],
+        ],
       }],
       ['_target_name in ["node_lib", "atom_lib"]', {
         'include_dirs': [
@@ -153,7 +168,9 @@
       ],
       'target_defaults': {
         'cflags_cc': [
-          '-std=c++11',
+          # Use gnu++11 instead of c++11 here, see:
+          # https://code.google.com/p/chromium/issues/detail?id=224515
+          '-std=gnu++11',
         ],
         'xcode_settings': {
           'CC': '/usr/bin/clang',

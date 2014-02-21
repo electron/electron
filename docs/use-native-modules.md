@@ -1,14 +1,23 @@
-# Build native modules
+# Use native modules
 
 Since atom-shell is using a different V8 version from the official node, you
 need to build native module against atom-shell's headers to use them.
 
-You need to use node-gyp to compile native modules, you can install node-gyp
-via npm if you hadn't:
+The [apm](https://github.com/atom/apm) provided a easy way to do this, after
+installing it you could use it to install dependencies just like using `npm`:
 
 ```bash
-$ npm install -g node-gyp
+$ cd /path/to/atom-shell/project/
+$ apm install .
 ```
+
+But you should notice that `apm install module` wont' work because it will
+install a user package for [Atom](https://github.com/atom/atom) instead.
+
+Apart from `apm`, you can also use `node-gyp` and `npm` to manually build the
+native modules.
+
+## The node-gyp way
 
 First you need to check which node release atom-shell is carrying via
 `process.version` (at the time of writing it is v0.10.5), then you can
@@ -23,13 +32,7 @@ The `HOME=~/.atom-shell-gyp` changes where to find development headers. The
 `--target=0.10.5` is specifying node's version. The `--dist-url=...` specifies
 where to download the headers.
 
-## Use npm to build native modules
-
-Under most circumstances you would want to use npm to install modules, if
-you're using npm >= v1.2.19 (because [a
-patch](https://github.com/TooTallNate/node-gyp/commit/afbcdea1ffd25c02bc88d119b10337852c44d400)
-is needed to make `npm_config_disturl` work) you can use following code to
-download and build native modules against atom-shell's headers:
+## The npm way
 
 ```bash
 export npm_config_disturl=https://gh-contractor-zcbenz.s3.amazonaws.com/atom-shell/dist
