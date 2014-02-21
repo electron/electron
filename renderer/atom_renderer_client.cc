@@ -11,6 +11,7 @@
 #include "common/options_switches.h"
 #include "renderer/api/atom_renderer_bindings.h"
 #include "renderer/atom_render_view_observer.h"
+#include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
 
 #include "common/v8/node_common.h"
@@ -19,10 +20,14 @@ namespace atom {
 
 namespace {
 
+// Security tokens.
 const char* kExceptIframe = "except-iframe";
 const char* kManualEnableIframe = "manual-enable-iframe";
 const char* kDisable = "disable";
 const char* kEnableNodeIntegration = "enable-node-integration";
+
+// Scheme used by devtools
+const char* kChromeDevToolsScheme = "chrome-devtools";
 
 }  // namespace
 
@@ -153,6 +158,9 @@ bool AtomRendererClient::IsNodeBindingEnabled(WebKit::WebFrame* frame) {
   // Node integration is enabled in main frame unless explictly disabled.
   else if (frame == main_frame_)
     return true;
+  // Do not pollute devtools.
+  else if (GURL(frame->document().url()).SchemeIs(kChromeDevToolsScheme))
+    return false;
   else if (node_integration_ == MANUAL_ENABLE_IFRAME &&
            frame != NULL &&
            frame->uniqueName().utf8().find(kEnableNodeIntegration)
