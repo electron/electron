@@ -15,8 +15,16 @@ class NodeBindingsLinux : public NodeBindings {
   explicit NodeBindingsLinux(bool is_browser);
   virtual ~NodeBindingsLinux();
 
+  virtual void RunMessageLoop() OVERRIDE;
+
  private:
+  // Called when uv's watcher queue changes.
+  static void OnWatcherQueueChanged(uv_loop_t* loop);
+
   virtual void PollEvents() OVERRIDE;
+
+  // Epoll to poll for uv's backend fd.
+  int epoll_;
 
   DISALLOW_COPY_AND_ASSIGN(NodeBindingsLinux);
 };
