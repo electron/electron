@@ -32,7 +32,8 @@ ipc.on('echo', function(ev, pid, rid, msg) {
   ev.returnValue = msg;
 });
 
-process.on('uncaughtException', function() {
+process.on('uncaughtException', function(error) {
+  console.log(error);
   window.openDevTools();
 });
 
@@ -133,7 +134,7 @@ app.on('ready', function() {
   app.setApplicationMenu(menu);
 
   // Test if using protocol module would crash.
-  require('protocol').registerProtocol('test-if-crashes', function() {});
+  // require('protocol').registerProtocol('test-if-crashes', function() {});
 
   window = new BrowserWindow({
     title: 'atom-shell tests',
