@@ -12,6 +12,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "browser/native_window_observer.h"
+#include "content/public/browser/devtools_frontend_host_delegate.h"
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -49,7 +50,8 @@ struct DraggableRegion;
 
 class NativeWindow : public brightray::DefaultWebContentsDelegate,
                      public content::WebContentsObserver,
-                     public content::NotificationObserver {
+                     public content::NotificationObserver,
+                     public content::DevToolsFrontendHostDelegate {
  public:
   typedef base::Callback<void(const std::vector<unsigned char>& buffer)>
       CapturePageCallback;
@@ -127,6 +129,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void CloseDevTools();
   virtual bool IsDevToolsOpened();
   virtual void InspectElement(int x, int y);
+  virtual void DebugDevTools();
 
   virtual void FocusOnWebView();
   virtual void BlurWebView();
@@ -210,10 +213,14 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void BeforeUnloadFired(const base::TimeTicks& proceed_time) OVERRIDE;
   virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
 
-  // Implementations of content::NotificationObserver
+  // Implementations of content::NotificationObserver.
   virtual void Observe(int type,
                        const content::NotificationSource& source,
                        const content::NotificationDetails& details) OVERRIDE;
+
+  // Implementations of content::DevToolsFrontendHostDelegate.
+  virtual void DispatchOnEmbedder(const std::string& message) OVERRIDE;
+  virtual void InspectedContentsClosing() OVERRIDE;
 
   // Whether window has standard frame.
   bool has_frame_;
