@@ -86,6 +86,7 @@ class Window : public EventEmitter,
   static void CloseDevTools(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void IsDevToolsOpened(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void InspectElement(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void DebugDevTools(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void FocusOnWebView(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void BlurWebView(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void IsWebViewFocused(const v8::FunctionCallbackInfo<v8::Value>& args);

@@ -167,8 +167,6 @@ bool NativeWindow::HasModalDialog() {
 
 void NativeWindow::OpenDevTools() {
   inspectable_web_contents()->ShowDevTools();
-
-  DebugDevTools();
 }
 
 void NativeWindow::CloseDevTools() {
@@ -187,14 +185,16 @@ void NativeWindow::InspectElement(int x, int y) {
   agent->InspectElement(x, y);
 }
 
-void NativeWindow::DebugDevTools() {
-  if (!IsDevToolsOpened())
-    return;
+scoped_ptr<NativeWindow> NativeWindow::DebugDevTools() {
+  scoped_ptr<NativeWindow> window;
+  if (IsDevToolsOpened()) {
+    base::DictionaryValue options;
+    window.reset(NativeWindow::Create(&options));
+    window->devtools_delegate_.reset(new DevToolsDelegate(
+        window.get(), GetDevToolsWebContents()));
+  }
 
-  base::DictionaryValue options;
-  NativeWindow* window = NativeWindow::Create(&options);
-  window->devtools_delegate_.reset(new DevToolsDelegate(
-      window, GetDevToolsWebContents()));
+  return window.Pass();
 }
 
 void NativeWindow::FocusOnWebView() {
