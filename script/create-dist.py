@@ -39,12 +39,20 @@ TARGET_BINARIES = {
     'icudt.dll',
     'libGLESv2.dll',
   ],
+  'linux': [
+    'atom',
+    'libchromiumcontent.so',
+    'libffmpegsumo.so',
+  ],
 }
 TARGET_DIRECTORIES = {
   'darwin': [
     'Atom.app',
   ],
   'win32': [
+    'resources',
+  ],
+  'linux': [
     'resources',
   ],
 }
@@ -74,8 +82,9 @@ def main():
   args = parse_args()
 
   force_build()
-  download_libchromiumcontent_symbols(args.url)
-  create_symbols()
+  if sys.platform != 'linux2':
+    download_libchromiumcontent_symbols(args.url)
+    create_symbols()
   copy_binaries()
   copy_headers()
   copy_license()
@@ -151,7 +160,7 @@ def create_version():
 def download_libchromiumcontent_symbols(url):
   if sys.platform == 'darwin':
     symbols_name = 'libchromiumcontent.dylib.dSYM'
-  else:
+  elif sys.platform == 'win32':
     symbols_name = 'chromiumcontent.dll.pdb'
 
   brightray_dir = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor')
@@ -196,6 +205,8 @@ def create_symbols_zip():
   with scoped_cwd(DIST_DIR):
     files = ['LICENSE', 'version']
     dirs = ['Atom-Shell.breakpad.syms']
+    if sys.platform == 'linux2':
+      dirs = []
     make_zip(zip_file, files, dirs)
 
 
