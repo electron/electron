@@ -45,6 +45,7 @@ class Message;
 namespace atom {
 
 class AtomJavaScriptDialogManager;
+class DevToolsDelegate;
 struct DraggableRegion;
 
 class NativeWindow : public brightray::DefaultWebContentsDelegate,
@@ -128,6 +129,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual bool IsDevToolsOpened();
   virtual void InspectElement(int x, int y);
 
+  // Creates a new window to debug the devtools.
+  virtual void DebugDevTools();
+
   virtual void FocusOnWebView();
   virtual void BlurWebView();
   virtual bool IsWebViewFocused();
@@ -149,6 +153,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void CloseWebContents();
 
   content::WebContents* GetWebContents() const;
+  content::WebContents* GetDevToolsWebContents() const;
 
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);
@@ -210,7 +215,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void BeforeUnloadFired(const base::TimeTicks& proceed_time) OVERRIDE;
   virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
 
-  // Implementations of content::NotificationObserver
+  // Implementations of content::NotificationObserver.
   virtual void Observe(int type,
                        const content::NotificationSource& source,
                        const content::NotificationDetails& details) OVERRIDE;
@@ -255,6 +260,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   base::WeakPtrFactory<NativeWindow> weak_factory_;
 
+  scoped_ptr<DevToolsDelegate> devtools_delegate_;
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
 

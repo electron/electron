@@ -415,6 +415,12 @@ void Window::InspectElement(const v8::FunctionCallbackInfo<v8::Value>& args) {
 }
 
 // static
+void Window::DebugDevTools(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  UNWRAP_WINDOW_AND_CHECK;
+  self->window_->DebugDevTools();
+}
+
+// static
 void Window::FocusOnWebView(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
   self->window_->FocusOnWebView();
@@ -663,6 +669,7 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "closeDevTools", CloseDevTools);
   NODE_SET_PROTOTYPE_METHOD(t, "isDevToolsOpened", IsDevToolsOpened);
   NODE_SET_PROTOTYPE_METHOD(t, "inspectElement", InspectElement);
+  NODE_SET_PROTOTYPE_METHOD(t, "debugDevTools", DebugDevTools);
   NODE_SET_PROTOTYPE_METHOD(t, "focusOnWebView", FocusOnWebView);
   NODE_SET_PROTOTYPE_METHOD(t, "blurWebView", BlurWebView);
   NODE_SET_PROTOTYPE_METHOD(t, "isWebViewFocused", IsWebViewFocused);

@@ -18,6 +18,7 @@
 #include "browser/atom_browser_main_parts.h"
 #include "browser/atom_javascript_dialog_manager.h"
 #include "browser/browser.h"
+#include "browser/devtools_delegate.h"
 #include "browser/window_list.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/invalidate_type.h"
@@ -37,6 +38,7 @@
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
+#include "vendor/brightray/browser/inspectable_web_contents_impl.h"
 #include "webkit/common/user_agent/user_agent_util.h"
 
 using content::NavigationEntry;
@@ -183,6 +185,16 @@ void NativeWindow::InspectElement(int x, int y) {
   agent->InspectElement(x, y);
 }
 
+void NativeWindow::DebugDevTools() {
+  if (!IsDevToolsOpened())
+    return;
+
+  base::DictionaryValue options;
+  NativeWindow* window = NativeWindow::Create(&options);
+  window->devtools_delegate_.reset(new DevToolsDelegate(
+      window, GetDevToolsWebContents()));
+}
+
 void NativeWindow::FocusOnWebView() {
   GetWebContents()->GetRenderViewHost()->Focus();
 }
@@ -267,6 +279,13 @@ void NativeWindow::CloseWebContents() {
 
 content::WebContents* NativeWindow::GetWebContents() const {
   return inspectable_web_contents_->GetWebContents();
+}
+
+content::WebContents* NativeWindow::GetDevToolsWebContents() const {
+  brightray::InspectableWebContentsImpl* inspectable_web_contents_impl =
+      static_cast<brightray::InspectableWebContentsImpl*>(
+          inspectable_web_contents());
+  return inspectable_web_contents_impl->devtools_web_contents();
 }
 
 void NativeWindow::NotifyWindowClosed() {
