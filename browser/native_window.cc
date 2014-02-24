@@ -207,16 +207,16 @@ void NativeWindow::DebugDevTools() {
           devtools_web_contents->GetRenderViewHost());
   content::DevToolsClientHost* frontend_host =
       content::DevToolsClientHost::CreateDevToolsFrontendHost(
-          devtools_web_contents, window);
+          window->GetWebContents(), window);
   content::DevToolsManager::GetInstance()->RegisterDevToolsClientHostFor(
       agent_host, frontend_host);
 
   window->InitFromOptions(&options);
   window->GetWebContents()->GetController().LoadURL(
-        GURL("chrome-devtools://devtools/devtools.html"),
-        content::Referrer(),
-        content::PAGE_TRANSITION_AUTO_TOPLEVEL,
-        std::string());
+      GURL("chrome-devtools://devtools/devtools.html"),
+      content::Referrer(),
+      content::PAGE_TRANSITION_AUTO_TOPLEVEL,
+      std::string());
 }
 
 void NativeWindow::FocusOnWebView() {
@@ -487,8 +487,8 @@ void NativeWindow::DispatchOnEmbedder(const std::string& message) {
 }
 
 void NativeWindow::InspectedContentsClosing() {
-  // We are acting as devtools debugger, safe to delete here.
-  delete this;
+  // We are acting as devtools debugger, safe to close here.
+  CloseImmediately();
 }
 
 void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
