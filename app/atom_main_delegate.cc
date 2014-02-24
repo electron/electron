@@ -42,7 +42,7 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   logging::SetLogItems(true, false, true, false);
 
   // Enable convient stack printing.
-#if defined(DEBUG)
+#if defined(DEBUG) && !defined(OS_MACOSX)
   base::debug::EnableInProcessStackDumping();
 #endif
 
