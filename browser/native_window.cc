@@ -196,21 +196,23 @@ void NativeWindow::DebugDevTools() {
   base::DictionaryValue options;
   NativeWindow* window = NativeWindow::Create(&options);
 
+  // Receive devtool's web contents.
   brightray::InspectableWebContentsImpl* inspectable_web_contents_impl =
       static_cast<brightray::InspectableWebContentsImpl*>(
           inspectable_web_contents());
   content::WebContents* devtools_web_contents =
       inspectable_web_contents_impl->devtools_web_contents();
 
-  content::DevToolsAgentHost* agent_host =
-      content::DevToolsAgentHost::GetOrCreateFor(
-          devtools_web_contents->GetRenderViewHost());
-  content::DevToolsClientHost* frontend_host =
+  // Setup devtools.
+  window->devtools_agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(
+      devtools_web_contents->GetRenderViewHost());
+  window->devtools_client_host_.reset(
       content::DevToolsClientHost::CreateDevToolsFrontendHost(
-          window->GetWebContents(), window);
+          window->GetWebContents(), window));
   content::DevToolsManager::GetInstance()->RegisterDevToolsClientHostFor(
-      agent_host, frontend_host);
+      window->devtools_agent_host_.get(), window->devtools_client_host_.get());
 
+  // Done.
   window->InitFromOptions(&options);
   window->GetWebContents()->GetController().LoadURL(
       GURL("chrome-devtools://devtools/devtools.html"),
@@ -432,6 +434,14 @@ void NativeWindow::RendererUnresponsive(content::WebContents* source) {
 void NativeWindow::RendererResponsive(content::WebContents* source) {
   window_unresposive_closure_.Cancel();
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
+}
+
+void NativeWindow::AboutToNavigateRenderView(
+      content::RenderViewHost* render_view_host) {
+  // Setup devtools frontend if we are devtools window.
+  if (devtools_client_host_)
+    content::DevToolsClientHost::SetupDevToolsFrontendClient(
+        GetWebContents()->GetRenderViewHost());
 }
 
 void NativeWindow::RenderViewDeleted(content::RenderViewHost* rvh) {

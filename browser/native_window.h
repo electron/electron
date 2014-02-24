@@ -30,6 +30,8 @@ class InspectableWebContents;
 
 namespace content {
 class BrowserContext;
+class DevToolsAgentHost;
+class DevToolsClientHost;
 class WebContents;
 }
 
@@ -208,6 +210,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void RendererResponsive(content::WebContents* source) OVERRIDE;
 
   // Implementations of content::WebContentsObserver.
+  virtual void AboutToNavigateRenderView(
+      content::RenderViewHost* render_view_host) OVERRIDE;
   virtual void RenderViewDeleted(content::RenderViewHost*) OVERRIDE;
   virtual void RenderProcessGone(base::TerminationStatus status) OVERRIDE;
   virtual void BeforeUnloadFired(const base::TimeTicks& proceed_time) OVERRIDE;
@@ -264,6 +268,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
+
+  scoped_refptr<content::DevToolsAgentHost> devtools_agent_host_;
+  scoped_ptr<content::DevToolsClientHost> devtools_client_host_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindow);
 };
