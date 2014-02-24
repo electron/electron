@@ -73,8 +73,10 @@ def get_atom_shell_build_version():
   if sys.platform == 'darwin':
     atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Release', 'Atom.app',
                               'Contents', 'MacOS', 'Atom')
-  else:
+  elif sys.platform == 'win32':
     atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Release', 'atom.exe')
+  else:
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Release', 'atom')
 
   return subprocess.check_output([atom_shell, '--version']).strip()
 
