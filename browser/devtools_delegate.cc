@@ -47,13 +47,17 @@ void DevToolsDelegate::DispatchOnEmbedder(const std::string& message) {
 }
 
 void DevToolsDelegate::InspectedContentsClosing() {
-  owner_window_->CloseImmediately();
+  delete owner_window_;
 }
 
 void DevToolsDelegate::AboutToNavigateRenderView(
       content::RenderViewHost* render_view_host) {
   content::DevToolsClientHost::SetupDevToolsFrontendClient(
       owner_window_->GetWebContents()->GetRenderViewHost());
+}
+
+void DevToolsDelegate::OnWindowClosed() {
+  delete owner_window_;
 }
 
 }  // namespace atom

@@ -130,7 +130,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void InspectElement(int x, int y);
 
   // Creates a new window to debug the devtools.
-  virtual scoped_ptr<NativeWindow> DebugDevTools();
+  virtual void DebugDevTools();
 
   virtual void FocusOnWebView();
   virtual void BlurWebView();

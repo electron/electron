@@ -185,16 +185,14 @@ void NativeWindow::InspectElement(int x, int y) {
   agent->InspectElement(x, y);
 }
 
-scoped_ptr<NativeWindow> NativeWindow::DebugDevTools() {
-  scoped_ptr<NativeWindow> window;
-  if (IsDevToolsOpened()) {
-    base::DictionaryValue options;
-    window.reset(NativeWindow::Create(&options));
-    window->devtools_delegate_.reset(new DevToolsDelegate(
-        window.get(), GetDevToolsWebContents()));
-  }
+void NativeWindow::DebugDevTools() {
+  if (!IsDevToolsOpened())
+    return;
 
-  return window.Pass();
+  base::DictionaryValue options;
+  NativeWindow* window = NativeWindow::Create(&options);
+  window->devtools_delegate_.reset(new DevToolsDelegate(
+      window, GetDevToolsWebContents()));
 }
 
 void NativeWindow::FocusOnWebView() {

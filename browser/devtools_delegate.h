@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_DEVTOOLS_DELEGATE_H_
 
 #include "base/memory/scoped_ptr.h"
+#include "browser/native_window_observer.h"
 #include "content/public/browser/devtools_frontend_host_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 
@@ -19,7 +20,8 @@ namespace atom {
 class NativeWindow;
 
 class DevToolsDelegate : public content::DevToolsFrontendHostDelegate,
-                         public content::WebContentsObserver {
+                         public content::WebContentsObserver,
+                         public NativeWindowObserver {
  public:
   DevToolsDelegate(NativeWindow* window,
                    content::WebContents* target_web_contents);
@@ -33,6 +35,9 @@ class DevToolsDelegate : public content::DevToolsFrontendHostDelegate,
   // Implementations of content::WebContentsObserver.
   virtual void AboutToNavigateRenderView(
       content::RenderViewHost* render_view_host) OVERRIDE;
+
+  // Implementations of NativeWindowObserver.
+  virtual void OnWindowClosed() OVERRIDE;
 
  private:
   NativeWindow* owner_window_;
