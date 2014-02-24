@@ -90,6 +90,8 @@
       'browser/browser_mac.mm',
       'browser/browser_win.cc',
       'browser/browser_observer.h',
+      'browser/devtools_delegate.cc',
+      'browser/devtools_delegate.h',
       'browser/native_window.cc',
       'browser/native_window.h',
       'browser/native_window_gtk.cc',

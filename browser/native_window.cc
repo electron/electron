@@ -18,11 +18,9 @@
 #include "browser/atom_browser_main_parts.h"
 #include "browser/atom_javascript_dialog_manager.h"
 #include "browser/browser.h"
+#include "browser/devtools_delegate.h"
 #include "browser/window_list.h"
 #include "content/public/browser/devtools_agent_host.h"
-#include "content/public/browser/devtools_client_host.h"
-#include "content/public/browser/devtools_http_handler.h"
-#include "content/public/browser/devtools_manager.h"
 #include "content/public/browser/invalidate_type.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/notification_details.h"
@@ -195,30 +193,8 @@ void NativeWindow::DebugDevTools() {
 
   base::DictionaryValue options;
   NativeWindow* window = NativeWindow::Create(&options);
-
-  // Receive devtool's web contents.
-  brightray::InspectableWebContentsImpl* inspectable_web_contents_impl =
-      static_cast<brightray::InspectableWebContentsImpl*>(
-          inspectable_web_contents());
-  content::WebContents* devtools_web_contents =
-      inspectable_web_contents_impl->devtools_web_contents();
-
-  // Setup devtools.
-  window->devtools_agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(
-      devtools_web_contents->GetRenderViewHost());
-  window->devtools_client_host_.reset(
-      content::DevToolsClientHost::CreateDevToolsFrontendHost(
-          window->GetWebContents(), window));
-  content::DevToolsManager::GetInstance()->RegisterDevToolsClientHostFor(
-      window->devtools_agent_host_.get(), window->devtools_client_host_.get());
-
-  // Done.
-  window->InitFromOptions(&options);
-  window->GetWebContents()->GetController().LoadURL(
-      GURL("chrome-devtools://devtools/devtools.html"),
-      content::Referrer(),
-      content::PAGE_TRANSITION_AUTO_TOPLEVEL,
-      std::string());
+  window->devtools_delegate_.reset(new DevToolsDelegate(
+      window, GetDevToolsWebContents()));
 }
 
 void NativeWindow::FocusOnWebView() {
@@ -305,6 +281,13 @@ void NativeWindow::CloseWebContents() {
 
 content::WebContents* NativeWindow::GetWebContents() const {
   return inspectable_web_contents_->GetWebContents();
+}
+
+content::WebContents* NativeWindow::GetDevToolsWebContents() const {
+  brightray::InspectableWebContentsImpl* inspectable_web_contents_impl =
+      static_cast<brightray::InspectableWebContentsImpl*>(
+          inspectable_web_contents());
+  return inspectable_web_contents_impl->devtools_web_contents();
 }
 
 void NativeWindow::NotifyWindowClosed() {
@@ -436,14 +419,6 @@ void NativeWindow::RendererResponsive(content::WebContents* source) {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
 }
 
-void NativeWindow::AboutToNavigateRenderView(
-      content::RenderViewHost* render_view_host) {
-  // Setup devtools frontend if we are devtools window.
-  if (devtools_client_host_)
-    content::DevToolsClientHost::SetupDevToolsFrontendClient(
-        GetWebContents()->GetRenderViewHost());
-}
-
 void NativeWindow::RenderViewDeleted(content::RenderViewHost* rvh) {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
                     OnRenderViewDeleted(rvh->GetProcess()->GetID(),
@@ -491,14 +466,6 @@ void NativeWindow::Observe(int type,
         SetTitle(text);
     }
   }
-}
-
-void NativeWindow::DispatchOnEmbedder(const std::string& message) {
-}
-
-void NativeWindow::InspectedContentsClosing() {
-  // We are acting as devtools debugger, safe to close here.
-  CloseImmediately();
 }
 
 void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,

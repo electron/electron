@@ -12,7 +12,6 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "browser/native_window_observer.h"
-#include "content/public/browser/devtools_frontend_host_delegate.h"
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -30,8 +29,6 @@ class InspectableWebContents;
 
 namespace content {
 class BrowserContext;
-class DevToolsAgentHost;
-class DevToolsClientHost;
 class WebContents;
 }
 
@@ -48,12 +45,12 @@ class Message;
 namespace atom {
 
 class AtomJavaScriptDialogManager;
+class DevToolsDelegate;
 struct DraggableRegion;
 
 class NativeWindow : public brightray::DefaultWebContentsDelegate,
                      public content::WebContentsObserver,
-                     public content::NotificationObserver,
-                     public content::DevToolsFrontendHostDelegate {
+                     public content::NotificationObserver {
  public:
   typedef base::Callback<void(const std::vector<unsigned char>& buffer)>
       CapturePageCallback;
@@ -154,6 +151,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void CloseWebContents();
 
   content::WebContents* GetWebContents() const;
+  content::WebContents* GetDevToolsWebContents() const;
 
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);
@@ -210,8 +208,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void RendererResponsive(content::WebContents* source) OVERRIDE;
 
   // Implementations of content::WebContentsObserver.
-  virtual void AboutToNavigateRenderView(
-      content::RenderViewHost* render_view_host) OVERRIDE;
   virtual void RenderViewDeleted(content::RenderViewHost*) OVERRIDE;
   virtual void RenderProcessGone(base::TerminationStatus status) OVERRIDE;
   virtual void BeforeUnloadFired(const base::TimeTicks& proceed_time) OVERRIDE;
@@ -221,10 +217,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void Observe(int type,
                        const content::NotificationSource& source,
                        const content::NotificationDetails& details) OVERRIDE;
-
-  // Implementations of content::DevToolsFrontendHostDelegate.
-  virtual void DispatchOnEmbedder(const std::string& message) OVERRIDE;
-  virtual void InspectedContentsClosing() OVERRIDE;
 
   // Whether window has standard frame.
   bool has_frame_;
@@ -266,11 +258,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   base::WeakPtrFactory<NativeWindow> weak_factory_;
 
+  scoped_ptr<DevToolsDelegate> devtools_delegate_;
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
-
-  scoped_refptr<content::DevToolsAgentHost> devtools_agent_host_;
-  scoped_ptr<content::DevToolsClientHost> devtools_client_host_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindow);
 };
