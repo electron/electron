@@ -232,7 +232,7 @@
     ],
     'configurations': {
       'Debug': {
-        'defines': [ 'DEBUG', '_DEBUG' ],
+        'defines': [ 'DEBUG' ],
         'cflags': [ '-g', '-O0' ],
       },
     },
