@@ -82,7 +82,7 @@ def main():
   args = parse_args()
 
   force_build()
-  if sys.platform != 'linux2':
+  if TARGET_PLATFORM != 'linux':
     download_libchromiumcontent_symbols(args.url)
     create_symbols()
   copy_binaries()
@@ -158,9 +158,9 @@ def create_version():
 
 
 def download_libchromiumcontent_symbols(url):
-  if sys.platform == 'darwin':
+  if TARGET_PLATFORM == 'darwin':
     symbols_name = 'libchromiumcontent.dylib.dSYM'
-  elif sys.platform == 'win32':
+  elif TARGET_PLATFORM == 'win32':
     symbols_name = 'chromiumcontent.dll.pdb'
 
   brightray_dir = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor')
@@ -205,7 +205,7 @@ def create_symbols_zip():
   with scoped_cwd(DIST_DIR):
     files = ['LICENSE', 'version']
     dirs = ['Atom-Shell.breakpad.syms']
-    if sys.platform == 'linux2':
+    if TARGET_PLATFORM == 'linux':
       dirs = []
     make_zip(zip_file, files, dirs)
 
