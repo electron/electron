@@ -65,7 +65,7 @@ def extract_tarball(tarball_path, member, destination):
 def extract_zip(zip_path, destination):
   if sys.platform == 'darwin':
     # Use unzip command on Mac to keep symbol links in zip file work.
-    subprocess.check_output(['unzip', zip_path, '-d', destination])
+    execute(['unzip', zip_path, '-d', destination])
   else:
     with zipfile.ZipFile(zip_path) as z:
       z.extractall(destination)
@@ -74,7 +74,7 @@ def make_zip(zip_file_path, files, dirs):
   safe_unlink(zip_file_path)
   if sys.platform == 'darwin':
     files += dirs
-    subprocess.check_output(['zip', '-r', '-y', zip_file_path] + files)
+    execute(['zip', '-r', '-y', zip_file_path] + files)
   else:
     zip_file = zipfile.ZipFile(zip_file_path, "w", zipfile.ZIP_DEFLATED)
     for filename in files:
@@ -108,6 +108,14 @@ def safe_mkdir(path):
   except OSError as e:
     if e.errno != errno.EEXIST:
       raise
+
+
+def execute(argv):
+  try:
+    subprocess.check_output(argv, stderr=subprocess.STDOUT)
+  except subprocess.CalledProcessError as e:
+    print e.output
+    raise e
 
 
 def get_atom_shell_version():
