@@ -552,12 +552,6 @@ void HandleCrashDump(const BreakpadInfo& info) {
     }
   }
 
-  if (info.process_type_length) {
-    writer.AddPairString("ptype", info.process_type);
-    writer.AddBoundary();
-    writer.Flush();
-  }
-
   if (info.distro_length) {
     static const char distro_msg[] = "lsb-release";
     writer.AddPairString(distro_msg, info.distro);

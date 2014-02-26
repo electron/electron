@@ -157,8 +157,6 @@ bool CrashReporterLinux::CrashDone(const MinidumpDescriptor& minidump,
   info.log_filename = log_path;
 #endif
   // TODO(zcbenz): Set the correct process_type here.
-  info.process_type = "browser";
-  info.process_type_length = 7;
   info.distro = base::g_linux_distro;
   info.distro_length = my_strlen(base::g_linux_distro);
   info.upload = true;

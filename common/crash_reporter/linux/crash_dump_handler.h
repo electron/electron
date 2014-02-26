@@ -24,8 +24,6 @@ struct BreakpadInfo {
   const char* asan_report_str;     // ASan report.
   unsigned asan_report_length;     // Length of |asan_report_length|.
 #endif
-  const char* process_type;        // Process type, e.g. "renderer".
-  unsigned process_type_length;    // Length of |process_type|.
   const char* distro;              // Linux distro string.
   unsigned distro_length;          // Length of |distro|.
   bool upload;                     // Whether to upload or save crash dump.
