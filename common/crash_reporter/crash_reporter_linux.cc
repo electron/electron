@@ -5,16 +5,7 @@
 
 #include "common/crash_reporter/crash_reporter_linux.h"
 
-// #include <fcntl.h>
-// #include <poll.h>
-// #include <signal.h>
-// #include <stdlib.h>
-// #include <sys/socket.h>
 #include <sys/time.h>
-// #include <sys/types.h>
-// #include <sys/uio.h>
-// #include <sys/wait.h>
-// #include <time.h>
 #include <unistd.h>
 
 #include "base/debug/crash_logging.h"
@@ -22,13 +13,9 @@
 #include "base/linux_util.h"
 #include "base/logging.h"
 #include "base/path_service.h"
-// #include "base/platform_file.h"
-// #include "base/posix/global_descriptors.h"
 #include "base/process/memory.h"
 #include "base/memory/singleton.h"
-// #include "base/strings/string_util.h"
 #include "common/crash_reporter/linux/crash_dump_handler.h"
-// #include "content/public/common/content_descriptors.h"
 #include "vendor/breakpad/src/client/linux/handler/exception_handler.h"
 #include "vendor/breakpad/src/common/linux/linux_libc_support.h"
 

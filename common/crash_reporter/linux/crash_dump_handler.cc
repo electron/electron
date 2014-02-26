@@ -19,9 +19,6 @@
 
 #include "third_party/lss/linux_syscall_support.h"
 
-#define STAT_STRUCT struct kernel_stat
-#define FSTAT_FUNC sys_fstat
-
 // Some versions of gcc are prone to warn about unused return values. In cases
 // where we either a) know the call cannot fail, or b) there is nothing we
 // can do when a call fails, we mark the return code as ignored. This avoids
@@ -268,8 +265,8 @@ void MimeWriter::AddItemWithoutTrailingSpaces(const void* base, size_t size) {
 
 void LoadDataFromFD(google_breakpad::PageAllocator& allocator,
                     int fd, bool close_fd, uint8_t** file_data, size_t* size) {
-  STAT_STRUCT st;
-  if (FSTAT_FUNC(fd, &st) != 0) {
+  struct kernel_stat st;
+  if (sys_fstat(fd, &st) != 0) {
     static const char msg[] = "Cannot upload crash dump: stat failed\n";
     WriteLog(msg, sizeof(msg) - 1);
     if (close_fd)
