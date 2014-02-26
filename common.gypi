@@ -31,6 +31,8 @@
     'node_use_perfctr': 'false',
     'node_use_systemtap': 'false',
     'v8_postmortem_support': 'false',
+    # Required by Linux (empty for now, should support it in future).
+    'sysroot': '',
   },
   # Settings to compile node under Windows.
   'target_defaults': {

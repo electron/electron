@@ -411,6 +411,9 @@
               '-rdynamic',
             ],
           },
+          'dependencies': [
+            'vendor/breakpad/breakpad.gyp:breakpad_client',
+          ],
         }],  # OS=="linux"
       ],
     },  # target <(product_name)_lib
