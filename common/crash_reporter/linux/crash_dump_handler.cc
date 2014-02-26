@@ -154,6 +154,7 @@ class MimeWriter {
 
   const char* const mime_boundary_;
 
+ private:
   DISALLOW_COPY_AND_ASSIGN(MimeWriter);
 };
 
@@ -256,9 +257,7 @@ void MimeWriter::AddItemWithoutTrailingSpaces(const void* base, size_t size) {
                                             size));
 }
 
-
-
-void LoadDataFromFD(google_breakpad::PageAllocator& allocator,
+void LoadDataFromFD(google_breakpad::PageAllocator* allocator,
                     int fd, bool close_fd, uint8_t** file_data, size_t* size) {
   struct kernel_stat st;
   if (sys_fstat(fd, &st) != 0) {
@@ -269,7 +268,7 @@ void LoadDataFromFD(google_breakpad::PageAllocator& allocator,
     return;
   }
 
-  *file_data = reinterpret_cast<uint8_t*>(allocator.Alloc(st.st_size));
+  *file_data = reinterpret_cast<uint8_t*>(allocator->Alloc(st.st_size));
   if (!(*file_data)) {
     static const char msg[] = "Cannot upload crash dump: cannot alloc\n";
     WriteLog(msg, sizeof(msg) - 1);
@@ -293,7 +292,7 @@ void LoadDataFromFD(google_breakpad::PageAllocator& allocator,
     IGNORE_RET(sys_close(fd));
 }
 
-void LoadDataFromFile(google_breakpad::PageAllocator& allocator,
+void LoadDataFromFile(google_breakpad::PageAllocator* allocator,
                       const char* filename,
                       int* fd, uint8_t** file_data, size_t* size) {
   // WARNING: this code runs in a compromised context. It may not call into
@@ -385,11 +384,12 @@ void HandleCrashDump(const BreakpadInfo& info) {
       IGNORE_RET(sys_close(dumpfd));
       return;
     }
-    LoadDataFromFD(allocator, info.fd, false, &dump_data, &dump_size);
+    LoadDataFromFD(&allocator, info.fd, false, &dump_data, &dump_size);
   } else {
     // Dump is provided with a path.
     keep_fd = false;
-    LoadDataFromFile(allocator, info.filename, &dumpfd, &dump_data, &dump_size);
+    LoadDataFromFile(
+        &allocator, info.filename, &dumpfd, &dump_data, &dump_size);
   }
 
   // We need to build a MIME block for uploading to the server. Since we are
