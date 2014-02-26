@@ -22,9 +22,7 @@ class CrashReporter
 
     start = -> binding.start productName, companyName, submitUrl, autoSubmit, ignoreSystemCrashHandler, extra
 
-    if process.platform is 'darwin'
-      start()
-    else
+    if process.platform is 'win32'
       args = [
         "--reporter-url=#{submitUrl}"
         "--application-name=#{productName}"
@@ -33,6 +31,8 @@ class CrashReporter
       env = ATOM_SHELL_INTERNAL_CRASH_SERVICE: 1
 
       spawn process.execPath, args, {env, detached: true}
+      start()
+    else
       start()
 
 module.exports = new CrashReporter

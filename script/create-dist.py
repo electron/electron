@@ -9,7 +9,7 @@ import tarfile
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, NODE_VERSION
 from lib.util import scoped_cwd, rm_rf, get_atom_shell_version, make_zip, \
-                     safe_mkdir
+                     safe_mkdir, execute
 
 
 ATOM_SHELL_VRESION = get_atom_shell_version()
@@ -107,7 +107,7 @@ def parse_args():
 
 def force_build():
   build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
-  subprocess.check_call([sys.executable, build, '-c', 'Release'])
+  execute([sys.executable, build, '-c', 'Release'])
 
 
 def copy_binaries():

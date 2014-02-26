@@ -9,7 +9,7 @@ import sys
 import tempfile
 
 from lib.config import NODE_VERSION
-from lib.util import get_atom_shell_version, scoped_cwd, safe_mkdir
+from lib.util import get_atom_shell_version, scoped_cwd, safe_mkdir, execute
 from lib.github import GitHub
 
 
@@ -36,7 +36,7 @@ def main():
 
   if not dist_newer_than_head():
     create_dist = os.path.join(SOURCE_ROOT, 'script', 'create-dist.py')
-    subprocess.check_output([sys.executable, create_dist])
+    execute([sys.executable, create_dist])
 
   build_version = get_atom_shell_build_version()
   if not ATOM_SHELL_VRESION.startswith(build_version):
@@ -158,8 +158,7 @@ def upload_node(bucket, access_key, secret_key, version):
   if TARGET_PLATFORM == 'win32':
     # Generate the node.lib.
     build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
-    subprocess.check_output([sys.executable, build, '-c', 'Release',
-                             '-t', 'generate_node_lib'])
+    execute([sys.executable, build, '-c', 'Release', '-t', 'generate_node_lib'])
 
     # Upload the 32bit node.lib.
     node_lib = os.path.join(OUT_DIR, 'node.lib')
@@ -203,7 +202,7 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
     '--grant', 'public-read'
   ] + files
 
-  subprocess.check_output(args)
+  execute(args)
 
 
 def touch_x64_node_lib():

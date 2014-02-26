@@ -31,6 +31,8 @@
     'node_use_perfctr': 'false',
     'node_use_systemtap': 'false',
     'v8_postmortem_support': 'false',
+    # Required by Linux (empty for now, should support it in future).
+    'sysroot': '',
   },
   # Settings to compile node under Windows.
   'target_defaults': {
@@ -108,13 +110,22 @@
         ],
       }],
       ['_target_name.startswith("breakpad") or _target_name in ["crash_report_sender", "dump_syms"]', {
-        'xcode_settings': {
-          'WARNING_CFLAGS': [
-            '-Wno-deprecated-declarations',
-            '-Wno-unused-private-field',
-            '-Wno-unused-function',
-          ],
-        },
+        'conditions': [
+          ['OS=="mac"', {
+            'xcode_settings': {
+              'WARNING_CFLAGS': [
+                '-Wno-deprecated-declarations',
+                '-Wno-unused-private-field',
+                '-Wno-unused-function',
+              ],
+            },
+          }],  # OS=="mac"
+          ['OS=="linux"', {
+            'cflags': [
+              '-Wno-empty-body',
+            ],
+          }],  # OS=="linux"
+        ],
       }],
     ],
     'msvs_cygwin_shell': 0, # Strangely setting it to 1 would make building under cygwin fail.
