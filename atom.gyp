@@ -170,6 +170,8 @@
       'common/crash_reporter/crash_reporter_mac.mm',
       'common/crash_reporter/crash_reporter_win.cc',
       'common/crash_reporter/crash_reporter_win.h',
+      'common/crash_reporter/linux/crash_dump_handler.cc',
+      'common/crash_reporter/linux/crash_dump_handler.h',
       'common/crash_reporter/win/crash_service.cc',
       'common/crash_reporter/win/crash_service.h',
       'common/crash_reporter/win/crash_service_main.cc',
@@ -411,6 +413,13 @@
               '-rdynamic',
             ],
           },
+          # Required settings of using breakpad.
+          'include_dirs': [
+            'vendor/breakpad/src',
+          ],
+          'cflags': [
+            '-Wno-empty-body',
+          ],
           'dependencies': [
             'vendor/breakpad/breakpad.gyp:breakpad_client',
           ],

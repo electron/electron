@@ -1,4 +1,4 @@
-// Copyright (c) 2013 GitHub, Inc. All rights reserved.
+// Copyright (c) 2014 GitHub, Inc. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -30,9 +30,10 @@ class CrashReporterLinux : public CrashReporter {
   CrashReporterLinux();
   virtual ~CrashReporterLinux();
 
+  void EnableCrashDumping();
+
   DISALLOW_COPY_AND_ASSIGN(CrashReporterLinux);
 };
-
 }  // namespace crash_reporter
 
 #endif  // ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_LINUX_H_
