@@ -7,8 +7,13 @@
 
 #include "base/compiler_specific.h"
 #include "common/crash_reporter/crash_reporter.h"
+#include "common/crash_reporter/linux/crash_dump_handler.h"
 
 template <typename T> struct DefaultSingletonTraits;
+
+namespace google_breakpad {
+class MinidumpDescriptor;
+}
 
 namespace crash_reporter {
 
@@ -31,6 +36,12 @@ class CrashReporterLinux : public CrashReporter {
   virtual ~CrashReporterLinux();
 
   void EnableCrashDumping();
+
+  static bool CrashDone(const google_breakpad::MinidumpDescriptor& minidump,
+                        void* context,
+                        const bool succeeded);
+
+  CrashKeyStorage crash_keys_;
 
   DISALLOW_COPY_AND_ASSIGN(CrashReporterLinux);
 };

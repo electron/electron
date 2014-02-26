@@ -15,7 +15,6 @@
 #include "base/path_service.h"
 #include "base/process/memory.h"
 #include "base/memory/singleton.h"
-#include "common/crash_reporter/linux/crash_dump_handler.h"
 #include "vendor/breakpad/src/client/linux/handler/exception_handler.h"
 #include "vendor/breakpad/src/common/linux/linux_libc_support.h"
 
@@ -36,8 +35,6 @@ static const off_t kMaxMinidumpFileSize = 1258291;
 uint64_t g_process_start_time = 0;
 pid_t g_pid = 0;
 ExceptionHandler* g_breakpad = NULL;
-
-CrashKeyStorage* g_crash_keys = NULL;
 
 // The following helper functions are for calculating uptime.
 
@@ -66,45 +63,6 @@ void PopulateDistro(char* distro, size_t* distro_len_param) {
   memcpy(distro, base::g_linux_distro, distro_len);
   if (distro_len_param)
     *distro_len_param = distro_len;
-}
-
-bool CrashDone(const MinidumpDescriptor& minidump,
-               void* context,
-               const bool succeeded) {
-  // WARNING: this code runs in a compromised context. It may not call into
-  // libc nor allocate memory normally.
-  if (!succeeded) {
-    const char msg[] = "Failed to generate minidump.";
-    WriteLog(msg, sizeof(msg) - 1);
-    return false;
-  }
-
-  DCHECK(!minidump.IsFD());
-
-  BreakpadInfo info = {0};
-  info.filename = minidump.path();
-  info.fd = minidump.fd();
-#if defined(ADDRESS_SANITIZER)
-  google_breakpad::PageAllocator allocator;
-  const size_t log_path_len = my_strlen(minidump.path());
-  char* log_path = reinterpret_cast<char*>(allocator.Alloc(log_path_len + 1));
-  my_memcpy(log_path, minidump.path(), log_path_len);
-  my_memcpy(log_path + log_path_len - 4, ".log", 4);
-  log_path[log_path_len] = '\0';
-  info.log_filename = log_path;
-#endif
-  // TODO(zcbenz): Set the correct process_type here.
-  info.process_type = "browser";
-  info.process_type_length = 7;
-  info.distro = base::g_linux_distro;
-  info.distro_length = my_strlen(base::g_linux_distro);
-  info.upload = true;
-  info.process_start_time = g_process_start_time;
-  info.oom_size = base::g_oom_size;
-  info.pid = g_pid;
-  info.crash_keys = g_crash_keys;
-  HandleCrashDump(info);
-  return true;
 }
 
 #if defined(ADDRESS_SANITIZER)
@@ -143,13 +101,14 @@ void CrashReporterLinux::InitBreakpad(const std::string& product_name,
   // Register the callback for AddressSanitizer error reporting.
   __asan_set_error_report_callback(AsanLinuxBreakpadCallback);
 #endif
+
+  for (StringMap::const_iterator iter = upload_parameters_.begin();
+       iter != upload_parameters_.end(); ++iter)
+    crash_keys_.SetKeyValue(iter->first.c_str(), iter->second.c_str());
 }
 
 void CrashReporterLinux::SetUploadParameters() {
   upload_parameters_["platform"] = "linux";
-
-  // TODO(zcbenz): Convert upload parameters to crash keys here.
-  g_crash_keys = new CrashKeyStorage;
 }
 
 void CrashReporterLinux::EnableCrashDumping() {
@@ -168,6 +127,47 @@ void CrashReporterLinux::EnableCrashDumping() {
       this,
       true,  // Install handlers.
       -1);   // Server file descriptor. -1 for in-process.
+}
+
+bool CrashReporterLinux::CrashDone(const MinidumpDescriptor& minidump,
+                                   void* context,
+                                   const bool succeeded) {
+  CrashReporterLinux* self = static_cast<CrashReporterLinux*>(context);
+
+  // WARNING: this code runs in a compromised context. It may not call into
+  // libc nor allocate memory normally.
+  if (!succeeded) {
+    const char msg[] = "Failed to generate minidump.";
+    WriteLog(msg, sizeof(msg) - 1);
+    return false;
+  }
+
+  DCHECK(!minidump.IsFD());
+
+  BreakpadInfo info = {0};
+  info.filename = minidump.path();
+  info.fd = minidump.fd();
+#if defined(ADDRESS_SANITIZER)
+  google_breakpad::PageAllocator allocator;
+  const size_t log_path_len = my_strlen(minidump.path());
+  char* log_path = reinterpret_cast<char*>(allocator.Alloc(log_path_len + 1));
+  my_memcpy(log_path, minidump.path(), log_path_len);
+  my_memcpy(log_path + log_path_len - 4, ".log", 4);
+  log_path[log_path_len] = '\0';
+  info.log_filename = log_path;
+#endif
+  // TODO(zcbenz): Set the correct process_type here.
+  info.process_type = "browser";
+  info.process_type_length = 7;
+  info.distro = base::g_linux_distro;
+  info.distro_length = my_strlen(base::g_linux_distro);
+  info.upload = true;
+  info.process_start_time = g_process_start_time;
+  info.oom_size = base::g_oom_size;
+  info.pid = g_pid;
+  info.crash_keys = &self->crash_keys_;
+  HandleCrashDump(info);
+  return true;
 }
 
 // static
