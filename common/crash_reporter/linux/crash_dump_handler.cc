@@ -29,8 +29,6 @@ namespace crash_reporter {
 
 namespace {
 
-const char kUploadURL[] = "https://clients2.google.com/cr/report";
-
 // String buffer size to use to convert a uint64_t to string.
 const size_t kUint64StringSize = 21;
 
@@ -90,9 +88,6 @@ const char g_form_data_msg[] = "Content-Disposition: form-data; name=\"";
 const char g_quote_msg[] = "\"";
 const char g_dashdash_msg[] = "--";
 const char g_dump_msg[] = "upload_file_minidump\"; filename=\"dump\"";
-#if defined(ADDRESS_SANITIZER)
-const char g_log_msg[] = "upload_file_log\"; filename=\"log\"";
-#endif
 const char g_content_type_msg[] = "Content-Type: application/octet-stream";
 
 // MimeWriter manages an iovec for writing MIMEs to a file.
@@ -352,7 +347,7 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
     header,
     post_file,
     // TODO(zcbenz): Enabling custom upload url.
-    kUploadURL,
+    info.upload_url,
     "--timeout=10",  // Set a timeout so we don't hang forever.
     "--tries=1",     // Don't retry if the upload fails.
     "-O",  // output reply to fd 3
@@ -396,15 +391,6 @@ void HandleCrashDump(const BreakpadInfo& info) {
     keep_fd = false;
     LoadDataFromFile(allocator, info.filename, &dumpfd, &dump_data, &dump_size);
   }
-
-  // TODO(jcivelli): make log work when using FDs.
-#if defined(ADDRESS_SANITIZER)
-  int logfd;
-  size_t log_size;
-  uint8_t* log_data;
-  // Load the AddressSanitizer log into log_data.
-  LoadDataFromFile(allocator, info.log_filename, &logfd, &log_data, &log_size);
-#endif
 
   // We need to build a MIME block for uploading to the server. Since we are
   // going to fork and run wget, it needs to be written to a temp file.
@@ -512,14 +498,6 @@ void HandleCrashDump(const BreakpadInfo& info) {
 
   MimeWriter writer(temp_file_fd, mime_boundary);
   {
-    // TODO(zcbenz): Set version and product_name from JS API.
-    std::string product_name("Atom-Shell");
-    std::string version("0.1.0");
-
-    writer.AddBoundary();
-    writer.AddPairString("prod", product_name.c_str());
-    writer.AddBoundary();
-    writer.AddPairString("ver", version.c_str());
     writer.AddBoundary();
     if (info.pid > 0) {
       char pid_value_buf[kUint64StringSize];
@@ -581,11 +559,6 @@ void HandleCrashDump(const BreakpadInfo& info) {
   }
 
   writer.AddFileContents(g_dump_msg, dump_data, dump_size);
-#if defined(ADDRESS_SANITIZER)
-  // Append a multipart boundary and the contents of the AddressSanitizer log.
-  writer.AddBoundary();
-  writer.AddFileContents(g_log_msg, log_data, log_size);
-#endif
   writer.AddEnd();
   writer.Flush();
 
@@ -678,9 +651,6 @@ void HandleCrashDump(const BreakpadInfo& info) {
 
     // Helper process.
     IGNORE_RET(sys_unlink(info.filename));
-#if defined(ADDRESS_SANITIZER)
-    IGNORE_RET(sys_unlink(info.log_filename));
-#endif
     IGNORE_RET(sys_unlink(temp_file));
     sys__exit(0);
   }

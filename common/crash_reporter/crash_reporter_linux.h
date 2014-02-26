@@ -6,12 +6,14 @@
 #define ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_LINUX_H_
 
 #include "base/compiler_specific.h"
+#include "base/memory/scoped_ptr.h"
 #include "common/crash_reporter/crash_reporter.h"
 #include "common/crash_reporter/linux/crash_dump_handler.h"
 
 template <typename T> struct DefaultSingletonTraits;
 
 namespace google_breakpad {
+class ExceptionHandler;
 class MinidumpDescriptor;
 }
 
@@ -41,7 +43,12 @@ class CrashReporterLinux : public CrashReporter {
                         void* context,
                         const bool succeeded);
 
+  scoped_ptr<google_breakpad::ExceptionHandler> breakpad_;
   CrashKeyStorage crash_keys_;
+
+  uint64_t process_start_time_;
+  pid_t pid_;
+  std::string upload_url_;
 
   DISALLOW_COPY_AND_ASSIGN(CrashReporterLinux);
 };

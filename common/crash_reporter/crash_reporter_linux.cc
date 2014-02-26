@@ -32,55 +32,19 @@ static const size_t kDistroSize = 128;
 // no limit.
 static const off_t kMaxMinidumpFileSize = 1258291;
 
-uint64_t g_process_start_time = 0;
-pid_t g_pid = 0;
-ExceptionHandler* g_breakpad = NULL;
-
-// The following helper functions are for calculating uptime.
-
-// Converts a struct timeval to milliseconds.
-uint64_t timeval_to_ms(struct timeval *tv) {
-  uint64_t ret = tv->tv_sec;  // Avoid overflow by explicitly using a uint64_t.
-  ret *= 1000;
-  ret += tv->tv_usec / 1000;
-  return ret;
-}
-
-void SetProcessStartTime() {
-  // Set the base process start time value.
-  struct timeval tv;
-  if (!gettimeofday(&tv, NULL))
-    g_process_start_time = timeval_to_ms(&tv);
-  else
-    g_process_start_time = 0;
-}
-
-// Populates the passed in allocated string and its size with the distro of
-// the crashing process.
-// The passed string is expected to be at least kDistroSize bytes long.
-void PopulateDistro(char* distro, size_t* distro_len_param) {
-  size_t distro_len = std::min(my_strlen(base::g_linux_distro), kDistroSize);
-  memcpy(distro, base::g_linux_distro, distro_len);
-  if (distro_len_param)
-    *distro_len_param = distro_len;
-}
-
-#if defined(ADDRESS_SANITIZER)
-extern "C"
-void __asan_set_error_report_callback(void (*cb)(const char*));
-
-extern "C"
-void AsanLinuxBreakpadCallback(const char* report) {
-  // Send minidump here.
-  g_breakpad->SimulateSignalDelivery(SIGKILL);
-}
-#endif
-
 }  // namespace
 
-CrashReporterLinux::CrashReporterLinux() {
-  SetProcessStartTime();
-  g_pid = getpid();
+CrashReporterLinux::CrashReporterLinux()
+    : process_start_time_(0),
+      pid_(getpid()) {
+  // Set the base process start time value.
+  struct timeval tv;
+  if (!gettimeofday(&tv, NULL)) {
+    uint64_t ret = tv.tv_sec;
+    ret *= 1000;
+    ret += tv.tv_usec / 1000;
+    process_start_time_ = ret;
+  }
 
   // Make base::g_linux_distro work.
   base::SetLinuxDistro(base::GetLinuxDistro());
@@ -97,10 +61,9 @@ void CrashReporterLinux::InitBreakpad(const std::string& product_name,
                                       bool skip_system_crash_handler) {
   EnableCrashDumping();
 
-#if defined(ADDRESS_SANITIZER)
-  // Register the callback for AddressSanitizer error reporting.
-  __asan_set_error_report_callback(AsanLinuxBreakpadCallback);
-#endif
+  crash_keys_.SetKeyValue("prod", "Atom-Shell");
+  crash_keys_.SetKeyValue("ver", version.c_str());
+  upload_url_ = submit_url;
 
   for (StringMap::const_iterator iter = upload_parameters_.begin();
        iter != upload_parameters_.end(); ++iter)
@@ -116,17 +79,16 @@ void CrashReporterLinux::EnableCrashDumping() {
   PathService::Get(base::DIR_TEMP, &tmp_path);
 
   base::FilePath dumps_path(tmp_path);
-  DCHECK(!g_breakpad);
   MinidumpDescriptor minidump_descriptor(dumps_path.value());
   minidump_descriptor.set_size_limit(kMaxMinidumpFileSize);
 
-  g_breakpad = new ExceptionHandler(
+  breakpad_.reset(new ExceptionHandler(
       minidump_descriptor,
       NULL,
       CrashDone,
       this,
       true,  // Install handlers.
-      -1);   // Server file descriptor. -1 for in-process.
+      -1));
 }
 
 bool CrashReporterLinux::CrashDone(const MinidumpDescriptor& minidump,
@@ -147,22 +109,13 @@ bool CrashReporterLinux::CrashDone(const MinidumpDescriptor& minidump,
   BreakpadInfo info = {0};
   info.filename = minidump.path();
   info.fd = minidump.fd();
-#if defined(ADDRESS_SANITIZER)
-  google_breakpad::PageAllocator allocator;
-  const size_t log_path_len = my_strlen(minidump.path());
-  char* log_path = reinterpret_cast<char*>(allocator.Alloc(log_path_len + 1));
-  my_memcpy(log_path, minidump.path(), log_path_len);
-  my_memcpy(log_path + log_path_len - 4, ".log", 4);
-  log_path[log_path_len] = '\0';
-  info.log_filename = log_path;
-#endif
-  // TODO(zcbenz): Set the correct process_type here.
   info.distro = base::g_linux_distro;
   info.distro_length = my_strlen(base::g_linux_distro);
   info.upload = true;
-  info.process_start_time = g_process_start_time;
+  info.process_start_time = self->process_start_time_;
   info.oom_size = base::g_oom_size;
-  info.pid = g_pid;
+  info.pid = self->pid_;
+  info.upload_url = self->upload_url_.c_str();
   info.crash_keys = &self->crash_keys_;
   HandleCrashDump(info);
   return true;
