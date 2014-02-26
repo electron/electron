@@ -6,19 +6,19 @@ import subprocess
 import sys
 
 IGNORE_FILES = [
-  'browser/atom_application_mac.h',
-  'browser/atom_application_delegate_mac.h',
-  'browser/native_window_mac.h',
-  'browser/resources/win/resource.h',
-  'browser/ui/cocoa/event_processing_window.h',
-  'browser/ui/cocoa/atom_menu_controller.h',
-  'browser/ui/cocoa/nsalert_synchronous_sheet.h',
-  'browser/ui/gtk/gtk_custom_menu.cc',
-  'browser/ui/gtk/gtk_custom_menu_item.cc',
-  'common/api/api_messages.cc',
-  'common/api/api_messages.h',
-  'common/atom_version.h',
-  'common/swap_or_assign.h',
+  os.path.join('browser', 'atom_application_mac.h'),
+  os.path.join('browser', 'atom_application_delegate_mac.h'),
+  os.path.join('browser', 'native_window_mac.h'),
+  os.path.join('browser', 'resources', 'win', 'resource.h'),
+  os.path.join('browser', 'ui', 'cocoa', 'event_processing_window.h'),
+  os.path.join('browser', 'ui', 'cocoa', 'atom_menu_controller.h'),
+  os.path.join('browser', 'ui', 'cocoa', 'nsalert_synchronous_sheet.h'),
+  os.path.join('browser', 'ui', 'gtk', 'gtk_custom_menu.cc'),
+  os.path.join('browser', 'ui', 'gtk', 'gtk_custom_menu_item.cc'),
+  os.path.join('common', 'api', 'api_messages.cc'),
+  os.path.join('common', 'api', 'api_messages.h'),
+  os.path.join('common', 'atom_version.h'),
+  os.path.join('common', 'swap_or_assign.h'),
 ]
 
 SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))
