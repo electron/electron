@@ -368,11 +368,9 @@ void Protocol::Initialize(v8::Handle<v8::Object> target) {
   // Remember the protocol object, used for emitting event later.
   g_protocol_object.reset(target);
 
-#if defined(OS_LINUX)
   // Make sure the job factory has been created.
   AtomBrowserContext::Get()->url_request_context_getter()->
       GetURLRequestContext();
-#endif
 
   NODE_SET_METHOD(target, "registerProtocol", RegisterProtocol);
   NODE_SET_METHOD(target, "unregisterProtocol", UnregisterProtocol);
