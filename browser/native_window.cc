@@ -260,7 +260,8 @@ void NativeWindow::CloseWebContents() {
   // not closed in 500ms, in this way we can quickly show the unresponsive
   // dialog when the window is busy executing some script withouth waiting for
   // the unresponsive timeout.
-  if (window_unresposive_closure_.IsCancelled()) {
+  if (!Browser::Get()->is_quiting() &&
+      window_unresposive_closure_.IsCancelled()) {
     window_unresposive_closure_.Reset(
         base::Bind(&NativeWindow::RendererUnresponsive,
                    weak_factory_.GetWeakPtr(),
