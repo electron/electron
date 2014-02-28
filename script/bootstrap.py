@@ -18,13 +18,12 @@ def main():
   os.chdir(SOURCE_ROOT)
 
   args = parse_args()
-  if not args.skip_network:
-    update_submodules()
-    update_apm()
-    update_node_modules()
-    bootstrap_brightray(args.url)
-    if sys.platform == 'cygwin':
-      update_win32_python()
+  update_submodules()
+  update_apm()
+  update_node_modules()
+  bootstrap_brightray(args.url)
+  if sys.platform == 'cygwin':
+    update_win32_python()
 
   touch_config_gypi()
   update_atom_shell()
@@ -38,9 +37,6 @@ def parse_args():
                       'libchromiumcontent\'s script/upload script',
                       default=BASE_URL,
                       required=False)
-  parser.add_argument('-s', '--skip-network',
-                      help='Skip operations require networking',
-                      action='store_true')
   return parser.parse_args()
 
 
