@@ -65,7 +65,7 @@ def parse_args():
                       default=ATOM_SHELL_VRESION)
   parser.add_argument('-n', '--no-publish-release',
                       help='Do not publish the release',
-                      action='store_true')
+                      action='store_false')
   return parser.parse_args()
 
 
