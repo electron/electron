@@ -48,3 +48,7 @@ window.confirm = (message, title='') ->
   dialog = remote.require 'dialog'
   buttons = ['OK', 'Cancel']
   not dialog.showMessageBox remote.getCurrentWindow(), {message, title, buttons}
+
+# But we do not support prompt().
+window.prompt = ->
+  throw new Error('prompt() is and will not be supported in atom-shell.')
