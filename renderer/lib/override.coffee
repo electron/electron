@@ -34,3 +34,10 @@ window.open = (url, name, features) ->
   browser = new BrowserWindow options
   browser.loadUrl url
   browser
+
+# Use the dialog API to implement alert().
+window.alert = (message, title='') ->
+  remote = require 'remote'
+  dialog = remote.require 'dialog'
+  buttons = ['OK']
+  dialog.showMessageBox remote.getCurrentWindow(), {message, title, buttons}
