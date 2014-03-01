@@ -32,6 +32,7 @@
       'common/api/lib/shell.coffee',
       'common/lib/init.coffee',
       'renderer/lib/init.coffee',
+      'renderer/lib/override.coffee',
       'renderer/api/lib/ipc.coffee',
       'renderer/api/lib/remote.coffee',
     ],
