@@ -20,7 +20,7 @@ class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
       const string16& message_text,
       const string16& default_prompt_text,
       const DialogClosedCallback& callback,
-      bool* did_suppress_message) OVERRIDE {}
+      bool* did_suppress_message) OVERRIDE;
   virtual void RunBeforeUnloadDialog(
       content::WebContents* web_contents,
       const string16& message_text,
