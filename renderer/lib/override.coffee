@@ -41,3 +41,10 @@ window.alert = (message, title='') ->
   dialog = remote.require 'dialog'
   buttons = ['OK']
   dialog.showMessageBox remote.getCurrentWindow(), {message, title, buttons}
+
+# And the confirm().
+window.confirm = (message, title='') ->
+  remote = require 'remote'
+  dialog = remote.require 'dialog'
+  buttons = ['OK', 'Cancel']
+  not dialog.showMessageBox remote.getCurrentWindow(), {message, title, buttons}
