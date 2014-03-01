@@ -51,7 +51,7 @@ def main():
   release_id = create_or_get_release_draft(github, args.version)
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, DIST_NAME))
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, SYMBOLS_NAME))
-  if not args.no_publish_release:
+  if args.publish_release:
     publish_release(github, release_id)
 
   # Upload node's headers to S3.
@@ -63,9 +63,9 @@ def parse_args():
   parser = argparse.ArgumentParser(description='upload distribution file')
   parser.add_argument('-v', '--version', help='Specify the version',
                       default=ATOM_SHELL_VRESION)
-  parser.add_argument('-n', '--no-publish-release',
-                      help='Do not publish the release',
-                      action='store_false')
+  parser.add_argument('-p', '--publish-release',
+                      help='Publish the release',
+                      action='store_true')
   return parser.parse_args()
 
 
