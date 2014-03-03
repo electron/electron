@@ -544,6 +544,21 @@
                 '--jobs=16',
               ],
             },
+            {
+              'action_name': 'Strip Binary',
+              'inputs': [
+                '<(PRODUCT_DIR)/libchromiumcontent.so',
+                '<(PRODUCT_DIR)/libffmpegsumo.so',
+                '<(PRODUCT_DIR)/<(project_name)',
+              ],
+              'outputs': [
+                '<(PRODUCT_DIR)/dummy_file',
+              ],
+              'action': [
+                'strip',
+                '<@(_inputs)'
+              ],
+            },
           ],
         }],  # OS=="linux"
       ],
