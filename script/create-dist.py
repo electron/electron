@@ -84,7 +84,7 @@ def main():
   force_build()
   if TARGET_PLATFORM != 'linux':
     download_libchromiumcontent_symbols(args.url)
-    create_symbols()
+  create_symbols()
   copy_binaries()
   copy_headers()
   copy_license()
@@ -205,8 +205,6 @@ def create_symbols_zip():
   with scoped_cwd(DIST_DIR):
     files = ['LICENSE', 'version']
     dirs = ['Atom-Shell.breakpad.syms']
-    if TARGET_PLATFORM == 'linux':
-      dirs = []
     make_zip(zip_file, files, dirs)
 
 
