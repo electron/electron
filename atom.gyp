@@ -488,7 +488,7 @@
               ],
               'action': [
                 'python',
-                'tools/mac/generate_breakpad_symbols.py',
+                'tools/posix/generate_breakpad_symbols.py',
                 '--build-dir=<(PRODUCT_DIR)',
                 '--binary=<(PRODUCT_DIR)/<(product_name).app/Contents/MacOS/<(product_name)',
                 '--symbols-dir=<(PRODUCT_DIR)/Atom-Shell.breakpad.syms',
@@ -520,6 +520,49 @@
             },
           ],
         }],  # OS=="win"
+        ['OS=="linux"', {
+          'dependencies': [
+            'vendor/breakpad/breakpad.gyp:dump_syms',
+          ],
+          'actions': [
+            {
+              'action_name': 'Dump Symbols',
+              'inputs': [
+                '<(PRODUCT_DIR)/<(project_name)',
+              ],
+              'outputs': [
+                '<(PRODUCT_DIR)/Atom-Shell.breakpad.syms',
+              ],
+              'action': [
+                'python',
+                'tools/posix/generate_breakpad_symbols.py',
+                '--build-dir=<(PRODUCT_DIR)',
+                '--binary=<(PRODUCT_DIR)/<(project_name)',
+                '--symbols-dir=<(PRODUCT_DIR)/Atom-Shell.breakpad.syms',
+                '--libchromiumcontent-dir=<(libchromiumcontent_library_dir)',
+                '--clear',
+                '--jobs=16',
+              ],
+            },
+            {
+              'action_name': 'Strip Binary',
+              'inputs': [
+                '<(PRODUCT_DIR)/libchromiumcontent.so',
+                '<(PRODUCT_DIR)/libffmpegsumo.so',
+                '<(PRODUCT_DIR)/<(project_name)',
+                # Add the syms folder as input would force this action to run
+                # after the 'Dump Symbols' action. And since it is a folder,
+                # it would be ignored by the 'strip' command.
+                '<(PRODUCT_DIR)/Atom-Shell.breakpad.syms',
+              ],
+              'outputs': [
+                # Gyp action requires a output file, add a fake one here.
+                '<(PRODUCT_DIR)/dummy_file',
+              ],
+              'action': [ 'strip', '<@(_inputs)' ],
+            },
+          ],
+        }],  # OS=="linux"
       ],
     },  # target <(project_name>_dump_symbols
   ],
