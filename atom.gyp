@@ -550,14 +550,16 @@
                 '<(PRODUCT_DIR)/libchromiumcontent.so',
                 '<(PRODUCT_DIR)/libffmpegsumo.so',
                 '<(PRODUCT_DIR)/<(project_name)',
+                # Add the syms folder as input would force this action to run
+                # after the 'Dump Symbols' action. And since it is a folder,
+                # it would be ignored by the 'strip' command.
+                '<(PRODUCT_DIR)/Atom-Shell.breakpad.syms',
               ],
               'outputs': [
+                # Gyp action requires a output file, add a fake one here.
                 '<(PRODUCT_DIR)/dummy_file',
               ],
-              'action': [
-                'strip',
-                '<@(_inputs)'
-              ],
+              'action': [ 'strip', '<@(_inputs)' ],
             },
           ],
         }],  # OS=="linux"
