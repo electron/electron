@@ -9,7 +9,7 @@ import tarfile
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, NODE_VERSION
 from lib.util import scoped_cwd, rm_rf, get_atom_shell_version, make_zip, \
-                     safe_mkdir, execute
+                     safe_mkdir, safe_unlink, execute
 
 
 ATOM_SHELL_VRESION = get_atom_shell_version()
@@ -81,6 +81,8 @@ def main():
 
   args = parse_args()
 
+  if TARGET_PLATFORM == 'linux':
+    clean_build()
   force_build()
   if TARGET_PLATFORM != 'linux':
     download_libchromiumcontent_symbols(args.url)
@@ -103,6 +105,16 @@ def parse_args():
                       default=BASE_URL,
                       required=False)
   return parser.parse_args()
+
+
+def clean_build():
+  # On Linux stripping binary would cause them to be rebuilt next time, which
+  # would make create-dist create symbols from stripped binary if it has been
+  # ran for twice.
+  # So in order to make sure we built correct symbols everytime, we have to
+  # force a rebuild of the binaries.
+  for binary in TARGET_BINARIES[TARGET_PLATFORM]:
+    safe_unlink(os.path.join(OUT_DIR, binary))
 
 
 def force_build():
