@@ -20,11 +20,14 @@ def main():
           glob.glob('common/api/lib/*.coffee') + \
           glob.glob('browser/atom/*.coffee')
 
-  if sys.platform in ['win32', 'cygwin']:
-    subprocess.check_call(['node', coffeelint] + settings + files,
-                          executable='C:/Program Files/nodejs/node.exe')
-  else:
+  try:
     subprocess.check_call(['node', coffeelint] + settings + files)
+  except OSError as e:
+    if e.errno == errno.ENOENT and sys.platform in ['win32', 'cygwin']:
+      subprocess.check_call(['node', coffeelint] + settings + files,
+                            executable='C:/Program Files/nodejs/node.exe')
+    else:
+      raise
 
 
 if __name__ == '__main__':
