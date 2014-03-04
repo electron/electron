@@ -14,17 +14,13 @@
 #include "browser/native_window_observer.h"
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
-#include "content/public/browser/web_contents_observer.h"
 #include "ui/gfx/image/image.h"
 #include "vendor/brightray/browser/default_web_contents_delegate.h"
+#include "vendor/brightray/browser/inspectable_web_contents_impl.h"
 
 namespace base {
 class DictionaryValue;
 class ListValue;
-}
-
-namespace brightray {
-class InspectableWebContents;
 }
 
 namespace content {
@@ -174,8 +170,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   explicit NativeWindow(content::WebContents* web_contents,
                         base::DictionaryValue* options);
 
-  brightray::InspectableWebContents* inspectable_web_contents() const {
-    return inspectable_web_contents_.get();
+  brightray::InspectableWebContentsImpl* inspectable_web_contents() const {
+    return static_cast<brightray::InspectableWebContentsImpl*>(
+        inspectable_web_contents_.get());
   }
 
   void NotifyWindowClosed();
@@ -231,6 +228,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   void OnCapturePageDone(const CapturePageCallback& callback,
                          bool succeed,
                          const SkBitmap& bitmap);
+
+  // Handler for the requestSetDockSide message from devtools.
+  bool OnRequestSetDockSide(const base::ListValue&);
 
   void OnRendererMessage(const string16& channel,
                          const base::ListValue& args);

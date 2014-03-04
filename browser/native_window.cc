@@ -7,6 +7,7 @@
 #include <string>
 
 #include "base/file_util.h"
+#include "base/prefs/pref_service.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
@@ -38,12 +39,17 @@
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
-#include "vendor/brightray/browser/inspectable_web_contents_impl.h"
 #include "webkit/common/user_agent/user_agent_util.h"
 
 using content::NavigationEntry;
 
 namespace atom {
+
+namespace {
+
+const char kDockSidePref[] = "brightray.devtools.dockside";
+
+}  // namespace
 
 NativeWindow::NativeWindow(content::WebContents* web_contents,
                            base::DictionaryValue* options)
@@ -166,7 +172,19 @@ bool NativeWindow::HasModalDialog() {
 }
 
 void NativeWindow::OpenDevTools() {
+  // Check if the devtools is docked.
+  AtomBrowserContext* browser_context = AtomBrowserContext::Get();
+  std::string dock_side = browser_context->prefs()->GetString(kDockSidePref);
+  if (dock_side == "undocked")
+    browser_context->prefs()->SetString(kDockSidePref, "bottom");
+
   inspectable_web_contents()->ShowDevTools();
+
+  // Intercept the requestSetDockSide message of devtools.
+  inspectable_web_contents()->embedder_message_dispatcher()->
+      RegisterHandler("requestSetDockSide",
+                      base::Bind(&NativeWindow::OnRequestSetDockSide,
+                                 base::Unretained(this)));
 }
 
 void NativeWindow::CloseDevTools() {
@@ -283,10 +301,7 @@ content::WebContents* NativeWindow::GetWebContents() const {
 }
 
 content::WebContents* NativeWindow::GetDevToolsWebContents() const {
-  brightray::InspectableWebContentsImpl* inspectable_web_contents_impl =
-      static_cast<brightray::InspectableWebContentsImpl*>(
-          inspectable_web_contents());
-  return inspectable_web_contents_impl->devtools_web_contents();
+  return inspectable_web_contents()->devtools_web_contents();
 }
 
 void NativeWindow::NotifyWindowClosed() {
@@ -474,6 +489,22 @@ void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
   if (succeed)
     gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, true, &data);
   callback.Run(data);
+}
+
+bool NativeWindow::OnRequestSetDockSide(const base::ListValue& args) {
+  brightray::DevToolsEmbedderMessageDispatcher::Delegate* delegate =
+      static_cast<brightray::DevToolsEmbedderMessageDispatcher::Delegate*>(
+          inspectable_web_contents());
+
+  // Do not allow the "undocked" state.
+  std::string dock_side;
+  if (args.GetString(0, &dock_side) && dock_side == "undocked") {
+    delegate->CloseWindow();
+    return true;
+  }
+
+  delegate->SetDockSide(dock_side);
+  return true;
 }
 
 void NativeWindow::OnRendererMessage(const string16& channel,
