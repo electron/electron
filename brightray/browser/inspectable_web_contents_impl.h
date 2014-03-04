@@ -23,6 +23,7 @@ class DevToolsClientHost;
 
 namespace brightray {
 
+class InspectableWebContentsDelegate;
 class InspectableWebContentsView;
 
 class InspectableWebContentsImpl :
@@ -42,6 +43,10 @@ class InspectableWebContentsImpl :
 
   virtual void ShowDevTools() OVERRIDE;
   virtual bool IsDevToolsViewShowing() OVERRIDE;
+
+  virtual void SetDelegate(InspectableWebContentsDelegate* delegate) {
+    delegate_ = delegate;
+  }
 
   content::WebContents* devtools_web_contents() {
     return devtools_web_contents_.get();
@@ -100,6 +105,8 @@ class InspectableWebContentsImpl :
   std::string dock_side_;
 
   scoped_ptr<DevToolsEmbedderMessageDispatcher> embedder_message_dispatcher_;
+
+  InspectableWebContentsDelegate* delegate_;
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsImpl);
 };

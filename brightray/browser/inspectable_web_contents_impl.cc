@@ -8,6 +8,7 @@
 #include "browser/browser_client.h"
 #include "browser/browser_context.h"
 #include "browser/browser_main_parts.h"
+#include "browser/inspectable_web_contents_delegate.h"
 #include "browser/inspectable_web_contents_view.h"
 
 #include "base/prefs/pref_registry_simple.h"
@@ -40,7 +41,8 @@ void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
 
 InspectableWebContentsImpl::InspectableWebContentsImpl(
     content::WebContents* web_contents)
-    : web_contents_(web_contents) {
+    : web_contents_(web_contents),
+      delegate_(nullptr) {
   auto context = static_cast<BrowserContext*>(
       web_contents_->GetBrowserContext());
   dock_side_ = context->prefs()->GetString(kDockSidePref);
@@ -92,6 +94,9 @@ void InspectableWebContentsImpl::ShowDevTools() {
         std::string());
   }
 
+  if (delegate_ && delegate_->DevToolsShow(dock_side_))
+    return;
+
   view_->SetDockSide(dock_side_);
   view_->ShowDevTools();
 }
@@ -120,8 +125,13 @@ void InspectableWebContentsImpl::MoveWindow(int x, int y) {
 }
 
 void InspectableWebContentsImpl::SetDockSide(const std::string& side) {
-  if (!view_->SetDockSide(side))
+  bool succeed = true;
+  if (delegate_ && delegate_->DevToolsSetDockSide(side, &succeed)) {
+    if (!succeed)  // delegate failed to set dock side.
+      return;
+  } else if (!view_->SetDockSide(side)) {
     return;
+  }
 
   dock_side_ = side;
 

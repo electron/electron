@@ -43,6 +43,7 @@
         'browser/download_manager_delegate.h',
         'browser/inspectable_web_contents.cc',
         'browser/inspectable_web_contents.h',
+        'browser/inspectable_web_contents_delegate.h',
         'browser/inspectable_web_contents_impl.cc',
         'browser/inspectable_web_contents_impl.h',
         'browser/inspectable_web_contents_view.h',

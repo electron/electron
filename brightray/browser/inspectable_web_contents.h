@@ -5,6 +5,7 @@
 
 namespace brightray {
 
+class InspectableWebContentsDelegate;
 class InspectableWebContentsView;
 
 class InspectableWebContents {
@@ -23,6 +24,9 @@ class InspectableWebContents {
 
   virtual void ShowDevTools() = 0;
   virtual bool IsDevToolsViewShowing() = 0;
+
+  // The delegate manages its own life.
+  virtual void SetDelegate(InspectableWebContentsDelegate* delegate) = 0;
 };
 
 }  // namespace brightray
