@@ -11,13 +11,16 @@
 #include "content/public/browser/devtools_http_handler.h"
 #include "content/public/browser/devtools_manager.h"
 #include "content/public/browser/web_contents.h"
+#include "ui/gfx/point.h"
 
 namespace atom {
 
 DevToolsDelegate::DevToolsDelegate(NativeWindow* window,
                                    content::WebContents* target_web_contents)
     : content::WebContentsObserver(window->GetWebContents()),
-      owner_window_(window) {
+      owner_window_(window),
+      embedder_message_dispatcher_(
+          new DevToolsEmbedderMessageDispatcher(this)) {
   content::WebContents* web_contents = window->GetWebContents();
 
   // Setup devtools.
@@ -34,7 +37,7 @@ DevToolsDelegate::DevToolsDelegate(NativeWindow* window,
   options.SetString("title", "DevTools Debugger");
   window->InitFromOptions(&options);
   web_contents->GetController().LoadURL(
-      GURL("chrome-devtools://devtools/devtools.html"),
+      GURL("chrome-devtools://devtools/devtools.html?dockSide=undocked"),
       content::Referrer(),
       content::PAGE_TRANSITION_AUTO_TOPLEVEL,
       std::string());
@@ -44,6 +47,7 @@ DevToolsDelegate::~DevToolsDelegate() {
 }
 
 void DevToolsDelegate::DispatchOnEmbedder(const std::string& message) {
+  embedder_message_dispatcher_->Dispatch(message);
 }
 
 void DevToolsDelegate::InspectedContentsClosing() {
@@ -58,6 +62,55 @@ void DevToolsDelegate::AboutToNavigateRenderView(
 
 void DevToolsDelegate::OnWindowClosed() {
   delete owner_window_;
+}
+
+void DevToolsDelegate::ActivateWindow() {
+}
+
+void DevToolsDelegate::CloseWindow() {
+  owner_window_->Close();
+}
+
+void DevToolsDelegate::MoveWindow(int x, int y) {
+  owner_window_->SetPosition(gfx::Point(x, y));
+}
+
+void DevToolsDelegate::SetDockSide(const std::string& dock_side) {
+  if (dock_side != "undocked")
+    owner_window_->Close();
+}
+
+void DevToolsDelegate::OpenInNewTab(const std::string& url) {
+}
+
+void DevToolsDelegate::SaveToFile(
+    const std::string& url, const std::string& content, bool save_as) {
+}
+
+void DevToolsDelegate::AppendToFile(
+    const std::string& url, const std::string& content) {
+}
+
+void DevToolsDelegate::RequestFileSystems() {
+}
+
+void DevToolsDelegate::AddFileSystem() {
+}
+
+void DevToolsDelegate::RemoveFileSystem(const std::string& file_system_path) {
+}
+
+void DevToolsDelegate::IndexPath(
+    int request_id, const std::string& file_system_path) {
+}
+
+void DevToolsDelegate::StopIndexing(int request_id) {
+}
+
+void DevToolsDelegate::SearchInPath(
+    int request_id,
+    const std::string& file_system_path,
+    const std::string& query) {
 }
 
 }  // namespace atom
