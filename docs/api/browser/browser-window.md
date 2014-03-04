@@ -66,6 +66,14 @@ An example of enable node integration in iframe with `node-integration` set to
 <iframe src="http://jandan.net"></iframe>
 ```
 
+And you should also notice that the iframes can have access to parent window's
+javascript objects via `window.parent`, so in order to grant complete security
+from iframes, you should add `sandbox` attribute to the iframes:
+
+```html
+<iframe sandbox="allow-scripts" src="http://bbs.seu.edu.cn"></iframe>
+```
+
 ### Event: 'page-title-updated'
 
 * `event` Event
