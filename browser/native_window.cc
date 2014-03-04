@@ -188,11 +188,15 @@ void NativeWindow::OpenDevTools() {
 }
 
 void NativeWindow::CloseDevTools() {
-  inspectable_web_contents()->GetView()->CloseDevTools();
+  if (devtools_window_)
+    devtools_window_->Close();
+  else
+    inspectable_web_contents()->GetView()->CloseDevTools();
 }
 
 bool NativeWindow::IsDevToolsOpened() {
-  return inspectable_web_contents()->IsDevToolsViewShowing();
+  return (devtools_window_ && devtools_window_->IsFocused()) ||
+         inspectable_web_contents()->IsDevToolsViewShowing();
 }
 
 void NativeWindow::InspectElement(int x, int y) {
