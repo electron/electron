@@ -4,6 +4,7 @@
 
 #include "browser/devtools_delegate.h"
 
+#include "base/message_loop/message_loop.h"
 #include "base/values.h"
 #include "browser/native_window.h"
 #include "content/public/browser/devtools_agent_host.h"
@@ -36,6 +37,7 @@ DevToolsDelegate::DevToolsDelegate(NativeWindow* window,
   base::DictionaryValue options;
   options.SetString("title", "DevTools Debugger");
   window->InitFromOptions(&options);
+  window->AddObserver(this);
   web_contents->GetController().LoadURL(
       GURL("chrome-devtools://devtools/devtools.html?dockSide=undocked"),
       content::Referrer(),
@@ -51,7 +53,7 @@ void DevToolsDelegate::DispatchOnEmbedder(const std::string& message) {
 }
 
 void DevToolsDelegate::InspectedContentsClosing() {
-  delete owner_window_;
+  owner_window_->Close();
 }
 
 void DevToolsDelegate::AboutToNavigateRenderView(
@@ -61,7 +63,7 @@ void DevToolsDelegate::AboutToNavigateRenderView(
 }
 
 void DevToolsDelegate::OnWindowClosed() {
-  delete owner_window_;
+  base::MessageLoop::current()->DeleteSoon(FROM_HERE, owner_window_);
 }
 
 void DevToolsDelegate::ActivateWindow() {
@@ -76,8 +78,7 @@ void DevToolsDelegate::MoveWindow(int x, int y) {
 }
 
 void DevToolsDelegate::SetDockSide(const std::string& dock_side) {
-  if (dock_side != "undocked")
-    owner_window_->Close();
+  owner_window_->Close();
 }
 
 void DevToolsDelegate::OpenInNewTab(const std::string& url) {
