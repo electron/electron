@@ -21,10 +21,11 @@ namespace atom {
 namespace {
 
 // Security tokens.
-const char* kExceptIframe = "except-iframe";
-const char* kManualEnableIframe = "manual-enable-iframe";
-const char* kDisable = "disable";
-const char* kEnableNodeIntegration = "enable-node-integration";
+const char* kSecurityAll = "all";
+const char* kSecurityExceptIframe = "except-iframe";
+const char* kSecurityManualEnableIframe = "manual-enable-iframe";
+const char* kSecurityDisable = "disable";
+const char* kSecurityEnableNodeIntegration = "enable-node-integration";
 
 // Scheme used by devtools
 const char* kChromeDevToolsScheme = "chrome-devtools";
@@ -32,17 +33,19 @@ const char* kChromeDevToolsScheme = "chrome-devtools";
 }  // namespace
 
 AtomRendererClient::AtomRendererClient()
-    : node_integration_(ALL),
+    : node_integration_(EXCEPT_IFRAME),
       main_frame_(NULL) {
   // Translate the token.
   std::string token = CommandLine::ForCurrentProcess()->
       GetSwitchValueASCII(switches::kNodeIntegration);
-  if (token == kExceptIframe)
+  if (token == kSecurityExceptIframe)
     node_integration_ = EXCEPT_IFRAME;
-  else if (token == kManualEnableIframe)
+  else if (token == kSecurityManualEnableIframe)
     node_integration_ = MANUAL_ENABLE_IFRAME;
-  else if (token == kDisable)
+  else if (token == kSecurityDisable)
     node_integration_ = DISABLE;
+  else if (token == kSecurityAll)
+    node_integration_ = ALL;
 
   if (IsNodeBindingEnabled()) {
     node_bindings_.reset(NodeBindings::Create(false));
@@ -164,7 +167,7 @@ bool AtomRendererClient::IsNodeBindingEnabled(WebKit::WebFrame* frame) {
     return true;
   else if (node_integration_ == MANUAL_ENABLE_IFRAME &&
            frame != NULL &&
-           frame->uniqueName().utf8().find(kEnableNodeIntegration)
+           frame->uniqueName().utf8().find(kSecurityEnableNodeIntegration)
                == std::string::npos)
     return false;
   else if (node_integration_ == EXCEPT_IFRAME && frame != NULL)
