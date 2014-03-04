@@ -20,6 +20,7 @@ DevToolsDelegate::DevToolsDelegate(NativeWindow* window,
                                    content::WebContents* target_web_contents)
     : content::WebContentsObserver(window->GetWebContents()),
       owner_window_(window),
+      delegate_(NULL),
       embedder_message_dispatcher_(
           new DevToolsEmbedderMessageDispatcher(this)) {
   content::WebContents* web_contents = window->GetWebContents();
@@ -78,7 +79,11 @@ void DevToolsDelegate::MoveWindow(int x, int y) {
 }
 
 void DevToolsDelegate::SetDockSide(const std::string& dock_side) {
-  owner_window_->Close();
+  bool succeed = true;
+  if (delegate_ &&
+      delegate_->DevToolsSetDockSide("attach-back", &succeed) &&
+      succeed)
+    owner_window_->Close();
 }
 
 void DevToolsDelegate::OpenInNewTab(const std::string& url) {

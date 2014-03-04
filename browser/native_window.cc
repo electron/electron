@@ -478,26 +478,18 @@ void NativeWindow::Observe(int type,
 
 bool NativeWindow::DevToolsSetDockSide(const std::string& dock_side,
                                        bool* succeed) {
-  if (dock_side != "undocked") {
-    //  Switch to docked mode.
-    if (devtools_window_) {
-      devtools_window_->Close();
-      devtools_window_.reset();
-    }
+  if (dock_side == "undocked") {
+    *succeed = false;
+    return true;
+  } else {
     return false;
   }
-
-  CloseDevTools();
-  devtools_window_ = Debug(GetWebContents())->GetWeakPtr();
-  return true;
 }
 
-bool NativeWindow::DevToolsShow(const std::string& dock_side) {
-  if (dock_side != "undocked")
-    return false;
-
-  devtools_window_ = Debug(GetWebContents())->GetWeakPtr();
-  return true;
+bool NativeWindow::DevToolsShow(std::string* dock_side) {
+  if (*dock_side == "undocked")
+    *dock_side = "bottom";
+  return false;
 }
 
 void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,

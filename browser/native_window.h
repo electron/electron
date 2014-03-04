@@ -229,7 +229,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Implementations of brightray::InspectableWebContentsDelegate.
   virtual bool DevToolsSetDockSide(const std::string& dock_side,
                                    bool* succeed) OVERRIDE;
-  virtual bool DevToolsShow(const std::string& side) OVERRIDE;
+  virtual bool DevToolsShow(std::string* dock_side) OVERRIDE;
 
   // Whether window has standard frame.
   bool has_frame_;

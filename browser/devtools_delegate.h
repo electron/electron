@@ -10,6 +10,7 @@
 #include "content/public/browser/devtools_frontend_host_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "vendor/brightray/browser/devtools_embedder_message_dispatcher.h"
+#include "vendor/brightray/browser/inspectable_web_contents_delegate.h"
 
 namespace content {
 class DevToolsAgentHost;
@@ -30,6 +31,10 @@ class DevToolsDelegate : public content::DevToolsFrontendHostDelegate,
   DevToolsDelegate(NativeWindow* window,
                    content::WebContents* target_web_contents);
   virtual ~DevToolsDelegate();
+
+  void SetDelegate(brightray::InspectableWebContentsDelegate* delegate) {
+    delegate_ = delegate;
+  }
 
  protected:
   // Implementations of content::DevToolsFrontendHostDelegate.
@@ -66,6 +71,7 @@ class DevToolsDelegate : public content::DevToolsFrontendHostDelegate,
 
  private:
   NativeWindow* owner_window_;
+  brightray::InspectableWebContentsDelegate* delegate_;
 
   scoped_refptr<content::DevToolsAgentHost> devtools_agent_host_;
   scoped_ptr<content::DevToolsClientHost> devtools_client_host_;
