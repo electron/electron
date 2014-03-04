@@ -72,12 +72,18 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   virtual ~NativeWindow();
 
-  // Create window with existing WebContents.
+  // Create window with existing WebContents, the caller is responsible for
+  // managing the window's live.
   static NativeWindow* Create(content::WebContents* web_contents,
                               base::DictionaryValue* options);
 
-  // Create window with new WebContents.
+  // Create window with new WebContents, the caller is responsible for
+  // managing the window's live.
   static NativeWindow* Create(base::DictionaryValue* options);
+
+  // Creates a devtools window to debug the WebContents, the returned window
+  // will manage its own life.
+  static NativeWindow* Debug(content::WebContents* web_contents);
 
   // Find a window from its process id and routing id.
   static NativeWindow* FromRenderView(int process_id, int routing_id);
@@ -124,9 +130,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void CloseDevTools();
   virtual bool IsDevToolsOpened();
   virtual void InspectElement(int x, int y);
-
-  // Creates a new window to debug the devtools.
-  virtual void DebugDevTools();
 
   virtual void FocusOnWebView();
   virtual void BlurWebView();

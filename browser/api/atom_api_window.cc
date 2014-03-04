@@ -417,7 +417,8 @@ void Window::InspectElement(const v8::FunctionCallbackInfo<v8::Value>& args) {
 // static
 void Window::DebugDevTools(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
-  self->window_->DebugDevTools();
+  if (self->window_->IsDevToolsOpened())
+    NativeWindow::Debug(self->window_->GetDevToolsWebContents());
 }
 
 // static

@@ -102,6 +102,14 @@ NativeWindow* NativeWindow::Create(base::DictionaryValue* options) {
 }
 
 // static
+NativeWindow* NativeWindow::Debug(content::WebContents* web_contents) {
+  base::DictionaryValue options;
+  NativeWindow* window = NativeWindow::Create(&options);
+  window->devtools_delegate_.reset(new DevToolsDelegate(window, web_contents));
+  return window;
+}
+
+// static
 NativeWindow* NativeWindow::FromRenderView(int process_id, int routing_id) {
   // Stupid iterating.
   WindowList& window_list = *WindowList::GetInstance();
@@ -201,16 +209,6 @@ void NativeWindow::InspectElement(int x, int y) {
   scoped_refptr<content::DevToolsAgentHost> agent(
       content::DevToolsAgentHost::GetOrCreateFor(rvh));
   agent->InspectElement(x, y);
-}
-
-void NativeWindow::DebugDevTools() {
-  if (!IsDevToolsOpened())
-    return;
-
-  base::DictionaryValue options;
-  NativeWindow* window = NativeWindow::Create(&options);
-  window->devtools_delegate_.reset(new DevToolsDelegate(
-      window, GetDevToolsWebContents()));
 }
 
 void NativeWindow::FocusOnWebView() {
