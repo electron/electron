@@ -48,9 +48,9 @@ Creates a new `BrowserWindow` with native properties set by the `options`.
 Usually you only need to set the `width` and `height`, other properties will
 have decent default values.
 
-By default the `node-integration` option is `all`, which means node integration
-is available to the main page and all its iframes. You can also set it to
-`except-iframe`, which would disable node integration in all iframes, or
+By default the `node-integration` option is `except-iframe`, which means node
+integration is disabled in all iframes, . You can also set it to `all`, with
+which node integration is available to the main page and all its iframes, or
 `manual-enable-iframe`, which is like `except-iframe`, but would enable iframes
 whose name is suffixed by `-enable-node-integration`. And setting to `disable`
 would disable the node integration in both the main page and its iframes.
