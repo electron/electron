@@ -16,6 +16,7 @@
 #include "content/public/browser/notification_observer.h"
 #include "ui/gfx/image/image.h"
 #include "vendor/brightray/browser/default_web_contents_delegate.h"
+#include "vendor/brightray/browser/inspectable_web_contents_delegate.h"
 #include "vendor/brightray/browser/inspectable_web_contents_impl.h"
 
 namespace base {
@@ -45,6 +46,7 @@ class DevToolsDelegate;
 struct DraggableRegion;
 
 class NativeWindow : public brightray::DefaultWebContentsDelegate,
+                     public brightray::InspectableWebContentsDelegate,
                      public content::WebContentsObserver,
                      public content::NotificationObserver {
  public:
@@ -220,6 +222,11 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
                        const content::NotificationSource& source,
                        const content::NotificationDetails& details) OVERRIDE;
 
+  // Implementations of brightray::InspectableWebContentsDelegate.
+  virtual bool DevToolsSetDockSide(const std::string& dock_side,
+                                   bool* succeed) OVERRIDE;
+  virtual bool DevToolsShow(const std::string& side) OVERRIDE;
+
   // Whether window has standard frame.
   bool has_frame_;
 
@@ -231,9 +238,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   void OnCapturePageDone(const CapturePageCallback& callback,
                          bool succeed,
                          const SkBitmap& bitmap);
-
-  // Handler for the requestSetDockSide message from devtools.
-  bool OnRequestSetDockSide(const base::ListValue&);
 
   void OnRendererMessage(const string16& channel,
                          const base::ListValue& args);

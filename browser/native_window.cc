@@ -72,6 +72,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
   options->GetString(switches::kNodeIntegration, &node_integration_);
 
   web_contents->SetDelegate(this);
+  inspectable_web_contents()->SetDelegate(this);
 
   WindowList::AddWindow(this);
 
@@ -180,22 +181,8 @@ bool NativeWindow::HasModalDialog() {
 }
 
 void NativeWindow::OpenDevTools() {
-  // Check if the devtools is undocked.
-  AtomBrowserContext* browser_context = AtomBrowserContext::Get();
-  std::string dock_side = browser_context->prefs()->GetString(kDockSidePref);
-  if (dock_side == "undocked") {
-    Debug(GetWebContents());
-    return;
-  }
-
   // For docked devtools we give it to brightray.
   inspectable_web_contents()->ShowDevTools();
-
-  // Intercept the requestSetDockSide message of devtools.
-  inspectable_web_contents()->embedder_message_dispatcher()->
-      RegisterHandler("requestSetDockSide",
-                      base::Bind(&NativeWindow::OnRequestSetDockSide,
-                                 base::Unretained(this)));
 }
 
 void NativeWindow::CloseDevTools() {
@@ -483,6 +470,24 @@ void NativeWindow::Observe(int type,
   }
 }
 
+bool NativeWindow::DevToolsSetDockSide(const std::string& dock_side,
+                                       bool* succeed) {
+  if (dock_side != "undocked")
+    return false;
+
+  CloseDevTools();
+  Debug(GetWebContents());
+  return true;
+}
+
+bool NativeWindow::DevToolsShow(const std::string& dock_side) {
+  if (dock_side != "undocked")
+    return false;
+
+  Debug(GetWebContents());
+  return true;
+}
+
 void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
                                      bool succeed,
                                      const SkBitmap& bitmap) {
@@ -490,22 +495,6 @@ void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
   if (succeed)
     gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, true, &data);
   callback.Run(data);
-}
-
-bool NativeWindow::OnRequestSetDockSide(const base::ListValue& args) {
-  brightray::DevToolsEmbedderMessageDispatcher::Delegate* delegate =
-      static_cast<brightray::DevToolsEmbedderMessageDispatcher::Delegate*>(
-          inspectable_web_contents());
-
-  // Takeover when devtools is undocked.
-  std::string dock_side;
-  if (args.GetString(0, &dock_side) && dock_side == "undocked") {
-    delegate->CloseWindow();
-    Debug(GetWebContents());
-  } else {
-    delegate->SetDockSide(dock_side);
-  }
-  return true;
 }
 
 void NativeWindow::OnRendererMessage(const string16& channel,
