@@ -180,12 +180,15 @@ bool NativeWindow::HasModalDialog() {
 }
 
 void NativeWindow::OpenDevTools() {
-  // Check if the devtools is docked.
+  // Check if the devtools is undocked.
   AtomBrowserContext* browser_context = AtomBrowserContext::Get();
   std::string dock_side = browser_context->prefs()->GetString(kDockSidePref);
-  if (dock_side == "undocked")
-    browser_context->prefs()->SetString(kDockSidePref, "bottom");
+  if (dock_side == "undocked") {
+    Debug(GetWebContents());
+    return;
+  }
 
+  // For docked devtools we give it to brightray.
   inspectable_web_contents()->ShowDevTools();
 
   // Intercept the requestSetDockSide message of devtools.
@@ -494,14 +497,14 @@ bool NativeWindow::OnRequestSetDockSide(const base::ListValue& args) {
       static_cast<brightray::DevToolsEmbedderMessageDispatcher::Delegate*>(
           inspectable_web_contents());
 
-  // Do not allow the "undocked" state.
+  // Takeover when devtools is undocked.
   std::string dock_side;
   if (args.GetString(0, &dock_side) && dock_side == "undocked") {
     delegate->CloseWindow();
-    return true;
+    Debug(GetWebContents());
+  } else {
+    delegate->SetDockSide(dock_side);
   }
-
-  delegate->SetDockSide(dock_side);
   return true;
 }
 
