@@ -153,6 +153,10 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Should be called by platform code when user want to close the window.
   virtual void CloseWebContents();
 
+  base::WeakPtr<NativeWindow> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
+
   content::WebContents* GetWebContents() const;
   content::WebContents* GetDevToolsWebContents() const;
 
@@ -266,6 +270,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   base::CancelableClosure window_unresposive_closure_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_;
+
+  base::WeakPtr<NativeWindow> devtools_window_;
 
   scoped_ptr<DevToolsDelegate> devtools_delegate_;
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;

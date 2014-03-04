@@ -181,8 +181,10 @@ bool NativeWindow::HasModalDialog() {
 }
 
 void NativeWindow::OpenDevTools() {
-  // For docked devtools we give it to brightray.
-  inspectable_web_contents()->ShowDevTools();
+  if (devtools_window_)
+    devtools_window_->Focus(true);
+  else
+    inspectable_web_contents()->ShowDevTools();
 }
 
 void NativeWindow::CloseDevTools() {
@@ -472,11 +474,17 @@ void NativeWindow::Observe(int type,
 
 bool NativeWindow::DevToolsSetDockSide(const std::string& dock_side,
                                        bool* succeed) {
-  if (dock_side != "undocked")
+  if (dock_side != "undocked") {
+    //  Switch to docked mode.
+    if (devtools_window_) {
+      devtools_window_->Close();
+      devtools_window_.reset();
+    }
     return false;
+  }
 
   CloseDevTools();
-  Debug(GetWebContents());
+  devtools_window_ = Debug(GetWebContents())->GetWeakPtr();
   return true;
 }
 
@@ -484,7 +492,7 @@ bool NativeWindow::DevToolsShow(const std::string& dock_side) {
   if (dock_side != "undocked")
     return false;
 
-  Debug(GetWebContents());
+  devtools_window_ = Debug(GetWebContents())->GetWeakPtr();
   return true;
 }
 
