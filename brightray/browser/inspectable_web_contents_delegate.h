@@ -18,7 +18,8 @@ class InspectableWebContentsDelegate {
 
   // Called when the devtools is going to be showed, returning true to override
   // the default behavior.
-  virtual bool DevToolsShow(const std::string& side) { return false; }
+  // Receiver is given the chance to change the |dock_side|.
+  virtual bool DevToolsShow(std::string* dock_side) { return false; }
 };
 
 }  // namespace brightray

@@ -94,7 +94,7 @@ void InspectableWebContentsImpl::ShowDevTools() {
         std::string());
   }
 
-  if (delegate_ && delegate_->DevToolsShow(dock_side_))
+  if (delegate_ && delegate_->DevToolsShow(&dock_side_))
     return;
 
   view_->SetDockSide(dock_side_);
