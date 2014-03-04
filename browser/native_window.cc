@@ -56,7 +56,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
     : content::WebContentsObserver(web_contents),
       has_frame_(true),
       is_closed_(false),
-      node_integration_("all"),
+      node_integration_("except-iframe"),
       has_dialog_attached_(false),
       weak_factory_(this),
       inspectable_web_contents_(

@@ -54,7 +54,7 @@ void AtomBrowserClient::OverrideWebkitPrefs(
     const GURL& url,
     WebPreferences* prefs) {
   prefs->javascript_enabled = true;
-  prefs->web_security_enabled = false;
+  prefs->web_security_enabled = true;
   prefs->javascript_can_open_windows_automatically = true;
   prefs->plugins_enabled = false;
   prefs->dom_paste_enabled = true;
