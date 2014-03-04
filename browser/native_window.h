@@ -14,17 +14,14 @@
 #include "browser/native_window_observer.h"
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
-#include "content/public/browser/web_contents_observer.h"
 #include "ui/gfx/image/image.h"
 #include "vendor/brightray/browser/default_web_contents_delegate.h"
+#include "vendor/brightray/browser/inspectable_web_contents_delegate.h"
+#include "vendor/brightray/browser/inspectable_web_contents_impl.h"
 
 namespace base {
 class DictionaryValue;
 class ListValue;
-}
-
-namespace brightray {
-class InspectableWebContents;
 }
 
 namespace content {
@@ -49,6 +46,7 @@ class DevToolsDelegate;
 struct DraggableRegion;
 
 class NativeWindow : public brightray::DefaultWebContentsDelegate,
+                     public brightray::InspectableWebContentsDelegate,
                      public content::WebContentsObserver,
                      public content::NotificationObserver {
  public:
@@ -76,12 +74,18 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   virtual ~NativeWindow();
 
-  // Create window with existing WebContents.
+  // Create window with existing WebContents, the caller is responsible for
+  // managing the window's live.
   static NativeWindow* Create(content::WebContents* web_contents,
                               base::DictionaryValue* options);
 
-  // Create window with new WebContents.
+  // Create window with new WebContents, the caller is responsible for
+  // managing the window's live.
   static NativeWindow* Create(base::DictionaryValue* options);
+
+  // Creates a devtools window to debug the WebContents, the returned window
+  // will manage its own life.
+  static NativeWindow* Debug(content::WebContents* web_contents);
 
   // Find a window from its process id and routing id.
   static NativeWindow* FromRenderView(int process_id, int routing_id);
@@ -129,9 +133,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual bool IsDevToolsOpened();
   virtual void InspectElement(int x, int y);
 
-  // Creates a new window to debug the devtools.
-  virtual void DebugDevTools();
-
   virtual void FocusOnWebView();
   virtual void BlurWebView();
   virtual bool IsWebViewFocused();
@@ -151,6 +152,10 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   //
   // Should be called by platform code when user want to close the window.
   virtual void CloseWebContents();
+
+  base::WeakPtr<NativeWindow> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
 
   content::WebContents* GetWebContents() const;
   content::WebContents* GetDevToolsWebContents() const;
@@ -174,8 +179,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   explicit NativeWindow(content::WebContents* web_contents,
                         base::DictionaryValue* options);
 
-  brightray::InspectableWebContents* inspectable_web_contents() const {
-    return inspectable_web_contents_.get();
+  brightray::InspectableWebContentsImpl* inspectable_web_contents() const {
+    return static_cast<brightray::InspectableWebContentsImpl*>(
+        inspectable_web_contents_.get());
   }
 
   void NotifyWindowClosed();
@@ -220,6 +226,11 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
                        const content::NotificationSource& source,
                        const content::NotificationDetails& details) OVERRIDE;
 
+  // Implementations of brightray::InspectableWebContentsDelegate.
+  virtual bool DevToolsSetDockSide(const std::string& dock_side,
+                                   bool* succeed) OVERRIDE;
+  virtual bool DevToolsShow(std::string* dock_side) OVERRIDE;
+
   // Whether window has standard frame.
   bool has_frame_;
 
@@ -259,6 +270,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   base::CancelableClosure window_unresposive_closure_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_;
+
+  base::WeakPtr<NativeWindow> devtools_window_;
 
   scoped_ptr<DevToolsDelegate> devtools_delegate_;
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;

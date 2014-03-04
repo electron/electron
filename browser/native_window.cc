@@ -7,6 +7,7 @@
 #include <string>
 
 #include "base/file_util.h"
+#include "base/prefs/pref_service.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
@@ -38,12 +39,17 @@
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
-#include "vendor/brightray/browser/inspectable_web_contents_impl.h"
 #include "webkit/common/user_agent/user_agent_util.h"
 
 using content::NavigationEntry;
 
 namespace atom {
+
+namespace {
+
+const char kDockSidePref[] = "brightray.devtools.dockside";
+
+}  // namespace
 
 NativeWindow::NativeWindow(content::WebContents* web_contents,
                            base::DictionaryValue* options)
@@ -66,6 +72,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
   options->GetString(switches::kNodeIntegration, &node_integration_);
 
   web_contents->SetDelegate(this);
+  inspectable_web_contents()->SetDelegate(this);
 
   WindowList::AddWindow(this);
 
@@ -93,6 +100,14 @@ NativeWindow::~NativeWindow() {
 NativeWindow* NativeWindow::Create(base::DictionaryValue* options) {
   content::WebContents::CreateParams create_params(AtomBrowserContext::Get());
   return Create(content::WebContents::Create(create_params), options);
+}
+
+// static
+NativeWindow* NativeWindow::Debug(content::WebContents* web_contents) {
+  base::DictionaryValue options;
+  NativeWindow* window = NativeWindow::Create(&options);
+  window->devtools_delegate_.reset(new DevToolsDelegate(window, web_contents));
+  return window;
 }
 
 // static
@@ -166,15 +181,22 @@ bool NativeWindow::HasModalDialog() {
 }
 
 void NativeWindow::OpenDevTools() {
-  inspectable_web_contents()->ShowDevTools();
+  if (devtools_window_)
+    devtools_window_->Focus(true);
+  else
+    inspectable_web_contents()->ShowDevTools();
 }
 
 void NativeWindow::CloseDevTools() {
-  inspectable_web_contents()->GetView()->CloseDevTools();
+  if (devtools_window_)
+    devtools_window_->Close();
+  else
+    inspectable_web_contents()->GetView()->CloseDevTools();
 }
 
 bool NativeWindow::IsDevToolsOpened() {
-  return inspectable_web_contents()->IsDevToolsViewShowing();
+  return (devtools_window_ && devtools_window_->IsFocused()) ||
+         inspectable_web_contents()->IsDevToolsViewShowing();
 }
 
 void NativeWindow::InspectElement(int x, int y) {
@@ -183,16 +205,6 @@ void NativeWindow::InspectElement(int x, int y) {
   scoped_refptr<content::DevToolsAgentHost> agent(
       content::DevToolsAgentHost::GetOrCreateFor(rvh));
   agent->InspectElement(x, y);
-}
-
-void NativeWindow::DebugDevTools() {
-  if (!IsDevToolsOpened())
-    return;
-
-  base::DictionaryValue options;
-  NativeWindow* window = NativeWindow::Create(&options);
-  window->devtools_delegate_.reset(new DevToolsDelegate(
-      window, GetDevToolsWebContents()));
 }
 
 void NativeWindow::FocusOnWebView() {
@@ -283,10 +295,7 @@ content::WebContents* NativeWindow::GetWebContents() const {
 }
 
 content::WebContents* NativeWindow::GetDevToolsWebContents() const {
-  brightray::InspectableWebContentsImpl* inspectable_web_contents_impl =
-      static_cast<brightray::InspectableWebContentsImpl*>(
-          inspectable_web_contents());
-  return inspectable_web_contents_impl->devtools_web_contents();
+  return inspectable_web_contents()->devtools_web_contents();
 }
 
 void NativeWindow::NotifyWindowClosed() {
@@ -465,6 +474,22 @@ void NativeWindow::Observe(int type,
         SetTitle(text);
     }
   }
+}
+
+bool NativeWindow::DevToolsSetDockSide(const std::string& dock_side,
+                                       bool* succeed) {
+  if (dock_side == "undocked") {
+    *succeed = false;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool NativeWindow::DevToolsShow(std::string* dock_side) {
+  if (*dock_side == "undocked")
+    *dock_side = "bottom";
+  return false;
 }
 
 void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
