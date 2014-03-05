@@ -44,6 +44,10 @@ void App::OnOpenURL(const std::string& url) {
   Emit("open-url", &args);
 }
 
+void App::OnActivateWithNoOpenWindows() {
+  Emit("activate-with-no-open-windows");
+}
+
 void App::OnWillFinishLaunching() {
   Emit("will-finish-launching");
 }

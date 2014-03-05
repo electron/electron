@@ -35,4 +35,15 @@
   }
 }
 
+- (BOOL)applicationShouldHandleReopen:(NSApplication*)theApplication
+                    hasVisibleWindows:(BOOL)flag {
+  atom::Browser* browser = atom::Browser::Get();
+  if (flag) {
+    return YES;
+  } else {
+    browser->ActivateWithNoOpenWindows();
+    return NO;
+  }
+}
+
 @end

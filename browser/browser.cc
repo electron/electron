@@ -74,6 +74,10 @@ void Browser::OpenURL(const std::string& url) {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnOpenURL(url));
 }
 
+void Browser::ActivateWithNoOpenWindows() {
+  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnActivateWithNoOpenWindows());
+}
+
 void Browser::WillFinishLaunching() {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWillFinishLaunching());
 }

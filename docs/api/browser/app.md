@@ -66,6 +66,12 @@ must be registered to be opened by your application.
 
 You should call `event.preventDefault()` if you want to handle this event.
 
+## Event: activate-with-no-open-windows
+
+Emitted when the application is activated while there is no opened windows. It
+usually happens when user has closed all of application's windows and then
+click on the application's dock icon.
+
 ## app.quit()
 
 Try to close all windows. If all windows are successfully closed, the

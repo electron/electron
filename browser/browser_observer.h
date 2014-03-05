@@ -26,6 +26,10 @@ class BrowserObserver {
   // Browser is used to open a url.
   virtual void OnOpenURL(const std::string& url) {}
 
+  // The browser is activated with no open windows (usually by clicking on the
+  // dock icon).
+  virtual void OnActivateWithNoOpenWindows() {}
+
   // The browser has finished loading.
   virtual void OnWillFinishLaunching() {}
   virtual void OnFinishLaunching() {}
