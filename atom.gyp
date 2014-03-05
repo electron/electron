@@ -119,8 +119,6 @@
       'browser/ui/cocoa/atom_menu_controller.mm',
       'browser/ui/cocoa/event_processing_window.h',
       'browser/ui/cocoa/event_processing_window.mm',
-      'browser/ui/cocoa/nsalert_synchronous_sheet.h',
-      'browser/ui/cocoa/nsalert_synchronous_sheet.mm',
       'browser/ui/file_dialog.h',
       'browser/ui/file_dialog_gtk.cc',
       'browser/ui/file_dialog_mac.mm',

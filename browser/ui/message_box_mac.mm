@@ -9,24 +9,27 @@
 #include "base/callback.h"
 #include "base/strings/sys_string_conversions.h"
 #include "browser/native_window.h"
-#include "browser/ui/cocoa/nsalert_synchronous_sheet.h"
 
 @interface ModalDelegate : NSObject {
  @private
   atom::MessageBoxCallback callback_;
   NSAlert* alert_;
+  bool callEndModal_;
 }
 - (id)initWithCallback:(const atom::MessageBoxCallback&)callback
-              andAlert:(NSAlert*)alert;
+              andAlert:(NSAlert*)alert
+          callEndModal:(bool)flag;
 @end
 
 @implementation ModalDelegate
 
 - (id)initWithCallback:(const atom::MessageBoxCallback&)callback
-              andAlert:(NSAlert*)alert {
+              andAlert:(NSAlert*)alert
+          callEndModal:(bool)flag {
   if ((self = [super init])) {
     callback_ = callback;
     alert_ = alert;
+    callEndModal_ = flag;
   }
   return self;
 }
@@ -37,6 +40,9 @@
   callback_.Run(returnCode);
   [alert_ release];
   [self release];
+
+  if (callEndModal_)
+    [NSApp stopModal];
 }
 
 @end
@@ -76,6 +82,10 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
   return alert;
 }
 
+void SetReturnCode(int* ret_code, int result) {
+  *ret_code = result;
+}
+
 }  // namespace
 
 int ShowMessageBox(NativeWindow* parent_window,
@@ -86,12 +96,26 @@ int ShowMessageBox(NativeWindow* parent_window,
                    const std::string& detail) {
   NSAlert* alert = CreateNSAlert(
       parent_window, type, buttons, title, message, detail);
-  [alert autorelease];
 
-  if (parent_window)
-    return [alert runModalSheetForWindow:parent_window->GetNativeWindow()];
-  else
-    return [alert runModal];
+  // Use runModal for synchronous alert without parent, since we don't have a
+  // window to wait for.
+  if (!parent_window)
+    return [[alert autorelease] runModal];
+
+  int ret_code = -1;
+  ModalDelegate* delegate = [[ModalDelegate alloc]
+      initWithCallback:base::Bind(&SetReturnCode, &ret_code)
+              andAlert:alert
+          callEndModal:true];
+
+  NSWindow* window = parent_window->GetNativeWindow();
+  [alert beginSheetModalForWindow:window
+                    modalDelegate:delegate
+                   didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
+                      contextInfo:nil];
+
+  [NSApp runModalForWindow:window];
+  return ret_code;
 }
 
 void ShowMessageBox(NativeWindow* parent_window,
@@ -104,7 +128,8 @@ void ShowMessageBox(NativeWindow* parent_window,
   NSAlert* alert = CreateNSAlert(
       parent_window, type, buttons, title, message, detail);
   ModalDelegate* delegate = [[ModalDelegate alloc] initWithCallback:callback
-                                                           andAlert:alert];
+                                                           andAlert:alert
+                                                       callEndModal:false];
 
   NSWindow* window = parent_window ? parent_window->GetNativeWindow() : nil;
   [alert beginSheetModalForWindow:window
