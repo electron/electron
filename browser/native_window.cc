@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "base/command_line.h"
 #include "base/file_util.h"
 #include "base/prefs/pref_service.h"
 #include "base/message_loop/message_loop.h"
@@ -309,6 +310,13 @@ content::WebContents* NativeWindow::GetWebContents() const {
 
 content::WebContents* NativeWindow::GetDevToolsWebContents() const {
   return inspectable_web_contents()->devtools_web_contents();
+}
+
+void NativeWindow::AppendExtraCommandLineSwitches(CommandLine* command_line,
+                                                  int child_process_id) {
+  // Append --node-integration to renderer process.
+  command_line->AppendSwitchASCII(switches::kNodeIntegration,
+                                  node_integration_);
 }
 
 void NativeWindow::NotifyWindowClosed() {
