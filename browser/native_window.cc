@@ -12,8 +12,6 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
-#include "brightray/browser/inspectable_web_contents.h"
-#include "brightray/browser/inspectable_web_contents_view.h"
 #include "browser/api/atom_browser_bindings.h"
 #include "browser/atom_browser_context.h"
 #include "browser/atom_browser_main_parts.h"
@@ -30,6 +28,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
+#include "content/public/browser/web_contents_view.h"
 #include "content/public/common/renderer_preferences.h"
 #include "common/api/api_messages.h"
 #include "common/atom_version.h"
@@ -39,6 +38,8 @@
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
+#include "vendor/brightray/browser/inspectable_web_contents.h"
+#include "vendor/brightray/browser/inspectable_web_contents_view.h"
 #include "webkit/common/user_agent/user_agent_util.h"
 
 using content::NavigationEntry;
@@ -62,6 +63,12 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       inspectable_web_contents_(
           brightray::InspectableWebContents::Create(web_contents)) {
   options->GetBoolean(switches::kFrame, &has_frame_);
+
+#if defined(OS_MACOSX)
+  // Temporary fix for flashing devtools, try removing this after upgraded to
+  // Chrome 32.
+  web_contents->GetView()->SetAllowOverlappingViews(false);
+#endif
 
   // Read icon before window is created.
   std::string icon;
@@ -181,10 +188,16 @@ bool NativeWindow::HasModalDialog() {
 }
 
 void NativeWindow::OpenDevTools() {
-  if (devtools_window_)
+  if (devtools_window_) {
     devtools_window_->Focus(true);
-  else
+  } else {
     inspectable_web_contents()->ShowDevTools();
+#if defined(OS_MACOSX)
+    // Temporary fix for flashing devtools, try removing this after upgraded to
+    // Chrome 32.
+    GetDevToolsWebContents()->GetView()->SetAllowOverlappingViews(false);
+#endif
+  }
 }
 
 void NativeWindow::CloseDevTools() {
