@@ -10,6 +10,7 @@
 #include "browser/net/atom_url_request_context_getter.h"
 #include "browser/window_list.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/render_view_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "webkit/common/webpreferences.h"
@@ -67,6 +68,12 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->experimental_webgl_enabled = false;
   prefs->allow_displaying_insecure_content = true;
   prefs->allow_running_insecure_content = true;
+
+  NativeWindow* window = NativeWindow::FromRenderView(
+      render_view_host->GetProcess()->GetID(),
+      render_view_host->GetRoutingID());
+  if (window)
+    window->OverrideWebkitPrefs(url, prefs);
 }
 
 bool AtomBrowserClient::ShouldSwapProcessesForNavigation(

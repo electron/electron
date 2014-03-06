@@ -42,6 +42,7 @@
 #include "vendor/brightray/browser/inspectable_web_contents.h"
 #include "vendor/brightray/browser/inspectable_web_contents_view.h"
 #include "webkit/common/user_agent/user_agent_util.h"
+#include "webkit/common/webpreferences.h"
 
 using content::NavigationEntry;
 
@@ -317,6 +318,12 @@ void NativeWindow::AppendExtraCommandLineSwitches(CommandLine* command_line,
   // Append --node-integration to renderer process.
   command_line->AppendSwitchASCII(switches::kNodeIntegration,
                                   node_integration_);
+}
+
+void NativeWindow::OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs) {
+  // FIXME Disable accelerated composition in frameless window.
+  if (!has_frame_)
+    prefs->accelerated_compositing_enabled = false;
 }
 
 void NativeWindow::NotifyWindowClosed() {

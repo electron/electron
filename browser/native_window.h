@@ -20,6 +20,7 @@
 #include "vendor/brightray/browser/inspectable_web_contents_impl.h"
 
 class CommandLine;
+struct WebPreferences;
 
 namespace base {
 class DictionaryValue;
@@ -165,6 +166,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Called when renderer process is going to be started.
   void AppendExtraCommandLineSwitches(CommandLine* command_line,
                                       int child_process_id);
+  void OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs);
 
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);
