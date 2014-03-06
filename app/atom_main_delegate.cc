@@ -70,10 +70,6 @@ void AtomMainDelegate::PreSandboxStartup() {
   // Disable renderer sandbox for most of node's functions.
   command_line->AppendSwitch(switches::kNoSandbox);
 
-  // Disable accelerated compositing since it caused a lot of troubles (black
-  // devtools, screen flashes) and needed lots of effort to make it right.
-  command_line->AppendSwitch(switches::kDisableAcceleratedCompositing);
-
   // Add a flag to mark the end of switches added by atom-shell.
   command_line->AppendSwitch("atom-shell-switches-end");
 }

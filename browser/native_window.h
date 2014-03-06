@@ -19,6 +19,9 @@
 #include "vendor/brightray/browser/inspectable_web_contents_delegate.h"
 #include "vendor/brightray/browser/inspectable_web_contents_impl.h"
 
+class CommandLine;
+struct WebPreferences;
+
 namespace base {
 class DictionaryValue;
 class ListValue;
@@ -160,6 +163,11 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   content::WebContents* GetWebContents() const;
   content::WebContents* GetDevToolsWebContents() const;
 
+  // Called when renderer process is going to be started.
+  void AppendExtraCommandLineSwitches(CommandLine* command_line,
+                                      int child_process_id);
+  void OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs);
+
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);
   }
@@ -169,7 +177,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   }
 
   bool has_frame() const { return has_frame_; }
-  std::string node_integration() const { return node_integration_; }
 
   void set_has_dialog_attached(bool has_dialog_attached) {
     has_dialog_attached_ = has_dialog_attached;

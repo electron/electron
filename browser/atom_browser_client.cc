@@ -4,14 +4,13 @@
 
 #include "browser/atom_browser_client.h"
 
-#include "base/command_line.h"
 #include "browser/atom_browser_context.h"
 #include "browser/atom_browser_main_parts.h"
 #include "browser/native_window.h"
 #include "browser/net/atom_url_request_context_getter.h"
 #include "browser/window_list.h"
-#include "common/options_switches.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/render_view_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "webkit/common/webpreferences.h"
@@ -69,6 +68,12 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->experimental_webgl_enabled = false;
   prefs->allow_displaying_insecure_content = true;
   prefs->allow_running_insecure_content = true;
+
+  NativeWindow* window = NativeWindow::FromRenderView(
+      render_view_host->GetProcess()->GetID(),
+      render_view_host->GetRoutingID());
+  if (window)
+    window->OverrideWebkitPrefs(url, prefs);
 }
 
 bool AtomBrowserClient::ShouldSwapProcessesForNavigation(
@@ -105,10 +110,8 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
       window = *iter;
   }
 
-  // Append --node-integration to renderer process.
   if (window != NULL)
-    command_line->AppendSwitchASCII(switches::kNodeIntegration,
-                                    window->node_integration());
+    window->AppendExtraCommandLineSwitches(command_line, child_process_id);
 
   dying_render_process_ = NULL;
 }
