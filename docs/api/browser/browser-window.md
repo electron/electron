@@ -66,12 +66,15 @@ An example of enable node integration in iframe with `node-integration` set to
 <iframe src="http://jandan.net"></iframe>
 ```
 
-And you should also notice that the iframes can have access to parent window's
-javascript objects via `window.parent`, so in order to grant complete security
-from iframes, you should add `sandbox` attribute to the iframes:
+And in atom-shell, the security limitaion of iframe is stricter than normal
+browser, by default iframe is sandboxed with all permissions except the
+`allow-same-origin`, which means iframe could not access parent's js context.
+
+If you want to enable things like `parent.window.process.exit()` in iframe,
+you should explictly set `sandbox` to `none`:
 
 ```html
-<iframe sandbox="allow-scripts" src="http://bbs.seu.edu.cn"></iframe>
+<iframe sandbox="none" src="https://github.com"></iframe>
 ```
 
 ### Event: 'page-title-updated'
