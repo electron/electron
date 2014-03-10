@@ -25,17 +25,30 @@ describe 'chromium feature', ->
       assert.equal b.constructor.name, 'BrowserWindow'
       b.destroy()
 
-  describe 'iframe with sandbox attribute', ->
-    it 'can not modify parent', (done) ->
-      page = path.join fixtures, 'pages', 'change-parent.html'
+  describe 'iframe', ->
+    page = path.join fixtures, 'pages', 'change-parent.html'
+
+    beforeEach ->
       global.changedByIframe = false
 
-      iframe = $('<iframe sandbox="allow-scripts">')
+    it 'can not modify parent by default', (done) ->
+      iframe = $('<iframe>')
       iframe.hide()
       iframe.attr 'src', "file://#{page}"
       iframe.appendTo 'body'
       isChanged = ->
         iframe.remove()
         assert.equal global.changedByIframe, false
+        done()
+      setTimeout isChanged, 30
+
+    it 'can modify parent when sanbox is set to none', (done) ->
+      iframe = $('<iframe sandbox="none">')
+      iframe.hide()
+      iframe.attr 'src', "file://#{page}"
+      iframe.appendTo 'body'
+      isChanged = ->
+        iframe.remove()
+        assert.equal global.changedByIframe, true
         done()
       setTimeout isChanged, 30
