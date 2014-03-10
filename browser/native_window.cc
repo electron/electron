@@ -231,7 +231,9 @@ void NativeWindow::BlurWebView() {
 }
 
 bool NativeWindow::IsWebViewFocused() {
-  return GetWebContents()->GetRenderViewHost()->GetView()->HasFocus();
+  content::RenderWidgetHostView* host_view =
+      GetWebContents()->GetRenderViewHost()->GetView();
+  return host_view && host_view->HasFocus();
 }
 
 bool NativeWindow::SetIcon(const std::string& str_path) {
