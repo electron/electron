@@ -28,6 +28,12 @@ TARGET_PLATFORM = {
   'win32': 'win32',
 }[sys.platform]
 
+SYMBOL_NAME = {
+  'darwin': 'libchromiumcontent.dylib.dSYM',
+  'linux': 'libchromiumcontent.so.dbg',
+  'win32': 'chromiumcontent.dll.pdb',
+}[TARGET_PLATFORM]
+
 TARGET_BINARIES = {
   'darwin': [
   ],
@@ -81,11 +87,8 @@ def main():
 
   args = parse_args()
 
-  if TARGET_PLATFORM == 'linux':
-    clean_build()
   force_build()
-  if TARGET_PLATFORM != 'linux':
-    download_libchromiumcontent_symbols(args.url)
+  download_libchromiumcontent_symbols(args.url)
   create_symbols()
   copy_binaries()
   copy_headers()
@@ -105,16 +108,6 @@ def parse_args():
                       default=BASE_URL,
                       required=False)
   return parser.parse_args()
-
-
-def clean_build():
-  # On Linux stripping binary would cause them to be rebuilt next time, which
-  # would make create-dist create symbols from stripped binary if it has been
-  # ran for twice.
-  # So in order to make sure we built correct symbols everytime, we have to
-  # force a rebuild of the binaries.
-  for binary in TARGET_BINARIES[TARGET_PLATFORM]:
-    safe_unlink(os.path.join(OUT_DIR, binary))
 
 
 def force_build():
@@ -170,14 +163,9 @@ def create_version():
 
 
 def download_libchromiumcontent_symbols(url):
-  if TARGET_PLATFORM == 'darwin':
-    symbols_name = 'libchromiumcontent.dylib.dSYM'
-  elif TARGET_PLATFORM == 'win32':
-    symbols_name = 'chromiumcontent.dll.pdb'
-
   brightray_dir = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor')
   target_dir = os.path.join(brightray_dir, 'download', 'libchromiumcontent')
-  symbols_path = os.path.join(target_dir, 'Release', symbols_name)
+  symbols_path = os.path.join(target_dir, 'Release', SYMBOL_NAME)
   if os.path.exists(symbols_path):
     return
 

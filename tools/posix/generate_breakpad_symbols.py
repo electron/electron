@@ -75,6 +75,16 @@ def GetDSYMBundle(options, binary_path):
   return binary_path
 
 
+def GetSymbolPath(options, binary_path):
+  """Finds the .dbg to the binary."""
+  filename = os.path.basename(binary_path)
+  dbg_path = os.path.join(options.libchromiumcontent_dir, filename) + '.dbg'
+  if os.path.exists(dbg_path):
+    return dbg_path
+
+  return binary_path
+
+
 def Resolve(path, exe_path, loader_path, rpaths):
   """Resolve a dyld path.
 
@@ -178,6 +188,8 @@ def GenerateSymbols(options, binaries):
 
       if sys.platform == 'darwin':
         binary = GetDSYMBundle(options, binary)
+      elif sys.platform == 'linux2':
+        binary = GetSymbolPath(options, binary)
 
       syms = GetCommandOutput([GetDumpSymsBinary(options.build_dir), '-r', '-c',
                                binary])
