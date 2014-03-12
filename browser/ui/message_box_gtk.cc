@@ -78,6 +78,7 @@ class MessageBox {
   CHROMEGTK_CALLBACK_1(MessageBox, void, OnResponseDialog, int);
 
   GtkWidget* dialog() const { return dialog_; }
+  int cancel_id() const { return cancel_id_; }
 
  private:
   GtkWidget* dialog_;
@@ -107,7 +108,13 @@ int ShowMessageBox(NativeWindow* parent_window,
                    const std::string& title,
                    const std::string& message,
                    const std::string& detail) {
-  return 0;
+  MessageBox message_box(parent_window, type, buttons, title, message, detail);
+  gtk_widget_show_all(message_box.dialog());
+  int response = gtk_dialog_run(GTK_DIALOG(message_box.dialog()));
+  if (response < 0)
+    return message_box.cancel_id();
+  else
+    return response;
 }
 
 void ShowMessageBox(NativeWindow* parent_window,
