@@ -5,6 +5,7 @@
 #include "browser/ui/message_box.h"
 
 #include "base/callback.h"
+#include "base/strings/string_util.h"
 #include "browser/native_window.h"
 #include "browser/ui/gtk/gtk_util.h"
 #include "ui/base/gtk/gtk_signal.h"
@@ -20,7 +21,8 @@ class MessageBox {
              const std::vector<std::string>& buttons,
              const std::string& title,
              const std::string& message,
-             const std::string& detail) {
+             const std::string& detail)
+      : cancel_id_(0) {
     GtkWindow* window = parent_window ? parent_window->GetNativeWindow() : NULL;
     dialog_ = gtk_dialog_new_with_buttons(
         title.c_str(),
@@ -29,7 +31,9 @@ class MessageBox {
         NULL);
 
     for (size_t i = 0; i < buttons.size(); ++i)
-      gtk_dialog_add_button(GTK_DIALOG(dialog_), buttons[i].c_str(), i);
+      gtk_dialog_add_button(GTK_DIALOG(dialog_),
+                            TranslateToStock(i, buttons[i]),
+                            i);
 
     GtkWidget* content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog_));
     GtkWidget* message_label = gtk_util::CreateBoldLabel(message);
@@ -44,6 +48,22 @@ class MessageBox {
 
   ~MessageBox() {
     gtk_widget_destroy(dialog_);
+  }
+
+  const char* TranslateToStock(int id, const std::string& text) {
+    if (LowerCaseEqualsASCII(text, "cancel")) {
+      cancel_id_ = id;
+      return GTK_STOCK_CANCEL;
+    } else if (LowerCaseEqualsASCII(text, "no")) {
+      cancel_id_ = id;
+      return GTK_STOCK_NO;
+    } else if (LowerCaseEqualsASCII(text, "ok")) {
+      return GTK_STOCK_OK;
+    } else if (LowerCaseEqualsASCII(text, "yes")) {
+      return GTK_STOCK_YES;
+    } else {
+      return text.c_str();
+    }
   }
 
   void RunAsynchronous(const MessageBoxCallback& callback) {
@@ -63,12 +83,19 @@ class MessageBox {
   GtkWidget* dialog_;
   MessageBoxCallback callback_;
 
+  // The id to return when the dialog is closed without pressing buttons.
+  int cancel_id_;
+
   DISALLOW_COPY_AND_ASSIGN(MessageBox);
 };
 
 void MessageBox::OnResponseDialog(GtkWidget* widget, int response) {
   gtk_widget_hide_all(dialog_);
-  callback_.Run(response);
+
+  if (response < 0)
+    callback_.Run(cancel_id_);
+  else
+    callback_.Run(response);
   delete this;
 }
 
