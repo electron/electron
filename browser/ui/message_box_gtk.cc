@@ -4,10 +4,9 @@
 
 #include "browser/ui/message_box.h"
 
-#include <gtk/gtk.h>
-
 #include "base/callback.h"
 #include "browser/native_window.h"
+#include "browser/ui/gtk/gtk_util.h"
 
 namespace atom {
 
@@ -38,11 +37,14 @@ void ShowMessageBox(NativeWindow* parent_window,
     gtk_dialog_add_button(GTK_DIALOG(dialog), buttons[i].c_str(), i);
 
   GtkWidget* content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-  GtkWidget* message_label = gtk_label_new(message.c_str());
+  GtkWidget* message_label = gtk_util::CreateBoldLabel(message);
+  gtk_util::LeftAlignMisc(message_label);
   gtk_box_pack_start(GTK_BOX(content_area), message_label, FALSE, FALSE, 0);
   GtkWidget* detail_label = gtk_label_new(detail.c_str());
+  gtk_util::LeftAlignMisc(detail_label);
   gtk_box_pack_start(GTK_BOX(content_area), detail_label, FALSE, FALSE, 0);
 
+  gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
   gtk_widget_show_all(dialog);
 
   callback.Run(0);
