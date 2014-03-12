@@ -127,6 +127,8 @@
       'browser/ui/gtk/gtk_custom_menu.h',
       'browser/ui/gtk/gtk_custom_menu_item.cc',
       'browser/ui/gtk/gtk_custom_menu_item.h',
+      'browser/ui/gtk/gtk_util.cc',
+      'browser/ui/gtk/gtk_util.h',
       'browser/ui/gtk/gtk_window_util.cc',
       'browser/ui/gtk/gtk_window_util.h',
       'browser/ui/message_box.h',
