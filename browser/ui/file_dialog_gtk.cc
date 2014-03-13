@@ -54,12 +54,19 @@ class FileChooserDialog {
     g_signal_connect(dialog_, "delete-event",
                      G_CALLBACK(gtk_widget_hide_on_delete), NULL);
     g_signal_connect(dialog_, "response",
-                     G_CALLBACK(OnSelectSingleFileDialogResponseThunk), this);
+                     G_CALLBACK(OnFileSaveDialogResponseThunk), this);
     gtk_widget_show_all(dialog_);
   }
 
+  base::FilePath GetFileName() const {
+    gchar* filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog_));
+    return base::FilePath(filename);
+  }
+
   CHROMEGTK_CALLBACK_1(FileChooserDialog, void,
-                       OnSelectSingleFileDialogResponse, int);
+                       OnFileSaveDialogResponse, int);
+
+  GtkWidget* dialog() const { return dialog_; }
 
  private:
   GtkWidget* dialog_;
@@ -70,17 +77,14 @@ class FileChooserDialog {
   DISALLOW_COPY_AND_ASSIGN(FileChooserDialog);
 };
 
-void FileChooserDialog::OnSelectSingleFileDialogResponse(GtkWidget* widget,
-                                                         int response) {
+void FileChooserDialog::OnFileSaveDialogResponse(GtkWidget* widget,
+                                                 int response) {
   gtk_widget_hide_all(dialog_);
 
-  if (response == GTK_RESPONSE_ACCEPT) {
-    gchar* filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog_));
-    save_callback_.Run(true, base::FilePath(filename));
-  } else {
+  if (response == GTK_RESPONSE_ACCEPT)
+    save_callback_.Run(true, GetFileName());
+  else
     save_callback_.Run(false, base::FilePath());
-  }
-
   delete this;
 }
 
@@ -106,7 +110,16 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     base::FilePath* path) {
-  return false;
+  FileChooserDialog save_dialog(
+      GTK_FILE_CHOOSER_ACTION_SAVE, parent_window, title, default_path);
+  gtk_widget_show_all(save_dialog.dialog());
+  int response = gtk_dialog_run(GTK_DIALOG(save_dialog.dialog()));
+  if (response == GTK_RESPONSE_ACCEPT) {
+    *path = save_dialog.GetFileName();
+    return true;
+  } else {
+    return false;
+  }
 }
 
 void ShowSaveDialog(atom::NativeWindow* parent_window,
