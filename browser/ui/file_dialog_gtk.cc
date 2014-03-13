@@ -27,6 +27,12 @@ class FileChooserDialog {
         GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
         GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
         NULL);
+
+    // Set window-to-parent modality by adding the dialog to the same window
+    // group as the parent.
+    gtk_window_group_add_window(gtk_window_get_group(window),
+                                GTK_WINDOW(dialog_));
+    gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
   }
 
   virtual ~FileChooserDialog() {
