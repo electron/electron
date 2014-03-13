@@ -29,6 +29,10 @@ class FileChooserDialog {
         GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
         NULL);
 
+    if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
+      gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog_),
+                                                     TRUE);
+
     // Set window-to-parent modality by adding the dialog to the same window
     // group as the parent.
     gtk_window_group_add_window(gtk_window_get_group(window),
