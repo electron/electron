@@ -5,6 +5,7 @@
 #include "browser/ui/file_dialog.h"
 
 #include "base/callback.h"
+#include "base/file_util.h"
 #include "browser/native_window.h"
 #include "browser/ui/gtk/gtk_util.h"
 #include "ui/base/gtk/gtk_signal.h"
@@ -33,6 +34,15 @@ class FileChooserDialog {
     gtk_window_group_add_window(gtk_window_get_group(window),
                                 GTK_WINDOW(dialog_));
     gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
+
+    if (!default_path.empty()) {
+      if (base::DirectoryExists(default_path))
+        gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog_),
+                                            default_path.value().c_str());
+      else
+        gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(dialog_),
+                                      default_path.value().c_str());
+    }
   }
 
   virtual ~FileChooserDialog() {
