@@ -64,7 +64,9 @@ class FileChooserDialog {
 
   base::FilePath GetFileName() const {
     gchar* filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog_));
-    return base::FilePath(filename);
+    base::FilePath path(filename);
+    g_free(filename);
+    return path;
   }
 
   CHROMEGTK_CALLBACK_1(FileChooserDialog, void,
