@@ -20,13 +20,19 @@ class FileChooserDialog {
                     atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path) {
+    const char* confirm_text = GTK_STOCK_OK;
+    if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
+      confirm_text = GTK_STOCK_SAVE;
+    else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
+      confirm_text = GTK_STOCK_OPEN;
+
     GtkWindow* window = parent_window ? parent_window->GetNativeWindow() : NULL;
     dialog_ = gtk_file_chooser_dialog_new(
         title.c_str(),
         window,
         action,
         GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-        GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+        confirm_text, GTK_RESPONSE_ACCEPT,
         NULL);
 
     if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
@@ -55,13 +61,22 @@ class FileChooserDialog {
     gtk_widget_destroy(dialog_);
   }
 
-  void RunSaveAsynchronous(const SaveDialogCallback& callback) {
-    save_callback_ = callback;
+  void RunAsynchronous() {
     g_signal_connect(dialog_, "delete-event",
                      G_CALLBACK(gtk_widget_hide_on_delete), NULL);
     g_signal_connect(dialog_, "response",
-                     G_CALLBACK(OnFileSaveDialogResponseThunk), this);
+                     G_CALLBACK(OnFileDialogResponseThunk), this);
     gtk_widget_show_all(dialog_);
+  }
+
+  void RunSaveAsynchronous(const SaveDialogCallback& callback) {
+    save_callback_ = callback;
+    RunAsynchronous();
+  }
+
+  void RunOpenAsynchronous(const OpenDialogCallback& callback) {
+    open_callback_ = callback;
+    RunAsynchronous();
   }
 
   base::FilePath GetFileName() const {
@@ -71,8 +86,20 @@ class FileChooserDialog {
     return path;
   }
 
-  CHROMEGTK_CALLBACK_1(FileChooserDialog, void,
-                       OnFileSaveDialogResponse, int);
+  std::vector<base::FilePath> GetFileNames() const {
+    std::vector<base::FilePath> paths;
+    GSList* filenames = gtk_file_chooser_get_filenames(
+        GTK_FILE_CHOOSER(dialog_));
+    for (GSList* iter = filenames; iter != NULL; iter = g_slist_next(iter)) {
+      base::FilePath path(static_cast<char*>(iter->data));
+      g_free(iter->data);
+      paths.push_back(path);
+    }
+    g_slist_free(filenames);
+    return paths;
+  }
+
+  CHROMEGTK_CALLBACK_1(FileChooserDialog, void, OnFileDialogResponse, int);
 
   GtkWidget* dialog() const { return dialog_; }
 
@@ -85,14 +112,20 @@ class FileChooserDialog {
   DISALLOW_COPY_AND_ASSIGN(FileChooserDialog);
 };
 
-void FileChooserDialog::OnFileSaveDialogResponse(GtkWidget* widget,
-                                                 int response) {
+void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
   gtk_widget_hide_all(dialog_);
 
-  if (response == GTK_RESPONSE_ACCEPT)
-    save_callback_.Run(true, GetFileName());
-  else
-    save_callback_.Run(false, base::FilePath());
+  if (!save_callback_.is_null()) {
+    if (response == GTK_RESPONSE_ACCEPT)
+      save_callback_.Run(true, GetFileName());
+    else
+      save_callback_.Run(false, base::FilePath());
+  } else if (!open_callback_.is_null()) {
+    if (response == GTK_RESPONSE_ACCEPT)
+      open_callback_.Run(true, GetFileNames());
+    else
+      open_callback_.Run(false, std::vector<base::FilePath>());
+  }
   delete this;
 }
 
@@ -111,7 +144,16 @@ void ShowOpenDialog(atom::NativeWindow* parent_window,
                     const base::FilePath& default_path,
                     int properties,
                     const OpenDialogCallback& callback) {
-  callback.Run(false, std::vector<base::FilePath>());
+  GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
+  if (properties & FILE_DIALOG_OPEN_DIRECTORY)
+    action = GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER;
+  FileChooserDialog* open_dialog = new FileChooserDialog(
+      action, parent_window, title, default_path);
+  if (properties & FILE_DIALOG_MULTI_SELECTIONS)
+    gtk_file_chooser_set_select_multiple(
+        GTK_FILE_CHOOSER(open_dialog->dialog()), TRUE);
+
+  open_dialog->RunOpenAsynchronous(callback);
 }
 
 bool ShowSaveDialog(atom::NativeWindow* parent_window,
@@ -134,9 +176,9 @@ void ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const SaveDialogCallback& callback) {
-  FileChooserDialog* dialog = new FileChooserDialog(
+  FileChooserDialog* save_dialog = new FileChooserDialog(
       GTK_FILE_CHOOSER_ACTION_SAVE, parent_window, title, default_path);
-  dialog->RunSaveAsynchronous(callback);
+  save_dialog->RunSaveAsynchronous(callback);
 }
 
 }  // namespace file_dialog
