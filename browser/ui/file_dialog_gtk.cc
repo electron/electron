@@ -136,7 +136,22 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
                     const base::FilePath& default_path,
                     int properties,
                     std::vector<base::FilePath>* paths) {
-  return false;
+  GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
+  if (properties & FILE_DIALOG_OPEN_DIRECTORY)
+    action = GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER;
+  FileChooserDialog open_dialog(action, parent_window, title, default_path);
+  if (properties & FILE_DIALOG_MULTI_SELECTIONS)
+    gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(open_dialog.dialog()),
+                                         TRUE);
+
+  gtk_widget_show_all(open_dialog.dialog());
+  int response = gtk_dialog_run(GTK_DIALOG(open_dialog.dialog()));
+  if (response == GTK_RESPONSE_ACCEPT) {
+    *paths = open_dialog.GetFileNames();
+    return true;
+  } else {
+    return false;
+  }
 }
 
 void ShowOpenDialog(atom::NativeWindow* parent_window,
