@@ -16,6 +16,11 @@ GtkWidget* LeftAlignMisc(GtkWidget* misc);
 // Create a left-aligned label with the given text in bold.
 GtkWidget* CreateBoldLabel(const std::string& text);
 
+// Show the image for the given menu item, even if the user's default is to not
+// show images. Only to be used for favicons or other menus where the image is
+// crucial to its functionality.
+void SetAlwaysShowImage(GtkWidget* image_menu_item);
+
 // Checks whether a widget is actually visible, i.e. whether it and all its
 // ancestors up to its toplevel are visible.
 bool IsWidgetAncestryVisible(GtkWidget* widget);
