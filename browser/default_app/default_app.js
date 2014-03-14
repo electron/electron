@@ -163,11 +163,11 @@ app.on('ready', function() {
         submenu: [
           {
             label: 'Open',
-            accelerator: 'Command+O',
+            accelerator: 'Ctrl+O',
           },
           {
             label: 'Close',
-            accelerator: 'Command+W',
+            accelerator: 'Ctrl+W',
             click: function() { mainWindow.close(); }
           },
         ]
@@ -177,16 +177,16 @@ app.on('ready', function() {
         submenu: [
           {
             label: 'Reload',
-            accelerator: 'Command+R',
+            accelerator: 'Ctrl+R',
             click: function() { mainWindow.restart(); }
           },
           {
             label: 'Enter Fullscreen',
-            click: function() { mainWindow.setFullscreen(true); }
+            click: function() { mainWindow.setFullScreen(true); }
           },
           {
             label: 'Toggle DevTools',
-            accelerator: 'Alt+Command+I',
+            accelerator: 'Alt+Ctrl+I',
             click: function() { mainWindow.toggleDevTools(); }
           },
         ]
