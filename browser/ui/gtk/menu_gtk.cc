@@ -178,11 +178,12 @@ GtkWidget* MenuGtk::Delegate::GetImageForCommandId(int command_id) const {
 }
 
 MenuGtk::MenuGtk(MenuGtk::Delegate* delegate,
-                 ui::MenuModel* model)
+                 ui::MenuModel* model,
+                 bool is_menubar)
     : delegate_(delegate),
       model_(model),
       dummy_accel_group_(gtk_accel_group_new()),
-      menu_(gtk_custom_menu_new()),
+      menu_(is_menubar ? gtk_menu_bar_new() : gtk_custom_menu_new()),
       weak_factory_(this) {
   DCHECK(model);
   g_object_ref_sink(menu_);

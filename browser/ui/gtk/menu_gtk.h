@@ -56,7 +56,9 @@ class MenuGtk {
     static GtkWidget* GetDefaultImageForLabel(const std::string& label);
   };
 
-  MenuGtk(MenuGtk::Delegate* delegate, ui::MenuModel* model);
+  MenuGtk(MenuGtk::Delegate* delegate,
+          ui::MenuModel* model,
+          bool is_menubar = false);
   virtual ~MenuGtk();
 
   // Initialize GTK signal handlers.
