@@ -131,6 +131,8 @@
       'browser/ui/gtk/gtk_util.h',
       'browser/ui/gtk/gtk_window_util.cc',
       'browser/ui/gtk/gtk_window_util.h',
+      'browser/ui/gtk/event_utils.cc',
+      'browser/ui/gtk/event_utils.h',
       'browser/ui/message_box.h',
       'browser/ui/message_box_gtk.cc',
       'browser/ui/message_box_mac.mm',
