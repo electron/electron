@@ -31,9 +31,11 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
                                  base::DictionaryValue* options)
     : NativeWindow(web_contents, options),
       window_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))),
+      vbox_(gtk_vbox_new(FALSE, 0)),
       state_(GDK_WINDOW_STATE_WITHDRAWN),
       is_always_on_top_(false) {
-  gtk_container_add(GTK_CONTAINER(window_),
+  gtk_container_add(GTK_CONTAINER(window_), vbox_);
+  gtk_container_add(GTK_CONTAINER(vbox_),
                     GetWebContents()->GetView()->GetNativeView());
 
   int width = 800, height = 600;
@@ -252,6 +254,12 @@ bool NativeWindowGtk::HasModalDialog() {
 
 gfx::NativeWindow NativeWindowGtk::GetNativeWindow() {
   return window_;
+}
+
+void NativeWindowGtk::SetMenu(ui::MenuModel* menu_model) {
+  menu_.reset(new ::MenuGtk(this, menu_model, true));
+  gtk_box_pack_start(GTK_BOX(vbox_), menu_->widget(), FALSE, FALSE, 0);
+  gtk_box_reorder_child(GTK_BOX(vbox_), menu_->widget(), 0);
 }
 
 void NativeWindowGtk::UpdateDraggableRegions(

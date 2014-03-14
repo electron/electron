@@ -4,10 +4,13 @@
 
 #include "browser/api/atom_api_menu_gtk.h"
 
-#include "browser/native_window.h"
+#include "browser/native_window_gtk.h"
+#include "common/v8/native_type_conversions.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/screen.h"
+
+#include "common/v8/node_common.h"
 
 namespace atom {
 
@@ -40,6 +43,15 @@ void MenuGtk::Popup(NativeWindow* native_window) {
 
 // static
 void Menu::AttachToWindow(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  Menu* self = ObjectWrap::Unwrap<Menu>(args.This());
+  if (self == NULL)
+    return node::ThrowError("Menu is already destroyed");
+
+  NativeWindow* native_window;
+  if (!FromV8Arguments(args, &native_window))
+    return node::ThrowTypeError("Bad argument");
+
+  static_cast<NativeWindowGtk*>(native_window)->SetMenu(self->model_.get());
 }
 
 // static

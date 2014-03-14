@@ -8,13 +8,15 @@
 #include <gtk/gtk.h>
 
 #include "browser/native_window.h"
+#include "browser/ui/gtk/menu_gtk.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/base/gtk/gtk_signal.h"
 #include "ui/gfx/size.h"
 
 namespace atom {
 
-class NativeWindowGtk : public NativeWindow {
+class NativeWindowGtk : public NativeWindow,
+                        public MenuGtk::Delegate {
  public:
   explicit NativeWindowGtk(content::WebContents* web_contents,
                            base::DictionaryValue* options);
@@ -56,6 +58,9 @@ class NativeWindowGtk : public NativeWindow {
   virtual bool HasModalDialog() OVERRIDE;
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
 
+  // Set the native window menu.
+  void SetMenu(ui::MenuModel* menu_model);
+
  protected:
   virtual void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) OVERRIDE;
@@ -83,6 +88,7 @@ class NativeWindowGtk : public NativeWindow {
                        GdkEventButton*);
 
   GtkWindow* window_;
+  GtkWidget* vbox_;
 
   GdkWindowState state_;
   bool is_always_on_top_;
@@ -100,6 +106,9 @@ class NativeWindowGtk : public NativeWindow {
   // The current window cursor.  We set it to a resize cursor when over the
   // custom frame border.  We set it to NULL if we want the default cursor.
   GdkCursor* frame_cursor_;
+
+  // The window menu.
+  scoped_ptr<MenuGtk> menu_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowGtk);
 };

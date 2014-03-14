@@ -198,6 +198,9 @@ class MenuGtk {
   // menu (overriding the delegate as a controller).
   ui::MenuModel* model_;
 
+  // Whether this is a menu bar.
+  bool is_menubar_;
+
   // For some menu items, we want to show the accelerator, but not actually
   // explicitly handle it. To this end we connect those menu items' accelerators
   // to this group, but don't attach this group to any top level window.

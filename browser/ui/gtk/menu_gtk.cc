@@ -182,6 +182,7 @@ MenuGtk::MenuGtk(MenuGtk::Delegate* delegate,
                  bool is_menubar)
     : delegate_(delegate),
       model_(model),
+      is_menubar_(is_menubar),
       dummy_accel_group_(gtk_accel_group_new()),
       menu_(is_menubar ? gtk_menu_bar_new() : gtk_custom_menu_new()),
       weak_factory_(this) {
@@ -331,7 +332,8 @@ void MenuGtk::PopupAsFromKeyEvent(GtkWidget* widget) {
 }
 
 void MenuGtk::Cancel() {
-  gtk_menu_popdown(GTK_MENU(menu_));
+  if (!is_menubar_)
+    gtk_menu_popdown(GTK_MENU(menu_));
 }
 
 void MenuGtk::UpdateMenu() {
@@ -710,6 +712,9 @@ void MenuGtk::OnSubMenuShow(GtkWidget* submenu) {
 }
 
 void MenuGtk::OnSubMenuHidden(GtkWidget* submenu) {
+  if (is_menubar_)
+    return;
+
   // Increase the reference count of the old submenu, and schedule it to be
   // deleted later. We get this hide notification before we've processed menu
   // activations, so if we were to delete the submenu now, we might lose the
