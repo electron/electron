@@ -6,12 +6,14 @@
 #define ATOM_BROWSER_API_ATOM_API_MENU_GTK_H_
 
 #include "browser/api/atom_api_menu.h"
+#include "browser/ui/gtk/menu_gtk.h"
 
 namespace atom {
 
 namespace api {
 
-class MenuGtk : public Menu {
+class MenuGtk : public Menu,
+                public ::MenuGtk::Delegate {
  public:
   explicit MenuGtk(v8::Handle<v8::Object> wrapper);
   virtual ~MenuGtk();
@@ -20,6 +22,8 @@ class MenuGtk : public Menu {
   virtual void Popup(NativeWindow* window) OVERRIDE;
 
  private:
+  scoped_ptr<::MenuGtk> menu_gtk_;
+
   DISALLOW_COPY_AND_ASSIGN(MenuGtk);
 };
 
