@@ -8,6 +8,7 @@
 #include <gtk/gtk.h>
 
 #include "browser/native_window.h"
+#include "browser/ui/accelerator_util.h"
 #include "browser/ui/gtk/menu_gtk.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/base/accelerators/accelerator.h"
@@ -67,18 +68,8 @@ class NativeWindowGtk : public NativeWindow,
       const std::vector<DraggableRegion>& regions) OVERRIDE;
 
  private:
-  typedef struct { int position; ui::MenuModel* model; } MenuItem;
-  typedef std::map<ui::Accelerator, MenuItem> AcceleratorTable;
-
   // Register accelerators supported by the menu model.
   void RegisterAccelerators();
-
-  // Generate a table that contains memu model's accelerators and command ids.
-  void GenerateAcceleratorTable();
-
-  // Helper to fill the accelerator table from the model.
-  void FillAcceleratorTable(AcceleratorTable* table,
-                            ui::MenuModel* model);
 
   // Set WebKit's style from current theme.
   void SetWebKitColorStyle();
@@ -130,7 +121,7 @@ class NativeWindowGtk : public NativeWindow,
   scoped_ptr<MenuGtk> menu_;
 
   // Map from accelerator to menu item's command id.
-  AcceleratorTable accelerator_table_;
+  accelerator_util::AcceleratorTable accelerator_table_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowGtk);
 };

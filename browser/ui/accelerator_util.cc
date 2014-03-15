@@ -8,10 +8,11 @@
 
 #include <string>
 
-#include "base/strings/string_util.h"
+#include "base/stl_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
-#include "ui/base/accelerators/accelerator.h"
+#include "base/strings/string_util.h"
+#include "ui/base/models/simple_menu_model.h"
 
 namespace accelerator_util {
 
@@ -184,6 +185,34 @@ bool StringToAccelerator(const std::string& description,
   *accelerator = ui::Accelerator(key, modifiers);
   SetPlatformAccelerator(accelerator);
   return true;
+}
+
+void GenerateAcceleratorTable(AcceleratorTable* table, ui::MenuModel* model) {
+  int count = model->GetItemCount();
+  for (int i = 0; i < count; ++i) {
+    ui::MenuModel::ItemType type = model->GetTypeAt(i);
+    if (type == ui::MenuModel::TYPE_SUBMENU) {
+      ui::MenuModel* submodel = model->GetSubmenuModelAt(i);
+      GenerateAcceleratorTable(table, submodel);
+    } else {
+      ui::Accelerator accelerator;
+      if (model->GetAcceleratorAt(i, &accelerator)) {
+        MenuItem item = { i, model };
+        (*table)[accelerator] = item;
+      }
+    }
+  }
+}
+
+bool TriggerAcceleratorTableCommand(AcceleratorTable* table,
+                                    const ui::Accelerator& accelerator) {
+  if (ContainsKey(*table, accelerator)) {
+    const accelerator_util::MenuItem& item = (*table)[accelerator];
+    item.model->ActivatedAt(item.position);
+    return true;
+  } else {
+    return false;
+  }
 }
 
 }  // namespace accelerator_util

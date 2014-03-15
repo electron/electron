@@ -4,7 +4,6 @@
 
 #include "browser/native_window_gtk.h"
 
-#include "base/stl_util.h"
 #include "base/values.h"
 #include "browser/ui/gtk/gtk_window_util.h"
 #include "common/draggable_region.h"
@@ -294,33 +293,10 @@ void NativeWindowGtk::UpdateDraggableRegions(
 }
 
 void NativeWindowGtk::RegisterAccelerators() {
-  accelerator_table_.clear();
-  GenerateAcceleratorTable();
-}
-
-void NativeWindowGtk::GenerateAcceleratorTable() {
   DCHECK(menu_);
-  ui::SimpleMenuModel* model = static_cast<ui::SimpleMenuModel*>(
-      menu_->model());
-  FillAcceleratorTable(&accelerator_table_, model);
-}
-
-void NativeWindowGtk::FillAcceleratorTable(AcceleratorTable* table,
-                                           ui::MenuModel* model) {
-  int count = model->GetItemCount();
-  for (int i = 0; i < count; ++i) {
-    ui::MenuModel::ItemType type = model->GetTypeAt(i);
-    if (type == ui::MenuModel::TYPE_SUBMENU) {
-      ui::MenuModel* submodel = model->GetSubmenuModelAt(i);
-      FillAcceleratorTable(table, submodel);
-    } else {
-      ui::Accelerator accelerator;
-      if (model->GetAcceleratorAt(i, &accelerator)) {
-        MenuItem item = { i, model };
-        (*table)[accelerator] = item;
-      }
-    }
-  }
+  accelerator_table_.clear();
+  accelerator_util::GenerateAcceleratorTable(&accelerator_table_,
+                                             menu_->model());
 }
 
 void NativeWindowGtk::SetWebKitColorStyle() {
@@ -467,13 +443,8 @@ gboolean NativeWindowGtk::OnButtonPress(GtkWidget* widget,
 gboolean NativeWindowGtk::OnKeyPress(GtkWidget* widget, GdkEventKey* event) {
   ui::Accelerator accelerator = ui::AcceleratorForGdkKeyCodeAndModifier(
       event->keyval, static_cast<GdkModifierType>(event->state));
-  if (ContainsKey(accelerator_table_, accelerator)) {
-    const MenuItem& item = accelerator_table_[accelerator];
-    item.model->ActivatedAt(item.position);
-    return TRUE;
-  } else {
-    return FALSE;
-  }
+  return accelerator_util::TriggerAcceleratorTableCommand(
+      &accelerator_table_, accelerator) ? TRUE: FALSE;
 }
 
 // static

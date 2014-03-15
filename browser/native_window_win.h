@@ -8,6 +8,7 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/strings/string16.h"
 #include "browser/native_window.h"
+#include "browser/ui/accelerator_util.h"
 #include "ui/gfx/size.h"
 #include "ui/views/widget/widget_delegate.h"
 
@@ -113,13 +114,6 @@ class NativeWindowWin : public NativeWindow,
   // Register accelerators supported by the menu model.
   void RegisterAccelerators();
 
-  // Generate a table that contains memu model's accelerators and command ids.
-  void GenerateAcceleratorTable();
-
-  // Helper to fill the accelerator table from the model.
-  void FillAcceleratorTable(AcceleratorTable* table,
-                            ui::MenuModel* model);
-
   scoped_ptr<views::Widget> window_;
   views::WebView* web_view_;  // managed by window_.
 
@@ -127,7 +121,7 @@ class NativeWindowWin : public NativeWindow,
   scoped_ptr<atom::Menu2> menu_;
 
   // Map from accelerator to menu item's command id.
-  AcceleratorTable accelerator_table_;
+  accelerator_util::AcceleratorTable accelerator_table_;
 
   scoped_ptr<SkRegion> draggable_region_;
 
