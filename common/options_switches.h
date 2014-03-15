@@ -27,6 +27,7 @@ extern const char kFullscreen[];
 extern const char kKiosk[];
 extern const char kAlwaysOnTop[];
 extern const char kNodeIntegration[];
+extern const char kAcceptFirstMouse[];
 
 }  // namespace switches
 

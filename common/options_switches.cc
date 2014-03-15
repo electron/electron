@@ -33,6 +33,9 @@ const char kAlwaysOnTop[] = "always-on-top";
 
 const char kNodeIntegration[] = "node-integration";
 
+// Enable the NSView to accept first mouse event.
+const char kAcceptFirstMouse[] = "accept-first-mouse";
+
 }  // namespace switches
 
 }  // namespace atom

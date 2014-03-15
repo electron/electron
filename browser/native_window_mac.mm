@@ -29,16 +29,24 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 @interface AtomNSWindowDelegate : NSObject<NSWindowDelegate> {
  @private
   atom::NativeWindowMac* shell_;
+  BOOL acceptsFirstMouse_;
 }
 - (id)initWithShell:(atom::NativeWindowMac*)shell;
+- (void)setAcceptsFirstMouse:(BOOL)accept;
 @end
 
 @implementation AtomNSWindowDelegate
 
 - (id)initWithShell:(atom::NativeWindowMac*)shell {
-  if ((self = [super init]))
+  if ((self = [super init])) {
     shell_ = shell;
+    acceptsFirstMouse_ = NO;
+  }
   return self;
+}
+
+- (void)setAcceptsFirstMouse:(BOOL)accept {
+  acceptsFirstMouse_ = accept;
 }
 
 - (void)windowDidResignMain:(NSNotification*)notification {
@@ -48,6 +56,13 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 - (void)windowDidResize:(NSNotification*)otification {
   if (!shell_->has_frame())
     shell_->ClipWebView();
+}
+
+- (void)windowDidExitFullScreen:(NSNotification*)notification {
+  if (!shell_->has_frame()) {
+    NSWindow* window = shell_->GetNativeWindow();
+    [[window standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
+  }
 }
 
 - (void)windowWillClose:(NSNotification*)notification {
@@ -63,11 +78,8 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   return NO;
 }
 
-- (void)windowDidExitFullScreen:(NSNotification*)notification {
-  if (!shell_->has_frame()) {
-    NSWindow* window = shell_->GetNativeWindow();
-    [[window standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
-  }
+- (BOOL)acceptsFirstMouse:(NSEvent*)event {
+  return acceptsFirstMouse_;
 }
 
 @end
@@ -77,7 +89,6 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   atom::NativeWindowMac* shell_;
 }
 - (void)setShell:(atom::NativeWindowMac*)shell;
-- (IBAction)showDevTools:(id)sender;
 @end
 
 @implementation AtomNSWindow
@@ -162,7 +173,14 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
   [atomWindow setShell:this];
   window_ = atomWindow;
 
-  [window() setDelegate:[[AtomNSWindowDelegate alloc] initWithShell:this]];
+  AtomNSWindowDelegate* delegate =
+      [[AtomNSWindowDelegate alloc] initWithShell:this];
+  [window() setDelegate:delegate];
+
+  // Enable the NSView to accept first mouse event.
+  bool acceptsFirstMouse = false;
+  options->GetBoolean(switches::kAcceptFirstMouse, &acceptsFirstMouse);
+  [delegate setAcceptsFirstMouse:acceptsFirstMouse];
 
   // Disable fullscreen button when 'fullscreen' is specified to false.
   bool fullscreen;
