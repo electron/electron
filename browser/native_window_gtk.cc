@@ -35,7 +35,9 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
       window_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))),
       vbox_(gtk_vbox_new(FALSE, 0)),
       state_(GDK_WINDOW_STATE_WITHDRAWN),
-      is_always_on_top_(false) {
+      is_always_on_top_(false),
+      suppress_window_raise_(false),
+      frame_cursor_(NULL) {
   gtk_container_add(GTK_CONTAINER(window_), vbox_);
   gtk_container_add(GTK_CONTAINER(vbox_),
                     GetWebContents()->GetView()->GetNativeView());
@@ -273,7 +275,7 @@ void NativeWindowGtk::UpdateDraggableRegions(
   if (has_frame_)
     return;
 
-  SkRegion draggable_region;
+  draggable_region_.reset(new SkRegion);
 
   // By default, the whole window is non-draggable. We need to explicitly
   // include those draggable regions.
@@ -281,15 +283,13 @@ void NativeWindowGtk::UpdateDraggableRegions(
            regions.begin();
        iter != regions.end(); ++iter) {
     const DraggableRegion& region = *iter;
-    draggable_region.op(
+    draggable_region_->op(
         region.bounds.x(),
         region.bounds.y(),
         region.bounds.right(),
         region.bounds.bottom(),
         region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
   }
-
-  draggable_region_ = draggable_region;
 }
 
 void NativeWindowGtk::RegisterAccelerators() {
@@ -361,18 +361,22 @@ gboolean NativeWindowGtk::OnWindowState(GtkWidget* window,
 
 gboolean NativeWindowGtk::OnMouseMoveEvent(GtkWidget* widget,
                                            GdkEventMotion* event) {
+  if (has_frame_) {
+    // Reset the cursor.
+    if (frame_cursor_) {
+      frame_cursor_ = NULL;
+      gdk_window_set_cursor(gtk_widget_get_window(GTK_WIDGET(window_)), NULL);
+    }
+    return FALSE;
+  }
+
   if (!IsResizable())
     return FALSE;
 
-  int win_x, win_y;
-  GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(window_));
-  gdk_window_get_origin(gdk_window, &win_x, &win_y);
-  gfx::Point point(static_cast<int>(event->x_root - win_x),
-                   static_cast<int>(event->y_root - win_y));
-
   // Update the cursor if we're on the custom frame border.
   GdkWindowEdge edge;
-  bool has_hit_edge = GetWindowEdge(point.x(), point.y(), &edge);
+  bool has_hit_edge = GetWindowEdge(static_cast<int>(event->x),
+                                    static_cast<int>(event->y), &edge);
   GdkCursorType new_cursor = GDK_LAST_CURSOR;
   if (has_hit_edge)
     new_cursor = gtk_window_util::GdkWindowEdgeToGdkCursorType(edge);
@@ -391,18 +395,19 @@ gboolean NativeWindowGtk::OnMouseMoveEvent(GtkWidget* widget,
 
 gboolean NativeWindowGtk::OnButtonPress(GtkWidget* widget,
                                         GdkEventButton* event) {
+  DCHECK(!has_frame_);
   // Make the button press coordinate relative to the browser window.
   int win_x, win_y;
   GdkWindow* gdk_window = gtk_widget_get_window(GTK_WIDGET(window_));
   gdk_window_get_origin(gdk_window, &win_x, &win_y);
 
-  bool resizable = IsResizable();
   GdkWindowEdge edge;
   gfx::Point point(static_cast<int>(event->x_root - win_x),
                    static_cast<int>(event->y_root - win_y));
-  bool has_hit_edge = resizable && GetWindowEdge(point.x(), point.y(), &edge);
-  bool has_hit_titlebar = !draggable_region_.isEmpty() &&
-      draggable_region_.contains(event->x, event->y);
+  bool has_hit_edge = IsResizable() &&
+                      GetWindowEdge(point.x(), point.y(), &edge);
+  bool has_hit_titlebar =
+      draggable_region_ && draggable_region_->contains(event->x, event->y);
 
   if (event->button == 1) {
     if (GDK_BUTTON_PRESS == event->type) {
@@ -419,11 +424,15 @@ gboolean NativeWindowGtk::OnButtonPress(GtkWidget* widget,
                                      event->time);
         return TRUE;
       } else if (has_hit_titlebar) {
+        GdkRectangle window_bounds = {0};
+        gdk_window_get_frame_extents(gdk_window, &window_bounds);
+        gfx::Rect bounds(window_bounds.x, window_bounds.y,
+                         window_bounds.width, window_bounds.height);
         return gtk_window_util::HandleTitleBarLeftMousePress(
-            window_, gfx::Rect(GetPosition(), GetSize()), event);
+            window_, bounds, event);
       }
     } else if (GDK_2BUTTON_PRESS == event->type) {
-      if (has_hit_titlebar && resizable) {
+      if (has_hit_titlebar && IsResizable()) {
         // Maximize/restore on double click.
         if (IsMaximized())
           gtk_window_unmaximize(window_);
@@ -437,6 +446,7 @@ gboolean NativeWindowGtk::OnButtonPress(GtkWidget* widget,
       gdk_window_lower(gdk_window);
     return TRUE;
   }
+
   return FALSE;
 }
 

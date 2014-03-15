@@ -105,9 +105,9 @@ class NativeWindowGtk : public NativeWindow,
   gfx::Size minimum_size_;
   gfx::Size maximum_size_;
 
-  // The region is treated as title bar, can be dragged to move
-  // and double clicked to maximize.
-  SkRegion draggable_region_;
+  // The region is treated as title bar, can be dragged to move and double
+  // clicked to maximize.
+  scoped_ptr<SkRegion> draggable_region_;
 
   // If true, don't call gdk_window_raise() when we get a click in the title
   // bar or window border.  This is to work around a compiz bug.
