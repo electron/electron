@@ -10,6 +10,7 @@
 #include "browser/native_window.h"
 #include "browser/ui/gtk/menu_gtk.h"
 #include "third_party/skia/include/core/SkRegion.h"
+#include "ui/base/accelerators/accelerator.h"
 #include "ui/base/gtk/gtk_signal.h"
 #include "ui/gfx/size.h"
 
@@ -66,6 +67,19 @@ class NativeWindowGtk : public NativeWindow,
       const std::vector<DraggableRegion>& regions) OVERRIDE;
 
  private:
+  typedef struct { int position; ui::MenuModel* model; } MenuItem;
+  typedef std::map<ui::Accelerator, MenuItem> AcceleratorTable;
+
+  // Register accelerators supported by the menu model.
+  void RegisterAccelerators();
+
+  // Generate a table that contains memu model's accelerators and command ids.
+  void GenerateAcceleratorTable();
+
+  // Helper to fill the accelerator table from the model.
+  void FillAcceleratorTable(AcceleratorTable* table,
+                            ui::MenuModel* model);
+
   // Set WebKit's style from current theme.
   void SetWebKitColorStyle();
 
@@ -82,10 +96,15 @@ class NativeWindowGtk : public NativeWindow,
   CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnFocusOut, GdkEventFocus*);
   CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnWindowState,
                        GdkEventWindowState*);
+
+  // Mouse move and mouse button press callbacks.
   CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnMouseMoveEvent,
                        GdkEventMotion*);
   CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnButtonPress,
                        GdkEventButton*);
+
+  // Key press event callback.
+  CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnKeyPress, GdkEventKey*);
 
   GtkWindow* window_;
   GtkWidget* vbox_;
@@ -109,6 +128,9 @@ class NativeWindowGtk : public NativeWindow,
 
   // The window menu.
   scoped_ptr<MenuGtk> menu_;
+
+  // Map from accelerator to menu item's command id.
+  AcceleratorTable accelerator_table_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowGtk);
 };

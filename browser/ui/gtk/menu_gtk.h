@@ -130,6 +130,7 @@ class MenuGtk {
                                     gpointer userdata);
 
   GtkWidget* widget() const { return menu_; }
+  ui::MenuModel* model() const { return model_;}
 
   // Updates all the enabled/checked states and the dynamic labels.
   void UpdateMenu();

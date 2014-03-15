@@ -4,6 +4,7 @@
 
 #include "browser/native_window_gtk.h"
 
+#include "base/stl_util.h"
 #include "base/values.h"
 #include "browser/ui/gtk/gtk_window_util.h"
 #include "common/draggable_region.h"
@@ -11,6 +12,8 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
 #include "content/public/common/renderer_preferences.h"
+#include "ui/base/accelerators/platform_accelerator_gtk.h"
+#include "ui/base/models/simple_menu_model.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/gtk_util.h"
 #include "ui/gfx/rect.h"
@@ -57,6 +60,8 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
                    G_CALLBACK(OnWindowDeleteEventThunk), this);
   g_signal_connect(window_, "focus-out-event",
                    G_CALLBACK(OnFocusOutThunk), this);
+  g_signal_connect(window_, "key-press-event",
+                   G_CALLBACK(OnKeyPressThunk), this);
 
   if (!has_frame_) {
     gtk_window_set_decorated(window_, false);
@@ -260,6 +265,7 @@ void NativeWindowGtk::SetMenu(ui::MenuModel* menu_model) {
   menu_.reset(new ::MenuGtk(this, menu_model, true));
   gtk_box_pack_start(GTK_BOX(vbox_), menu_->widget(), FALSE, FALSE, 0);
   gtk_box_reorder_child(GTK_BOX(vbox_), menu_->widget(), 0);
+  RegisterAccelerators();
 }
 
 void NativeWindowGtk::UpdateDraggableRegions(
@@ -285,6 +291,36 @@ void NativeWindowGtk::UpdateDraggableRegions(
   }
 
   draggable_region_ = draggable_region;
+}
+
+void NativeWindowGtk::RegisterAccelerators() {
+  accelerator_table_.clear();
+  GenerateAcceleratorTable();
+}
+
+void NativeWindowGtk::GenerateAcceleratorTable() {
+  DCHECK(menu_);
+  ui::SimpleMenuModel* model = static_cast<ui::SimpleMenuModel*>(
+      menu_->model());
+  FillAcceleratorTable(&accelerator_table_, model);
+}
+
+void NativeWindowGtk::FillAcceleratorTable(AcceleratorTable* table,
+                                           ui::MenuModel* model) {
+  int count = model->GetItemCount();
+  for (int i = 0; i < count; ++i) {
+    ui::MenuModel::ItemType type = model->GetTypeAt(i);
+    if (type == ui::MenuModel::TYPE_SUBMENU) {
+      ui::MenuModel* submodel = model->GetSubmenuModelAt(i);
+      FillAcceleratorTable(table, submodel);
+    } else {
+      ui::Accelerator accelerator;
+      if (model->GetAcceleratorAt(i, &accelerator)) {
+        MenuItem item = { i, model };
+        (*table)[accelerator] = item;
+      }
+    }
+  }
 }
 
 void NativeWindowGtk::SetWebKitColorStyle() {
@@ -426,6 +462,18 @@ gboolean NativeWindowGtk::OnButtonPress(GtkWidget* widget,
     return TRUE;
   }
   return FALSE;
+}
+
+gboolean NativeWindowGtk::OnKeyPress(GtkWidget* widget, GdkEventKey* event) {
+  ui::Accelerator accelerator = ui::AcceleratorForGdkKeyCodeAndModifier(
+      event->keyval, static_cast<GdkModifierType>(event->state));
+  if (ContainsKey(accelerator_table_, accelerator)) {
+    const MenuItem& item = accelerator_table_[accelerator];
+    item.model->ActivatedAt(item.position);
+    return TRUE;
+  } else {
+    return FALSE;
+  }
 }
 
 // static
