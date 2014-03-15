@@ -6,10 +6,6 @@
 
 #include <string>
 
-// FIXME: The foundation_util.h is aborting our compilation, do not
-// include it.
-#define BASE_MAC_FOUNDATION_UTIL_H_
-
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_nsobject.h"
 #include "base/strings/sys_string_conversions.h"
