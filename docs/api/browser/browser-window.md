@@ -43,6 +43,8 @@ You can also create a window without chrome by using
     [Frameless Window](frameless-window.md)
   * `node-integration` String - Can be `all`, `except-iframe`,
     `manual-enable-iframe` or `disable`.
+  * `accept-first-mouse` Boolean - Whether the web view accepts a single
+     mouse-down event that simultaneously activates the window
 
 Creates a new `BrowserWindow` with native properties set by the `options`.
 Usually you only need to set the `width` and `height`, other properties will
