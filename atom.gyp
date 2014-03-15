@@ -367,7 +367,6 @@
       ],
       'include_dirs': [
         '.',
-        'vendor',
         'vendor/brightray',
         # Include directories for uv and node.
         'vendor/node/src',
