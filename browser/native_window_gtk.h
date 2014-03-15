@@ -8,13 +8,17 @@
 #include <gtk/gtk.h>
 
 #include "browser/native_window.h"
+#include "browser/ui/accelerator_util.h"
+#include "browser/ui/gtk/menu_gtk.h"
 #include "third_party/skia/include/core/SkRegion.h"
+#include "ui/base/accelerators/accelerator.h"
 #include "ui/base/gtk/gtk_signal.h"
 #include "ui/gfx/size.h"
 
 namespace atom {
 
-class NativeWindowGtk : public NativeWindow {
+class NativeWindowGtk : public NativeWindow,
+                        public MenuGtk::Delegate {
  public:
   explicit NativeWindowGtk(content::WebContents* web_contents,
                            base::DictionaryValue* options);
@@ -56,11 +60,17 @@ class NativeWindowGtk : public NativeWindow {
   virtual bool HasModalDialog() OVERRIDE;
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
 
+  // Set the native window menu.
+  void SetMenu(ui::MenuModel* menu_model);
+
  protected:
   virtual void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) OVERRIDE;
 
  private:
+  // Register accelerators supported by the menu model.
+  void RegisterAccelerators();
+
   // Set WebKit's style from current theme.
   void SetWebKitColorStyle();
 
@@ -77,21 +87,27 @@ class NativeWindowGtk : public NativeWindow {
   CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnFocusOut, GdkEventFocus*);
   CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnWindowState,
                        GdkEventWindowState*);
+
+  // Mouse move and mouse button press callbacks.
   CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnMouseMoveEvent,
                        GdkEventMotion*);
   CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnButtonPress,
                        GdkEventButton*);
 
+  // Key press event callback.
+  CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnKeyPress, GdkEventKey*);
+
   GtkWindow* window_;
+  GtkWidget* vbox_;
 
   GdkWindowState state_;
   bool is_always_on_top_;
   gfx::Size minimum_size_;
   gfx::Size maximum_size_;
 
-  // The region is treated as title bar, can be dragged to move
-  // and double clicked to maximize.
-  SkRegion draggable_region_;
+  // The region is treated as title bar, can be dragged to move and double
+  // clicked to maximize.
+  scoped_ptr<SkRegion> draggable_region_;
 
   // If true, don't call gdk_window_raise() when we get a click in the title
   // bar or window border.  This is to work around a compiz bug.
@@ -100,6 +116,12 @@ class NativeWindowGtk : public NativeWindow {
   // The current window cursor.  We set it to a resize cursor when over the
   // custom frame border.  We set it to NULL if we want the default cursor.
   GdkCursor* frame_cursor_;
+
+  // The window menu.
+  scoped_ptr<MenuGtk> menu_;
+
+  // Map from accelerator to menu item's command id.
+  accelerator_util::AcceleratorTable accelerator_table_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowGtk);
 };

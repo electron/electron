@@ -59,6 +59,11 @@ GtkWidget* CreateBoldLabel(const std::string& text) {
   return LeftAlignMisc(label);
 }
 
+void SetAlwaysShowImage(GtkWidget* image_menu_item) {
+  gtk_image_menu_item_set_always_show_image(
+      GTK_IMAGE_MENU_ITEM(image_menu_item), TRUE);
+}
+
 bool IsWidgetAncestryVisible(GtkWidget* widget) {
   GtkWidget* parent = widget;
   while (parent && gtk_widget_get_visible(parent))

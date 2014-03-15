@@ -4,7 +4,6 @@
 
 #include "browser/native_window_win.h"
 
-#include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "browser/api/atom_api_menu.h"
@@ -431,13 +430,8 @@ void NativeWindowWin::ViewHierarchyChanged(
 
 bool NativeWindowWin::AcceleratorPressed(
     const ui::Accelerator& accelerator) {
-  if (ContainsKey(accelerator_table_, accelerator)) {
-    const MenuItem& item = accelerator_table_[accelerator];
-    item.model->ActivatedAt(item.position);
-    return true;
-  } else {
-    return false;
-  }
+  return accelerator_util::TriggerAcceleratorTableCommand(
+      &accelerator_table_, accelerator);
 }
 
 void NativeWindowWin::DeleteDelegate() {
@@ -530,36 +524,14 @@ void NativeWindowWin::RegisterAccelerators() {
   accelerator_table_.clear();
   focus_manager->UnregisterAccelerators(this);
 
-  GenerateAcceleratorTable();
-  for (AcceleratorTable::const_iterator iter = accelerator_table_.begin();
-       iter != accelerator_table_.end(); ++iter) {
+  accelerator_util::GenerateAcceleratorTable(&accelerator_table_,
+                                             menu_->model());
+  accelerator_util::AcceleratorTable::const_iterator iter;
+  for (iter = accelerator_table_.begin();
+       iter != accelerator_table_.end();
+       ++iter) {
     focus_manager->RegisterAccelerator(
         iter->first, ui::AcceleratorManager::kNormalPriority, this);
-  }
-}
-
-void NativeWindowWin::GenerateAcceleratorTable() {
-  DCHECK(menu_);
-  ui::SimpleMenuModel* model = static_cast<ui::SimpleMenuModel*>(
-      menu_->model());
-  FillAcceleratorTable(&accelerator_table_, model);
-}
-
-void NativeWindowWin::FillAcceleratorTable(AcceleratorTable* table,
-                                           ui::MenuModel* model) {
-  int count = model->GetItemCount();
-  for (int i = 0; i < count; ++i) {
-    ui::MenuModel::ItemType type = model->GetTypeAt(i);
-    if (type == ui::MenuModel::TYPE_SUBMENU) {
-      ui::MenuModel* submodel = model->GetSubmenuModelAt(i);
-      FillAcceleratorTable(table, submodel);
-    } else {
-      ui::Accelerator accelerator;
-      if (model->GetAcceleratorAt(i, &accelerator)) {
-        MenuItem item = { i, model };
-        (*table)[accelerator] = item;
-      }
-    }
   }
 }
 
