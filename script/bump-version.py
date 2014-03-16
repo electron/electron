@@ -71,7 +71,7 @@ def update_win_rc(version, versions):
   pattern_fvs = re.compile(' *VALUE "FileVersion", "[0-9.]+"')
   pattern_pvs = re.compile(' *VALUE "ProductVersion", "[0-9.]+"')
 
-  win_rc = os.path.join('browser', 'resources', 'win', 'atom.rc')
+  win_rc = os.path.join('atom', 'browser', 'resources', 'win', 'atom.rc')
   with open(win_rc, 'r') as f:
     lines = f.readlines()
 
@@ -92,7 +92,7 @@ def update_win_rc(version, versions):
 
 
 def update_version_h(versions):
-  version_h = os.path.join('common', 'atom_version.h')
+  version_h = os.path.join('atom', 'common', 'atom_version.h')
   with open(version_h, 'r') as f:
     lines = f.readlines()
 
@@ -109,7 +109,7 @@ def update_version_h(versions):
 
 
 def update_info_plist(version):
-  info_plist = os.path.join('browser', 'resources', 'mac', 'Info.plist')
+  info_plist = os.path.join('atom', 'browser', 'resources', 'mac', 'Info.plist')
   with open(info_plist, 'r') as f:
     lines = f.readlines()
 
@@ -130,7 +130,7 @@ def tag_version(version):
 
 
 def git_push():
-  subprocess.check_call(['git', 'push'])
+  subprocess.check_call(['git', 'push', '--follow-tags'])
 
 
 if __name__ == '__main__':
