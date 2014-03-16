@@ -16,10 +16,10 @@ def main():
   coffeelint = os.path.join(SOURCE_ROOT, 'node_modules', 'coffeelint', 'bin',
                             'coffeelint')
   settings = ['--quiet', '-f', os.path.join('script', 'coffeelint.json')]
-  files = glob.glob('browser/api/lib/*.coffee') + \
-          glob.glob('renderer/api/lib/*.coffee') + \
-          glob.glob('common/api/lib/*.coffee') + \
-          glob.glob('browser/atom/*.coffee')
+  files = glob.glob('atom/browser/api/lib/*.coffee') + \
+          glob.glob('atom/renderer/api/lib/*.coffee') + \
+          glob.glob('atom/common/api/lib/*.coffee') + \
+          glob.glob('atom/browser/atom/*.coffee')
 
   try:
     subprocess.check_call(['node', coffeelint] + settings + files)
