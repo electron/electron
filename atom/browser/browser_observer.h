@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROSER_BROWSER_OBSERVER_H_
-#define ATOM_BROSER_BROWSER_OBSERVER_H_
+#ifndef ATOM_BROWSER_BROWSER_OBSERVER_H_
+#define ATOM_BROWSER_BROWSER_OBSERVER_H_
 
 #include <string>
 
@@ -40,4 +40,4 @@ class BrowserObserver {
 
 }  // namespace atom
 
-#endif  // ATOM_BROSER_BROWSER_OBSERVER_H_
+#endif  // ATOM_BROWSER_BROWSER_OBSERVER_H_

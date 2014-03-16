@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BROWSER_UI_MESSAGE_BOX_H_
-#define BROWSER_UI_MESSAGE_BOX_H_
+#ifndef ATOM_BROWSER_UI_MESSAGE_BOX_H_
+#define ATOM_BROWSER_UI_MESSAGE_BOX_H_
 
 #include <string>
 #include <vector>
@@ -39,4 +39,4 @@ void ShowMessageBox(NativeWindow* parent_window,
 
 }  // namespace atom
 
-#endif  // BROWSER_UI_MESSAGE_BOX_H_
+#endif  // ATOM_BROWSER_UI_MESSAGE_BOX_H_

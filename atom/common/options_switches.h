@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_OPTIONS_SWITCHES_
-#define ATOM_COMMON_OPTIONS_SWITCHES_
+#ifndef ATOM_COMMON_OPTIONS_SWITCHES_H_
+#define ATOM_COMMON_OPTIONS_SWITCHES_H_
 
 namespace atom {
 
@@ -33,4 +33,4 @@ extern const char kAcceptFirstMouse[];
 
 }  // namespace atom
 
-#endif  // ATOM_COMMON_OPTIONS_SWITCHES_
+#endif  // ATOM_COMMON_OPTIONS_SWITCHES_H_

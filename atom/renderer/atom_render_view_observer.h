@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_RENDERER_ATOM_RENDER_VIEW_OBSERVER_
-#define ATOM_RENDERER_ATOM_RENDER_VIEW_OBSERVER_
+#ifndef ATOM_RENDERER_ATOM_RENDER_VIEW_OBSERVER_H_
+#define ATOM_RENDERER_ATOM_RENDER_VIEW_OBSERVER_H_
 
 #include "content/public/renderer/render_view_observer.h"
 
@@ -39,4 +39,4 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
 
 }  // namespace atom
 
-#endif  // ATOM_RENDERER_ATOM_RENDER_VIEW_OBSERVER_
+#endif  // ATOM_RENDERER_ATOM_RENDER_VIEW_OBSERVER_H_

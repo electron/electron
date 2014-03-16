@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BROWSER_UI_WIN_NATIVE_MENU_WIN_H_
-#define BROWSER_UI_WIN_NATIVE_MENU_WIN_H_
+#ifndef ATOM_BROWSER_UI_WIN_NATIVE_MENU_WIN_H_
+#define ATOM_BROWSER_UI_WIN_NATIVE_MENU_WIN_H_
 
 #include <vector>
 
@@ -189,4 +189,4 @@ class NativeMenuWin {
 
 }  // namespace atom
 
-#endif  // BROWSER_UI_WIN_NATIVE_MENU_WIN_H_
+#endif  // ATOM_BROWSER_UI_WIN_NATIVE_MENU_WIN_H_

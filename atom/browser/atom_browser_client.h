@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_ATOM_BROWSER_CLIENT_
-#define ATOM_BROWSER_ATOM_BROWSER_CLIENT_
+#ifndef ATOM_BROWSER_ATOM_BROWSER_CLIENT_H_
+#define ATOM_BROWSER_ATOM_BROWSER_CLIENT_H_
 
 #include "brightray/browser/browser_client.h"
 
@@ -40,4 +40,4 @@ class AtomBrowserClient : public brightray::BrowserClient {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_ATOM_BROWSER_CLIENT_
+#endif  // ATOM_BROWSER_ATOM_BROWSER_CLIENT_H_

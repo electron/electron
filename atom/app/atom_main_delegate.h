@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_APP_ATOM_MAIN_DELEGATE_
-#define ATOM_APP_ATOM_MAIN_DELEGATE_
+#ifndef ATOM_APP_ATOM_MAIN_DELEGATE_H_
+#define ATOM_APP_ATOM_MAIN_DELEGATE_H_
 
 #include "brightray/common/main_delegate.h"
 
@@ -38,4 +38,4 @@ class AtomMainDelegate : public brightray::MainDelegate {
 
 }  // namespace atom
 
-#endif  // ATOM_APP_ATOM_MAIN_DELEGATE_
+#endif  // ATOM_APP_ATOM_MAIN_DELEGATE_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_ATOM_API_EVENT_H_
-#define ATOM_BROWSER_ATOM_API_EVENT_H_
+#ifndef ATOM_BROWSER_API_ATOM_API_EVENT_H_
+#define ATOM_BROWSER_API_ATOM_API_EVENT_H_
 
 #include "base/basictypes.h"
 #include "base/compiler_specific.h"
@@ -64,4 +64,4 @@ class Event : public node::ObjectWrap,
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_ATOM_API_EVENT_H_
+#endif  // ATOM_BROWSER_API_ATOM_API_EVENT_H_

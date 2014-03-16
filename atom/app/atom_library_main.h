@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_APP_ATOM_LIBRARY_MAIN_
-#define ATOM_APP_ATOM_LIBRARY_MAIN_
+#ifndef ATOM_APP_ATOM_LIBRARY_MAIN_H_
+#define ATOM_APP_ATOM_LIBRARY_MAIN_H_
 
 #include "base/basictypes.h"
 
@@ -14,4 +14,4 @@ int AtomMain(int argc, const char* argv[]);
 }
 #endif  // OS_MACOSX
 
-#endif  // ATOM_APP_ATOM_LIBRARY_MAIN_
+#endif  // ATOM_APP_ATOM_LIBRARY_MAIN_H_

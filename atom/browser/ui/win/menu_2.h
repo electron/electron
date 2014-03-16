@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BROWSER_UI_WIN_MENU_2_H_
-#define BROWSER_UI_WIN_MENU_2_H_
+#ifndef ATOM_BROWSER_UI_WIN_MENU_2_H_
+#define ATOM_BROWSER_UI_WIN_MENU_2_H_
 
 #include "base/basictypes.h"
 #include "base/memory/scoped_ptr.h"
@@ -93,4 +93,4 @@ class Menu2 {
 
 }  // namespace atom
 
-#endif  // BROWSER_UI_WIN_MENU_2_H_
+#endif  // ATOM_BROWSER_UI_WIN_MENU_2_H_

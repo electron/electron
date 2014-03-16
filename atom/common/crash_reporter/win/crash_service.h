@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef COMMON_CRASH_REPORTER_WIN_CRASH_SERVICE_H_
-#define COMMON_CRASH_REPORTER_WIN_CRASH_SERVICE_H_
+#ifndef ATOM_COMMON_CRASH_REPORTER_WIN_CRASH_SERVICE_H_
+#define ATOM_COMMON_CRASH_REPORTER_WIN_CRASH_SERVICE_H_
 
 #include <string>
 
@@ -128,4 +128,4 @@ class CrashService {
 
 }  // namespace breakpad
 
-#endif  // COMMON_CRASH_REPORTER_WIN_CRASH_SERVICE_H_
+#endif  // ATOM_COMMON_CRASH_REPORTER_WIN_CRASH_SERVICE_H_

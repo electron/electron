@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_API_ATOM_BINDINGS_
-#define ATOM_COMMON_API_ATOM_BINDINGS_
+#ifndef ATOM_COMMON_API_ATOM_BINDINGS_H_
+#define ATOM_COMMON_API_ATOM_BINDINGS_H_
 
 #include "base/basictypes.h"
 #include "v8/include/v8.h"
@@ -33,4 +33,4 @@ class AtomBindings {
 
 }  // namespace atom
 
-#endif  // ATOM_COMMON_API_ATOM_BINDINGS_
+#endif  // ATOM_COMMON_API_ATOM_BINDINGS_H_

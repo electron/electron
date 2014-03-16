@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_SCOPED_PERSISTENT_H_
-#define ATOM_COMMON_SCOPED_PERSISTENT_H_
+#ifndef ATOM_COMMON_V8_SCOPED_PERSISTENT_H_
+#define ATOM_COMMON_V8_SCOPED_PERSISTENT_H_
 
 #include "base/logging.h"
 #include "base/memory/ref_counted.h"
@@ -112,4 +112,4 @@ typedef scoped_refptr<RefCountedPersistent<v8::Object>> RefCountedV8Object;
 
 }  // namespace atom
 
-#endif  // ATOM_COMMON_SCOPED_PERSISTENT_H_
+#endif  // ATOM_COMMON_V8_SCOPED_PERSISTENT_H_

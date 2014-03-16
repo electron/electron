@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROSER_WINDOW_LIST_OBSERVER_H_
-#define ATOM_BROSER_WINDOW_LIST_OBSERVER_H_
+#ifndef ATOM_BROWSER_WINDOW_LIST_OBSERVER_H_
+#define ATOM_BROWSER_WINDOW_LIST_OBSERVER_H_
 
 namespace atom {
 
@@ -27,7 +27,6 @@ class WindowListObserver {
   virtual ~WindowListObserver() {}
 };
 
-
 }  // namespace atom
 
-#endif  // ATOM_BROSER_WINDOW_LIST_OBSERVER_H_
+#endif  // ATOM_BROWSER_WINDOW_LIST_OBSERVER_H_

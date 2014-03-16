@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BROWSER_UI_ACCELERATOR_UTIL_H_
-#define BROWSER_UI_ACCELERATOR_UTIL_H_
+#ifndef ATOM_BROWSER_UI_ACCELERATOR_UTIL_H_
+#define ATOM_BROWSER_UI_ACCELERATOR_UTIL_H_
 
 #include <map>
 #include <string>
@@ -35,4 +35,4 @@ bool TriggerAcceleratorTableCommand(AcceleratorTable* table,
 
 }  // namespace accelerator_util
 
-#endif  // BROWSER_UI_ACCELERATOR_UTIL_H_
+#endif  // ATOM_BROWSER_UI_ACCELERATOR_UTIL_H_

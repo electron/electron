@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_ATOM_BROWSER_MAIN_PARTS_
-#define ATOM_BROWSER_ATOM_BROWSER_MAIN_PARTS_
+#ifndef ATOM_BROWSER_ATOM_BROWSER_MAIN_PARTS_H_
+#define ATOM_BROWSER_ATOM_BROWSER_MAIN_PARTS_H_
 
 #include "brightray/browser/browser_main_parts.h"
 
@@ -48,4 +48,4 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_ATOM_BROWSER_MAIN_PARTS_
+#endif  // ATOM_BROWSER_ATOM_BROWSER_MAIN_PARTS_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_NODE_BINDINGS_MAC_
-#define ATOM_COMMON_NODE_BINDINGS_MAC_
+#ifndef ATOM_COMMON_NODE_BINDINGS_MAC_H_
+#define ATOM_COMMON_NODE_BINDINGS_MAC_H_
 
 #include "base/compiler_specific.h"
 #include "atom/common/node_bindings.h"
@@ -31,4 +31,4 @@ class NodeBindingsMac : public NodeBindings {
 
 }  // namespace atom
 
-#endif  // ATOM_COMMON_NODE_BINDINGS_MAC_
+#endif  // ATOM_COMMON_NODE_BINDINGS_MAC_H_

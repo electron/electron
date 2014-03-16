@@ -42,4 +42,4 @@ class AtomRendererBindings : public AtomBindings {
 
 }  // namespace atom
 
-#endif  // ATOM_RENDERER_API_ATOM_BINDINGS_H_
+#endif  // ATOM_RENDERER_API_ATOM_RENDERER_BINDINGS_H_
