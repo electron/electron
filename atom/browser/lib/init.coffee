@@ -4,7 +4,7 @@ util = require 'util'
 
 # Expose information of current process.
 process.__atom_type = 'browser'
-process.resourcesPath = path.resolve process.argv[1], '..', '..', '..'
+process.resourcesPath = path.resolve process.argv[1], '..', '..', '..', '..'
 
 # We modified the original process.argv to let node.js load the atom.js,
 # we need to restore it here.
@@ -18,7 +18,7 @@ process.execArgv = process.argv.splice startMark, endMark - startMark + 1
 # Add browser/api/lib to require's search paths,
 # which contains javascript part of Atom's built-in libraries.
 globalPaths = require('module').globalPaths
-globalPaths.push path.join process.resourcesPath, 'browser', 'api', 'lib'
+globalPaths.push path.join process.resourcesPath, 'atom', 'browser', 'api', 'lib'
 
 # Do loading in next tick since we still need some initialize work before
 # native bindings can work.

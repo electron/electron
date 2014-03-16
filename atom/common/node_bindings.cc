@@ -125,7 +125,8 @@ node::Environment* NodeBindings::CreateEnvironment(
       exec_path.DirName().AppendASCII("resources");
 #endif
   base::FilePath script_path =
-      resources_path.AppendASCII(is_browser_ ? "browser" : "renderer")
+      resources_path.AppendASCII("atom")
+                    .AppendASCII(is_browser_ ? "browser" : "renderer")
                     .AppendASCII("lib")
                     .AppendASCII("init.js");
   std::string script_path_str = script_path.AsUTF8Unsafe();

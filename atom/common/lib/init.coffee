@@ -4,7 +4,7 @@ Module = require 'module'
 
 # Add common/api/lib to module search paths.
 globalPaths = Module.globalPaths
-globalPaths.push path.join(process.resourcesPath, 'common', 'api', 'lib')
+globalPaths.push path.join(process.resourcesPath, 'atom', 'common', 'api', 'lib')
 
 # setImmediate and process.nextTick makes use of uv_check and uv_prepare to
 # run the callbacks, however since we only run uv loop on requests, the
