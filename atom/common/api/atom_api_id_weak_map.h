@@ -8,14 +8,15 @@
 
 #include <map>
 
-#include "base/basictypes.h"
 #include "atom/common/v8/scoped_persistent.h"
+#include "base/basictypes.h"
 #include "vendor/node/src/node_object_wrap.h"
 
 namespace atom {
 
 namespace api {
 
+// Like ES6's WeakMap, but the key is Integer and the value is Weak Pointer.
 class IDWeakMap : public node::ObjectWrap {
  public:
   static void Initialize(v8::Handle<v8::Object> target);

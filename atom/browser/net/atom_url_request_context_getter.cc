@@ -6,10 +6,10 @@
 
 #include <algorithm>
 
+#include "atom/browser/net/atom_url_request_job_factory.h"
 #include "base/strings/string_util.h"
 #include "base/threading/sequenced_worker_pool.h"
 #include "base/threading/worker_pool.h"
-#include "atom/browser/net/atom_url_request_job_factory.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cookie_store_factory.h"
 #include "content/public/common/url_constants.h"

@@ -6,13 +6,13 @@
 
 #include <Windowsx.h>
 
+#include "atom/browser/ui/win/menu_2.h"
 #include "base/bind.h"
 #include "base/logging.h"
 #include "base/message_loop/message_loop.h"
 #include "base/stl_util.h"
 #include "base/strings/string_util.h"
 #include "base/win/wrapped_window_proc.h"
-#include "atom/browser/ui/win/menu_2.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 #include "ui/base/l10n/l10n_util.h"

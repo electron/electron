@@ -4,9 +4,9 @@
 
 #include "atom/common/crash_reporter/crash_reporter.h"
 
-#include "base/command_line.h"
 #include "atom/browser/browser.h"
 #include "atom/common/atom_version.h"
+#include "base/command_line.h"
 #include "content/public/common/content_switches.h"
 
 namespace crash_reporter {

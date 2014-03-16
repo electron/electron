@@ -6,9 +6,9 @@
 
 #include <algorithm>
 
-#include "base/logging.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list_observer.h"
+#include "base/logging.h"
 
 namespace atom {
 

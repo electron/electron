@@ -9,14 +9,14 @@
 #include <string>
 #include <vector>
 
-#include "base/files/file_path.h"
-#include "base/strings/string16.h"
-#include "base/template_util.h"
-#include "base/values.h"
 #include "atom/browser/api/atom_api_window.h"
 #include "atom/common/swap_or_assign.h"
 #include "atom/common/v8/scoped_persistent.h"
 #include "atom/common/v8/v8_value_converter.h"
+#include "base/files/file_path.h"
+#include "base/strings/string16.h"
+#include "base/template_util.h"
+#include "base/values.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"

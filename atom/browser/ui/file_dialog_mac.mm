@@ -5,11 +5,11 @@
 #include "atom/browser/ui/file_dialog.h"
 
 #import <Cocoa/Cocoa.h>
-#include <CoreServices/CoreServices.h>
+#import <CoreServices/CoreServices.h>
 
+#include "atom/browser/native_window.h"
 #include "base/file_util.h"
 #include "base/strings/sys_string_conversions.h"
-#include "atom/browser/native_window.h"
 
 namespace file_dialog {
 

@@ -4,9 +4,9 @@
 
 // Multiply-included file, no traditional include guard.
 
+#include "atom/common/draggable_region.h"
 #include "base/strings/string16.h"
 #include "base/values.h"
-#include "atom/common/draggable_region.h"
 #include "content/public/common/common_param_traits.h"
 #include "ipc/ipc_message_macros.h"
 

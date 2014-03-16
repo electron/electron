@@ -6,9 +6,9 @@
 
 #include <vector>
 
-#include "base/logging.h"
 #include "atom/browser/api/atom_api_event.h"
 #include "atom/common/v8/native_type_conversions.h"
+#include "base/logging.h"
 
 #include "atom/common/v8/node_common.h"
 

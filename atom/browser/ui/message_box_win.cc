@@ -4,12 +4,12 @@
 
 #include "atom/browser/ui/message_box.h"
 
+#include "atom/browser/native_window.h"
 #include "base/callback.h"
 #include "base/message_loop/message_loop.h"
 #include "base/run_loop.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "atom/browser/native_window.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/views/controls/button/label_button.h"
 #include "ui/views/controls/message_box_view.h"

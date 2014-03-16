@@ -6,9 +6,9 @@
 
 #include <string>
 
-#include "base/logging.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/v8/native_type_conversions.h"
+#include "base/logging.h"
 
 #include "atom/common/v8/node_common.h"
 

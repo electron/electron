@@ -7,11 +7,11 @@
 #include <algorithm>
 #include <string>
 
-#include "base/command_line.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/api/atom_renderer_bindings.h"
 #include "atom/renderer/atom_render_view_observer.h"
+#include "base/command_line.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
 

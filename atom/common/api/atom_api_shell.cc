@@ -6,9 +6,9 @@
 
 #include <string>
 
-#include "base/files/file_path.h"
 #include "atom/common/platform_util.h"
 #include "atom/common/v8/native_type_conversions.h"
+#include "base/files/file_path.h"
 #include "url/gurl.h"
 
 #include "atom/common/v8/node_common.h"

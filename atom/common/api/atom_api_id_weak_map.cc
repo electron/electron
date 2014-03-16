@@ -7,9 +7,9 @@
 
 #include <algorithm>
 
-#include "base/logging.h"
 #include "atom/common/v8/native_type_conversions.h"
 #include "atom/common/v8/node_common.h"
+#include "base/logging.h"
 
 namespace atom {
 

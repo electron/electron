@@ -7,10 +7,10 @@
 #include <vector>
 
 #include "atom/common/api/api_messages.h"
-#include "content/public/renderer/render_view.h"
-#include "ipc/ipc_message_macros.h"
 #include "atom/renderer/api/atom_renderer_bindings.h"
 #include "atom/renderer/atom_renderer_client.h"
+#include "content/public/renderer/render_view.h"
+#include "ipc/ipc_message_macros.h"
 #include "third_party/WebKit/public/web/WebDraggableRegion.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrame.h"

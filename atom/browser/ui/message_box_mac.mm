@@ -6,9 +6,9 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include "atom/browser/native_window.h"
 #include "base/callback.h"
 #include "base/strings/sys_string_conversions.h"
-#include "atom/browser/native_window.h"
 
 @interface ModalDelegate : NSObject {
  @private

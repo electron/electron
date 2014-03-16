@@ -6,8 +6,8 @@
 #ifndef ATOM_COMMON_API_OBJECT_LIFE_MONITOR_H_
 #define ATOM_COMMON_API_OBJECT_LIFE_MONITOR_H_
 
-#include "base/basictypes.h"
 #include "atom/common/v8/scoped_persistent.h"
+#include "base/basictypes.h"
 
 namespace atom {
 

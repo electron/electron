@@ -8,9 +8,9 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/crash_reporter/crash_reporter.h"
 #include "base/compiler_specific.h"
 #include "base/memory/scoped_ptr.h"
-#include "atom/common/crash_reporter/crash_reporter.h"
 #include "vendor/breakpad/src/client/windows/handler/exception_handler.h"
 
 template <typename T> struct DefaultSingletonTraits;

@@ -7,10 +7,10 @@
 
 #include <string>
 
-#include "base/compiler_specific.h"
-#include "base/memory/scoped_ptr.h"
 #include "atom/common/crash_reporter/crash_reporter.h"
 #include "atom/common/crash_reporter/linux/crash_dump_handler.h"
+#include "base/compiler_specific.h"
+#include "base/memory/scoped_ptr.h"
 
 template <typename T> struct DefaultSingletonTraits;
 

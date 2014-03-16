@@ -9,13 +9,13 @@
 #include <commdlg.h>
 #include <shlobj.h>
 
+#include "atom/browser/native_window.h"
 #include "base/file_util.h"
 #include "base/i18n/case_conversion.h"
 #include "base/strings/string_util.h"
 #include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/registry.h"
-#include "atom/browser/native_window.h"
 #include "third_party/wtl/include/atlapp.h"
 #include "third_party/wtl/include/atldlgs.h"
 

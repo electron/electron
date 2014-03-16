@@ -7,11 +7,11 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/v8/native_type_conversions.h"
 #include "base/command_line.h"
 #include "base/message_loop/message_loop.h"
 #include "base/base_paths.h"
 #include "base/path_service.h"
-#include "atom/common/v8/native_type_conversions.h"
 #include "content/public/browser/browser_thread.h"
 
 #if defined(OS_WIN)

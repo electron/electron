@@ -6,9 +6,9 @@
 #ifndef ATOM_BROWSER_UI_WIN_MENU_2_H_
 #define ATOM_BROWSER_UI_WIN_MENU_2_H_
 
+#include "atom/browser/ui/win/native_menu_win.h"
 #include "base/basictypes.h"
 #include "base/memory/scoped_ptr.h"
-#include "atom/browser/ui/win/native_menu_win.h"
 #include "ui/gfx/native_widget_types.h"
 
 namespace gfx {

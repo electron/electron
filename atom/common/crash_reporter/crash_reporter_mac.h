@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "base/compiler_specific.h"
 #include "atom/common/crash_reporter/crash_reporter.h"
+#include "base/compiler_specific.h"
 #import "vendor/breakpad/src/client/mac/Framework/Breakpad.h"
 
 template <typename T> struct DefaultSingletonTraits;

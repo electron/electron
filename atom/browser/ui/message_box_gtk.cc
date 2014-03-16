@@ -4,9 +4,9 @@
 
 #include "atom/browser/ui/message_box.h"
 
+#include "atom/browser/native_window.h"
 #include "base/callback.h"
 #include "base/strings/string_util.h"
-#include "atom/browser/native_window.h"
 #include "chrome/browser/ui/gtk/gtk_util.h"
 #include "ui/base/gtk/gtk_signal.h"
 
