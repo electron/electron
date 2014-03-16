@@ -4,13 +4,16 @@
 
 #include "atom/browser/native_window_win.h"
 
-#include "base/strings/utf_string_conversions.h"
-#include "base/values.h"
+#include <string>
+#include <vector>
+
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/ui/win/menu_2.h"
 #include "atom/browser/ui/win/native_menu_win.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
+#include "base/strings/utf_string_conversions.h"
+#include "base/values.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"

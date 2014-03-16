@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_NET_ADAPTER_REQUEST_JOB_H_
 #define ATOM_BROWSER_NET_ADAPTER_REQUEST_JOB_H_
 
+#include <string>
+
 #include "base/memory/weak_ptr.h"
 #include "net/url_request/url_request_job.h"
 #include "net/url_request/url_request_job_factory.h"

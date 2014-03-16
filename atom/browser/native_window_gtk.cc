@@ -4,6 +4,9 @@
 
 #include "atom/browser/native_window_gtk.h"
 
+#include <string>
+#include <vector>
+
 #include "base/values.h"
 #include "chrome/browser/ui/gtk/gtk_window_util.h"
 #include "atom/common/draggable_region.h"

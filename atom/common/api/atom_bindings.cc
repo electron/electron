@@ -4,6 +4,8 @@
 
 #include "atom/common/api/atom_bindings.h"
 
+#include <string>
+
 #include "base/logging.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/v8/native_type_conversions.h"

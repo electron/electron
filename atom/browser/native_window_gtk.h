@@ -7,6 +7,9 @@
 
 #include <gtk/gtk.h>
 
+#include <string>
+#include <vector>
+
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/accelerator_util.h"
 #include "chrome/browser/ui/gtk/menu_gtk.h"

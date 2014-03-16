@@ -4,6 +4,8 @@
 
 #include "atom/renderer/atom_render_view_observer.h"
 
+#include <vector>
+
 #include "atom/common/api/api_messages.h"
 #include "content/public/renderer/render_view.h"
 #include "ipc/ipc_message_macros.h"

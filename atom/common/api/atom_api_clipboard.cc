@@ -5,6 +5,7 @@
 #include "atom/common/api/atom_api_clipboard.h"
 
 #include <string>
+#include <vector>
 
 #include "atom/common/v8/native_type_conversions.h"
 #include "ui/base/clipboard/clipboard.h"

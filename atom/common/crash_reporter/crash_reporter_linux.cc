@@ -8,6 +8,8 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include <string>
+
 #include "base/debug/crash_logging.h"
 #include "base/files/file_path.h"
 #include "base/linux_util.h"

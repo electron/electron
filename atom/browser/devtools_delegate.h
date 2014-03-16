@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_DEVTOOLS_DELEGATE_H_
 #define ATOM_BROWSER_DEVTOOLS_DELEGATE_H_
 
+#include <string>
+
 #include "base/memory/scoped_ptr.h"
 #include "atom/browser/native_window_observer.h"
 #include "content/public/browser/devtools_frontend_host_delegate.h"

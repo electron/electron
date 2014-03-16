@@ -7,6 +7,7 @@ import sys
 from lib.util import execute
 
 IGNORE_FILES = [
+  os.path.join('atom', 'app', 'atom_main.cc'),
   os.path.join('atom', 'browser', 'atom_application_mac.h'),
   os.path.join('atom', 'browser', 'atom_application_delegate_mac.h'),
   os.path.join('atom', 'browser', 'native_window_mac.h'),
@@ -44,8 +45,7 @@ def list_files(directories, filters):
 
 def call_cpplint(files):
   cpplint = os.path.join(SOURCE_ROOT, 'vendor', 'depot_tools', 'cpplint.py')
-  rules = '--filter=-build/include_what_you_use'
-  execute([sys.executable, cpplint, rules] + files)
+  execute([sys.executable, cpplint] + files)
 
 
 if __name__ == '__main__':

@@ -4,6 +4,9 @@
 
 #include "atom/common/api/atom_api_crash_reporter.h"
 
+#include <map>
+#include <string>
+
 #include "atom/common/crash_reporter/crash_reporter.h"
 #include "atom/common/v8/native_type_conversions.h"
 

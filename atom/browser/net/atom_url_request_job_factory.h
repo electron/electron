@@ -7,6 +7,7 @@
 #define ATOM_BROWSER_NET_ATOM_URL_REQUEST_JOB_FACTORY_H_
 
 #include <map>
+#include <string>
 #include <vector>
 
 #include "base/basictypes.h"

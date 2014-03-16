@@ -5,6 +5,8 @@
 #include "atom/browser/native_window.h"
 
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "base/command_line.h"
 #include "base/file_util.h"

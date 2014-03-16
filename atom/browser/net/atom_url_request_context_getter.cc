@@ -4,6 +4,8 @@
 
 #include "atom/browser/net/atom_url_request_context_getter.h"
 
+#include <algorithm>
+
 #include "base/strings/string_util.h"
 #include "base/threading/sequenced_worker_pool.h"
 #include "base/threading/worker_pool.h"

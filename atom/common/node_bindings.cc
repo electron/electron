@@ -4,6 +4,9 @@
 
 #include "atom/common/node_bindings.h"
 
+#include <string>
+#include <vector>
+
 #include "base/command_line.h"
 #include "base/message_loop/message_loop.h"
 #include "base/base_paths.h"

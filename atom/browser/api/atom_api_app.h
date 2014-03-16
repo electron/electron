@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_APP_H_
 #define ATOM_BROWSER_API_ATOM_API_APP_H_
 
+#include <string>
+
 #include "base/compiler_specific.h"
 #include "atom/browser/browser_observer.h"
 #include "atom/common/api/atom_api_event_emitter.h"

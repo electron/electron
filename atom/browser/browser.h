@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_BROWSER_H_
 #define ATOM_BROWSER_BROWSER_H_
 
+#include <string>
+
 #include "base/basictypes.h"
 #include "base/compiler_specific.h"
 #include "base/observer_list.h"

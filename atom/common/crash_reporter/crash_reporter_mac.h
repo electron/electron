@@ -5,6 +5,8 @@
 #ifndef ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_MAC_H_
 #define ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_MAC_H_
 
+#include <string>
+
 #include "base/compiler_specific.h"
 #include "atom/common/crash_reporter/crash_reporter.h"
 #import "vendor/breakpad/src/client/mac/Framework/Breakpad.h"

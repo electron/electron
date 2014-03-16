@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_WINDOW_H_
 #define ATOM_BROWSER_API_ATOM_API_WINDOW_H_
 
+#include <string>
 #include <vector>
 
 #include "base/memory/scoped_ptr.h"

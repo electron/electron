@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/atom_api_menu.h"
 
+#include <string>
+
 #include "atom/browser/ui/accelerator_util.h"
 #include "atom/common/v8/node_common.h"
 #include "atom/common/v8/native_type_conversions.h"

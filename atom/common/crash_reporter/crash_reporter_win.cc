@@ -4,6 +4,8 @@
 
 #include "atom/common/crash_reporter/crash_reporter_win.h"
 
+#include <string>
+
 #include "base/file_util.h"
 #include "base/logging.h"
 #include "base/memory/singleton.h"

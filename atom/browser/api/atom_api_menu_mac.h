@@ -7,6 +7,8 @@
 
 #include "atom/browser/api/atom_api_menu.h"
 
+#include <string>
+
 #import "atom/browser/ui/cocoa/atom_menu_controller.h"
 
 namespace atom {

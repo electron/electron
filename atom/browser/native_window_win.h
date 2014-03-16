@@ -5,6 +5,10 @@
 #ifndef ATOM_BROWSER_NATIVE_WINDOW_WIN_H_
 #define ATOM_BROWSER_NATIVE_WINDOW_WIN_H_
 
+#include <map>
+#include <string>
+#include <vector>
+
 #include "base/memory/scoped_ptr.h"
 #include "base/strings/string16.h"
 #include "atom/browser/native_window.h"

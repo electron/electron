@@ -4,6 +4,8 @@
 
 #include "atom/renderer/api/atom_renderer_bindings.h"
 
+#include <vector>
+
 #include "atom/common/v8/native_type_conversions.h"
 #include "content/public/renderer/render_view.h"
 #include "third_party/WebKit/public/web/WebFrame.h"

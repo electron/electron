@@ -5,6 +5,7 @@
 #include "atom/common/v8/v8_value_converter.h"
 
 #include <string>
+#include <utility>
 
 #include "base/logging.h"
 #include "base/memory/scoped_ptr.h"

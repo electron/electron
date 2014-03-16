@@ -4,6 +4,9 @@
 
 #include "atom/browser/api/atom_api_dialog.h"
 
+#include <string>
+#include <vector>
+
 #include "base/bind.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"

@@ -5,6 +5,7 @@
 #include "atom/renderer/atom_renderer_client.h"
 
 #include <algorithm>
+#include <string>
 
 #include "base/command_line.h"
 #include "atom/common/node_bindings.h"

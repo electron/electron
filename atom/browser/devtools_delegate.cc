@@ -4,6 +4,8 @@
 
 #include "atom/browser/devtools_delegate.h"
 
+#include <string>
+
 #include "base/message_loop/message_loop.h"
 #include "base/values.h"
 #include "atom/browser/native_window.h"

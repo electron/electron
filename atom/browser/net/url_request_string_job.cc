@@ -4,6 +4,8 @@
 
 #include "atom/browser/net/url_request_string_job.h"
 
+#include <string>
+
 #include "net/base/net_errors.h"
 
 namespace atom {

@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/atom_api_window.h"
 
+#include <string>
+
 #include "base/bind.h"
 #include "base/process/kill.h"
 #include "atom/browser/native_window.h"

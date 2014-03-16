@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/atom_api_app.h"
 
+#include <string>
+
 #include "base/values.h"
 #include "base/command_line.h"
 #include "atom/browser/browser.h"

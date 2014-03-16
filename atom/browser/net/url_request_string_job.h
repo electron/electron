@@ -7,6 +7,8 @@
 
 #include "net/url_request/url_request_simple_job.h"
 
+#include <string>
+
 namespace atom {
 
 class URLRequestStringJob : public net::URLRequestSimpleJob {

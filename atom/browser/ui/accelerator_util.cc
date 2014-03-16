@@ -7,6 +7,7 @@
 #include <stdio.h>
 
 #include <string>
+#include <vector>
 
 #include "base/stl_util.h"
 #include "base/strings/string_number_conversions.h"
