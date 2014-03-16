@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/gtk/event_utils.h"
+#include "chrome/browser/ui/gtk/event_utils.h"
 
 #include "base/logging.h"
 #include "ui/base/window_open_disposition.h"

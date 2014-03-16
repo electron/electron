@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_GTK_MENU_GTK_H_
-#define ATOM_BROWSER_UI_GTK_MENU_GTK_H_
+#ifndef CHROME_BROWSER_UI_GTK_MENU_GTK_H_
+#define CHROME_BROWSER_UI_GTK_MENU_GTK_H_
 
 #include <gtk/gtk.h>
 
@@ -221,4 +221,4 @@ class MenuGtk {
   base::WeakPtrFactory<MenuGtk> weak_factory_;
 };
 
-#endif  // ATOM_BROWSER_UI_GTK_MENU_GTK_H_
+#endif  // CHROME_BROWSER_UI_GTK_MENU_GTK_H_

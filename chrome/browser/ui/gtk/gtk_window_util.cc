@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/gtk/gtk_window_util.h"
+#include "chrome/browser/ui/gtk/gtk_window_util.h"
 
 #include <dlfcn.h>
 #include "content/public/browser/render_view_host.h"

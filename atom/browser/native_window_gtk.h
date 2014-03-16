@@ -9,7 +9,7 @@
 
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/accelerator_util.h"
-#include "atom/browser/ui/gtk/menu_gtk.h"
+#include "chrome/browser/ui/gtk/menu_gtk.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/base/gtk/gtk_signal.h"

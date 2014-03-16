@@ -5,7 +5,7 @@
 #include "atom/browser/native_window_gtk.h"
 
 #include "base/values.h"
-#include "atom/browser/ui/gtk/gtk_window_util.h"
+#include "chrome/browser/ui/gtk/gtk_window_util.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "content/public/browser/web_contents.h"

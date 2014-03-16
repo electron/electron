@@ -6,7 +6,7 @@
 #define ATOM_BROWSER_API_ATOM_API_MENU_GTK_H_
 
 #include "atom/browser/api/atom_api_menu.h"
-#include "atom/browser/ui/gtk/menu_gtk.h"
+#include "chrome/browser/ui/gtk/menu_gtk.h"
 
 namespace atom {
 

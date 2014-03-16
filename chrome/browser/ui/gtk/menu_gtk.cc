@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/gtk/menu_gtk.h"
+#include "chrome/browser/ui/gtk/menu_gtk.h"
 
 #include <map>
 
@@ -12,10 +12,10 @@
 #include "base/message_loop/message_loop.h"
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "atom/browser/ui/gtk/event_utils.h"
-#include "atom/browser/ui/gtk/gtk_custom_menu.h"
-#include "atom/browser/ui/gtk/gtk_custom_menu_item.h"
-#include "atom/browser/ui/gtk/gtk_util.h"
+#include "chrome/browser/ui/gtk/event_utils.h"
+#include "chrome/browser/ui/gtk/gtk_custom_menu.h"
+#include "chrome/browser/ui/gtk/gtk_custom_menu_item.h"
+#include "chrome/browser/ui/gtk/gtk_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/accelerators/menu_label_accelerator_util_linux.h"
 #include "ui/base/accelerators/platform_accelerator_gtk.h"

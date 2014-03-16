@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_GTK_GTK_WINDOW_UTIL_H_
-#define ATOM_BROWSER_UI_GTK_GTK_WINDOW_UTIL_H_
+#ifndef CHROME_BROWSER_UI_GTK_GTK_WINDOW_UTIL_H_
+#define CHROME_BROWSER_UI_GTK_GTK_WINDOW_UTIL_H_
 
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
@@ -71,4 +71,4 @@ bool GetWindowEdge(const gfx::Size& window_size,
 
 }  // namespace gtk_window_util
 
-#endif  // ATOM_BROWSER_UI_GTK_GTK_WINDOW_UTIL_H_
+#endif  // CHROME_BROWSER_UI_GTK_GTK_WINDOW_UTIL_H_

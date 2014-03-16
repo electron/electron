@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/gtk/gtk_custom_menu.h"
+#include "chrome/browser/ui/gtk/gtk_custom_menu.h"
 
-#include "atom/browser/ui/gtk/gtk_custom_menu_item.h"
+#include "chrome/browser/ui/gtk/gtk_custom_menu_item.h"
 
 G_DEFINE_TYPE(GtkCustomMenu, gtk_custom_menu, GTK_TYPE_MENU)
 

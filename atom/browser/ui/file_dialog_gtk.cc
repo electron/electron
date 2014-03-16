@@ -7,7 +7,7 @@
 #include "base/callback.h"
 #include "base/file_util.h"
 #include "atom/browser/native_window.h"
-#include "atom/browser/ui/gtk/gtk_util.h"
+#include "chrome/browser/ui/gtk/gtk_util.h"
 #include "ui/base/gtk/gtk_signal.h"
 
 namespace file_dialog {
