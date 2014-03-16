@@ -48,6 +48,8 @@ def parse_version(version):
 
 
 def increase_version(versions, index):
+  for i in range(index + 1, 4):
+    versions[i] = '0'
   versions[index] = str(int(versions[index]) + 1)
   return versions
 
