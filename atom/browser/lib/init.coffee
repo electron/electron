@@ -63,7 +63,7 @@ setImmediate ->
     packageJson = JSON.parse(fs.readFileSync(path.join(packagePath, 'package.json')))
   catch error
     # If not found then we load browser/default_app
-    packagePath = path.join process.resourcesPath, 'browser', 'default_app'
+    packagePath = path.join process.resourcesPath, 'default_app'
     packageJson = JSON.parse(fs.readFileSync(path.join(packagePath, 'package.json')))
 
   # Set application's version.

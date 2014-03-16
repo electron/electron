@@ -290,7 +290,7 @@
               ],
             },
             {
-              'destination': '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources/atom/browser',
+              'destination': '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources',
               'files': [
                 'atom/browser/default_app',
               ],
@@ -328,7 +328,7 @@
               ],
             },
             {
-              'destination': '<(PRODUCT_DIR)/resources/atom/browser',
+              'destination': '<(PRODUCT_DIR)/resources',
               'files': [
                 'atom/browser/default_app',
               ]
@@ -346,7 +346,7 @@
               ],
             },
             {
-              'destination': '<(PRODUCT_DIR)/resources/atom/browser',
+              'destination': '<(PRODUCT_DIR)/resources',
               'files': [
                 'atom/browser/default_app',
               ]
