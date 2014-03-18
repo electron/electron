@@ -47,6 +47,7 @@ TARGET_BINARIES = {
   ],
   'linux': [
     'atom',
+    'content_shell.pak',
     'libchromiumcontent.so',
     'libffmpegsumo.so',
   ],
