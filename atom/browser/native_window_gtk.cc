@@ -256,11 +256,6 @@ bool NativeWindowGtk::IsKiosk() {
   return IsFullscreen();
 }
 
-bool NativeWindowGtk::HasModalDialog() {
-  // FIXME(zcbenz): Implement me.
-  return false;
-}
-
 gfx::NativeWindow NativeWindowGtk::GetNativeWindow() {
   return window_;
 }
