@@ -101,6 +101,14 @@ void InspectableWebContentsImpl::ShowDevTools() {
   view_->ShowDevTools();
 }
 
+void InspectableWebContentsImpl::CloseDevTools() {
+  if (IsDevToolsViewShowing()) {
+    view_->CloseDevTools();
+    devtools_web_contents_.reset();
+    web_contents_->GetView()->Focus();
+  }
+}
+
 bool InspectableWebContentsImpl::IsDevToolsViewShowing() {
   return devtools_web_contents_ && view_->IsDevToolsViewShowing();
 }
@@ -116,9 +124,7 @@ void InspectableWebContentsImpl::ActivateWindow() {
 }
 
 void InspectableWebContentsImpl::CloseWindow() {
-  view_->CloseDevTools();
-  devtools_web_contents_.reset();
-  web_contents_->GetView()->Focus();
+  CloseDevTools();
 }
 
 void InspectableWebContentsImpl::MoveWindow(int x, int y) {

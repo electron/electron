@@ -23,6 +23,8 @@ class InspectableWebContents {
   virtual content::WebContents* GetWebContents() const = 0;
 
   virtual void ShowDevTools() = 0;
+  // Close the DevTools completely instead of just hide it.
+  virtual void CloseDevTools() = 0;
   virtual bool IsDevToolsViewShowing() = 0;
 
   // The delegate manages its own life.
