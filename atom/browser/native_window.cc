@@ -208,7 +208,7 @@ void NativeWindow::CloseDevTools() {
   if (devtools_window_)
     devtools_window_->Close();
   else
-    inspectable_web_contents()->GetView()->CloseDevTools();
+    inspectable_web_contents()->CloseDevTools();
 }
 
 bool NativeWindow::IsDevToolsOpened() {
