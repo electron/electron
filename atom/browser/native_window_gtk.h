@@ -16,12 +16,14 @@
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/base/gtk/gtk_signal.h"
+#include "ui/base/x/active_window_watcher_x_observer.h"
 #include "ui/gfx/size.h"
 
 namespace atom {
 
 class NativeWindowGtk : public NativeWindow,
-                        public MenuGtk::Delegate {
+                        public MenuGtk::Delegate,
+                        public ui::ActiveWindowWatcherXObserver {
  public:
   explicit NativeWindowGtk(content::WebContents* web_contents,
                            base::DictionaryValue* options);
@@ -69,6 +71,9 @@ class NativeWindowGtk : public NativeWindow,
   virtual void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) OVERRIDE;
 
+  // Overridden from ActiveWindowWatcherXObserver.
+  virtual void ActiveWindowChanged(GdkWindow* active_window) OVERRIDE;
+
  private:
   // Register accelerators supported by the menu model.
   void RegisterAccelerators();
@@ -110,6 +115,11 @@ class NativeWindowGtk : public NativeWindow,
   // The region is treated as title bar, can be dragged to move and double
   // clicked to maximize.
   scoped_ptr<SkRegion> draggable_region_;
+
+  // True if the window manager thinks the window is active. It could happpen
+  // that the WM thinks a window is active but it's actually not, like when
+  // showing a context menu.
+  bool is_active_;
 
   // If true, don't call gdk_window_raise() when we get a click in the title
   // bar or window border.  This is to work around a compiz bug.

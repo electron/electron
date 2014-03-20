@@ -16,6 +16,7 @@
 #include "content/public/common/renderer_preferences.h"
 #include "ui/base/accelerators/platform_accelerator_gtk.h"
 #include "ui/base/models/simple_menu_model.h"
+#include "ui/base/x/active_window_watcher_x.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/gtk_util.h"
 #include "ui/gfx/rect.h"
@@ -39,6 +40,7 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
       vbox_(gtk_vbox_new(FALSE, 0)),
       state_(GDK_WINDOW_STATE_WITHDRAWN),
       is_always_on_top_(false),
+      is_active_(false),
       suppress_window_raise_(false),
       frame_cursor_(NULL) {
   gtk_container_add(GTK_CONTAINER(window_), vbox_);
@@ -52,6 +54,8 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
 
   if (!icon_.IsEmpty())
     gtk_window_set_icon(window_, icon_.ToGdkPixbuf());
+
+  ui::ActiveWindowWatcherX::AddObserver(this);
 
   // In some (older) versions of compiz, raising top-level windows when they
   // are partially off-screen causes them to get snapped back on screen, not
@@ -109,6 +113,10 @@ void NativeWindowGtk::Focus(bool focus) {
 }
 
 bool NativeWindowGtk::IsFocused() {
+  if (ui::ActiveWindowWatcherX::WMSupportsActivation())
+    return is_active_;
+
+  // This still works even though we don't get the activation notification.
   return gtk_window_is_active(window_);
 }
 
@@ -288,6 +296,10 @@ void NativeWindowGtk::UpdateDraggableRegions(
         region.bounds.bottom(),
         region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
   }
+}
+
+void NativeWindowGtk::ActiveWindowChanged(GdkWindow* active_window) {
+  is_active_ = gtk_widget_get_window(GTK_WIDGET(window_)) == active_window;
 }
 
 void NativeWindowGtk::RegisterAccelerators() {
