@@ -248,6 +248,12 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   gfx::Image icon_;
 
  private:
+  // Schedule a notification unresponsive event.
+  void ScheduleUnresponsiveEvent(int ms);
+
+  // Dispatch unresponsive event to observers.
+  void NotifyWindowUnresponsive();
+
   // Called when CapturePage has done.
   void OnCapturePageDone(const CapturePageCallback& callback,
                          bool succeed,

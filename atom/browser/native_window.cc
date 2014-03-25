@@ -292,16 +292,8 @@ void NativeWindow::CloseWebContents() {
   // dialog when the window is busy executing some script withouth waiting for
   // the unresponsive timeout.
   if (!Browser::Get()->is_quiting() &&
-      window_unresposive_closure_.IsCancelled()) {
-    window_unresposive_closure_.Reset(
-        base::Bind(&NativeWindow::RendererUnresponsive,
-                   weak_factory_.GetWeakPtr(),
-                   web_contents));
-    base::MessageLoop::current()->PostDelayedTask(
-        FROM_HERE,
-        window_unresposive_closure_.callback(),
-        base::TimeDelta::FromMilliseconds(500));
-  }
+      window_unresposive_closure_.IsCancelled())
+    ScheduleUnresponsiveEvent(500);
 
   if (web_contents->NeedToFireBeforeUnload())
     web_contents->GetRenderViewHost()->FirePageBeforeUnload(false);
@@ -446,12 +438,10 @@ bool NativeWindow::IsPopupOrPanel(const content::WebContents* source) const {
 }
 
 void NativeWindow::RendererUnresponsive(content::WebContents* source) {
-  window_unresposive_closure_.Cancel();
-
-  if (!HasModalDialog())
-    FOR_EACH_OBSERVER(NativeWindowObserver,
-                      observers_,
-                      OnRendererUnresponsive());
+  // Schedule the unresponsive shortly later, since we may receive the
+  // responsive event soon.
+  // This could happen after the whole application had blocked for a while.
+  ScheduleUnresponsiveEvent(50);
 }
 
 void NativeWindow::RendererResponsive(content::WebContents* source) {
@@ -522,6 +512,25 @@ bool NativeWindow::DevToolsShow(std::string* dock_side) {
   if (*dock_side == "undocked")
     *dock_side = "bottom";
   return false;
+}
+
+void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
+  window_unresposive_closure_.Reset(
+      base::Bind(&NativeWindow::NotifyWindowUnresponsive,
+                 weak_factory_.GetWeakPtr()));
+  base::MessageLoop::current()->PostDelayedTask(
+      FROM_HERE,
+      window_unresposive_closure_.callback(),
+      base::TimeDelta::FromMilliseconds(ms));
+}
+
+void NativeWindow::NotifyWindowUnresponsive() {
+  window_unresposive_closure_.Cancel();
+
+  if (!HasModalDialog())
+    FOR_EACH_OBSERVER(NativeWindowObserver,
+                      observers_,
+                      OnRendererUnresponsive());
 }
 
 void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
