@@ -4,7 +4,6 @@
 
 #import "atom/browser/api/atom_api_menu_mac.h"
 
-#include "base/mac/scoped_sending_event.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/sys_string_conversions.h"
 #include "atom/browser/native_window.h"
@@ -45,23 +44,10 @@ void MenuMac::Popup(NativeWindow* native_window) {
                                          clickCount:1
                                            pressure:1.0];
 
-  {
-    // Make sure events can be pumped while the menu is up.
-    base::MessageLoop::ScopedNestableTaskAllower allow(
-        base::MessageLoop::current());
-
-    // One of the events that could be pumped is |window.close()|.
-    // User-initiated event-tracking loops protect against this by
-    // setting flags in -[CrApplication sendEvent:], but since
-    // web-content menus are initiated by IPC message the setup has to
-    // be done manually.
-    base::mac::ScopedSendingEvent sendingEventScoper;
-
-    // Show the menu.
-    [NSMenu popUpContextMenu:[menu_controller menu]
-                   withEvent:clickEvent
-                     forView:web_contents->GetView()->GetContentNativeView()];
-  }
+  // Show the menu.
+  [NSMenu popUpContextMenu:[menu_controller menu]
+                 withEvent:clickEvent
+                   forView:web_contents->GetView()->GetContentNativeView()];
 }
 
 // static
