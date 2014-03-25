@@ -127,7 +127,7 @@ void Window::Destroy(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   base::ProcessHandle handle = self->window_->GetRenderProcessHandle();
-  delete self;
+  base::MessageLoop::current()->DeleteSoon(FROM_HERE, self);
 
   // Make sure the renderer process is terminated, it could happen that the
   // renderer process became a zombie.
