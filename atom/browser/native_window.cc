@@ -288,12 +288,12 @@ void NativeWindow::CloseWebContents() {
   content::WebContents* web_contents(GetWebContents());
 
   // Assume the window is not responding if it doesn't cancel the close and is
-  // not closed in 500ms, in this way we can quickly show the unresponsive
+  // not closed in 2000ms, in this way we can quickly show the unresponsive
   // dialog when the window is busy executing some script withouth waiting for
   // the unresponsive timeout.
   if (!Browser::Get()->is_quiting() &&
       window_unresposive_closure_.IsCancelled())
-    ScheduleUnresponsiveEvent(500);
+    ScheduleUnresponsiveEvent(2000);
 
   if (web_contents->NeedToFireBeforeUnload())
     web_contents->GetRenderViewHost()->FirePageBeforeUnload(false);
