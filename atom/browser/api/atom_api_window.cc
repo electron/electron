@@ -127,9 +127,7 @@ void Window::Destroy(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
   base::ProcessHandle handle = self->window_->GetRenderProcessHandle();
-  // Just destroy the NativeWindow object, the api::Window object would be
-  // deleted in the coming OnWindowClosed event.
-  self->window_.reset();
+  delete self;
 
   // Make sure the renderer process is terminated, it could happen that the
   // renderer process became a zombie.
