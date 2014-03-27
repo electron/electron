@@ -84,6 +84,8 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
 }
 
 NativeWindowGtk::~NativeWindowGtk() {
+  ui::ActiveWindowWatcherX::RemoveObserver(this);
+
   if (window_)
     gtk_widget_destroy(GTK_WIDGET(window_));
 }
