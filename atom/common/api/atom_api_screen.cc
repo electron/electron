@@ -11,6 +11,8 @@
 
 #if defined(TOOLKIT_GTK)
 #include "base/command_line.h"
+#include "base/environment.h"
+#include "base/nix/xdg_util.h"
 #include "ui/gfx/gtk_util.h"
 #endif
 
@@ -25,7 +27,23 @@ namespace api {
 
 namespace {
 
-v8::Handle<v8::Object> DisplayToV8Value(const gfx::Display& display) {
+gfx::Display AdaptToWindowManager(const gfx::Display& display) {
+  gfx::Display changed(display);
+#if defined(TOOLKIT_GTK)
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  base::nix::DesktopEnvironment de(base::nix::GetDesktopEnvironment(env.get()));
+  if (de == base::nix::DESKTOP_ENVIRONMENT_UNITY) {
+    // Unity's 24px global menu bar should not be included in the work area.
+    gfx::Rect rect(changed.work_area());
+    rect.set_height(rect.height() - 24);
+    changed.set_work_area(rect);
+  }
+#endif
+  return changed;
+}
+
+v8::Handle<v8::Object> DisplayToV8Value(const gfx::Display& raw) {
+  gfx::Display display(AdaptToWindowManager(raw));
   v8::Handle<v8::Object> obj = v8::Object::New();
   obj->Set(ToV8Value("bounds"), ToV8Value(display.bounds()));
   obj->Set(ToV8Value("workArea"), ToV8Value(display.work_area()));
