@@ -7,10 +7,10 @@
 #include <string>
 #include <vector>
 
-#include "base/values.h"
-#include "chrome/browser/ui/gtk/gtk_window_util.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
+#include "base/values.h"
+#include "chrome/browser/ui/gtk/gtk_window_util.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
 #include "content/public/common/renderer_preferences.h"
@@ -50,7 +50,7 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
   int width = 800, height = 600;
   options->GetInteger(switches::kWidth, &width);
   options->GetInteger(switches::kHeight, &height);
-  gtk_window_set_default_size(window_, width, height);
+  SetSize(gfx::Size(width, height));
 
   if (!icon_.IsEmpty())
     gtk_window_set_icon(window_, icon_.ToGdkPixbuf());
@@ -101,7 +101,7 @@ void NativeWindowGtk::CloseImmediately() {
 
 void NativeWindowGtk::Move(const gfx::Rect& pos) {
   gtk_window_move(window_, pos.x(), pos.y());
-  gtk_window_resize(window_, pos.width(), pos.height());
+  SetSize(pos.size());
 }
 
 void NativeWindowGtk::Focus(bool focus) {
@@ -162,7 +162,7 @@ bool NativeWindowGtk::IsFullscreen() {
 }
 
 void NativeWindowGtk::SetSize(const gfx::Size& size) {
-  gtk_window_resize(window_, size.width(), size.height());
+  gtk_window_util::SetWindowSize(window_, size);
 }
 
 gfx::Size NativeWindowGtk::GetSize() {
