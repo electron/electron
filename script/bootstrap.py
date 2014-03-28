@@ -59,7 +59,7 @@ def update_apm():
     execute([npm, 'install', 'npm'])
     npm = os.path.join('node_modules', '.bin', 'npm')
     if sys.platform == 'win32':
-      npm += 'cmd'
+      npm += '.cmd'
 
   with scoped_cwd(os.path.join('vendor', 'apm')):
     subprocess.check_call([npm, 'install', '.'])
@@ -73,7 +73,9 @@ def update_node_modules():
 def update_node_modules_for_dir(dirname):
   with scoped_cwd(dirname):
     apm = os.path.join(SOURCE_ROOT, 'vendor', 'apm', 'bin', 'apm')
-    subprocess.check_call(['node', os.path.relpath(apm), 'install'])
+    if sys.platform in ['win32', 'cygwin']:
+      apm += '.cmd'
+    subprocess.check_call([apm, 'install'])
 
 
 def update_win32_python():
