@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL
-from lib.util import scoped_cwd
+from lib.util import execute, scoped_cwd
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -53,13 +53,16 @@ def bootstrap_brightray(url):
 
 
 def update_apm():
-  ## NB: Without this, subprocess incorrectly searches for npm.exe
-  npm_cmd = 'npm'
-  if sys.platform in ['win32', 'cygwin']:
-    npm_cmd += '.cmd'
+  npm = 'npm.cmd' if sys.platform == 'win32' else 'npm'
+
+  if os.environ.get('CI') == '1':
+    execute([npm, 'install', 'npm'])
+    npm = os.path.join('node_modules', '.bin', 'npm')
+    if sys.platform == 'win32':
+      npm += 'cmd'
 
   with scoped_cwd(os.path.join('vendor', 'apm')):
-    subprocess.check_call([npm_cmd, 'install', '.'])
+    subprocess.check_call([npm, 'install', '.'])
 
 
 def update_node_modules():
