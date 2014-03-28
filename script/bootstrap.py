@@ -56,7 +56,7 @@ def update_apm():
 
   if os.environ.get('CI') == '1':
     execute([npm, 'install', 'npm'])
-    npm = os.path.join('node_modules', '.bin', 'npm')
+    npm = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'npm')
     if sys.platform == 'win32':
       npm += '.cmd'
 
