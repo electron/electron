@@ -52,6 +52,12 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
   options->GetInteger(switches::kHeight, &height);
   SetSize(gfx::Size(width, height));
 
+  // Force a size allocation so the web page of hidden window can have correct
+  // value of $(window).width().
+  GtkAllocation size = { 0, 0, width, height };
+  gtk_widget_show_all(vbox_);
+  gtk_widget_size_allocate(GTK_WIDGET(window_), &size);
+
   if (!icon_.IsEmpty())
     gtk_window_set_icon(window_, icon_.ToGdkPixbuf());
 
