@@ -41,15 +41,14 @@ def parse_args():
 
 
 def update_submodules():
-  subprocess.check_call(['git', 'submodule', 'sync', '--quiet'])
-  subprocess.check_call(['git', 'submodule', 'update', '--init',
-                         '--recursive'])
+  execute(['git', 'submodule', 'sync'])
+  execute(['git', 'submodule', 'update', '--init', '--recursive'])
 
 
 def bootstrap_brightray(url):
   bootstrap = os.path.join(VENDOR_DIR, 'brightray', 'script', 'bootstrap')
-  subprocess.check_call([sys.executable, bootstrap, '--commit',
-                         LIBCHROMIUMCONTENT_COMMIT, url])
+  execute([sys.executable, bootstrap, '--commit', LIBCHROMIUMCONTENT_COMMIT,
+           url])
 
 
 def update_apm():
@@ -62,7 +61,7 @@ def update_apm():
       npm += '.cmd'
 
   with scoped_cwd(os.path.join('vendor', 'apm')):
-    subprocess.check_call([npm, 'install', '.'])
+    execute([npm, 'install', '.'])
 
 
 def update_node_modules():
@@ -81,10 +80,7 @@ def update_node_modules_for_dir(dirname):
 def update_win32_python():
   with scoped_cwd(VENDOR_DIR):
     if not os.path.exists('python_26'):
-      subprocess.check_call(['git', 'clone', PYTHON_26_URL])
-    else:
-      with scoped_cwd('python_26'):
-        subprocess.check_call(['git', 'pull', '--rebase', 'origin', 'master'])
+      execute(['git', 'clone', PYTHON_26_URL])
 
 
 def touch_config_gypi():
@@ -97,7 +93,7 @@ def touch_config_gypi():
 
 def update_atom_shell():
   update = os.path.join(SOURCE_ROOT, 'script', 'update.py')
-  subprocess.check_call([sys.executable, update])
+  execute([sys.executable, update])
 
 
 if __name__ == '__main__':
