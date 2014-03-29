@@ -9,6 +9,8 @@
 
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
+#include "base/environment.h"
+#include "base/nix/xdg_util.h"
 #include "base/values.h"
 #include "chrome/browser/ui/gtk/gtk_window_util.h"
 #include "content/public/browser/web_contents.h"
@@ -31,6 +33,26 @@ namespace {
 // This matches the logic in the WebKit GTK port.
 const double kGtkCursorBlinkCycleFactor = 2000.0;
 
+// Substract window border's size from window size according to current window
+// manager.
+void SubstractBorderSize(int* width, int* height) {
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  base::nix::DesktopEnvironment de(base::nix::GetDesktopEnvironment(env.get()));
+  if (de == base::nix::DESKTOP_ENVIRONMENT_UNITY) {
+    *width -= 2;
+    *height -= 29;
+  } else if (de == base::nix::DESKTOP_ENVIRONMENT_GNOME) {
+    *width -= 2;
+    *height -= 33;
+  } else if (de == base::nix::DESKTOP_ENVIRONMENT_XFCE) {
+    *width -= 6;
+    *height -= 27;
+  } else {
+    *width -= 2;
+    *height -= 29;
+  }
+}
+
 }  // namespace
 
 NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
@@ -50,13 +72,16 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
   int width = 800, height = 600;
   options->GetInteger(switches::kWidth, &width);
   options->GetInteger(switches::kHeight, &height);
-  SetSize(gfx::Size(width, height));
+
+  if (has_frame_)
+    SubstractBorderSize(&width, &height);
 
   // Force a size allocation so the web page of hidden window can have correct
   // value of $(window).width().
   GtkAllocation size = { 0, 0, width, height };
   gtk_widget_show_all(vbox_);
   gtk_widget_size_allocate(GTK_WIDGET(window_), &size);
+  SetSize(gfx::Size(width, height));
 
   // Create the underlying gdk window.
   gtk_widget_realize(GTK_WIDGET(window_));
