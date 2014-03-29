@@ -58,6 +58,9 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
   gtk_widget_show_all(vbox_);
   gtk_widget_size_allocate(GTK_WIDGET(window_), &size);
 
+  // Create the underlying gdk window.
+  gtk_widget_realize(GTK_WIDGET(window_));
+
   if (!icon_.IsEmpty())
     gtk_window_set_icon(window_, icon_.ToGdkPixbuf());
 
