@@ -64,6 +64,7 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
       is_always_on_top_(false),
       is_active_(false),
       suppress_window_raise_(false),
+      has_ever_been_shown_(false),
       frame_cursor_(NULL) {
   gtk_container_add(GTK_CONTAINER(window_), vbox_);
   gtk_container_add(GTK_CONTAINER(vbox_),
@@ -73,6 +74,7 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
   options->GetInteger(switches::kWidth, &width);
   options->GetInteger(switches::kHeight, &height);
 
+  // Fixup the initial window size.
   if (has_frame_)
     SubstractBorderSize(&width, &height);
 
@@ -81,7 +83,7 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
   GtkAllocation size = { 0, 0, width, height };
   gtk_widget_show_all(vbox_);
   gtk_widget_size_allocate(GTK_WIDGET(window_), &size);
-  SetSize(gfx::Size(width, height));
+  gtk_window_util::SetWindowSize(window_, gfx::Size(width, height));
 
   // Create the underlying gdk window.
   gtk_widget_realize(GTK_WIDGET(window_));
@@ -157,6 +159,7 @@ bool NativeWindowGtk::IsFocused() {
 }
 
 void NativeWindowGtk::Show() {
+  has_ever_been_shown_ = true;
   gtk_widget_show_all(GTK_WIDGET(window_));
 }
 
@@ -196,7 +199,13 @@ bool NativeWindowGtk::IsFullscreen() {
 }
 
 void NativeWindowGtk::SetSize(const gfx::Size& size) {
-  gtk_window_util::SetWindowSize(window_, size);
+  // When the window has not been mapped the window size does not include frame.
+  int width = size.width();
+  int height = size.height();
+  if (has_frame_ && !has_ever_been_shown_)
+    SubstractBorderSize(&width, &height);
+
+  gtk_window_util::SetWindowSize(window_, gfx::Size(width, height));
 }
 
 gfx::Size NativeWindowGtk::GetSize() {
