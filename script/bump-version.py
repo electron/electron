@@ -2,10 +2,9 @@
 
 import os
 import re
-import subprocess
 import sys
 
-from lib.util import get_atom_shell_version, scoped_cwd
+from lib.util import execute, get_atom_shell_version, scoped_cwd
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -126,13 +125,13 @@ def update_info_plist(version):
 
 
 def tag_version(version):
-  subprocess.check_call(['git', 'commit', '-a', '-m',
-                         'Bump v{0}.'.format(version)])
-  subprocess.check_call(['git', 'tag', 'v{0}'.format(version)])
+  execute(['git', 'commit', '-a', '-m', 'Bump v{0}.'.format(version)])
+  execute(['git', 'tag', 'v{0}'.format(version)])
 
 
 def git_push():
-  subprocess.check_call(['git', 'push', '--follow-tags'])
+  execute(['git', 'push'])
+  execute(['git', 'push', '--tags'])
 
 
 if __name__ == '__main__':
