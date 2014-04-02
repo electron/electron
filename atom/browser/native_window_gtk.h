@@ -125,9 +125,9 @@ class NativeWindowGtk : public NativeWindow,
   // bar or window border.  This is to work around a compiz bug.
   bool suppress_window_raise_;
 
-  // True if the window has been visible for once, on Linux the window frame would
-  // only be considered as part of the window untill the window has been shown, so
-  // we need it to correctly set the window size.
+  // True if the window has been visible for once, on Linux the window frame
+  // would // only be considered as part of the window untill the window has
+  // been shown, so we need it to correctly set the window size.
   bool has_ever_been_shown_;
 
   // The current window cursor.  We set it to a resize cursor when over the
