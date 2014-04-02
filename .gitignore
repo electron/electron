@@ -5,6 +5,7 @@
 /out/
 /vendor/brightray/vendor/download/
 /vendor/python_26/
+/vendor/npm/
 node_modules/
 *.xcodeproj
 *.swp
