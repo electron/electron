@@ -32,6 +32,7 @@
       'atom/common/api/lib/shell.coffee',
       'atom/common/lib/init.coffee',
       'atom/renderer/lib/init.coffee',
+      'atom/renderer/lib/inspector.coffee',
       'atom/renderer/lib/override.coffee',
       'atom/renderer/api/lib/ipc.coffee',
       'atom/renderer/api/lib/remote.coffee',

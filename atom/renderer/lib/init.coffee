@@ -1,4 +1,5 @@
 path   = require 'path'
+url    = require 'url'
 Module = require 'module'
 
 # Expose information of current process.
@@ -42,5 +43,9 @@ else
   global.__filename = __filename
   global.__dirname = __dirname
 
-# Override default web functions.
-require path.join(__dirname, 'override')
+if location.protocol is 'chrome-devtools:'
+  # Override some inspector APIs.
+  require path.join(__dirname, 'inspector')
+else
+  # Override default web functions.
+  require path.join(__dirname, 'override')
