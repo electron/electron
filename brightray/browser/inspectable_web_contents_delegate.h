@@ -20,6 +20,12 @@ class InspectableWebContentsDelegate {
   // the default behavior.
   // Receiver is given the chance to change the |dock_side|.
   virtual bool DevToolsShow(std::string* dock_side) { return false; }
+
+  // Requested by WebContents of devtools.
+  virtual void DevToolsSaveToFile(
+      const std::string& url, const std::string& content, bool save_as) {}
+  virtual void DevToolsAppendToFile(
+      const std::string& url, const std::string& content) {}
 };
 
 }  // namespace brightray

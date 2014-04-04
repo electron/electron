@@ -153,10 +153,14 @@ void InspectableWebContentsImpl::OpenInNewTab(const std::string& url) {
 
 void InspectableWebContentsImpl::SaveToFile(
     const std::string& url, const std::string& content, bool save_as) {
+  if (delegate_)
+    delegate_->DevToolsSaveToFile(url, content, save_as);
 }
 
 void InspectableWebContentsImpl::AppendToFile(
     const std::string& url, const std::string& content) {
+  if (delegate_)
+    delegate_->DevToolsAppendToFile(url, content);
 }
 
 void InspectableWebContentsImpl::RequestFileSystems() {
