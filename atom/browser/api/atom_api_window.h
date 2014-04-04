@@ -103,6 +103,9 @@ class Window : public EventEmitter,
   static void GetProcessID(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void IsCrashed(const v8::FunctionCallbackInfo<v8::Value>& args);
 
+  // APIs for devtools.
+  static void GetDevTools(const v8::FunctionCallbackInfo<v8::Value>& args);
+
   // APIs for NavigationController.
   static void LoadURL(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void GetURL(const v8::FunctionCallbackInfo<v8::Value>& args);

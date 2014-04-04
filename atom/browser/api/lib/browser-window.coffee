@@ -55,4 +55,11 @@ BrowserWindow.fromProcessIdAndRoutingId = (processId, routingId) ->
   return window for window in windows when window.getProcessId() == processId and
                                            window.getRoutingId() == routingId
 
+BrowserWindow.fromDevTools = (processId, routingId) ->
+  windows = BrowserWindow.getAllWindows()
+  for window in windows
+    devtools = window.getDevTools()
+    return window if devtools.processId == processId and
+                     devtools.routingId == routingId
+
 module.exports = BrowserWindow
