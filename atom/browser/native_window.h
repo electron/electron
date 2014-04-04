@@ -41,14 +41,11 @@ class Rect;
 class Size;
 }
 
-namespace IPC {
-class Message;
-}
-
 namespace atom {
 
 class AtomJavaScriptDialogManager;
 class DevToolsDelegate;
+class DevToolsWebContentsObserver;
 struct DraggableRegion;
 
 class NativeWindow : public brightray::DefaultWebContentsDelegate,
@@ -288,8 +285,11 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   base::WeakPtrFactory<NativeWindow> weak_factory_;
 
   base::WeakPtr<NativeWindow> devtools_window_;
-
   scoped_ptr<DevToolsDelegate> devtools_delegate_;
+
+  // WebContentsObserver for the WebContents of devtools.
+  scoped_ptr<DevToolsWebContentsObserver> devtools_web_contents_observer_;
+
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
 

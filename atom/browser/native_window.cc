@@ -8,6 +8,17 @@
 #include <utility>
 #include <vector>
 
+#include "atom/browser/api/atom_browser_bindings.h"
+#include "atom/browser/atom_browser_context.h"
+#include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_javascript_dialog_manager.h"
+#include "atom/browser/browser.h"
+#include "atom/browser/devtools_delegate.h"
+#include "atom/browser/devtools_web_contents_observer.h"
+#include "atom/browser/window_list.h"
+#include "atom/common/api/api_messages.h"
+#include "atom/common/atom_version.h"
+#include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/file_util.h"
 #include "base/prefs/pref_service.h"
@@ -15,13 +26,6 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
-#include "atom/browser/api/atom_browser_bindings.h"
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/atom_javascript_dialog_manager.h"
-#include "atom/browser/browser.h"
-#include "atom/browser/devtools_delegate.h"
-#include "atom/browser/window_list.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/invalidate_type.h"
 #include "content/public/browser/navigation_entry.h"
@@ -33,9 +37,6 @@
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/web_contents_view.h"
 #include "content/public/common/renderer_preferences.h"
-#include "atom/common/api/api_messages.h"
-#include "atom/common/atom_version.h"
-#include "atom/common/options_switches.h"
 #include "ipc/ipc_message_macros.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/point.h"
@@ -194,8 +195,12 @@ bool NativeWindow::HasModalDialog() {
 void NativeWindow::OpenDevTools() {
   if (devtools_window_) {
     devtools_window_->Focus(true);
+    devtools_web_contents_observer_.reset(new DevToolsWebContentsObserver(
+        this, devtools_window_->GetWebContents()));
   } else {
     inspectable_web_contents()->ShowDevTools();
+    devtools_web_contents_observer_.reset(new DevToolsWebContentsObserver(
+        this, GetDevToolsWebContents()));
 #if defined(OS_MACOSX)
     // Temporary fix for flashing devtools, try removing this after upgraded to
     // Chrome 32.
@@ -559,7 +564,7 @@ void NativeWindow::OnRendererMessageSync(const string16& channel,
       GetWebContents()->GetRoutingID(),
       channel,
       args,
-      this,
+      GetWebContents(),
       reply_msg);
 }
 

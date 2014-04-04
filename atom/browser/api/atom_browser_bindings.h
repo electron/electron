@@ -13,13 +13,15 @@ namespace base {
 class ListValue;
 }
 
+namespace content {
+class WebContents;
+}
+
 namespace IPC {
 class Message;
 }
 
 namespace atom {
-
-class NativeWindow;
 
 class AtomBrowserBindings : public AtomBindings {
  public:
@@ -37,7 +39,7 @@ class AtomBrowserBindings : public AtomBindings {
                              int routing_id,
                              const string16& channel,
                              const base::ListValue& args,
-                             NativeWindow* sender,
+                             content::WebContents* sender,
                              IPC::Message* message);
 
  private:

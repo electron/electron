@@ -5,11 +5,11 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_EVENT_H_
 #define ATOM_BROWSER_API_ATOM_API_EVENT_H_
 
+#include "atom/common/v8/scoped_persistent.h"
 #include "base/basictypes.h"
 #include "base/compiler_specific.h"
 #include "base/strings/string16.h"
-#include "atom/browser/native_window_observer.h"
-#include "atom/common/v8/scoped_persistent.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "vendor/node/src/node_object_wrap.h"
 
 namespace IPC {
@@ -18,12 +18,10 @@ class Message;
 
 namespace atom {
 
-class NativeWindow;
-
 namespace api {
 
 class Event : public node::ObjectWrap,
-              public NativeWindowObserver {
+              public content::WebContentsObserver {
  public:
   virtual ~Event();
 
@@ -31,7 +29,7 @@ class Event : public node::ObjectWrap,
   static v8::Handle<v8::Object> CreateV8Object();
 
   // Pass the sender and message to be replied.
-  void SetSenderAndMessage(NativeWindow* sender, IPC::Message* message);
+  void SetSenderAndMessage(content::WebContents* sender, IPC::Message* message);
 
   // Whether event.preventDefault() is called.
   bool prevent_default() const { return prevent_default_; }
@@ -39,8 +37,8 @@ class Event : public node::ObjectWrap,
  protected:
   Event();
 
-  // NativeWindowObserver implementations:
-  virtual void OnWindowClosed() OVERRIDE;
+  // content::WebContentsObserver implementations:
+  virtual void WebContentsDestroyed(content::WebContents*) OVERRIDE;
 
  private:
   static void New(const v8::FunctionCallbackInfo<v8::Value>& args);
@@ -52,7 +50,7 @@ class Event : public node::ObjectWrap,
   static ScopedPersistent<v8::Function> constructor_template_;
 
   // Replyer for the synchronous messages.
-  NativeWindow* sender_;
+  content::WebContents* sender_;
   IPC::Message* message_;
 
   bool prevent_default_;
