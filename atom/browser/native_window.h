@@ -237,6 +237,11 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual bool DevToolsSetDockSide(const std::string& dock_side,
                                    bool* succeed) OVERRIDE;
   virtual bool DevToolsShow(std::string* dock_side) OVERRIDE;
+  virtual void DevToolsSaveToFile(const std::string& url,
+                                  const std::string& content,
+                                  bool save_as) OVERRIDE;
+  virtual void DevToolsAppendToFile(const std::string& url,
+                                    const std::string& content) OVERRIDE;
 
   // Whether window has standard frame.
   bool has_frame_;
@@ -250,6 +255,12 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   // Dispatch unresponsive event to observers.
   void NotifyWindowUnresponsive();
+
+  // Call a function in devtools.
+  void CallDevToolsFunction(const std::string& function_name,
+                            const base::Value* arg1 = NULL,
+                            const base::Value* arg2 = NULL,
+                            const base::Value* arg3 = NULL);
 
   // Called when CapturePage has done.
   void OnCapturePageDone(const CapturePageCallback& callback,
@@ -292,6 +303,10 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
+
+  // Maps url to file path, used by the file requests sent from devtools.
+  typedef std::map<std::string, base::FilePath> PathsMap;
+  PathsMap saved_files_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindow);
 };
