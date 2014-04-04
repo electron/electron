@@ -94,6 +94,8 @@
       'atom/browser/browser_observer.h',
       'atom/browser/devtools_delegate.cc',
       'atom/browser/devtools_delegate.h',
+      'atom/browser/devtools_web_contents_observer.cc',
+      'atom/browser/devtools_web_contents_observer.h',
       'atom/browser/native_window.cc',
       'atom/browser/native_window.h',
       'atom/browser/native_window_gtk.cc',
