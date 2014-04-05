@@ -1,11 +1,18 @@
-# Use menu API to show context menu.
 window.onload = ->
+  # Use menu API to show context menu.
   WebInspector.ContextMenu.prototype.show = ->
     menuObject = @_buildDescriptor()
     if menuObject.length
       WebInspector._contextMenu = this
       createMenu(menuObject, @_event)
       @_event.consume()
+
+  # Use dialog API to override file chooser dialog.
+  WebInspector.createFileSelectorElement = (callback) ->
+    fileSelectorElement = document.createElement 'span'
+    fileSelectorElement.style.display = 'none'
+    fileSelectorElement.click = showFileChooserDialog.bind this, callback
+    return fileSelectorElement
 
 convertToMenuTemplate = (items) ->
   template = []
@@ -40,3 +47,15 @@ createMenu = (items, event) ->
   menu = Menu.buildFromTemplate convertToMenuTemplate(items)
   menu.popup remote.getCurrentWindow()
   event.consume true
+
+showFileChooserDialog = (callback) ->
+  remote = require 'remote'
+  dialog = remote.require 'dialog'
+  dialog.showOpenDialog remote.getCurrentWindow(), null, (files) ->
+    callback pathToHtml5FileObject(files[0]) if files?
+
+pathToHtml5FileObject = (path) ->
+  fs = require 'fs'
+  blob = new Blob([fs.readFileSync(path)])
+  blob.name = path
+  blob
