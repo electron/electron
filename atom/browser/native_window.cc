@@ -8,20 +8,26 @@
 #include <utility>
 #include <vector>
 
-#include "base/command_line.h"
-#include "base/file_util.h"
-#include "base/prefs/pref_service.h"
-#include "base/message_loop/message_loop.h"
-#include "base/strings/stringprintf.h"
-#include "base/strings/utf_string_conversions.h"
-#include "base/values.h"
 #include "atom/browser/api/atom_browser_bindings.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/devtools_delegate.h"
+#include "atom/browser/devtools_web_contents_observer.h"
+#include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/window_list.h"
+#include "atom/common/api/api_messages.h"
+#include "atom/common/atom_version.h"
+#include "atom/common/options_switches.h"
+#include "base/command_line.h"
+#include "base/file_util.h"
+#include "base/json/json_writer.h"
+#include "base/prefs/pref_service.h"
+#include "base/message_loop/message_loop.h"
+#include "base/strings/stringprintf.h"
+#include "base/strings/utf_string_conversions.h"
+#include "base/values.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/invalidate_type.h"
 #include "content/public/browser/navigation_entry.h"
@@ -33,9 +39,6 @@
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/web_contents_view.h"
 #include "content/public/common/renderer_preferences.h"
-#include "atom/common/api/api_messages.h"
-#include "atom/common/atom_version.h"
-#include "atom/common/options_switches.h"
 #include "ipc/ipc_message_macros.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/point.h"
@@ -194,8 +197,12 @@ bool NativeWindow::HasModalDialog() {
 void NativeWindow::OpenDevTools() {
   if (devtools_window_) {
     devtools_window_->Focus(true);
+    devtools_web_contents_observer_.reset(new DevToolsWebContentsObserver(
+        this, devtools_window_->GetWebContents()));
   } else {
     inspectable_web_contents()->ShowDevTools();
+    devtools_web_contents_observer_.reset(new DevToolsWebContentsObserver(
+        this, GetDevToolsWebContents()));
 #if defined(OS_MACOSX)
     // Temporary fix for flashing devtools, try removing this after upgraded to
     // Chrome 32.
@@ -514,6 +521,41 @@ bool NativeWindow::DevToolsShow(std::string* dock_side) {
   return false;
 }
 
+void NativeWindow::DevToolsSaveToFile(const std::string& url,
+                                      const std::string& content,
+                                      bool save_as) {
+  base::FilePath path;
+  PathsMap::iterator it = saved_files_.find(url);
+  if (it != saved_files_.end() && !save_as) {
+    path = it->second;
+  } else {
+    if (!file_dialog::ShowSaveDialog(this, url, base::FilePath(url), &path))
+      return;
+  }
+
+  saved_files_[url] = path;
+  file_util::WriteFile(path, content.data(), content.size());
+
+  // Notify devtools.
+  base::StringValue url_value(url);
+  CallDevToolsFunction("InspectorFrontendAPI.savedURL", &url_value);
+
+  // TODO(zcbenz): In later Chrome we need to call canceledSaveURL when the save
+  // failed.
+}
+
+void NativeWindow::DevToolsAppendToFile(const std::string& url,
+                                        const std::string& content) {
+  PathsMap::iterator it = saved_files_.find(url);
+  if (it == saved_files_.end())
+    return;
+  file_util::AppendToFile(it->second, content.data(), content.size());
+
+  // Notify devtools.
+  base::StringValue url_value(url);
+  CallDevToolsFunction("InspectorFrontendAPI.appendedToURL", &url_value);
+}
+
 void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
   window_unresposive_closure_.Reset(
       base::Bind(&NativeWindow::NotifyWindowUnresponsive,
@@ -542,6 +584,30 @@ void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
   callback.Run(data);
 }
 
+void NativeWindow::CallDevToolsFunction(const std::string& function_name,
+                                        const base::Value* arg1,
+                                        const base::Value* arg2,
+                                        const base::Value* arg3) {
+  std::string params;
+  if (arg1) {
+    std::string json;
+    base::JSONWriter::Write(arg1, &json);
+    params.append(json);
+    if (arg2) {
+      base::JSONWriter::Write(arg2, &json);
+      params.append(", " + json);
+      if (arg3) {
+        base::JSONWriter::Write(arg3, &json);
+        params.append(", " + json);
+      }
+    }
+  }
+  base::string16 javascript =
+      base::ASCIIToUTF16(function_name + "(" + params + ");");
+  GetDevToolsWebContents()->GetRenderViewHost()->ExecuteJavascriptInWebFrame(
+      string16(), javascript);
+}
+
 void NativeWindow::OnRendererMessage(const string16& channel,
                                      const base::ListValue& args) {
   AtomBrowserMainParts::Get()->atom_bindings()->OnRendererMessage(
@@ -559,7 +625,7 @@ void NativeWindow::OnRendererMessageSync(const string16& channel,
       GetWebContents()->GetRoutingID(),
       channel,
       args,
-      this,
+      GetWebContents(),
       reply_msg);
 }
 

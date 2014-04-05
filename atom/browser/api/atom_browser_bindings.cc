@@ -57,7 +57,7 @@ void AtomBrowserBindings::OnRendererMessageSync(
     int routing_id,
     const string16& channel,
     const base::ListValue& args,
-    NativeWindow* sender,
+    content::WebContents* sender,
     IPC::Message* message) {
   v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);

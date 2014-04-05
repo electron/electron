@@ -504,6 +504,19 @@ void Window::IsCrashed(const v8::FunctionCallbackInfo<v8::Value>& args) {
 }
 
 // static
+void Window::GetDevTools(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  UNWRAP_WINDOW_AND_CHECK;
+
+  content::WebContents* web_contents = self->window_->GetDevToolsWebContents();
+  v8::Local<v8::Object> devtools = v8::Object::New();
+  devtools->Set(ToV8Value("processId"),
+                ToV8Value(web_contents->GetRenderProcessHost()->GetID()));
+  devtools->Set(ToV8Value("routingId"),
+                ToV8Value(web_contents->GetRoutingID()));
+  args.GetReturnValue().Set(devtools);
+}
+
+// static
 void Window::LoadURL(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
@@ -685,6 +698,8 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "getRoutingId", GetRoutingID);
   NODE_SET_PROTOTYPE_METHOD(t, "getProcessId", GetProcessID);
   NODE_SET_PROTOTYPE_METHOD(t, "isCrashed", IsCrashed);
+
+  NODE_SET_PROTOTYPE_METHOD(t, "getDevTools", GetDevTools);
 
   NODE_SET_PROTOTYPE_METHOD(t, "loadUrl", LoadURL);
   NODE_SET_PROTOTYPE_METHOD(t, "getUrl", GetURL);

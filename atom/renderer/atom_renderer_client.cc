@@ -28,9 +28,6 @@ const char* kSecurityManualEnableIframe = "manual-enable-iframe";
 const char* kSecurityDisable = "disable";
 const char* kSecurityEnableNodeIntegration = "enable-node-integration";
 
-// Scheme used by devtools
-const char* kChromeDevToolsScheme = "chrome-devtools";
-
 }  // namespace
 
 AtomRendererClient::AtomRendererClient()
@@ -158,10 +155,6 @@ bool AtomRendererClient::ShouldFork(WebKit::WebFrame* frame,
 
 bool AtomRendererClient::IsNodeBindingEnabled(WebKit::WebFrame* frame) {
   if (node_integration_ == DISABLE)
-    return false;
-  // Do not pollute devtools.
-  else if (frame != NULL &&
-           GURL(frame->document().url()).SchemeIs(kChromeDevToolsScheme))
     return false;
   // Node integration is enabled in main frame unless explictly disabled.
   else if (frame == main_frame_)

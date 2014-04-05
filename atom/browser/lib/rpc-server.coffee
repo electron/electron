@@ -98,6 +98,7 @@ ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event, processId, routingId) ->
   try
     BrowserWindow = require 'browser-window'
     window = BrowserWindow.fromProcessIdAndRoutingId processId, routingId
+    window = BrowserWindow.fromDevTools processId, routingId unless window?
     event.returnValue = valueToMeta processId, routingId, window
   catch e
     event.returnValue = errorToMeta e

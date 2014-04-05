@@ -4,10 +4,10 @@
 
 #include "atom/browser/api/atom_api_event.h"
 
-#include "atom/browser/native_window.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/v8/node_common.h"
 #include "atom/common/v8/native_type_conversions.h"
+#include "content/public/browser/web_contents.h"
 
 namespace atom {
 
@@ -22,8 +22,6 @@ Event::Event()
 }
 
 Event::~Event() {
-  if (sender_ != NULL)
-    sender_->RemoveObserver(this);
 }
 
 // static
@@ -44,16 +42,17 @@ v8::Handle<v8::Object> Event::CreateV8Object() {
   return t->NewInstance(0, NULL);
 }
 
-void Event::SetSenderAndMessage(NativeWindow* sender, IPC::Message* message) {
+void Event::SetSenderAndMessage(content::WebContents* sender,
+                                IPC::Message* message) {
   DCHECK(!sender_);
   DCHECK(!message_);
   sender_ = sender;
   message_ = message;
 
-  sender_->AddObserver(this);
+  Observe(sender);
 }
 
-void Event::OnWindowClosed() {
+void Event::WebContentsDestroyed(content::WebContents* web_contents) {
   sender_ = NULL;
   message_ = NULL;
 }

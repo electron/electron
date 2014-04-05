@@ -27,7 +27,6 @@ def main():
   run_script('coffeelint.py')
   run_script('build.py')
   run_script('test.py', ['--ci'])
-  run_script('create-dist.py')
 
 
 def run_script(script, args=[]):
