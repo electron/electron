@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_NATIVE_WINDOW_H_
 #define ATOM_BROWSER_NATIVE_WINDOW_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
