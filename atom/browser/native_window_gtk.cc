@@ -13,6 +13,7 @@
 #include "base/nix/xdg_util.h"
 #include "base/values.h"
 #include "chrome/browser/ui/gtk/gtk_window_util.h"
+#include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
 #include "content/public/common/renderer_preferences.h"
@@ -104,8 +105,6 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
                    G_CALLBACK(OnWindowDeleteEventThunk), this);
   g_signal_connect(window_, "focus-out-event",
                    G_CALLBACK(OnFocusOutThunk), this);
-  g_signal_connect(window_, "key-press-event",
-                   G_CALLBACK(OnKeyPressThunk), this);
 
   if (!has_frame_) {
     gtk_window_set_decorated(window_, false);
@@ -343,6 +342,18 @@ void NativeWindowGtk::UpdateDraggableRegions(
   }
 }
 
+void NativeWindowGtk::HandleKeyboardEvent(
+    content::WebContents*,
+    const content::NativeWebKeyboardEvent& event) {
+  if (event.type == WebKit::WebInputEvent::RawKeyDown) {
+    GdkEventKey* os_event = reinterpret_cast<GdkEventKey*>(event.os_event);
+    ui::Accelerator accelerator = ui::AcceleratorForGdkKeyCodeAndModifier(
+        os_event->keyval, static_cast<GdkModifierType>(os_event->state));
+    accelerator_util::TriggerAcceleratorTableCommand(&accelerator_table_,
+                                                     accelerator);
+  }
+}
+
 void NativeWindowGtk::ActiveWindowChanged(GdkWindow* active_window) {
   is_active_ = gtk_widget_get_window(GTK_WIDGET(window_)) == active_window;
 }
@@ -503,13 +514,6 @@ gboolean NativeWindowGtk::OnButtonPress(GtkWidget* widget,
   }
 
   return FALSE;
-}
-
-gboolean NativeWindowGtk::OnKeyPress(GtkWidget* widget, GdkEventKey* event) {
-  ui::Accelerator accelerator = ui::AcceleratorForGdkKeyCodeAndModifier(
-      event->keyval, static_cast<GdkModifierType>(event->state));
-  return accelerator_util::TriggerAcceleratorTableCommand(
-      &accelerator_table_, accelerator) ? TRUE: FALSE;
 }
 
 // static

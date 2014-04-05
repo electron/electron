@@ -71,6 +71,11 @@ class NativeWindowGtk : public NativeWindow,
   virtual void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) OVERRIDE;
 
+  // Overridden from content::WebContentsDelegate:
+  virtual void HandleKeyboardEvent(
+      content::WebContents*,
+      const content::NativeWebKeyboardEvent&) OVERRIDE;
+
   // Overridden from ActiveWindowWatcherXObserver.
   virtual void ActiveWindowChanged(GdkWindow* active_window) OVERRIDE;
 
@@ -100,9 +105,6 @@ class NativeWindowGtk : public NativeWindow,
                        GdkEventMotion*);
   CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnButtonPress,
                        GdkEventButton*);
-
-  // Key press event callback.
-  CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnKeyPress, GdkEventKey*);
 
   GtkWindow* window_;
   GtkWidget* vbox_;
