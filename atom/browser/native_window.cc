@@ -53,12 +53,6 @@ using content::NavigationEntry;
 
 namespace atom {
 
-namespace {
-
-const char kDockSidePref[] = "brightray.devtools.dockside";
-
-}  // namespace
-
 NativeWindow::NativeWindow(content::WebContents* web_contents,
                            base::DictionaryValue* options)
     : content::WebContentsObserver(web_contents),
