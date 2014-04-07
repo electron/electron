@@ -271,12 +271,28 @@ base::ProcessHandle NativeWindow::GetRenderProcessHandle() {
 
 void NativeWindow::CapturePage(const gfx::Rect& rect,
                                const CapturePageCallback& callback) {
+  content::RenderViewHost* render_view_host =
+      GetWebContents()->GetRenderViewHost();
+  content::RenderWidgetHostView* render_widget_host_view =
+      render_view_host->GetView();
+
+  if (!render_widget_host_view) {
+    callback.Run(std::vector<unsigned char>());
+    return;
+  }
+
   gfx::Rect flipped_y_rect = rect;
   flipped_y_rect.set_y(-rect.y());
 
+  gfx::Size size;
+  if (flipped_y_rect.IsEmpty())
+    size = render_widget_host_view->GetViewBounds().size();
+  else
+    size = flipped_y_rect.size();
+
   GetWebContents()->GetRenderViewHost()->CopyFromBackingStore(
       flipped_y_rect,
-      gfx::Size(),
+      size,
       base::Bind(&NativeWindow::OnCapturePageDone,
                  weak_factory_.GetWeakPtr(),
                  callback));
