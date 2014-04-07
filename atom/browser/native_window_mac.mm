@@ -199,7 +199,8 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
 
 NativeWindowMac::~NativeWindowMac() {
   if (window())
-    [window() release];
+    // Use autorelease since we may have delegates or observers at this time.
+    [window() autorelease];
 }
 
 void NativeWindowMac::Close() {
