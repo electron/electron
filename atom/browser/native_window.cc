@@ -313,8 +313,7 @@ void NativeWindow::CloseWebContents() {
   // not closed in 5000ms, in this way we can quickly show the unresponsive
   // dialog when the window is busy executing some script withouth waiting for
   // the unresponsive timeout.
-  if (!Browser::Get()->is_quiting() &&
-      window_unresposive_closure_.IsCancelled())
+  if (window_unresposive_closure_.IsCancelled())
     ScheduleUnresponsiveEvent(5000);
 
   if (web_contents->NeedToFireBeforeUnload())
