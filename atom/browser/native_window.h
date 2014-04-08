@@ -136,6 +136,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void CloseDevTools();
   virtual bool IsDevToolsOpened();
   virtual void InspectElement(int x, int y);
+  virtual void ExecuteJavaScriptInDevTools(const std::string& script);
 
   virtual void FocusOnWebView();
   virtual void BlurWebView();

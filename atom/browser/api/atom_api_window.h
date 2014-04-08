@@ -105,6 +105,8 @@ class Window : public EventEmitter,
 
   // APIs for devtools.
   static void GetDevTools(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static void ExecuteJavaScriptInDevTools(
+      const v8::FunctionCallbackInfo<v8::Value>& args);
 
   // APIs for NavigationController.
   static void LoadURL(const v8::FunctionCallbackInfo<v8::Value>& args);

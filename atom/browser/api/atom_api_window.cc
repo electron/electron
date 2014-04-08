@@ -517,6 +517,18 @@ void Window::GetDevTools(const v8::FunctionCallbackInfo<v8::Value>& args) {
 }
 
 // static
+void Window::ExecuteJavaScriptInDevTools(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
+  UNWRAP_WINDOW_AND_CHECK;
+
+  std::string code;
+  if (!FromV8Arguments(args, &code))
+    return node::ThrowTypeError("Bad argument");
+
+  self->window_->ExecuteJavaScriptInDevTools(code);
+}
+
+// static
 void Window::LoadURL(const v8::FunctionCallbackInfo<v8::Value>& args) {
   UNWRAP_WINDOW_AND_CHECK;
 
@@ -700,6 +712,8 @@ void Window::Initialize(v8::Handle<v8::Object> target) {
   NODE_SET_PROTOTYPE_METHOD(t, "isCrashed", IsCrashed);
 
   NODE_SET_PROTOTYPE_METHOD(t, "getDevTools", GetDevTools);
+  NODE_SET_PROTOTYPE_METHOD(
+      t, "executeJavaScriptInDevTools", ExecuteJavaScriptInDevTools);
 
   NODE_SET_PROTOTYPE_METHOD(t, "loadUrl", LoadURL);
   NODE_SET_PROTOTYPE_METHOD(t, "getUrl", GetURL);
