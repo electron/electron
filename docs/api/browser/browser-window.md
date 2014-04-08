@@ -334,6 +334,13 @@ Closes the developer tools.
 
 Starts inspecting element at position (`x`, `y`).
 
+### BrowserWindow.executeJavaScriptInDevTools(code)
+
+* `code` String
+
+Evaluate `code` in devtools to use
+[InspectorFrontendAPI](https://code.google.com/p/chromium/codesearch#chromium/src/third_party/WebKit/Source/devtools/front_end/InspectorFrontendAPI.js&q=InspectorFrontendAPI&sq=package:chromium&type=cs)
+
 ### BrowserWindow.focusOnWebView()
 
 ### BrowserWindow.blurWebView()
