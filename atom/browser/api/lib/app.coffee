@@ -29,7 +29,8 @@ if process.platform is 'darwin'
 
 # Be compatible with old API.
 app.once 'ready', -> app.emit 'finish-launching'
-app.terminate = app.exit = app.quit
+app.terminate = app.quit
+app.exit = process.exit
 
 # Only one App object pemitted.
 module.exports = app
