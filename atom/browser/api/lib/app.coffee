@@ -27,8 +27,9 @@ if process.platform is 'darwin'
     setBadge: bindings.dockSetBadgeText
     getBadge: bindings.dockGetBadgeText
 
-# Support old event name.
+# Be compatible with old API.
 app.once 'ready', -> app.emit 'finish-launching'
+app.terminate = app.exit = app.quit
 
 # Only one App object pemitted.
 module.exports = app

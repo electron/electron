@@ -39,8 +39,6 @@ class App : public EventEmitter,
   static void New(const v8::FunctionCallbackInfo<v8::Value>& args);
 
   static void Quit(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void Exit(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void Terminate(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void Focus(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void GetVersion(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void SetVersion(const v8::FunctionCallbackInfo<v8::Value>& args);

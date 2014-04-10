@@ -38,7 +38,7 @@ process.on('uncaughtException', function(error) {
 });
 
 app.on('window-all-closed', function() {
-  app.terminate();
+  app.quit();
 });
 
 app.on('ready', function() {

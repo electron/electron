@@ -10,7 +10,7 @@ var menu = null;
 
 // Quit when all windows are closed.
 app.on('window-all-closed', function() {
-  app.terminate();
+  app.quit();
 });
 
 app.on('open-url', function(event, url) {

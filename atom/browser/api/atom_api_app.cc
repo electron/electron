@@ -74,16 +74,6 @@ void App::Quit(const v8::FunctionCallbackInfo<v8::Value>& args) {
 }
 
 // static
-void App::Exit(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  exit(args[0]->IntegerValue());
-}
-
-// static
-void App::Terminate(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  Browser::Get()->Terminate();
-}
-
-// static
 void App::Focus(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Browser::Get()->Focus();
 }
@@ -185,8 +175,6 @@ void App::Initialize(v8::Handle<v8::Object> target) {
   t->SetClassName(v8::String::NewSymbol("Application"));
 
   NODE_SET_PROTOTYPE_METHOD(t, "quit", Quit);
-  NODE_SET_PROTOTYPE_METHOD(t, "exit", Exit);
-  NODE_SET_PROTOTYPE_METHOD(t, "terminate", Terminate);
   NODE_SET_PROTOTYPE_METHOD(t, "focus", Focus);
   NODE_SET_PROTOTYPE_METHOD(t, "getVersion", GetVersion);
   NODE_SET_PROTOTYPE_METHOD(t, "setVersion", SetVersion);
