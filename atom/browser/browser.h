@@ -26,8 +26,8 @@ class Browser : public WindowListObserver {
   // Try to close all windows and quit the application.
   void Quit();
 
-  // Quit the application immediately without cleanup work.
-  void Terminate();
+  // Cleanup everything and shutdown the application gracefully.
+  void Shutdown();
 
   // Focus the application.
   void Focus();
@@ -88,8 +88,8 @@ class Browser : public WindowListObserver {
   // Returns the name of application bundle or executable file.
   std::string GetExecutableFileProductName() const;
 
-  // Send the will-quit message and then terminate the application.
-  void NotifyAndTerminate();
+  // Send the will-quit message and then shutdown the application.
+  void NotifyAndShutdown();
 
   // Tell the system we have cancelled quiting.
   void CancelQuit();

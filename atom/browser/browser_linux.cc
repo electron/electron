@@ -12,11 +12,6 @@
 
 namespace atom {
 
-void Browser::Terminate() {
-  is_quiting_ = true;
-  exit(0);
-}
-
 void Browser::Focus() {
   // Focus on the first visible window.
   WindowList* list = WindowList::GetInstance();

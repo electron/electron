@@ -33,11 +33,6 @@ BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
 
 }  // namespace
 
-void Browser::Terminate() {
-  is_quiting_ = true;
-  PostQuitMessage(0);
-}
-
 void Browser::Focus() {
   // On Windows we just focus on the first window found for this process.
   DWORD pid = GetCurrentProcessId();

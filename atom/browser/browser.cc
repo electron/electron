@@ -8,6 +8,7 @@
 
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/window_list.h"
+#include "base/message_loop/message_loop.h"
 
 namespace atom {
 
@@ -30,9 +31,14 @@ void Browser::Quit() {
 
   atom::WindowList* window_list = atom::WindowList::GetInstance();
   if (window_list->size() == 0)
-    NotifyAndTerminate();
+    NotifyAndShutdown();
 
   window_list->CloseAllWindows();
+}
+
+void Browser::Shutdown() {
+  is_quiting_ = true;
+  base::MessageLoop::current()->Quit();
 }
 
 std::string Browser::GetVersion() const {
@@ -88,7 +94,7 @@ void Browser::DidFinishLaunching() {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnFinishLaunching());
 }
 
-void Browser::NotifyAndTerminate() {
+void Browser::NotifyAndShutdown() {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWillQuit(&prevent_default));
 
@@ -97,7 +103,7 @@ void Browser::NotifyAndTerminate() {
     return;
   }
 
-  Terminate();
+  Shutdown();
 }
 
 void Browser::OnWindowCloseCancelled(NativeWindow* window) {
@@ -112,7 +118,7 @@ void Browser::OnWindowCloseCancelled(NativeWindow* window) {
 
 void Browser::OnWindowAllClosed() {
   if (is_quiting_)
-    NotifyAndTerminate();
+    NotifyAndShutdown();
   else
     FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWindowAllClosed());
 }

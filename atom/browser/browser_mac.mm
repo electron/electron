@@ -10,11 +10,6 @@
 
 namespace atom {
 
-void Browser::Terminate() {
-  is_quiting_ = true;
-  [[AtomApplication sharedApplication] terminate:nil];
-}
-
 void Browser::Focus() {
   [[AtomApplication sharedApplication] activateIgnoringOtherApps:YES];
 }
