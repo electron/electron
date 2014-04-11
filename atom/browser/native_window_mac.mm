@@ -174,10 +174,10 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
 
   AtomNSWindowDelegate* delegate =
       [[AtomNSWindowDelegate alloc] initWithShell:this];
-  [window() setDelegate:delegate];
+  [window_ setDelegate:delegate];
 
   // We will manage window's lifetime ourselves.
-  [window() setReleasedWhenClosed:NO];
+  [window_ setReleasedWhenClosed:NO];
 
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;
@@ -188,9 +188,9 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
   bool fullscreen;
   if (!(options->GetBoolean(switches::kFullscreen, &fullscreen) &&
         !fullscreen)) {
-    NSUInteger collectionBehavior = [window() collectionBehavior];
+    NSUInteger collectionBehavior = [window_ collectionBehavior];
     collectionBehavior |= NSWindowCollectionBehaviorFullScreenPrimary;
-    [window() setCollectionBehavior:collectionBehavior];
+    [window_ setCollectionBehavior:collectionBehavior];
   }
 
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
@@ -204,17 +204,17 @@ NativeWindowMac::~NativeWindowMac() {
   // because it may still be observing the window at this time.
   inspectable_web_contents_.reset();
 
-  if (window())
+  if (window_)
     [window_ release];
 }
 
 void NativeWindowMac::Close() {
-  [window() performClose:nil];
+  [window_ performClose:nil];
 }
 
 void NativeWindowMac::CloseImmediately() {
-  [window() orderOut:nil];
-  [window() close];
+  [window_ orderOut:nil];
+  [window_ close];
 }
 
 void NativeWindowMac::Move(const gfx::Rect& pos) {
@@ -226,7 +226,7 @@ void NativeWindowMac::Move(const gfx::Rect& pos) {
   cocoa_bounds.origin.y =
       NSHeight([screen frame]) - pos.height() - pos.y();
 
-  [window() setFrame:cocoa_bounds display:YES];
+  [window_ setFrame:cocoa_bounds display:YES];
 }
 
 void NativeWindowMac::Focus(bool focus) {
@@ -235,42 +235,42 @@ void NativeWindowMac::Focus(bool focus) {
 
   if (focus) {
     [[NSApplication sharedApplication] activateIgnoringOtherApps:YES];
-    [window() makeKeyAndOrderFront:nil];
+    [window_ makeKeyAndOrderFront:nil];
   } else {
-    [window() orderBack:nil];
+    [window_ orderBack:nil];
   }
 }
 
 bool NativeWindowMac::IsFocused() {
-  return [window() isKeyWindow];
+  return [window_ isKeyWindow];
 }
 
 void NativeWindowMac::Show() {
-  [window() makeKeyAndOrderFront:nil];
+  [window_ makeKeyAndOrderFront:nil];
 }
 
 void NativeWindowMac::Hide() {
-  [window() orderOut:nil];
+  [window_ orderOut:nil];
 }
 
 bool NativeWindowMac::IsVisible() {
-  return [window() isVisible];
+  return [window_ isVisible];
 }
 
 void NativeWindowMac::Maximize() {
-  [window() zoom:nil];
+  [window_ zoom:nil];
 }
 
 void NativeWindowMac::Unmaximize() {
-  [window() zoom:nil];
+  [window_ zoom:nil];
 }
 
 void NativeWindowMac::Minimize() {
-  [window() miniaturize:nil];
+  [window_ miniaturize:nil];
 }
 
 void NativeWindowMac::Restore() {
-  [window() deminiaturize:nil];
+  [window_ deminiaturize:nil];
 }
 
 void NativeWindowMac::SetFullscreen(bool fullscreen) {
@@ -282,11 +282,11 @@ void NativeWindowMac::SetFullscreen(bool fullscreen) {
     return;
   }
 
-  [window() toggleFullScreen:nil];
+  [window_ toggleFullScreen:nil];
 }
 
 bool NativeWindowMac::IsFullscreen() {
-  return [window() styleMask] & NSFullScreenWindowMask;
+  return [window_ styleMask] & NSFullScreenWindowMask;
 }
 
 void NativeWindowMac::SetSize(const gfx::Size& size) {
@@ -295,7 +295,7 @@ void NativeWindowMac::SetSize(const gfx::Size& size) {
   frame.size.width = size.width();
   frame.size.height = size.height();
 
-  [window() setFrame:frame display:YES];
+  [window_ setFrame:frame display:YES];
 }
 
 gfx::Size NativeWindowMac::GetSize() {
@@ -305,54 +305,54 @@ gfx::Size NativeWindowMac::GetSize() {
 
 void NativeWindowMac::SetMinimumSize(const gfx::Size& size) {
   NSSize min_size = NSMakeSize(size.width(), size.height());
-  NSView* content = [window() contentView];
-  [window() setContentMinSize:[content convertSize:min_size toView:nil]];
+  NSView* content = [window_ contentView];
+  [window_ setContentMinSize:[content convertSize:min_size toView:nil]];
 }
 
 gfx::Size NativeWindowMac::GetMinimumSize() {
-  NSView* content = [window() contentView];
-  NSSize min_size = [content convertSize:[window() contentMinSize]
+  NSView* content = [window_ contentView];
+  NSSize min_size = [content convertSize:[window_ contentMinSize]
                                 fromView:nil];
   return gfx::Size(min_size.width, min_size.height);
 }
 
 void NativeWindowMac::SetMaximumSize(const gfx::Size& size) {
   NSSize max_size = NSMakeSize(size.width(), size.height());
-  NSView* content = [window() contentView];
-  [window() setContentMaxSize:[content convertSize:max_size toView:nil]];
+  NSView* content = [window_ contentView];
+  [window_ setContentMaxSize:[content convertSize:max_size toView:nil]];
 }
 
 gfx::Size NativeWindowMac::GetMaximumSize() {
-  NSView* content = [window() contentView];
-  NSSize max_size = [content convertSize:[window() contentMaxSize]
+  NSView* content = [window_ contentView];
+  NSSize max_size = [content convertSize:[window_ contentMaxSize]
                                 fromView:nil];
   return gfx::Size(max_size.width, max_size.height);
 }
 
 void NativeWindowMac::SetResizable(bool resizable) {
   if (resizable) {
-    [[window() standardWindowButton:NSWindowZoomButton] setEnabled:YES];
-    [window() setStyleMask:window().styleMask | NSResizableWindowMask];
+    [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:YES];
+    [window_ setStyleMask:window_.styleMask | NSResizableWindowMask];
   } else {
-    [[window() standardWindowButton:NSWindowZoomButton] setEnabled:NO];
-    [window() setStyleMask:window().styleMask ^ NSResizableWindowMask];
+    [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
+    [window_ setStyleMask:window_.styleMask ^ NSResizableWindowMask];
   }
 }
 
 bool NativeWindowMac::IsResizable() {
-  return [window() styleMask] & NSResizableWindowMask;
+  return [window_ styleMask] & NSResizableWindowMask;
 }
 
 void NativeWindowMac::SetAlwaysOnTop(bool top) {
-  [window() setLevel:(top ? NSFloatingWindowLevel : NSNormalWindowLevel)];
+  [window_ setLevel:(top ? NSFloatingWindowLevel : NSNormalWindowLevel)];
 }
 
 bool NativeWindowMac::IsAlwaysOnTop() {
-  return [window() level] == NSFloatingWindowLevel;
+  return [window_ level] == NSFloatingWindowLevel;
 }
 
 void NativeWindowMac::Center() {
-  [window() center];
+  [window_ center];
 }
 
 void NativeWindowMac::SetPosition(const gfx::Point& position) {
@@ -368,11 +368,11 @@ gfx::Point NativeWindowMac::GetPosition() {
 }
 
 void NativeWindowMac::SetTitle(const std::string& title) {
-  [window() setTitle:base::SysUTF8ToNSString(title)];
+  [window_ setTitle:base::SysUTF8ToNSString(title)];
 }
 
 std::string NativeWindowMac::GetTitle() {
-  return base::SysNSStringToUTF8([window() title]);
+  return base::SysNSStringToUTF8([window_ title]);
 }
 
 void NativeWindowMac::FlashFrame(bool flash) {
@@ -409,11 +409,11 @@ bool NativeWindowMac::IsKiosk() {
 }
 
 bool NativeWindowMac::HasModalDialog() {
-  return [window() attachedSheet] != nil;
+  return [window_ attachedSheet] != nil;
 }
 
 gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
-  return window();
+  return window_;
 }
 
 bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {
@@ -429,15 +429,15 @@ bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {
 
 void NativeWindowMac::HandleMouseEvent(NSEvent* event) {
   NSPoint current_mouse_location =
-      [window() convertBaseToScreen:[event locationInWindow]];
+      [window_ convertBaseToScreen:[event locationInWindow]];
 
   if ([event type] == NSLeftMouseDown) {
-    NSPoint frame_origin = [window() frame].origin;
+    NSPoint frame_origin = [window_ frame].origin;
     last_mouse_offset_ = NSMakePoint(
         frame_origin.x - current_mouse_location.x,
         frame_origin.y - current_mouse_location.y);
   } else if ([event type] == NSLeftMouseDragged) {
-    [window() setFrameOrigin:NSMakePoint(
+    [window_ setFrameOrigin:NSMakePoint(
         current_mouse_location.x + last_mouse_offset_.x,
         current_mouse_location.y + last_mouse_offset_.y)];
   }
@@ -461,7 +461,7 @@ void NativeWindowMac::HandleKeyboardEvent(
     return;
 
   EventProcessingWindow* event_window =
-      static_cast<EventProcessingWindow*>(window());
+      static_cast<EventProcessingWindow*>(window_);
   DCHECK([event_window isKindOfClass:[EventProcessingWindow class]]);
   [event_window redispatchKeyEvent:event.os_event];
 }
@@ -469,19 +469,19 @@ void NativeWindowMac::HandleKeyboardEvent(
 void NativeWindowMac::InstallView() {
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
   if (has_frame_) {
-    [view setFrame:[[window() contentView] bounds]];
-    [[window() contentView] addSubview:view];
+    [view setFrame:[[window_ contentView] bounds]];
+    [[window_ contentView] addSubview:view];
   } else {
-    NSView* frameView = [[window() contentView] superview];
+    NSView* frameView = [[window_ contentView] superview];
     [view setFrame:[frameView bounds]];
     [frameView addSubview:view];
 
     ClipWebView();
 
-    [[window() standardWindowButton:NSWindowZoomButton] setHidden:YES];
-    [[window() standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
-    [[window() standardWindowButton:NSWindowCloseButton] setHidden:YES];
-    [[window() standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
+    [[window_ standardWindowButton:NSWindowZoomButton] setHidden:YES];
+    [[window_ standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
+    [[window_ standardWindowButton:NSWindowCloseButton] setHidden:YES];
+    [[window_ standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
   }
 }
 

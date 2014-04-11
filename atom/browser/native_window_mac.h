@@ -68,7 +68,6 @@ class NativeWindowMac : public NativeWindow {
   // Clip web view to rounded corner.
   void ClipWebView();
 
-  NSWindow*& window() { return window_; }
   SkRegion* draggable_region() const { return draggable_region_.get(); }
 
  protected:
