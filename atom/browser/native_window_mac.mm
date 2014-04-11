@@ -66,7 +66,6 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 }
 
 - (void)windowWillClose:(NSNotification*)notification {
-  shell_->window() = nil;
   [self autorelease];
 }
 
@@ -177,6 +176,9 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
       [[AtomNSWindowDelegate alloc] initWithShell:this];
   [window() setDelegate:delegate];
 
+  // We will manage window's lifetime ourselves.
+  [window() setReleasedWhenClosed:NO];
+
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;
   options->GetBoolean(switches::kAcceptFirstMouse, &acceptsFirstMouse);
@@ -198,9 +200,12 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
 }
 
 NativeWindowMac::~NativeWindowMac() {
+  // Force InspectableWebContents to be destroyed before we destroy window,
+  // because it may still be observing the window at this time.
+  inspectable_web_contents_.reset();
+
   if (window())
-    // Use autorelease since we may have delegates or observers at this time.
-    [window() autorelease];
+    [window_ release];
 }
 
 void NativeWindowMac::Close() {

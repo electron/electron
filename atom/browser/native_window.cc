@@ -57,12 +57,12 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
                            base::DictionaryValue* options)
     : content::WebContentsObserver(web_contents),
       has_frame_(true),
+      inspectable_web_contents_(
+          brightray::InspectableWebContents::Create(web_contents)),
       is_closed_(false),
       node_integration_("except-iframe"),
       has_dialog_attached_(false),
-      weak_factory_(this),
-      inspectable_web_contents_(
-          brightray::InspectableWebContents::Create(web_contents)) {
+      weak_factory_(this) {
   options->GetBoolean(switches::kFrame, &has_frame_);
 
 #if defined(OS_MACOSX)

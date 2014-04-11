@@ -251,6 +251,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Window icon.
   gfx::Image icon_;
 
+  scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
+
  private:
   // Schedule a notification unresponsive event.
   void ScheduleUnresponsiveEvent(int ms);
@@ -304,7 +306,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   scoped_ptr<DevToolsWebContentsObserver> devtools_web_contents_observer_;
 
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
-  scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
 
   // Maps url to file path, used by the file requests sent from devtools.
   typedef std::map<std::string, base::FilePath> PathsMap;
