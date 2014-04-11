@@ -7,7 +7,6 @@
 #include <string>
 
 #include "base/mac/mac_util.h"
-#include "base/mac/scoped_nsobject.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 #import "atom/browser/ui/cocoa/event_processing_window.h"
@@ -170,7 +169,7 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
                     defer:YES];
 
   [atomWindow setShell:this];
-  window_ = atomWindow;
+  window_.reset(atomWindow);
 
   AtomNSWindowDelegate* delegate =
       [[AtomNSWindowDelegate alloc] initWithShell:this];
@@ -203,9 +202,6 @@ NativeWindowMac::~NativeWindowMac() {
   // Force InspectableWebContents to be destroyed before we destroy window,
   // because it may still be observing the window at this time.
   inspectable_web_contents_.reset();
-
-  if (window_)
-    [window_ release];
 }
 
 void NativeWindowMac::Close() {
@@ -332,10 +328,10 @@ gfx::Size NativeWindowMac::GetMaximumSize() {
 void NativeWindowMac::SetResizable(bool resizable) {
   if (resizable) {
     [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:YES];
-    [window_ setStyleMask:window_.styleMask | NSResizableWindowMask];
+    [window_ setStyleMask:[window_ styleMask] | NSResizableWindowMask];
   } else {
     [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
-    [window_ setStyleMask:window_.styleMask ^ NSResizableWindowMask];
+    [window_ setStyleMask:[window_ styleMask] ^ NSResizableWindowMask];
   }
 }
 

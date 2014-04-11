@@ -7,6 +7,7 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include "base/mac/scoped_nsobject.h"
 #include "base/memory/scoped_ptr.h"
 #include "atom/browser/native_window.h"
 
@@ -86,7 +87,7 @@ class NativeWindowMac : public NativeWindow {
   void UpdateDraggableRegionsForCustomDrag(
       const std::vector<DraggableRegion>& regions);
 
-  NSWindow* window_;
+  base::scoped_nsobject<NSWindow> window_;
 
   bool is_kiosk_;
 
