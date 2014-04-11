@@ -201,7 +201,7 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
 NativeWindowMac::~NativeWindowMac() {
   // Force InspectableWebContents to be destroyed before we destroy window,
   // because it may still be observing the window at this time.
-  inspectable_web_contents_.reset();
+  DestroyWebContents();
 }
 
 void NativeWindowMac::Close() {

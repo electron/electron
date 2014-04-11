@@ -196,6 +196,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   void NotifyWindowClosed();
   void NotifyWindowBlur();
 
+  // Destroy the inspectable_web_contents.
+  void DestroyWebContents();
+
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) = 0;
@@ -251,8 +254,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Window icon.
   gfx::Image icon_;
 
-  scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
-
  private:
   // Schedule a notification unresponsive event.
   void ScheduleUnresponsiveEvent(int ms);
@@ -306,6 +307,11 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   scoped_ptr<DevToolsWebContentsObserver> devtools_web_contents_observer_;
 
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
+
+  // Notice that inspectable_web_contents_ must be placed after dialog_manager_,
+  // so we can make sure inspectable_web_contents_ is destroyed before
+  // dialog_manager_, otherwise a crash would happen.
+  scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
 
   // Maps url to file path, used by the file requests sent from devtools.
   typedef std::map<std::string, base::FilePath> PathsMap;
