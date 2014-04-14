@@ -115,6 +115,7 @@
             'xcode_settings': {
               'WARNING_CFLAGS': [
                 '-Wno-deprecated-declarations',
+                '-Wno-deprecated-register',
                 '-Wno-unused-private-field',
                 '-Wno-unused-function',
               ],
