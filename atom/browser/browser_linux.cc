@@ -32,8 +32,4 @@ std::string Browser::GetExecutableFileProductName() const {
   return "Atom-Shell";
 }
 
-void Browser::CancelQuit() {
-  // No way to cancel quit on Linux.
-}
-
 }  // namespace atom

@@ -31,7 +31,7 @@
   } else {
     // System started termination.
     atom::Browser::Get()->Quit();
-    return NSTerminateLater;
+    return NSTerminateCancel;
   }
 }
 

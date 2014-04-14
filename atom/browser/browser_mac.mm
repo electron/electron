@@ -26,10 +26,6 @@ std::string Browser::GetExecutableFileProductName() const {
   return base::SysNSStringToUTF8(version);
 }
 
-void Browser::CancelQuit() {
-  [[AtomApplication sharedApplication] replyToApplicationShouldTerminate:NO];
-}
-
 int Browser::DockBounce(BounceType type) {
   return [[AtomApplication sharedApplication] requestUserAttention:type];
 }

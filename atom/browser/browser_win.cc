@@ -61,8 +61,4 @@ std::string Browser::GetExecutableFileProductName() const {
   return "Atom-Shell";
 }
 
-void Browser::CancelQuit() {
-  // TODO(zcbenz): Research on how to cancel shutdown in Windows.
-}
-
 }  // namespace atom

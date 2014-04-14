@@ -107,13 +107,10 @@ void Browser::NotifyAndShutdown() {
 }
 
 void Browser::OnWindowCloseCancelled(NativeWindow* window) {
-  if (is_quiting_) {
+  if (is_quiting_)
     // Once a beforeunload handler has prevented the closing, we think the quit
     // is cancelled too.
     is_quiting_ = false;
-
-    CancelQuit();
-  }
 }
 
 void Browser::OnWindowAllClosed() {
