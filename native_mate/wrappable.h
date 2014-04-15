@@ -5,9 +5,9 @@
 #ifndef NATIVE_MATE_WRAPPABLE_H_
 #define NATIVE_MATE_WRAPPABLE_H_
 
-#include "base/template_util.h"
 #include "native_mate/compat.h"
 #include "native_mate/converter.h"
+#include "native_mate/template_util.h"
 
 namespace mate {
 
@@ -67,8 +67,8 @@ class Wrappable {
 
 // This converter handles any subclass of Wrappable.
 template<typename T>
-struct Converter<T*, typename base::enable_if<
-                       base::is_convertible<T*, Wrappable*>::value>::type> {
+struct Converter<T*, typename enable_if<
+                       is_convertible<T*, Wrappable*>::value>::type> {
   static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate, T* val) {
     return val->GetWrapper(isolate);
   }

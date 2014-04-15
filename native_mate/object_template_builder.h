@@ -8,9 +8,9 @@
 #include "base/bind.h"
 #include "base/callback.h"
 #include "base/strings/string_piece.h"
-#include "base/template_util.h"
 #include "native_mate/converter.h"
 #include "native_mate/function_template.h"
+#include "native_mate/template_util.h"
 #include "v8/include/v8.h"
 
 namespace mate {
@@ -42,8 +42,8 @@ struct CallbackTraits<base::Callback<T> > {
 // come from the the JavaScript "this" object the function was called on, not
 // from the first normal parameter.
 template<typename T>
-struct CallbackTraits<T, typename base::enable_if<
-                           base::is_member_function_pointer<T>::value>::type> {
+struct CallbackTraits<T, typename enable_if<
+                           is_member_function_pointer<T>::value>::type> {
   static v8::Handle<v8::FunctionTemplate> CreateTemplate(v8::Isolate* isolate,
                                                          T callback) {
     return CreateFunctionTemplate(isolate, base::Bind(callback),
