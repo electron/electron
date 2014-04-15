@@ -3,8 +3,6 @@
 // found in the LICENSE file.
 
 #include "atom/common/api/object_life_monitor.h"
-
-#include "atom/common/v8/native_type_conversions.h"
 #include "v8/include/v8-profiler.h"
 
 #include "atom/common/v8/node_common.h"
