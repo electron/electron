@@ -4,10 +4,10 @@
 
 #include "atom/browser/atom_browser_main_parts.h"
 
+#import "atom/browser/mac/atom_application.h"
+#import "atom/browser/mac/atom_application_delegate.h"
 #include "base/files/file_path.h"
 #import "base/mac/foundation_util.h"
-#import "atom/browser/atom_application_mac.h"
-#import "atom/browser/atom_application_delegate_mac.h"
 #import "vendor/brightray/common/mac/main_application_bundle.h"
 
 namespace atom {

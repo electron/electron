@@ -6,7 +6,7 @@
 
 #import "base/mac/bundle_locations.h"
 #include "base/strings/sys_string_conversions.h"
-#import "atom/browser/atom_application_mac.h"
+#import "atom/browser/mac/atom_application.h"
 
 namespace atom {
 

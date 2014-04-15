@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#import "atom/browser/atom_application_mac.h"
+#import "atom/browser/mac/atom_application.h"
 
 #include "base/auto_reset.h"
 #include "base/strings/sys_string_conversions.h"
