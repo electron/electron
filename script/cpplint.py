@@ -8,8 +8,8 @@ from lib.util import execute
 
 IGNORE_FILES = [
   os.path.join('atom', 'app', 'atom_main.cc'),
-  os.path.join('atom', 'browser', 'atom_application_mac.h'),
-  os.path.join('atom', 'browser', 'atom_application_delegate_mac.h'),
+  os.path.join('atom', 'browser', 'mac', 'atom_application.h'),
+  os.path.join('atom', 'browser', 'mac', 'atom_application_delegate.h'),
   os.path.join('atom', 'browser', 'native_window_mac.h'),
   os.path.join('atom', 'browser', 'resources', 'win', 'resource.h'),
   os.path.join('atom', 'browser', 'ui', 'cocoa', 'event_processing_window.h'),
