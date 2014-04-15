@@ -153,7 +153,6 @@
       'atom/common/api/atom_api_screen.cc',
       'atom/common/api/atom_api_screen.h',
       'atom/common/api/atom_api_shell.cc',
-      'atom/common/api/atom_api_shell.h',
       'atom/common/api/atom_api_v8_util.cc',
       'atom/common/api/atom_bindings.cc',
       'atom/common/api/atom_bindings.h',

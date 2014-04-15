@@ -7,68 +7,66 @@
 #include <string>
 
 #include "atom/common/platform_util.h"
-#include "atom/common/v8/native_type_conversions.h"
 #include "base/files/file_path.h"
+#include "native_mate/object_template_builder.h"
 #include "url/gurl.h"
 
 #include "atom/common/v8/node_common.h"
 
-namespace atom {
+namespace mate {
 
-namespace api {
+template<>
+struct Converter<GURL> {
+  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+                                    const GURL& val) {
+    return Converter<base::StringPiece>::ToV8(isolate, val.spec());
+  }
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
+                     GURL* out) {
+    std::string url;
+    if (Converter<std::string>::FromV8(isolate, val, &url)) {
+      *out = GURL(url);
+      return true;
+    } else {
+      return false;
+    }
+  }
+};
 
-// static
-void Shell::ShowItemInFolder(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  base::FilePath file_path;
-  if (!FromV8Arguments(args, &file_path))
-    return node::ThrowTypeError("Bad argument");
+template<>
+struct Converter<base::FilePath> {
+  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+                                    const base::FilePath& val) {
+    return Converter<base::StringPiece>::ToV8(isolate, val.AsUTF8Unsafe());
+  }
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
+                     base::FilePath* out) {
+    std::string path;
+    if (Converter<std::string>::FromV8(isolate, val, &path)) {
+      *out = base::FilePath::FromUTF8Unsafe(path);
+      return true;
+    } else {
+      return false;
+    }
+  }
+};
 
-  platform_util::ShowItemInFolder(file_path);
+}  // namespace mate
+
+namespace {
+
+void Initialize(v8::Handle<v8::Object> exports) {
+  mate::ObjectTemplateBuilder builder(v8::Isolate::GetCurrent());
+  builder.SetMethod("showItemInFolder", &platform_util::ShowItemInFolder)
+         .SetMethod("openItem", &platform_util::OpenItem)
+         .SetMethod("openExternal", &platform_util::OpenExternal)
+         .SetMethod("moveItemToTrash", &platform_util::MoveItemToTrash)
+         .SetMethod("beep", &platform_util::Beep);
+  exports->SetPrototype(builder.Build()->NewInstance());
 }
 
-// static
-void Shell::OpenItem(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  base::FilePath file_path;
-  if (!FromV8Arguments(args, &file_path))
-    return node::ThrowTypeError("Bad argument");
+}  // namespace
 
-  platform_util::OpenItem(file_path);
-}
-
-// static
-void Shell::OpenExternal(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  GURL url;
-  if (!FromV8Arguments(args, &url))
-    return node::ThrowTypeError("Bad argument");
-
-  platform_util::OpenExternal(url);
-}
-
-// static
-void Shell::MoveItemToTrash(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  base::FilePath file_path;
-  if (!FromV8Arguments(args, &file_path))
-    return node::ThrowTypeError("Bad argument");
-
-  platform_util::MoveItemToTrash(file_path);
-}
-
-// static
-void Shell::Beep(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  platform_util::Beep();
-}
-
-// static
-void Shell::Initialize(v8::Handle<v8::Object> target) {
-  NODE_SET_METHOD(target, "showItemInFolder", ShowItemInFolder);
-  NODE_SET_METHOD(target, "openItem", OpenItem);
-  NODE_SET_METHOD(target, "openExternal", OpenExternal);
-  NODE_SET_METHOD(target, "moveItemToTrash", MoveItemToTrash);
-  NODE_SET_METHOD(target, "beep", Beep);
-}
-
-}  // namespace api
-
-}  // namespace atom
-
-NODE_MODULE(atom_common_shell, atom::api::Shell::Initialize)
+NODE_MODULE(atom_common_shell, Initialize)
