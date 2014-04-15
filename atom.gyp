@@ -1,5 +1,8 @@
 {
   'variables': {
+    'includes': [
+      'vendor/native_mate/native_mate_files.gypi',
+    ],
     'project_name': 'atom',
     'product_name': 'Atom',
     'framework_name': 'Atom Framework',
@@ -215,6 +218,7 @@
       'chrome/browser/ui/gtk/gtk_window_util.h',
       'chrome/browser/ui/gtk/menu_gtk.cc',
       'chrome/browser/ui/gtk/menu_gtk.h',
+      '<@(native_mate_files)',
     ],
     'framework_sources': [
       'atom/app/atom_library_main.cc',
@@ -371,6 +375,7 @@
       'include_dirs': [
         '.',
         'vendor/brightray',
+        'vendor/native_mate',
         # Include directories for uv and node.
         'vendor/node/src',
         'vendor/node/deps/http_parser',
