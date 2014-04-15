@@ -15,10 +15,6 @@ namespace mate {
 
 template<>
 struct Converter<GURL> {
-  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const GURL& val) {
-    return Converter<base::StringPiece>::ToV8(isolate, val.spec());
-  }
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      GURL* out) {
@@ -34,10 +30,6 @@ struct Converter<GURL> {
 
 template<>
 struct Converter<base::FilePath> {
-  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const base::FilePath& val) {
-    return Converter<base::StringPiece>::ToV8(isolate, val.AsUTF8Unsafe());
-  }
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      base::FilePath* out) {

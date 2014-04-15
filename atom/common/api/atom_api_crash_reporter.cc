@@ -2,40 +2,48 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/common/api/atom_api_crash_reporter.h"
-
 #include <map>
 #include <string>
 
 #include "atom/common/crash_reporter/crash_reporter.h"
-#include "atom/common/v8/native_type_conversions.h"
+#include "base/bind.h"
+#include "native_mate/object_template_builder.h"
 
 #include "atom/common/v8/node_common.h"
 
-namespace atom {
+namespace mate {
 
-namespace api {
+template<>
+struct Converter<std::map<std::string, std::string> > {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
+                     std::map<std::string, std::string>* out) {
+    if (!val->IsObject())
+      return false;
 
-// static
-void CrashReporter::Start(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  std::string product_name, company_name, submit_url;
-  bool auto_submit, skip_system;
-  std::map<std::string, std::string> dict;
-  if (!FromV8Arguments(args, &product_name, &company_name, &submit_url,
-                       &auto_submit, &skip_system, &dict))
-    return node::ThrowTypeError("Bad argument");
+    v8::Handle<v8::Object> dict = val->ToObject();
+    v8::Handle<v8::Array> keys = dict->GetOwnPropertyNames();
+    for (uint32_t i = 0; i < keys->Length(); ++i) {
+      v8::Handle<v8::Value> key = keys->Get(i);
+      (*out)[V8ToString(key)] = V8ToString(dict->Get(key));
+    }
+    return true;
+  }
+};
 
-  crash_reporter::CrashReporter::GetInstance()->Start(
-      product_name, company_name, submit_url, auto_submit, skip_system, dict);
+}  // namespace mate
+
+namespace {
+
+void Initialize(v8::Handle<v8::Object> exports) {
+  using crash_reporter::CrashReporter;
+  mate::ObjectTemplateBuilder builder(v8::Isolate::GetCurrent());
+  builder.SetMethod("start",
+                    base::Bind(&CrashReporter::Start,
+                               base::Unretained(CrashReporter::GetInstance())));
+  exports->SetPrototype(builder.Build()->NewInstance());
 }
 
-// static
-void CrashReporter::Initialize(v8::Handle<v8::Object> target) {
-  NODE_SET_METHOD(target, "start", Start);
-}
+}  // namespace
 
-}  // namespace api
-
-}  // namespace atom
-
-NODE_MODULE(atom_common_crash_reporter, atom::api::CrashReporter::Initialize)
+NODE_MODULE(atom_common_crash_reporter, Initialize)
