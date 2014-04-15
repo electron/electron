@@ -8,6 +8,7 @@
 #include "base/callback.h"
 #include "base/logging.h"
 #include "native_mate/arguments.h"
+#include "native_mate/compat.h"
 #include "native_mate/converter.h"
 #include "v8/include/v8.h"
 
@@ -229,7 +230,8 @@ struct Invoker<void, P1, void, void, void, void, void> {
       Arguments& args,
       const base::Callback<void(P1)>& callback,
       const P1& a1) {
-    MATE_METHOD_RETURN(callback.Run(a1));
+    callback.Run(a1);
+    MATE_METHOD_RETURN_UNDEFINED();
   }
 };
 
@@ -318,7 +320,7 @@ struct Dispatcher<R(P1)> {
     HolderT* holder = static_cast<HolderT*>(holder_base);
 
     typename CallbackParamTraits<P1>::LocalType a1;
-    if (!GetNextArgument(args, holder->flags, true, &a1)) {
+    if (!GetNextArgument(&args, holder->flags, true, &a1)) {
       args.ThrowError();
       MATE_METHOD_RETURN_UNDEFINED();
     }
@@ -341,8 +343,8 @@ struct Dispatcher<R(P1, P2)> {
 
     typename CallbackParamTraits<P1>::LocalType a1;
     typename CallbackParamTraits<P2>::LocalType a2;
-    if (!GetNextArgument(args, holder->flags, true, &a1) ||
-        !GetNextArgument(args, holder->flags, false, &a2)) {
+    if (!GetNextArgument(&args, holder->flags, true, &a1) ||
+        !GetNextArgument(&args, holder->flags, false, &a2)) {
       args.ThrowError();
       MATE_METHOD_RETURN_UNDEFINED();
     }
@@ -366,9 +368,9 @@ struct Dispatcher<R(P1, P2, P3)> {
     typename CallbackParamTraits<P1>::LocalType a1;
     typename CallbackParamTraits<P2>::LocalType a2;
     typename CallbackParamTraits<P3>::LocalType a3;
-    if (!GetNextArgument(args, holder->flags, true, &a1) ||
-        !GetNextArgument(args, holder->flags, false, &a2) ||
-        !GetNextArgument(args, holder->flags, false, &a3)) {
+    if (!GetNextArgument(&args, holder->flags, true, &a1) ||
+        !GetNextArgument(&args, holder->flags, false, &a2) ||
+        !GetNextArgument(&args, holder->flags, false, &a3)) {
       args.ThrowError();
       MATE_METHOD_RETURN_UNDEFINED();
     }
@@ -393,10 +395,10 @@ struct Dispatcher<R(P1, P2, P3, P4)> {
     typename CallbackParamTraits<P2>::LocalType a2;
     typename CallbackParamTraits<P3>::LocalType a3;
     typename CallbackParamTraits<P4>::LocalType a4;
-    if (!GetNextArgument(args, holder->flags, true, &a1) ||
-        !GetNextArgument(args, holder->flags, false, &a2) ||
-        !GetNextArgument(args, holder->flags, false, &a3) ||
-        !GetNextArgument(args, holder->flags, false, &a4)) {
+    if (!GetNextArgument(&args, holder->flags, true, &a1) ||
+        !GetNextArgument(&args, holder->flags, false, &a2) ||
+        !GetNextArgument(&args, holder->flags, false, &a3) ||
+        !GetNextArgument(&args, holder->flags, false, &a4)) {
       args.ThrowError();
       MATE_METHOD_RETURN_UNDEFINED();
     }
@@ -424,11 +426,11 @@ struct Dispatcher<R(P1, P2, P3, P4, P5)> {
     typename CallbackParamTraits<P3>::LocalType a3;
     typename CallbackParamTraits<P4>::LocalType a4;
     typename CallbackParamTraits<P5>::LocalType a5;
-    if (!GetNextArgument(args, holder->flags, true, &a1) ||
-        !GetNextArgument(args, holder->flags, false, &a2) ||
-        !GetNextArgument(args, holder->flags, false, &a3) ||
-        !GetNextArgument(args, holder->flags, false, &a4) ||
-        !GetNextArgument(args, holder->flags, false, &a5)) {
+    if (!GetNextArgument(&args, holder->flags, true, &a1) ||
+        !GetNextArgument(&args, holder->flags, false, &a2) ||
+        !GetNextArgument(&args, holder->flags, false, &a3) ||
+        !GetNextArgument(&args, holder->flags, false, &a4) ||
+        !GetNextArgument(&args, holder->flags, false, &a5)) {
       args.ThrowError();
       MATE_METHOD_RETURN_UNDEFINED();
     }
@@ -457,12 +459,12 @@ struct Dispatcher<R(P1, P2, P3, P4, P5, P6)> {
     typename CallbackParamTraits<P4>::LocalType a4;
     typename CallbackParamTraits<P5>::LocalType a5;
     typename CallbackParamTraits<P6>::LocalType a6;
-    if (!GetNextArgument(args, holder->flags, true, &a1) ||
-        !GetNextArgument(args, holder->flags, false, &a2) ||
-        !GetNextArgument(args, holder->flags, false, &a3) ||
-        !GetNextArgument(args, holder->flags, false, &a4) ||
-        !GetNextArgument(args, holder->flags, false, &a5) ||
-        !GetNextArgument(args, holder->flags, false, &a6)) {
+    if (!GetNextArgument(&args, holder->flags, true, &a1) ||
+        !GetNextArgument(&args, holder->flags, false, &a2) ||
+        !GetNextArgument(&args, holder->flags, false, &a3) ||
+        !GetNextArgument(&args, holder->flags, false, &a4) ||
+        !GetNextArgument(&args, holder->flags, false, &a5) ||
+        !GetNextArgument(&args, holder->flags, false, &a6)) {
       args.ThrowError();
       MATE_METHOD_RETURN_UNDEFINED();
     }
@@ -487,7 +489,9 @@ v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(
   HolderT* holder = new HolderT(isolate, callback, callback_flags);
 
   return v8::FunctionTemplate::New(
+#if NODE_VERSION_AT_LEAST(0, 11, 11)
       isolate,
+#endif
       &internal::Dispatcher<Sig>::DispatchToCallback,
       ConvertToV8<v8::Handle<v8::External> >(isolate,
                                              holder->GetHandle(isolate)));
