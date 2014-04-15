@@ -1,3 +1,1 @@
-{Screen} = process.atomBinding 'screen'
-
-module.exports = new Screen
+module.exports = process.atomBinding 'screen'
