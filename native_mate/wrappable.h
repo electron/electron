@@ -56,6 +56,10 @@ class Wrappable {
 
   virtual ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate);
 
+  // Override to change how the v8 wrapper is built (by default it was built
+  // from the ObjectTemplateBuilder.
+  // virtual v8::Handle<v8::Object> BuildObject();
+
  private:
   static MATE_WEAK_CALLBACK(WeakCallback, v8::Object, Wrappable);
 
