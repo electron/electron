@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#include "native_mate/wrappable_class.h"
+#include "native_mate/constructor.h"
 
 #include "native_mate/function_template.h"
 #include "native_mate/object_template_builder.h"
