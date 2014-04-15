@@ -6,8 +6,10 @@
 
 namespace mate {
 
-ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate)
-    : isolate_(isolate), template_(v8::ObjectTemplate::New()) {
+ObjectTemplateBuilder::ObjectTemplateBuilder(
+    v8::Isolate* isolate,
+    v8::Local<v8::ObjectTemplate> templ)
+    : isolate_(isolate), template_(templ) {
   template_->SetInternalFieldCount(1);
 }
 
