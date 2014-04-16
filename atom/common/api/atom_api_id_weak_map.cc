@@ -6,12 +6,11 @@
 
 #include <algorithm>
 
-#include "atom/common/v8/native_type_conversions.h"
-#include "atom/common/v8/node_common.h"
 #include "base/logging.h"
 #include "native_mate/constructor.h"
-#include "native_mate/function_template.h"
 #include "native_mate/object_template_builder.h"
+
+#include "atom/common/v8/node_common.h"
 
 namespace atom {
 
@@ -22,16 +21,6 @@ IDWeakMap::IDWeakMap()
 }
 
 IDWeakMap::~IDWeakMap() {
-}
-
-// static
-void IDWeakMap::WeakCallback(v8::Isolate* isolate,
-                             v8::Persistent<v8::Object>* value,
-                             IDWeakMap* self) {
-  v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Object> local = v8::Local<v8::Object>::New(isolate, *value);
-  self->Remove(
-      FromV8Value(local->GetHiddenValue(v8::String::New("IDWeakMapKey"))));
 }
 
 int32_t IDWeakMap::Add(v8::Isolate* isolate, v8::Handle<v8::Object> object) {
@@ -76,25 +65,46 @@ int IDWeakMap::GetNextID() {
   return ++next_id_;
 }
 
-void IDWeakMap::Initialize(v8::Handle<v8::Object> exports) {
-  v8::Local<v8::FunctionTemplate> constructor = mate::CreateConstructor(
-      v8::Isolate::GetCurrent(),
-      "IDWeakMap",
-      base::Bind(&mate::NewOperatorFactory<IDWeakMap>));
+// static
+void IDWeakMap::BuildPrototype(v8::Isolate* isolate,
+                               v8::Handle<v8::ObjectTemplate> prototype) {
+  mate::ObjectTemplateBuilder(isolate, prototype)
+      .SetMethod("add", &IDWeakMap::Add)
+      .SetMethod("get", &IDWeakMap::Get)
+      .SetMethod("has", &IDWeakMap::Has)
+      .SetMethod("keys", &IDWeakMap::Keys)
+      .SetMethod("remove", &IDWeakMap::Remove);
+}
 
-  mate::ObjectTemplateBuilder builder(
-      v8::Isolate::GetCurrent(), constructor->PrototypeTemplate());
-  builder.SetMethod("add", &IDWeakMap::Add)
-         .SetMethod("get", &IDWeakMap::Get)
-         .SetMethod("has", &IDWeakMap::Has)
-         .SetMethod("keys", &IDWeakMap::Keys)
-         .SetMethod("remove", &IDWeakMap::Remove);
-
-  exports->Set(v8::String::NewSymbol("IDWeakMap"), constructor->GetFunction());
+// static
+void IDWeakMap::WeakCallback(v8::Isolate* isolate,
+                             v8::Persistent<v8::Object>* value,
+                             IDWeakMap* self) {
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Object> object = v8::Local<v8::Object>::New(isolate, *value);
+  int32_t key = object->GetHiddenValue(
+      mate::StringToV8(isolate, "IDWeakMapKey"))->Int32Value();
+  self->Remove(key);
 }
 
 }  // namespace api
 
 }  // namespace atom
 
-NODE_MODULE(atom_common_id_weak_map, atom::api::IDWeakMap::Initialize)
+
+namespace {
+
+void Initialize(v8::Handle<v8::Object> exports) {
+  using atom::api::IDWeakMap;
+
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Local<v8::Function> constructor = mate::CreateConstructor<IDWeakMap>(
+      isolate,
+      "IDWeakMap",
+      base::Bind(&mate::NewOperatorFactory<IDWeakMap>));
+  exports->Set(mate::StringToV8(isolate, "IDWeakMap"), constructor);
+}
+
+}  // namespace
+
+NODE_MODULE(atom_common_id_weak_map, Initialize)

@@ -18,18 +18,15 @@ namespace atom {
 namespace api {
 
 // Like ES6's WeakMap, but the key is Integer and the value is Weak Pointer.
-class IDWeakMap : public mate::Wrappable<IDWeakMap> {
+class IDWeakMap : public mate::Wrappable {
  public:
   IDWeakMap();
 
-  static void Initialize(v8::Handle<v8::Object> exports);
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Handle<v8::ObjectTemplate> prototype);
 
  private:
   virtual ~IDWeakMap();
-
-  static void WeakCallback(v8::Isolate* isolate,
-                           v8::Persistent<v8::Object>* value,
-                           IDWeakMap* self);
 
   int32_t Add(v8::Isolate* isolate, v8::Handle<v8::Object> object);
   v8::Handle<v8::Value> Get(int32_t key);
@@ -37,6 +34,10 @@ class IDWeakMap : public mate::Wrappable<IDWeakMap> {
   std::vector<int32_t> Keys() const;
   void Remove(int32_t key);
   int GetNextID();
+
+  static void WeakCallback(v8::Isolate* isolate,
+                           v8::Persistent<v8::Object>* value,
+                           IDWeakMap* self);
 
   int32_t next_id_;
   std::map<int32_t, RefCountedV8Object> map_;
