@@ -143,10 +143,12 @@ class Constructor {
   }
 
  private:
-  static void New(const WrappableFactoryFunction& factory, Arguments* args) {
+  static void New(const WrappableFactoryFunction& factory,
+                  v8::Isolate* isolate,
+                  Arguments* args) {
     WrappableBase* object = internal::InvokeFactory(args, factory);
     if (object)
-      MATE_SET_INTERNAL_FIELD_POINTER(args->GetThis(), 0, object);
+      object->Wrap(isolate, args->GetThis());
     else
       args->ThrowError();
 

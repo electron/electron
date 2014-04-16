@@ -16,6 +16,12 @@ WrappableBase::~WrappableBase() {
   MATE_PERSISTENT_RESET(wrapper_);
 }
 
+void WrappableBase::Wrap(v8::Isolate* isolate, v8::Handle<v8::Object> wrapper) {
+  MATE_SET_INTERNAL_FIELD_POINTER(wrapper, 0, this);
+  MATE_PERSISTENT_ASSIGN(v8::Object, isolate, wrapper_, wrapper);
+  MATE_PERSISTENT_SET_WEAK(wrapper_, this, WeakCallback);
+}
+
 ObjectTemplateBuilder WrappableBase::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return ObjectTemplateBuilder(isolate);
@@ -38,9 +44,7 @@ v8::Handle<v8::Object> WrappableBase::GetWrapperImpl(v8::Isolate* isolate) {
   CHECK(!templ.IsEmpty());
   CHECK_EQ(1, templ->InternalFieldCount());
   v8::Handle<v8::Object> wrapper = templ->NewInstance();
-  MATE_SET_INTERNAL_FIELD_POINTER(wrapper, 0, this);
-  MATE_PERSISTENT_ASSIGN(v8::Object, isolate, wrapper_, wrapper);
-  MATE_PERSISTENT_SET_WEAK(wrapper_, this, WeakCallback);
+  Wrap(isolate, wrapper);
   return wrapper;
 }
 

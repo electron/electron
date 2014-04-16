@@ -49,6 +49,9 @@ class ObjectTemplateBuilder;
 
 // Non-template base class to share code between templates instances.
 class WrappableBase {
+ public:
+  void Wrap(v8::Isolate* isolate, v8::Handle<v8::Object> wrapper);
+
  protected:
   WrappableBase();
   virtual ~WrappableBase();
