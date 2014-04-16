@@ -196,7 +196,6 @@
       'atom/common/v8/v8_value_converter.cc',
       'atom/common/v8/v8_value_converter.h',
       'atom/renderer/api/atom_api_renderer_ipc.cc',
-      'atom/renderer/api/atom_api_renderer_ipc.h',
       'atom/renderer/api/atom_renderer_bindings.cc',
       'atom/renderer/api/atom_renderer_bindings.h',
       'atom/renderer/atom_render_view_observer.cc',
