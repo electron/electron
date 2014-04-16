@@ -6,6 +6,7 @@
 #define NATIVE_MATE_DICTIONARY_H_
 
 #include "native_mate/converter.h"
+#include "native_mate/object_template_builder.h"
 
 namespace mate {
 
@@ -30,14 +31,21 @@ class Dictionary {
   static Dictionary CreateEmpty(v8::Isolate* isolate);
 
   template<typename T>
-  bool Get(const std::string& key, T* out) {
+  bool Get(const base::StringPiece& key, T* out) {
     v8::Handle<v8::Value> val = object_->Get(StringToV8(isolate_, key));
     return ConvertFromV8(isolate_, val, out);
   }
 
   template<typename T>
-  bool Set(const std::string& key, T val) {
+  bool Set(const base::StringPiece& key, T val) {
     return object_->Set(StringToV8(isolate_, key), ConvertToV8(isolate_, val));
+  }
+
+  template<typename T>
+  bool SetMethod(const base::StringPiece& key, const T& callback) {
+    return object_->Set(
+        StringToV8(isolate_, key),
+        CallbackTraits<T>::CreateTemplate(isolate_, callback)->GetFunction());
   }
 
   v8::Isolate* isolate() const { return isolate_; }
