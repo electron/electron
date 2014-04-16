@@ -17,6 +17,13 @@ template<typename T, typename Enable = void>
 struct Converter {};
 
 template<>
+struct Converter<void*> {
+  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate, void* val) {
+    return v8::Undefined();
+  }
+};
+
+template<>
 struct Converter<bool> {
   static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
                                     bool val);
