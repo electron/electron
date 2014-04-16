@@ -9,26 +9,26 @@
 
 namespace mate {
 
-Wrappable::Wrappable() {
+WrappableBase::WrappableBase() {
 }
 
-Wrappable::~Wrappable() {
+WrappableBase::~WrappableBase() {
   MATE_PERSISTENT_RESET(wrapper_);
 }
 
-ObjectTemplateBuilder Wrappable::GetObjectTemplateBuilder(
+ObjectTemplateBuilder WrappableBase::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return ObjectTemplateBuilder(isolate);
 }
 
 // static
-MATE_WEAK_CALLBACK(Wrappable::WeakCallback, v8::Object, Wrappable) {
-  MATE_WEAK_CALLBACK_INIT(Wrappable);
+MATE_WEAK_CALLBACK(WrappableBase::WeakCallback, v8::Object, WrappableBase) {
+  MATE_WEAK_CALLBACK_INIT(WrappableBase);
   MATE_PERSISTENT_RESET(self->wrapper_);
   delete self;
 }
 
-v8::Handle<v8::Object> Wrappable::GetWrapper(v8::Isolate* isolate) {
+v8::Handle<v8::Object> WrappableBase::GetWrapperImpl(v8::Isolate* isolate) {
   if (!wrapper_.IsEmpty()) {
     return MATE_PERSISTENT_TO_LOCAL(v8::Object, isolate, wrapper_);
   }

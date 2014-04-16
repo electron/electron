@@ -56,6 +56,10 @@ class Arguments {
     return true;
   }
 
+  v8::Handle<v8::Object> GetThis() {
+    return info_->This();
+  }
+
 #if NODE_VERSION_AT_LEAST(0, 11, 0)
   template<typename T>
   void Return(T val) {

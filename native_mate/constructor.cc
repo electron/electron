@@ -4,39 +4,37 @@
 
 #include "native_mate/constructor.h"
 
+#include "base/bind.h"
+#include "base/strings/string_piece.h"
+#include "native_mate/arguments.h"
 #include "native_mate/function_template.h"
-#include "native_mate/object_template_builder.h"
 
 namespace mate {
 
-Constructor::Constructor(const base::StringPiece& name) : name_(name) {
+Constructor::Constructor(const base::StringPiece& name,
+                         const WrappableFactoryFunction& factory)
+    : name_(name), factory_(factory) {
 }
 
-Constructor::~Constructor() {
+virtual Constructor::~Constructor() {
   constructor_.Reset();
 }
 
-v8::Handle<v8::Function> Constructor::GetFunction(v8::Isolate* isolate) {
+v8::Handle<v8::FunctionTemplate> Constructor::GetFunctionTemplate(
+    v8::Isolate* isolate) {
   if (constructor_.IsEmpty()) {
     v8::Local<v8::FunctionTemplate> constructor = CreateFunctionTemplate(
-        isolate,
-        base::Bind(&Constructor::New, base::Unretained(this)));
+        isolate, base::Bind(&Constructor::New, base::Unretained(this)));
     constructor->InstanceTemplate()->SetInternalFieldCount(1);
     constructor->SetClassName(StringToV8(isolate, name_));
-    SetPrototype(isolate, constructor->PrototypeTemplate());
-
     constructor_.Reset(isolate, constructor);
   }
 
-  return MATE_PERSISTENT_TO_LOCAL(
-      v8::FunctionTemplate, isolate, constructor_)->GetFunction();
+  return MATE_PERSISTENT_TO_LOCAL(v8::FunctionTemplate, isolate, constructor_);
 }
 
-void Constructor::New() {
-}
-
-void Constructor::SetPrototype(v8::Isolate* isolate,
-                               v8::Handle<v8::ObjectTemplate> prototype) {
+void Constructor::New(mate::Arguments* args) {
+  MATE_SET_INTERNAL_FIELD_POINTER(args->GetThis(), 0, factory_.Run());
 }
 
 }  // namespace mate
