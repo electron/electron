@@ -9,8 +9,8 @@
 #include <map>
 #include <vector>
 
-#include "atom/common/v8/scoped_persistent.h"
 #include "base/basictypes.h"
+#include "native_mate/scoped_persistent.h"
 #include "native_mate/wrappable.h"
 
 namespace atom {
@@ -40,6 +40,9 @@ class IDWeakMap : public mate::Wrappable {
                            IDWeakMap* self);
 
   int32_t next_id_;
+
+  typedef scoped_refptr<mate::RefCountedPersistent<v8::Object> >
+      RefCountedV8Object;
   std::map<int32_t, RefCountedV8Object> map_;
 
   DISALLOW_COPY_AND_ASSIGN(IDWeakMap);

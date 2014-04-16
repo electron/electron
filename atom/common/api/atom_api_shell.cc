@@ -5,7 +5,7 @@
 #include <string>
 
 #include "atom/common/platform_util.h"
-#include "base/files/file_path.h"
+#include "atom/common/v8_converters/file_path_converter.h"
 #include "native_mate/object_template_builder.h"
 #include "url/gurl.h"
 
@@ -21,21 +21,6 @@ struct Converter<GURL> {
     std::string url;
     if (Converter<std::string>::FromV8(isolate, val, &url)) {
       *out = GURL(url);
-      return true;
-    } else {
-      return false;
-    }
-  }
-};
-
-template<>
-struct Converter<base::FilePath> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
-                     base::FilePath* out) {
-    std::string path;
-    if (Converter<std::string>::FromV8(isolate, val, &path)) {
-      *out = base::FilePath::FromUTF8Unsafe(path);
       return true;
     } else {
       return false;

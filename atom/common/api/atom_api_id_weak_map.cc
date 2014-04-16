@@ -28,7 +28,7 @@ int32_t IDWeakMap::Add(v8::Isolate* isolate, v8::Handle<v8::Object> object) {
   object->SetHiddenValue(mate::StringToV8(isolate, "IDWeakMapKey"),
                          mate::Converter<int32_t>::ToV8(isolate, key));
 
-  map_[key] = new RefCountedPersistent<v8::Object>(object);
+  map_[key] = new mate::RefCountedPersistent<v8::Object>(object);
   map_[key]->MakeWeak(this, WeakCallback);
   return key;
 }

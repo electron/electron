@@ -51,7 +51,6 @@
       'atom/browser/api/atom_api_browser_ipc.cc',
       'atom/browser/api/atom_api_browser_ipc.h',
       'atom/browser/api/atom_api_dialog.cc',
-      'atom/browser/api/atom_api_dialog.h',
       'atom/browser/api/atom_api_event.cc',
       'atom/browser/api/atom_api_event.h',
       'atom/browser/api/atom_api_menu.cc',

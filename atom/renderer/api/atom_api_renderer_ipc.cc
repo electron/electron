@@ -4,6 +4,7 @@
 
 #include "atom/common/api/api_messages.h"
 #include "atom/common/v8/v8_value_converter.h"
+#include "atom/common/v8_converters/string16_converter.h"
 #include "content/public/renderer/render_view.h"
 #include "native_mate/object_template_builder.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
@@ -16,22 +17,6 @@ using WebKit::WebFrame;
 using WebKit::WebView;
 
 namespace mate {
-
-template<>
-struct Converter<string16> {
-  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const string16& val) {
-    return v8::String::New(reinterpret_cast<const uint16_t*>(val.data()),
-                           val.size());
-  }
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
-                     string16* out) {
-    v8::String::Value s(val);
-    *out = string16(reinterpret_cast<const char16*>(*s), s.length());
-    return true;
-  }
-};
 
 template<>
 struct Converter<base::ListValue> {
