@@ -146,6 +146,19 @@ bool Converter<Handle<Object> >::FromV8(Isolate* isolate, Handle<Value> val,
   return true;
 }
 
+Handle<Value> Converter<Handle<String> >::ToV8(Isolate* isolate,
+                                               Handle<String> val) {
+  return val;
+}
+
+bool Converter<Handle<String> >::FromV8(Isolate* isolate, Handle<Value> val,
+                                        Handle<String>* out) {
+  if (!val->IsString())
+    return false;
+  *out = Handle<String>::Cast(val);
+  return true;
+}
+
 Handle<Value> Converter<Handle<External> >::ToV8(Isolate* isolate,
                                                  Handle<External> val) {
   return val;

@@ -121,6 +121,15 @@ struct Converter<v8::Handle<v8::Object> > {
 };
 
 template<>
+struct Converter<v8::Handle<v8::String> > {
+  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+                                    v8::Handle<v8::String> val);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
+                     v8::Handle<v8::String>* out);
+};
+
+template<>
 struct Converter<v8::Handle<v8::External> > {
   static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
                                     v8::Handle<v8::External> val);
