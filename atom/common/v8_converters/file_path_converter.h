@@ -19,9 +19,9 @@ struct Converter<base::FilePath> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      base::FilePath* out) {
-    std::string path;
+    base::FilePath::StringType path;
     if (Converter<std::string>::FromV8(isolate, val, &path)) {
-      *out = base::FilePath::FromUTF8Unsafe(path);
+      *out = base::FilePath(path);
       return true;
     } else {
       return false;
