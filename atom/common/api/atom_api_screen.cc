@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "native_mate/object_template_builder.h"
+#include "native_mate/dictionary.h"
 #include "ui/gfx/screen.h"
 
 #include "atom/common/v8/node_common.h"
@@ -92,15 +92,13 @@ void Initialize(v8::Handle<v8::Object> exports) {
 #endif
 
   gfx::Screen* screen = gfx::Screen::GetNativeScreen();
-
-  mate::ObjectTemplateBuilder builder(v8::Isolate::GetCurrent());
-  builder.SetMethod("getCursorScreenPoint",
-                    base::Bind(&gfx::Screen::GetCursorScreenPoint,
-                               base::Unretained(screen)))
-         .SetMethod("getPrimaryDisplay",
-                    base::Bind(&gfx::Screen::GetPrimaryDisplay,
-                               base::Unretained(screen)));
-  exports->SetPrototype(builder.Build()->NewInstance());
+  mate::Dictionary dict(v8::Isolate::GetCurrent(), exports);
+  dict.SetMethod("getCursorScreenPoint",
+                 base::Bind(&gfx::Screen::GetCursorScreenPoint,
+                            base::Unretained(screen)));
+  dict.SetMethod("getPrimaryDisplay",
+                 base::Bind(&gfx::Screen::GetPrimaryDisplay,
+                            base::Unretained(screen)));
 }
 
 }  // namespace

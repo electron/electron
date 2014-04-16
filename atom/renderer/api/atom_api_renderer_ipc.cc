@@ -6,7 +6,7 @@
 #include "atom/common/v8/v8_value_converter.h"
 #include "atom/common/v8_converters/string16_converter.h"
 #include "content/public/renderer/render_view.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
@@ -83,10 +83,9 @@ string16 SendSync(const string16& channel, const base::ListValue& arguments) {
 }
 
 void Initialize(v8::Handle<v8::Object> exports) {
-  mate::ObjectTemplateBuilder builder(v8::Isolate::GetCurrent());
-  builder.SetMethod("send", &Send)
-         .SetMethod("sendSync", &SendSync);
-  exports->SetPrototype(builder.Build()->NewInstance());
+  mate::Dictionary dict(v8::Isolate::GetCurrent(), exports);
+  dict.SetMethod("send", &Send);
+  dict.SetMethod("sendSync", &SendSync);
 }
 
 }  // namespace

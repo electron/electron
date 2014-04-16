@@ -3,57 +3,54 @@
 // found in the LICENSE file.
 
 #include "atom/common/api/object_life_monitor.h"
+#include "native_mate/dictionary.h"
 #include "v8/include/v8-profiler.h"
 
 #include "atom/common/v8/node_common.h"
 
-namespace atom {
-
-namespace api {
-
 namespace {
 
-void CreateObjectWithName(const v8::FunctionCallbackInfo<v8::Value>& args) {
+v8::Handle<v8::Object> CreateObjectWithName(v8::Handle<v8::String> name) {
   v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New();
-  t->SetClassName(args[0]->ToString());
-  args.GetReturnValue().Set(t->GetFunction()->NewInstance());
+  t->SetClassName(name);
+  return t->GetFunction()->NewInstance();
 }
 
-void GetHiddenValue(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  args.GetReturnValue().Set(
-      args[0]->ToObject()->GetHiddenValue(args[1]->ToString()));
+v8::Handle<v8::Value> GetHiddenValue(v8::Handle<v8::Object> object,
+                                     v8::Handle<v8::String> key) {
+  return object->GetHiddenValue(key);
 }
 
-void SetHiddenValue(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  args[0]->ToObject()->SetHiddenValue(args[1]->ToString(), args[2]);
+void SetHiddenValue(v8::Handle<v8::Object> object,
+                    v8::Handle<v8::String> key,
+                    v8::Handle<v8::Value> value) {
+  object->SetHiddenValue(key, value);
 }
 
-void GetObjectHash(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  args.GetReturnValue().Set(args[0]->ToObject()->GetIdentityHash());
+int32_t GetObjectHash(v8::Handle<v8::Object> object) {
+  return object->GetIdentityHash();
 }
 
-void SetDestructor(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  ObjectLifeMonitor::BindTo(args[0]->ToObject(), args[1]);
+void SetDestructor(v8::Handle<v8::Object> object,
+                   v8::Handle<v8::Function> callback) {
+  atom::ObjectLifeMonitor::BindTo(object, callback);
 }
 
-void TakeHeapSnapshot(const v8::FunctionCallbackInfo<v8::Value>& args) {
+void TakeHeapSnapshot() {
   node::node_isolate->GetHeapProfiler()->TakeHeapSnapshot(
       v8::String::New("test"));
 }
 
-}  // namespace
-
-void InitializeV8Util(v8::Handle<v8::Object> target) {
-  NODE_SET_METHOD(target, "createObjectWithName", CreateObjectWithName);
-  NODE_SET_METHOD(target, "getHiddenValue", GetHiddenValue);
-  NODE_SET_METHOD(target, "setHiddenValue", SetHiddenValue);
-  NODE_SET_METHOD(target, "getObjectHash", GetObjectHash);
-  NODE_SET_METHOD(target, "setDestructor", SetDestructor);
-  NODE_SET_METHOD(target, "takeHeapSnapshot", TakeHeapSnapshot);
+void Initialize(v8::Handle<v8::Object> exports) {
+  mate::Dictionary dict(v8::Isolate::GetCurrent(), exports);
+  dict.SetMethod("createObjectWithName", &CreateObjectWithName);
+  dict.SetMethod("getHiddenValue", &GetHiddenValue);
+  dict.SetMethod("setHiddenValue", &SetHiddenValue);
+  dict.SetMethod("getObjectHash", &GetObjectHash);
+  dict.SetMethod("setDestructor", &SetDestructor);
+  dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
 }
 
-}  // namespace api
+}  // namespace
 
-}  // namespace atom
-
-NODE_MODULE(atom_common_v8_util, atom::api::InitializeV8Util)
+NODE_MODULE(atom_common_v8_util, Initialize)

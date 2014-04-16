@@ -7,7 +7,7 @@
 
 #include "atom/common/crash_reporter/crash_reporter.h"
 #include "base/bind.h"
-#include "native_mate/object_template_builder.h"
+#include "native_mate/dictionary.h"
 
 #include "atom/common/v8/node_common.h"
 
@@ -37,11 +37,10 @@ namespace {
 
 void Initialize(v8::Handle<v8::Object> exports) {
   using crash_reporter::CrashReporter;
-  mate::ObjectTemplateBuilder builder(v8::Isolate::GetCurrent());
-  builder.SetMethod("start",
-                    base::Bind(&CrashReporter::Start,
-                               base::Unretained(CrashReporter::GetInstance())));
-  exports->SetPrototype(builder.Build()->NewInstance());
+  mate::Dictionary dict(v8::Isolate::GetCurrent(), exports);
+  dict.SetMethod("start",
+                 base::Bind(&CrashReporter::Start,
+                            base::Unretained(CrashReporter::GetInstance())));
 }
 
 }  // namespace

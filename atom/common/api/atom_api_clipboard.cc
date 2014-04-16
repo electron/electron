@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "native_mate/object_template_builder.h"
+#include "native_mate/dictionary.h"
 #include "ui/base/clipboard/clipboard.h"
 
 #include "atom/common/v8/node_common.h"
@@ -49,13 +49,12 @@ void Clear() {
 }
 
 void Initialize(v8::Handle<v8::Object> exports) {
-  mate::ObjectTemplateBuilder builder(v8::Isolate::GetCurrent());
-  builder.SetMethod("has", &Has)
-         .SetMethod("read", &Read)
-         .SetMethod("readText", &ReadText)
-         .SetMethod("writeText", &WriteText)
-         .SetMethod("clear", &Clear);
-  exports->SetPrototype(builder.Build()->NewInstance());
+  mate::Dictionary dict(v8::Isolate::GetCurrent(), exports);
+  dict.SetMethod("has", &Has);
+  dict.SetMethod("read", &Read);
+  dict.SetMethod("readText", &ReadText);
+  dict.SetMethod("writeText", &WriteText);
+  dict.SetMethod("clear", &Clear);
 }
 
 }  // namespace
