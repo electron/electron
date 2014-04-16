@@ -11,23 +11,23 @@
 
 namespace mate {
 
-class WrappableBase;
+class Wrappable;
 
 namespace internal {
 
 // This set of templates invokes a base::Callback by converting the Arguments
 // into native types. It relies on the function_template.h to provide helper
 // templates.
-inline WrappableBase* InvokeFactory(
+inline Wrappable* InvokeFactory(
     Arguments* args,
-    const base::Callback<WrappableBase*()>& callback) {
+    const base::Callback<Wrappable*()>& callback) {
   return callback.Run();
 };
 
 template<typename P1>
-inline WrappableBase* InvokeFactory(
+inline Wrappable* InvokeFactory(
     Arguments* args,
-    const base::Callback<WrappableBase*(P1)>& callback) {
+    const base::Callback<Wrappable*(P1)>& callback) {
   typename CallbackParamTraits<P1>::LocalType a1;
   if (!GetNextArgument(args, 0, false, &a1))
     return NULL;
@@ -35,9 +35,9 @@ inline WrappableBase* InvokeFactory(
 };
 
 template<typename P1, typename P2>
-inline WrappableBase* InvokeFactory(
+inline Wrappable* InvokeFactory(
     Arguments* args,
-    const base::Callback<WrappableBase*(P1, P2)>& callback) {
+    const base::Callback<Wrappable*(P1, P2)>& callback) {
   typename CallbackParamTraits<P1>::LocalType a1;
   typename CallbackParamTraits<P2>::LocalType a2;
   if (!GetNextArgument(args, 0, true, &a1) ||
@@ -47,9 +47,9 @@ inline WrappableBase* InvokeFactory(
 };
 
 template<typename P1, typename P2, typename P3>
-inline WrappableBase* InvokeFactory(
+inline Wrappable* InvokeFactory(
     Arguments* args,
-    const base::Callback<WrappableBase*(P1, P2, P3)>& callback) {
+    const base::Callback<Wrappable*(P1, P2, P3)>& callback) {
   typename CallbackParamTraits<P1>::LocalType a1;
   typename CallbackParamTraits<P2>::LocalType a2;
   typename CallbackParamTraits<P3>::LocalType a3;
@@ -61,9 +61,9 @@ inline WrappableBase* InvokeFactory(
 };
 
 template<typename P1, typename P2, typename P3, typename P4>
-inline WrappableBase* InvokeFactory(
+inline Wrappable* InvokeFactory(
     Arguments* args,
-    const base::Callback<WrappableBase*(P1, P2, P3, P4)>& callback) {
+    const base::Callback<Wrappable*(P1, P2, P3, P4)>& callback) {
   typename CallbackParamTraits<P1>::LocalType a1;
   typename CallbackParamTraits<P2>::LocalType a2;
   typename CallbackParamTraits<P3>::LocalType a3;
@@ -77,9 +77,9 @@ inline WrappableBase* InvokeFactory(
 };
 
 template<typename P1, typename P2, typename P3, typename P4, typename P5>
-inline WrappableBase* InvokeFactory(
+inline Wrappable* InvokeFactory(
     Arguments* args,
-    const base::Callback<WrappableBase*(P1, P2, P3, P4, P5)>& callback) {
+    const base::Callback<Wrappable*(P1, P2, P3, P4, P5)>& callback) {
   typename CallbackParamTraits<P1>::LocalType a1;
   typename CallbackParamTraits<P2>::LocalType a2;
   typename CallbackParamTraits<P3>::LocalType a3;
@@ -96,9 +96,9 @@ inline WrappableBase* InvokeFactory(
 
 template<typename P1, typename P2, typename P3, typename P4, typename P5,
     typename P6>
-inline WrappableBase* InvokeFactory(
+inline Wrappable* InvokeFactory(
     Arguments* args,
-    const base::Callback<WrappableBase*(P1, P2, P3, P4, P5, P6)>& callback) {
+    const base::Callback<Wrappable*(P1, P2, P3, P4, P5, P6)>& callback) {
   typename CallbackParamTraits<P1>::LocalType a1;
   typename CallbackParamTraits<P2>::LocalType a2;
   typename CallbackParamTraits<P3>::LocalType a3;
@@ -146,7 +146,7 @@ class Constructor {
   static void New(const WrappableFactoryFunction& factory,
                   v8::Isolate* isolate,
                   Arguments* args) {
-    WrappableBase* object = internal::InvokeFactory(args, factory);
+    Wrappable* object = internal::InvokeFactory(args, factory);
     if (object)
       object->Wrap(isolate, args->GetThis());
     else
@@ -163,16 +163,19 @@ class Constructor {
 
 
 template<typename T>
-WrappableBase* NewOperatorFactory() {
+Wrappable* NewOperatorFactory() {
   return new T;
 }
 
-template<typename Sig>
-v8::Local<v8::FunctionTemplate> CreateConstructor(
+template<typename T, typename Sig>
+v8::Local<v8::Function> CreateConstructor(
     v8::Isolate* isolate,
     const base::StringPiece& name,
-    const base::Callback<Sig>& constructor) {
-  return Constructor<Sig>(name).GetFunctionTemplate(isolate, constructor);
+    const base::Callback<Sig>& callback) {
+  v8::Local<v8::FunctionTemplate> constructor =
+      Constructor<Sig>(name).GetFunctionTemplate(isolate, callback);
+  T::BuildPrototype(isolate, constructor->PrototypeTemplate());
+  return constructor->GetFunction();
 }
 
 }  // namespace mate
