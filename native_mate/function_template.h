@@ -83,23 +83,42 @@ class CallbackHolder : public CallbackHolderBase {
 // have the void return type.
 template<typename R, typename P1 = void, typename P2 = void,
     typename P3 = void, typename P4 = void, typename P5 = void,
-    typename P6 = void>
+    typename P6 = void, typename P7 = void>
 struct Invoker {
   inline static MATE_METHOD_RETURN_TYPE Go(
       Arguments& args,
-      const base::Callback<R(P1, P2, P3, P4, P5, P6)>& callback,
+      const base::Callback<R(P1, P2, P3, P4, P5, P6, P7)>& callback,
       const P1& a1,
       const P2& a2,
       const P3& a3,
       const P4& a4,
       const P5& a5,
-      const P6& a6) {
-    MATE_METHOD_RETURN(callback.Run(a1, a2, a3, a4, a5, a6));
+      const P6& a6,
+      const P7& a7) {
+    MATE_METHOD_RETURN(callback.Run(a1, a2, a3, a4, a5, a6, a7));
   }
 };
 template<typename P1, typename P2, typename P3, typename P4, typename P5,
+    typename P6, typename P7>
+struct Invoker<void, P1, P2, P3, P4, P5, P6, P7> {
+  inline static MATE_METHOD_RETURN_TYPE Go(
+      Arguments& args,
+      const base::Callback<void(P1, P2, P3, P4, P5, P6, P7)>& callback,
+      const P1& a1,
+      const P2& a2,
+      const P3& a3,
+      const P4& a4,
+      const P5& a5,
+      const P6& a6,
+      const P7& a7) {
+    callback.Run(a1, a2, a3, a4, a5, a6, a7);
+    MATE_METHOD_RETURN_UNDEFINED();
+  }
+};
+
+template<typename P1, typename P2, typename P3, typename P4, typename P5,
     typename P6>
-struct Invoker<void, P1, P2, P3, P4, P5, P6> {
+struct Invoker<void, P1, P2, P3, P4, P5, P6, void> {
   inline static MATE_METHOD_RETURN_TYPE Go(
       Arguments& args,
       const base::Callback<void(P1, P2, P3, P4, P5, P6)>& callback,
@@ -116,7 +135,7 @@ struct Invoker<void, P1, P2, P3, P4, P5, P6> {
 
 template<typename R, typename P1, typename P2, typename P3, typename P4,
     typename P5>
-struct Invoker<R, P1, P2, P3, P4, P5, void> {
+struct Invoker<R, P1, P2, P3, P4, P5, void, void> {
   inline static MATE_METHOD_RETURN_TYPE Go(
       Arguments& args,
       const base::Callback<R(P1, P2, P3, P4, P5)>& callback,
@@ -129,7 +148,7 @@ struct Invoker<R, P1, P2, P3, P4, P5, void> {
   }
 };
 template<typename P1, typename P2, typename P3, typename P4, typename P5>
-struct Invoker<void, P1, P2, P3, P4, P5, void> {
+struct Invoker<void, P1, P2, P3, P4, P5, void, void> {
   inline static MATE_METHOD_RETURN_TYPE Go(
       Arguments& args,
       const base::Callback<void(P1, P2, P3, P4, P5)>& callback,
@@ -144,7 +163,7 @@ struct Invoker<void, P1, P2, P3, P4, P5, void> {
 };
 
 template<typename R, typename P1, typename P2, typename P3, typename P4>
-struct Invoker<R, P1, P2, P3, P4, void, void> {
+struct Invoker<R, P1, P2, P3, P4, void, void, void> {
   inline static MATE_METHOD_RETURN_TYPE Go(
       Arguments& args,
       const base::Callback<R(P1, P2, P3, P4)>& callback,
@@ -156,7 +175,7 @@ struct Invoker<R, P1, P2, P3, P4, void, void> {
   }
 };
 template<typename P1, typename P2, typename P3, typename P4>
-struct Invoker<void, P1, P2, P3, P4, void, void> {
+struct Invoker<void, P1, P2, P3, P4, void, void, void> {
   inline static MATE_METHOD_RETURN_TYPE Go(
       Arguments& args,
       const base::Callback<void(P1, P2, P3, P4)>& callback,
@@ -170,7 +189,7 @@ struct Invoker<void, P1, P2, P3, P4, void, void> {
 };
 
 template<typename R, typename P1, typename P2, typename P3>
-struct Invoker<R, P1, P2, P3, void, void, void> {
+struct Invoker<R, P1, P2, P3, void, void, void, void> {
   inline static MATE_METHOD_RETURN_TYPE Go(
       Arguments& args,
       const base::Callback<R(P1, P2, P3)>& callback,
@@ -181,7 +200,7 @@ struct Invoker<R, P1, P2, P3, void, void, void> {
   }
 };
 template<typename P1, typename P2, typename P3>
-struct Invoker<void, P1, P2, P3, void, void, void> {
+struct Invoker<void, P1, P2, P3, void, void, void, void> {
   inline static MATE_METHOD_RETURN_TYPE Go(
       Arguments& args,
       const base::Callback<void(P1, P2, P3)>& callback,
@@ -194,7 +213,7 @@ struct Invoker<void, P1, P2, P3, void, void, void> {
 };
 
 template<typename R, typename P1, typename P2>
-struct Invoker<R, P1, P2, void, void, void, void> {
+struct Invoker<R, P1, P2, void, void, void, void, void> {
   inline static MATE_METHOD_RETURN_TYPE Go(
       Arguments& args,
       const base::Callback<R(P1, P2)>& callback,
@@ -204,7 +223,7 @@ struct Invoker<R, P1, P2, void, void, void, void> {
   }
 };
 template<typename P1, typename P2>
-struct Invoker<void, P1, P2, void, void, void, void> {
+struct Invoker<void, P1, P2, void, void, void, void, void> {
   inline static MATE_METHOD_RETURN_TYPE Go(
       Arguments& args,
       const base::Callback<void(P1, P2)>& callback,
@@ -216,7 +235,7 @@ struct Invoker<void, P1, P2, void, void, void, void> {
 };
 
 template<typename R, typename P1>
-struct Invoker<R, P1, void, void, void, void, void> {
+struct Invoker<R, P1, void, void, void, void, void, void> {
   inline static MATE_METHOD_RETURN_TYPE Go(
       Arguments& args,
       const base::Callback<R(P1)>& callback,
@@ -225,7 +244,7 @@ struct Invoker<R, P1, void, void, void, void, void> {
   }
 };
 template<typename P1>
-struct Invoker<void, P1, void, void, void, void, void> {
+struct Invoker<void, P1, void, void, void, void, void, void> {
   inline static MATE_METHOD_RETURN_TYPE Go(
       Arguments& args,
       const base::Callback<void(P1)>& callback,
@@ -236,7 +255,7 @@ struct Invoker<void, P1, void, void, void, void, void> {
 };
 
 template<typename R>
-struct Invoker<R, void, void, void, void, void, void> {
+struct Invoker<R, void, void, void, void, void, void, void> {
   inline static MATE_METHOD_RETURN_TYPE Go(
       Arguments& args,
       const base::Callback<R()>& callback) {
@@ -244,7 +263,7 @@ struct Invoker<R, void, void, void, void, void, void> {
   }
 };
 template<>
-struct Invoker<void, void, void, void, void, void, void> {
+struct Invoker<void, void, void, void, void, void, void, void> {
   inline static MATE_METHOD_RETURN_TYPE Go(
       Arguments& args,
       const base::Callback<void()>& callback) {
@@ -473,6 +492,43 @@ struct Dispatcher<R(P1, P2, P3, P4, P5, P6)> {
         a2, a3, a4, a5, a6);
   }
 };
+
+template<typename R, typename P1, typename P2, typename P3, typename P4,
+    typename P5, typename P6, typename P7>
+struct Dispatcher<R(P1, P2, P3, P4, P5, P6, P7)> {
+  static MATE_METHOD(DispatchToCallback) {
+    Arguments args(info);
+    v8::Handle<v8::External> v8_holder;
+    CHECK(args.GetData(&v8_holder));
+    CallbackHolderBase* holder_base = reinterpret_cast<CallbackHolderBase*>(
+        v8_holder->Value());
+
+    typedef CallbackHolder<R(P1, P2, P3, P4, P5, P6, P7)> HolderT;
+    HolderT* holder = static_cast<HolderT*>(holder_base);
+
+    typename CallbackParamTraits<P1>::LocalType a1;
+    typename CallbackParamTraits<P2>::LocalType a2;
+    typename CallbackParamTraits<P3>::LocalType a3;
+    typename CallbackParamTraits<P4>::LocalType a4;
+    typename CallbackParamTraits<P5>::LocalType a5;
+    typename CallbackParamTraits<P6>::LocalType a6;
+    typename CallbackParamTraits<P7>::LocalType a7;
+    if (!GetNextArgument(&args, holder->flags, true, &a1) ||
+        !GetNextArgument(&args, holder->flags, false, &a2) ||
+        !GetNextArgument(&args, holder->flags, false, &a3) ||
+        !GetNextArgument(&args, holder->flags, false, &a4) ||
+        !GetNextArgument(&args, holder->flags, false, &a5) ||
+        !GetNextArgument(&args, holder->flags, false, &a6) ||
+        !GetNextArgument(&args, holder->flags, false, &a7)) {
+      args.ThrowError();
+      MATE_METHOD_RETURN_UNDEFINED();
+    }
+
+    return Invoker<R, P1, P2, P3, P4, P5, P6, P7>::Go(args, holder->callback,
+        a1, a2, a3, a4, a5, a6, a7);
+  }
+};
+
 
 }  // namespace internal
 
