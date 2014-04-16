@@ -106,6 +106,8 @@ class RefCountedPersistent : public ScopedPersistent<T>,
   DISALLOW_COPY_AND_ASSIGN(RefCountedPersistent);
 };
 
+typedef scoped_refptr<RefCountedPersistent<v8::Object>> RefCountedV8Object;
+
 }  // namespace mate
 
 #endif  // NATIVE_MATE_SCOPED_PERSISTENT_H_

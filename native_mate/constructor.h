@@ -7,9 +7,7 @@
 
 #include "base/bind.h"
 #include "base/compiler_specific.h"
-#include "base/strings/string_piece.h"
 #include "native_mate/function_template.h"
-#include "v8/include/v8.h"
 
 namespace mate {
 
