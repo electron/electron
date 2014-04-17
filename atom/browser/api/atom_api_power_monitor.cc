@@ -6,6 +6,7 @@
 
 #include "base/power_monitor/power_monitor.h"
 #include "base/power_monitor/power_monitor_device_source.h"
+#include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
 
@@ -13,8 +14,7 @@ namespace atom {
 
 namespace api {
 
-PowerMonitor::PowerMonitor(v8::Handle<v8::Object> wrapper)
-    : EventEmitter(wrapper) {
+PowerMonitor::PowerMonitor() {
   base::PowerMonitor::Get()->AddObserver(this);
 }
 
@@ -38,30 +38,29 @@ void PowerMonitor::OnResume() {
 }
 
 // static
-void PowerMonitor::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  if (!args.IsConstructCall())
-    return node::ThrowError("Require constructor call");
-
-  new PowerMonitor(args.This());
+mate::Handle<PowerMonitor> PowerMonitor::Create(v8::Isolate* isolate) {
+  return CreateHandle(isolate, new PowerMonitor);
 }
-
-// static
-void PowerMonitor::Initialize(v8::Handle<v8::Object> target) {
-#if defined(OS_MACOSX)
-  base::PowerMonitorDeviceSource::AllocateSystemIOPorts();
-#endif
-
-  v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(
-      PowerMonitor::New);
-  t->InstanceTemplate()->SetInternalFieldCount(1);
-  t->SetClassName(v8::String::NewSymbol("PowerMonitor"));
-
-  target->Set(v8::String::NewSymbol("PowerMonitor"), t->GetFunction());
-}
-
 
 }  // namespace api
 
 }  // namespace atom
 
-NODE_MODULE(atom_browser_power_monitor, atom::api::PowerMonitor::Initialize)
+
+namespace {
+
+void Initialize(v8::Handle<v8::Object> exports) {
+#if defined(OS_MACOSX)
+  base::PowerMonitorDeviceSource::AllocateSystemIOPorts();
+#endif
+
+  using atom::api::PowerMonitor;
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  mate::Handle<PowerMonitor> power_monitor = PowerMonitor::Create(isolate);
+  mate::Dictionary dict(isolate, exports);
+  dict.Set("powerMonitor", power_monitor);
+}
+
+}  // namespace
+
+NODE_MODULE(atom_browser_power_monitor, Initialize)

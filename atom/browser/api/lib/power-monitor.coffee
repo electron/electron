@@ -1,7 +1,6 @@
-bindings = process.atomBinding 'power_monitor'
+powerMonitor = process.atomBinding('power_monitor').powerMonitor
 EventEmitter = require('events').EventEmitter
 
-PowerMonitor = bindings.PowerMonitor
-PowerMonitor::__proto__ = EventEmitter.prototype
+powerMonitor.__proto__ = EventEmitter.prototype
 
-module.exports = new PowerMonitor
+module.exports = powerMonitor
