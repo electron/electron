@@ -16,7 +16,7 @@
 #include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 
 using WebKit::WebFrame;
 

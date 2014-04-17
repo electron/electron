@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_V8_CONVERTERS_STRING16_CONVERTER_H_
-#define ATOM_COMMON_V8_CONVERTERS_STRING16_CONVERTER_H_
+#ifndef ATOM_COMMON_NATIVE_MATE_CONVERTERS_STRING16_CONVERTER_H_
+#define ATOM_COMMON_NATIVE_MATE_CONVERTERS_STRING16_CONVERTER_H_
 
 #include "base/strings/string16.h"
 #include "native_mate/converter.h"
@@ -28,4 +28,4 @@ struct Converter<string16> {
 
 }  // namespace mate
 
-#endif  // ATOM_COMMON_V8_CONVERTERS_STRING16_CONVERTER_H_
+#endif  // ATOM_COMMON_NATIVE_MATE_CONVERTERS_STRING16_CONVERTER_H_

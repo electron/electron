@@ -9,7 +9,7 @@
 #include "base/bind.h"
 #include "native_mate/dictionary.h"
 
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 
 namespace mate {
 

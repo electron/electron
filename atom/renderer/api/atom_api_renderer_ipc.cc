@@ -3,39 +3,18 @@
 // found in the LICENSE file.
 
 #include "atom/common/api/api_messages.h"
-#include "atom/common/v8/v8_value_converter.h"
-#include "atom/common/v8_converters/string16_converter.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 
 using content::RenderView;
 using WebKit::WebFrame;
 using WebKit::WebView;
-
-namespace mate {
-
-template<>
-struct Converter<base::ListValue> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
-                     base::ListValue* out) {
-    scoped_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
-    scoped_ptr<base::Value> value(converter->FromV8Value(
-        val, v8::Context::GetCurrent()));
-    if (value->IsType(base::Value::TYPE_LIST)) {
-      out->Swap(static_cast<ListValue*>(value.get()));
-      return true;
-    } else {
-      return false;
-    }
-  }
-};
-
-}  // namespace mate
 
 namespace {
 

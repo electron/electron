@@ -5,7 +5,7 @@
 #include "atom/browser/api/atom_api_browser_ipc.h"
 
 #include "atom/common/api/api_messages.h"
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/v8/native_type_conversions.h"
 #include "content/public/browser/render_view_host.h"
 

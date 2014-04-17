@@ -11,7 +11,7 @@
 #include "atom/browser/browser.h"
 #include "atom/common/v8/native_type_conversions.h"
 
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 
 namespace atom {
 

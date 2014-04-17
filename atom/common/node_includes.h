@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_V8_NODE_COMMON_H_
-#define ATOM_COMMON_V8_NODE_COMMON_H_
+#ifndef ATOM_COMMON_NODE_INCLUDES_H_
+#define ATOM_COMMON_NODE_INCLUDES_H_
 
 // Include common headers for using node APIs.
 
@@ -24,4 +24,4 @@ namespace atom {
 extern node::Environment* global_env;
 }
 
-#endif  // ATOM_COMMON_V8_NODE_COMMON_H_
+#endif  // ATOM_COMMON_NODE_INCLUDES_H_

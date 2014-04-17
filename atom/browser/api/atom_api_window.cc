@@ -16,7 +16,7 @@
 #include "ui/gfx/point.h"
 #include "ui/gfx/size.h"
 
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 #include "vendor/node/src/node_buffer.h"
 
 using content::NavigationController;

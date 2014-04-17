@@ -12,7 +12,7 @@
 #include "atom/browser/api/atom_api_window.h"
 #include "atom/common/swap_or_assign.h"
 #include "atom/common/v8/scoped_persistent.h"
-#include "atom/common/v8/v8_value_converter.h"
+#include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "base/files/file_path.h"
 #include "base/strings/string16.h"
 #include "base/template_util.h"

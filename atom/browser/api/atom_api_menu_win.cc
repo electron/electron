@@ -10,7 +10,7 @@
 #include "ui/gfx/point.h"
 #include "ui/gfx/screen.h"
 
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 
 namespace atom {
 

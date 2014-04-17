@@ -5,7 +5,7 @@
 #include "native_mate/dictionary.h"
 #include "ui/gfx/screen.h"
 
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 
 #if defined(TOOLKIT_GTK)
 #include "base/command_line.h"

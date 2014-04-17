@@ -7,7 +7,7 @@
 #include "base/message_loop/message_loop.h"
 #include "base/strings/sys_string_conversions.h"
 #include "atom/browser/native_window.h"
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/v8/native_type_conversions.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"

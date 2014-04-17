@@ -2,10 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_V8_CONVERTERS_FILE_PATH_CONVERTER_H_
-#define ATOM_COMMON_V8_CONVERTERS_FILE_PATH_CONVERTER_H_
+#ifndef ATOM_COMMON_NATIVE_MATE_CONVERTERS_FILE_PATH_CONVERTER_H_
+#define ATOM_COMMON_NATIVE_MATE_CONVERTERS_FILE_PATH_CONVERTER_H_
 
-#include "atom/common/v8_converters/string16_converter.h"
+#include <string>
+
+#include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/files/file_path.h"
 
 namespace mate {
@@ -20,7 +22,7 @@ struct Converter<base::FilePath> {
                      v8::Handle<v8::Value> val,
                      base::FilePath* out) {
     base::FilePath::StringType path;
-    if (Converter<std::string>::FromV8(isolate, val, &path)) {
+    if (Converter<base::FilePath::StringType>::FromV8(isolate, val, &path)) {
       *out = base::FilePath(path);
       return true;
     } else {
@@ -31,4 +33,4 @@ struct Converter<base::FilePath> {
 
 }  // namespace mate
 
-#endif  // ATOM_COMMON_V8_CONVERTERS_FILE_PATH_CONVERTER_H_
+#endif  // ATOM_COMMON_NATIVE_MATE_CONVERTERS_FILE_PATH_CONVERTER_H_

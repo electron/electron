@@ -18,7 +18,7 @@
 #include "base/strings/utf_string_conversions.h"
 #endif
 
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 
 using content::BrowserThread;
 

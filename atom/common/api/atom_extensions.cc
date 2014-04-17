@@ -8,7 +8,7 @@
 #include "base/strings/string_util.h"
 #include "vendor/node/src/node_version.h"
 
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 
 namespace atom {
 

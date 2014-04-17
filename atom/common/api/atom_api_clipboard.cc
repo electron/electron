@@ -8,7 +8,7 @@
 #include "native_mate/dictionary.h"
 #include "ui/base/clipboard/clipboard.h"
 
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 
 namespace {
 

@@ -10,7 +10,7 @@
 #include "native_mate/constructor.h"
 #include "native_mate/object_template_builder.h"
 
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 
 namespace atom {
 

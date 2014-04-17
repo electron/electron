@@ -15,7 +15,7 @@
 #include "ui/gfx/win/dpi.h"
 #endif
 
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 
 namespace atom {
 

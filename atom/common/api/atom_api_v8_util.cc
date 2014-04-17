@@ -6,7 +6,7 @@
 #include "native_mate/dictionary.h"
 #include "v8/include/v8-profiler.h"
 
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 
 namespace {
 
