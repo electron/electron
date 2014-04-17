@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "base/logging.h"
-#include "atom/browser/api/atom_api_event.h"
+#include "atom/browser/api/event.h"
 #include "atom/common/v8/native_type_conversions.h"
 #include "content/public/browser/browser_thread.h"
 
@@ -65,8 +65,8 @@ void AtomBrowserBindings::OnRendererMessageSync(
   scoped_ptr<V8ValueConverter> converter(new V8ValueConverter);
 
   // Create the event object.
-  v8::Handle<v8::Object> event = api::Event::CreateV8Object();
-  api::Event::Unwrap<api::Event>(event)->SetSenderAndMessage(sender, message);
+  mate::Handle<mate::Event> event = mate::Event::Create(node_isolate);
+  event->SetSenderAndMessage(sender, message);
 
   // process.emit(channel, 'sync-message', event, process_id, routing_id);
   std::vector<v8::Handle<v8::Value>> arguments;
@@ -75,7 +75,7 @@ void AtomBrowserBindings::OnRendererMessageSync(
   const base::Value* value;
   if (args.Get(0, &value))
     arguments.push_back(converter->ToV8Value(value, global_env->context()));
-  arguments.push_back(event);
+  arguments.push_back(event.ToV8());
   arguments.push_back(v8::Integer::New(process_id));
   arguments.push_back(v8::Integer::New(routing_id));
 

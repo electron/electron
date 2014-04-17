@@ -6,6 +6,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "content/public/browser/render_view_host.h"
+#include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
 
@@ -14,7 +15,7 @@ using content::RenderViewHost;
 namespace {
 
 bool Send(const string16& channel, int process_id, int routing_id,
-          const base:ListValue& arguments) {
+          const base::ListValue& arguments) {
   RenderViewHost* render_view_host(RenderViewHost::FromID(
       process_id, routing_id));
   if (!render_view_host) {
