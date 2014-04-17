@@ -49,7 +49,6 @@
       'atom/browser/api/atom_api_auto_updater.cc',
       'atom/browser/api/atom_api_auto_updater.h',
       'atom/browser/api/atom_api_browser_ipc.cc',
-      'atom/browser/api/atom_api_browser_ipc.h',
       'atom/browser/api/atom_api_dialog.cc',
       'atom/browser/api/atom_api_event.cc',
       'atom/browser/api/atom_api_event.h',
