@@ -7,7 +7,8 @@
 #include "base/time/time.h"
 #include "base/values.h"
 #include "atom/browser/auto_updater.h"
-#include "atom/common/v8/native_type_conversions.h"
+#include "native_mate/dictionary.h"
+#include "native_mate/object_template_builder.h"
 
 #include "atom/common/node_includes.h"
 
@@ -15,8 +16,7 @@ namespace atom {
 
 namespace api {
 
-AutoUpdater::AutoUpdater(v8::Handle<v8::Object> wrapper)
-    : EventEmitter(wrapper) {
+AutoUpdater::AutoUpdater() {
   auto_updater::AutoUpdater::SetDelegate(this);
 }
 
@@ -27,7 +27,7 @@ AutoUpdater::~AutoUpdater() {
 void AutoUpdater::OnError(const std::string& error) {
   base::ListValue args;
   args.AppendString(error);
-  Emit("error", &args);
+  Emit("error", args);
 }
 
 void AutoUpdater::OnCheckingForUpdate() {
@@ -54,53 +54,40 @@ void AutoUpdater::OnUpdateDownloaded(const std::string& release_notes,
   args.AppendString(release_name);
   args.AppendDouble(release_date.ToJsTime());
   args.AppendString(update_url);
-  Emit("update-downloaded-raw", &args);
+  Emit("update-downloaded-raw", args);
+}
+
+mate::ObjectTemplateBuilder AutoUpdater::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return mate::ObjectTemplateBuilder(isolate)
+      .SetMethod("setFeedUrl", &auto_updater::AutoUpdater::SetFeedURL)
+      .SetMethod("checkForUpdates", &auto_updater::AutoUpdater::CheckForUpdates)
+      .SetMethod("quitAndInstall", &AutoUpdater::QuitAndInstall);
+}
+
+void AutoUpdater::QuitAndInstall() {
+  if (!quit_and_install_.is_null())
+    quit_and_install_.Run();
 }
 
 // static
-void AutoUpdater::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  if (!args.IsConstructCall())
-    return node::ThrowError("Require constructor call");
-
-  new AutoUpdater(args.This());
-}
-
-// static
-void AutoUpdater::SetFeedURL(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  auto_updater::AutoUpdater::SetFeedURL(FromV8Value(args[0]));
-}
-
-// static
-void AutoUpdater::CheckForUpdates(
-    const v8::FunctionCallbackInfo<v8::Value>& args) {
-  auto_updater::AutoUpdater::CheckForUpdates();
-}
-
-// static
-void AutoUpdater::QuitAndInstall(
-    const v8::FunctionCallbackInfo<v8::Value>& args) {
-  AutoUpdater* self = AutoUpdater::Unwrap<AutoUpdater>(args.This());
-
-  if (!self->quit_and_install_.is_null())
-    self->quit_and_install_.Run();
-}
-
-// static
-void AutoUpdater::Initialize(v8::Handle<v8::Object> target) {
-  v8::Local<v8::FunctionTemplate> t(
-      v8::FunctionTemplate::New(AutoUpdater::New));
-  t->InstanceTemplate()->SetInternalFieldCount(1);
-  t->SetClassName(v8::String::NewSymbol("AutoUpdater"));
-
-  NODE_SET_PROTOTYPE_METHOD(t, "setFeedUrl", SetFeedURL);
-  NODE_SET_PROTOTYPE_METHOD(t, "checkForUpdates", CheckForUpdates);
-  NODE_SET_PROTOTYPE_METHOD(t, "quitAndInstall", QuitAndInstall);
-
-  target->Set(v8::String::NewSymbol("AutoUpdater"), t->GetFunction());
+mate::Handle<AutoUpdater> AutoUpdater::Create(v8::Isolate* isolate) {
+  return CreateHandle(isolate, new AutoUpdater);
 }
 
 }  // namespace api
 
 }  // namespace atom
 
-NODE_MODULE(atom_browser_auto_updater, atom::api::AutoUpdater::Initialize)
+
+namespace {
+
+void Initialize(v8::Handle<v8::Object> exports) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  mate::Dictionary dict(isolate, exports);
+  dict.Set("autoUpdater", atom::api::AutoUpdater::Create(isolate));
+}
+
+}  // namespace
+
+NODE_MODULE(atom_browser_auto_updater, Initialize)

@@ -8,23 +8,22 @@
 #include <string>
 
 #include "base/callback.h"
-#include "base/memory/scoped_ptr.h"
+#include "atom/browser/api/event_emitter.h"
 #include "atom/browser/auto_updater_delegate.h"
-#include "atom/common/api/atom_api_event_emitter.h"
+#include "native_mate/handle.h"
 
 namespace atom {
 
 namespace api {
 
-class AutoUpdater : public EventEmitter,
+class AutoUpdater : public mate::EventEmitter,
                     public auto_updater::AutoUpdaterDelegate {
  public:
-  virtual ~AutoUpdater();
-
-  static void Initialize(v8::Handle<v8::Object> target);
+  static mate::Handle<AutoUpdater> Create(v8::Isolate* isolate);
 
  protected:
-  explicit AutoUpdater(v8::Handle<v8::Object> wrapper);
+  AutoUpdater();
+  virtual ~AutoUpdater();
 
   // AutoUpdaterDelegate implementations.
   virtual void OnError(const std::string& error) OVERRIDE;
@@ -38,14 +37,12 @@ class AutoUpdater : public EventEmitter,
       const std::string& update_url,
       const base::Closure& quit_and_install) OVERRIDE;
 
+  // mate::Wrappable implementations:
+  virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate);
+
  private:
-  static void New(const v8::FunctionCallbackInfo<v8::Value>& args);
-
-  static void SetFeedURL(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void CheckForUpdates(const v8::FunctionCallbackInfo<v8::Value>& args);
-
-  static void ContinueUpdate(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void QuitAndInstall(const v8::FunctionCallbackInfo<v8::Value>& args);
+  void QuitAndInstall();
 
   base::Closure quit_and_install_;
 
