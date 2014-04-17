@@ -8,22 +8,22 @@
 #include <string>
 
 #include "base/compiler_specific.h"
+#include "atom/browser/api/event_emitter.h"
 #include "atom/browser/browser_observer.h"
-#include "atom/common/api/atom_api_event_emitter.h"
+#include "native_mate/handle.h"
 
 namespace atom {
 
 namespace api {
 
-class App : public EventEmitter,
+class App : public mate::EventEmitter,
             public BrowserObserver {
  public:
-  virtual ~App();
-
-  static void Initialize(v8::Handle<v8::Object> target);
+  static mate::Handle<App> Create(v8::Isolate* isolate);
 
  protected:
-  explicit App(v8::Handle<v8::Object> wrapper);
+  App();
+  virtual ~App();
 
   // BrowserObserver implementations:
   virtual void OnWillQuit(bool* prevent_default) OVERRIDE;
@@ -35,25 +35,11 @@ class App : public EventEmitter,
   virtual void OnWillFinishLaunching() OVERRIDE;
   virtual void OnFinishLaunching() OVERRIDE;
 
+  // mate::Wrappable implementations:
+  virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate);
+
  private:
-  static void New(const v8::FunctionCallbackInfo<v8::Value>& args);
-
-  static void Quit(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void Focus(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GetVersion(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void SetVersion(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GetName(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void SetName(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void AppendSwitch(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void AppendArgument(const v8::FunctionCallbackInfo<v8::Value>& args);
-
-#if defined(OS_MACOSX)
-  static void DockBounce(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void DockCancelBounce(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void DockSetBadgeText(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void DockGetBadgeText(const v8::FunctionCallbackInfo<v8::Value>& args);
-#endif  // defined(OS_MACOSX)
-
   DISALLOW_COPY_AND_ASSIGN(App);
 };
 

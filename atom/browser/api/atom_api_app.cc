@@ -9,16 +9,18 @@
 #include "base/values.h"
 #include "base/command_line.h"
 #include "atom/browser/browser.h"
-#include "atom/common/v8/native_type_conversions.h"
+#include "native_mate/dictionary.h"
+#include "native_mate/object_template_builder.h"
 
 #include "atom/common/node_includes.h"
+
+using atom::Browser;
 
 namespace atom {
 
 namespace api {
 
-App::App(v8::Handle<v8::Object> wrapper)
-    : EventEmitter(wrapper) {
+App::App() {
   Browser::Get()->AddObserver(this);
 }
 
@@ -37,13 +39,13 @@ void App::OnWindowAllClosed() {
 void App::OnOpenFile(bool* prevent_default, const std::string& file_path) {
   base::ListValue args;
   args.AppendString(file_path);
-  *prevent_default = Emit("open-file", &args);
+  *prevent_default = Emit("open-file", args);
 }
 
 void App::OnOpenURL(const std::string& url) {
   base::ListValue args;
   args.AppendString(url);
-  Emit("open-url", &args);
+  Emit("open-url", args);
 }
 
 void App::OnActivateWithNoOpenWindows() {
@@ -58,144 +60,80 @@ void App::OnFinishLaunching() {
   Emit("ready");
 }
 
-// static
-void App::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::HandleScope scope(args.GetIsolate());
-
-  if (!args.IsConstructCall())
-    return node::ThrowError("Require constructor call");
-
-  new App(args.This());
+mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  Browser* browser = Browser::Get();
+  return mate::ObjectTemplateBuilder(isolate)
+      .SetMethod("quit", base::Bind(&Browser::Quit,
+                                    base::Unretained(browser)))
+      .SetMethod("focus", base::Bind(&Browser::Focus,
+                                     base::Unretained(browser)))
+      .SetMethod("getVersion", base::Bind(&Browser::GetVersion,
+                                          base::Unretained(browser)))
+      .SetMethod("setVersion", base::Bind(&Browser::SetVersion,
+                                          base::Unretained(browser)))
+      .SetMethod("getName", base::Bind(&Browser::GetName,
+                                       base::Unretained(browser)))
+      .SetMethod("setName", base::Bind(&Browser::SetName,
+                                       base::Unretained(browser)));
 }
 
 // static
-void App::Quit(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  Browser::Get()->Quit();
-}
-
-// static
-void App::Focus(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  Browser::Get()->Focus();
-}
-
-// static
-void App::GetVersion(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  args.GetReturnValue().Set(ToV8Value(Browser::Get()->GetVersion()));
-}
-
-// static
-void App::SetVersion(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  std::string version;
-  if (!FromV8Arguments(args, &version))
-    return node::ThrowError("Bad argument");
-
-  Browser::Get()->SetVersion(version);
-}
-
-// static
-void App::GetName(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  return args.GetReturnValue().Set(ToV8Value(Browser::Get()->GetName()));
-}
-
-// static
-void App::SetName(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  std::string name;
-  if (!FromV8Arguments(args, &name))
-    return node::ThrowError("Bad argument");
-
-  Browser::Get()->SetName(name);
-}
-
-// static
-void App::AppendSwitch(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  std::string switch_string;
-  if (!FromV8Arguments(args, &switch_string))
-    return node::ThrowError("Bad argument");
-
-  if (args.Length() == 1) {
-    CommandLine::ForCurrentProcess()->AppendSwitch(switch_string);
-  } else {
-    std::string value = FromV8Value(args[1]);
-    CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-        switch_string, value);
-  }
-}
-
-// static
-void App::AppendArgument(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  std::string value;
-  if (!FromV8Arguments(args, &value))
-    return node::ThrowError("Bad argument");
-
-  CommandLine::ForCurrentProcess()->AppendArg(value);
-}
-
-#if defined(OS_MACOSX)
-
-// static
-void App::DockBounce(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  std::string type;
-  if (!FromV8Arguments(args, &type))
-    return node::ThrowError("Bad argument");
-
-  int request_id = -1;
-
-  if (type == "critical")
-    request_id = Browser::Get()->DockBounce(Browser::BOUNCE_CRITICAL);
-  else if (type == "informational")
-    request_id = Browser::Get()->DockBounce(Browser::BOUNCE_INFORMATIONAL);
-  else
-    return node::ThrowTypeError("Invalid bounce type");
-
-  args.GetReturnValue().Set(request_id);
-}
-
-// static
-void App::DockCancelBounce(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  Browser::Get()->DockCancelBounce(FromV8Value(args[0]));
-}
-
-// static
-void App::DockSetBadgeText(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  Browser::Get()->DockSetBadgeText(FromV8Value(args[0]));
-}
-
-// static
-void App::DockGetBadgeText(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  std::string text(Browser::Get()->DockGetBadgeText());
-  args.GetReturnValue().Set(ToV8Value(text));
-}
-
-#endif  // defined(OS_MACOSX)
-
-// static
-void App::Initialize(v8::Handle<v8::Object> target) {
-  v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(New);
-  t->InstanceTemplate()->SetInternalFieldCount(1);
-  t->SetClassName(v8::String::NewSymbol("Application"));
-
-  NODE_SET_PROTOTYPE_METHOD(t, "quit", Quit);
-  NODE_SET_PROTOTYPE_METHOD(t, "focus", Focus);
-  NODE_SET_PROTOTYPE_METHOD(t, "getVersion", GetVersion);
-  NODE_SET_PROTOTYPE_METHOD(t, "setVersion", SetVersion);
-  NODE_SET_PROTOTYPE_METHOD(t, "getName", GetName);
-  NODE_SET_PROTOTYPE_METHOD(t, "setName", SetName);
-
-  target->Set(v8::String::NewSymbol("Application"), t->GetFunction());
-
-  NODE_SET_METHOD(target, "appendSwitch", AppendSwitch);
-  NODE_SET_METHOD(target, "appendArgument", AppendArgument);
-
-#if defined(OS_MACOSX)
-  NODE_SET_METHOD(target, "dockBounce", DockBounce);
-  NODE_SET_METHOD(target, "dockCancelBounce", DockCancelBounce);
-  NODE_SET_METHOD(target, "dockSetBadgeText", DockSetBadgeText);
-  NODE_SET_METHOD(target, "dockGetBadgeText", DockGetBadgeText);
-#endif  // defined(OS_MACOSX)
+mate::Handle<App> App::Create(v8::Isolate* isolate) {
+  return CreateHandle(isolate, new App);
 }
 
 }  // namespace api
 
 }  // namespace atom
 
-NODE_MODULE(atom_browser_app, atom::api::App::Initialize)
+
+namespace {
+
+void AppendSwitch(const std::string& switch_string, mate::Arguments* args) {
+  std::string value;
+  if (args->GetNext(&value))
+    CommandLine::ForCurrentProcess()->AppendSwitchASCII(switch_string, value);
+  else
+    CommandLine::ForCurrentProcess()->AppendSwitch(switch_string);
+}
+
+#if defined(OS_MACOSX)
+int DockBounce(const std::string& type) {
+  int request_id = -1;
+  if (type == "critical")
+    request_id = Browser::Get()->DockBounce(Browser::BOUNCE_CRITICAL);
+  else if (type == "informational")
+    request_id = Browser::Get()->DockBounce(Browser::BOUNCE_INFORMATIONAL);
+  return request_id;
+}
+#endif
+
+void Initialize(v8::Handle<v8::Object> exports) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  Browser* browser = Browser::Get();
+  CommandLine* command_line = CommandLine::ForCurrentProcess();
+
+  mate::Dictionary dict(isolate, exports);
+  dict.Set("app", atom::api::App::Create(isolate));
+  dict.SetMethod("appendSwitch", &AppendSwitch);
+  dict.SetMethod("appendArgument",
+                 base::Bind(&CommandLine::AppendArg,
+                            base::Unretained(command_line)));
+#if defined(OS_MACOSX)
+  dict.SetMethod("dockBounce", &DockBounce);
+  dict.SetMethod("dockCancelBounce",
+                 base::Bind(&Browser::DockCancelBounce,
+                            base::Unretained(browser)));
+  dict.SetMethod("dockSetBadgeText",
+                 base::Bind(&Browser::DockSetBadgeText,
+                            base::Unretained(browser)));
+  dict.SetMethod("dockGetBadgeText",
+                 base::Bind(&Browser::DockGetBadgeText,
+                            base::Unretained(browser)));
+#endif
+}
+
+}  // namespace
+
+NODE_MODULE(atom_browser_app, Initialize)
