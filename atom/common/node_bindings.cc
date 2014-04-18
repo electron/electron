@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/browser_v8_locker.h"
 #include "atom/common/v8/native_type_conversions.h"
 #include "base/command_line.h"
 #include "base/message_loop/message_loop.h"
@@ -199,9 +200,7 @@ void NodeBindings::UvRunOnce() {
   DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
 
   // Use Locker in browser process.
-  scoped_ptr<v8::Locker> locker;
-  if (is_browser_)
-    locker.reset(new v8::Locker(node_isolate));
+  BrowserV8Locker locker(node_isolate);
 
   v8::HandleScope handle_scope(node_isolate);
 

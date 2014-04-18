@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "atom/browser/api/atom_api_event.h"
+#include "atom/common/browser_v8_locker.h"
 #include "atom/common/v8/native_type_conversions.h"
 #include "base/logging.h"
 
@@ -21,13 +22,9 @@ EventEmitter::EventEmitter(v8::Handle<v8::Object> wrapper) {
 }
 
 EventEmitter::~EventEmitter() {
-  // Use Locker in browser process.
-  scoped_ptr<v8::Locker> locker;
-  if (node::g_standalone_mode)
-    locker.reset(new v8::Locker(node_isolate));
-
   // Clear the aligned pointer, it should have been done by ObjectWrap but
   // somehow node v0.11.x changed this behaviour.
+  BrowserV8Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
   handle()->SetAlignedPointerInInternalField(0, NULL);
 }
@@ -38,11 +35,7 @@ bool EventEmitter::Emit(const std::string& name) {
 }
 
 bool EventEmitter::Emit(const std::string& name, base::ListValue* args) {
-  // Use Locker in browser process.
-  scoped_ptr<v8::Locker> locker;
-  if (node::g_standalone_mode)
-    locker.reset(new v8::Locker(node_isolate));
-
+  BrowserV8Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
 
   v8::Handle<v8::Context> context = v8::Context::GetCurrent();

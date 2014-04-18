@@ -20,7 +20,7 @@ class PowerMonitor : public mate::EventEmitter,
   static mate::Handle<PowerMonitor> Create(v8::Isolate* isolate);
 
  protected:
-  explicit PowerMonitor();
+  PowerMonitor();
   virtual ~PowerMonitor();
 
   // base::PowerObserver implementations:
