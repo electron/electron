@@ -11,8 +11,8 @@
 #include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/ui/message_box.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/native_mate_converters/function_converter.h"
 #include "native_mate/dictionary.h"
-#include "native_mate/scoped_persistent.h"
 
 #include "atom/common/node_includes.h"
 
@@ -37,47 +37,10 @@ struct Converter<atom::NativeWindow*> {
   }
 };
 
-
-typedef scoped_refptr<RefCountedPersistent<v8::Function>> RefCountedV8Function;
-
-template<>
-struct Converter<mate::RefCountedV8Function> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
-                     RefCountedV8Function* out) {
-    if (!val->IsFunction())
-      return false;
-
-    v8::Handle<v8::Function> function = v8::Handle<v8::Function>::Cast(val);
-    *out = new mate::RefCountedPersistent<v8::Function>(function);
-    return true;
-  }
-};
-
 }  // namespace mate
 
 
 namespace {
-
-template<typename T>
-void CallV8Function(const mate::RefCountedV8Function& callback, T arg) {
-  v8::Locker locker(node_isolate);
-  v8::HandleScope handle_scope(node_isolate);
-
-  v8::Handle<v8::Value> value = mate::Converter<T>::ToV8(node_isolate, arg);
-  callback->NewHandle(node_isolate)->Call(
-      v8::Context::GetCurrent()->Global(), 1, &value);
-}
-
-template<typename T>
-void CallV8Function2(
-    const mate::RefCountedV8Function& callback, bool result, const T& arg) {
-  if (result)
-    return CallV8Function<T>(callback, arg);
-  else
-    return CallV8Function<void*>(callback, NULL);
-}
-
 
 void ShowMessageBox(int type,
                     const std::vector<std::string>& buttons,
@@ -87,18 +50,12 @@ void ShowMessageBox(int type,
                     atom::NativeWindow* window,
                     mate::Arguments* args) {
   v8::Handle<v8::Value> peek = args->PeekNext();
-  mate::RefCountedV8Function callback;
-  if (mate::Converter<mate::RefCountedV8Function>::FromV8(node_isolate,
-                                                          peek,
-                                                          &callback)) {
-    atom::ShowMessageBox(
-        window,
-        (atom::MessageBoxType)type,
-        buttons,
-        title,
-        message,
-        detail,
-        base::Bind(&CallV8Function<int>, callback));
+  atom::MessageBoxCallback callback;
+  if (mate::Converter<atom::MessageBoxCallback>::FromV8(node_isolate,
+                                                        peek,
+                                                        &callback)) {
+    atom::ShowMessageBox(window, (atom::MessageBoxType)type, buttons, title,
+                         message, detail, callback);
   } else {
     int chosen = atom::ShowMessageBox(
         window,
@@ -117,17 +74,12 @@ void ShowOpenDialog(const std::string& title,
                     atom::NativeWindow* window,
                     mate::Arguments* args) {
   v8::Handle<v8::Value> peek = args->PeekNext();
-  mate::RefCountedV8Function callback;
-  if (mate::Converter<mate::RefCountedV8Function>::FromV8(node_isolate,
-                                                          peek,
-                                                          &callback)) {
-    file_dialog::ShowOpenDialog(
-        window,
-        title,
-        default_path,
-        properties,
-        base::Bind(&CallV8Function2<std::vector<base::FilePath>>,
-                   callback));
+  file_dialog::OpenDialogCallback callback;
+  if (mate::Converter<file_dialog::OpenDialogCallback>::FromV8(node_isolate,
+                                                               peek,
+                                                               &callback)) {
+    file_dialog::ShowOpenDialog(window, title, default_path, properties,
+                                callback);
   } else {
     std::vector<base::FilePath> paths;
     if (file_dialog::ShowOpenDialog(window,
@@ -144,15 +96,11 @@ void ShowSaveDialog(const std::string& title,
                     atom::NativeWindow* window,
                     mate::Arguments* args) {
   v8::Handle<v8::Value> peek = args->PeekNext();
-  mate::RefCountedV8Function callback;
-  if (mate::Converter<mate::RefCountedV8Function>::FromV8(node_isolate,
-                                                          peek,
-                                                          &callback)) {
-    file_dialog::ShowSaveDialog(
-        window,
-        title,
-        default_path,
-        base::Bind(&CallV8Function2<base::FilePath>, callback));
+  file_dialog::SaveDialogCallback callback;
+  if (mate::Converter<file_dialog::SaveDialogCallback>::FromV8(node_isolate,
+                                                               peek,
+                                                               &callback)) {
+    file_dialog::ShowSaveDialog(window, title, default_path, callback);
   } else {
     base::FilePath path;
     if (file_dialog::ShowSaveDialog(window,
