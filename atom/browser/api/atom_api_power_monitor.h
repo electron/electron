@@ -28,6 +28,7 @@ class PowerMonitor : public mate::EventEmitter,
   virtual void OnSuspend() OVERRIDE;
   virtual void OnResume() OVERRIDE;
 
+ private:
   DISALLOW_COPY_AND_ASSIGN(PowerMonitor);
 };
 
