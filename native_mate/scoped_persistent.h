@@ -18,8 +18,8 @@ class ScopedPersistent {
   ScopedPersistent() {
   }
 
-  explicit ScopedPersistent(v8::Handle<T> handle) {
-    reset(handle);
+  explicit ScopedPersistent(v8::Handle<v8::Value> handle) {
+    reset(v8::Handle<T>::Cast(handle));
   }
 
   ~ScopedPersistent() {
@@ -93,7 +93,7 @@ class RefCountedPersistent : public ScopedPersistent<T>,
  public:
   RefCountedPersistent() {}
 
-  explicit RefCountedPersistent(v8::Handle<T> handle)
+  explicit RefCountedPersistent(v8::Handle<v8::Value> handle)
     : ScopedPersistent<T>(handle) {
   }
 

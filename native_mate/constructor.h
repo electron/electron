@@ -7,6 +7,7 @@
 
 #include "base/bind.h"
 #include "base/compiler_specific.h"
+#include "native_mate/wrappable.h"
 #include "native_mate/function_template.h"
 
 namespace mate {
