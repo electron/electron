@@ -6,7 +6,10 @@
 
 #include <vector>
 
-#include "atom/common/v8/native_type_conversions.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/native_mate_converters/v8_value_converter.h"
+#include "base/memory/scoped_ptr.h"
+#include "base/values.h"
 #include "content/public/renderer/render_view.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebView.h"
@@ -64,7 +67,7 @@ void AtomRendererBindings::OnBrowserMessage(content::RenderView* render_view,
 
   std::vector<v8::Handle<v8::Value>> arguments;
   arguments.reserve(1 + args.GetSize());
-  arguments.push_back(ToV8Value(channel));
+  arguments.push_back(mate::ConvertToV8(node_isolate, channel));
 
   for (size_t i = 0; i < args.GetSize(); i++) {
     const base::Value* value;

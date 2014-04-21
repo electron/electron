@@ -4,13 +4,13 @@
 
 #import "atom/browser/api/atom_api_menu_mac.h"
 
+#include "atom/browser/native_window.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/sys_string_conversions.h"
-#include "atom/browser/native_window.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/v8/native_type_conversions.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
+
+#include "atom/common/node_includes.h"
 
 namespace atom {
 
