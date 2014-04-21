@@ -14,14 +14,12 @@ class Menu2;
 namespace api {
 
 class MenuWin : public Menu {
- public:
-  explicit MenuWin(v8::Handle<v8::Object> wrapper);
-  virtual ~MenuWin();
-
  protected:
   virtual void Popup(NativeWindow* window) OVERRIDE;
 
  private:
+  MenuWin();
+
   scoped_ptr<atom::Menu2> menu_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuWin);

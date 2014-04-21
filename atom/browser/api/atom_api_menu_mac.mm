@@ -16,11 +16,7 @@ namespace atom {
 
 namespace api {
 
-MenuMac::MenuMac(v8::Handle<v8::Object> wrapper)
-    : Menu(wrapper) {
-}
-
-MenuMac::~MenuMac() {
+MenuMac::MenuMac() {
 }
 
 void MenuMac::Popup(NativeWindow* native_window) {
@@ -51,22 +47,8 @@ void MenuMac::Popup(NativeWindow* native_window) {
 }
 
 // static
-void MenuMac::SendActionToFirstResponder(const std::string& action) {
-  SEL selector = NSSelectorFromString(base::SysUTF8ToNSString(action));
-  [[NSApplication sharedApplication] sendAction:selector
-                                             to:nil
-                                           from:[NSApp mainMenu]];
-}
-
-// static
-void Menu::SetApplicationMenu(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  if (!args[0]->IsObject())
-    return node::ThrowTypeError("Bad argument");
-
-  MenuMac* menu = ObjectWrap::Unwrap<MenuMac>(args[0]->ToObject());
-  if (!menu)
-    return node::ThrowError("Menu is destroyed");
-
+void Menu::SetApplicationMenu(Menu* base_menu) {
+  MenuMac* menu = static_cast<MenuMac*>(base_menu);
   base::scoped_nsobject<AtomMenuController> menu_controller(
       [[AtomMenuController alloc] initWithModel:menu->model_.get()]);
   [NSApp setMainMenu:[menu_controller menu]];
@@ -76,18 +58,14 @@ void Menu::SetApplicationMenu(const v8::FunctionCallbackInfo<v8::Value>& args) {
 }
 
 // static
-void Menu::SendActionToFirstResponder(
-    const v8::FunctionCallbackInfo<v8::Value>& args) {
-  std::string action;
-  if (!FromV8Arguments(args, &action))
-    return node::ThrowTypeError("Bad argument");
-
-  MenuMac::SendActionToFirstResponder(action);
+void Menu::SendActionToFirstResponder(const std::string& action) {
+  SEL selector = NSSelectorFromString(base::SysUTF8ToNSString(action));
+  [NSApp sendAction:selector to:nil from:[NSApp mainMenu]];
 }
 
 // static
-Menu* Menu::Create(v8::Handle<v8::Object> wrapper) {
-  return new MenuMac(wrapper);
+mate::Wrappable* Menu::Create() {
+  return new MenuMac();
 }
 
 }  // namespace api

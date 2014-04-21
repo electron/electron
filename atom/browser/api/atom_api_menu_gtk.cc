@@ -5,7 +5,6 @@
 #include "atom/browser/api/atom_api_menu_gtk.h"
 
 #include "atom/browser/native_window_gtk.h"
-#include "atom/common/v8/native_type_conversions.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/screen.h"
@@ -16,11 +15,7 @@ namespace atom {
 
 namespace api {
 
-MenuGtk::MenuGtk(v8::Handle<v8::Object> wrapper)
-    : Menu(wrapper) {
-}
-
-MenuGtk::~MenuGtk() {
+MenuGtk::MenuGtk() {
 }
 
 void MenuGtk::Popup(NativeWindow* native_window) {
@@ -41,22 +36,16 @@ void MenuGtk::Popup(NativeWindow* native_window) {
   menu_gtk_->PopupAsContext(point, triggering_event_time);
 }
 
-// static
-void Menu::AttachToWindow(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  Menu* self = ObjectWrap::Unwrap<Menu>(args.This());
-  if (self == NULL)
-    return node::ThrowError("Menu is already destroyed");
+void Menu::AttachToWindow(NativeWindow* window) {
+  if (window == NULL)
+    return node::ThrowTypeError("Window is dead");
 
-  NativeWindow* native_window;
-  if (!FromV8Arguments(args, &native_window))
-    return node::ThrowTypeError("Bad argument");
-
-  static_cast<NativeWindowGtk*>(native_window)->SetMenu(self->model_.get());
+  static_cast<NativeWindowGtk*>(native_window)->SetMenu(model_.get());
 }
 
 // static
-Menu* Menu::Create(v8::Handle<v8::Object> wrapper) {
-  return new MenuGtk(wrapper);
+mate::Wrappable* Menu::Create() {
+  return new MenuGtk();
 }
 
 }  // namespace api

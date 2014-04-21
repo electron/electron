@@ -6,7 +6,6 @@
 
 #include "atom/browser/native_window_win.h"
 #include "atom/browser/ui/win/menu_2.h"
-#include "atom/common/v8/native_type_conversions.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/screen.h"
 
@@ -16,11 +15,7 @@ namespace atom {
 
 namespace api {
 
-MenuWin::MenuWin(v8::Handle<v8::Object> wrapper)
-    : Menu(wrapper) {
-}
-
-MenuWin::~MenuWin() {
+MenuWin::MenuWin() {
 }
 
 void MenuWin::Popup(NativeWindow* native_window) {
@@ -29,22 +24,16 @@ void MenuWin::Popup(NativeWindow* native_window) {
   menu_->RunContextMenuAt(cursor);
 }
 
-// static
-void Menu::AttachToWindow(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  Menu* self = ObjectWrap::Unwrap<Menu>(args.This());
-  if (self == NULL)
-    return node::ThrowError("Menu is already destroyed");
+void Menu::AttachToWindow(NativeWindow* window) {
+  if (window == NULL)
+    return node::ThrowTypeError("Window is dead");
 
-  NativeWindow* native_window;
-  if (!FromV8Arguments(args, &native_window))
-    return node::ThrowTypeError("Bad argument");
-
-  static_cast<NativeWindowWin*>(native_window)->SetMenu(self->model_.get());
+  static_cast<NativeWindowWin*>(native_window)->SetMenu(model_.get());
 }
 
 // static
-Menu* Menu::Create(v8::Handle<v8::Object> wrapper) {
-  return new MenuWin(wrapper);
+mate::Wrappable* Menu::Create() {
+  return new MenuWin();
 }
 
 }  // namespace api

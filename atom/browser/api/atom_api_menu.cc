@@ -4,16 +4,38 @@
 
 #include "atom/browser/api/atom_api_menu.h"
 
-#include <string>
-
+#include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/ui/accelerator_util.h"
-#include "atom/common/node_includes.h"
-#include "atom/common/v8/native_type_conversions.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
+#include "native_mate/constructor.h"
+#include "native_mate/dictionary.h"
+#include "native_mate/object_template_builder.h"
 
-#define UNWRAP_MEMNU_AND_CHECK \
-  Menu* self = ObjectWrap::Unwrap<Menu>(args.This()); \
-  if (self == NULL) \
-    return node::ThrowError("Menu is already destroyed")
+#include "atom/common/node_includes.h"
+
+namespace mate {
+
+template<>
+struct Converter<atom::NativeWindow*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
+                     atom::NativeWindow** out) {
+    using atom::api::Window;
+    if (val->IsNull()) {
+      *out = NULL;
+      return true;  // NULL is a valid value for NativeWindow*.
+    } else if (val->IsObject()) {
+      Window* window = Window::Unwrap<Window>(val->ToObject());
+      *out = window->window();
+      return true;
+    } else {
+      return false;
+    }
+  }
+};
+
+}  // namespace mate
+
 
 namespace atom {
 
@@ -46,9 +68,7 @@ v8::Handle<v8::Value> CallDelegate(v8::Handle<v8::Value> default_value,
 
 }  // namespace
 
-Menu::Menu(v8::Handle<v8::Object> wrapper)
-    : EventEmitter(wrapper),
-      model_(new ui::SimpleMenuModel(this)) {
+Menu::Menu() : model_(new ui::SimpleMenuModel(this)) {
 }
 
 Menu::~Menu() {
@@ -58,7 +78,7 @@ bool Menu::IsCommandIdChecked(int command_id) const {
   v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
   return CallDelegate(v8::False(),
-                      const_cast<Menu*>(this)->handle(),
+                      const_cast<Menu*>(this)->GetWrapper(node_isolate),
                       "isCommandIdChecked",
                       command_id)->BooleanValue();
 }
@@ -67,7 +87,7 @@ bool Menu::IsCommandIdEnabled(int command_id) const {
   v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
   return CallDelegate(v8::True(),
-                      const_cast<Menu*>(this)->handle(),
+                      const_cast<Menu*>(this)->GetWrapper(node_isolate),
                       "isCommandIdEnabled",
                       command_id)->BooleanValue();
 }
@@ -76,7 +96,7 @@ bool Menu::IsCommandIdVisible(int command_id) const {
   v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
   return CallDelegate(v8::True(),
-                      const_cast<Menu*>(this)->handle(),
+                      const_cast<Menu*>(this)->GetWrapper(node_isolate),
                       "isCommandIdVisible",
                       command_id)->BooleanValue();
 }
@@ -86,11 +106,11 @@ bool Menu::GetAcceleratorForCommandId(int command_id,
   v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
   v8::Handle<v8::Value> shortcut = CallDelegate(v8::Undefined(),
-                                                handle(),
+                                                GetWrapper(node_isolate),
                                                 "getAcceleratorForCommandId",
                                                 command_id);
   if (shortcut->IsString()) {
-    std::string shortcut_str = FromV8Value(shortcut);
+    std::string shortcut_str = mate::V8ToString(shortcut);
     return accelerator_util::StringToAccelerator(shortcut_str, accelerator);
   }
 
@@ -101,7 +121,7 @@ bool Menu::IsItemForCommandIdDynamic(int command_id) const {
   v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
   return CallDelegate(v8::False(),
-                      const_cast<Menu*>(this)->handle(),
+                      const_cast<Menu*>(this)->GetWrapper(node_isolate),
                       "isItemForCommandIdDynamic",
                       command_id)->BooleanValue();
 }
@@ -109,254 +129,150 @@ bool Menu::IsItemForCommandIdDynamic(int command_id) const {
 string16 Menu::GetLabelForCommandId(int command_id) const {
   v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
-  return FromV8Value(CallDelegate(v8::False(),
-                                  const_cast<Menu*>(this)->handle(),
-                                  "getLabelForCommandId",
-                                  command_id));
+  v8::Handle<v8::Value> result = CallDelegate(
+      v8::False(),
+      const_cast<Menu*>(this)->GetWrapper(node_isolate),
+      "getLabelForCommandId",
+      command_id);
+  string16 label;
+  mate::ConvertFromV8(node_isolate, result, &label);
+  return label;
 }
 
 string16 Menu::GetSublabelForCommandId(int command_id) const {
   v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
-  return FromV8Value(CallDelegate(v8::False(),
-                                  const_cast<Menu*>(this)->handle(),
-                                  "getSubLabelForCommandId",
-                                  command_id));
+  v8::Handle<v8::Value> result = CallDelegate(
+      v8::False(),
+      const_cast<Menu*>(this)->GetWrapper(node_isolate),
+      "getSubLabelForCommandId",
+      command_id);
+  string16 label;
+  mate::ConvertFromV8(node_isolate, result, &label);
+  return label;
 }
 
 void Menu::ExecuteCommand(int command_id, int event_flags) {
   v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
-  CallDelegate(v8::False(), handle(), "executeCommand", command_id);
+  CallDelegate(v8::False(), GetWrapper(node_isolate), "executeCommand",
+               command_id);
+}
+
+void Menu::InsertItemAt(
+    int index, int command_id, const base::string16& label) {
+  model_->InsertItemAt(index, command_id, label);
+}
+
+void Menu::InsertSeparatorAt(int index) {
+  model_->InsertSeparatorAt(index, ui::NORMAL_SEPARATOR);
+}
+
+void Menu::InsertCheckItemAt(int index,
+                             int command_id,
+                             const base::string16& label) {
+  model_->InsertCheckItemAt(index, command_id, label);
+}
+
+void Menu::InsertRadioItemAt(int index,
+                             int command_id,
+                             const base::string16& label,
+                             int group_id) {
+  model_->InsertRadioItemAt(index, command_id, label, group_id);
+}
+
+void Menu::InsertSubMenuAt(int index,
+                           int command_id,
+                           const base::string16& label,
+                           Menu* menu) {
+  model_->InsertSubMenuAt(index, command_id, label, menu->model_.get());
+}
+
+void Menu::SetSublabel(int index, const base::string16& sublabel) {
+  model_->SetSublabel(index, sublabel);
+}
+
+void Menu::Clear() {
+  model_->Clear();
+}
+
+int Menu::GetIndexOfCommandId(int command_id) {
+  return model_->GetIndexOfCommandId(command_id);
+}
+
+int Menu::GetItemCount() const {
+  return model_->GetItemCount();
+}
+
+int Menu::GetCommandIdAt(int index) const {
+  return model_->GetCommandIdAt(index);
+}
+
+base::string16 Menu::GetLabelAt(int index) const {
+  return model_->GetLabelAt(index);
+}
+
+base::string16 Menu::GetSublabelAt(int index) const {
+  return model_->GetSublabelAt(index);
+}
+
+bool Menu::IsItemCheckedAt(int index) const {
+  return model_->IsItemCheckedAt(index);
+}
+
+bool Menu::IsEnabledAt(int index) const {
+  return model_->IsEnabledAt(index);
+}
+
+bool Menu::IsVisibleAt(int index) const {
+  return model_->IsVisibleAt(index);
 }
 
 // static
-void Menu::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  if (!args.IsConstructCall())
-    return node::ThrowError("Require constructor call");
-
-  Menu::Create(args.This());
-}
-
-// static
-void Menu::InsertItem(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_MEMNU_AND_CHECK;
-
-  int index, command_id;
-  string16 label;
-  if (!FromV8Arguments(args, &index, &command_id, &label))
-    return node::ThrowTypeError("Bad argument");
-
-  if (index < 0)
-    self->model_->AddItem(command_id, label);
-  else
-    self->model_->InsertItemAt(index, command_id, label);
-}
-
-// static
-void Menu::InsertCheckItem(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_MEMNU_AND_CHECK;
-
-  int index, command_id;
-  string16 label;
-  if (!FromV8Arguments(args, &index, &command_id, &label))
-    return node::ThrowTypeError("Bad argument");
-
-  if (index < 0)
-    self->model_->AddCheckItem(command_id, label);
-  else
-    self->model_->InsertCheckItemAt(index, command_id, label);
-}
-
-// static
-void Menu::InsertRadioItem(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_MEMNU_AND_CHECK;
-
-  int index, command_id, group_id;
-  string16 label;
-  if (!FromV8Arguments(args, &index, &command_id, &label, &group_id))
-    return node::ThrowTypeError("Bad argument");
-
-  if (index < 0)
-    self->model_->AddRadioItem(command_id, label, group_id);
-  else
-    self->model_->InsertRadioItemAt(index, command_id, label, group_id);
-}
-
-// static
-void Menu::InsertSeparator(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_MEMNU_AND_CHECK;
-
-  int index;
-  if (!FromV8Arguments(args, &index))
-    return node::ThrowTypeError("Bad argument");
-
-  if (index < 0)
-    self->model_->AddSeparator(ui::NORMAL_SEPARATOR);
-  else
-    self->model_->InsertSeparatorAt(index, ui::NORMAL_SEPARATOR);
-}
-
-// static
-void Menu::InsertSubMenu(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_MEMNU_AND_CHECK;
-
-  int index, command_id;
-  string16 label;
-  if (!FromV8Arguments(args, &index, &command_id, &label))
-    return node::ThrowTypeError("Bad argument");
-
-  Menu* submenu = ObjectWrap::Unwrap<Menu>(args[3]->ToObject());
-  if (!submenu)
-    return node::ThrowTypeError("The submenu is already destroyed");
-
-  if (index < 0)
-    self->model_->AddSubMenu(command_id, label, submenu->model_.get());
-  else
-    self->model_->InsertSubMenuAt(
-        index, command_id, label, submenu->model_.get());
-}
-
-// static
-void Menu::SetIcon(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_MEMNU_AND_CHECK;
-
-  int index;
-  base::FilePath path;
-  if (!FromV8Arguments(args, &index, &path))
-    return node::ThrowTypeError("Bad argument");
-
-  // FIXME use webkit_glue's image decoder here.
-}
-
-// static
-void Menu::SetSublabel(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_MEMNU_AND_CHECK;
-
-  int index;
-  string16 label;
-  if (!FromV8Arguments(args, &index, &label))
-    return node::ThrowTypeError("Bad argument");
-
-  self->model_->SetSublabel(index, label);
-}
-
-// static
-void Menu::Clear(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_MEMNU_AND_CHECK;
-  self->model_->Clear();
-}
-
-// static
-void Menu::GetIndexOfCommandId(
-    const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_MEMNU_AND_CHECK;
-  int index = FromV8Value(args[0]);
-  args.GetReturnValue().Set(self->model_->GetIndexOfCommandId(index));
-}
-
-// static
-void Menu::GetItemCount(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_MEMNU_AND_CHECK;
-  args.GetReturnValue().Set(self->model_->GetItemCount());
-}
-
-// static
-void Menu::GetCommandIdAt(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_MEMNU_AND_CHECK;
-  int index = FromV8Value(args[0]);
-  args.GetReturnValue().Set(self->model_->GetCommandIdAt(index));
-}
-
-// static
-void Menu::GetLabelAt(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_MEMNU_AND_CHECK;
-  int index = FromV8Value(args[0]);
-  args.GetReturnValue().Set(ToV8Value(self->model_->GetLabelAt(index)));
-}
-
-// static
-void Menu::GetSublabelAt(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_MEMNU_AND_CHECK;
-  int index = FromV8Value(args[0]);
-  args.GetReturnValue().Set(ToV8Value(self->model_->GetSublabelAt(index)));
-}
-
-// static
-void Menu::IsItemCheckedAt(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_MEMNU_AND_CHECK;
-  int index = FromV8Value(args[0]);
-  args.GetReturnValue().Set(self->model_->IsItemCheckedAt(index));
-}
-
-// static
-void Menu::IsEnabledAt(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_MEMNU_AND_CHECK;
-  int index = FromV8Value(args[0]);
-  args.GetReturnValue().Set(self->model_->IsEnabledAt(index));
-}
-
-// static
-void Menu::IsVisibleAt(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_MEMNU_AND_CHECK;
-  int index = FromV8Value(args[0]);
-  args.GetReturnValue().Set(self->model_->IsVisibleAt(index));
-}
-
-// static
-void Menu::Popup(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_MEMNU_AND_CHECK;
-
-  atom::NativeWindow* window;
-  if (!FromV8Arguments(args, &window))
-    return node::ThrowTypeError("Bad argument");
-
-  self->Popup(window);
-}
-
-// static
-void Menu::Initialize(v8::Handle<v8::Object> target) {
-  v8::Local<v8::FunctionTemplate> t(v8::FunctionTemplate::New(Menu::New));
-  t->InstanceTemplate()->SetInternalFieldCount(1);
-  t->SetClassName(v8::String::NewSymbol("Menu"));
-
-  NODE_SET_PROTOTYPE_METHOD(t, "insertItem", InsertItem);
-  NODE_SET_PROTOTYPE_METHOD(t, "insertCheckItem", InsertCheckItem);
-  NODE_SET_PROTOTYPE_METHOD(t, "insertRadioItem", InsertRadioItem);
-  NODE_SET_PROTOTYPE_METHOD(t, "insertSeparator", InsertSeparator);
-  NODE_SET_PROTOTYPE_METHOD(t, "insertSubMenu", InsertSubMenu);
-
-  NODE_SET_PROTOTYPE_METHOD(t, "setIcon", SetIcon);
-  NODE_SET_PROTOTYPE_METHOD(t, "setSublabel", SetSublabel);
-
-  NODE_SET_PROTOTYPE_METHOD(t, "clear", Clear);
-
-  NODE_SET_PROTOTYPE_METHOD(t, "getIndexOfCommandId", GetIndexOfCommandId);
-  NODE_SET_PROTOTYPE_METHOD(t, "getItemCount", GetItemCount);
-  NODE_SET_PROTOTYPE_METHOD(t, "getCommandIdAt", GetCommandIdAt);
-  NODE_SET_PROTOTYPE_METHOD(t, "getLabelAt", GetLabelAt);
-  NODE_SET_PROTOTYPE_METHOD(t, "getSublabelAt", GetSublabelAt);
-  NODE_SET_PROTOTYPE_METHOD(t, "isItemCheckedAt", IsItemCheckedAt);
-  NODE_SET_PROTOTYPE_METHOD(t, "isEnabledAt", IsEnabledAt);
-  NODE_SET_PROTOTYPE_METHOD(t, "isVisibleAt", IsVisibleAt);
-
-  NODE_SET_PROTOTYPE_METHOD(t, "popup", Popup);
-
+void Menu::BuildPrototype(v8::Isolate* isolate,
+                          v8::Handle<v8::ObjectTemplate> prototype) {
+  mate::ObjectTemplateBuilder(isolate, prototype)
+      .SetMethod("insertItem", &Menu::InsertItemAt)
+      .SetMethod("insertCheckItem", &Menu::InsertCheckItemAt)
+      .SetMethod("insertRadioItem", &Menu::InsertRadioItemAt)
+      .SetMethod("insertSeparator", &Menu::InsertSeparatorAt)
+      .SetMethod("insertSubMenu", &Menu::InsertSubMenuAt)
+      .SetMethod("setSublabel", &Menu::SetSublabel)
+      .SetMethod("clear", &Menu::Clear)
+      .SetMethod("getIndexOfCommandId", &Menu::GetIndexOfCommandId)
+      .SetMethod("getItemCount", &Menu::GetItemCount)
+      .SetMethod("getCommandIdAt", &Menu::GetCommandIdAt)
+      .SetMethod("getLabelAt", &Menu::GetLabelAt)
+      .SetMethod("getSublabelAt", &Menu::GetSublabelAt)
+      .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
+      .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
+      .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
 #if defined(OS_WIN) || defined(TOOLKIT_GTK)
-  NODE_SET_PROTOTYPE_METHOD(t, "attachToWindow", AttachToWindow);
+      .SetMethod("attachToWindow", &Menu::AttachToWindow)
 #endif
-
-  target->Set(v8::String::NewSymbol("Menu"), t->GetFunction());
-
-#if defined(OS_MACOSX)
-  NODE_SET_METHOD(target, "setApplicationMenu", SetApplicationMenu);
-  NODE_SET_METHOD(
-      target, "sendActionToFirstResponder", SendActionToFirstResponder);
-#endif
+      .SetMethod("popup", &Menu::Popup);
 }
 
 }  // namespace api
 
 }  // namespace atom
 
-NODE_MODULE(atom_browser_menu, atom::api::Menu::Initialize)
+
+namespace {
+
+void Initialize(v8::Handle<v8::Object> exports) {
+  using atom::api::Menu;
+  v8::Local<v8::Function> constructor = mate::CreateConstructor<Menu>(
+      node_isolate, "Menu", base::Bind(&Menu::Create));
+  mate::Dictionary dict(v8::Isolate::GetCurrent(), exports);
+  dict.Set("Menu", static_cast<v8::Handle<v8::Value>>(constructor));
+#if defined(OS_MACOSX)
+  dict.SetMethod("setApplicationMenu", &Menu::SetApplicationMenu);
+  dict.SetMethod("sendActionToFirstResponder",
+                 &Menu::SendActionToFirstResponder);
+#endif
+}
+
+}  // namespace
+
+NODE_MODULE(atom_browser_menu, Initialize)

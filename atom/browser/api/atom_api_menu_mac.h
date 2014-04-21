@@ -16,11 +16,9 @@ namespace atom {
 namespace api {
 
 class MenuMac : public Menu {
- public:
-  explicit MenuMac(v8::Handle<v8::Object> wrapper);
-  virtual ~MenuMac();
-
  protected:
+  MenuMac();
+
   virtual void Popup(NativeWindow* window) OVERRIDE;
 
   base::scoped_nsobject<AtomMenuController> menu_controller_;
@@ -28,7 +26,6 @@ class MenuMac : public Menu {
  private:
   friend class Menu;
 
-  // Fake sending an action from the application menu.
   static void SendActionToFirstResponder(const std::string& action);
 
   DISALLOW_COPY_AND_ASSIGN(MenuMac);
