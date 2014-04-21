@@ -8,36 +8,68 @@
 #include <string>
 #include <map>
 
-#include "base/basictypes.h"
-#include "v8/include/v8.h"
+#include "atom/browser/api/event_emitter.h"
+#include "base/callback.h"
+#include "native_mate/handle.h"
+
+namespace net {
+class URLRequest;
+}
 
 namespace atom {
 
+class AtomURLRequestJobFactory;
+
 namespace api {
 
-class Protocol {
+class Protocol : public mate::EventEmitter {
  public:
-  static void Initialize(v8::Handle<v8::Object> target);
+  typedef base::Callback<v8::Handle<v8::Value>(const net::URLRequest*)>
+          JsProtocolHandler;
+
+  static mate::Handle<Protocol> Create(v8::Isolate* isolate);
+
+  JsProtocolHandler GetProtocolHandler(const std::string& scheme);
+
+ protected:
+  Protocol();
+
+  // mate::Wrappable implementations:
+  virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate);
 
  private:
-  static void RegisterProtocol(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void UnregisterProtocol(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void IsHandledProtocol(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
+  typedef std::map<std::string, JsProtocolHandler> ProtocolHandlersMap;
 
-  static void InterceptProtocol(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void UninterceptProtocol(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
+  // Register/unregister an networking |scheme| which would be handled by
+  // |callback|.
+  void RegisterProtocol(const std::string& scheme,
+                        const JsProtocolHandler& callback);
+  void UnregisterProtocol(const std::string& scheme);
 
-  static void RegisterProtocolInIO(const std::string& scheme);
-  static void UnregisterProtocolInIO(const std::string& scheme);
+  // Returns whether a scheme has been registered.
+  // FIXME Should accept a callback and be asynchronous so we do not have to use
+  // locks.
+  bool IsHandledProtocol(const std::string& scheme);
 
-  static void InterceptProtocolInIO(const std::string& scheme);
-  static void UninterceptProtocolInIO(const std::string& scheme);
+  // Intercept/unintercept an existing protocol handler.
+  void InterceptProtocol(const std::string& scheme,
+                         const JsProtocolHandler& callback);
+  void UninterceptProtocol(const std::string& scheme);
 
-  DISALLOW_IMPLICIT_CONSTRUCTORS(Protocol);
+  // The networking related operations have to be done in IO thread.
+  void RegisterProtocolInIO(const std::string& scheme);
+  void UnregisterProtocolInIO(const std::string& scheme);
+  void InterceptProtocolInIO(const std::string& scheme);
+  void UninterceptProtocolInIO(const std::string& scheme);
+
+  // Do protocol.emit(event, parameter) under UI thread.
+  void EmitEventInUI(const std::string& event, const std::string& parameter);
+
+  AtomURLRequestJobFactory* job_factory_;
+  ProtocolHandlersMap protocol_handlers_;
+
+  DISALLOW_COPY_AND_ASSIGN(Protocol);
 };
 
 }  // namespace api
