@@ -18,10 +18,11 @@ namespace api {
 MenuGtk::MenuGtk() {
 }
 
-void MenuGtk::Popup(NativeWindow* native_window) {
+void MenuGtk::Popup(Window* window) {
   uint32_t triggering_event_time;
   gfx::Point point;
 
+  BrowserWindow* native_window = window->window();
   GdkEventButton* event = native_window->GetWebContents()->
       GetRenderWidgetHostView()->GetLastMouseDown();
   if (event) {
@@ -36,11 +37,8 @@ void MenuGtk::Popup(NativeWindow* native_window) {
   menu_gtk_->PopupAsContext(point, triggering_event_time);
 }
 
-void Menu::AttachToWindow(NativeWindow* window) {
-  if (window == NULL)
-    return node::ThrowTypeError("Window is dead");
-
-  static_cast<NativeWindowGtk*>(native_window)->SetMenu(model_.get());
+void Menu::AttachToWindow(Window* window) {
+  static_cast<NativeWindowGtk*>(window->window())->SetMenu(model_.get());
 }
 
 // static

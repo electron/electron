@@ -297,6 +297,10 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
                  callback));
 }
 
+void NativeWindow::DestroyWebContents() {
+  inspectable_web_contents_.reset();
+}
+
 void NativeWindow::CloseWebContents() {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(NativeWindowObserver,
@@ -363,10 +367,6 @@ void NativeWindow::NotifyWindowClosed() {
 
 void NativeWindow::NotifyWindowBlur() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowBlur());
-}
-
-void NativeWindow::DestroyWebContents() {
-  inspectable_web_contents_.reset();
 }
 
 // In atom-shell all reloads and navigations started by renderer process would

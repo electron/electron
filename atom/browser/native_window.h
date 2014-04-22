@@ -158,6 +158,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Should be called by platform code when user want to close the window.
   virtual void CloseWebContents();
 
+  // Destroy the WebContents immediately.
+  virtual void DestroyWebContents();
+
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
@@ -195,9 +198,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   void NotifyWindowClosed();
   void NotifyWindowBlur();
-
-  // Destroy the inspectable_web_contents.
-  void DestroyWebContents();
 
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(

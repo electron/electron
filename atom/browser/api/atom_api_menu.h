@@ -7,13 +7,12 @@
 
 #include <string>
 
+#include "atom/browser/api/atom_api_window.h"
 #include "base/memory/scoped_ptr.h"
 #include "ui/base/models/simple_menu_model.h"
 #include "native_mate/wrappable.h"
 
 namespace atom {
-
-class NativeWindow;
 
 namespace api {
 
@@ -51,7 +50,7 @@ class Menu : public mate::Wrappable,
   virtual string16 GetSublabelForCommandId(int command_id) const OVERRIDE;
   virtual void ExecuteCommand(int command_id, int event_flags) OVERRIDE;
 
-  virtual void Popup(NativeWindow* window) = 0;
+  virtual void Popup(Window* window) = 0;
 
   scoped_ptr<ui::SimpleMenuModel> model_;
 
@@ -81,7 +80,7 @@ class Menu : public mate::Wrappable,
   bool IsVisibleAt(int index) const;
 
 #if defined(OS_WIN) || defined(TOOLKIT_GTK)
-  void AttachToWindow(NativeWindow* window);
+  void AttachToWindow(Window* window);
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(Menu);

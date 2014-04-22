@@ -6,29 +6,10 @@
 
 #include "atom/common/platform_util.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/native_mate_converters/gurl_converter.h"
 #include "native_mate/dictionary.h"
-#include "url/gurl.h"
 
 #include "atom/common/node_includes.h"
-
-namespace mate {
-
-template<>
-struct Converter<GURL> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
-                     GURL* out) {
-    std::string url;
-    if (Converter<std::string>::FromV8(isolate, val, &url)) {
-      *out = GURL(url);
-      return true;
-    } else {
-      return false;
-    }
-  }
-};
-
-}  // namespace mate
 
 namespace {
 

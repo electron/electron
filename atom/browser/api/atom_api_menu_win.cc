@@ -18,17 +18,14 @@ namespace api {
 MenuWin::MenuWin() {
 }
 
-void MenuWin::Popup(NativeWindow* native_window) {
+void MenuWin::Popup(Window* window) {
   gfx::Point cursor = gfx::Screen::GetNativeScreen()->GetCursorScreenPoint();
   menu_.reset(new atom::Menu2(model_.get()));
   menu_->RunContextMenuAt(cursor);
 }
 
-void Menu::AttachToWindow(NativeWindow* window) {
-  if (window == NULL)
-    return node::ThrowTypeError("Window is dead");
-
-  static_cast<NativeWindowWin*>(native_window)->SetMenu(model_.get());
+void Menu::AttachToWindow(Window* window) {
+  static_cast<NativeWindowWin*>(window->window())->SetMenu(model_.get());
 }
 
 // static

@@ -15,7 +15,7 @@ namespace api {
 
 class MenuWin : public Menu {
  protected:
-  virtual void Popup(NativeWindow* window) OVERRIDE;
+  virtual void Popup(Window* window) OVERRIDE;
 
  private:
   MenuWin();

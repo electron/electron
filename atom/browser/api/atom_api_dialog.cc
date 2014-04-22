@@ -16,30 +16,6 @@
 
 #include "atom/common/node_includes.h"
 
-namespace mate {
-
-template<>
-struct Converter<atom::NativeWindow*> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
-                     atom::NativeWindow** out) {
-    using atom::api::Window;
-    if (val->IsNull()) {
-      *out = NULL;
-      return true;  // NULL is a valid value for NativeWindow*.
-    } else if (val->IsObject()) {
-      Window* window = Window::Unwrap<Window>(val->ToObject());
-      *out = window->window();
-      return true;
-    } else {
-      return false;
-    }
-  }
-};
-
-}  // namespace mate
-
-
 namespace {
 
 void ShowMessageBox(int type,
@@ -47,18 +23,18 @@ void ShowMessageBox(int type,
                     const std::string& title,
                     const std::string& message,
                     const std::string& detail,
-                    atom::NativeWindow* window,
+                    atom::api::Window* window,
                     mate::Arguments* args) {
   v8::Handle<v8::Value> peek = args->PeekNext();
   atom::MessageBoxCallback callback;
   if (mate::Converter<atom::MessageBoxCallback>::FromV8(node_isolate,
                                                         peek,
                                                         &callback)) {
-    atom::ShowMessageBox(window, (atom::MessageBoxType)type, buttons, title,
-                         message, detail, callback);
+    atom::ShowMessageBox(window->window(), (atom::MessageBoxType)type, buttons,
+                         title, message, detail, callback);
   } else {
     int chosen = atom::ShowMessageBox(
-        window,
+        window->window(),
         (atom::MessageBoxType)type,
         buttons,
         title,
@@ -71,18 +47,18 @@ void ShowMessageBox(int type,
 void ShowOpenDialog(const std::string& title,
                     const base::FilePath& default_path,
                     int properties,
-                    atom::NativeWindow* window,
+                    atom::api::Window* window,
                     mate::Arguments* args) {
   v8::Handle<v8::Value> peek = args->PeekNext();
   file_dialog::OpenDialogCallback callback;
   if (mate::Converter<file_dialog::OpenDialogCallback>::FromV8(node_isolate,
                                                                peek,
                                                                &callback)) {
-    file_dialog::ShowOpenDialog(window, title, default_path, properties,
-                                callback);
+    file_dialog::ShowOpenDialog(window->window(), title, default_path,
+                                properties, callback);
   } else {
     std::vector<base::FilePath> paths;
-    if (file_dialog::ShowOpenDialog(window,
+    if (file_dialog::ShowOpenDialog(window->window(),
                                     title,
                                     default_path,
                                     properties,
@@ -93,19 +69,18 @@ void ShowOpenDialog(const std::string& title,
 
 void ShowSaveDialog(const std::string& title,
                     const base::FilePath& default_path,
-                    atom::NativeWindow* window,
+                    atom::api::Window* window,
                     mate::Arguments* args) {
   v8::Handle<v8::Value> peek = args->PeekNext();
   file_dialog::SaveDialogCallback callback;
   if (mate::Converter<file_dialog::SaveDialogCallback>::FromV8(node_isolate,
                                                                peek,
                                                                &callback)) {
-    file_dialog::ShowSaveDialog(window, title, default_path, callback);
+    file_dialog::ShowSaveDialog(window->window(), title, default_path,
+                                callback);
   } else {
     base::FilePath path;
-    if (file_dialog::ShowSaveDialog(window,
-                                    title,
-                                    default_path,
+    if (file_dialog::ShowSaveDialog(window->window(), title, default_path,
                                     &path))
       args->Return(path);
   }

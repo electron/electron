@@ -13,30 +13,6 @@
 
 #include "atom/common/node_includes.h"
 
-namespace mate {
-
-template<>
-struct Converter<atom::NativeWindow*> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
-                     atom::NativeWindow** out) {
-    using atom::api::Window;
-    if (val->IsNull()) {
-      *out = NULL;
-      return true;  // NULL is a valid value for NativeWindow*.
-    } else if (val->IsObject()) {
-      Window* window = Window::Unwrap<Window>(val->ToObject());
-      *out = window->window();
-      return true;
-    } else {
-      return false;
-    }
-  }
-};
-
-}  // namespace mate
-
-
 namespace atom {
 
 namespace api {

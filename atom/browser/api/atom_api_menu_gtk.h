@@ -15,7 +15,7 @@ namespace api {
 class MenuGtk : public Menu,
                 public ::MenuGtk::Delegate {
  protected:
-  virtual void Popup(NativeWindow* window) OVERRIDE;
+  virtual void Popup(Window* window) OVERRIDE;
 
  private:
   MenuGtk();

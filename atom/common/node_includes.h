@@ -14,6 +14,7 @@
 #include "vendor/node/src/env.h"
 #include "vendor/node/src/env-inl.h"
 #include "vendor/node/src/node.h"
+#include "vendor/node/src/node_buffer.h"
 #include "vendor/node/src/node_internals.h"
 using node::node_isolate;
 

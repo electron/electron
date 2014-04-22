@@ -19,22 +19,23 @@ namespace api {
 MenuMac::MenuMac() {
 }
 
-void MenuMac::Popup(NativeWindow* native_window) {
+void MenuMac::Popup(Window* window) {
   base::scoped_nsobject<AtomMenuController> menu_controller(
       [[AtomMenuController alloc] initWithModel:model_.get()]);
 
-  NSWindow* window = native_window->GetNativeWindow();
+  NativeWindow* native_window = window->window();
+  NSWindow* nswindow = native_window->GetNativeWindow();
   content::WebContents* web_contents = native_window->GetWebContents();
 
   // Fake out a context menu event.
   NSEvent* currentEvent = [NSApp currentEvent];
-  NSPoint position = [window mouseLocationOutsideOfEventStream];
+  NSPoint position = [nswindow mouseLocationOutsideOfEventStream];
   NSTimeInterval eventTime = [currentEvent timestamp];
   NSEvent* clickEvent = [NSEvent mouseEventWithType:NSRightMouseDown
                                            location:position
                                       modifierFlags:NSRightMouseDownMask
                                           timestamp:eventTime
-                                       windowNumber:[window windowNumber]
+                                       windowNumber:[nswindow windowNumber]
                                             context:nil
                                         eventNumber:0
                                          clickCount:1

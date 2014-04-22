@@ -8,10 +8,18 @@
 #include "native_mate/converter.h"
 
 namespace base {
+class DictionaryValue;
 class ListValue;
 }
 
 namespace mate {
+
+template<>
+struct Converter<base::DictionaryValue> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
+                     base::DictionaryValue* out);
+};
 
 template<>
 struct Converter<base::ListValue> {
