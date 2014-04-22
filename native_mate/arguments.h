@@ -60,6 +60,10 @@ class Arguments {
     return info_->This();
   }
 
+  int Length() const {
+    return info_->Length();
+  }
+
 #if NODE_VERSION_AT_LEAST(0, 11, 0)
   template<typename T>
   void Return(T val) {
