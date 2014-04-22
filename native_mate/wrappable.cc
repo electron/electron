@@ -17,6 +17,9 @@ Wrappable::~Wrappable() {
 }
 
 void Wrappable::Wrap(v8::Isolate* isolate, v8::Handle<v8::Object> wrapper) {
+  if (!wrapper_.IsEmpty())
+    return;
+
   MATE_SET_INTERNAL_FIELD_POINTER(wrapper, 0, this);
   MATE_PERSISTENT_ASSIGN(v8::Object, isolate, wrapper_, wrapper);
   MATE_PERSISTENT_SET_WEAK(wrapper_, this, WeakCallback);
@@ -40,9 +43,8 @@ MATE_WEAK_CALLBACK(Wrappable::WeakCallback, v8::Object, Wrappable) {
 }
 
 v8::Handle<v8::Object> Wrappable::GetWrapper(v8::Isolate* isolate) {
-  if (!wrapper_.IsEmpty()) {
+  if (!wrapper_.IsEmpty())
     return MATE_PERSISTENT_TO_LOCAL(v8::Object, isolate, wrapper_);
-  }
 
   v8::Local<v8::ObjectTemplate> templ =
       GetObjectTemplateBuilder(isolate).Build();
