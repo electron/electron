@@ -14,12 +14,13 @@ class Menu2;
 namespace api {
 
 class MenuWin : public Menu {
+ public:
+  MenuWin();
+
  protected:
   virtual void Popup(Window* window) OVERRIDE;
 
  private:
-  MenuWin();
-
   scoped_ptr<atom::Menu2> menu_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuWin);

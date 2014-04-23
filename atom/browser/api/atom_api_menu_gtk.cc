@@ -22,7 +22,7 @@ void MenuGtk::Popup(Window* window) {
   uint32_t triggering_event_time;
   gfx::Point point;
 
-  BrowserWindow* native_window = window->window();
+  NativeWindow* native_window = window->window();
   GdkEventButton* event = native_window->GetWebContents()->
       GetRenderWidgetHostView()->GetLastMouseDown();
   if (event) {

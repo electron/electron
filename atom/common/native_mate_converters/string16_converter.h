@@ -21,7 +21,7 @@ struct Converter<string16> {
                      v8::Handle<v8::Value> val,
                      string16* out) {
     v8::String::Value s(val);
-    *out = string16(reinterpret_cast<const char16*>(*s), s.length());
+    out->assign(reinterpret_cast<const char16*>(*s), s.length());
     return true;
   }
 };

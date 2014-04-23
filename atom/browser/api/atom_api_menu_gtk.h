@@ -14,12 +14,13 @@ namespace api {
 
 class MenuGtk : public Menu,
                 public ::MenuGtk::Delegate {
+ public:
+  MenuGtk();
+
  protected:
   virtual void Popup(Window* window) OVERRIDE;
 
  private:
-  MenuGtk();
-
   scoped_ptr<::MenuGtk> menu_gtk_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuGtk);
