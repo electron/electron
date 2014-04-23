@@ -98,6 +98,10 @@ void Window::WillCloseWindow(bool* prevent_default) {
 
 void Window::OnWindowClosed() {
   Emit("closed");
+
+  // Free memory when native window is closed, the delete is delayed so other
+  // observers would not get a invalid pointer of NativeWindow.
+  base::MessageLoop::current()->DeleteSoon(FROM_HERE, window_.release());
 }
 
 void Window::OnWindowBlur() {
