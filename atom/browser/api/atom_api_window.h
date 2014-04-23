@@ -10,11 +10,17 @@
 
 #include "base/memory/scoped_ptr.h"
 #include "atom/browser/native_window_observer.h"
-#include "atom/common/api/atom_api_event_emitter.h"
-#include "atom/common/v8/scoped_persistent.h"
+#include "atom/browser/api/event_emitter.h"
+
+class GURL;
 
 namespace base {
 class DictionaryValue;
+}
+
+namespace mate {
+class Arguments;
+class Dictionary;
 }
 
 namespace atom {
@@ -23,20 +29,22 @@ class NativeWindow;
 
 namespace api {
 
-class Window : public EventEmitter,
+class Window : public mate::EventEmitter,
                public NativeWindowObserver {
  public:
-  virtual ~Window();
+  static mate::Wrappable* New(mate::Arguments* args,
+                              const base::DictionaryValue& options);
 
-  static void Initialize(v8::Handle<v8::Object> target);
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Handle<v8::ObjectTemplate> prototype);
 
-  NativeWindow* window() { return window_.get(); }
+  NativeWindow* window() const { return window_.get(); }
 
  protected:
-  explicit Window(v8::Handle<v8::Object> wrapper,
-                  base::DictionaryValue* options);
+  explicit Window(base::DictionaryValue* options);
+  virtual ~Window();
 
-  // Implementations of NativeWindowObserver.
+  // Implementations of NativeWindowObserver:
   virtual void OnPageTitleUpdated(bool* prevent_default,
                                   const std::string& title) OVERRIDE;
   virtual void OnLoadingStateChanged(bool is_loading) OVERRIDE;
@@ -49,82 +57,73 @@ class Window : public EventEmitter,
   virtual void OnRendererCrashed() OVERRIDE;
 
  private:
-  static void New(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void Destroy(const v8::FunctionCallbackInfo<v8::Value>& args);
-
   // APIs for NativeWindow.
-  static void Close(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void Focus(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void IsFocused(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void Show(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void Hide(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void IsVisible(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void Maximize(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void Unmaximize(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void Minimize(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void Restore(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void SetFullscreen(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void IsFullscreen(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void SetSize(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GetSize(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void SetMinimumSize(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GetMinimumSize(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void SetMaximumSize(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GetMaximumSize(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void SetResizable(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void IsResizable(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void SetAlwaysOnTop(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void IsAlwaysOnTop(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void Center(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void SetPosition(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GetPosition(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void SetTitle(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GetTitle(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void FlashFrame(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void SetKiosk(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void IsKiosk(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void OpenDevTools(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void CloseDevTools(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void IsDevToolsOpened(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void InspectElement(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void DebugDevTools(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void FocusOnWebView(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void BlurWebView(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void IsWebViewFocused(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void CapturePage(const v8::FunctionCallbackInfo<v8::Value>& args);
+  void Destroy();
+  void Close();
+  void Focus();
+  bool IsFocused();
+  void Show();
+  void Hide();
+  bool IsVisible();
+  void Maximize();
+  void Unmaximize();
+  void Minimize();
+  void Restore();
+  void SetFullscreen(bool fullscreen);
+  bool IsFullscreen();
+  void SetSize(int width, int height);
+  std::vector<int> GetSize();
+  void SetMinimumSize(int width, int height);
+  std::vector<int> GetMinimumSize();
+  void SetMaximumSize(int width, int height);
+  std::vector<int> GetMaximumSize();
+  void SetResizable(bool resizable);
+  bool IsResizable();
+  void SetAlwaysOnTop(bool top);
+  bool IsAlwaysOnTop();
+  void Center();
+  void SetPosition(int x, int y);
+  std::vector<int> GetPosition();
+  void SetTitle(const std::string& title);
+  std::string GetTitle();
+  void FlashFrame(bool flash);
+  void SetKiosk(bool kiosk);
+  bool IsKiosk();
+  void OpenDevTools();
+  void CloseDevTools();
+  bool IsDevToolsOpened();
+  void InspectElement(int x, int y);
+  void DebugDevTools();
+  void FocusOnWebView();
+  void BlurWebView();
+  bool IsWebViewFocused();
+  void CapturePage(mate::Arguments* args);
 
   // APIs for WebContents.
-  static void GetPageTitle(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void IsLoading(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void IsWaitingForResponse(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void Stop(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GetRoutingID(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GetProcessID(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void IsCrashed(const v8::FunctionCallbackInfo<v8::Value>& args);
+  string16 GetPageTitle();
+  bool IsLoading();
+  bool IsWaitingForResponse();
+  void Stop();
+  int GetRoutingID();
+  int GetProcessID();
+  bool IsCrashed();
 
   // APIs for devtools.
-  static void GetDevTools(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void ExecuteJavaScriptInDevTools(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
+  mate::Dictionary GetDevTools(v8::Isolate* isolate);
+  void ExecuteJavaScriptInDevTools(const std::string& code);
 
   // APIs for NavigationController.
-  static void LoadURL(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GetURL(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void CanGoBack(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void CanGoForward(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void CanGoToOffset(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GoBack(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GoForward(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GoToIndex(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GoToOffset(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void Reload(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void ReloadIgnoringCache(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
-
-  // Called when capturePage is done.
-  void OnCapturePageDone(const RefCountedV8Function& callback,
-                         const std::vector<unsigned char>& data);
+  void LoadURL(const GURL& url);
+  GURL GetURL();
+  bool CanGoBack();
+  bool CanGoForward();
+  bool CanGoToOffset(int offset);
+  void GoBack();
+  void GoForward();
+  void GoToIndex(int index);
+  void GoToOffset(int offset);
+  void Reload();
+  void ReloadIgnoringCache();
 
   scoped_ptr<NativeWindow> window_;
 

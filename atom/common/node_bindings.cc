@@ -7,10 +7,11 @@
 #include <string>
 #include <vector>
 
-#include "atom/common/v8/native_type_conversions.h"
+#include "atom/common/browser_v8_locker.h"
 #include "base/command_line.h"
-#include "base/message_loop/message_loop.h"
 #include "base/base_paths.h"
+#include "base/files/file_path.h"
+#include "base/message_loop/message_loop.h"
 #include "base/path_service.h"
 #include "content/public/browser/browser_thread.h"
 
@@ -18,7 +19,7 @@
 #include "base/strings/utf_string_conversions.h"
 #endif
 
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 
 using content::BrowserThread;
 
@@ -199,9 +200,7 @@ void NodeBindings::UvRunOnce() {
   DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
 
   // Use Locker in browser process.
-  scoped_ptr<v8::Locker> locker;
-  if (is_browser_)
-    locker.reset(new v8::Locker(node_isolate));
+  BrowserV8Locker locker(node_isolate);
 
   v8::HandleScope handle_scope(node_isolate);
 

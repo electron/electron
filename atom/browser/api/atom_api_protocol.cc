@@ -9,142 +9,111 @@
 #include "atom/browser/net/adapter_request_job.h"
 #include "atom/browser/net/atom_url_request_context_getter.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
-#include "atom/common/v8/native_type_conversions.h"
+#include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/native_mate_converters/function_converter.h"
 #include "content/public/browser/browser_thread.h"
+#include "native_mate/dictionary.h"
 #include "net/url_request/url_request_context.h"
 
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
+
+using content::BrowserThread;
+
+namespace mate {
+
+template<>
+struct Converter<const net::URLRequest*> {
+  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+                                    const net::URLRequest* val) {
+    return mate::ObjectTemplateBuilder(isolate)
+        .SetValue("method", val->method())
+        .SetValue("url", val->url().spec())
+        .SetValue("referrer", val->referrer())
+        .Build()->NewInstance();
+  }
+};
+
+}  // namespace mate
+
 
 namespace atom {
 
 namespace api {
 
-typedef net::URLRequestJobFactory::ProtocolHandler ProtocolHandler;
-
 namespace {
 
-// The protocol module object.
-ScopedPersistent<v8::Object> g_protocol_object;
-
-// Registered protocol handlers.
-typedef std::map<std::string, RefCountedV8Function> HandlersMap;
-static HandlersMap g_handlers;
-
-static const char* kEarlyUseProtocolError = "This method can only be used"
-    "after the application has finished launching.";
-
-// Emit an event for the protocol module.
-void EmitEventInUI(const std::string& event, const std::string& parameter) {
-  v8::Locker locker(node_isolate);
-  v8::HandleScope handle_scope(node_isolate);
-
-  v8::Handle<v8::Value> argv[] = {
-      ToV8Value(event),
-      ToV8Value(parameter),
-  };
-  node::MakeCallback(g_protocol_object.NewHandle(node_isolate),
-                     "emit", 2, argv);
-}
-
-// Convert the URLRequest object to V8 object.
-v8::Handle<v8::Object> ConvertURLRequestToV8Object(
-    const net::URLRequest* request) {
-  v8::Local<v8::Object> obj = v8::Object::New();
-  obj->Set(ToV8Value("method"), ToV8Value(request->method()));
-  obj->Set(ToV8Value("url"), ToV8Value(request->url().spec()));
-  obj->Set(ToV8Value("referrer"), ToV8Value(request->referrer()));
-  return obj;
-}
-
-// Get the job factory.
-AtomURLRequestJobFactory* GetRequestJobFactory() {
-  return AtomBrowserContext::Get()->url_request_context_getter()->job_factory();
-}
+typedef net::URLRequestJobFactory::ProtocolHandler ProtocolHandler;
 
 class CustomProtocolRequestJob : public AdapterRequestJob {
  public:
-  CustomProtocolRequestJob(ProtocolHandler* protocol_handler,
+  CustomProtocolRequestJob(Protocol* registry,
+                           ProtocolHandler* protocol_handler,
                            net::URLRequest* request,
                            net::NetworkDelegate* network_delegate)
-      : AdapterRequestJob(protocol_handler, request, network_delegate) {
+      : AdapterRequestJob(protocol_handler, request, network_delegate),
+        registry_(registry) {
   }
 
   // AdapterRequestJob:
   virtual void GetJobTypeInUI() OVERRIDE {
-    DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
+    DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 
     v8::Locker locker(node_isolate);
     v8::HandleScope handle_scope(node_isolate);
 
     // Call the JS handler.
-    v8::Handle<v8::Value> argv[] = {
-      ConvertURLRequestToV8Object(request()),
-    };
-    RefCountedV8Function callback = g_handlers[request()->url().scheme()];
-    v8::Handle<v8::Value> result = callback->NewHandle(node_isolate)->Call(
-        v8::Context::GetCurrent()->Global(), 1, argv);
+    Protocol::JsProtocolHandler callback =
+        registry_->GetProtocolHandler(request()->url().scheme());
+    v8::Handle<v8::Value> result = callback.Run(request());
 
     // Determine the type of the job we are going to create.
     if (result->IsString()) {
-      std::string data = FromV8Value(result);
-      content::BrowserThread::PostTask(
-          content::BrowserThread::IO,
-          FROM_HERE,
+      std::string data = mate::V8ToString(result);
+      BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
           base::Bind(&AdapterRequestJob::CreateStringJobAndStart,
-                     GetWeakPtr(),
-                     "text/plain",
-                     "UTF-8",
-                     data));
+                     GetWeakPtr(), "text/plain", "UTF-8", data));
       return;
     } else if (result->IsObject()) {
       v8::Handle<v8::Object> obj = result->ToObject();
-      std::string name = FromV8Value(obj->GetConstructorName());
+      mate::Dictionary dict(node_isolate, obj);
+      std::string name = mate::V8ToString(obj->GetConstructorName());
       if (name == "RequestStringJob") {
-        std::string mime_type = FromV8Value(obj->Get(
-            v8::String::New("mimeType")));
-        std::string charset = FromV8Value(obj->Get(v8::String::New("charset")));
-        std::string data = FromV8Value(obj->Get(v8::String::New("data")));
+        std::string mime_type, charset, data;
+        dict.Get("mimeType", &mime_type);
+        dict.Get("charset", &charset);
+        dict.Get("data", &data);
 
-        content::BrowserThread::PostTask(
-            content::BrowserThread::IO,
-            FROM_HERE,
+        BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
             base::Bind(&AdapterRequestJob::CreateStringJobAndStart,
-                       GetWeakPtr(),
-                       mime_type,
-                       charset,
-                       data));
+                       GetWeakPtr(), mime_type, charset, data));
         return;
       } else if (name == "RequestFileJob") {
-        base::FilePath path = FromV8Value(obj->Get(v8::String::New("path")));
+        base::FilePath path;
+        dict.Get("path", &path);
 
-        content::BrowserThread::PostTask(
-            content::BrowserThread::IO,
-            FROM_HERE,
+        BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
             base::Bind(&AdapterRequestJob::CreateFileJobAndStart,
-                       GetWeakPtr(),
-                       path));
+                       GetWeakPtr(), path));
         return;
       }
     }
 
     // Try the default protocol handler if we have.
     if (default_protocol_handler()) {
-      content::BrowserThread::PostTask(
-          content::BrowserThread::IO,
-          FROM_HERE,
+      BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
           base::Bind(&AdapterRequestJob::CreateJobFromProtocolHandlerAndStart,
                      GetWeakPtr()));
       return;
     }
 
     // Fallback to the not implemented error.
-    content::BrowserThread::PostTask(
-        content::BrowserThread::IO,
-        FROM_HERE,
+    BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
         base::Bind(&AdapterRequestJob::CreateErrorJobAndStart,
-                   GetWeakPtr(),
-                   net::ERR_NOT_IMPLEMENTED));
+                   GetWeakPtr(), net::ERR_NOT_IMPLEMENTED));
   }
+
+ private:
+  Protocol* registry_;  // Weak, the Protocol class is expected to live forever.
 };
 
 // Always return the same CustomProtocolRequestJob for all requests, because
@@ -155,16 +124,16 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
 // registered handler doesn't want to deal with the request.
 class CustomProtocolHandler : public ProtocolHandler {
  public:
-  explicit CustomProtocolHandler(ProtocolHandler* protocol_handler = NULL)
-      : protocol_handler_(protocol_handler) {
+  CustomProtocolHandler(api::Protocol* registry,
+                        ProtocolHandler* protocol_handler = NULL)
+      : registry_(registry), protocol_handler_(protocol_handler) {
   }
 
   virtual net::URLRequestJob* MaybeCreateJob(
       net::URLRequest* request,
       net::NetworkDelegate* network_delegate) const OVERRIDE {
-    return new CustomProtocolRequestJob(protocol_handler_.get(),
-                                        request,
-                                        network_delegate);
+    return new CustomProtocolRequestJob(registry_, protocol_handler_.get(),
+                                        request, network_delegate);
   }
 
   ProtocolHandler* ReleaseDefaultProtocolHandler() {
@@ -174,6 +143,7 @@ class CustomProtocolHandler : public ProtocolHandler {
   ProtocolHandler* original_handler() { return protocol_handler_.get(); }
 
  private:
+  Protocol* registry_;  // Weak, the Protocol class is expected to live forever.
   scoped_ptr<ProtocolHandler> protocol_handler_;
 
   DISALLOW_COPY_AND_ASSIGN(CustomProtocolHandler);
@@ -181,206 +151,182 @@ class CustomProtocolHandler : public ProtocolHandler {
 
 }  // namespace
 
-// static
-void Protocol::RegisterProtocol(
-    const v8::FunctionCallbackInfo<v8::Value>& args) {
-  std::string scheme;
-  RefCountedV8Function callback;
-  if (!FromV8Arguments(args, &scheme, &callback))
-    return node::ThrowTypeError("Bad argument");
+Protocol::Protocol() : job_factory_(
+    AtomBrowserContext::Get()->url_request_context_getter()->job_factory()) {
+}
 
-  if (g_handlers.find(scheme) != g_handlers.end() ||
-      GetRequestJobFactory()->IsHandledProtocol(scheme))
+Protocol::JsProtocolHandler Protocol::GetProtocolHandler(
+    const std::string& scheme) {
+  return protocol_handlers_[scheme];
+}
+
+mate::ObjectTemplateBuilder Protocol::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return mate::ObjectTemplateBuilder(isolate)
+      .SetMethod("registerProtocol",
+                 base::Bind(&Protocol::RegisterProtocol,
+                            base::Unretained(this)))
+      .SetMethod("unregisterProtocol",
+                 base::Bind(&Protocol::UnregisterProtocol,
+                            base::Unretained(this)))
+      .SetMethod("isHandledProtocol",
+                 base::Bind(&Protocol::IsHandledProtocol,
+                            base::Unretained(this)))
+      .SetMethod("interceptProtocol",
+                 base::Bind(&Protocol::InterceptProtocol,
+                            base::Unretained(this)))
+      .SetMethod("uninterceptProtocol",
+                 base::Bind(&Protocol::UninterceptProtocol,
+                            base::Unretained(this)));
+}
+
+void Protocol::RegisterProtocol(const std::string& scheme,
+                                const JsProtocolHandler& callback) {
+  if (ContainsKey(protocol_handlers_, scheme) ||
+      job_factory_->IsHandledProtocol(scheme))
     return node::ThrowError("The scheme is already registered");
 
-  if (AtomBrowserContext::Get()->url_request_context_getter() == NULL)
-    return node::ThrowError(kEarlyUseProtocolError);
-
-  // Store the handler in a map.
-  g_handlers[scheme] = callback;
-
-  content::BrowserThread::PostTask(content::BrowserThread::IO,
-                                   FROM_HERE,
-                                   base::Bind(&RegisterProtocolInIO, scheme));
+  protocol_handlers_[scheme] = callback;
+  BrowserThread::PostTask(BrowserThread::IO,
+                          FROM_HERE,
+                          base::Bind(&Protocol::RegisterProtocolInIO,
+                                     base::Unretained(this), scheme));
 }
 
-// static
-void Protocol::UnregisterProtocol(
-    const v8::FunctionCallbackInfo<v8::Value>& args) {
-  std::string scheme;
-  if (!FromV8Arguments(args, &scheme))
-    return node::ThrowTypeError("Bad argument");
-
-  if (AtomBrowserContext::Get()->url_request_context_getter() == NULL)
-    return node::ThrowError(kEarlyUseProtocolError);
-
-  // Erase the handler from map.
-  HandlersMap::iterator it(g_handlers.find(scheme));
-  if (it == g_handlers.end())
+void Protocol::UnregisterProtocol(const std::string& scheme) {
+  ProtocolHandlersMap::iterator it(protocol_handlers_.find(scheme));
+  if (it == protocol_handlers_.end())
     return node::ThrowError("The scheme has not been registered");
-  g_handlers.erase(it);
 
-  content::BrowserThread::PostTask(content::BrowserThread::IO,
-                                   FROM_HERE,
-                                   base::Bind(&UnregisterProtocolInIO, scheme));
+  protocol_handlers_.erase(it);
+  BrowserThread::PostTask(BrowserThread::IO,
+                          FROM_HERE,
+                          base::Bind(&Protocol::UnregisterProtocolInIO,
+                                     base::Unretained(this), scheme));
 }
 
-// static
-void Protocol::IsHandledProtocol(
-    const v8::FunctionCallbackInfo<v8::Value>& args) {
-  std::string scheme;
-  if (!FromV8Arguments(args, &scheme))
-    return node::ThrowTypeError("Bad argument");
-
-  args.GetReturnValue().Set(GetRequestJobFactory()->IsHandledProtocol(scheme));
+bool Protocol::IsHandledProtocol(const std::string& scheme) {
+  return job_factory_->IsHandledProtocol(scheme);
 }
 
-// static
-void Protocol::InterceptProtocol(
-    const v8::FunctionCallbackInfo<v8::Value>& args) {
-  std::string scheme;
-  RefCountedV8Function callback;
-  if (!FromV8Arguments(args, &scheme, &callback))
-    return node::ThrowTypeError("Bad argument");
+void Protocol::InterceptProtocol(const std::string& scheme,
+                                 const JsProtocolHandler& callback) {
+  if (!job_factory_->HasProtocolHandler(scheme))
+    return node::ThrowError("Scheme does not exist.");
 
-  if (!GetRequestJobFactory()->HasProtocolHandler(scheme))
-    return node::ThrowError("Cannot intercept procotol");
-
-  if (ContainsKey(g_handlers, scheme))
+  if (ContainsKey(protocol_handlers_, scheme))
     return node::ThrowError("Cannot intercept custom procotols");
 
-  if (AtomBrowserContext::Get()->url_request_context_getter() == NULL)
-    return node::ThrowError(kEarlyUseProtocolError);
-
-  // Store the handler in a map.
-  g_handlers[scheme] = callback;
-
-  content::BrowserThread::PostTask(content::BrowserThread::IO,
-                                   FROM_HERE,
-                                   base::Bind(&InterceptProtocolInIO, scheme));
+  protocol_handlers_[scheme] = callback;
+  BrowserThread::PostTask(BrowserThread::IO,
+                          FROM_HERE,
+                          base::Bind(&Protocol::InterceptProtocolInIO,
+                                     base::Unretained(this), scheme));
 }
 
-// static
-void Protocol::UninterceptProtocol(
-    const v8::FunctionCallbackInfo<v8::Value>& args) {
-  std::string scheme;
-  if (!FromV8Arguments(args, &scheme))
-    return node::ThrowTypeError("Bad argument");
-
-  if (AtomBrowserContext::Get()->url_request_context_getter() == NULL)
-    return node::ThrowError(kEarlyUseProtocolError);
-
-  // Erase the handler from map.
-  HandlersMap::iterator it(g_handlers.find(scheme));
-  if (it == g_handlers.end())
+void Protocol::UninterceptProtocol(const std::string& scheme) {
+  ProtocolHandlersMap::iterator it(protocol_handlers_.find(scheme));
+  if (it == protocol_handlers_.end())
     return node::ThrowError("The scheme has not been registered");
-  g_handlers.erase(it);
 
-  content::BrowserThread::PostTask(content::BrowserThread::IO,
-                                   FROM_HERE,
-                                   base::Bind(&UninterceptProtocolInIO,
-                                              scheme));
+  protocol_handlers_.erase(it);
+  BrowserThread::PostTask(BrowserThread::IO,
+                          FROM_HERE,
+                          base::Bind(&Protocol::UninterceptProtocolInIO,
+                                     base::Unretained(this), scheme));
 }
 
-// static
 void Protocol::RegisterProtocolInIO(const std::string& scheme) {
-  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
-  AtomURLRequestJobFactory* job_factory(GetRequestJobFactory());
-  job_factory->SetProtocolHandler(scheme, new CustomProtocolHandler);
+  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
 
-  content::BrowserThread::PostTask(content::BrowserThread::UI,
-                                   FROM_HERE,
-                                   base::Bind(&EmitEventInUI,
-                                              "registered",
-                                              scheme));
+  job_factory_->SetProtocolHandler(scheme, new CustomProtocolHandler(this));
+  BrowserThread::PostTask(BrowserThread::UI,
+                          FROM_HERE,
+                          base::Bind(&Protocol::EmitEventInUI,
+                                     base::Unretained(this),
+                                     "registered", scheme));
 }
 
-// static
 void Protocol::UnregisterProtocolInIO(const std::string& scheme) {
-  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
-  AtomURLRequestJobFactory* job_factory(GetRequestJobFactory());
-  job_factory->SetProtocolHandler(scheme, NULL);
+  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
 
-  content::BrowserThread::PostTask(content::BrowserThread::UI,
-                                   FROM_HERE,
-                                   base::Bind(&EmitEventInUI,
-                                              "unregistered",
-                                              scheme));
+  job_factory_->SetProtocolHandler(scheme, NULL);
+  BrowserThread::PostTask(BrowserThread::UI,
+                          FROM_HERE,
+                          base::Bind(&Protocol::EmitEventInUI,
+                                     base::Unretained(this),
+                                     "unregistered", scheme));
 }
 
-// static
 void Protocol::InterceptProtocolInIO(const std::string& scheme) {
-  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
-  AtomURLRequestJobFactory* job_factory(GetRequestJobFactory());
-  ProtocolHandler* original_handler = job_factory->GetProtocolHandler(scheme);
+  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
+
+  ProtocolHandler* original_handler = job_factory_->GetProtocolHandler(scheme);
   if (original_handler == NULL) {
-    content::BrowserThread::PostTask(
-        content::BrowserThread::UI,
-        FROM_HERE,
-        base::Bind(&EmitEventInUI,
-                   "error",
-                   "There is no protocol handler to intercpet"));
+    BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, base::Bind(
+        &Protocol::EmitEventInUI,
+        base::Unretained(this),
+        "error", "There is no protocol handler to intercpet"));
     return;
   }
 
-  job_factory->ReplaceProtocol(scheme,
-                               new CustomProtocolHandler(original_handler));
-
-  content::BrowserThread::PostTask(content::BrowserThread::UI,
-                                   FROM_HERE,
-                                   base::Bind(&EmitEventInUI,
-                                              "intercepted",
-                                              scheme));
+  job_factory_->ReplaceProtocol(
+      scheme, new CustomProtocolHandler(this, original_handler));
+  BrowserThread::PostTask(BrowserThread::UI,
+                          FROM_HERE,
+                          base::Bind(&Protocol::EmitEventInUI,
+                                     base::Unretained(this),
+                                     "intercepted", scheme));
 }
 
-// static
 void Protocol::UninterceptProtocolInIO(const std::string& scheme) {
-  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
-  AtomURLRequestJobFactory* job_factory(GetRequestJobFactory());
+  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
 
-  // Check if the protocol handler is intercepted.
   CustomProtocolHandler* handler = static_cast<CustomProtocolHandler*>(
-      job_factory->GetProtocolHandler(scheme));
+      job_factory_->GetProtocolHandler(scheme));
   if (handler->original_handler() == NULL) {
-    content::BrowserThread::PostTask(
-        content::BrowserThread::UI,
-        FROM_HERE,
-        base::Bind(&EmitEventInUI,
-                   "error",
-                   "The protocol is not intercpeted"));
+    BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, base::Bind(
+        &Protocol::EmitEventInUI,
+        base::Unretained(this),
+        "error", "The protocol is not intercpeted"));
     return;
   }
 
-  // Reset the protocol handler to the orignal one and delete current
-  // protocol handler.
+  // Reset the protocol handler to the orignal one and delete current protocol
+  // handler.
   ProtocolHandler* original_handler = handler->ReleaseDefaultProtocolHandler();
-  delete job_factory->ReplaceProtocol(scheme, original_handler);
+  delete job_factory_->ReplaceProtocol(scheme, original_handler);
+  BrowserThread::PostTask(BrowserThread::UI,
+                          FROM_HERE,
+                          base::Bind(&Protocol::EmitEventInUI,
+                                     base::Unretained(this),
+                                     "unintercepted", scheme));
+}
 
-  content::BrowserThread::PostTask(content::BrowserThread::UI,
-                                   FROM_HERE,
-                                   base::Bind(&EmitEventInUI,
-                                              "unintercepted",
-                                              scheme));
+void Protocol::EmitEventInUI(const std::string& event,
+                             const std::string& parameter) {
+  base::ListValue args;
+  args.AppendString(parameter);
+  Emit(event, args);
 }
 
 // static
-void Protocol::Initialize(v8::Handle<v8::Object> target) {
-  // Remember the protocol object, used for emitting event later.
-  g_protocol_object.reset(target);
-
-  // Make sure the job factory has been created.
-  AtomBrowserContext::Get()->url_request_context_getter()->
-      GetURLRequestContext();
-
-  NODE_SET_METHOD(target, "registerProtocol", RegisterProtocol);
-  NODE_SET_METHOD(target, "unregisterProtocol", UnregisterProtocol);
-  NODE_SET_METHOD(target, "isHandledProtocol", IsHandledProtocol);
-  NODE_SET_METHOD(target, "interceptProtocol", InterceptProtocol);
-  NODE_SET_METHOD(target, "uninterceptProtocol", UninterceptProtocol);
+mate::Handle<Protocol> Protocol::Create(v8::Isolate* isolate) {
+  return CreateHandle(isolate, new Protocol);
 }
 
 }  // namespace api
 
 }  // namespace atom
 
-NODE_MODULE(atom_browser_protocol, atom::api::Protocol::Initialize)
+namespace {
+
+void Initialize(v8::Handle<v8::Object> exports) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  mate::Dictionary dict(isolate, exports);
+  dict.Set("protocol", atom::api::Protocol::Create(isolate));
+}
+
+}  // namespace
+
+NODE_MODULE(atom_browser_protocol, Initialize)

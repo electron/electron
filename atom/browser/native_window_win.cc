@@ -438,7 +438,7 @@ bool NativeWindowWin::AcceleratorPressed(
 }
 
 void NativeWindowWin::DeleteDelegate() {
-  // Do nothing, window is managed by users.
+  NotifyWindowClosed();
 }
 
 views::View* NativeWindowWin::GetInitiallyFocusedView() {

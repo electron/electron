@@ -65,6 +65,7 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 }
 
 - (void)windowWillClose:(NSNotification*)notification {
+  shell_->NotifyWindowClosed();
   [self autorelease];
 }
 

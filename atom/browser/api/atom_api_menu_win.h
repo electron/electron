@@ -15,11 +15,10 @@ namespace api {
 
 class MenuWin : public Menu {
  public:
-  explicit MenuWin(v8::Handle<v8::Object> wrapper);
-  virtual ~MenuWin();
+  MenuWin();
 
  protected:
-  virtual void Popup(NativeWindow* window) OVERRIDE;
+  virtual void Popup(Window* window) OVERRIDE;
 
  private:
   scoped_ptr<atom::Menu2> menu_;

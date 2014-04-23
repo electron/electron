@@ -30,7 +30,7 @@ module.exports =
                            String(options.defaultPath),
                            properties,
                            window,
-                           callback
+                           (success, result) -> callback if success then result
 
   showSaveDialog: (window, options, callback) ->
     unless window?.constructor is BrowserWindow
@@ -46,7 +46,7 @@ module.exports =
     binding.showSaveDialog String(options.title),
                            String(options.defaultPath),
                            window,
-                           callback
+                           (success, result) -> callback if success then result
 
   showMessageBox: (window, options, callback) ->
     unless window?.constructor is BrowserWindow

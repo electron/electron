@@ -2,12 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/common/api/atom_api_screen.h"
-
-#include "atom/common/v8/native_type_conversions.h"
+#include "native_mate/dictionary.h"
 #include "ui/gfx/screen.h"
 
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 
 #if defined(TOOLKIT_GTK)
 #include "base/command_line.h"
@@ -16,14 +14,7 @@
 #include "ui/gfx/gtk_util.h"
 #endif
 
-#define UNWRAP_SCREEN_AND_CHECK \
-  Screen* self = ObjectWrap::Unwrap<Screen>(args.This()); \
-  if (self == NULL) \
-    return node::ThrowError("Screen is already destroyed")
-
-namespace atom {
-
-namespace api {
+namespace mate {
 
 namespace {
 
@@ -42,70 +33,74 @@ gfx::Display AdaptToWindowManager(const gfx::Display& display) {
   return changed;
 }
 
-v8::Handle<v8::Object> DisplayToV8Value(const gfx::Display& raw) {
-  gfx::Display display(AdaptToWindowManager(raw));
-  v8::Handle<v8::Object> obj = v8::Object::New();
-  obj->Set(ToV8Value("bounds"), ToV8Value(display.bounds()));
-  obj->Set(ToV8Value("workArea"), ToV8Value(display.work_area()));
-  obj->Set(ToV8Value("size"), ToV8Value(display.size()));
-  obj->Set(ToV8Value("workAreaSize"), ToV8Value(display.work_area_size()));
-  obj->Set(ToV8Value("scaleFactor"), ToV8Value(display.device_scale_factor()));
-  return obj;
-}
-
 }  // namespace
 
-Screen::Screen(v8::Handle<v8::Object> wrapper)
-    : EventEmitter(wrapper),
-      screen_(gfx::Screen::GetNativeScreen()) {
-}
+template<>
+struct Converter<gfx::Point> {
+  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+                                    const gfx::Point& val) {
+    return mate::ObjectTemplateBuilder(isolate).SetValue("x", val.x())
+                                               .SetValue("y", val.y())
+                                               .Build()->NewInstance();
+  }
+};
 
-Screen::~Screen() {
-}
+template<>
+struct Converter<gfx::Size> {
+  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+                                    const gfx::Size& val) {
+    return mate::ObjectTemplateBuilder(isolate).SetValue("width", val.width())
+                                               .SetValue("height", val.height())
+                                               .Build()->NewInstance();
+  }
+};
 
-// static
-void Screen::New(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::HandleScope scope(args.GetIsolate());
+template<>
+struct Converter<gfx::Rect> {
+  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+                                    const gfx::Rect& val) {
+    return mate::ObjectTemplateBuilder(isolate).SetValue("x", val.x())
+                                               .SetValue("y", val.y())
+                                               .SetValue("width", val.width())
+                                               .SetValue("height", val.height())
+                                               .Build()->NewInstance();
+  }
+};
 
-  if (!args.IsConstructCall())
-    return node::ThrowError("Require constructor call");
+template<>
+struct Converter<gfx::Display> {
+  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+                                    const gfx::Display& val) {
+    gfx::Display display(AdaptToWindowManager(val));
+    return mate::ObjectTemplateBuilder(isolate)
+        .SetValue("bounds", display.bounds())
+        .SetValue("workArea", display.work_area())
+        .SetValue("size", display.size())
+        .SetValue("workAreaSize", display.work_area_size())
+        .SetValue("scaleFactor", display.device_scale_factor())
+        .Build()->NewInstance();
+  }
+};
 
-  new Screen(args.This());
-}
+}  // namespace mate
 
-// static
-void Screen::GetCursorScreenPoint(
-    const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_SCREEN_AND_CHECK;
-  args.GetReturnValue().Set(ToV8Value(self->screen_->GetCursorScreenPoint()));
-}
+namespace {
 
-// static
-void Screen::GetPrimaryDisplay(
-      const v8::FunctionCallbackInfo<v8::Value>& args) {
-  UNWRAP_SCREEN_AND_CHECK;
-  gfx::Display display = self->screen_->GetPrimaryDisplay();
-  args.GetReturnValue().Set(DisplayToV8Value(display));
-}
-
-// static
-void Screen::Initialize(v8::Handle<v8::Object> target) {
+void Initialize(v8::Handle<v8::Object> exports) {
 #if defined(TOOLKIT_GTK)
   gfx::GdkInitFromCommandLine(*CommandLine::ForCurrentProcess());
 #endif
 
-  v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(New);
-  t->InstanceTemplate()->SetInternalFieldCount(1);
-  t->SetClassName(v8::String::NewSymbol("Screen"));
-
-  NODE_SET_PROTOTYPE_METHOD(t, "getCursorScreenPoint", GetCursorScreenPoint);
-  NODE_SET_PROTOTYPE_METHOD(t, "getPrimaryDisplay", GetPrimaryDisplay);
-
-  target->Set(v8::String::NewSymbol("Screen"), t->GetFunction());
+  gfx::Screen* screen = gfx::Screen::GetNativeScreen();
+  mate::Dictionary dict(v8::Isolate::GetCurrent(), exports);
+  dict.SetMethod("getCursorScreenPoint",
+                 base::Bind(&gfx::Screen::GetCursorScreenPoint,
+                            base::Unretained(screen)));
+  dict.SetMethod("getPrimaryDisplay",
+                 base::Bind(&gfx::Screen::GetPrimaryDisplay,
+                            base::Unretained(screen)));
 }
 
-}  // namespace api
+}  // namespace
 
-}  // namespace atom
-
-NODE_MODULE(atom_common_screen, atom::api::Screen::Initialize)
+NODE_MODULE(atom_common_screen, Initialize)

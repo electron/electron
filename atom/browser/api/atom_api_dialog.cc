@@ -2,143 +2,97 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_dialog.h"
-
 #include <string>
 #include <vector>
 
 #include "base/bind.h"
+#include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/ui/message_box.h"
-#include "atom/common/v8/node_common.h"
-#include "atom/common/v8/native_type_conversions.h"
+#include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/native_mate_converters/function_converter.h"
+#include "native_mate/dictionary.h"
 
-namespace atom {
-
-namespace api {
+#include "atom/common/node_includes.h"
 
 namespace {
 
-template<typename T>
-void CallV8Function(const RefCountedV8Function& callback, T arg) {
-  v8::Locker locker(node_isolate);
-  v8::HandleScope handle_scope(node_isolate);
-
-  v8::Handle<v8::Value> value = ToV8Value(arg);
-  callback->NewHandle(node_isolate)->Call(
-      v8::Context::GetCurrent()->Global(), 1, &value);
-}
-
-template<typename T>
-void CallV8Function2(const RefCountedV8Function& callback, bool result, T arg) {
-  if (result)
-    return CallV8Function<T>(callback, arg);
-  else
-    return CallV8Function<void*>(callback, NULL);
-}
-
-void Initialize(v8::Handle<v8::Object> target) {
-  NODE_SET_METHOD(target, "showMessageBox", ShowMessageBox);
-  NODE_SET_METHOD(target, "showOpenDialog", ShowOpenDialog);
-  NODE_SET_METHOD(target, "showSaveDialog", ShowSaveDialog);
-}
-
-}  // namespace
-
-void ShowMessageBox(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  int type;
-  std::vector<std::string> buttons;
-  std::string title, message, detail;
-  if (!FromV8Arguments(args, &type, &buttons, &title, &message, &detail))
-    return node::ThrowTypeError("Bad argument");
-
-  NativeWindow* native_window = FromV8Value(args[5]);
-
-  if (!args[6]->IsFunction()) {
+void ShowMessageBox(int type,
+                    const std::vector<std::string>& buttons,
+                    const std::string& title,
+                    const std::string& message,
+                    const std::string& detail,
+                    atom::api::Window* window,
+                    mate::Arguments* args) {
+  v8::Handle<v8::Value> peek = args->PeekNext();
+  atom::MessageBoxCallback callback;
+  if (mate::Converter<atom::MessageBoxCallback>::FromV8(node_isolate,
+                                                        peek,
+                                                        &callback)) {
+    atom::ShowMessageBox(window->window(), (atom::MessageBoxType)type, buttons,
+                         title, message, detail, callback);
+  } else {
     int chosen = atom::ShowMessageBox(
-        native_window,
-        (MessageBoxType)type,
+        window->window(),
+        (atom::MessageBoxType)type,
         buttons,
         title,
         message,
         detail);
-    args.GetReturnValue().Set(chosen);
-  } else {
-    RefCountedV8Function callback = FromV8Value(args[6]);
-    atom::ShowMessageBox(
-        native_window,
-        (MessageBoxType)type,
-        buttons,
-        title,
-        message,
-        detail,
-        base::Bind(&CallV8Function<int>, callback));
+    args->Return(chosen);
   }
 }
 
-void ShowOpenDialog(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  std::string title;
-  base::FilePath default_path;
-  int properties;
-  if (!FromV8Arguments(args, &title, &default_path, &properties))
-    return node::ThrowTypeError("Bad argument");
-
-  NativeWindow* native_window = FromV8Value(args[3]);
-
-  if (!args[4]->IsFunction()) {
+void ShowOpenDialog(const std::string& title,
+                    const base::FilePath& default_path,
+                    int properties,
+                    atom::api::Window* window,
+                    mate::Arguments* args) {
+  v8::Handle<v8::Value> peek = args->PeekNext();
+  file_dialog::OpenDialogCallback callback;
+  if (mate::Converter<file_dialog::OpenDialogCallback>::FromV8(node_isolate,
+                                                               peek,
+                                                               &callback)) {
+    file_dialog::ShowOpenDialog(window->window(), title, default_path,
+                                properties, callback);
+  } else {
     std::vector<base::FilePath> paths;
-    if (!file_dialog::ShowOpenDialog(native_window,
-                                     title,
-                                     default_path,
-                                     properties,
-                                     &paths))
-      return;
-
-    v8::Handle<v8::Array> result = v8::Array::New(paths.size());
-    for (size_t i = 0; i < paths.size(); ++i)
-      result->Set(i, ToV8Value(paths[i]));
-
-    args.GetReturnValue().Set(result);
-  } else {
-    RefCountedV8Function callback = FromV8Value(args[4]);
-    file_dialog::ShowOpenDialog(
-        native_window,
-        title,
-        default_path,
-        properties,
-        base::Bind(&CallV8Function2<const std::vector<base::FilePath>&>,
-                   callback));
-  }
-}
-
-void ShowSaveDialog(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  std::string title;
-  base::FilePath default_path;
-  if (!FromV8Arguments(args, &title, &default_path))
-    return node::ThrowTypeError("Bad argument");
-
-  NativeWindow* native_window = FromV8Value(args[2]);
-
-  if (!args[3]->IsFunction()) {
-    base::FilePath path;
-    if (file_dialog::ShowSaveDialog(native_window,
+    if (file_dialog::ShowOpenDialog(window->window(),
                                     title,
                                     default_path,
-                                    &path))
-      args.GetReturnValue().Set(ToV8Value(path));
-  } else {
-    RefCountedV8Function callback = FromV8Value(args[3]);
-    file_dialog::ShowSaveDialog(
-        native_window,
-        title,
-        default_path,
-        base::Bind(&CallV8Function2<const base::FilePath&>, callback));
+                                    properties,
+                                    &paths))
+      args->Return(paths);
   }
 }
 
-}  // namespace api
+void ShowSaveDialog(const std::string& title,
+                    const base::FilePath& default_path,
+                    atom::api::Window* window,
+                    mate::Arguments* args) {
+  v8::Handle<v8::Value> peek = args->PeekNext();
+  file_dialog::SaveDialogCallback callback;
+  if (mate::Converter<file_dialog::SaveDialogCallback>::FromV8(node_isolate,
+                                                               peek,
+                                                               &callback)) {
+    file_dialog::ShowSaveDialog(window->window(), title, default_path,
+                                callback);
+  } else {
+    base::FilePath path;
+    if (file_dialog::ShowSaveDialog(window->window(), title, default_path,
+                                    &path))
+      args->Return(path);
+  }
+}
 
-}  // namespace atom
+void Initialize(v8::Handle<v8::Object> exports) {
+  mate::Dictionary dict(v8::Isolate::GetCurrent(), exports);
+  dict.SetMethod("showMessageBox", &ShowMessageBox);
+  dict.SetMethod("showOpenDialog", &ShowOpenDialog);
+  dict.SetMethod("showSaveDialog", &ShowSaveDialog);
+}
 
-NODE_MODULE(atom_browser_dialog, atom::api::Initialize)
+}  // namespace
+
+NODE_MODULE(atom_browser_dialog, Initialize)

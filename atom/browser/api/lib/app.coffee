@@ -2,10 +2,8 @@ EventEmitter = require('events').EventEmitter
 
 bindings = process.atomBinding 'app'
 
-Application = bindings.Application
-Application::__proto__ = EventEmitter.prototype
-
-app = new Application
+app = bindings.app
+app.__proto__ = EventEmitter.prototype
 
 app.getHomeDir = ->
   process.env[if process.platform is 'win32' then 'USERPROFILE' else 'HOME']

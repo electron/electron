@@ -7,25 +7,29 @@
 #include <string>
 
 #include "atom/common/atom_version.h"
-#include "atom/common/v8/native_type_conversions.h"
+#include "atom/common/native_mate_converters/function_converter.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
+#include "base/callback.h"
 #include "base/logging.h"
+#include "native_mate/dictionary.h"
 
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 
 namespace atom {
 
+// Defined in atom_extensions.cc.
+node::node_module_struct* GetBuiltinModule(const char *name, bool is_browser);
+
 namespace {
 
-static int kMaxCallStackSize = 200;  // Same with WebKit.
-
 // Async handle to wake up uv loop.
-static uv_async_t g_next_tick_uv_handle;
+uv_async_t g_next_tick_uv_handle;
 
 // Async handle to execute the stored v8 callback.
-static uv_async_t g_callback_uv_handle;
+uv_async_t g_callback_uv_handle;
 
 // Stored v8 callback, to be called by the async handler.
-RefCountedV8Function g_v8_callback;
+base::Closure g_v8_callback;
 
 // Dummy class type that used for crashing the program.
 struct DummyClass { bool crash; };
@@ -50,9 +54,7 @@ void UvCallNextTick(uv_async_t* handle, int status) {
 
 // Async handler to execute the stored v8 callback.
 void UvOnCallback(uv_async_t* handle, int status) {
-  v8::HandleScope handle_scope(node_isolate);
-  v8::Handle<v8::Object> global = v8::Context::GetCurrent()->Global();
-  g_v8_callback->NewHandle()->Call(global, 0, NULL);
+  g_v8_callback.Run();
 }
 
 // Called when there is a fatal error in V8, we just crash the process here so
@@ -62,50 +64,15 @@ void FatalErrorCallback(const char* location, const char* message) {
   static_cast<DummyClass*>(NULL)->crash = true;
 }
 
-v8::Handle<v8::Object> DumpStackFrame(v8::Handle<v8::StackFrame> stack_frame) {
-  v8::Local<v8::Object> result = v8::Object::New();
-  result->Set(ToV8Value("line"), ToV8Value(stack_frame->GetLineNumber()));
-  result->Set(ToV8Value("column"), ToV8Value(stack_frame->GetColumn()));
-
-  v8::Handle<v8::String> script = stack_frame->GetScriptName();
-  if (!script.IsEmpty())
-    result->Set(ToV8Value("script"), script);
-
-  v8::Handle<v8::String> function = stack_frame->GetScriptNameOrSourceURL();
-  if (!function.IsEmpty())
-    result->Set(ToV8Value("function"), function);
-  return result;
+v8::Handle<v8::Value> DumpStackFrame(v8::Isolate* isolate,
+                                     v8::Handle<v8::StackFrame> stack_frame) {
+  mate::Dictionary frame_dict(isolate);
+  frame_dict.Set("line", stack_frame->GetLineNumber());
+  frame_dict.Set("column", stack_frame->GetColumn());
+  return mate::ConvertToV8(isolate, frame_dict);;
 }
 
-}  // namespace
-
-// Defined in atom_extensions.cc.
-node::node_module_struct* GetBuiltinModule(const char *name, bool is_browser);
-
-AtomBindings::AtomBindings() {
-  uv_async_init(uv_default_loop(), &g_next_tick_uv_handle, UvCallNextTick);
-  uv_async_init(uv_default_loop(), &g_callback_uv_handle, UvOnCallback);
-  v8::V8::SetFatalErrorHandler(FatalErrorCallback);
-}
-
-AtomBindings::~AtomBindings() {
-}
-
-void AtomBindings::BindTo(v8::Handle<v8::Object> process) {
-  NODE_SET_METHOD(process, "atomBinding", Binding);
-  NODE_SET_METHOD(process, "crash", Crash);
-  NODE_SET_METHOD(process, "activateUvLoop", ActivateUVLoop);
-  NODE_SET_METHOD(process, "log", Log);
-  NODE_SET_METHOD(process, "getCurrentStackTrace", GetCurrentStackTrace);
-  NODE_SET_METHOD(process, "scheduleCallback", ScheduleCallback);
-
-  process->Get(v8::String::New("versions"))->ToObject()->
-    Set(v8::String::New("atom-shell"), v8::String::New(ATOM_VERSION_STRING));
-}
-
-// static
-void AtomBindings::Binding(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::Local<v8::String> module = args[0]->ToString();
+v8::Handle<v8::Value> Binding(v8::Handle<v8::String> module) {
   v8::String::Utf8Value module_v(module);
   node::node_module_struct* modp;
 
@@ -128,65 +95,78 @@ void AtomBindings::Binding(const v8::FunctionCallbackInfo<v8::Value>& args) {
     process->Set(bc_name, binding_cache);
   }
 
-  v8::Local<v8::Object> exports;
-
-  if (binding_cache->Has(module)) {
-    exports = binding_cache->Get(module)->ToObject();
-    return args.GetReturnValue().Set(exports);
-  }
+  if (binding_cache->Has(module))
+    return binding_cache->Get(module)->ToObject();
 
   if ((modp = GetBuiltinModule(*module_v, is_browser)) != NULL) {
-    exports = v8::Object::New();
+    v8::Local<v8::Object> exports = v8::Object::New();
     // Internal bindings don't have a "module" object,
     // only exports.
     modp->register_func(exports, v8::Undefined());
     binding_cache->Set(module, exports);
-    return args.GetReturnValue().Set(exports);
+    return exports;
   }
 
-  return node::ThrowError("No such module");
+  node::ThrowError("No such module");
+  return v8::Undefined();
 }
 
-// static
-void AtomBindings::Crash(const v8::FunctionCallbackInfo<v8::Value>& args) {
+void Crash() {
   static_cast<DummyClass*>(NULL)->crash = true;
 }
 
-// static
-void AtomBindings::ActivateUVLoop(
-    const v8::FunctionCallbackInfo<v8::Value>& args) {
+void ActivateUVLoop() {
   uv_async_send(&g_next_tick_uv_handle);
 }
 
-// static
-void AtomBindings::Log(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::String::Utf8Value str(args[0]);
-  logging::LogMessage("CONSOLE", 0, 0).stream() << *str;
+void Log(const string16& message) {
+  logging::LogMessage("CONSOLE", 0, 0).stream() << message;
 }
 
-// static
-void AtomBindings::GetCurrentStackTrace(
-    const v8::FunctionCallbackInfo<v8::Value>& args) {
-  int stack_limit = kMaxCallStackSize;
-  FromV8Arguments(args, &stack_limit);
-
+v8::Handle<v8::Value> GetCurrentStackTrace(v8::Isolate* isolate,
+                                           int stack_limit) {
   v8::Local<v8::StackTrace> stack_trace = v8::StackTrace::CurrentStackTrace(
       stack_limit, v8::StackTrace::kDetailed);
 
   int frame_count = stack_trace->GetFrameCount();
   v8::Local<v8::Array> result = v8::Array::New(frame_count);
   for (int i = 0; i < frame_count; ++i)
-    result->Set(i, DumpStackFrame(stack_trace->GetFrame(i)));
+    result->Set(i, DumpStackFrame(isolate, stack_trace->GetFrame(i)));
 
-  args.GetReturnValue().Set(result);
+  return result;
 }
 
-// static
-void AtomBindings::ScheduleCallback(
-    const v8::FunctionCallbackInfo<v8::Value>& args) {
-  if (!FromV8Arguments(args, &g_v8_callback))
-    return node::ThrowTypeError("Bad arguments");
+void ScheduleCallback(const base::Closure& callback) {
+  g_v8_callback = callback;
   uv_async_send(&g_callback_uv_handle);
+}
+
+}  // namespace
+
+
+AtomBindings::AtomBindings() {
+  uv_async_init(uv_default_loop(), &g_next_tick_uv_handle, UvCallNextTick);
+  uv_async_init(uv_default_loop(), &g_callback_uv_handle, UvOnCallback);
+  v8::V8::SetFatalErrorHandler(FatalErrorCallback);
+}
+
+AtomBindings::~AtomBindings() {
+}
+
+void AtomBindings::BindTo(v8::Handle<v8::Object> process) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  mate::Dictionary dict(isolate, process);
+  dict.SetMethod("atomBinding", &Binding);
+  dict.SetMethod("crash", &Crash);
+  dict.SetMethod("activateUvLoop", &ActivateUVLoop);
+  dict.SetMethod("log", &Log);
+  dict.SetMethod("getCurrentStackTrace", &GetCurrentStackTrace);
+  dict.SetMethod("scheduleCallback", &ScheduleCallback);
+
+  v8::Handle<v8::Object> versions;
+  if (dict.Get("versions", &versions))
+    versions->Set(mate::StringToV8(isolate, "atom-shell"),
+                  mate::StringToV8(isolate, ATOM_VERSION_STRING));
 }
 
 }  // namespace atom

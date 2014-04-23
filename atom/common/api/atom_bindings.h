@@ -6,6 +6,8 @@
 #define ATOM_COMMON_API_ATOM_BINDINGS_H_
 
 #include "base/basictypes.h"
+#include "base/callback_forward.h"
+#include "base/strings/string16.h"
 #include "v8/include/v8.h"
 
 namespace atom {
@@ -20,14 +22,6 @@ class AtomBindings {
   virtual void BindTo(v8::Handle<v8::Object> process);
 
  private:
-  static void Binding(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void Crash(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void ActivateUVLoop(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void Log(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GetCurrentStackTrace(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void ScheduleCallback(const v8::FunctionCallbackInfo<v8::Value>& args);
-
   DISALLOW_COPY_AND_ASSIGN(AtomBindings);
 };
 

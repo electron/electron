@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/common/v8/v8_value_converter.h"
+#include "atom/common/native_mate_converters/v8_value_converter.h"
 
 #include <string>
 #include <utility>

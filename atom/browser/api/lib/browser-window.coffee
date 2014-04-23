@@ -19,7 +19,7 @@ BrowserWindow::_init = ->
 
   # Remove the window from weak map immediately when it's destroyed, since we
   # could be iterating windows before GC happended.
-  @once 'destroyed', ->
+  @once 'closed', ->
     BrowserWindow.windows.remove id if BrowserWindow.windows.has id
 
   # Tell the rpc server that a render view has been deleted and we need to

@@ -5,9 +5,8 @@
 #ifndef ATOM_BROWSER_API_ATOM_BROWSER_BINDINGS_H_
 #define ATOM_BROWSER_API_ATOM_BROWSER_BINDINGS_H_
 
-#include "base/strings/string16.h"
 #include "atom/common/api/atom_bindings.h"
-#include "atom/common/v8/scoped_persistent.h"
+#include "base/strings/string16.h"
 
 namespace base {
 class ListValue;
@@ -26,7 +25,6 @@ namespace atom {
 class AtomBrowserBindings : public AtomBindings {
  public:
   AtomBrowserBindings();
-  virtual ~AtomBrowserBindings();
 
   // Called when received a message from renderer.
   void OnRendererMessage(int process_id,

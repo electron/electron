@@ -15,11 +15,10 @@ namespace api {
 class MenuGtk : public Menu,
                 public ::MenuGtk::Delegate {
  public:
-  explicit MenuGtk(v8::Handle<v8::Object> wrapper);
-  virtual ~MenuGtk();
+  MenuGtk();
 
  protected:
-  virtual void Popup(NativeWindow* window) OVERRIDE;
+  virtual void Popup(Window* window) OVERRIDE;
 
  private:
   scoped_ptr<::MenuGtk> menu_gtk_;

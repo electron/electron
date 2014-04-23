@@ -8,7 +8,7 @@ describe 'protocol module', ->
   describe 'protocol.registerProtocol', ->
     it 'throws error when scheme is already registered', (done) ->
       register = -> protocol.registerProtocol('test1', ->)
-      protocol.once 'registered', (scheme) ->
+      protocol.once 'registered', (event, scheme) ->
         assert.equal scheme, 'test1'
         assert.throws register, /The scheme is already registered/
         protocol.unregisterProtocol 'test1'
@@ -85,28 +85,28 @@ describe 'protocol module', ->
   describe 'protocol.interceptProtocol', ->
     it 'throws error when scheme is not a registered one', ->
       register = -> protocol.interceptProtocol('test-intercept', ->)
-      assert.throws register, /Cannot intercept procotol/
+      assert.throws register, /Scheme does not exist/
 
     it 'throws error when scheme is a custom protocol', (done) ->
-      protocol.once 'unregistered', (scheme) ->
+      protocol.once 'unregistered', (event, scheme) ->
         assert.equal scheme, 'atom'
         done()
-      protocol.once 'registered', (scheme) ->
+      protocol.once 'registered', (event, scheme) ->
         assert.equal scheme, 'atom'
         register = -> protocol.interceptProtocol('test-intercept', ->)
-        assert.throws register, /Cannot intercept procotol/
+        assert.throws register, /Scheme does not exist/
         protocol.unregisterProtocol scheme
       protocol.registerProtocol('atom', ->)
 
     it 'returns original job when callback returns nothing', (done) ->
       targetScheme = 'file'
-      protocol.once 'intercepted', (scheme) ->
+      protocol.once 'intercepted', (event, scheme) ->
         assert.equal scheme, targetScheme
         free = -> protocol.uninterceptProtocol targetScheme
         $.ajax
           url: "#{targetScheme}://#{__filename}",
           success: ->
-            protocol.once 'unintercepted', (scheme) ->
+            protocol.once 'unintercepted', (event, scheme) ->
               assert.equal scheme, targetScheme
               done()
             free()

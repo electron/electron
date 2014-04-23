@@ -6,19 +6,18 @@
 
 #include <vector>
 
+#include "atom/browser/api/event.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "base/logging.h"
-#include "atom/browser/api/atom_api_event.h"
-#include "atom/common/v8/native_type_conversions.h"
-#include "content/public/browser/browser_thread.h"
+#include "base/memory/scoped_ptr.h"
+#include "base/values.h"
 
-#include "atom/common/v8/node_common.h"
+#include "atom/common/node_includes.h"
 
 namespace atom {
 
 AtomBrowserBindings::AtomBrowserBindings() {
-}
-
-AtomBrowserBindings::~AtomBrowserBindings() {
 }
 
 void AtomBrowserBindings::OnRendererMessage(int process_id,
@@ -33,7 +32,7 @@ void AtomBrowserBindings::OnRendererMessage(int process_id,
   // process.emit(channel, 'message', process_id, routing_id);
   std::vector<v8::Handle<v8::Value>> arguments;
   arguments.reserve(3 + args.GetSize());
-  arguments.push_back(ToV8Value(channel));
+  arguments.push_back(mate::ConvertToV8(node_isolate, channel));
   const base::Value* value;
   if (args.Get(0, &value))
     arguments.push_back(converter->ToV8Value(value, global_env->context()));
@@ -65,17 +64,17 @@ void AtomBrowserBindings::OnRendererMessageSync(
   scoped_ptr<V8ValueConverter> converter(new V8ValueConverter);
 
   // Create the event object.
-  v8::Handle<v8::Object> event = api::Event::CreateV8Object();
-  api::Event::Unwrap<api::Event>(event)->SetSenderAndMessage(sender, message);
+  mate::Handle<mate::Event> event = mate::Event::Create(node_isolate);
+  event->SetSenderAndMessage(sender, message);
 
   // process.emit(channel, 'sync-message', event, process_id, routing_id);
   std::vector<v8::Handle<v8::Value>> arguments;
   arguments.reserve(3 + args.GetSize());
-  arguments.push_back(ToV8Value(channel));
+  arguments.push_back(mate::ConvertToV8(node_isolate, channel));
   const base::Value* value;
   if (args.Get(0, &value))
     arguments.push_back(converter->ToV8Value(value, global_env->context()));
-  arguments.push_back(event);
+  arguments.push_back(event.ToV8());
   arguments.push_back(v8::Integer::New(process_id));
   arguments.push_back(v8::Integer::New(routing_id));
 

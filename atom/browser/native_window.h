@@ -158,6 +158,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Should be called by platform code when user want to close the window.
   virtual void CloseWebContents();
 
+  // Destroy the WebContents immediately.
+  virtual void DestroyWebContents();
+
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
@@ -169,6 +172,11 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   void AppendExtraCommandLineSwitches(CommandLine* command_line,
                                       int child_process_id);
   void OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs);
+
+  // Public API used by platform-dependent delegates and observers to send UI
+  // related notifications.
+  void NotifyWindowClosed();
+  void NotifyWindowBlur();
 
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);
@@ -192,12 +200,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
     return static_cast<brightray::InspectableWebContentsImpl*>(
         inspectable_web_contents_.get());
   }
-
-  void NotifyWindowClosed();
-  void NotifyWindowBlur();
-
-  // Destroy the inspectable_web_contents.
-  void DestroyWebContents();
 
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(

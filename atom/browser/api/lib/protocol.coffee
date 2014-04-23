@@ -1,7 +1,7 @@
-protocol = process.atomBinding 'protocol'
+protocol = process.atomBinding('protocol').protocol
 EventEmitter = require('events').EventEmitter
 
-protocol[key] = value for key, value of EventEmitter.prototype
+protocol.__proto__ = EventEmitter.prototype
 
 protocol.RequestStringJob =
 class RequestStringJob

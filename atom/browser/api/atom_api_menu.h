@@ -5,27 +5,38 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_MENU_H_
 #define ATOM_BROWSER_API_ATOM_API_MENU_H_
 
+#include <string>
+
+#include "atom/browser/api/atom_api_window.h"
 #include "base/memory/scoped_ptr.h"
-#include "atom/common/api/atom_api_event_emitter.h"
 #include "ui/base/models/simple_menu_model.h"
+#include "native_mate/wrappable.h"
 
 namespace atom {
 
-class NativeWindow;
-
 namespace api {
 
-class Menu : public EventEmitter,
+class MenuMac;
+
+class Menu : public mate::Wrappable,
              public ui::SimpleMenuModel::Delegate {
  public:
-  virtual ~Menu();
+  static mate::Wrappable* Create();
 
-  static Menu* Create(v8::Handle<v8::Object> wrapper);
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Handle<v8::ObjectTemplate> prototype);
 
-  static void Initialize(v8::Handle<v8::Object> target);
+#if defined(OS_MACOSX)
+  // Set the global menubar.
+  static void SetApplicationMenu(Menu* menu);
+
+  // Fake sending an action from the application menu.
+  static void SendActionToFirstResponder(const std::string& action);
+#endif
 
  protected:
-  explicit Menu(v8::Handle<v8::Object> wrapper);
+  Menu();
+  virtual ~Menu();
 
   // ui::SimpleMenuModel::Delegate implementations:
   virtual bool IsCommandIdChecked(int command_id) const OVERRIDE;
@@ -39,43 +50,37 @@ class Menu : public EventEmitter,
   virtual string16 GetSublabelForCommandId(int command_id) const OVERRIDE;
   virtual void ExecuteCommand(int command_id, int event_flags) OVERRIDE;
 
-  virtual void Popup(NativeWindow* window) = 0;
+  virtual void Popup(Window* window) = 0;
 
   scoped_ptr<ui::SimpleMenuModel> model_;
 
  private:
-  static void New(const v8::FunctionCallbackInfo<v8::Value>& args);
-
-  static void InsertItem(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void InsertCheckItem(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void InsertRadioItem(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void InsertSeparator(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void InsertSubMenu(const v8::FunctionCallbackInfo<v8::Value>& args);
-
-  static void SetIcon(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void SetSublabel(const v8::FunctionCallbackInfo<v8::Value>& args);
-
-  static void Clear(const v8::FunctionCallbackInfo<v8::Value>& args);
-
-  static void GetIndexOfCommandId(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GetItemCount(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GetCommandIdAt(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GetLabelAt(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void GetSublabelAt(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void IsItemCheckedAt(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void IsEnabledAt(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void IsVisibleAt(const v8::FunctionCallbackInfo<v8::Value>& args);
-
-  static void Popup(const v8::FunctionCallbackInfo<v8::Value>& args);
+  void InsertItemAt(int index, int command_id, const base::string16& label);
+  void InsertSeparatorAt(int index);
+  void InsertCheckItemAt(int index,
+                         int command_id,
+                         const base::string16& label);
+  void InsertRadioItemAt(int index,
+                         int command_id,
+                         const base::string16& label,
+                         int group_id);
+  void InsertSubMenuAt(int index,
+                       int command_id,
+                       const base::string16& label,
+                       Menu* menu);
+  void SetSublabel(int index, const base::string16& sublabel);
+  void Clear();
+  int GetIndexOfCommandId(int command_id);
+  int GetItemCount() const;
+  int GetCommandIdAt(int index) const;
+  base::string16 GetLabelAt(int index) const;
+  base::string16 GetSublabelAt(int index) const;
+  bool IsItemCheckedAt(int index) const;
+  bool IsEnabledAt(int index) const;
+  bool IsVisibleAt(int index) const;
 
 #if defined(OS_WIN) || defined(TOOLKIT_GTK)
-  static void AttachToWindow(const v8::FunctionCallbackInfo<v8::Value>& args);
-#elif defined(OS_MACOSX)
-  static void SetApplicationMenu(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void SendActionToFirstResponder(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
+  void AttachToWindow(Window* window);
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(Menu);

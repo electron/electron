@@ -14,7 +14,7 @@ describe 'browser-window module', ->
       w.on 'loading-state-changed', (event, isLoading) ->
         if (!isLoading)
           w.close()
-      w.on 'destroyed', ->
+      w.on 'closed', ->
         test = path.join(fixtures, 'api', 'unload')
         content = fs.readFileSync(test)
         fs.unlinkSync(test)

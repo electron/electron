@@ -121,10 +121,7 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
 }
 
 NativeWindowGtk::~NativeWindowGtk() {
-  ui::ActiveWindowWatcherX::RemoveObserver(this);
-
-  if (window_)
-    gtk_widget_destroy(GTK_WIDGET(window_));
+  CloseImmediately();
 }
 
 void NativeWindowGtk::Close() {
@@ -132,6 +129,12 @@ void NativeWindowGtk::Close() {
 }
 
 void NativeWindowGtk::CloseImmediately() {
+  if (window_ == NULL)
+    return;
+
+  NotifyWindowClosed();
+  ui::ActiveWindowWatcherX::RemoveObserver(this);
+
   gtk_widget_destroy(GTK_WIDGET(window_));
   window_ = NULL;
 }
