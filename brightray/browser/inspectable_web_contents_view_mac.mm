@@ -17,6 +17,10 @@ InspectableWebContentsViewMac::InspectableWebContentsViewMac(InspectableWebConte
       view_([[BRYInspectableWebContentsView alloc] initWithInspectableWebContentsViewMac:this]) {
 }
 
+InspectableWebContentsViewMac::~InspectableWebContentsViewMac() {
+  [view_ removeFromNotificationCenter];
+}
+
 gfx::NativeView InspectableWebContentsViewMac::GetNativeView() const {
   return view_.get();
 }

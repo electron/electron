@@ -8,6 +8,7 @@
   BRYInspectableWebContentsViewPrivate *_private;
 }
 
+- (void)removeFromNotificationCenter;
 - (IBAction)showDevTools:(id)sender;
 
 @end

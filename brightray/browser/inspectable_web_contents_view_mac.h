@@ -15,6 +15,7 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
  public:
   explicit InspectableWebContentsViewMac(
       InspectableWebContentsImpl* inspectable_web_contents_impl);
+  virtual ~InspectableWebContentsViewMac();
 
   virtual gfx::NativeView GetNativeView() const OVERRIDE;
   virtual void ShowDevTools() OVERRIDE;
