@@ -132,6 +132,7 @@ void NativeWindowGtk::Close() {
 }
 
 void NativeWindowGtk::CloseImmediately() {
+  NotifyWindowClosed();
   gtk_widget_destroy(GTK_WIDGET(window_));
   window_ = NULL;
 }

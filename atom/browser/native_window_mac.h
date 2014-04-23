@@ -57,8 +57,6 @@ class NativeWindowMac : public NativeWindow {
   virtual bool HasModalDialog() OVERRIDE;
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
 
-  void NotifyWindowBlur() { NativeWindow::NotifyWindowBlur(); }
-
   // Returns true if |point| in local Cocoa coordinate system falls within
   // the draggable region.
   bool IsWithinDraggableRegion(NSPoint point) const;

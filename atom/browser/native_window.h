@@ -173,6 +173,11 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
                                       int child_process_id);
   void OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs);
 
+  // Public API used by platform-dependent delegates and observers to send UI
+  // related notifications.
+  void NotifyWindowClosed();
+  void NotifyWindowBlur();
+
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);
   }
@@ -195,9 +200,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
     return static_cast<brightray::InspectableWebContentsImpl*>(
         inspectable_web_contents_.get());
   }
-
-  void NotifyWindowClosed();
-  void NotifyWindowBlur();
 
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(
