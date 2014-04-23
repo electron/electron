@@ -461,8 +461,6 @@ void NativeWindow::CloseContents(content::WebContents* source) {
   // overriding the OnWindowClosed method in the observer.
   CloseImmediately();
 
-  NotifyWindowClosed();
-
   // Do not sent "unresponsive" event after window is closed.
   window_unresposive_closure_.Cancel();
 }
