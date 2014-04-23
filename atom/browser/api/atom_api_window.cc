@@ -11,7 +11,6 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/bind.h"
 #include "base/callback.h"
-#include "base/process/kill.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/render_process_host.h"
@@ -74,6 +73,9 @@ Window::Window(base::DictionaryValue* options)
 }
 
 Window::~Window() {
+  if (window_)
+    Destroy();
+
   Emit("destroyed");
 }
 
@@ -137,7 +139,7 @@ mate::Wrappable* Window::New(mate::Arguments* args,
 }
 
 void Window::Destroy() {
-  base::KillProcess(window_->GetRenderProcessHandle(), 0, false);
+  window_->DestroyWebContents();
   window_->CloseImmediately();
 }
 
