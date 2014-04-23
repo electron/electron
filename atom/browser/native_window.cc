@@ -99,6 +99,10 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
 }
 
 NativeWindow::~NativeWindow() {
+  // Make sure we have the OnRenderViewDeleted message sent even when the window
+  // is destroyed directly.
+  DestroyWebContents();
+
   // It's possible that the windows gets destroyed before it's closed, in that
   // case we need to ensure the OnWindowClosed message is still notified.
   NotifyWindowClosed();
@@ -298,6 +302,17 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
 }
 
 void NativeWindow::DestroyWebContents() {
+  if (!inspectable_web_contents_)
+    return;
+
+  // The OnRenderViewDeleted is not called when the WebContents is destroyed
+  // directly (e.g. when closing the window), so we make sure it's always
+  // emitted to users by sending it before window is closed..
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnRenderViewDeleted(
+                        GetWebContents()->GetRenderProcessHost()->GetID(),
+                        GetWebContents()->GetRoutingID()));
+
   inspectable_web_contents_.reset();
 }
 
@@ -350,14 +365,6 @@ void NativeWindow::OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs) {
 void NativeWindow::NotifyWindowClosed() {
   if (is_closed_)
     return;
-
-  // The OnRenderViewDeleted is not called when the WebContents is destroyed
-  // directly (e.g. when closing the window), so we make sure it's always
-  // emitted to users by sending it before window is closed..
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnRenderViewDeleted(
-                        GetWebContents()->GetRenderProcessHost()->GetID(),
-                        GetWebContents()->GetRoutingID()));
 
   is_closed_ = true;
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowClosed());
@@ -444,6 +451,9 @@ void NativeWindow::MoveContents(content::WebContents* source,
 }
 
 void NativeWindow::CloseContents(content::WebContents* source) {
+  // Destroy the WebContents before we close the window.
+  DestroyWebContents();
+
   // When the web contents is gone, close the window immediately, but the
   // memory will not be freed until you call delete.
   // In this way, it would be safe to manage windows via smart pointers. If you
