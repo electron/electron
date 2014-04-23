@@ -38,7 +38,6 @@ ObjectTemplateBuilder Wrappable::GetObjectTemplateBuilder(
 // static
 MATE_WEAK_CALLBACK(Wrappable::WeakCallback, v8::Object, Wrappable) {
   MATE_WEAK_CALLBACK_INIT(Wrappable);
-  MATE_PERSISTENT_RESET(self->wrapper_);
   delete self;
 }
 
