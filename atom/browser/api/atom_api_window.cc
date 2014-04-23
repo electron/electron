@@ -318,10 +318,9 @@ void Window::CapturePage(mate::Arguments* args) {
   gfx::Rect rect;
   base::Callback<void(v8::Handle<v8::Value>)> callback;
 
-  if ((args->Length() == 1 && !args->GetNext(&callback)) ||
-      (args->Length() == 2 && !args->GetNext(&rect)
-                           && !args->GetNext(&callback)) ||
-      (args->Length() == 0)) {
+  if (!(args->Length() == 1 && args->GetNext(&callback)) ||
+      !(args->Length() == 2 && args->GetNext(&rect)
+                            && args->GetNext(&callback))) {
     args->ThrowError();
     return;
   }
