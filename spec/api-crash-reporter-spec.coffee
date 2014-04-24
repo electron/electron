@@ -10,8 +10,11 @@ BrowserWindow = remote.require 'browser-window'
 describe 'crash-reporter module', ->
   fixtures = path.resolve __dirname, 'fixtures'
 
+  w = null
+  beforeEach -> w = new BrowserWindow(show: false)
+  afterEach -> w.destroy()
+
   it 'should send minidump when renderer crashes', (done) ->
-    w = new BrowserWindow(show: false)
     server = http.createServer (req, res) ->
       form = new formidable.IncomingForm()
       process.throwDeprecation = false
@@ -28,7 +31,6 @@ describe 'crash-reporter module', ->
         assert.equal fields['_version'], require('remote').require('app').getVersion()
         assert files['upload_file_minidump']['name']?
 
-        w.destroy()
         res.end()
         server.close()
         done()
