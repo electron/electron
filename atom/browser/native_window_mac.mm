@@ -210,7 +210,6 @@ void NativeWindowMac::Close() {
 }
 
 void NativeWindowMac::CloseImmediately() {
-  [window_ orderOut:nil];
   [window_ close];
 }
 
