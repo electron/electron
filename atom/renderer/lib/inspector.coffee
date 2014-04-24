@@ -51,8 +51,8 @@ createMenu = (items, event) ->
 showFileChooserDialog = (callback) ->
   remote = require 'remote'
   dialog = remote.require 'dialog'
-  dialog.showOpenDialog remote.getCurrentWindow(), null, (files) ->
-    callback pathToHtml5FileObject(files[0]) if files?
+  files = dialog.showOpenDialog remote.getCurrentWindow(), null
+  callback pathToHtml5FileObject files[0] if files?
 
 pathToHtml5FileObject = (path) ->
   fs = require 'fs'
