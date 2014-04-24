@@ -1,6 +1,7 @@
 assert     = require 'assert'
 path       = require 'path'
 http       = require 'http'
+url        = require 'url'
 remote     = require 'remote'
 formidable = require 'formidable'
 
@@ -31,5 +32,10 @@ describe 'crash-reporter module', ->
         res.end()
         server.close()
         done()
-    server.listen 1127, '127.0.0.1', ->
-      w.loadUrl 'file://' + path.join(fixtures, 'api', 'crash.html')
+    port = Math.floor(Math.random() * 55535 + 10000)
+    server.listen port, '127.0.0.1', ->
+      url = url.format
+        protocol: 'file'
+        pathname: path.join fixtures, 'api', 'crash.html'
+        search: "?port=#{port}"
+      w.loadUrl url
