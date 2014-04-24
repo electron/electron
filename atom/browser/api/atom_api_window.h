@@ -11,6 +11,7 @@
 #include "base/memory/scoped_ptr.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/browser/api/event_emitter.h"
+#include "native_mate/handle.h"
 
 class GURL;
 
@@ -28,6 +29,8 @@ namespace atom {
 class NativeWindow;
 
 namespace api {
+
+class WebContents;
 
 class Window : public mate::EventEmitter,
                public NativeWindowObserver {
@@ -100,6 +103,8 @@ class Window : public mate::EventEmitter,
   void CapturePage(mate::Arguments* args);
 
   // APIs for WebContents.
+  mate::Handle<WebContents> GetWebContents(v8::Isolate* isolate) const;
+  mate::Handle<WebContents> GetDevToolsWebContents(v8::Isolate* isolate) const;
   string16 GetPageTitle();
   bool IsLoading();
   bool IsWaitingForResponse();

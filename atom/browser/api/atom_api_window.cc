@@ -4,6 +4,7 @@
 
 #include "atom/browser/api/atom_api_window.h"
 
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_window.h"
 #include "atom/common/native_mate_converters/function_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -326,6 +327,15 @@ void Window::CapturePage(mate::Arguments* args) {
   window_->CapturePage(rect, base::Bind(&OnCapturePageDone, callback));
 }
 
+mate::Handle<WebContents> Window::GetWebContents(v8::Isolate* isolate) const {
+  return WebContents::Create(isolate, window_->GetWebContents());
+}
+
+mate::Handle<WebContents> Window::GetDevToolsWebContents(
+    v8::Isolate* isolate) const {
+  return WebContents::Create(isolate, window_->GetDevToolsWebContents());
+}
+
 string16 Window::GetPageTitle() {
   return window_->GetWebContents()->GetTitle();
 }
@@ -462,6 +472,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("blurWebView", &Window::BlurWebView)
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)
       .SetMethod("capturePage", &Window::CapturePage)
+      .SetMethod("getWebContents", &Window::GetWebContents)
+      .SetMethod("getDevToolsWebContents", &Window::GetDevToolsWebContents)
       .SetMethod("getPageTitle", &Window::GetPageTitle)
       .SetMethod("isLoading", &Window::IsLoading)
       .SetMethod("isWaitingForResponse", &Window::IsWaitingForResponse)
