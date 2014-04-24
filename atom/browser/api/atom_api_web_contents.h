@@ -8,6 +8,8 @@
 #include "atom/browser/api/event_emitter.h"
 #include "native_mate/handle.h"
 
+class GURL;
+
 namespace content {
 class WebContents;
 }
@@ -20,6 +22,15 @@ class WebContents : public mate::EventEmitter {
  public:
   static mate::Handle<WebContents> Create(v8::Isolate* isolate,
                                           content::WebContents* web_contents);
+
+  GURL GetURL() const;
+  string16 GetTitle() const;
+  bool IsLoading() const;
+  bool IsWaitingForResponse() const;
+  void Stop();
+  int GetRoutingID() const;
+  int GetProcessID() const;
+  bool IsCrashed() const;
 
  protected:
   explicit WebContents(content::WebContents* web_contents);

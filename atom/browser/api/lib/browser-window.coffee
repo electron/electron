@@ -14,6 +14,8 @@ BrowserWindow::_init = ->
     menu = app.getApplicationMenu()
     @setMenu menu if menu?
 
+  @webContents = @getWebContents()
+
   # Remember the window.
   id = BrowserWindow.windows.add this
 
@@ -61,5 +63,15 @@ BrowserWindow.fromDevTools = (processId, routingId) ->
     devtools = window.getDevTools()
     return window if devtools.processId == processId and
                      devtools.routingId == routingId
+
+# Be compatible with old API.
+BrowserWindow::getUrl = -> @webContents.getUrl()
+BrowserWindow::getPageTitle = -> @webContents.getTitle()
+BrowserWindow::isLoading = -> @webContents.isLoading()
+BrowserWindow::isWaitingForResponse = -> @webContents.isWaitingForResponse()
+BrowserWindow::stop = -> @webContents.stop()
+BrowserWindow::getRoutingId = -> @webContents.getRoutingId()
+BrowserWindow::getProcessId = -> @webContents.getProcessId()
+BrowserWindow::isCrashed = -> @webContents.isCrashed()
 
 module.exports = BrowserWindow

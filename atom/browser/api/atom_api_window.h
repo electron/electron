@@ -105,13 +105,6 @@ class Window : public mate::EventEmitter,
   // APIs for WebContents.
   mate::Handle<WebContents> GetWebContents(v8::Isolate* isolate) const;
   mate::Handle<WebContents> GetDevToolsWebContents(v8::Isolate* isolate) const;
-  string16 GetPageTitle();
-  bool IsLoading();
-  bool IsWaitingForResponse();
-  void Stop();
-  int GetRoutingID();
-  int GetProcessID();
-  bool IsCrashed();
 
   // APIs for devtools.
   mate::Dictionary GetDevTools(v8::Isolate* isolate);
@@ -119,7 +112,6 @@ class Window : public mate::EventEmitter,
 
   // APIs for NavigationController.
   void LoadURL(const GURL& url);
-  GURL GetURL();
   bool CanGoBack();
   bool CanGoForward();
   bool CanGoToOffset(int offset);

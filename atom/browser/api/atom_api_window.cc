@@ -336,34 +336,6 @@ mate::Handle<WebContents> Window::GetDevToolsWebContents(
   return WebContents::Create(isolate, window_->GetDevToolsWebContents());
 }
 
-string16 Window::GetPageTitle() {
-  return window_->GetWebContents()->GetTitle();
-}
-
-bool Window::IsLoading() {
-  return window_->GetWebContents()->IsLoading();
-}
-
-bool Window::IsWaitingForResponse() {
-  return window_->GetWebContents()->IsWaitingForResponse();
-}
-
-void Window::Stop() {
-  window_->GetWebContents()->Stop();
-}
-
-int Window::GetRoutingID() {
-  return window_->GetWebContents()->GetRoutingID();
-}
-
-int Window::GetProcessID() {
-  return window_->GetWebContents()->GetRenderProcessHost()->GetID();
-}
-
-bool Window::IsCrashed() {
-  return window_->GetWebContents()->IsCrashed();
-}
-
 mate::Dictionary Window::GetDevTools(v8::Isolate* isolate) {
   mate::Dictionary dict(mate::Dictionary::CreateEmpty(isolate));
   content::WebContents* web_contents = window_->GetDevToolsWebContents();
@@ -383,13 +355,6 @@ void Window::LoadURL(const GURL& url) {
   params.transition_type = content::PAGE_TRANSITION_TYPED;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
   controller.LoadURLWithParams(params);
-}
-
-GURL Window::GetURL() {
-  NavigationController& controller = window_->GetWebContents()->GetController();
-  if (!controller.GetActiveEntry())
-    return GURL();
-  return controller.GetActiveEntry()->GetVirtualURL();
 }
 
 bool Window::CanGoBack() {
@@ -474,18 +439,10 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("capturePage", &Window::CapturePage)
       .SetMethod("getWebContents", &Window::GetWebContents)
       .SetMethod("getDevToolsWebContents", &Window::GetDevToolsWebContents)
-      .SetMethod("getPageTitle", &Window::GetPageTitle)
-      .SetMethod("isLoading", &Window::IsLoading)
-      .SetMethod("isWaitingForResponse", &Window::IsWaitingForResponse)
-      .SetMethod("stop", &Window::Stop)
-      .SetMethod("getRoutingId", &Window::GetRoutingID)
-      .SetMethod("getProcessId", &Window::GetProcessID)
-      .SetMethod("isCrashed", &Window::IsCrashed)
       .SetMethod("getDevTools", &Window::GetDevTools)
       .SetMethod("executeJavaScriptInDevTools",
                  &Window::ExecuteJavaScriptInDevTools)
       .SetMethod("loadUrl", &Window::LoadURL)
-      .SetMethod("getUrl", &Window::GetURL)
       .SetMethod("canGoBack", &Window::CanGoBack)
       .SetMethod("canGoForward", &Window::CanGoForward)
       .SetMethod("canGoToOffset", &Window::CanGoToOffset)
