@@ -57,7 +57,7 @@ BrowserWindow.fromProcessIdAndRoutingId = (processId, routingId) ->
 
 BrowserWindow.fromDevTools = (processId, routingId) ->
   windows = BrowserWindow.getAllWindows()
-  for window in windows
+  for window in windows when window.isDevToolsOpened()
     devtools = window.getDevTools()
     return window if devtools.processId == processId and
                      devtools.routingId == routingId

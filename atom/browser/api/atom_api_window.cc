@@ -355,8 +355,8 @@ bool Window::IsCrashed() {
 }
 
 mate::Dictionary Window::GetDevTools(v8::Isolate* isolate) {
+  mate::Dictionary dict(mate::Dictionary::CreateEmpty(isolate));
   content::WebContents* web_contents = window_->GetDevToolsWebContents();
-  mate::Dictionary dict(isolate);
   dict.Set("processId", web_contents->GetRenderProcessHost()->GetID());
   dict.Set("routingId", web_contents->GetRoutingID());
   return dict;
