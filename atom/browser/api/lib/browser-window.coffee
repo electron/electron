@@ -15,7 +15,9 @@ BrowserWindow::_init = ->
     @setMenu menu if menu?
 
   # Define getter for webContents.
-  @webContents = @getWebContents()
+  @__webContents = null
+  @__defineGetter__ 'webContents', ->
+    @__webContents ?= @getWebContents()
   @__devToolsWebContents = null
   @__defineGetter__ 'devToolsWebContents', ->
     if @isDevToolsOpened()
