@@ -106,10 +106,6 @@ class Window : public mate::EventEmitter,
   mate::Handle<WebContents> GetWebContents(v8::Isolate* isolate) const;
   mate::Handle<WebContents> GetDevToolsWebContents(v8::Isolate* isolate) const;
 
-  // APIs for devtools.
-  mate::Dictionary GetDevTools(v8::Isolate* isolate);
-  void ExecuteJavaScriptInDevTools(const std::string& code);
-
   // APIs for NavigationController.
   void LoadURL(const GURL& url);
   bool CanGoBack();

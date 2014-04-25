@@ -229,11 +229,6 @@ void NativeWindow::InspectElement(int x, int y) {
   agent->InspectElement(x, y);
 }
 
-void NativeWindow::ExecuteJavaScriptInDevTools(const std::string& script) {
-  GetDevToolsWebContents()->GetRenderViewHost()->ExecuteJavascriptInWebFrame(
-      string16(), base::UTF8ToUTF16(script));
-}
-
 void NativeWindow::FocusOnWebView() {
   GetWebContents()->GetRenderViewHost()->Focus();
 }
@@ -628,7 +623,8 @@ void NativeWindow::CallDevToolsFunction(const std::string& function_name,
       }
     }
   }
-  ExecuteJavaScriptInDevTools(function_name + "(" + params + ");");
+  GetDevToolsWebContents()->GetRenderViewHost()->ExecuteJavascriptInWebFrame(
+      string16(), base::UTF8ToUTF16(function_name + "(" + params + ");"));
 }
 
 void NativeWindow::OnRendererMessage(const string16& channel,

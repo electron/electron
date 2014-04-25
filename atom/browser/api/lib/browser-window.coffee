@@ -14,7 +14,14 @@ BrowserWindow::_init = ->
     menu = app.getApplicationMenu()
     @setMenu menu if menu?
 
+  # Define getter for webContents.
   @webContents = @getWebContents()
+  @__devToolsWebContents = null
+  @__defineGetter__ 'devToolsWebContents', ->
+    if @isDevToolsOpened()
+      @__devToolsWebContents ?= @getDevToolsWebContents()
+    else
+      @__devToolsWebContents = null
 
   # Remember the window.
   id = BrowserWindow.windows.add this
@@ -73,5 +80,10 @@ BrowserWindow::stop = -> @webContents.stop()
 BrowserWindow::getRoutingId = -> @webContents.getRoutingId()
 BrowserWindow::getProcessId = -> @webContents.getProcessId()
 BrowserWindow::isCrashed = -> @webContents.isCrashed()
+BrowserWindow::getDevTools = ->
+  processId: @devToolsWebContents.getProcessId()
+  routingId: @devToolsWebContents.getRoutingId()
+BrowserWindow::executeJavaScriptInDevTools = (code) ->
+  @devToolsWebContents.executeJavaScript code
 
 module.exports = BrowserWindow

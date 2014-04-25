@@ -336,18 +336,6 @@ mate::Handle<WebContents> Window::GetDevToolsWebContents(
   return WebContents::Create(isolate, window_->GetDevToolsWebContents());
 }
 
-mate::Dictionary Window::GetDevTools(v8::Isolate* isolate) {
-  mate::Dictionary dict(mate::Dictionary::CreateEmpty(isolate));
-  content::WebContents* web_contents = window_->GetDevToolsWebContents();
-  dict.Set("processId", web_contents->GetRenderProcessHost()->GetID());
-  dict.Set("routingId", web_contents->GetRoutingID());
-  return dict;
-}
-
-void Window::ExecuteJavaScriptInDevTools(const std::string& code) {
-  window_->ExecuteJavaScriptInDevTools(code);
-}
-
 void Window::LoadURL(const GURL& url) {
   NavigationController& controller = window_->GetWebContents()->GetController();
 
@@ -439,9 +427,6 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("capturePage", &Window::CapturePage)
       .SetMethod("getWebContents", &Window::GetWebContents)
       .SetMethod("getDevToolsWebContents", &Window::GetDevToolsWebContents)
-      .SetMethod("getDevTools", &Window::GetDevTools)
-      .SetMethod("executeJavaScriptInDevTools",
-                 &Window::ExecuteJavaScriptInDevTools)
       .SetMethod("loadUrl", &Window::LoadURL)
       .SetMethod("canGoBack", &Window::CanGoBack)
       .SetMethod("canGoForward", &Window::CanGoForward)
