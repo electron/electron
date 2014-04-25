@@ -1,5 +1,5 @@
 // Copyright (c) 2013 GitHub, Inc. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
+// Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
 #ifndef ATOM_BROWSER_UI_FILE_DIALOG_H_

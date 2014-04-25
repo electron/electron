@@ -1,6 +1,6 @@
 // Copyright (c) 2013 GitHub, Inc. All rights reserved.
 // Copyright (c) 2011 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
+// Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
 #include "atom/browser/net/atom_url_request_job_factory.h"

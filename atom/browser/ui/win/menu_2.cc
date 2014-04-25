@@ -1,6 +1,6 @@
 // Copyright (c) 2013 GitHub, Inc. All rights reserved.
 // Copyright (c) 2012 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
+// Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
 #include "atom/browser/ui/win/menu_2.h"

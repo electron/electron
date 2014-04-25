@@ -1,5 +1,5 @@
 // Copyright (c) 2014 GitHub, Inc. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
+// Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
 #include "atom/common/native_mate_converters/value_converter.h"
