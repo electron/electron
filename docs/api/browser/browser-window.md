@@ -7,7 +7,7 @@ example is:
 var BrowserWindow = require('browser-window');
 
 var win = new BrowserWindow({ width: 800, height: 600, show: false });
-win.on('destroyed', function() {
+win.on('closed', function() {
   win = null;
 });
 
@@ -86,13 +86,6 @@ you should explictly set `sandbox` to `none`:
 Emitted when the document changed its title, calling `event.preventDefault()`
 would prevent the native window's title to change.
 
-### Event: 'loading-state-changed'
-
-* `event` Event
-* `isLoading` Boolean
-
-Emitted when the window is starting or is done loading a page.
-
 ### Event: 'close'
 
 * `event` Event
@@ -137,10 +130,6 @@ Emiited when the web page becomes unresponsive.
 
 Emitted when the unresponsive web page becomes responsive again.
 
-### Event: 'crashed'
-
-Emitted when the renderer process is crashed.
-
 ### Event: 'blur'
 
 Emiited when window loses focus.
@@ -153,12 +142,20 @@ Returns an array of all opened browser windows.
 
 Returns the window that is focused in this application.
 
-### Class Method: BrowserWindow.fromProcessIdAndRoutingId(processId, routingId)
+### Class Method: BrowserWindow.fromWebContents(webContents)
 
-* `processId` Integer
-* `routingId` Integer
+* `webContents` WebContents
 
-Find a window according to its `processId` and `routingId`.
+Find a window according to the `webContents` it owns
+
+### BrowserWindow.webContents
+
+The `WebContents` object this window owns, all web page related events and
+operations would be done via it.
+
+### BrowserWindow.devToolsWebContents
+
+Get the `WebContents` of devtools of this window.
 
 ### BrowserWindow.destroy()
 
@@ -334,13 +331,6 @@ Closes the developer tools.
 
 Starts inspecting element at position (`x`, `y`).
 
-### BrowserWindow.executeJavaScriptInDevTools(code)
-
-* `code` String
-
-Evaluate `code` in devtools to use
-[InspectorFrontendAPI](https://code.google.com/p/chromium/codesearch#chromium/src/third_party/WebKit/Source/devtools/front_end/InspectorFrontendAPI.js&q=InspectorFrontendAPI&sq=package:chromium&type=cs)
-
 ### BrowserWindow.focusOnWebView()
 
 ### BrowserWindow.blurWebView()
@@ -366,82 +356,113 @@ encode it and use data URL to embed the image in HTML.
 [remote](../renderer/remote.md) if you are going to use this API in renderer
 process.
 
-### BrowserWindow.getPageTitle()
-
-Returns the title of web page.
-
-### BrowserWindow.isLoading()
-
-Returns whether web page is still loading resources.
-
-### BrowserWindow.isWaitingForResponse()
-
-Returns whether web page is waiting for a first-response for the main resource
-of the page.
-
-### BrowserWindow.stop()
-
-Stops any pending navigation.
-
-### BrowserWindow.getProcessId()
-
-Returns window's process ID. The process ID and routing ID can be used
-together to locate a window.
-
-### BrowserWindow.getRoutingId()
-
-Returns window's routing ID. The process ID and routing ID can be used
-together to locate a window.
-
 ### BrowserWindow.loadUrl(url)
+
+Same with `webContents.loadUrl(url)`.
+
+## Class: WebContents
+
+A `WebContents` is responsible for rendering and controlling a web page.
+
+`WebContents` is an
+[EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
+
+### Event: 'crashed'
+
+Emitted when the renderer process is crashed.
+
+### Event: 'did-finish-load'
+
+Emitted when the navigation is done, i.e. the spinner of the tab will stop
+spinning, and the onload event was dispatched.
+
+### Event: 'did-start-loading'
+
+### Event: 'did-stop-loading'
+
+### WebContents.loadUrl(url)
 
 * `url` URL
 
 Loads the `url` in the window, the `url` must contains the protocol prefix,
 e.g. the `http://` or `file://`.
 
-### BrowserWindow.getUrl()
+### WebContents.getUrl()
 
 Returns URL of current web page.
 
-### BrowserWindow.canGoBack()
+### WebContents.getTitle()
+
+Returns the title of web page.
+
+### WebContents.isLoading()
+
+Returns whether web page is still loading resources.
+
+### WebContents.isWaitingForResponse()
+
+Returns whether web page is waiting for a first-response for the main resource
+of the page.
+
+### WebContents.stop()
+
+Stops any pending navigation.
+
+### WebContents.reload()
+
+Reloads current page.
+
+### WebContents.reloadIgnoringCache()
+
+Reloads current page and ignores cache.
+
+### WebContents.canGoBack()
 
 Returns whether the web page can go back.
 
-### BrowserWindow.canGoForward()
+### WebContents.canGoForward()
 
 Returns whether the web page can go forward.
 
-### BrowserWindow.canGoToOffset(offset)
+### WebContents.canGoToOffset(offset)
 
 * `offset` Integer
 
 Returns whether the web page can go to `offset`.
 
-### BrowserWindow.goBack()
+### WebContents.goBack()
 
 Makes the web page go back.
 
-### BrowserWindow.goForward()
+### WebContents.goForward()
 
 Makes the web page go forward.
 
-### BrowserWindow.goToIndex(index)
+### WebContents.goToIndex(index)
 
 * `index` Integer
 
 Navigates to the specified absolute index.
 
-### BrowserWindow.goToOffset(offset)
+### WebContents.goToOffset(offset)
 
 * `offset` Integer
 
 Navigates to the specified offset from the "current entry".
 
-### BrowserWindow.reload()
+### WebContents.IsCrashed()
 
-Reloads current window.
+Whether the renderer process has crashed.
 
-### BrowserWindow.reloadIgnoringCache()
+### WebContents.executeJavaScript(code)
 
-Reloads current window and ignores cache.
+* `code` String
+
+Evaluate `code` in page.
+
+### WebContents.send(channel[, args...])
+
+* `channel` String
+
+Send `args..` to the web page via `channel` in asynchronous message, the web
+page can handle it by listening to the `channel` event of `ipc` module.
