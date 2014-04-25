@@ -1,52 +1,45 @@
 # ipc (browser)
 
-The `ipc` module allows developers to send asynchronous messages to renderers.
-To avoid possible dead-locks, it's not allowed to send synchronous messages in
-browser.
+Handles asynchronous and synchronous message sent from web page.
 
-## Event: 'message'
+The messages sent from web page would be emitted to this module, the event name
+is the `channel` when sending message. To reply a synchronous message, you need
+to set `event.returnValue`, to send an asynchronous back to the sender, you can
+use `event.sender.send(...)`.
 
-* `processId` Integer
-* `routingId` Integer
-
-Emitted when renderer sent a message to the browser.
-
-## Event: 'sync-message'
-
-* `event` Object
-* `processId` Integer
-* `routingId` Integer
-
-Emitted when renderer sent a synchronous message to the browser. The receiver
-should store the result in `event.returnValue`.
-
-**Note:** Due to the limitation of `EventEmitter`, returning value in the
-event handler has no effect, so we have to store the result by using the
-`event` parameter.
-
-## ipc.send(processId, routingId, [args...])
-
-* `processId` Integer
-* `routingId` Integer
-
-Send `args...` to the renderer specified by `processId` and `routingId` and
-return immediately, the renderer should handle the message by listening to the
-`message` event.
-
-## ipc.sendChannel(processId, routingId, channel, [args...])
-
-* `processId` Integer
-* `routingId` Integer
-* `channel` String
-
-This is the same with ipc.send, except that the renderer should listen to the
-`channel` event. The ipc.send(processId, routingId, args...) can be seen as
-ipc.sendChannel(processId, routingId, 'message', args...).
-
-**Note:** If the the first argument (e.g. `processId`) is a `BrowserWindow`,
-`ipc.sendChannel` would automatically get the `processId` and `routingId`
-from it, so you can send a message to window like this:
+An example of sending and handling messages:
 
 ```javascript
-ipc.sendChannel(browserWindow, 'message', ...);
+// In browser.
+var ipc = require('ipc');
+ipc.on('asynchronous-message', function(event, arg) {
+  console.log(arg);  // prints "ping"
+  event.sender.send('asynchronous-reply', 'pong');
+});
+
+ipc.on('synchronous-message', function(event, arg) {
+  console.log(arg);  // prints "ping"
+  event.returnValue = 'pong'.
+});
 ```
+
+```javascript
+// In web page.
+var ipc = require('ipc');
+console.log(ipc.sendSync('synchronous-message', 'ping')); // prints "pong"
+
+ipc.on('asynchronous-reply', function(arg) {
+  console.log(arg); // prints "pong"
+});
+ipc.send('asynchronous-message', 'ping');
+```
+
+### Class: Event
+
+## Event.returnValue
+
+Assign to this to return an value to synchronous messages.
+
+## Event.sender
+
+The `WebContents` of the web page that has sent the message.
