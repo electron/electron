@@ -60,9 +60,18 @@ class WebContents : public mate::EventEmitter,
       content::RenderViewHost* render_view_host) OVERRIDE;
   virtual void DidStopLoading(
       content::RenderViewHost* render_view_host) OVERRIDE;
+  virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
   virtual void WebContentsDestroyed(content::WebContents*) OVERRIDE;
 
  private:
+  // Called when received a message from renderer.
+  void OnRendererMessage(const string16& channel, const base::ListValue& args);
+
+  // Called when received a synchronous message from renderer.
+  void OnRendererMessageSync(const string16& channel,
+                             const base::ListValue& args,
+                             IPC::Message* message);
+
   content::WebContents* web_contents_;  // Weak.
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);

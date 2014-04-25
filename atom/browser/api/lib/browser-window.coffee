@@ -1,9 +1,31 @@
 EventEmitter = require('events').EventEmitter
 IDWeakMap = require 'id-weak-map'
 app = require 'app'
+ipc = require 'ipc'
 
 BrowserWindow = process.atomBinding('window').BrowserWindow
 BrowserWindow::__proto__ = EventEmitter.prototype
+
+wrapWebContents = (webContents) ->
+  return null unless webContents.isAlive()
+  # webContents is an EventEmitter.
+  webContents.__proto__ = EventEmitter.prototype
+
+  # Wrap around the send method.
+  webContents.send = (args...) ->
+    @_send 'ATOM_INTERNAL_MESSAGE', [args...]
+
+  # Dispatch the ipc messages.
+  webContents.on 'ipc-message', (event, channel, args...) =>
+    Object.defineProperty event, 'sender', value: webContents
+    ipc.emit channel, event, args...
+  webContents.on 'ipc-message-sync', (event, channel, args...) =>
+    set = (value) -> event.sendReply JSON.stringify(value)
+    Object.defineProperty event, 'returnValue', {set}
+    Object.defineProperty event, 'sender', value: webContents
+    ipc.emit channel, event, args...
+
+  webContents
 
 # Store all created windows in the weak map.
 BrowserWindow.windows = new IDWeakMap
@@ -45,15 +67,10 @@ BrowserWindow::toggleDevTools = ->
   if @isDevToolsOpened() then @closeDevTools() else @openDevTools()
 
 BrowserWindow::getWebContents = ->
-  webContents = @_getWebContents()
-  webContents.__proto__ = EventEmitter.prototype
-  webContents
+  wrapWebContents @_getWebContents()
 
 BrowserWindow::getDevToolsWebContents = ->
-  webContents = @_getDevToolsWebContents()
-  webContents.__proto__ = EventEmitter.prototype
-  webContents = null unless webContents.isAlive()
-  webContents
+  wrapWebContents @_getDevToolsWebContents()
 
 BrowserWindow::restart = ->
   @loadUrl(@getUrl())

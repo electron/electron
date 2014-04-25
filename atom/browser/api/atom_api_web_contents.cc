@@ -8,6 +8,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
@@ -46,6 +47,18 @@ void WebContents::DidStartLoading(content::RenderViewHost* render_view_host) {
 
 void WebContents::DidStopLoading(content::RenderViewHost* render_view_host) {
   Emit("did-stop-loading");
+}
+
+bool WebContents::OnMessageReceived(const IPC::Message& message) {
+  bool handled = true;
+  IPC_BEGIN_MESSAGE_MAP(WebContents, message)
+    IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
+    IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
+                                    OnRendererMessageSync)
+    IPC_MESSAGE_UNHANDLED(handled = false)
+  IPC_END_MESSAGE_MAP()
+
+  return handled;
 }
 
 void WebContents::WebContentsDestroyed(content::WebContents*) {
@@ -166,7 +179,20 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
       .SetMethod("executeJavaScript", &WebContents::ExecuteJavaScript)
-      .SetMethod("send", &WebContents::SendIPCMessage);
+      .SetMethod("_send", &WebContents::SendIPCMessage);
+}
+
+void WebContents::OnRendererMessage(const string16& channel,
+                                    const base::ListValue& args) {
+  // webContents.emit(channel, new Event(), args...);
+  Emit(UTF16ToUTF8(channel), args, web_contents(), NULL);
+}
+
+void WebContents::OnRendererMessageSync(const string16& channel,
+                                        const base::ListValue& args,
+                                        IPC::Message* message) {
+  // webContents.emit(channel, new Event(sender, message), args...);
+  Emit(UTF16ToUTF8(channel), args, web_contents(), message);
 }
 
 // static

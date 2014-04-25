@@ -8,8 +8,8 @@ var window = null;
 
 app.commandLine.appendSwitch('js-flags', '--expose_gc');
 
-ipc.on('message', function() {
-  ipc.send.apply(this, arguments);
+ipc.on('message', function(event, arg) {
+  event.sender.send('message', arg);
 });
 
 ipc.on('console.log', function(pid, rid, args) {
@@ -24,11 +24,11 @@ ipc.on('process.exit', function(pid, rid, code) {
   process.exit(code);
 });
 
-ipc.on('eval', function(ev, pid, rid, script) {
+ipc.on('eval', function(ev, script) {
   ev.returnValue = eval(script);
 });
 
-ipc.on('echo', function(ev, pid, rid, msg) {
+ipc.on('echo', function(ev, msg) {
   ev.returnValue = msg;
 });
 

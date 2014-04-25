@@ -11,6 +11,14 @@ namespace base {
 class ListValue;
 }
 
+namespace content {
+class WebContents;
+}
+
+namespace IPC {
+class Message;
+}
+
 namespace mate {
 
 // Provide helperers to emit event in JavaScript.
@@ -18,11 +26,15 @@ class EventEmitter : public Wrappable {
  protected:
   EventEmitter();
 
-  // this.emit(name);
+  // this.emit(name, new Event());
   bool Emit(const base::StringPiece& name);
 
-  // this.emit(name, args...);
+  // this.emit(name, new Event(), args...);
   bool Emit(const base::StringPiece& name, const base::ListValue& args);
+
+  // this.emit(name, new Event(sender, message), args...);
+  bool Emit(const base::StringPiece& name, const base::ListValue& args,
+            content::WebContents* sender, IPC::Message* message);
 
  private:
   DISALLOW_COPY_AND_ASSIGN(EventEmitter);

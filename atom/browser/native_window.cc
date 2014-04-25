@@ -8,13 +8,10 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/api/atom_browser_bindings.h"
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/devtools_delegate.h"
-#include "atom/browser/devtools_web_contents_observer.h"
 #include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
@@ -195,12 +192,8 @@ bool NativeWindow::HasModalDialog() {
 void NativeWindow::OpenDevTools() {
   if (devtools_window_) {
     devtools_window_->Focus(true);
-    devtools_web_contents_observer_.reset(new DevToolsWebContentsObserver(
-        this, devtools_window_->GetWebContents()));
   } else {
     inspectable_web_contents()->ShowDevTools();
-    devtools_web_contents_observer_.reset(new DevToolsWebContentsObserver(
-        this, GetDevToolsWebContents()));
 #if defined(OS_MACOSX)
     // Temporary fix for flashing devtools, try removing this after upgraded to
     // Chrome 32.
@@ -470,9 +463,6 @@ void NativeWindow::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(NativeWindow, message)
-    IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
-    IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
-                                    OnRendererMessageSync)
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_UpdateDraggableRegions,
                         UpdateDraggableRegions)
     IPC_MESSAGE_UNHANDLED(handled = false)
@@ -600,27 +590,6 @@ void NativeWindow::CallDevToolsFunction(const std::string& function_name,
   }
   GetDevToolsWebContents()->GetRenderViewHost()->ExecuteJavascriptInWebFrame(
       string16(), base::UTF8ToUTF16(function_name + "(" + params + ");"));
-}
-
-void NativeWindow::OnRendererMessage(const string16& channel,
-                                     const base::ListValue& args) {
-  AtomBrowserMainParts::Get()->atom_bindings()->OnRendererMessage(
-      GetWebContents()->GetRenderProcessHost()->GetID(),
-      GetWebContents()->GetRoutingID(),
-      channel,
-      args);
-}
-
-void NativeWindow::OnRendererMessageSync(const string16& channel,
-                                         const base::ListValue& args,
-                                         IPC::Message* reply_msg) {
-  AtomBrowserMainParts::Get()->atom_bindings()->OnRendererMessageSync(
-      GetWebContents()->GetRenderProcessHost()->GetID(),
-      GetWebContents()->GetRoutingID(),
-      channel,
-      args,
-      GetWebContents(),
-      reply_msg);
 }
 
 }  // namespace atom

@@ -46,7 +46,6 @@ namespace atom {
 
 class AtomJavaScriptDialogManager;
 class DevToolsDelegate;
-class DevToolsWebContentsObserver;
 struct DraggableRegion;
 
 class NativeWindow : public brightray::DefaultWebContentsDelegate,
@@ -270,13 +269,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
                          bool succeed,
                          const SkBitmap& bitmap);
 
-  void OnRendererMessage(const string16& channel,
-                         const base::ListValue& args);
-
-  void OnRendererMessageSync(const string16& channel,
-                             const base::ListValue& args,
-                             IPC::Message* reply_msg);
-
   // Notification manager.
   content::NotificationRegistrar registrar_;
 
@@ -300,9 +292,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   base::WeakPtr<NativeWindow> devtools_window_;
   scoped_ptr<DevToolsDelegate> devtools_delegate_;
-
-  // WebContentsObserver for the WebContents of devtools.
-  scoped_ptr<DevToolsWebContentsObserver> devtools_web_contents_observer_;
 
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
 

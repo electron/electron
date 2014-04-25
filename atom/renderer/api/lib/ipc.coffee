@@ -10,15 +10,13 @@ class Ipc extends EventEmitter
       process.removeAllListeners 'ATOM_INTERNAL_MESSAGE'
 
   send: (args...) ->
-    @sendChannel 'message', args...
-
-  sendChannel: (args...) ->
-    ipc.send 'ATOM_INTERNAL_MESSAGE', [args...]
+    ipc.send 'ipc-message', [args...]
 
   sendSync: (args...) ->
-    @sendSync 'sync-message', args...
+    JSON.parse ipc.sendSync('ipc-message-sync', [args...])
 
-  sendChannelSync: (args...) ->
-    JSON.parse ipc.sendSync('ATOM_INTERNAL_MESSAGE_SYNC', [args...])
+  # Discarded
+  sendChannel: -> @send.apply this, arguments
+  sendChannelSync: -> @sendSync.apply this, arguments
 
 module.exports = new Ipc

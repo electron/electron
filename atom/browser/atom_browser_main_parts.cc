@@ -4,10 +4,10 @@
 
 #include "atom/browser/atom_browser_main_parts.h"
 
-#include "atom/browser/api/atom_browser_bindings.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/browser.h"
+#include "atom/common/api/atom_bindings.h"
 #include "atom/common/node_bindings.h"
 #include "net/proxy/proxy_resolver_v8.h"
 
@@ -23,7 +23,7 @@ namespace atom {
 AtomBrowserMainParts* AtomBrowserMainParts::self_ = NULL;
 
 AtomBrowserMainParts::AtomBrowserMainParts()
-    : atom_bindings_(new AtomBrowserBindings),
+    : atom_bindings_(new AtomBindings),
       browser_(new Browser),
       node_bindings_(NodeBindings::Create(true)) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";

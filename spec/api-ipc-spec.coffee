@@ -48,13 +48,13 @@ describe 'ipc module', ->
       print_name = remote.require path.join(fixtures, 'module', 'print_name.js')
       assert.equal print_name.print(buf), 'Buffer'
 
-  describe 'ipc.send', ->
+  describe 'ipc.sender.send', ->
     it 'should work when sending an object containing id property', (done) ->
       obj = id: 1, name: 'ly'
       ipc.once 'message', (message) ->
         assert.deepEqual message, obj
         done()
-      ipc.send obj
+      ipc.send 'message', obj
 
   describe 'ipc.sendSync', ->
     it 'can be replied by setting event.returnValue', ->
