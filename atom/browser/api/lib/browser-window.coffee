@@ -15,6 +15,7 @@ BrowserWindow::_init = ->
     @setMenu menu if menu?
 
   @webContents = @getWebContents()
+  @webContents.once 'destroyed', => @webContents = null
 
   # Define getter for devToolsWebContents.
   devToolsWebContents = null

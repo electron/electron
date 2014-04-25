@@ -39,6 +39,7 @@ void WebContents::WebContentsDestroyed(content::WebContents*) {
   // directly.
   RenderViewDeleted(web_contents_->GetRenderViewHost());
 
+  Emit("destroyed");
   web_contents_ = NULL;
 }
 
