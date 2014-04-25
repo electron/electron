@@ -23,10 +23,10 @@ WebContents::WebContents(content::WebContents* web_contents)
 WebContents::~WebContents() {
 }
 
-void WebContents::RenderViewDeleted(content::RenderViewHost*) {
+void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
   base::ListValue args;
-  args.AppendInteger(GetProcessID());
-  args.AppendInteger(GetRoutingID());
+  args.AppendInteger(render_view_host->GetProcess()->GetID());
+  args.AppendInteger(render_view_host->GetRoutingID());
   Emit("render-view-deleted", args);
 }
 

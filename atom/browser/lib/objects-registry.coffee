@@ -78,7 +78,7 @@ class ObjectsRegistry extends EventEmitter
 
   # Clear all references to objects from renderer view.
   clear: (processId, routingId) ->
-    @emit "release-renderer-view-#{processId}-#{routingId}"
+    @emit "clear-#{processId}-#{routingId}"
     ObjectsStore.releaseForRenderView processId, routingId
 
 module.exports = new ObjectsRegistry

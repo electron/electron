@@ -53,7 +53,7 @@ unwrapArgs = (processId, routingId, args) ->
         -> returnValue
       when 'function'
         rendererReleased = false
-        objectsRegistry.once "release-renderer-view-#{processId}-#{routingId}", ->
+        objectsRegistry.once "clear-#{processId}-#{routingId}", ->
           rendererReleased = true
 
         ret = ->
