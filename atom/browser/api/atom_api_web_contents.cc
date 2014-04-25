@@ -7,6 +7,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
 #include "native_mate/object_template_builder.h"
 
@@ -53,6 +54,11 @@ bool WebContents::IsCrashed() const {
   return web_contents_->IsCrashed();
 }
 
+void WebContents::ExecuteJavaScript(const string16& code) {
+  web_contents_->GetRenderViewHost()->ExecuteJavascriptInWebFrame(
+      string16(), code);
+}
+
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
@@ -63,7 +69,8 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
       .SetMethod("stop", &WebContents::Stop)
       .SetMethod("getRoutingId", &WebContents::GetRoutingID)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
-      .SetMethod("isCrashed", &WebContents::IsCrashed);
+      .SetMethod("isCrashed", &WebContents::IsCrashed)
+      .SetMethod("executeJavaScript", &WebContents::ExecuteJavaScript);
 }
 
 // static

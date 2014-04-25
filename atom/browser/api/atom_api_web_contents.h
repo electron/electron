@@ -31,6 +31,7 @@ class WebContents : public mate::EventEmitter {
   int GetRoutingID() const;
   int GetProcessID() const;
   bool IsCrashed() const;
+  void ExecuteJavaScript(const string16& code);
 
  protected:
   explicit WebContents(content::WebContents* web_contents);
