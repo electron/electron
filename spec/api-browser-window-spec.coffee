@@ -18,9 +18,8 @@ describe 'browser-window module', ->
 
   describe 'BrowserWindow.close()', ->
     it 'should emit unload handler', (done) ->
-      w.on 'loading-state-changed', (event, isLoading) ->
-        if (!isLoading)
-          w.close()
+      w.webContents.on 'did-finish-load', ->
+        w.close()
       w.on 'closed', ->
         test = path.join(fixtures, 'api', 'unload')
         content = fs.readFileSync(test)
@@ -32,9 +31,8 @@ describe 'browser-window module', ->
     it 'should emit beforeunload handler', (done) ->
       w.on 'onbeforeunload', ->
         done()
-      w.on 'loading-state-changed', (event, isLoading) ->
-        if (!isLoading)
-          w.close()
+      w.webContents.on 'did-finish-load', ->
+        w.close()
       w.loadUrl 'file://' + path.join(fixtures, 'api', 'beforeunload-false.html')
 
   describe 'window.close()', ->
@@ -53,18 +51,9 @@ describe 'browser-window module', ->
       w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html')
 
   describe 'BrowserWindow.loadUrl(url)', ->
-    it 'should emit loading-state-changed event', (done) ->
-      count = 0
-      w.on 'loading-state-changed', (event, isLoading) ->
-        if count == 0
-          assert.equal isLoading, true
-        else if count == 1
-          assert.equal isLoading, false
-          done()
-        else
-          assert false
-
-        ++count
+    it 'should emit did-start-loading event', (done) ->
+      w.webContents.on 'did-start-loading', ->
+        done()
       w.loadUrl 'about:blank'
 
   describe 'BrowserWindow.focus()', ->

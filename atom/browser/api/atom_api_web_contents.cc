@@ -34,6 +34,21 @@ void WebContents::RenderProcessGone(base::TerminationStatus status) {
   Emit("crashed");
 }
 
+void WebContents::DidFinishLoad(int64 frame_id,
+                                const GURL& validated_url,
+                                bool is_main_frame,
+                                content::RenderViewHost* render_view_host) {
+  Emit("did-finish-load");
+}
+
+void WebContents::DidStartLoading(content::RenderViewHost* render_view_host) {
+  Emit("did-start-loading");
+}
+
+void WebContents::DidStopLoading(content::RenderViewHost* render_view_host) {
+  Emit("did-stop-loading");
+}
+
 void WebContents::WebContentsDestroyed(content::WebContents*) {
   // The RenderViewDeleted is not called when the WebContents is destroyed
   // directly.
