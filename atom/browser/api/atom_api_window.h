@@ -11,6 +11,7 @@
 #include "base/memory/scoped_ptr.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/browser/api/event_emitter.h"
+#include "native_mate/handle.h"
 
 class GURL;
 
@@ -28,6 +29,8 @@ namespace atom {
 class NativeWindow;
 
 namespace api {
+
+class WebContents;
 
 class Window : public mate::EventEmitter,
                public NativeWindowObserver {
@@ -47,14 +50,11 @@ class Window : public mate::EventEmitter,
   // Implementations of NativeWindowObserver:
   virtual void OnPageTitleUpdated(bool* prevent_default,
                                   const std::string& title) OVERRIDE;
-  virtual void OnLoadingStateChanged(bool is_loading) OVERRIDE;
   virtual void WillCloseWindow(bool* prevent_default) OVERRIDE;
   virtual void OnWindowClosed() OVERRIDE;
   virtual void OnWindowBlur() OVERRIDE;
   virtual void OnRendererUnresponsive() OVERRIDE;
   virtual void OnRendererResponsive() OVERRIDE;
-  virtual void OnRenderViewDeleted(int process_id, int routing_id) OVERRIDE;
-  virtual void OnRendererCrashed() OVERRIDE;
 
  private:
   // APIs for NativeWindow.
@@ -100,30 +100,8 @@ class Window : public mate::EventEmitter,
   void CapturePage(mate::Arguments* args);
 
   // APIs for WebContents.
-  string16 GetPageTitle();
-  bool IsLoading();
-  bool IsWaitingForResponse();
-  void Stop();
-  int GetRoutingID();
-  int GetProcessID();
-  bool IsCrashed();
-
-  // APIs for devtools.
-  mate::Dictionary GetDevTools(v8::Isolate* isolate);
-  void ExecuteJavaScriptInDevTools(const std::string& code);
-
-  // APIs for NavigationController.
-  void LoadURL(const GURL& url);
-  GURL GetURL();
-  bool CanGoBack();
-  bool CanGoForward();
-  bool CanGoToOffset(int offset);
-  void GoBack();
-  void GoForward();
-  void GoToIndex(int index);
-  void GoToOffset(int offset);
-  void Reload();
-  void ReloadIgnoringCache();
+  mate::Handle<WebContents> GetWebContents(v8::Isolate* isolate) const;
+  mate::Handle<WebContents> GetDevToolsWebContents(v8::Isolate* isolate) const;
 
   scoped_ptr<NativeWindow> window_;
 

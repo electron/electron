@@ -1,6 +1,7 @@
 EventEmitter = require('events').EventEmitter
 IDWeakMap = require 'id-weak-map'
 app = require 'app'
+wrapWebContents = require('web-contents').wrap
 
 BrowserWindow = process.atomBinding('window').BrowserWindow
 BrowserWindow::__proto__ = EventEmitter.prototype
@@ -14,6 +15,20 @@ BrowserWindow::_init = ->
     menu = app.getApplicationMenu()
     @setMenu menu if menu?
 
+  @webContents = @getWebContents()
+  @webContents.once 'destroyed', => @webContents = null
+
+  # Define getter for devToolsWebContents.
+  devToolsWebContents = null
+  @__defineGetter__ 'devToolsWebContents', ->
+    if @isDevToolsOpened()
+      # Get a new devToolsWebContents if previous one has been destroyed, it
+      # could happen when the devtools has been closed and then reopened.
+      devToolsWebContents = null unless devToolsWebContents?.isAlive()
+      devToolsWebContents ?= @getDevToolsWebContents()
+    else
+      devToolsWebContents = null
+
   # Remember the window.
   id = BrowserWindow.windows.add this
 
@@ -24,11 +39,17 @@ BrowserWindow::_init = ->
 
   # Tell the rpc server that a render view has been deleted and we need to
   # release all objects owned by it.
-  @on 'render-view-deleted', (event, processId, routingId) ->
-    process.emit 'ATOM_BROWSER_RELEASE_RENDER_VIEW', processId, routingId
+  @webContents.on 'render-view-deleted', (event, processId, routingId) ->
+    process.emit 'ATOM_BROWSER_RELEASE_RENDER_VIEW', "#{processId}-#{routingId}"
 
 BrowserWindow::toggleDevTools = ->
   if @isDevToolsOpened() then @closeDevTools() else @openDevTools()
+
+BrowserWindow::getWebContents = ->
+  wrapWebContents @_getWebContents()
+
+BrowserWindow::getDevToolsWebContents = ->
+  wrapWebContents @_getDevToolsWebContents()
 
 BrowserWindow::restart = ->
   @loadUrl(@getUrl())
@@ -50,16 +71,30 @@ BrowserWindow.getFocusedWindow = ->
   windows = BrowserWindow.getAllWindows()
   return window for window in windows when window.isFocused()
 
-BrowserWindow.fromProcessIdAndRoutingId = (processId, routingId) ->
+BrowserWindow.fromWebContents = (webContents) ->
   windows = BrowserWindow.getAllWindows()
-  return window for window in windows when window.getProcessId() == processId and
-                                           window.getRoutingId() == routingId
+  return window for window in windows when webContents.equal window.webContents
 
-BrowserWindow.fromDevTools = (processId, routingId) ->
+BrowserWindow.fromDevToolsWebContents = (webContents) ->
   windows = BrowserWindow.getAllWindows()
-  for window in windows when window.isDevToolsOpened()
-    devtools = window.getDevTools()
-    return window if devtools.processId == processId and
-                     devtools.routingId == routingId
+  return window for window in windows when webContents.equal window.devToolsWebContents
+
+# Helpers.
+BrowserWindow::loadUrl = -> @webContents.loadUrl.apply @webContents, arguments
+BrowserWindow::send = -> @webContents.send.apply @webContents, arguments
+
+# Be compatible with old API.
+BrowserWindow::getUrl = -> @webContents.getUrl()
+BrowserWindow::reload = -> @webContents.reload()
+BrowserWindow::reloadIgnoringCache = -> @webContents.reloadIgnoringCache()
+BrowserWindow::getPageTitle = -> @webContents.getTitle()
+BrowserWindow::isLoading = -> @webContents.isLoading()
+BrowserWindow::isWaitingForResponse = -> @webContents.isWaitingForResponse()
+BrowserWindow::stop = -> @webContents.stop()
+BrowserWindow::getRoutingId = -> @webContents.getRoutingId()
+BrowserWindow::getProcessId = -> @webContents.getProcessId()
+BrowserWindow::isCrashed = -> @webContents.isCrashed()
+BrowserWindow::executeJavaScriptInDevTools = (code) ->
+  @devToolsWebContents.executeJavaScript code
 
 module.exports = BrowserWindow

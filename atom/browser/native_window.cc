@@ -8,13 +8,10 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/api/atom_browser_bindings.h"
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/devtools_delegate.h"
-#include "atom/browser/devtools_web_contents_observer.h"
 #include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
@@ -195,12 +192,8 @@ bool NativeWindow::HasModalDialog() {
 void NativeWindow::OpenDevTools() {
   if (devtools_window_) {
     devtools_window_->Focus(true);
-    devtools_web_contents_observer_.reset(new DevToolsWebContentsObserver(
-        this, devtools_window_->GetWebContents()));
   } else {
     inspectable_web_contents()->ShowDevTools();
-    devtools_web_contents_observer_.reset(new DevToolsWebContentsObserver(
-        this, GetDevToolsWebContents()));
 #if defined(OS_MACOSX)
     // Temporary fix for flashing devtools, try removing this after upgraded to
     // Chrome 32.
@@ -227,11 +220,6 @@ void NativeWindow::InspectElement(int x, int y) {
   scoped_refptr<content::DevToolsAgentHost> agent(
       content::DevToolsAgentHost::GetOrCreateFor(rvh));
   agent->InspectElement(x, y);
-}
-
-void NativeWindow::ExecuteJavaScriptInDevTools(const std::string& script) {
-  GetDevToolsWebContents()->GetRenderViewHost()->ExecuteJavascriptInWebFrame(
-      string16(), base::UTF8ToUTF16(script));
 }
 
 void NativeWindow::FocusOnWebView() {
@@ -304,14 +292,6 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
 void NativeWindow::DestroyWebContents() {
   if (!inspectable_web_contents_)
     return;
-
-  // The OnRenderViewDeleted is not called when the WebContents is destroyed
-  // directly (e.g. when closing the window), so we make sure it's always
-  // emitted to users by sending it before window is closed..
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnRenderViewDeleted(
-                        GetWebContents()->GetRenderProcessHost()->GetID(),
-                        GetWebContents()->GetRoutingID()));
 
   inspectable_web_contents_.reset();
 }
@@ -437,13 +417,6 @@ void NativeWindow::DeactivateContents(content::WebContents* contents) {
   BlurWebView();
 }
 
-void NativeWindow::LoadingStateChanged(content::WebContents* source) {
-  bool is_loading = source->IsLoading();
-  FOR_EACH_OBSERVER(NativeWindowObserver,
-                    observers_,
-                    OnLoadingStateChanged(is_loading));
-}
-
 void NativeWindow::MoveContents(content::WebContents* source,
                                 const gfx::Rect& pos) {
   SetPosition(pos.origin());
@@ -482,16 +455,6 @@ void NativeWindow::RendererResponsive(content::WebContents* source) {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
 }
 
-void NativeWindow::RenderViewDeleted(content::RenderViewHost* rvh) {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnRenderViewDeleted(rvh->GetProcess()->GetID(),
-                                        rvh->GetRoutingID()));
-}
-
-void NativeWindow::RenderProcessGone(base::TerminationStatus status) {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererCrashed());
-}
-
 void NativeWindow::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
   // Do nothing, we override this method just to avoid compilation error since
   // there are two virtual functions named BeforeUnloadFired.
@@ -500,9 +463,6 @@ void NativeWindow::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(NativeWindow, message)
-    IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
-    IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
-                                    OnRendererMessageSync)
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_UpdateDraggableRegions,
                         UpdateDraggableRegions)
     IPC_MESSAGE_UNHANDLED(handled = false)
@@ -628,28 +588,8 @@ void NativeWindow::CallDevToolsFunction(const std::string& function_name,
       }
     }
   }
-  ExecuteJavaScriptInDevTools(function_name + "(" + params + ");");
-}
-
-void NativeWindow::OnRendererMessage(const string16& channel,
-                                     const base::ListValue& args) {
-  AtomBrowserMainParts::Get()->atom_bindings()->OnRendererMessage(
-      GetWebContents()->GetRenderProcessHost()->GetID(),
-      GetWebContents()->GetRoutingID(),
-      channel,
-      args);
-}
-
-void NativeWindow::OnRendererMessageSync(const string16& channel,
-                                         const base::ListValue& args,
-                                         IPC::Message* reply_msg) {
-  AtomBrowserMainParts::Get()->atom_bindings()->OnRendererMessageSync(
-      GetWebContents()->GetRenderProcessHost()->GetID(),
-      GetWebContents()->GetRoutingID(),
-      channel,
-      args,
-      GetWebContents(),
-      reply_msg);
+  GetDevToolsWebContents()->GetRenderViewHost()->ExecuteJavascriptInWebFrame(
+      string16(), base::UTF8ToUTF16(function_name + "(" + params + ");"));
 }
 
 }  // namespace atom

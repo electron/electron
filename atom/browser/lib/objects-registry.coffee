@@ -29,13 +29,11 @@ class ObjectsStore
     throw new Error("Invalid key #{id} for ObjectsStore") unless @has id
     @objects[id]
 
-  @forRenderView: (processId, routingId) ->
-    key = "#{processId}_#{routingId}"
+  @forRenderView: (key) ->
     @stores[key] = new ObjectsStore unless @stores[key]?
     @stores[key]
 
-  @releaseForRenderView: (processId, routingId) ->
-    key = "#{processId}_#{routingId}"
+  @releaseForRenderView: (key) ->
     delete @stores[key]
 
 class ObjectsRegistry extends EventEmitter
@@ -52,7 +50,7 @@ class ObjectsRegistry extends EventEmitter
 
   # Register a new object, the object would be kept referenced until you release
   # it explicitly.
-  add: (processId, routingId, obj) ->
+  add: (key, obj) ->
     # Some native objects may already been added to objectsWeakMap, be care not
     # to add it twice.
     @objectsWeakMap.add obj unless v8Util.getHiddenValue obj, 'atomId'
@@ -63,7 +61,7 @@ class ObjectsRegistry extends EventEmitter
     # with the storeId.
     # We use a difference key because the same object can be referenced for
     # multiple times by the same renderer view.
-    store = ObjectsStore.forRenderView processId, routingId
+    store = ObjectsStore.forRenderView key
     storeId = store.add obj
 
     [id, storeId]
@@ -73,12 +71,12 @@ class ObjectsRegistry extends EventEmitter
     @objectsWeakMap.get id
 
   # Remove an object according to its storeId.
-  remove: (processId, routingId, storeId) ->
-    ObjectsStore.forRenderView(processId, routingId).remove storeId
+  remove: (key, storeId) ->
+    ObjectsStore.forRenderView(key).remove storeId
 
   # Clear all references to objects from renderer view.
-  clear: (processId, routingId) ->
-    @emit "release-renderer-view-#{processId}-#{routingId}"
-    ObjectsStore.releaseForRenderView processId, routingId
+  clear: (key) ->
+    @emit "clear-#{key}"
+    ObjectsStore.releaseForRenderView key
 
 module.exports = new ObjectsRegistry

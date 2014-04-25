@@ -24,6 +24,13 @@ bool EventEmitter::Emit(const base::StringPiece& name) {
 
 bool EventEmitter::Emit(const base::StringPiece& name,
                         const base::ListValue& args) {
+  return Emit(name, args, NULL, NULL);
+}
+
+bool EventEmitter::Emit(const base::StringPiece& name,
+                        const base::ListValue& args,
+                        content::WebContents* sender,
+                        IPC::Message* message) {
   v8::Locker locker(node_isolate);
   v8::HandleScope handle_scope(node_isolate);
 
@@ -31,6 +38,8 @@ bool EventEmitter::Emit(const base::StringPiece& name,
   scoped_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
 
   mate::Handle<mate::Event> event = mate::Event::Create(node_isolate);
+  if (sender && message)
+    event->SetSenderAndMessage(sender, message);
 
   // v8_args = [name, event, args...];
   std::vector<v8::Handle<v8::Value>> v8_args;

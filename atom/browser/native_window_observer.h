@@ -17,9 +17,6 @@ class NativeWindowObserver {
   virtual void OnPageTitleUpdated(bool* prevent_default,
                                   const std::string& title) {}
 
-  // Called when the window is starting or is done loading a page.
-  virtual void OnLoadingStateChanged(bool is_loading) {}
-
   // Called when the window is gonna closed.
   virtual void WillCloseWindow(bool* prevent_default) {}
 
@@ -34,12 +31,6 @@ class NativeWindowObserver {
 
   // Called when renderer recovers.
   virtual void OnRendererResponsive() {}
-
-  // Called when a render view has been deleted.
-  virtual void OnRenderViewDeleted(int process_id, int routing_id) {}
-
-  // Called when renderer has crashed.
-  virtual void OnRendererCrashed() {}
 };
 
 }  // namespace atom

@@ -46,7 +46,6 @@ namespace atom {
 
 class AtomJavaScriptDialogManager;
 class DevToolsDelegate;
-class DevToolsWebContentsObserver;
 struct DraggableRegion;
 
 class NativeWindow : public brightray::DefaultWebContentsDelegate,
@@ -136,7 +135,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void CloseDevTools();
   virtual bool IsDevToolsOpened();
   virtual void InspectElement(int x, int y);
-  virtual void ExecuteJavaScriptInDevTools(const std::string& script);
 
   virtual void FocusOnWebView();
   virtual void BlurWebView();
@@ -220,7 +218,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual bool CanOverscrollContent() const OVERRIDE;
   virtual void ActivateContents(content::WebContents* contents) OVERRIDE;
   virtual void DeactivateContents(content::WebContents* contents) OVERRIDE;
-  virtual void LoadingStateChanged(content::WebContents* source) OVERRIDE;
   virtual void MoveContents(content::WebContents* source,
                             const gfx::Rect& pos) OVERRIDE;
   virtual void CloseContents(content::WebContents* source) OVERRIDE;
@@ -230,8 +227,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void RendererResponsive(content::WebContents* source) OVERRIDE;
 
   // Implementations of content::WebContentsObserver.
-  virtual void RenderViewDeleted(content::RenderViewHost*) OVERRIDE;
-  virtual void RenderProcessGone(base::TerminationStatus status) OVERRIDE;
   virtual void BeforeUnloadFired(const base::TimeTicks& proceed_time) OVERRIDE;
   virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
 
@@ -274,13 +269,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
                          bool succeed,
                          const SkBitmap& bitmap);
 
-  void OnRendererMessage(const string16& channel,
-                         const base::ListValue& args);
-
-  void OnRendererMessageSync(const string16& channel,
-                             const base::ListValue& args,
-                             IPC::Message* reply_msg);
-
   // Notification manager.
   content::NotificationRegistrar registrar_;
 
@@ -304,9 +292,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   base::WeakPtr<NativeWindow> devtools_window_;
   scoped_ptr<DevToolsDelegate> devtools_delegate_;
-
-  // WebContentsObserver for the WebContents of devtools.
-  scoped_ptr<DevToolsWebContentsObserver> devtools_web_contents_observer_;
 
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
 
