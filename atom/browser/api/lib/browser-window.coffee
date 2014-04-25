@@ -88,7 +88,10 @@ BrowserWindow.fromDevTools = (processId, routingId) ->
                      devtools.routingId == routingId
 
 # Be compatible with old API.
+BrowserWindow::loadUrl = (url) -> @webContents.loadUrl(url)
 BrowserWindow::getUrl = -> @webContents.getUrl()
+BrowserWindow::reload = -> @webContents.reload()
+BrowserWindow::reloadIgnoringCache = -> @webContents.reloadIgnoringCache()
 BrowserWindow::getPageTitle = -> @webContents.getTitle()
 BrowserWindow::isLoading = -> @webContents.isLoading()
 BrowserWindow::isWaitingForResponse = -> @webContents.isWaitingForResponse()

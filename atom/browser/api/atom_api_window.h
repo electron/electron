@@ -103,18 +103,6 @@ class Window : public mate::EventEmitter,
   mate::Handle<WebContents> GetWebContents(v8::Isolate* isolate) const;
   mate::Handle<WebContents> GetDevToolsWebContents(v8::Isolate* isolate) const;
 
-  // APIs for NavigationController.
-  void LoadURL(const GURL& url);
-  bool CanGoBack();
-  bool CanGoForward();
-  bool CanGoToOffset(int offset);
-  void GoBack();
-  void GoForward();
-  void GoToIndex(int index);
-  void GoToOffset(int offset);
-  void Reload();
-  void ReloadIgnoringCache();
-
   scoped_ptr<NativeWindow> window_;
 
   DISALLOW_COPY_AND_ASSIGN(Window);

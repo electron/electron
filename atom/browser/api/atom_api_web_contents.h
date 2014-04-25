@@ -20,11 +20,21 @@ class WebContents : public mate::EventEmitter,
                                           content::WebContents* web_contents);
 
   bool IsAlive() const;
+  void LoadURL(const GURL& url);
   GURL GetURL() const;
   string16 GetTitle() const;
   bool IsLoading() const;
   bool IsWaitingForResponse() const;
   void Stop();
+  void Reload();
+  void ReloadIgnoringCache();
+  bool CanGoBack() const;
+  bool CanGoForward() const;
+  bool CanGoToOffset(int offset) const;
+  void GoBack();
+  void GoForward();
+  void GoToIndex(int index);
+  void GoToOffset(int offset);
   int GetRoutingID() const;
   int GetProcessID() const;
   bool IsCrashed() const;

@@ -7,13 +7,9 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_window.h"
 #include "atom/common/native_mate_converters/function_converter.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/bind.h"
 #include "base/callback.h"
-#include "content/public/browser/navigation_entry.h"
-#include "content/public/browser/web_contents.h"
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
@@ -22,8 +18,6 @@
 #include "ui/gfx/size.h"
 
 #include "atom/common/node_includes.h"
-
-using content::NavigationController;
 
 namespace mate {
 
@@ -319,51 +313,6 @@ mate::Handle<WebContents> Window::GetDevToolsWebContents(
   return WebContents::Create(isolate, window_->GetDevToolsWebContents());
 }
 
-void Window::LoadURL(const GURL& url) {
-  NavigationController& controller = window_->GetWebContents()->GetController();
-
-  content::NavigationController::LoadURLParams params(url);
-  params.transition_type = content::PAGE_TRANSITION_TYPED;
-  params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
-  controller.LoadURLWithParams(params);
-}
-
-bool Window::CanGoBack() {
-  return window_->GetWebContents()->GetController().CanGoBack();
-}
-
-bool Window::CanGoForward() {
-  return window_->GetWebContents()->GetController().CanGoForward();
-}
-
-bool Window::CanGoToOffset(int offset) {
-  return window_->GetWebContents()->GetController().CanGoToOffset(offset);
-}
-
-void Window::GoBack() {
-  window_->GetWebContents()->GetController().GoBack();
-}
-
-void Window::GoForward() {
-  window_->GetWebContents()->GetController().GoForward();
-}
-
-void Window::GoToIndex(int index) {
-  window_->GetWebContents()->GetController().GoToIndex(index);
-}
-
-void Window::GoToOffset(int offset) {
-  window_->GetWebContents()->GetController().GoToOffset(offset);
-}
-
-void Window::Reload() {
-  window_->GetWebContents()->GetController().Reload(false);
-}
-
-void Window::ReloadIgnoringCache() {
-  window_->GetWebContents()->GetController().ReloadIgnoringCache(false);
-}
-
 // static
 void Window::BuildPrototype(v8::Isolate* isolate,
                             v8::Handle<v8::ObjectTemplate> prototype) {
@@ -409,17 +358,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)
       .SetMethod("capturePage", &Window::CapturePage)
       .SetMethod("_getWebContents", &Window::GetWebContents)
-      .SetMethod("_getDevToolsWebContents", &Window::GetDevToolsWebContents)
-      .SetMethod("loadUrl", &Window::LoadURL)
-      .SetMethod("canGoBack", &Window::CanGoBack)
-      .SetMethod("canGoForward", &Window::CanGoForward)
-      .SetMethod("canGoToOffset", &Window::CanGoToOffset)
-      .SetMethod("goBack", &Window::GoBack)
-      .SetMethod("goForward", &Window::GoForward)
-      .SetMethod("goToIndex", &Window::GoToIndex)
-      .SetMethod("goToOffset", &Window::GoToOffset)
-      .SetMethod("reload", &Window::Reload)
-      .SetMethod("reloadIgnoringCache", &Window::ReloadIgnoringCache);
+      .SetMethod("_getDevToolsWebContents", &Window::GetDevToolsWebContents);
 }
 
 }  // namespace api

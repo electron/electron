@@ -62,6 +62,13 @@ bool WebContents::IsAlive() const {
   return web_contents_ != NULL;
 }
 
+void WebContents::LoadURL(const GURL& url) {
+  content::NavigationController::LoadURLParams params(url);
+  params.transition_type = content::PAGE_TRANSITION_TYPED;
+  params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
+  web_contents_->GetController().LoadURLWithParams(params);
+}
+
 GURL WebContents::GetURL() const {
   return web_contents_->GetURL();
 }
@@ -80,6 +87,42 @@ bool WebContents::IsWaitingForResponse() const {
 
 void WebContents::Stop() {
   web_contents_->Stop();
+}
+
+void WebContents::Reload() {
+  web_contents_->GetController().Reload(false);
+}
+
+void WebContents::ReloadIgnoringCache() {
+  web_contents_->GetController().ReloadIgnoringCache(false);
+}
+
+bool WebContents::CanGoBack() const {
+  return web_contents_->GetController().CanGoBack();
+}
+
+bool WebContents::CanGoForward() const {
+  return web_contents_->GetController().CanGoForward();
+}
+
+bool WebContents::CanGoToOffset(int offset) const {
+  return web_contents_->GetController().CanGoToOffset(offset);
+}
+
+void WebContents::GoBack() {
+  web_contents_->GetController().GoBack();
+}
+
+void WebContents::GoForward() {
+  web_contents_->GetController().GoForward();
+}
+
+void WebContents::GoToIndex(int index) {
+  web_contents_->GetController().GoToIndex(index);
+}
+
+void WebContents::GoToOffset(int offset) {
+  web_contents_->GetController().GoToOffset(offset);
 }
 
 int WebContents::GetRoutingID() const {
@@ -103,11 +146,21 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("isAlive", &WebContents::IsAlive)
+      .SetMethod("loadUrl", &WebContents::LoadURL)
       .SetMethod("getUrl", &WebContents::GetURL)
       .SetMethod("getTitle", &WebContents::GetTitle)
       .SetMethod("isLoading", &WebContents::IsLoading)
       .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
       .SetMethod("stop", &WebContents::Stop)
+      .SetMethod("reload", &WebContents::Reload)
+      .SetMethod("reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
+      .SetMethod("canGoBack", &WebContents::CanGoBack)
+      .SetMethod("canGoForward", &WebContents::CanGoForward)
+      .SetMethod("canGoToOffset", &WebContents::CanGoToOffset)
+      .SetMethod("goBack", &WebContents::GoBack)
+      .SetMethod("goForward", &WebContents::GoForward)
+      .SetMethod("goToIndex", &WebContents::GoToIndex)
+      .SetMethod("goToOffset", &WebContents::GoToOffset)
       .SetMethod("getRoutingId", &WebContents::GetRoutingID)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
