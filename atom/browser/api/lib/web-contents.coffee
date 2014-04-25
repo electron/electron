@@ -7,9 +7,13 @@ module.exports.wrap = (webContents) ->
   # webContents is an EventEmitter.
   webContents.__proto__ = EventEmitter.prototype
 
-  # Add the send method.
+  # WebContents::send(channel, args..)
   webContents.send = (args...) ->
     @_send 'ATOM_INTERNAL_MESSAGE', [args...]
+
+  # The processId and routingId and identify a webContents.
+  webContents.getId = -> "#{@getProcessId()}-#{@getRoutingId()}"
+  webContents.equal = (other) -> @getId() is other.getId()
 
   # Dispatch IPC messages to the ipc module.
   webContents.on 'ipc-message', (event, channel, args...) =>

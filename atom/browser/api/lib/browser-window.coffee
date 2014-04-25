@@ -40,7 +40,7 @@ BrowserWindow::_init = ->
   # Tell the rpc server that a render view has been deleted and we need to
   # release all objects owned by it.
   @webContents.on 'render-view-deleted', (event, processId, routingId) ->
-    process.emit 'ATOM_BROWSER_RELEASE_RENDER_VIEW', processId, routingId
+    process.emit 'ATOM_BROWSER_RELEASE_RENDER_VIEW', "#{processId}-#{routingId}"
 
 BrowserWindow::toggleDevTools = ->
   if @isDevToolsOpened() then @closeDevTools() else @openDevTools()
@@ -71,17 +71,13 @@ BrowserWindow.getFocusedWindow = ->
   windows = BrowserWindow.getAllWindows()
   return window for window in windows when window.isFocused()
 
-BrowserWindow.fromProcessIdAndRoutingId = (processId, routingId) ->
+BrowserWindow.fromWebContents = (webContents) ->
   windows = BrowserWindow.getAllWindows()
-  return window for window in windows when window.getProcessId() == processId and
-                                           window.getRoutingId() == routingId
+  return window for window in windows when webContents.equal window.webContents
 
-BrowserWindow.fromDevTools = (processId, routingId) ->
+BrowserWindow.fromDevToolsWebContents = (webContents) ->
   windows = BrowserWindow.getAllWindows()
-  for window in windows when window.isDevToolsOpened()
-    devtools = window.getDevTools()
-    return window if devtools.processId == processId and
-                     devtools.routingId == routingId
+  return window for window in windows when webContents.equal window.devToolsWebContents
 
 # Helpers.
 BrowserWindow::loadUrl = -> @webContents.loadUrl.apply @webContents, arguments
@@ -98,9 +94,6 @@ BrowserWindow::stop = -> @webContents.stop()
 BrowserWindow::getRoutingId = -> @webContents.getRoutingId()
 BrowserWindow::getProcessId = -> @webContents.getProcessId()
 BrowserWindow::isCrashed = -> @webContents.isCrashed()
-BrowserWindow::getDevTools = ->
-  processId: @devToolsWebContents.getProcessId()
-  routingId: @devToolsWebContents.getRoutingId()
 BrowserWindow::executeJavaScriptInDevTools = (code) ->
   @devToolsWebContents.executeJavaScript code
 

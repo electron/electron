@@ -22,9 +22,7 @@ valueToMeta = (sender, value) ->
     # Reference the original value if it's an object, because when it's
     # passed to renderer we would assume the renderer keeps a reference of
     # it.
-    processId = sender.getProcessId()
-    routingId = sender.getRoutingId()
-    [meta.id, meta.storeId] = objectsRegistry.add processId, routingId, value
+    [meta.id, meta.storeId] = objectsRegistry.add sender.getId(), value
 
     meta.members = []
     meta.members.push {name: prop, type: typeof field} for prop, field of value
@@ -40,8 +38,6 @@ errorToMeta = (error) ->
 
 # Convert array of meta data from renderer into array of real values.
 unwrapArgs = (sender, args) ->
-  processId = sender.getProcessId()
-  routingId = sender.getRoutingId()
   metaToValue = (meta) ->
     switch meta.type
       when 'value' then meta.value
@@ -57,7 +53,7 @@ unwrapArgs = (sender, args) ->
         -> returnValue
       when 'function'
         rendererReleased = false
-        objectsRegistry.once "clear-#{processId}-#{routingId}", ->
+        objectsRegistry.once "clear-#{sender.getId()}", ->
           rendererReleased = true
 
         ret = ->
@@ -83,8 +79,8 @@ callFunction = (event, func, caller, args) ->
     event.returnValue = valueToMeta event.sender, ret
 
 # Send by BrowserWindow when its render view is deleted.
-process.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (processId, routingId) ->
-  objectsRegistry.clear processId, routingId
+process.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (id) ->
+  objectsRegistry.clear id
 
 ipc.on 'ATOM_BROWSER_REQUIRE', (event, module) ->
   try
@@ -101,10 +97,8 @@ ipc.on 'ATOM_BROWSER_GLOBAL', (event, name) ->
 ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event) ->
   try
     BrowserWindow = require 'browser-window'
-    processId = event.sender.getProcessId()
-    routingId = event.sender.getRoutingId()
-    window = BrowserWindow.fromProcessIdAndRoutingId processId, routingId
-    window = BrowserWindow.fromDevTools processId, routingId unless window?
+    window = BrowserWindow.fromWebContents event.sender
+    window = BrowserWindow.fromDevToolsWebContents event.sender unless window?
     event.returnValue = valueToMeta event.sender, window
   catch e
     event.returnValue = errorToMeta e
@@ -162,6 +156,4 @@ ipc.on 'ATOM_BROWSER_MEMBER_GET', (event, id, name) ->
     event.returnValue = errorToMeta e
 
 ipc.on 'ATOM_BROWSER_DEREFERENCE', (event, storeId) ->
-  processId = event.sender.getProcessId()
-  routingId = event.sender.getRoutingId()
-  objectsRegistry.remove processId, routingId, storeId
+  objectsRegistry.remove event.sender.getId(), storeId
