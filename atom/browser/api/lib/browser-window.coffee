@@ -15,15 +15,23 @@ BrowserWindow::_init = ->
     @setMenu menu if menu?
 
   # Define getter for webContents.
-  @__webContents = null
+  webContents = null
   @__defineGetter__ 'webContents', ->
-    @__webContents ?= @getWebContents()
-  @__devToolsWebContents = null
+    webContents ?= @getWebContents()
+    # Return null if webContents is destroyed.
+    webContents = null unless webContents?.isAlive()
+    webContents
+
+  # And devToolsWebContents.
+  devToolsWebContents = null
   @__defineGetter__ 'devToolsWebContents', ->
     if @isDevToolsOpened()
-      @__devToolsWebContents ?= @getDevToolsWebContents()
+      # Get the new devToolsWebContents if previous one has been destroyed, it
+      # could happen when the devtools has been closed and then reopened.
+      devToolsWebContents = null unless devToolsWebContents?.isAlive()
+      devToolsWebContents ?= @getDevToolsWebContents()
     else
-      @__devToolsWebContents = null
+      devToolsWebContents = null
 
   # Remember the window.
   id = BrowserWindow.windows.add this

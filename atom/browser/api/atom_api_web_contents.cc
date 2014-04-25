@@ -17,9 +17,18 @@ namespace api {
 
 WebContents::WebContents(content::WebContents* web_contents)
     : web_contents_(web_contents) {
+  Observe(web_contents_);
 }
 
 WebContents::~WebContents() {
+}
+
+void WebContents::WebContentsDestroyed(content::WebContents*) {
+  web_contents_ = NULL;
+}
+
+bool WebContents::IsAlive() const {
+  return web_contents_ != NULL;
 }
 
 GURL WebContents::GetURL() const {
@@ -62,6 +71,7 @@ void WebContents::ExecuteJavaScript(const string16& code) {
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
+      .SetMethod("isAlive", &WebContents::IsAlive)
       .SetMethod("getUrl", &WebContents::GetURL)
       .SetMethod("getTitle", &WebContents::GetTitle)
       .SetMethod("isLoading", &WebContents::IsLoading)

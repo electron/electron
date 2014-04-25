@@ -6,23 +6,20 @@
 #define ATOM_BROWSER_API_ATOM_API_WEB_CONTENTS_H_
 
 #include "atom/browser/api/event_emitter.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "native_mate/handle.h"
-
-class GURL;
-
-namespace content {
-class WebContents;
-}
 
 namespace atom {
 
 namespace api {
 
-class WebContents : public mate::EventEmitter {
+class WebContents : public mate::EventEmitter,
+                    public content::WebContentsObserver {
  public:
   static mate::Handle<WebContents> Create(v8::Isolate* isolate,
                                           content::WebContents* web_contents);
 
+  bool IsAlive() const;
   GURL GetURL() const;
   string16 GetTitle() const;
   bool IsLoading() const;
@@ -39,7 +36,10 @@ class WebContents : public mate::EventEmitter {
 
   // mate::Wrappable implementations:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate);
+      v8::Isolate* isolate) OVERRIDE;
+
+  // content::WebContentsObserver implementations:
+  virtual void WebContentsDestroyed(content::WebContents*) OVERRIDE;
 
  private:
   content::WebContents* web_contents_;  // Weak.
