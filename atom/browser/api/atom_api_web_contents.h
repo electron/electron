@@ -39,10 +39,10 @@ class WebContents : public mate::EventEmitter,
   int GetProcessID() const;
   bool IsCrashed() const;
   void ExecuteJavaScript(const string16& code);
+  bool SendIPCMessage(const string16& channel, const base::ListValue& args);
 
  protected:
   explicit WebContents(content::WebContents* web_contents);
-  virtual ~WebContents();
 
   // mate::Wrappable implementations:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(

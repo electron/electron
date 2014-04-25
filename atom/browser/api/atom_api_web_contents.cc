@@ -4,8 +4,10 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 
+#include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
@@ -16,11 +18,8 @@ namespace atom {
 namespace api {
 
 WebContents::WebContents(content::WebContents* web_contents)
-    : web_contents_(web_contents) {
-  Observe(web_contents_);
-}
-
-WebContents::~WebContents() {
+    : content::WebContentsObserver(web_contents),
+      web_contents_(web_contents) {
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
@@ -50,96 +49,98 @@ void WebContents::DidStopLoading(content::RenderViewHost* render_view_host) {
 }
 
 void WebContents::WebContentsDestroyed(content::WebContents*) {
-  // The RenderViewDeleted is not called when the WebContents is destroyed
-  // directly.
+  // The RenderViewDeleted was not called when the WebContents is destroyed.
   RenderViewDeleted(web_contents_->GetRenderViewHost());
-
   Emit("destroyed");
-  web_contents_ = NULL;
 }
 
 bool WebContents::IsAlive() const {
-  return web_contents_ != NULL;
+  return web_contents() != NULL;
 }
 
 void WebContents::LoadURL(const GURL& url) {
   content::NavigationController::LoadURLParams params(url);
   params.transition_type = content::PAGE_TRANSITION_TYPED;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
-  web_contents_->GetController().LoadURLWithParams(params);
+  web_contents()->GetController().LoadURLWithParams(params);
 }
 
 GURL WebContents::GetURL() const {
-  return web_contents_->GetURL();
+  return web_contents()->GetURL();
 }
 
 string16 WebContents::GetTitle() const {
-  return web_contents_->GetTitle();
+  return web_contents()->GetTitle();
 }
 
 bool WebContents::IsLoading() const {
-  return web_contents_->IsLoading();
+  return web_contents()->IsLoading();
 }
 
 bool WebContents::IsWaitingForResponse() const {
-  return web_contents_->IsWaitingForResponse();
+  return web_contents()->IsWaitingForResponse();
 }
 
 void WebContents::Stop() {
-  web_contents_->Stop();
+  web_contents()->Stop();
 }
 
 void WebContents::Reload() {
-  web_contents_->GetController().Reload(false);
+  web_contents()->GetController().Reload(false);
 }
 
 void WebContents::ReloadIgnoringCache() {
-  web_contents_->GetController().ReloadIgnoringCache(false);
+  web_contents()->GetController().ReloadIgnoringCache(false);
 }
 
 bool WebContents::CanGoBack() const {
-  return web_contents_->GetController().CanGoBack();
+  return web_contents()->GetController().CanGoBack();
 }
 
 bool WebContents::CanGoForward() const {
-  return web_contents_->GetController().CanGoForward();
+  return web_contents()->GetController().CanGoForward();
 }
 
 bool WebContents::CanGoToOffset(int offset) const {
-  return web_contents_->GetController().CanGoToOffset(offset);
+  return web_contents()->GetController().CanGoToOffset(offset);
 }
 
 void WebContents::GoBack() {
-  web_contents_->GetController().GoBack();
+  web_contents()->GetController().GoBack();
 }
 
 void WebContents::GoForward() {
-  web_contents_->GetController().GoForward();
+  web_contents()->GetController().GoForward();
 }
 
 void WebContents::GoToIndex(int index) {
-  web_contents_->GetController().GoToIndex(index);
+  web_contents()->GetController().GoToIndex(index);
 }
 
 void WebContents::GoToOffset(int offset) {
-  web_contents_->GetController().GoToOffset(offset);
+  web_contents()->GetController().GoToOffset(offset);
 }
 
 int WebContents::GetRoutingID() const {
-  return web_contents_->GetRoutingID();
+  return web_contents()->GetRoutingID();
 }
 
 int WebContents::GetProcessID() const {
-  return web_contents_->GetRenderProcessHost()->GetID();
+  return web_contents()->GetRenderProcessHost()->GetID();
 }
 
 bool WebContents::IsCrashed() const {
-  return web_contents_->IsCrashed();
+  return web_contents()->IsCrashed();
 }
 
 void WebContents::ExecuteJavaScript(const string16& code) {
-  web_contents_->GetRenderViewHost()->ExecuteJavascriptInWebFrame(
+  web_contents()->GetRenderViewHost()->ExecuteJavascriptInWebFrame(
       string16(), code);
+}
+
+bool WebContents::SendIPCMessage(const string16& channel,
+                                 const base::ListValue& args) {
+  return Send(new AtomViewMsg_Message(routing_id(), channel, args));
 }
 
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
@@ -164,7 +165,8 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
       .SetMethod("getRoutingId", &WebContents::GetRoutingID)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
-      .SetMethod("executeJavaScript", &WebContents::ExecuteJavaScript);
+      .SetMethod("executeJavaScript", &WebContents::ExecuteJavaScript)
+      .SetMethod("send", &WebContents::SendIPCMessage);
 }
 
 // static
