@@ -87,8 +87,11 @@ BrowserWindow.fromDevTools = (processId, routingId) ->
     return window if devtools.processId == processId and
                      devtools.routingId == routingId
 
+# Helpers.
+BrowserWindow::loadUrl = -> @webContents.loadUrl.apply @webContents, arguments
+BrowserWindow::send = -> @webContents.send.apply @webContents, arguments
+
 # Be compatible with old API.
-BrowserWindow::loadUrl = (url) -> @webContents.loadUrl(url)
 BrowserWindow::getUrl = -> @webContents.getUrl()
 BrowserWindow::reload = -> @webContents.reload()
 BrowserWindow::reloadIgnoringCache = -> @webContents.reloadIgnoringCache()
