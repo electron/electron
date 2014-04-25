@@ -115,17 +115,6 @@ void Window::OnRendererResponsive() {
   Emit("responsive");
 }
 
-void Window::OnRenderViewDeleted(int process_id, int routing_id) {
-  base::ListValue args;
-  args.AppendInteger(process_id);
-  args.AppendInteger(routing_id);
-  Emit("render-view-deleted", args);
-}
-
-void Window::OnRendererCrashed() {
-  Emit("crashed");
-}
-
 // static
 mate::Wrappable* Window::New(mate::Arguments* args,
                              const base::DictionaryValue& options) {
@@ -425,8 +414,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("blurWebView", &Window::BlurWebView)
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)
       .SetMethod("capturePage", &Window::CapturePage)
-      .SetMethod("getWebContents", &Window::GetWebContents)
-      .SetMethod("getDevToolsWebContents", &Window::GetDevToolsWebContents)
+      .SetMethod("_getWebContents", &Window::GetWebContents)
+      .SetMethod("_getDevToolsWebContents", &Window::GetDevToolsWebContents)
       .SetMethod("loadUrl", &Window::LoadURL)
       .SetMethod("canGoBack", &Window::CanGoBack)
       .SetMethod("canGoForward", &Window::CanGoForward)

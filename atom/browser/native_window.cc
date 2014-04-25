@@ -300,14 +300,6 @@ void NativeWindow::DestroyWebContents() {
   if (!inspectable_web_contents_)
     return;
 
-  // The OnRenderViewDeleted is not called when the WebContents is destroyed
-  // directly (e.g. when closing the window), so we make sure it's always
-  // emitted to users by sending it before window is closed..
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnRenderViewDeleted(
-                        GetWebContents()->GetRenderProcessHost()->GetID(),
-                        GetWebContents()->GetRoutingID()));
-
   inspectable_web_contents_.reset();
 }
 
@@ -475,16 +467,6 @@ void NativeWindow::RendererUnresponsive(content::WebContents* source) {
 void NativeWindow::RendererResponsive(content::WebContents* source) {
   window_unresposive_closure_.Cancel();
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
-}
-
-void NativeWindow::RenderViewDeleted(content::RenderViewHost* rvh) {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
-                    OnRenderViewDeleted(rvh->GetProcess()->GetID(),
-                                        rvh->GetRoutingID()));
-}
-
-void NativeWindow::RenderProcessGone(base::TerminationStatus status) {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererCrashed());
 }
 
 void NativeWindow::BeforeUnloadFired(const base::TimeTicks& proceed_time) {

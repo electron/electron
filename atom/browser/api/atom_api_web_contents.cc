@@ -23,7 +23,22 @@ WebContents::WebContents(content::WebContents* web_contents)
 WebContents::~WebContents() {
 }
 
+void WebContents::RenderViewDeleted(content::RenderViewHost*) {
+  base::ListValue args;
+  args.AppendInteger(GetProcessID());
+  args.AppendInteger(GetRoutingID());
+  Emit("render-view-deleted", args);
+}
+
+void WebContents::RenderProcessGone(base::TerminationStatus status) {
+  Emit("crashed");
+}
+
 void WebContents::WebContentsDestroyed(content::WebContents*) {
+  // The RenderViewDeleted is not called when the WebContents is destroyed
+  // directly.
+  RenderViewDeleted(web_contents_->GetRenderViewHost());
+
   web_contents_ = NULL;
 }
 

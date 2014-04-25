@@ -39,6 +39,8 @@ class WebContents : public mate::EventEmitter,
       v8::Isolate* isolate) OVERRIDE;
 
   // content::WebContentsObserver implementations:
+  virtual void RenderViewDeleted(content::RenderViewHost*) OVERRIDE;
+  virtual void RenderProcessGone(base::TerminationStatus status) OVERRIDE;
   virtual void WebContentsDestroyed(content::WebContents*) OVERRIDE;
 
  private:

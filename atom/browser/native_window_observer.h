@@ -34,12 +34,6 @@ class NativeWindowObserver {
 
   // Called when renderer recovers.
   virtual void OnRendererResponsive() {}
-
-  // Called when a render view has been deleted.
-  virtual void OnRenderViewDeleted(int process_id, int routing_id) {}
-
-  // Called when renderer has crashed.
-  virtual void OnRendererCrashed() {}
 };
 
 }  // namespace atom

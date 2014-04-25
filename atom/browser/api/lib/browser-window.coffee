@@ -14,19 +14,13 @@ BrowserWindow::_init = ->
     menu = app.getApplicationMenu()
     @setMenu menu if menu?
 
-  # Define getter for webContents.
-  webContents = null
-  @__defineGetter__ 'webContents', ->
-    webContents ?= @getWebContents()
-    # Return null if webContents is destroyed.
-    webContents = null unless webContents?.isAlive()
-    webContents
+  @webContents = @getWebContents()
 
-  # And devToolsWebContents.
+  # Define getter for devToolsWebContents.
   devToolsWebContents = null
   @__defineGetter__ 'devToolsWebContents', ->
     if @isDevToolsOpened()
-      # Get the new devToolsWebContents if previous one has been destroyed, it
+      # Get a new devToolsWebContents if previous one has been destroyed, it
       # could happen when the devtools has been closed and then reopened.
       devToolsWebContents = null unless devToolsWebContents?.isAlive()
       devToolsWebContents ?= @getDevToolsWebContents()
@@ -43,11 +37,22 @@ BrowserWindow::_init = ->
 
   # Tell the rpc server that a render view has been deleted and we need to
   # release all objects owned by it.
-  @on 'render-view-deleted', (event, processId, routingId) ->
+  @webContents.on 'render-view-deleted', (event, processId, routingId) ->
     process.emit 'ATOM_BROWSER_RELEASE_RENDER_VIEW', processId, routingId
 
 BrowserWindow::toggleDevTools = ->
   if @isDevToolsOpened() then @closeDevTools() else @openDevTools()
+
+BrowserWindow::getWebContents = ->
+  webContents = @_getWebContents()
+  webContents.__proto__ = EventEmitter.prototype
+  webContents
+
+BrowserWindow::getDevToolsWebContents = ->
+  webContents = @_getDevToolsWebContents()
+  webContents.__proto__ = EventEmitter.prototype
+  webContents = null unless webContents.isAlive()
+  webContents
 
 BrowserWindow::restart = ->
   @loadUrl(@getUrl())
