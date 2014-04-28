@@ -12,24 +12,24 @@ ipc.on('message', function(event, arg) {
   event.sender.send('message', arg);
 });
 
-ipc.on('console.log', function(pid, rid, args) {
+ipc.on('console.log', function(event, args) {
   console.log.apply(console, args);
 });
 
-ipc.on('console.error', function(pid, rid, args) {
+ipc.on('console.error', function(event, args) {
   console.log.apply(console, args);
 });
 
-ipc.on('process.exit', function(pid, rid, code) {
+ipc.on('process.exit', function(event, code) {
   process.exit(code);
 });
 
-ipc.on('eval', function(ev, script) {
-  ev.returnValue = eval(script);
+ipc.on('eval', function(event, script) {
+  event.returnValue = eval(script);
 });
 
-ipc.on('echo', function(ev, msg) {
-  ev.returnValue = msg;
+ipc.on('echo', function(event, msg) {
+  event.returnValue = msg;
 });
 
 process.on('uncaughtException', function(error) {
