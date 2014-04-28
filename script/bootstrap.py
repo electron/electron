@@ -20,7 +20,6 @@ def main():
 
   args = parse_args()
   update_submodules()
-  update_npm()
   update_node_modules('.')
   update_atom_modules('atom/browser/default_app')
   bootstrap_brightray(args.url)
@@ -52,14 +51,6 @@ def bootstrap_brightray(url):
   execute([sys.executable, bootstrap, '--commit', LIBCHROMIUMCONTENT_COMMIT,
            url])
 
-
-def update_npm():
-  global NPM
-  if os.environ.get('CI') == '1':
-    execute([NPM, 'install', 'npm'])
-    NPM = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'npm')
-    if sys.platform == 'win32':
-      NPM += '.cmd'
 
 def update_node_modules(dirname):
   with scoped_cwd(dirname):
