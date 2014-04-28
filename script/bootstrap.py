@@ -2,7 +2,6 @@
 
 import argparse
 import os
-import subprocess
 import sys
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL
