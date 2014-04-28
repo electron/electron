@@ -3,6 +3,7 @@
   "version": "0.11.10",
 
   "devDependencies": {
+    "atom-package-manager": "0.41.x",
     "coffee-script": "~1.6.3",
     "coffeelint": "~0.6.1",
     "formidable": "~1.0.14",
