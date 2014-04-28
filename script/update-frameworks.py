@@ -7,7 +7,7 @@ from lib.util import safe_mkdir, extract_zip, tempdir, download
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-FRAMEWORKS_URL = 'https://github.com/atom/atom-shell/releases/download/v0.11.10'
+FRAMEWORKS_URL = 'https://github.com/atom/atom-shell-frameworks/releases/download/v0.0.1'
 
 def main():
   os.chdir(SOURCE_ROOT)
