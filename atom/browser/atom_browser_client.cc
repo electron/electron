@@ -83,7 +83,8 @@ bool AtomBrowserClient::ShouldSwapProcessesForNavigation(
   if (site_instance->HasProcess())
     dying_render_process_ = site_instance->GetProcess();
 
-  // Restart renderer process for all navigations.
+  // Restart renderer process for all navigations, this relies on a patch to
+  // Chromium: http://git.io/_PaNyg.
   return true;
 }
 

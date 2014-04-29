@@ -99,11 +99,14 @@ void WebContents::Stop() {
 }
 
 void WebContents::Reload() {
-  web_contents()->GetController().Reload(false);
+  // Navigating to a URL would always restart the renderer process, we want this
+  // because normal reloading will break our node integration.
+  // This is done by AtomBrowserClient::ShouldSwapProcessesForNavigation.
+  LoadURL(GetURL());
 }
 
 void WebContents::ReloadIgnoringCache() {
-  web_contents()->GetController().ReloadIgnoringCache(false);
+  Reload();
 }
 
 bool WebContents::CanGoBack() const {

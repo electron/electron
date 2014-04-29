@@ -81,7 +81,7 @@ BrowserWindow::loadUrl = -> @webContents.loadUrl.apply @webContents, arguments
 BrowserWindow::send = -> @webContents.send.apply @webContents, arguments
 
 # Be compatible with old API.
-BrowserWindow::restart = -> @webContents.restart()
+BrowserWindow::restart = -> @webContents.reload()
 BrowserWindow::getUrl = -> @webContents.getUrl()
 BrowserWindow::reload = -> @webContents.reload()
 BrowserWindow::reloadIgnoringCache = -> @webContents.reloadIgnoringCache()
