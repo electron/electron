@@ -2,7 +2,6 @@
 
 import argparse
 import os
-import subprocess
 import sys
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL
@@ -12,6 +11,7 @@ from lib.util import execute, scoped_cwd
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
 PYTHON_26_URL = 'https://chromium.googlesource.com/chromium/deps/python_26'
+NPM = 'npm.cmd' if sys.platform == 'win32' else 'npm'
 
 
 def main():
@@ -19,8 +19,8 @@ def main():
 
   args = parse_args()
   update_submodules()
-  update_apm()
-  update_node_modules()
+  update_node_modules('.')
+  update_atom_modules('atom/browser/default_app')
   bootstrap_brightray(args.url)
   if sys.platform == 'cygwin':
     update_win32_python()
@@ -51,30 +51,17 @@ def bootstrap_brightray(url):
            url])
 
 
-def update_apm():
-  npm = 'npm.cmd' if sys.platform == 'win32' else 'npm'
-
-  if os.environ.get('CI') == '1':
-    execute([npm, 'install', 'npm'])
-    npm = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'npm')
-    if sys.platform == 'win32':
-      npm += '.cmd'
-
-  with scoped_cwd(os.path.join('vendor', 'apm')):
-    execute([npm, 'install', '.'])
-
-
-def update_node_modules():
-  for dirname in ['atom/browser/default_app', '.']:
-    update_node_modules_for_dir(dirname)
-
-
-def update_node_modules_for_dir(dirname):
+def update_node_modules(dirname):
   with scoped_cwd(dirname):
-    apm = os.path.join(SOURCE_ROOT, 'vendor', 'apm', 'bin', 'apm')
+    execute([NPM, 'install'])
+
+
+def update_atom_modules(dirname):
+  with scoped_cwd(dirname):
+    apm = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'apm')
     if sys.platform in ['win32', 'cygwin']:
       apm += '.cmd'
-    subprocess.check_call([apm, 'install'])
+    execute([apm, 'install'])
 
 
 def update_win32_python():
