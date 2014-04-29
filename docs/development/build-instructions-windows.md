@@ -68,3 +68,33 @@ After building is done, you can find `atom.exe` under `out\Debug`.
 ```bash
 $ python script/test.py
 ```
+
+## Troubleshooting
+
+### Assertion failed: ((handle))->activecnt >= 0
+
+When building under cygwin, you could see `bootstrap.py` failed with following
+error:
+
+```
+Assertion failed: ((handle))->activecnt >= 0, file src\win\pipe.c, line 1430
+
+Traceback (most recent call last):
+  File "script/bootstrap.py", line 87, in <module>
+    sys.exit(main())
+  File "script/bootstrap.py", line 22, in main
+    update_node_modules('.')
+  File "script/bootstrap.py", line 56, in update_node_modules
+    execute([NPM, 'install'])
+  File "/home/zcbenz/codes/raven/script/lib/util.py", line 118, in execute
+    raise e
+subprocess.CalledProcessError: Command '['npm.cmd', 'install']' returned non-zero exit status 3
+```
+
+This is caused a bug when using cygwin python and win32 node together, the
+solution is to use the win32 python to execute the bootstrap script (supposing
+you have installed python under `C:\Python27`):
+
+```bash
+/cygdrive/c/Python27/python.exe script/bootstrap.py
+```
