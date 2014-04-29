@@ -21,6 +21,7 @@ def main():
   update_submodules()
   update_node_modules('.')
   update_atom_modules('atom/browser/default_app')
+  update_atom_modules('spec')
   bootstrap_brightray(args.url)
   if sys.platform == 'cygwin':
     update_win32_python()

@@ -1,7 +1,7 @@
 <html>
 <head>
   <meta name="referrer" content="always">
-  <link href="../../node_modules/mocha/mocha.css" rel="stylesheet">
+  <link href="../node_modules/mocha/mocha.css" rel="stylesheet">
   <script src="jquery-2.0.3.min.js"></script>
 </head>
 <body>
@@ -28,7 +28,7 @@
     require('remote').getCurrentWindow().inspectElement(e.clientX, e.clientY);
   }
 
-  require('coffee-script'); // Supports .coffee tests.
+  require('coffee-script/register');  // Supports .coffee tests.
   var ipc = require('ipc');
 
   // Rediret all output to browser.
@@ -70,7 +70,7 @@
     var runner = mocha.run(function() {
       Mocha.utils.highlightTags('code');
       if (isCi)
-        ipc.sendChannel('process.exit', runner.failures);
+        ipc.send('process.exit', runner.failures);
     });
   });
 })();

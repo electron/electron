@@ -1,5 +1,15 @@
 {
   "name": "atom-shell-specs",
   "main": "static/main.js",
-  "version": "0.1.0"
+  "version": "0.1.0",
+
+  "devDependencies": {
+    "formidable": "~1.0.14",
+    "pathwatcher": "0.14.0",
+    "q": "0.9.7",
+    "mocha": "~1.18.2",
+    "runas": "0.5.*",
+    "temp": "~0.6.0",
+    "walkdir": "~0.0.7"
+  }
 }

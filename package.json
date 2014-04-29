@@ -4,15 +4,8 @@
 
   "devDependencies": {
     "atom-package-manager": "0.44.x",
-    "coffee-script": "~1.6.3",
-    "coffeelint": "~0.6.1",
-    "formidable": "~1.0.14",
-    "mocha": "~1.13.0",
-    "pathwatcher": "0.14.0",
-    "q": "0.9.7",
-    "runas": "0.5.*",
-    "temp": "~0.6.0",
-    "walkdir": "~0.0.7"
+    "coffee-script": "~1.7.1",
+    "coffeelint": "~1.3.0"
   },
 
   "private": true,
