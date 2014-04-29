@@ -60,7 +60,8 @@ def update_atom_modules(dirname):
   with scoped_cwd(dirname):
     apm = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'apm')
     if sys.platform in ['win32', 'cygwin']:
-      apm += '.cmd'
+      apm = os.path.join(SOURCE_ROOT, 'node_modules', 'atom-package-manager',
+                         'bin', 'apm.cmd')
     execute([apm, 'install'])
 
 
