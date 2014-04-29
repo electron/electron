@@ -37,11 +37,11 @@
       return {
         log: function() {
           args = Array.prototype.slice.call(arguments);
-          ipc.sendChannel('console.log', args);
+          ipc.send('console.log', args);
         },
         error: function() {
           args = Array.prototype.slice.call(arguments);
-          ipc.sendChannel('console.error', args);
+          ipc.send('console.error', args);
         },
       }
     });

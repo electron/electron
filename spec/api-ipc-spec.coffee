@@ -58,7 +58,7 @@ describe 'ipc module', ->
 
   describe 'ipc.sendSync', ->
     it 'can be replied by setting event.returnValue', ->
-      msg = ipc.sendChannelSync 'echo', 'test'
+      msg = ipc.sendSync 'echo', 'test'
       assert.equal msg, 'test'
 
     it 'does not crash when reply is not sent and browser is destroyed', (done) ->
