@@ -11,6 +11,10 @@ module.exports.wrap = (webContents) ->
   webContents.send = (args...) ->
     @_send 'ATOM_INTERNAL_MESSAGE', [args...]
 
+  # WebContents::restart()
+  # Restart the renderer process.
+  webContents.restart = -> @loadUrl @getUrl()
+
   # The processId and routingId and identify a webContents.
   webContents.getId = -> "#{@getProcessId()}-#{@getRoutingId()}"
   webContents.equal = (other) -> @getId() is other.getId()

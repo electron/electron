@@ -51,9 +51,6 @@ BrowserWindow::getWebContents = ->
 BrowserWindow::getDevToolsWebContents = ->
   wrapWebContents @_getDevToolsWebContents()
 
-BrowserWindow::restart = ->
-  @loadUrl(@getUrl())
-
 BrowserWindow::setMenu = (menu) ->
   if process.platform is 'darwin'
     throw new Error('BrowserWindow.setMenu is not available on OS X')
@@ -84,6 +81,7 @@ BrowserWindow::loadUrl = -> @webContents.loadUrl.apply @webContents, arguments
 BrowserWindow::send = -> @webContents.send.apply @webContents, arguments
 
 # Be compatible with old API.
+BrowserWindow::restart = -> @webContents.restart()
 BrowserWindow::getUrl = -> @webContents.getUrl()
 BrowserWindow::reload = -> @webContents.reload()
 BrowserWindow::reloadIgnoringCache = -> @webContents.reloadIgnoringCache()
