@@ -198,7 +198,7 @@ void WebContents::OnRendererMessageSync(const string16& channel,
 // static
 mate::Handle<WebContents> WebContents::Create(
     v8::Isolate* isolate, content::WebContents* web_contents) {
-  return CreateHandle(isolate, new WebContents(web_contents));
+  return mate::CreateHandle(isolate, new WebContents(web_contents));
 }
 
 }  // namespace api

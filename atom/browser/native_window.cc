@@ -515,7 +515,8 @@ void NativeWindow::DevToolsSaveToFile(const std::string& url,
   if (it != saved_files_.end() && !save_as) {
     path = it->second;
   } else {
-    if (!file_dialog::ShowSaveDialog(this, url, base::FilePath(url), &path))
+    base::FilePath default_path(base::FilePath::FromUTF8Unsafe(url));
+    if (!file_dialog::ShowSaveDialog(this, url, default_path, &path))
       return;
   }
 
