@@ -7,7 +7,8 @@ from lib.util import safe_mkdir, extract_zip, tempdir, download
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-FRAMEWORKS_URL = 'http://atom-alpha.s3.amazonaws.com'
+FRAMEWORKS_URL = 'https://github.com/atom/atom-shell-frameworks/releases' \
+                 '/download/v0.0.2'
 
 
 def main():
