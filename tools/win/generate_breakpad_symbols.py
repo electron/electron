@@ -49,9 +49,7 @@ def mkdir_p(path):
 
 def RegisterRequiredDll():
   register = os.path.join(os.path.dirname(__file__), 'register_msdia80_dll.js')
-  node = os.path.join(SOURCE_ROOT, 'out', 'Release', 'atom.exe')
-  os.environ['ATOM_SHELL_INTERNAL_RUN_AS_NODE'] = '1'
-  subprocess.check_call([node, register]);
+  subprocess.check_call(['node.exe', register]);
 
 
 def GenerateSymbols(options, binaries):

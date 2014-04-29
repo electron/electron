@@ -25,6 +25,8 @@ def main():
   bootstrap_brightray(args.url)
   if sys.platform == 'cygwin':
     update_win32_python()
+  if sys.platform in ['win32', 'cygwin']:
+    install_runas()
 
   touch_config_gypi()
   update_atom_shell()
@@ -70,6 +72,13 @@ def update_win32_python():
   with scoped_cwd(VENDOR_DIR):
     if not os.path.exists('python_26'):
       execute(['git', 'clone', PYTHON_26_URL])
+
+
+def install_runas():
+  # TODO This is needed by the tools/win/register_msdia80_dll.js, should move
+  # this to a better place.
+  with scoped_cwd(os.path.join(SOURCE_ROOT, 'tools', 'win')):
+    execute([NPM, 'install', 'runas'])
 
 
 def touch_config_gypi():
