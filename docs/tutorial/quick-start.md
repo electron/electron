@@ -2,27 +2,48 @@
 
 ## Introduction
 
-Generally, atom-shell lets you create a web-based desktop application in pure
-javascript. Unlike CEF, which requires you to use C++ to write underlying
-code, or node-webkit, which only allows you to write everything in the web
-page, atom-shell gives you the power to use javascript to control the browser
-side.
+Generally, atom-shell enables you to create desktop applications with pure
+JavaScript by providing a runtime with rich native APIs, you could see it as
+an variant of node.js runtime that focused on desktop applications instead of
+web server.
 
-## Browser and renderer
+But it doesn't mean atom-shell is a JavaScript binding to GUI libraries, instead
+atom-shell uses web pages as GUI, so you could also see it as a minimal Chromium
+browser, controlled by JavaScript.
 
-Atom-shell is built upon Chromium's Content API, so it has the same
-multi-processes architecture with the Chrome browser. In summary, things about
-UI are done in the browser process, and each web page instance would start a
-new renderer process.
+### The browser side
 
-In atom-shell, you can just put everything in a simpler way: when you are
-executing javascript in browser side, you can control the application's life,
-create UI widget, deal with system events, and create windows which contain
-web pages; while on the renderer side, you can only control the web page you
-are showing, if you want something more like creating a new window, you should
-use IPC API to tell the browser to do that.
+If you had experience with node.js web applications, you would notice that there
+are types of JavaScript scripts: the server side scripts and the client side
+scripts. The server side JavaScript, is the scrips that run on the node.js
+runtime, and the client side JavaScript, is the ones that run on user's browser.
 
-## The architecture of an app
+In atom-shell we have similar concepts, since atom-shell displays GUI by showing
+web pages, we would have scripts that run in the web page, and also have scripts
+ran by the atom-shell runtime, which created those web pages. Like node.js, we
+call the former ones client client scripts, and the latter one browser side
+scripts.
+
+In traditional node.js applications, communication between server side and
+client side are usually done by web sockets. In atom-shell, we have provided
+the [ipc](../api/renderer/ipc-renderer.md) module for browser side to client
+communication, and the [remote](../api/renderer/remote.md) module for easy RPC
+support.
+
+### Web page and node.js
+
+Normal web pages are designed to not touch outside world, which makes them not
+suitable for interacting with native systems, atom-shell provides node.js APIs
+in web pages so you could access native resources in web pages, just like
+[node-webkit](https://github.com/rogerwang/node-webkit).
+
+But unlike node-webkit, you could not do native GUI related operations in web
+pages, instead you need to do them on the browser side by sending messages or
+use the easy [remote](../api/renderer/remote.md) module.
+
+## Write your first atom-shell app
+
+### The architecture of an app
 
 Generally, an app of atom-shell should contains at least following files:
 
@@ -95,7 +116,7 @@ Finally the `index.html` is the web page you want to show, in fact you
 actually don't need to provide it, you can just make the window load url of a
 remote page.
 
-## Package your app in atom-shell
+### Package your app in atom-shell
 
 To make atom-shell run your app, you should name the folder of your app as
 `app`, and put it under `Atom.app/Contents/Resources/`, like this:
@@ -110,11 +131,3 @@ Atom.app/Contents/Resources/app/
 Then atom-shell will automatically read your `package.json`. If there is no
 `Atom.app/Contents/Resources/app/`, atom-shell will load the default empty
 app, which is `Atom.app/Contents/Resources/browser/default_app/`.
-
-## IPC between browser and renderer
-
-Atom-shell provides a set of javascript APIs for developers to communicate
-between browser and renderers. There are two types of message: asynchronous
-messages and synchronous messages, the former one is quite similar with node's
-IPC APIs, while the latter one is mainly used for implement the RPC API.
-Details can be found in the `ipc` module reference.
