@@ -3,6 +3,7 @@
 ## Tutorials
 
 * [Quick start](tutorial/quick-start.md)
+* [Application distribution](tutorial/application-distribution.md)
 * [Use native node modules](tutorial/use-native-node-modules.md)
 
 ## Development

@@ -124,8 +124,9 @@ Finally the `index.html` is the web page you want to show:
 ## Run your app
 
 After done writing your app, you could create a distribution of your app by
-following next section and then execute the packaged binary, or you can just
-use the downloaded atom-shell binary to execute your app.
+following the [Application distribution](./application-distribution.md) guide
+and then execute the packaged app, or you can just use the downloaded atom-shell
+binary to execute your app directly.
 
 On Window:
 
@@ -144,20 +145,3 @@ On Mac OS X:
 ```bash
 $ ./Atom.app/Contents/MacOS/Atom app
 ```
-
-## Distribute your app
-
-To distribute your app with atom-shell, you should name the folder of your app
-as `app`, and put it under atom-shell's resources directory (on OS X it is
-`Atom.app/Contents/Resources/`, and on Linux and Windows it is `resources/`),
-like this:
-
-```text
-Atom.app/Contents/Resources/app/
-├── package.json
-├── main.js
-└── index.html
-```
-
-Then execute `Atom.app` (or `atom` on Linux, and `atom.exe` on Window), and
-atom-shell will start as your app.
