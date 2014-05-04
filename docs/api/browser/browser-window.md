@@ -113,14 +113,8 @@ window.onbeforeunload = function(e) {
 
 ### Event: 'closed'
 
-Emitted when the window is closed. At the time of this event, window is not
-destroyed yet so you can still do some operations to the window (but you
-shouldn't!).
-
-### Event: 'destroyed'
-
-Emitted when the memory taken by the native window is released. Usually you
-should dereference the javascript object when received this event.
+Emitted when the window is closed. After you have received this event you should
+remove the reference to the window and avoid using it anymore.
 
 ### Event: 'unresponsive'
 
@@ -159,12 +153,11 @@ Get the `WebContents` of devtools of this window.
 
 ### BrowserWindow.destroy()
 
-Destroy the window and free the memory without closing it.
+Force closing the window, the `unload` and `beforeunload` event won't be emitted
+for the web page, and `close` event would also not be emitted for this window,
+but it would gurrantee the `closed` event to be emitted.
 
-**Note:** Usually you should always call `Window.close()` to close the window,
-**which will emit `beforeunload` and `unload` events for DOM. Only use
-**`Window.destroy()` when the window gets into a very bad state and you want
-**to force closing it.
+You should only use this method when the web page has crashed.
 
 ### BrowserWindow.close()
 

@@ -1,9 +1,10 @@
 # Atom-Shell Documentations
 
-## Guides
+## Tutorials
 
-* [Quick start](quick-start.md)
-* [Use native modules](use-native-modules.md)
+* [Quick start](tutorial/quick-start.md)
+* [Application distribution](tutorial/application-distribution.md)
+* [Use native node modules](tutorial/use-native-node-modules.md)
 
 ## Development
 
