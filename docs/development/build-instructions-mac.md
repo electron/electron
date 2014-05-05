@@ -44,6 +44,11 @@ $ ./script/build.py -c Debug
 
 After building is done, you can find `Atom.app` under `out/Debug`.
 
+## 32bit support
+
+Currently atom-shell can only be built for 64bit target on OS X, and there is no
+plan to support 32bit on OS X in future.
+
 ## Tests
 
 ```bash

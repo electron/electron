@@ -63,6 +63,11 @@ $ python script/build.py -c Debug
 
 After building is done, you can find `atom.exe` under `out\Debug`.
 
+## 64bit support
+
+Currently atom-shell can only be built for 32bit target on Windows, support for
+64bit would come in future.
+
 ## Tests
 
 ```bash

@@ -1,4 +1,4 @@
-# Atom-Shell Documentations
+# Atom Shell Documentations
 
 ## Tutorials
 
