@@ -47,6 +47,7 @@
       font-size: 40px;
       line-height: 300px;
       text-align: center;
+      -webkit-user-select: none;
     }
     #holder.hover {
       border: 4px dashed #999;
@@ -59,14 +60,16 @@
     var execPath = require('remote').process.execPath;
     var command = execPath + ' path-to-your-app';
 
-    var openWiki = function() {
-      require('shell').openExternal('https://github.com/atom/atom-shell/blob/master/docs/tutorial/quick-start.md');
-    }
-
+    document.onclick = function(e) {
+      e.preventDefault();
+      if (e.target.tagName == 'A')
+        require('shell').openExternal(e.target.href);
+      return false;
+    };
     document.ondragover = document.ondrop = function(e) {
       e.preventDefault();
       return false;
-    }
+    };
   </script>
 
   <h2>Welcome to Atom Shell</h2>
@@ -80,8 +83,9 @@
 
   <p>
   The <code>path-to-your-app</code> should be the path to your own atom-shell
-  app, you can read the <a href="javascript:openWiki()">Quick Start</a> guide
-  in atom-shell's docs on how to write one.
+  app, you can read the <a href='https://github.com/atom/atom-shell/blob/master/docs/tutorial/quick-start.md'>quick start</a>
+  guide in atom-shell's <a href='https://github.com/atom/atom-shell/blob/master/docs'>docs</a>
+  on how to write one.
   </p>
 
   <p>
