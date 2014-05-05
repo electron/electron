@@ -1,6 +1,6 @@
 {
   "name": "atom-shell",
-  "version": "0.12.0",
+  "version": "0.12.1",
 
   "devDependencies": {
     "atom-package-manager": "0.44.x",
