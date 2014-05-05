@@ -5,7 +5,7 @@ asynchronous messages to the browser, and also receive messages sent from
 browser. If you want to make use of modules of browser from renderer, you
 might consider using the [remote](remote.md) module.
 
-See [ipc (browser)](../browser/ipc-browser.md) for examples.
+See [ipc (browser)](ipc-browser.md) for examples.
 
 ## ipc.send(channel[, args...])
 

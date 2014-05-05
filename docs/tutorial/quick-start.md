@@ -26,8 +26,8 @@ scripts.
 
 In traditional node.js applications, communication between server side and
 client side are usually done by web sockets. In atom-shell, we have provided
-the [ipc](../api/renderer/ipc-renderer.md) module for browser side to client
-communication, and the [remote](../api/renderer/remote.md) module for easy RPC
+the [ipc](../api/ipc-renderer.md) module for browser side to client
+communication, and the [remote](../api/remote.md) module for easy RPC
 support.
 
 ### Web page and node.js
@@ -39,7 +39,7 @@ in web pages so you could access native resources in web pages, just like
 
 But unlike node-webkit, you could not do native GUI related operations in web
 pages, instead you need to do them on the browser side by sending messages or
-use the easy [remote](../api/renderer/remote.md) module.
+use the easy [remote](../api/remote.md) module.
 
 
 ## Write your first atom-shell app
@@ -131,17 +131,17 @@ binary to execute your app directly.
 On Window:
 
 ```cmd
-$ .\atom-shell\atom.exe app
+$ .\atom-shell\atom.exe path-to-app\
 ```
 
 On Linux:
 
 ```bash
-$ ./atom-shell/atom app
+$ ./atom-shell/atom path-to-app/
 ```
 
 On Mac OS X:
 
 ```bash
-$ ./Atom.app/Contents/MacOS/Atom app
+$ ./Atom.app/Contents/MacOS/Atom path-to-app/
 ```

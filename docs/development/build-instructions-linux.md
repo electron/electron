@@ -44,6 +44,11 @@ $ ./script/build.py -c Debug
 
 After building is done, you can find `atom` under `out/Debug`.
 
+## 32bit support
+
+Currently atom-shell can only be built for 64bit target, support for 32bit would
+come in future, patches would also be welcomed.
+
 ## Troubleshooting
 
 If you got an error like this:

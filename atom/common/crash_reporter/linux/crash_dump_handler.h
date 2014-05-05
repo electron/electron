@@ -1,6 +1,6 @@
 // Copyright (c) 2014 GitHub, Inc. All rights reserved.
 // Copyright (c) 2013 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
+// Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
 #ifndef ATOM_COMMON_CRASH_REPORTER_LINUX_CRASH_DUMP_HANDLER_H_
