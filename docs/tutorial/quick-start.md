@@ -131,17 +131,17 @@ binary to execute your app directly.
 On Window:
 
 ```cmd
-$ .\atom-shell\atom.exe app
+$ .\atom-shell\atom.exe path-to-app\
 ```
 
 On Linux:
 
 ```bash
-$ ./atom-shell/atom app
+$ ./atom-shell/atom path-to-app/
 ```
 
 On Mac OS X:
 
 ```bash
-$ ./Atom.app/Contents/MacOS/Atom app
+$ ./Atom.app/Contents/MacOS/Atom path-to-app/
 ```

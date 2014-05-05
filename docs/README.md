@@ -1,22 +1,14 @@
-# Atom Shell documents
-
 ## Tutorials
 
 * [Quick start](tutorial/quick-start.md)
 * [Application distribution](tutorial/application-distribution.md)
 * [Use native node modules](tutorial/use-native-node-modules.md)
 
-## Development
-
-* [Coding style](development/coding-style.md)
-* [Source code directory structure](development/source-code-directory-structure.md)
-* [Build instructions (Mac)](development/build-instructions-mac.md)
-* [Build instructions (Windows)](development/build-instructions-windows.md)
-* [Build instructions (Linux)](development/build-instructions-linux.md)
-
 ## API references
 
-Browser side modules:
+* [Synopsis](api/synopsis.md)
+
+Modules for browser side:
 
 * [app](api/app.md)
 * [auto-updater](api/auto-updater.md)
@@ -28,14 +20,22 @@ Browser side modules:
 * [power-monitor](api/power-monitor.md)
 * [protocol](api/protocol.md)
 
-Renderer side modules:
+Modules for web page:
 
 * [ipc (renderer)](api/ipc-renderer.md)
 * [remote](api/remote.md)
 
-Common modules:
+Modules for both sides:
 
 * [clipboard](api/clipboard.md)
 * [crash-reporter](api/crash-reporter.md)
 * [screen](api/screen.md)
 * [shell](api/shell.md)
+
+## Development
+
+* [Coding style](development/coding-style.md)
+* [Source code directory structure](development/source-code-directory-structure.md)
+* [Build instructions (Mac)](development/build-instructions-mac.md)
+* [Build instructions (Windows)](development/build-instructions-windows.md)
+* [Build instructions (Linux)](development/build-instructions-linux.md)
