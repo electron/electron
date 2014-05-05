@@ -15,11 +15,11 @@ describe 'app module', ->
 
   describe 'app.getName()', ->
     it 'returns the name field of package.json', ->
-      assert.equal app.getName(), 'atom-shell-default-app'
+      assert.equal app.getName(), 'Atom Shell Default App'
 
   describe 'app.setName(name)', ->
     it 'overrides the name', ->
-      assert.equal app.getName(), 'atom-shell-default-app'
+      assert.equal app.getName(), 'Atom Shell Default App'
       app.setName 'test-name'
       assert.equal app.getName(), 'test-name'
-      app.setName 'atom-shell-default-app'
+      app.setName 'Atom Shell Default App'

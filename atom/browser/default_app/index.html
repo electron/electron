@@ -1,18 +1,36 @@
 <html>
 <head>
-  <meta http-equiv="content-type" content="text/html; charset=utf-8">
   <title>Atom Shell</title>
+  <style></style>
 </head>
 <body>
-  This is the default mode of Atom Shell, please follow the instructions in
-  wiki to get started.
-  <script type="text/javascript" charset="utf-8">
-    var ipc = require('ipc');
+  <script>
+    var execPath = require('remote').process.execPath;
+    var command = execPath + ' path-to-your-app';
 
-    window.addEventListener('contextmenu', function (e) {
-      e.preventDefault();
-      ipc.send('menu');
-    }, false);
+    var openWiki = function() {
+      require('shell').openExternal('https://github.com/atom/atom-shell/blob/master/docs/tutorial/quick-start.md');
+    }
   </script>
+
+  <h1>Welcome to Atom Shell!</h1>
+
+  <p>
+  Atom Shell is a cross-platform desktop application shell that enables you to
+  build native like applications with node.js and web page engine of Chromium.
+  </p>
+
+  <p>
+  To run your app with atom-shell, execute the following command under your
+  Console (or Terminal):
+  </p>
+
+  <script>document.write('<pre>' + command + '</pre>')</script>
+
+  <p>
+  The <code>path-to-your-app</code> should be the path to your own atom-shell
+  app, you can read the <a href="javascript:openWiki()">Quick Start</a> guide
+  in atom-shell's docs on how to write one.
+  </p>
 </body>
 </html>
