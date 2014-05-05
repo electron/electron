@@ -1,3 +1,5 @@
+# Atom Shell [![Build Status](https://travis-ci.org/atom/atom-shell.svg?branch=master)](https://travis-ci.org/atom/atom-shell)
+
 ## Overview
 
 The Atom Shell framework lets you write cross-platform desktop applications
