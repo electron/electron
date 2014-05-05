@@ -17,19 +17,15 @@ if (argv._.length > 0) {
   try {
     require(path.resolve(argv._[0]));
   } catch(e) {
-    if (e.code == 'MODULE_NOT_FOUND') {
-      app.focus();
-      dialog.showMessageBox({
-        type: 'warning',
-        buttons: ['OK'],
-        title: 'Error opening app',
-        message: 'The app provided is not a valid atom-shell app, please read the docs on how to write one:',
-        detail: 'https://github.com/atom/atom-shell/tree/master/docs'
-      });
-      process.exit(1);
-    } else {
-      throw e;
-    }
+    app.focus();
+    dialog.showMessageBox({
+      type: 'warning',
+      buttons: ['OK'],
+      title: 'Error opening app',
+      message: 'The app provided is not a valid atom-shell app, please read the docs on how to write one:',
+      detail: 'https://github.com/atom/atom-shell/tree/master/docs'
+    });
+    process.exit(1);
   }
 } else if (argv.version) {
   console.log('v' + process.versions['atom-shell']);
