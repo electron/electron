@@ -38,6 +38,20 @@
       overflow: auto;
       padding: 6px 10px;
     }
+
+    #holder {
+      border: 4px dashed #ccc;
+      margin: 0 auto;
+      height: 300px;
+      color: #ccc;
+      font-size: 40px;
+      line-height: 300px;
+      text-align: center;
+    }
+    #holder.hover {
+      border: 4px dashed #999;
+      color: #eee;
+    }
   </style>
 </head>
 <body>
@@ -47,6 +61,11 @@
 
     var openWiki = function() {
       require('shell').openExternal('https://github.com/atom/atom-shell/blob/master/docs/tutorial/quick-start.md');
+    }
+
+    document.ondragover = document.ondrop = function(e) {
+      e.preventDefault();
+      return false;
     }
   </script>
 
@@ -64,5 +83,35 @@
   app, you can read the <a href="javascript:openWiki()">Quick Start</a> guide
   in atom-shell's docs on how to write one.
   </p>
+
+  <p>
+  Or you can just drag your app here to run it:
+  </p>
+
+  <div id="holder">
+    Drag your app here to run it
+  </div>
+
+  <script>
+    var holder = document.getElementById('holder');
+    holder.ondragover = function () {
+      this.className = 'hover';
+      return false;
+    };
+    holder.ondragleave = holder.ondragend = function () {
+      this.className = '';
+      return false;
+    };
+    holder.ondrop = function (e) {
+      this.className = '';
+      e.preventDefault();
+
+      var file = e.dataTransfer.files[0];
+      require('child_process').execFile(execPath, [file.path], {
+        detached: true, stdio: 'ignore'
+      }).unref();
+      return false;
+    };
+  </script>
 </body>
 </html>
