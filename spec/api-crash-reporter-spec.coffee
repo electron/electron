@@ -34,8 +34,8 @@ describe 'crash-reporter module', ->
         res.end()
         server.close()
         done()
-    port = Math.floor(Math.random() * 55535 + 10000)
-    server.listen port, '127.0.0.1', ->
+    server.listen 0, '127.0.0.1', ->
+      {port} = server.address()
       url = url.format
         protocol: 'file'
         pathname: path.join fixtures, 'api', 'crash.html'
