@@ -1,6 +1,4 @@
 var app = require('app');
-var dialog = require('dialog');
-var ipc = require('ipc');
 var Menu = require('menu');
 var MenuItem = require('menu-item');
 var BrowserWindow = require('browser-window');
@@ -13,29 +11,11 @@ app.on('window-all-closed', function() {
   app.quit();
 });
 
-app.on('open-url', function(event, url) {
-  dialog.showMessageBox({message: url, buttons: ['OK']});
-});
-
 app.on('ready', function() {
   app.commandLine.appendSwitch('js-flags', '--harmony_collections');
 
   mainWindow = new BrowserWindow({ width: 800, height: 600 });
   mainWindow.loadUrl('file://' + __dirname + '/index.html');
-
-  mainWindow.on('page-title-updated', function(event, title) {
-    event.preventDefault();
-
-    this.setTitle('Atom Shell - ' + title);
-  });
-
-  mainWindow.on('closed', function() {
-    mainWindow = null;
-  });
-
-  mainWindow.on('unresponsive', function() {
-    console.log('unresponsive');
-  });
 
   if (process.platform == 'darwin') {
     var template = [
@@ -117,16 +97,16 @@ app.on('ready', function() {
           {
             label: 'Reload',
             accelerator: 'Command+R',
-            click: function() { BrowserWindow.getFocusedWindow().restart(); }
+            click: function() { mainWindow.restart(); }
           },
           {
             label: 'Enter Fullscreen',
-            click: function() { BrowserWindow.getFocusedWindow().setFullscreen(true); }
+            click: function() { mainWindow.setFullscreen(true); }
           },
           {
             label: 'Toggle DevTools',
             accelerator: 'Alt+Command+I',
-            click: function() { BrowserWindow.getFocusedWindow().toggleDevTools(); }
+            click: function() { mainWindow.toggleDevTools(); }
           },
         ]
       },
@@ -196,9 +176,4 @@ app.on('ready', function() {
     menu = Menu.buildFromTemplate(template);
     mainWindow.setMenu(menu);
   }
-
-  ipc.on('message', function(processId, routingId, type) {
-    if (type == 'menu')
-      menu.popup(mainWindow);
-  });
 });
