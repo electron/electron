@@ -1,4 +1,4 @@
-# Atom Shell Documentations
+# Atom Shell documents
 
 ## Tutorials
 
@@ -14,28 +14,28 @@
 * [Build instructions (Windows)](development/build-instructions-windows.md)
 * [Build instructions (Linux)](development/build-instructions-linux.md)
 
-## API References
-
-Renderer side modules:
-
-* [ipc (renderer)](api/renderer/ipc-renderer.md)
-* [remote](api/renderer/remote.md)
+## API references
 
 Browser side modules:
 
-* [app](api/browser/app.md)
-* [auto-updater](api/browser/auto-updater.md)
-* [browser-window](api/browser/browser-window.md)
-* [dialog](api/browser/dialog.md)
-* [ipc (browser)](api/browser/ipc-browser.md)
-* [menu](api/browser/menu.md)
-* [menu-item](api/browser/menu-item.md)
-* [power-monitor](api/browser/power-monitor.md)
-* [protocol](api/browser/protocol.md)
+* [app](api/app.md)
+* [auto-updater](api/auto-updater.md)
+* [browser-window](api/browser-window.md)
+* [dialog](api/dialog.md)
+* [ipc (browser)](api/ipc-browser.md)
+* [menu](api/menu.md)
+* [menu-item](api/menu-item.md)
+* [power-monitor](api/power-monitor.md)
+* [protocol](api/protocol.md)
+
+Renderer side modules:
+
+* [ipc (renderer)](api/ipc-renderer.md)
+* [remote](api/remote.md)
 
 Common modules:
 
-* [clipboard](api/common/clipboard.md)
-* [crash-reporter](api/common/crash-reporter.md)
-* [screen](api/common/screen.md)
-* [shell](api/common/shell.md)
+* [clipboard](api/clipboard.md)
+* [crash-reporter](api/crash-reporter.md)
+* [screen](api/screen.md)
+* [shell](api/shell.md)

@@ -136,7 +136,7 @@ Returns the object returned by `require(module)` in the browser process.
 
 ## remote.getCurrentWindow()
 
-Returns the [BrowserWindow](../browser/browser-window.md) object which
+Returns the [BrowserWindow](browser-window.md) object which
 represents current window.
 
 ## remote.getGlobal(name)
