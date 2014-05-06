@@ -2,9 +2,8 @@
 
 **This module has only been implemented for Mac OS X.**
 
-The `auto-updater` module is a simple wrap around the `Squirrel` framework, the
-`Squirrel` framework is not open sourced yet and atom-shell would download the
-binary of `Squirrel` when bootstrapping.
+The `auto-updater` module is a simple wrap around the
+[Squirrel.Mac](https://github.com/Squirrel/Squirrel.Mac) framework.
 
 ## Squirrel
 

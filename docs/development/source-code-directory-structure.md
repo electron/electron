@@ -58,5 +58,5 @@ to understand the source code better.
 * **out** - Temporary output directory of `ninja`.
 * **dist** - Temporary directory created by `script/create-dist.py` script
   when creating an distribution.
-* **frameworks** - Downloaded binaries of third-party frameworks, binaries
-  here are usually either closed source or hard to be built via `gyp`.
+* **frameworks** - Downloaded binaries of third-party frameworks which do not
+  support to be built via `gyp`.
