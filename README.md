@@ -7,7 +7,7 @@ editor](https://github.com/atom/atom).
 
 ## Downloads
 
-Prebuilt binaries of atom-shell for Linux, Window and Mac can be found on the
+Prebuilt binaries of atom-shell for Linux, Windows and Mac can be found on the
 [releases](https://github.com/atom/atom-shell/releases) page.
 
 ## Documentation
