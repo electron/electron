@@ -19,10 +19,9 @@ scripts. The server side JavaScript, is the scrips that run on the node.js
 runtime, and the client side JavaScript, is the ones that run on user's browser.
 
 In atom-shell we have similar concepts, since atom-shell displays GUI by showing
-web pages, we would have scripts that run in the web page, and also have scripts
-ran by the atom-shell runtime, which created those web pages. Like node.js, we
-call the former ones client scripts, and the latter ones browser side
-scripts.
+web pages, we would have **scripts that run in the web page**, and also have
+**scripts ran by the atom-shell runtime**, which created those web pages.
+Like node.js, we call them **client scripts**, and **browser scripts**.
 
 In traditional node.js applications, communication between server side and
 client side are usually done by web sockets. In atom-shell, we have provided
