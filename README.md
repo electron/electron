@@ -1,7 +1,5 @@
 # Atom Shell [![Build Status](https://travis-ci.org/atom/atom-shell.svg?branch=master)](https://travis-ci.org/atom/atom-shell)
 
-## Overview
-
 The Atom Shell framework lets you write cross-platform desktop applications
 using JavaScript, HTML and CSS. It is based on [node.js](http://nodejs.org) and
 [Chromium](http://www.chromium.org) and is used in the [Atom
