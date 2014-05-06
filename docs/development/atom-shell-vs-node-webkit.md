@@ -7,7 +7,7 @@ system in web pages.
 But there are also fundamental differences between the two projects that making
 atom-shell a completely product from node-webkit:
 
-1. Entry of application
+**1. Entry of application**
 
 In node-webkit, the main entry of an application is a web page, you specify a
 main page in the `package.json` and it would be opened in a browser window as
@@ -22,7 +22,7 @@ So atom-shell works more like the node.js runtime, and APIs are more low level,
 you can also use atom-shell for web testing purpose like
 [phantomjs](http://phantomjs.org/),
 
-2. Build system
+**2. Build system**
 
 In order to avoid the complexity of building the whole Chromium, atom-shell uses
 [libchromiumcontent](https://github.com/brightray/libchromiumcontent) to access
@@ -30,14 +30,14 @@ Chromium's Content API, libchromiumcontent is a single, shared library that
 includes the Chromium Content module and all its dependencies. So users don't
 need a powerful machine to build atom-shell.
 
-3. Node integration
+**3. Node integration**
 
 In node-webkit, the node integration in web pages requires patching Chromium to
 work, while in atom-shell we chose a different way to integrate libuv loop to
 each platform's message loop to avoid hacking Chromium, see the
 [`node_bindings`](../../atom/common/) code for how that was done.
 
-4. Multi-context
+**4. Multi-context**
 
 If you are an experienced node-webkit user, you should be familiar with the
 concept of node context and web context, these concepts were invented because
