@@ -4,8 +4,8 @@ Like node-webkit, atom-shell provides a platform to write desktop applications
 with JavaScript and HTML, and has node integration to grant access to low level
 system in web pages.
 
-But there are also fundamental differences between the two projects that making
-atom-shell a completely product from node-webkit:
+But there are also fundamental differences between the two projects that make
+atom-shell a completely separate product from node-webkit:
 
 **1. Entry of application**
 
