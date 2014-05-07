@@ -15,8 +15,8 @@ browser, controlled by JavaScript.
 
 If you had experience with node.js web applications, you would notice that there
 are types of JavaScript scripts: the server side scripts and the client side
-scripts. The server side JavaScript, is the scrips that run on the node.js
-runtime, and the client side JavaScript, is the ones that run on user's browser.
+scripts. The server side JavaScript, are the scripts that run on the node.js
+runtime, and the client side JavaScript, are the ones that run on user's browser.
 
 In atom-shell we have similar concepts, since atom-shell displays GUI by showing
 web pages, we would have **scripts that run in the web page**, and also have
