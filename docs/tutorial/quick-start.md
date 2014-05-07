@@ -43,10 +43,10 @@ use the easy [remote](../api/remote.md) module.
 
 ## Write your first atom-shell app
 
-Generally, an atom-shell app would be like this:
+Generally, an atom-shell app would be like this (see this repo for reference [hello-atom](https://github.com/dougnukem/hello-atom)):
 
 ```text
-app/
+your-app/
 ├── package.json
 ├── main.js
 └── index.html
@@ -130,17 +130,17 @@ binary to execute your app directly.
 On Windows:
 
 ```cmd
-$ .\atom-shell\atom.exe path-to-app\
+$ .\atom-shell\atom.exe your-app\
 ```
 
 On Linux:
 
 ```bash
-$ ./atom-shell/atom path-to-app/
+$ ./atom-shell/atom your-app/
 ```
 
 On Mac OS X:
 
 ```bash
-$ ./Atom.app/Contents/MacOS/Atom path-to-app/
+$ ./Atom.app/Contents/MacOS/Atom your-app/
 ```
