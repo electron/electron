@@ -7,6 +7,7 @@
 #include "base/time/time.h"
 #include "base/values.h"
 #include "atom/browser/auto_updater.h"
+#include "atom/browser/browser.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 
@@ -62,11 +63,13 @@ mate::ObjectTemplateBuilder AutoUpdater::GetObjectTemplateBuilder(
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("setFeedUrl", &auto_updater::AutoUpdater::SetFeedURL)
       .SetMethod("checkForUpdates", &auto_updater::AutoUpdater::CheckForUpdates)
-      .SetMethod("quitAndInstall", &AutoUpdater::QuitAndInstall);
+      .SetMethod("_quitAndInstall", &AutoUpdater::QuitAndInstall);
 }
 
 void AutoUpdater::QuitAndInstall() {
-  if (!quit_and_install_.is_null())
+  if (quit_and_install_.is_null())
+    Browser::Get()->Shutdown();
+  else
     quit_and_install_.Run();
 }
 

@@ -12,13 +12,13 @@ autoUpdater.quitAndInstall = ->
   BrowserWindow = require 'browser-window'
   windows = BrowserWindow.getAllWindows()
   if windows.length is 0
-    AutoUpdater::quitAndInstall.call this
+    @_quitAndInstall()
     return
 
   # Do the restart after all windows have been closed.
   app = require 'app'
   app.removeAllListeners 'window-all-closed'
-  app.once 'window-all-closed', AutoUpdater::quitAndInstall.bind(this)
+  app.once 'window-all-closed', @_quitAndInstall.bind(this)
   win.close() for win in windows
 
 module.exports = autoUpdater
