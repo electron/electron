@@ -15,7 +15,7 @@ $ apm install .
 But you should notice that `apm install module` won't work because it will
 install a user package for [Atom Editor](https://github.com/atom/atom) instead.
 
-## Native Node module compability
+## Native Node module compatibility
 
 Since Node v0.11.x there were vital changes in the V8 API. So generally all native
 modules written for Node v0.10.x wouldn't work for Node v0.11.x. Additionally

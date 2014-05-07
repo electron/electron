@@ -68,12 +68,12 @@ An example of enable node integration in iframe with `node-integration` set to
 <iframe src="http://jandan.net"></iframe>
 ```
 
-And in atom-shell, the security limitaion of iframe is stricter than normal
+And in atom-shell, the security limitation of iframe is stricter than normal
 browser, by default iframe is sandboxed with all permissions except the
 `allow-same-origin`, which means iframe could not access parent's js context.
 
 If you want to enable things like `parent.window.process.exit()` in iframe,
-you should explictly set `sandbox` to `none`:
+you should explicitly set `sandbox` to `none`:
 
 ```html
 <iframe sandbox="none" src="https://github.com"></iframe>
@@ -118,7 +118,7 @@ remove the reference to the window and avoid using it anymore.
 
 ### Event: 'unresponsive'
 
-Emiited when the web page becomes unresponsive.
+Emitted when the web page becomes unresponsive.
 
 ### Event: 'responsive'
 
@@ -126,7 +126,7 @@ Emitted when the unresponsive web page becomes responsive again.
 
 ### Event: 'blur'
 
-Emiited when window loses focus.
+Emitted when window loses focus.
 
 ### Class Method: BrowserWindow.getAllWindows()
 
@@ -155,7 +155,7 @@ Get the `WebContents` of devtools of this window.
 
 Force closing the window, the `unload` and `beforeunload` event won't be emitted
 for the web page, and `close` event would also not be emitted for this window,
-but it would gurrantee the `closed` event to be emitted.
+but it would guarantee the `closed` event to be emitted.
 
 You should only use this method when the web page has crashed.
 

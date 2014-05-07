@@ -12,7 +12,7 @@ from lib.util import scoped_cwd, rm_rf, get_atom_shell_version, make_zip, \
                      safe_mkdir, execute
 
 
-ATOM_SHELL_VRESION = get_atom_shell_version()
+ATOM_SHELL_VERSION = get_atom_shell_version()
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
@@ -160,7 +160,7 @@ def copy_license():
 def create_version():
   version_path = os.path.join(SOURCE_ROOT, 'dist', 'version')
   with open(version_path, 'w') as version_file:
-    version_file.write(ATOM_SHELL_VRESION)
+    version_file.write(ATOM_SHELL_VERSION)
 
 
 def download_libchromiumcontent_symbols(url):
@@ -188,7 +188,7 @@ def create_symbols():
 
 
 def create_dist_zip():
-  dist_name = 'atom-shell-{0}-{1}.zip'.format(ATOM_SHELL_VRESION,
+  dist_name = 'atom-shell-{0}-{1}.zip'.format(ATOM_SHELL_VERSION,
                                               TARGET_PLATFORM)
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
@@ -199,7 +199,7 @@ def create_dist_zip():
 
 
 def create_symbols_zip():
-  dist_name = 'atom-shell-{0}-{1}-symbols.zip'.format(ATOM_SHELL_VRESION,
+  dist_name = 'atom-shell-{0}-{1}-symbols.zip'.format(ATOM_SHELL_VERSION,
                                                       TARGET_PLATFORM)
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 

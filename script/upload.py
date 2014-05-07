@@ -21,13 +21,13 @@ TARGET_PLATFORM = {
 }[sys.platform]
 
 ATOM_SHELL_REPO = 'atom/atom-shell'
-ATOM_SHELL_VRESION = get_atom_shell_version()
+ATOM_SHELL_VERSION = get_atom_shell_version()
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'Release')
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
-DIST_NAME = 'atom-shell-{0}-{1}.zip'.format(ATOM_SHELL_VRESION, TARGET_PLATFORM)
-SYMBOLS_NAME = 'atom-shell-{0}-{1}-symbols.zip'.format(ATOM_SHELL_VRESION,
+DIST_NAME = 'atom-shell-{0}-{1}.zip'.format(ATOM_SHELL_VERSION, TARGET_PLATFORM)
+SYMBOLS_NAME = 'atom-shell-{0}-{1}-symbols.zip'.format(ATOM_SHELL_VERSION,
                                                        TARGET_PLATFORM)
 
 
@@ -39,9 +39,9 @@ def main():
     execute([sys.executable, create_dist])
 
   build_version = get_atom_shell_build_version()
-  if not ATOM_SHELL_VRESION.startswith(build_version):
+  if not ATOM_SHELL_VERSION.startswith(build_version):
     error = 'Tag name ({0}) should match build version ({1})\n'.format(
-        ATOM_SHELL_VRESION, build_version)
+        ATOM_SHELL_VERSION, build_version)
     sys.stderr.write(error)
     sys.stderr.flush()
     return 1
@@ -62,7 +62,7 @@ def main():
 def parse_args():
   parser = argparse.ArgumentParser(description='upload distribution file')
   parser.add_argument('-v', '--version', help='Specify the version',
-                      default=ATOM_SHELL_VRESION)
+                      default=ATOM_SHELL_VERSION)
   parser.add_argument('-p', '--publish-release',
                       help='Publish the release',
                       action='store_true')
