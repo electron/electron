@@ -488,6 +488,7 @@ app.on('ready', function() {
 ```
 
 **Note:**
+
 1. The IPC message handler in web pages do not have a `event` parameter, which
    is different from the handlers on browser side.
 2. There is no way to send synchronous messages from browser side to web pages,
