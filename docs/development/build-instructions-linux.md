@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-* [node.js](http://nodejs.org)
+* [Node.js](http://nodejs.org)
 * clang and headers of GTK+ and libnotify
 
 On Ubuntu you could install the libraries via:
