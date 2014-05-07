@@ -29,6 +29,6 @@ your distribution that should be delivered to final users.
 
 ## Build with grunt
 
-If you build your application with `grunt`, then there is a grunt task that can
-download atom-shell for current platform automatically:
+If you build your application with `grunt` there is a grunt task that can
+download atom-shell for your current platform automatically:
 [grunt-download-atom-shell](https://github.com/atom/grunt-download-atom-shell).
