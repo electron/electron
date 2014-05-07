@@ -11,7 +11,7 @@
   <key>CFBundleIconFile</key>
   <string>atom.icns</string>
   <key>CFBundleVersion</key>
-  <string>0.12.2</string>
+  <string>0.12.3</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
