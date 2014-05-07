@@ -10,6 +10,7 @@ describe 'chromium feature', ->
 
   describe 'sending request of http protocol urls', ->
     it 'does not crash', ->
+      @timeout 5000
       $.get 'https://api.github.com/zen'
 
   describe 'navigator.webkitGetUserMedia', ->
