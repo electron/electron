@@ -347,10 +347,9 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
     post_file,
     // TODO(zcbenz): Enabling custom upload url.
     info.upload_url,
-    "--timeout=10",  // Set a timeout so we don't hang forever.
+    "--timeout=60",  // Set a timeout so we don't hang forever.
     "--tries=1",     // Don't retry if the upload fails.
-    "-O",  // output reply to fd 3
-    "/dev/fd/3",
+    "--quiet",       // Be silent.
     NULL,
   };
   static const char msg[] = "Cannot upload crash dump: cannot exec "
