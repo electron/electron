@@ -322,6 +322,10 @@ mate::Handle<Protocol> Protocol::Create(v8::Isolate* isolate) {
 namespace {
 
 void Initialize(v8::Handle<v8::Object> exports) {
+  // Make sure the job factory has been created.
+  atom::AtomBrowserContext::Get()->url_request_context_getter()->
+      GetURLRequestContext();
+
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   mate::Dictionary dict(isolate, exports);
   dict.Set("protocol", atom::api::Protocol::Create(isolate));
