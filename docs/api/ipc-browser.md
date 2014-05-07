@@ -7,6 +7,9 @@ is the `channel` when sending message. To reply a synchronous message, you need
 to set `event.returnValue`, to send an asynchronous back to the sender, you can
 use `event.sender.send(...)`.
 
+It's also possible to send messages from browser side to web pages, see
+[WebContents.send](browser-window.md#webcontentssendchannel-args) for more.
+
 An example of sending and handling messages:
 
 ```javascript
@@ -34,12 +37,12 @@ ipc.on('asynchronous-reply', function(arg) {
 ipc.send('asynchronous-message', 'ping');
 ```
 
-### Class: Event
+## Class: Event
 
-## Event.returnValue
+### Event.returnValue
 
 Assign to this to return an value to synchronous messages.
 
-## Event.sender
+### Event.sender
 
 The `WebContents` of the web page that has sent the message.

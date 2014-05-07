@@ -459,3 +459,36 @@ Evaluate `code` in page.
 
 Send `args..` to the web page via `channel` in asynchronous message, the web
 page can handle it by listening to the `channel` event of `ipc` module.
+
+An example of sending messages from browser side to web pages:
+
+```javascript
+// On browser side.
+var window = null;
+app.on('ready', function() {
+  window = new BrowserWindow({width: 800, height: 600});
+  window.loadUrl('file://' + __dirname + '/index.html');
+  window.on('did-finish-load', function() {
+    window.webContents.send('ping', 'whoooooooh!');
+  });
+});
+```
+
+```html
+// index.html
+<html>
+<body>
+  <script>
+    require('ipc').on('ping', function(message) {
+      console.log(message);  // Prints "whoooooooh!"
+    });
+  </script>
+</body>
+</html>
+```
+
+**Note:**
+1. The IPC message handler in web pages do not have a `event` parameter, which
+   is different from the handlers on browser side.
+2. There is no way to send synchronous messages from browser side to web pages,
+   because it would be very easy to cause dead locks.
