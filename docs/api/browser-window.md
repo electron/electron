@@ -468,7 +468,7 @@ var window = null;
 app.on('ready', function() {
   window = new BrowserWindow({width: 800, height: 600});
   window.loadUrl('file://' + __dirname + '/index.html');
-  window.on('did-finish-load', function() {
+  window.webContents.on('did-finish-load', function() {
     window.webContents.send('ping', 'whoooooooh!');
   });
 });
