@@ -33,7 +33,7 @@ BrowserWindow::_init = ->
   id = BrowserWindow.windows.add this
 
   # Remove the window from weak map immediately when it's destroyed, since we
-  # could be iterating windows before GC happended.
+  # could be iterating windows before GC happened.
   @once 'closed', ->
     BrowserWindow.windows.remove id if BrowserWindow.windows.has id
 

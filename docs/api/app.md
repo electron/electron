@@ -23,7 +23,7 @@ Under most cases you should just do everything in `ready` event.
 
 ## Event: ready
 
-Emitted when atom-shell has done everything initializaiton.
+Emitted when atom-shell has done everything initialization.
 
 ## Event: window-all-closed
 

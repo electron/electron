@@ -11,7 +11,7 @@
 #include "ipc/ipc_message_macros.h"
 
 // The message starter should be declared in ipc/ipc_message_start.h. Since
-// we don't wan't to patch Chromium, we just pretend to be Content Shell.
+// we don't want to patch Chromium, we just pretend to be Content Shell.
 
 #define IPC_MESSAGE_START ShellMsgStart
 

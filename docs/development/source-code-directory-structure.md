@@ -15,7 +15,7 @@ to understand the source code better.
   * **app** - System entry code.
   * **browser** - The frontend including the main window, UI, and all browser
     side things. This talks to the renderer to manage web pages.
-    * **lib** - Javascript part of browser sidde initialization code.
+    * **lib** - Javascript part of browser side initialization code.
     * **ui** - Implementation of UI stuff for different platforms.
       * **cocoa** - Cocoa specific source code.
       * **gtk** - GTK+ specific source code.
