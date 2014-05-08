@@ -1,4 +1,5 @@
 assert = require 'assert'
+http = require 'http'
 path = require 'path'
 
 describe 'chromium feature', ->
@@ -9,9 +10,15 @@ describe 'chromium feature', ->
       process.atomBinding('v8_util').takeHeapSnapshot()
 
   describe 'sending request of http protocol urls', ->
-    it 'does not crash', ->
+    it 'does not crash', (done) ->
       @timeout 5000
-      $.get 'https://api.github.com/zen'
+      server = http.createServer (req, res) ->
+        res.end()
+        server.close()
+        done()
+      server.listen 0, '127.0.0.1', ->
+        {port} = server.address()
+        $.get "http://127.0.0.1:#{port}"
 
   describe 'navigator.webkitGetUserMedia', ->
     it 'calls its callbacks', (done) ->
