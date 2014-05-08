@@ -20,7 +20,7 @@ to decide when to quit the application.
 
 So atom-shell works more like the Node.js runtime, and APIs are more low level,
 you can also use atom-shell for web testing purpose like
-[phantomjs](http://phantomjs.org/),
+[phantomjs](http://phantomjs.org/).
 
 **2. Build system**
 
