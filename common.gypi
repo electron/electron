@@ -113,9 +113,9 @@
         'conditions': [
           ['OS=="mac"', {
             'xcode_settings': {
-              'GCC_TREAT_WARNINGS_AS_ERRORS': 'NO',
               'WARNING_CFLAGS': [
                 '-Wno-deprecated-declarations',
+                '-Wno-deprecated-register',
                 '-Wno-unused-private-field',
                 '-Wno-unused-function',
               ],
