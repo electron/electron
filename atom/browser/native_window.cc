@@ -313,11 +313,11 @@ void NativeWindow::CloseWebContents() {
   }
 
   // Assume the window is not responding if it doesn't cancel the close and is
-  // not closed in 10s, in this way we can quickly show the unresponsive
+  // not closed in 5s, in this way we can quickly show the unresponsive
   // dialog when the window is busy executing some script withouth waiting for
   // the unresponsive timeout.
   if (window_unresposive_closure_.IsCancelled())
-    ScheduleUnresponsiveEvent(10000);
+    ScheduleUnresponsiveEvent(5000);
 
   if (web_contents->NeedToFireBeforeUnload())
     web_contents->GetRenderViewHost()->FirePageBeforeUnload(false);
@@ -404,11 +404,12 @@ void NativeWindow::BeforeUnloadFired(content::WebContents* tab,
                                      bool* proceed_to_fire_unload) {
   *proceed_to_fire_unload = proceed;
 
-  if (!proceed)
+  if (!proceed) {
     WindowList::WindowCloseCancelled(this);
 
-  // When the "beforeunload" callback is fired the window is certainly live.
-  window_unresposive_closure_.Cancel();
+    // Cancel unresponsive event when window close is cancelled.
+    window_unresposive_closure_.Cancel();
+  }
 }
 
 void NativeWindow::RequestToLockMouse(content::WebContents* web_contents,
@@ -457,8 +458,12 @@ bool NativeWindow::IsPopupOrPanel(const content::WebContents* source) const {
 
 void NativeWindow::RendererUnresponsive(content::WebContents* source) {
   // Schedule the unresponsive shortly later, since we may receive the
-  // responsive event soon.
-  // This could happen after the whole application had blocked for a while.
+  // responsive event soon. This could happen after the whole application had
+  // blocked for a while.
+  // Also notice that when closing this event would be ignored because we have
+  // explicity started a close timeout counter. This is on purpose because we
+  // don't want the unresponsive event to be sent too early when user is closing
+  // the window.
   ScheduleUnresponsiveEvent(50);
 }
 
@@ -556,6 +561,9 @@ void NativeWindow::DevToolsAppendToFile(const std::string& url,
 }
 
 void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
+  if (!window_unresposive_closure_.IsCancelled())
+    return;
+
   window_unresposive_closure_.Reset(
       base::Bind(&NativeWindow::NotifyWindowUnresponsive,
                  weak_factory_.GetWeakPtr()));
@@ -568,7 +576,7 @@ void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
 void NativeWindow::NotifyWindowUnresponsive() {
   window_unresposive_closure_.Cancel();
 
-  if (!HasModalDialog())
+  if (!is_closed_ && !HasModalDialog())
     FOR_EACH_OBSERVER(NativeWindowObserver,
                       observers_,
                       OnRendererUnresponsive());
