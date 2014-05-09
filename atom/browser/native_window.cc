@@ -307,6 +307,10 @@ void NativeWindow::CloseWebContents() {
   }
 
   content::WebContents* web_contents(GetWebContents());
+  if (!web_contents) {
+    CloseImmediately();
+    return;
+  }
 
   // Assume the window is not responding if it doesn't cancel the close and is
   // not closed in 10s, in this way we can quickly show the unresponsive
@@ -322,10 +326,14 @@ void NativeWindow::CloseWebContents() {
 }
 
 content::WebContents* NativeWindow::GetWebContents() const {
-  return inspectable_web_contents_->GetWebContents();
+  if (!inspectable_web_contents_)
+    return NULL;
+  return inspectable_web_contents()->GetWebContents();
 }
 
 content::WebContents* NativeWindow::GetDevToolsWebContents() const {
+  if (!inspectable_web_contents_)
+    return NULL;
   return inspectable_web_contents()->devtools_web_contents();
 }
 
