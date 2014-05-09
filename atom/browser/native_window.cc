@@ -404,11 +404,12 @@ void NativeWindow::BeforeUnloadFired(content::WebContents* tab,
                                      bool* proceed_to_fire_unload) {
   *proceed_to_fire_unload = proceed;
 
-  if (!proceed)
+  if (!proceed) {
     WindowList::WindowCloseCancelled(this);
 
-  // When the "beforeunload" callback is fired the window is certainly live.
-  window_unresposive_closure_.Cancel();
+    // Cancel unresponsive event when window close is cancelled.
+    window_unresposive_closure_.Cancel();
+  }
 }
 
 void NativeWindow::RequestToLockMouse(content::WebContents* web_contents,
