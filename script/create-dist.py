@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -64,6 +65,11 @@ TARGET_DIRECTORIES = {
   ],
 }
 
+SYSTEM_LIBRARIES = [
+  'libudev.so',
+  'libgcrypt.so',
+]
+
 HEADERS_SUFFIX = [
   '.h',
   '.gypi',
@@ -94,6 +100,10 @@ def main():
   copy_binaries()
   copy_headers()
   copy_license()
+
+  if TARGET_PLATFORM == 'linux':
+    copy_system_libraries()
+
   create_version()
   create_dist_zip()
   create_symbols_zip()
@@ -157,6 +167,20 @@ def copy_license():
   shutil.copy2(os.path.join(SOURCE_ROOT, 'LICENSE'), DIST_DIR)
 
 
+def copy_system_libraries():
+  ldd = execute(['ldd', os.path.join(OUT_DIR, 'atom')])
+  lib_re = re.compile('\t(.*) => (.+) \(.*\)$')
+  for line in ldd.splitlines():
+    m = lib_re.match(line)
+    if not m:
+      continue
+    for i, library in enumerate(SYSTEM_LIBRARIES):
+      real_library = m.group(1)
+      if real_library.startswith(library):
+        shutil.copy2(m.group(2), os.path.join(DIST_DIR, real_library))
+        SYSTEM_LIBRARIES[i] = real_library
+
+
 def create_version():
   version_path = os.path.join(SOURCE_ROOT, 'dist', 'version')
   with open(version_path, 'w') as version_file:
@@ -194,6 +218,8 @@ def create_dist_zip():
 
   with scoped_cwd(DIST_DIR):
     files = TARGET_BINARIES[TARGET_PLATFORM] +  ['LICENSE', 'version']
+    if TARGET_PLATFORM == 'linux':
+      files += SYSTEM_LIBRARIES
     dirs = TARGET_DIRECTORIES[TARGET_PLATFORM]
     make_zip(zip_file, files, dirs)
 

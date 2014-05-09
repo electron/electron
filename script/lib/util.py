@@ -112,7 +112,7 @@ def safe_mkdir(path):
 
 def execute(argv):
   try:
-    subprocess.check_output(argv, stderr=subprocess.STDOUT)
+    return subprocess.check_output(argv, stderr=subprocess.STDOUT)
   except subprocess.CalledProcessError as e:
     print e.output
     raise e
