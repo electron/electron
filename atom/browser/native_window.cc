@@ -357,6 +357,10 @@ void NativeWindow::NotifyWindowClosed() {
   is_closed_ = true;
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowClosed());
 
+  // Do not receive any notification after window has been closed, there is a
+  // crash that seems to be caused by this: http://git.io/YqMG5g.
+  registrar_.RemoveAll();
+
   WindowList::RemoveWindow(this);
 }
 
