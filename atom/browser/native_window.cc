@@ -457,8 +457,12 @@ bool NativeWindow::IsPopupOrPanel(const content::WebContents* source) const {
 
 void NativeWindow::RendererUnresponsive(content::WebContents* source) {
   // Schedule the unresponsive shortly later, since we may receive the
-  // responsive event soon.
-  // This could happen after the whole application had blocked for a while.
+  // responsive event soon. This could happen after the whole application had
+  // blocked for a while.
+  // Also notice that when closing this event would be ignored because we have
+  // explicity started a close timeout counter. This is on purpose because we
+  // don't want the unresponsive event to be sent too early when user is closing
+  // the window.
   ScheduleUnresponsiveEvent(50);
 }
 
@@ -556,6 +560,9 @@ void NativeWindow::DevToolsAppendToFile(const std::string& url,
 }
 
 void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
+  if (!window_unresposive_closure_.IsCancelled())
+    return;
+
   window_unresposive_closure_.Reset(
       base::Bind(&NativeWindow::NotifyWindowUnresponsive,
                  weak_factory_.GetWeakPtr()));
