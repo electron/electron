@@ -18,14 +18,14 @@ softwares:
 * [Windows 7 SDK](http://www.microsoft.com/en-us/download/details.aspx?id=8279)
   * `Windows Headers` and `Visual C++ Compilers` are required.
 
-The instructions bellow are executed under [cygwin](http://www.cygwin.com),
-but it's not a requirement, you can also build atom-shell under Windows's
-console or other terminals.
+The instructions below are executed under [cygwin](http://www.cygwin.com),
+but it's not a requirement, you can also build atom-shell under the Windows
+command prompt or other terminals.
 
-The building of atom-shell is done entirely with command line scripts, so you
+The building of atom-shell is done entirely with command-line scripts, so you
 can use any editor you like to develop atom-shell, but it also means you can
 not use Visual Studio for the development. Support of building with Visual
-Studio will come in future.
+Studio will come in the future.
 
 **Note:** Even though Visual Studio is not used for building, it's still
 **required** because we need the build toolchains it provided.
@@ -66,7 +66,7 @@ After building is done, you can find `atom.exe` under `out\Debug`.
 ## 64bit support
 
 Currently atom-shell can only be built for 32bit target on Windows, support for
-64bit would come in future.
+64bit will come in future.
 
 ## Tests
 
@@ -96,7 +96,7 @@ Traceback (most recent call last):
 subprocess.CalledProcessError: Command '['npm.cmd', 'install']' returned non-zero exit status 3
 ```
 
-This is caused a bug when using cygwin python and win32 node together, the
+This is caused by a bug when using cygwin python and win32 node together. The
 solution is to use the win32 python to execute the bootstrap script (supposing
 you have installed python under `C:\Python27`):
 
