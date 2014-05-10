@@ -295,7 +295,7 @@ Returns the title of the native window.
 **Note:** The title of web page can be different from the title of the native
 **window.
 
-### BrowserWindow.flashFlame()
+### BrowserWindow.flashFrame()
 
 Flashes the window to attract user's attention.
 
