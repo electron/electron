@@ -22,7 +22,7 @@ ipc.on('asynchronous-message', function(event, arg) {
 
 ipc.on('synchronous-message', function(event, arg) {
   console.log(arg);  // prints "ping"
-  event.returnValue = 'pong'.
+  event.returnValue = 'pong';
 });
 ```
 
