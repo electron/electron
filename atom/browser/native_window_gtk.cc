@@ -321,6 +321,7 @@ void NativeWindowGtk::SetMenu(ui::MenuModel* menu_model) {
   menu_.reset(new ::MenuGtk(this, menu_model, true));
   gtk_box_pack_start(GTK_BOX(vbox_), menu_->widget(), FALSE, FALSE, 0);
   gtk_box_reorder_child(GTK_BOX(vbox_), menu_->widget(), 0);
+  gtk_widget_show_all(vbox_);
   RegisterAccelerators();
 }
 
