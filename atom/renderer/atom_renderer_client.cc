@@ -150,7 +150,10 @@ bool AtomRendererClient::ShouldFork(WebKit::WebFrame* frame,
                                     bool is_server_redirect,
                                     bool* send_referrer) {
   // Handle all the navigations and reloads in browser.
-  return true;
+  // FIXME We only support GET here because http method will be ignored when
+  // the OpenURLFromTab is triggered, which means form posting would not work,
+  // we should solve this by patching Chromium in future.
+  return http_method == "GET";
 }
 
 bool AtomRendererClient::IsNodeBindingEnabled(WebKit::WebFrame* frame) {
