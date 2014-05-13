@@ -177,7 +177,7 @@ def copy_system_libraries():
     for i, library in enumerate(SYSTEM_LIBRARIES):
       real_library = m.group(1)
       if real_library.startswith(library):
-        shutil.copy2(m.group(2), os.path.join(DIST_DIR, real_library))
+        shutil.copyfile(m.group(2), os.path.join(DIST_DIR, real_library))
         SYSTEM_LIBRARIES[i] = real_library
 
 
