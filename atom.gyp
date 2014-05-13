@@ -62,6 +62,7 @@
       'atom/browser/api/atom_api_power_monitor.h',
       'atom/browser/api/atom_api_protocol.cc',
       'atom/browser/api/atom_api_protocol.h',
+      'atom/browser/api/atom_api_tracing.cc',
       'atom/browser/api/atom_api_web_contents.cc',
       'atom/browser/api/atom_api_web_contents.h',
       'atom/browser/api/atom_api_window.cc',
