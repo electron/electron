@@ -68,6 +68,7 @@ TARGET_DIRECTORIES = {
 SYSTEM_LIBRARIES = [
   'libudev.so',
   'libgcrypt.so',
+  'libnotify.so',
 ]
 
 HEADERS_SUFFIX = [
