@@ -279,6 +279,10 @@ void NativeWindowMac::Unmaximize() {
   [window_ zoom:nil];
 }
 
+void NativeWindowMac::IsMaximized() {
+  return [window_ isZoomed];
+}
+
 void NativeWindowMac::Minimize() {
   [window_ miniaturize:nil];
 }

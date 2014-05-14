@@ -40,6 +40,7 @@ class NativeWindowGtk : public NativeWindow,
   virtual bool IsVisible() OVERRIDE;
   virtual void Maximize() OVERRIDE;
   virtual void Unmaximize() OVERRIDE;
+  virtual bool IsMaximized() OVERRIDE;
   virtual void Minimize() OVERRIDE;
   virtual void Restore() OVERRIDE;
   virtual void SetFullscreen(bool fullscreen) OVERRIDE;
@@ -91,9 +92,6 @@ class NativeWindowGtk : public NativeWindow,
 
   // Set how font is renderered.
   void SetFontRenderering();
-
-  // Whether window is maximized.
-  bool IsMaximized() const;
 
   // If the point (|x|, |y|) is within the resize border area of the window,
   // returns true and sets |edge| to the appropriate GdkWindowEdge value.
