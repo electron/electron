@@ -10,5 +10,7 @@
 	<string>Atom Framework</string>
 	<key>CFBundlePackageType</key>
 	<string>FMWK</string>
+	<key>NSSupportsAutomaticGraphicsSwitching</key>
+	<true/>
 </dict>
 </plist>
