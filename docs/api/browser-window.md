@@ -355,6 +355,10 @@ Same with `webContents.loadUrl(url)`.
 
 ### BrowserWindow.restart()
 
+### BrowserWindow.setMenu(menu)
+
+Sets the `menu` as the window top menu.
+
 ## Class: WebContents
 
 A `WebContents` is responsible for rendering and controlling a web page.
