@@ -86,6 +86,9 @@ class NativeWindowGtk : public NativeWindow,
   // Set WebKit's style from current theme.
   void SetWebKitColorStyle();
 
+  // Set how font is renderered.
+  void SetFontRenderering();
+
   // Whether window is maximized.
   bool IsMaximized() const;
 
