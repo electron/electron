@@ -60,3 +60,8 @@ describe 'chromium feature', ->
         assert.equal global.changedByIframe, true
         done()
       setTimeout isChanged, 30
+
+  describe 'creating a Uint8Array under browser side', ->
+    it 'does not crash', ->
+      RUint8Array = require('remote').getGlobal 'Uint8Array'
+      new RUint8Array
