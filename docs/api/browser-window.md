@@ -353,6 +353,8 @@ process.
 
 Same with `webContents.loadUrl(url)`.
 
+### BrowserWindow.restart()
+
 ## Class: WebContents
 
 A `WebContents` is responsible for rendering and controlling a web page.
