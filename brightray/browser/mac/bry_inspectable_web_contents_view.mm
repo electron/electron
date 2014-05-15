@@ -76,6 +76,10 @@ void SetActive(content::WebContents* web_contents, bool active) {
   [super dealloc];
 }
 
+- (void)removeFromNotificationCenter {
+  [NSNotificationCenter.defaultCenter removeObserver:self];
+}
+
 - (IBAction)showDevTools:(id)sender {
   _private->inspectableWebContentsView->inspectable_web_contents()->ShowDevTools();
 }
