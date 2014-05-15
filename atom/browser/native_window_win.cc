@@ -295,6 +295,10 @@ gfx::Size NativeWindowWin::GetSize() {
   return window_->GetWindowBoundsInScreen().size();
 }
 
+void NativeWindowWin::SetContentSize(const gfx::Size& size) {
+  // FIXME
+}
+
 gfx::Size NativeWindowWin::GetContentSize() {
   return window_->GetClientAreaBoundsInScreen().size();
 }

@@ -262,6 +262,11 @@ gfx::Size NativeWindowGtk::GetSize() {
   return gfx::Size(frame_extents.width, frame_extents.height);
 }
 
+void NativeWindowGtk::SetContentSize(const gfx::Size& size) {
+  GtkAllocation size = { 0, 0, size.width(), size.height() };
+  gtk_widget_size_allocate(GetWebContents()->GetView()->GetNativeView(), &size);
+}
+
 gfx::Size NativeWindowGtk::GetContentSize() {
   gint width, height;
   gtk_window_get_size(window_, &width, &height);

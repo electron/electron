@@ -305,6 +305,19 @@ gfx::Size NativeWindowMac::GetSize() {
   return gfx::Size(frame.size.width, frame.size.height);
 }
 
+void NativeWindowMac::SetContentSize(const gfx::Size& size) {
+  NSRect frame_nsrect = [window_ frame];
+  NSSize frame = frame_nsrect.size;
+  NSSize content = [window_ contentRectForFrameRect:frame_nsrect].size;
+
+  int width = size.width() + frame.width - content.width;
+  int height = size.height() + frame.height - content.height;
+  frame_nsrect.origin.y -= height - frame_nsrect.size.height;
+  frame_nsrect.size.width = width;
+  frame_nsrect.size.height = height;
+  [window_ setFrame:frame_nsrect display:YES];
+}
+
 gfx::Size NativeWindowMac::GetContentSize() {
   NSRect bounds = [[window_ contentView] bounds];
   return gfx::Size(bounds.size.width, bounds.size.height);

@@ -181,6 +181,10 @@ std::vector<int> Window::GetSize() {
   return result;
 }
 
+void Window::SetContentSize(int width, int height) {
+  window_->SetContentSize(gfx::Size(width, height));
+}
+
 std::vector<int> Window::GetContentSize() {
   std::vector<int> result(2);
   gfx::Size size = window_->GetContentSize();
@@ -339,8 +343,9 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setFullScreen", &Window::SetFullscreen)
       .SetMethod("isFullScreen", &Window::IsFullscreen)
       .SetMethod("getSize", &Window::GetSize)
-      .SetMethod("getContentSize", &Window::GetContentSize)
       .SetMethod("setSize", &Window::SetSize)
+      .SetMethod("getContentSize", &Window::GetContentSize)
+      .SetMethod("setContentSize", &Window::SetContentSize)
       .SetMethod("setMinimumSize", &Window::SetMinimumSize)
       .SetMethod("getMinimumSize", &Window::GetMinimumSize)
       .SetMethod("setMaximumSize", &Window::SetMaximumSize)
