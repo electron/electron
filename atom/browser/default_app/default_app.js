@@ -14,13 +14,11 @@ app.on('window-all-closed', function() {
 app.on('ready', function() {
   app.commandLine.appendSwitch('js-flags', '--harmony_collections');
 
-  var height = 600;
-  if (process.platform == 'win32')
-    height += 60;
-  else if (process.platform == 'linux')
-    height += 30;
-
-  mainWindow = new BrowserWindow({ width: 800, height: height });
+  mainWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    'use-content-size': true,
+  });
   mainWindow.loadUrl('file://' + __dirname + '/index.html');
 
   if (process.platform == 'darwin') {
