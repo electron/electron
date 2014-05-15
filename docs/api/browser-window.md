@@ -353,6 +353,14 @@ process.
 
 Same with `webContents.loadUrl(url)`.
 
+### BrowserWindow.reload()
+
+Reloads the current url.
+
+### BrowserWindow.setMenu(menu)
+
+Sets the `menu` as the window top menu.
+
 ## Class: WebContents
 
 A `WebContents` is responsible for rendering and controlling a web page.
