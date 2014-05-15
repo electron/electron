@@ -114,8 +114,9 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
   options->GetInteger(switches::kWidth, &width);
   options->GetInteger(switches::kHeight, &height);
 
-  // Fixup the initial window size.
-  if (has_frame_)
+  bool use_content_size = false;
+  options->GetBoolean(switches::kUseContentSize, &use_content_size);
+  if (has_frame_ && !use_content_size)
     SubstractBorderSize(&width, &height);
 
   // Force a size allocation so the web page of hidden window can have correct
