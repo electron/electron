@@ -3,7 +3,7 @@
 ## Prerequisites
 
 * Windows 7 or later
-* Visual Studio 2010 Express or Professional
+* Visual Studio 2010 Express or Professional, with SP1 update
   * Make sure "X64 Compilers and Tools" are installed if you use the
     Professional edition.
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
@@ -103,3 +103,8 @@ you have installed python under `C:\Python27`):
 ```bash
 /cygdrive/c/Python27/python.exe script/bootstrap.py
 ```
+
+### LNK1123: failure during conversion to COFF: file invalid or corrupt
+
+Upgrading to VS 2010 SP1 would solve this, read the Microsoft Support article
+on more of this: http://support.microsoft.com/kb/2757355.
