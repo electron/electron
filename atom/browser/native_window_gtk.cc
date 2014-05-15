@@ -263,8 +263,15 @@ gfx::Size NativeWindowGtk::GetSize() {
 }
 
 void NativeWindowGtk::SetContentSize(const gfx::Size& size) {
-  GtkAllocation size = { 0, 0, size.width(), size.height() };
-  gtk_widget_size_allocate(GetWebContents()->GetView()->GetNativeView(), &size);
+  if (!has_frame_ || !has_ever_been_shown_) {
+    gtk_window_util::SetWindowSize(window_, size);
+  } else {
+    gfx::Size window_size = GetSize();
+    gfx::Size content_size = GetContentSize();
+    gfx::Size target(size.width() + window_size.width() - content_size.width(),
+                     size.height() + window_size.height() - content_size.height());
+    gtk_window_util::SetWindowSize(window_, target);
+  }
 }
 
 gfx::Size NativeWindowGtk::GetContentSize() {
