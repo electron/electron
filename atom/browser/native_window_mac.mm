@@ -305,6 +305,11 @@ gfx::Size NativeWindowMac::GetSize() {
   return gfx::Size(frame.size.width, frame.size.height);
 }
 
+gfx::Size NativeWindowMac::GetContentSize() {
+  NSRect bounds = [[window_ contentView] bounds];
+  return gfx::Size(bounds.size.width, bounds.size.height);
+}
+
 void NativeWindowMac::SetMinimumSize(const gfx::Size& size) {
   NSSize min_size = NSMakeSize(size.width(), size.height());
   NSView* content = [window_ contentView];

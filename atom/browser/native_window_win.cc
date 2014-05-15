@@ -295,6 +295,10 @@ gfx::Size NativeWindowWin::GetSize() {
   return window_->GetWindowBoundsInScreen().size();
 }
 
+gfx::Size NativeWindowWin::GetContentSize() {
+  return window_->GetClientAreaBoundsInScreen().size();
+}
+
 void NativeWindowWin::SetMinimumSize(const gfx::Size& size) {
   minimum_size_ = size;
 }

@@ -261,6 +261,12 @@ gfx::Size NativeWindowGtk::GetSize() {
   return gfx::Size(frame_extents.width, frame_extents.height);
 }
 
+gfx::Size NativeWindowGtk::GetContentSize() {
+  gint width, height;
+  gtk_window_get_size(window_, &width, &height);
+  return gfx::Size(width, height);
+}
+
 void NativeWindowGtk::SetMinimumSize(const gfx::Size& size) {
   minimum_size_ = size;
 
