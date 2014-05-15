@@ -15,3 +15,8 @@ Prebuilt binaries of atom-shell for Linux, Windows and Mac can be found on the
 Guides and the API reference are located in the
 [docs](https://github.com/atom/atom-shell/tree/master/docs) directory. It also
 contains documents describing how to build and contribute to atom-shell.
+
+## Community
+
+There is an [`atom-shell` category on the Atom forums](http://discuss.atom.io/category/atom-shell)
+as well as an `#atom-shell` channel on Freenode.
