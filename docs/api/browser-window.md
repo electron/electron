@@ -353,7 +353,9 @@ process.
 
 Same with `webContents.loadUrl(url)`.
 
-### BrowserWindow.restart()
+### BrowserWindow.reload()
+
+Reloads the current url.
 
 ### BrowserWindow.setMenu(menu)
 
