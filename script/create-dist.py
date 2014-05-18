@@ -44,7 +44,10 @@ TARGET_BINARIES = {
     'content_shell.pak',
     'ffmpegsumo.dll',
     'icudt.dll',
+    'libEGL.dll',
     'libGLESv2.dll',
+    'd3dcompiler_43.dll',
+    'xinput1_3.dll',
   ],
   'linux': [
     'atom',
