@@ -216,6 +216,15 @@ NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
   options->GetInteger(switches::kWidth, &width);
   options->GetInteger(switches::kHeight, &height);
 
+  bool use_content_size = false;
+  options->GetBoolean(switches::kUseContentSize, &use_content_size);
+  if (has_frame_ && use_content_size) {
+    gfx::Size window = window_->GetWindowBoundsInScreen().size();
+    gfx::Size client = window_->GetClientAreaBoundsInScreen().size();
+    width += window.width() - client.width();
+    height += window.height() - client.height();
+  }
+
   gfx::Size size(width, height);
   window_->CenterWindow(size);
 
