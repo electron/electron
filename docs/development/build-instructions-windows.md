@@ -76,6 +76,12 @@ $ python script/test.py
 
 ## Troubleshooting
 
+### Command xxxx not found
+
+If you encountered an error like `Command xxxx not found`, you may try to use
+the `Visual Studio x64 Tools Command Prompt (2010)` console to execute the build
+scripts.
+
 ### Assertion failed: ((handle))->activecnt >= 0
 
 When building under cygwin, you could see `bootstrap.py` failed with following
