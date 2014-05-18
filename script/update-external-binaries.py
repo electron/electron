@@ -15,7 +15,7 @@ FRAMEWORKS_URL = 'https://github.com/atom/atom-shell-frameworks/releases' \
 def main():
   os.chdir(SOURCE_ROOT)
   try:
-    os.makedirs('frameworks')
+    os.makedirs('external_binaries')
   except OSError as e:
     if e.errno != errno.EEXIST:
       raise
@@ -33,7 +33,7 @@ def main():
 def download_and_unzip(framework):
   zip_path = download_framework(framework)
   if zip_path:
-    extract_zip(zip_path, 'frameworks')
+    extract_zip(zip_path, 'external_binaries')
 
 
 def download_framework(framework):

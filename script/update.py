@@ -11,12 +11,12 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 def main():
   os.chdir(SOURCE_ROOT)
 
-  update_frameworks()
+  update_external_binaries()
   update_gyp()
 
 
-def update_frameworks():
-  uf = os.path.join('script', 'update-frameworks.py')
+def update_external_binaries():
+  uf = os.path.join('script', 'update-external-binaries.py')
   subprocess.check_call([sys.executable, uf])
 
 
