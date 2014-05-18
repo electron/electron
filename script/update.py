@@ -16,9 +16,8 @@ def main():
 
 
 def update_frameworks():
-  if sys.platform == 'darwin':
-    uf = os.path.join('script', 'update-frameworks.py')
-    subprocess.check_call([sys.executable, uf])
+  uf = os.path.join('script', 'update-frameworks.py')
+  subprocess.check_call([sys.executable, uf])
 
 
 def update_gyp():

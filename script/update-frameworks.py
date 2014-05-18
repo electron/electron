@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import errno
 import sys
 import os
 
@@ -8,15 +9,25 @@ from lib.util import safe_mkdir, extract_zip, tempdir, download
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 FRAMEWORKS_URL = 'https://github.com/atom/atom-shell-frameworks/releases' \
-                 '/download/v0.0.2'
+                 '/download/v0.0.3'
 
 
 def main():
   os.chdir(SOURCE_ROOT)
-  safe_mkdir('frameworks')
-  download_and_unzip('Mantle')
-  download_and_unzip('ReactiveCocoa')
-  download_and_unzip('Squirrel')
+  try:
+    os.makedirs('frameworks')
+  except OSError as e:
+    if e.errno != errno.EEXIST:
+      raise
+    else:
+      return
+
+  if sys.platform == 'darwin':
+    download_and_unzip('Mantle')
+    download_and_unzip('ReactiveCocoa')
+    download_and_unzip('Squirrel')
+  elif sys.platform in ['cygwin', 'win32']:
+    download_and_unzip('directxsdk')
 
 
 def download_and_unzip(framework):
@@ -26,11 +37,7 @@ def download_and_unzip(framework):
 
 
 def download_framework(framework):
-  framework_path = os.path.join('frameworks', framework) + '.framework'
-  if os.path.exists(framework_path):
-    return
-
-  filename = framework + '.framework.zip'
+  filename = framework + '.zip'
   url = FRAMEWORKS_URL + '/' + filename
   download_dir = tempdir(prefix='atom-shell-')
   path = os.path.join(download_dir, filename)

@@ -329,6 +329,8 @@
                 '<(libchromiumcontent_library_dir)/icudt.dll',
                 '<(libchromiumcontent_library_dir)/libGLESv2.dll',
                 '<(libchromiumcontent_resources_dir)/content_shell.pak',
+                'frameworks/d3dcompiler_43.dll',
+                'frameworks/xinput1_3.dll',
               ],
             },
             {
