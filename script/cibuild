@@ -26,7 +26,7 @@ def main():
   if sys.platform != 'win32':
     run_script('pylint.py')
   run_script('coffeelint.py')
-  run_script('build.py')
+  run_script('build.py', ['-c', 'Debug'])
   run_script('test.py', ['--ci'])
 
 
