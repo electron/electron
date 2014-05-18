@@ -65,3 +65,8 @@ describe 'chromium feature', ->
     it 'does not crash', ->
       RUint8Array = require('remote').getGlobal 'Uint8Array'
       new RUint8Array
+
+  describe 'webgl', ->
+    it 'can be get as context in canvas', ->
+      webgl = document.createElement('canvas').getContext 'webgl'
+      assert.notEqual webgl, null
