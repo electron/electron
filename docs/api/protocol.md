@@ -7,10 +7,15 @@ An example of implementing a protocol that has the same effect with the
 `file://` protocol:
 
 ```javascript
-var protocol = require('protocol');
-protocol.registerProtocol('atom', function(request) {
-  var path = request.url.substr(7)
-  return new protocol.RequestFileJob(path);
+var app = require('app'),
+    path = require('path');
+
+app.on('will-finish-launching', function() {
+    var protocol = require('protocol');
+    protocol.registerProtocol('atom', function(request) {
+      var url = request.url.substr(7)
+      return new protocol.RequestFileJob(path.normalize(__dirname + '/' + url));
+    });
 });
 ```
 
