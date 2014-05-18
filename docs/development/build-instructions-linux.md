@@ -8,7 +8,7 @@
 On Ubuntu you could install the libraries via:
 
 ```bash
-$ sudo apt-get install build-essential clang libgtk2.0-dev libnotify-dev gcc-multilib g++-multilib libnss3 libstxt6
+$ sudo apt-get install build-essential clang libgtk2.0-dev libnotify-dev gcc-multilib g++-multilib
 ```
 
 Latest Node.js could be installed via ppa:
