@@ -235,7 +235,7 @@
   },
   'target_defaults': {
     'mac_framework_dirs': [
-      '<(atom_source_root)/frameworks',
+      '<(atom_source_root)/external_binaries',
     ],
     'includes': [
        # Rules for excluding e.g. foo_win.cc from the build on non-Windows.
@@ -288,9 +288,9 @@
               'files': [
                 '<(PRODUCT_DIR)/<(product_name) Helper.app',
                 '<(PRODUCT_DIR)/<(framework_name).framework',
-                'frameworks/Squirrel.framework',
-                'frameworks/ReactiveCocoa.framework',
-                'frameworks/Mantle.framework',
+                'external_binaries/Squirrel.framework',
+                'external_binaries/ReactiveCocoa.framework',
+                'external_binaries/Mantle.framework',
               ],
             },
             {
@@ -327,8 +327,11 @@
                 '<(libchromiumcontent_library_dir)/chromiumcontent.dll',
                 '<(libchromiumcontent_library_dir)/ffmpegsumo.dll',
                 '<(libchromiumcontent_library_dir)/icudt.dll',
+                '<(libchromiumcontent_library_dir)/libEGL.dll',
                 '<(libchromiumcontent_library_dir)/libGLESv2.dll',
                 '<(libchromiumcontent_resources_dir)/content_shell.pak',
+                'external_binaries/d3dcompiler_43.dll',
+                'external_binaries/xinput1_3.dll',
               ],
             },
             {
@@ -598,9 +601,9 @@
           'link_settings': {
             'libraries': [
               '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
-              'frameworks/Squirrel.framework',
-              'frameworks/ReactiveCocoa.framework',
-              'frameworks/Mantle.framework',
+              'external_binaries/Squirrel.framework',
+              'external_binaries/ReactiveCocoa.framework',
+              'external_binaries/Mantle.framework',
             ],
           },
           'mac_bundle': 1,
