@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-* Mac OS X >= 10.7
+* Mac OS X >= 10.8
 * [Xcode](https://developer.apple.com/technologies/tools/) >= 5.1
-* [node.js](http://nodejs.org)
+* [node.js](http://nodejs.org) (external).
 
 If you are using the python downloaded by Homebrew, you also need to install
 following python modules:
