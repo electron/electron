@@ -391,6 +391,11 @@ void NativeWindowWin::SetMenu(ui::MenuModel* menu_model) {
   menu_.reset(new atom::Menu2(menu_model, true));
   ::SetMenu(GetNativeWindow(), menu_->GetNativeMenu());
   RegisterAccelerators();
+
+  // Resize the window so SetMenu won't change client area size.
+  gfx::Size size = GetSize();
+  size.set_height(size.height() + GetSystemMetrics(SM_CYMENU));
+  SetSize(size);
 }
 
 void NativeWindowWin::UpdateDraggableRegions(
