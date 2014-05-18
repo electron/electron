@@ -203,6 +203,7 @@ NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
     : NativeWindow(web_contents, options),
       window_(new views::Widget),
       web_view_(new views::WebView(NULL)),
+      use_content_size_(false),
       resizable_(true) {
   views::Widget::InitParams params(views::Widget::InitParams::TYPE_WINDOW);
   params.delegate = this;
@@ -216,18 +217,12 @@ NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
   options->GetInteger(switches::kWidth, &width);
   options->GetInteger(switches::kHeight, &height);
 
-  bool use_content_size = false;
-  options->GetBoolean(switches::kUseContentSize, &use_content_size);
-  if (has_frame_ && use_content_size) {
-    gfx::Size window = window_->GetWindowBoundsInScreen().size();
-    gfx::Size client = window_->GetClientAreaBoundsInScreen().size();
-    width += window.width() - client.width();
-    height += window.height() - client.height();
-  }
-
   gfx::Size size(width, height);
-  window_->CenterWindow(size);
+  options->GetBoolean(switches::kUseContentSize, &use_content_size_);
+  if (has_frame_ && use_content_size_)
+    ClientAreaSizeToWindowSize(&size);
 
+  window_->CenterWindow(size);
   window_->UpdateWindowIcon();
 
   web_view_->SetWebContents(web_contents);
@@ -305,7 +300,9 @@ gfx::Size NativeWindowWin::GetSize() {
 }
 
 void NativeWindowWin::SetContentSize(const gfx::Size& size) {
-  // FIXME
+  gfx::Size resized(size);
+  ClientAreaSizeToWindowSize(&resized);
+  SetSize(resized);
 }
 
 gfx::Size NativeWindowWin::GetContentSize() {
@@ -393,9 +390,11 @@ void NativeWindowWin::SetMenu(ui::MenuModel* menu_model) {
   RegisterAccelerators();
 
   // Resize the window so SetMenu won't change client area size.
-  gfx::Size size = GetSize();
-  size.set_height(size.height() + GetSystemMetrics(SM_CYMENU));
-  SetSize(size);
+  if (use_content_size_) {
+    gfx::Size size = GetSize();
+    size.set_height(size.height() + GetSystemMetrics(SM_CYMENU));
+    SetSize(size);
+  }
 }
 
 void NativeWindowWin::UpdateDraggableRegions(
@@ -512,6 +511,13 @@ views::NonClientFrameView* NativeWindowWin::CreateNonClientFrameView(
     return new NativeWindowFrameView(widget, this);
 
   return new NativeWindowFramelessView(widget, this);
+}
+
+void NativeWindowWin::ClientAreaSizeToWindowSize(gfx::Size* size) {
+  gfx::Size window = window_->GetWindowBoundsInScreen().size();
+  gfx::Size client = window_->GetClientAreaBoundsInScreen().size();
+  size->set_width(size->width() + window.width() - client.width());
+  size->set_height(size->height() + window.height() - client.height());
 }
 
 void NativeWindowWin::OnViewWasResized() {
