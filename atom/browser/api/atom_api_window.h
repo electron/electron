@@ -73,6 +73,8 @@ class Window : public mate::EventEmitter,
   bool IsFullscreen();
   void SetSize(int width, int height);
   std::vector<int> GetSize();
+  void SetContentSize(int width, int height);
+  std::vector<int> GetContentSize();
   void SetMinimumSize(int width, int height);
   std::vector<int> GetMinimumSize();
   void SetMaximumSize(int width, int height);

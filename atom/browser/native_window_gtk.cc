@@ -114,8 +114,9 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
   options->GetInteger(switches::kWidth, &width);
   options->GetInteger(switches::kHeight, &height);
 
-  // Fixup the initial window size.
-  if (has_frame_)
+  bool use_content_size = false;
+  options->GetBoolean(switches::kUseContentSize, &use_content_size);
+  if (has_frame_ && !use_content_size)
     SubstractBorderSize(&width, &height);
 
   // Force a size allocation so the web page of hidden window can have correct
@@ -259,6 +260,24 @@ gfx::Size NativeWindowGtk::GetSize() {
   gdk_window_get_frame_extents(gdk_window, &frame_extents);
 
   return gfx::Size(frame_extents.width, frame_extents.height);
+}
+
+void NativeWindowGtk::SetContentSize(const gfx::Size& size) {
+  if (!has_frame_ || !has_ever_been_shown_) {
+    gtk_window_util::SetWindowSize(window_, size);
+  } else {
+    gfx::Size large = GetSize();
+    gfx::Size small = GetContentSize();
+    gfx::Size target(size.width() + large.width() - small.width(),
+                     size.height() + large.height() - small.height());
+    gtk_window_util::SetWindowSize(window_, target);
+  }
+}
+
+gfx::Size NativeWindowGtk::GetContentSize() {
+  gint width, height;
+  gtk_window_get_size(window_, &width, &height);
+  return gfx::Size(width, height);
 }
 
 void NativeWindowGtk::SetMinimumSize(const gfx::Size& size) {

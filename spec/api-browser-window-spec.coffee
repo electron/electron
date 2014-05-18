@@ -11,7 +11,7 @@ describe 'browser-window module', ->
   w = null
   beforeEach ->
     w.destroy() if w?
-    w = new BrowserWindow(show: false)
+    w = new BrowserWindow(show: false, width: 400, height: 400)
   afterEach ->
     w.destroy() if w?
     w = null
@@ -67,6 +67,44 @@ describe 'browser-window module', ->
       w.capturePage {x: 0, y: 0, width: 100, height: 100}, (image) ->
         assert.equal image.constructor.name, 'Buffer'
         done()
+
+  describe 'BrowserWindow.setSize(width, height)', ->
+    it 'sets the window size', ->
+      # No way to reliably set size when window has not been shown on Linux.
+      return if process.platform is 'linux'
+
+      size = [400, 400]
+      w.setSize size[0], size[1]
+      after = w.getSize()
+      assert.equal after[0], size[0]
+      assert.equal after[1], size[1]
+
+  describe 'BrowserWindow.setContentSize(width, height)', ->
+    it 'sets the content size', ->
+      # No way to reliably set size when window has not been shown on Linux.
+      return if process.platform is 'linux'
+
+      size = [400, 400]
+      w.setContentSize size[0], size[1]
+      after = w.getContentSize()
+      assert.equal after[0], size[0]
+      assert.equal after[1], size[1]
+
+  describe '"use-content-size" option', ->
+    it 'make window created with content size when used', ->
+      w.destroy()
+      w = new BrowserWindow(show: false, width: 400, height: 400, 'use-content-size': true)
+      contentSize = w.getContentSize()
+      assert.equal contentSize[0], 400
+      assert.equal contentSize[1], 400
+
+    it 'make window created with window size when not used', ->
+      # No way to reliably set size when window has not been shown on Linux.
+      return if process.platform is 'linux'
+
+      contentSize = w.getSize()
+      assert.equal contentSize[0], 400
+      assert.equal contentSize[1], 400
 
   describe 'beforeunload handler', ->
     it 'returning true would not prevent close', (done) ->

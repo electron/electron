@@ -6,18 +6,18 @@
 
 #include <string>
 
+#import "atom/browser/ui/cocoa/event_processing_window.h"
+#include "atom/common/draggable_region.h"
+#include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
-#import "atom/browser/ui/cocoa/event_processing_window.h"
-#include "brightray/browser/inspectable_web_contents.h"
-#include "brightray/browser/inspectable_web_contents_view.h"
-#include "atom/common/draggable_region.h"
-#include "atom/common/options_switches.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
 #include "content/public/browser/render_view_host.h"
+#include "vendor/brightray/browser/inspectable_web_contents.h"
+#include "vendor/brightray/browser/inspectable_web_contents_view.h"
 
 static const CGFloat kAtomWindowCornerRadius = 4.0;
 
@@ -179,6 +179,12 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
   // We will manage window's lifetime ourselves.
   [window_ setReleasedWhenClosed:NO];
 
+  // On OS X the initial window size doesn't include window frame.
+  bool use_content_size = false;
+  options->GetBoolean(switches::kUseContentSize, &use_content_size);
+  if (has_frame_ && !use_content_size)
+    SetSize(gfx::Size(width, height));
+
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;
   options->GetBoolean(switches::kAcceptFirstMouse, &acceptsFirstMouse);
@@ -297,6 +303,24 @@ void NativeWindowMac::SetSize(const gfx::Size& size) {
 gfx::Size NativeWindowMac::GetSize() {
   NSRect frame = [window_ frame];
   return gfx::Size(frame.size.width, frame.size.height);
+}
+
+void NativeWindowMac::SetContentSize(const gfx::Size& size) {
+  NSRect frame_nsrect = [window_ frame];
+  NSSize frame = frame_nsrect.size;
+  NSSize content = [window_ contentRectForFrameRect:frame_nsrect].size;
+
+  int width = size.width() + frame.width - content.width;
+  int height = size.height() + frame.height - content.height;
+  frame_nsrect.origin.y -= height - frame_nsrect.size.height;
+  frame_nsrect.size.width = width;
+  frame_nsrect.size.height = height;
+  [window_ setFrame:frame_nsrect display:YES];
+}
+
+gfx::Size NativeWindowMac::GetContentSize() {
+  NSRect bounds = [[window_ contentView] bounds];
+  return gfx::Size(bounds.size.width, bounds.size.height);
 }
 
 void NativeWindowMac::SetMinimumSize(const gfx::Size& size) {

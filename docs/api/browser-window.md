@@ -28,13 +28,19 @@ You can also create a window without chrome by using
 * `options` Object
   * `x` Integer - Window's left offset to screen
   * `y` Integer - Window's top offset to screen
+  * `width` Integer - Window's width
+  * `height` Integer - Window's height
+  * `use-content-size` Boolean - The `width` and `height` would be used as web
+     page's size, which means the actual window's size will include window
+     frame's size and be slightly larger.
   * `center` Boolean - Show window in the center of the screen
   * `min-width` Integer - Minimum width
   * `min-height` Integer - Minimum height
   * `max-width` Integer - Maximum width
   * `max-height` Integer - Maximum height
   * `resizable` Boolean - Whether window is resizable
-  * `always-on-top` Boolean - Whether the window should always stay on top of other windows
+  * `always-on-top` Boolean - Whether the window should always stay on top of
+     other windows
   * `fullscreen` Boolean - Whether the window should show in fullscreen
   * `kiosk` Boolean - The kiosk mode
   * `title` String - Default window title
@@ -222,6 +228,17 @@ Resizes the window to `width` and `height`.
 ### BrowserWindow.getSize()
 
 Returns an array that contains window's width and height.
+
+### BrowserWindow.setContentSize(width, height)
+
+* `width` Integer
+* `height` Integer
+
+Resizes the window's client area (e.g. the web page) to `width` and `height`.
+
+### BrowserWindow.getContentSize()
+
+Returns an array that contains window's client area's width and height.
 
 ### BrowserWindow.setMinimumSize(width, height)
 

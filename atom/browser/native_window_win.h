@@ -53,6 +53,8 @@ class NativeWindowWin : public NativeWindow,
   virtual bool IsFullscreen() OVERRIDE;
   virtual void SetSize(const gfx::Size& size) OVERRIDE;
   virtual gfx::Size GetSize() OVERRIDE;
+  virtual void SetContentSize(const gfx::Size& size) OVERRIDE;
+  virtual gfx::Size GetContentSize() OVERRIDE;
   virtual void SetMinimumSize(const gfx::Size& size) OVERRIDE;
   virtual gfx::Size GetMinimumSize() OVERRIDE;
   virtual void SetMaximumSize(const gfx::Size& size) OVERRIDE;
@@ -113,6 +115,8 @@ class NativeWindowWin : public NativeWindow,
   typedef struct { int position; ui::MenuModel* model; } MenuItem;
   typedef std::map<ui::Accelerator, MenuItem> AcceleratorTable;
 
+  void ClientAreaSizeToWindowSize(gfx::Size* size);
+
   void OnViewWasResized();
 
   // Register accelerators supported by the menu model.
@@ -128,6 +132,8 @@ class NativeWindowWin : public NativeWindow,
   accelerator_util::AcceleratorTable accelerator_table_;
 
   scoped_ptr<SkRegion> draggable_region_;
+
+  bool use_content_size_;
 
   bool resizable_;
   string16 title_;
