@@ -7,20 +7,22 @@ import os
 from lib.util import safe_mkdir, extract_zip, tempdir, download
 
 
+VERSION = 'v0.0.3'
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 FRAMEWORKS_URL = 'https://github.com/atom/atom-shell-frameworks/releases' \
-                 '/download/v0.0.3'
+                 '/download/' + VERSION
 
 
 def main():
   os.chdir(SOURCE_ROOT)
-  try:
-    os.makedirs('external_binaries')
-  except OSError as e:
-    if e.errno != errno.EEXIST:
-      raise
-    else:
-      return
+  version_file = os.path.join(SOURCE_ROOT, 'external_binaries', '.version')
+
+  safe_mkdir('external_binaries')
+  if (is_updated(version_file, VERSION)):
+    return
+
+  with open(version_file, 'w') as f:
+    f.write(VERSION)
 
   if sys.platform == 'darwin':
     download_and_unzip('Mantle')
@@ -28,6 +30,17 @@ def main():
     download_and_unzip('Squirrel')
   elif sys.platform in ['cygwin', 'win32']:
     download_and_unzip('directxsdk')
+
+
+def is_updated(version_file, version):
+  existing_version = ''
+  try:
+    with open(version_file, 'r') as f:
+      existing_version = f.readline().strip()
+  except IOError as e:
+    if e.errno != errno.ENOENT:
+      raise
+  return existing_version == version
 
 
 def download_and_unzip(framework):

@@ -1,7 +1,7 @@
 .DS_Store
 /build/
 /dist/
-/frameworks/
+/external_binaries/
 /out/
 /vendor/brightray/vendor/download/
 /vendor/python_26/
