@@ -68,5 +68,6 @@ describe 'chromium feature', ->
 
   describe 'webgl', ->
     it 'can be get as context in canvas', ->
+      return if process.platform is 'linux'
       webgl = document.createElement('canvas').getContext 'webgl'
       assert.notEqual webgl, null
