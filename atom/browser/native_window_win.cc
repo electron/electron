@@ -205,6 +205,8 @@ NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
       web_view_(new views::WebView(NULL)),
       use_content_size_(false),
       resizable_(true) {
+  options->GetBoolean(switches::kResizable, &resizable_);
+
   views::Widget::InitParams params(views::Widget::InitParams::TYPE_WINDOW);
   params.delegate = this;
   params.native_widget = new MenuCommandNativeWidget(this);
@@ -327,6 +329,15 @@ gfx::Size NativeWindowWin::GetMaximumSize() {
 
 void NativeWindowWin::SetResizable(bool resizable) {
   resizable_ = resizable;
+
+  // WS_MAXIMIZEBOX => Maximize/Minimize button
+  // WS_THICKFRAME => Resize handle
+  DWORD style = ::GetWindowLong(GetNativeWindow(), GWL_STYLE);
+  if (resizable)
+    style |= WS_MAXIMIZEBOX | WS_THICKFRAME;
+  else
+    style &= ~(WS_MAXIMIZEBOX | WS_THICKFRAME);
+  ::SetWindowLong(GetNativeWindow(), GWL_STYLE, style);
 }
 
 bool NativeWindowWin::IsResizable() {
