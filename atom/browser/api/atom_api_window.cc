@@ -362,7 +362,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("flashFrame", &Window::FlashFrame)
       .SetMethod("setKiosk", &Window::SetKiosk)
       .SetMethod("isKiosk", &Window::IsKiosk)
-      .SetMethod("openDevTools", &Window::OpenDevTools)
+      .SetMethod("_openDevTools", &Window::OpenDevTools)
       .SetMethod("closeDevTools", &Window::CloseDevTools)
       .SetMethod("isDevToolsOpened", &Window::IsDevToolsOpened)
       .SetMethod("inspectElement", &Window::InspectElement)

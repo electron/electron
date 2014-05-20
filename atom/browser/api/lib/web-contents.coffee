@@ -15,6 +15,11 @@ module.exports.wrap = (webContents) ->
   webContents.getId = -> "#{@getProcessId()}-#{@getRoutingId()}"
   webContents.equal = (other) -> @getId() is other.getId()
 
+  # Tell the rpc server that a render view has been deleted and we need to
+  # release all objects owned by it.
+  webContents.on 'render-view-deleted', (event, processId, routingId) ->
+    process.emit 'ATOM_BROWSER_RELEASE_RENDER_VIEW', "#{processId}-#{routingId}"
+
   # Dispatch IPC messages to the ipc module.
   webContents.on 'ipc-message', (event, channel, args...) =>
     Object.defineProperty event, 'sender', value: webContents

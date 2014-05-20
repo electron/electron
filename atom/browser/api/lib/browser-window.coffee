@@ -18,17 +18,6 @@ BrowserWindow::_init = ->
   @webContents = @getWebContents()
   @webContents.once 'destroyed', => @webContents = null
 
-  # Define getter for devToolsWebContents.
-  devToolsWebContents = null
-  @__defineGetter__ 'devToolsWebContents', ->
-    if @isDevToolsOpened()
-      # Get a new devToolsWebContents if previous one has been destroyed, it
-      # could happen when the devtools has been closed and then reopened.
-      devToolsWebContents = null unless devToolsWebContents?.isAlive()
-      devToolsWebContents ?= @getDevToolsWebContents()
-    else
-      devToolsWebContents = null
-
   # Remember the window.
   id = BrowserWindow.windows.add this
 
@@ -37,10 +26,12 @@ BrowserWindow::_init = ->
   @once 'closed', ->
     BrowserWindow.windows.remove id if BrowserWindow.windows.has id
 
-  # Tell the rpc server that a render view has been deleted and we need to
-  # release all objects owned by it.
-  @webContents.on 'render-view-deleted', (event, processId, routingId) ->
-    process.emit 'ATOM_BROWSER_RELEASE_RENDER_VIEW', "#{processId}-#{routingId}"
+BrowserWindow::openDevTools = ->
+  @_openDevTools()
+
+  # Force devToolsWebContents to be created.
+  @devToolsWebContents = @getDevToolsWebContents()
+  @devToolsWebContents.once 'destroyed', => @devToolsWebContents = null
 
 BrowserWindow::toggleDevTools = ->
   if @isDevToolsOpened() then @closeDevTools() else @openDevTools()
