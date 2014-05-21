@@ -26,6 +26,9 @@ class NativeWindowObserver {
   // Called when window loses focus.
   virtual void OnWindowBlur() {}
 
+  // Called when window gains focus.
+  virtual void OnWindowFocus() {}
+
   // Called when renderer is hung.
   virtual void OnRendererUnresponsive() {}
 

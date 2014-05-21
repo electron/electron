@@ -48,6 +48,10 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   acceptsFirstMouse_ = accept;
 }
 
+- (void)windowDidBecomeMain:(NSNotification*)notification {
+  shell_->NotifyWindowFocus();
+}
+
 - (void)windowDidResignMain:(NSNotification*)notification {
   shell_->NotifyWindowBlur();
 }

@@ -101,6 +101,7 @@ class NativeWindowGtk : public NativeWindow,
 
   CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnWindowDeleteEvent,
                        GdkEvent*);
+  CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnFocusIn, GdkEventFocus*);
   CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnFocusOut, GdkEventFocus*);
   CHROMEGTK_CALLBACK_1(NativeWindowGtk, gboolean, OnWindowState,
                        GdkEventWindowState*);

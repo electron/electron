@@ -53,6 +53,7 @@ class Window : public mate::EventEmitter,
   virtual void WillCloseWindow(bool* prevent_default) OVERRIDE;
   virtual void OnWindowClosed() OVERRIDE;
   virtual void OnWindowBlur() OVERRIDE;
+  virtual void OnWindowFocus() OVERRIDE;
   virtual void OnRendererUnresponsive() OVERRIDE;
   virtual void OnRendererResponsive() OVERRIDE;
 

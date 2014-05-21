@@ -368,6 +368,10 @@ void NativeWindow::NotifyWindowBlur() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowBlur());
 }
 
+void NativeWindow::NotifyWindowFocus() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowFocus());
+}
+
 // In atom-shell all reloads and navigations started by renderer process would
 // be redirected to this method, so we can have precise control of how we
 // would open the url (in our case, is to restart the renderer process). See

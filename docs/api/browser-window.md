@@ -134,6 +134,10 @@ Emitted when the unresponsive web page becomes responsive again.
 
 Emitted when window loses focus.
 
+### Event: 'focus'
+
+Emitted when window gains focus.
+
 ### Class Method: BrowserWindow.getAllWindows()
 
 Returns an array of all opened browser windows.
