@@ -3,7 +3,7 @@ path = require 'path'
 util = require 'util'
 
 # Expose information of current process.
-process.__atom_type = 'browser'
+process.type = 'browser'
 process.resourcesPath = path.resolve process.argv[1], '..', '..', '..', '..'
 
 # We modified the original process.argv to let node.js load the atom.js,

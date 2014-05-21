@@ -15,7 +15,7 @@ class CrashReporter
     extra._productName ?= productName
     extra._companyName ?= companyName
     extra._version ?=
-      if process.__atom_type is 'browser'
+      if process.type is 'browser'
         require('app').getVersion()
       else
         require('remote').require('app').getVersion()

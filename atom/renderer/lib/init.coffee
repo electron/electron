@@ -3,7 +3,7 @@ url    = require 'url'
 Module = require 'module'
 
 # Expose information of current process.
-process.__atom_type = 'renderer'
+process.type = 'renderer'
 process.resourcesPath = path.resolve process.argv[1], '..', '..', '..', '..'
 
 # We modified the original process.argv to let node.js load the

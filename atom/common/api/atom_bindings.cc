@@ -80,9 +80,9 @@ v8::Handle<v8::Value> Binding(v8::Handle<v8::String> module) {
       Get(v8::String::New("process"))->ToObject();
   DCHECK(!process.IsEmpty());
 
-  // is_browser = process.__atom_type == 'browser'.
+  // is_browser = process.type == 'browser'.
   bool is_browser = std::string("browser") == *v8::String::Utf8Value(
-      process->Get(v8::String::New("__atom_type")));
+      process->Get(v8::String::New("type")));
 
   // Cached in process.__atom_binding_cache.
   v8::Local<v8::Object> binding_cache;
