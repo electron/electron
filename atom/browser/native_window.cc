@@ -31,6 +31,7 @@
 #include "content/public/browser/notification_details.h"
 #include "content/public/browser/notification_source.h"
 #include "content/public/browser/notification_types.h"
+#include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
@@ -355,26 +356,35 @@ void NativeWindow::OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs) {
     prefs->accelerated_compositing_enabled = false;
 
   bool b;
+  base::ListValue* list;
   if (!web_preferences_)
     return;
-  else if (web_preferences_->GetBoolean("javascript", &b))
+  if (web_preferences_->GetBoolean("javascript", &b))
     prefs->javascript_enabled = b;
-  else if (web_preferences_->GetBoolean("web-security", &b))
+  if (web_preferences_->GetBoolean("web-security", &b))
     prefs->web_security_enabled = b;
-  else if (web_preferences_->GetBoolean("images", &b))
+  if (web_preferences_->GetBoolean("images", &b))
     prefs->images_enabled = b;
-  else if (web_preferences_->GetBoolean("plugins", &b))
-    prefs->plugins_enabled = b;
-  else if (web_preferences_->GetBoolean("java", &b))
+  if (web_preferences_->GetBoolean("java", &b))
     prefs->java_enabled = b;
-  else if (web_preferences_->GetBoolean("text-areas-are-resizable", &b))
+  if (web_preferences_->GetBoolean("text-areas-are-resizable", &b))
     prefs->text_areas_are_resizable = b;
-  else if (web_preferences_->GetBoolean("webgl", &b))
+  if (web_preferences_->GetBoolean("webgl", &b))
     prefs->experimental_webgl_enabled = b;
-  else if (web_preferences_->GetBoolean("webaudio", &b))
+  if (web_preferences_->GetBoolean("webaudio", &b))
     prefs->webaudio_enabled = b;
-  else if (web_preferences_->GetBoolean("accelerated-compositing", &b))
+  if (web_preferences_->GetBoolean("accelerated-compositing", &b))
     prefs->accelerated_compositing_enabled = b;
+  if (web_preferences_->GetBoolean("plugins", &b))
+    prefs->plugins_enabled = b;
+  if (web_preferences_->GetList("extra-plugin-dirs", &list))
+    for (size_t i = 0; i < list->GetSize(); ++i) {
+      base::FilePath::StringType path_string;
+      if (list->GetString(i, &path_string)) {
+        base::FilePath path(path_string);
+        content::PluginService::GetInstance()->AddExtraPluginDir(path);
+      }
+    }
 }
 
 void NativeWindow::NotifyWindowClosed() {
