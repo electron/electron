@@ -76,6 +76,11 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
   // Read iframe security before any navigation.
   options->GetString(switches::kNodeIntegration, &node_integration_);
 
+  // Read the web preferences.
+  base::DictionaryValue* web_preferences;
+  if (options->GetDictionary(switches::kWebPreferences, &web_preferences))
+    web_preferences_.reset(web_preferences->DeepCopy());
+
   web_contents->SetDelegate(this);
   inspectable_web_contents()->SetDelegate(this);
 
@@ -348,6 +353,28 @@ void NativeWindow::OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs) {
   // FIXME Disable accelerated composition in frameless window.
   if (!has_frame_)
     prefs->accelerated_compositing_enabled = false;
+
+  bool b;
+  if (!web_preferences_)
+    return;
+  else if (web_preferences_->GetBoolean("javascript", &b))
+    prefs->javascript_enabled = b;
+  else if (web_preferences_->GetBoolean("web-security", &b))
+    prefs->web_security_enabled = b;
+  else if (web_preferences_->GetBoolean("images", &b))
+    prefs->images_enabled = b;
+  else if (web_preferences_->GetBoolean("plugins", &b))
+    prefs->plugins_enabled = b;
+  else if (web_preferences_->GetBoolean("java", &b))
+    prefs->java_enabled = b;
+  else if (web_preferences_->GetBoolean("text-areas-are-resizable", &b))
+    prefs->text_areas_are_resizable = b;
+  else if (web_preferences_->GetBoolean("webgl", &b))
+    prefs->experimental_webgl_enabled = b;
+  else if (web_preferences_->GetBoolean("webaudio", &b))
+    prefs->webaudio_enabled = b;
+  else if (web_preferences_->GetBoolean("accelerated-compositing", &b))
+    prefs->accelerated_compositing_enabled = b;
 }
 
 void NativeWindow::NotifyWindowClosed() {

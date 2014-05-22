@@ -290,6 +290,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // it should be cancelled when we can prove that the window is responsive.
   base::CancelableClosure window_unresposive_closure_;
 
+  // web preferences.
+  scoped_ptr<base::DictionaryValue> web_preferences_;
+
   base::WeakPtrFactory<NativeWindow> weak_factory_;
 
   base::WeakPtr<NativeWindow> devtools_window_;
