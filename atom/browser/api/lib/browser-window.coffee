@@ -18,13 +18,15 @@ BrowserWindow::_init = ->
   @webContents = @getWebContents()
   @webContents.once 'destroyed', => @webContents = null
 
-  # Remember the window.
-  id = BrowserWindow.windows.add this
+  # Remember the window ID.
+  Object.defineProperty this, 'id',
+    value: BrowserWindow.windows.add(this)
+    enumerable: true
 
   # Remove the window from weak map immediately when it's destroyed, since we
   # could be iterating windows before GC happened.
-  @once 'closed', ->
-    BrowserWindow.windows.remove id if BrowserWindow.windows.has id
+  @once 'closed', =>
+    BrowserWindow.windows.remove @id if BrowserWindow.windows.has @id
 
 BrowserWindow::openDevTools = ->
   @_openDevTools()
@@ -66,6 +68,9 @@ BrowserWindow.fromWebContents = (webContents) ->
 BrowserWindow.fromDevToolsWebContents = (webContents) ->
   windows = BrowserWindow.getAllWindows()
   return window for window in windows when webContents.equal window.devToolsWebContents
+
+BrowserWindow.fromId = (id) ->
+  BrowserWindow.windows.get id
 
 # Helpers.
 BrowserWindow::loadUrl = -> @webContents.loadUrl.apply @webContents, arguments

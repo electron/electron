@@ -90,6 +90,10 @@ describe 'browser-window module', ->
       assert.equal after[0], size[0]
       assert.equal after[1], size[1]
 
+  describe 'BrowserWindow.fromId(id)', ->
+    it 'returns the window with id', ->
+      assert.equal w.id, BrowserWindow.fromId(w.id).id
+
   describe '"use-content-size" option', ->
     it 'make window created with content size when used', ->
       w.destroy()
