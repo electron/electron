@@ -148,14 +148,30 @@ Returns the window that is focused in this application.
 
 Find a window according to the `webContents` it owns
 
+### Class Method: BrowserWindow.fromId(id)
+
+* `id` Integer
+
+Find a window according to its ID.
+
 ### BrowserWindow.webContents
 
 The `WebContents` object this window owns, all web page related events and
 operations would be done via it.
 
+**Note:** Users should never store this object because it may becomes `null`
+when the web page has crashed.
+
 ### BrowserWindow.devToolsWebContents
 
 Get the `WebContents` of devtools of this window.
+
+**Note:** Users should never store this object because it may becomes `null`
+when the devtools has been closed.
+
+### BrowserWindow.id
+
+Get the unique ID of this window.
 
 ### BrowserWindow.destroy()
 
