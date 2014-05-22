@@ -51,6 +51,18 @@ You can also create a window without chrome by using
     `manual-enable-iframe` or `disable`.
   * `accept-first-mouse` Boolean - Whether the web view accepts a single
      mouse-down event that simultaneously activates the window
+  * `web-preferences` Object - Settings of web page's features
+    * `javascript` Boolean
+    * `web-security` Boolean
+    * `images` Boolean
+    * `java` Boolean
+    * `text-areas-are-resizable` Boolean
+    * `webgl` Boolean
+    * `webaudio` Boolean
+    * `accelerated-compositing` Boolean
+    * `plugins` Boolean
+    * `extra-plugin-dirs` Array - Array of paths that would be searched for
+      plugins.
 
 Creates a new `BrowserWindow` with native properties set by the `options`.
 Usually you only need to set the `width` and `height`, other properties will
