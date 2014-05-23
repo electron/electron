@@ -145,6 +145,8 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
                    G_CALLBACK(OnWindowDeleteEventThunk), this);
   g_signal_connect(window_, "focus-out-event",
                    G_CALLBACK(OnFocusOutThunk), this);
+  g_signal_connect(window_, "focus-in-event",
+                   G_CALLBACK(OnFocusInThunk), this);
   g_signal_connect(window_, "window-state-event",
                    G_CALLBACK(OnWindowStateThunk), this);
 
