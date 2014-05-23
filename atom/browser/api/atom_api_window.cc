@@ -95,6 +95,10 @@ void Window::OnWindowBlur() {
   Emit("blur");
 }
 
+void Window::OnWindowFocus() {
+  Emit("focus");
+}
+
 void Window::OnRendererUnresponsive() {
   Emit("unresponsive");
 }

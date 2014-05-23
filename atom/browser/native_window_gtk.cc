@@ -492,6 +492,11 @@ gboolean NativeWindowGtk::OnWindowDeleteEvent(GtkWidget* widget,
   return TRUE;
 }
 
+gboolean NativeWindowGtk::OnFocusIn(GtkWidget* window, GdkEventFocus*) {
+  NotifyWindowFocus();
+  return FALSE;
+}
+
 gboolean NativeWindowGtk::OnFocusOut(GtkWidget* window, GdkEventFocus*) {
   NotifyWindowBlur();
   return FALSE;
