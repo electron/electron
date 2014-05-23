@@ -39,6 +39,9 @@ const char kAcceptFirstMouse[] = "accept-first-mouse";
 // Whether window size should include window frame.
 const char kUseContentSize[] = "use-content-size";
 
+// The WebPreferences.
+const char kWebPreferences[] = "web-preferences";
+
 }  // namespace switches
 
 }  // namespace atom

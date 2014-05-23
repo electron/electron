@@ -7,6 +7,7 @@
 ## API references
 
 * [Synopsis](api/synopsis.md)
+* [Process object](api/process.md)
 
 Modules for browser side:
 

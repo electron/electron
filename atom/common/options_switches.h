@@ -29,6 +29,7 @@ extern const char kAlwaysOnTop[];
 extern const char kNodeIntegration[];
 extern const char kAcceptFirstMouse[];
 extern const char kUseContentSize[];
+extern const char kWebPreferences[];
 
 }  // namespace switches
 
