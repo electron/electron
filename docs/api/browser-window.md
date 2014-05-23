@@ -60,9 +60,13 @@ You can also create a window without chrome by using
     * `webgl` Boolean
     * `webaudio` Boolean
     * `accelerated-compositing` Boolean
-    * `plugins` Boolean
+    * `plugins` Boolean - Whether plugins should be enabled, currently only
+      `NPAPI` plugins are supported.
     * `extra-plugin-dirs` Array - Array of paths that would be searched for
-      plugins.
+      plugins. Note that if you want to add a directory under your app, you
+      should use `__dirname` or `process.resourcesPath` to join the paths to
+      make them absolute, using relative paths would make atom-shell search
+      under current working directory.
 
 Creates a new `BrowserWindow` with native properties set by the `options`.
 Usually you only need to set the `width` and `height`, other properties will
