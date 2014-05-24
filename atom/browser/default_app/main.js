@@ -1,5 +1,6 @@
 var app = require('app');
 var dialog = require('dialog');
+var fs = require('fs');
 var path = require('path');
 var optimist = require('optimist');
 
@@ -15,7 +16,21 @@ var argv = optimist(process.argv.slice(1)).boolean('ci').argv;
 // start the default app.
 if (argv._.length > 0) {
   try {
-    require(path.resolve(argv._[0]));
+    // Override app name and version.
+    var packagePath = path.resolve(argv._[0]);
+    var packageJsonPath = path.join(packagePath, 'package.json');
+    if (fs.existsSync(packageJsonPath)) {
+      var packageJson = JSON.parse(fs.readFileSync(packageJsonPath));
+      if (packageJson.version)
+        app.setVersion(packageJson.version);
+      if (packageJson.productName)
+        app.setName(packageJson.productName);
+      else if (packageJson.name)
+        app.setName(packageJson.name);
+    }
+
+    // Run the app.
+    require(packagePath);
   } catch(e) {
     if (e.code == 'MODULE_NOT_FOUND') {
       app.focus();
