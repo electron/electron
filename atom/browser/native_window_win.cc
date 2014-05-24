@@ -34,6 +34,22 @@ namespace {
 const int kResizeInsideBoundsSize = 5;
 const int kResizeAreaCornerSize = 16;
 
+// Returns true if |possible_parent| is a parent window of |child|.
+bool IsParent(gfx::NativeView child, gfx::NativeView possible_parent) {
+  if (!child)
+    return false;
+  if (::GetWindow(child, GW_OWNER) == possible_parent)
+    return true;
+  gfx::NativeView parent = ::GetParent(child);
+  while (parent) {
+    if (possible_parent == parent)
+      return true;
+    parent = ::GetParent(parent);
+  }
+
+  return false;
+}
+
 // Wrapper of NativeWidgetWin to handle WM_MENUCOMMAND messages, which are
 // triggered by window menus.
 class MenuCommandNativeWidget : public views::NativeWidgetWin {
@@ -214,6 +230,8 @@ NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
   params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
   window_->set_frame_type(views::Widget::FRAME_TYPE_FORCE_NATIVE);
   window_->Init(params);
+
+  views::WidgetFocusManager::GetInstance()->AddFocusChangeListener(this);
 
   int width = 800, height = 600;
   options->GetInteger(switches::kWidth, &width);
@@ -522,6 +540,18 @@ views::NonClientFrameView* NativeWindowWin::CreateNonClientFrameView(
     return new NativeWindowFrameView(widget, this);
 
   return new NativeWindowFramelessView(widget, this);
+}
+
+void NativeWindowWin::OnNativeFocusChange(gfx::NativeView focused_before,
+                                          gfx::NativeView focused_now) {
+  gfx::NativeView this_window = GetWidget()->GetNativeView();
+  if (IsParent(focused_now, this_window))
+    return;
+
+  if (focused_now == this_window)
+    NotifyWindowFocus();
+  else if (focused_before == this_window)
+    NotifyWindowBlur();
 }
 
 void NativeWindowWin::ClientAreaSizeToWindowSize(gfx::Size* size) {

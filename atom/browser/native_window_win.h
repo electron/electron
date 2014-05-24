@@ -14,6 +14,7 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/accelerator_util.h"
 #include "ui/gfx/size.h"
+#include "ui/views/focus/widget_focus_manager.h"
 #include "ui/views/widget/widget_delegate.h"
 
 namespace ui {
@@ -30,6 +31,7 @@ namespace atom {
 class Menu2;
 
 class NativeWindowWin : public NativeWindow,
+                        public views::WidgetFocusChangeListener,
                         public views::WidgetDelegateView {
  public:
   explicit NativeWindowWin(content::WebContents* web_contents,
@@ -110,6 +112,10 @@ class NativeWindowWin : public NativeWindow,
   virtual views::ClientView* CreateClientView(views::Widget* widget) OVERRIDE;
   virtual views::NonClientFrameView* CreateNonClientFrameView(
       views::Widget* widget) OVERRIDE;
+
+  // Overridden from views::WidgetFocusChangeListener:
+  virtual void OnNativeFocusChange(gfx::NativeView focused_before,
+                                   gfx::NativeView focused_now) OVERRIDE;
 
  private:
   typedef struct { int position; ui::MenuModel* model; } MenuItem;
