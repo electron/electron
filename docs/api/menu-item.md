@@ -17,7 +17,7 @@
   * `enabled` Boolean
   * `visible` Boolean
   * `checked` Boolean
-  * `groupId` Boolean - Should be specified for `radio` type menu item
+  * `groupId` Integer - Should be specified for `radio` type menu item
   * `submenu` Menu - Should be specified for `submenu` type menu item, when
      it's specified the `type: 'submenu'` can be omitted for the menu item
 
