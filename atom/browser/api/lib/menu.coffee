@@ -1,6 +1,7 @@
 BrowserWindow = require 'browser-window'
 EventEmitter = require('events').EventEmitter
 MenuItem = require 'menu-item'
+v8Util = process.atomBinding 'v8_util'
 
 bindings = process.atomBinding 'menu'
 
@@ -51,13 +52,8 @@ Menu::insert = (pos, item) ->
         activeItem = @commandsMap[commandId]
         # Manually flip the checked flags when clicked.
         if activeItem?
-          switch activeItem.type
-            when 'checkbox'
-              activeItem.checked = !activeItem.checked
-            when 'radio'
-              for item in @groupsMap[activeItem.groupId]
-                item.checked = false
-              activeItem.checked = true
+          if activeItem.type in ['checkbox', 'radio']
+            activeItem.checked = !activeItem.checked
           activeItem.click()
 
   switch item.type
@@ -70,6 +66,17 @@ Menu::insert = (pos, item) ->
       item.groupId = generateGroupId(@items, pos)
       @groupsMap[item.groupId] ?= []
       @groupsMap[item.groupId].push item
+
+      # Setting a radio menu item should flip other items in the group.
+      v8Util.setHiddenValue item, 'checked', item.checked
+      Object.defineProperty item, 'checked',
+        enumerable: true
+        get: -> v8Util.getHiddenValue item, 'checked'
+        set: (val) =>
+          for otherItem in @groupsMap[item.groupId]
+            v8Util.setHiddenValue otherItem, 'checked', false
+          v8Util.setHiddenValue item, 'checked', true
+
       @insertRadioItem pos, item.commandId, item.label, item.groupId
 
   @setSublabel pos, item.sublabel if item.sublabel?
