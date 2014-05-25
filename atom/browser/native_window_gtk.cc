@@ -315,7 +315,7 @@ gfx::Size NativeWindowGtk::GetMaximumSize() {
 void NativeWindowGtk::SetResizable(bool resizable) {
   // Should request widget size after setting unresizable, otherwise the
   // window will shrink to a very small size.
-  if (!IsResizable()) {
+  if (!IsResizable() || !has_ever_been_shown_) {
     gint width, height;
     gtk_window_get_size(window_, &width, &height);
     gtk_widget_set_size_request(GTK_WIDGET(window_), width, height);
