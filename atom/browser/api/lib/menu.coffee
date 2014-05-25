@@ -99,7 +99,7 @@ Menu.setApplicationMenu = (menu) ->
   if process.platform is 'darwin'
     # Force menuWillShow to be called
     menuWillShow = (menu) ->
-      menu.delegate.menuWillShow()
+      menu.delegate?.menuWillShow()
       menuWillShow item.submenu for item in menu.items when item.submenu?
     menuWillShow menu
 
