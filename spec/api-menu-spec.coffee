@@ -35,3 +35,40 @@ describe 'menu module', ->
           done()
       ]
       menu.delegate.executeCommand menu.items[0].commandId
+
+  describe 'radio MenuItem', ->
+    it 'clicking an item should flip the checked property', ->
+      menu = Menu.buildFromTemplate [ label: 'text', type: 'radio' ]
+      assert.equal menu.items[0].checked, false
+      menu.delegate.executeCommand menu.items[0].commandId
+      assert.equal menu.items[0].checked, true
+
+    it 'should assign groupId automatically', ->
+      template = []
+      template.push label: "#{i}", type: 'radio' for i in [0..10]
+      template.push type: 'separator'
+      template.push label: "#{i}", type: 'radio' for i in [12..20]
+      menu = Menu.buildFromTemplate template
+      groupId = menu.items[0].groupId
+      assert.equal menu.items[i].groupId, groupId for i in [0..10]
+      assert.equal menu.items[i].groupId, groupId + 1 for i in [12..20]
+
+    it "setting 'checked' should flip other items' 'checked' property", ->
+      template = []
+      template.push label: "#{i}", type: 'radio' for i in [0..10]
+      template.push type: 'separator'
+      template.push label: "#{i}", type: 'radio' for i in [12..20]
+      menu = Menu.buildFromTemplate template
+      assert.equal menu.items[i].checked, false for i in [0..10]
+      menu.items[0].checked = true
+      assert.equal menu.items[0].checked, true
+      assert.equal menu.items[i].checked, false for i in [1..10]
+      menu.items[10].checked = true
+      assert.equal menu.items[10].checked, true
+      assert.equal menu.items[i].checked, false for i in [0..9]
+      assert.equal menu.items[i].checked, false for i in [12..20]
+      menu.items[12].checked = true
+      assert.equal menu.items[10].checked, true
+      assert.equal menu.items[i].checked, false for i in [0..9]
+      assert.equal menu.items[12].checked, true
+      assert.equal menu.items[i].checked, false for i in [13..20]
