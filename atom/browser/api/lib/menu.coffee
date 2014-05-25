@@ -97,6 +97,12 @@ Menu.setApplicationMenu = (menu) ->
   applicationMenu = menu  # Keep a reference.
 
   if process.platform is 'darwin'
+    # Force menuWillShow to be called
+    menuWillShow = (menu) ->
+      menu.delegate.menuWillShow()
+      menuWillShow item.submenu for item in menu.items when item.submenu?
+    menuWillShow menu
+
     bindings.setApplicationMenu menu
   else
     windows = BrowserWindow.getAllWindows()
