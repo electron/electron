@@ -32,10 +32,13 @@ ipc.on('echo', function(event, msg) {
   event.returnValue = msg;
 });
 
-process.on('uncaughtException', function(error) {
-  console.log(error);
-  window.openDevTools();
-});
+if (process.argv[1] == '--ci') {
+  process.removeAllListeners('uncaughtException');
+  process.on('uncaughtException', function(error) {
+    console.error(error, error.stack);
+    process.exit(1);
+  });
+}
 
 app.on('window-all-closed', function() {
   app.quit();
