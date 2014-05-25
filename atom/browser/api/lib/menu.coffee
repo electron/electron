@@ -4,6 +4,24 @@ MenuItem = require 'menu-item'
 
 bindings = process.atomBinding 'menu'
 
+# Automatically generated radio menu item's group id.
+nextGroupId = 0
+
+# Search between seperators to find a radio menu item and return its group id,
+# otherwise generate a group id.
+generateGroupId = (items, pos) ->
+  if pos > 0
+    for i in [pos - 1..0]
+      item = items[i]
+      return item.groupId if item.type is 'radio'
+      break if item.type is 'separator'
+  else if pos < items.length
+    for i in [pos..items.length - 1]
+      item = items[i]
+      return item.groupId if item.type is 'radio'
+      break if item.type is 'separator'
+  ++nextGroupId
+
 Menu = bindings.Menu
 Menu::__proto__ = EventEmitter.prototype
 
@@ -19,15 +37,7 @@ Menu::append = (item) ->
 Menu::insert = (pos, item) ->
   throw new TypeError('Invalid item') unless item?.constructor is MenuItem
 
-  switch item.type
-    when 'normal' then @insertItem pos, item.commandId, item.label
-    when 'checkbox' then @insertCheckItem pos, item.commandId, item.label
-    when 'radio' then @insertRadioItem pos, item.commandId, item.label, item.groupId
-    when 'separator' then @insertSeparator pos
-    when 'submenu' then @insertSubMenu pos, item.commandId, item.label, item.submenu
-
-  @setSublabel pos, item.sublabel if item.sublabel?
-
+  # Create delegate.
   unless @delegate?
     @commandsMap = {}
     @groupsMap = {}
@@ -39,6 +49,7 @@ Menu::insert = (pos, item) ->
       getAcceleratorForCommandId: (commandId) => @commandsMap[commandId]?.accelerator
       executeCommand: (commandId) =>
         activeItem = @commandsMap[commandId]
+        # Manually flip the checked flags when clicked.
         if activeItem?
           switch activeItem.type
             when 'checkbox'
@@ -48,12 +59,24 @@ Menu::insert = (pos, item) ->
                 item.checked = false
               activeItem.checked = true
           activeItem.click()
+
+  switch item.type
+    when 'normal' then @insertItem pos, item.commandId, item.label
+    when 'checkbox' then @insertCheckItem pos, item.commandId, item.label
+    when 'separator' then @insertSeparator pos
+    when 'submenu' then @insertSubMenu pos, item.commandId, item.label, item.submenu
+    when 'radio'
+      # Grouping radio menu items.
+      item.groupId = generateGroupId(@items, pos)
+      @groupsMap[item.groupId] ?= []
+      @groupsMap[item.groupId].push item
+      @insertRadioItem pos, item.commandId, item.label, item.groupId
+
+  @setSublabel pos, item.sublabel if item.sublabel?
+
+  # Remember the items.
   @items.splice pos, 0, item
   @commandsMap[item.commandId] = item
-
-  if item.groupId?
-    @groupsMap[item.groupId] ?= []
-    @groupsMap[item.groupId].push item
 
 applicationMenu = null
 Menu.setApplicationMenu = (menu) ->
