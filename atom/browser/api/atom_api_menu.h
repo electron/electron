@@ -49,6 +49,7 @@ class Menu : public mate::Wrappable,
   virtual string16 GetLabelForCommandId(int command_id) const OVERRIDE;
   virtual string16 GetSublabelForCommandId(int command_id) const OVERRIDE;
   virtual void ExecuteCommand(int command_id, int event_flags) OVERRIDE;
+  virtual void MenuWillShow(ui::SimpleMenuModel* source) OVERRIDE;
 
   virtual void Popup(Window* window) = 0;
 

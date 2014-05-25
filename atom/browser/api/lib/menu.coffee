@@ -26,11 +26,9 @@ generateGroupId = (items, pos) ->
 Menu = bindings.Menu
 Menu::__proto__ = EventEmitter.prototype
 
-popup = Menu::popup
 Menu::popup = (window) ->
   throw new TypeError('Invalid window') unless window?.constructor is BrowserWindow
-
-  popup.call this, window
+  @_popup window
 
 Menu::append = (item) ->
   @insert @getItemCount(), item
@@ -55,6 +53,14 @@ Menu::insert = (pos, item) ->
           if activeItem.type in ['checkbox', 'radio']
             activeItem.checked = !activeItem.checked
           activeItem.click()
+      menuWillShow: =>
+        # Make sure radio groups have at least one menu item seleted.
+        for id, group of @groupsMap
+          checked = false
+          for radioItem in group when radioItem.checked
+            checked = true
+            break
+          v8Util.setHiddenValue group[0], 'checked', true unless checked
 
   switch item.type
     when 'normal' then @insertItem pos, item.commandId, item.label

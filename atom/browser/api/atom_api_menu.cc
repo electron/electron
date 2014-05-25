@@ -135,6 +135,12 @@ void Menu::ExecuteCommand(int command_id, int event_flags) {
                command_id);
 }
 
+void Menu::MenuWillShow(ui::SimpleMenuModel* source) {
+  v8::Locker locker(node_isolate);
+  v8::HandleScope handle_scope(node_isolate);
+  CallDelegate(v8::False(), GetWrapper(node_isolate), "menuWillShow", -1);
+}
+
 void Menu::InsertItemAt(
     int index, int command_id, const base::string16& label) {
   model_->InsertItemAt(index, command_id, label);
@@ -226,7 +232,7 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
 #if defined(OS_WIN) || defined(TOOLKIT_GTK)
       .SetMethod("attachToWindow", &Menu::AttachToWindow)
 #endif
-      .SetMethod("popup", &Menu::Popup);
+      .SetMethod("_popup", &Menu::Popup);
 }
 
 }  // namespace api

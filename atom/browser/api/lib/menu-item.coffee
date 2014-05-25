@@ -22,7 +22,7 @@ class MenuItem
     @checked = @checked ? false
     @submenu = @submenu ? null
 
-    throw new Error('Unknown menu type') if MenuItem.types.indexOf(@type) is -1
+    throw new Error("Unknown menu type #{@type}") if MenuItem.types.indexOf(@type) is -1
 
     @commandId = ++nextCommandId
     @click = =>

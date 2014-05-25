@@ -43,6 +43,16 @@ describe 'menu module', ->
       menu.delegate.executeCommand menu.items[0].commandId
       assert.equal menu.items[0].checked, true
 
+    it 'at least have one item checked in each group', ->
+      template = []
+      template.push label: "#{i}", type: 'radio' for i in [0..10]
+      template.push type: 'separator'
+      template.push label: "#{i}", type: 'radio' for i in [12..20]
+      menu = Menu.buildFromTemplate template
+      menu.delegate.menuWillShow()
+      assert.equal menu.items[0].checked, true
+      assert.equal menu.items[12].checked, true
+
     it 'should assign groupId automatically', ->
       template = []
       template.push label: "#{i}", type: 'radio' for i in [0..10]
