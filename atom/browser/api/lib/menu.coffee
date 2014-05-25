@@ -30,6 +30,7 @@ Menu::insert = (pos, item) ->
 
   unless @delegate?
     @commandsMap = {}
+    @groupsMap = {}
     @items = []
     @delegate =
       isCommandIdChecked: (commandId) => @commandsMap[commandId]?.checked
@@ -38,9 +39,21 @@ Menu::insert = (pos, item) ->
       getAcceleratorForCommandId: (commandId) => @commandsMap[commandId]?.accelerator
       executeCommand: (commandId) =>
         activeItem = @commandsMap[commandId]
-        activeItem.click() if activeItem?
+        if activeItem?
+          switch activeItem.type
+            when 'checkbox'
+              activeItem.checked = !activeItem.checked
+            when 'radio'
+              for item in @groupsMap[activeItem.groupId]
+                item.checked = false
+              activeItem.checked = true
+          activeItem.click()
   @items.splice pos, 0, item
   @commandsMap[item.commandId] = item
+
+  if item.groupId?
+    @groupsMap[item.groupId] ?= []
+    @groupsMap[item.groupId].push item
 
 applicationMenu = null
 Menu.setApplicationMenu = (menu) ->
