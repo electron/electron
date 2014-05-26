@@ -44,7 +44,9 @@ v8::Handle<v8::Value> CallDelegate(v8::Handle<v8::Value> default_value,
 
 }  // namespace
 
-Menu::Menu() : model_(new ui::SimpleMenuModel(this)) {
+Menu::Menu()
+    : model_(new ui::SimpleMenuModel(this)),
+      parent_(NULL) {
 }
 
 Menu::~Menu() {
@@ -135,6 +137,12 @@ void Menu::ExecuteCommand(int command_id, int event_flags) {
                command_id);
 }
 
+void Menu::MenuWillShow(ui::SimpleMenuModel* source) {
+  v8::Locker locker(node_isolate);
+  v8::HandleScope handle_scope(node_isolate);
+  CallDelegate(v8::False(), GetWrapper(node_isolate), "menuWillShow", -1);
+}
+
 void Menu::InsertItemAt(
     int index, int command_id, const base::string16& label) {
   model_->InsertItemAt(index, command_id, label);
@@ -161,6 +169,7 @@ void Menu::InsertSubMenuAt(int index,
                            int command_id,
                            const base::string16& label,
                            Menu* menu) {
+  menu->parent_ = this;
   model_->InsertSubMenuAt(index, command_id, label, menu->model_.get());
 }
 
@@ -224,9 +233,12 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
 #if defined(OS_WIN) || defined(TOOLKIT_GTK)
-      .SetMethod("attachToWindow", &Menu::AttachToWindow)
+      .SetMethod("_attachToWindow", &Menu::AttachToWindow)
 #endif
-      .SetMethod("popup", &Menu::Popup);
+#if defined(OS_WIN)
+      .SetMethod("_updateStates", &Menu::UpdateStates)
+#endif
+      .SetMethod("_popup", &Menu::Popup);
 }
 
 }  // namespace api

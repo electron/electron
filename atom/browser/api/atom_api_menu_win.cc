@@ -15,17 +15,28 @@ namespace atom {
 
 namespace api {
 
-MenuWin::MenuWin() {
+MenuWin::MenuWin() : menu_(NULL) {
 }
 
 void MenuWin::Popup(Window* window) {
   gfx::Point cursor = gfx::Screen::GetNativeScreen()->GetCursorScreenPoint();
-  menu_.reset(new atom::Menu2(model_.get()));
+  popup_menu_.reset(new atom::Menu2(model_.get()));
+  menu_ = popup_menu_.get();
   menu_->RunContextMenuAt(cursor);
 }
 
-void Menu::AttachToWindow(Window* window) {
-  static_cast<NativeWindowWin*>(window->window())->SetMenu(model_.get());
+void MenuWin::UpdateStates() {
+  MenuWin* top = this;
+  while (top->parent_)
+    top = static_cast<MenuWin*>(top->parent_);
+  if (top->menu_)
+    top->menu_->UpdateStates();
+}
+
+void MenuWin::AttachToWindow(Window* window) {
+  NativeWindowWin* nw = static_cast<NativeWindowWin*>(window->window());
+  nw->SetMenu(model_.get());
+  menu_ = nw->menu();
 }
 
 // static

@@ -37,7 +37,7 @@ void MenuGtk::Popup(Window* window) {
   menu_gtk_->PopupAsContext(point, triggering_event_time);
 }
 
-void Menu::AttachToWindow(Window* window) {
+void MenuGtk::AttachToWindow(Window* window) {
   static_cast<NativeWindowGtk*>(window->window())->SetMenu(model_.get());
 }
 
