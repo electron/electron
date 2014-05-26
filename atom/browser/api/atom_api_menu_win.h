@@ -19,9 +19,12 @@ class MenuWin : public Menu {
 
  protected:
   virtual void Popup(Window* window) OVERRIDE;
+  virtual void UpdateStates() OVERRIDE;
+  virtual void AttachToWindow(Window* window) OVERRIDE;
 
  private:
-  scoped_ptr<atom::Menu2> menu_;
+  atom::Menu2* menu_;  // Weak ref, could be window menu or popup menu.
+  scoped_ptr<atom::Menu2> popup_menu_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuWin);
 };

@@ -64,7 +64,18 @@ Menu::insert = (pos, item) ->
 
   switch item.type
     when 'normal' then @insertItem pos, item.commandId, item.label
-    when 'checkbox' then @insertCheckItem pos, item.commandId, item.label
+    when 'checkbox'
+      # Update states when clicked on Windows.
+      if process.platform is 'win32'
+        v8Util.setHiddenValue item, 'checked', item.checked
+        Object.defineProperty item, 'checked',
+          enumerable: true
+          get: -> v8Util.getHiddenValue item, 'checked'
+          set: (val) =>
+            v8Util.setHiddenValue item, 'checked', val
+            @_updateStates() if process.platform is 'win32'
+
+      @insertCheckItem pos, item.commandId, item.label
     when 'separator' then @insertSeparator pos
     when 'submenu' then @insertSubMenu pos, item.commandId, item.label, item.submenu
     when 'radio'
@@ -82,6 +93,9 @@ Menu::insert = (pos, item) ->
           for otherItem in @groupsMap[item.groupId]
             v8Util.setHiddenValue otherItem, 'checked', false
           v8Util.setHiddenValue item, 'checked', true
+
+          # Update states when clicked on Windows.
+          @_updateStates() if process.platform is 'win32'
 
       @insertRadioItem pos, item.commandId, item.label, item.groupId
 

@@ -81,6 +81,7 @@ class NativeWindowWin : public NativeWindow,
   void SetMenu(ui::MenuModel* menu_model);
 
   views::Widget* window() const { return window_.get(); }
+  atom::Menu2* menu() const { return menu_.get(); }
   SkRegion* draggable_region() { return draggable_region_.get(); }
 
  protected:

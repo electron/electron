@@ -44,7 +44,9 @@ v8::Handle<v8::Value> CallDelegate(v8::Handle<v8::Value> default_value,
 
 }  // namespace
 
-Menu::Menu() : model_(new ui::SimpleMenuModel(this)) {
+Menu::Menu()
+    : model_(new ui::SimpleMenuModel(this)),
+      parent_(NULL) {
 }
 
 Menu::~Menu() {
@@ -167,6 +169,7 @@ void Menu::InsertSubMenuAt(int index,
                            int command_id,
                            const base::string16& label,
                            Menu* menu) {
+  menu->parent_ = this;
   model_->InsertSubMenuAt(index, command_id, label, menu->model_.get());
 }
 
@@ -231,6 +234,9 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
 #if defined(OS_WIN) || defined(TOOLKIT_GTK)
       .SetMethod("_attachToWindow", &Menu::AttachToWindow)
+#endif
+#if defined(OS_WIN)
+      .SetMethod("_updateStates", &Menu::UpdateStates)
 #endif
       .SetMethod("_popup", &Menu::Popup);
 }

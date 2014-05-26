@@ -54,6 +54,7 @@ class Menu : public mate::Wrappable,
   virtual void Popup(Window* window) = 0;
 
   scoped_ptr<ui::SimpleMenuModel> model_;
+  Menu* parent_;
 
  private:
   void InsertItemAt(int index, int command_id, const base::string16& label);
@@ -80,8 +81,12 @@ class Menu : public mate::Wrappable,
   bool IsEnabledAt(int index) const;
   bool IsVisibleAt(int index) const;
 
+#if defined(OS_WIN)
+  virtual void UpdateStates() = 0;
+#endif
+
 #if defined(OS_WIN) || defined(TOOLKIT_GTK)
-  void AttachToWindow(Window* window);
+  virtual void AttachToWindow(Window* window) = 0;
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(Menu);
