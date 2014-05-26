@@ -46,13 +46,7 @@ Menu::insert = (pos, item) ->
       isCommandIdEnabled: (commandId) => @commandsMap[commandId]?.enabled
       isCommandIdVisible: (commandId) => @commandsMap[commandId]?.visible
       getAcceleratorForCommandId: (commandId) => @commandsMap[commandId]?.accelerator
-      executeCommand: (commandId) =>
-        activeItem = @commandsMap[commandId]
-        # Manually flip the checked flags when clicked.
-        if activeItem?
-          if activeItem.type in ['checkbox', 'radio']
-            activeItem.checked = !activeItem.checked
-          activeItem.click()
+      executeCommand: (commandId) => @commandsMap[commandId]?.click()
       menuWillShow: =>
         # Make sure radio groups have at least one menu item seleted.
         for id, group of @groupsMap
@@ -69,7 +63,7 @@ Menu::insert = (pos, item) ->
     when 'submenu' then @insertSubMenu pos, item.commandId, item.label, item.submenu
     when 'radio'
       # Grouping radio menu items.
-      item.groupId = generateGroupId(@items, pos)
+      item.overrideReadOnlyProperty 'groupId', generateGroupId(@items, pos)
       @groupsMap[item.groupId] ?= []
       @groupsMap[item.groupId].push item
 
@@ -78,7 +72,7 @@ Menu::insert = (pos, item) ->
         enumerable: true
         get: -> v8Util.getHiddenValue item, 'checked'
         set: (val) =>
-          for otherItem in @groupsMap[item.groupId]
+          for otherItem in @groupsMap[item.groupId] when otherItem isnt item
             v8Util.setHiddenValue otherItem, 'checked', false
           v8Util.setHiddenValue item, 'checked', true
 
@@ -90,7 +84,7 @@ Menu::insert = (pos, item) ->
   @setSublabel pos, item.sublabel if item.sublabel?
 
   # Make menu accessable to items.
-  item.menu = this
+  item.overrideReadOnlyProperty 'menu', this
 
   # Remember the items.
   @items.splice pos, 0, item
