@@ -68,6 +68,7 @@ Menu::insert = (pos, item) ->
       @groupsMap[item.groupId].push item
 
       # Setting a radio menu item should flip other items in the group.
+      v8Util.setHiddenValue item, 'checked', item.checked
       Object.defineProperty item, 'checked',
         enumerable: true
         get: -> v8Util.getHiddenValue item, 'checked'

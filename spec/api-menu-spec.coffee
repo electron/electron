@@ -36,10 +36,17 @@ describe 'menu module', ->
       ]
       menu.delegate.executeCommand menu.items[0].commandId
 
-  describe 'radio MenuItem', ->
-    it 'clicking an item should flip the checked property', ->
-      menu = Menu.buildFromTemplate [ label: 'text', type: 'radio' ]
+  describe 'MenuItem with checked property', ->
+    it 'clicking an checkbox item should flip the checked property', ->
+      menu = Menu.buildFromTemplate [ label: 'text', type: 'checkbox' ]
       assert.equal menu.items[0].checked, false
+      menu.delegate.executeCommand menu.items[0].commandId
+      assert.equal menu.items[0].checked, true
+
+    it 'clicking an radio item should always make checked property true', ->
+      menu = Menu.buildFromTemplate [ label: 'text', type: 'radio' ]
+      menu.delegate.executeCommand menu.items[0].commandId
+      assert.equal menu.items[0].checked, true
       menu.delegate.executeCommand menu.items[0].commandId
       assert.equal menu.items[0].checked, true
 
