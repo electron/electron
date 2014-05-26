@@ -230,7 +230,7 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
 #if defined(OS_WIN) || defined(TOOLKIT_GTK)
-      .SetMethod("attachToWindow", &Menu::AttachToWindow)
+      .SetMethod("_attachToWindow", &Menu::AttachToWindow)
 #endif
       .SetMethod("_popup", &Menu::Popup);
 }

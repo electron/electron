@@ -91,18 +91,22 @@ Menu::insert = (pos, item) ->
   @items.splice pos, 0, item
   @commandsMap[item.commandId] = item
 
+Menu::attachToWindow = (window) ->
+  @_callMenuWillShow() if process.platform is 'win32'
+  @_attachToWindow window
+
+# Force menuWillShow to be called
+Menu::_callMenuWillShow = ->
+  @delegate?.menuWillShow()
+  item.submenu._callMenuWillShow() for item in @items when item.submenu?
+
 applicationMenu = null
 Menu.setApplicationMenu = (menu) ->
   throw new TypeError('Invalid menu') unless menu?.constructor is Menu
   applicationMenu = menu  # Keep a reference.
 
   if process.platform is 'darwin'
-    # Force menuWillShow to be called
-    menuWillShow = (menu) ->
-      menu.delegate?.menuWillShow()
-      menuWillShow item.submenu for item in menu.items when item.submenu?
-    menuWillShow menu
-
+    menu._callMenuWillShow()
     bindings.setApplicationMenu menu
   else
     windows = BrowserWindow.getAllWindows()
