@@ -64,18 +64,7 @@ Menu::insert = (pos, item) ->
 
   switch item.type
     when 'normal' then @insertItem pos, item.commandId, item.label
-    when 'checkbox'
-      # Update states when clicked on Windows.
-      if process.platform is 'win32'
-        v8Util.setHiddenValue item, 'checked', item.checked
-        Object.defineProperty item, 'checked',
-          enumerable: true
-          get: -> v8Util.getHiddenValue item, 'checked'
-          set: (val) =>
-            v8Util.setHiddenValue item, 'checked', val
-            @_updateStates() if process.platform is 'win32'
-
-      @insertCheckItem pos, item.commandId, item.label
+    when 'checkbox' then @insertCheckItem pos, item.commandId, item.label
     when 'separator' then @insertSeparator pos
     when 'submenu' then @insertSubMenu pos, item.commandId, item.label, item.submenu
     when 'radio'
@@ -85,7 +74,6 @@ Menu::insert = (pos, item) ->
       @groupsMap[item.groupId].push item
 
       # Setting a radio menu item should flip other items in the group.
-      v8Util.setHiddenValue item, 'checked', item.checked
       Object.defineProperty item, 'checked',
         enumerable: true
         get: -> v8Util.getHiddenValue item, 'checked'
@@ -100,6 +88,9 @@ Menu::insert = (pos, item) ->
       @insertRadioItem pos, item.commandId, item.label, item.groupId
 
   @setSublabel pos, item.sublabel if item.sublabel?
+
+  # Make menu accessable to items.
+  item.menu = this
 
   # Remember the items.
   @items.splice pos, 0, item
