@@ -415,6 +415,7 @@ void NativeWindowWin::OnMenuCommand(int position, HMENU menu) {
 
 void NativeWindowWin::SetMenu(ui::MenuModel* menu_model) {
   menu_.reset(new atom::Menu2(menu_model, true));
+  menu_->UpdateStates();
   ::SetMenu(GetNativeWindow(), menu_->GetNativeMenu());
   RegisterAccelerators();
 
