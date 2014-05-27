@@ -26,6 +26,25 @@ generateGroupId = (items, pos) ->
 Menu = bindings.Menu
 Menu::__proto__ = EventEmitter.prototype
 
+Menu::_init = ->
+  @commandsMap = {}
+  @groupsMap = {}
+  @items = []
+  @delegate =
+    isCommandIdChecked: (commandId) => @commandsMap[commandId]?.checked
+    isCommandIdEnabled: (commandId) => @commandsMap[commandId]?.enabled
+    isCommandIdVisible: (commandId) => @commandsMap[commandId]?.visible
+    getAcceleratorForCommandId: (commandId) => @commandsMap[commandId]?.accelerator
+    executeCommand: (commandId) => @commandsMap[commandId]?.click()
+    menuWillShow: =>
+      # Make sure radio groups have at least one menu item seleted.
+      for id, group of @groupsMap
+        checked = false
+        for radioItem in group when radioItem.checked
+          checked = true
+          break
+        v8Util.setHiddenValue group[0], 'checked', true unless checked
+
 Menu::popup = (window) ->
   throw new TypeError('Invalid window') unless window?.constructor is BrowserWindow
   @_popup window
@@ -35,26 +54,6 @@ Menu::append = (item) ->
 
 Menu::insert = (pos, item) ->
   throw new TypeError('Invalid item') unless item?.constructor is MenuItem
-
-  # Create delegate.
-  unless @delegate?
-    @commandsMap = {}
-    @groupsMap = {}
-    @items = []
-    @delegate =
-      isCommandIdChecked: (commandId) => @commandsMap[commandId]?.checked
-      isCommandIdEnabled: (commandId) => @commandsMap[commandId]?.enabled
-      isCommandIdVisible: (commandId) => @commandsMap[commandId]?.visible
-      getAcceleratorForCommandId: (commandId) => @commandsMap[commandId]?.accelerator
-      executeCommand: (commandId) => @commandsMap[commandId]?.click()
-      menuWillShow: =>
-        # Make sure radio groups have at least one menu item seleted.
-        for id, group of @groupsMap
-          checked = false
-          for radioItem in group when radioItem.checked
-            checked = true
-            break
-          v8Util.setHiddenValue group[0], 'checked', true unless checked
 
   switch item.type
     when 'normal' then @insertItem pos, item.commandId, item.label
