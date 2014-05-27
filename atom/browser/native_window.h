@@ -129,6 +129,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void FlashFrame(bool flash) = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
+  virtual void SetRepresentedFilename(const std::string& filename);
+  virtual void SetDocumentEdited(bool edited);
   virtual bool HasModalDialog();
   virtual gfx::NativeWindow GetNativeWindow() = 0;
 

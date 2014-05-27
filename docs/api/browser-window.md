@@ -362,6 +362,20 @@ Enters or leaves the kiosk mode.
 
 Returns whether the window is in kiosk mode.
 
+### BrowserWindow.setRepresentedFilename(filename)
+
+* `filename` String
+
+__OS X Only__ Sets the pathname of the file the window represents, and the icon
+of the file will show in window's title bar.
+
+### BrowserWindow.setDocumentEdited(edited)
+
+* `edited` Boolean
+
+__OS X Only__ Specifies whether the window’s document has been edited, and the
+icon in titlebar will become grey when set to `true`.
+
 ### BrowserWindow.openDevTools()
 
 Opens the developer tools.

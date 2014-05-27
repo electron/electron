@@ -56,6 +56,8 @@ class NativeWindowMac : public NativeWindow {
   virtual void FlashFrame(bool flash) OVERRIDE;
   virtual void SetKiosk(bool kiosk) OVERRIDE;
   virtual bool IsKiosk() OVERRIDE;
+  virtual void SetRepresentedFilename(const std::string& filename) OVERRIDE;
+  virtual void SetDocumentEdited(bool edited) OVERRIDE;
   virtual bool HasModalDialog() OVERRIDE;
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
 

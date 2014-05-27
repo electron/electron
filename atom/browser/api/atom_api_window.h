@@ -101,6 +101,8 @@ class Window : public mate::EventEmitter,
   void BlurWebView();
   bool IsWebViewFocused();
   void CapturePage(mate::Arguments* args);
+  void SetRepresentedFilename(const std::string& filename);
+  void SetDocumentEdited(bool edited);
 
   // APIs for WebContents.
   mate::Handle<WebContents> GetWebContents(v8::Isolate* isolate) const;

@@ -314,6 +314,14 @@ void Window::CapturePage(mate::Arguments* args) {
   window_->CapturePage(rect, base::Bind(&OnCapturePageDone, callback));
 }
 
+void Window::SetRepresentedFilename(const std::string& filename) {
+  window_->SetRepresentedFilename(filename);
+}
+
+void Window::SetDocumentEdited(bool edited) {
+  window_->SetDocumentEdited(edited);
+}
+
 mate::Handle<WebContents> Window::GetWebContents(v8::Isolate* isolate) const {
   return WebContents::Create(isolate, window_->GetWebContents());
 }
@@ -360,6 +368,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("flashFrame", &Window::FlashFrame)
       .SetMethod("setKiosk", &Window::SetKiosk)
       .SetMethod("isKiosk", &Window::IsKiosk)
+      .SetMethod("setRepresentedFilename", &Window::SetRepresentedFilename)
+      .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)
       .SetMethod("_openDevTools", &Window::OpenDevTools)
       .SetMethod("closeDevTools", &Window::CloseDevTools)
       .SetMethod("isDevToolsOpened", &Window::IsDevToolsOpened)

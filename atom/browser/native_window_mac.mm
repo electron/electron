@@ -432,6 +432,14 @@ bool NativeWindowMac::IsKiosk() {
   return is_kiosk_;
 }
 
+void NativeWindowMac::SetRepresentedFilename(const std::string& filename) {
+  [window_ setRepresentedFilename:base::SysUTF8ToNSString(filename)];
+}
+
+void NativeWindowMac::SetDocumentEdited(bool edited) {
+  [window_ setDocumentEdited:edited];
+}
+
 bool NativeWindowMac::HasModalDialog() {
   return [window_ attachedSheet] != nil;
 }

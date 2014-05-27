@@ -191,6 +191,12 @@ void NativeWindow::InitFromOptions(base::DictionaryValue* options) {
     Show();
 }
 
+void NativeWindow::SetRepresentedFilename(const std::string& filename) {
+}
+
+void NativeWindow::SetDocumentEdited(bool edited) {
+}
+
 bool NativeWindow::HasModalDialog() {
   return has_dialog_attached_;
 }
