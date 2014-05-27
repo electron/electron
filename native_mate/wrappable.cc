@@ -5,6 +5,7 @@
 #include "native_mate/wrappable.h"
 
 #include "base/logging.h"
+#include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 
 namespace mate {
@@ -23,6 +24,11 @@ void Wrappable::Wrap(v8::Isolate* isolate, v8::Handle<v8::Object> wrapper) {
   MATE_SET_INTERNAL_FIELD_POINTER(wrapper, 0, this);
   MATE_PERSISTENT_ASSIGN(v8::Object, isolate, wrapper_, wrapper);
   MATE_PERSISTENT_SET_WEAK(wrapper_, this, WeakCallback);
+
+  // Call object._init if we have one.
+  v8::Handle<v8::Function> init;
+  if (Dictionary(isolate, wrapper).Get("_init", &init))
+    init->Call(wrapper, 0, NULL);
 }
 
 // static
