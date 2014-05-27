@@ -111,13 +111,7 @@ void Window::OnRendererResponsive() {
 mate::Wrappable* Window::New(mate::Arguments* args,
                              const base::DictionaryValue& options) {
   scoped_ptr<base::DictionaryValue> copied_options(options.DeepCopy());
-  Window* window = new Window(copied_options.get());
-  window->Wrap(args->isolate(), args->GetThis());
-
-  // Give js code a chance to do initialization.
-  node::MakeCallback(args->GetThis(), "_init", 0, NULL);
-
-  return window;
+  return new Window(copied_options.get());
 }
 
 void Window::Destroy() {
