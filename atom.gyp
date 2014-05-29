@@ -221,6 +221,15 @@
       'atom/app/atom_library_main.cc',
       'atom/app/atom_library_main.h',
     ],
+    'locales': [
+      'am', 'ar', 'bg', 'bn', 'ca', 'cs', 'da', 'de', 'el', 'en-GB',
+      'en-US', 'es-419', 'es', 'et', 'fa', 'fi', 'fil', 'fr', 'gu', 'he',
+      'hi', 'hr', 'hu', 'id', 'it', 'ja', 'kn', 'ko', 'lt', 'lv',
+      'ml', 'mr', 'ms', 'nb', 'nl', 'pl', 'pt-BR', 'pt-PT', 'ro', 'ru',
+      'sk', 'sl', 'sr', 'sv', 'sw', 'ta', 'te', 'th', 'tr', 'uk',
+      'vi', 'zh-CN', 'zh-TW',
+    ],
+    'atom_source_root': '<!(python tools/atom_source_root.py)',
     'conditions': [
       ['OS=="win"', {
         'app_sources': [
@@ -230,8 +239,10 @@
           '<(libchromiumcontent_src_dir)/content/app/startup_helper_win.cc',
         ],
       }],  # OS=="win"
+      ['OS=="mac"', {
+        'apply_locales_cmd': ['python', 'tools/mac/apply_locales.py'],
+      }],  # OS=="mac"
     ],
-    'atom_source_root': '<!(python tools/atom_source_root.py)',
   },
   'target_defaults': {
     'mac_framework_dirs': [
@@ -317,8 +328,27 @@
                 '<(product_name)',
               ],
             },
+              # The application doesn't have real localizations, it just has
+              # empty .lproj directories, which is enough to convince Cocoa
+              # atom-shell supports those languages.
+            {
+              'postbuild_name': 'Make Empty Localizations',
+              'variables': {
+                'locale_dirs': [
+                  '>!@(<(apply_locales_cmd) -d ZZLOCALE.lproj <(locales))',
+                ],
+              },
+              'action': [
+                'tools/mac/make_locale_dirs.sh',
+                '<@(locale_dirs)',
+              ],
+            },
           ]
-        }],  # OS=="mac"
+        }, {  # OS=="mac"
+          'dependencies': [
+            'make_locale_paks',
+          ],
+        }],  # OS!="mac"
         ['OS=="win"', {
           'copies': [
             {
@@ -674,7 +704,31 @@
           },
         },  # target helper
       ],
-    }],  # OS==Mac
+    }, {  # OS=="mac"
+      'targets': [
+        {
+          'target_name': 'make_locale_paks',
+          'type': 'none',
+          'actions': [
+            {
+              'action_name': 'Make Empty Paks',
+              'inputs': [
+                'tools/posix/make_locale_paks.sh',
+              ],
+              'outputs': [
+                '<(PRODUCT_DIR)/locales'
+              ],
+              'action': [
+                'tools/posix/make_locale_paks.sh',
+                '<(PRODUCT_DIR)',
+                '<@(locales)',
+              ],
+              'msvs_cygwin_shell': 0,
+            },
+          ],
+        },
+      ],
+    }],  # OS!="mac"
     ['OS=="win"', {
       'targets': [
         {
