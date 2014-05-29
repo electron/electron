@@ -344,7 +344,11 @@
               ],
             },
           ]
-        }],  # OS=="mac"
+        }, {  # OS=="mac"
+          'dependencies': [
+            'make_locale_paks',
+          ],
+        }],  # OS!="mac"
         ['OS=="win"', {
           'copies': [
             {
@@ -700,7 +704,31 @@
           },
         },  # target helper
       ],
-    }],  # OS==Mac
+    }, {  # OS=="mac"
+      'targets': [
+        {
+          'target_name': 'make_locale_paks',
+          'type': 'none',
+          'actions': [
+            {
+              'action_name': 'Make Empty Paks',
+              'inputs': [
+                'tools/posix/make_locale_paks.sh',
+              ],
+              'outputs': [
+                '<(PRODUCT_DIR)/locales'
+              ],
+              'action': [
+                'tools/posix/make_locale_paks.sh',
+                '<(PRODUCT_DIR)',
+                '<@(locales)',
+              ],
+              'msvs_cygwin_shell': 0,
+            },
+          ],
+        },
+      ],
+    }],  # OS!="mac"
     ['OS=="win"', {
       'targets': [
         {

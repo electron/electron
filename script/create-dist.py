@@ -62,9 +62,11 @@ TARGET_DIRECTORIES = {
   ],
   'win32': [
     'resources',
+    'locales',
   ],
   'linux': [
     'resources',
+    'locales',
   ],
 }
 
