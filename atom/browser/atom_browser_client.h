@@ -25,6 +25,7 @@ class AtomBrowserClient : public brightray::BrowserClient {
       content::SiteInstance* site_instance,
       const GURL& current_url,
       const GURL& new_url) OVERRIDE;
+  virtual std::string GetApplicationLocale() OVERRIDE;
   virtual void AppendExtraCommandLineSwitches(CommandLine* command_line,
                                               int child_process_id) OVERRIDE;
 

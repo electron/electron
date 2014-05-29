@@ -13,6 +13,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
+#include "ui/base/l10n/l10n_util.h"
 #include "webkit/common/webpreferences.h"
 
 namespace atom {
@@ -86,6 +87,10 @@ bool AtomBrowserClient::ShouldSwapProcessesForNavigation(
   // Restart renderer process for all navigations, this relies on a patch to
   // Chromium: http://git.io/_PaNyg.
   return true;
+}
+
+std::string AtomBrowserClient::GetApplicationLocale() {
+  return l10n_util::GetApplicationLocale("");
 }
 
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
