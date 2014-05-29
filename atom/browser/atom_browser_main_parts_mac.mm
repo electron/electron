@@ -8,11 +8,15 @@
 #import "atom/browser/mac/atom_application_delegate.h"
 #include "base/files/file_path.h"
 #import "base/mac/foundation_util.h"
+#include "ui/base/l10n/l10n_util_mac.h"
 #import "vendor/brightray/common/mac/main_application_bundle.h"
 
 namespace atom {
 
 void AtomBrowserMainParts::PreMainMessageLoopStart() {
+  // Initialize locale setting.
+  l10n_util::OverrideLocaleWithCocoaLocale();
+
   // Force the NSApplication subclass to be used.
   NSApplication* application = [AtomApplication sharedApplication];
 
