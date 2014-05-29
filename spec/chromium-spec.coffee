@@ -27,6 +27,10 @@ describe 'chromium feature', ->
         -> done()
         -> done()
 
+  describe 'navigator.language', ->
+    it 'should not be empty', ->
+      assert.notEqual navigator.language, ''
+
   describe 'window.open', ->
     it 'returns a BrowserWindow object', ->
       b = window.open 'about:blank', 'test', 'show=no'
