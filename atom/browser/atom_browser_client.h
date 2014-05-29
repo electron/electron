@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_ATOM_BROWSER_CLIENT_H_
 #define ATOM_BROWSER_ATOM_BROWSER_CLIENT_H_
 
+#include <string>
+
 #include "brightray/browser/browser_client.h"
 
 namespace atom {
