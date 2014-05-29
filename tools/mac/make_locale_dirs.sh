@@ -33,7 +33,7 @@ fi
 cd "${RESOURCES_DIR}"
 
 for dir in "${@}"; do
-  if [[ ! -d "${dir}.lproj" ]]; then
-    mkdir "${dir}.lproj"
+  if [[ ! -d "${dir}" ]]; then
+    mkdir "${dir}"
   fi
 done

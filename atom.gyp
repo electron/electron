@@ -221,6 +221,14 @@
       'atom/app/atom_library_main.cc',
       'atom/app/atom_library_main.h',
     ],
+    'locales': [
+      'am', 'ar', 'bg', 'bn', 'ca', 'cs', 'da', 'de', 'el', 'en-GB',
+      'en-US', 'es-419', 'es', 'et', 'fa', 'fi', 'fil', 'fr', 'gu', 'he',
+      'hi', 'hr', 'hu', 'id', 'it', 'ja', 'kn', 'ko', 'lt', 'lv',
+      'ml', 'mr', 'ms', 'nb', 'nl', 'pl', 'pt-BR', 'pt-PT', 'ro', 'ru',
+      'sk', 'sl', 'sr', 'sv', 'sw', 'ta', 'te', 'th', 'tr', 'uk',
+      'vi', 'zh-CN', 'zh-TW',
+    ],
     'atom_source_root': '<!(python tools/atom_source_root.py)',
     'conditions': [
       ['OS=="win"', {
@@ -232,14 +240,7 @@
         ],
       }],  # OS=="win"
       ['OS=="mac"', {
-        'locales': [
-          'am', 'ar', 'bg', 'bn', 'ca', 'cs', 'da', 'de', 'el', 'en_GB',
-          'en_US', 'es_419', 'es', 'et', 'fa', 'fi', 'fil', 'fr', 'gu', 'he',
-          'hi', 'hr', 'hu', 'id', 'it', 'ja', 'kn', 'ko', 'lt', 'lv',
-          'ml', 'mr', 'ms', 'nb', 'nl', 'pl', 'pt_BR', 'pt_PT', 'ro', 'ru',
-          'sk', 'sl', 'sr', 'sv', 'sw', 'ta', 'te', 'th', 'tr', 'uk',
-          'vi', 'zh_CN', 'zh_TW',
-        ],
+        'apply_locales_cmd': ['python', 'tools/mac/apply_locales.py'],
       }],  # OS=="mac"
     ],
   },
@@ -332,9 +333,14 @@
               # atom-shell supports those languages.
             {
               'postbuild_name': 'Make Empty Localizations',
+              'variables': {
+                'locale_dirs': [
+                  '>!@(<(apply_locales_cmd) -d ZZLOCALE.lproj <(locales))',
+                ],
+              },
               'action': [
                 'tools/mac/make_locale_dirs.sh',
-                '<@(locales)',
+                '<@(locale_dirs)',
               ],
             },
           ]
