@@ -13,15 +13,15 @@ namespace atom {
 
 class TrayIconWin : public TrayIcon {
  public:
+  TrayIconWin();
+  virtual ~TrayIconWin();
+
   virtual void SetImage(const gfx::ImageSkia& image) OVERRIDE;
   virtual void SetPressedImage(const gfx::ImageSkia& image) OVERRIDE;
   virtual void SetToolTip(const std::string& tool_tip) OVERRIDE;
   virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) OVERRIDE;
 
  private:
-  TrayIconWin();
-  virtual ~TrayIconWin();
-
   DISALLOW_COPY_AND_ASSIGN(TrayIconWin);
 };
 

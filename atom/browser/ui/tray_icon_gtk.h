@@ -13,15 +13,15 @@ namespace atom {
 
 class TrayIconGtk : public TrayIcon {
  public:
+  TrayIconGtk();
+  virtual ~TrayIconGtk();
+
   virtual void SetImage(const gfx::ImageSkia& image) OVERRIDE;
   virtual void SetPressedImage(const gfx::ImageSkia& image) OVERRIDE;
   virtual void SetToolTip(const std::string& tool_tip) OVERRIDE;
   virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) OVERRIDE;
 
  private:
-  TrayIconGtk();
-  virtual ~TrayIconGtk();
-
   DISALLOW_COPY_AND_ASSIGN(TrayIconGtk);
 };
 

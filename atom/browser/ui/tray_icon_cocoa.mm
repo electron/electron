@@ -41,9 +41,13 @@ void TrayIconCocoa::SetToolTip(const std::string& tool_tip) {
 }
 
 void TrayIconCocoa::SetContextMenu(ui::SimpleMenuModel* menu_model) {
-  TrayIcon::SetContextMenu(menu_model);
   menu_.reset([[AtomMenuController alloc] initWithModel:menu_model]);
   [item_ setMenu:[menu_ menu]];
+}
+
+// static
+TrayIcon* TrayIcon::Create() {
+  return new TrayIconCocoa;
 }
 
 }  // namespace atom

@@ -24,4 +24,9 @@ void TrayIconGtk::SetToolTip(const std::string& tool_tip) {
 void TrayIconGtk::SetContextMenu(ui::SimpleMenuModel* menu_model) {
 }
 
+// static
+TrayIcon* TrayIcon::Create() {
+  return new TrayIconGtk;
+}
+
 }  // namespace atom

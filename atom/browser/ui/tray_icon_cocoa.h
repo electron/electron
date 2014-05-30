@@ -18,15 +18,15 @@ namespace atom {
 
 class TrayIconCocoa : public TrayIcon {
  public:
+  TrayIconCocoa();
+  virtual ~TrayIconCocoa();
+
   virtual void SetImage(const gfx::ImageSkia& image) OVERRIDE;
   virtual void SetPressedImage(const gfx::ImageSkia& image) OVERRIDE;
   virtual void SetToolTip(const std::string& tool_tip) OVERRIDE;
   virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) OVERRIDE;
 
  private:
-  TrayIconCocoa();
-  virtual ~TrayIconCocoa();
-
   base::scoped_nsobject<NSStatusItem> item_;
 
   // Status menu shown when right-clicking the system icon.

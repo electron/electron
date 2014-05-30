@@ -15,6 +15,8 @@ class TrayIcon {
  public:
   static TrayIcon* Create();
 
+  virtual ~TrayIcon();
+
   // Sets the image associated with this status icon.
   virtual void SetImage(const gfx::ImageSkia& image) = 0;
 
@@ -32,7 +34,6 @@ class TrayIcon {
 
  protected:
   TrayIcon();
-  virtual ~TrayIcon();
 
  private:
   DISALLOW_COPY_AND_ASSIGN(TrayIcon);

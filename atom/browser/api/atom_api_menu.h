@@ -34,6 +34,8 @@ class Menu : public mate::Wrappable,
   static void SendActionToFirstResponder(const std::string& action);
 #endif
 
+  ui::SimpleMenuModel* model() const { return model_.get(); }
+
  protected:
   Menu();
   virtual ~Menu();
