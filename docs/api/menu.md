@@ -151,9 +151,8 @@ Creates a new menu.
 
 * `menu` Menu
 
-Sets `menu` as the application menu.
-
-**Note:** This method is OS X only.
+Sets `menu` as the application menu on OS X. On Windows and Linux, the `menu`
+will be set as each window's top menu.
 
 ### Class Method: Menu.sendActionToFirstResponder(action)
 
