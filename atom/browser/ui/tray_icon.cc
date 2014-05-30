@@ -6,14 +6,10 @@
 
 namespace atom {
 
-TrayIcon::TrayIcon() : model_(NULL) {
+TrayIcon::TrayIcon() {
 }
 
 TrayIcon::~TrayIcon() {
-}
-
-void TrayIcon::SetContextMenu(ui::SimpleMenuModel* menu_model) {
-  model_ = menu_model;
 }
 
 }  // namespace atom

@@ -21,4 +21,7 @@ void TrayIconGtk::SetPressedImage(const gfx::ImageSkia& image) {
 void TrayIconGtk::SetToolTip(const std::string& tool_tip) {
 }
 
+void TrayIconGtk::SetContextMenu(ui::SimpleMenuModel* menu_model) {
+}
+
 }  // namespace atom

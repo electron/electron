@@ -16,6 +16,7 @@ class TrayIconWin : public TrayIcon {
   virtual void SetImage(const gfx::ImageSkia& image) OVERRIDE;
   virtual void SetPressedImage(const gfx::ImageSkia& image) OVERRIDE;
   virtual void SetToolTip(const std::string& tool_tip) OVERRIDE;
+  virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) OVERRIDE;
 
  private:
   TrayIconWin();

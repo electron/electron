@@ -28,15 +28,13 @@ class TrayIcon {
   virtual void SetToolTip(const std::string& tool_tip) = 0;
 
   // Set the context menu for this icon.
-  void SetContextMenu(ui::SimpleMenuModel* menu_model);
+  virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) = 0;
 
  protected:
   TrayIcon();
   virtual ~TrayIcon();
 
  private:
-  ui::SimpleMenuModel* model_;  // Weak reference.
-
   DISALLOW_COPY_AND_ASSIGN(TrayIcon);
 };
 
