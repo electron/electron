@@ -2,31 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/tray_icon_gtk.h"
+#include "atom/browser/ui/gtk/status_icon.h"
 
 namespace atom {
 
-TrayIconGtk::TrayIconGtk() {
-}
-
-TrayIconGtk::~TrayIconGtk() {
-}
-
-void TrayIconGtk::SetImage(const gfx::ImageSkia& image) {
-}
-
-void TrayIconGtk::SetPressedImage(const gfx::ImageSkia& image) {
-}
-
-void TrayIconGtk::SetToolTip(const std::string& tool_tip) {
-}
-
-void TrayIconGtk::SetContextMenu(ui::SimpleMenuModel* menu_model) {
-}
-
 // static
 TrayIcon* TrayIcon::Create() {
-  return new TrayIconGtk;
+  return new StatusIcon;
 }
 
 }  // namespace atom
