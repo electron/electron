@@ -3,12 +3,16 @@
 // found in the LICENSE file.
 
 #include "atom/browser/ui/gtk/status_icon.h"
+#include "atom/browser/ui/gtk/app_indicator_icon.h"
 
 namespace atom {
 
 // static
 TrayIcon* TrayIcon::Create() {
-  return new StatusIcon;
+  if (AppIndicatorIcon::CouldOpen())
+    return new AppIndicatorIcon;
+  else
+    return new StatusIcon;
 }
 
 }  // namespace atom

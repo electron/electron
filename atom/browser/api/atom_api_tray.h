@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_TRAY_H_
 #define ATOM_BROWSER_API_ATOM_API_TRAY_H_
 
+#include <string>
+
 #include "atom/browser/api/event_emitter.h"
 #include "base/memory/scoped_ptr.h"
 
@@ -28,7 +30,7 @@ class Tray : public mate::EventEmitter {
                              v8::Handle<v8::ObjectTemplate> prototype);
 
  protected:
-  Tray(const gfx::ImageSkia& image);
+  explicit Tray(const gfx::ImageSkia& image);
   virtual ~Tray();
 
   void SetImage(const gfx::ImageSkia& image);

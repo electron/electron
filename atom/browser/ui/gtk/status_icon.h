@@ -5,9 +5,9 @@
 #ifndef ATOM_BROWSER_UI_GTK_STATUS_ICON_H_
 #define ATOM_BROWSER_UI_GTK_STATUS_ICON_H_
 
-#include <string>
-
 #include <gtk/gtk.h>
+
+#include <string>
 
 #include "atom/browser/ui/tray_icon.h"
 #include "ui/base/gtk/gtk_signal.h"

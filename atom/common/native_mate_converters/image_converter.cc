@@ -4,6 +4,8 @@
 
 #include "atom/common/native_mate_converters/image_converter.h"
 
+#include <string>
+
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "base/file_util.h"
 #include "ui/gfx/codec/jpeg_codec.h"

@@ -130,6 +130,8 @@
       'atom/browser/ui/file_dialog_gtk.cc',
       'atom/browser/ui/file_dialog_mac.mm',
       'atom/browser/ui/file_dialog_win.cc',
+      'atom/browser/ui/gtk/app_indicator_icon.cc',
+      'atom/browser/ui/gtk/app_indicator_icon.h',
       'atom/browser/ui/gtk/status_icon.cc',
       'atom/browser/ui/gtk/status_icon.h',
       'atom/browser/ui/message_box.h',

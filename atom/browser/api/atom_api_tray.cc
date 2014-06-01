@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/atom_api_tray.h"
 
+#include <string>
+
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/ui/tray_icon.h"
 #include "atom/common/native_mate_converters/image_converter.h"
