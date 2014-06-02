@@ -9,10 +9,10 @@ namespace atom {
 
 class TrayIconObserver {
  public:
-  virtual void OnClicked() {};
+  virtual void OnClicked() {}
 
  protected:
-  virtual ~TrayIconObserver() {};
+  virtual ~TrayIconObserver() {}
 };
 
 }  // namespace atom
