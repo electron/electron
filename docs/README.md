@@ -20,6 +20,7 @@ Modules for browser side:
 * [menu-item](api/menu-item.md)
 * [power-monitor](api/power-monitor.md)
 * [protocol](api/protocol.md)
+* [tray](api/tray.md)
 
 Modules for web page:
 
