@@ -12,4 +12,8 @@ TrayIcon::TrayIcon() {
 TrayIcon::~TrayIcon() {
 }
 
+void TrayIcon::NotifyClicked() {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnClicked());
+}
+
 }  // namespace atom

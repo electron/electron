@@ -7,6 +7,8 @@
 
 #include <string>
 
+#include "atom/browser/ui/tray_icon_observer.h"
+#include "base/observer_list.h"
 #include "ui/base/models/simple_menu_model.h"
 
 namespace atom {
@@ -32,10 +34,16 @@ class TrayIcon {
   // Set the context menu for this icon.
   virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) = 0;
 
+  void AddObserver(TrayIconObserver* obs) { observers_.AddObserver(obs); }
+  void RemoveObserver(TrayIconObserver* obs) { observers_.RemoveObserver(obs); }
+  void NotifyClicked();
+
  protected:
   TrayIcon();
 
  private:
+  ObserverList<TrayIconObserver> observers_;
+
   DISALLOW_COPY_AND_ASSIGN(TrayIcon);
 };
 

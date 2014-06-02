@@ -8,6 +8,7 @@
 #include <string>
 
 #include "atom/browser/api/event_emitter.h"
+#include "atom/browser/ui/tray_icon_observer.h"
 #include "base/memory/scoped_ptr.h"
 
 namespace gfx {
@@ -22,7 +23,8 @@ namespace api {
 
 class Menu;
 
-class Tray : public mate::EventEmitter {
+class Tray : public mate::EventEmitter,
+             public TrayIconObserver {
  public:
   static mate::Wrappable* New(const gfx::ImageSkia& image);
 
@@ -32,6 +34,9 @@ class Tray : public mate::EventEmitter {
  protected:
   explicit Tray(const gfx::ImageSkia& image);
   virtual ~Tray();
+
+  // TrayIcon implementations:
+  virtual void OnClicked() OVERRIDE;
 
   void SetImage(const gfx::ImageSkia& image);
   void SetPressedImage(const gfx::ImageSkia& image);

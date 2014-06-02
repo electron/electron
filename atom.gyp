@@ -143,6 +143,7 @@
       'atom/browser/ui/tray_icon_gtk.cc',
       'atom/browser/ui/tray_icon_cocoa.h',
       'atom/browser/ui/tray_icon_cocoa.mm',
+      'atom/browser/ui/tray_icon_observer.h',
       'atom/browser/ui/tray_icon_win.cc',
       'atom/browser/ui/tray_icon_win.h',
       'atom/browser/ui/win/menu_2.cc',

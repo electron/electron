@@ -31,6 +31,10 @@ mate::Wrappable* Tray::New(const gfx::ImageSkia& image) {
   return new Tray(image);
 }
 
+void Tray::OnClicked() {
+  Emit("clicked");
+}
+
 void Tray::SetImage(const gfx::ImageSkia& image) {
   tray_icon_->SetImage(image);
 }
