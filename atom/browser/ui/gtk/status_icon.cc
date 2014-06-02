@@ -12,6 +12,7 @@ namespace atom {
 StatusIcon::StatusIcon() : icon_(gtk_status_icon_new()) {
   gtk_status_icon_set_visible(icon_, TRUE);
 
+  g_signal_connect(icon_, "activate", G_CALLBACK(OnActivateThunk), this);
   g_signal_connect(icon_, "popup-menu", G_CALLBACK(OnPopupMenuThunk), this);
 }
 
@@ -46,6 +47,10 @@ void StatusIcon::OnPopupMenu(GtkWidget* widget, guint button, guint time) {
   // If we have a menu - display it.
   if (menu_.get())
     menu_->PopupAsContextForStatusIcon(time, button, icon_);
+}
+
+void StatusIcon::OnActivate(GtkWidget* widget) {
+  NotifyClicked();
 }
 
 }  // namespace atom

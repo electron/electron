@@ -30,6 +30,9 @@ class StatusIcon : public TrayIcon {
   // Callback invoked when user right-clicks on the status icon.
   CHROMEGTK_CALLBACK_2(StatusIcon, void, OnPopupMenu, guint, guint);
 
+  // Callback invoked when the icon is clicked.
+  CHROMEGTK_CALLBACK_0(StatusIcon, void, OnActivate);
+
   // The currently-displayed icon for the window.
   GtkStatusIcon* icon_;
 
