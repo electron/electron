@@ -13,6 +13,7 @@
 #include "base/mac/scoped_nsobject.h"
 
 @class AtomMenuController;
+@class StatusItemController;
 
 namespace atom {
 
@@ -28,6 +29,8 @@ class TrayIconCocoa : public TrayIcon {
 
  private:
   base::scoped_nsobject<NSStatusItem> item_;
+
+  base::scoped_nsobject<StatusItemController> controller_;
 
   // Status menu shown when right-clicking the system icon.
   base::scoped_nsobject<AtomMenuController> menu_;

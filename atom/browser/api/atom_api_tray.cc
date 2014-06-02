@@ -21,6 +21,7 @@ namespace api {
 Tray::Tray(const gfx::ImageSkia& image)
     : tray_icon_(TrayIcon::Create()) {
   tray_icon_->SetImage(image);
+  tray_icon_->AddObserver(this);
 }
 
 Tray::~Tray() {

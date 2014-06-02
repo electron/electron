@@ -8,16 +8,44 @@
 #include "base/strings/sys_string_conversions.h"
 #include "skia/ext/skia_utils_mac.h"
 
+@interface StatusItemController : NSObject {
+  atom::TrayIconCocoa* trayIcon_; // weak
+}
+- (id)initWithIcon:(atom::TrayIconCocoa*)icon;
+- (void)handleClick:(id)sender;
+
+@end // @interface StatusItemController
+
+@implementation StatusItemController
+
+- (id)initWithIcon:(atom::TrayIconCocoa*)icon {
+  trayIcon_ = icon;
+  return self;
+}
+
+- (void)handleClick:(id)sender {
+  DCHECK(trayIcon_);
+  trayIcon_->NotifyClicked();
+}
+
+@end
+
 namespace atom {
 
 TrayIconCocoa::TrayIconCocoa() {
+  controller_.reset([[StatusItemController alloc] initWithIcon:this]);
+
   item_.reset([[[NSStatusBar systemStatusBar]
                 statusItemWithLength:NSVariableStatusItemLength] retain]);
   [item_ setEnabled:YES];
+  [item_ setTarget:controller_];
+  [item_ setAction:@selector(handleClick:)];
   [item_ setHighlightMode:YES];
 }
 
 TrayIconCocoa::~TrayIconCocoa() {
+  // Remove the status item from the status bar.
+  [[NSStatusBar systemStatusBar] removeStatusItem:item_];
 }
 
 void TrayIconCocoa::SetImage(const gfx::ImageSkia& image) {
