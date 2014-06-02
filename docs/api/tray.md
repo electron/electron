@@ -21,6 +21,13 @@ appIcon.setContextMenu(contextMenu);
 __Platform limitations:__
 
 * On OS X `clicked` event will be ignored if the tray icon has context menu.
+* On Linux app indicator will be used if it is supported, otherwise
+  `GtkStatusIcon` will be used instead.
+* App indicator will only be showed when it has context menu.
+* When app indicator is used on Linux, `clicked` event is ignored.
+
+So if you want to keep exact same behaviors on all platforms, you should not
+rely on `clicked` event and always attach a context menu to the tray icon.
 
 ## Class: Tray
 
