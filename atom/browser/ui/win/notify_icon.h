@@ -66,6 +66,9 @@ class NotifyIcon : public TrayIcon {
   // The currently-displayed icon for the window.
   base::win::ScopedHICON icon_;
 
+  // The context menu.
+  ui::SimpleMenuModel* menu_model_;
+
   DISALLOW_COPY_AND_ASSIGN(NotifyIcon);
 };
 

@@ -4,6 +4,7 @@
 
 #include "atom/browser/ui/win/notify_icon.h"
 
+#include "atom/browser/ui/win/menu_2.h"
 #include "atom/browser/ui/win/notify_icon_host.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
@@ -22,7 +23,8 @@ NotifyIcon::NotifyIcon(NotifyIconHost* host,
     : host_(host),
       icon_id_(id),
       window_(window),
-      message_id_(message) {
+      message_id_(message),
+      menu_model_(NULL) {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
   icon_data.uFlags = NIF_MESSAGE;
@@ -50,7 +52,6 @@ void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
     return;
   }
 
-  /*
   if (!menu_model_)
     return;
 
@@ -59,15 +60,8 @@ void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
   if (!SetForegroundWindow(window_))
     return;
 
-  menu_runner_.reset(new views::MenuRunner(menu_model_));
-
-  ignore_result(menu_runner_->RunMenuAt(NULL,
-                                        NULL,
-                                        gfx::Rect(cursor_pos, gfx::Size()),
-                                        views::MENU_ANCHOR_TOPLEFT,
-                                        ui::MENU_SOURCE_MOUSE,
-                                        views::MenuRunner::HAS_MNEMONICS));
-                                        */
+  scoped_ptr<Menu2> menu(new Menu2(menu_model_));
+  menu->RunContextMenuAt(cursor_pos);
 }
 
 void NotifyIcon::ResetIcon() {
@@ -120,6 +114,7 @@ void NotifyIcon::SetToolTip(const std::string& tool_tip) {
 }
 
 void NotifyIcon::SetContextMenu(ui::SimpleMenuModel* menu_model) {
+  menu_model_ = menu_model;
 }
 
 void NotifyIcon::InitIconData(NOTIFYICONDATA* icon_data) {
