@@ -250,6 +250,7 @@ NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
 }
 
 NativeWindowWin::~NativeWindowWin() {
+  views::WidgetFocusManager::GetInstance()->RemoveFocusChangeListener(this);
 }
 
 void NativeWindowWin::Close() {
