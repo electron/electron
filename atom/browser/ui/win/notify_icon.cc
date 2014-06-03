@@ -4,8 +4,8 @@
 
 #include "atom/browser/ui/win/notify_icon.h"
 
-#include "atom/browser/ui/win/menu_2.h"
 #include "atom/browser/ui/win/notify_icon_host.h"
+#include "atom/browser/ui/win/menu_2.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/windows_version.h"
@@ -60,8 +60,8 @@ void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
   if (!SetForegroundWindow(window_))
     return;
 
-  scoped_ptr<Menu2> menu(new Menu2(menu_model_));
-  menu->RunContextMenuAt(cursor_pos);
+  menu_.reset(new Menu2(menu_model_));
+  menu_->RunContextMenuAt(cursor_pos);
 }
 
 void NotifyIcon::ResetIcon() {

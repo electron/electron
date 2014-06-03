@@ -22,6 +22,7 @@ class Point;
 
 namespace atom {
 
+class Menu2;
 class NotifyIconHost;
 
 class NotifyIcon : public TrayIcon {
@@ -68,6 +69,7 @@ class NotifyIcon : public TrayIcon {
 
   // The context menu.
   ui::SimpleMenuModel* menu_model_;
+  scoped_ptr<atom::Menu2> menu_;
 
   DISALLOW_COPY_AND_ASSIGN(NotifyIcon);
 };
