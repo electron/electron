@@ -8,7 +8,8 @@ import subprocess
 import sys
 import tarfile
 
-from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, NODE_VERSION
+from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, NODE_VERSION, \
+                       TARGET_PLATFORM, DIST_ARCH
 from lib.util import scoped_cwd, rm_rf, get_atom_shell_version, make_zip, \
                      safe_mkdir, execute
 
@@ -21,13 +22,6 @@ OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'Release')
 NODE_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'node')
 DIST_HEADERS_NAME = 'node-{0}'.format(NODE_VERSION)
 DIST_HEADERS_DIR = os.path.join(DIST_DIR, DIST_HEADERS_NAME)
-
-TARGET_PLATFORM = {
-  'cygwin': 'win32',
-  'darwin': 'darwin',
-  'linux2': 'linux',
-  'win32': 'win32',
-}[sys.platform]
 
 SYMBOL_NAME = {
   'darwin': 'libchromiumcontent.dylib.dSYM',
@@ -218,8 +212,8 @@ def create_symbols():
 
 
 def create_dist_zip():
-  dist_name = 'atom-shell-{0}-{1}.zip'.format(ATOM_SHELL_VERSION,
-                                              TARGET_PLATFORM)
+  dist_name = 'atom-shell-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
+                                                  TARGET_PLATFORM, DIST_ARCH)
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
@@ -231,8 +225,9 @@ def create_dist_zip():
 
 
 def create_symbols_zip():
-  dist_name = 'atom-shell-{0}-{1}-symbols.zip'.format(ATOM_SHELL_VERSION,
-                                                      TARGET_PLATFORM)
+  dist_name = 'atom-shell-{0}-{1}-{2}-symbols.zip'.format(ATOM_SHELL_VERSION,
+                                                          TARGET_PLATFORM,
+                                                          DIST_ARCH)
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
