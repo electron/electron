@@ -8,17 +8,10 @@ import subprocess
 import sys
 import tempfile
 
-from lib.config import NODE_VERSION
+from lib.config import DIST_ARCH, NODE_VERSION, TARGET_PLATFORM
 from lib.util import get_atom_shell_version, scoped_cwd, safe_mkdir, execute
 from lib.github import GitHub
 
-
-TARGET_PLATFORM = {
-  'cygwin': 'win32',
-  'darwin': 'darwin',
-  'linux2': 'linux',
-  'win32': 'win32',
-}[sys.platform]
 
 ATOM_SHELL_REPO = 'atom/atom-shell'
 ATOM_SHELL_VERSION = get_atom_shell_version()
@@ -26,9 +19,12 @@ ATOM_SHELL_VERSION = get_atom_shell_version()
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'Release')
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
-DIST_NAME = 'atom-shell-{0}-{1}.zip'.format(ATOM_SHELL_VERSION, TARGET_PLATFORM)
-SYMBOLS_NAME = 'atom-shell-{0}-{1}-symbols.zip'.format(ATOM_SHELL_VERSION,
-                                                       TARGET_PLATFORM)
+DIST_NAME = 'atom-shell-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
+                                                TARGET_PLATFORM,
+                                                DIST_ARCH)
+SYMBOLS_NAME = 'atom-shell-{0}-{1}-{2}-symbols.zip'.format(ATOM_SHELL_VERSION,
+                                                           TARGET_PLATFORM,
+                                                           DIST_ARCH)
 
 
 def main():
