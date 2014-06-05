@@ -23,9 +23,9 @@ struct Converter<ui::Clipboard::Buffer> {
       return false;
 
     if (type == "selection")
-      *out = ui::Clipboard::BUFFER_STANDARD;
-    else
       *out = ui::Clipboard::BUFFER_SELECTION;
+    else
+      *out = ui::Clipboard::BUFFER_STANDARD;
     return true;
   }
 };
