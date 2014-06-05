@@ -11,15 +11,37 @@
 
 #include "atom/common/node_includes.h"
 
+namespace mate {
+
+template<>
+struct Converter<ui::Clipboard::Buffer> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
+                     ui::Clipboard::Buffer* out) {
+    std::string type;
+    if (!Converter<std::string>::FromV8(isolate, val, &type))
+      return false;
+
+    if (type == "selection")
+      *out = ui::Clipboard::BUFFER_STANDARD;
+    else
+      *out = ui::Clipboard::BUFFER_SELECTION;
+    return true;
+  }
+};
+
+}  // namespace mate
+
 namespace {
 
-bool Has(const std::string& format_string) {
+bool Has(const std::string& format_string, ui::Clipboard::Buffer buffer) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   ui::Clipboard::FormatType format(ui::Clipboard::GetFormatType(format_string));
-  return clipboard->IsFormatAvailable(format, ui::Clipboard::BUFFER_STANDARD);
+  return clipboard->IsFormatAvailable(format, buffer);
 }
 
-std::string Read(const std::string& format_string) {
+std::string Read(const std::string& format_string,
+                 ui::Clipboard::Buffer buffer) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   ui::Clipboard::FormatType format(ui::Clipboard::GetFormatType(format_string));
 
@@ -28,34 +50,32 @@ std::string Read(const std::string& format_string) {
   return data;
 }
 
-string16 ReadText() {
-  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-
+string16 ReadText(ui::Clipboard::Buffer buffer) {
   string16 data;
-  clipboard->ReadText(ui::Clipboard::BUFFER_STANDARD, &data);
+  ui::Clipboard::GetForCurrentThread()->ReadText(buffer, &data);
   return data;
 }
 
-void WriteText(const std::string text) {
+void WriteText(const std::string text, ui::Clipboard::Buffer buffer) {
   ui::Clipboard::ObjectMap object_map;
   object_map[ui::Clipboard::CBF_TEXT].push_back(
       std::vector<char>(text.begin(), text.end()));
 
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  clipboard->WriteObjects(ui::Clipboard::BUFFER_STANDARD, object_map);
+  clipboard->WriteObjects(buffer, object_map);
 }
 
-void Clear() {
-  ui::Clipboard::GetForCurrentThread()->Clear(ui::Clipboard::BUFFER_STANDARD);
+void Clear(ui::Clipboard::Buffer buffer) {
+  ui::Clipboard::GetForCurrentThread()->Clear(buffer);
 }
 
 void Initialize(v8::Handle<v8::Object> exports) {
   mate::Dictionary dict(v8::Isolate::GetCurrent(), exports);
-  dict.SetMethod("has", &Has);
-  dict.SetMethod("read", &Read);
-  dict.SetMethod("readText", &ReadText);
-  dict.SetMethod("writeText", &WriteText);
-  dict.SetMethod("clear", &Clear);
+  dict.SetMethod("_has", &Has);
+  dict.SetMethod("_read", &Read);
+  dict.SetMethod("_readText", &ReadText);
+  dict.SetMethod("_writeText", &WriteText);
+  dict.SetMethod("_clear", &Clear);
 }
 
 }  // namespace
