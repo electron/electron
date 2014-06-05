@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/dictionary.h"
 #include "ui/base/clipboard/clipboard.h"
 
@@ -27,11 +28,11 @@ std::string Read(const std::string& format_string) {
   return data;
 }
 
-std::string ReadText() {
+string16 ReadText() {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
 
-  std::string data;
-  clipboard->ReadAsciiText(ui::Clipboard::BUFFER_STANDARD, &data);
+  string16 data;
+  clipboard->ReadText(ui::Clipboard::BUFFER_STANDARD, &data);
   return data;
 }
 
