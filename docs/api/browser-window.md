@@ -448,6 +448,13 @@ Emitted when the renderer process is crashed.
 Emitted when the navigation is done, i.e. the spinner of the tab will stop
 spinning, and the onload event was dispatched.
 
+### Event: 'did-frame-finish-load'
+
+* `event` Event
+* `isMainFrame` Boolean
+
+Emitted when a frame has done navigation.
+
 ### Event: 'did-start-loading'
 
 ### Event: 'did-stop-loading'

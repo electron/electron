@@ -38,7 +38,12 @@ void WebContents::DidFinishLoad(int64 frame_id,
                                 const GURL& validated_url,
                                 bool is_main_frame,
                                 content::RenderViewHost* render_view_host) {
-  Emit("did-finish-load");
+  base::ListValue args;
+  args.AppendBoolean(is_main_frame);
+  Emit("did-frame-finish-load", args);
+
+  if (is_main_frame)
+    Emit("did-finish-load");
 }
 
 void WebContents::DidStartLoading(content::RenderViewHost* render_view_host) {
