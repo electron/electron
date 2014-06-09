@@ -95,6 +95,9 @@ class NativeWindowMac : public NativeWindow {
 
   NSInteger attention_request_id_;  // identifier from requestUserAttention
 
+  // The presentation options before entering kiosk mode.
+  NSApplicationPresentationOptions kiosk_options_;
+
   // For system drag, the whole window is draggable and the non-draggable areas
   // have to been explicitly excluded.
   std::vector<gfx::Rect> system_drag_exclude_areas_;

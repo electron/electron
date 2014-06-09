@@ -409,7 +409,8 @@ void NativeWindowMac::FlashFrame(bool flash) {
 }
 
 void NativeWindowMac::SetKiosk(bool kiosk) {
-  if (kiosk) {
+  if (kiosk && !is_kiosk_) {
+    kiosk_options_ = [NSApp currentSystemPresentationOptions];
     NSApplicationPresentationOptions options =
         NSApplicationPresentationHideDock +
         NSApplicationPresentationHideMenuBar +
@@ -421,10 +422,10 @@ void NativeWindowMac::SetKiosk(bool kiosk) {
     [NSApp setPresentationOptions:options];
     is_kiosk_ = true;
     SetFullscreen(true);
-  } else {
-    [NSApp setPresentationOptions:[NSApp currentSystemPresentationOptions]];
-    is_kiosk_  = false;
+  } else if (!kiosk && is_kiosk_) {
+    is_kiosk_ = false;
     SetFullscreen(false);
+    [NSApp setPresentationOptions:kiosk_options_];
   }
 }
 
