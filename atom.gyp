@@ -223,6 +223,8 @@
       'atom/renderer/atom_render_view_observer.h',
       'atom/renderer/atom_renderer_client.cc',
       'atom/renderer/atom_renderer_client.h',
+      'atom/renderer/autofill/autofill_agent.cc',
+      'atom/renderer/autofill/autofill_agent.h',
       'atom/renderer/autofill/page_click_listener.h',
       'atom/renderer/autofill/page_click_tracker.cc',
       'atom/renderer/autofill/page_click_tracker.h',
