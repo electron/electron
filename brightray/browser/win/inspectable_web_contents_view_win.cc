@@ -6,6 +6,7 @@
 
 #include "content/public/browser/web_contents_view.h"
 #include "ui/gfx/win/hwnd_util.h"
+#include "ui/views/controls/single_split_view.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/view.h"
 
@@ -24,14 +25,49 @@ class ContainerView : public views::View {
         web_view_(new views::WebView(NULL)),
         web_contents_view_(web_contents_view) {
     set_owned_by_client();
+    web_view_->set_owned_by_client();
     web_view_->SetWebContents(
         web_contents_view_->inspectable_web_contents()->GetWebContents());
+  }
+
+  void ShowDevTools() {
+    if (IsDevToolsViewShowing())
+      return;
+
+    RemoveChildView(web_view_.get());
+    devtools_view_ = new views::WebView(NULL);
+    devtools_view_->SetWebContents(web_contents_view_->
+        inspectable_web_contents()->devtools_web_contents());
+    split_view_.reset(new views::SingleSplitView(
+        web_view_.get(),
+        devtools_view_,
+        views::SingleSplitView::VERTICAL_SPLIT,
+        NULL));
+    AddChildView(split_view_.get());
+    Layout();
+  }
+
+  void CloseDevTools() {
+    if (!IsDevToolsViewShowing())
+      return;
+
+    RemoveChildView(split_view_.get());
+    split_view_.reset();
+    AddChildView(web_view_.get());
+    Layout();
+  }
+
+  bool IsDevToolsViewShowing() {
+    return split_view_;
   }
 
  private:
   // views::View:
   virtual void Layout() OVERRIDE {
-    web_view_->SetBounds(0, 0, width(), height());
+    if (split_view_)
+      split_view_->SetBounds(0, 0, width(), height());
+    else
+      web_view_->SetBounds(0, 0, width(), height());
   }
 
   virtual void ViewHierarchyChanged(
@@ -41,14 +77,16 @@ class ContainerView : public views::View {
     // available when this is added to the hierarchy.
     if (details.is_add && GetWidget() && !container_view_created_) {
       container_view_created_ = true;
-      AddChildView(web_view_);
+      AddChildView(web_view_.get());
     }
   }
 
   // True if the container view has already been created, or false otherwise.
   bool container_view_created_;
 
-  views::WebView* web_view_;
+  scoped_ptr<views::WebView> web_view_;
+  scoped_ptr<views::SingleSplitView> split_view_;
+  views::WebView* devtools_view_;  // Owned by split_view_.
 
   InspectableWebContentsViewWin* web_contents_view_;
 };
@@ -79,6 +117,9 @@ gfx::NativeView InspectableWebContentsViewWin::GetNativeView() const {
 }
 
 void InspectableWebContentsViewWin::ShowDevTools() {
+  container_->ShowDevTools();
+  return;
+
   if (!devtools_window_) {
     devtools_window_ = DevToolsWindow::Create(this)->AsWeakPtr();
     devtools_window_->Init(HWND_DESKTOP, gfx::Rect());
@@ -95,13 +136,16 @@ void InspectableWebContentsViewWin::ShowDevTools() {
 }
 
 void InspectableWebContentsViewWin::CloseDevTools() {
+  container_->CloseDevTools();
+  return;
+
   if (!devtools_window_)
     return;
   SendMessage(devtools_window_->hwnd(), WM_CLOSE, 0, 0);
 }
 
 bool InspectableWebContentsViewWin::IsDevToolsViewShowing() {
-  return devtools_window_;
+  return container_->IsDevToolsViewShowing() || devtools_window_;
 }
 
 bool InspectableWebContentsViewWin::SetDockSide(const std::string& side) {
