@@ -22,6 +22,7 @@ class ContainerView : public views::View {
  public:
   explicit ContainerView(InspectableWebContentsViewWin* web_contents_view)
       : container_view_created_(false),
+        dockside_("bottom"),
         web_view_(new views::WebView(NULL)),
         web_contents_view_(web_contents_view) {
     set_owned_by_client();
@@ -45,10 +46,12 @@ class ContainerView : public views::View {
     split_view_.reset(new views::SingleSplitView(
         web_view_.get(),
         devtools_view_,
-        views::SingleSplitView::VERTICAL_SPLIT,
+        GetSplitViewOrientation(),
         NULL));
+    split_view_->set_divider_offset(GetSplitVievDividerOffset());
     AddChildView(split_view_.get());
     Layout();
+
     devtools_view_->RequestFocus();
   }
 
@@ -64,6 +67,22 @@ class ContainerView : public views::View {
 
   bool IsDevToolsViewShowing() {
     return split_view_;
+  }
+
+  bool SetDockSide(const std::string& side) {
+    if (side != "bottom" && side != "right")
+      return false;  // unsupported display location
+    if (dockside_ == side)
+      return true;  // no change from current location
+
+    dockside_ = side;
+    if (!IsDevToolsViewShowing())
+      return true;
+
+    split_view_->set_orientation(GetSplitViewOrientation());
+    split_view_->set_divider_offset(GetSplitVievDividerOffset());
+    split_view_->Layout();
+    return true;
   }
 
  private:
@@ -86,8 +105,24 @@ class ContainerView : public views::View {
     }
   }
 
+  views::SingleSplitView::Orientation GetSplitViewOrientation() const {
+    if (dockside_ == "bottom")
+      return views::SingleSplitView::VERTICAL_SPLIT;
+    else
+      return views::SingleSplitView::HORIZONTAL_SPLIT;
+  }
+
+  int GetSplitVievDividerOffset() const {
+    if (dockside_ == "bottom")
+      return height() * 2 / 3;
+    else
+      return width() * 2 / 3;
+  }
+
   // True if the container view has already been created, or false otherwise.
   bool container_view_created_;
+
+  std::string dockside_;
 
   scoped_ptr<views::WebView> web_view_;
   scoped_ptr<views::SingleSplitView> split_view_;
@@ -158,7 +193,7 @@ bool InspectableWebContentsViewWin::IsDevToolsViewShowing() {
 }
 
 bool InspectableWebContentsViewWin::SetDockSide(const std::string& side) {
-  return false;
+  return container_->SetDockSide(side);
 }
 
 }  // namespace brightray
