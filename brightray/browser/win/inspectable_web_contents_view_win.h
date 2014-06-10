@@ -4,6 +4,7 @@
 #include "browser/inspectable_web_contents_view.h"
 
 #include "base/compiler_specific.h"
+#include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 
 namespace views {
@@ -38,7 +39,7 @@ class InspectableWebContentsViewWin : public InspectableWebContentsView {
   // Owns us.
   InspectableWebContentsImpl* inspectable_web_contents_;
 
-  ContainerView* container_;
+  scoped_ptr<ContainerView> container_;
 
   base::WeakPtr<DevToolsWindow> devtools_window_;
 

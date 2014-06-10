@@ -23,6 +23,7 @@ class ContainerView : public views::View {
       : container_view_created_(false),
         web_view_(new views::WebView(NULL)),
         web_contents_view_(web_contents_view) {
+    set_owned_by_client();
     web_view_->SetWebContents(
         web_contents_view_->inspectable_web_contents()->GetWebContents());
   }
@@ -69,7 +70,7 @@ InspectableWebContentsViewWin::~InspectableWebContentsViewWin() {
 }
 
 views::View* InspectableWebContentsViewWin::GetView() const {
-  return container_;
+  return container_.get();
 }
 
 gfx::NativeView InspectableWebContentsViewWin::GetNativeView() const {
