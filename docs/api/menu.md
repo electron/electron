@@ -4,12 +4,16 @@ The `Menu` class is used to create native menus that can be used as
 application menu and context menu. Each menu is consisted of multiple menu
 items, and each menu item can have a submenu.
 
-An example of creating a menu dynamically and show it when user right clicks
+An example of creating a menu dynamically in web page by using the
+[remote](remote.md) module, and show it when user right clicks
 the page:
 
-```javascript
-var Menu = require('menu');
-var MenuItem = require('menu-item');
+```html
+<!-- index.html -->
+<script>
+var remote = require('remote');
+var Menu = remote.require('menu');
+var MenuItem = remote.require('menu-item');
 
 var menu = new Menu();
 menu.append(new MenuItem({ label: 'MenuItem1', click: function() { console.log('item 1 clicked'); } }));
@@ -18,13 +22,15 @@ menu.append(new MenuItem({ label: 'MenuItem2', type: 'checkbox', checked: true }
 
 window.addEventListener('contextmenu', function (e) {
   e.preventDefault();
-  menu.popup();
+  menu.popup(remote.getCurrentWindow());
 }, false);
+</script>
 ```
 
 Another example of creating the application menu with the simple template API:
 
 ```javascript
+// main.js
 var template = [
   {
     label: 'Atom Shell',
