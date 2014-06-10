@@ -6,8 +6,13 @@
 #include "base/compiler_specific.h"
 #include "base/memory/weak_ptr.h"
 
+namespace views {
+class View;
+}
+
 namespace brightray {
 
+class ContainerView;
 class DevToolsWindow;
 class InspectableWebContentsImpl;
 
@@ -16,6 +21,8 @@ class InspectableWebContentsViewWin : public InspectableWebContentsView {
   explicit InspectableWebContentsViewWin(
       InspectableWebContentsImpl* inspectable_web_contents_impl);
   ~InspectableWebContentsViewWin();
+
+  views::View* GetView() const;
 
   virtual gfx::NativeView GetNativeView() const OVERRIDE;
   virtual void ShowDevTools() OVERRIDE;
@@ -30,6 +37,8 @@ class InspectableWebContentsViewWin : public InspectableWebContentsView {
  private:
   // Owns us.
   InspectableWebContentsImpl* inspectable_web_contents_;
+
+  ContainerView* container_;
 
   base::WeakPtr<DevToolsWindow> devtools_window_;
 
