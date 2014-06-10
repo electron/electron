@@ -1,7 +1,6 @@
 # Frameless window
 
-A frameless window is a window that has no chrome, you can find a demo at
-[atom/frameless-window-demo](https://github.com/atom/frameless-window-demo).
+A frameless window is a window that has no chrome.
 
 ## Create a frameless window
 
