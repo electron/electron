@@ -30,6 +30,10 @@ class ContainerView : public views::View {
         web_contents_view_->inspectable_web_contents()->GetWebContents());
   }
 
+  views::View* GetWebView() const {
+    return web_view_.get();
+  }
+
   void ShowDevTools() {
     if (IsDevToolsViewShowing())
       return;
@@ -45,6 +49,7 @@ class ContainerView : public views::View {
         NULL));
     AddChildView(split_view_.get());
     Layout();
+    devtools_view_->RequestFocus();
   }
 
   void CloseDevTools() {
@@ -109,6 +114,10 @@ InspectableWebContentsViewWin::~InspectableWebContentsViewWin() {
 
 views::View* InspectableWebContentsViewWin::GetView() const {
   return container_.get();
+}
+
+views::View* InspectableWebContentsViewWin::GetWebView() const {
+  return container_->GetWebView();
 }
 
 gfx::NativeView InspectableWebContentsViewWin::GetNativeView() const {

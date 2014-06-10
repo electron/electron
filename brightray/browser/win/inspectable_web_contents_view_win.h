@@ -24,6 +24,7 @@ class InspectableWebContentsViewWin : public InspectableWebContentsView {
   ~InspectableWebContentsViewWin();
 
   views::View* GetView() const;
+  views::View* GetWebView() const;
 
   virtual gfx::NativeView GetNativeView() const OVERRIDE;
   virtual void ShowDevTools() OVERRIDE;
