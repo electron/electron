@@ -40,8 +40,8 @@ class InspectableWebContentsViewWin : public InspectableWebContentsView {
   // Owns us.
   InspectableWebContentsImpl* inspectable_web_contents_;
 
+  bool undocked_;
   scoped_ptr<ContainerView> container_;
-
   base::WeakPtr<DevToolsWindow> devtools_window_;
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewWin);

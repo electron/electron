@@ -22,7 +22,7 @@ class ContainerView : public views::View {
  public:
   explicit ContainerView(InspectableWebContentsViewWin* web_contents_view)
       : container_view_created_(false),
-        dockside_("bottom"),
+        dockside_("none"),  // "none" is treated as "bottom".
         web_view_(new views::WebView(NULL)),
         web_contents_view_(web_contents_view) {
     set_owned_by_client();
@@ -69,20 +69,18 @@ class ContainerView : public views::View {
     return split_view_;
   }
 
-  bool SetDockSide(const std::string& side) {
-    if (side != "bottom" && side != "right")
-      return false;  // unsupported display location
+  void SetDockSide(const std::string& side) {
     if (dockside_ == side)
-      return true;  // no change from current location
+      return;  // no change from current location
 
     dockside_ = side;
     if (!IsDevToolsViewShowing())
-      return true;
+      return;
 
     split_view_->set_orientation(GetSplitViewOrientation());
     split_view_->set_divider_offset(GetSplitVievDividerOffset());
     split_view_->Layout();
-    return true;
+    return;
   }
 
  private:
@@ -106,17 +104,17 @@ class ContainerView : public views::View {
   }
 
   views::SingleSplitView::Orientation GetSplitViewOrientation() const {
-    if (dockside_ == "bottom")
-      return views::SingleSplitView::VERTICAL_SPLIT;
-    else
+    if (dockside_ == "right")
       return views::SingleSplitView::HORIZONTAL_SPLIT;
+    else
+      return views::SingleSplitView::VERTICAL_SPLIT;
   }
 
   int GetSplitVievDividerOffset() const {
-    if (dockside_ == "bottom")
-      return height() * 2 / 3;
-    else
+    if (dockside_ == "right")
       return width() * 2 / 3;
+    else
+      return height() * 2 / 3;
   }
 
   // True if the container view has already been created, or false otherwise.
@@ -139,6 +137,7 @@ InspectableWebContentsView* CreateInspectableContentsView(
 InspectableWebContentsViewWin::InspectableWebContentsViewWin(
     InspectableWebContentsImpl* inspectable_web_contents)
     : inspectable_web_contents_(inspectable_web_contents),
+      undocked_(false),
       container_(new ContainerView(this)) {
 }
 
@@ -161,31 +160,30 @@ gfx::NativeView InspectableWebContentsViewWin::GetNativeView() const {
 }
 
 void InspectableWebContentsViewWin::ShowDevTools() {
-  container_->ShowDevTools();
-  return;
+  if (undocked_) {
+    if (!devtools_window_) {
+      devtools_window_ = DevToolsWindow::Create(this)->AsWeakPtr();
+      devtools_window_->Init(HWND_DESKTOP, gfx::Rect());
+    }
 
-  if (!devtools_window_) {
-    devtools_window_ = DevToolsWindow::Create(this)->AsWeakPtr();
-    devtools_window_->Init(HWND_DESKTOP, gfx::Rect());
+    auto contents_view = inspectable_web_contents_->GetWebContents()->GetView();
+    auto size = contents_view->GetContainerSize();
+    size.Enlarge(-kWindowInset, -kWindowInset);
+    gfx::CenterAndSizeWindow(contents_view->GetNativeView(),
+                             devtools_window_->hwnd(),
+                             size);
+
+    ShowWindow(devtools_window_->hwnd(), SW_SHOWNORMAL);
+  } else {
+    container_->ShowDevTools();
   }
-
-  auto contents_view = inspectable_web_contents_->GetWebContents()->GetView();
-  auto size = contents_view->GetContainerSize();
-  size.Enlarge(-kWindowInset, -kWindowInset);
-  gfx::CenterAndSizeWindow(contents_view->GetNativeView(),
-                           devtools_window_->hwnd(),
-                           size);
-
-  ShowWindow(devtools_window_->hwnd(), SW_SHOWNORMAL);
 }
 
 void InspectableWebContentsViewWin::CloseDevTools() {
-  container_->CloseDevTools();
-  return;
-
-  if (!devtools_window_)
-    return;
-  SendMessage(devtools_window_->hwnd(), WM_CLOSE, 0, 0);
+  if (undocked_)
+    SendMessage(devtools_window_->hwnd(), WM_CLOSE, 0, 0);
+  else
+    container_->CloseDevTools();
 }
 
 bool InspectableWebContentsViewWin::IsDevToolsViewShowing() {
@@ -193,7 +191,20 @@ bool InspectableWebContentsViewWin::IsDevToolsViewShowing() {
 }
 
 bool InspectableWebContentsViewWin::SetDockSide(const std::string& side) {
-  return container_->SetDockSide(side);
+  if (side == "undocked") {
+    undocked_ = true;
+    container_->CloseDevTools();
+  } else if (side == "right" || side == "bottom") {
+    undocked_ = false;
+    if (devtools_window_)
+      SendMessage(devtools_window_->hwnd(), WM_CLOSE, 0, 0);
+    container_->SetDockSide(side);
+  } else {
+    return false;
+  }
+
+  ShowDevTools();
+  return true;
 }
 
 }  // namespace brightray
