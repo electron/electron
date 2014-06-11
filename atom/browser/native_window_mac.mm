@@ -29,6 +29,7 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
  @private
   atom::NativeWindowMac* shell_;
   BOOL acceptsFirstMouse_;
+  BOOL hasSetInitialFocus_;
 }
 - (id)initWithShell:(atom::NativeWindowMac*)shell;
 - (void)setAcceptsFirstMouse:(BOOL)accept;
@@ -40,6 +41,7 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   if ((self = [super init])) {
     shell_ = shell;
     acceptsFirstMouse_ = NO;
+    hasSetInitialFocus_ = NO;
   }
   return self;
 }
@@ -50,6 +52,12 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 
 - (void)windowDidBecomeMain:(NSNotification*)notification {
   shell_->NotifyWindowFocus();
+
+  // Make sure the web view is the first responder of the window.
+  if (!hasSetInitialFocus_) {
+    shell_->GetWebContents()->GetView()->Focus();
+    hasSetInitialFocus_ = YES;
+  }
 }
 
 - (void)windowDidResignMain:(NSNotification*)notification {
