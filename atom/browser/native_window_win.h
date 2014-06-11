@@ -16,13 +16,13 @@
 #include "ui/gfx/size.h"
 #include "ui/views/focus/widget_focus_manager.h"
 #include "ui/views/widget/widget_delegate.h"
+#include "vendor/brightray/browser/win/inspectable_web_contents_view_win.h"
 
 namespace ui {
 class MenuModel;
 }
 
 namespace views {
-class WebView;
 class Widget;
 }
 
@@ -80,6 +80,12 @@ class NativeWindowWin : public NativeWindow,
   // Set the native window menu.
   void SetMenu(ui::MenuModel* menu_model);
 
+  brightray::InspectableWebContentsViewWin* inspectable_web_contents_view()
+      const {
+    return static_cast<brightray::InspectableWebContentsViewWin*>(
+        inspectable_web_contents()->GetView());
+  }
+
   views::Widget* window() const { return window_.get(); }
   atom::Menu2* menu() const { return menu_.get(); }
   SkRegion* draggable_region() { return draggable_region_.get(); }
@@ -130,7 +136,7 @@ class NativeWindowWin : public NativeWindow,
   void RegisterAccelerators();
 
   scoped_ptr<views::Widget> window_;
-  views::WebView* web_view_;  // managed by window_.
+  views::View* web_view_;  // managed by window_.
 
   // The window menu.
   scoped_ptr<atom::Menu2> menu_;

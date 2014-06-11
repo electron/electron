@@ -21,7 +21,6 @@
 #include "content/public/browser/web_contents_view.h"
 #include "ui/gfx/path.h"
 #include "ui/base/models/simple_menu_model.h"
-#include "ui/views/controls/webview/webview.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/widget/native_widget_win.h"
 #include "ui/views/window/client_view.h"
@@ -218,7 +217,7 @@ NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
                                  base::DictionaryValue* options)
     : NativeWindow(web_contents, options),
       window_(new views::Widget),
-      web_view_(new views::WebView(NULL)),
+      web_view_(inspectable_web_contents_view()->GetView()),
       use_content_size_(false),
       resizable_(true) {
   options->GetBoolean(switches::kResizable, &resizable_);
@@ -245,7 +244,6 @@ NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
   window_->CenterWindow(size);
   window_->UpdateWindowIcon();
 
-  web_view_->SetWebContents(web_contents);
   OnViewWasResized();
 }
 
@@ -494,7 +492,7 @@ void NativeWindowWin::DeleteDelegate() {
 }
 
 views::View* NativeWindowWin::GetInitiallyFocusedView() {
-  return web_view_;
+  return inspectable_web_contents_view()->GetWebView();
 }
 
 bool NativeWindowWin::CanResize() const {
