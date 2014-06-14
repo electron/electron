@@ -129,6 +129,8 @@ bool StringToAccelerator(const std::string& description,
       key = ui::VKEY_BACK;
     } else if (tokens[i] == "delete") {
       key = ui::VKEY_DELETE;
+    } else if (tokens[i] == "insert") {
+      key = ui::VKEY_INSERT;
     } else if (tokens[i] == "enter" || tokens[i] == "return") {
       key = ui::VKEY_RETURN;
     } else if (tokens[i] == "up") {
