@@ -26,11 +26,17 @@ module.exports =
     options.title ?= ''
     options.defaultPath ?= ''
 
+    wrappedCallback =
+      if typeof callback is 'function'
+        (success, result) -> callback(if success then result)
+      else
+        null
+
     binding.showOpenDialog String(options.title),
                            String(options.defaultPath),
                            properties,
                            window,
-                           (success, result) -> callback if success then result
+                           wrappedCallback
 
   showSaveDialog: (window, options, callback) ->
     unless window?.constructor is BrowserWindow
@@ -43,10 +49,16 @@ module.exports =
     options.title ?= ''
     options.defaultPath ?= ''
 
+    wrappedCallback =
+      if typeof callback is 'function'
+        (success, result) -> callback(if success then result)
+      else
+        null
+
     binding.showSaveDialog String(options.title),
                            String(options.defaultPath),
                            window,
-                           (success, result) -> callback if success then result
+                           wrappedCallback
 
   showMessageBox: (window, options, callback) ->
     unless window?.constructor is BrowserWindow
