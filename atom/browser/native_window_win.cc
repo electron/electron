@@ -4,6 +4,8 @@
 
 #include "atom/browser/native_window_win.h"
 
+#include <shobjidl.h>
+
 #include <string>
 #include <vector>
 
@@ -14,6 +16,7 @@
 #include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
+#include "base/win/scoped_comptr.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
@@ -393,6 +396,18 @@ std::string NativeWindowWin::GetTitle() {
 
 void NativeWindowWin::FlashFrame(bool flash) {
   window_->FlashFrame(flash);
+}
+
+void NativeWindowWin::SetSkipTaskbar(bool skip) {
+  base::win::ScopedComPtr<ITaskbarList> taskbar;
+  if (FAILED(taskbar.CreateInstance(CLSID_TaskbarList, NULL,
+                                    CLSCTX_INPROC_SERVER)) ||
+      FAILED(taskbar->HrInit()))
+    return;
+  if (skip)
+    taskbar->DeleteTab(GetNativeWindow());
+  else
+    taskbar->AddTab(GetNativeWindow());
 }
 
 void NativeWindowWin::SetKiosk(bool kiosk) {

@@ -24,6 +24,9 @@ const char kMaxHeight[]  = "max-height";
 const char kResizable[]  = "resizable";
 const char kFullscreen[] = "fullscreen";
 
+// Whether the window should show in taskbar.
+const char kSkipTaskbar[] = "skip-taskbar";
+
 // Start with the kiosk mode, see Opera's page for description:
 // http://www.opera.com/support/mastering/kiosk/
 const char kKiosk[] = "kiosk";

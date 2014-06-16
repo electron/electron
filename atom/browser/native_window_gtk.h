@@ -62,6 +62,7 @@ class NativeWindowGtk : public NativeWindow,
   virtual void SetTitle(const std::string& title) OVERRIDE;
   virtual std::string GetTitle() OVERRIDE;
   virtual void FlashFrame(bool flash) OVERRIDE;
+  virtual void SetSkipTaskbar(bool skip) OVERRIDE;
   virtual void SetKiosk(bool kiosk) OVERRIDE;
   virtual bool IsKiosk() OVERRIDE;
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;

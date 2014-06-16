@@ -90,6 +90,7 @@ class Window : public mate::EventEmitter,
   void SetTitle(const std::string& title);
   std::string GetTitle();
   void FlashFrame(bool flash);
+  void SetSkipTaskbar(bool skip);
   void SetKiosk(bool kiosk);
   bool IsKiosk();
   void OpenDevTools();

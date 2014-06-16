@@ -259,6 +259,10 @@ void Window::FlashFrame(bool flash) {
   window_->FlashFrame(flash);
 }
 
+void Window::SetSkipTaskbar(bool skip) {
+  window_->SetSkipTaskbar(skip);
+}
+
 void Window::SetKiosk(bool kiosk) {
   window_->SetKiosk(kiosk);
 }
@@ -366,6 +370,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setTitle", &Window::SetTitle)
       .SetMethod("getTitle", &Window::GetTitle)
       .SetMethod("flashFrame", &Window::FlashFrame)
+      .SetMethod("setSkipTaskbar", &Window::SetSkipTaskbar)
       .SetMethod("setKiosk", &Window::SetKiosk)
       .SetMethod("isKiosk", &Window::IsKiosk)
       .SetMethod("setRepresentedFilename", &Window::SetRepresentedFilename)

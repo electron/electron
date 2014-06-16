@@ -416,6 +416,9 @@ void NativeWindowMac::FlashFrame(bool flash) {
   }
 }
 
+void NativeWindowMac::SetSkipTaskbar(bool skip) {
+}
+
 void NativeWindowMac::SetKiosk(bool kiosk) {
   if (kiosk && !is_kiosk_) {
     kiosk_options_ = [NSApp currentSystemPresentationOptions];

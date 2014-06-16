@@ -176,6 +176,10 @@ void NativeWindow::InitFromOptions(base::DictionaryValue* options) {
   if (options->GetBoolean(switches::kFullscreen, &fullscreen) && fullscreen) {
     SetFullscreen(true);
   }
+  bool skip;
+  if (options->GetBoolean(switches::kSkipTaskbar, &skip) && skip) {
+    SetSkipTaskbar(skip);
+  }
   bool kiosk;
   if (options->GetBoolean(switches::kKiosk, &kiosk) && kiosk) {
     SetKiosk(kiosk);

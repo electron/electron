@@ -42,6 +42,7 @@ You can also create a window without chrome by using
   * `always-on-top` Boolean - Whether the window should always stay on top of
      other windows
   * `fullscreen` Boolean - Whether the window should show in fullscreen
+  * `skip-taskbar` Boolean - Do not show window in taskbar
   * `kiosk` Boolean - The kiosk mode
   * `title` String - Default window title
   * `icon` String - The path of icon file
@@ -352,6 +353,12 @@ Returns the title of the native window.
 ### BrowserWindow.flashFrame()
 
 Flashes the window to attract user's attention.
+
+### BrowserWindow.setSkipTaskbar(skip)
+
+* `skip` Boolean
+
+Makes the window do not show in taskbar.
 
 ### BrowserWindow.setKiosk(flag)
 
