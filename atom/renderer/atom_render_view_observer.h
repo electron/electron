@@ -25,6 +25,7 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
 
  private:
   // content::RenderViewObserver implementation.
+  virtual void DidCreateDocumentElement(WebKit::WebFrame* frame) OVERRIDE;
   virtual void DraggableRegionsChanged(WebKit::WebFrame* frame) OVERRIDE;
   virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
 

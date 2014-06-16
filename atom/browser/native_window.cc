@@ -22,6 +22,7 @@
 #include "base/json/json_writer.h"
 #include "base/prefs/pref_service.h"
 #include "base/message_loop/message_loop.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
@@ -58,6 +59,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       is_closed_(false),
       node_integration_("except-iframe"),
       has_dialog_attached_(false),
+      zoom_factor_(1.0),
       weak_factory_(this),
       inspectable_web_contents_(
           brightray::InspectableWebContents::Create(web_contents)) {
@@ -81,6 +83,9 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
   base::DictionaryValue* web_preferences;
   if (options->GetDictionary(switches::kWebPreferences, &web_preferences))
     web_preferences_.reset(web_preferences->DeepCopy());
+
+  // Read the zoom factor before any navigation.
+  options->GetDouble(switches::kZoomFactor, &zoom_factor_);
 
   web_contents->SetDelegate(this);
   inspectable_web_contents()->SetDelegate(this);
@@ -358,6 +363,11 @@ void NativeWindow::AppendExtraCommandLineSwitches(CommandLine* command_line,
   // Append --node-integration to renderer process.
   command_line->AppendSwitchASCII(switches::kNodeIntegration,
                                   node_integration_);
+
+  // Append --zoom-factor.
+  if (zoom_factor_ != 1.0)
+    command_line->AppendSwitchASCII(switches::kZoomFactor,
+                                    base::DoubleToString(zoom_factor_));
 }
 
 void NativeWindow::OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs) {
