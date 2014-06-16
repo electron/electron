@@ -24,8 +24,10 @@ class WebView : public mate::Wrappable {
   WebView();
   virtual ~WebView();
 
-  void SetZoomLevel(double level);
+  double SetZoomLevel(double level);
   double GetZoomLevel() const;
+  double SetZoomFactor(double factor);
+  double GetZoomFactor() const;
 
   // mate::Wrappable:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(

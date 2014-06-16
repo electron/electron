@@ -32,19 +32,30 @@ WebView::WebView() : web_view_(GetCurrentWebView()) {
 WebView::~WebView() {
 }
 
-void WebView::SetZoomLevel(double level) {
-  web_view_->setZoomLevel(level);
+double WebView::SetZoomLevel(double level) {
+  return web_view_->setZoomLevel(level);
 }
 
 double WebView::GetZoomLevel() const {
   return web_view_->zoomLevel();
 }
 
+double WebView::SetZoomFactor(double factor) {
+  return WebKit::WebView::zoomLevelToZoomFactor(SetZoomLevel(
+      WebKit::WebView::zoomFactorToZoomLevel(factor)));
+}
+
+double WebView::GetZoomFactor() const {
+  return WebKit::WebView::zoomLevelToZoomFactor(GetZoomLevel());
+}
+
 mate::ObjectTemplateBuilder WebView::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("setZoomLevel", &WebView::SetZoomLevel)
-      .SetMethod("getZoomLevel", &WebView::GetZoomLevel);
+      .SetMethod("getZoomLevel", &WebView::GetZoomLevel)
+      .SetMethod("setZoomFactor", &WebView::SetZoomFactor)
+      .SetMethod("getZoomFactor", &WebView::GetZoomFactor);
 }
 
 // static
