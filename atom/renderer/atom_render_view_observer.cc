@@ -4,6 +4,7 @@
 
 #include "atom/renderer/atom_render_view_observer.h"
 
+#include <string>
 #include <vector>
 
 #include "atom/common/api/api_messages.h"
@@ -36,6 +37,7 @@ AtomRenderViewObserver::~AtomRenderViewObserver() {
 }
 
 void AtomRenderViewObserver::DidCreateDocumentElement(WebKit::WebFrame* frame) {
+  // Read --zoom-factor from command line.
   std::string zoom_factor_str = CommandLine::ForCurrentProcess()->
       GetSwitchValueASCII(switches::kZoomFactor);;
   if (zoom_factor_str.empty())
