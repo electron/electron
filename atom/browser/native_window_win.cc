@@ -395,6 +395,9 @@ void NativeWindowWin::FlashFrame(bool flash) {
   window_->FlashFrame(flash);
 }
 
+void NativeWindowWin::SetSkipTaskbar(bool skip) {
+}
+
 void NativeWindowWin::SetKiosk(bool kiosk) {
   SetFullscreen(kiosk);
 }

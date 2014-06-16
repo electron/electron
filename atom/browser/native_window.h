@@ -127,6 +127,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void SetTitle(const std::string& title) = 0;
   virtual std::string GetTitle() = 0;
   virtual void FlashFrame(bool flash) = 0;
+  virtual void SetSkipTaskbar(bool skip) = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
   virtual void SetRepresentedFilename(const std::string& filename);

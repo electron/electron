@@ -366,6 +366,11 @@ void NativeWindowGtk::FlashFrame(bool flash) {
   gtk_window_set_urgency_hint(window_, flash);
 }
 
+void NativeWindowGtk::SetSkipTaskbar(bool skip) {
+  gtk_window_set_skip_taskbar_hint(window_, skip);
+  gtk_window_set_skip_pager_hint(window_, skip);
+}
+
 void NativeWindowGtk::SetKiosk(bool kiosk) {
   SetFullscreen(kiosk);
 }
