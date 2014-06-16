@@ -11,6 +11,16 @@ module.exports.wrap = (webContents) ->
   webContents.send = (args...) ->
     @_send 'ATOM_INTERNAL_MESSAGE', [args...]
 
+  # Make sure webContents.executeJavaScript would run the code only when the
+  # web contents has been loaded.
+  webContents.loaded = false
+  webContents.once 'did-finish-load', -> @loaded = true
+  webContents.executeJavaScript = (code) ->
+    if @loaded
+      @_executeJavaScript code
+    else
+      webContents.once 'did-finish-load', @_executeJavaScript.bind(this, code)
+
   # The processId and routingId and identify a webContents.
   webContents.getId = -> "#{@getProcessId()}-#{@getRoutingId()}"
   webContents.equal = (other) -> @getId() is other.getId()

@@ -186,7 +186,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
       .SetMethod("getRoutingId", &WebContents::GetRoutingID)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
-      .SetMethod("executeJavaScript", &WebContents::ExecuteJavaScript)
+      .SetMethod("_executeJavaScript", &WebContents::ExecuteJavaScript)
       .SetMethod("_send", &WebContents::SendIPCMessage);
 }
 
