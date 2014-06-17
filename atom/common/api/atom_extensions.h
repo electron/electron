@@ -21,6 +21,7 @@ NODE_EXT_LIST_ITEM(atom_browser_window)
 // Module names start with `atom_renderer_` can only be used by renderer
 // process.
 NODE_EXT_LIST_ITEM(atom_renderer_ipc)
+NODE_EXT_LIST_ITEM(atom_renderer_web_view)
 
 // Module names start with `atom_common_` can be used by both browser and
 // renderer processes.

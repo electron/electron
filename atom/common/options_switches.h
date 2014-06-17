@@ -31,6 +31,7 @@ extern const char kNodeIntegration[];
 extern const char kAcceptFirstMouse[];
 extern const char kUseContentSize[];
 extern const char kWebPreferences[];
+extern const char kZoomFactor[];
 
 }  // namespace switches
 

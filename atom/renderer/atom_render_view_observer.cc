@@ -4,11 +4,15 @@
 
 #include "atom/renderer/atom_render_view_observer.h"
 
+#include <string>
 #include <vector>
 
 #include "atom/common/api/api_messages.h"
+#include "atom/common/options_switches.h"
 #include "atom/renderer/api/atom_renderer_bindings.h"
 #include "atom/renderer/atom_renderer_client.h"
+#include "base/command_line.h"
+#include "base/strings/string_number_conversions.h"
 #include "content/public/renderer/render_view.h"
 #include "ipc/ipc_message_macros.h"
 #include "third_party/WebKit/public/web/WebDraggableRegion.h"
@@ -30,6 +34,19 @@ AtomRenderViewObserver::AtomRenderViewObserver(
 }
 
 AtomRenderViewObserver::~AtomRenderViewObserver() {
+}
+
+void AtomRenderViewObserver::DidCreateDocumentElement(WebKit::WebFrame* frame) {
+  // Read --zoom-factor from command line.
+  std::string zoom_factor_str = CommandLine::ForCurrentProcess()->
+      GetSwitchValueASCII(switches::kZoomFactor);;
+  if (zoom_factor_str.empty())
+    return;
+  double zoom_factor;
+  if (!base::StringToDouble(zoom_factor_str, &zoom_factor))
+    return;
+  double zoom_level = WebKit::WebView::zoomFactorToZoomLevel(zoom_factor);
+  frame->view()->setZoomLevel(zoom_level);
 }
 
 void AtomRenderViewObserver::DraggableRegionsChanged(WebKit::WebFrame* frame) {

@@ -45,6 +45,9 @@ const char kUseContentSize[] = "use-content-size";
 // The WebPreferences.
 const char kWebPreferences[] = "web-preferences";
 
+// The factor of which page should be zoomed.
+const char kZoomFactor[] = "zoom-factor";
+
 }  // namespace switches
 
 }  // namespace atom
