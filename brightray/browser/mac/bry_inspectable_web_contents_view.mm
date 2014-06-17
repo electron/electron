@@ -232,6 +232,7 @@ void SetActive(content::WebContents* web_contents, bool active) {
 #pragma mark - NSWindowDelegate
 
 - (BOOL)windowShouldClose:(id)sender {
+  _private->visible = NO;
   [_private->window orderOut:nil];
   return NO;
 }
