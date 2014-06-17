@@ -569,22 +569,6 @@ void NativeWindow::Observe(int type,
   }
 }
 
-bool NativeWindow::DevToolsSetDockSide(const std::string& dock_side,
-                                       bool* succeed) {
-  if (dock_side == "undocked") {
-    *succeed = false;
-    return true;
-  } else {
-    return false;
-  }
-}
-
-bool NativeWindow::DevToolsShow(std::string* dock_side) {
-  if (*dock_side == "undocked")
-    *dock_side = "bottom";
-  return false;
-}
-
 void NativeWindow::DevToolsSaveToFile(const std::string& url,
                                       const std::string& content,
                                       bool save_as) {
