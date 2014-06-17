@@ -242,9 +242,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
                        const content::NotificationDetails& details) OVERRIDE;
 
   // Implementations of brightray::InspectableWebContentsDelegate.
-  virtual bool DevToolsSetDockSide(const std::string& dock_side,
-                                   bool* succeed) OVERRIDE;
-  virtual bool DevToolsShow(std::string* dock_side) OVERRIDE;
   virtual void DevToolsSaveToFile(const std::string& url,
                                   const std::string& content,
                                   bool save_as) OVERRIDE;
