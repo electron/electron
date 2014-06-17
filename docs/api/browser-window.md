@@ -43,6 +43,8 @@ You can also create a window without chrome by using
      other windows
   * `fullscreen` Boolean - Whether the window should show in fullscreen
   * `skip-taskbar` Boolean - Do not show window in taskbar
+  * `zoom-factor` Number - The default zoom factor of the page, zoom factor is
+    zoom percent / 100, so `3.0` represents `300%`
   * `kiosk` Boolean - The kiosk mode
   * `title` String - Default window title
   * `icon` String - The path of icon file
