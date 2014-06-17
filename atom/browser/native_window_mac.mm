@@ -504,10 +504,17 @@ void NativeWindowMac::HandleKeyboardEvent(
       event.type == content::NativeWebKeyboardEvent::Char)
     return;
 
-  EventProcessingWindow* event_window =
-      static_cast<EventProcessingWindow*>(window_);
-  DCHECK([event_window isKindOfClass:[EventProcessingWindow class]]);
-  [event_window redispatchKeyEvent:event.os_event];
+  if (event.os_event.window == window_) {
+    EventProcessingWindow* event_window =
+        static_cast<EventProcessingWindow*>(window_);
+    DCHECK([event_window isKindOfClass:[EventProcessingWindow class]]);
+    [event_window redispatchKeyEvent:event.os_event];
+  } else {
+    // The event comes from detached devtools view, and it has already been
+    // handled by the devtools itself, we now send it to application menu to
+    // make menu acclerators work.
+    [[NSApp mainMenu] performKeyEquivalent:event.os_event];
+  }
 }
 
 void NativeWindowMac::InstallView() {
