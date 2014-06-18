@@ -4,18 +4,23 @@ A `Tray` represents an icon in operating system's notification area, it is
 usually attached with a context menu.
 
 ```javascript
+var app = require('app');
 var Menu = require('menu');
 var Tray = require('tray');
 
-var appIcon = new Tray('/path/to/my/icon');
-var contextMenu = Menu.buildFromTemplate([
-  { label: 'Item1', type: 'radio' },
-  { label: 'Item2', type: 'radio' },
-  { label: 'Item3', type: 'radio', clicked: true },
-  { label: 'Item4', type: 'radio' },
-]);
-appIcon.setToolTip('This is my application.');
-appIcon.setContextMenu(contextMenu);
+var appIcon = null;
+app.on('ready', function(){
+  appIcon = new Tray('/path/to/my/icon');
+  var contextMenu = Menu.buildFromTemplate([
+    { label: 'Item1', type: 'radio' },
+    { label: 'Item2', type: 'radio' },
+    { label: 'Item3', type: 'radio', clicked: true },
+    { label: 'Item4', type: 'radio' },
+  ]);
+  appIcon.setToolTip('This is my application.');
+  appIcon.setContextMenu(contextMenu);
+});
+
 ```
 
 __Platform limitations:__
