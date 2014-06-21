@@ -106,7 +106,7 @@ app.on('ready', function() {
           },
           {
             label: 'Enter Fullscreen',
-            click: function() { mainWindow.setFullscreen(true); }
+            click: function() { mainWindow.setFullScreen(true); }
           },
           {
             label: 'Toggle DevTools',
