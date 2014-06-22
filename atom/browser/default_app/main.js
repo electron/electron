@@ -30,7 +30,7 @@ if (argv._.length > 0) {
     }
 
     // Run the app.
-    require(packagePath);
+    require('module')._load(packagePath, module, true);
   } catch(e) {
     if (e.code == 'MODULE_NOT_FOUND') {
       app.focus();

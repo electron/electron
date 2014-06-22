@@ -1,6 +1,7 @@
-fs   = require 'fs'
-path = require 'path'
-util = require 'util'
+fs     = require 'fs'
+path   = require 'path'
+module = require 'module'
+util   = require 'util'
 
 # Expose information of current process.
 process.type = 'browser'
@@ -17,7 +18,7 @@ process.execArgv = process.argv.splice startMark, endMark - startMark + 1
 
 # Add browser/api/lib to require's search paths,
 # which contains javascript part of Atom's built-in libraries.
-globalPaths = require('module').globalPaths
+globalPaths = module.globalPaths
 globalPaths.push path.join process.resourcesPath, 'atom', 'browser', 'api', 'lib'
 
 # Do loading in next tick since we still need some initialize work before
@@ -77,4 +78,4 @@ setImmediate ->
     app.setName packageJson.name
 
   # Finally load app's main.js and transfer control to C++.
-  require path.join(packagePath, packageJson.main)
+  module._load path.join(packagePath, packageJson.main), module, true

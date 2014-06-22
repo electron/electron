@@ -84,7 +84,7 @@ process.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (id) ->
 
 ipc.on 'ATOM_BROWSER_REQUIRE', (event, module) ->
   try
-    event.returnValue = valueToMeta event.sender, require(module)
+    event.returnValue = valueToMeta event.sender, process.mainModule.require(module)
   catch e
     event.returnValue = errorToMeta e
 
