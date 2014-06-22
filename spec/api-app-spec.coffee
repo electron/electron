@@ -22,4 +22,4 @@ describe 'app module', ->
       assert.equal app.getName(), 'Atom Shell Test App'
       app.setName 'test-name'
       assert.equal app.getName(), 'test-name'
-      app.setName 'Atom Shell Default App'
+      app.setName 'Atom Shell Test App'
