@@ -18,6 +18,10 @@ describe 'ipc module', ->
       a = remote.require path.join(fixtures, 'module', 'id.js')
       assert.equal a.id, 1127
 
+    it 'should search module from the user app', ->
+      assert.equal remote.process.mainModule.filename, path.resolve(__dirname, 'static', 'main.js')
+      assert.equal remote.process.mainModule.paths[0], path.resolve(__dirname, 'static', 'node_modules')
+
   describe 'remote.createFunctionWithReturnValue', ->
     it 'should be called in browser synchronously', ->
       buf = new Buffer('test')
