@@ -40,7 +40,7 @@ rely on `clicked` event and always attach a context menu to the tray icon.
 
 ### new Tray(image)
 
-* `image` String
+* `image` [Image](image.md)
 
 Creates a new tray icon associated with the `image`.
 
@@ -50,13 +50,13 @@ Emitted when the tray icon is clicked.
 
 ### Tray.setImage(image)
 
-* `image` String
+* `image` [Image](image.md)
 
 Sets the `image` associated with this tray icon.
 
 ### Tray.setPressedImage(image)
 
-* `image` String
+* `image` [Image](image.md)
 
 Sets the `image` associated with this tray icon when pressed.
 
