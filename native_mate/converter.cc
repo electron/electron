@@ -25,6 +25,8 @@ Handle<Value> Converter<bool>::ToV8(Isolate* isolate, bool val) {
 }
 
 bool Converter<bool>::FromV8(Isolate* isolate, Handle<Value> val, bool* out) {
+  if (!val->IsBoolean())
+    return false;
   *out = val->BooleanValue();
   return true;
 }
