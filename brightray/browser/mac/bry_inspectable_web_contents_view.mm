@@ -156,6 +156,7 @@ void SetActive(content::WebContents* web_contents, bool active) {
     _private->window.delegate = self;
     _private->window.releasedWhenClosed = NO;
     _private->window.title = @"Developer Tools";
+    _private->window.frameAutosaveName = @"brightray.developer.tools";
     [_private->window setAutorecalculatesContentBorderThickness:NO forEdge:NSMaxYEdge];
     [_private->window setContentBorderThickness:24 forEdge:NSMaxYEdge];
   }
