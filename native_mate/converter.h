@@ -89,6 +89,11 @@ struct Converter<double> {
 };
 
 template<>
+struct Converter<const char*> {
+  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate, const char* val);
+};
+
+template<>
 struct Converter<base::StringPiece> {
   static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
                                     const base::StringPiece& val);

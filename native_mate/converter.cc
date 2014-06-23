@@ -103,6 +103,11 @@ bool Converter<double>::FromV8(Isolate* isolate, Handle<Value> val,
   return true;
 }
 
+Handle<Value> Converter<const char*>::ToV8(
+    Isolate* isolate, const char* val) {
+  return MATE_STRING_NEW_FROM_UTF8(isolate, val, -1);
+}
+
 Handle<Value> Converter<base::StringPiece>::ToV8(
     Isolate* isolate, const base::StringPiece& val) {
   return MATE_STRING_NEW_FROM_UTF8(isolate, val.data(),
