@@ -23,6 +23,7 @@
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/font_render_params_linux.h"
 #include "ui/gfx/gtk_util.h"
+#include "ui/gfx/image.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/skia_utils_gtk.h"
 
@@ -129,8 +130,8 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
   // Create the underlying gdk window.
   gtk_widget_realize(GTK_WIDGET(window_));
 
-  if (!icon_.IsEmpty())
-    gtk_window_set_icon(window_, icon_.ToGdkPixbuf());
+  if (icon_)
+    gtk_window_set_icon(window_, icon_->ToGdkPixbuf());
 
   ui::ActiveWindowWatcherX::AddObserver(this);
 

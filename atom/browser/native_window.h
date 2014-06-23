@@ -18,7 +18,6 @@
 #include "atom/browser/native_window_observer.h"
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
-#include "ui/gfx/image/image.h"
 #include "vendor/brightray/browser/default_web_contents_delegate.h"
 #include "vendor/brightray/browser/inspectable_web_contents_delegate.h"
 #include "vendor/brightray/browser/inspectable_web_contents_impl.h"
@@ -32,6 +31,7 @@ class WebContents;
 }
 
 namespace gfx {
+class Image;
 class Point;
 class Rect;
 class Size;
@@ -144,8 +144,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void BlurWebView();
   virtual bool IsWebViewFocused();
 
-  virtual bool SetIcon(const std::string& path);
-
   // Returns the process handle of render process, useful for killing the
   // render process manually
   virtual base::ProcessHandle GetRenderProcessHandle();
@@ -251,7 +249,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   bool has_frame_;
 
   // Window icon.
-  gfx::Image icon_;
+  scoped_ptr<gfx::Image> icon_;
 
  private:
   // Schedule a notification unresponsive event.

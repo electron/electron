@@ -16,6 +16,7 @@
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/atom_version.h"
+#include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -41,6 +42,8 @@
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/codec/png_codec.h"
+#include "ui/gfx/image/image.h"
+#include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
@@ -73,9 +76,9 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
 #endif
 
   // Read icon before window is created.
-  std::string icon;
-  if (options.Get(switches::kIcon, &icon) && !SetIcon(icon))
-    LOG(ERROR) << "Failed to set icon to " << icon;
+  gfx::ImageSkia icon;
+  if (options.Get(switches::kIcon, &icon))
+    icon_.reset(new gfx::Image(icon));
 
   // Read iframe security before any navigation.
   options.Get(switches::kNodeIntegration, &node_integration_);
@@ -255,26 +258,6 @@ bool NativeWindow::IsWebViewFocused() {
   content::RenderWidgetHostView* host_view =
       GetWebContents()->GetRenderViewHost()->GetView();
   return host_view && host_view->HasFocus();
-}
-
-bool NativeWindow::SetIcon(const std::string& str_path) {
-  base::FilePath path = base::FilePath::FromUTF8Unsafe(str_path);
-
-  // Read the file from disk.
-  std::string file_contents;
-  if (path.empty() || !base::ReadFileToString(path, &file_contents))
-    return false;
-
-  // Decode the bitmap using WebKit's image decoder.
-  const unsigned char* data =
-      reinterpret_cast<const unsigned char*>(file_contents.data());
-  scoped_ptr<SkBitmap> decoded(new SkBitmap());
-  gfx::PNGCodec::Decode(data, file_contents.length(), decoded.get());
-  if (decoded->empty())
-    return false;  // Unable to decode.
-
-  icon_ = gfx::Image::CreateFrom1xBitmap(*decoded.release());
-  return true;
 }
 
 base::ProcessHandle NativeWindow::GetRenderProcessHandle() {
