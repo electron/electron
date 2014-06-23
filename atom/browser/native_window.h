@@ -26,11 +26,6 @@
 class CommandLine;
 struct WebPreferences;
 
-namespace base {
-class DictionaryValue;
-class ListValue;
-}
-
 namespace content {
 class BrowserContext;
 class WebContents;
@@ -296,7 +291,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   base::CancelableClosure window_unresposive_closure_;
 
   // Web preferences.
-  scoped_ptr<base::DictionaryValue> web_preferences_;
+  scoped_ptr<mate::Dictionary> web_preferences_;
 
   // Page's default zoom factor.
   double zoom_factor_;

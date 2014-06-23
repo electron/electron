@@ -16,7 +16,7 @@
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/atom_version.h"
-#include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/file_util.h"
@@ -26,7 +26,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/values.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/invalidate_type.h"
 #include "content/public/browser/navigation_entry.h"
@@ -82,9 +81,9 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
   options.Get(switches::kNodeIntegration, &node_integration_);
 
   // Read the web preferences.
-  base::DictionaryValue web_preferences;
-  if (options.Get(switches::kWebPreferences, &web_preferences))
-    web_preferences_.reset(web_preferences.DeepCopy());
+  scoped_ptr<mate::Dictionary> web_preferences(new mate::Dictionary);
+  if (options.Get(switches::kWebPreferences, web_preferences.get()))
+    web_preferences_.reset(web_preferences.release());
 
   // Read the zoom factor before any navigation.
   options.Get(switches::kZoomFactor, &zoom_factor_);
@@ -377,35 +376,30 @@ void NativeWindow::OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs) {
     prefs->accelerated_compositing_enabled = false;
 
   bool b;
-  base::ListValue* list;
+  std::vector<base::FilePath> list;
   if (!web_preferences_)
     return;
-  if (web_preferences_->GetBoolean("javascript", &b))
+  if (web_preferences_->Get("javascript", &b))
     prefs->javascript_enabled = b;
-  if (web_preferences_->GetBoolean("web-security", &b))
+  if (web_preferences_->Get("web-security", &b))
     prefs->web_security_enabled = b;
-  if (web_preferences_->GetBoolean("images", &b))
+  if (web_preferences_->Get("images", &b))
     prefs->images_enabled = b;
-  if (web_preferences_->GetBoolean("java", &b))
+  if (web_preferences_->Get("java", &b))
     prefs->java_enabled = b;
-  if (web_preferences_->GetBoolean("text-areas-are-resizable", &b))
+  if (web_preferences_->Get("text-areas-are-resizable", &b))
     prefs->text_areas_are_resizable = b;
-  if (web_preferences_->GetBoolean("webgl", &b))
+  if (web_preferences_->Get("webgl", &b))
     prefs->experimental_webgl_enabled = b;
-  if (web_preferences_->GetBoolean("webaudio", &b))
+  if (web_preferences_->Get("webaudio", &b))
     prefs->webaudio_enabled = b;
-  if (web_preferences_->GetBoolean("accelerated-compositing", &b))
+  if (web_preferences_->Get("accelerated-compositing", &b))
     prefs->accelerated_compositing_enabled = b;
-  if (web_preferences_->GetBoolean("plugins", &b))
+  if (web_preferences_->Get("plugins", &b))
     prefs->plugins_enabled = b;
-  if (web_preferences_->GetList("extra-plugin-dirs", &list))
-    for (size_t i = 0; i < list->GetSize(); ++i) {
-      base::FilePath::StringType path_string;
-      if (list->GetString(i, &path_string)) {
-        base::FilePath path(path_string);
-        content::PluginService::GetInstance()->AddExtraPluginDir(path);
-      }
-    }
+  if (web_preferences_->Get("extra-plugin-dirs", &list))
+    for (size_t i = 0; i < list.size(); ++i)
+      content::PluginService::GetInstance()->AddExtraPluginDir(list[i]);
 }
 
 void NativeWindow::NotifyWindowClosed() {
