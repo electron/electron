@@ -31,7 +31,7 @@ class Dictionary {
   static Dictionary CreateEmpty(v8::Isolate* isolate);
 
   template<typename T>
-  bool Get(const base::StringPiece& key, T* out) {
+  bool Get(const base::StringPiece& key, T* out) const {
     v8::Handle<v8::Value> val = object_->Get(StringToV8(isolate_, key));
     return ConvertFromV8(isolate_, val, out);
   }
