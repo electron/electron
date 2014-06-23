@@ -6,7 +6,7 @@
 
 #include "atom/browser/ui/cocoa/atom_menu_controller.h"
 #include "base/strings/sys_string_conversions.h"
-#include "skia/ext/skia_utils_mac.h"
+#include "ui/gfx/image/image.h"
 
 @interface StatusItemController : NSObject {
   atom::TrayIconCocoa* trayIcon_; // weak
@@ -50,17 +50,17 @@ TrayIconCocoa::~TrayIconCocoa() {
 
 void TrayIconCocoa::SetImage(const gfx::ImageSkia& image) {
   if (!image.isNull()) {
-    NSImage* ns_image = gfx::SkBitmapToNSImage(*image.bitmap());
-    if (ns_image)
-      [item_ setImage:ns_image];
+    gfx::Image neutral(image);
+    if (!neutral.IsEmpty())
+      [item_ setImage:neutral.ToNSImage()];
   }
 }
 
 void TrayIconCocoa::SetPressedImage(const gfx::ImageSkia& image) {
   if (!image.isNull()) {
-    NSImage* ns_image = gfx::SkBitmapToNSImage(*image.bitmap());
-    if (ns_image)
-      [item_ setAlternateImage:ns_image];
+    gfx::Image neutral(image);
+    if (!neutral.IsEmpty())
+      [item_ setAlternateImage:neutral.ToNSImage()];
   }
 }
 
