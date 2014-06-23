@@ -16,6 +16,8 @@
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/atom_version.h"
+#include "atom/common/native_mate_converters/image_converter.h"
+#include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/file_util.h"
@@ -25,7 +27,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/values.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/invalidate_type.h"
 #include "content/public/browser/navigation_entry.h"
@@ -39,7 +40,10 @@
 #include "content/public/browser/web_contents_view.h"
 #include "content/public/common/renderer_preferences.h"
 #include "ipc/ipc_message_macros.h"
+#include "native_mate/dictionary.h"
 #include "ui/gfx/codec/png_codec.h"
+#include "ui/gfx/image/image.h"
+#include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
@@ -53,7 +57,7 @@ using content::NavigationEntry;
 namespace atom {
 
 NativeWindow::NativeWindow(content::WebContents* web_contents,
-                           base::DictionaryValue* options)
+                           const mate::Dictionary& options)
     : content::WebContentsObserver(web_contents),
       has_frame_(true),
       is_closed_(false),
@@ -63,7 +67,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       weak_factory_(this),
       inspectable_web_contents_(
           brightray::InspectableWebContents::Create(web_contents)) {
-  options->GetBoolean(switches::kFrame, &has_frame_);
+  options.Get(switches::kFrame, &has_frame_);
 
 #if defined(OS_MACOSX)
   // Temporary fix for flashing devtools, try removing this after upgraded to
@@ -72,20 +76,20 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
 #endif
 
   // Read icon before window is created.
-  std::string icon;
-  if (options->GetString(switches::kIcon, &icon) && !SetIcon(icon))
-    LOG(ERROR) << "Failed to set icon to " << icon;
+  gfx::ImageSkia icon;
+  if (options.Get(switches::kIcon, &icon))
+    icon_.reset(new gfx::Image(icon));
 
   // Read iframe security before any navigation.
-  options->GetString(switches::kNodeIntegration, &node_integration_);
+  options.Get(switches::kNodeIntegration, &node_integration_);
 
   // Read the web preferences.
-  base::DictionaryValue* web_preferences;
-  if (options->GetDictionary(switches::kWebPreferences, &web_preferences))
-    web_preferences_.reset(web_preferences->DeepCopy());
+  scoped_ptr<mate::Dictionary> web_preferences(new mate::Dictionary);
+  if (options.Get(switches::kWebPreferences, web_preferences.get()))
+    web_preferences_.reset(web_preferences.release());
 
   // Read the zoom factor before any navigation.
-  options->GetDouble(switches::kZoomFactor, &zoom_factor_);
+  options.Get(switches::kZoomFactor, &zoom_factor_);
 
   web_contents->SetDelegate(this);
   inspectable_web_contents()->SetDelegate(this);
@@ -117,15 +121,15 @@ NativeWindow::~NativeWindow() {
 }
 
 // static
-NativeWindow* NativeWindow::Create(base::DictionaryValue* options) {
+NativeWindow* NativeWindow::Create(const mate::Dictionary& options) {
   content::WebContents::CreateParams create_params(AtomBrowserContext::Get());
   return Create(content::WebContents::Create(create_params), options);
 }
 
 // static
 NativeWindow* NativeWindow::Debug(content::WebContents* web_contents) {
-  base::DictionaryValue options;
-  NativeWindow* window = NativeWindow::Create(&options);
+  mate::Dictionary options;
+  NativeWindow* window = NativeWindow::Create(options);
   window->devtools_delegate_.reset(new DevToolsDelegate(window, web_contents));
   return window;
 }
@@ -146,56 +150,55 @@ NativeWindow* NativeWindow::FromRenderView(int process_id, int routing_id) {
   return NULL;
 }
 
-void NativeWindow::InitFromOptions(base::DictionaryValue* options) {
+void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   // Setup window from options.
   int x = -1, y = -1;
   bool center;
-  if (options->GetInteger(switches::kX, &x) &&
-      options->GetInteger(switches::kY, &y)) {
+  if (options.Get(switches::kX, &x) && options.Get(switches::kY, &y)) {
     int width = -1, height = -1;
-    options->GetInteger(switches::kWidth, &width);
-    options->GetInteger(switches::kHeight, &height);
+    options.Get(switches::kWidth, &width);
+    options.Get(switches::kHeight, &height);
     Move(gfx::Rect(x, y, width, height));
-  } else if (options->GetBoolean(switches::kCenter, &center) && center) {
+  } else if (options.Get(switches::kCenter, &center) && center) {
     Center();
   }
   int min_height = -1, min_width = -1;
-  if (options->GetInteger(switches::kMinHeight, &min_height) &&
-      options->GetInteger(switches::kMinWidth, &min_width)) {
+  if (options.Get(switches::kMinHeight, &min_height) &&
+      options.Get(switches::kMinWidth, &min_width)) {
     SetMinimumSize(gfx::Size(min_width, min_height));
   }
   int max_height = -1, max_width = -1;
-  if (options->GetInteger(switches::kMaxHeight, &max_height) &&
-      options->GetInteger(switches::kMaxWidth, &max_width)) {
+  if (options.Get(switches::kMaxHeight, &max_height) &&
+      options.Get(switches::kMaxWidth, &max_width)) {
     SetMaximumSize(gfx::Size(max_width, max_height));
   }
   bool resizable;
-  if (options->GetBoolean(switches::kResizable, &resizable)) {
+  if (options.Get(switches::kResizable, &resizable)) {
     SetResizable(resizable);
   }
   bool top;
-  if (options->GetBoolean(switches::kAlwaysOnTop, &top) && top) {
+  if (options.Get(switches::kAlwaysOnTop, &top) && top) {
     SetAlwaysOnTop(true);
   }
   bool fullscreen;
-  if (options->GetBoolean(switches::kFullscreen, &fullscreen) && fullscreen) {
+  if (options.Get(switches::kFullscreen, &fullscreen) && fullscreen) {
     SetFullscreen(true);
   }
   bool skip;
-  if (options->GetBoolean(switches::kSkipTaskbar, &skip) && skip) {
+  if (options.Get(switches::kSkipTaskbar, &skip) && skip) {
     SetSkipTaskbar(skip);
   }
   bool kiosk;
-  if (options->GetBoolean(switches::kKiosk, &kiosk) && kiosk) {
+  if (options.Get(switches::kKiosk, &kiosk) && kiosk) {
     SetKiosk(kiosk);
   }
   std::string title("Atom Shell");
-  options->GetString(switches::kTitle, &title);
+  options.Get(switches::kTitle, &title);
   SetTitle(title);
 
   // Then show it.
   bool show = true;
-  options->GetBoolean(switches::kShow, &show);
+  options.Get(switches::kShow, &show);
   if (show)
     Show();
 }
@@ -255,26 +258,6 @@ bool NativeWindow::IsWebViewFocused() {
   content::RenderWidgetHostView* host_view =
       GetWebContents()->GetRenderViewHost()->GetView();
   return host_view && host_view->HasFocus();
-}
-
-bool NativeWindow::SetIcon(const std::string& str_path) {
-  base::FilePath path = base::FilePath::FromUTF8Unsafe(str_path);
-
-  // Read the file from disk.
-  std::string file_contents;
-  if (path.empty() || !base::ReadFileToString(path, &file_contents))
-    return false;
-
-  // Decode the bitmap using WebKit's image decoder.
-  const unsigned char* data =
-      reinterpret_cast<const unsigned char*>(file_contents.data());
-  scoped_ptr<SkBitmap> decoded(new SkBitmap());
-  gfx::PNGCodec::Decode(data, file_contents.length(), decoded.get());
-  if (decoded->empty())
-    return false;  // Unable to decode.
-
-  icon_ = gfx::Image::CreateFrom1xBitmap(*decoded.release());
-  return true;
 }
 
 base::ProcessHandle NativeWindow::GetRenderProcessHandle() {
@@ -376,35 +359,30 @@ void NativeWindow::OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs) {
     prefs->accelerated_compositing_enabled = false;
 
   bool b;
-  base::ListValue* list;
+  std::vector<base::FilePath> list;
   if (!web_preferences_)
     return;
-  if (web_preferences_->GetBoolean("javascript", &b))
+  if (web_preferences_->Get("javascript", &b))
     prefs->javascript_enabled = b;
-  if (web_preferences_->GetBoolean("web-security", &b))
+  if (web_preferences_->Get("web-security", &b))
     prefs->web_security_enabled = b;
-  if (web_preferences_->GetBoolean("images", &b))
+  if (web_preferences_->Get("images", &b))
     prefs->images_enabled = b;
-  if (web_preferences_->GetBoolean("java", &b))
+  if (web_preferences_->Get("java", &b))
     prefs->java_enabled = b;
-  if (web_preferences_->GetBoolean("text-areas-are-resizable", &b))
+  if (web_preferences_->Get("text-areas-are-resizable", &b))
     prefs->text_areas_are_resizable = b;
-  if (web_preferences_->GetBoolean("webgl", &b))
+  if (web_preferences_->Get("webgl", &b))
     prefs->experimental_webgl_enabled = b;
-  if (web_preferences_->GetBoolean("webaudio", &b))
+  if (web_preferences_->Get("webaudio", &b))
     prefs->webaudio_enabled = b;
-  if (web_preferences_->GetBoolean("accelerated-compositing", &b))
+  if (web_preferences_->Get("accelerated-compositing", &b))
     prefs->accelerated_compositing_enabled = b;
-  if (web_preferences_->GetBoolean("plugins", &b))
+  if (web_preferences_->Get("plugins", &b))
     prefs->plugins_enabled = b;
-  if (web_preferences_->GetList("extra-plugin-dirs", &list))
-    for (size_t i = 0; i < list->GetSize(); ++i) {
-      base::FilePath::StringType path_string;
-      if (list->GetString(i, &path_string)) {
-        base::FilePath path(path_string);
-        content::PluginService::GetInstance()->AddExtraPluginDir(path);
-      }
-    }
+  if (web_preferences_->Get("extra-plugin-dirs", &list))
+    for (size_t i = 0; i < list.size(); ++i)
+      content::PluginService::GetInstance()->AddExtraPluginDir(list[i]);
 }
 
 void NativeWindow::NotifyWindowClosed() {

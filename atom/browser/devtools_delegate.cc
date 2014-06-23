@@ -7,13 +7,13 @@
 #include <string>
 
 #include "base/message_loop/message_loop.h"
-#include "base/values.h"
 #include "atom/browser/native_window.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_client_host.h"
 #include "content/public/browser/devtools_http_handler.h"
 #include "content/public/browser/devtools_manager.h"
 #include "content/public/browser/web_contents.h"
+#include "native_mate/dictionary.h"
 #include "ui/gfx/point.h"
 
 namespace atom {
@@ -37,9 +37,9 @@ DevToolsDelegate::DevToolsDelegate(NativeWindow* window,
       devtools_agent_host_.get(), devtools_client_host_.get());
 
   // Go!
-  base::DictionaryValue options;
-  options.SetString("title", "DevTools Debugger");
-  window->InitFromOptions(&options);
+  mate::Dictionary options;
+  options.Set("title", "DevTools Debugger");
+  window->InitFromOptions(options);
   window->AddObserver(this);
   web_contents->GetController().LoadURL(
       GURL("chrome-devtools://devtools/devtools.html?dockSide=undocked"),

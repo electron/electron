@@ -18,7 +18,7 @@ namespace atom {
 class NativeWindowMac : public NativeWindow {
  public:
   explicit NativeWindowMac(content::WebContents* web_contents,
-                           base::DictionaryValue* options);
+                           const mate::Dictionary& options);
   virtual ~NativeWindowMac();
 
   // NativeWindow implementation.

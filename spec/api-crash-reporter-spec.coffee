@@ -15,7 +15,7 @@ describe 'crash-reporter module', ->
   afterEach -> w.destroy()
 
   it 'should send minidump when renderer crashes', (done) ->
-    @timeout 5000
+    @timeout 60000
     server = http.createServer (req, res) ->
       form = new formidable.IncomingForm()
       process.throwDeprecation = false

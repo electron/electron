@@ -15,7 +15,7 @@ bool Converter<base::DictionaryValue>::FromV8(v8::Isolate* isolate,
   scoped_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
   scoped_ptr<base::Value> value(converter->FromV8Value(
       val, v8::Context::GetCurrent()));
-  if (value->IsType(base::Value::TYPE_DICTIONARY)) {
+  if (value && value->IsType(base::Value::TYPE_DICTIONARY)) {
     out->Swap(static_cast<DictionaryValue*>(value.get()));
     return true;
   } else {

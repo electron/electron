@@ -15,10 +15,6 @@
 
 class GURL;
 
-namespace base {
-class DictionaryValue;
-}
-
 namespace mate {
 class Arguments;
 class Dictionary;
@@ -35,8 +31,7 @@ class WebContents;
 class Window : public mate::EventEmitter,
                public NativeWindowObserver {
  public:
-  static mate::Wrappable* New(mate::Arguments* args,
-                              const base::DictionaryValue& options);
+  static mate::Wrappable* New(const mate::Dictionary& options);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Handle<v8::ObjectTemplate> prototype);
@@ -44,7 +39,7 @@ class Window : public mate::EventEmitter,
   NativeWindow* window() const { return window_.get(); }
 
  protected:
-  explicit Window(base::DictionaryValue* options);
+  explicit Window(const mate::Dictionary& options);
   virtual ~Window();
 
   // Implementations of NativeWindowObserver:
