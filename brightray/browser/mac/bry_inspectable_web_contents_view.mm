@@ -188,7 +188,7 @@ void SetActive(content::WebContents* web_contents, bool active) {
   if (!devToolsWebContents)
     return NO;
   auto devToolsView = devToolsWebContents->GetView()->GetNativeView();
-
+  
   return _private->window && devToolsView.window == _private->window;
 }
 
@@ -200,7 +200,7 @@ void SetActive(content::WebContents* web_contents, bool active) {
     SetActive(inspectable_contents->devtools_web_contents(), active);
     return;
   }
-
+  
   // Changes the window that hosts us always affect our main web contents. If the dev tools are also
   // hosted in this window, they are affected too.
   SetActive(inspectable_contents->GetWebContents(), active);
