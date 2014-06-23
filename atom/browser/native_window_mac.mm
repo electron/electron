@@ -11,11 +11,11 @@
 #include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/values.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
 #include "content/public/browser/render_view_host.h"
+#include "native_mate/dictionary.h"
 #include "vendor/brightray/browser/inspectable_web_contents.h"
 #include "vendor/brightray/browser/inspectable_web_contents_view.h"
 
@@ -156,13 +156,13 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 namespace atom {
 
 NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
-                                 base::DictionaryValue* options)
+                                 const mate::Dictionary& options)
     : NativeWindow(web_contents, options),
       is_kiosk_(false),
       attention_request_id_(0) {
   int width = 800, height = 600;
-  options->GetInteger(switches::kWidth, &width);
-  options->GetInteger(switches::kHeight, &height);
+  options.Get(switches::kWidth, &width);
+  options.Get(switches::kHeight, &height);
 
   NSRect main_screen_rect = [[[NSScreen screens] objectAtIndex:0] frame];
   NSRect cocoa_bounds = NSMakeRect(
@@ -193,18 +193,18 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
 
   // On OS X the initial window size doesn't include window frame.
   bool use_content_size = false;
-  options->GetBoolean(switches::kUseContentSize, &use_content_size);
+  options.Get(switches::kUseContentSize, &use_content_size);
   if (has_frame_ && !use_content_size)
     SetSize(gfx::Size(width, height));
 
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;
-  options->GetBoolean(switches::kAcceptFirstMouse, &acceptsFirstMouse);
+  options.Get(switches::kAcceptFirstMouse, &acceptsFirstMouse);
   [delegate setAcceptsFirstMouse:acceptsFirstMouse];
 
   // Disable fullscreen button when 'fullscreen' is specified to false.
   bool fullscreen;
-  if (!(options->GetBoolean(switches::kFullscreen, &fullscreen) &&
+  if (!(options.Get(switches::kFullscreen, &fullscreen) &&
         !fullscreen)) {
     NSUInteger collectionBehavior = [window_ collectionBehavior];
     collectionBehavior |= NSWindowCollectionBehaviorFullScreenPrimary;
@@ -612,7 +612,7 @@ void NativeWindowMac::UpdateDraggableRegionsForCustomDrag(
 
 // static
 NativeWindow* NativeWindow::Create(content::WebContents* web_contents,
-                                   base::DictionaryValue* options) {
+                                   const mate::Dictionary& options) {
   return new NativeWindowMac(web_contents, options);
 }
 

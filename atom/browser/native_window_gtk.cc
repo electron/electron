@@ -11,12 +11,12 @@
 #include "atom/common/options_switches.h"
 #include "base/environment.h"
 #include "base/nix/xdg_util.h"
-#include "base/values.h"
 #include "chrome/browser/ui/gtk/gtk_window_util.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
 #include "content/public/common/renderer_preferences.h"
+#include "native_mate/dictionary.h"
 #include "ui/base/accelerators/platform_accelerator_gtk.h"
 #include "ui/base/models/simple_menu_model.h"
 #include "ui/base/x/active_window_watcher_x.h"
@@ -96,7 +96,7 @@ GetRendererPreferencesSubpixelRenderingEnum(
 }  // namespace
 
 NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
-                                 base::DictionaryValue* options)
+                                 const mate::Dictionary& options)
     : NativeWindow(web_contents, options),
       window_(GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL))),
       vbox_(gtk_vbox_new(FALSE, 0)),
@@ -111,11 +111,11 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
                     GetWebContents()->GetView()->GetNativeView());
 
   int width = 800, height = 600;
-  options->GetInteger(switches::kWidth, &width);
-  options->GetInteger(switches::kHeight, &height);
+  options.Get(switches::kWidth, &width);
+  options.Get(switches::kHeight, &height);
 
   bool use_content_size = false;
-  options->GetBoolean(switches::kUseContentSize, &use_content_size);
+  options.Get(switches::kUseContentSize, &use_content_size);
   if (has_frame_ && !use_content_size)
     SubstractBorderSize(&width, &height);
 
@@ -608,7 +608,7 @@ gboolean NativeWindowGtk::OnButtonPress(GtkWidget* widget,
 
 // static
 NativeWindow* NativeWindow::Create(content::WebContents* web_contents,
-                                   base::DictionaryValue* options) {
+                                   const mate::Dictionary& options) {
   return new NativeWindowGtk(web_contents, options);
 }
 

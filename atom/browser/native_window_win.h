@@ -35,7 +35,7 @@ class NativeWindowWin : public NativeWindow,
                         public views::WidgetDelegateView {
  public:
   explicit NativeWindowWin(content::WebContents* web_contents,
-                           base::DictionaryValue* options);
+                           const mate::Dictionary& options);
   virtual ~NativeWindowWin();
 
   // NativeWindow implementation.

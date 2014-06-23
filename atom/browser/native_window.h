@@ -42,6 +42,10 @@ class Rect;
 class Size;
 }
 
+namespace mate {
+class Dictionary;
+}
+
 namespace atom {
 
 class AtomJavaScriptDialogManager;
@@ -80,11 +84,11 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Create window with existing WebContents, the caller is responsible for
   // managing the window's live.
   static NativeWindow* Create(content::WebContents* web_contents,
-                              base::DictionaryValue* options);
+                              const mate::Dictionary& options);
 
   // Create window with new WebContents, the caller is responsible for
   // managing the window's live.
-  static NativeWindow* Create(base::DictionaryValue* options);
+  static NativeWindow* Create(const mate::Dictionary& options);
 
   // Creates a devtools window to debug the WebContents, the returned window
   // will manage its own life.
@@ -93,7 +97,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Find a window from its process id and routing id.
   static NativeWindow* FromRenderView(int process_id, int routing_id);
 
-  void InitFromOptions(base::DictionaryValue* options);
+  void InitFromOptions(const mate::Dictionary& options);
 
   virtual void Close() = 0;
   virtual void CloseImmediately() = 0;
@@ -198,7 +202,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
  protected:
   explicit NativeWindow(content::WebContents* web_contents,
-                        base::DictionaryValue* options);
+                        const mate::Dictionary& options);
 
   brightray::InspectableWebContentsImpl* inspectable_web_contents() const {
     return static_cast<brightray::InspectableWebContentsImpl*>(

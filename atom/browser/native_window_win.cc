@@ -15,13 +15,13 @@
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/values.h"
 #include "base/win/scoped_comptr.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
+#include "native_mate/dictionary.h"
 #include "ui/gfx/path.h"
 #include "ui/base/models/simple_menu_model.h"
 #include "ui/views/widget/widget.h"
@@ -217,13 +217,13 @@ class NativeWindowFramelessView : public views::NonClientFrameView {
 }  // namespace
 
 NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
-                                 base::DictionaryValue* options)
+                                 const mate::Dictionary& options)
     : NativeWindow(web_contents, options),
       window_(new views::Widget),
       web_view_(inspectable_web_contents_view()->GetView()),
       use_content_size_(false),
       resizable_(true) {
-  options->GetBoolean(switches::kResizable, &resizable_);
+  options.Get(switches::kResizable, &resizable_);
 
   views::Widget::InitParams params(views::Widget::InitParams::TYPE_WINDOW);
   params.delegate = this;
@@ -236,11 +236,11 @@ NativeWindowWin::NativeWindowWin(content::WebContents* web_contents,
   views::WidgetFocusManager::GetInstance()->AddFocusChangeListener(this);
 
   int width = 800, height = 600;
-  options->GetInteger(switches::kWidth, &width);
-  options->GetInteger(switches::kHeight, &height);
+  options.Get(switches::kWidth, &width);
+  options.Get(switches::kHeight, &height);
 
   gfx::Size size(width, height);
-  options->GetBoolean(switches::kUseContentSize, &use_content_size_);
+  options.Get(switches::kUseContentSize, &use_content_size_);
   if (has_frame_ && use_content_size_)
     ClientAreaSizeToWindowSize(&size);
 
@@ -624,7 +624,7 @@ void NativeWindowWin::RegisterAccelerators() {
 
 // static
 NativeWindow* NativeWindow::Create(content::WebContents* web_contents,
-                                   base::DictionaryValue* options) {
+                                   const mate::Dictionary& options) {
   return new NativeWindowWin(web_contents, options);
 }
 

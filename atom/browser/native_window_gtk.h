@@ -26,7 +26,7 @@ class NativeWindowGtk : public NativeWindow,
                         public ui::ActiveWindowWatcherXObserver {
  public:
   explicit NativeWindowGtk(content::WebContents* web_contents,
-                           base::DictionaryValue* options);
+                           const mate::Dictionary& options);
   virtual ~NativeWindowGtk();
 
   // NativeWindow implementation.

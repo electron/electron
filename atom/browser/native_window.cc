@@ -16,6 +16,7 @@
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/atom_version.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/file_util.h"
@@ -39,6 +40,7 @@
 #include "content/public/browser/web_contents_view.h"
 #include "content/public/common/renderer_preferences.h"
 #include "ipc/ipc_message_macros.h"
+#include "native_mate/dictionary.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
@@ -53,7 +55,7 @@ using content::NavigationEntry;
 namespace atom {
 
 NativeWindow::NativeWindow(content::WebContents* web_contents,
-                           base::DictionaryValue* options)
+                           const mate::Dictionary& options)
     : content::WebContentsObserver(web_contents),
       has_frame_(true),
       is_closed_(false),
@@ -63,7 +65,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       weak_factory_(this),
       inspectable_web_contents_(
           brightray::InspectableWebContents::Create(web_contents)) {
-  options->GetBoolean(switches::kFrame, &has_frame_);
+  options.Get(switches::kFrame, &has_frame_);
 
 #if defined(OS_MACOSX)
   // Temporary fix for flashing devtools, try removing this after upgraded to
@@ -73,19 +75,19 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
 
   // Read icon before window is created.
   std::string icon;
-  if (options->GetString(switches::kIcon, &icon) && !SetIcon(icon))
+  if (options.Get(switches::kIcon, &icon) && !SetIcon(icon))
     LOG(ERROR) << "Failed to set icon to " << icon;
 
   // Read iframe security before any navigation.
-  options->GetString(switches::kNodeIntegration, &node_integration_);
+  options.Get(switches::kNodeIntegration, &node_integration_);
 
   // Read the web preferences.
-  base::DictionaryValue* web_preferences;
-  if (options->GetDictionary(switches::kWebPreferences, &web_preferences))
-    web_preferences_.reset(web_preferences->DeepCopy());
+  base::DictionaryValue web_preferences;
+  if (options.Get(switches::kWebPreferences, &web_preferences))
+    web_preferences_.reset(web_preferences.DeepCopy());
 
   // Read the zoom factor before any navigation.
-  options->GetDouble(switches::kZoomFactor, &zoom_factor_);
+  options.Get(switches::kZoomFactor, &zoom_factor_);
 
   web_contents->SetDelegate(this);
   inspectable_web_contents()->SetDelegate(this);
@@ -117,15 +119,15 @@ NativeWindow::~NativeWindow() {
 }
 
 // static
-NativeWindow* NativeWindow::Create(base::DictionaryValue* options) {
+NativeWindow* NativeWindow::Create(const mate::Dictionary& options) {
   content::WebContents::CreateParams create_params(AtomBrowserContext::Get());
   return Create(content::WebContents::Create(create_params), options);
 }
 
 // static
 NativeWindow* NativeWindow::Debug(content::WebContents* web_contents) {
-  base::DictionaryValue options;
-  NativeWindow* window = NativeWindow::Create(&options);
+  mate::Dictionary options;
+  NativeWindow* window = NativeWindow::Create(options);
   window->devtools_delegate_.reset(new DevToolsDelegate(window, web_contents));
   return window;
 }
@@ -146,56 +148,55 @@ NativeWindow* NativeWindow::FromRenderView(int process_id, int routing_id) {
   return NULL;
 }
 
-void NativeWindow::InitFromOptions(base::DictionaryValue* options) {
+void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   // Setup window from options.
   int x = -1, y = -1;
   bool center;
-  if (options->GetInteger(switches::kX, &x) &&
-      options->GetInteger(switches::kY, &y)) {
+  if (options.Get(switches::kX, &x) && options.Get(switches::kY, &y)) {
     int width = -1, height = -1;
-    options->GetInteger(switches::kWidth, &width);
-    options->GetInteger(switches::kHeight, &height);
+    options.Get(switches::kWidth, &width);
+    options.Get(switches::kHeight, &height);
     Move(gfx::Rect(x, y, width, height));
-  } else if (options->GetBoolean(switches::kCenter, &center) && center) {
+  } else if (options.Get(switches::kCenter, &center) && center) {
     Center();
   }
   int min_height = -1, min_width = -1;
-  if (options->GetInteger(switches::kMinHeight, &min_height) &&
-      options->GetInteger(switches::kMinWidth, &min_width)) {
+  if (options.Get(switches::kMinHeight, &min_height) &&
+      options.Get(switches::kMinWidth, &min_width)) {
     SetMinimumSize(gfx::Size(min_width, min_height));
   }
   int max_height = -1, max_width = -1;
-  if (options->GetInteger(switches::kMaxHeight, &max_height) &&
-      options->GetInteger(switches::kMaxWidth, &max_width)) {
+  if (options.Get(switches::kMaxHeight, &max_height) &&
+      options.Get(switches::kMaxWidth, &max_width)) {
     SetMaximumSize(gfx::Size(max_width, max_height));
   }
   bool resizable;
-  if (options->GetBoolean(switches::kResizable, &resizable)) {
+  if (options.Get(switches::kResizable, &resizable)) {
     SetResizable(resizable);
   }
   bool top;
-  if (options->GetBoolean(switches::kAlwaysOnTop, &top) && top) {
+  if (options.Get(switches::kAlwaysOnTop, &top) && top) {
     SetAlwaysOnTop(true);
   }
   bool fullscreen;
-  if (options->GetBoolean(switches::kFullscreen, &fullscreen) && fullscreen) {
+  if (options.Get(switches::kFullscreen, &fullscreen) && fullscreen) {
     SetFullscreen(true);
   }
   bool skip;
-  if (options->GetBoolean(switches::kSkipTaskbar, &skip) && skip) {
+  if (options.Get(switches::kSkipTaskbar, &skip) && skip) {
     SetSkipTaskbar(skip);
   }
   bool kiosk;
-  if (options->GetBoolean(switches::kKiosk, &kiosk) && kiosk) {
+  if (options.Get(switches::kKiosk, &kiosk) && kiosk) {
     SetKiosk(kiosk);
   }
   std::string title("Atom Shell");
-  options->GetString(switches::kTitle, &title);
+  options.Get(switches::kTitle, &title);
   SetTitle(title);
 
   // Then show it.
   bool show = true;
-  options->GetBoolean(switches::kShow, &show);
+  options.Get(switches::kShow, &show);
   if (show)
     Show();
 }
