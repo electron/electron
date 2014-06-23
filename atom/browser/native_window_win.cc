@@ -22,7 +22,7 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
 #include "native_mate/dictionary.h"
-#include "ui/gfx/image.h"
+#include "ui/gfx/image/image.h"
 #include "ui/gfx/path.h"
 #include "ui/base/models/simple_menu_model.h"
 #include "ui/views/widget/widget.h"

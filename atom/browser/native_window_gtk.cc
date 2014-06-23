@@ -23,7 +23,7 @@
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/font_render_params_linux.h"
 #include "ui/gfx/gtk_util.h"
-#include "ui/gfx/image.h"
+#include "ui/gfx/image/image.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/skia_utils_gtk.h"
 
