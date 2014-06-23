@@ -24,7 +24,7 @@ namespace mate {
 //
 class Dictionary {
  public:
-  explicit Dictionary(v8::Isolate* isolate);
+  explicit Dictionary(v8::Isolate* isolate = NULL);
   Dictionary(v8::Isolate* isolate, v8::Handle<v8::Object> object);
   ~Dictionary();
 
@@ -48,6 +48,7 @@ class Dictionary {
         CallbackTraits<T>::CreateTemplate(isolate_, callback)->GetFunction());
   }
 
+  v8::Handle<v8::Object> object() const { return object_; }
   v8::Isolate* isolate() const { return isolate_; }
 
  private:
