@@ -24,7 +24,7 @@ namespace mate {
 //
 class Dictionary {
  public:
-  explicit Dictionary(v8::Isolate* isolate = NULL);
+  Dictionary(v8::Isolate* isolate = v8::Isolate::GetCurrent());
   Dictionary(v8::Isolate* isolate, v8::Handle<v8::Object> object);
   ~Dictionary();
 

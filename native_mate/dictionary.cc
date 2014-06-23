@@ -7,7 +7,8 @@
 namespace mate {
 
 Dictionary::Dictionary(v8::Isolate* isolate)
-    : isolate_(isolate) {
+    : isolate_(isolate),
+      object_(v8::Object::New()) {
 }
 
 Dictionary::Dictionary(v8::Isolate* isolate,
