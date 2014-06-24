@@ -22,7 +22,8 @@ class MessageBox {
              const std::string& title,
              const std::string& message,
              const std::string& detail)
-      : cancel_id_(0) {
+      : cancel_id_(0),
+        dialog_scope_(new NativeWindow::DialogScope(parent_window)) {
     GtkWindow* window = parent_window ? parent_window->GetNativeWindow() : NULL;
     dialog_ = gtk_dialog_new_with_buttons(
         title.c_str(),
@@ -83,6 +84,8 @@ class MessageBox {
  private:
   GtkWidget* dialog_;
   MessageBoxCallback callback_;
+
+  scoped_ptr<NativeWindow::DialogScope> dialog_scope_;
 
   // The id to return when the dialog is closed without pressing buttons.
   int cancel_id_;
