@@ -40,10 +40,10 @@ Modules for both sides:
 * [Coding style](development/coding-style.md)
 * [Source code directory structure](development/source-code-directory-structure.md)
 * [Technical differences to node-webkit](development/atom-shell-vs-node-webkit.md)
-* [How node.js is integrated into atom-shell](atom-shell slides) (slides) ([中文版](atom-shell slides chinese))
+* [How node.js is integrated into atom-shell](atom-shell-slides) (slides) ([中文版](atom-shell-slides-chinese))
 * [Build instructions (Mac)](development/build-instructions-mac.md)
 * [Build instructions (Windows)](development/build-instructions-windows.md)
 * [Build instructions (Linux)](development/build-instructions-linux.md)
 
-[atom-shell slides]:https://speakerdeck.com/zcbenz/practice-on-embedding-node-dot-js-into-atom-editor
-[atom-shell slides chinese]:http://2014.jsconf.cn/slides/Practice%20on%20embedding%20Node.js%20into%20Atom%20Editor.pdf
+[atom-shell-slides]:https://speakerdeck.com/zcbenz/practice-on-embedding-node-dot-js-into-atom-editor
+[atom-shell-slides-chinese]:http://2014.jsconf.cn/slides/Practice%20on%20embedding%20Node.js%20into%20Atom%20Editor.pdf
