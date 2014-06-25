@@ -28,6 +28,7 @@ def main():
   if sys.platform in ['win32', 'cygwin']:
     install_runas()
 
+  create_chrome_version_h()
   touch_config_gypi()
   update_atom_shell()
 
@@ -79,6 +80,22 @@ def install_runas():
   # this to a better place.
   with scoped_cwd(os.path.join(SOURCE_ROOT, 'tools', 'win')):
     execute([NPM, 'install', 'runas'])
+
+
+def create_chrome_version_h():
+  version_file = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
+                              'libchromiumcontent', 'VERSION')
+  target_file = os.path.join(SOURCE_ROOT, 'atom', 'common', 'chrome_version.h')
+  template_file = os.path.join(SOURCE_ROOT, 'script', 'chrome_version.h.in')
+
+  with open(version_file, 'r') as f:
+    version = f.read()
+  with open(template_file, 'r') as f:
+    template = f.read()
+  with open(target_file, 'w+') as f:
+    content = template.replace('{PLACEHOLDER}', version.strip())
+    if f.read() != content:
+      f.write(content)
 
 
 def touch_config_gypi():

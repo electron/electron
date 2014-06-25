@@ -16,6 +16,7 @@
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/atom_version.h"
+#include "atom/common/chrome_version.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/options_switches.h"
@@ -99,9 +100,10 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
   // Override the user agent to contain application and atom-shell's version.
   Browser* browser = Browser::Get();
   std::string product_name = base::StringPrintf(
-      "%s/%s Atom-Shell/" ATOM_VERSION_STRING,
+      "%s/%s Chrome/%s Atom-Shell/" ATOM_VERSION_STRING,
       browser->GetName().c_str(),
-      browser->GetVersion().c_str());
+      browser->GetVersion().c_str(),
+      CHROME_VERSION_STRING);
   web_contents->GetMutableRendererPrefs()->user_agent_override =
       webkit_glue::BuildUserAgentFromProduct(product_name);
 
