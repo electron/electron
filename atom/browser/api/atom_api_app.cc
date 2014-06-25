@@ -131,6 +131,10 @@ void Initialize(v8::Handle<v8::Object> exports) {
   dict.SetMethod("dockGetBadgeText",
                  base::Bind(&Browser::DockGetBadgeText,
                             base::Unretained(browser)));
+  dict.SetMethod("dockHide",
+                 base::Bind(&Browser::DockHide, base::Unretained(browser)));
+  dict.SetMethod("dockShow",
+                 base::Bind(&Browser::DockShow, base::Unretained(browser)));
 #endif
 }
 

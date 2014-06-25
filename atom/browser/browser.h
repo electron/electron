@@ -56,6 +56,10 @@ class Browser : public WindowListObserver {
   // Set/Get dock's badge text.
   void DockSetBadgeText(const std::string& label);
   std::string DockGetBadgeText();
+
+  // Hide/Show dock.
+  void DockHide();
+  void DockShow();
 #endif  // defined(OS_MACOSX)
 
   // Tell the application to open a file.

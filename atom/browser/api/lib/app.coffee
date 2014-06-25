@@ -24,6 +24,8 @@ if process.platform is 'darwin'
     cancelBounce: bindings.dockCancelBounce
     setBadge: bindings.dockSetBadgeText
     getBadge: bindings.dockGetBadgeText
+    hide: bindings.hide
+    show: bindings.show
 
 # Be compatible with old API.
 app.once 'ready', -> app.emit 'finish-launching'

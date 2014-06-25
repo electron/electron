@@ -4,9 +4,11 @@
 
 #include "atom/browser/browser.h"
 
+#import "atom/browser/mac/atom_application.h"
+#include "atom/browser/native_window.h"
+#include "atom/browser/window_list.h"
 #import "base/mac/bundle_locations.h"
 #include "base/strings/sys_string_conversions.h"
-#import "atom/browser/mac/atom_application.h"
 
 namespace atom {
 
@@ -42,6 +44,20 @@ void Browser::DockSetBadgeText(const std::string& label) {
 std::string Browser::DockGetBadgeText() {
   NSDockTile *tile = [[AtomApplication sharedApplication] dockTile];
   return base::SysNSStringToUTF8([tile badgeLabel]);
+}
+
+void Browser::DockHide() {
+  WindowList* list = WindowList::GetInstance();
+  for (WindowList::iterator it = list->begin(); it != list->end(); ++it)
+    [(*it)->GetNativeWindow() setCanHide:NO];
+
+  ProcessSerialNumber psn = { 0, kCurrentProcess };
+  TransformProcessType(&psn, kProcessTransformToUIElementApplication);
+}
+
+void Browser::DockShow() {
+  ProcessSerialNumber psn = { 0, kCurrentProcess };
+  TransformProcessType(&psn, kProcessTransformToForegroundApplication);
 }
 
 }  // namespace atom

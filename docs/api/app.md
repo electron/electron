@@ -153,3 +153,15 @@ Sets the string to be displayed in the dock’s badging area.
 Returns the badge string of the dock.
 
 **Note:** This API is only available on Mac.
+
+## app.dock.hide()
+
+Hides the dock icon.
+
+**Note:** This API is only available on Mac.
+
+## app.dock.show()
+
+Shows the dock icon.
+
+**Note:** This API is only available on Mac.
