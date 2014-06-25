@@ -7,7 +7,7 @@
   * Make sure "X64 Compilers and Tools" are installed if you use the
     Professional edition.
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
-* [node.js](http://nodejs.org/)
+* 32bit [node.js](http://nodejs.org/)
 * [git](http://git-scm.com)
 
 If you are using Visual Studio 2010 __Express__ then you also need following
@@ -114,3 +114,7 @@ you have installed python under `C:\Python27`):
 
 Upgrading to VS 2010 SP1 would solve this, read the Microsoft Support article
 on more of this: http://support.microsoft.com/kb/2757355.
+
+### LNK1181: cannot open input file 'kernel32.lib'
+
+Try reinstalling 32bit node.js.
