@@ -284,11 +284,6 @@ void Window::InspectElement(int x, int y) {
   window_->InspectElement(x, y);
 }
 
-void Window::DebugDevTools() {
-  if (window_->IsDevToolsOpened())
-    NativeWindow::Debug(window_->GetDevToolsWebContents());
-}
-
 void Window::FocusOnWebView() {
   window_->FocusOnWebView();
 }
@@ -376,7 +371,6 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("closeDevTools", &Window::CloseDevTools)
       .SetMethod("isDevToolsOpened", &Window::IsDevToolsOpened)
       .SetMethod("inspectElement", &Window::InspectElement)
-      .SetMethod("debugDevTools", &Window::DebugDevTools)
       .SetMethod("focusOnWebView", &Window::FocusOnWebView)
       .SetMethod("blurWebView", &Window::BlurWebView)
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)

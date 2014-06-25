@@ -92,7 +92,6 @@ class Window : public mate::EventEmitter,
   void CloseDevTools();
   bool IsDevToolsOpened();
   void InspectElement(int x, int y);
-  void DebugDevTools();
   void FocusOnWebView();
   void BlurWebView();
   bool IsWebViewFocused();

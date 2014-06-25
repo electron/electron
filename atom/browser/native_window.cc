@@ -11,7 +11,6 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/browser.h"
-#include "atom/browser/devtools_delegate.h"
 #include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
@@ -129,14 +128,6 @@ NativeWindow* NativeWindow::Create(const mate::Dictionary& options) {
 }
 
 // static
-NativeWindow* NativeWindow::Debug(content::WebContents* web_contents) {
-  mate::Dictionary options;
-  NativeWindow* window = NativeWindow::Create(options);
-  window->devtools_delegate_.reset(new DevToolsDelegate(window, web_contents));
-  return window;
-}
-
-// static
 NativeWindow* NativeWindow::FromRenderView(int process_id, int routing_id) {
   // Stupid iterating.
   WindowList& window_list = *WindowList::GetInstance();
@@ -216,28 +207,20 @@ bool NativeWindow::HasModalDialog() {
 }
 
 void NativeWindow::OpenDevTools() {
-  if (devtools_window_) {
-    devtools_window_->Focus(true);
-  } else {
-    inspectable_web_contents()->ShowDevTools();
+  inspectable_web_contents()->ShowDevTools();
 #if defined(OS_MACOSX)
-    // Temporary fix for flashing devtools, try removing this after upgraded to
-    // Chrome 32.
-    GetDevToolsWebContents()->GetView()->SetAllowOverlappingViews(false);
+  // Temporary fix for flashing devtools, try removing this after upgraded to
+  // Chrome 32.
+  GetDevToolsWebContents()->GetView()->SetAllowOverlappingViews(false);
 #endif
-  }
 }
 
 void NativeWindow::CloseDevTools() {
-  if (devtools_window_)
-    devtools_window_->Close();
-  else
-    inspectable_web_contents()->CloseDevTools();
+  inspectable_web_contents()->CloseDevTools();
 }
 
 bool NativeWindow::IsDevToolsOpened() {
-  return (devtools_window_ && devtools_window_->IsFocused()) ||
-         inspectable_web_contents()->IsDevToolsViewShowing();
+  return inspectable_web_contents()->IsDevToolsViewShowing();
 }
 
 void NativeWindow::InspectElement(int x, int y) {
@@ -260,10 +243,6 @@ bool NativeWindow::IsWebViewFocused() {
   content::RenderWidgetHostView* host_view =
       GetWebContents()->GetRenderViewHost()->GetView();
   return host_view && host_view->HasFocus();
-}
-
-base::ProcessHandle NativeWindow::GetRenderProcessHandle() {
-  return GetWebContents()->GetRenderProcessHost()->GetHandle();
 }
 
 void NativeWindow::CapturePage(const gfx::Rect& rect,

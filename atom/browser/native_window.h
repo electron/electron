@@ -44,7 +44,6 @@ class Dictionary;
 namespace atom {
 
 class AtomJavaScriptDialogManager;
-class DevToolsDelegate;
 struct DraggableRegion;
 
 class NativeWindow : public brightray::DefaultWebContentsDelegate,
@@ -84,10 +83,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Create window with new WebContents, the caller is responsible for
   // managing the window's live.
   static NativeWindow* Create(const mate::Dictionary& options);
-
-  // Creates a devtools window to debug the WebContents, the returned window
-  // will manage its own life.
-  static NativeWindow* Debug(content::WebContents* web_contents);
 
   // Find a window from its process id and routing id.
   static NativeWindow* FromRenderView(int process_id, int routing_id);
@@ -143,10 +138,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void FocusOnWebView();
   virtual void BlurWebView();
   virtual bool IsWebViewFocused();
-
-  // Returns the process handle of render process, useful for killing the
-  // render process manually
-  virtual base::ProcessHandle GetRenderProcessHandle();
 
   // Captures the page with |rect|, |callback| would be called when capturing is
   // done.
@@ -295,9 +286,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   double zoom_factor_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_;
-
-  base::WeakPtr<NativeWindow> devtools_window_;
-  scoped_ptr<DevToolsDelegate> devtools_delegate_;
 
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
 

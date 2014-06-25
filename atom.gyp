@@ -95,8 +95,6 @@
       'atom/browser/browser_mac.mm',
       'atom/browser/browser_win.cc',
       'atom/browser/browser_observer.h',
-      'atom/browser/devtools_delegate.cc',
-      'atom/browser/devtools_delegate.h',
       'atom/browser/mac/atom_application.h',
       'atom/browser/mac/atom_application.mm',
       'atom/browser/mac/atom_application_delegate.h',
