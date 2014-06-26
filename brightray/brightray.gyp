@@ -14,6 +14,7 @@
         '<(libchromiumcontent_include_dir)',
         '<(libchromiumcontent_include_dir)/skia/config',
         '<(libchromiumcontent_include_dir)/third_party/skia/include/core',
+        '<(libchromiumcontent_include_dir)/third_party/WebKit',
       ],
       'direct_dependent_settings': {
         'include_dirs': [
@@ -22,6 +23,7 @@
           '<(libchromiumcontent_include_dir)/skia/config',
           '<(libchromiumcontent_include_dir)/third_party/skia/include/core',
           '<(libchromiumcontent_include_dir)/third_party/icu/source/common',
+          '<(libchromiumcontent_include_dir)/third_party/WebKit',
         ],
       },
       'sources': [
