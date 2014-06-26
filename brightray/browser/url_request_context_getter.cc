@@ -85,7 +85,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         base::WorkerPool::GetTaskRunner(true)));
     storage_->set_http_user_agent_settings(
         new net::StaticHttpUserAgentSettings(
-            "en-us,en", EmptyString()));
+            "en-us,en", base::EmptyString()));
 
     scoped_ptr<net::HostResolver> host_resolver(
         net::HostResolver::CreateDefaultResolver(NULL));

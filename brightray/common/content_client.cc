@@ -21,7 +21,7 @@ ContentClient::~ContentClient() {
 
 std::string ContentClient::GetProduct() const {
   auto name = GetApplicationName();
-  RemoveChars(name, kWhitespaceASCII, &name);
+  base::RemoveChars(name, base::kWhitespaceASCII, &name);
   return base::StringPrintf("%s/%s",
       name.c_str(), GetApplicationVersion().c_str());
 }

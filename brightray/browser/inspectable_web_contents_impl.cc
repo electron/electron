@@ -117,7 +117,7 @@ void InspectableWebContentsImpl::UpdateFrontendDockSide() {
   auto javascript = base::StringPrintf(
       "InspectorFrontendAPI.setDockSide(\"%s\")", dock_side_.c_str());
   devtools_web_contents_->GetRenderViewHost()->ExecuteJavascriptInWebFrame(
-      string16(), ASCIIToUTF16(javascript));
+      base::string16(), base::ASCIIToUTF16(javascript));
 }
 
 void InspectableWebContentsImpl::ActivateWindow() {

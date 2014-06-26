@@ -59,7 +59,7 @@ void NetworkDelegate::OnURLRequestDestroyed(net::URLRequest* request) {
 }
 
 void NetworkDelegate::OnPACScriptError(int line_number,
-                                            const string16& error) {
+                                       const base::string16& error) {
 }
 
 NetworkDelegate::AuthRequiredResponse NetworkDelegate::OnAuthRequired(
