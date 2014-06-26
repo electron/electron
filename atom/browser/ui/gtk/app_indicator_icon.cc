@@ -173,8 +173,6 @@ AppIndicatorIcon::AppIndicatorIcon()
 AppIndicatorIcon::~AppIndicatorIcon() {
   if (icon_) {
     app_indicator_set_status(icon_, APP_INDICATOR_STATUS_PASSIVE);
-    // if (gtk_menu_)
-    //   DestroyMenu();
     g_object_unref(icon_);
     content::BrowserThread::GetBlockingPool()->PostTask(
         FROM_HERE,
@@ -220,6 +218,18 @@ void AppIndicatorIcon::SetToolTip(const std::string& tool_tip) {
 }
 
 void AppIndicatorIcon::SetContextMenu(ui::SimpleMenuModel* menu_model) {
+  // The icon is created asynchronously, wait until the icon has been ready.
+  if (!icon_) {
+    content::BrowserThread::GetBlockingPool()
+        ->GetTaskRunnerWithShutdownBehavior(
+              base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)->PostTask(
+        FROM_HERE,
+        base::Bind(&AppIndicatorIcon::SetContextMenu,
+                   weak_factory_.GetWeakPtr(),
+                   base::Unretained(menu_model)));
+    return;
+  }
+
   menu_.reset(new MenuGtk(NULL, menu_model));
   app_indicator_set_menu(icon_, GTK_MENU(menu_->widget()));
 }
