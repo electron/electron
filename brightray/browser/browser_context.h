@@ -25,7 +25,8 @@ class BrowserContext : public content::BrowserContext {
   virtual void Initialize();
 
   net::URLRequestContextGetter* CreateRequestContext(
-      content::ProtocolHandlerMap*);
+      content::ProtocolHandlerMap* protocol_handlers,
+      content::ProtocolHandlerScopedVector protocol_interceptors);
 
   PrefService* prefs() { return prefs_.get(); }
 

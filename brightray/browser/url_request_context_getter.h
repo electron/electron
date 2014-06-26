@@ -32,7 +32,8 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
       base::MessageLoop* io_loop,
       base::MessageLoop* file_loop,
       base::Callback<scoped_ptr<NetworkDelegate>(void)>,
-      content::ProtocolHandlerMap*);
+      content::ProtocolHandlerMap* protocol_handlers,
+      content::ProtocolHandlerScopedVector protocol_interceptors);
   virtual ~URLRequestContextGetter();
 
   net::HostResolver* host_resolver();
@@ -53,6 +54,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   scoped_ptr<net::URLRequestContextStorage> storage_;
   scoped_ptr<net::URLRequestContext> url_request_context_;
   content::ProtocolHandlerMap protocol_handlers_;
+  content::ProtocolHandlerScopedVector protocol_interceptors_;
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestContextGetter);
 };
