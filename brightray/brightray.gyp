@@ -12,15 +12,14 @@
       'include_dirs': [
         '.',
         '<(libchromiumcontent_include_dir)',
-        '<(libchromiumcontent_include_dir)/third_party/skia/include/config',
+        '<(libchromiumcontent_include_dir)/skia/config',
         '<(libchromiumcontent_include_dir)/third_party/skia/include/core',
       ],
       'direct_dependent_settings': {
         'include_dirs': [
           '..',
           '<(libchromiumcontent_include_dir)',
-          '<(libchromiumcontent_include_dir)/third_party/skia/include/config',
-          # For SkMatrix.h.
+          '<(libchromiumcontent_include_dir)/skia/config',
           '<(libchromiumcontent_include_dir)/third_party/skia/include/core',
           '<(libchromiumcontent_include_dir)/third_party/icu/source/common',
         ],
