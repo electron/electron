@@ -8,8 +8,8 @@
 
 #include "base/strings/stringprintf.h"
 #include "base/strings/string_util.h"
+#include "content/public/common/user_agent.h"
 #include "ui/base/resource/resource_bundle.h"
-#include "webkit/common/user_agent/user_agent_util.h"
 
 namespace brightray {
 
@@ -27,7 +27,7 @@ std::string ContentClient::GetProduct() const {
 }
 
 std::string ContentClient::GetUserAgent() const {
-  return webkit_glue::BuildUserAgentFromProduct(GetProduct());
+  return content::BuildUserAgentFromProduct(GetProduct());
 }
 
 base::StringPiece ContentClient::GetDataResource(
