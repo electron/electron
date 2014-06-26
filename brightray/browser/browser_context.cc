@@ -16,7 +16,7 @@
 #include "base/prefs/json_pref_store.h"
 #include "base/prefs/pref_registry_simple.h"
 #include "base/prefs/pref_service.h"
-#include "base/prefs/pref_service_builder.h"
+#include "base/prefs/pref_service_factory.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_context.h"
 #include "content/public/browser/storage_partition.h"
@@ -76,8 +76,8 @@ void BrowserContext::Initialize() {
   path_ = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
 
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
-  PrefServiceBuilder builder;
-  builder.WithUserFilePrefs(prefs_path,
+  base::PrefServiceFactory prefs_factory;
+  prefs_factory.SetUserPrefsFile(prefs_path,
       JsonPrefStore::GetTaskRunnerForFile(
           prefs_path, content::BrowserThread::GetBlockingPool()));
 
@@ -85,7 +85,7 @@ void BrowserContext::Initialize() {
   RegisterInternalPrefs(registry);
   RegisterPrefs(registry);
 
-  prefs_.reset(builder.Create(registry));
+  prefs_ = prefs_factory.Create(registry);
 }
 
 BrowserContext::~BrowserContext() {
