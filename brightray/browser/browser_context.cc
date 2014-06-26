@@ -155,12 +155,34 @@ net::URLRequestContextGetter*
   return GetRequestContext();
 }
 
-void BrowserContext::RequestMIDISysExPermission(
+void BrowserContext::RequestMidiSysExPermission(
     int render_process_id,
     int render_view_id,
+    int bridge_id,
     const GURL& requesting_frame,
-    const MIDISysExPermissionCallback& callback) {
+    bool user_gesture,
+    const MidiSysExPermissionCallback& callback) {
   callback.Run(false);
+}
+
+void BrowserContext::CancelMidiSysExPermissionRequest(
+    int render_process_id,
+    int render_view_id,
+    int bridge_id,
+    const GURL& requesting_frame) {
+}
+
+void BrowserContext::RequestProtectedMediaIdentifierPermission(
+    int render_process_id,
+    int render_view_id,
+    int bridge_id,
+    int group_id,
+    const GURL& requesting_frame,
+    const ProtectedMediaIdentifierPermissionCallback& callback) {
+  callback.Run(false);
+}
+
+void BrowserContext::CancelProtectedMediaIdentifierPermissionRequests(int group_id) {
 }
 
 content::ResourceContext* BrowserContext::GetResourceContext() {
