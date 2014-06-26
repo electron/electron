@@ -27,14 +27,14 @@ scoped_ptr<ContentClient> MainDelegate::CreateContentClient() {
 bool MainDelegate::BasicStartupComplete(int* exit_code) {
   content_client_ = CreateContentClient().Pass();
   SetContentClient(content_client_.get());
-  return false;
-}
-
-void MainDelegate::PreSandboxStartup() {
 #if defined(OS_MACOSX)
   OverrideChildProcessPath();
   OverrideFrameworkBundlePath();
 #endif
+  return false;
+}
+
+void MainDelegate::PreSandboxStartup() {
   InitializeResourceBundle();
 }
 
