@@ -20,7 +20,7 @@ DevToolsWindow::DevToolsWindow(InspectableWebContentsViewWin* controller)
 DevToolsWindow::~DevToolsWindow() {
 }
 
-LRESULT DevToolsWindow::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
+LRESULT DevToolsWindow::OnCreate(UINT, WPARAM, LPARAM) {
   auto devtools_web_contents =
       controller_->inspectable_web_contents()->devtools_web_contents();
   SetParent(devtools_web_contents->GetView()->GetNativeView(), hwnd());
@@ -28,7 +28,7 @@ LRESULT DevToolsWindow::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
   return 0;
 }
 
-LRESULT DevToolsWindow::OnDestroy(UINT, WPARAM, LPARAM, BOOL&) {
+LRESULT DevToolsWindow::OnDestroy(UINT, WPARAM, LPARAM) {
   auto devtools_web_contents =
       controller_->inspectable_web_contents()->devtools_web_contents();
   SetParent(
@@ -37,7 +37,7 @@ LRESULT DevToolsWindow::OnDestroy(UINT, WPARAM, LPARAM, BOOL&) {
   return 0;
 }
 
-LRESULT DevToolsWindow::OnSize(UINT, WPARAM, LPARAM, BOOL&) {
+LRESULT DevToolsWindow::OnSize(UINT, WPARAM, LPARAM) {
   RECT rect;
   GetClientRect(hwnd(), &rect);
 

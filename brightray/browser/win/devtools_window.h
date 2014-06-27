@@ -14,20 +14,20 @@ class DevToolsWindow : public gfx::WindowImpl,
   static DevToolsWindow* Create(
       InspectableWebContentsViewWin* inspectable_web_contents_view_win);
 
-  BEGIN_MSG_MAP_EX(DevToolsWindow)
-    MESSAGE_HANDLER(WM_CREATE, OnCreate)
-    MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
-    MESSAGE_HANDLER(WM_SIZE, OnSize)
-  END_MSG_MAP()
+  CR_BEGIN_MSG_MAP_EX(DevToolsWindow)
+    CR_MESSAGE_HANDLER_EX(WM_CREATE, OnCreate)
+    CR_MESSAGE_HANDLER_EX(WM_DESTROY, OnDestroy)
+    CR_MESSAGE_HANDLER_EX(WM_SIZE, OnSize)
+  CR_END_MSG_MAP()
 
  private:
   explicit DevToolsWindow(
       InspectableWebContentsViewWin* inspectable_web_contents_view_win);
   ~DevToolsWindow();
 
-  LRESULT OnCreate(UINT message, WPARAM, LPARAM, BOOL& handled);
-  LRESULT OnDestroy(UINT message, WPARAM, LPARAM, BOOL& handled);
-  LRESULT OnSize(UINT message, WPARAM, LPARAM, BOOL& handled);
+  LRESULT OnCreate(UINT message, WPARAM, LPARAM);
+  LRESULT OnDestroy(UINT message, WPARAM, LPARAM);
+  LRESULT OnSize(UINT message, WPARAM, LPARAM);
 
   InspectableWebContentsViewWin* controller_;
 
