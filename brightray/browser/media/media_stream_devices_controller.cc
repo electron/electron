@@ -157,7 +157,9 @@ void MediaStreamDevicesController::Accept() {
 void MediaStreamDevicesController::Deny() {
   content::MediaResponseCallback cb = callback_;
   callback_.Reset();
-  cb.Run(content::MediaStreamDevices(), content::MEDIA_DEVICE_PERMISSION_DENIED, scoped_ptr<content::MediaStreamUI>());
+  cb.Run(content::MediaStreamDevices(),
+         content::MEDIA_DEVICE_PERMISSION_DENIED,
+         scoped_ptr<content::MediaStreamUI>());
 }
 
 }  // namespace brightray
