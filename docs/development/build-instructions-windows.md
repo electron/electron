@@ -2,21 +2,17 @@
 
 ## Prerequisites
 
-* Windows 7 or later
-* Visual Studio 2010 Express or Professional, with SP1 update
-  * Make sure "X64 Compilers and Tools" are installed if you use the
-    Professional edition.
+* Windows 8
+* Visual Studio 2013
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
 * 32bit [node.js](http://nodejs.org/)
 * [git](http://git-scm.com)
 
-If you are using Visual Studio 2010 __Express__ then you also need following
+If you are using Visual Studio 2013 __Express__ then you also need following
 softwares:
 
 * [WDK](http://www.microsoft.com/en-us/download/details.aspx?id=11800)
   * `Build Environments` is required.
-* [Windows 7 SDK](http://www.microsoft.com/en-us/download/details.aspx?id=8279)
-  * `Windows Headers` and `Visual C++ Compilers` are required.
 
 The instructions below are executed under [cygwin](http://www.cygwin.com),
 but it's not a requirement, you can also build atom-shell under the Windows
@@ -79,8 +75,7 @@ $ python script/test.py
 ### Command xxxx not found
 
 If you encountered an error like `Command xxxx not found`, you may try to use
-the `Visual Studio x64 Tools Command Prompt (2010)` console to execute the build
-scripts.
+the `VS2012 Command Prompt` console to execute the build scripts.
 
 ### Assertion failed: ((handle))->activecnt >= 0
 
@@ -109,11 +104,6 @@ you have installed python under `C:\Python27`):
 ```bash
 /cygdrive/c/Python27/python.exe script/bootstrap.py
 ```
-
-### LNK1123: failure during conversion to COFF: file invalid or corrupt
-
-Upgrading to VS 2010 SP1 would solve this, read the Microsoft Support article
-on more of this: http://support.microsoft.com/kb/2757355.
 
 ### LNK1181: cannot open input file 'kernel32.lib'
 
