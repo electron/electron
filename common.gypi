@@ -5,7 +5,7 @@
       ['OS=="mac" or OS=="linux"', {
         'clang': 1,
       }],
-      ['OS=="win" and (MSVS_VERSION=="2012e" or MSVS_VERSION=="2010e")', {
+      ['OS=="win" and (MSVS_VERSION=="2013e" or MSVS_VERSION=="2012e" or MSVS_VERSION=="2010e")', {
         'msvs_express': 1,
         'windows_driver_kit_path%': 'C:/WinDDK/7600.16385.1',
       },{
@@ -39,6 +39,7 @@
     'target_conditions': [
       ['_target_name in ["libuv", "http_parser", "cares", "openssl", "openssl-cli", "node_lib", "zlib"]', {
         'msvs_disabled_warnings': [
+          4703,  # potentially uninitialized local pointer variable 'req' used
           4013,  # 'free' undefined; assuming extern returning int
           4054,  #
           4057,  # 'function' : 'volatile LONG *' differs in indirection to slightly different base types from 'unsigned long *'
@@ -136,6 +137,7 @@
       4201,  # (uv.h) nameless struct/union
       4800,  # (v8.h) forcing value to bool 'true' or 'false'
       4819,  # The file contains a character that cannot be represented in the current code page
+      4996,  # (atlapp.h) 'GetVersionExW': was declared deprecated
     ],
     'msvs_settings': {
       'VCCLCompilerTool': {
