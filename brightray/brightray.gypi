@@ -77,6 +77,11 @@
           },
         },
         'conditions': [
+          ['OS=="win"', {
+            'defines': [
+              'USE_AURA',
+            ],
+          }],
           ['OS not in ["mac", "win"]', {
             'defines': [
               'USE_X11',
