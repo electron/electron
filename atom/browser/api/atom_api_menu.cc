@@ -122,7 +122,7 @@ base::string16 Menu::GetLabelForCommandId(int command_id) const {
       "getLabelForCommandId",
       command_id);
   base::string16 label;
-  mate::ConvertFromV8(node_isolate, result, &label);
+  mate::ConvertFromV8(isolate, result, &label);
   return label;
 }
 
@@ -264,9 +264,10 @@ namespace {
 
 void Initialize(v8::Handle<v8::Object> exports) {
   using atom::api::Menu;
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Local<v8::Function> constructor = mate::CreateConstructor<Menu>(
-      node_isolate, "Menu", base::Bind(&Menu::Create));
-  mate::Dictionary dict(v8::Isolate::GetCurrent(), exports);
+      isolate, "Menu", base::Bind(&Menu::Create));
+  mate::Dictionary dict(isolate, exports);
   dict.Set("Menu", static_cast<v8::Handle<v8::Value>>(constructor));
 #if defined(OS_MACOSX)
   dict.SetMethod("setApplicationMenu", &Menu::SetApplicationMenu);

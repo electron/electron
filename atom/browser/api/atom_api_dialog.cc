@@ -27,7 +27,7 @@ void ShowMessageBox(int type,
                     mate::Arguments* args) {
   v8::Handle<v8::Value> peek = args->PeekNext();
   atom::MessageBoxCallback callback;
-  if (mate::Converter<atom::MessageBoxCallback>::FromV8(node_isolate,
+  if (mate::Converter<atom::MessageBoxCallback>::FromV8(args->isolate(),
                                                         peek,
                                                         &callback)) {
     atom::ShowMessageBox(window, (atom::MessageBoxType)type, buttons, title,
@@ -46,7 +46,7 @@ void ShowOpenDialog(const std::string& title,
                     mate::Arguments* args) {
   v8::Handle<v8::Value> peek = args->PeekNext();
   file_dialog::OpenDialogCallback callback;
-  if (mate::Converter<file_dialog::OpenDialogCallback>::FromV8(node_isolate,
+  if (mate::Converter<file_dialog::OpenDialogCallback>::FromV8(args->isolate(),
                                                                peek,
                                                                &callback)) {
     file_dialog::ShowOpenDialog(window, title, default_path, properties,
@@ -65,7 +65,7 @@ void ShowSaveDialog(const std::string& title,
                     mate::Arguments* args) {
   v8::Handle<v8::Value> peek = args->PeekNext();
   file_dialog::SaveDialogCallback callback;
-  if (mate::Converter<file_dialog::SaveDialogCallback>::FromV8(node_isolate,
+  if (mate::Converter<file_dialog::SaveDialogCallback>::FromV8(args->isolate(),
                                                                peek,
                                                                &callback)) {
     file_dialog::ShowSaveDialog(window, title, default_path, callback);

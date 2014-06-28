@@ -31,20 +31,21 @@ bool EventEmitter::Emit(const base::StringPiece& name,
                         const base::ListValue& args,
                         content::WebContents* sender,
                         IPC::Message* message) {
-  v8::Locker locker(node_isolate);
-  v8::HandleScope handle_scope(node_isolate);
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
 
-  v8::Handle<v8::Context> context = v8::Context::GetCurrent();
+  v8::Handle<v8::Context> context = isolate->GetCurrentContext();
   scoped_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
 
-  mate::Handle<mate::Event> event = mate::Event::Create(node_isolate);
+  mate::Handle<mate::Event> event = mate::Event::Create(isolate);
   if (sender && message)
     event->SetSenderAndMessage(sender, message);
 
   // v8_args = [name, event, args...];
   std::vector<v8::Handle<v8::Value>> v8_args;
   v8_args.reserve(args.GetSize() + 2);
-  v8_args.push_back(mate::StringToV8(node_isolate, name));
+  v8_args.push_back(mate::StringToV8(isolate, name));
   v8_args.push_back(event.ToV8());
   for (size_t i = 0; i < args.GetSize(); i++) {
     const base::Value* value(NULL);
@@ -53,8 +54,8 @@ bool EventEmitter::Emit(const base::StringPiece& name,
   }
 
   // this.emit.apply(this, v8_args);
-  node::MakeCallback(
-      GetWrapper(node_isolate), "emit", v8_args.size(), &v8_args[0]);
+  node::MakeCallback(isolate, GetWrapper(isolate), "emit", v8_args.size(),
+                     &v8_args[0]);
 
   return event->prevent_default();
 }

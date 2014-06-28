@@ -46,10 +46,11 @@ namespace api {
 namespace {
 
 void OnCapturePageDone(
+    v8::Isolate* isolate,
     const base::Callback<void(v8::Handle<v8::Value>)>& callback,
     const std::vector<unsigned char>& data) {
-  v8::Locker locker(node_isolate);
-  v8::HandleScope handle_scope(node_isolate);
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
 
   v8::Local<v8::Value> buffer = node::Buffer::New(
       reinterpret_cast<const char*>(data.data()),
@@ -307,7 +308,8 @@ void Window::CapturePage(mate::Arguments* args) {
     return;
   }
 
-  window_->CapturePage(rect, base::Bind(&OnCapturePageDone, callback));
+  window_->CapturePage(
+      rect, base::Bind(&OnCapturePageDone, args->isolate(), callback));
 }
 
 void Window::SetRepresentedFilename(const std::string& filename) {
@@ -388,9 +390,10 @@ namespace {
 
 void Initialize(v8::Handle<v8::Object> exports) {
   using atom::api::Window;
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Local<v8::Function> constructor = mate::CreateConstructor<Window>(
-      node_isolate, "BrowserWindow", base::Bind(&Window::New));
-  mate::Dictionary dict(v8::Isolate::GetCurrent(), exports);
+      isolate, "BrowserWindow", base::Bind(&Window::New));
+  mate::Dictionary dict(isolate, exports);
   dict.Set("BrowserWindow", static_cast<v8::Handle<v8::Value>>(constructor));
 }
 

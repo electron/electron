@@ -51,9 +51,10 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   v8::V8::Initialize();
 
   // Create context.
-  v8::Locker locker(node_isolate);
-  v8::HandleScope handle_scope(node_isolate);
-  v8::Local<v8::Context> context = v8::Context::New(node_isolate);
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> context = v8::Context::New(isolate);
 
   // Create the global environment.
   global_env = node_bindings_->CreateEnvironment(context);
