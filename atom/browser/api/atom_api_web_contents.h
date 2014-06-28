@@ -22,7 +22,7 @@ class WebContents : public mate::EventEmitter,
   bool IsAlive() const;
   void LoadURL(const GURL& url);
   GURL GetURL() const;
-  string16 GetTitle() const;
+  base::string16 GetTitle() const;
   bool IsLoading() const;
   bool IsWaitingForResponse() const;
   void Stop();
@@ -38,8 +38,9 @@ class WebContents : public mate::EventEmitter,
   int GetRoutingID() const;
   int GetProcessID() const;
   bool IsCrashed() const;
-  void ExecuteJavaScript(const string16& code);
-  bool SendIPCMessage(const string16& channel, const base::ListValue& args);
+  void ExecuteJavaScript(const base::string16& code);
+  bool SendIPCMessage(const base::string16& channel,
+                      const base::ListValue& args);
 
  protected:
   explicit WebContents(content::WebContents* web_contents);
@@ -65,10 +66,11 @@ class WebContents : public mate::EventEmitter,
 
  private:
   // Called when received a message from renderer.
-  void OnRendererMessage(const string16& channel, const base::ListValue& args);
+  void OnRendererMessage(const base::string16& channel,
+                         const base::ListValue& args);
 
   // Called when received a synchronous message from renderer.
-  void OnRendererMessageSync(const string16& channel,
+  void OnRendererMessageSync(const base::string16& channel,
                              const base::ListValue& args,
                              IPC::Message* message);
 

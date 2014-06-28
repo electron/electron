@@ -45,7 +45,7 @@ void Event::PreventDefault() {
   prevent_default_ = true;
 }
 
-bool Event::SendReply(const string16& json) {
+bool Event::SendReply(const base::string16& json) {
   if (message_ == NULL || sender_ == NULL)
     return false;
 

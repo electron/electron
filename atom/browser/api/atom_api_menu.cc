@@ -111,7 +111,7 @@ bool Menu::IsItemForCommandIdDynamic(int command_id) const {
                       command_id)->BooleanValue();
 }
 
-string16 Menu::GetLabelForCommandId(int command_id) const {
+base::string16 Menu::GetLabelForCommandId(int command_id) const {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
@@ -121,12 +121,12 @@ string16 Menu::GetLabelForCommandId(int command_id) const {
       const_cast<Menu*>(this)->GetWrapper(isolate),
       "getLabelForCommandId",
       command_id);
-  string16 label;
+  base::string16 label;
   mate::ConvertFromV8(node_isolate, result, &label);
   return label;
 }
 
-string16 Menu::GetSublabelForCommandId(int command_id) const {
+base::string16 Menu::GetSublabelForCommandId(int command_id) const {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
@@ -136,7 +136,7 @@ string16 Menu::GetSublabelForCommandId(int command_id) const {
       const_cast<Menu*>(this)->GetWrapper(isolate),
       "getSubLabelForCommandId",
       command_id);
-  string16 label;
+  base::string16 label;
   mate::ConvertFromV8(isolate, result, &label);
   return label;
 }
