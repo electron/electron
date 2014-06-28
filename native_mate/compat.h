@@ -19,10 +19,20 @@
 #define MATE_METHOD_RETURN_NULL()       return info.GetReturnValue().SetNull()
 #define MATE_METHOD_RETURN(value)       args.Return(value)
 
+#define MATE_STRING_NEW(isolate, data) \
+    v8::String::NewFromUtf8(isolate, data, v8::String::kNormalString)
 #define MATE_STRING_NEW_FROM_UTF8(isolate, data, length) \
     v8::String::NewFromUtf8(isolate, data, v8::String::kNormalString, length)
+#define MATE_STRING_NEW_FROM_UTF16(isolate, data, length) \
+    v8::String::NewFromTwoByte(isolate, data, v8::String::kNormalString, length)
 #define MATE_STRING_NEW_SYMBOL(isolate, data, length) \
     v8::String::NewFromUtf8(isolate, data, v8::String::kInternalizedString, length)
+
+#define MATE_UNDEFINED(isolate) v8::Undefined(isolate)
+#define MATE_TRUE(isolate) v8::True(isolate)
+#define MATE_FALSE(isolate) v8::False(isolate)
+#define MATE_ARRAY_NEW(isolate, size) v8::Array::New(isolate, size)
+#define MATE_INTEGER_NEW(isolate, data) v8::Integer::New(isolate, data)
 
 #define MATE_SET_INTERNAL_FIELD_POINTER(object, index, value) \
     object->SetAlignedPointerInInternalField(index, value)
@@ -58,10 +68,20 @@
 #define MATE_METHOD_RETURN(value) \
     MATE_METHOD_RETURN_VALUE(ConvertToV8(args.isolate(), value))
 
+#define MATE_STRING_NEW(isolate, data) \
+    v8::String::New(data)
 #define MATE_STRING_NEW_FROM_UTF8(isolate, data, length) \
     v8::String::New(data, length)
+#define MATE_STRING_NEW_FROM_UTF16(isolate, data, length) \
+    v8::String::NewFromTwoByte(data, v8::String::kNormalString, length)
 #define MATE_STRING_NEW_SYMBOL(isolate, data, length) \
     v8::String::NewSymbol(data, length)
+
+#define MATE_UNDEFINED(isolate) v8::Undefined()
+#define MATE_TRUE(isolate) v8::True()
+#define MATE_FALSE(isolate) v8::False()
+#define MATE_ARRAY_NEW(isolate, size) v8::Array::New(size)
+#define MATE_INTEGER_NEW(isolate, data) v8::Integer::New(data)
 
 #define MATE_SET_INTERNAL_FIELD_POINTER(object, index, value) \
     object->SetPointerInInternalField(index, value)

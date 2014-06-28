@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/strings/string_piece.h"
+#include "native_mate/compat.h"
 #include "v8/include/v8.h"
 
 namespace mate {
@@ -19,7 +20,7 @@ struct Converter {};
 template<>
 struct Converter<void*> {
   static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate, void* val) {
-    return v8::Undefined();
+    return MATE_UNDEFINED(isolate);
   }
 };
 
@@ -157,7 +158,7 @@ struct Converter<std::vector<T> > {
   static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
                                     const std::vector<T>& val) {
     v8::Handle<v8::Array> result(
-        v8::Array::New(static_cast<int>(val.size())));
+        MATE_ARRAY_NEW(isolate, static_cast<int>(val.size())));
     for (size_t i = 0; i < val.size(); ++i) {
       result->Set(static_cast<int>(i), Converter<T>::ToV8(isolate, val[i]));
     }

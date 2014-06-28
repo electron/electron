@@ -53,12 +53,6 @@ class ScopedPersistent {
     return v8::Local<T>::New(isolate, handle_);
   }
 
-  template <typename P>
-  void MakeWeak(P* parameters,
-                typename v8::WeakReferenceCallbacks<T, P>::Revivable callback) {
-    handle_.MakeWeak(parameters, callback);
-  }
-
  private:
   template <typename U>
   static v8::Isolate* GetIsolate(v8::Handle<U> object_handle) {
