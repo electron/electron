@@ -21,7 +21,7 @@ using v8::Value;
 namespace mate {
 
 Handle<Value> Converter<bool>::ToV8(Isolate* isolate, bool val) {
-  return Boolean::New(val);
+  return MATE_BOOLEAN_NEW(isolate, val);
 }
 
 bool Converter<bool>::FromV8(Isolate* isolate, Handle<Value> val, bool* out) {
@@ -32,7 +32,7 @@ bool Converter<bool>::FromV8(Isolate* isolate, Handle<Value> val, bool* out) {
 }
 
 Handle<Value> Converter<int32_t>::ToV8(Isolate* isolate, int32_t val) {
-  return Integer::New(val);
+  return MATE_INTEGER_NEW(isolate, val);
 }
 
 bool Converter<int32_t>::FromV8(Isolate* isolate, Handle<Value> val,
@@ -44,7 +44,7 @@ bool Converter<int32_t>::FromV8(Isolate* isolate, Handle<Value> val,
 }
 
 Handle<Value> Converter<uint32_t>::ToV8(Isolate* isolate, uint32_t val) {
-  return Integer::NewFromUnsigned(val);
+  return MATE_INTEGER_NEW_UNSIGNED(isolate, val);
 }
 
 bool Converter<uint32_t>::FromV8(Isolate* isolate, Handle<Value> val,
@@ -56,7 +56,7 @@ bool Converter<uint32_t>::FromV8(Isolate* isolate, Handle<Value> val,
 }
 
 Handle<Value> Converter<int64_t>::ToV8(Isolate* isolate, int64_t val) {
-  return Number::New(static_cast<double>(val));
+  return MATE_NUMBER_NEW(isolate, static_cast<double>(val));
 }
 
 bool Converter<int64_t>::FromV8(Isolate* isolate, Handle<Value> val,
@@ -70,7 +70,7 @@ bool Converter<int64_t>::FromV8(Isolate* isolate, Handle<Value> val,
 }
 
 Handle<Value> Converter<uint64_t>::ToV8(Isolate* isolate, uint64_t val) {
-  return Number::New(static_cast<double>(val));
+  return MATE_NUMBER_NEW(isolate, static_cast<double>(val));
 }
 
 bool Converter<uint64_t>::FromV8(Isolate* isolate, Handle<Value> val,
@@ -82,7 +82,7 @@ bool Converter<uint64_t>::FromV8(Isolate* isolate, Handle<Value> val,
 }
 
 Handle<Value> Converter<float>::ToV8(Isolate* isolate, float val) {
-  return Number::New(val);
+  return MATE_NUMBER_NEW(isolate, val);
 }
 
 bool Converter<float>::FromV8(Isolate* isolate, Handle<Value> val,
@@ -94,7 +94,7 @@ bool Converter<float>::FromV8(Isolate* isolate, Handle<Value> val,
 }
 
 Handle<Value> Converter<double>::ToV8(Isolate* isolate, double val) {
-  return Number::New(val);
+  return MATE_NUMBER_NEW(isolate, val);
 }
 
 bool Converter<double>::FromV8(Isolate* isolate, Handle<Value> val,

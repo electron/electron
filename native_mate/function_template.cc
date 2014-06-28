@@ -9,7 +9,7 @@ namespace mate {
 namespace internal {
 
 CallbackHolderBase::CallbackHolderBase(v8::Isolate* isolate)
-    : MATE_PERSISTENT_INIT(isolate, v8_ref_, v8::External::New(this)) {
+    : MATE_PERSISTENT_INIT(isolate, v8_ref_, MATE_EXTERNAL_NEW(isolate, this)) {
   MATE_PERSISTENT_SET_WEAK(v8_ref_, this, &CallbackHolderBase::WeakCallback);
 }
 

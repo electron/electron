@@ -32,7 +32,12 @@
 #define MATE_TRUE(isolate) v8::True(isolate)
 #define MATE_FALSE(isolate) v8::False(isolate)
 #define MATE_ARRAY_NEW(isolate, size) v8::Array::New(isolate, size)
+#define MATE_NUMBER_NEW(isolate, data) v8::Number::New(isolate, data)
 #define MATE_INTEGER_NEW(isolate, data) v8::Integer::New(isolate, data)
+#define MATE_INTEGER_NEW_UNSIGNED(isolate, data) \
+  v8::Integer::NewFromUnsigned(isolate, data)
+#define MATE_EXTERNAL_NEW(isolate, data) v8::External::New(isolate, data)
+#define MATE_BOOLEAN_NEW(isolate, data) v8::Boolean::New(isolate, data)
 
 #define MATE_SET_INTERNAL_FIELD_POINTER(object, index, value) \
     object->SetAlignedPointerInInternalField(index, value)
@@ -54,6 +59,9 @@
   void name(const v8::WeakCallbackData<v8_type, c_type>& data)
 #define MATE_WEAK_CALLBACK_INIT(c_type) \
   c_type* self = data.GetParameter()
+
+#define MATE_THROW_EXCEPTION(isolate, value) \
+    isolate->ThrowException(value)
 
 #else  // Node 0.8 and 0.10
 
@@ -81,7 +89,12 @@
 #define MATE_TRUE(isolate) v8::True()
 #define MATE_FALSE(isolate) v8::False()
 #define MATE_ARRAY_NEW(isolate, size) v8::Array::New(size)
+#define MATE_NUMBER_NEW(isolate, data) v8::Number::New(data)
 #define MATE_INTEGER_NEW(isolate, data) v8::Integer::New(data)
+#define MATE_INTEGER_NEW_UNSIGNED(isolate, data) \
+  v8::Integer::NewFromUnsigned(data)
+#define MATE_EXTERNAL_NEW(isolate, data) v8::External::New(data)
+#define MATE_BOOLEAN_NEW(isolate, data) v8::Boolean::New(data)
 
 #define MATE_SET_INTERNAL_FIELD_POINTER(object, index, value) \
     object->SetPointerInInternalField(index, value)
@@ -105,6 +118,9 @@
 #define MATE_WEAK_CALLBACK_INIT(c_type) \
   c_type* self = static_cast<c_type*>(parameter)
 
+#define MATE_THROW_EXCEPTION(isolate, value) \
+    v8::ThrowException(value)
+
 #endif  // (NODE_MODULE_VERSION > 0x000B)
 
 
@@ -112,9 +128,5 @@
 // much more comfortable so we keep it.
 #define MATE_METHOD(name) \
     MATE_METHOD_RETURN_TYPE name(const MATE_METHOD_ARGS_TYPE& info)
-
-// In lastest V8 ThrowException would need to pass isolate, be prepared for it.
-#define MATE_THROW_EXCEPTION(isolate, value) \
-    v8::ThrowException(value)
 
 #endif  // NATIVE_MATE_COMPAT_H_
