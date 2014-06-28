@@ -20,26 +20,23 @@ namespace api {
 namespace {
 
 // Call method of delegate object.
-v8::Handle<v8::Value> CallDelegate(v8::Handle<v8::Value> default_value,
+v8::Handle<v8::Value> CallDelegate(v8::Isolate* isolate,
+                                   v8::Handle<v8::Value> default_value,
                                    v8::Handle<v8::Object> menu,
                                    const char* method,
                                    int command_id) {
-  v8::Locker locker(node_isolate);
-  v8::HandleScope handle_scope(node_isolate);
-
-  v8::Handle<v8::Value> delegate = menu->Get(v8::String::New("delegate"));
+  v8::Handle<v8::Value> delegate = menu->Get(
+      MATE_STRING_NEW(isolate, "delegate"));
   if (!delegate->IsObject())
     return default_value;
 
   v8::Handle<v8::Function> function = v8::Handle<v8::Function>::Cast(
-      delegate->ToObject()->Get(v8::String::New(method)));
+      delegate->ToObject()->Get(MATE_STRING_NEW(isolate, method)));
   if (!function->IsFunction())
     return default_value;
 
-  v8::Handle<v8::Value> argv = v8::Integer::New(command_id);
-
-  return handle_scope.Close(
-      function->Call(v8::Context::GetCurrent()->Global(), 1, &argv));
+  v8::Handle<v8::Value> argv = MATE_INTEGER_NEW(isolate, command_id);
+  return function->Call(isolate->GetCurrentContext()->Global(), 1, &argv);
 }
 
 }  // namespace
@@ -53,38 +50,46 @@ Menu::~Menu() {
 }
 
 bool Menu::IsCommandIdChecked(int command_id) const {
-  v8::Locker locker(node_isolate);
-  v8::HandleScope handle_scope(node_isolate);
-  return CallDelegate(v8::False(),
-                      const_cast<Menu*>(this)->GetWrapper(node_isolate),
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  return CallDelegate(isolate,
+                      MATE_FALSE(isolate),
+                      const_cast<Menu*>(this)->GetWrapper(isolate),
                       "isCommandIdChecked",
                       command_id)->BooleanValue();
 }
 
 bool Menu::IsCommandIdEnabled(int command_id) const {
-  v8::Locker locker(node_isolate);
-  v8::HandleScope handle_scope(node_isolate);
-  return CallDelegate(v8::True(),
-                      const_cast<Menu*>(this)->GetWrapper(node_isolate),
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  return CallDelegate(isolate,
+                      MATE_TRUE(isolate),
+                      const_cast<Menu*>(this)->GetWrapper(isolate),
                       "isCommandIdEnabled",
                       command_id)->BooleanValue();
 }
 
 bool Menu::IsCommandIdVisible(int command_id) const {
-  v8::Locker locker(node_isolate);
-  v8::HandleScope handle_scope(node_isolate);
-  return CallDelegate(v8::True(),
-                      const_cast<Menu*>(this)->GetWrapper(node_isolate),
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  return CallDelegate(isolate,
+                      MATE_TRUE(isolate),
+                      const_cast<Menu*>(this)->GetWrapper(isolate),
                       "isCommandIdVisible",
                       command_id)->BooleanValue();
 }
 
 bool Menu::GetAcceleratorForCommandId(int command_id,
                                       ui::Accelerator* accelerator) {
-  v8::Locker locker(node_isolate);
-  v8::HandleScope handle_scope(node_isolate);
-  v8::Handle<v8::Value> shortcut = CallDelegate(v8::Undefined(),
-                                                GetWrapper(node_isolate),
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  v8::Handle<v8::Value> shortcut = CallDelegate(isolate,
+                                                MATE_UNDEFINED(isolate),
+                                                GetWrapper(isolate),
                                                 "getAcceleratorForCommandId",
                                                 command_id);
   if (shortcut->IsString()) {
@@ -96,20 +101,24 @@ bool Menu::GetAcceleratorForCommandId(int command_id,
 }
 
 bool Menu::IsItemForCommandIdDynamic(int command_id) const {
-  v8::Locker locker(node_isolate);
-  v8::HandleScope handle_scope(node_isolate);
-  return CallDelegate(v8::False(),
-                      const_cast<Menu*>(this)->GetWrapper(node_isolate),
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  return CallDelegate(isolate,
+                      MATE_FALSE(isolate),
+                      const_cast<Menu*>(this)->GetWrapper(isolate),
                       "isItemForCommandIdDynamic",
                       command_id)->BooleanValue();
 }
 
 string16 Menu::GetLabelForCommandId(int command_id) const {
-  v8::Locker locker(node_isolate);
-  v8::HandleScope handle_scope(node_isolate);
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
   v8::Handle<v8::Value> result = CallDelegate(
-      v8::False(),
-      const_cast<Menu*>(this)->GetWrapper(node_isolate),
+      isolate,
+      MATE_FALSE(isolate),
+      const_cast<Menu*>(this)->GetWrapper(isolate),
       "getLabelForCommandId",
       command_id);
   string16 label;
@@ -118,29 +127,34 @@ string16 Menu::GetLabelForCommandId(int command_id) const {
 }
 
 string16 Menu::GetSublabelForCommandId(int command_id) const {
-  v8::Locker locker(node_isolate);
-  v8::HandleScope handle_scope(node_isolate);
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
   v8::Handle<v8::Value> result = CallDelegate(
-      v8::False(),
-      const_cast<Menu*>(this)->GetWrapper(node_isolate),
+      isolate,
+      MATE_FALSE(isolate),
+      const_cast<Menu*>(this)->GetWrapper(isolate),
       "getSubLabelForCommandId",
       command_id);
   string16 label;
-  mate::ConvertFromV8(node_isolate, result, &label);
+  mate::ConvertFromV8(isolate, result, &label);
   return label;
 }
 
 void Menu::ExecuteCommand(int command_id, int event_flags) {
-  v8::Locker locker(node_isolate);
-  v8::HandleScope handle_scope(node_isolate);
-  CallDelegate(v8::False(), GetWrapper(node_isolate), "executeCommand",
-               command_id);
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  CallDelegate(isolate, MATE_FALSE(isolate), GetWrapper(isolate),
+               "executeCommand", command_id);
 }
 
 void Menu::MenuWillShow(ui::SimpleMenuModel* source) {
-  v8::Locker locker(node_isolate);
-  v8::HandleScope handle_scope(node_isolate);
-  CallDelegate(v8::False(), GetWrapper(node_isolate), "menuWillShow", -1);
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  CallDelegate(isolate, MATE_FALSE(isolate), GetWrapper(isolate),
+               "menuWillShow", -1);
 }
 
 void Menu::InsertItemAt(
