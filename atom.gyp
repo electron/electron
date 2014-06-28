@@ -313,6 +313,7 @@
           },
           'mac_bundle_resources': [
             '<@(bundle_sources)',
+            '<(libchromiumcontent_resources_dir)/icudtl.dat',
           ],
           'copies': [
             {
@@ -377,7 +378,6 @@
               'files': [
                 '<(libchromiumcontent_library_dir)/chromiumcontent.dll',
                 '<(libchromiumcontent_library_dir)/ffmpegsumo.dll',
-                '<(libchromiumcontent_library_dir)/icudt.dll',
                 '<(libchromiumcontent_library_dir)/libEGL.dll',
                 '<(libchromiumcontent_library_dir)/libGLESv2.dll',
                 '<(libchromiumcontent_resources_dir)/icudtl.dat',
@@ -663,7 +663,6 @@
           'mac_bundle_resources': [
             'atom/common/resources/mac/MainMenu.xib',
             '<(libchromiumcontent_resources_dir)/content_shell.pak',
-            '<(libchromiumcontent_resources_dir)/icudtl.dat',
           ],
           'xcode_settings': {
             'INFOPLIST_FILE': 'atom/common/resources/mac/Info.plist',

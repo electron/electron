@@ -52,10 +52,6 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 }
 
 void AtomMainDelegate::PreSandboxStartup() {
-#if defined(OS_MACOSX)
-  OverrideChildProcessPath();
-  OverrideFrameworkBundlePath();
-#endif
   InitializeResourceBundle();
 
   CommandLine* command_line = CommandLine::ForCurrentProcess();
