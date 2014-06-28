@@ -148,7 +148,7 @@ void Window::Unmaximize() {
   window_->Unmaximize();
 }
 
-void Window::IsMaximized() {
+bool Window::IsMaximized() {
   return window_->IsMaximized();
 }
 

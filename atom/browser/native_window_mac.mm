@@ -279,7 +279,7 @@ void NativeWindowMac::Unmaximize() {
   [window_ zoom:nil];
 }
 
-void NativeWindowMac::IsMaximized() {
+bool NativeWindowMac::IsMaximized() {
   return [window_ isZoomed];
 }
 
