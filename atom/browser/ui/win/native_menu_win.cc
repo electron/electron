@@ -55,7 +55,7 @@ struct NativeMenuWin::ItemData {
   // The Windows API requires that whoever creates the menus must own the
   // strings used for labels, and keep them around for the lifetime of the
   // created menu. So be it.
-  string16 label;
+  base::string16 label;
 
   // Someone needs to own submenus, it may as well be us.
   scoped_ptr<Menu2> submenu;
@@ -182,7 +182,7 @@ class NativeMenuWin::MenuHostWindow {
       if (data->submenu.get())
         measure_item_struct->itemWidth += kArrowWidth;
       // If the label contains an accelerator, make room for tab.
-      if (data->label.find(L'\t') != string16::npos)
+      if (data->label.find(L'\t') != base::string16::npos)
         measure_item_struct->itemWidth += font.GetStringWidth(L" ");
       measure_item_struct->itemHeight =
           font.GetHeight() + kItemBottomMargin + kItemTopMargin;
@@ -238,10 +238,10 @@ class NativeMenuWin::MenuHostWindow {
       // left and the accelerator on the right.
       // TODO(jungshik): This will break in RTL UI. Currently, he/ar use the
       //                 window system UI font and will not hit here.
-      string16 label = data->label;
-      string16 accel;
-      string16::size_type tab_pos = label.find(L'\t');
-      if (tab_pos != string16::npos) {
+      base::string16 label = data->label;
+      base::string16 accel;
+      base::string16::size_type tab_pos = label.find(L'\t');
+      if (tab_pos != base::string16::npos) {
         accel = label.substr(tab_pos);
         label = label.substr(0, tab_pos);
       }
@@ -635,7 +635,7 @@ void NativeMenuWin::AddMenuItemAt(int menu_index, int model_index) {
     mii.fType = MFT_OWNERDRAW;
 
   ItemData* item_data = new ItemData;
-  item_data->label = string16();
+  item_data->label = base::string16();
   ui::MenuModel::ItemType type = model_->GetTypeAt(model_index);
   if (type == ui::MenuModel::TYPE_SUBMENU) {
     item_data->submenu.reset(new Menu2(model_->GetSubmenuModelAt(model_index)));
@@ -687,7 +687,7 @@ void NativeMenuWin::SetMenuItemState(int menu_index, bool enabled, bool checked,
 
 void NativeMenuWin::SetMenuItemLabel(int menu_index,
                                      int model_index,
-                                     const string16& label) {
+                                     const base::string16& label) {
   if (IsSeparatorItemAt(menu_index))
     return;
 
@@ -699,8 +699,8 @@ void NativeMenuWin::SetMenuItemLabel(int menu_index,
 
 void NativeMenuWin::UpdateMenuItemInfoForString(MENUITEMINFO* mii,
                                                 int model_index,
-                                                const string16& label) {
-  string16 formatted = label;
+                                                const base::string16& label) {
+  base::string16 formatted = label;
   ui::MenuModel::ItemType type = model_->GetTypeAt(model_index);
   // Strip out any tabs, otherwise they get interpreted as accelerators and can
   // lead to weird behavior.

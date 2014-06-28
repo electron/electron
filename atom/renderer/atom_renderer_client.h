@@ -24,7 +24,7 @@ class AtomRendererClient : public content::ContentRendererClient {
   AtomRendererClient();
   virtual ~AtomRendererClient();
 
-  bool IsNodeBindingEnabled(WebKit::WebFrame* frame = NULL);
+  bool IsNodeBindingEnabled(blink::WebFrame* frame = NULL);
 
   AtomRendererBindings* atom_bindings() const { return atom_bindings_.get(); }
 
@@ -36,16 +36,18 @@ class AtomRendererClient : public content::ContentRendererClient {
     DISABLE,
   };
 
+  // content::ContentRendererClient:
   virtual void RenderThreadStarted() OVERRIDE;
+  virtual void RenderFrameCreated(content::RenderFrame* render_frame) OVERRIDE;
   virtual void RenderViewCreated(content::RenderView*) OVERRIDE;
-  virtual void DidCreateScriptContext(WebKit::WebFrame* frame,
+  virtual void DidCreateScriptContext(blink::WebFrame* frame,
                                       v8::Handle<v8::Context> context,
                                       int extension_group,
                                       int world_id) OVERRIDE;
-  virtual void WillReleaseScriptContext(WebKit::WebFrame* frame,
+  virtual void WillReleaseScriptContext(blink::WebFrame* frame,
                                         v8::Handle<v8::Context>,
-                                        int world_id) OVERRIDE;
-  virtual bool ShouldFork(WebKit::WebFrame* frame,
+                                        int world_id);
+  virtual bool ShouldFork(blink::WebFrame* frame,
                           const GURL& url,
                           const std::string& http_method,
                           bool is_initial_navigation,
@@ -61,7 +63,7 @@ class AtomRendererClient : public content::ContentRendererClient {
   NodeIntegration node_integration_;
 
   // The main frame.
-  WebKit::WebFrame* main_frame_;
+  blink::WebFrame* main_frame_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
 };

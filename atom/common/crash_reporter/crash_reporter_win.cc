@@ -45,7 +45,7 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
     return;
   }
 
-  string16 pipe_name = ReplaceStringPlaceholders(kPipeNameFormat,
+  base::string16 pipe_name = ReplaceStringPlaceholders(kPipeNameFormat,
                                                  UTF8ToUTF16(product_name),
                                                  NULL);
 

@@ -8,24 +8,25 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/dictionary.h"
 #include "ui/base/clipboard/clipboard.h"
+#include "ui/base/clipboard/scoped_clipboard_writer.h"
 
 #include "atom/common/node_includes.h"
 
 namespace mate {
 
 template<>
-struct Converter<ui::Clipboard::Buffer> {
+struct Converter<ui::ClipboardType> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
-                     ui::Clipboard::Buffer* out) {
+                     ui::ClipboardType* out) {
     std::string type;
     if (!Converter<std::string>::FromV8(isolate, val, &type))
       return false;
 
     if (type == "selection")
-      *out = ui::Clipboard::BUFFER_SELECTION;
+      *out = ui::CLIPBOARD_TYPE_SELECTION;
     else
-      *out = ui::Clipboard::BUFFER_STANDARD;
+      *out = ui::CLIPBOARD_TYPE_COPY_PASTE;
     return true;
   }
 };
@@ -34,14 +35,14 @@ struct Converter<ui::Clipboard::Buffer> {
 
 namespace {
 
-bool Has(const std::string& format_string, ui::Clipboard::Buffer buffer) {
+bool Has(const std::string& format_string, ui::ClipboardType type) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   ui::Clipboard::FormatType format(ui::Clipboard::GetFormatType(format_string));
-  return clipboard->IsFormatAvailable(format, buffer);
+  return clipboard->IsFormatAvailable(format, type);
 }
 
 std::string Read(const std::string& format_string,
-                 ui::Clipboard::Buffer buffer) {
+                 ui::ClipboardType type) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   ui::Clipboard::FormatType format(ui::Clipboard::GetFormatType(format_string));
 
@@ -50,23 +51,20 @@ std::string Read(const std::string& format_string,
   return data;
 }
 
-string16 ReadText(ui::Clipboard::Buffer buffer) {
-  string16 data;
-  ui::Clipboard::GetForCurrentThread()->ReadText(buffer, &data);
+base::string16 ReadText(ui::ClipboardType type) {
+  base::string16 data;
+  ui::Clipboard::GetForCurrentThread()->ReadText(type, &data);
   return data;
 }
 
-void WriteText(const std::string text, ui::Clipboard::Buffer buffer) {
-  ui::Clipboard::ObjectMap object_map;
-  object_map[ui::Clipboard::CBF_TEXT].push_back(
-      std::vector<char>(text.begin(), text.end()));
-
+void WriteText(const base::string16& text, ui::ClipboardType type) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  clipboard->WriteObjects(buffer, object_map);
+  ui::ScopedClipboardWriter writer(clipboard, type);
+  writer.WriteText(text);
 }
 
-void Clear(ui::Clipboard::Buffer buffer) {
-  ui::Clipboard::GetForCurrentThread()->Clear(buffer);
+void Clear(ui::ClipboardType type) {
+  ui::Clipboard::GetForCurrentThread()->Clear(type);
 }
 
 void Initialize(v8::Handle<v8::Object> exports) {
@@ -80,4 +78,4 @@ void Initialize(v8::Handle<v8::Object> exports) {
 
 }  // namespace
 
-NODE_MODULE(atom_common_clipboard, Initialize)
+NODE_MODULE_X(atom_common_clipboard, Initialize, NULL, NM_F_BUILTIN)

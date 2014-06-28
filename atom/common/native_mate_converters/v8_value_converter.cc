@@ -36,74 +36,76 @@ void V8ValueConverter::SetStripNullFromObjects(bool val) {
   strip_null_from_objects_ = val;
 }
 
-v8::Handle<v8::Value> V8ValueConverter::ToV8Value(
-    const base::Value* value, v8::Handle<v8::Context> context) const {
+v8::Local<v8::Value> V8ValueConverter::ToV8Value(
+    const base::Value* value, v8::Local<v8::Context> context) const {
   v8::Context::Scope context_scope(context);
-  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
-  return handle_scope.Close(ToV8ValueImpl(value));
+  v8::EscapableHandleScope handle_scope(context->GetIsolate());
+  return handle_scope.Escape(ToV8ValueImpl(context->GetIsolate(), value));
 }
 
-Value* V8ValueConverter::FromV8Value(
-    v8::Handle<v8::Value> val,
-    v8::Handle<v8::Context> context) const {
+base::Value* V8ValueConverter::FromV8Value(
+    v8::Local<v8::Value> val,
+    v8::Local<v8::Context> context) const {
   v8::Context::Scope context_scope(context);
-  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  v8::HandleScope handle_scope(context->GetIsolate());
   HashToHandleMap unique_map;
   return FromV8ValueImpl(val, &unique_map);
 }
 
-v8::Handle<v8::Value> V8ValueConverter::ToV8ValueImpl(
-     const base::Value* value) const {
+v8::Local<v8::Value> V8ValueConverter::ToV8ValueImpl(
+     v8::Isolate* isolate, const base::Value* value) const {
   CHECK(value);
   switch (value->GetType()) {
     case base::Value::TYPE_NULL:
-      return v8::Null();
+      return v8::Null(isolate);
 
     case base::Value::TYPE_BOOLEAN: {
       bool val = false;
       CHECK(value->GetAsBoolean(&val));
-      return v8::Boolean::New(val);
+      return v8::Boolean::New(isolate, val);
     }
 
     case base::Value::TYPE_INTEGER: {
       int val = 0;
       CHECK(value->GetAsInteger(&val));
-      return v8::Integer::New(val);
+      return v8::Integer::New(isolate, val);
     }
 
     case base::Value::TYPE_DOUBLE: {
       double val = 0.0;
       CHECK(value->GetAsDouble(&val));
-      return v8::Number::New(val);
+      return v8::Number::New(isolate, val);
     }
 
     case base::Value::TYPE_STRING: {
       std::string val;
       CHECK(value->GetAsString(&val));
-      return v8::String::New(val.c_str(), val.length());
+      return v8::String::NewFromUtf8(
+          isolate, val.c_str(), v8::String::kNormalString, val.length());
     }
 
     case base::Value::TYPE_LIST:
-      return ToV8Array(static_cast<const base::ListValue*>(value));
+      return ToV8Array(isolate, static_cast<const base::ListValue*>(value));
 
     case base::Value::TYPE_DICTIONARY:
-      return ToV8Object(static_cast<const base::DictionaryValue*>(value));
+      return ToV8Object(isolate,
+                        static_cast<const base::DictionaryValue*>(value));
 
     default:
       LOG(ERROR) << "Unexpected value type: " << value->GetType();
-      return v8::Null();
+      return v8::Null(isolate);
   }
 }
 
-v8::Handle<v8::Value> V8ValueConverter::ToV8Array(
-    const base::ListValue* val) const {
-  v8::Handle<v8::Array> result(v8::Array::New(val->GetSize()));
+v8::Local<v8::Value> V8ValueConverter::ToV8Array(
+    v8::Isolate* isolate, const base::ListValue* val) const {
+  v8::Local<v8::Array> result(v8::Array::New(isolate, val->GetSize()));
 
   for (size_t i = 0; i < val->GetSize(); ++i) {
     const base::Value* child = NULL;
     CHECK(val->Get(i, &child));
 
-    v8::Handle<v8::Value> child_v8 = ToV8ValueImpl(child);
+    v8::Local<v8::Value> child_v8 = ToV8ValueImpl(isolate, child);
     CHECK(!child_v8.IsEmpty());
 
     v8::TryCatch try_catch;
@@ -115,18 +117,21 @@ v8::Handle<v8::Value> V8ValueConverter::ToV8Array(
   return result;
 }
 
-v8::Handle<v8::Value> V8ValueConverter::ToV8Object(
-    const base::DictionaryValue* val) const {
-  v8::Handle<v8::Object> result(v8::Object::New());
+v8::Local<v8::Value> V8ValueConverter::ToV8Object(
+    v8::Isolate* isolate, const base::DictionaryValue* val) const {
+  v8::Local<v8::Object> result(v8::Object::New(isolate));
 
   for (base::DictionaryValue::Iterator iter(*val);
        !iter.IsAtEnd(); iter.Advance()) {
     const std::string& key = iter.key();
-    v8::Handle<v8::Value> child_v8 = ToV8ValueImpl(&iter.value());
+    v8::Local<v8::Value> child_v8 = ToV8ValueImpl(isolate, &iter.value());
     CHECK(!child_v8.IsEmpty());
 
     v8::TryCatch try_catch;
-    result->Set(v8::String::New(key.c_str(), key.length()), child_v8);
+    result->Set(
+        v8::String::NewFromUtf8(isolate, key.c_str(), v8::String::kNormalString,
+                                key.length()),
+        child_v8);
     if (try_catch.HasCaught()) {
       LOG(ERROR) << "Setter for property " << key.c_str() << " threw an "
                  << "exception.";
@@ -136,7 +141,7 @@ v8::Handle<v8::Value> V8ValueConverter::ToV8Object(
   return result;
 }
 
-Value* V8ValueConverter::FromV8ValueImpl(v8::Handle<v8::Value> val,
+base::Value* V8ValueConverter::FromV8ValueImpl(v8::Local<v8::Value> val,
     HashToHandleMap* unique_map) const {
   CHECK(!val.IsEmpty());
 
@@ -196,16 +201,17 @@ Value* V8ValueConverter::FromV8ValueImpl(v8::Handle<v8::Value> val,
   return NULL;
 }
 
-Value* V8ValueConverter::FromV8Array(v8::Handle<v8::Array> val,
+base::Value* V8ValueConverter::FromV8Array(v8::Local<v8::Array> val,
     HashToHandleMap* unique_map) const {
   if (!UpdateAndCheckUniqueness(unique_map, val))
     return base::Value::CreateNullValue();
 
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
   scoped_ptr<v8::Context::Scope> scope;
   // If val was created in a different context than our current one, change to
   // that context, but change back after val is converted.
   if (!val->CreationContext().IsEmpty() &&
-      val->CreationContext() != v8::Context::GetCurrent())
+      val->CreationContext() != isolate->GetCurrentContext())
     scope.reset(new v8::Context::Scope(val->CreationContext()));
 
   base::ListValue* result = new base::ListValue();
@@ -213,10 +219,10 @@ Value* V8ValueConverter::FromV8Array(v8::Handle<v8::Array> val,
   // Only fields with integer keys are carried over to the ListValue.
   for (uint32 i = 0; i < val->Length(); ++i) {
     v8::TryCatch try_catch;
-    v8::Handle<v8::Value> child_v8 = val->Get(i);
+    v8::Local<v8::Value> child_v8 = val->Get(i);
     if (try_catch.HasCaught()) {
       LOG(ERROR) << "Getter for index " << i << " threw an exception.";
-      child_v8 = v8::Null();
+      child_v8 = v8::Null(isolate);
     }
 
     if (!val->HasRealIndexedProperty(i))
@@ -233,28 +239,29 @@ Value* V8ValueConverter::FromV8Array(v8::Handle<v8::Array> val,
   return result;
 }
 
-Value* V8ValueConverter::FromV8Object(
-    v8::Handle<v8::Object> val,
+base::Value* V8ValueConverter::FromV8Object(
+    v8::Local<v8::Object> val,
     HashToHandleMap* unique_map) const {
   if (!UpdateAndCheckUniqueness(unique_map, val))
     return base::Value::CreateNullValue();
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
   scoped_ptr<v8::Context::Scope> scope;
   // If val was created in a different context than our current one, change to
   // that context, but change back after val is converted.
   if (!val->CreationContext().IsEmpty() &&
-      val->CreationContext() != v8::Context::GetCurrent())
+      val->CreationContext() != isolate->GetCurrentContext())
     scope.reset(new v8::Context::Scope(val->CreationContext()));
 
   scoped_ptr<base::DictionaryValue> result(new base::DictionaryValue());
-  v8::Handle<v8::Array> property_names(val->GetOwnPropertyNames());
+  v8::Local<v8::Array> property_names(val->GetOwnPropertyNames());
 
   for (uint32 i = 0; i < property_names->Length(); ++i) {
-    v8::Handle<v8::Value> key(property_names->Get(i));
+    v8::Local<v8::Value> key(property_names->Get(i));
 
     // Extend this test to cover more types as necessary and if sensible.
     if (!key->IsString() &&
         !key->IsNumber()) {
-      NOTREACHED() << "Key \"" << *v8::String::AsciiValue(key) << "\" "
+      NOTREACHED() << "Key \"" << *v8::String::Utf8Value(key) << "\" "
                       "is neither a string nor a number";
       continue;
     }
@@ -266,12 +273,12 @@ Value* V8ValueConverter::FromV8Object(
     v8::String::Utf8Value name_utf8(key->ToString());
 
     v8::TryCatch try_catch;
-    v8::Handle<v8::Value> child_v8 = val->Get(key);
+    v8::Local<v8::Value> child_v8 = val->Get(key);
 
     if (try_catch.HasCaught()) {
       LOG(ERROR) << "Getter for property " << *name_utf8
                  << " threw an exception.";
-      child_v8 = v8::Null();
+      child_v8 = v8::Null(isolate);
     }
 
     scoped_ptr<base::Value> child(FromV8ValueImpl(child_v8, unique_map));
@@ -300,7 +307,7 @@ Value* V8ValueConverter::FromV8Object(
     // there *is* a "windowId" property, but since it should be an int, code
     // on the browser which doesn't additionally check for null will fail.
     // We can avoid all bugs related to this by stripping null.
-    if (strip_null_from_objects_ && child->IsType(Value::TYPE_NULL))
+    if (strip_null_from_objects_ && child->IsType(base::Value::TYPE_NULL))
       continue;
 
     result->SetWithoutPathExpansion(std::string(*name_utf8, name_utf8.length()),
@@ -312,7 +319,7 @@ Value* V8ValueConverter::FromV8Object(
 
 bool V8ValueConverter::UpdateAndCheckUniqueness(
     HashToHandleMap* map,
-    v8::Handle<v8::Object> handle) const {
+    v8::Local<v8::Object> handle) const {
   typedef HashToHandleMap::const_iterator Iterator;
 
   int hash = avoid_identity_hash_for_testing_ ? 0 : handle->GetIdentityHash();
@@ -326,7 +333,7 @@ bool V8ValueConverter::UpdateAndCheckUniqueness(
       return false;
   }
 
-  map->insert(std::pair<int, v8::Handle<v8::Object> >(hash, handle));
+  map->insert(std::pair<int, v8::Local<v8::Object> >(hash, handle));
   return true;
 }
 

@@ -12,15 +12,15 @@ namespace atom {
 
 class ObjectLifeMonitor {
  public:
-  static void BindTo(v8::Handle<v8::Object> target,
+  static void BindTo(v8::Isolate* isolate,
+                     v8::Handle<v8::Object> target,
                      v8::Handle<v8::Value> destructor);
 
  private:
   ObjectLifeMonitor();
 
-  static void WeakCallback(v8::Isolate* isolate,
-                           v8::Persistent<v8::Object>* value,
-                           ObjectLifeMonitor* self);
+  static void WeakCallback(
+      const v8::WeakCallbackData<v8::Object, ObjectLifeMonitor>& data);
 
   mate::ScopedPersistent<v8::Object> handle_;
 

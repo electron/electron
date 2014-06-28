@@ -29,15 +29,14 @@ class IDWeakMap : public mate::Wrappable {
   virtual ~IDWeakMap();
 
   int32_t Add(v8::Isolate* isolate, v8::Handle<v8::Object> object);
-  v8::Handle<v8::Value> Get(int32_t key);
+  v8::Handle<v8::Value> Get(v8::Isolate* isolate, int32_t key);
   bool Has(int32_t key) const;
   std::vector<int32_t> Keys() const;
   void Remove(int32_t key);
   int GetNextID();
 
-  static void WeakCallback(v8::Isolate* isolate,
-                           v8::Persistent<v8::Object>* value,
-                           IDWeakMap* self);
+  static void WeakCallback(
+      const v8::WeakCallbackData<v8::Object, IDWeakMap>& data);
 
   int32_t next_id_;
 

@@ -32,6 +32,7 @@
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_storage.h"
 #include "vendor/brightray/browser/network_delegate.h"
+#include "webkit/browser/quota/special_storage_policy.h"
 
 namespace atom {
 
@@ -75,18 +76,18 @@ net::URLRequestContext* AtomURLRequestContextGetter::GetURLRequestContext() {
     url_request_context_->set_network_delegate(network_delegate_.get());
     storage_.reset(
         new net::URLRequestContextStorage(url_request_context_.get()));
-    storage_->set_cookie_store(content::CreatePersistentCookieStore(
+    auto cookie_config = content::CookieStoreConfig(
         base_path_.Append(FILE_PATH_LITERAL("Cookies")),
-        false,
+        content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
         nullptr,
-        nullptr,
-        nullptr));
+        nullptr);
+    storage_->set_cookie_store(content::CreateCookieStore(cookie_config));
     storage_->set_server_bound_cert_service(new net::ServerBoundCertService(
         new net::DefaultServerBoundCertStore(NULL),
         base::WorkerPool::GetTaskRunner(true)));
     storage_->set_http_user_agent_settings(
         new net::StaticHttpUserAgentSettings(
-            "en-us,en", EmptyString()));
+            "en-us,en", base::EmptyString()));
 
     scoped_ptr<net::HostResolver> host_resolver(
         net::HostResolver::CreateDefaultResolver(NULL));
@@ -163,9 +164,9 @@ net::URLRequestContext* AtomURLRequestContextGetter::GetURLRequestContext() {
             content::BrowserThread::GetBlockingPool()->
                 GetTaskRunnerWithShutdownBehavior(
                     base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
-    job_factory_->SetProtocolHandler(chrome::kDataScheme,
+    job_factory_->SetProtocolHandler(content::kDataScheme,
                                      new net::DataProtocolHandler);
-    job_factory_->SetProtocolHandler(chrome::kFileScheme,
+    job_factory_->SetProtocolHandler(content::kFileScheme,
                                      file_protocol_handler.release());
     storage_->set_job_factory(job_factory_);
   }

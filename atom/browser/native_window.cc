@@ -34,11 +34,13 @@
 #include "content/public/browser/notification_source.h"
 #include "content/public/browser/notification_types.h"
 #include "content/public/browser/plugin_service.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/web_contents_view.h"
 #include "content/public/common/renderer_preferences.h"
+#include "content/public/common/user_agent.h"
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/codec/png_codec.h"
@@ -49,7 +51,6 @@
 #include "ui/gfx/size.h"
 #include "vendor/brightray/browser/inspectable_web_contents.h"
 #include "vendor/brightray/browser/inspectable_web_contents_view.h"
-#include "webkit/common/user_agent/user_agent_util.h"
 #include "webkit/common/webpreferences.h"
 
 using content::NavigationEntry;
@@ -104,7 +105,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       browser->GetVersion().c_str(),
       CHROME_VERSION_STRING);
   web_contents->GetMutableRendererPrefs()->user_agent_override =
-      webkit_glue::BuildUserAgentFromProduct(product_name);
+      content::BuildUserAgentFromProduct(product_name);
 
   // Get notified of title updated message.
   registrar_.Add(this, content::NOTIFICATION_WEB_CONTENTS_TITLE_UPDATED,
@@ -271,7 +272,8 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
       size,
       base::Bind(&NativeWindow::OnCapturePageDone,
                  weak_factory_.GetWeakPtr(),
-                 callback));
+                 callback),
+      SkBitmap::kARGB_8888_Config);
 }
 
 void NativeWindow::DestroyWebContents() {
@@ -305,7 +307,7 @@ void NativeWindow::CloseWebContents() {
     ScheduleUnresponsiveEvent(5000);
 
   if (web_contents->NeedToFireBeforeUnload())
-    web_contents->GetRenderViewHost()->FirePageBeforeUnload(false);
+    web_contents->GetMainFrame()->DispatchBeforeUnload(false);
   else
     web_contents->Close();
 }
@@ -322,8 +324,8 @@ content::WebContents* NativeWindow::GetDevToolsWebContents() const {
   return inspectable_web_contents()->devtools_web_contents();
 }
 
-void NativeWindow::AppendExtraCommandLineSwitches(CommandLine* command_line,
-                                                  int child_process_id) {
+void NativeWindow::AppendExtraCommandLineSwitches(
+    base::CommandLine* command_line, int child_process_id) {
   // Append --node-integration to renderer process.
   command_line->AppendSwitchASCII(switches::kNodeIntegration,
                                   node_integration_);
@@ -542,7 +544,7 @@ void NativeWindow::DevToolsSaveToFile(const std::string& url,
   }
 
   saved_files_[url] = path;
-  file_util::WriteFile(path, content.data(), content.size());
+  base::WriteFile(path, content.data(), content.size());
 
   // Notify devtools.
   base::StringValue url_value(url);
@@ -557,7 +559,7 @@ void NativeWindow::DevToolsAppendToFile(const std::string& url,
   PathsMap::iterator it = saved_files_.find(url);
   if (it == saved_files_.end())
     return;
-  file_util::AppendToFile(it->second, content.data(), content.size());
+  base::AppendToFile(it->second, content.data(), content.size());
 
   // Notify devtools.
   base::StringValue url_value(url);
@@ -614,7 +616,7 @@ void NativeWindow::CallDevToolsFunction(const std::string& function_name,
     }
   }
   GetDevToolsWebContents()->GetRenderViewHost()->ExecuteJavascriptInWebFrame(
-      string16(), base::UTF8ToUTF16(function_name + "(" + params + ");"));
+      base::string16(), base::UTF8ToUTF16(function_name + "(" + params + ");"));
 }
 
 }  // namespace atom

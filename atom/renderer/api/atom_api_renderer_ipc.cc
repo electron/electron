@@ -13,8 +13,8 @@
 #include "atom/common/node_includes.h"
 
 using content::RenderView;
-using WebKit::WebFrame;
-using WebKit::WebView;
+using blink::WebFrame;
+using blink::WebView;
 
 namespace {
 
@@ -30,7 +30,7 @@ RenderView* GetCurrentRenderView() {
   return RenderView::FromWebView(view);
 }
 
-void Send(const string16& channel, const base::ListValue& arguments) {
+void Send(const base::string16& channel, const base::ListValue& arguments) {
   RenderView* render_view = GetCurrentRenderView();
   if (render_view == NULL)
     return;
@@ -42,8 +42,9 @@ void Send(const string16& channel, const base::ListValue& arguments) {
     node::ThrowError("Unable to send AtomViewHostMsg_Message");
 }
 
-string16 SendSync(const string16& channel, const base::ListValue& arguments) {
-  string16 json;
+base::string16 SendSync(const base::string16& channel,
+                        const base::ListValue& arguments) {
+  base::string16 json;
 
   RenderView* render_view = GetCurrentRenderView();
   if (render_view == NULL)
@@ -69,4 +70,4 @@ void Initialize(v8::Handle<v8::Object> exports) {
 
 }  // namespace
 
-NODE_MODULE(atom_renderer_ipc, Initialize)
+NODE_MODULE_X(atom_renderer_ipc, Initialize, NULL, NM_F_BUILTIN)

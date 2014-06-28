@@ -103,4 +103,4 @@ void Initialize(v8::Handle<v8::Object> exports) {
 
 }  // namespace
 
-NODE_MODULE(atom_common_screen, Initialize)
+NODE_MODULE_X(atom_common_screen, Initialize, NULL, NM_F_BUILTIN)

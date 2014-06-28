@@ -111,7 +111,7 @@ class NativeWindowWin : public NativeWindow,
   virtual views::View* GetInitiallyFocusedView() OVERRIDE;
   virtual bool CanResize() const OVERRIDE;
   virtual bool CanMaximize() const OVERRIDE;
-  virtual string16 GetWindowTitle() const OVERRIDE;
+  virtual base::string16 GetWindowTitle() const OVERRIDE;
   virtual bool ShouldHandleSystemCommands() const OVERRIDE;
   virtual gfx::ImageSkia GetWindowAppIcon() OVERRIDE;
   virtual gfx::ImageSkia GetWindowIcon() OVERRIDE;
@@ -150,7 +150,7 @@ class NativeWindowWin : public NativeWindow,
   bool use_content_size_;
 
   bool resizable_;
-  string16 title_;
+  base::string16 title_;
   gfx::Size minimum_size_;
   gfx::Size maximum_size_;
 

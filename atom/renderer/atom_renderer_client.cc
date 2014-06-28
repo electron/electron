@@ -12,6 +12,7 @@
 #include "atom/renderer/api/atom_renderer_bindings.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "base/command_line.h"
+#include "native_mate/converter.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
 
@@ -65,16 +66,21 @@ void AtomRendererClient::RenderThreadStarted() {
 
   // Create a default empty environment which would be used when we need to
   // run V8 code out of a window context (like running a uv callback).
-  v8::HandleScope handle_scope(node_isolate);
-  v8::Local<v8::Context> context = v8::Context::New(node_isolate);
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> context = v8::Context::New(isolate);
   global_env = node::Environment::New(context);
+}
+
+void AtomRendererClient::RenderFrameCreated(
+    content::RenderFrame* render_frame) {
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
   new AtomRenderViewObserver(render_view, this);
 }
 
-void AtomRendererClient::DidCreateScriptContext(WebKit::WebFrame* frame,
+void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,
                                                 v8::Handle<v8::Context> context,
                                                 int extension_group,
                                                 int world_id) {
@@ -88,7 +94,8 @@ void AtomRendererClient::DidCreateScriptContext(WebKit::WebFrame* frame,
   v8::Context::Scope scope(context);
 
   // Check the existance of process object to prevent duplicate initialization.
-  if (context->Global()->Has(v8::String::New("process")))
+  if (context->Global()->Has(
+        mate::StringToV8(context->GetIsolate(), "process")))
     return;
 
   // Give the node loop a run to make sure everything is ready.
@@ -109,7 +116,7 @@ void AtomRendererClient::DidCreateScriptContext(WebKit::WebFrame* frame,
 }
 
 void AtomRendererClient::WillReleaseScriptContext(
-    WebKit::WebFrame* frame,
+    blink::WebFrame* frame,
     v8::Handle<v8::Context> context,
     int world_id) {
   if (!IsNodeBindingEnabled(frame))
@@ -143,7 +150,7 @@ void AtomRendererClient::WillReleaseScriptContext(
   }
 }
 
-bool AtomRendererClient::ShouldFork(WebKit::WebFrame* frame,
+bool AtomRendererClient::ShouldFork(blink::WebFrame* frame,
                                     const GURL& url,
                                     const std::string& http_method,
                                     bool is_initial_navigation,
@@ -156,7 +163,7 @@ bool AtomRendererClient::ShouldFork(WebKit::WebFrame* frame,
   return http_method == "GET";
 }
 
-bool AtomRendererClient::IsNodeBindingEnabled(WebKit::WebFrame* frame) {
+bool AtomRendererClient::IsNodeBindingEnabled(blink::WebFrame* frame) {
   if (node_integration_ == DISABLE)
     return false;
   // Node integration is enabled in main frame unless explictly disabled.

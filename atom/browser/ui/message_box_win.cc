@@ -53,7 +53,7 @@ class MessageDialog : public base::MessageLoop::Dispatcher,
   virtual bool Dispatch(const base::NativeEvent& event) OVERRIDE;
 
   // Overridden from views::WidgetDelegate:
-  virtual string16 GetWindowTitle() const;
+  virtual base::string16 GetWindowTitle() const;
   virtual void WindowClosing() OVERRIDE;
   virtual views::Widget* GetWidget() OVERRIDE;
   virtual const views::Widget* GetWidget() const OVERRIDE;
@@ -73,7 +73,7 @@ class MessageDialog : public base::MessageLoop::Dispatcher,
   bool should_close_;
   bool delete_on_close_;
   int result_;
-  string16 title_;
+  base::string16 title_;
   views::Widget* widget_;
   views::MessageBoxView* message_box_view_;
   scoped_ptr<NativeWindow::DialogScope> dialog_scope_;

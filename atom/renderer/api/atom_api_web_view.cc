@@ -17,8 +17,8 @@ namespace api {
 
 namespace {
 
-WebKit::WebView* GetCurrentWebView() {
-  WebKit::WebFrame* frame = WebKit::WebFrame::frameForCurrentContext();
+blink::WebView* GetCurrentWebView() {
+  blink::WebFrame* frame = blink::WebFrame::frameForCurrentContext();
   if (!frame)
     return NULL;
   return frame->view();
@@ -41,12 +41,12 @@ double WebView::GetZoomLevel() const {
 }
 
 double WebView::SetZoomFactor(double factor) {
-  return WebKit::WebView::zoomLevelToZoomFactor(SetZoomLevel(
-      WebKit::WebView::zoomFactorToZoomLevel(factor)));
+  return blink::WebView::zoomLevelToZoomFactor(SetZoomLevel(
+      blink::WebView::zoomFactorToZoomLevel(factor)));
 }
 
 double WebView::GetZoomFactor() const {
-  return WebKit::WebView::zoomLevelToZoomFactor(GetZoomLevel());
+  return blink::WebView::zoomLevelToZoomFactor(GetZoomLevel());
 }
 
 mate::ObjectTemplateBuilder WebView::GetObjectTemplateBuilder(
@@ -77,4 +77,4 @@ void Initialize(v8::Handle<v8::Object> exports) {
 
 }  // namespace
 
-NODE_MODULE(atom_renderer_web_view, Initialize)
+NODE_MODULE_X(atom_renderer_web_view, Initialize, NULL, NM_F_BUILTIN)

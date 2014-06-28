@@ -10,6 +10,6 @@
 #if defined(OS_MACOSX)
 int AtomMain(int argc, const char* argv[]) {
   atom::AtomMainDelegate delegate;
-  return content::ContentMain(argc, argv, &delegate);
+  return content::ContentMain(content::ContentMainParams(&delegate));
 }
 #endif  // OS_MACOSX

@@ -36,7 +36,7 @@ namespace atom {
 namespace {
 
 // Empty callback for async handle.
-void UvNoOp(uv_async_t* handle, int status) {
+void UvNoOp(uv_async_t* handle) {
 }
 
 // Convert the given vector to an array of C-strings. The strings in the
@@ -85,16 +85,9 @@ NodeBindings::~NodeBindings() {
 
   // Clear uv.
   uv_sem_destroy(&embed_sem_);
-  uv_timer_stop(&idle_timer_);
 }
 
 void NodeBindings::Initialize() {
-  // Init idle GC for browser.
-  if (is_browser_) {
-    uv_timer_init(uv_default_loop(), &idle_timer_);
-    uv_timer_start(&idle_timer_, IdleCallback, 5000, 5000);
-  }
-
   // Open node's error reporting system for browser process.
   node::g_standalone_mode = is_browser_;
   node::g_upstream_node_mode = false;
@@ -162,7 +155,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   uv_unref(reinterpret_cast<uv_handle_t*>(env->idle_prepare_handle()));
   uv_unref(reinterpret_cast<uv_handle_t*>(env->idle_check_handle()));
 
-  Local<FunctionTemplate> process_template = FunctionTemplate::New();
+  Local<FunctionTemplate> process_template = FunctionTemplate::New(isolate);
   process_template->SetClassName(FIXED_ONE_BYTE_STRING(isolate, "process"));
 
   Local<Object> process_object = process_template->GetFunction()->NewInstance();
@@ -199,15 +192,16 @@ void NodeBindings::RunMessageLoop() {
 void NodeBindings::UvRunOnce() {
   DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
 
-  // Use Locker in browser process.
-  BrowserV8Locker locker(node_isolate);
-
-  v8::HandleScope handle_scope(node_isolate);
-
-  // Enter node context while dealing with uv events, by default the global
-  // env would be used unless user specified another one (this happens for
-  // renderer process, which wraps the uv loop with web page context).
+  // By default the global env would be used unless user specified another one
+  // (this happens for renderer process, which wraps the uv loop with web page
+  // context).
   node::Environment* env = uv_env() ? uv_env() : global_env;
+
+  // Use Locker in browser process.
+  BrowserV8Locker locker(env->isolate());
+  v8::HandleScope handle_scope(env->isolate());
+
+  // Enter node context while dealing with uv events.
   v8::Context::Scope context_scope(env->context());
 
   // Deal with uv events.
@@ -251,11 +245,6 @@ void NodeBindings::EmbedThreadRunner(void *arg) {
     // Deal with event in main thread.
     self->WakeupMainThread();
   }
-}
-
-// static
-void NodeBindings::IdleCallback(uv_timer_t*, int) {
-  v8::V8::IdleNotification();
 }
 
 }  // namespace atom

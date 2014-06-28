@@ -17,9 +17,9 @@ class AtomBindings {
   AtomBindings();
   virtual ~AtomBindings();
 
-  // Add process.atom_binding function, which behaves like process.binding but
+  // Add process.atom_binding function, which behaves like process.atomBinding but
   // load native code from atom-shell instead.
-  virtual void BindTo(v8::Handle<v8::Object> process);
+  virtual void BindTo(v8::Isolate* isolate, v8::Handle<v8::Object> process);
 
  private:
   DISALLOW_COPY_AND_ASSIGN(AtomBindings);

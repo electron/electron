@@ -167,8 +167,6 @@
       'atom/common/api/atom_api_v8_util.cc',
       'atom/common/api/atom_bindings.cc',
       'atom/common/api/atom_bindings.h',
-      'atom/common/api/atom_extensions.cc',
-      'atom/common/api/atom_extensions.h',
       'atom/common/api/object_life_monitor.cc',
       'atom/common/api/object_life_monitor.h',
       'atom/common/browser_v8_locker.cc',
@@ -382,6 +380,7 @@
                 '<(libchromiumcontent_library_dir)/icudt.dll',
                 '<(libchromiumcontent_library_dir)/libEGL.dll',
                 '<(libchromiumcontent_library_dir)/libGLESv2.dll',
+                '<(libchromiumcontent_resources_dir)/icudtl.dat',
                 '<(libchromiumcontent_resources_dir)/content_shell.pak',
                 'external_binaries/d3dcompiler_43.dll',
                 'external_binaries/xinput1_3.dll',
@@ -402,6 +401,7 @@
               'files': [
                 '<(libchromiumcontent_library_dir)/libchromiumcontent.so',
                 '<(libchromiumcontent_library_dir)/libffmpegsumo.so',
+                '<(libchromiumcontent_resources_dir)/icudtl.dat',
                 '<(libchromiumcontent_resources_dir)/content_shell.pak',
               ],
             },
@@ -663,6 +663,7 @@
           'mac_bundle_resources': [
             'atom/common/resources/mac/MainMenu.xib',
             '<(libchromiumcontent_resources_dir)/content_shell.pak',
+            '<(libchromiumcontent_resources_dir)/icudtl.dat',
           ],
           'xcode_settings': {
             'INFOPLIST_FILE': 'atom/common/resources/mac/Info.plist',

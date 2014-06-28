@@ -22,8 +22,11 @@
 #include "vendor/brightray/browser/inspectable_web_contents_delegate.h"
 #include "vendor/brightray/browser/inspectable_web_contents_impl.h"
 
-class CommandLine;
 struct WebPreferences;
+
+namespace base {
+class CommandLine;
+}
 
 namespace content {
 class BrowserContext;
@@ -160,7 +163,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   content::WebContents* GetDevToolsWebContents() const;
 
   // Called when renderer process is going to be started.
-  void AppendExtraCommandLineSwitches(CommandLine* command_line,
+  void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
                                       int child_process_id);
   void OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs);
 

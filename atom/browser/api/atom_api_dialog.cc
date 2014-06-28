@@ -85,4 +85,4 @@ void Initialize(v8::Handle<v8::Object> exports) {
 
 }  // namespace
 
-NODE_MODULE(atom_browser_dialog, Initialize)
+NODE_MODULE_X(atom_browser_dialog, Initialize, NULL, NM_F_BUILTIN)

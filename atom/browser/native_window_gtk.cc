@@ -418,7 +418,7 @@ void NativeWindowGtk::UpdateDraggableRegions(
 void NativeWindowGtk::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
-  if (event.type == WebKit::WebInputEvent::RawKeyDown) {
+  if (event.type == blink::WebInputEvent::RawKeyDown) {
     GdkEventKey* os_event = reinterpret_cast<GdkEventKey*>(event.os_event);
     ui::Accelerator accelerator = ui::AcceleratorForGdkKeyCodeAndModifier(
         os_event->keyval, static_cast<GdkModifierType>(os_event->state));

@@ -93,4 +93,4 @@ void Initialize(v8::Handle<v8::Object> exports) {
 
 }  // namespace
 
-NODE_MODULE(atom_browser_auto_updater, Initialize)
+NODE_MODULE_X(atom_browser_auto_updater, Initialize, NULL, NM_F_BUILTIN)

@@ -63,7 +63,7 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   context->Enter();
 
   // Add atom-shell extended APIs.
-  atom_bindings_->BindTo(global_env->process_object());
+  atom_bindings_->BindTo(isolate, global_env->process_object());
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {

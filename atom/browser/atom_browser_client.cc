@@ -44,7 +44,8 @@ AtomBrowserClient::~AtomBrowserClient() {
 
 net::URLRequestContextGetter* AtomBrowserClient::CreateRequestContext(
     content::BrowserContext* browser_context,
-    content::ProtocolHandlerMap* protocol_handlers) {
+    content::ProtocolHandlerMap* protocol_handlers,
+    content::ProtocolHandlerScopedVector protocol_interceptors) {
   return static_cast<AtomBrowserContext*>(browser_context)->
       CreateRequestContext(protocol_handlers);
 }
@@ -77,7 +78,7 @@ void AtomBrowserClient::OverrideWebkitPrefs(
     window->OverrideWebkitPrefs(url, prefs);
 }
 
-bool AtomBrowserClient::ShouldSwapProcessesForNavigation(
+bool AtomBrowserClient::ShouldSwapBrowsingInstancesForNavigation(
     content::SiteInstance* site_instance,
     const GURL& current_url,
     const GURL& new_url) {
@@ -94,7 +95,7 @@ std::string AtomBrowserClient::GetApplicationLocale() {
 }
 
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
-    CommandLine* command_line,
+    base::CommandLine* command_line,
     int child_process_id) {
   WindowList* list = WindowList::GetInstance();
   NativeWindow* window = NULL;
