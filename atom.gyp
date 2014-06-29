@@ -140,6 +140,7 @@
       'atom/browser/ui/gtk/status_icon.h',
       'atom/browser/ui/gtk/work_area_watcher_x.cc',
       'atom/browser/ui/gtk/work_area_watcher_x.h',
+      'atom/browser/ui/gtk/x11_util.cc',
       'atom/browser/ui/message_box.h',
       'atom/browser/ui/message_box_gtk.cc',
       'atom/browser/ui/message_box_mac.mm',
