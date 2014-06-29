@@ -98,7 +98,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   sandbox::SandboxInterfaceInfo sandbox_info = {0};
   content::InitializeSandboxInfo(&sandbox_info);
   atom::AtomMainDelegate delegate;
-  return content::ContentMain(instance, &sandbox_info, &delegate);
+  return content::ContentMain(content::ContentMainParams(&delegate));
 }
 
 #elif defined(OS_LINUX)  // defined(OS_WIN)
@@ -109,7 +109,7 @@ int main(int argc, const char* argv[]) {
     return node::Start(argc, const_cast<char**>(argv));
 
   atom::AtomMainDelegate delegate;
-  return content::ContentMain(argc, argv, &delegate);
+  return content::ContentMain(content::ContentMainParams(&delegate));
 }
 
 #else  // defined(OS_LINUX)

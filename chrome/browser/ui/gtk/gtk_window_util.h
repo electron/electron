@@ -22,11 +22,6 @@ extern const int kFrameBorderThickness;
 // the 16 px at the end of each edge triggers diagonal resizing.
 extern const int kResizeAreaCornerSize;
 
-// Performs Cut/Copy/Paste operation on the |window|'s |web_contents|.
-void DoCut(GtkWindow* window, content::WebContents* web_contents);
-void DoCopy(GtkWindow* window, content::WebContents* web_contents);
-void DoPaste(GtkWindow* window, content::WebContents* web_contents);
-
 // Ubuntu patches their version of GTK+ to that there is always a
 // gripper in the bottom right corner of the window. We always need to
 // disable this feature since we can't communicate this to WebKit easily.

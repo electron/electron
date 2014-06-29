@@ -23,44 +23,6 @@ static guint32 last_click_time;
 static int last_click_x;
 static int last_click_y;
 
-// Performs Cut/Copy/Paste operation on the |window|.
-// If the current render view is focused, then just call the specified |method|
-// against the current render view host, otherwise emit the specified |signal|
-// against the focused widget.
-// TODO(suzhe): This approach does not work for plugins.
-void DoCutCopyPaste(GtkWindow* window,
-                    WebContents* web_contents,
-                    void (RenderWidgetHost::*method)(),
-                    const char* signal) {
-  GtkWidget* widget = gtk_window_get_focus(window);
-  if (widget == NULL)
-    return;  // Do nothing if no focused widget.
-
-  if (web_contents &&
-      widget == web_contents->GetView()->GetContentNativeView()) {
-    (web_contents->GetRenderViewHost()->*method)();
-  } else {
-    guint id;
-    if ((id = g_signal_lookup(signal, G_OBJECT_TYPE(widget))) != 0)
-      g_signal_emit(widget, id, 0);
-  }
-}
-
-void DoCut(GtkWindow* window, WebContents* web_contents) {
-  DoCutCopyPaste(window, web_contents,
-                 &RenderWidgetHost::Cut, "cut-clipboard");
-}
-
-void DoCopy(GtkWindow* window, WebContents* web_contents) {
-  DoCutCopyPaste(window, web_contents,
-                 &RenderWidgetHost::Copy, "copy-clipboard");
-}
-
-void DoPaste(GtkWindow* window, WebContents* web_contents) {
-  DoCutCopyPaste(window, web_contents,
-                 &RenderWidgetHost::Paste, "paste-clipboard");
-}
-
 // Ubuntu patches their version of GTK+ so that there is always a
 // gripper in the bottom right corner of the window. We dynamically
 // look up this symbol because it's a non-standard Ubuntu extension to
