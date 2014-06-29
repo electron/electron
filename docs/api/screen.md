@@ -1,6 +1,9 @@
 # screen
 
 Gets various info about screen size, displays, cursor position, etc.
+```
+var screen = require('screen');
+```
 
 ## screen.getCursorScreenPoint()
 
