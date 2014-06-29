@@ -109,8 +109,9 @@ int DockBounce(const std::string& type) {
 }
 #endif
 
-void Initialize(v8::Handle<v8::Object> exports) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
+                v8::Handle<v8::Context> context, void* priv) {
+  v8::Isolate* isolate = context->GetIsolate();
   Browser* browser = Browser::Get();
   CommandLine* command_line = CommandLine::ForCurrentProcess();
 
@@ -140,4 +141,4 @@ void Initialize(v8::Handle<v8::Object> exports) {
 
 }  // namespace
 
-NODE_MODULE_X(atom_browser_app, Initialize, NULL, NM_F_BUILTIN)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_app, Initialize)

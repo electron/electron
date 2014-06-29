@@ -62,12 +62,13 @@ base::string16 SendSync(const base::string16& channel,
   return json;
 }
 
-void Initialize(v8::Handle<v8::Object> exports) {
-  mate::Dictionary dict(v8::Isolate::GetCurrent(), exports);
+void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
+                v8::Handle<v8::Context> context, void* priv) {
+  mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("send", &Send);
   dict.SetMethod("sendSync", &SendSync);
 }
 
 }  // namespace
 
-NODE_MODULE_X(atom_renderer_ipc, Initialize, NULL, NM_F_BUILTIN)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_renderer_ipc, Initialize)

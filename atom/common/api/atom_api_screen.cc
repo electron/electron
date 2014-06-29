@@ -86,13 +86,14 @@ struct Converter<gfx::Display> {
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports) {
+void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
+                v8::Handle<v8::Context> context, void* priv) {
 #if defined(TOOLKIT_GTK)
   gfx::GdkInitFromCommandLine(*CommandLine::ForCurrentProcess());
 #endif
 
   gfx::Screen* screen = gfx::Screen::GetNativeScreen();
-  mate::Dictionary dict(v8::Isolate::GetCurrent(), exports);
+  mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("getCursorScreenPoint",
                  base::Bind(&gfx::Screen::GetCursorScreenPoint,
                             base::Unretained(screen)));
@@ -103,4 +104,4 @@ void Initialize(v8::Handle<v8::Object> exports) {
 
 }  // namespace
 
-NODE_MODULE_X(atom_common_screen, Initialize, NULL, NM_F_BUILTIN)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_common_screen, Initialize)

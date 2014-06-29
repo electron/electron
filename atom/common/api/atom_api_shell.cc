@@ -13,8 +13,9 @@
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports) {
-  mate::Dictionary dict(v8::Isolate::GetCurrent(), exports);
+void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
+                v8::Handle<v8::Context> context, void* priv) {
+  mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("showItemInFolder", &platform_util::ShowItemInFolder);
   dict.SetMethod("openItem", &platform_util::OpenItem);
   dict.SetMethod("openExternal", &platform_util::OpenExternal);
@@ -24,4 +25,4 @@ void Initialize(v8::Handle<v8::Object> exports) {
 
 }  // namespace
 
-NODE_MODULE_X(atom_common_shell, Initialize, NULL, NM_F_BUILTIN)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_common_shell, Initialize)

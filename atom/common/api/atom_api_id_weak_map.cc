@@ -91,10 +91,10 @@ void IDWeakMap::WeakCallback(
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports) {
+void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
+                v8::Handle<v8::Context> context, void* priv) {
   using atom::api::IDWeakMap;
-
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = context->GetIsolate();
   v8::Local<v8::Function> constructor = mate::CreateConstructor<IDWeakMap>(
       isolate,
       "IDWeakMap",
@@ -104,4 +104,4 @@ void Initialize(v8::Handle<v8::Object> exports) {
 
 }  // namespace
 
-NODE_MODULE_X(atom_common_id_weak_map, Initialize, NULL, NM_F_BUILTIN)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_common_id_weak_map, Initialize)

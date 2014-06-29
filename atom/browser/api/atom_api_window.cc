@@ -388,9 +388,10 @@ void Window::BuildPrototype(v8::Isolate* isolate,
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports) {
+void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
+                v8::Handle<v8::Context> context, void* priv) {
   using atom::api::Window;
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = context->GetIsolate();
   v8::Local<v8::Function> constructor = mate::CreateConstructor<Window>(
       isolate, "BrowserWindow", base::Bind(&Window::New));
   mate::Dictionary dict(isolate, exports);
@@ -399,4 +400,4 @@ void Initialize(v8::Handle<v8::Object> exports) {
 
 }  // namespace
 
-NODE_MODULE_X(atom_browser_window, Initialize, NULL, NM_F_BUILTIN)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_window, Initialize)

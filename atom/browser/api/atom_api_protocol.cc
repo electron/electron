@@ -322,16 +322,17 @@ mate::Handle<Protocol> Protocol::Create(v8::Isolate* isolate) {
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports) {
+void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
+                v8::Handle<v8::Context> context, void* priv) {
   // Make sure the job factory has been created.
   atom::AtomBrowserContext::Get()->url_request_context_getter()->
       GetURLRequestContext();
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("protocol", atom::api::Protocol::Create(isolate));
 }
 
 }  // namespace
 
-NODE_MODULE_X(atom_browser_protocol, Initialize, NULL, NM_F_BUILTIN)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_protocol, Initialize)

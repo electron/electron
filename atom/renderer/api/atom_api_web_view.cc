@@ -69,12 +69,13 @@ mate::Handle<WebView> WebView::Create(v8::Isolate* isolate) {
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
+                v8::Handle<v8::Context> context, void* priv) {
+  v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("webView", atom::api::WebView::Create(isolate));
 }
 
 }  // namespace
 
-NODE_MODULE_X(atom_renderer_web_view, Initialize, NULL, NM_F_BUILTIN)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_renderer_web_view, Initialize)
