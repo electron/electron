@@ -255,7 +255,7 @@
       'chromium_src/ui/base/x/x11_util.cc',
       'chromium_src/ui/events/keycodes/keyboard_code_conversion_gtk.cc',
       'chromium_src/ui/events/keycodes/keyboard_code_conversion_gtk.h',
-      'chromium_src/ui/gfx/gfx_gtk_util.cc',
+      'chromium_src/ui/gfx/gtk_util_gfx.cc',
       'chromium_src/ui/gfx/gtk_util.h',
       '<@(native_mate_files)',
     ],

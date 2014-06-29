@@ -33,6 +33,7 @@
       'sources/': [
         ['exclude', '_linux(_unittest)?\\.(h|cc)$'],
         ['exclude', '(^|/)linux/'],
+        ['exclude', '(^|/)linux/'],
       ],
     }],
     ['OS!="android"', {
@@ -57,6 +58,8 @@
         ['exclude', '_gtk(_browsertest|_unittest)?\\.(h|cc)$'],
         ['exclude', '(^|/)gtk/'],
         ['exclude', '(^|/)gtk_[^/]*\\.(h|cc)$'],
+        ['exclude', '(^|/)libgtk2ui/'],
+        ['exclude', '(^|/)x/'],
       ],
     }],
     ['OS!="win"', {
