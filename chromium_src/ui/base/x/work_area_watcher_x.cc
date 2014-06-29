@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/gtk/work_area_watcher_x.h"
+#include "ui/base/x/work_area_watcher_x.h"
 
 #include "base/memory/singleton.h"
 #include "ui/base/work_area_watcher_observer.h"
-#include "atom/browser/ui/gtk/root_window_property_watcher_x.h"
+#include "ui/base/x/root_window_property_watcher_x.h"
 #include "ui/base/x/x11_util.h"
 
 namespace ui {

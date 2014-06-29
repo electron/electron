@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/ui/gtk/active_window_watcher_x.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "base/environment.h"
@@ -21,6 +20,7 @@
 #include "native_mate/dictionary.h"
 #include "ui/base/accelerators/platform_accelerator_gtk.h"
 #include "ui/base/models/simple_menu_model.h"
+#include "ui/base/x/active_window_watcher_x.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/font_render_params_linux.h"
 #include "ui/gfx/gtk_util.h"

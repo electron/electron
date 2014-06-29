@@ -2,11 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_GTK_ACTIVE_WINDOW_WATCHER_X_H_
-#define ATOM_BROWSER_UI_GTK_ACTIVE_WINDOW_WATCHER_X_H_
+#ifndef UI_BASE_X_ACTIVE_WINDOW_WATCHER_X_H_
+#define UI_BASE_X_ACTIVE_WINDOW_WATCHER_X_H_
 
 #include "base/basictypes.h"
 #include "base/observer_list.h"
+#include "ui/base/ui_base_export.h"
 #include "ui/base/x/x11_util.h"
 
 template <typename T> struct DefaultSingletonTraits;
@@ -22,7 +23,7 @@ class RootWindowPropertyWatcherX;
 // This is a helper class that is used to keep track of which window the X
 // window manager thinks is active. Add an Observer to listen for changes to
 // the active window.
-class ActiveWindowWatcherX {
+class UI_BASE_EXPORT ActiveWindowWatcherX {
  public:
   static ActiveWindowWatcherX* GetInstance();
   static void AddObserver(ActiveWindowWatcherXObserver* observer);
@@ -56,4 +57,4 @@ class ActiveWindowWatcherX {
 
 }  // namespace ui
 
-#endif  // ATOM_BROWSER_UI_GTK_ACTIVE_WINDOW_WATCHER_X_H_
+#endif  // UI_BASE_X_ACTIVE_WINDOW_WATCHER_X_H_

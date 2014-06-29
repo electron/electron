@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_GTK_ROOT_WINDOW_PROPERTY_WATCHER_X_H_
-#define ATOM_BROWSER_UI_GTK_ROOT_WINDOW_PROPERTY_WATCHER_X_H_
+#ifndef UI_BASE_X_ROOT_WINDOW_PROPERTY_WATCHER_X_H_
+#define UI_BASE_X_ROOT_WINDOW_PROPERTY_WATCHER_X_H_
 
 #include <gdk/gdk.h>
 
@@ -13,7 +13,6 @@
 template <typename T> struct DefaultSingletonTraits;
 
 namespace ui {
-
 namespace internal {
 
 // This class keeps track of changes to properties on the root window. This is
@@ -37,7 +36,6 @@ class RootWindowPropertyWatcherX {
 };
 
 }  // namespace internal
-
 }  // namespace ui
 
-#endif  // ATOM_BROWSER_UI_GTK_ROOT_WINDOW_PROPERTY_WATCHER_X_H_
+#endif  // UI_BASE_X_ROOT_WINDOW_PROPERTY_WATCHER_X_H_
