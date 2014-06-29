@@ -12,6 +12,7 @@
 #include "base/environment.h"
 #include "base/nix/xdg_util.h"
 #include "chrome/browser/ui/gtk/gtk_window_util.h"
+#include "chrome/browser/ui/libgtk2ui/skia_utils_gtk2.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
@@ -25,7 +26,6 @@
 #include "ui/gfx/gtk_util.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/rect.h"
-#include "ui/gfx/skia_utils_gtk.h"
 
 namespace atom {
 
@@ -131,7 +131,8 @@ NativeWindowGtk::NativeWindowGtk(content::WebContents* web_contents,
   gtk_widget_realize(GTK_WIDGET(window_));
 
   if (icon_)
-    gtk_window_set_icon(window_, icon_->ToGdkPixbuf());
+    gtk_window_set_icon(window_,
+                        libgtk2ui::GdkPixbufFromSkBitmap(*icon_->ToSkBitmap()));
 
   ui::ActiveWindowWatcherX::AddObserver(this);
 
@@ -443,7 +444,7 @@ void NativeWindowGtk::SetWebKitColorStyle() {
       GetWebContents()->GetMutableRendererPrefs();
   GtkStyle* frame_style = gtk_rc_get_style(GTK_WIDGET(window_));
   prefs->focus_ring_color =
-      gfx::GdkColorToSkColor(frame_style->bg[GTK_STATE_SELECTED]);
+      libgtk2ui::GdkColorToSkColor(frame_style->bg[GTK_STATE_SELECTED]);
   prefs->thumb_active_color = SkColorSetRGB(244, 244, 244);
   prefs->thumb_inactive_color = SkColorSetRGB(234, 234, 234);
   prefs->track_color = SkColorSetRGB(211, 211, 211);
@@ -451,13 +452,13 @@ void NativeWindowGtk::SetWebKitColorStyle() {
   GtkWidget* url_entry = gtk_entry_new();
   GtkStyle* entry_style = gtk_rc_get_style(url_entry);
   prefs->active_selection_bg_color =
-      gfx::GdkColorToSkColor(entry_style->base[GTK_STATE_SELECTED]);
+      libgtk2ui::GdkColorToSkColor(entry_style->base[GTK_STATE_SELECTED]);
   prefs->active_selection_fg_color =
-      gfx::GdkColorToSkColor(entry_style->text[GTK_STATE_SELECTED]);
+      libgtk2ui::GdkColorToSkColor(entry_style->text[GTK_STATE_SELECTED]);
   prefs->inactive_selection_bg_color =
-      gfx::GdkColorToSkColor(entry_style->base[GTK_STATE_ACTIVE]);
+      libgtk2ui::GdkColorToSkColor(entry_style->base[GTK_STATE_ACTIVE]);
   prefs->inactive_selection_fg_color =
-      gfx::GdkColorToSkColor(entry_style->text[GTK_STATE_ACTIVE]);
+      libgtk2ui::GdkColorToSkColor(entry_style->text[GTK_STATE_ACTIVE]);
   gtk_widget_destroy(url_entry);
 
   const base::TimeDelta cursor_blink_time = gfx::GetCursorBlinkCycle();

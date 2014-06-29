@@ -11,8 +11,8 @@
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
-#include "ui/base/gtk/gtk_signal.h"
-#include "ui/base/gtk/gtk_signal_registrar.h"
+#include "chrome/browser/ui/libgtk2ui/gtk2_signal.h"
+#include "chrome/browser/ui/libgtk2ui/gtk2_signal_registrar.h"
 #include "ui/gfx/point.h"
 
 namespace gfx {
@@ -216,7 +216,7 @@ class MenuGtk {
   // menu.
   static bool block_activation_;
 
-  ui::GtkSignalRegistrar signal_;
+  libgtk2ui::Gtk2SignalRegistrar signal_;
 
   base::WeakPtrFactory<MenuGtk> weak_factory_;
 };

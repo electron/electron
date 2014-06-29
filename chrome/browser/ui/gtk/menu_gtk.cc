@@ -16,6 +16,7 @@
 #include "chrome/browser/ui/gtk/gtk_custom_menu.h"
 #include "chrome/browser/ui/gtk/gtk_custom_menu_item.h"
 #include "chrome/browser/ui/gtk/gtk_util.h"
+#include "chrome/browser/ui/libgtk2ui/skia_utils_gtk2.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/accelerators/menu_label_accelerator_util_linux.h"
 #include "ui/base/accelerators/platform_accelerator_gtk.h"
@@ -350,8 +351,10 @@ GtkWidget* MenuGtk::BuildMenuItemWithImage(const std::string& label,
 
 GtkWidget* MenuGtk::BuildMenuItemWithImage(const std::string& label,
                                            const gfx::Image& icon) {
-  GtkWidget* menu_item = BuildMenuItemWithImage(label,
-      gtk_image_new_from_pixbuf(icon.ToGdkPixbuf()));
+  GtkWidget* menu_item = BuildMenuItemWithImage(
+      label,
+      gtk_image_new_from_pixbuf(
+          libgtk2ui::GdkPixbufFromSkBitmap(*icon.ToSkBitmap())));
   return menu_item;
 }
 
@@ -856,9 +859,10 @@ void MenuGtk::SetMenuItemInfo(GtkWidget* widget, gpointer userdata) {
         if (GTK_IS_IMAGE_MENU_ITEM(widget)) {
           gfx::Image icon;
           if (model->GetIconAt(id, &icon)) {
-            gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(widget),
-                                          gtk_image_new_from_pixbuf(
-                                              icon.ToGdkPixbuf()));
+            gtk_image_menu_item_set_image(
+                GTK_IMAGE_MENU_ITEM(widget),
+                gtk_image_new_from_pixbuf(
+                    libgtk2ui::GdkPixbufFromSkBitmap(*icon.ToSkBitmap())));
           } else {
             gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(widget), NULL);
           }
