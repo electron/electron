@@ -31,6 +31,57 @@ void SetupProcessObject(Environment*, int, const char* const*, int,
                         const char* const*);
 }
 
+// Force all builtin modules to be referenced so they can actually run their
+// DSO constructors, see http://git.io/DRIqCg.
+#if defined(OS_WIN)
+#define REFERENCE_MODULE(name) \
+  __pragma(comment (linker, "/export:_register_" #name))
+#else
+#define REFERENCE_MODULE(name) \
+  extern "C" void _register_ ## name (void); \
+  void (*fp_register_ ## name)(void) = _register_ ## name
+#endif
+// Node's builtin modules.
+REFERENCE_MODULE(cares_wrap);
+REFERENCE_MODULE(fs_event_wrap);
+REFERENCE_MODULE(buffer);
+REFERENCE_MODULE(contextify);
+REFERENCE_MODULE(crypto);
+REFERENCE_MODULE(fs);
+REFERENCE_MODULE(http_parser);
+REFERENCE_MODULE(os);
+REFERENCE_MODULE(v8);
+REFERENCE_MODULE(zlib);
+REFERENCE_MODULE(pipe_wrap);
+REFERENCE_MODULE(process_wrap);
+REFERENCE_MODULE(signal_wrap);
+REFERENCE_MODULE(smalloc);
+REFERENCE_MODULE(spawn_sync);
+REFERENCE_MODULE(tcp_wrap);
+REFERENCE_MODULE(timer_wrap);
+REFERENCE_MODULE(tls_wrap);
+REFERENCE_MODULE(tty_wrap);
+REFERENCE_MODULE(udp_wrap);
+REFERENCE_MODULE(uv);
+// Atom Shell's builtin modules.
+REFERENCE_MODULE(atom_browser_app);
+REFERENCE_MODULE(atom_browser_auto_updater);
+REFERENCE_MODULE(atom_browser_dialog);
+REFERENCE_MODULE(atom_browser_menu);
+REFERENCE_MODULE(atom_browser_power_monitor);
+REFERENCE_MODULE(atom_browser_protocol);
+REFERENCE_MODULE(atom_browser_tray);
+REFERENCE_MODULE(atom_browser_window);
+REFERENCE_MODULE(atom_common_clipboard);
+REFERENCE_MODULE(atom_common_crash_reporter);
+REFERENCE_MODULE(atom_common_id_weak_map);
+REFERENCE_MODULE(atom_common_screen);
+REFERENCE_MODULE(atom_common_shell);
+REFERENCE_MODULE(atom_common_v8_util);
+REFERENCE_MODULE(atom_renderer_ipc);
+REFERENCE_MODULE(atom_renderer_web_view);
+#undef REFERENCE_MODULE
+
 namespace atom {
 
 namespace {
