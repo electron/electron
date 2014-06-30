@@ -3,7 +3,7 @@
 import platform
 import sys
 
-NODE_VERSION = 'v0.11.10'
+NODE_VERSION = 'v0.11.13'
 BASE_URL = 'https://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent'
 LIBCHROMIUMCONTENT_COMMIT = 'e6aebd2156034b12e869d8905b22c088b2dc42ea'
 

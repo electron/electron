@@ -4,7 +4,7 @@ import argparse
 import os
 import sys
 
-from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL
+from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, NODE_VERSION
 from lib.util import execute, scoped_cwd
 
 
@@ -61,6 +61,7 @@ def update_node_modules(dirname):
 
 
 def update_atom_modules(dirname):
+  os.environ['ATOM_NODE_VERSION'] = NODE_VERSION[1:]
   with scoped_cwd(dirname):
     apm = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'apm')
     if sys.platform in ['win32', 'cygwin']:
