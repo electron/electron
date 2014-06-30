@@ -334,7 +334,6 @@
           },
           'mac_bundle_resources': [
             '<@(bundle_sources)',
-            '<(libchromiumcontent_resources_dir)/icudtl.dat',
           ],
           'copies': [
             {
@@ -384,15 +383,6 @@
               'action': [
                 'tools/mac/make_locale_dirs.sh',
                 '<@(locale_dirs)',
-              ],
-            },
-              # Link the icudtl.dat file to the Helper app, which is needed
-              # by the V8 of Helper too.
-            {
-              'postbuild_name' : 'Link icudtl.dat to Helper App',
-              'action': [
-                'tools/mac/link_file_to_helper.sh',
-                'Resources/icudtl.dat',
               ],
             },
           ]
@@ -694,6 +684,7 @@
           'mac_bundle_resources': [
             'atom/common/resources/mac/MainMenu.xib',
             '<(libchromiumcontent_resources_dir)/content_shell.pak',
+            '<(libchromiumcontent_resources_dir)/icudtl.dat',
           ],
           'xcode_settings': {
             'INFOPLIST_FILE': 'atom/common/resources/mac/Info.plist',
