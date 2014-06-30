@@ -14,7 +14,6 @@
 #include "base/path_service.h"
 #include "content/public/common/content_switches.h"
 #include "ui/base/resource/resource_bundle.h"
-#include "vendor/brightray/common/content_client.h"
 
 namespace atom {
 
@@ -49,13 +48,12 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   base::debug::EnableInProcessStackDumping();
 #endif
 
-  content_client_.reset(new brightray::ContentClient);
-  SetContentClient(content_client_.get());
-
 #if defined(OS_MACOSX)
   OverrideChildProcessPath();
   OverrideFrameworkBundlePath();
 #endif
+
+  SetContentClient(&content_client_);
   return false;
 }
 

@@ -25,7 +25,12 @@ AtomBrowserMainParts* AtomBrowserMainParts::self_ = NULL;
 AtomBrowserMainParts::AtomBrowserMainParts()
     : atom_bindings_(new AtomBindings),
       browser_(new Browser),
-      node_bindings_(NodeBindings::Create(true)) {
+      node_bindings_(NodeBindings::Create(true)),
+      isolate_(v8::Isolate::GetCurrent()),
+      locker_(isolate_),
+      handle_scope_(isolate_),
+      context_(isolate_, v8::Context::New(isolate_)),
+      context_scope_(v8::Local<v8::Context>::New(isolate_, context_)) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
   self_ = this;
 }
@@ -48,22 +53,12 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 
   node_bindings_->Initialize();
 
-  v8::V8::Initialize();
-
-  // Create context.
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Context> context = v8::Context::New(isolate);
-
   // Create the global environment.
-  global_env = node_bindings_->CreateEnvironment(context);
-
-  // Wrap whole process in one global context.
-  context->Enter();
+  global_env = node_bindings_->CreateEnvironment(
+      v8::Local<v8::Context>::New(isolate_, context_));
 
   // Add atom-shell extended APIs.
-  atom_bindings_->BindTo(isolate, global_env->process_object());
+  atom_bindings_->BindTo(isolate_, global_env->process_object());
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {

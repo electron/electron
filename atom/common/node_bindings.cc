@@ -35,10 +35,10 @@ void SetupProcessObject(Environment*, int, const char* const*, int,
 // DSO constructors, see http://git.io/DRIqCg.
 #if defined(OS_WIN)
 #define REFERENCE_MODULE(name) \
-  __pragma(comment (linker, "/export:_register_" #name))
+  __pragma(comment(linker, "/export:_register_" #name))
 #else
 #define REFERENCE_MODULE(name) \
-  extern "C" void _register_ ## name (void); \
+  extern "C" void _register_ ## name(void); \
   void (*fp_register_ ## name)(void) = _register_ ## name
 #endif
 // Node's builtin modules.
