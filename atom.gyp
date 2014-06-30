@@ -386,6 +386,15 @@
                 '<@(locale_dirs)',
               ],
             },
+              # Link the icudtl.dat file to the Helper app, which is needed
+              # by the V8 of Helper too.
+            {
+              'postbuild_name' : 'Link icudtl.dat to Helper App',
+              'action': [
+                'tools/mac/link_file_to_helper.sh',
+                'Resources/icudtl.dat',
+              ],
+            },
           ]
         }, {  # OS=="mac"
           'dependencies': [
