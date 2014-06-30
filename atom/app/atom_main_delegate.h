@@ -30,6 +30,7 @@ class AtomMainDelegate : public brightray::MainDelegate {
   virtual content::ContentRendererClient*
       CreateContentRendererClient() OVERRIDE;
 
+  scoped_ptr<brightray::ContentClient> content_client_;
   scoped_ptr<content::ContentBrowserClient> browser_client_;
   scoped_ptr<content::ContentRendererClient> renderer_client_;
 

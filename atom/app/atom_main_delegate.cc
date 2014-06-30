@@ -6,14 +6,15 @@
 
 #include <string>
 
+#include "atom/browser/atom_browser_client.h"
+#include "atom/renderer/atom_renderer_client.h"
 #include "base/command_line.h"
 #include "base/debug/stack_trace.h"
 #include "base/logging.h"
-#include "atom/browser/atom_browser_client.h"
-#include "content/public/common/content_switches.h"
-#include "atom/renderer/atom_renderer_client.h"
-#include "ui/base/resource/resource_bundle.h"
 #include "base/path_service.h"
+#include "content/public/common/content_switches.h"
+#include "ui/base/resource/resource_bundle.h"
+#include "vendor/brightray/common/content_client.h"
 
 namespace atom {
 
@@ -48,7 +49,14 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   base::debug::EnableInProcessStackDumping();
 #endif
 
-  return brightray::MainDelegate::BasicStartupComplete(exit_code);
+  content_client_.reset(new brightray::ContentClient);
+  SetContentClient(content_client_.get());
+
+#if defined(OS_MACOSX)
+  OverrideChildProcessPath();
+  OverrideFrameworkBundlePath();
+#endif
+  return false;
 }
 
 void AtomMainDelegate::PreSandboxStartup() {
