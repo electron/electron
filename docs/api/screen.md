@@ -2,7 +2,10 @@
 
 Gets various info about screen size, displays, cursor position, etc.
 ```
-var screen = require('screen');
+var Screen = require('screen');
+var BrowserWindow = require('browser-window');
+var size = Screen.getPrimaryDisplay().workAreaSize;
+mainWindow = new BrowserWindow({ width: size.width, height: size.height });
 ```
 
 ## screen.getCursorScreenPoint()
