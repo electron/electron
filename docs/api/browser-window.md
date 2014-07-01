@@ -394,6 +394,10 @@ Opens the developer tools.
 
 Closes the developer tools.
 
+### BrowserWindow.toggleDevTools()
+
+Toggle the developer tools.
+
 ### BrowserWindow.inspectElement(x, y)
 
 * `x` Integer
