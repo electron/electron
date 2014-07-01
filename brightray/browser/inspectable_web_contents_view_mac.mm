@@ -1,13 +1,13 @@
 #import "browser/inspectable_web_contents_view_mac.h"
 
 #import "browser/inspectable_web_contents.h"
-#import "browser/mac/bry_inspectable_web_contents_view_private.h"
+#import "browser/mac/bry_inspectable_web_contents_view.h"
 
 #import "content/public/browser/web_contents_view.h"
 #import <AppKit/AppKit.h>
 
 namespace brightray {
-  
+
 InspectableWebContentsView* CreateInspectableContentsView(InspectableWebContentsImpl* inspectable_web_contents) {
   return new InspectableWebContentsViewMac(inspectable_web_contents);
 }
@@ -18,7 +18,6 @@ InspectableWebContentsViewMac::InspectableWebContentsViewMac(InspectableWebConte
 }
 
 InspectableWebContentsViewMac::~InspectableWebContentsViewMac() {
-  [view_ removeFromNotificationCenter];
 }
 
 gfx::NativeView InspectableWebContentsViewMac::GetNativeView() const {

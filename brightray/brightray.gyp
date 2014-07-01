@@ -60,7 +60,6 @@
         'browser/mac/bry_application.mm',
         'browser/mac/bry_inspectable_web_contents_view.h',
         'browser/mac/bry_inspectable_web_contents_view.mm',
-        'browser/mac/bry_inspectable_web_contents_view_private.h',
         'browser/media/media_capture_devices_dispatcher.cc',
         'browser/media/media_capture_devices_dispatcher.h',
         'browser/media/media_stream_devices_controller.cc',
