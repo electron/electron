@@ -43,10 +43,6 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
     content::WebContents* web_contents)
     : web_contents_(web_contents),
       delegate_(nullptr) {
-  auto context = static_cast<BrowserContext*>(
-      web_contents_->GetBrowserContext());
-  is_docked_ = context->prefs()->GetBoolean(kIsDockedPref);
-
   view_.reset(CreateInspectableContentsView(this));
 }
 
@@ -128,11 +124,6 @@ void InspectableWebContentsImpl::MoveWindow(int x, int y) {
 
 void InspectableWebContentsImpl::SetIsDocked(bool docked) {
   view_->SetIsDocked(docked);
-  is_docked_ = docked;
-
-  auto context = static_cast<BrowserContext*>(
-      web_contents_->GetBrowserContext());
-  context->prefs()->SetBoolean(kIsDockedPref, docked);
 }
 
 void InspectableWebContentsImpl::OpenInNewTab(const std::string& url) {

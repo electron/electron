@@ -105,7 +105,6 @@ class InspectableWebContentsImpl :
   scoped_ptr<InspectableWebContentsView> view_;
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
 
-  bool is_docked_;
   DevToolsContentsResizingStrategy contents_resizing_strategy_;
 
   scoped_ptr<DevToolsEmbedderMessageDispatcher> embedder_message_dispatcher_;
