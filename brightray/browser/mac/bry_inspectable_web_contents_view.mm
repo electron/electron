@@ -62,10 +62,12 @@ using namespace brightray;
       [self adjustSubviews];
     }
   } else {
-    if (visible)
+    if (visible) {
       [devtools_window_ makeKeyAndOrderFront:nil];
-    else
+    } else {
+      [[self window] makeKeyAndOrderFront:nil];
       devtools_window_.reset();
+    }
   }
 }
 
