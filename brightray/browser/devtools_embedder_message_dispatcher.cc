@@ -27,6 +27,36 @@ bool GetValue(const base::ListValue& list, int pos, bool& value) {
   return list.GetBoolean(pos, &value);
 }
 
+bool GetValue(const base::ListValue& list, int pos, gfx::Insets& insets) {
+  const base::DictionaryValue* dict;
+  if (!list.GetDictionary(pos, &dict))
+    return false;
+  int top = 0;
+  int left = 0;
+  int bottom = 0;
+  int right = 0;
+  if (!dict->GetInteger("top", &top) ||
+      !dict->GetInteger("left", &left) ||
+      !dict->GetInteger("bottom", &bottom) ||
+      !dict->GetInteger("right", &right))
+    return false;
+  insets.Set(top, left, bottom, right);
+  return true;
+}
+
+bool GetValue(const base::ListValue& list, int pos, gfx::Size& size) {
+  const base::DictionaryValue* dict;
+  if (!list.GetDictionary(pos, &dict))
+    return false;
+  int width = 0;
+  int height = 0;
+  if (!dict->GetInteger("width", &width) ||
+      !dict->GetInteger("height", &height))
+    return false;
+  size.SetSize(width, height);
+  return true;
+}
+
 template <typename T>
 struct StorageTraits {
   typedef T StorageType;
@@ -105,6 +135,28 @@ bool ParseAndHandle3(const base::Callback<void(A1, A2, A3)>& handler,
   return true;
 }
 
+template <class A1, class A2, class A3, class A4>
+bool ParseAndHandle3(const base::Callback<void(A1, A2, A3, A4)>& handler,
+                     const base::ListValue& list) {
+  if (list.GetSize() != 3)
+    return false;
+  Argument<A1> arg1(list, 0);
+  if (!arg1.valid())
+    return false;
+  Argument<A2> arg2(list, 1);
+  if (!arg2.valid())
+    return false;
+  Argument<A3> arg3(list, 2);
+  if (!arg3.valid())
+    return false;
+  Argument<A4> arg4(list, 3);
+  if (!arg4.valid())
+    return false;
+  handler.Run(arg1.value(), arg2.value(), arg3.value(), arg4.value());
+  return true;
+}
+
+
 typedef base::Callback<bool (const base::ListValue&)> ListValueParser;
 
 ListValueParser BindToListParser(const base::Callback<void()>& handler) {
@@ -127,6 +179,12 @@ ListValueParser BindToListParser(
   return base::Bind(&ParseAndHandle3<A1, A2, A3>, handler);
 }
 
+template <class A1, class A2, class A3, class A4>
+ListValueParser BindToListParser(
+    const base::Callback<void(A1, A2, A3, A4)>& handler) {
+  return base::Bind(&ParseAndHandle3<A1, A2, A3, A4>, handler);
+}
+
 }  // namespace
 
 DevToolsEmbedderMessageDispatcher::DevToolsEmbedderMessageDispatcher(
@@ -137,11 +195,14 @@ DevToolsEmbedderMessageDispatcher::DevToolsEmbedderMessageDispatcher(
   RegisterHandler("closeWindow",
       BindToListParser(base::Bind(&Delegate::CloseWindow,
                                   base::Unretained(delegate))));
+  RegisterHandler("setContentsResizingStrategy",
+      BindToListParser(base::Bind(&Delegate::SetContentsResizingStrategy,
+                                  base::Unretained(delegate))));
   RegisterHandler("moveWindowBy",
       BindToListParser(base::Bind(&Delegate::MoveWindow,
                                   base::Unretained(delegate))));
-  RegisterHandler("requestSetDockSide",
-      BindToListParser(base::Bind(&Delegate::SetDockSide,
+  RegisterHandler("setIsDocked",
+      BindToListParser(base::Bind(&Delegate::SetIsDocked,
                                   base::Unretained(delegate))));
   RegisterHandler("openInNewTab",
       BindToListParser(base::Bind(&Delegate::OpenInNewTab,

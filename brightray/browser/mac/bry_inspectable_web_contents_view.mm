@@ -1,11 +1,12 @@
-#import "browser/mac/bry_inspectable_web_contents_view.h"
+#include "browser/mac/bry_inspectable_web_contents_view.h"
 
-#import "browser/inspectable_web_contents_impl.h"
-#import "browser/inspectable_web_contents_view_mac.h"
+#include "browser/inspectable_web_contents_impl.h"
+#include "browser/inspectable_web_contents_view_mac.h"
 
-#import "content/public/browser/render_widget_host_view.h"
-#import "content/public/browser/web_contents_view.h"
+#include "content/public/browser/render_widget_host_view.h"
+#include "content/public/browser/web_contents_view.h"
 #import "ui/base/cocoa/underlay_opengl_hosting_window.h"
+#include "ui/gfx/mac/scoped_ns_disable_screen_updates.h"
 
 using namespace brightray;
 
@@ -18,10 +19,12 @@ using namespace brightray;
 
   inspectableWebContentsView_ = inspectableWebContentsView;
   devtools_visible_ = NO;
+  devtools_docked_ = NO;
 
-  auto webView = inspectableWebContentsView->inspectable_web_contents()->GetWebContents()->GetView()->GetNativeView();
-  webView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-  [self addSubview:webView];
+  auto contents = inspectableWebContentsView->inspectable_web_contents()->GetWebContents();
+  auto contentsView = contents->GetView()->GetNativeView();
+  [contentsView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+  [self addSubview:contentsView];
 
   return self;
 }
@@ -30,16 +33,53 @@ using namespace brightray;
   [super dealloc];
 }
 
+- (void)resizeSubviewsWithOldSize:(NSSize)oldBoundsSize {
+  [self adjustSubviews];
+}
+
 - (IBAction)showDevTools:(id)sender {
   inspectableWebContentsView_->inspectable_web_contents()->ShowDevTools();
 }
 
 - (void)setDevToolsVisible:(BOOL)visible {
-  if (devtools_visible_ == visible)
+  if (visible == devtools_visible_)
     return;
-  devtools_visible_ = visible;
 
-  if (!devtools_window_) {
+  auto devToolsWebContents = inspectableWebContentsView_->inspectable_web_contents()->devtools_web_contents();
+  auto devToolsView = devToolsWebContents->GetView()->GetNativeView();
+
+  devtools_visible_ = visible;
+  if (devtools_docked_) {
+    if (visible) {
+      // Place the devToolsView under contentsView, notice that we didn't set
+      // sizes for them until the setContentsResizingStrategy message.
+      [self addSubview:devToolsView positioned:NSWindowBelow relativeTo:nil];
+      [self update];
+    } else {
+      gfx::ScopedNSDisableScreenUpdates disabler;
+      devToolsWebContents->GetView()->RemoveOverlayView();
+      [devToolsView removeFromSuperview];
+      [self adjustSubviews];
+    }
+  } else {
+    if (visible)
+      [devtools_window_ makeKeyAndOrderFront:nil];
+    else
+      devtools_window_.reset();
+  }
+}
+
+- (BOOL)isDevToolsVisible {
+  return devtools_visible_;
+}
+
+- (void)setIsDocked:(BOOL)docked {
+  // Revert to no-devtools state.
+  [self setDevToolsVisible:NO];
+
+  // Switch to new state.
+  devtools_docked_ = docked;
+  if (!docked) {
     auto devToolsWebContents = inspectableWebContentsView_->inspectable_web_contents()->devtools_web_contents();
     auto devToolsView = devToolsWebContents->GetView()->GetNativeView();
 
@@ -65,27 +105,59 @@ using namespace brightray;
 
     [contentView addSubview:devToolsView];
   }
+  [self setDevToolsVisible:YES];
+}
 
-  if (visible) {
-    [devtools_window_ makeKeyAndOrderFront:nil];
-  } else {
-    [devtools_window_ performClose:nil];
+- (void)setContentsResizingStrategy:(const DevToolsContentsResizingStrategy&)strategy {
+  strategy_.CopyFrom(strategy);
+  [self update];
+}
+
+- (void)update {
+  if (!devtools_docked_)
+    return;
+
+  auto contents = inspectableWebContentsView_->inspectable_web_contents()->GetWebContents();
+  auto devToolsWebContents = inspectableWebContentsView_->inspectable_web_contents()->devtools_web_contents();
+
+  gfx::ScopedNSDisableScreenUpdates disabler;
+  devToolsWebContents->GetView()->SetOverlayView(
+      contents->GetView(),
+      gfx::Point(strategy_.insets().left(), strategy_.insets().top()));
+  [self adjustSubviews];
+}
+
+- (void)adjustSubviews {
+  if (![[self subviews] count])
+    return;
+
+  if (![self isDevToolsVisible] || devtools_window_) {
+    DCHECK_EQ(1u, [[self subviews] count]);
+    NSView* contents = [[self subviews] objectAtIndex:0];
+    [contents setFrame:[self bounds]];
+    return;
   }
-}
 
-- (BOOL)isDevToolsVisible {
-  return devtools_visible_;
-}
+  NSView* devToolsView = [[self subviews] objectAtIndex:0];
+  NSView* contentsView = [[self subviews] objectAtIndex:1];
 
-- (BOOL)setDockSide:(const std::string&)side {
-  return NO;
+  DCHECK_EQ(2u, [[self subviews] count]);
+
+  gfx::Rect new_devtools_bounds;
+  gfx::Rect new_contents_bounds;
+  ApplyDevToolsContentsResizingStrategy(
+      strategy_, gfx::Size(NSSizeToCGSize([self bounds].size)),
+      [self flipNSRectToRect:[devToolsView bounds]],
+      [self flipNSRectToRect:[contentsView bounds]],
+      &new_devtools_bounds, &new_contents_bounds);
+  [devToolsView setFrame:[self flipRectToNSRect:new_devtools_bounds]];
+  [contentsView setFrame:[self flipRectToNSRect:new_contents_bounds]];
 }
 
 #pragma mark - NSWindowDelegate
 
 - (void)windowWillClose:(NSNotification*)notification {
-  devtools_visible_ = NO;
-  devtools_window_.reset();
+  inspectableWebContentsView_->inspectable_web_contents()->CloseDevTools();
 }
 
 @end

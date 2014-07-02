@@ -26,8 +26,8 @@ namespace brightray {
 
 namespace {
 
-const char kChromeUIDevToolsURL[] = "chrome-devtools://devtools/devtools.html";
-const char kDockSidePref[] = "brightray.devtools.dockside";
+const char kChromeUIDevToolsURL[] = "chrome-devtools://devtools/devtools.html?can_dock=true";
+const char kIsDockedPref[] = "brightray.devtools.isDocked";
 
 }
 
@@ -36,7 +36,7 @@ InspectableWebContentsView* CreateInspectableContentsView(
     InspectableWebContentsImpl* inspectable_web_contents_impl);
 
 void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
-  registry->RegisterStringPref(kDockSidePref, "bottom");
+  registry->RegisterBooleanPref(kIsDockedPref, true);
 }
 
 InspectableWebContentsImpl::InspectableWebContentsImpl(
@@ -45,7 +45,7 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
       delegate_(nullptr) {
   auto context = static_cast<BrowserContext*>(
       web_contents_->GetBrowserContext());
-  dock_side_ = context->prefs()->GetString(kDockSidePref);
+  is_docked_ = context->prefs()->GetBoolean(kIsDockedPref);
 
   view_.reset(CreateInspectableContentsView(this));
 }
@@ -62,6 +62,8 @@ content::WebContents* InspectableWebContentsImpl::GetWebContents() const {
 }
 
 void InspectableWebContentsImpl::ShowDevTools() {
+  // Show devtools only after it has done loading, this is to make sure the
+  // SetIsDocked is called *BEFORE* ShowDevTools.
   if (!devtools_web_contents_) {
     embedder_message_dispatcher_.reset(
         new DevToolsEmbedderMessageDispatcher(this));
@@ -69,11 +71,6 @@ void InspectableWebContentsImpl::ShowDevTools() {
     auto create_params = content::WebContents::CreateParams(
         web_contents_->GetBrowserContext());
     devtools_web_contents_.reset(content::WebContents::Create(create_params));
-
-#if defined(OS_MACOSX)
-    // Work around http://crbug.com/279472.
-    devtools_web_contents_->GetView()->SetAllowOverlappingViews(true);
-#endif
 
     Observe(devtools_web_contents_.get());
     devtools_web_contents_->SetDelegate(this);
@@ -92,17 +89,13 @@ void InspectableWebContentsImpl::ShowDevTools() {
         content::Referrer(),
         content::PAGE_TRANSITION_AUTO_TOPLEVEL,
         std::string());
+  } else {
+    view_->ShowDevTools();
   }
-
-  if (delegate_ && delegate_->DevToolsShow(&dock_side_))
-    return;
-
-  view_->SetDockSide(dock_side_);
-  view_->ShowDevTools();
 }
 
 void InspectableWebContentsImpl::CloseDevTools() {
-  if (IsDevToolsViewShowing()) {
+  if (devtools_web_contents_) {
     view_->CloseDevTools();
     devtools_web_contents_.reset();
     web_contents_->GetView()->Focus();
@@ -113,13 +106,6 @@ bool InspectableWebContentsImpl::IsDevToolsViewShowing() {
   return devtools_web_contents_ && view_->IsDevToolsViewShowing();
 }
 
-void InspectableWebContentsImpl::UpdateFrontendDockSide() {
-  auto javascript = base::StringPrintf(
-      "InspectorFrontendAPI.setDockSide(\"%s\")", dock_side_.c_str());
-  devtools_web_contents_->GetRenderViewHost()->ExecuteJavascriptInWebFrame(
-      base::string16(), base::ASCIIToUTF16(javascript));
-}
-
 void InspectableWebContentsImpl::ActivateWindow() {
 }
 
@@ -127,25 +113,26 @@ void InspectableWebContentsImpl::CloseWindow() {
   CloseDevTools();
 }
 
+void InspectableWebContentsImpl::SetContentsResizingStrategy(
+    const gfx::Insets& insets, const gfx::Size& min_size) {
+  DevToolsContentsResizingStrategy strategy(insets, min_size);
+  if (contents_resizing_strategy_.Equals(strategy))
+    return;
+
+  contents_resizing_strategy_.CopyFrom(strategy);
+  view_->SetContentsResizingStrategy(contents_resizing_strategy_);
+}
+
 void InspectableWebContentsImpl::MoveWindow(int x, int y) {
 }
 
-void InspectableWebContentsImpl::SetDockSide(const std::string& side) {
-  bool succeed = true;
-  if (delegate_ && delegate_->DevToolsSetDockSide(side, &succeed)) {
-    if (!succeed)  // delegate failed to set dock side.
-      return;
-  } else if (!view_->SetDockSide(side)) {
-    return;
-  }
-
-  dock_side_ = side;
+void InspectableWebContentsImpl::SetIsDocked(bool docked) {
+  view_->SetIsDocked(docked);
+  is_docked_ = docked;
 
   auto context = static_cast<BrowserContext*>(
       web_contents_->GetBrowserContext());
-  context->prefs()->SetString(kDockSidePref, side);
-
-  UpdateFrontendDockSide();
+  context->prefs()->SetBoolean(kIsDockedPref, docked);
 }
 
 void InspectableWebContentsImpl::OpenInNewTab(const std::string& url) {
@@ -207,7 +194,7 @@ void InspectableWebContentsImpl::DidFinishLoad(int64 frame_id,
   if (!is_main_frame)
     return;
 
-  UpdateFrontendDockSide();
+  view_->ShowDevTools();
 }
 
 void InspectableWebContentsImpl::WebContentsDestroyed(content::WebContents*) {

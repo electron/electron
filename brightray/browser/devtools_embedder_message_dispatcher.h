@@ -9,6 +9,8 @@
 #include <string>
 
 #include "base/callback.h"
+#include "ui/gfx/insets.h"
+#include "ui/gfx/size.h"
 
 namespace base {
 class ListValue;
@@ -30,8 +32,10 @@ class DevToolsEmbedderMessageDispatcher {
 
     virtual void ActivateWindow() = 0;
     virtual void CloseWindow() = 0;
+    virtual void SetContentsResizingStrategy(
+        const gfx::Insets& insets, const gfx::Size& min_size) = 0;
     virtual void MoveWindow(int x, int y) = 0;
-    virtual void SetDockSide(const std::string& side) = 0;
+    virtual void SetIsDocked(bool docked) = 0;
     virtual void OpenInNewTab(const std::string& url) = 0;
     virtual void SaveToFile(const std::string& url,
                             const std::string& content,

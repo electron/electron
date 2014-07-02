@@ -8,6 +8,7 @@
 
 #include "browser/inspectable_web_contents.h"
 
+#include "browser/devtools_contents_resizing_strategy.h"
 #include "browser/devtools_embedder_message_dispatcher.h"
 
 #include "content/public/browser/devtools_frontend_host_delegate.h"
@@ -54,14 +55,14 @@ class InspectableWebContentsImpl :
   }
 
  private:
-  void UpdateFrontendDockSide();
-
   // DevToolsEmbedderMessageDispacher::Delegate
 
   virtual void ActivateWindow() OVERRIDE;
   virtual void CloseWindow() OVERRIDE;
+  virtual void SetContentsResizingStrategy(
+      const gfx::Insets& insets, const gfx::Size& min_size) OVERRIDE;
   virtual void MoveWindow(int x, int y) OVERRIDE;
-  virtual void SetDockSide(const std::string& side) OVERRIDE;
+  virtual void SetIsDocked(bool docked) OVERRIDE;
   virtual void OpenInNewTab(const std::string& url) OVERRIDE;
   virtual void SaveToFile(const std::string& url,
                           const std::string& content,
@@ -103,7 +104,9 @@ class InspectableWebContentsImpl :
   scoped_ptr<content::WebContents> devtools_web_contents_;
   scoped_ptr<InspectableWebContentsView> view_;
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
-  std::string dock_side_;
+
+  bool is_docked_;
+  DevToolsContentsResizingStrategy contents_resizing_strategy_;
 
   scoped_ptr<DevToolsEmbedderMessageDispatcher> embedder_message_dispatcher_;
 

@@ -3,6 +3,8 @@
 
 #include "ui/gfx/native_widget_types.h"
 
+class DevToolsContentsResizingStrategy;
+
 namespace brightray {
 
 class InspectableWebContentsView {
@@ -15,7 +17,9 @@ class InspectableWebContentsView {
   // Hide the DevTools view.
   virtual void CloseDevTools() = 0;
   virtual bool IsDevToolsViewShowing() = 0;
-  virtual bool SetDockSide(const std::string& side) = 0;
+  virtual void SetIsDocked(bool docked) = 0;
+  virtual void SetContentsResizingStrategy(
+      const DevToolsContentsResizingStrategy& strategy) = 0;
 };
 
 }  // namespace brightray
