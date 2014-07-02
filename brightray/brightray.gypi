@@ -80,7 +80,7 @@
           },
         },
         'conditions': [
-          ['OS=="win"', {
+          ['OS!="mac"', {
             'defines': [
               'USE_AURA',
               'VIEWS_IMPLEMENTATION',
