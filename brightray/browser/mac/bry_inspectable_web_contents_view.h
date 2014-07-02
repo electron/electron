@@ -4,7 +4,6 @@
 
 #include "base/mac/scoped_nsobject.h"
 #include "ui/base/cocoa/base_view.h"
-#include "ui/gfx/insets.h"
 
 namespace brightray {
 class InspectableWebContentsViewMac;
