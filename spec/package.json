@@ -6,10 +6,10 @@
 
   "devDependencies": {
     "formidable": "~1.0.14",
-    "pathwatcher": "1.4.*",
+    "pathwatcher": "2.x",
     "q": "0.9.7",
     "mocha": "~1.18.2",
-    "runas": "0.6.*",
+    "runas": "1.x",
     "temp": "~0.6.0",
     "walkdir": "~0.0.7"
   }
