@@ -675,6 +675,7 @@
           'link_settings': {
             'libraries': [
               '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
+              '$(SDKROOT)/System/Library/Frameworks/QuartzCore.framework',
               'external_binaries/Squirrel.framework',
               'external_binaries/ReactiveCocoa.framework',
               'external_binaries/Mantle.framework',

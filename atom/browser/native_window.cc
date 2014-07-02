@@ -70,12 +70,6 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
           brightray::InspectableWebContents::Create(web_contents)) {
   options.Get(switches::kFrame, &has_frame_);
 
-#if defined(OS_MACOSX)
-  // Temporary fix for flashing devtools, try removing this after upgraded to
-  // Chrome 32.
-  web_contents->GetView()->SetAllowOverlappingViews(false);
-#endif
-
   // Read icon before window is created.
   gfx::ImageSkia icon;
   if (options.Get(switches::kIcon, &icon))
@@ -209,11 +203,6 @@ bool NativeWindow::HasModalDialog() {
 
 void NativeWindow::OpenDevTools() {
   inspectable_web_contents()->ShowDevTools();
-#if defined(OS_MACOSX)
-  // Temporary fix for flashing devtools, try removing this after upgraded to
-  // Chrome 32.
-  GetDevToolsWebContents()->GetView()->SetAllowOverlappingViews(false);
-#endif
 }
 
 void NativeWindow::CloseDevTools() {
