@@ -175,7 +175,7 @@ void MoveItemToTrash(const base::FilePath& path) {
   SHFILEOPSTRUCT file_operation = {0};
   file_operation.wFunc = FO_DELETE;
   file_operation.pFrom = double_terminated_path;
-  file_operation.fFlags = FOF_ALLOWUNDO;
+  file_operation.fFlags = FOF_ALLOWUNDO | FOF_SILENT | FOF_NOCONFIRMATION;
   SHFileOperation(&file_operation);
 }
 
