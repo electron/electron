@@ -10,6 +10,8 @@ namespace brightray {
 class InspectableWebContentsViewMac;
 }
 
+using brightray::InspectableWebContentsViewMac;
+
 @interface BRYInspectableWebContentsView : BaseView<NSWindowDelegate> {
 @private
   brightray::InspectableWebContentsViewMac* inspectableWebContentsView_;
@@ -21,7 +23,7 @@ class InspectableWebContentsViewMac;
   DevToolsContentsResizingStrategy strategy_;
 }
 
-- (instancetype)initWithInspectableWebContentsViewMac:(brightray::InspectableWebContentsViewMac*)inspectableWebContentsView;
+- (instancetype)initWithInspectableWebContentsViewMac:(InspectableWebContentsViewMac*)view;
 - (void)setDevToolsVisible:(BOOL)visible;
 - (BOOL)isDevToolsVisible;
 - (void)setIsDocked:(BOOL)docked;

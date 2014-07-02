@@ -12,16 +12,16 @@ using namespace brightray;
 
 @implementation BRYInspectableWebContentsView
 
-- (instancetype)initWithInspectableWebContentsViewMac:(InspectableWebContentsViewMac*)inspectableWebContentsView {
+- (instancetype)initWithInspectableWebContentsViewMac:(InspectableWebContentsViewMac*)view {
   self = [super init];
   if (!self)
     return nil;
 
-  inspectableWebContentsView_ = inspectableWebContentsView;
+  inspectableWebContentsView_ = view;
   devtools_visible_ = NO;
   devtools_docked_ = NO;
 
-  auto contents = inspectableWebContentsView->inspectable_web_contents()->GetWebContents();
+  auto contents = inspectableWebContentsView_->inspectable_web_contents()->GetWebContents();
   auto contentsView = contents->GetView()->GetNativeView();
   [contentsView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   [self addSubview:contentsView];
