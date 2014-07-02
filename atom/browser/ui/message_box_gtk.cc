@@ -24,7 +24,8 @@ class MessageBox {
              const std::string& detail)
       : cancel_id_(0),
         dialog_scope_(new NativeWindow::DialogScope(parent_window)) {
-    GtkWindow* window = parent_window ? parent_window->GetNativeWindow() : NULL;
+    // GtkWindow* window = parent_window ? parent_window->GetNativeWindow() : NULL;
+    GtkWindow* window = NULL;
     dialog_ = gtk_dialog_new_with_buttons(
         title.c_str(),
         window,

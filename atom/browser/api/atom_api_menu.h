@@ -87,7 +87,7 @@ class Menu : public mate::Wrappable,
   virtual void UpdateStates() = 0;
 #endif
 
-#if defined(OS_WIN) || defined(TOOLKIT_GTK)
+#if defined(OS_WIN) || defined(OS_LINUX)
   virtual void AttachToWindow(Window* window) = 0;
 #endif
 

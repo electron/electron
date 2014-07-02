@@ -62,8 +62,8 @@
         ['exclude', '(^|/)x/'],
       ],
     }],
-    ['OS!="win"', {
-      'sources/': [ ['exclude', '_views\\.(h|cc)$'] ]
+    ['OS!="linux"', {
+      'sources/': [ ['exclude', '_aura\\.(h|cc)$'] ]
     }],
   ]
 }

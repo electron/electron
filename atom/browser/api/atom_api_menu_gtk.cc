@@ -19,6 +19,7 @@ MenuGtk::MenuGtk() {
 }
 
 void MenuGtk::Popup(Window* window) {
+  /*
   uint32_t triggering_event_time;
   gfx::Point point;
 
@@ -35,10 +36,11 @@ void MenuGtk::Popup(Window* window) {
 
   menu_gtk_.reset(new ::MenuGtk(this, model_.get()));
   menu_gtk_->PopupAsContext(point, triggering_event_time);
+  */
 }
 
 void MenuGtk::AttachToWindow(Window* window) {
-  static_cast<NativeWindowGtk*>(window->window())->SetMenu(model_.get());
+  // static_cast<NativeWindowGtk*>(window->window())->SetMenu(model_.get());
 }
 
 // static
