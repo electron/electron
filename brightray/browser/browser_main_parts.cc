@@ -11,6 +11,7 @@
 #include "ui/views/widget/desktop_aura/desktop_screen.h"
 
 #if defined(USE_AURA)
+#include "ui/aura/env.h"
 #include "ui/gfx/screen.h"
 #include "ui/views/widget/desktop_aura/desktop_screen.h"
 #endif
@@ -78,10 +79,14 @@ void BrowserMainParts::PreMainMessageLoopRun() {
 
 void BrowserMainParts::PostMainMessageLoopRun() {
   browser_context_.reset();
+#if defined(USE_AURA)
+  aura::Env::DeleteInstance();
+#endif
 }
 
 int BrowserMainParts::PreCreateThreads() {
 #if defined(USE_AURA)
+  aura::Env::CreateInstance();
   gfx::Screen::SetScreenInstance(gfx::SCREEN_TYPE_NATIVE,
                                  views::CreateDesktopScreen());
 #endif
