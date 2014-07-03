@@ -10,6 +10,11 @@
 #include "ui/gfx/screen.h"
 #include "ui/views/widget/desktop_aura/desktop_screen.h"
 
+#if defined(USE_AURA) && defined(USE_X11)
+#include "chrome/browser/ui/libgtk2ui/gtk2_ui.h"
+#include "ui/views/linux_ui/linux_ui.h"
+#endif
+
 namespace brightray {
 
 BrowserMainParts::BrowserMainParts() {
@@ -22,9 +27,16 @@ void BrowserMainParts::PreEarlyInitialization() {
 #if defined(OS_MACOSX)
   IncreaseFileDescriptorLimit();
 #endif
+
+#if defined(USE_AURA) && defined(USE_X11)
+  views::LinuxUI::SetInstance(BuildGtk2UI());
+#endif
 }
 
 void BrowserMainParts::ToolkitInitialized() {
+#if defined(USE_AURA) && defined(USE_X11)
+  views::LinuxUI::instance()->Initialize();
+#endif
 }
 
 void BrowserMainParts::PreMainMessageLoopStart() {
