@@ -62,8 +62,12 @@
         ['exclude', '(^|/)x/'],
       ],
     }],
-    ['OS!="linux"', {
-      'sources/': [ ['exclude', '_aura\\.(h|cc)$'] ]
+    ['OS=="mac"', {
+      'sources/': [ ['exclude', '_aura(_browsertest|_unittest)?\\.(h|cc)$'],
+                    ['exclude', '(^|/)aura/'],
+                    ['exclude', '_views\\.(h|cc)$'],
+                    ['exclude', '(^|/)views/'],
+      ],
     }],
   ]
 }
