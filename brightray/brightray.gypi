@@ -181,6 +181,11 @@
           ['exclude', '/mac/'],
           ['exclude', '_mac\.(mm|h)$'],
         ],
+      }, {
+        'sources/': [
+          ['exclude', '/views/'],
+          ['exclude', '_views\.(cc|h)$'],
+        ],
       }],
       ['OS!="win"', {
         'sources/': [
