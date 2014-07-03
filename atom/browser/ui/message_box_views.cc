@@ -9,8 +9,9 @@
 #include "base/message_loop/message_loop.h"
 #include "base/run_loop.h"
 #include "base/strings/string_util.h"
+#include "base/strings/string16.h"
 #include "base/strings/utf_string_conversions.h"
-#include "skia/ext/skia_utils_win.h"
+#include "ui/views/background.h"
 #include "ui/views/controls/button/label_button.h"
 #include "ui/views/controls/message_box_view.h"
 #include "ui/views/layout/grid_layout.h"
@@ -26,8 +27,7 @@ namespace {
 // conflict with other groups that could be in the dialog content.
 const int kButtonGroup = 1127;
 
-class MessageDialog : public base::MessageLoop::Dispatcher,
-                      public views::WidgetDelegate,
+class MessageDialog : public views::WidgetDelegate,
                       public views::View,
                       public views::ButtonListener {
  public:
@@ -39,7 +39,7 @@ class MessageDialog : public base::MessageLoop::Dispatcher,
                 const std::string& detail);
   virtual ~MessageDialog();
 
-  void Show();
+  void Show(base::RunLoop* run_loop = NULL);
 
   int GetResult() const;
 
@@ -49,9 +49,6 @@ class MessageDialog : public base::MessageLoop::Dispatcher,
   }
 
  private:
-  // Overridden from MessageLoop::Dispatcher:
-  virtual bool Dispatch(const base::NativeEvent& event) OVERRIDE;
-
   // Overridden from views::WidgetDelegate:
   virtual base::string16 GetWindowTitle() const;
   virtual void WindowClosing() OVERRIDE;
@@ -76,6 +73,7 @@ class MessageDialog : public base::MessageLoop::Dispatcher,
   base::string16 title_;
   views::Widget* widget_;
   views::MessageBoxView* message_box_view_;
+  base::RunLoop* run_loop_;
   scoped_ptr<NativeWindow::DialogScope> dialog_scope_;
   std::vector<views::LabelButton*> buttons_;
   MessageBoxCallback callback_;
@@ -95,24 +93,27 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
     : should_close_(false),
       delete_on_close_(false),
       result_(-1),
-      title_(UTF8ToUTF16(title)),
+      title_(base::UTF8ToUTF16(title)),
       widget_(NULL),
       message_box_view_(NULL),
+      run_loop_(NULL),
       dialog_scope_(new NativeWindow::DialogScope(parent_window)) {
   DCHECK_GT(buttons.size(), 0u);
   set_owned_by_client();
+  set_background(views::Background::CreateStandardPanelBackground());
 
-  views::MessageBoxView::InitParams params(UTF8ToUTF16(title));
-  params.message = UTF8ToUTF16(message + "\n" + detail);
+  std::string content = message + "\n" + detail;
+  views::MessageBoxView::InitParams params(base::UTF8ToUTF16(content));
   message_box_view_ = new views::MessageBoxView(params);
   AddChildView(message_box_view_);
 
   for (size_t i = 0; i < buttons.size(); ++i) {
     views::LabelButton* button = new views::LabelButton(
-        this, UTF8ToUTF16(buttons[i]));
+        this, base::UTF8ToUTF16(buttons[i]));
     button->set_tag(i);
-    button->set_min_size(gfx::Size(60, 20));
-    button->SetStyle(views::Button::STYLE_NATIVE_TEXTBUTTON);
+    button->set_min_size(gfx::Size(60, 30));
+    button->SetStyle(views::Button::STYLE_BUTTON);
+    button->SetHorizontalAlignment(gfx::ALIGN_CENTER);
     button->SetGroup(kButtonGroup);
 
     buttons_.push_back(button);
@@ -129,20 +130,17 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
   if (parent_window)
     widget_params.parent = parent_window->GetNativeWindow();
   widget_ = new views::Widget;
-  widget_->set_frame_type(views::Widget::FRAME_TYPE_FORCE_NATIVE);
   widget_->Init(widget_params);
 
   // Bind to ESC.
   AddAccelerator(ui::Accelerator(ui::VKEY_ESCAPE, ui::EF_NONE));
-
-  set_background(views::Background::CreateSolidBackground(
-        skia::COLORREFToSkColor(GetSysColor(COLOR_WINDOW))));
 }
 
 MessageDialog::~MessageDialog() {
 }
 
-void MessageDialog::Show() {
+void MessageDialog::Show(base::RunLoop* run_loop) {
+  run_loop_ = run_loop;
   widget_->Show();
 }
 
@@ -164,13 +162,7 @@ int MessageDialog::GetResult() const {
 ////////////////////////////////////////////////////////////////////////////////
 // MessageDialog, private:
 
-bool MessageDialog::Dispatch(const base::NativeEvent& event) {
-  TranslateMessage(&event);
-  DispatchMessage(&event);
-  return !should_close_;
-}
-
-string16 MessageDialog::GetWindowTitle() const {
+base::string16 MessageDialog::GetWindowTitle() const {
   return title_;
 }
 
@@ -181,6 +173,8 @@ void MessageDialog::WindowClosing() {
   if (delete_on_close_) {
     callback_.Run(GetResult());
     base::MessageLoop::current()->DeleteSoon(FROM_HERE, this);
+  } else if (run_loop_) {
+    run_loop_->Quit();
   }
 }
 
@@ -269,11 +263,11 @@ int ShowMessageBox(NativeWindow* parent_window,
                    const std::string& message,
                    const std::string& detail) {
   MessageDialog dialog(parent_window, type, buttons, title, message, detail);
-  dialog.Show();
   {
     base::MessageLoop::ScopedNestableTaskAllower allow(
         base::MessageLoopForUI::current());
-    base::RunLoop run_loop(&dialog);
+    base::RunLoop run_loop;
+    dialog.Show(&run_loop);
     run_loop.Run();
   }
 

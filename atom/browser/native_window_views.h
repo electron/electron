@@ -2,20 +2,29 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_NATIVE_WINDOW_AURA_H_
-#define ATOM_BROWSER_NATIVE_WINDOW_AURA_H_
+#ifndef ATOM_BROWSER_NATIVE_WINDOW_VIEWS_H_
+#define ATOM_BROWSER_NATIVE_WINDOW_VIEWS_H_
 
 #include "atom/browser/native_window.h"
 
-#include "ui/aura/window_tree_host.h"
+#include <string>
+#include <vector>
+
+#include "ui/views/widget/widget_delegate.h"
+
+namespace views {
+class WebView;
+class Widget;
+}
 
 namespace atom {
 
-class NativeWindowAura : public NativeWindow {
+class NativeWindowViews : public NativeWindow,
+                          public views::WidgetDelegateView {
  public:
-  explicit NativeWindowAura(content::WebContents* web_contents,
+  explicit NativeWindowViews(content::WebContents* web_contents,
                             const mate::Dictionary& options);
-  virtual ~NativeWindowAura();
+  virtual ~NativeWindowViews();
 
   // NativeWindow:
   virtual void Close() OVERRIDE;
@@ -60,11 +69,35 @@ class NativeWindowAura : public NativeWindow {
   virtual void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) OVERRIDE;
 
-  scoped_ptr<aura::WindowTreeHost> host_;
+  // views::View:
+  virtual void ViewHierarchyChanged(
+      const ViewHierarchyChangedDetails& details) OVERRIDE;
 
-  DISALLOW_COPY_AND_ASSIGN(NativeWindowAura);
+  // views::WidgetDelegate:
+  virtual void DeleteDelegate() OVERRIDE;
+  virtual views::View* GetInitiallyFocusedView() OVERRIDE;
+  virtual bool CanResize() const OVERRIDE;
+  virtual bool CanMaximize() const OVERRIDE;
+  virtual base::string16 GetWindowTitle() const OVERRIDE;
+  virtual bool ShouldHandleSystemCommands() const OVERRIDE;
+  virtual gfx::ImageSkia GetWindowAppIcon() OVERRIDE;
+  virtual gfx::ImageSkia GetWindowIcon() OVERRIDE;
+  virtual views::Widget* GetWidget() OVERRIDE;
+  virtual const views::Widget* GetWidget() const OVERRIDE;
+  virtual views::View* GetContentsView() OVERRIDE;
+  virtual views::ClientView* CreateClientView(views::Widget* widget) OVERRIDE;
+
+  scoped_ptr<views::Widget> window_;
+  views::WebView* web_view_;  // managed by window_.
+
+  bool resizable_;
+  std::string title_;
+  gfx::Size minimum_size_;
+  gfx::Size maximum_size_;
+
+  DISALLOW_COPY_AND_ASSIGN(NativeWindowViews);
 };
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_NATR_NATIVE_WINDOW_AURA_H_
+#endif  // ATOM_BROWSER_NATIVE_WINDOW_VIEWS_H_

@@ -27,7 +27,6 @@ class FileChooserDialog {
     else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
       confirm_text = GTK_STOCK_OPEN;
 
-    // GtkWindow* window = parent_window ? parent_window->GetNativeWindow() : NULL;
     GtkWindow* window = NULL;
     dialog_ = gtk_file_chooser_dialog_new(
         title.c_str(),

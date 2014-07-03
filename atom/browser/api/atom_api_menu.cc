@@ -246,7 +246,7 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
-#if defined(OS_WIN) || defined(TOOLKIT_GTK)
+#if defined(OS_WIN) || defined(OS_LINUX)
       .SetMethod("_attachToWindow", &Menu::AttachToWindow)
 #endif
 #if defined(OS_WIN)

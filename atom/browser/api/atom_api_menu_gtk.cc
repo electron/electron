@@ -4,7 +4,6 @@
 
 #include "atom/browser/api/atom_api_menu_gtk.h"
 
-#include "atom/browser/native_window_gtk.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/screen.h"

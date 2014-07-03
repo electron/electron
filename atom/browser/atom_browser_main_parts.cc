@@ -9,10 +9,15 @@
 #include "atom/browser/browser.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/node_bindings.h"
+#include "base/command_line.h"
 #include "net/proxy/proxy_resolver_v8.h"
 
 #if defined(OS_WIN)
 #include "ui/gfx/win/dpi.h"
+#endif
+
+#if defined(USE_X11)
+#include "chrome/browser/ui/libgtk2ui/gtk2_util.h"
 #endif
 
 #include "atom/common/node_includes.h"
@@ -48,6 +53,14 @@ brightray::BrowserContext* AtomBrowserMainParts::CreateBrowserContext() {
   return new AtomBrowserContext();
 }
 
+void AtomBrowserMainParts::InitProxyResolverV8() {
+  // Since we are integrating node in browser, we can just be sure that an
+  // V8 instance would be prepared, while the ProxyResolverV8::CreateIsolate()
+  // would try to create a V8 isolate, which messed everything on Windows, so
+  // we have to override and call RememberDefaultIsolate on Windows instead.
+  net::ProxyResolverV8::RememberDefaultIsolate();
+}
+
 void AtomBrowserMainParts::PostEarlyInitialization() {
   brightray::BrowserMainParts::PostEarlyInitialization();
 
@@ -64,6 +77,10 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
   brightray::BrowserMainParts::PreMainMessageLoopRun();
 
+#if defined(USE_X11)
+  libgtk2ui::GtkInitFromCommandLine(*CommandLine::ForCurrentProcess());
+#endif
+
   node_bindings_->PrepareMessageLoop();
   node_bindings_->RunMessageLoop();
 
@@ -77,21 +94,6 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   Browser::Get()->WillFinishLaunching();
   Browser::Get()->DidFinishLaunching();
 #endif
-}
-
-int AtomBrowserMainParts::PreCreateThreads() {
-  // Note that we are overriding the PreCreateThreads of brightray, since we
-  // are integrating node in browser, we can just be sure that an V8 instance
-  // would be prepared, while the ProxyResolverV8::CreateIsolate() would
-  // try to create a V8 isolate, which messed everything on Windows, so we
-  // have to override and call RememberDefaultIsolate on Windows instead.
-  net::ProxyResolverV8::RememberDefaultIsolate();
-
-#if defined(OS_WIN)
-  gfx::EnableHighDPISupport();
-#endif
-
-  return 0;
 }
 
 }  // namespace atom

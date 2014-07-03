@@ -20,6 +20,9 @@ struct Converter<base::string16> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      base::string16* out) {
+    if (!val->IsString())
+      return false;
+
     v8::String::Value s(val);
     out->assign(reinterpret_cast<const base::char16*>(*s), s.length());
     return true;
