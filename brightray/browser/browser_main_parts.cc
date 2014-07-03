@@ -10,6 +10,11 @@
 #include "ui/gfx/screen.h"
 #include "ui/views/widget/desktop_aura/desktop_screen.h"
 
+#if defined(USE_AURA)
+#include "ui/gfx/screen.h"
+#include "ui/views/widget/desktop_aura/desktop_screen.h"
+#endif
+
 #if defined(USE_AURA) && defined(USE_X11)
 #include "chrome/browser/ui/libgtk2ui/gtk2_ui.h"
 #include "ui/views/linux_ui/linux_ui.h"
@@ -76,6 +81,11 @@ void BrowserMainParts::PostMainMessageLoopRun() {
 }
 
 int BrowserMainParts::PreCreateThreads() {
+#if defined(USE_AURA)
+  gfx::Screen::SetScreenInstance(gfx::SCREEN_TYPE_NATIVE,
+                                 views::CreateDesktopScreen());
+#endif
+
 #if defined(OS_WIN)
   net::ProxyResolverV8::CreateIsolate();
 #else
