@@ -101,6 +101,7 @@
           'link_settings': {
             'libraries': [
               '<(brightray_source_root)/<(libchromiumcontent_library_dir)/libchromiumcontent.so',
+              '<(brightray_source_root)/<(libchromiumcontent_library_dir)/libchromiumviews.a',
               '-lpthread',
               '<!@(pkg-config --libs gtk+-2.0 libnotify)',
             ],
@@ -120,6 +121,7 @@
               '<(brightray_source_root)/<(libchromiumcontent_library_dir)/base_static.lib',
               '<(brightray_source_root)/<(libchromiumcontent_library_dir)/chromiumviews.lib',
               '<(brightray_source_root)/<(libchromiumcontent_library_dir)/chromiumcontent.dll.lib',
+              '<(brightray_source_root)/<(libchromiumcontent_library_dir)/chromiumviews.lib',
               '<(brightray_source_root)/<(libchromiumcontent_library_dir)/sandbox_static.lib',
             ],
           },
