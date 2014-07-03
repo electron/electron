@@ -18,6 +18,21 @@ BrowserMainParts::BrowserMainParts() {
 BrowserMainParts::~BrowserMainParts() {
 }
 
+void BrowserMainParts::PreEarlyInitialization() {
+#if defined(OS_MACOSX)
+  IncreaseFileDescriptorLimit();
+#endif
+}
+
+void BrowserMainParts::ToolkitInitialized() {
+}
+
+void BrowserMainParts::PreMainMessageLoopStart() {
+#if defined(OS_MACOSX)
+  InitializeMainNib();
+#endif
+}
+
 void BrowserMainParts::PreMainMessageLoopRun() {
   browser_context_.reset(CreateBrowserContext());
   browser_context_->Initialize();

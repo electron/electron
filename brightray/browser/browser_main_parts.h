@@ -26,16 +26,19 @@ class BrowserMainParts : public content::BrowserMainParts {
   // implementation. The caller takes ownership of the returned object.
   virtual BrowserContext* CreateBrowserContext();
 
-#if defined(OS_MACOSX)
   virtual void PreEarlyInitialization() OVERRIDE;
+  virtual void ToolkitInitialized() OVERRIDE;
   virtual void PreMainMessageLoopStart() OVERRIDE;
-#endif
-
   virtual void PreMainMessageLoopRun() OVERRIDE;
   virtual void PostMainMessageLoopRun() OVERRIDE;
   virtual int PreCreateThreads() OVERRIDE;
 
  private:
+#if defined(OS_MACOSX)
+  void IncreaseFileDescriptorLimit();
+  void InitializeMainNib();
+#endif
+
   scoped_ptr<BrowserContext> browser_context_;
   scoped_ptr<WebUIControllerFactory> web_ui_controller_factory_;
 

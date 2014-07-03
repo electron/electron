@@ -27,7 +27,7 @@ void SetFileDescriptorLimit(rlim_t max_descriptors) {
 
 }  // namespace
 
-void BrowserMainParts::PreEarlyInitialization() {
+void BrowserMainParts::IncreaseFileDescriptorLimit() {
   // We use quite a few file descriptors for our IPC, and the default limit on the Mac is low (256),
   // so bump it up.
   // See http://src.chromium.org/viewvc/chrome/trunk/src/chrome/browser/chrome_browser_main_posix.cc?revision=244734#l295
@@ -36,7 +36,7 @@ void BrowserMainParts::PreEarlyInitialization() {
 }
 
 // Replicates NSApplicationMain, but doesn't start a run loop.
-void BrowserMainParts::PreMainMessageLoopStart() {
+void BrowserMainParts::InitializeMainNib() {
   auto infoDictionary = base::mac::OuterBundle().infoDictionary;
 
   auto principalClass = NSClassFromString([infoDictionary objectForKey:@"NSPrincipalClass"]);
