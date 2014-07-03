@@ -82,6 +82,7 @@
         'conditions': [
           ['OS!="mac"', {
             'defines': [
+              'TOOLKIT_VIEWS',
               'USE_AURA',
               'VIEWS_IMPLEMENTATION',
               'WEBVIEW_IMPLEMENTATION',
