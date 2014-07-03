@@ -86,16 +86,20 @@ int BrowserMainParts::PreCreateThreads() {
                                  views::CreateDesktopScreen());
 #endif
 
-#if defined(OS_WIN)
-  net::ProxyResolverV8::CreateIsolate();
-#else
-  net::ProxyResolverV8::RememberDefaultIsolate();
-#endif
+  InitProxyResolverV8();
   return 0;
 }
 
 BrowserContext* BrowserMainParts::CreateBrowserContext() {
   return new BrowserContext;
+}
+
+void BrowserMainParts::InitProxyResolverV8() {
+#if defined(OS_WIN)
+  net::ProxyResolverV8::CreateIsolate();
+#else
+  net::ProxyResolverV8::RememberDefaultIsolate();
+#endif
 }
 
 }  // namespace brightray

@@ -28,16 +28,20 @@ class BrowserMainParts : public content::BrowserMainParts {
   BrowserContext* browser_context() { return browser_context_.get(); }
 
  protected:
-  // Subclasses should override this to provide their own BrowserContxt
-  // implementation. The caller takes ownership of the returned object.
-  virtual BrowserContext* CreateBrowserContext();
-
+  // content::BrowserMainParts:
   virtual void PreEarlyInitialization() OVERRIDE;
   virtual void ToolkitInitialized() OVERRIDE;
   virtual void PreMainMessageLoopStart() OVERRIDE;
   virtual void PreMainMessageLoopRun() OVERRIDE;
   virtual void PostMainMessageLoopRun() OVERRIDE;
   virtual int PreCreateThreads() OVERRIDE;
+
+  // Subclasses should override this to provide their own BrowserContxt
+  // implementation. The caller takes ownership of the returned object.
+  virtual BrowserContext* CreateBrowserContext();
+
+  // Override this to change how ProxyResolverV8 is initialized.
+  virtual void InitProxyResolverV8();
 
  private:
 #if defined(OS_MACOSX)
