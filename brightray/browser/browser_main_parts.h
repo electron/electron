@@ -9,6 +9,12 @@
 #include "base/memory/scoped_ptr.h"
 #include "content/public/browser/browser_main_parts.h"
 
+#if defined(TOOLKIT_VIEWS)
+namespace wm {
+class WMState;
+}
+#endif
+
 namespace brightray {
 
 class BrowserContext;
@@ -41,6 +47,10 @@ class BrowserMainParts : public content::BrowserMainParts {
 
   scoped_ptr<BrowserContext> browser_context_;
   scoped_ptr<WebUIControllerFactory> web_ui_controller_factory_;
+
+#if defined(TOOLKIT_VIEWS)
+  scoped_ptr<wm::WMState> wm_state_;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(BrowserMainParts);
 };

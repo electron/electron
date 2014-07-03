@@ -15,6 +15,11 @@
 #include "ui/views/linux_ui/linux_ui.h"
 #endif
 
+#if defined(TOOLKIT_VIEWS)
+#include "browser/views/views_delegate.h"
+#include "ui/wm/core/wm_state.h"
+#endif
+
 namespace brightray {
 
 BrowserMainParts::BrowserMainParts() {
@@ -36,6 +41,13 @@ void BrowserMainParts::PreEarlyInitialization() {
 void BrowserMainParts::ToolkitInitialized() {
 #if defined(USE_AURA) && defined(USE_X11)
   views::LinuxUI::instance()->Initialize();
+#endif
+
+#if defined(TOOLKIT_VIEWS)
+  if (!views::ViewsDelegate::views_delegate)
+    views::ViewsDelegate::views_delegate = new ViewsDelegate;
+
+  wm_state_.reset(new wm::WMState);
 #endif
 }
 

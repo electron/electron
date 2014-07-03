@@ -75,6 +75,8 @@
         'browser/linux/notification_presenter_linux.cc',
         'browser/url_request_context_getter.cc',
         'browser/url_request_context_getter.h',
+        'browser/views/views_delegate.cc',
+        'browser/views/views_delegate.h',
         'browser/win/devtools_window.cc',
         'browser/win/devtools_window.h',
         'browser/win/inspectable_web_contents_view_win.cc',
