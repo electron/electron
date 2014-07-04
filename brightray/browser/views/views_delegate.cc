@@ -91,7 +91,7 @@ base::TimeDelta ViewsDelegate::GetDefaultTextfieldObscuredRevealDuration() {
 }
 
 bool ViewsDelegate::WindowManagerProvidesTitleBar(bool maximized) {
-  return true;
+  return maximized;
 }
 
 }  // namespace brightray
