@@ -55,6 +55,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   options.Get(switches::kTitle, &title_);
 
   views::Widget::InitParams params;
+  params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
   params.delegate = this;
   params.type = has_frame_ ? views::Widget::InitParams::TYPE_WINDOW :
                              views::Widget::InitParams::TYPE_WINDOW_FRAMELESS;
