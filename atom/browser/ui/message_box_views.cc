@@ -127,6 +127,7 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
   views::Widget::InitParams widget_params;
   widget_params.delegate = this;
   widget_params.top_level = true;
+  widget_params.remove_standard_frame = true;
   if (parent_window)
     widget_params.parent = parent_window->GetNativeWindow();
   widget_ = new views::Widget;

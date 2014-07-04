@@ -17,7 +17,7 @@
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/layout/fill_layout.h"
 #include "ui/views/window/client_view.h"
-#include "ui/views/window/native_frame_view.h"
+#include "ui/views/window/custom_frame_view.h"
 #include "ui/views/widget/widget.h"
 
 namespace atom {
@@ -54,19 +54,30 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
 
   views::Widget::InitParams params;
   params.delegate = this;
+  params.type = has_frame_ ? views::Widget::InitParams::TYPE_WINDOW :
+                             views::Widget::InitParams::TYPE_WINDOW_FRAMELESS;
   params.top_level = true;
-  params.remove_standard_frame = !has_frame_;
+  params.remove_standard_frame = true;
   window_->Init(params);
+
+  // Add web view.
+  SetLayoutManager(new views::FillLayout);
+  set_background(views::Background::CreateStandardPanelBackground());
+  web_view_->SetWebContents(web_contents);
+  AddChildView(web_view_);
 
   int width = 800, height = 600;
   options.Get(switches::kWidth, &width);
   options.Get(switches::kHeight, &height);
-  window_->CenterWindow(gfx::Size(width, height));
 
-  SetLayoutManager(new views::FillLayout);
-  set_background(views::Background::CreateStandardPanelBackground());
+  bool use_content_size;
+  gfx::Rect bounds(0, 0, width, height);
+  if (has_frame_ &&
+      options.Get(switches::kUseContentSize, &use_content_size) &&
+      use_content_size)
+    bounds = window_->non_client_view()->GetWindowBoundsForClientBounds(bounds);
 
-  web_view_->SetWebContents(web_contents);
+  window_->CenterWindow(bounds.size());
 }
 
 NativeWindowViews::~NativeWindowViews() {
@@ -140,13 +151,23 @@ gfx::Size NativeWindowViews::GetSize() {
 }
 
 void NativeWindowViews::SetContentSize(const gfx::Size& size) {
-  // FIXME
-  SetSize(size);
+  if (!has_frame_) {
+    SetSize(size);
+    return;
+  }
+
+  gfx::Rect bounds = window_->GetWindowBoundsInScreen();
+  bounds.set_size(size);
+  window_->SetBounds(
+      window_->non_client_view()->GetWindowBoundsForClientBounds(bounds));
 }
 
 gfx::Size NativeWindowViews::GetContentSize() {
-  // FIXME
-  return GetSize();
+  if (!has_frame_)
+    return GetSize();
+
+  return window_->non_client_view()->frame_view()->
+      GetBoundsForClientView().size();
 }
 
 void NativeWindowViews::SetMinimumSize(const gfx::Size& size) {
@@ -166,7 +187,6 @@ gfx::Size NativeWindowViews::GetMaximumSize() {
 }
 
 void NativeWindowViews::SetResizable(bool resizable) {
-  // FIXME
   resizable_ = resizable;
 }
 
@@ -179,8 +199,7 @@ void NativeWindowViews::SetAlwaysOnTop(bool top) {
 }
 
 bool NativeWindowViews::IsAlwaysOnTop() {
-  // FIXME
-  return false;
+  return window_->IsAlwaysOnTop();
 }
 
 void NativeWindowViews::Center() {
@@ -226,13 +245,7 @@ gfx::NativeWindow NativeWindowViews::GetNativeWindow() {
 
 void NativeWindowViews::UpdateDraggableRegions(
     const std::vector<DraggableRegion>& regions) {
-}
-
-void NativeWindowViews::ViewHierarchyChanged(
-  const ViewHierarchyChangedDetails& details) {
-  if (details.is_add && details.child == this) {
-    AddChildView(web_view_);
-  }
+  // FIXME
 }
 
 void NativeWindowViews::DeleteDelegate() {
@@ -284,6 +297,13 @@ views::View* NativeWindowViews::GetContentsView() {
 
 views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {
   return new NativeWindowClientView(widget, this);
+}
+
+views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
+    views::Widget* widget) {
+  views::CustomFrameView* frame_view = new views::CustomFrameView;
+  frame_view->Init(widget);
+  return frame_view;
 }
 
 // static

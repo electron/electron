@@ -69,10 +69,6 @@ class NativeWindowViews : public NativeWindow,
   virtual void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) OVERRIDE;
 
-  // views::View:
-  virtual void ViewHierarchyChanged(
-      const ViewHierarchyChangedDetails& details) OVERRIDE;
-
   // views::WidgetDelegate:
   virtual void DeleteDelegate() OVERRIDE;
   virtual views::View* GetInitiallyFocusedView() OVERRIDE;
@@ -86,6 +82,8 @@ class NativeWindowViews : public NativeWindow,
   virtual const views::Widget* GetWidget() const OVERRIDE;
   virtual views::View* GetContentsView() OVERRIDE;
   virtual views::ClientView* CreateClientView(views::Widget* widget) OVERRIDE;
+  virtual views::NonClientFrameView* CreateNonClientFrameView(
+      views::Widget* widget) OVERRIDE;
 
   scoped_ptr<views::Widget> window_;
   views::WebView* web_view_;  // managed by window_.
