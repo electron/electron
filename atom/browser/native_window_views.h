@@ -10,10 +10,10 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/ui/accelerator_util.h"
 #include "ui/views/widget/widget_delegate.h"
 
 namespace views {
-class WebView;
 class Widget;
 }
 
@@ -62,6 +62,7 @@ class NativeWindowViews : public NativeWindow,
   virtual void SetSkipTaskbar(bool skip) OVERRIDE;
   virtual void SetKiosk(bool kiosk) OVERRIDE;
   virtual bool IsKiosk() OVERRIDE;
+  virtual void SetMenu(ui::MenuModel* menu_model) OVERRIDE;
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
 
  private:
@@ -85,8 +86,22 @@ class NativeWindowViews : public NativeWindow,
   virtual views::NonClientFrameView* CreateNonClientFrameView(
       views::Widget* widget) OVERRIDE;
 
+  // content::WebContentsDelegate:
+  virtual void HandleKeyboardEvent(
+      content::WebContents*,
+      const content::NativeWebKeyboardEvent& event) OVERRIDE;
+
+  // views::View:
+  virtual bool AcceleratorPressed(const ui::Accelerator& accelerator) OVERRIDE;
+
+  // Register accelerators supported by the menu model.
+  void RegisterAccelerators(ui::MenuModel* menu_model);
+
   scoped_ptr<views::Widget> window_;
-  views::WebView* web_view_;  // managed by window_.
+  views::View* web_view_;  // Managed by inspectable_web_contents_.
+
+  // Map from accelerator to menu item's command id.
+  accelerator_util::AcceleratorTable accelerator_table_;
 
   bool resizable_;
   std::string title_;

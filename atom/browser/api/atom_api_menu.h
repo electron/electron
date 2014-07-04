@@ -53,6 +53,7 @@ class Menu : public mate::Wrappable,
   virtual void ExecuteCommand(int command_id, int event_flags) OVERRIDE;
   virtual void MenuWillShow(ui::SimpleMenuModel* source) OVERRIDE;
 
+  virtual void AttachToWindow(Window* window);
   virtual void Popup(Window* window) = 0;
 
   scoped_ptr<ui::SimpleMenuModel> model_;
@@ -85,10 +86,6 @@ class Menu : public mate::Wrappable,
 
 #if defined(OS_WIN)
   virtual void UpdateStates() = 0;
-#endif
-
-#if defined(OS_WIN) || defined(OS_LINUX)
-  virtual void AttachToWindow(Window* window) = 0;
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(Menu);

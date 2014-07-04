@@ -4,7 +4,7 @@
 
 #include "atom/browser/api/atom_api_menu.h"
 
-#include "atom/browser/api/atom_api_window.h"
+#include "atom/browser/native_window.h"
 #include "atom/browser/ui/accelerator_util.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/constructor.h"
@@ -157,6 +157,10 @@ void Menu::MenuWillShow(ui::SimpleMenuModel* source) {
                "menuWillShow", -1);
 }
 
+void Menu::AttachToWindow(Window* window) {
+  window->window()->SetMenu(model_.get());
+}
+
 void Menu::InsertItemAt(
     int index, int command_id, const base::string16& label) {
   model_->InsertItemAt(index, command_id, label);
@@ -246,9 +250,7 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
-#if defined(OS_WIN) || defined(OS_LINUX)
       .SetMethod("_attachToWindow", &Menu::AttachToWindow)
-#endif
 #if defined(OS_WIN)
       .SetMethod("_updateStates", &Menu::UpdateStates)
 #endif

@@ -38,10 +38,6 @@ void MenuGtk::Popup(Window* window) {
   */
 }
 
-void MenuGtk::AttachToWindow(Window* window) {
-  // static_cast<NativeWindowGtk*>(window->window())->SetMenu(model_.get());
-}
-
 // static
 mate::Wrappable* Menu::Create() {
   return new MenuGtk();

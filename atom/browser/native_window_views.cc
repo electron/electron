@@ -9,6 +9,8 @@
 
 #include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
+#include "browser/inspectable_web_contents_view.h"
+#include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents_view.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/image/image.h"
@@ -47,7 +49,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
                                      const mate::Dictionary& options)
     : NativeWindow(web_contents, options),
       window_(new views::Widget),
-      web_view_(new views::WebView(web_contents->GetBrowserContext())),
+      web_view_(inspectable_web_contents()->GetView()->GetView()),
       resizable_(true) {
   options.Get(switches::kResizable, &resizable_);
   options.Get(switches::kTitle, &title_);
@@ -63,7 +65,6 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   // Add web view.
   SetLayoutManager(new views::FillLayout);
   set_background(views::Background::CreateStandardPanelBackground());
-  web_view_->SetWebContents(web_contents);
   AddChildView(web_view_);
 
   int width = 800, height = 600;
@@ -239,6 +240,11 @@ bool NativeWindowViews::IsKiosk() {
   return IsFullscreen();
 }
 
+void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
+  // FIXME
+  RegisterAccelerators(menu_model);
+}
+
 gfx::NativeWindow NativeWindowViews::GetNativeWindow() {
   return window_->GetNativeWindow();
 }
@@ -253,7 +259,7 @@ void NativeWindowViews::DeleteDelegate() {
 }
 
 views::View* NativeWindowViews::GetInitiallyFocusedView() {
-  return web_view_;
+  return inspectable_web_contents()->GetView()->GetWebView();
 }
 
 bool NativeWindowViews::CanResize() const {
@@ -304,6 +310,42 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
   views::CustomFrameView* frame_view = new views::CustomFrameView;
   frame_view->Init(widget);
   return frame_view;
+}
+
+void NativeWindowViews::HandleKeyboardEvent(
+    content::WebContents*,
+    const content::NativeWebKeyboardEvent& event) {
+  if (event.type == blink::WebInputEvent::RawKeyDown) {
+    ui::Accelerator accelerator(
+        static_cast<ui::KeyboardCode>(event.windowsKeyCode),
+        content::GetModifiersFromNativeWebKeyboardEvent(event));
+
+    if (GetFocusManager()->ProcessAccelerator(accelerator)) {
+      return;
+    }
+  }
+}
+
+bool NativeWindowViews::AcceleratorPressed(const ui::Accelerator& accelerator) {
+  return accelerator_util::TriggerAcceleratorTableCommand(
+      &accelerator_table_, accelerator);
+}
+
+void NativeWindowViews::RegisterAccelerators(ui::MenuModel* menu_model) {
+  // Clear previous accelerators.
+  views::FocusManager* focus_manager = GetFocusManager();
+  accelerator_table_.clear();
+  focus_manager->UnregisterAccelerators(this);
+
+  // Register accelerators with focus manager.
+  accelerator_util::GenerateAcceleratorTable(&accelerator_table_, menu_model);
+  accelerator_util::AcceleratorTable::const_iterator iter;
+  for (iter = accelerator_table_.begin();
+       iter != accelerator_table_.end();
+       ++iter) {
+    focus_manager->RegisterAccelerator(
+        iter->first, ui::AcceleratorManager::kNormalPriority, this);
+  }
 }
 
 // static

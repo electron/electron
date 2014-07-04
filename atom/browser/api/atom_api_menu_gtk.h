@@ -19,7 +19,6 @@ class MenuGtk : public Menu,
 
  protected:
   virtual void Popup(Window* window) OVERRIDE;
-  virtual void AttachToWindow(Window* window) OVERRIDE;
 
  private:
   scoped_ptr<::MenuGtk> menu_gtk_;

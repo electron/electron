@@ -16,6 +16,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "atom/browser/native_window_observer.h"
+#include "atom/browser/ui/accelerator_util.h"
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
 #include "vendor/brightray/browser/default_web_contents_delegate.h"
@@ -42,6 +43,10 @@ class Size;
 
 namespace mate {
 class Dictionary;
+}
+
+namespace ui {
+class MenuModel;
 }
 
 namespace atom {
@@ -129,6 +134,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual bool IsKiosk() = 0;
   virtual void SetRepresentedFilename(const std::string& filename);
   virtual void SetDocumentEdited(bool edited);
+  virtual void SetMenu(ui::MenuModel* menu);
   virtual bool HasModalDialog();
   virtual gfx::NativeWindow GetNativeWindow() = 0;
 

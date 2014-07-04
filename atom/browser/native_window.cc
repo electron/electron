@@ -197,6 +197,9 @@ void NativeWindow::SetRepresentedFilename(const std::string& filename) {
 void NativeWindow::SetDocumentEdited(bool edited) {
 }
 
+void NativeWindow::SetMenu(ui::MenuModel* menu) {
+}
+
 bool NativeWindow::HasModalDialog() {
   return has_dialog_attached_;
 }
