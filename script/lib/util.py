@@ -30,7 +30,7 @@ def scoped_cwd(path):
 
 
 def download(text, url, path):
-  with open(path, 'w') as local_file:
+  with open(path, 'wb') as local_file:
     web_file = urllib2.urlopen(url)
     file_size = int(web_file.info().getheaders("Content-Length")[0])
     downloaded_size = 0
