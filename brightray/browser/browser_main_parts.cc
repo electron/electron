@@ -50,9 +50,7 @@ void BrowserMainParts::ToolkitInitialized() {
 #endif
 
 #if defined(TOOLKIT_VIEWS)
-  if (!views::ViewsDelegate::views_delegate)
-    views::ViewsDelegate::views_delegate = new ViewsDelegate;
-
+  views_delegate_.reset(new ViewsDelegate);
   wm_state_.reset(new wm::WMState);
 #endif
 }

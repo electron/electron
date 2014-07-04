@@ -9,9 +9,13 @@
 namespace brightray {
 
 ViewsDelegate::ViewsDelegate() {
+  DCHECK(!views::ViewsDelegate::views_delegate);
+  views::ViewsDelegate::views_delegate = this;
 }
 
 ViewsDelegate::~ViewsDelegate() {
+  DCHECK_EQ(views::ViewsDelegate::views_delegate, this);
+  views::ViewsDelegate::views_delegate = NULL;
 }
 
 void ViewsDelegate::SaveWindowPlacement(const views::Widget* window,

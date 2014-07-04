@@ -10,6 +10,10 @@
 #include "content/public/browser/browser_main_parts.h"
 
 #if defined(TOOLKIT_VIEWS)
+namespace brightray {
+class ViewsDelegate;
+}
+
 namespace wm {
 class WMState;
 }
@@ -53,6 +57,7 @@ class BrowserMainParts : public content::BrowserMainParts {
   scoped_ptr<WebUIControllerFactory> web_ui_controller_factory_;
 
 #if defined(TOOLKIT_VIEWS)
+  scoped_ptr<ViewsDelegate> views_delegate_;
   scoped_ptr<wm::WMState> wm_state_;
 #endif
 
