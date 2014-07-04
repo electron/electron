@@ -32,6 +32,7 @@ class NativeWindowMac : public NativeWindow {
   virtual bool IsVisible() OVERRIDE;
   virtual void Maximize() OVERRIDE;
   virtual void Unmaximize() OVERRIDE;
+  virtual bool IsMaximized() OVERRIDE;
   virtual void Minimize() OVERRIDE;
   virtual void Restore() OVERRIDE;
   virtual void SetFullscreen(bool fullscreen) OVERRIDE;

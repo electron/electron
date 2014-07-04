@@ -239,6 +239,10 @@ Maximizes the window.
 
 Unmaximizes the window.
 
+### BrowserWindow.isMaximized()
+
+Returns whether the window is maximized.
+
 ### BrowserWindow.minimize()
 
 Minimizes the window. On some platforms the minimized window will be shown in

@@ -148,6 +148,10 @@ void Window::Unmaximize() {
   window_->Unmaximize();
 }
 
+bool Window::IsMaximized() {
+  return window_->IsMaximized();
+}
+
 void Window::Minimize() {
   window_->Minimize();
 }
@@ -340,6 +344,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isVisible", &Window::IsVisible)
       .SetMethod("maximize", &Window::Maximize)
       .SetMethod("unmaximize", &Window::Unmaximize)
+      .SetMethod("isMaximized", &Window::IsMaximized)
       .SetMethod("minimize", &Window::Minimize)
       .SetMethod("restore", &Window::Restore)
       .SetMethod("setFullScreen", &Window::SetFullscreen)
