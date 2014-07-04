@@ -29,7 +29,7 @@ class DevToolsWindowDelegate : public views::ClientView,
   // views::WidgetDelegate:
   virtual views::View* GetInitiallyFocusedView() OVERRIDE { return view_; }
   virtual bool CanResize() const OVERRIDE { return true; }
-  virtual bool CanMaximize() const OVERRIDE { return true; }
+  virtual bool CanMaximize() const OVERRIDE { return false; }
   virtual base::string16 GetWindowTitle() const OVERRIDE { return title_; }
   virtual views::Widget* GetWidget() OVERRIDE { return widget_; }
   virtual const views::Widget* GetWidget() const OVERRIDE { return widget_; }
@@ -74,6 +74,8 @@ InspectableWebContentsViewViews::InspectableWebContentsViewViews(
 }
 
 InspectableWebContentsViewViews::~InspectableWebContentsViewViews() {
+  if (devtools_window_)
+    inspectable_web_contents()->SaveDevToolsBounds(devtools_window_->GetWindowBoundsInScreen());
 }
 
 views::View* InspectableWebContentsViewViews::GetView() {
@@ -95,7 +97,7 @@ void InspectableWebContentsViewViews::ShowDevTools() {
   devtools_visible_ = true;
   if (devtools_window_) {
     devtools_window_web_view_->SetWebContents(inspectable_web_contents_->devtools_web_contents());
-    devtools_window_->CenterWindow(gfx::Size(800, 600));
+    devtools_window_->SetBounds(inspectable_web_contents()->GetDevToolsBounds());
     devtools_window_->Show();
   } else {
     devtools_web_view_->SetVisible(true);
@@ -111,6 +113,7 @@ void InspectableWebContentsViewViews::CloseDevTools() {
 
   devtools_visible_ = false;
   if (devtools_window_) {
+    inspectable_web_contents()->SaveDevToolsBounds(devtools_window_->GetWindowBoundsInScreen());
     devtools_window_.reset();
     devtools_window_web_view_ = NULL;
   } else {

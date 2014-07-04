@@ -14,6 +14,7 @@
 #include "content/public/browser/devtools_frontend_host_delegate.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "ui/gfx/rect.h"
 
 class PrefRegistrySimple;
 
@@ -45,6 +46,10 @@ class InspectableWebContentsImpl :
   virtual void ShowDevTools() OVERRIDE;
   virtual void CloseDevTools() OVERRIDE;
   virtual bool IsDevToolsViewShowing() OVERRIDE;
+
+  // Return the last position and size of devtools window.
+  gfx::Rect GetDevToolsBounds() const;
+  void SaveDevToolsBounds(const gfx::Rect& bounds);
 
   virtual void SetDelegate(InspectableWebContentsDelegate* delegate) {
     delegate_ = delegate;
@@ -106,6 +111,7 @@ class InspectableWebContentsImpl :
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
 
   DevToolsContentsResizingStrategy contents_resizing_strategy_;
+  gfx::Rect devtools_bounds_;
 
   scoped_ptr<DevToolsEmbedderMessageDispatcher> embedder_message_dispatcher_;
 

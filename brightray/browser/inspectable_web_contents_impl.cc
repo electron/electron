@@ -15,6 +15,7 @@
 #include "base/prefs/pref_service.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/values.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_client_host.h"
 #include "content/public/browser/devtools_http_handler.h"
@@ -27,22 +28,45 @@ namespace brightray {
 namespace {
 
 const char kChromeUIDevToolsURL[] = "chrome-devtools://devtools/devtools.html?can_dock=true";
-const char kIsDockedPref[] = "brightray.devtools.isDocked";
+const char kDevToolsBoundsPref[] = "brightray.devtools.bounds";
 
+void RectToDictionary(const gfx::Rect& bounds, base::DictionaryValue* dict) {
+  dict->SetInteger("x", bounds.x());
+  dict->SetInteger("y", bounds.y());
+  dict->SetInteger("width", bounds.width());
+  dict->SetInteger("height", bounds.height());
 }
+
+void DictionaryToRect(const base::DictionaryValue& dict, gfx::Rect* bounds) {
+  int x = 0, y = 0, width = 800, height = 600;
+  dict.GetInteger("x", &x);
+  dict.GetInteger("y", &y);
+  dict.GetInteger("width", &width);
+  dict.GetInteger("height", &height);
+  *bounds = gfx::Rect(x, y, width, height);
+}
+
+}  // namespace
 
 // Implemented separately on each platform.
 InspectableWebContentsView* CreateInspectableContentsView(
     InspectableWebContentsImpl* inspectable_web_contents_impl);
 
 void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
-  registry->RegisterBooleanPref(kIsDockedPref, true);
+  scoped_ptr<base::DictionaryValue> bounds_dict(new base::DictionaryValue);
+  RectToDictionary(gfx::Rect(0, 0, 800, 600), bounds_dict.get());
+  registry->RegisterDictionaryPref(kDevToolsBoundsPref, bounds_dict.release());
 }
 
 InspectableWebContentsImpl::InspectableWebContentsImpl(
     content::WebContents* web_contents)
     : web_contents_(web_contents),
       delegate_(nullptr) {
+  auto context = static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
+  auto bounds_dict = context->prefs()->GetDictionary(kDevToolsBoundsPref);
+  if (bounds_dict)
+    DictionaryToRect(*bounds_dict, &devtools_bounds_);
+
   view_.reset(CreateInspectableContentsView(this));
 }
 
@@ -100,6 +124,18 @@ void InspectableWebContentsImpl::CloseDevTools() {
 
 bool InspectableWebContentsImpl::IsDevToolsViewShowing() {
   return devtools_web_contents_ && view_->IsDevToolsViewShowing();
+}
+
+gfx::Rect InspectableWebContentsImpl::GetDevToolsBounds() const {
+  return devtools_bounds_;
+}
+
+void InspectableWebContentsImpl::SaveDevToolsBounds(const gfx::Rect& bounds) {
+  auto context = static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
+  base::DictionaryValue bounds_dict;
+  RectToDictionary(bounds, &bounds_dict);
+  context->prefs()->Set(kDevToolsBoundsPref, bounds_dict);
+  devtools_bounds_ = bounds;
 }
 
 void InspectableWebContentsImpl::ActivateWindow() {
