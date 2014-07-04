@@ -5,14 +5,28 @@
 
 class DevToolsContentsResizingStrategy;
 
+#if defined(TOOLKIT_VIEWS)
+namespace views {
+class View;
+}
+#endif
+
 namespace brightray {
 
 class InspectableWebContentsView {
  public:
   virtual ~InspectableWebContentsView() {}
 
-  virtual gfx::NativeView GetNativeView() const = 0;
+#if defined(TOOLKIT_VIEWS)
+  // Returns the container control, which has devtools view attached.
+  virtual views::View* GetView() = 0;
 
+  // Returns the web view control, which can be used by the
+  // GetInitiallyFocusedView() to set initial focus to web view.
+  virtual views::View* GetWebView() = 0;
+#endif
+
+  virtual gfx::NativeView GetNativeView() const = 0;
   virtual void ShowDevTools() = 0;
   // Hide the DevTools view.
   virtual void CloseDevTools() = 0;
