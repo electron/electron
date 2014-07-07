@@ -19,7 +19,7 @@ class WidgetDelegateView : public views::WidgetDelegateView {
   }
 
   virtual void DeleteDelegate() OVERRIDE { delete this; }
-  virtual views::View* GetContentsView() OVERRIDE{ return this; }
+  virtual views::View* GetContentsView() OVERRIDE { return this; }
   virtual bool CanResize() const OVERRIDE { return true; }
   virtual bool CanMaximize() const OVERRIDE { return true; }
   virtual base::string16 GetWindowTitle() const OVERRIDE { return L"Developer Tools"; }
@@ -27,7 +27,7 @@ class WidgetDelegateView : public views::WidgetDelegateView {
   virtual gfx::Size GetMinimumSize() OVERRIDE { return gfx::Size(100, 100); }
 };
 
-}
+}  // namespace
 
 DevToolsWindow* DevToolsWindow::Create(
     InspectableWebContentsViewWin* controller) {
