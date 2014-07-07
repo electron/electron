@@ -72,6 +72,9 @@
           'VCLinkerTool': {
             'AdditionalDependencies': [
               'advapi32.lib',
+              'dwmapi.lib',
+              'gdi32.lib',
+              'oleacc.lib',
               'user32.lib',
             ],
           },
@@ -80,6 +83,8 @@
           ['OS=="win"', {
             'defines': [
               'USE_AURA',
+              'VIEWS_IMPLEMENTATION',
+              'WEBVIEW_IMPLEMENTATION',
             ],
           }],
           ['OS not in ["mac", "win"]', {
