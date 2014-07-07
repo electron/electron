@@ -14,6 +14,7 @@
 #include "ui/views/widget/widget_delegate.h"
 
 namespace views {
+class UnhandledKeyboardEventHandler;
 class Widget;
 }
 
@@ -104,6 +105,9 @@ class NativeWindowViews : public NativeWindow,
 
   scoped_ptr<views::Widget> window_;
   views::View* web_view_;  // Managed by inspectable_web_contents_.
+
+  // Handles unhandled keyboard messages coming back from the renderer process.
+  scoped_ptr<views::UnhandledKeyboardEventHandler> keyboard_event_handler_;
 
   // Map from accelerator to menu item's command id.
   accelerator_util::AcceleratorTable accelerator_table_;

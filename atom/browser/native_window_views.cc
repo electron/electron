@@ -18,6 +18,7 @@
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/views/background.h"
+#include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/layout/fill_layout.h"
 #include "ui/views/window/client_view.h"
@@ -56,6 +57,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
     : NativeWindow(web_contents, options),
       window_(new views::Widget),
       web_view_(inspectable_web_contents()->GetView()->GetView()),
+      keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
       resizable_(true) {
   options.Get(switches::kResizable, &resizable_);
   options.Get(switches::kTitle, &title_);
@@ -369,15 +371,7 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
-  if (event.type == blink::WebInputEvent::RawKeyDown) {
-    ui::Accelerator accelerator(
-        static_cast<ui::KeyboardCode>(event.windowsKeyCode),
-        content::GetModifiersFromNativeWebKeyboardEvent(event));
-
-    if (GetFocusManager()->ProcessAccelerator(accelerator)) {
-      return;
-    }
-  }
+  keyboard_event_handler_->HandleKeyboardEvent(event, GetFocusManager());
 }
 
 bool NativeWindowViews::AcceleratorPressed(const ui::Accelerator& accelerator) {
