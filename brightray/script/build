@@ -15,7 +15,12 @@ def main():
 
 
 def run_gyp():
-    return subprocess.call([sys.executable, GYP, '--depth', '.', 'brightray.gyp'])
+    env = os.environ.copy()
+    gyp_pylib = os.path.join(os.path.dirname(GYP), 'pylib')
+    env['PYTHONPATH'] = os.path.pathsep.join([gyp_pylib,
+                                              env.get('PYTHONPATH', '')])
+    return subprocess.call([sys.executable, GYP, '--depth', '.',
+                            'brightray.gyp'], env=env)
 
 
 def build():
