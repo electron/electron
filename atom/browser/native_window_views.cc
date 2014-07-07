@@ -62,8 +62,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   views::Widget::InitParams params;
   params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
   params.delegate = this;
-  params.type = has_frame_ ? views::Widget::InitParams::TYPE_WINDOW :
-                             views::Widget::InitParams::TYPE_WINDOW_FRAMELESS;
+  params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.top_level = true;
   params.remove_standard_frame = true;
   window_->Init(params);

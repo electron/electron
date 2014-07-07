@@ -140,6 +140,12 @@ int LinuxFrameView::NonClientHitTest(const gfx::Point& point) {
   if (!bounds().Contains(point))
     return HTNOWHERE;
 
+  // Check for possible draggable region in the client area for the frameless
+  // window.
+  SkRegion* draggable_region = window_->draggable_region();
+  if (draggable_region && draggable_region->contains(point.x(), point.y()))
+    return HTCAPTION;
+
   int frame_component = frame_->client_view()->NonClientHitTest(point);
 
   // See if we're in the sysmenu region.  (We check the ClientView first to be
@@ -323,6 +329,9 @@ gfx::Rect LinuxFrameView::IconBounds() const {
 }
 
 bool LinuxFrameView::ShouldShowTitleBarAndBorder() const {
+  if (!window_->has_frame())
+    return false;
+
   if (frame_->IsFullscreen())
     return false;
 

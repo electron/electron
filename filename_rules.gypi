@@ -32,7 +32,7 @@
     ['OS!="linux" and OS!="openbsd" and OS!="freebsd"', {
       'sources/': [
         ['exclude', '_linux(_unittest)?\\.(h|cc)$'],
-        ['exclude', '(^|/)linux/'],
+        ['exclude', '(^|/)linux_[^/]*\\.(h|cc)$'],
         ['exclude', '(^|/)linux/'],
       ],
     }],
