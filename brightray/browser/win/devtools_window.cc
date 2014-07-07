@@ -4,9 +4,30 @@
 #include "browser/win/inspectable_web_contents_view_win.h"
 
 #include "content/public/browser/web_contents_view.h"
-#include "ui/base/win/hidden_window.h"
+#include "ui/views/layout/fill_layout.h"
+#include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
+#include "ui/views/widget/widget_delegate.h"
 
 namespace brightray {
+
+namespace {
+
+class WidgetDelegateView : public views::WidgetDelegateView {
+ public:
+  WidgetDelegateView() {
+    SetLayoutManager(new views::FillLayout);
+  }
+
+  virtual void DeleteDelegate() OVERRIDE { delete this; }
+  virtual views::View* GetContentsView() OVERRIDE{ return this; }
+  virtual bool CanResize() const OVERRIDE { return true; }
+  virtual bool CanMaximize() const OVERRIDE { return true; }
+  virtual base::string16 GetWindowTitle() const OVERRIDE { return L"Developer Tools"; }
+  virtual gfx::Size GetPreferredSize() OVERRIDE { return gfx::Size(800, 600); }
+  virtual gfx::Size GetMinimumSize() OVERRIDE { return gfx::Size(100, 100); }
+};
+
+}
 
 DevToolsWindow* DevToolsWindow::Create(
     InspectableWebContentsViewWin* controller) {
@@ -14,42 +35,32 @@ DevToolsWindow* DevToolsWindow::Create(
 }
 
 DevToolsWindow::DevToolsWindow(InspectableWebContentsViewWin* controller)
-    : controller_(controller) {
+    : controller_(controller),
+      widget_(new views::Widget) {
+  auto delegate_view = new WidgetDelegateView;
+  views::Widget::InitParams params;
+  params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
+  params.top_level = true;
+  params.native_widget = new views::DesktopNativeWidgetAura(widget_.get());
+  params.delegate = delegate_view;
+  widget_->Init(params);
+  delegate_view->AddChildView(controller->GetView());
+  delegate_view->Layout();
 }
 
 DevToolsWindow::~DevToolsWindow() {
 }
 
-LRESULT DevToolsWindow::OnCreate(UINT, WPARAM, LPARAM) {
-  auto devtools_web_contents =
-      controller_->inspectable_web_contents()->devtools_web_contents();
-  SetParent(devtools_web_contents->GetView()->GetNativeView(), hwnd());
-  SetWindowText(hwnd(), L"Developer Tools");
-  return 0;
+void DevToolsWindow::Show() {
+  widget_->Show();
 }
 
-LRESULT DevToolsWindow::OnDestroy(UINT, WPARAM, LPARAM) {
-  auto devtools_web_contents =
-      controller_->inspectable_web_contents()->devtools_web_contents();
-  SetParent(
-      devtools_web_contents->GetView()->GetNativeView(), ui::GetHiddenWindow());
+void DevToolsWindow::Close() {
+  widget_->Hide();
+}
+
+void DevToolsWindow::Destroy() {
   delete this;
-  return 0;
-}
-
-LRESULT DevToolsWindow::OnSize(UINT, WPARAM, LPARAM) {
-  RECT rect;
-  GetClientRect(hwnd(), &rect);
-
-  auto devtools_web_contents =
-      controller_->inspectable_web_contents()->devtools_web_contents();
-  SetWindowPos(devtools_web_contents->GetView()->GetNativeView(),
-               nullptr,
-               rect.left, rect.top,
-               rect.right - rect.left, rect.bottom - rect.top,
-               SWP_NOZORDER | SWP_SHOWWINDOW);
-
-  return 0;
 }
 
 }  // namespace brightray

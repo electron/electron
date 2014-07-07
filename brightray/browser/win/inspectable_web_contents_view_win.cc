@@ -143,7 +143,7 @@ InspectableWebContentsViewWin::InspectableWebContentsViewWin(
 
 InspectableWebContentsViewWin::~InspectableWebContentsViewWin() {
   if (devtools_window_)
-    DestroyWindow(devtools_window_->hwnd());
+    devtools_window_->Destroy();
 }
 
 views::View* InspectableWebContentsViewWin::GetView() const {
@@ -161,19 +161,10 @@ gfx::NativeView InspectableWebContentsViewWin::GetNativeView() const {
 
 void InspectableWebContentsViewWin::ShowDevTools() {
   if (undocked_) {
-    if (!devtools_window_) {
+    if (!devtools_window_)
       devtools_window_ = DevToolsWindow::Create(this)->AsWeakPtr();
-      devtools_window_->Init(HWND_DESKTOP, gfx::Rect());
-    }
 
-    auto contents_view = inspectable_web_contents_->GetWebContents()->GetView();
-    auto size = contents_view->GetContainerSize();
-    size.Enlarge(-kWindowInset, -kWindowInset);
-    gfx::CenterAndSizeWindow(contents_view->GetNativeView(),
-                             devtools_window_->hwnd(),
-                             size);
-
-    ShowWindow(devtools_window_->hwnd(), SW_SHOWNORMAL);
+    devtools_window_->Show();
   } else {
     container_->ShowDevTools();
   }
@@ -181,7 +172,7 @@ void InspectableWebContentsViewWin::ShowDevTools() {
 
 void InspectableWebContentsViewWin::CloseDevTools() {
   if (undocked_)
-    SendMessage(devtools_window_->hwnd(), WM_CLOSE, 0, 0);
+    devtools_window_->Close();
   else
     container_->CloseDevTools();
 }
@@ -197,7 +188,7 @@ bool InspectableWebContentsViewWin::SetDockSide(const std::string& side) {
   } else if (side == "right" || side == "bottom") {
     undocked_ = false;
     if (devtools_window_)
-      SendMessage(devtools_window_->hwnd(), WM_CLOSE, 0, 0);
+      devtools_window_->Close();
     container_->SetDockSide(side);
   } else {
     return false;
