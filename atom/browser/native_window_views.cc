@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
 #include "browser/inspectable_web_contents_view.h"
@@ -21,6 +22,10 @@
 #include "ui/views/window/client_view.h"
 #include "ui/views/window/custom_frame_view.h"
 #include "ui/views/widget/widget.h"
+
+#if defined(USE_X11)
+#include "atom/browser/ui/views/linux_frame_view.h"
+#endif
 
 namespace atom {
 
@@ -252,7 +257,25 @@ gfx::NativeWindow NativeWindowViews::GetNativeWindow() {
 
 void NativeWindowViews::UpdateDraggableRegions(
     const std::vector<DraggableRegion>& regions) {
-  // FIXME
+  if (has_frame_)
+    return;
+
+  SkRegion* draggable_region = new SkRegion;
+
+  // By default, the whole window is non-draggable. We need to explicitly
+  // include those draggable regions.
+  for (std::vector<DraggableRegion>::const_iterator iter = regions.begin();
+       iter != regions.end(); ++iter) {
+    const DraggableRegion& region = *iter;
+    draggable_region->op(
+        region.bounds.x(),
+        region.bounds.y(),
+        region.bounds.right(),
+        region.bounds.bottom(),
+        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
+  }
+
+  draggable_region_.reset(draggable_region);
 }
 
 void NativeWindowViews::DeleteDelegate() {
@@ -302,14 +325,27 @@ views::View* NativeWindowViews::GetContentsView() {
   return this;
 }
 
+bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
+    gfx::NativeView child,
+    const gfx::Point& location) {
+  // App window should claim mouse events that fall within the draggable region.
+  return !draggable_region_.get() ||
+         !draggable_region_->contains(location.x(), location.y());
+}
+
 views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {
   return new NativeWindowClientView(widget, this);
 }
 
 views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
     views::Widget* widget) {
+#if defined(USE_X11)
+  LinuxFrameView* frame_view =  new LinuxFrameView;
+  frame_view->Init(this, widget);
+#else
   views::CustomFrameView* frame_view = new views::CustomFrameView;
   frame_view->Init(widget);
+#endif
   return frame_view;
 }
 

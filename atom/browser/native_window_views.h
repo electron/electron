@@ -65,6 +65,8 @@ class NativeWindowViews : public NativeWindow,
   virtual void SetMenu(ui::MenuModel* menu_model) OVERRIDE;
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
 
+  SkRegion* draggable_region() const { return draggable_region_.get(); }
+
  private:
   // NativeWindow:
   virtual void UpdateDraggableRegions(
@@ -82,6 +84,9 @@ class NativeWindowViews : public NativeWindow,
   virtual views::Widget* GetWidget() OVERRIDE;
   virtual const views::Widget* GetWidget() const OVERRIDE;
   virtual views::View* GetContentsView() OVERRIDE;
+  virtual bool ShouldDescendIntoChildForEventHandling(
+     gfx::NativeView child,
+     const gfx::Point& location) OVERRIDE;
   virtual views::ClientView* CreateClientView(views::Widget* widget) OVERRIDE;
   virtual views::NonClientFrameView* CreateNonClientFrameView(
       views::Widget* widget) OVERRIDE;
@@ -107,6 +112,8 @@ class NativeWindowViews : public NativeWindow,
   std::string title_;
   gfx::Size minimum_size_;
   gfx::Size maximum_size_;
+
+  scoped_ptr<SkRegion> draggable_region_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowViews);
 };
