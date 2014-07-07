@@ -65,6 +65,11 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.top_level = true;
   params.remove_standard_frame = true;
+
+  bool skip_taskbar = false;
+  if (options.Get(switches::kSkipTaskbar, &skip_taskbar) && skip_taskbar)
+    params.type = views::Widget::InitParams::TYPE_BUBBLE;
+
   window_->Init(params);
 
   // Add web view.
@@ -234,7 +239,9 @@ void NativeWindowViews::FlashFrame(bool flash) {
 }
 
 void NativeWindowViews::SetSkipTaskbar(bool skip) {
+#if defined(OS_WIN)
   // FIXME
+#endif
 }
 
 void NativeWindowViews::SetKiosk(bool kiosk) {
