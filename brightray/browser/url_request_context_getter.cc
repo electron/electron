@@ -29,10 +29,12 @@
 #include "net/ssl/ssl_config_service_defaults.h"
 #include "net/url_request/data_protocol_handler.h"
 #include "net/url_request/file_protocol_handler.h"
+#include "net/url_request/protocol_intercept_job_factory.h"
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_storage.h"
 #include "net/url_request/url_request_job_factory_impl.h"
+#include "webkit/browser/quota/special_storage_policy.h"
 
 namespace brightray {
 
@@ -41,11 +43,13 @@ URLRequestContextGetter::URLRequestContextGetter(
     base::MessageLoop* io_loop,
     base::MessageLoop* file_loop,
     base::Callback<scoped_ptr<NetworkDelegate>(void)> network_delegate_factory,
-    content::ProtocolHandlerMap* protocol_handlers)
+    content::ProtocolHandlerMap* protocol_handlers,
+    content::ProtocolHandlerScopedVector protocol_interceptors)
     : base_path_(base_path),
       io_loop_(io_loop),
       file_loop_(file_loop),
-      network_delegate_factory_(network_delegate_factory) {
+      network_delegate_factory_(network_delegate_factory),
+      protocol_interceptors_(protocol_interceptors.Pass()) {
   // Must first be created on the UI thread.
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
 
@@ -71,18 +75,18 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     url_request_context_->set_network_delegate(network_delegate_.get());
     storage_.reset(
         new net::URLRequestContextStorage(url_request_context_.get()));
-    storage_->set_cookie_store(content::CreatePersistentCookieStore(
+    auto cookie_config = content::CookieStoreConfig(
         base_path_.Append(FILE_PATH_LITERAL("Cookies")),
-        false,
+        content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
         nullptr,
-        nullptr,
-        nullptr));
+        nullptr);
+    storage_->set_cookie_store(content::CreateCookieStore(cookie_config));
     storage_->set_server_bound_cert_service(new net::ServerBoundCertService(
         new net::DefaultServerBoundCertStore(NULL),
         base::WorkerPool::GetTaskRunner(true)));
     storage_->set_http_user_agent_settings(
         new net::StaticHttpUserAgentSettings(
-            "en-us,en", EmptyString()));
+            "en-us,en", base::EmptyString()));
 
     scoped_ptr<net::HostResolver> host_resolver(
         net::HostResolver::CreateDefaultResolver(NULL));
@@ -151,17 +155,31 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
       bool set_protocol = job_factory->SetProtocolHandler(
           it->first, it->second.release());
       DCHECK(set_protocol);
+      (void)set_protocol;  // silence unused-variable warning in Release builds on Windows
     }
     protocol_handlers_.clear();
     job_factory->SetProtocolHandler(
-        chrome::kDataScheme, new net::DataProtocolHandler);
+        content::kDataScheme, new net::DataProtocolHandler);
     job_factory->SetProtocolHandler(
-        chrome::kFileScheme,
+        content::kFileScheme,
         new net::FileProtocolHandler(
             content::BrowserThread::GetBlockingPool()->
                 GetTaskRunnerWithShutdownBehavior(
                     base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
-    storage_->set_job_factory(job_factory.release());
+
+    // Set up interceptors in the reverse order.
+    scoped_ptr<net::URLRequestJobFactory> top_job_factory =
+        job_factory.PassAs<net::URLRequestJobFactory>();
+    for (content::ProtocolHandlerScopedVector::reverse_iterator i =
+             protocol_interceptors_.rbegin();
+         i != protocol_interceptors_.rend();
+         ++i) {
+      top_job_factory.reset(new net::ProtocolInterceptJobFactory(
+          top_job_factory.Pass(), make_scoped_ptr(*i)));
+    }
+    protocol_interceptors_.weak_clear();
+
+    storage_->set_job_factory(top_job_factory.release());
   }
 
   return url_request_context_.get();

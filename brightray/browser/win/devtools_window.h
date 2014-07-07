@@ -1,35 +1,33 @@
 #ifndef BRIGHTRAY_BROWSER_WIN_DEVTOOLS_WINDOW_H_
 #define BRIGHTRAY_BROWSER_WIN_DEVTOOLS_WINDOW_H_
 
+#include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
-#include "ui/gfx/win/window_impl.h"
+
+namespace views {
+class Widget;
+}
 
 namespace brightray {
 
 class InspectableWebContentsViewWin;
 
-class DevToolsWindow : public gfx::WindowImpl,
-                       public base::SupportsWeakPtr<DevToolsWindow> {
+class DevToolsWindow : public base::SupportsWeakPtr<DevToolsWindow> {
  public:
   static DevToolsWindow* Create(
       InspectableWebContentsViewWin* inspectable_web_contents_view_win);
 
-  BEGIN_MSG_MAP_EX(DevToolsWindow)
-    MESSAGE_HANDLER(WM_CREATE, OnCreate)
-    MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
-    MESSAGE_HANDLER(WM_SIZE, OnSize)
-  END_MSG_MAP()
+  void Show();
+  void Close();
+  void Destroy();
 
  private:
   explicit DevToolsWindow(
       InspectableWebContentsViewWin* inspectable_web_contents_view_win);
   ~DevToolsWindow();
 
-  LRESULT OnCreate(UINT message, WPARAM, LPARAM, BOOL& handled);
-  LRESULT OnDestroy(UINT message, WPARAM, LPARAM, BOOL& handled);
-  LRESULT OnSize(UINT message, WPARAM, LPARAM, BOOL& handled);
-
   InspectableWebContentsViewWin* controller_;
+  scoped_ptr<views::Widget> widget_;
 
   DISALLOW_COPY_AND_ASSIGN(DevToolsWindow);
 };

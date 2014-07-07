@@ -34,7 +34,9 @@ class BrowserClient : public content::ContentBrowserClient {
   // Subclasses that override this (e.g., to provide their own protocol
   // handlers) should call this implementation after doing their own work.
   virtual net::URLRequestContextGetter* CreateRequestContext(
-      content::BrowserContext*, content::ProtocolHandlerMap*) OVERRIDE;
+      content::BrowserContext* browser_context,
+      content::ProtocolHandlerMap* protocol_handlers,
+      content::ProtocolHandlerScopedVector protocol_interceptors) OVERRIDE;
 
  private:
   virtual content::BrowserMainParts* CreateBrowserMainParts(

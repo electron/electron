@@ -56,9 +56,10 @@ content::BrowserMainParts* BrowserClient::CreateBrowserMainParts(
 
 net::URLRequestContextGetter* BrowserClient::CreateRequestContext(
     content::BrowserContext* browser_context,
-    content::ProtocolHandlerMap* protocol_handlers) {
+    content::ProtocolHandlerMap* protocol_handlers,
+    content::ProtocolHandlerScopedVector protocol_interceptors) {
   auto context = static_cast<BrowserContext*>(browser_context);
-  return context->CreateRequestContext(protocol_handlers);
+  return context->CreateRequestContext(protocol_handlers, protocol_interceptors.Pass());
 }
 
 void BrowserClient::ShowDesktopNotification(

@@ -6,8 +6,7 @@
 
 #include "base/logging.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/media_devices_monitor.h"
-#include "content/public/common/desktop_media_id.h"
+#include "content/public/browser/media_capture_devices.h"
 #include "content/public/common/media_stream_request.h"
 
 namespace brightray {
@@ -30,6 +29,11 @@ const content::MediaStreamDevice* FindDeviceWithId(
   return NULL;
 }
 
+const MediaStreamDevices& EmptyDevices() {
+  static MediaStreamDevices* devices = new MediaStreamDevices;
+  return *devices;
+}
+
 }  // namespace
 
 MediaCaptureDevicesDispatcher* MediaCaptureDevicesDispatcher::GetInstance() {
@@ -37,8 +41,7 @@ MediaCaptureDevicesDispatcher* MediaCaptureDevicesDispatcher::GetInstance() {
 }
 
 MediaCaptureDevicesDispatcher::MediaCaptureDevicesDispatcher()
-    : devices_enumerated_(false),
-      is_device_enumeration_disabled_(false) {
+    : is_device_enumeration_disabled_(false) {
   // MediaCaptureDevicesDispatcher is a singleton. It should be created on
   // UI thread.
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
@@ -49,21 +52,17 @@ MediaCaptureDevicesDispatcher::~MediaCaptureDevicesDispatcher() {}
 const MediaStreamDevices&
 MediaCaptureDevicesDispatcher::GetAudioCaptureDevices() {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-  if (!is_device_enumeration_disabled_ && !devices_enumerated_) {
-    content::EnsureMonitorCaptureDevices();
-    devices_enumerated_ = true;
-  }
-  return audio_devices_;
+  if (is_device_enumeration_disabled_)
+    return EmptyDevices();
+  return content::MediaCaptureDevices::GetInstance()->GetAudioCaptureDevices();
 }
 
 const MediaStreamDevices&
 MediaCaptureDevicesDispatcher::GetVideoCaptureDevices() {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-  if (!is_device_enumeration_disabled_ && !devices_enumerated_) {
-    content::EnsureMonitorCaptureDevices();
-    devices_enumerated_ = true;
-  }
-  return video_devices_;
+  if (is_device_enumeration_disabled_)
+    return EmptyDevices();
+  return content::MediaCaptureDevices::GetInstance()->GetVideoCaptureDevices();
 }
 
 void MediaCaptureDevicesDispatcher::GetDefaultDevices(
@@ -128,56 +127,39 @@ void MediaCaptureDevicesDispatcher::DisableDeviceEnumerationForTesting() {
   is_device_enumeration_disabled_ = true;
 }
 
-void MediaCaptureDevicesDispatcher::OnAudioCaptureDevicesChanged(
-    const content::MediaStreamDevices& devices) {
-  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
-  BrowserThread::PostTask(
-      BrowserThread::UI, FROM_HERE,
-      base::Bind(&MediaCaptureDevicesDispatcher::UpdateAudioDevicesOnUIThread,
-                 base::Unretained(this), devices));
+void MediaCaptureDevicesDispatcher::OnAudioCaptureDevicesChanged() {
 }
 
-void MediaCaptureDevicesDispatcher::OnVideoCaptureDevicesChanged(
-    const content::MediaStreamDevices& devices) {
-  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
-  BrowserThread::PostTask(
-      BrowserThread::UI, FROM_HERE,
-      base::Bind(&MediaCaptureDevicesDispatcher::UpdateVideoDevicesOnUIThread,
-                 base::Unretained(this), devices));
+void MediaCaptureDevicesDispatcher::OnVideoCaptureDevicesChanged() {
 }
 
 void MediaCaptureDevicesDispatcher::OnMediaRequestStateChanged(
     int render_process_id,
     int render_view_id,
     int page_request_id,
+    const GURL& security_origin,
     const content::MediaStreamDevice& device,
     content::MediaRequestState state) {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
 }
 
-void MediaCaptureDevicesDispatcher::OnAudioStreamPlayingChanged(
-    int render_process_id, int render_view_id, int stream_id,
-    bool is_playing, float power_dbfs, bool clipped) {
+void MediaCaptureDevicesDispatcher::OnAudioStreamPlaying(
+    int render_process_id,
+    int render_frame_id,
+    int stream_id,
+    const ReadPowerAndClipCallback& power_read_callback) {
+}
+
+void MediaCaptureDevicesDispatcher::OnAudioStreamStopped(
+    int render_process_id,
+    int render_frame_id,
+    int stream_id) {
 }
 
 void MediaCaptureDevicesDispatcher::OnCreatingAudioStream(
     int render_process_id,
     int render_view_id) {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
-}
-
-void MediaCaptureDevicesDispatcher::UpdateAudioDevicesOnUIThread(
-    const content::MediaStreamDevices& devices) {
-  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-  devices_enumerated_ = true;
-  audio_devices_ = devices;
-}
-
-void MediaCaptureDevicesDispatcher::UpdateVideoDevicesOnUIThread(
-    const content::MediaStreamDevices& devices) {
-  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-  devices_enumerated_ = true;
-  video_devices_ = devices;
 }
 
 }  // namespace brightray

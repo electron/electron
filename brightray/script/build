@@ -15,7 +15,12 @@ def main():
 
 
 def run_gyp():
-    return subprocess.call([sys.executable, GYP, '--depth', '.', 'brightray.gyp'])
+    env = os.environ.copy()
+    gyp_pylib = os.path.join(os.path.dirname(GYP), 'pylib')
+    env['PYTHONPATH'] = os.path.pathsep.join([gyp_pylib,
+                                              env.get('PYTHONPATH', '')])
+    return subprocess.call([sys.executable, GYP, '--depth', '.',
+                            'brightray.gyp'], env=env)
 
 
 def build():
@@ -25,7 +30,8 @@ def build():
         return subprocess.call(['make'])
 
     assert sys.platform == 'win32', sys.platform
-    msbuild = os.path.join(os.environ['windir'], 'Microsoft.NET', 'Framework', 'v4.0.30319', 'MSBuild.exe')
+    program_files = os.environ.get('PROGRAMFILES(X86)', os.environ['PROGRAMFILES'])
+    msbuild = os.path.join(program_files, 'MSBuild', '12.0', 'Bin', 'MSBuild.exe')
     return subprocess.call([msbuild, 'brightray.sln'])
 
 

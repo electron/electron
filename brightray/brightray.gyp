@@ -12,17 +12,21 @@
       'include_dirs': [
         '.',
         '<(libchromiumcontent_include_dir)',
-        '<(libchromiumcontent_include_dir)/third_party/skia/include/config',
+        '<(libchromiumcontent_include_dir)/skia/config',
         '<(libchromiumcontent_include_dir)/third_party/skia/include/core',
+        '<(libchromiumcontent_include_dir)/third_party/WebKit',
+        '<(libchromiumcontent_library_dir)/gen',
       ],
       'direct_dependent_settings': {
         'include_dirs': [
+          '.',
           '..',
           '<(libchromiumcontent_include_dir)',
-          '<(libchromiumcontent_include_dir)/third_party/skia/include/config',
-          # For SkMatrix.h.
+          '<(libchromiumcontent_include_dir)/skia/config',
           '<(libchromiumcontent_include_dir)/third_party/skia/include/core',
           '<(libchromiumcontent_include_dir)/third_party/icu/source/common',
+          '<(libchromiumcontent_include_dir)/third_party/WebKit',
+          '<(libchromiumcontent_library_dir)/gen',
         ],
       },
       'sources': [
@@ -113,6 +117,7 @@
           'link_settings': {
             'libraries': [
               '<(brightray_source_root)/<(libchromiumcontent_library_dir)/base_static.lib',
+              '<(brightray_source_root)/<(libchromiumcontent_library_dir)/chromiumviews.lib',
               '<(brightray_source_root)/<(libchromiumcontent_library_dir)/chromiumcontent.dll.lib',
               '<(brightray_source_root)/<(libchromiumcontent_library_dir)/sandbox_static.lib',
             ],

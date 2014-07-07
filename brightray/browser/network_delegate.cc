@@ -37,7 +37,8 @@ int NetworkDelegate::OnHeadersReceived(
     net::URLRequest* request,
     const net::CompletionCallback& callback,
     const net::HttpResponseHeaders* original_response_headers,
-    scoped_refptr<net::HttpResponseHeaders>* override_response_headers) {
+    scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
+    GURL* allowed_unsafe_redirect_url) {
   return net::OK;
 }
 
@@ -59,7 +60,7 @@ void NetworkDelegate::OnURLRequestDestroyed(net::URLRequest* request) {
 }
 
 void NetworkDelegate::OnPACScriptError(int line_number,
-                                            const string16& error) {
+                                       const base::string16& error) {
 }
 
 NetworkDelegate::AuthRequiredResponse NetworkDelegate::OnAuthRequired(
@@ -95,11 +96,6 @@ int NetworkDelegate::OnBeforeSocketStreamConnect(
     net::SocketStream* socket,
     const net::CompletionCallback& callback) {
   return net::OK;
-}
-
-void NetworkDelegate::OnRequestWaitStateChange(
-    const net::URLRequest& request,
-    RequestWaitState waiting) {
 }
 
 }  // namespace brightray

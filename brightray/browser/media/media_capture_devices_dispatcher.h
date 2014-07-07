@@ -51,23 +51,24 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
   void DisableDeviceEnumerationForTesting();
 
   // Overridden from content::MediaObserver:
-  virtual void OnAudioCaptureDevicesChanged(
-      const content::MediaStreamDevices& devices) OVERRIDE;
-  virtual void OnVideoCaptureDevicesChanged(
-      const content::MediaStreamDevices& devices) OVERRIDE;
+  virtual void OnAudioCaptureDevicesChanged() OVERRIDE;
+  virtual void OnVideoCaptureDevicesChanged() OVERRIDE;
   virtual void OnMediaRequestStateChanged(
       int render_process_id,
       int render_view_id,
       int page_request_id,
+      const GURL& security_origin,
       const content::MediaStreamDevice& device,
       content::MediaRequestState state) OVERRIDE;
-  virtual void OnAudioStreamPlayingChanged(
+  virtual void OnAudioStreamPlaying(
       int render_process_id,
-      int render_view_id,
+      int render_frame_id,
       int stream_id,
-      bool is_playing,
-      float power_dBFS,
-      bool clipped) OVERRIDE;
+      const ReadPowerAndClipCallback& power_read_callback) OVERRIDE;
+  virtual void OnAudioStreamStopped(
+      int render_process_id,
+      int render_frame_id,
+      int stream_id) OVERRIDE;
   virtual void OnCreatingAudioStream(int render_process_id,
                                      int render_view_id) OVERRIDE;
 
@@ -76,20 +77,6 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
 
   MediaCaptureDevicesDispatcher();
   virtual ~MediaCaptureDevicesDispatcher();
-
-  // Called by the MediaObserver() functions, executed on UI thread.
-  void UpdateAudioDevicesOnUIThread(const content::MediaStreamDevices& devices);
-  void UpdateVideoDevicesOnUIThread(const content::MediaStreamDevices& devices);
-
-  // A list of cached audio capture devices.
-  content::MediaStreamDevices audio_devices_;
-
-  // A list of cached video capture devices.
-  content::MediaStreamDevices video_devices_;
-
-  // Flag to indicate if device enumeration has been done/doing.
-  // Only accessed on UI thread.
-  bool devices_enumerated_;
 
   // Flag used by unittests to disable device enumeration.
   bool is_device_enumeration_disabled_;
