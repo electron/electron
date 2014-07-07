@@ -155,7 +155,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
       bool set_protocol = job_factory->SetProtocolHandler(
           it->first, it->second.release());
       DCHECK(set_protocol);
-      (void)set_protocol; // silence unused-variable warning in Release builds on Windows
+      (void)set_protocol;  // silence unused-variable warning in Release builds on Windows
     }
     protocol_handlers_.clear();
     job_factory->SetProtocolHandler(
