@@ -14,6 +14,7 @@
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents_view.h"
 #include "native_mate/dictionary.h"
+#include "ui/base/hit_test.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/views/background.h"
@@ -335,8 +336,18 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
     gfx::NativeView child,
     const gfx::Point& location) {
   // App window should claim mouse events that fall within the draggable region.
-  return !draggable_region_.get() ||
-         !draggable_region_->contains(location.x(), location.y());
+  if (draggable_region_.get() &&
+      draggable_region_->contains(location.x(), location.y()))
+    return false;
+
+  // And the events on border for dragging resizable frameless window.
+  if (!has_frame_ && CanResize()) {
+    LinuxFrameView* frame = static_cast<LinuxFrameView*>(
+        window_->non_client_view()->frame_view());
+    return frame->ResizingBorderHitTest(location) == HTNOWHERE;
+  }
+
+  return true;
 }
 
 views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {

@@ -56,6 +56,9 @@ class LinuxFrameView : public views::NonClientFrameView,
   virtual void ButtonPressed(views::Button* sender,
                              const ui::Event& event) OVERRIDE;
 
+  // Returns whether the |point| is on frameless window's resizing border.
+  int ResizingBorderHitTest(const gfx::Point& point);
+
  private:
   // Returns the thickness of the border that makes up the window frame edges.
   // This does not include any client edge.

@@ -84,7 +84,7 @@ LinuxFrameView::LinuxFrameView()
       restore_button_(NULL),
       close_button_(NULL),
       should_show_maximize_button_(false),
-      frame_background_(new views::FrameBackground()) {
+      frame_background_(new views::FrameBackground) {
 }
 
 LinuxFrameView::~LinuxFrameView() {
@@ -118,6 +118,12 @@ void LinuxFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
   }
 }
 
+int LinuxFrameView::ResizingBorderHitTest(const gfx::Point& point) {
+  return GetHTComponentForFrame(point, FrameBorderThickness(),
+      FrameBorderThickness() + kClientEdgeThickness, kResizeAreaCornerSize,
+      kResizeAreaCornerSize, true);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // LinuxFrameView, NonClientFrameView implementation:
 
@@ -145,6 +151,13 @@ int LinuxFrameView::NonClientHitTest(const gfx::Point& point) {
   SkRegion* draggable_region = window_->draggable_region();
   if (draggable_region && draggable_region->contains(point.x(), point.y()))
     return HTCAPTION;
+
+  // Support resizing frameless window by dragging the border.
+  if (!window_->has_frame() && frame_->widget_delegate()->CanResize()) {
+    int window_component = ResizingBorderHitTest(point);
+    if (window_component != HTNOWHERE)
+      return window_component;
+  }
 
   int frame_component = frame_->client_view()->NonClientHitTest(point);
 
