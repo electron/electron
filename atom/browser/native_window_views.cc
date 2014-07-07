@@ -140,6 +140,10 @@ void NativeWindowViews::Unmaximize() {
   window_->Restore();
 }
 
+bool NativeWindowViews::IsMaximized() {
+  return window_->IsMaximized();
+}
+
 void NativeWindowViews::Minimize() {
   window_->Minimize();
 }

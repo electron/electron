@@ -294,6 +294,10 @@ void NativeWindowWin::Unmaximize() {
   window_->Restore();
 }
 
+bool NativeWindowWin::IsMaximized() {
+  return window_->IsMaximized();
+}
+
 bool NativeWindowWin::IsVisible() {
   return window_->IsVisible();
 }
