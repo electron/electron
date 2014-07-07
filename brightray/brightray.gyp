@@ -15,15 +15,18 @@
         '<(libchromiumcontent_include_dir)/skia/config',
         '<(libchromiumcontent_include_dir)/third_party/skia/include/core',
         '<(libchromiumcontent_include_dir)/third_party/WebKit',
+        '<(libchromiumcontent_library_dir)/gen',
       ],
       'direct_dependent_settings': {
         'include_dirs': [
+          '.',
           '..',
           '<(libchromiumcontent_include_dir)',
           '<(libchromiumcontent_include_dir)/skia/config',
           '<(libchromiumcontent_include_dir)/third_party/skia/include/core',
           '<(libchromiumcontent_include_dir)/third_party/icu/source/common',
           '<(libchromiumcontent_include_dir)/third_party/WebKit',
+          '<(libchromiumcontent_library_dir)/gen',
         ],
       },
       'sources': [
