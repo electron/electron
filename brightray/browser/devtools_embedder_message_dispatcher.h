@@ -34,6 +34,7 @@ class DevToolsEmbedderMessageDispatcher {
     virtual void CloseWindow() = 0;
     virtual void SetContentsResizingStrategy(
         const gfx::Insets& insets, const gfx::Size& min_size) = 0;
+    virtual void InspectElementCompleted() = 0;
     virtual void MoveWindow(int x, int y) = 0;
     virtual void SetIsDocked(bool docked) = 0;
     virtual void OpenInNewTab(const std::string& url) = 0;
@@ -45,12 +46,17 @@ class DevToolsEmbedderMessageDispatcher {
     virtual void RequestFileSystems() = 0;
     virtual void AddFileSystem() = 0;
     virtual void RemoveFileSystem(const std::string& file_system_path) = 0;
+    virtual void UpgradeDraggedFileSystemPermissions(
+        const std::string& file_system_url) = 0;
     virtual void IndexPath(int request_id,
                            const std::string& file_system_path) = 0;
     virtual void StopIndexing(int request_id) = 0;
     virtual void SearchInPath(int request_id,
                               const std::string& file_system_path,
                               const std::string& query) = 0;
+    virtual void ZoomIn() = 0;
+    virtual void ZoomOut() = 0;
+    virtual void ResetZoom() = 0;
   };
 
   explicit DevToolsEmbedderMessageDispatcher(Delegate* delegate);

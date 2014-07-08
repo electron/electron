@@ -66,6 +66,7 @@ class InspectableWebContentsImpl :
   virtual void CloseWindow() OVERRIDE;
   virtual void SetContentsResizingStrategy(
       const gfx::Insets& insets, const gfx::Size& min_size) OVERRIDE;
+  virtual void InspectElementCompleted() OVERRIDE;
   virtual void MoveWindow(int x, int y) OVERRIDE;
   virtual void SetIsDocked(bool docked) OVERRIDE;
   virtual void OpenInNewTab(const std::string& url) OVERRIDE;
@@ -77,12 +78,17 @@ class InspectableWebContentsImpl :
   virtual void RequestFileSystems() OVERRIDE;
   virtual void AddFileSystem() OVERRIDE;
   virtual void RemoveFileSystem(const std::string& file_system_path) OVERRIDE;
+  virtual void UpgradeDraggedFileSystemPermissions(
+      const std::string& file_system_url) OVERRIDE;
   virtual void IndexPath(int request_id,
                          const std::string& file_system_path) OVERRIDE;
   virtual void StopIndexing(int request_id) OVERRIDE;
   virtual void SearchInPath(int request_id,
                             const std::string& file_system_path,
                             const std::string& query) OVERRIDE;
+  virtual void ZoomIn() OVERRIDE;
+  virtual void ZoomOut() OVERRIDE;
+  virtual void ResetZoom() OVERRIDE;
 
   // content::DevToolsFrontendHostDelegate
 

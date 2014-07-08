@@ -198,6 +198,9 @@ DevToolsEmbedderMessageDispatcher::DevToolsEmbedderMessageDispatcher(
   RegisterHandler("setContentsResizingStrategy",
       BindToListParser(base::Bind(&Delegate::SetContentsResizingStrategy,
                                   base::Unretained(delegate))));
+  RegisterHandler("inspectElementCompleted",
+      BindToListParser(base::Bind(&Delegate::InspectElementCompleted,
+                                  base::Unretained(delegate))));
   RegisterHandler("moveWindowBy",
       BindToListParser(base::Bind(&Delegate::MoveWindow,
                                   base::Unretained(delegate))));
@@ -222,6 +225,9 @@ DevToolsEmbedderMessageDispatcher::DevToolsEmbedderMessageDispatcher(
   RegisterHandler("removeFileSystem",
       BindToListParser(base::Bind(&Delegate::RemoveFileSystem,
                                   base::Unretained(delegate))));
+  RegisterHandler("upgradeDraggedFileSystemPermissions",
+      BindToListParser(base::Bind(&Delegate::UpgradeDraggedFileSystemPermissions,
+                                  base::Unretained(delegate))));
   RegisterHandler("indexPath",
       BindToListParser(base::Bind(&Delegate::IndexPath,
                                   base::Unretained(delegate))));
@@ -230,6 +236,15 @@ DevToolsEmbedderMessageDispatcher::DevToolsEmbedderMessageDispatcher(
                                   base::Unretained(delegate))));
   RegisterHandler("searchInPath",
       BindToListParser(base::Bind(&Delegate::SearchInPath,
+                                  base::Unretained(delegate))));
+  RegisterHandler("zoomIn",
+      BindToListParser(base::Bind(&Delegate::ZoomIn,
+                                  base::Unretained(delegate))));
+  RegisterHandler("zoomOut",
+      BindToListParser(base::Bind(&Delegate::ZoomOut,
+                                  base::Unretained(delegate))));
+  RegisterHandler("resetZoom",
+      BindToListParser(base::Bind(&Delegate::ResetZoom,
                                   base::Unretained(delegate))));
 }
 

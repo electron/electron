@@ -155,6 +155,9 @@ void InspectableWebContentsImpl::SetContentsResizingStrategy(
   view_->SetContentsResizingStrategy(contents_resizing_strategy_);
 }
 
+void InspectableWebContentsImpl::InspectElementCompleted() {
+}
+
 void InspectableWebContentsImpl::MoveWindow(int x, int y) {
 }
 
@@ -187,6 +190,10 @@ void InspectableWebContentsImpl::RemoveFileSystem(
     const std::string& file_system_path) {
 }
 
+void InspectableWebContentsImpl::UpgradeDraggedFileSystemPermissions(
+    const std::string& file_system_url) {
+}
+
 void InspectableWebContentsImpl::IndexPath(
     int request_id, const std::string& file_system_path) {
 }
@@ -198,6 +205,15 @@ void InspectableWebContentsImpl::SearchInPath(
     int request_id,
     const std::string& file_system_path,
     const std::string& query) {
+}
+
+void InspectableWebContentsImpl::ZoomIn() {
+}
+
+void InspectableWebContentsImpl::ZoomOut() {
+}
+
+void InspectableWebContentsImpl::ResetZoom() {
 }
 
 void InspectableWebContentsImpl::DispatchOnEmbedder(
