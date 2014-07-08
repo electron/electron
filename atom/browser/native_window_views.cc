@@ -62,6 +62,8 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   options.Get(switches::kResizable, &resizable_);
   options.Get(switches::kTitle, &title_);
 
+  window_->AddObserver(this);
+
   views::Widget::InitParams params;
   params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
   params.delegate = this;
@@ -95,6 +97,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
 }
 
 NativeWindowViews::~NativeWindowViews() {
+  window_->RemoveObserver(this);
 }
 
 void NativeWindowViews::Close() {
@@ -289,6 +292,17 @@ void NativeWindowViews::UpdateDraggableRegions(
   }
 
   draggable_region_.reset(draggable_region);
+}
+
+void NativeWindowViews::OnWidgetActivationChanged(
+    views::Widget* widget, bool active) {
+  if (widget != window_.get())
+    return;
+
+  if (active)
+    NotifyWindowFocus();
+  else
+    NotifyWindowBlur();
 }
 
 void NativeWindowViews::DeleteDelegate() {

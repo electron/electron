@@ -12,6 +12,7 @@
 
 #include "atom/browser/ui/accelerator_util.h"
 #include "ui/views/widget/widget_delegate.h"
+#include "ui/views/widget/widget_observer.h"
 
 namespace views {
 class UnhandledKeyboardEventHandler;
@@ -21,7 +22,8 @@ class Widget;
 namespace atom {
 
 class NativeWindowViews : public NativeWindow,
-                          public views::WidgetDelegateView {
+                          public views::WidgetDelegateView,
+                          public views::WidgetObserver {
  public:
   explicit NativeWindowViews(content::WebContents* web_contents,
                             const mate::Dictionary& options);
@@ -73,6 +75,10 @@ class NativeWindowViews : public NativeWindow,
   // NativeWindow:
   virtual void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) OVERRIDE;
+
+  // views::WidgetObserver:
+  virtual void OnWidgetActivationChanged(
+      views::Widget* widget, bool active) OVERRIDE;
 
   // views::WidgetDelegate:
   virtual void DeleteDelegate() OVERRIDE;

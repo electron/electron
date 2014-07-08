@@ -199,7 +199,11 @@ views::View* MessageDialog::GetInitiallyFocusedView() {
 }
 
 ui::ModalType MessageDialog::GetModalType() const {
+#if defined(USE_X11)
+  return ui::MODAL_TYPE_NONE;
+#else
   return ui::MODAL_TYPE_WINDOW;
+#endif
 }
 
 gfx::Size MessageDialog::GetPreferredSize() {
