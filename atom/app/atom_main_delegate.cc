@@ -11,9 +11,7 @@
 #include "base/command_line.h"
 #include "base/debug/stack_trace.h"
 #include "base/logging.h"
-#include "base/path_service.h"
 #include "content/public/common/content_switches.h"
-#include "ui/base/resource/resource_bundle.h"
 
 namespace atom {
 
@@ -48,17 +46,11 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   base::debug::EnableInProcessStackDumping();
 #endif
 
-#if defined(OS_MACOSX)
-  OverrideChildProcessPath();
-  OverrideFrameworkBundlePath();
-#endif
-
-  SetContentClient(&content_client_);
-  return false;
+  return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
 
 void AtomMainDelegate::PreSandboxStartup() {
-  InitializeResourceBundle();
+  brightray::MainDelegate::PreSandboxStartup();
 
   CommandLine* command_line = CommandLine::ForCurrentProcess();
   std::string process_type = command_line->GetSwitchValueASCII(
@@ -76,19 +68,6 @@ void AtomMainDelegate::PreSandboxStartup() {
 
   // Add a flag to mark the end of switches added by atom-shell.
   command_line->AppendSwitch("atom-shell-switches-end");
-}
-
-void AtomMainDelegate::InitializeResourceBundle() {
-  base::FilePath path;
-#if defined(OS_MACOSX)
-  path = GetResourcesPakFilePath();
-#else
-  base::FilePath pak_dir;
-  PathService::Get(base::DIR_MODULE, &pak_dir);
-  path = pak_dir.Append(FILE_PATH_LITERAL("content_shell.pak"));
-#endif
-
-  ui::ResourceBundle::InitSharedInstanceWithPakPath(path);
 }
 
 content::ContentBrowserClient* AtomMainDelegate::CreateContentBrowserClient() {

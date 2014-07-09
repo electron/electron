@@ -4,16 +4,11 @@
 
 #include "atom/app/atom_main_delegate.h"
 
-#import "base/mac/bundle_locations.h"
-#import "base/mac/foundation_util.h"
-#import "base/mac/mac_util.h"
-#include "base/command_line.h"
+#include "base/mac/bundle_locations.h"
+#include "base/files/file_path.h"
 #include "base/path_service.h"
-#include "base/strings/sys_string_conversions.h"
+#include "brightray/common/mac/main_application_bundle.h"
 #include "content/public/common/content_paths.h"
-#include "content/public/common/content_switches.h"
-#include "vendor/brightray/common/application_info.h"
-#include "vendor/brightray/common/mac/main_application_bundle.h"
 
 namespace atom {
 
@@ -25,12 +20,6 @@ base::FilePath GetFrameworksPath() {
 }
 
 }  // namespace
-
-base::FilePath AtomMainDelegate::GetResourcesPakFilePath() {
-  NSString* path = [base::mac::FrameworkBundle()
-      pathForResource:@"content_shell" ofType:@"pak"];
-  return base::mac::NSStringToFilePath(path);
-}
 
 void AtomMainDelegate::OverrideFrameworkBundlePath() {
   base::mac::SetOverrideFrameworkBundlePath(
