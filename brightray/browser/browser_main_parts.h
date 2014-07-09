@@ -13,7 +13,9 @@
 namespace brightray {
 class ViewsDelegate;
 }
+#endif
 
+#if defined(USE_AURA) && defined(USE_X11)
 namespace wm {
 class WMState;
 }
@@ -58,6 +60,9 @@ class BrowserMainParts : public content::BrowserMainParts {
 
 #if defined(TOOLKIT_VIEWS)
   scoped_ptr<ViewsDelegate> views_delegate_;
+#endif
+
+#if defined(USE_AURA) && defined(USE_X11)
   scoped_ptr<wm::WMState> wm_state_;
 #endif
 

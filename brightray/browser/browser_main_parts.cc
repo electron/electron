@@ -17,11 +17,11 @@
 #if defined(USE_AURA) && defined(USE_X11)
 #include "chrome/browser/ui/libgtk2ui/gtk2_ui.h"
 #include "ui/views/linux_ui/linux_ui.h"
+#include "ui/wm/core/wm_state.h"
 #endif
 
 #if defined(TOOLKIT_VIEWS)
 #include "browser/views/views_delegate.h"
-#include "ui/wm/core/wm_state.h"
 #endif
 
 namespace brightray {
@@ -45,11 +45,11 @@ void BrowserMainParts::PreEarlyInitialization() {
 void BrowserMainParts::ToolkitInitialized() {
 #if defined(USE_AURA) && defined(USE_X11)
   views::LinuxUI::instance()->Initialize();
+  wm_state_.reset(new wm::WMState);
 #endif
 
 #if defined(TOOLKIT_VIEWS)
   views_delegate_.reset(new ViewsDelegate);
-  wm_state_.reset(new wm::WMState);
 #endif
 }
 
