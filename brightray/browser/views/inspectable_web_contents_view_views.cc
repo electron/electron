@@ -23,10 +23,14 @@ class DevToolsWindowDelegate : public views::ClientView,
         shell_(shell),
         view_(view),
         widget_(widget),
-        title_(base::ASCIIToUTF16("Developer Tools")) {}
+        title_(base::ASCIIToUTF16("Developer Tools")) {
+    // A WidgetDelegate should be deleted on DeleteDelegate.
+    set_owned_by_client();
+  }
   virtual ~DevToolsWindowDelegate() {}
 
   // views::WidgetDelegate:
+  virtual void DeleteDelegate() OVERRIDE { delete this; }
   virtual views::View* GetInitiallyFocusedView() OVERRIDE { return view_; }
   virtual bool CanResize() const OVERRIDE { return true; }
   virtual bool CanMaximize() const OVERRIDE { return false; }
@@ -136,8 +140,6 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked) {
 
     views::Widget::InitParams params;
     params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
-    // The delegate is also a ClientView, so it would deleted when the view
-    // destructs, no need to delete it in DeleteDelegate.
     params.delegate = new DevToolsWindowDelegate(this,
                                                  devtools_window_web_view_,
                                                  devtools_window_.get());
