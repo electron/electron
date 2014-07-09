@@ -11,6 +11,7 @@
 #include "browser/inspectable_web_contents_delegate.h"
 #include "browser/inspectable_web_contents_view.h"
 
+#include "base/json/json_reader.h"
 #include "base/prefs/pref_registry_simple.h"
 #include "base/prefs/pref_service.h"
 #include "base/strings/stringprintf.h"
@@ -21,6 +22,7 @@
 #include "content/public/browser/devtools_http_handler.h"
 #include "content/public/browser/devtools_manager.h"
 #include "content/public/browser/web_contents_view.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 
 namespace brightray {
@@ -29,6 +31,10 @@ namespace {
 
 const char kChromeUIDevToolsURL[] = "chrome-devtools://devtools/devtools.html?can_dock=true";
 const char kDevToolsBoundsPref[] = "brightray.devtools.bounds";
+
+const char kFrontendHostId[] = "id";
+const char kFrontendHostMethod[] = "method";
+const char kFrontendHostParams[] = "params";
 
 void RectToDictionary(const gfx::Rect& bounds, base::DictionaryValue* dict) {
   dict->SetInteger("x", bounds.x());
@@ -181,6 +187,8 @@ void InspectableWebContentsImpl::AppendToFile(
 }
 
 void InspectableWebContentsImpl::RequestFileSystems() {
+    devtools_web_contents()->GetMainFrame()->ExecuteJavaScript(
+        base::ASCIIToUTF16("InspectorFrontendAPI.fileSystemsLoaded([])"));
 }
 
 void InspectableWebContentsImpl::AddFileSystem() {
@@ -218,7 +226,30 @@ void InspectableWebContentsImpl::ResetZoom() {
 
 void InspectableWebContentsImpl::DispatchOnEmbedder(
     const std::string& message) {
-  embedder_message_dispatcher_->Dispatch(message);
+  std::string method;
+  base::ListValue empty_params;
+  base::ListValue* params = &empty_params;
+
+  base::DictionaryValue* dict = NULL;
+  scoped_ptr<base::Value> parsed_message(base::JSONReader::Read(message));
+  if (!parsed_message ||
+      !parsed_message->GetAsDictionary(&dict) ||
+      !dict->GetString(kFrontendHostMethod, &method) ||
+      (dict->HasKey(kFrontendHostParams) &&
+          !dict->GetList(kFrontendHostParams, &params))) {
+    LOG(ERROR) << "Invalid message was sent to embedder: " << message;
+    return;
+  }
+
+  int id = 0;
+  dict->GetInteger(kFrontendHostId, &id);
+
+  std::string error = embedder_message_dispatcher_->Dispatch(method, params);
+  if (id) {
+    std::string ack = base::StringPrintf(
+        "InspectorFrontendAPI.embedderMessageAck(%d, \"%s\");", id, error.c_str());
+    devtools_web_contents()->GetMainFrame()->ExecuteJavaScript(base::UTF8ToUTF16(ack));
+  }
 }
 
 void InspectableWebContentsImpl::InspectedContentsClosing() {

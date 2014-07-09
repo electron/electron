@@ -5,15 +5,11 @@
 #include "browser/devtools_embedder_message_dispatcher.h"
 
 #include "base/bind.h"
-#include "base/json/json_reader.h"
 #include "base/values.h"
 
 namespace brightray {
 
 namespace {
-
-static const char kFrontendHostMethod[] = "method";
-static const char kFrontendHostParams[] = "params";
 
 bool GetValue(const base::ListValue& list, int pos, std::string& value) {
   return list.GetString(pos, &value);
@@ -250,30 +246,15 @@ DevToolsEmbedderMessageDispatcher::DevToolsEmbedderMessageDispatcher(
 
 DevToolsEmbedderMessageDispatcher::~DevToolsEmbedderMessageDispatcher() {}
 
-void DevToolsEmbedderMessageDispatcher::Dispatch(const std::string& message) {
-  std::string method;
-  base::ListValue empty_params;
-  base::ListValue* params = &empty_params;
-
-  base::DictionaryValue* dict;
-  scoped_ptr<base::Value> parsed_message(base::JSONReader::Read(message));
-  if (!parsed_message ||
-      !parsed_message->GetAsDictionary(&dict) ||
-      !dict->GetString(kFrontendHostMethod, &method) ||
-      (dict->HasKey(kFrontendHostParams) &&
-          !dict->GetList(kFrontendHostParams, &params))) {
-    LOG(ERROR) << "Cannot parse frontend host message: " << message;
-    return;
-  }
-
+std::string DevToolsEmbedderMessageDispatcher::Dispatch(
+    const std::string& method, base::ListValue* params) {
   HandlerMap::iterator it = handlers_.find(method);
-  if (it == handlers_.end()) {
-    LOG(ERROR) << "Unsupported frontend host method: " << message;
-    return;
-  }
+  if (it == handlers_.end())
+    return "Unsupported frontend host method: " + method;
 
   if (!it->second.Run(*params))
-    LOG(ERROR) << "Invalid frontend host message parameters: " << message;
+    return "Invalid frontend host message parameters: " + method;
+  return "";
 }
 
 void DevToolsEmbedderMessageDispatcher::RegisterHandler(

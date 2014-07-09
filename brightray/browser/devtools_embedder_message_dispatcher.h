@@ -63,7 +63,7 @@ class DevToolsEmbedderMessageDispatcher {
 
   ~DevToolsEmbedderMessageDispatcher();
 
-  void Dispatch(const std::string& message);
+  std::string Dispatch(const std::string& method, base::ListValue* params);
 
  private:
   typedef base::Callback<bool (const base::ListValue&)> Handler;
