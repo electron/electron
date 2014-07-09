@@ -531,8 +531,11 @@ void NativeWindow::DevToolsSaveToFile(const std::string& url,
     path = it->second;
   } else {
     base::FilePath default_path(base::FilePath::FromUTF8Unsafe(url));
-    if (!file_dialog::ShowSaveDialog(this, url, default_path, &path))
+    if (!file_dialog::ShowSaveDialog(this, url, default_path, &path)) {
+      base::StringValue url_value(url);
+      CallDevToolsFunction("InspectorFrontendAPI.canceledSaveURL", &url_value);
       return;
+    }
   }
 
   saved_files_[url] = path;
@@ -541,9 +544,6 @@ void NativeWindow::DevToolsSaveToFile(const std::string& url,
   // Notify devtools.
   base::StringValue url_value(url);
   CallDevToolsFunction("InspectorFrontendAPI.savedURL", &url_value);
-
-  // TODO(zcbenz): In later Chrome we need to call canceledSaveURL when the save
-  // failed.
 }
 
 void NativeWindow::DevToolsAppendToFile(const std::string& url,
@@ -607,8 +607,9 @@ void NativeWindow::CallDevToolsFunction(const std::string& function_name,
       }
     }
   }
-  GetDevToolsWebContents()->GetRenderViewHost()->ExecuteJavascriptInWebFrame(
-      base::string16(), base::UTF8ToUTF16(function_name + "(" + params + ");"));
+  base::string16 javascript =
+      base::UTF8ToUTF16(function_name + "(" + params + ");");
+  GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(javascript);
 }
 
 }  // namespace atom
