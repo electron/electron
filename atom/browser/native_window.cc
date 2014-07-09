@@ -329,10 +329,6 @@ void NativeWindow::AppendExtraCommandLineSwitches(
 }
 
 void NativeWindow::OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs) {
-  // FIXME Disable accelerated composition in frameless window.
-  if (!has_frame_)
-    prefs->accelerated_compositing_enabled = false;
-
   bool b;
   std::vector<base::FilePath> list;
   if (!web_preferences_)
