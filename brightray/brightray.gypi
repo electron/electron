@@ -268,6 +268,7 @@
           4481, # nonstandard extension used: override specifier 'override'
           4512, # assignment operator could not be generated
           4702, # unreachable code
+          4819, # The file contains a character that cannot be represented in the current code page
         ],
       },
     }],
