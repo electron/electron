@@ -7,8 +7,6 @@
 #include "browser/browser_context.h"
 #include "browser/web_ui_controller_factory.h"
 #include "net/proxy/proxy_resolver_v8.h"
-#include "ui/gfx/screen.h"
-#include "ui/views/widget/desktop_aura/desktop_screen.h"
 
 #if defined(USE_AURA)
 #include "ui/aura/env.h"
@@ -69,10 +67,6 @@ void BrowserMainParts::PreMainMessageLoopRun() {
       new WebUIControllerFactory(browser_context_.get()));
   content::WebUIControllerFactory::RegisterFactory(
       web_ui_controller_factory_.get());
-
-#if defined(OS_WIN)
-  gfx::Screen::SetScreenInstance(gfx::SCREEN_TYPE_NATIVE, views::CreateDesktopScreen());
-#endif
 }
 
 void BrowserMainParts::PostMainMessageLoopRun() {
