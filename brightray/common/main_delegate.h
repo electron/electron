@@ -38,6 +38,14 @@ class MainDelegate : public content::ContentMainDelegate {
   // included in the ui::ResourceBundle.
   virtual void AddPakPaths(std::vector<base::FilePath>* pak_paths) {}
 
+#if defined(OS_MACOSX)
+  // Subclasses can override this to custom the paths of child process and
+  // framework bundle.
+  virtual base::FilePath GetResourcesPakFilePath();
+  virtual void OverrideChildProcessPath();
+  virtual void OverrideFrameworkBundlePath();
+#endif
+
   virtual bool BasicStartupComplete(int* exit_code) OVERRIDE;
   virtual void PreSandboxStartup() OVERRIDE;
 
@@ -45,11 +53,6 @@ class MainDelegate : public content::ContentMainDelegate {
   virtual content::ContentBrowserClient* CreateContentBrowserClient() OVERRIDE;
 
   void InitializeResourceBundle();
-#if defined(OS_MACOSX)
-  static base::FilePath GetResourcesPakFilePath();
-  static void OverrideChildProcessPath();
-  static void OverrideFrameworkBundlePath();
-#endif
 
   scoped_ptr<ContentClient> content_client_;
   scoped_ptr<BrowserClient> browser_client_;
