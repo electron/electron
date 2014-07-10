@@ -70,6 +70,7 @@ class NativeWindowViews : public NativeWindow,
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
 
   SkRegion* draggable_region() const { return draggable_region_.get(); }
+  views::Widget* widget() const { return window_.get(); }
 
  private:
   // NativeWindow:
