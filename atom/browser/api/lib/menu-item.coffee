@@ -44,9 +44,7 @@ class MenuItem
     Object.defineProperty this, name,
       enumerable: true
       get: => v8Util.getHiddenValue this, name
-      set: (val) =>
-        v8Util.setHiddenValue this, name, val
-        @menu?._updateStates()
+      set: (val) => v8Util.setHiddenValue this, name, val
 
   overrideReadOnlyProperty: (name, defaultValue=null) ->
     this[name] ?= defaultValue

@@ -20,9 +20,12 @@ namespace gfx {
 class Point;
 }
 
+namespace views {
+class MenuRunner;
+}
+
 namespace atom {
 
-class Menu2;
 class NotifyIconHost;
 
 class NotifyIcon : public TrayIcon {
@@ -69,7 +72,7 @@ class NotifyIcon : public TrayIcon {
 
   // The context menu.
   ui::SimpleMenuModel* menu_model_;
-  scoped_ptr<atom::Menu2> menu_;
+  scoped_ptr<views::MenuRunner> menu_runner_;
 
   DISALLOW_COPY_AND_ASSIGN(NotifyIcon);
 };

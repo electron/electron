@@ -439,7 +439,6 @@
               '-loleacc.lib',
               '-lComdlg32.lib',
               '-lWininet.lib',
-              '<(atom_source_root)/<(libchromiumcontent_library_dir)/chromiumviews.lib',
             ],
           },
           'dependencies': [

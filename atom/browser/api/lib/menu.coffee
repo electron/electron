@@ -76,9 +76,6 @@ Menu::insert = (pos, item) ->
             v8Util.setHiddenValue otherItem, 'checked', false
           v8Util.setHiddenValue item, 'checked', true
 
-          # Update states when clicked on Windows.
-          @_updateStates() if process.platform is 'win32'
-
       @insertRadioItem pos, item.commandId, item.label, item.groupId
 
   @setSublabel pos, item.sublabel if item.sublabel?
