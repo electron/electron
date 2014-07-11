@@ -162,8 +162,7 @@ void SetMenuItemID(DbusmenuMenuitem* item, int id) {
 GlobalMenuBarX11::GlobalMenuBarX11(NativeWindowViews* window)
     : window_(window),
       xid_(window_->GetNativeWindow()->GetHost()->GetAcceleratedWidget()),
-      server_(NULL),
-      root_item_(NULL) {
+      server_(NULL) {
   EnsureMethodsLoaded();
   if (server_new)
     InitServer(xid_);
@@ -187,13 +186,13 @@ void GlobalMenuBarX11::SetMenu(ui::MenuModel* menu_model) {
   if (!server_)
     return;
 
-  root_item_ = menuitem_new();
-  menuitem_property_set(root_item_, kPropertyLabel, "Root");
-  menuitem_property_set_bool(root_item_, kPropertyVisible, true);
-  BuildMenuFromModel(menu_model, root_item_);
+  DbusmenuMenuitem* root_item = menuitem_new();
+  menuitem_property_set(root_item, kPropertyLabel, "Root");
+  menuitem_property_set_bool(root_item, kPropertyVisible, true);
+  BuildMenuFromModel(menu_model, root_item);
 
-  server_set_root(server_, root_item_);
-  g_object_unref(root_item_);
+  server_set_root(server_, root_item);
+  g_object_unref(root_item);
 }
 
 void GlobalMenuBarX11::InitServer(unsigned long xid) {

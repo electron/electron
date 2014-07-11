@@ -63,7 +63,6 @@ class GlobalMenuBarX11 {
   int xid_;
 
   DbusmenuServer* server_;
-  DbusmenuMenuitem* root_item_;
 
   DISALLOW_COPY_AND_ASSIGN(GlobalMenuBarX11);
 };
