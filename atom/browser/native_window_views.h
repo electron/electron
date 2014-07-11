@@ -15,7 +15,6 @@
 #include "ui/views/widget/widget_observer.h"
 
 namespace views {
-class DesktopWindowTreeHostX11;
 class UnhandledKeyboardEventHandler;
 class Widget;
 }
@@ -75,10 +74,6 @@ class NativeWindowViews : public NativeWindow,
   SkRegion* draggable_region() const { return draggable_region_.get(); }
   views::Widget* widget() const { return window_.get(); }
 
-#if defined(USE_X11)
-  views::DesktopWindowTreeHostX11* host() const { return host_; }
-#endif
-
  private:
   // NativeWindow:
   virtual void UpdateDraggableRegions(
@@ -122,7 +117,6 @@ class NativeWindowViews : public NativeWindow,
   views::View* web_view_;  // Managed by inspectable_web_contents_.
 
 #if defined(USE_X11)
-  views::DesktopWindowTreeHostX11* host_;  // Managed by native_widget.
   scoped_ptr<GlobalMenuBarX11> global_menu_bar_;
 #endif
 
