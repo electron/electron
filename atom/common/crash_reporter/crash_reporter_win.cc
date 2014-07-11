@@ -40,14 +40,13 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
   skip_system_crash_handler_ = skip_system_crash_handler;
 
   base::FilePath temp_dir;
-  if (!file_util::GetTempDir(&temp_dir)) {
+  if (!base::GetTempDir(&temp_dir)) {
     LOG(ERROR) << "Cannot get temp directory";
     return;
   }
 
-  base::string16 pipe_name = ReplaceStringPlaceholders(kPipeNameFormat,
-                                                 UTF8ToUTF16(product_name),
-                                                 NULL);
+  base::string16 pipe_name = ReplaceStringPlaceholders(
+      kPipeNameFormat, base::UTF8ToUTF16(product_name), NULL);
 
   // Wait until the crash service is started.
   HANDLE waiting_event =
@@ -104,13 +103,13 @@ google_breakpad::CustomClientInfo* CrashReporterWin::GetCustomInfo(
   custom_info_entries_.push_back(google_breakpad::CustomInfoEntry(
       L"prod", L"Atom-Shell"));
   custom_info_entries_.push_back(google_breakpad::CustomInfoEntry(
-      L"ver", UTF8ToWide(version).c_str()));
+      L"ver", base::UTF8ToWide(version).c_str()));
 
   for (StringMap::const_iterator iter = upload_parameters_.begin();
        iter != upload_parameters_.end(); ++iter) {
     custom_info_entries_.push_back(google_breakpad::CustomInfoEntry(
-        UTF8ToWide(iter->first).c_str(),
-        UTF8ToWide(iter->second).c_str()));
+        base::UTF8ToWide(iter->first).c_str(),
+        base::UTF8ToWide(iter->second).c_str()));
   }
 
   custom_info_.entries = &custom_info_entries_.front();

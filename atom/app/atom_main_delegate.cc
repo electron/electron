@@ -33,8 +33,6 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 #else
   settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
 #endif
-  settings.dcheck_state =
-      logging::DISABLE_DCHECK_FOR_NON_OFFICIAL_RELEASE_BUILDS;
   logging::InitLogging(settings);
 #endif  // defined(OS_WIN)
 

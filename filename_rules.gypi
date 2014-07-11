@@ -34,6 +34,9 @@
         ['exclude', '_linux(_unittest)?\\.(h|cc)$'],
         ['exclude', '(^|/)linux_[^/]*\\.(h|cc)$'],
         ['exclude', '(^|/)linux/'],
+        ['exclude', '_x11(_unittest)?\\.(h|cc)$'],
+        ['exclude', '(^|/)x11_[^/]*\\.(h|cc)$'],
+        ['exclude', '(^|/)x11/'],
       ],
     }],
     ['OS!="android"', {

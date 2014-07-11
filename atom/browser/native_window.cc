@@ -507,7 +507,7 @@ void NativeWindow::Observe(int type,
 
     if (title->first) {
       bool prevent_default = false;
-      std::string text = UTF16ToUTF8(title->first->GetTitle());
+      std::string text = base::UTF16ToUTF8(title->first->GetTitle());
       FOR_EACH_OBSERVER(NativeWindowObserver,
                         observers_,
                         OnPageTitleUpdated(&prevent_default, text));

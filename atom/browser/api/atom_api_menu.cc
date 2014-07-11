@@ -251,9 +251,6 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
       .SetMethod("_attachToWindow", &Menu::AttachToWindow)
-#if defined(OS_WIN)
-      .SetMethod("_updateStates", &Menu::UpdateStates)
-#endif
       .SetMethod("_popup", &Menu::Popup);
 }
 

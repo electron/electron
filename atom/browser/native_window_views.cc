@@ -378,12 +378,14 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
       draggable_region_->contains(location.x(), location.y()))
     return false;
 
+#if defined(USE_X11)
   // And the events on border for dragging resizable frameless window.
   if (!has_frame_ && CanResize()) {
     LinuxFrameView* frame = static_cast<LinuxFrameView*>(
         window_->non_client_view()->frame_view());
     return frame->ResizingBorderHitTest(location) == HTNOWHERE;
   }
+#endif
 
   return true;
 }

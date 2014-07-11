@@ -44,7 +44,7 @@ std::string Browser::GetExecutableFileVersion() const {
   if (PathService::Get(base::FILE_EXE, &path)) {
     scoped_ptr<FileVersionInfo> version_info(
         FileVersionInfo::CreateFileVersionInfo(path));
-    return UTF16ToUTF8(version_info->product_version());
+    return base::UTF16ToUTF8(version_info->product_version());
   }
 
   return ATOM_VERSION_STRING;
@@ -55,7 +55,7 @@ std::string Browser::GetExecutableFileProductName() const {
   if (PathService::Get(base::FILE_EXE, &path)) {
     scoped_ptr<FileVersionInfo> version_info(
         FileVersionInfo::CreateFileVersionInfo(path));
-    return UTF16ToUTF8(version_info->product_name());
+    return base::UTF16ToUTF8(version_info->product_name());
   }
 
   return "Atom-Shell";

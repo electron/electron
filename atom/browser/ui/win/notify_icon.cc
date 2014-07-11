@@ -107,7 +107,7 @@ void NotifyIcon::SetToolTip(const std::string& tool_tip) {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
   icon_data.uFlags = NIF_TIP;
-  wcscpy_s(icon_data.szTip, UTF8ToUTF16(tool_tip).c_str());
+  wcscpy_s(icon_data.szTip, base::UTF8ToUTF16(tool_tip).c_str());
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
     LOG(WARNING) << "Unable to set tooltip for status tray icon";

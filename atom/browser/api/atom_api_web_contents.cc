@@ -193,14 +193,14 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
 void WebContents::OnRendererMessage(const base::string16& channel,
                                     const base::ListValue& args) {
   // webContents.emit(channel, new Event(), args...);
-  Emit(UTF16ToUTF8(channel), args, web_contents(), NULL);
+  Emit(base::UTF16ToUTF8(channel), args, web_contents(), NULL);
 }
 
 void WebContents::OnRendererMessageSync(const base::string16& channel,
                                         const base::ListValue& args,
                                         IPC::Message* message) {
   // webContents.emit(channel, new Event(sender, message), args...);
-  Emit(UTF16ToUTF8(channel), args, web_contents(), message);
+  Emit(base::UTF16ToUTF8(channel), args, web_contents(), message);
 }
 
 // static

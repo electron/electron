@@ -25,8 +25,8 @@ namespace {
 
 // Distinguish directories from regular files.
 bool IsDirectory(const base::FilePath& path) {
-  base::PlatformFileInfo file_info;
-  return file_util::GetFileInfo(path, &file_info) ?
+  base::File::Info file_info;
+  return base::GetFileInfo(path, &file_info) ?
       file_info.is_directory : path.EndsWithSeparator();
 }
 
@@ -105,7 +105,7 @@ void FormatFilterForExtensions(
         // the we create a description "QQQ File (.qqq)").
         include_all_files = true;
         // TODO(zcbenz): should be localized.
-        desc = base::i18n::ToUpper(WideToUTF16(ext_name)) + L" File";
+        desc = base::i18n::ToUpper(base::WideToUTF16(ext_name)) + L" File";
       }
       desc += L" (*." + ext_name + L")";
 
@@ -157,14 +157,16 @@ class FileDialog {
         filters.size()));
 
     if (!title.empty())
-      GetPtr()->SetTitle(UTF8ToUTF16(title).c_str());
+      GetPtr()->SetTitle(base::UTF8ToUTF16(title).c_str());
 
     SetDefaultFolder(default_path);
   }
 
   bool Show(atom::NativeWindow* parent_window) {
     atom::NativeWindow::DialogScope dialog_scope(parent_window);
-    HWND window = parent_window ? parent_window->GetNativeWindow() : NULL;
+    // HWND window = parent_window ? parent_window->GetNativeWindow() : NULL;
+    // FIXME
+    HWND window = NULL;
     return dialog_->DoModal(window) == IDOK;
   }
 

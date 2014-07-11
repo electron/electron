@@ -84,10 +84,6 @@ class Menu : public mate::Wrappable,
   bool IsEnabledAt(int index) const;
   bool IsVisibleAt(int index) const;
 
-#if defined(OS_WIN)
-  virtual void UpdateStates() = 0;
-#endif
-
   DISALLOW_COPY_AND_ASSIGN(Menu);
 };
 

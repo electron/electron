@@ -33,14 +33,9 @@ void SetupProcessObject(Environment*, int, const char* const*, int,
 
 // Force all builtin modules to be referenced so they can actually run their
 // DSO constructors, see http://git.io/DRIqCg.
-#if defined(OS_WIN)
-#define REFERENCE_MODULE(name) \
-  __pragma(comment(linker, "/export:_register_" #name))
-#else
 #define REFERENCE_MODULE(name) \
   extern "C" void _register_ ## name(void); \
   void (*fp_register_ ## name)(void) = _register_ ## name
-#endif
 // Node's builtin modules.
 REFERENCE_MODULE(cares_wrap);
 REFERENCE_MODULE(fs_event_wrap);
@@ -103,11 +98,11 @@ scoped_ptr<const char*[]> StringVectorToArgArray(
 
 #if defined(OS_WIN)
 std::vector<std::string> String16VectorToStringVector(
-    const std::vector<string16>& vector) {
+    const std::vector<base::string16>& vector) {
   std::vector<std::string> utf8_vector;
   utf8_vector.reserve(vector.size());
   for (size_t i = 0; i < vector.size(); ++i)
-    utf8_vector.push_back(UTF16ToUTF8(vector[i]));
+    utf8_vector.push_back(base::UTF16ToUTF8(vector[i]));
   return utf8_vector;
 }
 #endif
