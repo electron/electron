@@ -90,12 +90,6 @@ views::View* InspectableWebContentsViewViews::GetWebView() {
   return contents_web_view_;
 }
 
-gfx::NativeView InspectableWebContentsViewViews::GetNativeView() const {
-  NOTREACHED() << "GetNativeView() shouldn't be used when having views library, "
-                  "use GetView() instead";
-  return inspectable_web_contents_->GetWebContents()->GetView()->GetNativeView();
-}
-
 void InspectableWebContentsViewViews::ShowDevTools() {
   if (devtools_visible_)
     return;

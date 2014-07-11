@@ -26,7 +26,6 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   // InspectableWebContentsView:
   virtual views::View* GetView() OVERRIDE;
   virtual views::View* GetWebView() OVERRIDE;
-  virtual gfx::NativeView GetNativeView() const OVERRIDE;
   virtual void ShowDevTools() OVERRIDE;
   virtual void CloseDevTools() OVERRIDE;
   virtual bool IsDevToolsViewShowing() OVERRIDE;

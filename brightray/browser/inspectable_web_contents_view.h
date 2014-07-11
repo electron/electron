@@ -24,9 +24,10 @@ class InspectableWebContentsView {
   // Returns the web view control, which can be used by the
   // GetInitiallyFocusedView() to set initial focus to web view.
   virtual views::View* GetWebView() = 0;
+#else
+  virtual gfx::NativeView GetNativeView() const = 0;
 #endif
 
-  virtual gfx::NativeView GetNativeView() const = 0;
   virtual void ShowDevTools() = 0;
   // Hide the DevTools view.
   virtual void CloseDevTools() = 0;
