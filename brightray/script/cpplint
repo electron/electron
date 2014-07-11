@@ -11,7 +11,7 @@ CPPLINT = os.path.join(SOURCE_ROOT, 'vendor', 'google-styleguide', 'trunk', 'cpp
 LINE_LENGTH = 100
 
 IGNORED_FILES = [
-    os.path.join('browser', 'mac', 'bry_inspectable_web_contents_view_private.h'),
+    os.path.join('browser', 'mac', 'bry_inspectable_web_contents_view.h'),
 ]
 
 FILTERS = [

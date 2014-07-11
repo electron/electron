@@ -8,11 +8,13 @@
 
 #include "browser/inspectable_web_contents.h"
 
+#include "browser/devtools_contents_resizing_strategy.h"
 #include "browser/devtools_embedder_message_dispatcher.h"
 
 #include "content/public/browser/devtools_frontend_host_delegate.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "ui/gfx/rect.h"
 
 class PrefRegistrySimple;
 
@@ -45,6 +47,10 @@ class InspectableWebContentsImpl :
   virtual void CloseDevTools() OVERRIDE;
   virtual bool IsDevToolsViewShowing() OVERRIDE;
 
+  // Return the last position and size of devtools window.
+  gfx::Rect GetDevToolsBounds() const;
+  void SaveDevToolsBounds(const gfx::Rect& bounds);
+
   virtual void SetDelegate(InspectableWebContentsDelegate* delegate) {
     delegate_ = delegate;
   }
@@ -54,14 +60,15 @@ class InspectableWebContentsImpl :
   }
 
  private:
-  void UpdateFrontendDockSide();
-
   // DevToolsEmbedderMessageDispacher::Delegate
 
   virtual void ActivateWindow() OVERRIDE;
   virtual void CloseWindow() OVERRIDE;
+  virtual void SetContentsResizingStrategy(
+      const gfx::Insets& insets, const gfx::Size& min_size) OVERRIDE;
+  virtual void InspectElementCompleted() OVERRIDE;
   virtual void MoveWindow(int x, int y) OVERRIDE;
-  virtual void SetDockSide(const std::string& side) OVERRIDE;
+  virtual void SetIsDocked(bool docked) OVERRIDE;
   virtual void OpenInNewTab(const std::string& url) OVERRIDE;
   virtual void SaveToFile(const std::string& url,
                           const std::string& content,
@@ -71,12 +78,17 @@ class InspectableWebContentsImpl :
   virtual void RequestFileSystems() OVERRIDE;
   virtual void AddFileSystem() OVERRIDE;
   virtual void RemoveFileSystem(const std::string& file_system_path) OVERRIDE;
+  virtual void UpgradeDraggedFileSystemPermissions(
+      const std::string& file_system_url) OVERRIDE;
   virtual void IndexPath(int request_id,
                          const std::string& file_system_path) OVERRIDE;
   virtual void StopIndexing(int request_id) OVERRIDE;
   virtual void SearchInPath(int request_id,
                             const std::string& file_system_path,
                             const std::string& query) OVERRIDE;
+  virtual void ZoomIn() OVERRIDE;
+  virtual void ZoomOut() OVERRIDE;
+  virtual void ResetZoom() OVERRIDE;
 
   // content::DevToolsFrontendHostDelegate
 
@@ -103,7 +115,9 @@ class InspectableWebContentsImpl :
   scoped_ptr<content::WebContents> devtools_web_contents_;
   scoped_ptr<InspectableWebContentsView> view_;
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
-  std::string dock_side_;
+
+  DevToolsContentsResizingStrategy contents_resizing_strategy_;
+  gfx::Rect devtools_bounds_;
 
   scoped_ptr<DevToolsEmbedderMessageDispatcher> embedder_message_dispatcher_;
 

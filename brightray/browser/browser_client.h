@@ -51,6 +51,8 @@ class BrowserClient : public content::ContentBrowserClient {
       int render_view_id,
       int notification_id) OVERRIDE;
   virtual content::MediaObserver* GetMediaObserver() OVERRIDE;
+  virtual void GetAdditionalAllowedSchemesForFileSystem(
+      std::vector<std::string>* additional_schemes) OVERRIDE;
 
   BrowserMainParts* browser_main_parts_;
   scoped_ptr<NotificationPresenter> notification_presenter_;

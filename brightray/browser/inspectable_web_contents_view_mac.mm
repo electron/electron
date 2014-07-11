@@ -1,13 +1,14 @@
-#import "browser/inspectable_web_contents_view_mac.h"
+#include "browser/inspectable_web_contents_view_mac.h"
 
-#import "browser/inspectable_web_contents.h"
-#import "browser/mac/bry_inspectable_web_contents_view_private.h"
-
-#import "content/public/browser/web_contents_view.h"
 #import <AppKit/AppKit.h>
 
+#include "browser/inspectable_web_contents.h"
+#import "browser/mac/bry_inspectable_web_contents_view.h"
+
+#include "content/public/browser/web_contents_view.h"
+
 namespace brightray {
-  
+
 InspectableWebContentsView* CreateInspectableContentsView(InspectableWebContentsImpl* inspectable_web_contents) {
   return new InspectableWebContentsViewMac(inspectable_web_contents);
 }
@@ -18,7 +19,6 @@ InspectableWebContentsViewMac::InspectableWebContentsViewMac(InspectableWebConte
 }
 
 InspectableWebContentsViewMac::~InspectableWebContentsViewMac() {
-  [view_ removeFromNotificationCenter];
 }
 
 gfx::NativeView InspectableWebContentsViewMac::GetNativeView() const {
@@ -37,8 +37,13 @@ bool InspectableWebContentsViewMac::IsDevToolsViewShowing() {
   return [view_ isDevToolsVisible];
 }
 
-bool InspectableWebContentsViewMac::SetDockSide(const std::string& side) {
-  return [view_ setDockSide:side];
+void InspectableWebContentsViewMac::SetIsDocked(bool docked) {
+  [view_ setIsDocked:docked];
+}
+
+void InspectableWebContentsViewMac::SetContentsResizingStrategy(
+      const DevToolsContentsResizingStrategy& strategy) {
+  [view_ setContentsResizingStrategy:strategy];
 }
 
 }

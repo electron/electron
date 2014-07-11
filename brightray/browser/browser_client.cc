@@ -9,6 +9,8 @@
 #include "browser/media/media_capture_devices_dispatcher.h"
 #include "browser/notification_presenter.h"
 
+#include "content/public/common/url_constants.h"
+
 namespace brightray {
 
 namespace {
@@ -86,6 +88,12 @@ void BrowserClient::CancelDesktopNotification(
 
 content::MediaObserver* BrowserClient::GetMediaObserver() {
   return MediaCaptureDevicesDispatcher::GetInstance();
+}
+
+void BrowserClient::GetAdditionalAllowedSchemesForFileSystem(
+    std::vector<std::string>* additional_schemes) {
+  additional_schemes->push_back(content::kChromeDevToolsScheme);
+  additional_schemes->push_back(content::kChromeUIScheme);
 }
 
 }  // namespace brightray

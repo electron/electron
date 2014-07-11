@@ -21,7 +21,9 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
   virtual void ShowDevTools() OVERRIDE;
   virtual void CloseDevTools() OVERRIDE;
   virtual bool IsDevToolsViewShowing() OVERRIDE;
-  virtual bool SetDockSide(const std::string& side) OVERRIDE;
+  virtual void SetIsDocked(bool docked) OVERRIDE;
+  virtual void SetContentsResizingStrategy(
+      const DevToolsContentsResizingStrategy& strategy) OVERRIDE;
 
   InspectableWebContentsImpl* inspectable_web_contents() {
     return inspectable_web_contents_;

@@ -80,8 +80,9 @@
           },
         },
         'conditions': [
-          ['OS=="win"', {
+          ['OS!="mac"', {
             'defines': [
+              'TOOLKIT_VIEWS',
               'USE_AURA',
               'VIEWS_IMPLEMENTATION',
               'WEBVIEW_IMPLEMENTATION',
@@ -180,6 +181,11 @@
           ['exclude', '/mac/'],
           ['exclude', '_mac\.(mm|h)$'],
         ],
+      }, {
+        'sources/': [
+          ['exclude', '/views/'],
+          ['exclude', '_views\.(cc|h)$'],
+        ],
       }],
       ['OS!="win"', {
         'sources/': [
@@ -262,6 +268,7 @@
           4481, # nonstandard extension used: override specifier 'override'
           4512, # assignment operator could not be generated
           4702, # unreachable code
+          4819, # The file contains a character that cannot be represented in the current code page
         ],
       },
     }],
