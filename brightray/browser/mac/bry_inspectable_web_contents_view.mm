@@ -29,10 +29,6 @@ using namespace brightray;
   return self;
 }
 
-- (void)dealloc {
-  [super dealloc];
-}
-
 - (void)resizeSubviewsWithOldSize:(NSSize)oldBoundsSize {
   [self adjustSubviews];
 }
