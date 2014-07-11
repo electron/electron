@@ -10,6 +10,7 @@
 #include "base/basictypes.h"
 #include "base/compiler_specific.h"
 #include "ui/base/glib/glib_signal.h"
+#include "ui/gfx/native_widget_types.h"
 
 typedef struct _DbusmenuMenuitem DbusmenuMenuitem;
 typedef struct _DbusmenuServer   DbusmenuServer;
@@ -36,17 +37,17 @@ class NativeWindowViews;
 // from menu models instead, and it is also per-window specific.
 class GlobalMenuBarX11 {
  public:
-  GlobalMenuBarX11(NativeWindowViews* window);
+  explicit GlobalMenuBarX11(NativeWindowViews* window);
   virtual ~GlobalMenuBarX11();
 
   // Creates the object path for DbusemenuServer which is attached to |xid|.
-  static std::string GetPathForWindow(unsigned long xid);
+  static std::string GetPathForWindow(gfx::AcceleratedWidget xid);
 
   void SetMenu(ui::MenuModel* menu_model);
 
  private:
   // Creates a DbusmenuServer.
-  void InitServer(unsigned long xid);
+  void InitServer(gfx::AcceleratedWidget xid);
 
   // Create a menu from menu model.
   void BuildMenuFromModel(ui::MenuModel* model, DbusmenuMenuitem* parent);
@@ -60,7 +61,7 @@ class GlobalMenuBarX11 {
   CHROMEG_CALLBACK_0(GlobalMenuBarX11, void, OnSubMenuShow, DbusmenuMenuitem*);
 
   NativeWindowViews* window_;
-  int xid_;
+  gfx::AcceleratedWidget xid_;
 
   DbusmenuServer* server_;
 

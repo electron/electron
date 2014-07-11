@@ -178,7 +178,7 @@ GlobalMenuBarX11::~GlobalMenuBarX11() {
 }
 
 // static
-std::string GlobalMenuBarX11::GetPathForWindow(unsigned long xid) {
+std::string GlobalMenuBarX11::GetPathForWindow(gfx::AcceleratedWidget xid) {
   return base::StringPrintf("/com/canonical/menu/%lX", xid);
 }
 
@@ -195,7 +195,7 @@ void GlobalMenuBarX11::SetMenu(ui::MenuModel* menu_model) {
   g_object_unref(root_item);
 }
 
-void GlobalMenuBarX11::InitServer(unsigned long xid) {
+void GlobalMenuBarX11::InitServer(gfx::AcceleratedWidget xid) {
   std::string path = GetPathForWindow(xid);
   server_ = server_new(path.c_str());
 }
