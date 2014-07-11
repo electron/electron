@@ -5,7 +5,7 @@ import sys
 
 NODE_VERSION = 'v0.11.13'
 BASE_URL = 'https://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent'
-LIBCHROMIUMCONTENT_COMMIT = '5d5539f8232bb4d0253438216de11a99159b3c4d'
+LIBCHROMIUMCONTENT_COMMIT = '99d263cbd842ba57331ddb975aad742470a4cff4'
 
 ARCH = {
     'cygwin': '32bit',
