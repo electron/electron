@@ -52,6 +52,34 @@ void DictionaryToRect(const base::DictionaryValue& dict, gfx::Rect* bounds) {
   *bounds = gfx::Rect(x, y, width, height);
 }
 
+bool ParseMessage(const std::string& message,
+                  std::string* method,
+                  base::ListValue* params,
+                  int* id) {
+  scoped_ptr<base::Value> parsed_message(base::JSONReader::Read(message));
+  if (!parsed_message)
+    return false;
+
+  base::DictionaryValue* dict = NULL;
+  if (!parsed_message->GetAsDictionary(&dict))
+    return false;
+  if (!dict->GetString(kFrontendHostMethod, method))
+    return false;
+
+  // "params" is optional.
+  if (dict->HasKey(kFrontendHostParams)) {
+    base::ListValue* internal_params;
+    if (dict->GetList(kFrontendHostParams, &internal_params))
+      params->Swap(internal_params);
+    else
+      return false;
+  }
+
+  *id = 0;
+  dict->GetInteger(kFrontendHostId, id);
+  return true;
+}
+
 }  // namespace
 
 // Implemented separately on each platform.
@@ -227,24 +255,14 @@ void InspectableWebContentsImpl::ResetZoom() {
 void InspectableWebContentsImpl::DispatchOnEmbedder(
     const std::string& message) {
   std::string method;
-  base::ListValue empty_params;
-  base::ListValue* params = &empty_params;
-
-  base::DictionaryValue* dict = NULL;
-  scoped_ptr<base::Value> parsed_message(base::JSONReader::Read(message));
-  if (!parsed_message ||
-      !parsed_message->GetAsDictionary(&dict) ||
-      !dict->GetString(kFrontendHostMethod, &method) ||
-      (dict->HasKey(kFrontendHostParams) &&
-          !dict->GetList(kFrontendHostParams, &params))) {
+  base::ListValue params;
+  int id;
+  if (!ParseMessage(message, &method, &params, &id)) {
     LOG(ERROR) << "Invalid message was sent to embedder: " << message;
     return;
   }
 
-  int id = 0;
-  dict->GetInteger(kFrontendHostId, &id);
-
-  std::string error = embedder_message_dispatcher_->Dispatch(method, params);
+  std::string error = embedder_message_dispatcher_->Dispatch(method, &params);
   if (id) {
     std::string ack = base::StringPrintf(
         "InspectorFrontendAPI.embedderMessageAck(%d, \"%s\");", id, error.c_str());
