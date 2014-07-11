@@ -59,7 +59,7 @@ InspectableWebContentsView* CreateInspectableContentsView(
     InspectableWebContentsImpl* inspectable_web_contents_impl);
 
 void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
-  scoped_ptr<base::DictionaryValue> bounds_dict(new base::DictionaryValue);
+  auto bounds_dict = make_scoped_ptr(new base::DictionaryValue);
   RectToDictionary(gfx::Rect(0, 0, 800, 600), bounds_dict.get());
   registry->RegisterDictionaryPref(kDevToolsBoundsPref, bounds_dict.release());
 }
