@@ -26,6 +26,10 @@ struct FindByProcessId {
   }
 
   bool operator() (NativeWindow* const window) {
+    content::WebContents* web_contents = window->GetWebContents();
+    if (!web_contents)
+      return false;
+
     int id = window->GetWebContents()->GetRenderProcessHost()->GetID();
     return id == child_process_id_;
   }
