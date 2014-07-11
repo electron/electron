@@ -26,7 +26,10 @@
 #include "ui/views/widget/widget.h"
 
 #if defined(USE_X11)
+#include "atom/browser/ui/views/global_menu_bar_x11.h"
 #include "atom/browser/ui/views/linux_frame_view.h"
+#include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
+#include "ui/views/widget/desktop_aura/desktop_window_tree_host_x11.h"
 #endif
 
 namespace atom {
@@ -70,6 +73,15 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.top_level = true;
   params.remove_standard_frame = true;
+
+#if defined(USE_X11)
+  // Expose DesktopWindowTreeHostX11 for GlobalMenuBarX11.
+  params.native_widget = new views::DesktopNativeWidgetAura(window_.get());
+  host_ = new views::DesktopWindowTreeHostX11(
+      window_.get(),
+      static_cast<views::DesktopNativeWidgetAura*>(params.native_widget));
+  params.desktop_window_tree_host = host_;
+#endif
 
   bool skip_taskbar = false;
   if (options.Get(switches::kSkipTaskbar, &skip_taskbar) && skip_taskbar)
@@ -265,6 +277,12 @@ bool NativeWindowViews::IsKiosk() {
 void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
   // FIXME
   RegisterAccelerators(menu_model);
+
+#if defined(USE_X11)
+  if (!global_menu_bar_)
+    global_menu_bar_.reset(new GlobalMenuBarX11(this));
+  global_menu_bar_->SetMenu(menu_model);
+#endif
 }
 
 gfx::NativeWindow NativeWindowViews::GetNativeWindow() {
