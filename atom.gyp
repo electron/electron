@@ -139,6 +139,8 @@
       'atom/browser/ui/views/global_menu_bar_x11.h',
       'atom/browser/ui/views/linux_frame_view.cc',
       'atom/browser/ui/views/linux_frame_view.h',
+      'atom/browser/ui/views/win_frame_view.cc',
+      'atom/browser/ui/views/win_frame_view.h',
       'atom/browser/ui/win/notify_icon_host.cc',
       'atom/browser/ui/win/notify_icon_host.h',
       'atom/browser/ui/win/notify_icon.cc',

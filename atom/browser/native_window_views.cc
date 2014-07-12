@@ -22,12 +22,13 @@
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/layout/fill_layout.h"
 #include "ui/views/window/client_view.h"
-#include "ui/views/window/custom_frame_view.h"
 #include "ui/views/widget/widget.h"
 
 #if defined(USE_X11)
 #include "atom/browser/ui/views/global_menu_bar_x11.h"
 #include "atom/browser/ui/views/linux_frame_view.h"
+#elif defined(OS_WIN)
+#include "atom/browser/ui/views/win_frame_view.h"
 #endif
 
 namespace atom {
@@ -63,14 +64,24 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   options.Get(switches::kResizable, &resizable_);
   options.Get(switches::kTitle, &title_);
 
+  int width = 800, height = 600;
+  options.Get(switches::kWidth, &width);
+  options.Get(switches::kHeight, &height);
+  gfx::Rect bounds(0, 0, width, height);
+
   window_->AddObserver(this);
 
   views::Widget::InitParams params;
   params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
+  params.bounds = bounds;
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.top_level = true;
+
+#if defined(USE_X11)
+  // In X11 the window frame is drawn by the application.
   params.remove_standard_frame = true;
+#endif
 
   bool skip_taskbar = false;
   if (options.Get(switches::kSkipTaskbar, &skip_taskbar) && skip_taskbar)
@@ -83,18 +94,14 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   set_background(views::Background::CreateStandardPanelBackground());
   AddChildView(web_view_);
 
-  int width = 800, height = 600;
-  options.Get(switches::kWidth, &width);
-  options.Get(switches::kHeight, &height);
-
   bool use_content_size;
-  gfx::Rect bounds(0, 0, width, height);
   if (has_frame_ &&
       options.Get(switches::kUseContentSize, &use_content_size) &&
       use_content_size)
     bounds = window_->non_client_view()->GetWindowBoundsForClientBounds(bounds);
 
   window_->CenterWindow(bounds.size());
+  Layout();
 }
 
 NativeWindowViews::~NativeWindowViews() {
@@ -388,11 +395,12 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
 #if defined(USE_X11)
   LinuxFrameView* frame_view =  new LinuxFrameView;
   frame_view->Init(this, widget);
-#else
-  views::CustomFrameView* frame_view = new views::CustomFrameView;
-  frame_view->Init(widget);
-#endif
   return frame_view;
+#elif defined(OS_WIN)
+  return new WinFrameView(widget);
+#else
+  return NULL;
+#endif
 }
 
 void NativeWindowViews::HandleKeyboardEvent(
