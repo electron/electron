@@ -16,8 +16,11 @@
 #include "ui/views/controls/message_box_view.h"
 #include "ui/views/layout/grid_layout.h"
 #include "ui/views/layout/layout_constants.h"
+#include "ui/views/bubble/bubble_border.h"
+#include "ui/views/bubble/bubble_frame_view.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/widget/widget_delegate.h"
+#include "ui/wm/core/shadow_types.h"
 
 namespace atom {
 
@@ -57,6 +60,8 @@ class MessageDialog : public views::WidgetDelegate,
   virtual views::View* GetContentsView() OVERRIDE;
   virtual views::View* GetInitiallyFocusedView() OVERRIDE;
   virtual ui::ModalType GetModalType() const OVERRIDE;
+  virtual views::NonClientFrameView* CreateNonClientFrameView(
+      views::Widget* widget) OVERRIDE;
 
   // Overridden from views::View:
   virtual gfx::Size GetPreferredSize() OVERRIDE;
@@ -71,11 +76,14 @@ class MessageDialog : public views::WidgetDelegate,
   bool delete_on_close_;
   int result_;
   base::string16 title_;
+
+  NativeWindow* parent_;
   views::Widget* widget_;
   views::MessageBoxView* message_box_view_;
+  std::vector<views::LabelButton*> buttons_;
+
   base::RunLoop* run_loop_;
   scoped_ptr<NativeWindow::DialogScope> dialog_scope_;
-  std::vector<views::LabelButton*> buttons_;
   MessageBoxCallback callback_;
 
   DISALLOW_COPY_AND_ASSIGN(MessageDialog);
@@ -94,17 +102,20 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
       delete_on_close_(false),
       result_(-1),
       title_(base::UTF8ToUTF16(title)),
+      parent_(parent_window),
       widget_(NULL),
       message_box_view_(NULL),
       run_loop_(NULL),
       dialog_scope_(new NativeWindow::DialogScope(parent_window)) {
   DCHECK_GT(buttons.size(), 0u);
   set_owned_by_client();
-  set_background(views::Background::CreateStandardPanelBackground());
+
+  if (!parent_)
+    set_background(views::Background::CreateStandardPanelBackground());
 
   std::string content = message + "\n" + detail;
-  views::MessageBoxView::InitParams params(base::UTF8ToUTF16(content));
-  message_box_view_ = new views::MessageBoxView(params);
+  views::MessageBoxView::InitParams box_params(base::UTF8ToUTF16(content));
+  message_box_view_ = new views::MessageBoxView(box_params);
   AddChildView(message_box_view_);
 
   for (size_t i = 0; i < buttons.size(); ++i) {
@@ -113,7 +124,6 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
     button->set_tag(i);
     button->set_min_size(gfx::Size(60, 30));
     button->SetStyle(views::Button::STYLE_BUTTON);
-    button->SetHorizontalAlignment(gfx::ALIGN_CENTER);
     button->SetGroup(kButtonGroup);
 
     buttons_.push_back(button);
@@ -124,14 +134,25 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
   buttons_[0]->SetIsDefault(true);
   buttons_[0]->AddAccelerator(ui::Accelerator(ui::VKEY_RETURN, ui::EF_NONE));
 
-  views::Widget::InitParams widget_params;
-  widget_params.delegate = this;
-  widget_params.top_level = true;
-  widget_params.remove_standard_frame = true;
+  views::Widget::InitParams params;
+  params.delegate = this;
+  params.top_level = true;
   if (parent_window)
-    widget_params.parent = parent_window->GetNativeWindow();
+    params.parent = parent_window->GetNativeWindow();
+
+  // Use bubble style for dialog has a parent.
+  if (parent_) {
+    params.opacity = views::Widget::InitParams::TRANSLUCENT_WINDOW;
+    params.remove_standard_frame = true;
+  }
+
+#if defined(USE_X11)
+  // In X11 the window frame is drawn by the application.
+  widget_params.remove_standard_frame = true;
+#endif
+
   widget_ = new views::Widget;
-  widget_->Init(widget_params);
+  widget_->Init(params);
 
   // Bind to ESC.
   AddAccelerator(ui::Accelerator(ui::VKEY_ESCAPE, ui::EF_NONE));
@@ -202,8 +223,24 @@ ui::ModalType MessageDialog::GetModalType() const {
 #if defined(USE_X11)
   return ui::MODAL_TYPE_NONE;
 #else
-  return ui::MODAL_TYPE_WINDOW;
+  return ui::MODAL_TYPE_SYSTEM;
 #endif
+}
+
+views::NonClientFrameView* MessageDialog::CreateNonClientFrameView(
+    views::Widget* widget) {
+  if (!parent_)
+    return NULL;
+
+  // Create a bubble style frame like Chrome.
+  views::BubbleFrameView* frame =  new views::BubbleFrameView(gfx::Insets());
+  const SkColor color = widget->GetNativeTheme()->GetSystemColor(
+      ui::NativeTheme::kColorId_DialogBackground);
+  scoped_ptr<views::BubbleBorder> border(new views::BubbleBorder(
+      views::BubbleBorder::FLOAT, views::BubbleBorder::SMALL_SHADOW, color));
+  frame->SetBubbleBorder(border.Pass());
+  wm::SetShadowType(widget->GetNativeWindow(), wm::SHADOW_TYPE_NONE);
+  return frame;
 }
 
 gfx::Size MessageDialog::GetPreferredSize() {
