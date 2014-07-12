@@ -6,6 +6,10 @@
 
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 
+#if defined(OS_LINUX)
+#include "ui/views/linux_ui/linux_ui.h"
+#endif
+
 namespace brightray {
 
 ViewsDelegate::ViewsDelegate() {
@@ -95,7 +99,14 @@ base::TimeDelta ViewsDelegate::GetDefaultTextfieldObscuredRevealDuration() {
 }
 
 bool ViewsDelegate::WindowManagerProvidesTitleBar(bool maximized) {
-  return maximized;
+#if defined(OS_LINUX)
+  // On Ubuntu Unity, the system always provides a title bar for maximized
+  // windows.
+  views::LinuxUI* ui = views::LinuxUI::instance();
+  return maximized && ui && ui->UnityIsRunning();
+#else
+  return false;
+#endif
 }
 
 }  // namespace brightray
