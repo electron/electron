@@ -5,14 +5,16 @@
 #ifndef BRIGHTRAY_COMMON_MAIN_DELEGATE_H_
 #define BRIGHTRAY_COMMON_MAIN_DELEGATE_H_
 
-#include <vector>
-
 #include "base/compiler_specific.h"
 #include "base/memory/scoped_ptr.h"
 #include "content/public/app/content_main_delegate.h"
 
 namespace base {
 class FilePath;
+}
+
+namespace ui {
+class ResourceBundle;
 }
 
 namespace brightray {
@@ -36,7 +38,8 @@ class MainDelegate : public content::ContentMainDelegate {
 
   // Subclasses can override this to provide additional .pak files to be
   // included in the ui::ResourceBundle.
-  virtual void AddPakPaths(std::vector<base::FilePath>* pak_paths) {}
+  virtual void AddDataPackFromPath(
+      ui::ResourceBundle* bundle, const base::FilePath& pak_dir) {}
 
 #if defined(OS_MACOSX)
   // Subclasses can override this to custom the paths of child process and
