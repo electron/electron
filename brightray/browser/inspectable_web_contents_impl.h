@@ -109,6 +109,7 @@ class InspectableWebContentsImpl :
 
   virtual void HandleKeyboardEvent(
       content::WebContents*, const content::NativeWebKeyboardEvent&) OVERRIDE;
+  virtual void CloseContents(content::WebContents* source) OVERRIDE;
 
   scoped_ptr<content::WebContents> web_contents_;
   scoped_ptr<content::DevToolsClientHost> frontend_host_;
