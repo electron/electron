@@ -30,6 +30,8 @@ namespace {
 // conflict with other groups that could be in the dialog content.
 const int kButtonGroup = 1127;
 
+class MessageDialogClientView;
+
 class MessageDialog : public views::WidgetDelegate,
                       public views::View,
                       public views::ButtonListener {
@@ -43,6 +45,7 @@ class MessageDialog : public views::WidgetDelegate,
   virtual ~MessageDialog();
 
   void Show(base::RunLoop* run_loop = NULL);
+  void Close();
 
   int GetResult() const;
 
@@ -54,7 +57,6 @@ class MessageDialog : public views::WidgetDelegate,
  private:
   // Overridden from views::WidgetDelegate:
   virtual base::string16 GetWindowTitle() const;
-  virtual void WindowClosing() OVERRIDE;
   virtual views::Widget* GetWidget() OVERRIDE;
   virtual const views::Widget* GetWidget() const OVERRIDE;
   virtual views::View* GetContentsView() OVERRIDE;
@@ -62,6 +64,7 @@ class MessageDialog : public views::WidgetDelegate,
   virtual ui::ModalType GetModalType() const OVERRIDE;
   virtual views::NonClientFrameView* CreateNonClientFrameView(
       views::Widget* widget) OVERRIDE;
+  virtual views::ClientView* CreateClientView(views::Widget* widget) OVERRIDE;
 
   // Overridden from views::View:
   virtual gfx::Size GetPreferredSize() OVERRIDE;
@@ -72,13 +75,12 @@ class MessageDialog : public views::WidgetDelegate,
   virtual void ButtonPressed(views::Button* sender,
                              const ui::Event& event) OVERRIDE;
 
-  bool should_close_;
   bool delete_on_close_;
   int result_;
   base::string16 title_;
 
   NativeWindow* parent_;
-  views::Widget* widget_;
+  scoped_ptr<views::Widget> widget_;
   views::MessageBoxView* message_box_view_;
   std::vector<views::LabelButton*> buttons_;
 
@@ -87,6 +89,25 @@ class MessageDialog : public views::WidgetDelegate,
   MessageBoxCallback callback_;
 
   DISALLOW_COPY_AND_ASSIGN(MessageDialog);
+};
+
+class MessageDialogClientView : public views::ClientView {
+ public:
+  MessageDialogClientView(MessageDialog* dialog, views::Widget* widget)
+      : views::ClientView(widget, dialog),
+        dialog_(dialog) {
+  }
+
+  // views::ClientView:
+  virtual bool CanClose() OVERRIDE {
+    dialog_->Close();
+    return false;
+  }
+
+ private:
+  MessageDialog* dialog_;
+
+  DISALLOW_COPY_AND_ASSIGN(MessageDialogClientView);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -98,12 +119,10 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
                              const std::string& title,
                              const std::string& message,
                              const std::string& detail)
-    : should_close_(false),
-      delete_on_close_(false),
+    : delete_on_close_(false),
       result_(-1),
       title_(base::UTF8ToUTF16(title)),
       parent_(parent_window),
-      widget_(NULL),
       message_box_view_(NULL),
       run_loop_(NULL),
       dialog_scope_(new NativeWindow::DialogScope(parent_window)) {
@@ -136,13 +155,12 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
 
   views::Widget::InitParams params;
   params.delegate = this;
+  params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
   params.top_level = true;
-  if (parent_window)
-    params.parent = parent_window->GetNativeWindow();
-
-  // Use bubble style for dialog has a parent.
   if (parent_) {
+    params.parent = parent_->GetNativeWindow();
     params.opacity = views::Widget::InitParams::TRANSLUCENT_WINDOW;
+    // Use bubble style for dialog has a parent.
     params.remove_standard_frame = true;
   }
 
@@ -151,7 +169,7 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
   widget_params.remove_standard_frame = true;
 #endif
 
-  widget_ = new views::Widget;
+  widget_.reset(new views::Widget);
   widget_->Init(params);
 
   // Bind to ESC.
@@ -164,6 +182,17 @@ MessageDialog::~MessageDialog() {
 void MessageDialog::Show(base::RunLoop* run_loop) {
   run_loop_ = run_loop;
   widget_->Show();
+}
+
+void MessageDialog::Close() {
+  dialog_scope_.reset();
+
+  if (delete_on_close_) {
+    callback_.Run(GetResult());
+    base::MessageLoop::current()->DeleteSoon(FROM_HERE, this);
+  } else if (run_loop_) {
+    run_loop_->Quit();
+  }
 }
 
 int MessageDialog::GetResult() const {
@@ -188,24 +217,12 @@ base::string16 MessageDialog::GetWindowTitle() const {
   return title_;
 }
 
-void MessageDialog::WindowClosing() {
-  should_close_ = true;
-  dialog_scope_.reset();
-
-  if (delete_on_close_) {
-    callback_.Run(GetResult());
-    base::MessageLoop::current()->DeleteSoon(FROM_HERE, this);
-  } else if (run_loop_) {
-    run_loop_->Quit();
-  }
-}
-
 views::Widget* MessageDialog::GetWidget() {
-  return widget_;
+  return widget_.get();
 }
 
 const views::Widget* MessageDialog::GetWidget() const {
-  return widget_;
+  return widget_.get();
 }
 
 views::View* MessageDialog::GetContentsView() {
@@ -241,6 +258,10 @@ views::NonClientFrameView* MessageDialog::CreateNonClientFrameView(
   frame->SetBubbleBorder(border.Pass());
   wm::SetShadowType(widget->GetNativeWindow(), wm::SHADOW_TYPE_NONE);
   return frame;
+}
+
+views::ClientView* MessageDialog::CreateClientView(views::Widget* widget) {
+  return new MessageDialogClientView(this, widget);
 }
 
 gfx::Size MessageDialog::GetPreferredSize() {
