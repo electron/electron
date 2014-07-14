@@ -166,7 +166,7 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
 
 #if defined(USE_X11)
   // In X11 the window frame is drawn by the application.
-  widget_params.remove_standard_frame = true;
+  params.remove_standard_frame = true;
 #endif
 
   widget_.reset(new views::Widget);
@@ -237,11 +237,7 @@ views::View* MessageDialog::GetInitiallyFocusedView() {
 }
 
 ui::ModalType MessageDialog::GetModalType() const {
-#if defined(USE_X11)
-  return ui::MODAL_TYPE_NONE;
-#else
   return ui::MODAL_TYPE_SYSTEM;
-#endif
 }
 
 views::NonClientFrameView* MessageDialog::CreateNonClientFrameView(
