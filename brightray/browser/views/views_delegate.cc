@@ -89,7 +89,8 @@ void ViewsDelegate::OnBeforeWidgetInit(
     return;
 
   // The native_widget is required when using aura.
-  if (params->parent == NULL && params->context == NULL && !params->child)
+  if (params->type == views::Widget::InitParams::TYPE_MENU ||
+      (params->parent == NULL && params->context == NULL && !params->child))
     params->native_widget = new views::DesktopNativeWidgetAura(delegate);
 }
 
