@@ -135,6 +135,8 @@
       'atom/browser/ui/tray_icon_cocoa.mm',
       'atom/browser/ui/tray_icon_observer.h',
       'atom/browser/ui/tray_icon_win.cc',
+      'atom/browser/ui/views/frameless_view.cc',
+      'atom/browser/ui/views/frameless_view.h',
       'atom/browser/ui/views/global_menu_bar_x11.cc',
       'atom/browser/ui/views/global_menu_bar_x11.h',
       'atom/browser/ui/views/linux_frame_view.cc',

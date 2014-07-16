@@ -91,8 +91,7 @@ LinuxFrameView::~LinuxFrameView() {
 }
 
 void LinuxFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
-  window_ = window;
-  frame_ = frame;
+  FramelessView::Init(window, frame);
 
   close_button_ = new views::ImageButton(this);
   close_button_->SetAccessibleName(

@@ -81,6 +81,9 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
 #if defined(USE_X11)
   // In X11 the window frame is drawn by the application.
   params.remove_standard_frame = true;
+#elif defined(OS_WIN)
+  if (!has_frame_)
+    params.remove_standard_frame = true;
 #endif
 
   bool skip_taskbar = false;
@@ -370,18 +373,16 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
     gfx::NativeView child,
     const gfx::Point& location) {
   // App window should claim mouse events that fall within the draggable region.
-  if (draggable_region_.get() &&
+  if (draggable_region_ &&
       draggable_region_->contains(location.x(), location.y()))
     return false;
 
-#if defined(USE_X11)
   // And the events on border for dragging resizable frameless window.
   if (!has_frame_ && CanResize()) {
-    LinuxFrameView* frame = static_cast<LinuxFrameView*>(
+    FramelessView* frame = static_cast<FramelessView*>(
         window_->non_client_view()->frame_view());
     return frame->ResizingBorderHitTest(location) == HTNOWHERE;
   }
-#endif
 
   return true;
 }
@@ -394,13 +395,11 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
     views::Widget* widget) {
 #if defined(USE_X11)
   LinuxFrameView* frame_view =  new LinuxFrameView;
+#else defined(OS_WIN)
+  WinFrameView* frame_view =  new WinFrameView;
+#endif
   frame_view->Init(this, widget);
   return frame_view;
-#elif defined(OS_WIN)
-  return new WinFrameView(widget);
-#else
-  return NULL;
-#endif
 }
 
 void NativeWindowViews::HandleKeyboardEvent(

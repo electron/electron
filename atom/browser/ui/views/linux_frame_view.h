@@ -5,12 +5,10 @@
 #ifndef ATOM_BROWSER_UI_VIEWS_LINUX_FRAME_VIEW_H_
 #define ATOM_BROWSER_UI_VIEWS_LINUX_FRAME_VIEW_H_
 
-#include "base/basictypes.h"
-#include "base/compiler_specific.h"
+#include "atom/browser/ui/views/frameless_view.h"
 #include "base/memory/scoped_ptr.h"
 #include "ui/views/controls/button/button.h"
 #include "ui/views/window/frame_buttons.h"
-#include "ui/views/window/non_client_view.h"
 
 namespace gfx {
 class ImageSkia;
@@ -19,20 +17,17 @@ class ImageSkia;
 namespace views {
 class FrameBackground;
 class ImageButton;
-class Widget;
 }
 
 namespace atom {
 
-class NativeWindowViews;
-
-class LinuxFrameView : public views::NonClientFrameView,
+class LinuxFrameView : public FramelessView
                        public views::ButtonListener {
  public:
   LinuxFrameView();
   virtual ~LinuxFrameView();
 
-  void Init(NativeWindowViews* window, views::Widget* frame);
+  void Init(NativeWindowViews* window, views::Widget* frame) OVERRIDE;
 
   // Overridden from NonClientFrameView:
   virtual gfx::Rect GetBoundsForClientView() const OVERRIDE;
@@ -122,10 +117,6 @@ class LinuxFrameView : public views::NonClientFrameView,
 
   // The layout rect of the title, if visible.
   gfx::Rect title_bounds_;
-
-  // Not owned.
-  NativeWindowViews* window_;
-  views::Widget* frame_;
 
   // The icon of this window. May be NULL.
   views::ImageButton* window_icon_;
