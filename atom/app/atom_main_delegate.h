@@ -16,6 +16,11 @@ class AtomMainDelegate : public brightray::MainDelegate {
   ~AtomMainDelegate();
 
  protected:
+  // brightray::MainDelegate:
+  virtual void AddDataPackFromPath(
+      ui::ResourceBundle* bundle, const base::FilePath& pak_dir) OVERRIDE;
+
+  // content::ContentMainDelegate:
   virtual bool BasicStartupComplete(int* exit_code) OVERRIDE;
   virtual void PreSandboxStartup() OVERRIDE;
 

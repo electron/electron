@@ -12,6 +12,7 @@
 #include "base/debug/stack_trace.h"
 #include "base/logging.h"
 #include "content/public/common/content_switches.h"
+#include "ui/base/resource/resource_bundle.h"
 
 namespace atom {
 
@@ -19,6 +20,16 @@ AtomMainDelegate::AtomMainDelegate() {
 }
 
 AtomMainDelegate::~AtomMainDelegate() {
+}
+
+void AtomMainDelegate::AddDataPackFromPath(
+    ui::ResourceBundle* bundle, const base::FilePath& pak_dir) {
+  bundle->AddDataPackFromPath(
+      pak_dir.Append(FILE_PATH_LITERAL("ui_resources_200_percent.pak")),
+      ui::SCALE_FACTOR_200P);
+  bundle->AddDataPackFromPath(
+      pak_dir.Append(FILE_PATH_LITERAL("webkit_resources_200_percent.pak")),
+      ui::SCALE_FACTOR_200P);
 }
 
 bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {

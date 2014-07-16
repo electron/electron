@@ -41,6 +41,8 @@ TARGET_BINARIES = {
     'libEGL.dll',
     'libGLESv2.dll',
     'd3dcompiler_43.dll',
+    'ui_resources_200_percent.pak',
+    'webkit_resources_200_percent.pak',
     'xinput1_3.dll',
   ],
   'linux': [
@@ -48,6 +50,8 @@ TARGET_BINARIES = {
     'content_shell.pak',
     'libchromiumcontent.so',
     'libffmpegsumo.so',
+    'ui_resources_200_percent.pak',
+    'webkit_resources_200_percent.pak',
   ],
 }
 TARGET_DIRECTORIES = {

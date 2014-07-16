@@ -368,6 +368,8 @@
                 '<(libchromiumcontent_library_dir)/libGLESv2.dll',
                 '<(libchromiumcontent_resources_dir)/icudtl.dat',
                 '<(libchromiumcontent_resources_dir)/content_shell.pak',
+                '<(libchromiumcontent_resources_dir)/ui_resources_200_percent.pak',
+                '<(libchromiumcontent_resources_dir)/webkit_resources_200_percent.pak',
                 'external_binaries/d3dcompiler_43.dll',
                 'external_binaries/xinput1_3.dll',
               ],
@@ -389,6 +391,8 @@
                 '<(libchromiumcontent_library_dir)/libffmpegsumo.so',
                 '<(libchromiumcontent_resources_dir)/icudtl.dat',
                 '<(libchromiumcontent_resources_dir)/content_shell.pak',
+                '<(libchromiumcontent_resources_dir)/ui_resources_200_percent.pak',
+                '<(libchromiumcontent_resources_dir)/webkit_resources_200_percent.pak',
               ],
             },
             {
@@ -650,6 +654,8 @@
           'mac_bundle_resources': [
             'atom/common/resources/mac/MainMenu.xib',
             '<(libchromiumcontent_resources_dir)/content_shell.pak',
+            '<(libchromiumcontent_resources_dir)/ui_resources_200_percent.pak',
+            '<(libchromiumcontent_resources_dir)/webkit_resources_200_percent.pak',
             '<(libchromiumcontent_resources_dir)/icudtl.dat',
           ],
           'xcode_settings': {
