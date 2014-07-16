@@ -50,8 +50,6 @@ TARGET_BINARIES = {
     'content_shell.pak',
     'libchromiumcontent.so',
     'libffmpegsumo.so',
-    'ui_resources_200_percent.pak',
-    'webkit_resources_200_percent.pak',
   ],
 }
 TARGET_DIRECTORIES = {
