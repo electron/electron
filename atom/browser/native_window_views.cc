@@ -395,7 +395,7 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
     views::Widget* widget) {
 #if defined(USE_X11)
   LinuxFrameView* frame_view =  new LinuxFrameView;
-#else defined(OS_WIN)
+#else
   WinFrameView* frame_view =  new WinFrameView;
 #endif
   frame_view->Init(this, widget);

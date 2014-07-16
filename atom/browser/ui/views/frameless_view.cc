@@ -6,6 +6,7 @@
 
 #include "atom/browser/native_window_views.h"
 #include "ui/aura/window.h"
+#include "ui/base/hit_test.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/widget/widget_delegate.h"
 

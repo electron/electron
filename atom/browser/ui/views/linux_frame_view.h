@@ -21,7 +21,7 @@ class ImageButton;
 
 namespace atom {
 
-class LinuxFrameView : public FramelessView
+class LinuxFrameView : public FramelessView,
                        public views::ButtonListener {
  public:
   LinuxFrameView();
@@ -50,9 +50,6 @@ class LinuxFrameView : public FramelessView
   // Overridden from ButtonListener:
   virtual void ButtonPressed(views::Button* sender,
                              const ui::Event& event) OVERRIDE;
-
-  // Returns whether the |point| is on frameless window's resizing border.
-  int ResizingBorderHitTest(const gfx::Point& point);
 
  private:
   // Returns the thickness of the border that makes up the window frame edges.
