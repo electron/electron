@@ -15,6 +15,7 @@ namespace {
 
 const int kResizeInsideBoundsSize = 5;
 const int kResizeAreaCornerSize = 16;
+
 const char kViewClassName[] = "FramelessView";
 
 }  // namespace
