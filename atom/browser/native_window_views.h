@@ -22,6 +22,7 @@ class Widget;
 namespace atom {
 
 class GlobalMenuBarX11;
+class MenuBar;
 
 class NativeWindowViews : public NativeWindow,
                           public views::WidgetDelegateView,
@@ -113,7 +114,12 @@ class NativeWindowViews : public NativeWindow,
   // Register accelerators supported by the menu model.
   void RegisterAccelerators(ui::MenuModel* menu_model);
 
+  // Converts between client area and window area, since we include the menu bar
+  // in client area we need to substract/add menu bar's height in convertions.
+  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& content_bounds);
+
   scoped_ptr<views::Widget> window_;
+  MenuBar* menu_bar_;
   views::View* web_view_;  // Managed by inspectable_web_contents_.
 
 #if defined(USE_X11)

@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/ui/views/menu_bar.h"
+#include "atom/browser/ui/views/menu_layout.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
@@ -20,7 +22,6 @@
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/controls/webview/webview.h"
-#include "ui/views/layout/fill_layout.h"
 #include "ui/views/window/client_view.h"
 #include "ui/views/widget/widget.h"
 
@@ -34,6 +35,9 @@
 namespace atom {
 
 namespace {
+
+// The menu bar height in pixels.
+const int kMenuBarHeight = 25;
 
 class NativeWindowClientView : public views::ClientView {
  public:
@@ -58,6 +62,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
                                      const mate::Dictionary& options)
     : NativeWindow(web_contents, options),
       window_(new views::Widget),
+      menu_bar_(NULL),
       web_view_(inspectable_web_contents()->GetView()->GetView()),
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
       resizable_(true) {
@@ -93,7 +98,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   window_->Init(params);
 
   // Add web view.
-  SetLayoutManager(new views::FillLayout);
+  SetLayoutManager(new MenuLayout(kMenuBarHeight));
   set_background(views::Background::CreateStandardPanelBackground());
   AddChildView(web_view_);
 
@@ -101,7 +106,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   if (has_frame_ &&
       options.Get(switches::kUseContentSize, &use_content_size) &&
       use_content_size)
-    bounds = window_->non_client_view()->GetWindowBoundsForClientBounds(bounds);
+    bounds = ContentBoundsToWindowBounds(bounds);
 
   window_->CenterWindow(bounds.size());
   Layout();
@@ -190,16 +195,18 @@ void NativeWindowViews::SetContentSize(const gfx::Size& size) {
 
   gfx::Rect bounds = window_->GetWindowBoundsInScreen();
   bounds.set_size(size);
-  window_->SetBounds(
-      window_->non_client_view()->GetWindowBoundsForClientBounds(bounds));
+  window_->SetBounds(ContentBoundsToWindowBounds(bounds));
 }
 
 gfx::Size NativeWindowViews::GetContentSize() {
   if (!has_frame_)
     return GetSize();
 
-  return window_->non_client_view()->frame_view()->
-      GetBoundsForClientView().size();
+  gfx::Size content_size =
+      window_->non_client_view()->frame_view()->GetBoundsForClientView().size();
+  if (menu_bar_)
+    content_size.set_height(content_size.height() - kMenuBarHeight);
+  return content_size;
 }
 
 void NativeWindowViews::SetMinimumSize(const gfx::Size& size) {
@@ -274,14 +281,29 @@ bool NativeWindowViews::IsKiosk() {
 }
 
 void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
-  // FIXME
   RegisterAccelerators(menu_model);
 
 #if defined(USE_X11)
   if (!global_menu_bar_)
     global_menu_bar_.reset(new GlobalMenuBarX11(this));
-  global_menu_bar_->SetMenu(menu_model);
+
+  // Use global application menu bar when possible.
+  if (global_menu_bar_->IsServerStarted()) {
+    global_menu_bar_->SetMenu(menu_model);
+    return;
+  }
 #endif
+
+  // Do not show menu bar in frameless window.
+  if (!has_frame_)
+    return;
+
+  if (!menu_bar_) {
+    gfx::Size content_size = GetContentSize();
+    menu_bar_ = new MenuBar;
+    AddChildViewAt(menu_bar_, 0);
+    SetContentSize(content_size);
+  }
 }
 
 gfx::NativeWindow NativeWindowViews::GetNativeWindow() {
@@ -428,6 +450,15 @@ void NativeWindowViews::RegisterAccelerators(ui::MenuModel* menu_model) {
     focus_manager->RegisterAccelerator(
         iter->first, ui::AcceleratorManager::kNormalPriority, this);
   }
+}
+
+gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
+    const gfx::Rect& bounds) {
+  gfx::Rect window_bounds =
+      window_->non_client_view()->GetWindowBoundsForClientBounds(bounds);
+  if (menu_bar_)
+    window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
+  return window_bounds;
 }
 
 // static

@@ -171,7 +171,7 @@ GlobalMenuBarX11::GlobalMenuBarX11(NativeWindowViews* window)
 }
 
 GlobalMenuBarX11::~GlobalMenuBarX11() {
-  if (server_)
+  if (IsServerStarted())
     g_object_unref(server_);
 
   GlobalMenuBarRegistrarX11::GetInstance()->OnWindowUnmapped(xid_);
@@ -183,7 +183,7 @@ std::string GlobalMenuBarX11::GetPathForWindow(gfx::AcceleratedWidget xid) {
 }
 
 void GlobalMenuBarX11::SetMenu(ui::MenuModel* menu_model) {
-  if (!server_)
+  if (!IsServerStarted())
     return;
 
   DbusmenuMenuitem* root_item = menuitem_new();
@@ -193,6 +193,10 @@ void GlobalMenuBarX11::SetMenu(ui::MenuModel* menu_model) {
 
   server_set_root(server_, root_item);
   g_object_unref(root_item);
+}
+
+bool GlobalMenuBarX11::IsServerStarted() const {
+  return server_;
 }
 
 void GlobalMenuBarX11::InitServer(gfx::AcceleratedWidget xid) {

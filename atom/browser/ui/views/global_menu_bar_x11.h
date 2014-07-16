@@ -44,6 +44,7 @@ class GlobalMenuBarX11 {
   static std::string GetPathForWindow(gfx::AcceleratedWidget xid);
 
   void SetMenu(ui::MenuModel* menu_model);
+  bool IsServerStarted() const;
 
  private:
   // Creates a DbusmenuServer.
