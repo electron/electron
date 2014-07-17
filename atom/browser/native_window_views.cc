@@ -304,6 +304,9 @@ void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
     AddChildViewAt(menu_bar_, 0);
     SetContentSize(content_size);
   }
+
+  menu_bar_->SetMenu(menu_model);
+  Layout();
 }
 
 gfx::NativeWindow NativeWindowViews::GetNativeWindow() {

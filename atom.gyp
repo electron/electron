@@ -143,6 +143,8 @@
       'atom/browser/ui/views/linux_frame_view.h',
       'atom/browser/ui/views/menu_bar.cc',
       'atom/browser/ui/views/menu_bar.h',
+      'atom/browser/ui/views/menu_delegate.cc',
+      'atom/browser/ui/views/menu_delegate.h',
       'atom/browser/ui/views/menu_layout.cc',
       'atom/browser/ui/views/menu_layout.h',
       'atom/browser/ui/views/win_frame_view.cc',
