@@ -26,6 +26,11 @@ class AtomRendererClient : public content::ContentRendererClient {
 
   bool IsNodeBindingEnabled(blink::WebFrame* frame = NULL);
 
+  // Forwarded by RenderFrameObserver.
+  void WillReleaseScriptContext(blink::WebFrame* frame,
+                                v8::Handle<v8::Context> context,
+                                int world_id);
+
   AtomRendererBindings* atom_bindings() const { return atom_bindings_.get(); }
 
  private:
@@ -44,15 +49,12 @@ class AtomRendererClient : public content::ContentRendererClient {
                                       v8::Handle<v8::Context> context,
                                       int extension_group,
                                       int world_id) OVERRIDE;
-  virtual void WillReleaseScriptContext(blink::WebFrame* frame,
-                                        v8::Handle<v8::Context>,
-                                        int world_id);
   virtual bool ShouldFork(blink::WebFrame* frame,
                           const GURL& url,
                           const std::string& http_method,
                           bool is_initial_navigation,
                           bool is_server_redirect,
-                          bool* send_referrer);
+                          bool* send_referrer) OVERRIDE;
 
   std::vector<node::Environment*> web_page_envs_;
 

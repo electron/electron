@@ -11,6 +11,8 @@
 #include "atom/common/options_switches.h"
 #include "atom/renderer/api/atom_renderer_bindings.h"
 #include "atom/renderer/atom_render_view_observer.h"
+#include "content/public/renderer/render_frame.h"
+#include "content/public/renderer/render_frame_observer.h"
 #include "base/command_line.h"
 #include "native_mate/converter.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
@@ -28,6 +30,27 @@ const char* kSecurityExceptIframe = "except-iframe";
 const char* kSecurityManualEnableIframe = "manual-enable-iframe";
 const char* kSecurityDisable = "disable";
 const char* kSecurityEnableNodeIntegration = "enable-node-integration";
+
+// Helper class to forward the WillReleaseScriptContext message to the client.
+class AtomRenderFrameObserver : public content::RenderFrameObserver {
+ public:
+  AtomRenderFrameObserver(content::RenderFrame* frame,
+                          AtomRendererClient* renderer_client)
+      : content::RenderFrameObserver(frame),
+        renderer_client_(renderer_client) {}
+
+  // content::RenderFrameObserver:
+  virtual void WillReleaseScriptContext(v8::Handle<v8::Context> context,
+                                        int world_id) OVERRIDE {
+    renderer_client_->WillReleaseScriptContext(
+        render_frame()->GetWebFrame(), context, world_id);
+  }
+
+ private:
+  AtomRendererClient* renderer_client_;
+
+  DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
+};
 
 }  // namespace
 
@@ -74,6 +97,7 @@ void AtomRendererClient::RenderThreadStarted() {
 
 void AtomRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
+  new AtomRenderFrameObserver(render_frame, this);
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
