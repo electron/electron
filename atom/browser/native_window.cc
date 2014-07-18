@@ -192,6 +192,10 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
 void NativeWindow::SetRepresentedFilename(const std::string& filename) {
 }
 
+std::string NativeWindow::GetRepresentedFilename() {
+  return "";
+}
+
 void NativeWindow::SetDocumentEdited(bool edited) {
 }
 

@@ -135,6 +135,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
   virtual void SetRepresentedFilename(const std::string& filename);
+  virtual std::string GetRepresentedFilename();
   virtual void SetDocumentEdited(bool edited);
   virtual void SetMenu(ui::MenuModel* menu);
   virtual bool HasModalDialog();

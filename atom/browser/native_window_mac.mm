@@ -452,6 +452,10 @@ void NativeWindowMac::SetRepresentedFilename(const std::string& filename) {
   [window_ setRepresentedFilename:base::SysUTF8ToNSString(filename)];
 }
 
+std::string NativeWindowMac::GetRepresentedFilename() {
+  return base::SysNSStringToUTF8([window_ representedFilename]);
+}
+
 void NativeWindowMac::SetDocumentEdited(bool edited) {
   [window_ setDocumentEdited:edited];
 }

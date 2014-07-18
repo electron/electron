@@ -320,6 +320,10 @@ void Window::SetRepresentedFilename(const std::string& filename) {
   window_->SetRepresentedFilename(filename);
 }
 
+std::string Window::GetRepresentedFilename() {
+  return window_->GetRepresentedFilename();
+}
+
 void Window::SetDocumentEdited(bool edited) {
   window_->SetDocumentEdited(edited);
 }
@@ -373,6 +377,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setKiosk", &Window::SetKiosk)
       .SetMethod("isKiosk", &Window::IsKiosk)
       .SetMethod("setRepresentedFilename", &Window::SetRepresentedFilename)
+      .SetMethod("getRepresentedFilename", &Window::GetRepresentedFilename)
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)
       .SetMethod("_openDevTools", &Window::OpenDevTools)
       .SetMethod("closeDevTools", &Window::CloseDevTools)
