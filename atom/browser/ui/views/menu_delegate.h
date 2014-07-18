@@ -24,7 +24,7 @@ class MenuBar;
 
 class MenuDelegate : public views::MenuDelegate {
  public:
-  MenuDelegate(MenuBar* menu_bar);
+  explicit MenuDelegate(MenuBar* menu_bar);
   virtual ~MenuDelegate();
 
   void RunMenu(ui::MenuModel* model, views::MenuButton* button);
