@@ -65,6 +65,7 @@ REFERENCE_MODULE(atom_browser_dialog);
 REFERENCE_MODULE(atom_browser_menu);
 REFERENCE_MODULE(atom_browser_power_monitor);
 REFERENCE_MODULE(atom_browser_protocol);
+REFERENCE_MODULE(atom_browser_shortcut);
 REFERENCE_MODULE(atom_browser_tray);
 REFERENCE_MODULE(atom_browser_window);
 REFERENCE_MODULE(atom_common_clipboard);
