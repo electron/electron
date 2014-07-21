@@ -48,7 +48,6 @@ void MenuDelegate::RunMenu(ui::MenuModel* model, views::MenuButton* button) {
 
 views::MenuItemView* MenuDelegate::BuildMenu(ui::MenuModel* model) {
   DCHECK_GE(id_, 0);
-  DCHECK_LT(id_, items_.size());
 
   if (!items_[id_]) {
     views::MenuModelAdapter* delegate = new views::MenuModelAdapter(model);
