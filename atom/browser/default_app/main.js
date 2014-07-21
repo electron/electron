@@ -34,6 +34,7 @@ if (argv._.length > 0) {
   } catch(e) {
     if (e.code == 'MODULE_NOT_FOUND') {
       app.focus();
+      console.error(e.stack);
       dialog.showMessageBox({
         type: 'warning',
         buttons: ['OK'],
