@@ -9,7 +9,7 @@
 #include <commdlg.h>
 #include <shlobj.h>
 
-#include "atom/browser/native_window.h"
+#include "atom/browser/native_window_views.h"
 #include "base/file_util.h"
 #include "base/i18n/case_conversion.h"
 #include "base/strings/string_util.h"
@@ -164,9 +164,9 @@ class FileDialog {
 
   bool Show(atom::NativeWindow* parent_window) {
     atom::NativeWindow::DialogScope dialog_scope(parent_window);
-    // HWND window = parent_window ? parent_window->GetNativeWindow() : NULL;
-    // FIXME
-    HWND window = NULL;
+    HWND window = parent_window ? static_cast<atom::NativeWindowViews*>(
+        parent_window)->GetAcceleratedWidget() :
+        NULL;
     return dialog_->DoModal(window) == IDOK;
   }
 
