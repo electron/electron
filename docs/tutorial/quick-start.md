@@ -51,7 +51,7 @@ your-app/
 └── index.html
 ```
 
-The format of `package.json` is exactly the same as with Node's modules, and the
+The format of `package.json` is exactly the same as that of Node's modules, and the
 script specified by the `main` field is the startup script of your app, which
 will run on the browser side. An example of your `package.json` might look like
 this:
