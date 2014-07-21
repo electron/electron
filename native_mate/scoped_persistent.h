@@ -6,6 +6,7 @@
 #define NATIVE_MATE_SCOPED_PERSISTENT_H_
 
 #include "base/memory/ref_counted.h"
+#include "native_mate/converter.h"
 #include "v8/include/v8.h"
 
 namespace mate {
@@ -15,10 +16,11 @@ namespace mate {
 template <typename T>
 class ScopedPersistent {
  public:
-  ScopedPersistent() {
+  ScopedPersistent(v8::Isolate* isolate = NULL) : isolate_(isolate) {
   }
 
-  explicit ScopedPersistent(v8::Handle<v8::Value> handle) {
+  ScopedPersistent(v8::Handle<v8::Value> handle, v8::Isolate* isolate = NULL)
+      : isolate_(isolate) {
     reset(v8::Handle<T>::Cast(handle));
   }
 
@@ -27,10 +29,16 @@ class ScopedPersistent {
   }
 
   void reset(v8::Handle<T> handle) {
-    if (!handle.IsEmpty())
-      handle_.Reset(GetIsolate(handle), handle);
-    else
+    reset(GetIsolate(handle), handle);
+  }
+
+  void reset(v8::Isolate* isolate, v8::Handle<T> handle) {
+    if (!handle.IsEmpty()) {
+      isolate_ = isolate;
+      handle_.Reset(isolate, handle);
+    } else {
       reset();
+    }
   }
 
   void reset() {
@@ -42,9 +50,7 @@ class ScopedPersistent {
   }
 
   v8::Handle<T> NewHandle() const {
-    if (handle_.IsEmpty())
-      return v8::Local<T>();
-    return v8::Local<T>::New(GetIsolate(handle_), handle_);
+    return NewHandle(GetIsolate(handle_));
   }
 
   v8::Handle<T> NewHandle(v8::Isolate* isolate) const {
@@ -59,29 +65,38 @@ class ScopedPersistent {
     handle_.SetWeak(parameter, callback);
   }
 
+  v8::Isolate* isolate() const { return isolate_; }
+
  private:
   template <typename U>
-  static v8::Isolate* GetIsolate(v8::Handle<U> object_handle) {
+  v8::Isolate* GetIsolate(v8::Handle<U> object_handle) const {
     // Only works for v8::Object and its subclasses. Add specialisations for
     // anything else.
     if (!object_handle.IsEmpty())
       return GetIsolate(object_handle->CreationContext());
-    return v8::Isolate::GetCurrent();
+    return GetIsolate();
   }
-  static v8::Isolate* GetIsolate(v8::Handle<v8::Context> context_handle) {
+  v8::Isolate* GetIsolate(v8::Handle<v8::Context> context_handle) const {
     if (!context_handle.IsEmpty())
       return context_handle->GetIsolate();
-    return v8::Isolate::GetCurrent();
+    return GetIsolate();
   }
-  static v8::Isolate* GetIsolate(
-      v8::Handle<v8::ObjectTemplate> template_handle) {
-    return v8::Isolate::GetCurrent();
+  v8::Isolate* GetIsolate(
+      v8::Handle<v8::ObjectTemplate> template_handle) const {
+    return GetIsolate();
   }
   template <typename U>
-  static v8::Isolate* GetIsolate(const U& any_handle) {
-    return v8::Isolate::GetCurrent();
+  v8::Isolate* GetIsolate(const U& any_handle) const {
+    return GetIsolate();
+  }
+  v8::Isolate* GetIsolate() const {
+    if (isolate_)
+      return isolate_;
+    else
+      return v8::Isolate::GetCurrent();
   }
 
+  v8::Isolate* isolate_;
   v8::Persistent<T> handle_;
 
   DISALLOW_COPY_AND_ASSIGN(ScopedPersistent);
@@ -104,6 +119,25 @@ class RefCountedPersistent : public ScopedPersistent<T>,
 
  private:
   DISALLOW_COPY_AND_ASSIGN(RefCountedPersistent);
+};
+
+template<typename T>
+struct Converter<ScopedPersistent<T> > {
+  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+                                    const ScopedPersistent<T>& val) {
+    return val.NewHandle(isolate);
+  }
+
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
+                     ScopedPersistent<T>* out) {
+    v8::Handle<T> converted;
+    if (!Converter<v8::Handle<T> >::FromV8(isolate, val, &converted))
+      return false;
+
+    out->reset(isolate, converted);
+    return true;
+  }
 };
 
 }  // namespace mate
