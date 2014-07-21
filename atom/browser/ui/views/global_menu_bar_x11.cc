@@ -6,6 +6,12 @@
 
 #include <X11/Xlib.h>
 
+// This conflicts with mate::Converter,
+#undef True
+#undef False
+// and V8.
+#undef None
+
 #include <dlfcn.h>
 #include <glib-object.h>
 

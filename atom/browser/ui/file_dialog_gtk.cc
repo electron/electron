@@ -8,6 +8,12 @@
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
 
+// This conflicts with mate::Converter,
+#undef True
+#undef False
+// and V8.
+#undef None
+
 #include "atom/browser/native_window.h"
 #include "base/callback.h"
 #include "base/file_util.h"
