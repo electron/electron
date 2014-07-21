@@ -72,6 +72,8 @@ class NativeWindowViews : public NativeWindow,
   virtual void SetMenu(ui::MenuModel* menu_model) OVERRIDE;
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
 
+  gfx::AcceleratedWidget GetAcceleratedWidget();
+
   SkRegion* draggable_region() const { return draggable_region_.get(); }
   views::Widget* widget() const { return window_.get(); }
 

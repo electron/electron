@@ -4,6 +4,10 @@
 
 #include "atom/browser/native_window_views.h"
 
+#if defined(OS_WIN)
+#include <shobjidl.h>
+#endif
+
 #include <string>
 #include <vector>
 
@@ -16,6 +20,8 @@
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents_view.h"
 #include "native_mate/dictionary.h"
+#include "ui/aura/window.h"
+#include "ui/aura/window_tree_host.h"
 #include "ui/base/hit_test.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
@@ -30,6 +36,7 @@
 #include "atom/browser/ui/views/linux_frame_view.h"
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
+#include "base/win/scoped_comptr.h"
 #endif
 
 namespace atom {
@@ -92,9 +99,12 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
     params.remove_standard_frame = true;
 #endif
 
+#if defined(USE_X11)
+  // FIXME Find out how to do this dynamically on Linux.
   bool skip_taskbar = false;
   if (options.Get(switches::kSkipTaskbar, &skip_taskbar) && skip_taskbar)
     params.type = views::Widget::InitParams::TYPE_BUBBLE;
+#endif
 
   window_->Init(params);
 
@@ -268,7 +278,15 @@ void NativeWindowViews::FlashFrame(bool flash) {
 
 void NativeWindowViews::SetSkipTaskbar(bool skip) {
 #if defined(OS_WIN)
-  // FIXME
+  base::win::ScopedComPtr<ITaskbarList> taskbar;
+  if (FAILED(taskbar.CreateInstance(CLSID_TaskbarList, NULL,
+                                    CLSCTX_INPROC_SERVER)) ||
+      FAILED(taskbar->HrInit()))
+    return;
+  if (skip)
+    taskbar->DeleteTab(GetAcceleratedWidget());
+  else
+    taskbar->AddTab(GetAcceleratedWidget());
 #endif
 }
 
@@ -313,6 +331,10 @@ void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
 
 gfx::NativeWindow NativeWindowViews::GetNativeWindow() {
   return window_->GetNativeWindow();
+}
+
+gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() {
+  return GetNativeWindow()->GetHost()->GetAcceleratedWidget();
 }
 
 void NativeWindowViews::UpdateDraggableRegions(
