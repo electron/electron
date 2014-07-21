@@ -144,3 +144,5 @@ On Mac OS X:
 ```bash
 $ ./Atom.app/Contents/MacOS/Atom your-app/
 ```
+
+`Atom.app` here is in the atom-shell's release package, you can download it from [here](https://github.com/atom/atom-shell/releases).
