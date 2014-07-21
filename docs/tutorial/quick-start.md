@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Generally atom-shell enables you to create desktop applications with pure
+Generally, atom-shell enables you to create desktop applications with pure
 JavaScript by providing a runtime with rich native APIs. You could see it as
 a variant of the Node.js runtime which is focused on desktop applications
 instead of web servers.
