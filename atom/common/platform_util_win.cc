@@ -29,7 +29,7 @@ namespace {
 // is empty. This function tells if it is.
 bool ValidateShellCommandForScheme(const std::string& scheme) {
   base::win::RegKey key;
-  std::wstring registry_path = ASCIIToWide(scheme) +
+  std::wstring registry_path = base::ASCIIToWide(scheme) +
                                L"\\shell\\open\\command";
   key.Open(HKEY_CLASSES_ROOT, registry_path.c_str(), KEY_READ);
   if (!key.Valid())

@@ -2,6 +2,12 @@ path   = require 'path'
 timers = require 'timers'
 Module = require 'module'
 
+process.atomBinding = (name) ->
+  try
+    process.binding "atom_#{process.type}_#{name}"
+  catch e
+    process.binding "atom_common_#{name}" if e.message is 'No such module'
+
 # Add common/api/lib to module search paths.
 globalPaths = Module.globalPaths
 globalPaths.push path.join(process.resourcesPath, 'atom', 'common', 'api', 'lib')

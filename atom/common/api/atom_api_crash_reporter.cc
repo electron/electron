@@ -35,9 +35,10 @@ struct Converter<std::map<std::string, std::string> > {
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports) {
+void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
+                v8::Handle<v8::Context> context, void* priv) {
   using crash_reporter::CrashReporter;
-  mate::Dictionary dict(v8::Isolate::GetCurrent(), exports);
+  mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("start",
                  base::Bind(&CrashReporter::Start,
                             base::Unretained(CrashReporter::GetInstance())));
@@ -45,4 +46,4 @@ void Initialize(v8::Handle<v8::Object> exports) {
 
 }  // namespace
 
-NODE_MODULE(atom_common_crash_reporter, Initialize)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_common_crash_reporter, Initialize)

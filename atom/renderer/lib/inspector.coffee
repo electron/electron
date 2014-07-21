@@ -1,11 +1,7 @@
 window.onload = ->
   # Use menu API to show context menu.
-  WebInspector.ContextMenu.prototype.show = ->
-    menuObject = @_buildDescriptor()
-    if menuObject.length
-      WebInspector._contextMenu = this
-      createMenu(menuObject, @_event)
-      @_event.consume()
+  InspectorFrontendHost.showContextMenu = (event, items) ->
+    createMenu items, event
 
   # Use dialog API to override file chooser dialog.
   WebInspector.createFileSelectorElement = (callback) ->

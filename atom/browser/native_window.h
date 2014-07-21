@@ -16,14 +16,19 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "atom/browser/native_window_observer.h"
+#include "atom/browser/ui/accelerator_util.h"
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
+#include "native_mate/scoped_persistent.h"
 #include "vendor/brightray/browser/default_web_contents_delegate.h"
 #include "vendor/brightray/browser/inspectable_web_contents_delegate.h"
 #include "vendor/brightray/browser/inspectable_web_contents_impl.h"
 
-class CommandLine;
 struct WebPreferences;
+
+namespace base {
+class CommandLine;
+}
 
 namespace content {
 class BrowserContext;
@@ -39,6 +44,10 @@ class Size;
 
 namespace mate {
 class Dictionary;
+}
+
+namespace ui {
+class MenuModel;
 }
 
 namespace atom {
@@ -127,6 +136,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual bool IsKiosk() = 0;
   virtual void SetRepresentedFilename(const std::string& filename);
   virtual void SetDocumentEdited(bool edited);
+  virtual void SetMenu(ui::MenuModel* menu);
   virtual bool HasModalDialog();
   virtual gfx::NativeWindow GetNativeWindow() = 0;
 
@@ -161,7 +171,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   content::WebContents* GetDevToolsWebContents() const;
 
   // Called when renderer process is going to be started.
-  void AppendExtraCommandLineSwitches(CommandLine* command_line,
+  void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
                                       int child_process_id);
   void OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs);
 
@@ -281,7 +291,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   base::CancelableClosure window_unresposive_closure_;
 
   // Web preferences.
-  scoped_ptr<mate::Dictionary> web_preferences_;
+  mate::ScopedPersistent<v8::Object> web_preferences_;
 
   // Page's default zoom factor.
   double zoom_factor_;

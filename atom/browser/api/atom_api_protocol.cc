@@ -58,8 +58,9 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
   virtual void GetJobTypeInUI() OVERRIDE {
     DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 
-    v8::Locker locker(node_isolate);
-    v8::HandleScope handle_scope(node_isolate);
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Locker locker(isolate);
+    v8::HandleScope handle_scope(isolate);
 
     // Call the JS handler.
     Protocol::JsProtocolHandler callback =
@@ -75,7 +76,7 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
       return;
     } else if (result->IsObject()) {
       v8::Handle<v8::Object> obj = result->ToObject();
-      mate::Dictionary dict(node_isolate, obj);
+      mate::Dictionary dict(isolate, obj);
       std::string name = mate::V8ToString(obj->GetConstructorName());
       if (name == "RequestStringJob") {
         std::string mime_type, charset, data;
@@ -321,16 +322,17 @@ mate::Handle<Protocol> Protocol::Create(v8::Isolate* isolate) {
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports) {
+void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
+                v8::Handle<v8::Context> context, void* priv) {
   // Make sure the job factory has been created.
   atom::AtomBrowserContext::Get()->url_request_context_getter()->
       GetURLRequestContext();
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("protocol", atom::api::Protocol::Create(isolate));
 }
 
 }  // namespace
 
-NODE_MODULE(atom_browser_protocol, Initialize)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_protocol, Initialize)

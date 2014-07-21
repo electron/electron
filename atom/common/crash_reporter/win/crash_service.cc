@@ -347,7 +347,7 @@ void CrashService::OnClientDumpRequest(void* context,
   CrashMap::const_iterator it = map.find(L"breakpad-dump-location");
   if (it != map.end()) {
     base::FilePath alternate_dump_location = base::FilePath(it->second);
-    file_util::CreateDirectoryW(alternate_dump_location);
+    base::CreateDirectoryW(alternate_dump_location);
     alternate_dump_location = alternate_dump_location.Append(
         dump_location.BaseName());
     base::Move(dump_location, alternate_dump_location);

@@ -4,15 +4,46 @@
 
 #include "atom/browser/ui/file_dialog.h"
 
+#include <gdk/gdk.h>
+#include <gdk/gdkx.h>
+#include <gtk/gtk.h>
+
+// This conflicts with mate::Converter,
+#undef True
+#undef False
+// and V8.
+#undef None
+
 #include "atom/browser/native_window.h"
 #include "base/callback.h"
 #include "base/file_util.h"
-#include "chrome/browser/ui/gtk/gtk_util.h"
-#include "ui/base/gtk/gtk_signal.h"
+#include "chrome/browser/ui/libgtk2ui/gtk2_signal.h"
+#include "ui/aura/window.h"
+#include "ui/aura/window_tree_host.h"
 
 namespace file_dialog {
 
 namespace {
+
+const char kAuraTransientParent[] = "aura-transient-parent";
+
+void SetGtkTransientForAura(GtkWidget* dialog, aura::Window* parent) {
+  if (!parent || !parent->GetHost())
+    return;
+
+  gtk_widget_realize(dialog);
+  GdkWindow* gdk_window = gtk_widget_get_window(dialog);
+
+  // TODO(erg): Check to make sure we're using X11 if wayland or some other
+  // display server ever happens. Otherwise, this will crash.
+  XSetTransientForHint(GDK_WINDOW_XDISPLAY(gdk_window),
+                       GDK_WINDOW_XID(gdk_window),
+                       parent->GetHost()->GetAcceleratedWidget());
+
+  // We also set the |parent| as a property of |dialog|, so that we can unlink
+  // the two later.
+  g_object_set_data(G_OBJECT(dialog), kAuraTransientParent, parent);
+}
 
 class FileChooserDialog {
  public:
@@ -27,14 +58,17 @@ class FileChooserDialog {
     else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
       confirm_text = GTK_STOCK_OPEN;
 
-    GtkWindow* window = parent_window ? parent_window->GetNativeWindow() : NULL;
     dialog_ = gtk_file_chooser_dialog_new(
         title.c_str(),
-        window,
+        NULL,
         action,
         GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
         confirm_text, GTK_RESPONSE_ACCEPT,
         NULL);
+    if (parent_window) {
+      gfx::NativeWindow window = parent_window->GetNativeWindow();
+      SetGtkTransientForAura(dialog_, window);
+    }
 
     if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
       gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog_),
@@ -42,10 +76,6 @@ class FileChooserDialog {
     if (action != GTK_FILE_CHOOSER_ACTION_OPEN)
       gtk_file_chooser_set_create_folders(GTK_FILE_CHOOSER(dialog_), TRUE);
 
-    // Set window-to-parent modality by adding the dialog to the same window
-    // group as the parent.
-    gtk_window_group_add_window(gtk_window_get_group(window),
-                                GTK_WINDOW(dialog_));
     gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
 
     if (!default_path.empty()) {

@@ -22,7 +22,7 @@
 
 #include "atom/common/node_includes.h"
 
-using WebKit::WebFrame;
+using blink::WebFrame;
 
 namespace atom {
 
@@ -36,7 +36,7 @@ AtomRenderViewObserver::AtomRenderViewObserver(
 AtomRenderViewObserver::~AtomRenderViewObserver() {
 }
 
-void AtomRenderViewObserver::DidCreateDocumentElement(WebKit::WebFrame* frame) {
+void AtomRenderViewObserver::DidCreateDocumentElement(blink::WebFrame* frame) {
   // Read --zoom-factor from command line.
   std::string zoom_factor_str = CommandLine::ForCurrentProcess()->
       GetSwitchValueASCII(switches::kZoomFactor);;
@@ -45,12 +45,12 @@ void AtomRenderViewObserver::DidCreateDocumentElement(WebKit::WebFrame* frame) {
   double zoom_factor;
   if (!base::StringToDouble(zoom_factor_str, &zoom_factor))
     return;
-  double zoom_level = WebKit::WebView::zoomFactorToZoomLevel(zoom_factor);
+  double zoom_level = blink::WebView::zoomFactorToZoomLevel(zoom_factor);
   frame->view()->setZoomLevel(zoom_level);
 }
 
-void AtomRenderViewObserver::DraggableRegionsChanged(WebKit::WebFrame* frame) {
-  WebKit::WebVector<WebKit::WebDraggableRegion> webregions =
+void AtomRenderViewObserver::DraggableRegionsChanged(blink::WebFrame* frame) {
+  blink::WebVector<blink::WebDraggableRegion> webregions =
       frame->document().draggableRegions();
   std::vector<DraggableRegion> regions;
   for (size_t i = 0; i < webregions.size(); ++i) {
@@ -72,12 +72,12 @@ bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
   return handled;
 }
 
-void AtomRenderViewObserver::OnBrowserMessage(const string16& channel,
+void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
                                               const base::ListValue& args) {
   if (!render_view()->GetWebView())
     return;
 
-  WebKit::WebFrame* frame = render_view()->GetWebView()->mainFrame();
+  blink::WebFrame* frame = render_view()->GetWebView()->mainFrame();
   if (!renderer_client_->IsNodeBindingEnabled(frame))
     return;
 

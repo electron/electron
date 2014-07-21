@@ -8,7 +8,7 @@
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
 
-namespace WebKit {
+namespace blink {
 class WebView;
 }
 
@@ -33,7 +33,7 @@ class WebView : public mate::Wrappable {
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate);
 
-  WebKit::WebView* web_view_;
+  blink::WebView* web_view_;
 
   DISALLOW_COPY_AND_ASSIGN(WebView);
 };

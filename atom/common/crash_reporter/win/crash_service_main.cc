@@ -23,11 +23,11 @@ const wchar_t kStandardLogFile[] = L"operation_log.txt";
 bool GetCrashServiceDirectory(const std::wstring& application_name,
                               base::FilePath* dir) {
   base::FilePath temp_dir;
-  if (!file_util::GetTempDir(&temp_dir))
+  if (!base::GetTempDir(&temp_dir))
     return false;
   temp_dir = temp_dir.Append(application_name + L" Crashes");
   if (!base::PathExists(temp_dir)) {
-    if (!file_util::CreateDirectory(temp_dir))
+    if (!base::CreateDirectory(temp_dir))
       return false;
   }
   *dir = temp_dir;
@@ -68,7 +68,7 @@ int Main(const wchar_t* cmd) {
   VLOG(1) << "Session start. cmdline is [" << cmd << "]";
 
   // Setting the crash reporter.
-  string16 pipe_name = ReplaceStringPlaceholders(kPipeNameFormat,
+  base::string16 pipe_name = ReplaceStringPlaceholders(kPipeNameFormat,
                                                  application_name,
                                                  NULL);
   cmd_line.AppendSwitch("no-window");

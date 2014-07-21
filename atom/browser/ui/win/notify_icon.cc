@@ -5,7 +5,6 @@
 #include "atom/browser/ui/win/notify_icon.h"
 
 #include "atom/browser/ui/win/notify_icon_host.h"
-#include "atom/browser/ui/win/menu_2.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/windows_version.h"
@@ -13,6 +12,7 @@
 #include "ui/gfx/icon_util.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
+#include "ui/views/controls/menu/menu_runner.h"
 
 namespace atom {
 
@@ -60,8 +60,16 @@ void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
   if (!SetForegroundWindow(window_))
     return;
 
-  menu_.reset(new Menu2(menu_model_));
-  menu_->RunContextMenuAt(cursor_pos);
+  menu_runner_.reset(new views::MenuRunner(menu_model_));
+  views::MenuRunner::RunResult result = menu_runner_->RunMenuAt(
+      NULL,
+      NULL,
+      gfx::Rect(cursor_pos, gfx::Size()),
+      views::MenuItemView::TOPLEFT,
+      ui::MENU_SOURCE_MOUSE,
+      views::MenuRunner::HAS_MNEMONICS | views::MenuRunner::CONTEXT_MENU);
+  if (result == views::MenuRunner::MENU_DELETED)
+    LOG(ERROR) << "Menu deleted when running";
 }
 
 void NotifyIcon::ResetIcon() {
@@ -107,7 +115,7 @@ void NotifyIcon::SetToolTip(const std::string& tool_tip) {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
   icon_data.uFlags = NIF_TIP;
-  wcscpy_s(icon_data.szTip, UTF8ToUTF16(tool_tip).c_str());
+  wcscpy_s(icon_data.szTip, base::UTF8ToUTF16(tool_tip).c_str());
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
     LOG(WARNING) << "Unable to set tooltip for status tray icon";

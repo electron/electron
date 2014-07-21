@@ -15,21 +15,21 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
     const GURL& origin_url,
     const std::string& accept_lang,
     content::JavaScriptMessageType javascript_message_type,
-    const string16& message_text,
-    const string16& default_prompt_text,
+    const base::string16& message_text,
+    const base::string16& default_prompt_text,
     const DialogClosedCallback& callback,
     bool* did_suppress_message) {
-  callback.Run(false, string16());
+  callback.Run(false, base::string16());
 }
 
 void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
     content::WebContents* web_contents,
-    const string16& message_text,
+    const base::string16& message_text,
     bool is_reload,
     const DialogClosedCallback& callback) {
 
   bool prevent_reload = message_text.empty() ||
-                        message_text == ASCIIToUTF16("false");
+                        message_text == base::ASCIIToUTF16("false");
   callback.Run(!prevent_reload, message_text);
 }
 

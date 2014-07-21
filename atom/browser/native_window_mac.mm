@@ -524,6 +524,12 @@ void NativeWindowMac::HandleKeyboardEvent(
 void NativeWindowMac::InstallView() {
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
   if (has_frame_) {
+    // Add layer with white background for the contents view.
+    base::scoped_nsobject<CALayer> layer([[CALayer alloc] init]);
+    [layer setBackgroundColor:CGColorGetConstantColor(kCGColorWhite)];
+    [view setLayer:layer];
+    [view setWantsLayer:YES];
+
     [view setFrame:[[window_ contentView] bounds]];
     [[window_ contentView] addSubview:view];
   } else {

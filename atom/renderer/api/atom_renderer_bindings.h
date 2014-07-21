@@ -17,7 +17,7 @@ namespace content {
 class RenderView;
 }
 
-namespace WebKit {
+namespace blink {
 class WebFrame;
 }
 
@@ -29,11 +29,11 @@ class AtomRendererBindings : public AtomBindings {
   virtual ~AtomRendererBindings();
 
   // Call BindTo for process object of the frame.
-  void BindToFrame(WebKit::WebFrame* frame);
+  void BindToFrame(blink::WebFrame* frame);
 
   // Dispatch messages from browser.
   void OnBrowserMessage(content::RenderView* render_view,
-                        const string16& channel,
+                        const base::string16& channel,
                         const base::ListValue& args);
 
  private:

@@ -29,14 +29,14 @@ int32_t IDWeakMap::Add(v8::Isolate* isolate, v8::Handle<v8::Object> object) {
                          mate::Converter<int32_t>::ToV8(isolate, key));
 
   map_[key] = new mate::RefCountedPersistent<v8::Object>(object);
-  map_[key]->MakeWeak(this, WeakCallback);
+  map_[key]->SetWeak(this, WeakCallback);
   return key;
 }
 
-v8::Handle<v8::Value> IDWeakMap::Get(int32_t key) {
+v8::Handle<v8::Value> IDWeakMap::Get(v8::Isolate* isolate, int32_t key) {
   if (!Has(key)) {
     node::ThrowError("Invalid key");
-    return v8::Undefined();
+    return v8::Undefined(isolate);
   }
 
   return map_[key]->NewHandle();
@@ -77,14 +77,11 @@ void IDWeakMap::BuildPrototype(v8::Isolate* isolate,
 }
 
 // static
-void IDWeakMap::WeakCallback(v8::Isolate* isolate,
-                             v8::Persistent<v8::Object>* value,
-                             IDWeakMap* self) {
-  v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Object> object = v8::Local<v8::Object>::New(isolate, *value);
-  int32_t key = object->GetHiddenValue(
-      mate::StringToV8(isolate, "IDWeakMapKey"))->Int32Value();
-  self->Remove(key);
+void IDWeakMap::WeakCallback(
+    const v8::WeakCallbackData<v8::Object, IDWeakMap>& data) {
+  int32_t key = data.GetValue()->GetHiddenValue(
+      mate::StringToV8(data.GetIsolate(), "IDWeakMapKey"))->Int32Value();
+  data.GetParameter()->Remove(key);
 }
 
 }  // namespace api
@@ -94,10 +91,10 @@ void IDWeakMap::WeakCallback(v8::Isolate* isolate,
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports) {
+void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
+                v8::Handle<v8::Context> context, void* priv) {
   using atom::api::IDWeakMap;
-
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = context->GetIsolate();
   v8::Local<v8::Function> constructor = mate::CreateConstructor<IDWeakMap>(
       isolate,
       "IDWeakMap",
@@ -107,4 +104,4 @@ void Initialize(v8::Handle<v8::Object> exports) {
 
 }  // namespace
 
-NODE_MODULE(atom_common_id_weak_map, Initialize)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_common_id_weak_map, Initialize)

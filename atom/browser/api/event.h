@@ -27,7 +27,7 @@ class Event : public Wrappable,
   void PreventDefault();
 
   // event.sendReply(json), used for replying synchronous message.
-  bool SendReply(const string16& json);
+  bool SendReply(const base::string16& json);
 
   // Whether event.preventDefault() is called.
   bool prevent_default() const { return prevent_default_; }

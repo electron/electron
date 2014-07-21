@@ -49,13 +49,14 @@ mate::Handle<PowerMonitor> PowerMonitor::Create(v8::Isolate* isolate) {
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports) {
+void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
+                v8::Handle<v8::Context> context, void* priv) {
 #if defined(OS_MACOSX)
   base::PowerMonitorDeviceSource::AllocateSystemIOPorts();
 #endif
 
   using atom::api::PowerMonitor;
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = context->GetIsolate();
   mate::Handle<PowerMonitor> power_monitor = PowerMonitor::Create(isolate);
   mate::Dictionary dict(isolate, exports);
   dict.Set("powerMonitor", power_monitor);
@@ -63,4 +64,4 @@ void Initialize(v8::Handle<v8::Object> exports) {
 
 }  // namespace
 
-NODE_MODULE(atom_browser_power_monitor, Initialize)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_power_monitor, Initialize)

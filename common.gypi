@@ -5,7 +5,7 @@
       ['OS=="mac" or OS=="linux"', {
         'clang': 1,
       }],
-      ['OS=="win" and (MSVS_VERSION=="2012e" or MSVS_VERSION=="2010e")', {
+      ['OS=="win" and (MSVS_VERSION=="2013e" or MSVS_VERSION=="2012e" or MSVS_VERSION=="2010e")', {
         'msvs_express': 1,
         'windows_driver_kit_path%': 'C:/WinDDK/7600.16385.1',
       },{
@@ -24,12 +24,14 @@
     'node_shared_v8': 'true',
     'node_shared_zlib': 'false',
     'node_tag': '',
-    'node_unsafe_optimizations': 0,
     'node_use_dtrace': 'false',
     'node_use_etw': 'false',
+    'node_use_mdb': 'false',
     'node_use_openssl': 'true',
     'node_use_perfctr': 'false',
-    'node_use_systemtap': 'false',
+    'uv_library': 'static_library',
+    'uv_parent_path': 'vendor/node/deps/uv',
+    'uv_use_dtrace': 'false',
     'v8_postmortem_support': 'false',
     # Required by Linux (empty for now, should support it in future).
     'sysroot': '',
@@ -39,6 +41,7 @@
     'target_conditions': [
       ['_target_name in ["libuv", "http_parser", "cares", "openssl", "openssl-cli", "node_lib", "zlib"]', {
         'msvs_disabled_warnings': [
+          4703,  # potentially uninitialized local pointer variable 'req' used
           4013,  # 'free' undefined; assuming extern returning int
           4054,  #
           4057,  # 'function' : 'volatile LONG *' differs in indirection to slightly different base types from 'unsigned long *'
@@ -136,6 +139,7 @@
       4201,  # (uv.h) nameless struct/union
       4800,  # (v8.h) forcing value to bool 'true' or 'false'
       4819,  # The file contains a character that cannot be represented in the current code page
+      4996,  # (atlapp.h) 'GetVersionExW': was declared deprecated
     ],
     'msvs_settings': {
       'VCCLCompilerTool': {

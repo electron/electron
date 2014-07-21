@@ -13,8 +13,8 @@
 #include "atom/common/node_includes.h"
 
 using content::RenderView;
-using WebKit::WebFrame;
-using WebKit::WebView;
+using blink::WebFrame;
+using blink::WebView;
 
 namespace {
 
@@ -30,7 +30,7 @@ RenderView* GetCurrentRenderView() {
   return RenderView::FromWebView(view);
 }
 
-void Send(const string16& channel, const base::ListValue& arguments) {
+void Send(const base::string16& channel, const base::ListValue& arguments) {
   RenderView* render_view = GetCurrentRenderView();
   if (render_view == NULL)
     return;
@@ -42,8 +42,9 @@ void Send(const string16& channel, const base::ListValue& arguments) {
     node::ThrowError("Unable to send AtomViewHostMsg_Message");
 }
 
-string16 SendSync(const string16& channel, const base::ListValue& arguments) {
-  string16 json;
+base::string16 SendSync(const base::string16& channel,
+                        const base::ListValue& arguments) {
+  base::string16 json;
 
   RenderView* render_view = GetCurrentRenderView();
   if (render_view == NULL)
@@ -61,12 +62,13 @@ string16 SendSync(const string16& channel, const base::ListValue& arguments) {
   return json;
 }
 
-void Initialize(v8::Handle<v8::Object> exports) {
-  mate::Dictionary dict(v8::Isolate::GetCurrent(), exports);
+void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
+                v8::Handle<v8::Context> context, void* priv) {
+  mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("send", &Send);
   dict.SetMethod("sendSync", &SendSync);
 }
 
 }  // namespace
 
-NODE_MODULE(atom_renderer_ipc, Initialize)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_renderer_ipc, Initialize)

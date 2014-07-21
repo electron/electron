@@ -25,11 +25,11 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
 
  private:
   // content::RenderViewObserver implementation.
-  virtual void DidCreateDocumentElement(WebKit::WebFrame* frame) OVERRIDE;
-  virtual void DraggableRegionsChanged(WebKit::WebFrame* frame) OVERRIDE;
+  virtual void DidCreateDocumentElement(blink::WebFrame* frame) OVERRIDE;
+  virtual void DraggableRegionsChanged(blink::WebFrame* frame) OVERRIDE;
   virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
 
-  void OnBrowserMessage(const string16& channel,
+  void OnBrowserMessage(const base::string16& channel,
                         const base::ListValue& args);
 
   // Weak reference to renderer client.

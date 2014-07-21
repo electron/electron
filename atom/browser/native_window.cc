@@ -34,11 +34,13 @@
 #include "content/public/browser/notification_source.h"
 #include "content/public/browser/notification_types.h"
 #include "content/public/browser/plugin_service.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/web_contents_view.h"
 #include "content/public/common/renderer_preferences.h"
+#include "content/public/common/user_agent.h"
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/codec/png_codec.h"
@@ -49,7 +51,6 @@
 #include "ui/gfx/size.h"
 #include "vendor/brightray/browser/inspectable_web_contents.h"
 #include "vendor/brightray/browser/inspectable_web_contents_view.h"
-#include "webkit/common/user_agent/user_agent_util.h"
 #include "webkit/common/webpreferences.h"
 
 using content::NavigationEntry;
@@ -69,12 +70,6 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
           brightray::InspectableWebContents::Create(web_contents)) {
   options.Get(switches::kFrame, &has_frame_);
 
-#if defined(OS_MACOSX)
-  // Temporary fix for flashing devtools, try removing this after upgraded to
-  // Chrome 32.
-  web_contents->GetView()->SetAllowOverlappingViews(false);
-#endif
-
   // Read icon before window is created.
   gfx::ImageSkia icon;
   if (options.Get(switches::kIcon, &icon))
@@ -84,9 +79,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
   options.Get(switches::kNodeIntegration, &node_integration_);
 
   // Read the web preferences.
-  scoped_ptr<mate::Dictionary> web_preferences(new mate::Dictionary);
-  if (options.Get(switches::kWebPreferences, web_preferences.get()))
-    web_preferences_.reset(web_preferences.release());
+  options.Get(switches::kWebPreferences, &web_preferences_);
 
   // Read the zoom factor before any navigation.
   options.Get(switches::kZoomFactor, &zoom_factor_);
@@ -104,7 +97,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       browser->GetVersion().c_str(),
       CHROME_VERSION_STRING);
   web_contents->GetMutableRendererPrefs()->user_agent_override =
-      webkit_glue::BuildUserAgentFromProduct(product_name);
+      content::BuildUserAgentFromProduct(product_name);
 
   // Get notified of title updated message.
   registrar_.Add(this, content::NOTIFICATION_WEB_CONTENTS_TITLE_UPDATED,
@@ -202,17 +195,15 @@ void NativeWindow::SetRepresentedFilename(const std::string& filename) {
 void NativeWindow::SetDocumentEdited(bool edited) {
 }
 
+void NativeWindow::SetMenu(ui::MenuModel* menu) {
+}
+
 bool NativeWindow::HasModalDialog() {
   return has_dialog_attached_;
 }
 
 void NativeWindow::OpenDevTools() {
   inspectable_web_contents()->ShowDevTools();
-#if defined(OS_MACOSX)
-  // Temporary fix for flashing devtools, try removing this after upgraded to
-  // Chrome 32.
-  GetDevToolsWebContents()->GetView()->SetAllowOverlappingViews(false);
-#endif
 }
 
 void NativeWindow::CloseDevTools() {
@@ -271,7 +262,8 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
       size,
       base::Bind(&NativeWindow::OnCapturePageDone,
                  weak_factory_.GetWeakPtr(),
-                 callback));
+                 callback),
+      SkBitmap::kARGB_8888_Config);
 }
 
 void NativeWindow::DestroyWebContents() {
@@ -305,7 +297,7 @@ void NativeWindow::CloseWebContents() {
     ScheduleUnresponsiveEvent(5000);
 
   if (web_contents->NeedToFireBeforeUnload())
-    web_contents->GetRenderViewHost()->FirePageBeforeUnload(false);
+    web_contents->GetMainFrame()->DispatchBeforeUnload(false);
   else
     web_contents->Close();
 }
@@ -322,8 +314,8 @@ content::WebContents* NativeWindow::GetDevToolsWebContents() const {
   return inspectable_web_contents()->devtools_web_contents();
 }
 
-void NativeWindow::AppendExtraCommandLineSwitches(CommandLine* command_line,
-                                                  int child_process_id) {
+void NativeWindow::AppendExtraCommandLineSwitches(
+    base::CommandLine* command_line, int child_process_id) {
   // Append --node-integration to renderer process.
   command_line->AppendSwitchASCII(switches::kNodeIntegration,
                                   node_integration_);
@@ -335,33 +327,32 @@ void NativeWindow::AppendExtraCommandLineSwitches(CommandLine* command_line,
 }
 
 void NativeWindow::OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs) {
-  // FIXME Disable accelerated composition in frameless window.
-  if (!has_frame_)
-    prefs->accelerated_compositing_enabled = false;
+  if (web_preferences_.IsEmpty())
+    return;
 
   bool b;
   std::vector<base::FilePath> list;
-  if (!web_preferences_)
-    return;
-  if (web_preferences_->Get("javascript", &b))
+  mate::Dictionary web_preferences(web_preferences_.isolate(),
+                                   web_preferences_.NewHandle());
+  if (web_preferences.Get("javascript", &b))
     prefs->javascript_enabled = b;
-  if (web_preferences_->Get("web-security", &b))
+  if (web_preferences.Get("web-security", &b))
     prefs->web_security_enabled = b;
-  if (web_preferences_->Get("images", &b))
+  if (web_preferences.Get("images", &b))
     prefs->images_enabled = b;
-  if (web_preferences_->Get("java", &b))
+  if (web_preferences.Get("java", &b))
     prefs->java_enabled = b;
-  if (web_preferences_->Get("text-areas-are-resizable", &b))
+  if (web_preferences.Get("text-areas-are-resizable", &b))
     prefs->text_areas_are_resizable = b;
-  if (web_preferences_->Get("webgl", &b))
+  if (web_preferences.Get("webgl", &b))
     prefs->experimental_webgl_enabled = b;
-  if (web_preferences_->Get("webaudio", &b))
+  if (web_preferences.Get("webaudio", &b))
     prefs->webaudio_enabled = b;
-  if (web_preferences_->Get("accelerated-compositing", &b))
+  if (web_preferences.Get("accelerated-compositing", &b))
     prefs->accelerated_compositing_enabled = b;
-  if (web_preferences_->Get("plugins", &b))
+  if (web_preferences.Get("plugins", &b))
     prefs->plugins_enabled = b;
-  if (web_preferences_->Get("extra-plugin-dirs", &list))
+  if (web_preferences.Get("extra-plugin-dirs", &list))
     for (size_t i = 0; i < list.size(); ++i)
       content::PluginService::GetInstance()->AddExtraPluginDir(list[i]);
 }
@@ -517,7 +508,7 @@ void NativeWindow::Observe(int type,
 
     if (title->first) {
       bool prevent_default = false;
-      std::string text = UTF16ToUTF8(title->first->GetTitle());
+      std::string text = base::UTF16ToUTF8(title->first->GetTitle());
       FOR_EACH_OBSERVER(NativeWindowObserver,
                         observers_,
                         OnPageTitleUpdated(&prevent_default, text));
@@ -537,19 +528,19 @@ void NativeWindow::DevToolsSaveToFile(const std::string& url,
     path = it->second;
   } else {
     base::FilePath default_path(base::FilePath::FromUTF8Unsafe(url));
-    if (!file_dialog::ShowSaveDialog(this, url, default_path, &path))
+    if (!file_dialog::ShowSaveDialog(this, url, default_path, &path)) {
+      base::StringValue url_value(url);
+      CallDevToolsFunction("InspectorFrontendAPI.canceledSaveURL", &url_value);
       return;
+    }
   }
 
   saved_files_[url] = path;
-  file_util::WriteFile(path, content.data(), content.size());
+  base::WriteFile(path, content.data(), content.size());
 
   // Notify devtools.
   base::StringValue url_value(url);
   CallDevToolsFunction("InspectorFrontendAPI.savedURL", &url_value);
-
-  // TODO(zcbenz): In later Chrome we need to call canceledSaveURL when the save
-  // failed.
 }
 
 void NativeWindow::DevToolsAppendToFile(const std::string& url,
@@ -557,7 +548,7 @@ void NativeWindow::DevToolsAppendToFile(const std::string& url,
   PathsMap::iterator it = saved_files_.find(url);
   if (it == saved_files_.end())
     return;
-  file_util::AppendToFile(it->second, content.data(), content.size());
+  base::AppendToFile(it->second, content.data(), content.size());
 
   // Notify devtools.
   base::StringValue url_value(url);
@@ -613,8 +604,9 @@ void NativeWindow::CallDevToolsFunction(const std::string& function_name,
       }
     }
   }
-  GetDevToolsWebContents()->GetRenderViewHost()->ExecuteJavascriptInWebFrame(
-      string16(), base::UTF8ToUTF16(function_name + "(" + params + ");"));
+  base::string16 javascript =
+      base::UTF8ToUTF16(function_name + "(" + params + ");");
+  GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(javascript);
 }
 
 }  // namespace atom

@@ -38,7 +38,7 @@ to understand the source code better.
     * **api** - The implementation of common APIs, and foundations of
       atom-shell's built-in modules.
        * **lib** - Javascript part of the API implementation.
-* **chrome** - Source code modified from Chromium's `chrome` component.
+* **chromium_src** - Source code that copied from Chromium.
 * **docs** - Documentations.
 * **spec** - Automatic tests.
 * **atom.gyp** - Building rules of atom-shell.

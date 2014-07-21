@@ -10,8 +10,9 @@
 
 namespace {
 
-v8::Handle<v8::Object> CreateObjectWithName(v8::Handle<v8::String> name) {
-  v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New();
+v8::Handle<v8::Object> CreateObjectWithName(v8::Isolate* isolate,
+                                            v8::Handle<v8::String> name) {
+  v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(isolate);
   t->SetClassName(name);
   return t->GetFunction()->NewInstance();
 }
@@ -31,18 +32,20 @@ int32_t GetObjectHash(v8::Handle<v8::Object> object) {
   return object->GetIdentityHash();
 }
 
-void SetDestructor(v8::Handle<v8::Object> object,
+void SetDestructor(v8::Isolate* isolate,
+                   v8::Handle<v8::Object> object,
                    v8::Handle<v8::Function> callback) {
-  atom::ObjectLifeMonitor::BindTo(object, callback);
+  atom::ObjectLifeMonitor::BindTo(isolate, object, callback);
 }
 
-void TakeHeapSnapshot() {
-  node::node_isolate->GetHeapProfiler()->TakeHeapSnapshot(
-      v8::String::New("test"));
+void TakeHeapSnapshot(v8::Isolate* isolate) {
+  isolate->GetHeapProfiler()->TakeHeapSnapshot(
+      mate::StringToV8(isolate, "test"));
 }
 
-void Initialize(v8::Handle<v8::Object> exports) {
-  mate::Dictionary dict(v8::Isolate::GetCurrent(), exports);
+void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
+                v8::Handle<v8::Context> context, void* priv) {
+  mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createObjectWithName", &CreateObjectWithName);
   dict.SetMethod("getHiddenValue", &GetHiddenValue);
   dict.SetMethod("setHiddenValue", &SetHiddenValue);
@@ -53,4 +56,4 @@ void Initialize(v8::Handle<v8::Object> exports) {
 
 }  // namespace
 
-NODE_MODULE(atom_common_v8_util, Initialize)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_common_v8_util, Initialize)

@@ -85,12 +85,13 @@ mate::Handle<AutoUpdater> AutoUpdater::Create(v8::Isolate* isolate) {
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
+                v8::Handle<v8::Context> context, void* priv) {
+  v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("autoUpdater", atom::api::AutoUpdater::Create(isolate));
 }
 
 }  // namespace
 
-NODE_MODULE(atom_browser_auto_updater, Initialize)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_auto_updater, Initialize)

@@ -48,11 +48,12 @@ class Menu : public mate::Wrappable,
       int command_id,
       ui::Accelerator* accelerator) OVERRIDE;
   virtual bool IsItemForCommandIdDynamic(int command_id) const OVERRIDE;
-  virtual string16 GetLabelForCommandId(int command_id) const OVERRIDE;
-  virtual string16 GetSublabelForCommandId(int command_id) const OVERRIDE;
+  virtual base::string16 GetLabelForCommandId(int command_id) const OVERRIDE;
+  virtual base::string16 GetSublabelForCommandId(int command_id) const OVERRIDE;
   virtual void ExecuteCommand(int command_id, int event_flags) OVERRIDE;
   virtual void MenuWillShow(ui::SimpleMenuModel* source) OVERRIDE;
 
+  virtual void AttachToWindow(Window* window);
   virtual void Popup(Window* window) = 0;
 
   scoped_ptr<ui::SimpleMenuModel> model_;
@@ -82,14 +83,6 @@ class Menu : public mate::Wrappable,
   bool IsItemCheckedAt(int index) const;
   bool IsEnabledAt(int index) const;
   bool IsVisibleAt(int index) const;
-
-#if defined(OS_WIN)
-  virtual void UpdateStates() = 0;
-#endif
-
-#if defined(OS_WIN) || defined(TOOLKIT_GTK)
-  virtual void AttachToWindow(Window* window) = 0;
-#endif
 
   DISALLOW_COPY_AND_ASSIGN(Menu);
 };

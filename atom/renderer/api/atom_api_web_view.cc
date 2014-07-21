@@ -17,8 +17,8 @@ namespace api {
 
 namespace {
 
-WebKit::WebView* GetCurrentWebView() {
-  WebKit::WebFrame* frame = WebKit::WebFrame::frameForCurrentContext();
+blink::WebView* GetCurrentWebView() {
+  blink::WebFrame* frame = blink::WebFrame::frameForCurrentContext();
   if (!frame)
     return NULL;
   return frame->view();
@@ -41,12 +41,12 @@ double WebView::GetZoomLevel() const {
 }
 
 double WebView::SetZoomFactor(double factor) {
-  return WebKit::WebView::zoomLevelToZoomFactor(SetZoomLevel(
-      WebKit::WebView::zoomFactorToZoomLevel(factor)));
+  return blink::WebView::zoomLevelToZoomFactor(SetZoomLevel(
+      blink::WebView::zoomFactorToZoomLevel(factor)));
 }
 
 double WebView::GetZoomFactor() const {
-  return WebKit::WebView::zoomLevelToZoomFactor(GetZoomLevel());
+  return blink::WebView::zoomLevelToZoomFactor(GetZoomLevel());
 }
 
 mate::ObjectTemplateBuilder WebView::GetObjectTemplateBuilder(
@@ -69,12 +69,13 @@ mate::Handle<WebView> WebView::Create(v8::Isolate* isolate) {
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
+                v8::Handle<v8::Context> context, void* priv) {
+  v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("webView", atom::api::WebView::Create(isolate));
 }
 
 }  // namespace
 
-NODE_MODULE(atom_renderer_web_view, Initialize)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_renderer_web_view, Initialize)

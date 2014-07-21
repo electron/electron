@@ -31,12 +31,58 @@ void SetupProcessObject(Environment*, int, const char* const*, int,
                         const char* const*);
 }
 
+// Force all builtin modules to be referenced so they can actually run their
+// DSO constructors, see http://git.io/DRIqCg.
+#define REFERENCE_MODULE(name) \
+  extern "C" void _register_ ## name(void); \
+  void (*fp_register_ ## name)(void) = _register_ ## name
+// Node's builtin modules.
+REFERENCE_MODULE(cares_wrap);
+REFERENCE_MODULE(fs_event_wrap);
+REFERENCE_MODULE(buffer);
+REFERENCE_MODULE(contextify);
+REFERENCE_MODULE(crypto);
+REFERENCE_MODULE(fs);
+REFERENCE_MODULE(http_parser);
+REFERENCE_MODULE(os);
+REFERENCE_MODULE(v8);
+REFERENCE_MODULE(zlib);
+REFERENCE_MODULE(pipe_wrap);
+REFERENCE_MODULE(process_wrap);
+REFERENCE_MODULE(signal_wrap);
+REFERENCE_MODULE(smalloc);
+REFERENCE_MODULE(spawn_sync);
+REFERENCE_MODULE(tcp_wrap);
+REFERENCE_MODULE(timer_wrap);
+REFERENCE_MODULE(tls_wrap);
+REFERENCE_MODULE(tty_wrap);
+REFERENCE_MODULE(udp_wrap);
+REFERENCE_MODULE(uv);
+// Atom Shell's builtin modules.
+REFERENCE_MODULE(atom_browser_app);
+REFERENCE_MODULE(atom_browser_auto_updater);
+REFERENCE_MODULE(atom_browser_dialog);
+REFERENCE_MODULE(atom_browser_menu);
+REFERENCE_MODULE(atom_browser_power_monitor);
+REFERENCE_MODULE(atom_browser_protocol);
+REFERENCE_MODULE(atom_browser_tray);
+REFERENCE_MODULE(atom_browser_window);
+REFERENCE_MODULE(atom_common_clipboard);
+REFERENCE_MODULE(atom_common_crash_reporter);
+REFERENCE_MODULE(atom_common_id_weak_map);
+REFERENCE_MODULE(atom_common_screen);
+REFERENCE_MODULE(atom_common_shell);
+REFERENCE_MODULE(atom_common_v8_util);
+REFERENCE_MODULE(atom_renderer_ipc);
+REFERENCE_MODULE(atom_renderer_web_view);
+#undef REFERENCE_MODULE
+
 namespace atom {
 
 namespace {
 
 // Empty callback for async handle.
-void UvNoOp(uv_async_t* handle, int status) {
+void UvNoOp(uv_async_t* handle) {
 }
 
 // Convert the given vector to an array of C-strings. The strings in the
@@ -52,11 +98,11 @@ scoped_ptr<const char*[]> StringVectorToArgArray(
 
 #if defined(OS_WIN)
 std::vector<std::string> String16VectorToStringVector(
-    const std::vector<string16>& vector) {
+    const std::vector<base::string16>& vector) {
   std::vector<std::string> utf8_vector;
   utf8_vector.reserve(vector.size());
   for (size_t i = 0; i < vector.size(); ++i)
-    utf8_vector.push_back(UTF16ToUTF8(vector[i]));
+    utf8_vector.push_back(base::UTF16ToUTF8(vector[i]));
   return utf8_vector;
 }
 #endif
@@ -85,16 +131,9 @@ NodeBindings::~NodeBindings() {
 
   // Clear uv.
   uv_sem_destroy(&embed_sem_);
-  uv_timer_stop(&idle_timer_);
 }
 
 void NodeBindings::Initialize() {
-  // Init idle GC for browser.
-  if (is_browser_) {
-    uv_timer_init(uv_default_loop(), &idle_timer_);
-    uv_timer_start(&idle_timer_, IdleCallback, 5000, 5000);
-  }
-
   // Open node's error reporting system for browser process.
   node::g_standalone_mode = is_browser_;
   node::g_upstream_node_mode = false;
@@ -162,7 +201,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   uv_unref(reinterpret_cast<uv_handle_t*>(env->idle_prepare_handle()));
   uv_unref(reinterpret_cast<uv_handle_t*>(env->idle_check_handle()));
 
-  Local<FunctionTemplate> process_template = FunctionTemplate::New();
+  Local<FunctionTemplate> process_template = FunctionTemplate::New(isolate);
   process_template->SetClassName(FIXED_ONE_BYTE_STRING(isolate, "process"));
 
   Local<Object> process_object = process_template->GetFunction()->NewInstance();
@@ -199,15 +238,16 @@ void NodeBindings::RunMessageLoop() {
 void NodeBindings::UvRunOnce() {
   DCHECK(!is_browser_ || BrowserThread::CurrentlyOn(BrowserThread::UI));
 
-  // Use Locker in browser process.
-  BrowserV8Locker locker(node_isolate);
-
-  v8::HandleScope handle_scope(node_isolate);
-
-  // Enter node context while dealing with uv events, by default the global
-  // env would be used unless user specified another one (this happens for
-  // renderer process, which wraps the uv loop with web page context).
+  // By default the global env would be used unless user specified another one
+  // (this happens for renderer process, which wraps the uv loop with web page
+  // context).
   node::Environment* env = uv_env() ? uv_env() : global_env;
+
+  // Use Locker in browser process.
+  BrowserV8Locker locker(env->isolate());
+  v8::HandleScope handle_scope(env->isolate());
+
+  // Enter node context while dealing with uv events.
   v8::Context::Scope context_scope(env->context());
 
   // Deal with uv events.
@@ -251,11 +291,6 @@ void NodeBindings::EmbedThreadRunner(void *arg) {
     // Deal with event in main thread.
     self->WakeupMainThread();
   }
-}
-
-// static
-void NodeBindings::IdleCallback(uv_timer_t*, int) {
-  v8::V8::IdleNotification();
 }
 
 }  // namespace atom

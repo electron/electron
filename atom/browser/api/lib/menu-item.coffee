@@ -38,16 +38,6 @@ class MenuItem
   overrideProperty: (name, defaultValue=null) ->
     this[name] ?= defaultValue
 
-    # Update states when property is changed on Windows.
-    return unless process.platform is 'win32'
-    v8Util.setHiddenValue this, name, this[name]
-    Object.defineProperty this, name,
-      enumerable: true
-      get: => v8Util.getHiddenValue this, name
-      set: (val) =>
-        v8Util.setHiddenValue this, name, val
-        @menu?._updateStates()
-
   overrideReadOnlyProperty: (name, defaultValue=null) ->
     this[name] ?= defaultValue
     Object.defineProperty this, name,

@@ -5,34 +5,32 @@
 
 #include "atom/common/api/object_life_monitor.h"
 
+#include "native_mate/compat.h"
+
 namespace atom {
 
 // static
-void ObjectLifeMonitor::BindTo(v8::Handle<v8::Object> target,
+void ObjectLifeMonitor::BindTo(v8::Isolate* isolate,
+                               v8::Handle<v8::Object> target,
                                v8::Handle<v8::Value> destructor) {
-  target->SetHiddenValue(v8::String::New("destructor"), destructor);
+  target->SetHiddenValue(MATE_STRING_NEW(isolate, "destructor"), destructor);
 
   ObjectLifeMonitor* olm = new ObjectLifeMonitor();
   olm->handle_.reset(target);
-  olm->handle_.MakeWeak(olm, WeakCallback);
+  olm->handle_.SetWeak(olm, WeakCallback);
 }
 
 ObjectLifeMonitor::ObjectLifeMonitor() {
 }
 
 // static
-void ObjectLifeMonitor::WeakCallback(v8::Isolate* isolate,
-                                     v8::Persistent<v8::Object>* value,
-                                     ObjectLifeMonitor* self) {
+void ObjectLifeMonitor::WeakCallback(
+    const v8::WeakCallbackData<v8::Object, ObjectLifeMonitor>& data) {
   // destructor.call(object, object);
-  {
-    v8::HandleScope handle_scope(isolate);
-    v8::Local<v8::Object> obj = self->handle_.NewHandle();
-    v8::Local<v8::Function>::Cast(obj->GetHiddenValue(
-        v8::String::New("destructor")))->Call(obj, 0, NULL);
-  }
-
-  delete self;
+  v8::Local<v8::Object> obj = data.GetValue();
+  v8::Local<v8::Function>::Cast(obj->GetHiddenValue(
+      MATE_STRING_NEW(data.GetIsolate(), "destructor")))->Call(obj, 0, NULL);
+  delete data.GetParameter();
 }
 
 }  // namespace atom

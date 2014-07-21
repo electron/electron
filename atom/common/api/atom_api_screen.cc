@@ -7,33 +7,7 @@
 
 #include "atom/common/node_includes.h"
 
-#if defined(TOOLKIT_GTK)
-#include "base/command_line.h"
-#include "base/environment.h"
-#include "base/nix/xdg_util.h"
-#include "ui/gfx/gtk_util.h"
-#endif
-
 namespace mate {
-
-namespace {
-
-gfx::Display AdaptToWindowManager(const gfx::Display& display) {
-  gfx::Display changed(display);
-#if defined(TOOLKIT_GTK)
-  scoped_ptr<base::Environment> env(base::Environment::Create());
-  base::nix::DesktopEnvironment de(base::nix::GetDesktopEnvironment(env.get()));
-  if (de == base::nix::DESKTOP_ENVIRONMENT_UNITY) {
-    // Unity's 24px global menu bar should not be included in the work area.
-    gfx::Rect rect(changed.work_area());
-    rect.set_height(rect.height() - 24);
-    changed.set_work_area(rect);
-  }
-#endif
-  return changed;
-}
-
-}  // namespace
 
 template<>
 struct Converter<gfx::Point> {
@@ -70,8 +44,7 @@ struct Converter<gfx::Rect> {
 template<>
 struct Converter<gfx::Display> {
   static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const gfx::Display& val) {
-    gfx::Display display(AdaptToWindowManager(val));
+                                    const gfx::Display& display) {
     return mate::ObjectTemplateBuilder(isolate)
         .SetValue("bounds", display.bounds())
         .SetValue("workArea", display.work_area())
@@ -86,13 +59,10 @@ struct Converter<gfx::Display> {
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports) {
-#if defined(TOOLKIT_GTK)
-  gfx::GdkInitFromCommandLine(*CommandLine::ForCurrentProcess());
-#endif
-
+void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
+                v8::Handle<v8::Context> context, void* priv) {
   gfx::Screen* screen = gfx::Screen::GetNativeScreen();
-  mate::Dictionary dict(v8::Isolate::GetCurrent(), exports);
+  mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("getCursorScreenPoint",
                  base::Bind(&gfx::Screen::GetCursorScreenPoint,
                             base::Unretained(screen)));
@@ -103,4 +73,4 @@ void Initialize(v8::Handle<v8::Object> exports) {
 
 }  // namespace
 
-NODE_MODULE(atom_common_screen, Initialize)
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_common_screen, Initialize)

@@ -75,3 +75,21 @@ describe 'chromium feature', ->
       return if process.platform is 'linux'
       webgl = document.createElement('canvas').getContext 'webgl'
       assert.notEqual webgl, null
+
+  describe 'web workers', ->
+    it 'Worker can work', (done) ->
+      worker = new Worker('../fixtures/workers/worker.js')
+      message = 'ping'
+      worker.onmessage = (event) ->
+        assert.equal event.data, message
+        worker.terminate()
+        done()
+      worker.postMessage message
+
+    it 'SharedWorker can work', (done) ->
+      worker = new SharedWorker('../fixtures/workers/shared_worker.js')
+      message = 'ping'
+      worker.port.onmessage = (event) ->
+        assert.equal event.data, message
+        done()
+      worker.port.postMessage message

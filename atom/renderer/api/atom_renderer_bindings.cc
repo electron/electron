@@ -11,6 +11,7 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/values.h"
 #include "content/public/renderer/render_view.h"
+#include "native_mate/converter.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
@@ -21,8 +22,8 @@ namespace atom {
 namespace {
 
 v8::Handle<v8::Object> GetProcessObject(v8::Handle<v8::Context> context) {
-  v8::Handle<v8::Object> process =
-      context->Global()->Get(v8::String::New("process"))->ToObject();
+  v8::Handle<v8::Object> process = context->Global()->Get(
+      mate::StringToV8(context->GetIsolate(), "process"))->ToObject();
   DCHECK(!process.IsEmpty());
 
   return process;
@@ -36,24 +37,26 @@ AtomRendererBindings::AtomRendererBindings() {
 AtomRendererBindings::~AtomRendererBindings() {
 }
 
-void AtomRendererBindings::BindToFrame(WebKit::WebFrame* frame) {
-  v8::HandleScope handle_scope(node_isolate);
+void AtomRendererBindings::BindToFrame(blink::WebFrame* frame) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope handle_scope(isolate);
 
   v8::Handle<v8::Context> context = frame->mainWorldScriptContext();
   if (context.IsEmpty())
     return;
 
   v8::Context::Scope scope(context);
-  AtomBindings::BindTo(GetProcessObject(context));
+  AtomBindings::BindTo(isolate, GetProcessObject(context));
 }
 
 void AtomRendererBindings::OnBrowserMessage(content::RenderView* render_view,
-                                            const string16& channel,
+                                            const base::string16& channel,
                                             const base::ListValue& args) {
   if (!render_view->GetWebView())
     return;
 
-  v8::HandleScope handle_scope(node_isolate);
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope handle_scope(isolate);
 
   v8::Local<v8::Context> context =
       render_view->GetWebView()->mainFrame()->mainWorldScriptContext();
@@ -67,7 +70,7 @@ void AtomRendererBindings::OnBrowserMessage(content::RenderView* render_view,
 
   std::vector<v8::Handle<v8::Value>> arguments;
   arguments.reserve(1 + args.GetSize());
-  arguments.push_back(mate::ConvertToV8(node_isolate, channel));
+  arguments.push_back(mate::ConvertToV8(isolate, channel));
 
   for (size_t i = 0; i < args.GetSize(); i++) {
     const base::Value* value;
@@ -75,7 +78,7 @@ void AtomRendererBindings::OnBrowserMessage(content::RenderView* render_view,
       arguments.push_back(converter->ToV8Value(value, context));
   }
 
-  node::MakeCallback(process, "emit", arguments.size(), &arguments[0]);
+  node::MakeCallback(isolate, process, "emit", arguments.size(), &arguments[0]);
 }
 
 }  // namespace atom

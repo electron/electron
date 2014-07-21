@@ -3,9 +3,9 @@
 import platform
 import sys
 
-NODE_VERSION = 'v0.11.10'
+NODE_VERSION = 'v0.11.13'
 BASE_URL = 'https://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent'
-LIBCHROMIUMCONTENT_COMMIT = '765ec5dcf192845fed4aec0b117f1e53050911d6'
+LIBCHROMIUMCONTENT_COMMIT = '177f00b33d8ba5a6befe646e8d39ce19b6a3c668'
 
 ARCH = {
     'cygwin': '32bit',

@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_ATOM_BROWSER_MAIN_PARTS_H_
 
 #include "brightray/browser/browser_main_parts.h"
+#include "v8/include/v8.h"
 
 namespace atom {
 
@@ -25,11 +26,11 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
  protected:
   // Implementations of brightray::BrowserMainParts.
   virtual brightray::BrowserContext* CreateBrowserContext() OVERRIDE;
+  virtual void InitProxyResolverV8() OVERRIDE;
 
   // Implementations of content::BrowserMainParts.
   virtual void PostEarlyInitialization() OVERRIDE;
   virtual void PreMainMessageLoopRun() OVERRIDE;
-  virtual int PreCreateThreads() OVERRIDE;
 #if defined(OS_MACOSX)
   virtual void PreMainMessageLoopStart() OVERRIDE;
   virtual void PostDestroyThreads() OVERRIDE;
@@ -39,6 +40,13 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   scoped_ptr<AtomBindings> atom_bindings_;
   scoped_ptr<Browser> browser_;
   scoped_ptr<NodeBindings> node_bindings_;
+
+  // The V8 environment of browser process.
+  v8::Isolate* isolate_;
+  v8::Locker locker_;
+  v8::HandleScope handle_scope_;
+  v8::UniquePersistent<v8::Context> context_;
+  v8::Context::Scope context_scope_;
 
   static AtomBrowserMainParts* self_;
 

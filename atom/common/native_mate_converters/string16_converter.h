@@ -11,17 +11,20 @@
 namespace mate {
 
 template<>
-struct Converter<string16> {
+struct Converter<base::string16> {
   static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const string16& val) {
-    return v8::String::New(reinterpret_cast<const uint16_t*>(val.data()),
-                           val.size());
+                                    const base::string16& val) {
+    return MATE_STRING_NEW_FROM_UTF16(
+        isolate, reinterpret_cast<const uint16_t*>(val.data()), val.size());
   }
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
-                     string16* out) {
+                     base::string16* out) {
+    if (!val->IsString())
+      return false;
+
     v8::String::Value s(val);
-    out->assign(reinterpret_cast<const char16*>(*s), s.length());
+    out->assign(reinterpret_cast<const base::char16*>(*s), s.length());
     return true;
   }
 };

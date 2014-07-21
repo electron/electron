@@ -87,7 +87,7 @@ GURL WebContents::GetURL() const {
   return web_contents()->GetURL();
 }
 
-string16 WebContents::GetTitle() const {
+base::string16 WebContents::GetTitle() const {
   return web_contents()->GetTitle();
 }
 
@@ -154,12 +154,12 @@ bool WebContents::IsCrashed() const {
   return web_contents()->IsCrashed();
 }
 
-void WebContents::ExecuteJavaScript(const string16& code) {
+void WebContents::ExecuteJavaScript(const base::string16& code) {
   web_contents()->GetRenderViewHost()->ExecuteJavascriptInWebFrame(
-      string16(), code);
+      base::string16(), code);
 }
 
-bool WebContents::SendIPCMessage(const string16& channel,
+bool WebContents::SendIPCMessage(const base::string16& channel,
                                  const base::ListValue& args) {
   return Send(new AtomViewMsg_Message(routing_id(), channel, args));
 }
@@ -190,17 +190,17 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
       .SetMethod("_send", &WebContents::SendIPCMessage);
 }
 
-void WebContents::OnRendererMessage(const string16& channel,
+void WebContents::OnRendererMessage(const base::string16& channel,
                                     const base::ListValue& args) {
   // webContents.emit(channel, new Event(), args...);
-  Emit(UTF16ToUTF8(channel), args, web_contents(), NULL);
+  Emit(base::UTF16ToUTF8(channel), args, web_contents(), NULL);
 }
 
-void WebContents::OnRendererMessageSync(const string16& channel,
+void WebContents::OnRendererMessageSync(const base::string16& channel,
                                         const base::ListValue& args,
                                         IPC::Message* message) {
   // webContents.emit(channel, new Event(sender, message), args...);
-  Emit(UTF16ToUTF8(channel), args, web_contents(), message);
+  Emit(base::UTF16ToUTF8(channel), args, web_contents(), message);
 }
 
 // static

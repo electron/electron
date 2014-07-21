@@ -32,7 +32,11 @@
     ['OS!="linux" and OS!="openbsd" and OS!="freebsd"', {
       'sources/': [
         ['exclude', '_linux(_unittest)?\\.(h|cc)$'],
+        ['exclude', '(^|/)linux_[^/]*\\.(h|cc)$'],
         ['exclude', '(^|/)linux/'],
+        ['exclude', '_x11(_unittest)?\\.(h|cc)$'],
+        ['exclude', '(^|/)x11_[^/]*\\.(h|cc)$'],
+        ['exclude', '(^|/)x11/'],
       ],
     }],
     ['OS!="android"', {
@@ -57,10 +61,16 @@
         ['exclude', '_gtk(_browsertest|_unittest)?\\.(h|cc)$'],
         ['exclude', '(^|/)gtk/'],
         ['exclude', '(^|/)gtk_[^/]*\\.(h|cc)$'],
+        ['exclude', '(^|/)libgtk2ui/'],
+        ['exclude', '(^|/)x/'],
       ],
     }],
-    ['OS!="win"', {
-      'sources/': [ ['exclude', '_views\\.(h|cc)$'] ]
+    ['OS=="mac"', {
+      'sources/': [ ['exclude', '_aura(_browsertest|_unittest)?\\.(h|cc)$'],
+                    ['exclude', '(^|/)aura/'],
+                    ['exclude', '_views\\.(h|cc)$'],
+                    ['exclude', '(^|/)views/'],
+      ],
     }],
   ]
 }
