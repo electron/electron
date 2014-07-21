@@ -65,6 +65,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
       menu_bar_(NULL),
       web_view_(inspectable_web_contents()->GetView()->GetView()),
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
+      use_content_size_(false),
       resizable_(true) {
   options.Get(switches::kResizable, &resizable_);
   options.Get(switches::kTitle, &title_);
@@ -102,10 +103,9 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   set_background(views::Background::CreateStandardPanelBackground());
   AddChildView(web_view_);
 
-  bool use_content_size;
   if (has_frame_ &&
-      options.Get(switches::kUseContentSize, &use_content_size) &&
-      use_content_size)
+      options.Get(switches::kUseContentSize, &use_content_size_) &&
+      use_content_size_)
     bounds = ContentBoundsToWindowBounds(bounds);
 
   window_->CenterWindow(bounds.size());
@@ -302,7 +302,9 @@ void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
     gfx::Size content_size = GetContentSize();
     menu_bar_ = new MenuBar;
     AddChildViewAt(menu_bar_, 0);
-    SetContentSize(content_size);
+
+    if (use_content_size_)
+      SetContentSize(content_size);
   }
 
   menu_bar_->SetMenu(menu_model);

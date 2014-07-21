@@ -103,12 +103,9 @@ describe 'browser-window module', ->
       assert.equal contentSize[1], 400
 
     it 'make window created with window size when not used', ->
-      # No way to reliably set size when window has not been shown on Linux.
-      return if process.platform is 'linux'
-
-      contentSize = w.getSize()
-      assert.equal contentSize[0], 400
-      assert.equal contentSize[1], 400
+      size = w.getSize()
+      assert.equal size[0], 400
+      assert.equal size[1], 400
 
   describe 'beforeunload handler', ->
     it 'returning true would not prevent close', (done) ->

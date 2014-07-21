@@ -132,6 +132,7 @@ class NativeWindowViews : public NativeWindow,
   // Map from accelerator to menu item's command id.
   accelerator_util::AcceleratorTable accelerator_table_;
 
+  bool use_content_size_;
   bool resizable_;
   std::string title_;
   gfx::Size minimum_size_;
