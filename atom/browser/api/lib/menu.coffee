@@ -87,10 +87,6 @@ Menu::insert = (pos, item) ->
   @items.splice pos, 0, item
   @commandsMap[item.commandId] = item
 
-Menu::attachToWindow = (window) ->
-  @_callMenuWillShow() if process.platform is 'win32'
-  @_attachToWindow window
-
 # Force menuWillShow to be called
 Menu::_callMenuWillShow = ->
   @delegate?.menuWillShow()

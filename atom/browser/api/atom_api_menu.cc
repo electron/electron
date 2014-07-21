@@ -250,7 +250,7 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
-      .SetMethod("_attachToWindow", &Menu::AttachToWindow)
+      .SetMethod("attachToWindow", &Menu::AttachToWindow)
       .SetMethod("_popup", &Menu::Popup);
 }
 
