@@ -79,9 +79,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
   options.Get(switches::kNodeIntegration, &node_integration_);
 
   // Read the web preferences.
-  scoped_ptr<mate::Dictionary> web_preferences(new mate::Dictionary);
-  if (options.Get(switches::kWebPreferences, web_preferences.get()))
-    web_preferences_.reset(web_preferences.release());
+  options.Get(switches::kWebPreferences, &web_preferences_);
 
   // Read the zoom factor before any navigation.
   options.Get(switches::kZoomFactor, &zoom_factor_);
@@ -329,29 +327,32 @@ void NativeWindow::AppendExtraCommandLineSwitches(
 }
 
 void NativeWindow::OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs) {
+  if (web_preferences_.IsEmpty())
+    return;
+
   bool b;
   std::vector<base::FilePath> list;
-  if (!web_preferences_)
-    return;
-  if (web_preferences_->Get("javascript", &b))
+  mate::Dictionary web_preferences(web_preferences_.isolate(),
+                                   web_preferences_.NewHandle());
+  if (web_preferences.Get("javascript", &b))
     prefs->javascript_enabled = b;
-  if (web_preferences_->Get("web-security", &b))
+  if (web_preferences.Get("web-security", &b))
     prefs->web_security_enabled = b;
-  if (web_preferences_->Get("images", &b))
+  if (web_preferences.Get("images", &b))
     prefs->images_enabled = b;
-  if (web_preferences_->Get("java", &b))
+  if (web_preferences.Get("java", &b))
     prefs->java_enabled = b;
-  if (web_preferences_->Get("text-areas-are-resizable", &b))
+  if (web_preferences.Get("text-areas-are-resizable", &b))
     prefs->text_areas_are_resizable = b;
-  if (web_preferences_->Get("webgl", &b))
+  if (web_preferences.Get("webgl", &b))
     prefs->experimental_webgl_enabled = b;
-  if (web_preferences_->Get("webaudio", &b))
+  if (web_preferences.Get("webaudio", &b))
     prefs->webaudio_enabled = b;
-  if (web_preferences_->Get("accelerated-compositing", &b))
+  if (web_preferences.Get("accelerated-compositing", &b))
     prefs->accelerated_compositing_enabled = b;
-  if (web_preferences_->Get("plugins", &b))
+  if (web_preferences.Get("plugins", &b))
     prefs->plugins_enabled = b;
-  if (web_preferences_->Get("extra-plugin-dirs", &list))
+  if (web_preferences.Get("extra-plugin-dirs", &list))
     for (size_t i = 0; i < list.size(); ++i)
       content::PluginService::GetInstance()->AddExtraPluginDir(list[i]);
 }

@@ -19,6 +19,7 @@
 #include "atom/browser/ui/accelerator_util.h"
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
+#include "native_mate/scoped_persistent.h"
 #include "vendor/brightray/browser/default_web_contents_delegate.h"
 #include "vendor/brightray/browser/inspectable_web_contents_delegate.h"
 #include "vendor/brightray/browser/inspectable_web_contents_impl.h"
@@ -290,7 +291,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   base::CancelableClosure window_unresposive_closure_;
 
   // Web preferences.
-  scoped_ptr<mate::Dictionary> web_preferences_;
+  mate::ScopedPersistent<v8::Object> web_preferences_;
 
   // Page's default zoom factor.
   double zoom_factor_;

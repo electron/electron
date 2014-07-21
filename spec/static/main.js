@@ -139,7 +139,10 @@ app.on('ready', function() {
     title: 'atom-shell tests',
     show: false,
     width: 800,
-    height: 600
+    height: 600,
+    'web-preferences': {
+      javascript: true  // Test whether web-preferences crashes.
+    },
   });
   window.loadUrl('file://' + __dirname + '/index.html');
   window.on('unresponsive', function() {
