@@ -25,16 +25,14 @@ void MenuViews::Popup(Window* window) {
   cursor = gfx::win::ScreenToDIPPoint(cursor);
 #endif
 
-  menu_runner_.reset(new views::MenuRunner(model()));
-  views::MenuRunner::RunResult result = menu_runner_->RunMenuAt(
+  views::MenuRunner menu_runner(model());
+  ignore_result(menu_runner.RunMenuAt(
       static_cast<NativeWindowViews*>(window->window())->widget(),
       NULL,
       gfx::Rect(cursor, gfx::Size()),
       views::MenuItemView::TOPLEFT,
       ui::MENU_SOURCE_MOUSE,
-      views::MenuRunner::HAS_MNEMONICS | views::MenuRunner::CONTEXT_MENU);
-  if (result == views::MenuRunner::MENU_DELETED)
-    LOG(ERROR) << "Menu deleted when running";
+      views::MenuRunner::HAS_MNEMONICS | views::MenuRunner::CONTEXT_MENU));
 }
 
 // static

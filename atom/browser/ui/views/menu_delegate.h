@@ -11,7 +11,6 @@
 
 namespace views {
 class MenuModelAdapter;
-class MenuRunner;
 }
 
 namespace ui {
@@ -59,7 +58,6 @@ class MenuDelegate : public views::MenuDelegate {
   views::MenuDelegate* delegate() const { return delegates_[id_]; }
 
   MenuBar* menu_bar_;
-  scoped_ptr<views::MenuRunner> menu_runner_;
 
   // Current item's id.
   int id_;

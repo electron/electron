@@ -7,10 +7,6 @@
 
 #include "atom/browser/api/atom_api_menu.h"
 
-namespace views {
-class MenuRunner;
-}
-
 namespace atom {
 
 namespace api {
@@ -23,8 +19,6 @@ class MenuViews : public Menu {
   virtual void Popup(Window* window) OVERRIDE;
 
  private:
-  scoped_ptr<views::MenuRunner> menu_runner_;
-
   DISALLOW_COPY_AND_ASSIGN(MenuViews);
 };
 

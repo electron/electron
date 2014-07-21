@@ -34,16 +34,14 @@ void MenuDelegate::RunMenu(ui::MenuModel* model, views::MenuButton* button) {
   id_ = button->tag();
   views::MenuItemView* item = BuildMenu(model);
 
-  menu_runner_.reset(new views::MenuRunner(item));
-  views::MenuRunner::RunResult result = menu_runner_->RunMenuAt(
+  views::MenuRunner menu_runner(item);
+  ignore_result(menu_runner.RunMenuAt(
       button->GetWidget()->GetTopLevelWidget(),
       button,
       bounds,
       views::MenuItemView::TOPRIGHT,
       ui::MENU_SOURCE_MOUSE,
-      views::MenuRunner::HAS_MNEMONICS | views::MenuRunner::CONTEXT_MENU);
-  if (result == views::MenuRunner::MENU_DELETED)
-    LOG(ERROR) << "Menu deleted when running";
+      views::MenuRunner::HAS_MNEMONICS | views::MenuRunner::CONTEXT_MENU));
 }
 
 views::MenuItemView* MenuDelegate::BuildMenu(ui::MenuModel* model) {
