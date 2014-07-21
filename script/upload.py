@@ -9,7 +9,8 @@ import sys
 import tempfile
 
 from lib.config import DIST_ARCH, NODE_VERSION, TARGET_PLATFORM
-from lib.util import get_atom_shell_version, scoped_cwd, safe_mkdir, execute
+from lib.util import get_atom_shell_version, scoped_cwd, safe_mkdir, execute, \
+                     s3_config, s3put
 from lib.github import GitHub
 
 
@@ -48,6 +49,11 @@ def main():
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, DIST_NAME))
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, SYMBOLS_NAME))
   if args.publish_release:
+    # Upload the SHASUMS.txt.
+    execute([sys.executable,
+             os.path.join(SOURCE_ROOT, 'script', 'upload-checksums.py')])
+
+    # Press the publish button.
     publish_release(github, release_id)
 
   # Upload node's headers to S3.
@@ -174,31 +180,6 @@ def auth_token():
              'environment variable, which is your personal token')
   assert token, message
   return token
-
-
-def s3_config():
-  config = (os.environ.get('ATOM_SHELL_S3_BUCKET', ''),
-            os.environ.get('ATOM_SHELL_S3_ACCESS_KEY', ''),
-            os.environ.get('ATOM_SHELL_S3_SECRET_KEY', ''))
-  message = ('Error: Please set the $ATOM_SHELL_S3_BUCKET, '
-             '$ATOM_SHELL_S3_ACCESS_KEY, and '
-             '$ATOM_SHELL_S3_SECRET_KEY environment variables')
-  assert all(len(c) for c in config), message
-  return config
-
-
-def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
-  args = [
-    's3put',
-    '--bucket', bucket,
-    '--access_key', access_key,
-    '--secret_key', secret_key,
-    '--prefix', prefix,
-    '--key_prefix', key_prefix,
-    '--grant', 'public-read'
-  ] + files
-
-  execute(args)
 
 
 def touch_x64_node_lib():

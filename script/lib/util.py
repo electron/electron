@@ -30,6 +30,7 @@ def scoped_cwd(path):
 
 
 def download(text, url, path):
+  safe_mkdir(os.path.dirname(path))
   with open(path, 'w') as local_file:
     web_file = urllib2.urlopen(url)
     file_size = int(web_file.info().getheaders("Content-Length")[0])
@@ -55,6 +56,7 @@ def download(text, url, path):
       print "%s done." % (text)
     else:
       print
+  return path
 
 
 def extract_tarball(tarball_path, member, destination):
@@ -120,3 +122,28 @@ def execute(argv):
 
 def get_atom_shell_version():
   return subprocess.check_output(['git', 'describe', '--tags']).strip()
+
+
+def s3_config():
+  config = (os.environ.get('ATOM_SHELL_S3_BUCKET', ''),
+            os.environ.get('ATOM_SHELL_S3_ACCESS_KEY', ''),
+            os.environ.get('ATOM_SHELL_S3_SECRET_KEY', ''))
+  message = ('Error: Please set the $ATOM_SHELL_S3_BUCKET, '
+             '$ATOM_SHELL_S3_ACCESS_KEY, and '
+             '$ATOM_SHELL_S3_SECRET_KEY environment variables')
+  assert all(len(c) for c in config), message
+  return config
+
+
+def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
+  args = [
+    's3put',
+    '--bucket', bucket,
+    '--access_key', access_key,
+    '--secret_key', secret_key,
+    '--prefix', prefix,
+    '--key_prefix', key_prefix,
+    '--grant', 'public-read'
+  ] + files
+
+  execute(args)
