@@ -61,6 +61,7 @@ class NativeWindowMac : public NativeWindow {
   virtual void SetRepresentedFilename(const std::string& filename) OVERRIDE;
   virtual std::string GetRepresentedFilename() OVERRIDE;
   virtual void SetDocumentEdited(bool edited) OVERRIDE;
+  virtual bool IsDocumentEdited() OVERRIDE;
   virtual bool HasModalDialog() OVERRIDE;
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
 

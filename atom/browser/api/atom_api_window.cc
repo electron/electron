@@ -328,6 +328,10 @@ void Window::SetDocumentEdited(bool edited) {
   window_->SetDocumentEdited(edited);
 }
 
+bool Window::IsDocumentEdited() {
+  return window_->IsDocumentEdited();
+}
+
 mate::Handle<WebContents> Window::GetWebContents(v8::Isolate* isolate) const {
   return WebContents::Create(isolate, window_->GetWebContents());
 }
@@ -379,6 +383,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setRepresentedFilename", &Window::SetRepresentedFilename)
       .SetMethod("getRepresentedFilename", &Window::GetRepresentedFilename)
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)
+      .SetMethod("IsDocumentEdited", &Window::IsDocumentEdited)
       .SetMethod("_openDevTools", &Window::OpenDevTools)
       .SetMethod("closeDevTools", &Window::CloseDevTools)
       .SetMethod("isDevToolsOpened", &Window::IsDevToolsOpened)

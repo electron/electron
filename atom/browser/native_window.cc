@@ -202,6 +202,10 @@ void NativeWindow::SetDocumentEdited(bool edited) {
 void NativeWindow::SetMenu(ui::MenuModel* menu) {
 }
 
+bool NativeWindow::IsDocumentEdited() {
+  return false;
+}
+
 bool NativeWindow::HasModalDialog() {
   return has_dialog_attached_;
 }

@@ -138,6 +138,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual std::string GetRepresentedFilename();
   virtual void SetDocumentEdited(bool edited);
   virtual void SetMenu(ui::MenuModel* menu);
+  virtual bool IsDocumentEdited();
   virtual bool HasModalDialog();
   virtual gfx::NativeWindow GetNativeWindow() = 0;
 

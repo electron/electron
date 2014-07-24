@@ -100,6 +100,7 @@ class Window : public mate::EventEmitter,
   void SetRepresentedFilename(const std::string& filename);
   std::string GetRepresentedFilename();
   void SetDocumentEdited(bool edited);
+  bool IsDocumentEdited();
 
   // APIs for WebContents.
   mate::Handle<WebContents> GetWebContents(v8::Isolate* isolate) const;
