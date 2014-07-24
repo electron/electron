@@ -8,6 +8,12 @@
 #include <shobjidl.h>
 #endif
 
+#if defined(USE_X11)
+#include <X11/extensions/XInput2.h>
+#include <X11/extensions/Xrandr.h>
+#include <X11/Xlib.h>
+#endif
+
 #include <string>
 #include <vector>
 
@@ -34,6 +40,7 @@
 #if defined(USE_X11)
 #include "atom/browser/ui/views/global_menu_bar_x11.h"
 #include "atom/browser/ui/views/frameless_view.h"
+#include "ui/gfx/x/x11_types.h"
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
@@ -218,13 +225,10 @@ void NativeWindowViews::SetMinimumSize(const gfx::Size& size) {
 
 #if defined(USE_X11)
   XSizeHints size_hints;
-  size_hints.flags = PPosition | PWinGravity;
-  size_hints.x = bounds_.x();
-  size_hints.y = bounds_.y();
-  // Set StaticGravity so that the window position is not affected by the
-  // frame width when running with window manager.
-  size_hints.win_gravity = StaticGravity;
-  XSetWMNormalHints(xdisplay_, xwindow_, &size_hints);
+  size_hints.flags = PMinSize;
+  size_hints.min_width = size.width();
+  size_hints.min_height = size.height();
+  XSetWMNormalHints(gfx::GetXDisplay(), GetAcceleratedWidget(), &size_hints);
 #endif
 }
 
@@ -234,6 +238,14 @@ gfx::Size NativeWindowViews::GetMinimumSize() {
 
 void NativeWindowViews::SetMaximumSize(const gfx::Size& size) {
   maximum_size_ = size;
+
+#if defined(USE_X11)
+  XSizeHints size_hints;
+  size_hints.flags = PMaxSize;
+  size_hints.max_width = size.width();
+  size_hints.max_height = size.height();
+  XSetWMNormalHints(gfx::GetXDisplay(), GetAcceleratedWidget(), &size_hints);
+#endif
 }
 
 gfx::Size NativeWindowViews::GetMaximumSize() {
@@ -242,6 +254,7 @@ gfx::Size NativeWindowViews::GetMaximumSize() {
 
 void NativeWindowViews::SetResizable(bool resizable) {
   resizable_ = resizable;
+  // FIXME Implement me for X11.
 }
 
 bool NativeWindowViews::IsResizable() {
