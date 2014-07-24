@@ -8,6 +8,12 @@
 #include <shobjidl.h>
 #endif
 
+#if defined(USE_X11)
+#include <X11/extensions/XInput2.h>
+#include <X11/extensions/Xrandr.h>
+#include <X11/Xlib.h>
+#endif
+
 #include <string>
 #include <vector>
 
@@ -33,7 +39,9 @@
 
 #if defined(USE_X11)
 #include "atom/browser/ui/views/global_menu_bar_x11.h"
-#include "atom/browser/ui/views/linux_frame_view.h"
+#include "atom/browser/ui/views/frameless_view.h"
+#include "ui/gfx/x/x11_types.h"
+#include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
 #include "base/win/scoped_comptr.h"
@@ -90,14 +98,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.top_level = true;
-
-#if defined(USE_X11)
-  // In X11 the window frame is drawn by the application.
-  params.remove_standard_frame = true;
-#elif defined(OS_WIN)
-  if (!has_frame_)
-    params.remove_standard_frame = true;
-#endif
+  params.remove_standard_frame = !has_frame_;
 
 #if defined(USE_X11)
   // FIXME Find out how to do this dynamically on Linux.
@@ -221,6 +222,14 @@ gfx::Size NativeWindowViews::GetContentSize() {
 
 void NativeWindowViews::SetMinimumSize(const gfx::Size& size) {
   minimum_size_ = size;
+
+#if defined(USE_X11)
+  XSizeHints size_hints;
+  size_hints.flags = PMinSize;
+  size_hints.min_width = size.width();
+  size_hints.min_height = size.height();
+  XSetWMNormalHints(gfx::GetXDisplay(), GetAcceleratedWidget(), &size_hints);
+#endif
 }
 
 gfx::Size NativeWindowViews::GetMinimumSize() {
@@ -229,6 +238,14 @@ gfx::Size NativeWindowViews::GetMinimumSize() {
 
 void NativeWindowViews::SetMaximumSize(const gfx::Size& size) {
   maximum_size_ = size;
+
+#if defined(USE_X11)
+  XSizeHints size_hints;
+  size_hints.flags = PMaxSize;
+  size_hints.max_width = size.width();
+  size_hints.max_height = size.height();
+  XSetWMNormalHints(gfx::GetXDisplay(), GetAcceleratedWidget(), &size_hints);
+#endif
 }
 
 gfx::Size NativeWindowViews::GetMaximumSize() {
@@ -237,6 +254,7 @@ gfx::Size NativeWindowViews::GetMaximumSize() {
 
 void NativeWindowViews::SetResizable(bool resizable) {
   resizable_ = resizable;
+  // FIXME Implement me for X11.
 }
 
 bool NativeWindowViews::IsResizable() {
@@ -442,13 +460,21 @@ views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {
 
 views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
     views::Widget* widget) {
-#if defined(USE_X11)
-  LinuxFrameView* frame_view =  new LinuxFrameView;
-#else
+#if defined(OS_WIN)
   WinFrameView* frame_view =  new WinFrameView;
-#endif
   frame_view->Init(this, widget);
   return frame_view;
+#elif defined(OS_LINUX)
+  if (has_frame_) {
+    return new views::NativeFrameView(widget);
+  } else {
+    FramelessView* frame_view =  new FramelessView;
+    frame_view->Init(this, widget);
+    return frame_view;
+  }
+#else
+  return NULL;
+#endif
 }
 
 void NativeWindowViews::HandleKeyboardEvent(

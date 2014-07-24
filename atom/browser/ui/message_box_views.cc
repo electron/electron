@@ -22,6 +22,10 @@
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/wm/core/shadow_types.h"
 
+#if defined(USE_X11)
+#include "ui/views/window/native_frame_view.h"
+#endif
+
 namespace atom {
 
 namespace {
@@ -164,11 +168,6 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
     params.remove_standard_frame = true;
   }
 
-#if defined(USE_X11)
-  // In X11 the window frame is drawn by the application.
-  params.remove_standard_frame = true;
-#endif
-
   widget_.reset(new views::Widget);
   widget_->Init(params);
 
@@ -242,8 +241,13 @@ ui::ModalType MessageDialog::GetModalType() const {
 
 views::NonClientFrameView* MessageDialog::CreateNonClientFrameView(
     views::Widget* widget) {
-  if (!parent_)
+  if (!parent_) {
+#if defined(USE_X11)
+    return new views::NativeFrameView(widget);
+#else
     return NULL;
+#endif
+  }
 
   // Create a bubble style frame like Chrome.
   views::BubbleFrameView* frame =  new views::BubbleFrameView(gfx::Insets());
