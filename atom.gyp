@@ -139,8 +139,6 @@
       'atom/browser/ui/views/frameless_view.h',
       'atom/browser/ui/views/global_menu_bar_x11.cc',
       'atom/browser/ui/views/global_menu_bar_x11.h',
-      'atom/browser/ui/views/linux_frame_view.cc',
-      'atom/browser/ui/views/linux_frame_view.h',
       'atom/browser/ui/views/menu_bar.cc',
       'atom/browser/ui/views/menu_bar.h',
       'atom/browser/ui/views/menu_delegate.cc',
