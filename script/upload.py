@@ -48,17 +48,19 @@ def main():
   release_id = create_or_get_release_draft(github, args.version)
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, DIST_NAME))
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, SYMBOLS_NAME))
-  if args.publish_release:
-    # Upload the SHASUMS.txt.
-    execute([sys.executable,
-             os.path.join(SOURCE_ROOT, 'script', 'upload-checksums.py')])
-
-    # Press the publish button.
-    publish_release(github, release_id)
 
   # Upload node's headers to S3.
   bucket, access_key, secret_key = s3_config()
   upload_node(bucket, access_key, secret_key, NODE_VERSION)
+
+  if args.publish_release:
+    # Press the publish button.
+    publish_release(github, release_id)
+
+    # Upload the SHASUMS.txt.
+    execute([sys.executable,
+             os.path.join(SOURCE_ROOT, 'script', 'upload-checksums.py'),
+             '-v', NODE_VERSION])
 
 
 def parse_args():
