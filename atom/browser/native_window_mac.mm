@@ -15,6 +15,7 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_widget_host_view.h"
 #include "native_mate/dictionary.h"
 #include "vendor/brightray/browser/inspectable_web_contents.h"
 #include "vendor/brightray/browser/inspectable_web_contents_view.h"
@@ -29,7 +30,6 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
  @private
   atom::NativeWindowMac* shell_;
   BOOL acceptsFirstMouse_;
-  BOOL hasSetInitialFocus_;
 }
 - (id)initWithShell:(atom::NativeWindowMac*)shell;
 - (void)setAcceptsFirstMouse:(BOOL)accept;
@@ -41,7 +41,6 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   if ((self = [super init])) {
     shell_ = shell;
     acceptsFirstMouse_ = NO;
-    hasSetInitialFocus_ = NO;
   }
   return self;
 }
@@ -53,15 +52,25 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 - (void)windowDidBecomeMain:(NSNotification*)notification {
   shell_->NotifyWindowFocus();
 
-  // Make sure the web view is the first responder of the window.
-  if (!hasSetInitialFocus_) {
-    shell_->GetWebContents()->GetView()->Focus();
-    hasSetInitialFocus_ = YES;
-  }
+  if (shell_->GetWebContents())
+    shell_->GetWebContents()->GetView()->StoreFocus();
+
+  content::RenderWidgetHostView* rwhv =
+      shell_->GetWebContents()->GetRenderWidgetHostView();
+  if (rwhv)
+    rwhv->SetActive(true);
 }
 
 - (void)windowDidResignMain:(NSNotification*)notification {
   shell_->NotifyWindowBlur();
+
+  if (shell_->GetWebContents())
+    shell_->GetWebContents()->GetView()->StoreFocus();
+
+  content::RenderWidgetHostView* rwhv =
+      shell_->GetWebContents()->GetRenderWidgetHostView();
+  if (rwhv)
+    rwhv->SetActive(false);
 }
 
 - (void)windowDidResize:(NSNotification*)otification {
