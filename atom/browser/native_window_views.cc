@@ -33,7 +33,8 @@
 
 #if defined(USE_X11)
 #include "atom/browser/ui/views/global_menu_bar_x11.h"
-#include "atom/browser/ui/views/linux_frame_view.h"
+#include "atom/browser/ui/views/frameless_view.h"
+#include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
 #include "base/win/scoped_comptr.h"
@@ -90,14 +91,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.top_level = true;
-
-#if defined(USE_X11)
-  // In X11 the window frame is drawn by the application.
-  params.remove_standard_frame = true;
-#elif defined(OS_WIN)
-  if (!has_frame_)
-    params.remove_standard_frame = true;
-#endif
+  params.remove_standard_frame = !has_frame_;
 
 #if defined(USE_X11)
   // FIXME Find out how to do this dynamically on Linux.
@@ -221,6 +215,17 @@ gfx::Size NativeWindowViews::GetContentSize() {
 
 void NativeWindowViews::SetMinimumSize(const gfx::Size& size) {
   minimum_size_ = size;
+
+#if defined(USE_X11)
+  XSizeHints size_hints;
+  size_hints.flags = PPosition | PWinGravity;
+  size_hints.x = bounds_.x();
+  size_hints.y = bounds_.y();
+  // Set StaticGravity so that the window position is not affected by the
+  // frame width when running with window manager.
+  size_hints.win_gravity = StaticGravity;
+  XSetWMNormalHints(xdisplay_, xwindow_, &size_hints);
+#endif
 }
 
 gfx::Size NativeWindowViews::GetMinimumSize() {
@@ -442,13 +447,21 @@ views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {
 
 views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
     views::Widget* widget) {
-#if defined(USE_X11)
-  LinuxFrameView* frame_view =  new LinuxFrameView;
-#else
+#if defined(OS_WIN)
   WinFrameView* frame_view =  new WinFrameView;
-#endif
   frame_view->Init(this, widget);
   return frame_view;
+#elif defined(OS_LINUX)
+  if (has_frame_) {
+    return new views::NativeFrameView(widget);
+  } else {
+    FramelessView* frame_view =  new FramelessView;
+    frame_view->Init(this, widget);
+    return frame_view;
+  }
+#else
+  return NULL;
+#endif
 }
 
 void NativeWindowViews::HandleKeyboardEvent(
