@@ -320,8 +320,16 @@ void Window::SetRepresentedFilename(const std::string& filename) {
   window_->SetRepresentedFilename(filename);
 }
 
+std::string Window::GetRepresentedFilename() {
+  return window_->GetRepresentedFilename();
+}
+
 void Window::SetDocumentEdited(bool edited) {
   window_->SetDocumentEdited(edited);
+}
+
+bool Window::IsDocumentEdited() {
+  return window_->IsDocumentEdited();
 }
 
 mate::Handle<WebContents> Window::GetWebContents(v8::Isolate* isolate) const {
@@ -373,7 +381,9 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setKiosk", &Window::SetKiosk)
       .SetMethod("isKiosk", &Window::IsKiosk)
       .SetMethod("setRepresentedFilename", &Window::SetRepresentedFilename)
+      .SetMethod("getRepresentedFilename", &Window::GetRepresentedFilename)
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)
+      .SetMethod("IsDocumentEdited", &Window::IsDocumentEdited)
       .SetMethod("_openDevTools", &Window::OpenDevTools)
       .SetMethod("closeDevTools", &Window::CloseDevTools)
       .SetMethod("isDevToolsOpened", &Window::IsDevToolsOpened)

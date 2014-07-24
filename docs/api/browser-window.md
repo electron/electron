@@ -383,12 +383,20 @@ Returns whether the window is in kiosk mode.
 __OS X Only:__ Sets the pathname of the file the window represents, and the icon
 of the file will show in window's title bar.
 
+### BrowserWindow.getRepresentedFilename()
+
+__OS X Only:__ Returns the pathname of the file the window represents.
+
 ### BrowserWindow.setDocumentEdited(edited)
 
 * `edited` Boolean
 
 __OS X Only:__ Specifies whether the window’s document has been edited, and the
 icon in titlebar will become grey when set to `true`.
+
+### BrowserWindow.IsDocumentEdited()
+
+__OS X Only:__ Whether the window's document has been edited.
 
 ### BrowserWindow.openDevTools()
 
