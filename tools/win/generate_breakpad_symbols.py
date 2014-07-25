@@ -67,7 +67,7 @@ def GenerateSymbols(options, binaries):
           print "Generating symbols for %s" % binary
 
       syms = GetCommandOutput([DUMP_SYMS, binary])
-      module_line = re.match("MODULE [^ ]+ [^ ]+ ([0-9A-F]+) (.*)\r\n", syms)
+      module_line = re.match("MODULE [^ ]+ [^ ]+ ([0-9A-Fa-f]+) (.*)\r\n", syms)
       if module_line == None:
         with print_lock:
           print "Failed to get symbols for %s" % binary
