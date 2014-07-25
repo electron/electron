@@ -2,11 +2,12 @@ assert        = require 'assert'
 child_process = require 'child_process'
 fs            = require 'fs'
 path          = require 'path'
+os            = require 'os'
 
 describe 'node feature', ->
-  describe 'child_process', ->
-    fixtures = path.join __dirname, 'fixtures'
+  fixtures = path.join __dirname, 'fixtures'
 
+  describe 'child_process', ->
     describe 'child_process.fork', ->
       it 'works in current process', (done) ->
         child = child_process.fork path.join(fixtures, 'module', 'ping.js')
@@ -73,3 +74,18 @@ describe 'node feature', ->
         setImmediate ->
           setImmediate ->
             setImmediate done
+
+  describe 'net.connect', ->
+    it 'emit error when connect to a socket path without listeners', (done) ->
+      socketPath =
+        if process.platform is 'win32'
+          '\\\\.\\pipe\\atom-shell-test-sock'
+        else
+          path.join os.tmpdir(), 'atom-shell-test.sock'
+      script = path.join(fixtures, 'module', 'create_socket.js')
+      child = child_process.fork script, [socketPath]
+      child.on 'exit', ->
+        client = require('net').connect socketPath
+        client.on 'error', (error) ->
+          assert.equal error.code, 'ECONNREFUSED'
+          done()
