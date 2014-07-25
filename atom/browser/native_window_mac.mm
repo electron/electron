@@ -52,11 +52,13 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 - (void)windowDidBecomeMain:(NSNotification*)notification {
   shell_->NotifyWindowFocus();
 
-  if (shell_->GetWebContents())
-    shell_->GetWebContents()->GetView()->StoreFocus();
+  content::WebContents* web_contents = shell_->GetWebContents();
+  if (!web_contents)
+    return;
 
-  content::RenderWidgetHostView* rwhv =
-      shell_->GetWebContents()->GetRenderWidgetHostView();
+  web_contents->GetView()->RestoreFocus();
+
+  content::RenderWidgetHostView* rwhv = web_contents->GetRenderWidgetHostView();
   if (rwhv)
     rwhv->SetActive(true);
 }
@@ -64,11 +66,13 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 - (void)windowDidResignMain:(NSNotification*)notification {
   shell_->NotifyWindowBlur();
 
-  if (shell_->GetWebContents())
-    shell_->GetWebContents()->GetView()->StoreFocus();
+  content::WebContents* web_contents = shell_->GetWebContents();
+  if (!web_contents)
+    return;
 
-  content::RenderWidgetHostView* rwhv =
-      shell_->GetWebContents()->GetRenderWidgetHostView();
+  web_contents->GetView()->StoreFocus();
+
+  content::RenderWidgetHostView* rwhv = web_contents->GetRenderWidgetHostView();
   if (rwhv)
     rwhv->SetActive(false);
 }
