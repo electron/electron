@@ -5,6 +5,10 @@
 The `auto-updater` module is a simple wrap around the
 [Squirrel.Mac](https://github.com/Squirrel/Squirrel.Mac) framework.
 
+Squirrel.Mac requires that your `.app` folder is signed using the
+[codesign](https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man1/codesign.1.html)
+utility for updates to be installed.
+
 ## Squirrel
 
 Squirrel is an OS X framework focused on making application updates **as safe
