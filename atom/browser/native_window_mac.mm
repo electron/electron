@@ -538,7 +538,11 @@ void NativeWindowMac::HandleKeyboardEvent(
     // The event comes from detached devtools view, and it has already been
     // handled by the devtools itself, we now send it to application menu to
     // make menu acclerators work.
-    [[NSApp mainMenu] performKeyEquivalent:event.os_event];
+    BOOL handled = [[NSApp mainMenu] performKeyEquivalent:event.os_event];
+    // Handle the cmd+~ shortcut.
+    if (!handled && (event.os_event.modifierFlags & NSCommandKeyMask) &&
+        (event.os_event.keyCode == 50  /* ~ key */))
+      Focus(true);
   }
 }
 
