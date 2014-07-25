@@ -5,6 +5,8 @@
 #include "atom/browser/ui/views/menu_bar.h"
 
 #include "atom/browser/ui/views/menu_delegate.h"
+#include "base/strings/string_util.h"
+#include "base/strings/utf_string_conversions.h"
 #include "ui/base/models/menu_model.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/button/menu_button.h"
@@ -18,6 +20,13 @@ const char kViewClassName[] = "AtomMenuBar";
 
 // Default color of the menu bar.
 const SkColor kDefaultColor = SkColorSetARGB(255, 233, 233, 233);
+
+// Filter out the "&" in menu label.
+base::string16 FilterMenuButtonLabel(const base::string16& label) {
+  base::string16 out;
+  base::RemoveChars(label, base::ASCIIToUTF16("&").c_str(), &out);
+  return out;
+}
 
 }  // namespace
 
@@ -36,8 +45,8 @@ void MenuBar::SetMenu(ui::MenuModel* model) {
   RemoveAllChildViews(true);
 
   for (int i = 0; i < model->GetItemCount(); ++i) {
-    views::MenuButton* button =
-        new views::MenuButton(this, model->GetLabelAt(i), this, false);
+    views::MenuButton* button = new views::MenuButton(
+        this, FilterMenuButtonLabel(model->GetLabelAt(i)), this, false);
     button->set_tag(i);
     AddChildView(button);
   }
