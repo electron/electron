@@ -77,11 +77,9 @@ describe 'node feature', ->
 
   describe 'net.connect', ->
     it 'emit error when connect to a socket path without listeners', (done) ->
-      socketPath =
-        if process.platform is 'win32'
-          '\\\\.\\pipe\\atom-shell-test-sock'
-        else
-          path.join os.tmpdir(), 'atom-shell-test.sock'
+      return done() if process.platform is 'win32'
+
+      socketPath = path.join os.tmpdir(), 'atom-shell-test.sock'
       script = path.join(fixtures, 'module', 'create_socket.js')
       child = child_process.fork script, [socketPath]
       child.on 'exit', ->
