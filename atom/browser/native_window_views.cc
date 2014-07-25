@@ -52,7 +52,11 @@ namespace atom {
 namespace {
 
 // The menu bar height in pixels.
+#if defined(OS_WIN)
+const int kMenuBarHeight = 20;
+#else
 const int kMenuBarHeight = 25;
+#endif
 
 class NativeWindowClientView : public views::ClientView {
  public:
