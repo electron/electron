@@ -12,6 +12,10 @@
 #include "ui/views/controls/button/menu_button.h"
 #include "ui/views/layout/box_layout.h"
 
+#if defined(OS_WIN)
+#include "ui/gfx/color_utils.h"
+#endif
+
 namespace atom {
 
 namespace {
@@ -32,7 +36,13 @@ base::string16 FilterMenuButtonLabel(const base::string16& label) {
 
 MenuBar::MenuBar()
     : menu_model_(NULL) {
-  set_background(views::Background::CreateSolidBackground(kDefaultColor));
+#if defined(OS_WIN)
+  SkColor background_color = color_utils::GetSysSkColor(COLOR_MENUBAR);
+#else
+  SkColor background_color = kDefaultColor;
+#endif
+  set_background(views::Background::CreateSolidBackground(background_color));
+
   SetLayoutManager(new views::BoxLayout(
       views::BoxLayout::kHorizontal, 0, 0, 0));
 }
