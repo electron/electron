@@ -252,7 +252,7 @@ the Dock.
 
 Restores the window from minimized state to its previous state.
 
-### BrowserWindow.isMaximized()
+### BrowserWindow.isMinimized()
 
 Returns whether the window is minimized.
 
