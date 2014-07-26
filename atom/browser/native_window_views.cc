@@ -204,6 +204,11 @@ void NativeWindowViews::SetSize(const gfx::Size& size) {
 }
 
 gfx::Size NativeWindowViews::GetSize() {
+#if defined(OS_WIN)
+  if (IsMinimized())
+    return window_->GetRestoredBounds().size();
+#endif
+
   return window_->GetWindowBoundsInScreen().size();
 }
 
@@ -287,6 +292,11 @@ void NativeWindowViews::SetPosition(const gfx::Point& position) {
 }
 
 gfx::Point NativeWindowViews::GetPosition() {
+#if defined(OS_WIN)
+  if (IsMinimized())
+    return window_->GetRestoredBounds().origin();
+#endif
+
   return window_->GetWindowBoundsInScreen().origin();
 }
 
