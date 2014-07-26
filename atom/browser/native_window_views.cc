@@ -187,6 +187,10 @@ void NativeWindowViews::Restore() {
   window_->Restore();
 }
 
+bool NativeWindowViews::IsMinimized() {
+  return window_->IsMinimized();
+}
+
 void NativeWindowViews::SetFullscreen(bool fullscreen) {
   window_->SetFullscreen(fullscreen);
 }

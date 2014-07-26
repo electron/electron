@@ -161,6 +161,10 @@ void Window::Restore() {
   window_->Restore();
 }
 
+bool Window::IsMinimized() {
+  return window_->IsMinimized();
+}
+
 void Window::SetFullscreen(bool fullscreen) {
   window_->SetFullscreen(fullscreen);
 }
@@ -357,6 +361,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isMaximized", &Window::IsMaximized)
       .SetMethod("minimize", &Window::Minimize)
       .SetMethod("restore", &Window::Restore)
+      .SetMethod("isMinimized", &Window::IsMinimized)
       .SetMethod("setFullScreen", &Window::SetFullscreen)
       .SetMethod("isFullScreen", &Window::IsFullscreen)
       .SetMethod("getSize", &Window::GetSize)

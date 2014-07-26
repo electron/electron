@@ -111,6 +111,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual bool IsMaximized() = 0;
   virtual void Minimize() = 0;
   virtual void Restore() = 0;
+  virtual bool IsMinimized() = 0;
   virtual void SetFullscreen(bool fullscreen) = 0;
   virtual bool IsFullscreen() = 0;
   virtual void SetSize(const gfx::Size& size) = 0;

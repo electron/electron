@@ -46,6 +46,7 @@ class NativeWindowViews : public NativeWindow,
   virtual bool IsMaximized() OVERRIDE;
   virtual void Minimize() OVERRIDE;
   virtual void Restore() OVERRIDE;
+  virtual bool IsMinimized() OVERRIDE;
   virtual void SetFullscreen(bool fullscreen) OVERRIDE;
   virtual bool IsFullscreen() OVERRIDE;
   virtual void SetSize(const gfx::Size& size) OVERRIDE;

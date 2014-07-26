@@ -252,6 +252,10 @@ the Dock.
 
 Restores the window from minimized state to its previous state.
 
+### BrowserWindow.isMaximized()
+
+Returns whether the window is minimized.
+
 ### BrowserWindow.setFullScreen(flag)
 
 * `flag` Boolean

@@ -304,6 +304,10 @@ void NativeWindowMac::Restore() {
   [window_ deminiaturize:nil];
 }
 
+bool NativeWindowMac::IsMinimized() {
+  return [window_ isMiniaturized];
+}
+
 void NativeWindowMac::SetFullscreen(bool fullscreen) {
   if (fullscreen == IsFullscreen())
     return;

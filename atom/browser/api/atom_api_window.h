@@ -66,6 +66,7 @@ class Window : public mate::EventEmitter,
   bool IsMaximized();
   void Minimize();
   void Restore();
+  bool IsMinimized();
   void SetFullscreen(bool fullscreen);
   bool IsFullscreen();
   void SetSize(int width, int height);
