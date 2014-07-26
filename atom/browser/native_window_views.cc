@@ -123,6 +123,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
       use_content_size_)
     bounds = ContentBoundsToWindowBounds(bounds);
 
+  window_->UpdateWindowIcon();
   window_->CenterWindow(bounds.size());
   Layout();
 }
