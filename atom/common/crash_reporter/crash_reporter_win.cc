@@ -54,12 +54,14 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
   if (waiting_event != INVALID_HANDLE_VALUE)
     WaitForSingleObject(waiting_event, 1000);
 
+  int handler_types = google_breakpad::ExceptionHandler::HANDLER_EXCEPTION |
+      google_breakpad::ExceptionHandler::HANDLER_PURECALL;
   breakpad_.reset(new google_breakpad::ExceptionHandler(
       temp_dir.value(),
       FilterCallback,
       MinidumpCallback,
       this,
-      google_breakpad::ExceptionHandler::HANDLER_ALL,
+      handler_types,
       kSmallDumpType,
       pipe_name.c_str(),
       GetCustomInfo(product_name, version, company_name)));
