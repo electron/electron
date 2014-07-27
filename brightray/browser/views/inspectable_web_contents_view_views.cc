@@ -3,7 +3,6 @@
 #include "browser/inspectable_web_contents_impl.h"
 
 #include "base/strings/utf_string_conversions.h"
-#include "content/public/browser/web_contents_view.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/widget/widget_delegate.h"
