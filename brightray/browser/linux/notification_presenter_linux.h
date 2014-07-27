@@ -7,10 +7,12 @@
 #define BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_LINUX_H_
 
 #include <libnotify/notify.h>
+
 #include <map>
 
 #include "base/compiler_specific.h"
 #include "browser/notification_presenter.h"
+#include "ui/base/glib/glib_signal.h"
 
 namespace brightray {
 
@@ -22,14 +24,18 @@ class NotificationPresenterLinux : public NotificationPresenter {
   void RemoveNotification(NotifyNotification *notification);
 
  private:
+  // NotificationPresenter:
   virtual void ShowNotification(
       const content::ShowDesktopNotificationHostMsgParams&,
-      int render_process_id,
-      int render_view_id) OVERRIDE;
-  virtual void CancelNotification(
-      int render_process_id,
-      int render_view_id,
-      int notification_id) OVERRIDE;
+      content::DesktopNotificationDelegate* delegate,
+      base::Closure* cancel_callback) OVERRIDE;
+
+  void CancelNotification(NotifyNotification* notification);
+  void DeleteNotification(NotifyNotification* notification);
+
+  CHROMEG_CALLBACK_0(NotificationPresenterLinux, void, OnNotificationClosed, NotifyNotification*);
+  CHROMEG_CALLBACK_1(NotificationPresenterLinux, void, OnNotificationView, NotifyNotification*,
+                     char*);
 
   // A list of all open NotifyNotification objects.
   // We do lookups here both by NotifyNotification object (when the user
@@ -38,7 +44,7 @@ class NotificationPresenterLinux : public NotificationPresenter {
   // a map.
   // Entries in this list count as refs, so removal from this list should
   // always go with g_object_unref().
-  GList *notifications_;
+  GList* notifications_;
 };
 
 }  // namespace brightray

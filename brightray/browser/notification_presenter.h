@@ -1,7 +1,10 @@
 #ifndef BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_H_
 #define BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_H_
 
+#include "base/callback_forward.h"
+
 namespace content {
+class DesktopNotificationDelegate;
 struct ShowDesktopNotificationHostMsgParams;
 }
 
@@ -15,12 +18,8 @@ class NotificationPresenter {
 
   virtual void ShowNotification(
       const content::ShowDesktopNotificationHostMsgParams&,
-      int render_process_id,
-      int render_view_id) = 0;
-  virtual void CancelNotification(
-      int render_process_id,
-      int render_view_id,
-      int notification_id) = 0;
+      content::DesktopNotificationDelegate* delegate,
+      base::Closure* cancel_callback) = 0;
 };
 
 }  // namespace brightray
