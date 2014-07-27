@@ -289,7 +289,7 @@ void InspectableWebContentsImpl::DidFinishLoad(int64 frame_id,
   view_->ShowDevTools();
 }
 
-void InspectableWebContentsImpl::WebContentsDestroyed(content::WebContents*) {
+void InspectableWebContentsImpl::WebContentsDestroyed() {
   content::DevToolsManager::GetInstance()->ClientHostClosing(
       frontend_host_.get());
   Observe(nullptr);

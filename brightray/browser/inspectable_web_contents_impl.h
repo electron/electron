@@ -103,7 +103,7 @@ class InspectableWebContentsImpl :
                              const GURL& validated_url,
                              bool is_main_frame,
                              content::RenderViewHost*) OVERRIDE;
-  virtual void WebContentsDestroyed(content::WebContents*) OVERRIDE;
+  virtual void WebContentsDestroyed() OVERRIDE;
 
   // content::WebContentsDelegate
 
