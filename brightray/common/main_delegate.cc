@@ -49,13 +49,7 @@ void MainDelegate::InitializeResourceBundle() {
 #endif
 
   ui::ResourceBundle::InitSharedInstanceWithPakPath(path);
-
-  std::vector<base::FilePath> pak_paths;
-  AddPakPaths(&pak_paths);
-  for (auto it = pak_paths.begin(), end = pak_paths.end(); it != end; ++it) {
-    ui::ResourceBundle::GetSharedInstance().AddDataPackFromPath(
-        *it, ui::SCALE_FACTOR_NONE);
-  }
+  AddDataPackFromPath(&ui::ResourceBundle::GetSharedInstance(), path.DirName());
 }
 
 content::ContentBrowserClient* MainDelegate::CreateContentBrowserClient() {

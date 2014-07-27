@@ -176,7 +176,7 @@ void InspectableWebContentsImpl::ActivateWindow() {
 }
 
 void InspectableWebContentsImpl::CloseWindow() {
-  CloseDevTools();
+  devtools_web_contents()->GetMainFrame()->DispatchBeforeUnload(false);
 }
 
 void InspectableWebContentsImpl::SetContentsResizingStrategy(
@@ -303,6 +303,10 @@ void InspectableWebContentsImpl::HandleKeyboardEvent(
   auto delegate = web_contents_->GetDelegate();
   if (delegate)
     delegate->HandleKeyboardEvent(source, event);
+}
+
+void InspectableWebContentsImpl::CloseContents(content::WebContents* source) {
+  CloseDevTools();
 }
 
 }  // namespace brightray

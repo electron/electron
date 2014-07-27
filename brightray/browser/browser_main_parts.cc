@@ -24,7 +24,28 @@
 #include "browser/views/views_delegate.h"
 #endif
 
+#if defined(OS_WIN)
+#include "ui/base/l10n/l10n_util.h"
+#include "ui/base/l10n/l10n_util_win.h"
+#include "ui/gfx/platform_font_win.h"
+#endif
+
 namespace brightray {
+
+#if defined(OS_WIN)
+namespace {
+
+// gfx::Font callbacks
+void AdjustUIFont(LOGFONT* logfont) {
+  l10n_util::AdjustUIFont(logfont);
+}
+
+int GetMinimumFontSize() {
+  return 10;
+}
+
+}  // namespace
+#endif
 
 BrowserMainParts::BrowserMainParts() {
 }
@@ -50,6 +71,11 @@ void BrowserMainParts::ToolkitInitialized() {
 
 #if defined(TOOLKIT_VIEWS)
   views_delegate_.reset(new ViewsDelegate);
+#endif
+
+#if defined(OS_WIN)
+  gfx::PlatformFontWin::adjust_font_callback = &AdjustUIFont;
+  gfx::PlatformFontWin::get_minimum_font_size_callback = &GetMinimumFontSize;
 #endif
 }
 
