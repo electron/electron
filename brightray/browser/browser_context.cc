@@ -204,4 +204,8 @@ quota::SpecialStoragePolicy* BrowserContext::GetSpecialStoragePolicy() {
   return nullptr;
 }
 
+content::BrowserPluginGuestManagerDelegate* BrowserContext::GetGuestManagerDelegate() {
+  return nullptr;
+}
+
 }  // namespace brightray
