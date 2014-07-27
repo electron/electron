@@ -238,6 +238,8 @@
       'chromium_src/chrome/browser/ui/shortcut/global_shortcut_listener.h',
       'chromium_src/chrome/browser/ui/shortcut/global_shortcut_listener_mac.mm',
       'chromium_src/chrome/browser/ui/shortcut/global_shortcut_listener_mac.h',
+      'chromium_src/chrome/browser/ui/shortcut/global_shortcut_listener_win.cc',
+      'chromium_src/chrome/browser/ui/shortcut/global_shortcut_listener_win.h',
       '<@(native_mate_files)',
     ],
     'framework_sources': [
