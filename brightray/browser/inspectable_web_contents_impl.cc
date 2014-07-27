@@ -175,7 +175,7 @@ void InspectableWebContentsImpl::ActivateWindow() {
 }
 
 void InspectableWebContentsImpl::CloseWindow() {
-  devtools_web_contents()->GetMainFrame()->DispatchBeforeUnload(false);
+  devtools_web_contents()->DispatchBeforeUnload(false);
 }
 
 void InspectableWebContentsImpl::SetContentsResizingStrategy(
