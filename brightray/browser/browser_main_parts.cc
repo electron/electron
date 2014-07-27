@@ -113,11 +113,7 @@ BrowserContext* BrowserMainParts::CreateBrowserContext() {
 }
 
 void BrowserMainParts::InitProxyResolverV8() {
-#if defined(OS_WIN)
-  net::ProxyResolverV8::CreateIsolate();
-#else
-  net::ProxyResolverV8::RememberDefaultIsolate();
-#endif
+  net::ProxyResolverV8::EnsureIsolateCreated();
 }
 
 }  // namespace brightray
