@@ -12,6 +12,7 @@
 #include "ui/gfx/icon_util.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
+#include "ui/gfx/win/dpi.h"
 #include "ui/views/controls/menu/menu_runner.h"
 
 namespace atom {
@@ -64,7 +65,7 @@ void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
   views::MenuRunner::RunResult result = menu_runner_->RunMenuAt(
       NULL,
       NULL,
-      gfx::Rect(cursor_pos, gfx::Size()),
+      gfx::Rect(gfx::win::ScreenToDIPPoint(cursor_pos), gfx::Size()),
       views::MenuItemView::TOPLEFT,
       ui::MENU_SOURCE_MOUSE,
       views::MenuRunner::HAS_MNEMONICS | views::MenuRunner::CONTEXT_MENU);
