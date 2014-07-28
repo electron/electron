@@ -7,10 +7,10 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/browser.h"
+#include "atom/browser/javascript_environment.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/node_bindings.h"
 #include "base/command_line.h"
-#include "net/proxy/proxy_resolver_v8.h"
 
 #if defined(OS_WIN)
 #include "ui/gfx/win/dpi.h"
@@ -28,14 +28,9 @@ namespace atom {
 AtomBrowserMainParts* AtomBrowserMainParts::self_ = NULL;
 
 AtomBrowserMainParts::AtomBrowserMainParts()
-    : atom_bindings_(new AtomBindings),
-      browser_(new Browser),
+    : browser_(new Browser),
       node_bindings_(NodeBindings::Create(true)),
-      isolate_(v8::Isolate::GetCurrent()),
-      locker_(isolate_),
-      handle_scope_(isolate_),
-      context_(isolate_, v8::Context::New(isolate_)),
-      context_scope_(v8::Local<v8::Context>::New(isolate_, context_)) {
+      atom_bindings_(new AtomBindings) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
   self_ = this;
 }
@@ -53,21 +48,20 @@ brightray::BrowserContext* AtomBrowserMainParts::CreateBrowserContext() {
   return new AtomBrowserContext();
 }
 
-void AtomBrowserMainParts::InitProxyResolverV8() {
-  brightray::BrowserMainParts::InitProxyResolverV8();
-}
-
 void AtomBrowserMainParts::PostEarlyInitialization() {
   brightray::BrowserMainParts::PostEarlyInitialization();
+
+  // The ProxyResolverV8 has setup a complete V8 environment, in order to avoid
+  // conflicts we only initialize our V8 environment after that.
+  js_env_.reset(new JavascriptEnvironment);
 
   node_bindings_->Initialize();
 
   // Create the global environment.
-  global_env = node_bindings_->CreateEnvironment(
-      v8::Local<v8::Context>::New(isolate_, context_));
+  global_env = node_bindings_->CreateEnvironment(js_env_->context());
 
   // Add atom-shell extended APIs.
-  atom_bindings_->BindTo(isolate_, global_env->process_object());
+  atom_bindings_->BindTo(js_env_->isolate(), global_env->process_object());
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
