@@ -60,6 +60,8 @@ void BrowserMainParts::PreEarlyInitialization() {
 #if defined(USE_AURA) && defined(USE_X11)
   views::LinuxUI::SetInstance(BuildGtk2UI());
 #endif
+
+  InitProxyResolverV8();
 }
 
 void BrowserMainParts::ToolkitInitialized() {
@@ -104,7 +106,6 @@ int BrowserMainParts::PreCreateThreads() {
                                  views::CreateDesktopScreen());
 #endif
 
-  InitProxyResolverV8();
   return 0;
 }
 
