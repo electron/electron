@@ -66,7 +66,7 @@ void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
       NULL,
       NULL,
       gfx::Rect(gfx::win::ScreenToDIPPoint(cursor_pos), gfx::Size()),
-      views::MenuItemView::TOPLEFT,
+      views::MENU_ANCHOR_TOPLEFT,
       ui::MENU_SOURCE_MOUSE,
       views::MenuRunner::HAS_MNEMONICS | views::MenuRunner::CONTEXT_MENU);
   if (result == views::MenuRunner::MENU_DELETED)
