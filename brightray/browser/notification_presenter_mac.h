@@ -22,17 +22,27 @@ class NotificationPresenterMac : public NotificationPresenter {
 
   virtual void ShowNotification(
       const content::ShowDesktopNotificationHostMsgParams&,
-      int render_process_id,
-      int render_view_id) OVERRIDE;
-  virtual void CancelNotification(
-      int render_process_id,
-      int render_view_id,
-      int notification_id) OVERRIDE;
+      content::DesktopNotificationDelegate* delegate,
+      base::Closure* cancel_callback) OVERRIDE;
+
+  // Get the delegate accroding from the notification object.
+  content::DesktopNotificationDelegate* GetDelegateFromNotification(
+      NSUserNotification* notification);
+
+  // Remove the notification object accroding to its delegate.
+  void RemoveNotification(content::DesktopNotificationDelegate* delegate);
 
  private:
-  typedef std::map<std::string, base::scoped_nsobject<NSUserNotification>>
-      NotificationMap;
-  NotificationMap notification_map_;
+  void CancelNotification(content::DesktopNotificationDelegate* delegate);
+
+  // The userInfo of NSUserNotification can not store pointers (because they are
+  // not in property list), so we have to track them in a C++ map.
+  // Also notice that the delegate acts as "ID" or "Key", because it is certain
+  // that each notification has a unique delegate.
+  typedef std::map<content::DesktopNotificationDelegate*, base::scoped_nsobject<NSUserNotification>>
+      NotificationsMap;
+  NotificationsMap notifications_map_;
+
   base::scoped_nsobject<BRYUserNotificationCenterDelegate> delegate_;
 };
 

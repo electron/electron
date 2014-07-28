@@ -70,7 +70,7 @@ void BrowserClient::ShowDesktopNotification(
     content::DesktopNotificationDelegate* delegate,
     base::Closure* cancel_callback) {
   auto presenter = notification_presenter();
-  if (!presenter)
+  if (presenter)
     presenter->ShowNotification(params, delegate, cancel_callback);
 }
 
