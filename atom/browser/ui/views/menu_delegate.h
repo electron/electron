@@ -46,7 +46,7 @@ class MenuDelegate : public views::MenuDelegate {
   virtual views::MenuItemView* GetSiblingMenu(
       views::MenuItemView* menu,
       const gfx::Point& screen_point,
-      views::MenuItemView::AnchorPosition* anchor,
+      views::MenuAnchorPosition* anchor,
       bool* has_mnemonics,
       views::MenuButton** button);
 

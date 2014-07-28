@@ -30,7 +30,7 @@ void MenuViews::Popup(Window* window) {
       static_cast<NativeWindowViews*>(window->window())->widget(),
       NULL,
       gfx::Rect(cursor, gfx::Size()),
-      views::MenuItemView::TOPLEFT,
+      views::MENU_ANCHOR_TOPLEFT,
       ui::MENU_SOURCE_MOUSE,
       views::MenuRunner::HAS_MNEMONICS | views::MenuRunner::CONTEXT_MENU));
 }
