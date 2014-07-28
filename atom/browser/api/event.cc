@@ -36,7 +36,7 @@ void Event::SetSenderAndMessage(content::WebContents* sender,
   Observe(sender);
 }
 
-void Event::WebContentsDestroyed(content::WebContents* web_contents) {
+void Event::WebContentsDestroyed() {
   sender_ = NULL;
   message_ = NULL;
 }

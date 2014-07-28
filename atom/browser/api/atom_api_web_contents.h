@@ -62,7 +62,7 @@ class WebContents : public mate::EventEmitter,
   virtual void DidStopLoading(
       content::RenderViewHost* render_view_host) OVERRIDE;
   virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
-  virtual void WebContentsDestroyed(content::WebContents*) OVERRIDE;
+  virtual void WebContentsDestroyed() OVERRIDE;
 
  private:
   // Called when received a message from renderer.

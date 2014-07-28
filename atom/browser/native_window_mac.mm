@@ -13,7 +13,6 @@
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents.h"
-#include "content/public/browser/web_contents_view.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "native_mate/dictionary.h"
@@ -56,7 +55,7 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   if (!web_contents)
     return;
 
-  web_contents->GetView()->RestoreFocus();
+  web_contents->RestoreFocus();
 
   content::RenderWidgetHostView* rwhv = web_contents->GetRenderWidgetHostView();
   if (rwhv)
@@ -70,7 +69,7 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   if (!web_contents)
     return;
 
-  web_contents->GetView()->StoreFocus();
+  web_contents->StoreFocus();
 
   content::RenderWidgetHostView* rwhv = web_contents->GetRenderWidgetHostView();
   if (rwhv)
@@ -492,7 +491,7 @@ gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
 bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {
   if (!draggable_region_)
     return false;
-  NSView* webView = GetWebContents()->GetView()->GetNativeView();
+  NSView* webView = GetWebContents()->GetNativeView();
   NSInteger webViewHeight = NSHeight([webView bounds]);
   // |draggable_region_| is stored in local platform-indepdent coordiate system
   // while |point| is in local Cocoa coordinate system. Do the conversion
@@ -581,7 +580,7 @@ void NativeWindowMac::UninstallView() {
 }
 
 void NativeWindowMac::ClipWebView() {
-  NSView* view = GetWebContents()->GetView()->GetNativeView();
+  NSView* view = GetWebContents()->GetNativeView();
 
   view.wantsLayer = YES;
   view.layer.masksToBounds = YES;
@@ -594,7 +593,7 @@ void NativeWindowMac::InstallDraggableRegionViews() {
   // All ControlRegionViews should be added as children of the WebContentsView,
   // because WebContentsView will be removed and re-added when entering and
   // leaving fullscreen mode.
-  NSView* webView = GetWebContents()->GetView()->GetNativeView();
+  NSView* webView = GetWebContents()->GetNativeView();
   NSInteger webViewHeight = NSHeight([webView bounds]);
 
   // Remove all ControlRegionViews that are added last time.
@@ -626,7 +625,7 @@ void NativeWindowMac::UpdateDraggableRegionsForCustomDrag(
     const std::vector<DraggableRegion>& regions) {
   // We still need one ControlRegionView to cover the whole window such that
   // mouse events could be captured.
-  NSView* web_view = GetWebContents()->GetView()->GetNativeView();
+  NSView* web_view = GetWebContents()->GetNativeView();
   gfx::Rect window_bounds(
       0, 0, NSWidth([web_view bounds]), NSHeight([web_view bounds]));
   system_drag_exclude_areas_.clear();

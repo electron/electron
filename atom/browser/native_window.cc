@@ -38,7 +38,6 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
-#include "content/public/browser/web_contents_view.h"
 #include "content/public/common/renderer_preferences.h"
 #include "content/public/common/user_agent.h"
 #include "ipc/ipc_message_macros.h"
@@ -305,7 +304,7 @@ void NativeWindow::CloseWebContents() {
     ScheduleUnresponsiveEvent(5000);
 
   if (web_contents->NeedToFireBeforeUnload())
-    web_contents->GetMainFrame()->DispatchBeforeUnload(false);
+    web_contents->DispatchBeforeUnload(false);
   else
     web_contents->Close();
 }
@@ -356,8 +355,6 @@ void NativeWindow::OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs) {
     prefs->experimental_webgl_enabled = b;
   if (web_preferences.Get("webaudio", &b))
     prefs->webaudio_enabled = b;
-  if (web_preferences.Get("accelerated-compositing", &b))
-    prefs->accelerated_compositing_enabled = b;
   if (web_preferences.Get("plugins", &b))
     prefs->plugins_enabled = b;
   if (web_preferences.Get("extra-plugin-dirs", &list))

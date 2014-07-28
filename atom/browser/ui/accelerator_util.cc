@@ -87,7 +87,7 @@ ui::KeyboardCode KeyboardCodeFromCharCode(char c, bool* shifted) {
 
 bool StringToAccelerator(const std::string& description,
                          ui::Accelerator* accelerator) {
-  if (!IsStringASCII(description)) {
+  if (!base::IsStringASCII(description)) {
     LOG(ERROR) << "The accelerator string can only contain ASCII characters";
     return false;
   }

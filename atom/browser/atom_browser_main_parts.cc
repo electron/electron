@@ -54,11 +54,7 @@ brightray::BrowserContext* AtomBrowserMainParts::CreateBrowserContext() {
 }
 
 void AtomBrowserMainParts::InitProxyResolverV8() {
-  // Since we are integrating node in browser, we can just be sure that an
-  // V8 instance would be prepared, while the ProxyResolverV8::CreateIsolate()
-  // would try to create a V8 isolate, which messed everything on Windows, so
-  // we have to override and call RememberDefaultIsolate on Windows instead.
-  net::ProxyResolverV8::RememberDefaultIsolate();
+  brightray::BrowserMainParts::InitProxyResolverV8();
 }
 
 void AtomBrowserMainParts::PostEarlyInitialization() {

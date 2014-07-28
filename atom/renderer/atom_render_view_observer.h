@@ -25,7 +25,7 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
 
  private:
   // content::RenderViewObserver implementation.
-  virtual void DidCreateDocumentElement(blink::WebFrame* frame) OVERRIDE;
+  virtual void DidCreateDocumentElement(blink::WebLocalFrame* frame) OVERRIDE;
   virtual void DraggableRegionsChanged(blink::WebFrame* frame) OVERRIDE;
   virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
 
