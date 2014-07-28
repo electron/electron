@@ -27,6 +27,9 @@ using namespace brightray;
   [contentsView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   [self addSubview:contentsView];
 
+  // See https://code.google.com/p/chromium/issues/detail?id=348490.
+  [self setWantsLayer:YES];
+
   return self;
 }
 
