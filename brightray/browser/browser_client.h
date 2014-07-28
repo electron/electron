@@ -49,6 +49,7 @@ class BrowserClient : public content::ContentBrowserClient {
   virtual content::MediaObserver* GetMediaObserver() OVERRIDE;
   virtual void GetAdditionalAllowedSchemesForFileSystem(
       std::vector<std::string>* additional_schemes) OVERRIDE;
+  virtual base::FilePath GetDefaultDownloadDirectory() OVERRIDE;
 
   BrowserMainParts* browser_main_parts_;
   scoped_ptr<NotificationPresenter> notification_presenter_;

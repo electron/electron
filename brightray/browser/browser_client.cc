@@ -9,6 +9,8 @@
 #include "browser/media/media_capture_devices_dispatcher.h"
 #include "browser/notification_presenter.h"
 
+#include "base/base_paths.h"
+#include "base/path_service.h"
 #include "content/public/common/url_constants.h"
 
 namespace brightray {
@@ -82,6 +84,15 @@ void BrowserClient::GetAdditionalAllowedSchemesForFileSystem(
     std::vector<std::string>* additional_schemes) {
   additional_schemes->push_back(content::kChromeDevToolsScheme);
   additional_schemes->push_back(content::kChromeUIScheme);
+}
+
+base::FilePath BrowserClient::GetDefaultDownloadDirectory() {
+  // ~/Downloads
+  base::FilePath path;
+  if (PathService::Get(base::DIR_HOME, &path))
+    path = path.Append(FILE_PATH_LITERAL("Downloads"));
+
+  return path;
 }
 
 }  // namespace brightray
