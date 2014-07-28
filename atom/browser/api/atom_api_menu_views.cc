@@ -8,10 +8,6 @@
 #include "ui/gfx/screen.h"
 #include "ui/views/controls/menu/menu_runner.h"
 
-#if defined(OS_WIN)
-#include "ui/gfx/win/dpi.h"
-#endif
-
 namespace atom {
 
 namespace api {
@@ -21,10 +17,6 @@ MenuViews::MenuViews() {
 
 void MenuViews::Popup(Window* window) {
   gfx::Point cursor = gfx::Screen::GetNativeScreen()->GetCursorScreenPoint();
-#if defined(OS_WIN)
-  cursor = gfx::win::ScreenToDIPPoint(cursor);
-#endif
-
   views::MenuRunner menu_runner(model());
   ignore_result(menu_runner.RunMenuAt(
       static_cast<NativeWindowViews*>(window->window())->widget(),

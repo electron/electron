@@ -12,7 +12,6 @@
 #include "ui/gfx/icon_util.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
-#include "ui/gfx/win/dpi.h"
 #include "ui/views/controls/menu/menu_runner.h"
 
 namespace atom {
@@ -61,16 +60,14 @@ void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
   if (!SetForegroundWindow(window_))
     return;
 
-  menu_runner_.reset(new views::MenuRunner(menu_model_));
-  views::MenuRunner::RunResult result = menu_runner_->RunMenuAt(
+  views::MenuRunner menu_runner(menu_model_);
+  ignore_result(menu_runner.RunMenuAt(
       NULL,
       NULL,
-      gfx::Rect(gfx::win::ScreenToDIPPoint(cursor_pos), gfx::Size()),
+      gfx::Rect(cursor_pos, gfx::Size()),
       views::MENU_ANCHOR_TOPLEFT,
       ui::MENU_SOURCE_MOUSE,
-      views::MenuRunner::HAS_MNEMONICS | views::MenuRunner::CONTEXT_MENU);
-  if (result == views::MenuRunner::MENU_DELETED)
-    LOG(ERROR) << "Menu deleted when running";
+      views::MenuRunner::HAS_MNEMONICS | views::MenuRunner::CONTEXT_MENU));
 }
 
 void NotifyIcon::ResetIcon() {
