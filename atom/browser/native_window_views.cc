@@ -137,6 +137,7 @@ void NativeWindowViews::Close() {
 
 void NativeWindowViews::CloseImmediately() {
   window_->CloseNow();
+  window_.reset();
 }
 
 void NativeWindowViews::Move(const gfx::Rect& bounds) {

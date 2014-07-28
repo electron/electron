@@ -104,10 +104,6 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
 }
 
 NativeWindow::~NativeWindow() {
-  // Make sure we have the OnRenderViewDeleted message sent even when the window
-  // is destroyed directly.
-  DestroyWebContents();
-
   // It's possible that the windows gets destroyed before it's closed, in that
   // case we need to ensure the OnWindowClosed message is still notified.
   NotifyWindowClosed();
@@ -453,9 +449,6 @@ void NativeWindow::MoveContents(content::WebContents* source,
 }
 
 void NativeWindow::CloseContents(content::WebContents* source) {
-  // Destroy the WebContents before we close the window.
-  DestroyWebContents();
-
   // When the web contents is gone, close the window immediately, but the
   // memory will not be freed until you call delete.
   // In this way, it would be safe to manage windows via smart pointers. If you
