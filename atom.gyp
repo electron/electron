@@ -380,6 +380,8 @@
                 '<(libchromiumcontent_resources_dir)/webkit_resources_200_percent.pak',
                 'external_binaries/d3dcompiler_43.dll',
                 'external_binaries/xinput1_3.dll',
+                'vendor/third_party/microsoft/msvcp100.dll',
+                'vendor/third_party/microsoft/msvcr100.dll',
               ],
             },
             {
