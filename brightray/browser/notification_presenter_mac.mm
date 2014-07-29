@@ -5,146 +5,121 @@
 
 #import "browser/notification_presenter_mac.h"
 
-#import "base/strings/stringprintf.h"
-#import "base/strings/sys_string_conversions.h"
-#import "content/public/browser/render_view_host.h"
-#import "content/public/common/show_desktop_notification_params.h"
+#include "base/bind.h"
+#include "base/stl_util.h"
+#include "base/strings/sys_string_conversions.h"
+#include "content/public/browser/desktop_notification_delegate.h"
+#include "content/public/common/show_desktop_notification_params.h"
 
 #import <Foundation/Foundation.h>
 
-@interface BRYUserNotificationCenterDelegate : NSObject <NSUserNotificationCenterDelegate>
+@interface BRYUserNotificationCenterDelegate : NSObject<NSUserNotificationCenterDelegate> {
+ @private
+  brightray::NotificationPresenterMac* presenter_;
+}
+- (instancetype)initWithNotificationPresenter:(brightray::NotificationPresenterMac*)presenter;
 @end
 
 namespace brightray {
 
 namespace {
 
-NSString * const kRenderProcessIDKey = @"RenderProcessID";
-NSString * const kRenderViewIDKey = @"RenderViewID";
-NSString * const kNotificationIDKey = @"NotificationID";
-
-struct NotificationID {
-  NotificationID(
-      int render_process_id,
-      int render_view_id,
-      int notification_id)
-      : render_process_id(render_process_id),
-        render_view_id(render_view_id),
-        notification_id(notification_id) {
-  }
-
-  NotificationID(NSUserNotification* notification)
-      : render_process_id([[notification.userInfo objectForKey:kRenderProcessIDKey] intValue]),
-        render_view_id([[notification.userInfo objectForKey:kRenderViewIDKey] intValue]),
-        notification_id([[notification.userInfo objectForKey:kNotificationIDKey] intValue]) {
-  }
-
-  std::string GetID() {
-    return base::StringPrintf("%d:%d:%d", render_process_id, render_view_id, notification_id);
-  }
-
-  NSDictionary* GetUserInfo() {
-    return @{
-      kRenderProcessIDKey: @(render_process_id),
-      kRenderViewIDKey: @(render_view_id),
-      kNotificationIDKey: @(notification_id),
-    };
-  }
-
-  int render_process_id;
-  int render_view_id;
-  int notification_id;
-};
-
-base::scoped_nsobject<NSUserNotification> CreateUserNotification(
-    const content::ShowDesktopNotificationHostMsgParams& params,
-    int render_process_id,
-    int render_view_id) {
-  auto notification = [[NSUserNotification alloc] init];
-  notification.title = base::SysUTF16ToNSString(params.title);
-  notification.informativeText = base::SysUTF16ToNSString(params.body);
-  notification.userInfo = NotificationID(render_process_id, render_view_id, params.notification_id).GetUserInfo();
-
-  return base::scoped_nsobject<NSUserNotification>(notification);
-}
-
-}
+}  // namespace
 
 NotificationPresenter* NotificationPresenter::Create() {
   return new NotificationPresenterMac;
 }
 
 NotificationPresenterMac::NotificationPresenterMac()
-    : delegate_([[BRYUserNotificationCenterDelegate alloc] init]) {
+    : delegate_([[BRYUserNotificationCenterDelegate alloc] initWithNotificationPresenter:this]) {
   NSUserNotificationCenter.defaultUserNotificationCenter.delegate = delegate_;
 }
 
 NotificationPresenterMac::~NotificationPresenterMac() {
+  NSUserNotificationCenter.defaultUserNotificationCenter.delegate = nil;
 }
 
 void NotificationPresenterMac::ShowNotification(
     const content::ShowDesktopNotificationHostMsgParams& params,
-    int render_process_id,
-    int render_view_id) {
-  auto notification = CreateUserNotification(params, render_process_id, render_view_id);
-  notification_map_.insert(std::make_pair(NotificationID(notification).GetID(), notification));
+    content::DesktopNotificationDelegate* delegate,
+    base::Closure* cancel_callback) {
+  auto notification = [[NSUserNotification alloc] init];
+  notification.title = base::SysUTF16ToNSString(params.title);
+  notification.informativeText = base::SysUTF16ToNSString(params.body);
+
+  notifications_map_[delegate].reset(notification);
   [NSUserNotificationCenter.defaultUserNotificationCenter deliverNotification:notification];
+
+  if (cancel_callback)
+    *cancel_callback = base::Bind(
+        &NotificationPresenterMac::CancelNotification,
+        base::Unretained(this),
+        delegate);
 }
 
-void NotificationPresenterMac::CancelNotification(
-    int render_process_id,
-    int render_view_id,
-    int notification_id) {
-  auto found = notification_map_.find(NotificationID(render_process_id, render_view_id, notification_id).GetID());
-  if (found == notification_map_.end())
+content::DesktopNotificationDelegate* NotificationPresenterMac::GetDelegateFromNotification(
+    NSUserNotification* notification) {
+  for (NotificationsMap::const_iterator it = notifications_map_.begin();
+       it != notifications_map_.end(); ++it)
+    if ([it->second isEqual:notification])
+      return it->first;
+  return NULL;
+}
+
+void NotificationPresenterMac::RemoveNotification(content::DesktopNotificationDelegate* delegate) {
+  if (ContainsKey(notifications_map_, delegate))
+    notifications_map_.erase(delegate);
+}
+
+void NotificationPresenterMac::CancelNotification(content::DesktopNotificationDelegate* delegate) {
+  if (!ContainsKey(notifications_map_, delegate))
     return;
-
-  auto notification = found->second;
-
-  notification_map_.erase(found);
 
   // Notifications in -deliveredNotifications aren't the same objects we passed to
   // -deliverNotification:, but they will respond YES to -isEqual:.
+  auto notification = notifications_map_[delegate];
   auto center = NSUserNotificationCenter.defaultUserNotificationCenter;
-  for (NSUserNotification* deliveredNotification in center.deliveredNotifications) {
-    if (![notification isEqual:deliveredNotification])
-      continue;
-    [center removeDeliveredNotification:deliveredNotification];
-  }
+  for (NSUserNotification* deliveredNotification in center.deliveredNotifications)
+    if ([notification isEqual:deliveredNotification]) {
+      [center removeDeliveredNotification:deliveredNotification];
+      delegate->NotificationClosed(false);
+      break;
+    }
 
-  NotificationID ID(notification);
-  auto host = content::RenderViewHost::FromID(ID.render_process_id, ID.render_view_id);
-  if (!host)
-    return;
-
-  host->DesktopNotificationPostClose(ID.notification_id, false);
+  RemoveNotification(delegate);
 }
 
-}
+}  // namespace brightray
 
 @implementation BRYUserNotificationCenterDelegate
 
-- (void)userNotificationCenter:(NSUserNotificationCenter *)center didDeliverNotification:(NSUserNotification *)notification {
-  brightray::NotificationID ID(notification);
+- (instancetype)initWithNotificationPresenter:(brightray::NotificationPresenterMac*)presenter {
+  self = [super init];
+  if (!self)
+    return nil;
 
-  auto host = content::RenderViewHost::FromID(ID.render_process_id, ID.render_view_id);
-  if (!host)
-    return;
-
-  host->DesktopNotificationPostDisplay(ID.notification_id);
+  presenter_ = presenter;
+  return self;
 }
 
-- (void)userNotificationCenter:(NSUserNotificationCenter *)center didActivateNotification:(NSUserNotification *)notification {
-  brightray::NotificationID ID(notification);
-
-  auto host = content::RenderViewHost::FromID(ID.render_process_id, ID.render_view_id);
-  if (!host)
-    return;
-
-  host->DesktopNotificationPostClick(ID.notification_id);
+- (void)userNotificationCenter:(NSUserNotificationCenter*)center
+        didDeliverNotification:(NSUserNotification*)notification {
+  auto delegate = presenter_->GetDelegateFromNotification(notification);
+  if (delegate)
+    delegate->NotificationDisplayed();
 }
 
-- (BOOL)userNotificationCenter:(NSUserNotificationCenter *)center shouldPresentNotification:(NSUserNotification *)notification {
+- (void)userNotificationCenter:(NSUserNotificationCenter*)center
+       didActivateNotification:(NSUserNotification *)notification {
+  auto delegate = presenter_->GetDelegateFromNotification(notification);
+  if (delegate) {
+    delegate->NotificationClick();
+    presenter_->RemoveNotification(delegate);
+  }
+}
+
+- (BOOL)userNotificationCenter:(NSUserNotificationCenter*)center
+     shouldPresentNotification:(NSUserNotification*)notification {
   // Display notifications even if the app is active.
   return YES;
 }

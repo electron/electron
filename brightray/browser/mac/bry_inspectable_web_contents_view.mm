@@ -4,7 +4,6 @@
 #include "browser/inspectable_web_contents_view_mac.h"
 
 #include "content/public/browser/render_widget_host_view.h"
-#include "content/public/browser/web_contents_view.h"
 #import "ui/base/cocoa/underlay_opengl_hosting_window.h"
 #include "ui/gfx/mac/scoped_ns_disable_screen_updates.h"
 
@@ -22,9 +21,14 @@ using namespace brightray;
   devtools_docked_ = NO;
 
   auto contents = inspectableWebContentsView_->inspectable_web_contents()->GetWebContents();
-  auto contentsView = contents->GetView()->GetNativeView();
+  contents->SetAllowOverlappingViews(true);
+
+  auto contentsView = contents->GetNativeView();
   [contentsView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   [self addSubview:contentsView];
+
+  // See https://code.google.com/p/chromium/issues/detail?id=348490.
+  [self setWantsLayer:YES];
 
   return self;
 }
@@ -42,7 +46,7 @@ using namespace brightray;
     return;
 
   auto devToolsWebContents = inspectableWebContentsView_->inspectable_web_contents()->devtools_web_contents();
-  auto devToolsView = devToolsWebContents->GetView()->GetNativeView();
+  auto devToolsView = devToolsWebContents->GetNativeView();
 
   devtools_visible_ = visible;
   if (devtools_docked_) {
@@ -53,7 +57,7 @@ using namespace brightray;
       [self update];
     } else {
       gfx::ScopedNSDisableScreenUpdates disabler;
-      devToolsWebContents->GetView()->RemoveOverlayView();
+      devToolsWebContents->RemoveOverlayView();
       [devToolsView removeFromSuperview];
       [self adjustSubviews];
     }
@@ -79,7 +83,7 @@ using namespace brightray;
   devtools_docked_ = docked;
   if (!docked) {
     auto devToolsWebContents = inspectableWebContentsView_->inspectable_web_contents()->devtools_web_contents();
-    auto devToolsView = devToolsWebContents->GetView()->GetNativeView();
+    auto devToolsView = devToolsWebContents->GetNativeView();
 
     auto styleMask = NSTitledWindowMask | NSClosableWindowMask |
                      NSMiniaturizableWindowMask | NSResizableWindowMask |
@@ -119,8 +123,8 @@ using namespace brightray;
   auto devToolsWebContents = inspectableWebContentsView_->inspectable_web_contents()->devtools_web_contents();
 
   gfx::ScopedNSDisableScreenUpdates disabler;
-  devToolsWebContents->GetView()->SetOverlayView(
-      contents->GetView(),
+  devToolsWebContents->SetOverlayView(
+      contents,
       gfx::Point(strategy_.insets().left(), strategy_.insets().top()));
   [self adjustSubviews];
 }

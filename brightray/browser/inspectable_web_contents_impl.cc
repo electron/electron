@@ -21,7 +21,6 @@
 #include "content/public/browser/devtools_client_host.h"
 #include "content/public/browser/devtools_http_handler.h"
 #include "content/public/browser/devtools_manager.h"
-#include "content/public/browser/web_contents_view.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 
@@ -152,7 +151,7 @@ void InspectableWebContentsImpl::CloseDevTools() {
   if (devtools_web_contents_) {
     view_->CloseDevTools();
     devtools_web_contents_.reset();
-    web_contents_->GetView()->Focus();
+    web_contents_->Focus();
   }
 }
 
@@ -176,7 +175,7 @@ void InspectableWebContentsImpl::ActivateWindow() {
 }
 
 void InspectableWebContentsImpl::CloseWindow() {
-  devtools_web_contents()->GetMainFrame()->DispatchBeforeUnload(false);
+  devtools_web_contents()->DispatchBeforeUnload(false);
 }
 
 void InspectableWebContentsImpl::SetContentsResizingStrategy(
@@ -289,7 +288,7 @@ void InspectableWebContentsImpl::DidFinishLoad(int64 frame_id,
   view_->ShowDevTools();
 }
 
-void InspectableWebContentsImpl::WebContentsDestroyed(content::WebContents*) {
+void InspectableWebContentsImpl::WebContentsDestroyed() {
   content::DevToolsManager::GetInstance()->ClientHostClosing(
       frontend_host_.get());
   Observe(nullptr);

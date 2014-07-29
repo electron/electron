@@ -9,6 +9,8 @@
 #include "browser/media/media_capture_devices_dispatcher.h"
 #include "browser/notification_presenter.h"
 
+#include "base/base_paths.h"
+#include "base/path_service.h"
 #include "content/public/common/url_constants.h"
 
 namespace brightray {
@@ -66,24 +68,12 @@ net::URLRequestContextGetter* BrowserClient::CreateRequestContext(
 
 void BrowserClient::ShowDesktopNotification(
     const content::ShowDesktopNotificationHostMsgParams& params,
-    int render_process_id,
-    int render_view_id,
-    bool worker) {
+    content::RenderFrameHost* render_frame_host,
+    content::DesktopNotificationDelegate* delegate,
+    base::Closure* cancel_callback) {
   auto presenter = notification_presenter();
-  if (!presenter)
-    return;
-  presenter->ShowNotification(params, render_process_id, render_view_id);
-}
-
-void BrowserClient::CancelDesktopNotification(
-    int render_process_id,
-    int render_view_id,
-    int notification_id) {
-  auto presenter = notification_presenter();
-  if (!presenter)
-    return;
-  presenter->CancelNotification(
-      render_process_id, render_view_id, notification_id);
+  if (presenter)
+    presenter->ShowNotification(params, delegate, cancel_callback);
 }
 
 content::MediaObserver* BrowserClient::GetMediaObserver() {
@@ -94,6 +84,15 @@ void BrowserClient::GetAdditionalAllowedSchemesForFileSystem(
     std::vector<std::string>* additional_schemes) {
   additional_schemes->push_back(content::kChromeDevToolsScheme);
   additional_schemes->push_back(content::kChromeUIScheme);
+}
+
+base::FilePath BrowserClient::GetDefaultDownloadDirectory() {
+  // ~/Downloads
+  base::FilePath path;
+  if (PathService::Get(base::DIR_HOME, &path))
+    path = path.Append(FILE_PATH_LITERAL("Downloads"));
+
+  return path;
 }
 
 }  // namespace brightray

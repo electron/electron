@@ -5,8 +5,6 @@
 #include "browser/inspectable_web_contents.h"
 #import "browser/mac/bry_inspectable_web_contents_view.h"
 
-#include "content/public/browser/web_contents_view.h"
-
 namespace brightray {
 
 InspectableWebContentsView* CreateInspectableContentsView(InspectableWebContentsImpl* inspectable_web_contents) {

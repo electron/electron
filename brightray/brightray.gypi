@@ -259,6 +259,7 @@
         'msvs_disabled_warnings': [
           4100, # unreferenced formal parameter
           4127, # conditional expression is constant
+          4189, # local variable is initialized but not referenced
           4244, # 'initializing' : conversion from 'double' to 'size_t', possible loss of data
           4245, # 'initializing' : conversion from 'int' to 'const net::QuicVersionTag', signed/unsigned mismatch
           4251, # class 'std::xx' needs to have dll-interface.
