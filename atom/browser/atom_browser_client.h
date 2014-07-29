@@ -17,6 +17,7 @@ class AtomBrowserClient : public brightray::BrowserClient {
   virtual ~AtomBrowserClient();
 
  protected:
+  // content::ContentBrowserClient:
   net::URLRequestContextGetter* CreateRequestContext(
       content::BrowserContext* browser_context,
       content::ProtocolHandlerMap* protocol_handlers,

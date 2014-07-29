@@ -7,6 +7,7 @@
 #include "atom/browser/ui/views/menu_bar.h"
 #include "base/stl_util.h"
 #include "ui/views/controls/button/menu_button.h"
+#include "ui/views/controls/menu/menu_item_view.h"
 #include "ui/views/controls/menu/menu_model_adapter.h"
 #include "ui/views/controls/menu/menu_runner.h"
 #include "ui/views/widget/widget.h"
@@ -39,7 +40,7 @@ void MenuDelegate::RunMenu(ui::MenuModel* model, views::MenuButton* button) {
       button->GetWidget()->GetTopLevelWidget(),
       button,
       bounds,
-      views::MenuItemView::TOPRIGHT,
+      views::MENU_ANCHOR_TOPRIGHT,
       ui::MENU_SOURCE_MOUSE,
       views::MenuRunner::HAS_MNEMONICS | views::MenuRunner::CONTEXT_MENU));
 }
@@ -107,14 +108,14 @@ void MenuDelegate::WillHideMenu(views::MenuItemView* menu) {
 views::MenuItemView* MenuDelegate::GetSiblingMenu(
     views::MenuItemView* menu,
     const gfx::Point& screen_point,
-    views::MenuItemView::AnchorPosition* anchor,
+    views::MenuAnchorPosition* anchor,
     bool* has_mnemonics,
     views::MenuButton** button) {
   ui::MenuModel* model;
   if (!menu_bar_->GetMenuButtonFromScreenPoint(screen_point, &model, button))
     return NULL;
 
-  *anchor = views::MenuItemView::TOPLEFT;
+  *anchor = views::MENU_ANCHOR_TOPLEFT;
   *has_mnemonics = true;
 
   id_ = (*button)->tag();

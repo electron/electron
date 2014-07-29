@@ -18,6 +18,7 @@
 #include "third_party/WebKit/public/web/WebDraggableRegion.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
+#include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
 #include "atom/common/node_includes.h"
@@ -36,7 +37,8 @@ AtomRenderViewObserver::AtomRenderViewObserver(
 AtomRenderViewObserver::~AtomRenderViewObserver() {
 }
 
-void AtomRenderViewObserver::DidCreateDocumentElement(blink::WebFrame* frame) {
+void AtomRenderViewObserver::DidCreateDocumentElement(
+    blink::WebLocalFrame* frame) {
   // Read --zoom-factor from command line.
   std::string zoom_factor_str = CommandLine::ForCurrentProcess()->
       GetSwitchValueASCII(switches::kZoomFactor);;

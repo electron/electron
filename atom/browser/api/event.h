@@ -40,7 +40,7 @@ class Event : public Wrappable,
   virtual ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate);
 
   // content::WebContentsObserver implementations:
-  virtual void WebContentsDestroyed(content::WebContents*) OVERRIDE;
+  virtual void WebContentsDestroyed() OVERRIDE;
 
  private:
   // Replyer for the synchronous messages.

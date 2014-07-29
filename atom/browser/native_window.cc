@@ -38,7 +38,6 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
-#include "content/public/browser/web_contents_view.h"
 #include "content/public/common/renderer_preferences.h"
 #include "content/public/common/user_agent.h"
 #include "ipc/ipc_message_macros.h"
@@ -105,10 +104,6 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
 }
 
 NativeWindow::~NativeWindow() {
-  // Make sure we have the OnRenderViewDeleted message sent even when the window
-  // is destroyed directly.
-  DestroyWebContents();
-
   // It's possible that the windows gets destroyed before it's closed, in that
   // case we need to ensure the OnWindowClosed message is still notified.
   NotifyWindowClosed();
@@ -305,7 +300,7 @@ void NativeWindow::CloseWebContents() {
     ScheduleUnresponsiveEvent(5000);
 
   if (web_contents->NeedToFireBeforeUnload())
-    web_contents->GetMainFrame()->DispatchBeforeUnload(false);
+    web_contents->DispatchBeforeUnload(false);
   else
     web_contents->Close();
 }
@@ -356,8 +351,6 @@ void NativeWindow::OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs) {
     prefs->experimental_webgl_enabled = b;
   if (web_preferences.Get("webaudio", &b))
     prefs->webaudio_enabled = b;
-  if (web_preferences.Get("accelerated-compositing", &b))
-    prefs->accelerated_compositing_enabled = b;
   if (web_preferences.Get("plugins", &b))
     prefs->plugins_enabled = b;
   if (web_preferences.Get("extra-plugin-dirs", &list))
@@ -456,9 +449,6 @@ void NativeWindow::MoveContents(content::WebContents* source,
 }
 
 void NativeWindow::CloseContents(content::WebContents* source) {
-  // Destroy the WebContents before we close the window.
-  DestroyWebContents();
-
   // When the web contents is gone, close the window immediately, but the
   // memory will not be freed until you call delete.
   // In this way, it would be safe to manage windows via smart pointers. If you

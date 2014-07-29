@@ -70,6 +70,10 @@ AtomRendererClient::AtomRendererClient()
     node_integration_ = ALL;
 
   if (IsNodeBindingEnabled()) {
+    // Always enable harmony when node binding is on.
+    std::string flags("--harmony");
+    v8::V8::SetFlagsFromString(flags.c_str(), static_cast<int>(flags.size()));
+
     node_bindings_.reset(NodeBindings::Create(false));
     atom_bindings_.reset(new AtomRendererBindings);
   }

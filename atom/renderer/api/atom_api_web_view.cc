@@ -6,7 +6,7 @@
 
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
-#include "third_party/WebKit/public/web/WebFrame.h"
+#include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
 #include "atom/common/node_includes.h"
@@ -18,7 +18,7 @@ namespace api {
 namespace {
 
 blink::WebView* GetCurrentWebView() {
-  blink::WebFrame* frame = blink::WebFrame::frameForCurrentContext();
+  blink::WebLocalFrame* frame = blink::WebLocalFrame::frameForCurrentContext();
   if (!frame)
     return NULL;
   return frame->view();

@@ -9,6 +9,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/strings/utf_string_conversions.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
@@ -66,7 +67,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
   return handled;
 }
 
-void WebContents::WebContentsDestroyed(content::WebContents*) {
+void WebContents::WebContentsDestroyed() {
   // The RenderViewDeleted was not called when the WebContents is destroyed.
   RenderViewDeleted(web_contents_->GetRenderViewHost());
   Emit("destroyed");
@@ -155,8 +156,7 @@ bool WebContents::IsCrashed() const {
 }
 
 void WebContents::ExecuteJavaScript(const base::string16& code) {
-  web_contents()->GetRenderViewHost()->ExecuteJavascriptInWebFrame(
-      base::string16(), code);
+  web_contents()->GetMainFrame()->ExecuteJavaScript(code);
 }
 
 bool WebContents::SendIPCMessage(const base::string16& channel,

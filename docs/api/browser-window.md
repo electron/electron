@@ -63,7 +63,6 @@ You can also create a window without chrome by using
     * `text-areas-are-resizable` Boolean
     * `webgl` Boolean
     * `webaudio` Boolean
-    * `accelerated-compositing` Boolean
     * `plugins` Boolean - Whether plugins should be enabled, currently only
       `NPAPI` plugins are supported.
     * `extra-plugin-dirs` Array - Array of paths that would be searched for

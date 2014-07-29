@@ -7,19 +7,19 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
-#include "third_party/WebKit/public/web/WebFrame.h"
+#include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
 #include "atom/common/node_includes.h"
 
 using content::RenderView;
-using blink::WebFrame;
+using blink::WebLocalFrame;
 using blink::WebView;
 
 namespace {
 
 RenderView* GetCurrentRenderView() {
-  WebFrame* frame = WebFrame::frameForCurrentContext();
+  WebLocalFrame* frame = WebLocalFrame::frameForCurrentContext();
   if (!frame)
     return NULL;
 

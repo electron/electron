@@ -24,7 +24,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "browser/inspectable_web_contents_view.h"
 #include "content/public/browser/native_web_keyboard_event.h"
-#include "content/public/browser/web_contents_view.h"
 #include "native_mate/dictionary.h"
 #include "ui/aura/window.h"
 #include "ui/aura/window_tree_host.h"
