@@ -4,8 +4,11 @@
 
 #include "browser/browser_main_parts.h"
 
+#include "base/command_line.h"
 #include "browser/browser_context.h"
+#include "browser/devtools_delegate.h"
 #include "browser/web_ui_controller_factory.h"
+#include "content/public/common/content_switches.h"
 #include "net/proxy/proxy_resolver_v8.h"
 
 #if defined(USE_AURA)
@@ -64,6 +67,7 @@ void BrowserMainParts::PreEarlyInitialization() {
   InitProxyResolverV8();
 }
 
+
 void BrowserMainParts::ToolkitInitialized() {
 #if defined(USE_AURA) && defined(USE_X11)
   views::LinuxUI::instance()->Initialize();
@@ -94,6 +98,11 @@ void BrowserMainParts::PreMainMessageLoopRun() {
       new WebUIControllerFactory(browser_context_.get()));
   content::WebUIControllerFactory::RegisterFactory(
       web_ui_controller_factory_.get());
+  if (CommandLine::ForCurrentProcess()->HasSwitch(
+      switches::kRemoteDebuggingPort)) {
+    devtools_delegate_.reset(new brightray::DevToolsDelegate(
+        browser_context()));
+  }
 }
 
 void BrowserMainParts::PostMainMessageLoopRun() {
