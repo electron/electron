@@ -63,8 +63,9 @@ void Shortcut::Register() {
     OnFailed("Shortcut is invalid.");
     return;
   }
-  GlobalShortcutListener::GetInstance()->RegisterAccelerator(
-      accelerator_, this);
+  if (!GlobalShortcutListener::GetInstance()->RegisterAccelerator(
+      accelerator_, this))
+    OnFailed("Fail to register the shortcut.");
 }
 
 void Shortcut::Unregister() {
