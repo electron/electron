@@ -7,6 +7,10 @@
 
 #include "brightray/browser/browser_main_parts.h"
 
+namespace brightray {
+class DevToolsDelegate;
+};
+
 namespace atom {
 
 class AtomBindings;
@@ -40,6 +44,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   scoped_ptr<JavascriptEnvironment> js_env_;
   scoped_ptr<NodeBindings> node_bindings_;
   scoped_ptr<AtomBindings> atom_bindings_;
+  scoped_ptr<brightray::DevToolsDelegate> devtools_delegate_;
 
   static AtomBrowserMainParts* self_;
 

@@ -11,6 +11,8 @@
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/node_bindings.h"
 #include "base/command_line.h"
+#include "brightray/browser/devtools_delegate.h"
+#include "content/public/common/content_switches.h"
 
 #if defined(OS_WIN)
 #include "ui/gfx/win/dpi.h"
@@ -78,6 +80,12 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   // will-finish-launching event.
   static_cast<content::BrowserContext*>(AtomBrowserContext::Get())->
       GetRequestContext();
+
+  if (CommandLine::ForCurrentProcess()->HasSwitch(
+	  switches::kRemoteDebuggingPort)) {
+    devtools_delegate_.reset(new brightray::DevToolsDelegate(
+        AtomBrowserContext::Get()));
+  }
 
 #if !defined(OS_MACOSX)
   // The corresponding call in OS X is in AtomApplicationDelegate.
