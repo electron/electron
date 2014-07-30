@@ -42,8 +42,8 @@ class Shortcut : public mate::EventEmitter,
     return accelerator_;
   }
 
-  void OnActive() ;
-  void OnFailed(const std::string& error_msg) ;
+  void OnActive();
+  void OnFailed(const std::string& error_msg);
 
   // GlobalShortcutListener::Observer implementation.
   virtual void OnKeyPressed(const ui::Accelerator& accelerator) OVERRIDE;

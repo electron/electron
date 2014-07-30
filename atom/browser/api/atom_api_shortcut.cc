@@ -69,11 +69,13 @@ void Shortcut::Register() {
 }
 
 void Shortcut::Unregister() {
-  GlobalShortcutListener::GetInstance()->UnregisterAccelerator(accelerator_, this);
+  GlobalShortcutListener::GetInstance()->UnregisterAccelerator(
+      accelerator_, this);
 }
 
 bool Shortcut::IsRegistered() {
-  return GlobalShortcutListener::GetInstance()->IsAcceleratorRegistered(accelerator_);
+  return GlobalShortcutListener::GetInstance()->IsAcceleratorRegistered(
+      accelerator_);
 }
 
 // static
