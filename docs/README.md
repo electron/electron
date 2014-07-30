@@ -21,6 +21,7 @@ Modules for browser side:
 * [power-monitor](api/power-monitor.md)
 * [protocol](api/protocol.md)
 * [tray](api/tray.md)
+* [shortcut](api/shortcut.md)
 
 Modules for web page:
 
