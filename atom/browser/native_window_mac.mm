@@ -557,8 +557,6 @@ void NativeWindowMac::InstallView() {
     base::scoped_nsobject<CALayer> layer([[CALayer alloc] init]);
     [layer setBackgroundColor:CGColorGetConstantColor(kCGColorWhite)];
     [view setLayer:layer];
-    [view setWantsLayer:YES];
-
     [view setFrame:[[window_ contentView] bounds]];
     [[window_ contentView] addSubview:view];
   } else {
@@ -582,8 +580,6 @@ void NativeWindowMac::UninstallView() {
 
 void NativeWindowMac::ClipWebView() {
   NSView* view = GetWebContents()->GetNativeView();
-
-  view.wantsLayer = YES;
   view.layer.masksToBounds = YES;
   view.layer.cornerRadius = kAtomWindowCornerRadius;
 }
