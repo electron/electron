@@ -25,7 +25,7 @@ def update_gyp():
   python = sys.executable
   arch = 'ia32'
   if sys.platform.startswith('linux') and sys.maxsize > 2**32 or sys.platform == 'darwin':
-      arch = 'x64'
+    arch = 'x64'
   if sys.platform in ['cygwin', 'win32']:
     python = os.path.join('vendor', 'python_26', 'python.exe')
   subprocess.call([python, gyp,
