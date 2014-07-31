@@ -5,13 +5,13 @@
 #include <string>
 #include <vector>
 
-#include "base/bind.h"
 #include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/ui/message_box.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/function_converter.h"
+#include "base/bind.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
