@@ -55,7 +55,7 @@ void SetupDialogForProperties(NSOpenPanel* dialog, int properties) {
 // Run modal dialog with parent window and return user's choice.
 int RunModalDialog(NSSavePanel* dialog, atom::NativeWindow* parent_window) {
   __block int chosen = NSFileHandlingPanelCancelButton;
-  if (parent_window == NULL) {
+  if (!parent_window || !parent_window->GetNativeWindow()) {
     chosen = [dialog runModal];
   } else {
     NSWindow* window = parent_window->GetNativeWindow();

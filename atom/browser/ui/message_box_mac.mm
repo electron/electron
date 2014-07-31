@@ -99,7 +99,7 @@ int ShowMessageBox(NativeWindow* parent_window,
 
   // Use runModal for synchronous alert without parent, since we don't have a
   // window to wait for.
-  if (!parent_window)
+  if (!parent_window || !parent_window->GetNativeWindow())
     return [[alert autorelease] runModal];
 
   int ret_code = -1;
