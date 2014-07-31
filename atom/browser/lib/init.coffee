@@ -14,7 +14,7 @@ process.argv.splice 1, 1
 # Pick out switches appended by atom-shell.
 startMark = process.argv.indexOf '--atom-shell-switches-start'
 endMark = process.argv.indexOf '--atom-shell-switches-end'
-process.execArgv = process.argv.splice startMark, endMark - startMark + 1
+process.argv.splice startMark, endMark - startMark + 1
 
 # Add browser/api/lib to require's search paths,
 # which contains javascript part of Atom's built-in libraries.
