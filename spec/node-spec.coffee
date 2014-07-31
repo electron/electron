@@ -32,6 +32,14 @@ describe 'node feature', ->
           done()
         child.send 'message'
 
+      it 'works in browser process', (done) ->
+        fork = require('remote').require('child_process').fork
+        child = fork path.join(fixtures, 'module', 'ping.js')
+        child.on 'message', (msg) ->
+          assert.equal msg, 'message'
+          done()
+        child.send 'message'
+
   describe 'contexts', ->
     describe 'setTimeout in fs callback', ->
       it 'does not crash', (done) ->
