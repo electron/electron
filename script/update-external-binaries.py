@@ -4,10 +4,10 @@ import errno
 import sys
 import os
 
-from lib.util import safe_mkdir, extract_zip, tempdir, download
+from lib.util import safe_mkdir, rm_rf, extract_zip, tempdir, download
 
 
-VERSION = 'v0.0.3'
+VERSION = 'v0.1.0'
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 FRAMEWORKS_URL = 'https://github.com/atom/atom-shell-frameworks/releases' \
                  '/download/' + VERSION
@@ -17,9 +17,11 @@ def main():
   os.chdir(SOURCE_ROOT)
   version_file = os.path.join(SOURCE_ROOT, 'external_binaries', '.version')
 
-  safe_mkdir('external_binaries')
   if (is_updated(version_file, VERSION)):
     return
+
+  rm_rf('external_binaries')
+  safe_mkdir('external_binaries')
 
   with open(version_file, 'w') as f:
     f.write(VERSION)
@@ -30,6 +32,7 @@ def main():
     download_and_unzip('Squirrel')
   elif sys.platform in ['cygwin', 'win32']:
     download_and_unzip('directxsdk')
+    download_and_unzip('vs2012_crt')
 
 
 def is_updated(version_file, version):
