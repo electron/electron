@@ -14,6 +14,7 @@ Modules for browser side:
 * [app](api/app.md)
 * [auto-updater](api/auto-updater.md)
 * [browser-window](api/browser-window.md)
+* [content-tracing](api/content-tracing.md)
 * [dialog](api/dialog.md)
 * [ipc (browser)](api/ipc-browser.md)
 * [menu](api/menu.md)
