@@ -23,10 +23,11 @@ def update_external_binaries():
 def update_gyp():
   gyp = os.path.join('vendor', 'brightray', 'vendor', 'gyp', 'gyp_main.py')
   python = sys.executable
-  arch = 'x64'
+  arch = 'ia32'
+  if sys.platform.startswith('linux') and sys.maxsize > 2**32 or sys.platform == 'darwin':
+      arch = 'x64'
   if sys.platform in ['cygwin', 'win32']:
     python = os.path.join('vendor', 'python_26', 'python.exe')
-    arch = 'ia32'
   subprocess.call([python, gyp,
                    '-f', 'ninja', '--depth', '.', 'atom.gyp',
                    '-Icommon.gypi', '-Ivendor/brightray/brightray.gypi',
