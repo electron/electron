@@ -1,9 +1,9 @@
-// Copyright (c) 2014 The Chromium Authors. All rights reserved.
+// Copyright (c) 2013 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CHROME_BROWSER_UI_SHORTCUT_GLOBAL_SHORTCUT_LISTENER_H_
-#define CHROME_BROWSER_UI_SHORTCUT_GLOBAL_SHORTCUT_LISTENER_H_
+#ifndef CHROME_BROWSER_EXTENSIONS_GLOBAL_SHORTCUT_LISTENER_H_
+#define CHROME_BROWSER_EXTENSIONS_GLOBAL_SHORTCUT_LISTENER_H_
 
 #include <map>
 
@@ -14,9 +14,7 @@ namespace ui {
 class Accelerator;
 }
 
-namespace atom {
-
-namespace api {
+namespace extensions {
 
 // Platform-neutral implementation of a class that keeps track of observers and
 // monitors keystrokes. It relays messages to the appropriate observer when a
@@ -61,9 +59,6 @@ class GlobalShortcutListener {
   // Returns whether shortcut handling is currently suspended.
   bool IsShortcutHandlingSuspended() const;
 
-  // Returen whether accelerator is registered.
-  virtual bool IsAcceleratorRegistered(const ui::Accelerator& accelerator) = 0;
-
  protected:
   GlobalShortcutListener();
 
@@ -99,7 +94,6 @@ class GlobalShortcutListener {
   DISALLOW_COPY_AND_ASSIGN(GlobalShortcutListener);
 };
 
-}  // namespace api
+}  // namespace extensions
 
-}  // namespace atom
-#endif  // CHROME_BROWSER_UI_SHORTCUT_GLOBAL_SHORTCUT_LISTENER_H_
+#endif  // CHROME_BROWSER_EXTENSIONS_GLOBAL_SHORTCUT_LISTENER_H_

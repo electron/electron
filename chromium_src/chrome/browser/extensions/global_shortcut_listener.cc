@@ -1,18 +1,16 @@
-// Copyright (c) 2014 The Chromium Authors. All rights reserved.
+// Copyright (c) 2013 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "chrome/browser/extensions/global_shortcut_listener.h"
 
 #include "base/logging.h"
-#include "chrome/browser/ui/shortcut/global_shortcut_listener.h"
 #include "content/public/browser/browser_thread.h"
 #include "ui/base/accelerators/accelerator.h"
 
 using content::BrowserThread;
 
-namespace atom {
-
-namespace api {
+namespace extensions {
 
 GlobalShortcutListener::GlobalShortcutListener()
     : shortcut_handling_suspended_(false) {
@@ -21,6 +19,7 @@ GlobalShortcutListener::GlobalShortcutListener()
 
 GlobalShortcutListener::~GlobalShortcutListener() {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+  DCHECK(accelerator_map_.empty());  // Make sure we've cleaned up.
 }
 
 bool GlobalShortcutListener::RegisterAccelerator(
@@ -55,8 +54,8 @@ void GlobalShortcutListener::UnregisterAccelerator(
     return;
 
   AcceleratorMap::iterator it = accelerator_map_.find(accelerator);
-  if (it == accelerator_map_.end())
-    return;
+  // We should never get asked to unregister something that we didn't register.
+  DCHECK(it != accelerator_map_.end());
   // The caller should call this function with the right observer.
   DCHECK(it->second == observer);
 
@@ -120,6 +119,4 @@ void GlobalShortcutListener::NotifyKeyPressed(
   iter->second->OnKeyPressed(accelerator);
 }
 
-}  // namespace api
-
-}  // namespace atom
+}  // namespace extensions

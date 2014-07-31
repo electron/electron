@@ -1,15 +1,20 @@
-// Copyright 2014 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "chrome/browser/ui/shortcut/global_shortcut_listener_x11.h"
+#include "chrome/browser/extensions/global_shortcut_listener_x11.h"
 
-#include "base/message_loop/message_pump_x11.h"
 #include "content/public/browser/browser_thread.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/events/keycodes/keyboard_code_conversion_x.h"
 #include "ui/gfx/x/x11_error_tracker.h"
 #include "ui/gfx/x/x11_types.h"
+
+#if defined(TOOLKIT_GTK)
+#include <gdk/gdkx.h>
+#else
+#include "base/message_loop/message_pump_x11.h"
+#endif
 
 using content::BrowserThread;
 
@@ -41,9 +46,7 @@ int GetNativeModifiers(const ui::Accelerator& accelerator) {
 
 }  // namespace
 
-namespace atom {
-
-namespace api {
+namespace extensions {
 
 // static
 GlobalShortcutListener* GlobalShortcutListener::GetInstance() {
@@ -65,16 +68,17 @@ GlobalShortcutListenerX11::~GlobalShortcutListenerX11() {
     StopListening();
 }
 
-bool GlobalShortcutListenerX11::IsAcceleratorRegistered(
-      const ui::Accelerator& accelerator)  {
-  return registered_hot_keys_.find(accelerator) != registered_hot_keys_.end();
-}
-
 void GlobalShortcutListenerX11::StartListening() {
   DCHECK(!is_listening_);  // Don't start twice.
   DCHECK(!registered_hot_keys_.empty());  // Also don't start if no hotkey is
                                           // registered.
+#if defined(TOOLKIT_GTK)
+  gdk_window_add_filter(gdk_get_default_root_window(),
+                        &GlobalShortcutListenerX11::OnXEventThunk,
+                        this);
+#else
   base::MessagePumpX11::Current()->AddDispatcherForRootWindow(this);
+#endif
 
   is_listening_ = true;
 }
@@ -84,17 +88,25 @@ void GlobalShortcutListenerX11::StopListening() {
   DCHECK(registered_hot_keys_.empty());  // Make sure the set is clean before
                                          // ending.
 
+#if defined(TOOLKIT_GTK)
+  gdk_window_remove_filter(NULL,
+                           &GlobalShortcutListenerX11::OnXEventThunk,
+                           this);
+#else
   base::MessagePumpX11::Current()->RemoveDispatcherForRootWindow(this);
+#endif
 
   is_listening_ = false;
 }
 
+#if !defined(TOOLKIT_GTK)
 uint32_t GlobalShortcutListenerX11::Dispatch(const base::NativeEvent& event) {
   if (event->type == KeyPress)
     OnXKeyPressEvent(event);
 
   return POST_DISPATCH_NONE;
 }
+#endif
 
 bool GlobalShortcutListenerX11::RegisterAcceleratorImpl(
     const ui::Accelerator& accelerator) {
@@ -142,6 +154,17 @@ void GlobalShortcutListenerX11::UnregisterAcceleratorImpl(
   registered_hot_keys_.erase(accelerator);
 }
 
+#if defined(TOOLKIT_GTK)
+GdkFilterReturn GlobalShortcutListenerX11::OnXEvent(GdkXEvent* gdk_x_event,
+                                                    GdkEvent* gdk_event) {
+  XEvent* x_event = static_cast<XEvent*>(gdk_x_event);
+  if (x_event->type == KeyPress)
+    OnXKeyPressEvent(x_event);
+
+  return GDK_FILTER_CONTINUE;
+}
+#endif
+
 void GlobalShortcutListenerX11::OnXKeyPressEvent(::XEvent* x_event) {
   DCHECK(x_event->type == KeyPress);
   int modifiers = 0;
@@ -155,6 +178,4 @@ void GlobalShortcutListenerX11::OnXKeyPressEvent(::XEvent* x_event) {
     NotifyKeyPressed(accelerator);
 }
 
-}  // namespace api
-
-}  // namespace atom
+}  // namespace extensions

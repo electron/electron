@@ -1,8 +1,8 @@
-// Copyright (c) 2014 The Chromium Authors. All rights reserved.
+// Copyright (c) 2013 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "chrome/browser/ui/shortcut/global_shortcut_listener_win.h"
+#include "chrome/browser/extensions/global_shortcut_listener_win.h"
 
 #include "base/win/win_util.h"
 #include "content/public/browser/browser_thread.h"
@@ -12,9 +12,7 @@
 
 using content::BrowserThread;
 
-namespace atom {
-
-namespace api {
+namespace extensions {
 
 // static
 GlobalShortcutListener* GlobalShortcutListener::GetInstance() {
@@ -32,11 +30,6 @@ GlobalShortcutListenerWin::GlobalShortcutListenerWin()
 GlobalShortcutListenerWin::~GlobalShortcutListenerWin() {
   if (is_listening_)
     StopListening();
-}
-
-bool GlobalShortcutListenerWin::IsAcceleratorRegistered(
-    const ui::Accelerator& accelerator) {
-  return hotkey_ids_.find(accelerator) != hotkey_ids_.end();
 }
 
 void GlobalShortcutListenerWin::StartListening() {
@@ -80,7 +73,6 @@ bool GlobalShortcutListenerWin::RegisterAcceleratorImpl(
   modifiers |= accelerator.IsCtrlDown() ? MOD_CONTROL : 0;
   modifiers |= accelerator.IsAltDown() ? MOD_ALT : 0;
   static int hotkey_id = 0;
-  //bool success = false;
   bool success = !!RegisterHotKey(
       gfx::SingletonHwnd::GetInstance()->hwnd(),
       hotkey_id,
@@ -101,8 +93,6 @@ void GlobalShortcutListenerWin::UnregisterAcceleratorImpl(
   HotkeyIdMap::iterator it = hotkey_ids_.find(accelerator);
   DCHECK(it != hotkey_ids_.end());
 
-  //bool success = false;
-  gfx::SingletonHwnd::GetInstance();
   bool success = !!UnregisterHotKey(
       gfx::SingletonHwnd::GetInstance()->hwnd(), it->second);
   // This call should always succeed, as long as we pass in the right HWND and
@@ -112,6 +102,4 @@ void GlobalShortcutListenerWin::UnregisterAcceleratorImpl(
   hotkey_ids_.erase(it);
 }
 
-}  // namespace api
-
-}  // namespace atom
+}  // namespace extensions

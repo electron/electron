@@ -1,8 +1,8 @@
-// Copyright (c) 2014 The Chromium Authors. All rights reserved.
+// Copyright (c) 2013 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "chrome/browser/ui/shortcut/global_shortcut_listener_mac.h"
+#include "chrome/browser/extensions/global_shortcut_listener_mac.h"
 
 #include <ApplicationServices/ApplicationServices.h>
 #import <Cocoa/Cocoa.h>
@@ -15,7 +15,7 @@
 #import "ui/events/keycodes/keyboard_code_conversion_mac.h"
 
 using content::BrowserThread;
-using atom::api::GlobalShortcutListenerMac;
+using extensions::GlobalShortcutListenerMac;
 
 namespace {
 
@@ -48,9 +48,7 @@ bool IsMediaKey(const ui::Accelerator& accelerator) {
 
 }  // namespace
 
-namespace atom {
-
-namespace api {
+namespace extensions {
 
 // static
 GlobalShortcutListener* GlobalShortcutListener::GetInstance() {
@@ -84,11 +82,6 @@ GlobalShortcutListenerMac::~GlobalShortcutListenerMac() {
 
   if (IsAnyHotKeyRegistered())
     StopWatchingHotKeys();
-}
-
-bool GlobalShortcutListenerMac::IsAcceleratorRegistered(
-    const ui::Accelerator& accelerator) {
-  return accelerator_ids_.find(accelerator) != accelerator_ids_.end();
 }
 
 void GlobalShortcutListenerMac::StartListening() {
@@ -387,6 +380,4 @@ OSStatus GlobalShortcutListenerMac::HotKeyHandler(
   return noErr;
 }
 
-}  // namespace api
-
-}  // namespace atom
+}  // namespace extensions

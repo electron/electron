@@ -1,11 +1,11 @@
-// Copyright (c) 2014 The Chromium Authors. All rights reserved.
+// Copyright (c) 2013 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CHROME_BROWSER_UI_SHORTCUT_GLOBAL_SHORTCUT_LISTENER_MAC_H_
-#define CHROME_BROWSER_UI_SHORTCUT_GLOBAL_SHORTCUT_LISTENER_MAC_H_
+#ifndef CHROME_BROWSER_EXTENSIONS_GLOBAL_SHORTCUT_LISTENER_MAC_H_
+#define CHROME_BROWSER_EXTENSIONS_GLOBAL_SHORTCUT_LISTENER_MAC_H_
 
-#include "chrome/browser/ui/shortcut/global_shortcut_listener.h"
+#include "chrome/browser/extensions/global_shortcut_listener.h"
 
 #include <Carbon/Carbon.h>
 #include <CoreFoundation/CoreFoundation.h>
@@ -14,9 +14,7 @@
 
 #include "base/mac/scoped_nsobject.h"
 
-namespace atom {
-
-namespace api {
+namespace extensions {
 
 // Mac-specific implementation of the GlobalShortcutListener class that
 // listens for global shortcuts. Handles basic keyboard intercepting and
@@ -32,7 +30,6 @@ class GlobalShortcutListenerMac : public GlobalShortcutListener {
   GlobalShortcutListenerMac();
   virtual ~GlobalShortcutListenerMac();
 
-  virtual bool IsAcceleratorRegistered(const ui::Accelerator& accelerator) OVERRIDE;
  private:
   typedef int KeyId;
   typedef std::map<ui::Accelerator, KeyId> AcceleratorIdMap;
@@ -104,8 +101,6 @@ class GlobalShortcutListenerMac : public GlobalShortcutListener {
   DISALLOW_COPY_AND_ASSIGN(GlobalShortcutListenerMac);
 };
 
-}  // namespace api
+}  // namespace extensions
 
-}  // namespace atom
-
-#endif  // CHROME_BROWSER_UI_SHORTCUT_GLOBAL_SHORTCUT_LISTENER_MAC_H_
+#endif  // CHROME_BROWSER_EXTENSIONS_GLOBAL_SHORTCUT_LISTENER_MAC_H_

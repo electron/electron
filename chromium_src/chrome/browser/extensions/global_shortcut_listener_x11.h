@@ -1,35 +1,40 @@
-// Copyright 2014 The Chromium Authors. All rights reserved.
+// Copyright 2013 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CHROME_BROWSER_UI_SHORTCUT_GLOBAL_SHORTCUT_LISTENER_X11_H_
-#define CHROME_BROWSER_UI_SHORTCUT_GLOBAL_SHORTCUT_LISTENER_X11_H_
+#ifndef CHROME_BROWSER_EXTENSIONS_GLOBAL_SHORTCUT_LISTENER_X11_H_
+#define CHROME_BROWSER_EXTENSIONS_GLOBAL_SHORTCUT_LISTENER_X11_H_
 
 #include <X11/Xlib.h>
 #include <set>
 
 #include "base/message_loop/message_pump_dispatcher.h"
-#include "chrome/browser/ui/shortcut/global_shortcut_listener.h"
+#include "chrome/browser/extensions/global_shortcut_listener.h"
 
-namespace atom {
+#if defined(TOOLKIT_GTK)
+#include <gtk/gtk.h>
+#include "ui/base/gtk/gtk_signal.h"
+#endif  // defined(TOOLKIT_GTK)
 
-namespace api {
+namespace extensions {
 
 // X11-specific implementation of the GlobalShortcutListener class that
 // listens for global shortcuts. Handles basic keyboard intercepting and
 // forwards its output to the base class for processing.
 class GlobalShortcutListenerX11
-    : public base::MessagePumpDispatcher,
+    :
+#if !defined(TOOLKIT_GTK)
+      public base::MessagePumpDispatcher,
+#endif
       public GlobalShortcutListener {
  public:
   GlobalShortcutListenerX11();
   virtual ~GlobalShortcutListenerX11();
 
+#if !defined(TOOLKIT_GTK)
   // base::MessagePumpDispatcher implementation.
   virtual uint32_t Dispatch(const base::NativeEvent& event) OVERRIDE;
-
-  virtual bool IsAcceleratorRegistered(
-      const ui::Accelerator& accelerator) OVERRIDE;
+#endif
 
  private:
   // GlobalShortcutListener implementation.
@@ -39,6 +44,12 @@ class GlobalShortcutListenerX11
       const ui::Accelerator& accelerator) OVERRIDE;
   virtual void UnregisterAcceleratorImpl(
       const ui::Accelerator& accelerator) OVERRIDE;
+
+#if defined(TOOLKIT_GTK)
+  // Callback for XEvents of the default root window.
+  CHROMEG_CALLBACK_1(GlobalShortcutListenerX11, GdkFilterReturn,
+                     OnXEvent, GdkXEvent*, GdkEvent*);
+#endif
 
   // Invoked when a global shortcut is pressed.
   void OnXKeyPressEvent(::XEvent* x_event);
@@ -57,8 +68,6 @@ class GlobalShortcutListenerX11
   DISALLOW_COPY_AND_ASSIGN(GlobalShortcutListenerX11);
 };
 
-}  // namespace api
+}  // namespace extensions
 
-}  // namespace atom
-
-#endif  // CHROME_BROWSER_UI_SHORTCUT_GLOBAL_SHORTCUT_LISTENER_X11_H_
+#endif  // CHROME_BROWSER_EXTENSIONS_GLOBAL_SHORTCUT_LISTENER_X11_H_

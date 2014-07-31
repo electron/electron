@@ -1,18 +1,16 @@
-// Copyright (c) 2014 The Chromium Authors. All rights reserved.
+// Copyright (c) 2013 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CHROME_BROWSER_UI_SHORTCUT_GLOBAL_SHORTCUT_LISTENER_WIN_H_
-#define CHROME_BROWSER_UI_SHORTCUT_GLOBAL_SHORTCUT_LISTENER_WIN_H_
+#ifndef CHROME_BROWSER_EXTENSIONS_GLOBAL_SHORTCUT_LISTENER_WIN_H_
+#define CHROME_BROWSER_EXTENSIONS_GLOBAL_SHORTCUT_LISTENER_WIN_H_
 
 #include <windows.h>
 
-#include "chrome/browser/ui/shortcut/global_shortcut_listener.h"
+#include "chrome/browser/extensions/global_shortcut_listener.h"
 #include "ui/gfx/win/singleton_hwnd.h"
 
-namespace atom {
-
-namespace api {
+namespace extensions {
 
 // Windows-specific implementation of the GlobalShortcutListener class that
 // listens for global shortcuts. Handles setting up a keyboard hook and
@@ -22,9 +20,6 @@ class GlobalShortcutListenerWin : public GlobalShortcutListener,
  public:
   GlobalShortcutListenerWin();
   virtual ~GlobalShortcutListenerWin();
-
-  virtual bool IsAcceleratorRegistered(
-      const ui::Accelerator& accelerator) OVERRIDE;
 
  private:
   // The implementation of our Window Proc, called by SingletonHwnd.
@@ -51,8 +46,6 @@ class GlobalShortcutListenerWin : public GlobalShortcutListener,
   DISALLOW_COPY_AND_ASSIGN(GlobalShortcutListenerWin);
 };
 
-}  // namespace api
+}  // namespace extensions
 
-}  // namespace atom
-
-#endif  // CHROME_BROWSER_UI_SHORTCUT_GLOBAL_SHORTCUT_LISTENER_WIN_H_
+#endif  // CHROME_BROWSER_EXTENSIONS_GLOBAL_SHORTCUT_LISTENER_WIN_H_
