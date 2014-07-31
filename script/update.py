@@ -24,9 +24,11 @@ def update_gyp():
   gyp = os.path.join('vendor', 'brightray', 'vendor', 'gyp', 'gyp_main.py')
   python = sys.executable
   arch = 'ia32'
-  if sys.platform.startswith('linux') and sys.maxsize > 2**32 or sys.platform == 'darwin':
+  if sys.platform.startswith('linux') and sys.maxsize > 2**32:
     arch = 'x64'
-  if sys.platform in ['cygwin', 'win32']:
+  elif sys.platform == 'darwin':
+    arch = 'x64'
+  elif sys.platform in ['cygwin', 'win32']:
     python = os.path.join('vendor', 'python_26', 'python.exe')
   subprocess.call([python, gyp,
                    '-f', 'ninja', '--depth', '.', 'atom.gyp',
