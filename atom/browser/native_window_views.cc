@@ -39,6 +39,7 @@
 #if defined(USE_X11)
 #include "atom/browser/ui/views/global_menu_bar_x11.h"
 #include "atom/browser/ui/views/frameless_view.h"
+#include "chrome/browser/ui/libgtk2ui/unity_service.h"
 #include "ui/gfx/x/x11_types.h"
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
@@ -338,11 +339,11 @@ void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
   RegisterAccelerators(menu_model);
 
 #if defined(USE_X11)
-  if (!global_menu_bar_)
+  if (unity::IsRunning() && !global_menu_bar_)
     global_menu_bar_.reset(new GlobalMenuBarX11(this));
 
   // Use global application menu bar when possible.
-  if (global_menu_bar_->IsServerStarted()) {
+  if (global_menu_bar_ && global_menu_bar_->IsServerStarted()) {
     global_menu_bar_->SetMenu(menu_model);
     return;
   }
