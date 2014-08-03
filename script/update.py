@@ -4,6 +4,8 @@ import os
 import subprocess
 import sys
 
+from lib.config import DIST_ARCH
+
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
@@ -23,13 +25,16 @@ def update_external_binaries():
 def update_gyp():
   gyp = os.path.join('vendor', 'brightray', 'vendor', 'gyp', 'gyp_main.py')
   python = sys.executable
-  arch = 'ia32'
-  if sys.platform.startswith('linux') and sys.maxsize > 2**32:
-    arch = 'x64'
-  elif sys.platform == 'darwin':
+  arch = DIST_ARCH
+  if sys.platform == 'darwin':
+    # Only have 64bit build on OS X.
     arch = 'x64'
   elif sys.platform in ['cygwin', 'win32']:
-    python = os.path.join('vendor', 'python_26', 'python.exe')
+    # Only have 32bit build on Windows.
+    arch = 'ia32'
+    if sys.platform == 'cygwin':
+      # Force using win32 python on cygwin.
+      python = os.path.join('vendor', 'python_26', 'python.exe')
   subprocess.call([python, gyp,
                    '-f', 'ninja', '--depth', '.', 'atom.gyp',
                    '-Icommon.gypi', '-Ivendor/brightray/brightray.gypi',
