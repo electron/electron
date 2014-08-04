@@ -34,9 +34,10 @@ class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
  private:
   typedef std::map<ui::Accelerator, base::Closure> AcceleratorCallbackMap;
 
-  bool Register(const std::string& keycode, const base::Closure& callback);
-  bool IsRegistered(const std::string& keycode);
-  void Unregister(const std::string& keycode);
+  bool Register(const ui::Accelerator& accelerator,
+                const base::Closure& callback);
+  bool IsRegistered(const ui::Accelerator& accelerator);
+  void Unregister(const ui::Accelerator& accelerator);
   void UnregisterAll();
 
   // GlobalShortcutListener::Observer implementation.

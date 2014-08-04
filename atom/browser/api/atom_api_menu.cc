@@ -5,7 +5,7 @@
 #include "atom/browser/api/atom_api_menu.h"
 
 #include "atom/browser/native_window.h"
-#include "atom/browser/ui/accelerator_util.h"
+#include "atom/common/native_mate_converters/accelerator_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
@@ -92,12 +92,7 @@ bool Menu::GetAcceleratorForCommandId(int command_id,
                                                 GetWrapper(isolate),
                                                 "getAcceleratorForCommandId",
                                                 command_id);
-  if (shortcut->IsString()) {
-    std::string shortcut_str = mate::V8ToString(shortcut);
-    return accelerator_util::StringToAccelerator(shortcut_str, accelerator);
-  }
-
-  return false;
+  return mate::ConvertFromV8(isolate, shortcut, accelerator);
 }
 
 bool Menu::IsItemForCommandIdDynamic(int command_id) const {

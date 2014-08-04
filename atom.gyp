@@ -194,6 +194,8 @@
       'atom/common/draggable_region.cc',
       'atom/common/draggable_region.h',
       'atom/common/linux/application_info.cc',
+      'atom/common/native_mate_converters/accelerator_converter.cc',
+      'atom/common/native_mate_converters/accelerator_converter.h',
       'atom/common/native_mate_converters/file_path_converter.h',
       'atom/common/native_mate_converters/function_converter.h',
       'atom/common/native_mate_converters/gurl_converter.h',

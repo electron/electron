@@ -22,33 +22,23 @@ globalShortcut.unregister('ctrl+x');
 globalShortcut.unregisterAll();
 ```
 
-## globalShortcut.register(keycode, callback)
+## globalShortcut.register(accelerator, callback)
 
-* `keycode` String
+* `accelerator` [Accelerator](accelerator.md)
 * `callback` Function
 
-Registers a global shortcut of `keycode`, the `callback` would be called when
+Registers a global shortcut of `accelerator`, the `callback` would be called when
 the registered shortcut is pressed by user.
 
-`keycode` is a string to specify shortcut key, such as "ctrl+shift+a".
+## globalShortcut.isRegistered(accelerator)
 
-A `keycode` consists of modifier and key two parts:
+* `accelerator` [Accelerator](accelerator.md)
 
-__Modifiers__: control(ctrl), command(cmd), alt, shift, commandorcontrol(cmdorctrl).
+Returns whether shortcut of `accelerator` is registered.
 
-__Supported keys__: 0-9, a-z, up, down, left, right, home, end, pagedown, pageup,
-insert, delete, esc, space, backspace, tab, f1-f12, volumeup, volumedown, media 
-keys(medianextrack, mediaprevioustrack, mediastop, mediaplaypause).
+## globalShortcut.unregister(accelerator)
 
-## globalShortcut.isRegistered(keycode)
-
-* `keycode` String
-
-Return whether the shortcut is registered.
-
-## globalShortcut.unregister(keycode)
-
-* `keycode` String
+* `accelerator` [Accelerator](accelerator.md)
 
 Unregisters the global shortcut of `keycode`.
 

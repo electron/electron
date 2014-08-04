@@ -6,8 +6,9 @@
 
 #include <string>
 
-#include "atom/browser/ui/accelerator_util.h"
+#include "atom/common/native_mate_converters/accelerator_converter.h"
 #include "atom/common/native_mate_converters/function_converter.h"
+#include "base/stl_util.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
@@ -36,50 +37,33 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
   accelerator_callback_map_[accelerator].Run();
 }
 
-bool GlobalShortcut::Register(const std::string& keycode,
-    const base::Closure& callback) {
-  ui::Accelerator accelerator;
-  if (!accelerator_util::StringToAccelerator(keycode, &accelerator)) {
-    LOG(ERROR) << keycode << " is invalid.";
-    return false;
-  }
+bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
+                              const base::Closure& callback) {
   if (!GlobalShortcutListener::GetInstance()->RegisterAccelerator(
       accelerator, this)) {
     return false;
   }
+
   accelerator_callback_map_[accelerator] = callback;
   return true;
 }
 
-void GlobalShortcut::Unregister(const std::string& keycode) {
-  ui::Accelerator accelerator;
-  if (!accelerator_util::StringToAccelerator(keycode, &accelerator)) {
-    LOG(ERROR) << "The keycode: " << keycode << " is invalid.";
+void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
+  if (!ContainsKey(accelerator_callback_map_, accelerator))
     return;
-  }
-  if (accelerator_callback_map_.find(accelerator) ==
-      accelerator_callback_map_.end()) {
-    LOG(ERROR) << "The keycode: " << keycode << " isn't registered yet!";
-    return;
-  }
+
   accelerator_callback_map_.erase(accelerator);
   GlobalShortcutListener::GetInstance()->UnregisterAccelerator(
       accelerator, this);
 }
 
+bool GlobalShortcut::IsRegistered(const ui::Accelerator& accelerator) {
+  return ContainsKey(accelerator_callback_map_, accelerator);
+}
+
 void GlobalShortcut::UnregisterAll() {
   accelerator_callback_map_.clear();
   GlobalShortcutListener::GetInstance()->UnregisterAccelerators(this);
-}
-
-bool GlobalShortcut::IsRegistered(const std::string& keycode) {
-  ui::Accelerator accelerator;
-  if (!accelerator_util::StringToAccelerator(keycode, &accelerator)) {
-    LOG(ERROR) << "The keycode: " << keycode << " is invalid.";
-    return false;
-  }
-  return accelerator_callback_map_.find(accelerator) !=
-      accelerator_callback_map_.end();
 }
 
 // static
