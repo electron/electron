@@ -241,7 +241,6 @@ void NativeWindowMac::Close() {
 
 void NativeWindowMac::CloseImmediately() {
   [window_ close];
-  window_.reset();
 }
 
 void NativeWindowMac::Move(const gfx::Rect& pos) {
