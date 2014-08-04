@@ -8,33 +8,23 @@
 #include <X11/Xlib.h>
 #include <set>
 
-#include "base/message_loop/message_pump_dispatcher.h"
 #include "chrome/browser/extensions/global_shortcut_listener.h"
-
-#if defined(TOOLKIT_GTK)
-#include <gtk/gtk.h>
-#include "ui/base/gtk/gtk_signal.h"
-#endif  // defined(TOOLKIT_GTK)
+#include "ui/events/platform/platform_event_dispatcher.h"
 
 namespace extensions {
 
 // X11-specific implementation of the GlobalShortcutListener class that
 // listens for global shortcuts. Handles basic keyboard intercepting and
 // forwards its output to the base class for processing.
-class GlobalShortcutListenerX11
-    :
-#if !defined(TOOLKIT_GTK)
-      public base::MessagePumpDispatcher,
-#endif
-      public GlobalShortcutListener {
+class GlobalShortcutListenerX11 : public GlobalShortcutListener,
+                                  public ui::PlatformEventDispatcher {
  public:
   GlobalShortcutListenerX11();
   virtual ~GlobalShortcutListenerX11();
 
-#if !defined(TOOLKIT_GTK)
-  // base::MessagePumpDispatcher implementation.
-  virtual uint32_t Dispatch(const base::NativeEvent& event) OVERRIDE;
-#endif
+  // ui::PlatformEventDispatcher implementation.
+  virtual bool CanDispatchEvent(const ui::PlatformEvent& event) OVERRIDE;
+  virtual uint32_t DispatchEvent(const ui::PlatformEvent& event) OVERRIDE;
 
  private:
   // GlobalShortcutListener implementation.
@@ -44,12 +34,6 @@ class GlobalShortcutListenerX11
       const ui::Accelerator& accelerator) OVERRIDE;
   virtual void UnregisterAcceleratorImpl(
       const ui::Accelerator& accelerator) OVERRIDE;
-
-#if defined(TOOLKIT_GTK)
-  // Callback for XEvents of the default root window.
-  CHROMEG_CALLBACK_1(GlobalShortcutListenerX11, GdkFilterReturn,
-                     OnXEvent, GdkXEvent*, GdkEvent*);
-#endif
 
   // Invoked when a global shortcut is pressed.
   void OnXKeyPressEvent(::XEvent* x_event);
