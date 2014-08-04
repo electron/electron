@@ -65,17 +65,18 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
+  // Run user's main script before most things get initialized, so we can have
+  // a chance to setup everything.
+  node_bindings_->PrepareMessageLoop();
+  node_bindings_->RunMessageLoop();
+
   brightray::BrowserMainParts::PreMainMessageLoopRun();
 
 #if defined(USE_X11)
   libgtk2ui::GtkInitFromCommandLine(*CommandLine::ForCurrentProcess());
 #endif
 
-  node_bindings_->PrepareMessageLoop();
-  node_bindings_->RunMessageLoop();
-
-  // Make sure the url request job factory is created before the
-  // will-finish-launching event.
+  // Make sure the url request job factory is created before the ready event.
   static_cast<content::BrowserContext*>(AtomBrowserContext::Get())->
       GetRequestContext();
 
