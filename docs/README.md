@@ -16,13 +16,13 @@ Modules for browser side:
 * [browser-window](api/browser-window.md)
 * [content-tracing](api/content-tracing.md)
 * [dialog](api/dialog.md)
+* [global-shortcut](api/global-shortcut.md)
 * [ipc (browser)](api/ipc-browser.md)
 * [menu](api/menu.md)
 * [menu-item](api/menu-item.md)
 * [power-monitor](api/power-monitor.md)
 * [protocol](api/protocol.md)
 * [tray](api/tray.md)
-* [global-shortcut](api/global-shortcut.md)
 
 Modules for web page:
 
