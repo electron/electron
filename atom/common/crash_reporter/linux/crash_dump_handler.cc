@@ -350,6 +350,8 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
     "--timeout=60",  // Set a timeout so we don't hang forever.
     "--tries=1",     // Don't retry if the upload fails.
     "--quiet",       // Be silent.
+    "-O",            // output reply to /dev/null.
+    "/dev/null",
     NULL,
   };
   static const char msg[] = "Cannot upload crash dump: cannot exec "
