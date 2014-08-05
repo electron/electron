@@ -3,7 +3,7 @@
 ## Prerequisites
 
 * [Node.js](http://nodejs.org)
-* clang and headers of GTK+ and libnotify
+* clang, development headers of GTK+ and libnotify
 
 On Ubuntu you could install the libraries via:
 
@@ -56,12 +56,9 @@ $ ./script/build.py -c Debug
 
 After building is done, you can find `atom` under `out/Debug`.
 
-## 32bit support
-
-Currently atom-shell can only be built for 64bit target, support for 32bit would
-come in future, patches would also be welcomed.
-
 ## Troubleshooting
+
+### fatal error: bits/predefs.h: No such file or directory
 
 If you got an error like this:
 
@@ -80,16 +77,20 @@ this:
 $ sudo apt-get install gcc-multilib g++-multilib
 ```
 
+### error adding symbols: DSO missing from command line
+
 If you got an error like this:
+
 ````
 /usr/bin/ld: vendor/download/libchromiumcontent/Release/libchromiumcontent.so: undefined reference to symbol 'gconf_client_get'
 //usr/lib/x86_64-linux-gnu/libgconf-2.so.4: error adding symbols: DSO missing from command line
 ````
-libchromiumcontent.so is build with clang 3.0 which is incompatible with newer versions of clang. Try using clang 3.0, default version in Ubuntu 12.04.
+
+libchromiumcontent.so is build with clang 3.0 which is incompatible with newer
+versions of clang. Try using clang 3.0, default version in Ubuntu 12.04.
 
 ## Tests
 
 ```bash
 $ ./script/test.py
 ```
-
