@@ -4,6 +4,8 @@
 
 #include "atom/common/native_mate_converters/accelerator_converter.h"
 
+#include <string>
+
 #include "atom/browser/ui/accelerator_util.h"
 
 namespace mate {
