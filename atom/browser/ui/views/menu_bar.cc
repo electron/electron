@@ -4,6 +4,10 @@
 
 #include "atom/browser/ui/views/menu_bar.h"
 
+#if defined(USE_X11)
+#include "gtk/gtk.h"
+#endif
+
 #include "atom/browser/ui/views/menu_delegate.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -14,6 +18,9 @@
 
 #if defined(OS_WIN)
 #include "ui/gfx/color_utils.h"
+#elif defined(USE_X11)
+#include "chrome/browser/ui/libgtk2ui/owned_widget_gtk2.h"
+#include "chrome/browser/ui/libgtk2ui/skia_utils_gtk2.h"
 #endif
 
 namespace atom {
@@ -32,17 +39,34 @@ base::string16 FilterMenuButtonLabel(const base::string16& label) {
   return out;
 }
 
+#if defined(USE_X11)
+void GetMenuBarColor(SkColor* enabled, SkColor* disabled, SkColor* highlight,
+                     SkColor* hover, SkColor* background) {
+  libgtk2ui::OwnedWidgetGtk fake_menu_bar;
+  fake_menu_bar.Own(gtk_menu_bar_new());
+
+  GtkStyle* style = gtk_rc_get_style(fake_menu_bar.get());
+  *enabled = libgtk2ui::GdkColorToSkColor(style->text[GTK_STATE_NORMAL]);
+  *disabled = libgtk2ui::GdkColorToSkColor(style->text[GTK_STATE_INSENSITIVE]);
+  *highlight = libgtk2ui::GdkColorToSkColor(style->text[GTK_STATE_SELECTED]);
+  *hover = libgtk2ui::GdkColorToSkColor(style->text[GTK_STATE_PRELIGHT]);
+  *background = libgtk2ui::GdkColorToSkColor(style->bg[GTK_STATE_NORMAL]);
+}
+#endif
+
 }  // namespace
 
 MenuBar::MenuBar()
-    : menu_model_(NULL) {
+    : background_color_(kDefaultColor),
+      menu_model_(NULL) {
 #if defined(OS_WIN)
-  SkColor background_color = color_utils::GetSysSkColor(COLOR_MENUBAR);
-#else
-  SkColor background_color = kDefaultColor;
+  background_color_ = color_utils::GetSysSkColor(COLOR_MENUBAR);
+#elif defined(USE_X11)
+  GetMenuBarColor(&enabled_color_, &disabled_color_, &highlight_color_,
+                  &hover_color_, &background_color_);
 #endif
-  set_background(views::Background::CreateSolidBackground(background_color));
 
+  set_background(views::Background::CreateSolidBackground(background_color_));
   SetLayoutManager(new views::BoxLayout(
       views::BoxLayout::kHorizontal, 0, 0, 0));
 }
@@ -58,6 +82,14 @@ void MenuBar::SetMenu(ui::MenuModel* model) {
     views::MenuButton* button = new views::MenuButton(
         this, FilterMenuButtonLabel(model->GetLabelAt(i)), this, false);
     button->set_tag(i);
+
+#if defined(USE_X11)
+    button->SetEnabledColor(enabled_color_);
+    button->SetDisabledColor(disabled_color_);
+    button->SetHighlightColor(highlight_color_);
+    button->SetHoverColor(hover_color_);
+#endif
+
     AddChildView(button);
   }
 }

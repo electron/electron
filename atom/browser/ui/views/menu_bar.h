@@ -52,6 +52,15 @@ class MenuBar : public views::View,
                                    const gfx::Point& point) OVERRIDE;
 
  private:
+  SkColor background_color_;
+
+#if defined(USE_X11)
+  SkColor enabled_color_;
+  SkColor disabled_color_;
+  SkColor highlight_color_;
+  SkColor hover_color_;
+#endif
+
   ui::MenuModel* menu_model_;
   scoped_ptr<MenuDelegate> menu_delegate_;
 
