@@ -74,6 +74,13 @@ void AtomMainDelegate::PreSandboxStartup() {
   // Add a flag to mark the start of switches added by atom-shell.
   command_line->AppendSwitch("atom-shell-switches-start");
 
+#if defined(OS_WIN)
+  // Disable the LegacyRenderWidgetHostHWND, it made frameless windows unable
+  // to move and resize. We may consider enabling it again after upgraded to
+  // Chrome 38, which should have fixed the problem.
+  command_line->AppendSwitch(switches::kDisableLegacyIntermediateWindow);
+#endif
+
   // Disable renderer sandbox for most of node's functions.
   command_line->AppendSwitch(switches::kNoSandbox);
 
