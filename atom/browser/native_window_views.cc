@@ -269,6 +269,21 @@ gfx::Size NativeWindowViews::GetMaximumSize() {
 
 void NativeWindowViews::SetResizable(bool resizable) {
   resizable_ = resizable;
+
+#if defined(OS_WIN)
+  if (has_frame_) {
+    // WS_MAXIMIZEBOX => Maximize button
+    // WS_MINIMIZEBOX => Minimize button
+    // WS_THICKFRAME => Resize handle
+    DWORD style = ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE);
+    if (resizable)
+      style |= WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME;
+    else
+      style &= ~(WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME);
+    ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, style);
+  }
+#endif
+
   // FIXME Implement me for X11.
 }
 
