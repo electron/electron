@@ -45,6 +45,7 @@
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
 #include "base/win/scoped_comptr.h"
+#include "ui/base/win/shell.h"
 #endif
 
 namespace atom {
@@ -480,9 +481,11 @@ views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {
 views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
     views::Widget* widget) {
 #if defined(OS_WIN)
-  WinFrameView* frame_view =  new WinFrameView;
-  frame_view->Init(this, widget);
-  return frame_view;
+  if (ui::win::IsAeroGlassEnabled()) {
+    WinFrameView* frame_view =  new WinFrameView;
+    frame_view->Init(this, widget);
+    return frame_view;
+  }
 #elif defined(OS_LINUX)
   if (has_frame_) {
     return new views::NativeFrameView(widget);
@@ -491,9 +494,9 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
     frame_view->Init(this, widget);
     return frame_view;
   }
-#else
-  return NULL;
 #endif
+
+  return NULL;
 }
 
 void NativeWindowViews::HandleKeyboardEvent(
