@@ -39,6 +39,8 @@
 #if defined(USE_X11)
 #include "atom/browser/ui/views/global_menu_bar_x11.h"
 #include "atom/browser/ui/views/frameless_view.h"
+#include "base/environment.h"
+#include "base/nix/xdg_util.h"
 #include "chrome/browser/ui/libgtk2ui/unity_service.h"
 #include "ui/gfx/x/x11_types.h"
 #include "ui/views/window/native_frame_view.h"
@@ -57,6 +59,16 @@ namespace {
 const int kMenuBarHeight = 20;
 #else
 const int kMenuBarHeight = 25;
+#endif
+
+#if defined(USE_X11)
+bool ShouldUseGlobalMenuBar() {
+  // Some DE would pretend to be Unity but don't have global application menu,
+  // so we can not trust unity::IsRunning().
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  return unity::IsRunning() && (base::nix::GetDesktopEnvironment(env.get()) ==
+      base::nix::DESKTOP_ENVIRONMENT_UNITY);
+}
 #endif
 
 class NativeWindowClientView : public views::ClientView {
@@ -355,7 +367,7 @@ void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
   RegisterAccelerators(menu_model);
 
 #if defined(USE_X11)
-  if (unity::IsRunning() && !global_menu_bar_)
+  if (!global_menu_bar_ && ShouldUseGlobalMenuBar())
     global_menu_bar_.reset(new GlobalMenuBarX11(this));
 
   // Use global application menu bar when possible.
