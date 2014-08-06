@@ -3,7 +3,10 @@ v8Util = process.atomBinding 'v8_util'
 BrowserWindow = require 'browser-window'
 
 fileDialogProperties =
-  openFile: 1, openDirectory: 2, multiSelections: 4, createDirectory: 8
+  openFile:        1 << 0
+  openDirectory:   1 << 1
+  multiSelections: 1 << 2
+  createDirectory: 1 << 3
 
 messageBoxTypes = ['none', 'info', 'warning']
 
