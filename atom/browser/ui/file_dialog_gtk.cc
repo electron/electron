@@ -167,6 +167,7 @@ void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
 bool ShowOpenDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
+                    const Filters& filters,
                     int properties,
                     std::vector<base::FilePath>* paths) {
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
@@ -190,6 +191,7 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
 void ShowOpenDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
+                    const Filters& filters,
                     int properties,
                     const OpenDialogCallback& callback) {
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
@@ -207,6 +209,7 @@ void ShowOpenDialog(atom::NativeWindow* parent_window,
 bool ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
+                    const Filters& filters,
                     base::FilePath* path) {
   FileChooserDialog save_dialog(
       GTK_FILE_CHOOSER_ACTION_SAVE, parent_window, title, default_path);
@@ -223,6 +226,7 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
 void ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
+                    const Filters& filters,
                     const SaveDialogCallback& callback) {
   FileChooserDialog* save_dialog = new FileChooserDialog(
       GTK_FILE_CHOOSER_ACTION_SAVE, parent_window, title, default_path);

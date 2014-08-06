@@ -83,6 +83,7 @@ void ReadDialogPaths(NSOpenPanel* dialog, std::vector<base::FilePath>* paths) {
 bool ShowOpenDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
+                    const Filters& filters,
                     int properties,
                     std::vector<base::FilePath>* paths) {
   DCHECK(paths);
@@ -102,6 +103,7 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
 void ShowOpenDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
+                    const Filters& filters,
                     int properties,
                     const OpenDialogCallback& c) {
   NSOpenPanel* dialog = [NSOpenPanel openPanel];
@@ -129,6 +131,7 @@ void ShowOpenDialog(atom::NativeWindow* parent_window,
 bool ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
+                    const Filters& filters,
                     base::FilePath* path) {
   DCHECK(path);
   NSSavePanel* dialog = [NSSavePanel savePanel];
@@ -146,6 +149,7 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
 void ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
+                    const Filters& filters,
                     const SaveDialogCallback& c) {
   NSSavePanel* dialog = [NSSavePanel savePanel];
 

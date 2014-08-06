@@ -205,6 +205,7 @@ class FileDialog {
 bool ShowOpenDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
+                    const Filters& filters,
                     int properties,
                     std::vector<base::FilePath>* paths) {
   int options = FOS_FORCEFILESYSTEM | FOS_FILEMUSTEXIST;
@@ -255,6 +256,7 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
 void ShowOpenDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
+                    const Filters& filters,
                     int properties,
                     const OpenDialogCallback& callback) {
   std::vector<base::FilePath> paths;
@@ -262,6 +264,7 @@ void ShowOpenDialog(atom::NativeWindow* parent_window,
                                title,
                                default_path,
                                properties,
+                               filters,
                                &paths);
   callback.Run(result, paths);
 }
@@ -269,6 +272,7 @@ void ShowOpenDialog(atom::NativeWindow* parent_window,
 bool ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
+                    const Filters& filters,
                     base::FilePath* path) {
   // TODO(zcbenz): Accept custom filters from caller.
   std::vector<std::wstring> file_ext;
@@ -312,9 +316,11 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
 void ShowSaveDialog(atom::NativeWindow* parent_window,
                     const std::string& title,
                     const base::FilePath& default_path,
+                    const Filters& filters,
                     const SaveDialogCallback& callback) {
   base::FilePath path;
-  bool result = ShowSaveDialog(parent_window, title, default_path, &path);
+  bool result = ShowSaveDialog(parent_window, title, default_path, filters,
+                               &path);
   callback.Run(result, path);
 }
 

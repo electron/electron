@@ -25,6 +25,7 @@ module.exports =
 
     options.title ?= ''
     options.defaultPath ?= ''
+    options.filters ?= []
 
     wrappedCallback =
       if typeof callback is 'function'
@@ -34,6 +35,7 @@ module.exports =
 
     binding.showOpenDialog String(options.title),
                            String(options.defaultPath),
+                           options.filters
                            properties,
                            window,
                            wrappedCallback
@@ -48,6 +50,7 @@ module.exports =
     options ?= title: 'Save'
     options.title ?= ''
     options.defaultPath ?= ''
+    options.filter ?= []
 
     wrappedCallback =
       if typeof callback is 'function'
@@ -57,6 +60,7 @@ module.exports =
 
     binding.showSaveDialog String(options.title),
                            String(options.defaultPath),
+                           options.filters
                            window,
                            wrappedCallback
 

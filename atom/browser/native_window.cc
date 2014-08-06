@@ -528,8 +528,9 @@ void NativeWindow::DevToolsSaveToFile(const std::string& url,
   if (it != saved_files_.end() && !save_as) {
     path = it->second;
   } else {
+    file_dialog::Filters filters;
     base::FilePath default_path(base::FilePath::FromUTF8Unsafe(url));
-    if (!file_dialog::ShowSaveDialog(this, url, default_path, &path)) {
+    if (!file_dialog::ShowSaveDialog(this, url, default_path, filters, &path)) {
       base::StringValue url_value(url);
       CallDevToolsFunction("InspectorFrontendAPI.canceledSaveURL", &url_value);
       return;
