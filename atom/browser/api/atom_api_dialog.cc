@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atom/browser/api/atom_api_window.h"
@@ -15,6 +16,26 @@
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
+
+namespace mate {
+
+template<>
+struct Converter<file_dialog::Filter> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
+                     file_dialog::Filter* out) {
+    mate::Dictionary dict(isolate);
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+    if (!dict.Get("name", &(out->first)))
+      return false;
+    if (!dict.Get("extensions", &(out->second)))
+      return false;
+    return true;
+  }
+};
+
+}  // namespace mate
 
 namespace {
 
@@ -41,6 +62,7 @@ void ShowMessageBox(int type,
 
 void ShowOpenDialog(const std::string& title,
                     const base::FilePath& default_path,
+                    const file_dialog::Filters& filters,
                     int properties,
                     atom::NativeWindow* window,
                     mate::Arguments* args) {
@@ -49,18 +71,19 @@ void ShowOpenDialog(const std::string& title,
   if (mate::Converter<file_dialog::OpenDialogCallback>::FromV8(args->isolate(),
                                                                peek,
                                                                &callback)) {
-    file_dialog::ShowOpenDialog(window, title, default_path, properties,
-                                callback);
+    file_dialog::ShowOpenDialog(window, title, default_path, filters,
+                                properties, callback);
   } else {
     std::vector<base::FilePath> paths;
-    if (file_dialog::ShowOpenDialog(window, title, default_path, properties,
-                                    &paths))
+    if (file_dialog::ShowOpenDialog(window, title, default_path, filters,
+                                    properties, &paths))
       args->Return(paths);
   }
 }
 
 void ShowSaveDialog(const std::string& title,
                     const base::FilePath& default_path,
+                    const file_dialog::Filters& filters,
                     atom::NativeWindow* window,
                     mate::Arguments* args) {
   v8::Handle<v8::Value> peek = args->PeekNext();
@@ -68,10 +91,11 @@ void ShowSaveDialog(const std::string& title,
   if (mate::Converter<file_dialog::SaveDialogCallback>::FromV8(args->isolate(),
                                                                peek,
                                                                &callback)) {
-    file_dialog::ShowSaveDialog(window, title, default_path, callback);
+    file_dialog::ShowSaveDialog(window, title, default_path, filters, callback);
   } else {
     base::FilePath path;
-    if (file_dialog::ShowSaveDialog(window, title, default_path, &path))
+    if (file_dialog::ShowSaveDialog(window, title, default_path, filters,
+                                    &path))
       args->Return(path);
   }
 }
