@@ -53,7 +53,7 @@ module.exports =
     options ?= title: 'Save'
     options.title ?= ''
     options.defaultPath ?= ''
-    options.filter ?= []
+    options.filters ?= []
 
     wrappedCallback =
       if typeof callback is 'function'
