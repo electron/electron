@@ -19,6 +19,7 @@ console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', '
 * `options` Object
   * `title` String
   * `defaultPath` String
+  * `filters` Array
   * `properties` Array - Contains which features the dialog should use, can
     contain `openFile`, `openDirectory`, `multiSelections` and
     `createDirectory`
@@ -26,6 +27,19 @@ console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', '
 
 On success, returns an array of file paths chosen by the user, otherwise
 returns `undefined`.
+
+The `filters` specifies an array of file types that can be displayed or
+selected, an example is:
+
+```javascript
+{
+  filters: [
+    { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
+    { name: 'Movies', extensions: ['mkv', 'avi', 'mp4'] },
+    { name: 'Custom File Type', extensions: ['as'] },
+  ],
+}
+```
 
 If a `callback` is passed, the API call would be asynchronous and the result
 would be passed via `callback(filenames)`
@@ -41,10 +55,14 @@ be showed.
 * `options` Object
   * `title` String
   * `defaultPath` String
+  * `filters` Array
 * `callback` Function
 
 On success, returns the path of file chosen by the user, otherwise returns
 `undefined`.
+
+The `filters` specifies an array of file types that can be displayed, see
+`dialog.showOpenDialog` for an example.
 
 If a `callback` is passed, the API call would be asynchronous and the result
 would be passed via `callback(filename)`
