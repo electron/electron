@@ -23,9 +23,6 @@ def main():
   rm_rf('external_binaries')
   safe_mkdir('external_binaries')
 
-  with open(version_file, 'w') as f:
-    f.write(VERSION)
-
   if sys.platform == 'darwin':
     download_and_unzip('Mantle')
     download_and_unzip('ReactiveCocoa')
@@ -33,6 +30,9 @@ def main():
   elif sys.platform in ['cygwin', 'win32']:
     download_and_unzip('directxsdk')
     download_and_unzip('vs2012_crt')
+
+  with open(version_file, 'w') as f:
+    f.write(VERSION)
 
 
 def is_updated(version_file, version):
