@@ -94,13 +94,15 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
                                      const mate::Dictionary& options)
     : NativeWindow(web_contents, options),
       window_(new views::Widget),
-      menu_bar_(NULL),
       web_view_(inspectable_web_contents()->GetView()->GetView()),
+      menu_bar_autohide_(false),
+      menu_bar_show_(false),
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
       use_content_size_(false),
       resizable_(true) {
   options.Get(switches::kResizable, &resizable_);
   options.Get(switches::kTitle, &title_);
+  options.Get(switches::kAutoHideMenuBar, &menu_bar_autohide_);
 
   int width = 800, height = 600;
   options.Get(switches::kWidth, &width);
@@ -242,7 +244,7 @@ gfx::Size NativeWindowViews::GetContentSize() {
 
   gfx::Size content_size =
       window_->non_client_view()->frame_view()->GetBoundsForClientView().size();
-  if (menu_bar_)
+  if (menu_bar_ && menu_bar_show_)
     content_size.set_height(content_size.height() - kMenuBarHeight);
   return content_size;
 }
@@ -383,11 +385,14 @@ void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
 
   if (!menu_bar_) {
     gfx::Size content_size = GetContentSize();
-    menu_bar_ = new MenuBar;
-    AddChildViewAt(menu_bar_, 0);
+    menu_bar_.reset(new MenuBar);
+    menu_bar_->set_owned_by_client();
 
-    if (use_content_size_)
-      SetContentSize(content_size);
+    if (!menu_bar_autohide_) {
+      SetMenuBarVisibility(true);
+      if (use_content_size_)
+        SetContentSize(content_size);
+    }
   }
 
   menu_bar_->SetMenu(menu_model);
@@ -529,6 +534,14 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
+  if (menu_bar_autohide_ &&
+      (event.modifiers & content::NativeWebKeyboardEvent::AltKey) &&
+      (event.windowsKeyCode == 164 || event.windowsKeyCode == 165) &&
+      (event.type == blink::WebInputEvent::RawKeyDown)) {
+    SetMenuBarVisibility(!menu_bar_show_);
+    Layout();
+  }
+
   keyboard_event_handler_->HandleKeyboardEvent(event, GetFocusManager());
 }
 
@@ -558,9 +571,20 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
     const gfx::Rect& bounds) {
   gfx::Rect window_bounds =
       window_->non_client_view()->GetWindowBoundsForClientBounds(bounds);
-  if (menu_bar_)
+  if (menu_bar_ && menu_bar_show_)
     window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
   return window_bounds;
+}
+
+void NativeWindowViews::SetMenuBarVisibility(bool visible) {
+  if (!menu_bar_)
+    return;
+
+  menu_bar_show_ = visible;
+  if (visible)
+    AddChildView(menu_bar_.get());
+  else
+    RemoveChildView(menu_bar_.get());
 }
 
 // static
