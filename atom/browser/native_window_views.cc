@@ -456,6 +456,9 @@ void NativeWindowViews::OnWidgetActivationChanged(
   else
     NotifyWindowBlur();
 
+  if (active && GetWebContents() && !IsDevToolsOpened())
+    GetWebContents()->Focus();
+
   // Hide menu bar when window is blured.
   if (!active && menu_bar_autohide_ && menu_bar_show_) {
     SetMenuBarVisibility(false);
