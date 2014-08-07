@@ -71,6 +71,22 @@ bool ShouldUseGlobalMenuBar() {
 }
 #endif
 
+bool IsAltKey(const content::NativeWebKeyboardEvent& event) {
+#if defined(USE_X11)
+  // 164 and 165 represent VK_LALT and VK_RALT.
+  return event.windowsKeyCode == 164 || event.windowsKeyCode == 165;
+#else
+  return event.windowsKeyCode == ui::VKEY_MENU;
+#endif
+}
+
+bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
+  typedef content::NativeWebKeyboardEvent::Modifiers Modifiers;
+  return (event.modifiers == Modifiers::AltKey) ||
+         (event.modifiers == (Modifiers::AltKey | Modifiers::IsLeft)) ||
+         (event.modifiers == (Modifiers::AltKey | Modifiers::IsRight));
+}
+
 class NativeWindowClientView : public views::ClientView {
  public:
   NativeWindowClientView(views::Widget* widget,
@@ -94,13 +110,16 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
                                      const mate::Dictionary& options)
     : NativeWindow(web_contents, options),
       window_(new views::Widget),
-      menu_bar_(NULL),
       web_view_(inspectable_web_contents()->GetView()->GetView()),
+      menu_bar_autohide_(false),
+      menu_bar_visible_(false),
+      menu_bar_alt_pressed_(false),
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
       use_content_size_(false),
       resizable_(true) {
   options.Get(switches::kResizable, &resizable_);
   options.Get(switches::kTitle, &title_);
+  options.Get(switches::kAutoHideMenuBar, &menu_bar_autohide_);
 
   int width = 800, height = 600;
   options.Get(switches::kWidth, &width);
@@ -242,7 +261,7 @@ gfx::Size NativeWindowViews::GetContentSize() {
 
   gfx::Size content_size =
       window_->non_client_view()->frame_view()->GetBoundsForClientView().size();
-  if (menu_bar_)
+  if (menu_bar_ && menu_bar_visible_)
     content_size.set_height(content_size.height() - kMenuBarHeight);
   return content_size;
 }
@@ -383,11 +402,14 @@ void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
 
   if (!menu_bar_) {
     gfx::Size content_size = GetContentSize();
-    menu_bar_ = new MenuBar;
-    AddChildViewAt(menu_bar_, 0);
+    menu_bar_.reset(new MenuBar);
+    menu_bar_->set_owned_by_client();
 
-    if (use_content_size_)
-      SetContentSize(content_size);
+    if (!menu_bar_autohide_) {
+      SetMenuBarVisibility(true);
+      if (use_content_size_)
+        SetContentSize(content_size);
+    }
   }
 
   menu_bar_->SetMenu(menu_model);
@@ -434,6 +456,15 @@ void NativeWindowViews::OnWidgetActivationChanged(
     NotifyWindowFocus();
   else
     NotifyWindowBlur();
+
+  if (active && GetWebContents() && !IsDevToolsOpened())
+    GetWebContents()->Focus();
+
+  // Hide menu bar when window is blured.
+  if (!active && menu_bar_autohide_ && menu_bar_visible_) {
+    SetMenuBarVisibility(false);
+    Layout();
+  }
 }
 
 void NativeWindowViews::DeleteDelegate() {
@@ -526,9 +557,33 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
   return NULL;
 }
 
+void NativeWindowViews::HandleMouseDown() {
+  // Hide menu bar when web view is clicked.
+  if (menu_bar_autohide_ && menu_bar_visible_) {
+    SetMenuBarVisibility(false);
+    Layout();
+  }
+}
+
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
+  // Toggle the menu bar only when a single Alt is released.
+  if (event.type == blink::WebInputEvent::RawKeyDown && IsAltKey(event) &&
+      IsAltModifier(event)) {
+    // When a single Alt is pressed:
+    menu_bar_alt_pressed_ = true;
+  } else if (event.type == blink::WebInputEvent::KeyUp && IsAltKey(event) &&
+             event.modifiers == 0 && menu_bar_alt_pressed_) {
+    // When a single Alt is released right after a Alt is pressed:
+    menu_bar_alt_pressed_ = false;
+    SetMenuBarVisibility(!menu_bar_visible_);
+    Layout();
+  } else {
+    // When any other keys except single Alt have been pressed/released:
+    menu_bar_alt_pressed_ = false;
+  }
+
   keyboard_event_handler_->HandleKeyboardEvent(event, GetFocusManager());
 }
 
@@ -558,9 +613,23 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
     const gfx::Rect& bounds) {
   gfx::Rect window_bounds =
       window_->non_client_view()->GetWindowBoundsForClientBounds(bounds);
-  if (menu_bar_)
+  if (menu_bar_ && menu_bar_visible_)
     window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
   return window_bounds;
+}
+
+void NativeWindowViews::SetMenuBarVisibility(bool visible) {
+  if (!menu_bar_)
+    return;
+
+  menu_bar_visible_ = visible;
+  if (visible) {
+    DCHECK_EQ(child_count(), 1);
+    AddChildView(menu_bar_.get());
+  } else {
+    DCHECK_EQ(child_count(), 2);
+    RemoveChildView(menu_bar_.get());
+  }
 }
 
 // static

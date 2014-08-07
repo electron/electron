@@ -55,6 +55,8 @@ You can also create a window without chrome by using
     `manual-enable-iframe` or `disable`.
   * `accept-first-mouse` Boolean - Whether the web view accepts a single
      mouse-down event that simultaneously activates the window
+  * `auto-hide-menu-bar` Boolean - Auto hide the menu bar unless the `Alt`
+    key is pressed.
   * `web-preferences` Object - Settings of web page's features
     * `javascript` Boolean
     * `web-security` Boolean

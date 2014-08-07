@@ -48,6 +48,9 @@ const char kWebPreferences[] = "web-preferences";
 // The factor of which page should be zoomed.
 const char kZoomFactor[] = "zoom-factor";
 
+// The menu bar is hidden unless "Alt" is pressed.
+const char kAutoHideMenuBar[] = "auto-hide-menu-bar";
+
 }  // namespace switches
 
 }  // namespace atom

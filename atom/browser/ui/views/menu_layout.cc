@@ -24,10 +24,10 @@ void MenuLayout::Layout(views::View* host) {
   gfx::Rect web_view_bounds = gfx::Rect(
       0, menu_height_, size.width(), size.height() - menu_height_);
 
-  views::View* menu_bar = host->child_at(0);
-  views::View* web_view = host->child_at(1);
-  menu_bar->SetBoundsRect(menu_Bar_bounds);
+  views::View* web_view = host->child_at(0);
+  views::View* menu_bar = host->child_at(1);
   web_view->SetBoundsRect(web_view_bounds);
+  menu_bar->SetBoundsRect(menu_Bar_bounds);
 }
 
 gfx::Size MenuLayout::GetPreferredSize(views::View* host) {

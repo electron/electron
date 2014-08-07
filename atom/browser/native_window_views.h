@@ -107,6 +107,7 @@ class NativeWindowViews : public NativeWindow,
       views::Widget* widget) OVERRIDE;
 
   // content::WebContentsDelegate:
+  virtual void HandleMouseDown() OVERRIDE;
   virtual void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) OVERRIDE;
@@ -121,9 +122,16 @@ class NativeWindowViews : public NativeWindow,
   // in client area we need to substract/add menu bar's height in convertions.
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& content_bounds);
 
+  // Show/Hide the menu bar.
+  void SetMenuBarVisibility(bool visible);
+
   scoped_ptr<views::Widget> window_;
-  MenuBar* menu_bar_;
   views::View* web_view_;  // Managed by inspectable_web_contents_.
+
+  scoped_ptr<MenuBar> menu_bar_;
+  bool menu_bar_autohide_;
+  bool menu_bar_visible_;
+  bool menu_bar_alt_pressed_;
 
 #if defined(USE_X11)
   scoped_ptr<GlobalMenuBarX11> global_menu_bar_;
