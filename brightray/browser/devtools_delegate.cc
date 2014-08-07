@@ -139,7 +139,6 @@ DevToolsDelegate::DevToolsDelegate(
 }
 
 DevToolsDelegate::~DevToolsDelegate() {
-	LOG(ERROR) << "delete!";
 }
 
 void DevToolsDelegate::Stop() {
