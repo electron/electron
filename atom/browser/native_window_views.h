@@ -107,6 +107,7 @@ class NativeWindowViews : public NativeWindow,
       views::Widget* widget) OVERRIDE;
 
   // content::WebContentsDelegate:
+  virtual void HandleMouseDown() OVERRIDE;
   virtual void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) OVERRIDE;

@@ -537,6 +537,13 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
   return NULL;
 }
 
+void NativeWindowViews::HandleMouseDown() {
+  if (menu_bar_autohide_ && menu_bar_show_) {
+    SetMenuBarVisibility(false);
+    Layout();
+  }
+}
+
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
