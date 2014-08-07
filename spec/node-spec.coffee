@@ -74,7 +74,7 @@ describe 'node feature', ->
         clear = ->
           remote.getGlobal('clearInterval')(interval)
           done()
-        interval = remote.getGlobal('setInterval')(clear, 0)
+        interval = remote.getGlobal('setInterval')(clear, 10)
 
   describe 'message loop', ->
     describe 'process.nextTick', ->
