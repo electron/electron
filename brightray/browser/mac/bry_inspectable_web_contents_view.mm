@@ -55,6 +55,9 @@ using namespace brightray;
       // sizes for them until the setContentsResizingStrategy message.
       [self addSubview:devToolsView positioned:NSWindowBelow relativeTo:nil];
       [self update];
+
+      // Focus on web view.
+      devToolsWebContents->RestoreFocus();
     } else {
       gfx::ScopedNSDisableScreenUpdates disabler;
       devToolsWebContents->RemoveOverlayView();
