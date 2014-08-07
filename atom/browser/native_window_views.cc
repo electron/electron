@@ -550,8 +550,12 @@ void NativeWindowViews::HandleKeyboardEvent(
     const content::NativeWebKeyboardEvent& event) {
   if (menu_bar_autohide_ &&
       (event.modifiers & content::NativeWebKeyboardEvent::AltKey) &&
+#if defined(USE_X11)
       // 164 and 165 represent VK_LALT and VK_RALT.
       (event.windowsKeyCode == 164 || event.windowsKeyCode == 165) &&
+#else
+      (event.windowsKeyCode == ui::VKEY_MENU) &&
+#endif
       (event.type == blink::WebInputEvent::RawKeyDown)) {
     SetMenuBarVisibility(!menu_bar_show_);
     Layout();
