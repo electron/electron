@@ -439,6 +439,12 @@ void NativeWindowViews::OnWidgetActivationChanged(
     NotifyWindowFocus();
   else
     NotifyWindowBlur();
+
+  // The menu bar should be hide when window is closed
+  if (!active && menu_bar_autohide_ && menu_bar_show_) {
+    SetMenuBarVisibility(false);
+    Layout();
+  }
 }
 
 void NativeWindowViews::DeleteDelegate() {
