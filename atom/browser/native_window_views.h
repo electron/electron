@@ -130,7 +130,7 @@ class NativeWindowViews : public NativeWindow,
 
   scoped_ptr<MenuBar> menu_bar_;
   bool menu_bar_autohide_;
-  bool menu_bar_show_;
+  bool menu_bar_visible_;
   bool menu_bar_alt_pressed_;
 
 #if defined(USE_X11)

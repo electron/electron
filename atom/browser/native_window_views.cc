@@ -112,7 +112,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
       window_(new views::Widget),
       web_view_(inspectable_web_contents()->GetView()->GetView()),
       menu_bar_autohide_(false),
-      menu_bar_show_(false),
+      menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
       use_content_size_(false),
@@ -261,7 +261,7 @@ gfx::Size NativeWindowViews::GetContentSize() {
 
   gfx::Size content_size =
       window_->non_client_view()->frame_view()->GetBoundsForClientView().size();
-  if (menu_bar_ && menu_bar_show_)
+  if (menu_bar_ && menu_bar_visible_)
     content_size.set_height(content_size.height() - kMenuBarHeight);
   return content_size;
 }
@@ -461,7 +461,7 @@ void NativeWindowViews::OnWidgetActivationChanged(
     GetWebContents()->Focus();
 
   // Hide menu bar when window is blured.
-  if (!active && menu_bar_autohide_ && menu_bar_show_) {
+  if (!active && menu_bar_autohide_ && menu_bar_visible_) {
     SetMenuBarVisibility(false);
     Layout();
   }
@@ -559,7 +559,7 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
 
 void NativeWindowViews::HandleMouseDown() {
   // Hide menu bar when web view is clicked.
-  if (menu_bar_autohide_ && menu_bar_show_) {
+  if (menu_bar_autohide_ && menu_bar_visible_) {
     SetMenuBarVisibility(false);
     Layout();
   }
@@ -577,7 +577,7 @@ void NativeWindowViews::HandleKeyboardEvent(
              event.modifiers == 0 && menu_bar_alt_pressed_) {
     // When a single Alt is released right after a Alt is pressed:
     menu_bar_alt_pressed_ = false;
-    SetMenuBarVisibility(!menu_bar_show_);
+    SetMenuBarVisibility(!menu_bar_visible_);
     Layout();
   } else {
     // When any other keys except single Alt have been pressed/released:
@@ -613,7 +613,7 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
     const gfx::Rect& bounds) {
   gfx::Rect window_bounds =
       window_->non_client_view()->GetWindowBoundsForClientBounds(bounds);
-  if (menu_bar_ && menu_bar_show_)
+  if (menu_bar_ && menu_bar_visible_)
     window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
   return window_bounds;
 }
@@ -622,7 +622,7 @@ void NativeWindowViews::SetMenuBarVisibility(bool visible) {
   if (!menu_bar_)
     return;
 
-  menu_bar_show_ = visible;
+  menu_bar_visible_ = visible;
   if (visible) {
     DCHECK_EQ(child_count(), 1);
     AddChildView(menu_bar_.get());
