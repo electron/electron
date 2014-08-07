@@ -71,6 +71,21 @@ bool ShouldUseGlobalMenuBar() {
 }
 #endif
 
+bool IsAltKey(const content::NativeWebKeyboardEvent& event) {
+#if defined(USE_X11)
+  // 164 and 165 represent VK_LALT and VK_RALT.
+  return event.windowsKeyCode == 164 || event.windowsKeyCode == 165;
+#else
+  return event.windowsKeyCode == ui::VKEY_MENU;
+#endif
+}
+
+bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
+  typedef content::NativeWebKeyboardEvent::Modifiers Modifiers;
+  return (event.modifiers == (Modifiers::AltKey | Modifiers::IsLeft)) ||
+         (event.modifiers == (Modifiers::AltKey | Modifiers::IsRight));
+}
+
 class NativeWindowClientView : public views::ClientView {
  public:
   NativeWindowClientView(views::Widget* widget,
@@ -97,6 +112,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
       web_view_(inspectable_web_contents()->GetView()->GetView()),
       menu_bar_autohide_(false),
       menu_bar_show_(false),
+      menu_bar_alt_pressed_(false),
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
       use_content_size_(false),
       resizable_(true) {
@@ -548,16 +564,20 @@ void NativeWindowViews::HandleMouseDown() {
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
-  if (menu_bar_autohide_ &&
-#if defined(USE_X11)
-      // 164 and 165 represent VK_LALT and VK_RALT.
-      (event.windowsKeyCode == 164 || event.windowsKeyCode == 165) &&
-#else
-      (event.windowsKeyCode == ui::VKEY_MENU) &&
-#endif
-      (event.type == blink::WebInputEvent::KeyUp)) {
+  // Toggle the menu bar only when a single Alt is released.
+  if (event.type == blink::WebInputEvent::RawKeyDown && IsAltKey(event) &&
+      IsAltModifier(event)) {
+    // When a single Alt is pressed:
+    menu_bar_alt_pressed_ = true;
+  } else if (event.type == blink::WebInputEvent::KeyUp && IsAltKey(event) &&
+             event.modifiers == 0 && menu_bar_alt_pressed_) {
+    // When a single Alt is released right after a Alt is pressed:
+    menu_bar_alt_pressed_ = false;
     SetMenuBarVisibility(!menu_bar_show_);
     Layout();
+  } else {
+    // When any other keys except single Alt have been pressed/released:
+    menu_bar_alt_pressed_ = false;
   }
 
   keyboard_event_handler_->HandleKeyboardEvent(event, GetFocusManager());
