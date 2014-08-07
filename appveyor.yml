@@ -1,7 +1,5 @@
 # appveyor file
 # http://www.appveyor.com/docs/appveyor-yml
-project_id: "fgmr18mx183acim0"
-
 version: "{build}"
 
 init:
