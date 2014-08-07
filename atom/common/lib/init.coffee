@@ -32,3 +32,4 @@ global.clearImmediate = timers.clearImmediate
 # timeout in browser process.
 if process.type is 'browser'
   global.setTimeout = wrapWithActivateUvLoop timers.setTimeout
+  global.setInterval = wrapWithActivateUvLoop timers.setInterval

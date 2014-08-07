@@ -69,6 +69,13 @@ describe 'node feature', ->
       it 'can be scheduled in time', (done) ->
         remote.getGlobal('setTimeout')(done, 0)
 
+    describe 'setInterval called under Chromium event loop in browser process', ->
+      it 'can be scheduled in time', (done) ->
+        clear = ->
+          remote.getGlobal('clearInterval')(interval)
+          done()
+        interval = remote.getGlobal('setInterval')(clear, 0)
+
   describe 'message loop', ->
     describe 'process.nextTick', ->
       it 'emits the callback', (done) ->
