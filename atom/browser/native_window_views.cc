@@ -440,7 +440,7 @@ void NativeWindowViews::OnWidgetActivationChanged(
   else
     NotifyWindowBlur();
 
-  // The menu bar should be hide when window is closed
+  // Hide menu bar when window is blured.
   if (!active && menu_bar_autohide_ && menu_bar_show_) {
     SetMenuBarVisibility(false);
     Layout();
@@ -538,6 +538,7 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
 }
 
 void NativeWindowViews::HandleMouseDown() {
+  // Hide menu bar when web view is clicked.
   if (menu_bar_autohide_ && menu_bar_show_) {
     SetMenuBarVisibility(false);
     Layout();
@@ -549,6 +550,7 @@ void NativeWindowViews::HandleKeyboardEvent(
     const content::NativeWebKeyboardEvent& event) {
   if (menu_bar_autohide_ &&
       (event.modifiers & content::NativeWebKeyboardEvent::AltKey) &&
+      // 164 and 165 represent VK_LALT and VK_RALT.
       (event.windowsKeyCode == 164 || event.windowsKeyCode == 165) &&
       (event.type == blink::WebInputEvent::RawKeyDown)) {
     SetMenuBarVisibility(!menu_bar_show_);
@@ -594,10 +596,13 @@ void NativeWindowViews::SetMenuBarVisibility(bool visible) {
     return;
 
   menu_bar_show_ = visible;
-  if (visible)
+  if (visible) {
+    DCHECK_EQ(child_count(), 1);
     AddChildView(menu_bar_.get());
-  else
+  } else {
+    DCHECK_EQ(child_count(), 2);
     RemoveChildView(menu_bar_.get());
+  }
 }
 
 // static
