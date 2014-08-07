@@ -3,6 +3,7 @@ child_process = require 'child_process'
 fs            = require 'fs'
 path          = require 'path'
 os            = require 'os'
+remote        = require 'remote'
 
 describe 'node feature', ->
   fixtures = path.join __dirname, 'fixtures'
@@ -33,7 +34,7 @@ describe 'node feature', ->
         child.send 'message'
 
       it 'works in browser process', (done) ->
-        fork = require('remote').require('child_process').fork
+        fork = remote.require('child_process').fork
         child = fork path.join(fixtures, 'module', 'ping.js')
         child.on 'message', (msg) ->
           assert.equal msg, 'message'
@@ -63,6 +64,10 @@ describe 'node feature', ->
           done()
         fs.readFile __filename, ->
           throw error
+
+    describe 'setTimeout called under Chromium event loop in browser process', ->
+      it 'can be scheduled in time', (done) ->
+        remote.getGlobal('setTimeout')(done, 0)
 
   describe 'message loop', ->
     describe 'process.nextTick', ->
