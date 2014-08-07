@@ -25,3 +25,10 @@ wrapWithActivateUvLoop = (func) ->
 process.nextTick = wrapWithActivateUvLoop process.nextTick
 global.setImmediate = wrapWithActivateUvLoop timers.setImmediate
 global.clearImmediate = timers.clearImmediate
+
+# setTimeout needs to update the polling timeout of the event loop, when called
+# under Chromium's event loop the node's event loop won't get a chance to update
+# the timeout, so we have to force the node's event loop to recalculate the
+# timeout in browser process.
+if process.type is 'browser'
+  global.setTimeout = wrapWithActivateUvLoop timers.setTimeout
