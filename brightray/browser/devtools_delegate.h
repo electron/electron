@@ -49,6 +49,6 @@ class DevToolsDelegate : public content::DevToolsHttpHandlerDelegate {
   DISALLOW_COPY_AND_ASSIGN(DevToolsDelegate);
 };
 
-}  // namespace brightray 
+}  // namespace brightray
 
 #endif  // BRIGHTRAY_DEVTOOLS_DELEGATE_H_
