@@ -82,7 +82,8 @@ bool IsAltKey(const content::NativeWebKeyboardEvent& event) {
 
 bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
   typedef content::NativeWebKeyboardEvent::Modifiers Modifiers;
-  return (event.modifiers == (Modifiers::AltKey | Modifiers::IsLeft)) ||
+  return (event.modifiers == Modifiers::AltKey) ||
+         (event.modifiers == (Modifiers::AltKey | Modifiers::IsLeft)) ||
          (event.modifiers == (Modifiers::AltKey | Modifiers::IsRight));
 }
 
