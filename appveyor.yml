@@ -17,11 +17,14 @@ install:
   - cmd: SET PATH=C:\Program Files (x86)\MSBuild\12.0\bin\;%PATH%
   - cmd: SET PATH=C:\python27;%PATH%
   - cmd: python script/bootstrap.py
-  - python script/build.py -c Debug
+  - cmd: python script/build.py -c Debug
 
 test_script:
   - node --version
   - npm --version
-  - cmd: python script/test.py
+  - cmd: python script/cpplint.py
+  - cmd: python script/pylint.py
+  - cmd: python script/coffeelint.py
+  - cmd: python script/test.py --ci
 
 build: off
