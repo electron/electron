@@ -568,6 +568,11 @@ void NativeWindowViews::HandleMouseDown() {
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
+  keyboard_event_handler_->HandleKeyboardEvent(event, GetFocusManager());
+
+  if (!menu_bar_autohide_)
+    return;
+
   // Toggle the menu bar only when a single Alt is released.
   if (event.type == blink::WebInputEvent::RawKeyDown && IsAltKey(event) &&
       IsAltModifier(event)) {
@@ -583,8 +588,6 @@ void NativeWindowViews::HandleKeyboardEvent(
     // When any other keys except single Alt have been pressed/released:
     menu_bar_alt_pressed_ = false;
   }
-
-  keyboard_event_handler_->HandleKeyboardEvent(event, GetFocusManager());
 }
 
 bool NativeWindowViews::AcceleratorPressed(const ui::Accelerator& accelerator) {
