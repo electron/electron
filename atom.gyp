@@ -800,5 +800,31 @@
         },  # target generate_node_lib
       ],
     }],  # OS==win
+    # Using Visual Studio Express.
+    ['msvs_express==1', {
+      'target_defaults': {
+        'defines!': [
+          '_SECURE_ATL',
+        ],
+        'msvs_settings': {
+          'VCLibrarianTool': {
+            'AdditionalLibraryDirectories': [
+              '<(atom_source_root)/external_binaries/atl/lib',
+            ],
+          },
+          'VCLinkerTool': {
+            'AdditionalLibraryDirectories': [
+              '<(atom_source_root)/external_binaries/atl/lib',
+            ],
+            'AdditionalDependencies': [
+              'atls.lib',
+            ],
+          },
+        },
+        'msvs_system_include_dirs': [
+          '<(atom_source_root)/external_binaries/atl/include',
+        ],
+      },
+    }],  # msvs_express==1
   ],
 }

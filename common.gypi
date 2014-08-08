@@ -134,7 +134,6 @@
     'msvs_cygwin_shell': 0, # Strangely setting it to 1 would make building under cygwin fail.
     'msvs_disabled_warnings': [
       4005,  # (node.h) macro redefinition
-      4099,  # PDB 'atls.pdb' was not found with 'atls.lib'
       4189,  # local variable is initialized but not referenced
       4201,  # (uv.h) nameless struct/union
       4800,  # (v8.h) forcing value to bool 'true' or 'false'
@@ -202,32 +201,6 @@
         },
       },
     }],  # clang==1
-    # Using Visual Studio Express.
-    ['msvs_express==1', {
-      'target_defaults': {
-        'defines!': [
-          '_SECURE_ATL',
-        ],
-        'msvs_settings': {
-          'VCLibrarianTool': {
-            'AdditionalLibraryDirectories': [
-              'external_binaries/atl/lib',
-            ],
-          },
-          'VCLinkerTool': {
-            'AdditionalLibraryDirectories': [
-              'external_binaries/atl/lib',
-            ],
-            'AdditionalDependencies': [
-              'atls.lib',
-            ],
-          },
-        },
-        'msvs_system_include_dirs': [
-          'external_binaries/atl/include',
-        ],
-      },
-    }],  # msvs_express==1
     # The breakdpad on Windows assumes Debug_x64 and Release_x64 configurations.
     ['OS=="win"', {
       'target_defaults': {
