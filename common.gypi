@@ -7,7 +7,6 @@
       }],
       ['OS=="win" and (MSVS_VERSION=="2013e" or MSVS_VERSION=="2012e" or MSVS_VERSION=="2010e")', {
         'msvs_express': 1,
-        'windows_driver_kit_path%': 'C:/WinDDK/7600.16385.1',
       },{
         'msvs_express': 0,
       }],
@@ -135,6 +134,7 @@
     'msvs_cygwin_shell': 0, # Strangely setting it to 1 would make building under cygwin fail.
     'msvs_disabled_warnings': [
       4005,  # (node.h) macro redefinition
+      4099,  # PDB 'atls.pdb' was not found with 'atls.lib'
       4189,  # local variable is initialized but not referenced
       4201,  # (uv.h) nameless struct/union
       4800,  # (v8.h) forcing value to bool 'true' or 'false'
@@ -211,21 +211,20 @@
         'msvs_settings': {
           'VCLibrarianTool': {
             'AdditionalLibraryDirectories': [
-              '<(windows_driver_kit_path)/lib/ATL/i386',
+              'external_binaries/atl/lib',
             ],
           },
           'VCLinkerTool': {
             'AdditionalLibraryDirectories': [
-              '<(windows_driver_kit_path)/lib/ATL/i386',
+              'external_binaries/atl/lib',
             ],
             'AdditionalDependencies': [
-              'atlthunk.lib',
+              'atls.lib',
             ],
           },
         },
         'msvs_system_include_dirs': [
-          '<(windows_driver_kit_path)/inc/atl71',
-          '<(windows_driver_kit_path)/inc/mfc42',
+          'external_binaries/atl/include',
         ],
       },
     }],  # msvs_express==1
