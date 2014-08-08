@@ -9,12 +9,20 @@ from lib.util import rm_rf
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
+LINUX_DEPS = [
+  'libgnome-keyring-dev',
+  'libgtk2.0-dev',
+  'libnotify-dev',
+  'gcc-multilib',
+  'g++-multilib',
+]
+
 
 def main():
   os.environ['CI'] = '1'
 
   if os.environ['TRAVIS'] == 'true' and sys.platform == 'linux2':
-    subprocess.check_call(['sudo', 'apt-get', 'install', 'libgnome-keyring-dev'])
+    subprocess.check_call(['sudo', 'apt-get', 'install'] + LINUX_DEPS)
 
   rm_rf(os.path.join(SOURCE_ROOT, 'out'))
   rm_rf(os.path.join(SOURCE_ROOT, 'node_modules'))
