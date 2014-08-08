@@ -24,6 +24,5 @@ test_script:
   - npm --version
   - cmd: python script/cpplint.py
   - cmd: python script/coffeelint.py
-  - cmd: python script/test.py --ci
 
 build: off
