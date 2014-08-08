@@ -22,6 +22,7 @@ def main():
   os.environ['CI'] = '1'
 
   if os.environ['TRAVIS'] == 'true' and sys.platform == 'linux2':
+    subprocess.check_call(['sudo', 'apt-get', 'update'])
     subprocess.check_call(['sudo', 'apt-get', 'install'] + LINUX_DEPS)
 
   rm_rf(os.path.join(SOURCE_ROOT, 'out'))
