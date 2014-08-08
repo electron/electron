@@ -23,7 +23,6 @@ test_script:
   - node --version
   - npm --version
   - cmd: python script/cpplint.py
-  - cmd: python script/pylint.py
   - cmd: python script/coffeelint.py
   - cmd: python script/test.py --ci
 
