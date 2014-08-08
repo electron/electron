@@ -7,7 +7,6 @@
       }],
       ['OS=="win" and (MSVS_VERSION=="2013e" or MSVS_VERSION=="2012e" or MSVS_VERSION=="2010e")', {
         'msvs_express': 1,
-        'windows_driver_kit_path%': 'C:/WinDDK/7600.16385.1',
       },{
         'msvs_express': 0,
       }],
@@ -202,33 +201,6 @@
         },
       },
     }],  # clang==1
-    # Using Visual Studio Express.
-    ['msvs_express==1', {
-      'target_defaults': {
-        'defines!': [
-          '_SECURE_ATL',
-        ],
-        'msvs_settings': {
-          'VCLibrarianTool': {
-            'AdditionalLibraryDirectories': [
-              '<(windows_driver_kit_path)/lib/ATL/i386',
-            ],
-          },
-          'VCLinkerTool': {
-            'AdditionalLibraryDirectories': [
-              '<(windows_driver_kit_path)/lib/ATL/i386',
-            ],
-            'AdditionalDependencies': [
-              'atlthunk.lib',
-            ],
-          },
-        },
-        'msvs_system_include_dirs': [
-          '<(windows_driver_kit_path)/inc/atl71',
-          '<(windows_driver_kit_path)/inc/mfc42',
-        ],
-      },
-    }],  # msvs_express==1
     # The breakdpad on Windows assumes Debug_x64 and Release_x64 configurations.
     ['OS=="win"', {
       'target_defaults': {

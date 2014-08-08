@@ -23,7 +23,7 @@ IGNORE_FILES = [
   os.path.join('atom', 'common', 'swap_or_assign.h'),
 ]
 
-SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))
+SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
 def main():
