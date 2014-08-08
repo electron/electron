@@ -17,6 +17,7 @@ InspectableWebContentsViewMac::InspectableWebContentsViewMac(InspectableWebConte
 }
 
 InspectableWebContentsViewMac::~InspectableWebContentsViewMac() {
+  CloseDevTools();
 }
 
 gfx::NativeView InspectableWebContentsViewMac::GetNativeView() const {
