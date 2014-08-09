@@ -29,6 +29,18 @@ def scoped_cwd(path):
     os.chdir(cwd)
 
 
+@contextlib.contextmanager
+def scoped_env(key, value):
+  origin = ''
+  if key in os.environ:
+    origin = os.environ[key]
+  os.environ[key] = value
+  try:
+    yield
+  finally:
+    os.environ[key] = origin
+
+
 def download(text, url, path):
   safe_mkdir(os.path.dirname(path))
   with open(path, 'wb') as local_file:
