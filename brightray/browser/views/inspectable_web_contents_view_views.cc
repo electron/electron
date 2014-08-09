@@ -18,7 +18,7 @@ class DevToolsWindowDelegate : public views::ClientView,
   DevToolsWindowDelegate(InspectableWebContentsViewViews* shell,
                          views::View* view,
                          views::Widget* widget)
-      : views::ClientView(widget_, view),
+      : views::ClientView(widget, view),
         shell_(shell),
         view_(view),
         widget_(widget),
