@@ -20,7 +20,9 @@ def main():
   args = parse_args()
   for config in args.configuration:
     build_path = os.path.join('out', config)
-    subprocess.call([ninja, '-C', build_path, args.target])
+    ret = subprocess.call([ninja, '-C', build_path, args.target])
+    if ret != 0:
+      sys.exit(ret)
 
 
 def parse_args():

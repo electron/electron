@@ -1,4 +1,8 @@
-language: objective-c
+language: cpp
+compiler: clang
+os:
+  - linux
+  - osx
 
 notifications:
   email:

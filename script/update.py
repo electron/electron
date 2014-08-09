@@ -35,12 +35,15 @@ def update_gyp():
     if sys.platform == 'cygwin':
       # Force using win32 python on cygwin.
       python = os.path.join('vendor', 'python_26', 'python.exe')
-  subprocess.call([python, gyp,
-                   '-f', 'ninja', '--depth', '.', 'atom.gyp',
-                   '-Icommon.gypi', '-Ivendor/brightray/brightray.gypi',
-                   '-Dlinux_clang=0',  # Disable brightray's clang setting
-                   '-Dtarget_arch={0}'.format(arch),
-                   '-Dlibrary=static_library'])
+
+  ret = subprocess.call([python, gyp,
+                         '-f', 'ninja', '--depth', '.', 'atom.gyp',
+                         '-Icommon.gypi', '-Ivendor/brightray/brightray.gypi',
+                         '-Dlinux_clang=0',  # Disable brightray's clang setting
+                         '-Dtarget_arch={0}'.format(arch),
+                         '-Dlibrary=static_library'])
+  if ret != 0:
+    sys.exit(ret)
 
 
 if __name__ == '__main__':
