@@ -23,8 +23,12 @@ def main():
 
   is_travis = (os.getenv('TRAVIS') == 'true')
   if is_travis and sys.platform == 'linux2':
+    print 'Setup travis CI'
     execute(['sudo', 'apt-get', 'update'])
     execute(['sudo', 'apt-get', 'install'] + LINUX_DEPS)
+
+    os.environ['DISPLAY'] = ':99.0'
+    execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
 
   rm_rf(os.path.join(SOURCE_ROOT, 'out'))
   rm_rf(os.path.join(SOURCE_ROOT, 'node_modules'))
