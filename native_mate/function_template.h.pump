@@ -1,0 +1,225 @@
+$$ This is a pump file for generating file templates.  Pump is a python
+$$ script that is part of the Google Test suite of utilities.  Description
+$$ can be found here:
+$$
+$$ http://code.google.com/p/googletest/wiki/PumpManual
+$$
+$var MAX_ARITY = 7
+// Copyright 2013 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE.chromium file.
+
+#ifndef NATIVE_MATE_FUNCTION_TEMPLATE_H_
+#define NATIVE_MATE_FUNCTION_TEMPLATE_H_
+
+#include "base/callback.h"
+#include "base/logging.h"
+#include "native_mate/arguments.h"
+#include "native_mate/compat.h"
+#include "native_mate/converter.h"
+#include "v8/include/v8.h"
+
+namespace mate {
+
+class PerIsolateData;
+
+enum CreateFunctionTemplateFlags {
+  HolderIsFirstArgument = 1 << 0,
+};
+
+namespace internal {
+
+template<typename T>
+struct CallbackParamTraits {
+  typedef T LocalType;
+};
+template<typename T>
+struct CallbackParamTraits<const T&> {
+  typedef T LocalType;
+};
+template<typename T>
+struct CallbackParamTraits<const T*> {
+  typedef T* LocalType;
+};
+
+
+// CallbackHolder and CallbackHolderBase are used to pass a base::Callback from
+// CreateFunctionTemplate through v8 (via v8::FunctionTemplate) to
+// DispatchToCallback, where it is invoked.
+
+// This simple base class is used so that we can share a single object template
+// among every CallbackHolder instance.
+class CallbackHolderBase {
+ public:
+  v8::Handle<v8::External> GetHandle(v8::Isolate* isolate);
+
+ protected:
+  explicit CallbackHolderBase(v8::Isolate* isolate);
+  virtual ~CallbackHolderBase();
+
+ private:
+  static MATE_WEAK_CALLBACK(WeakCallback, v8::External, CallbackHolderBase);
+
+  v8::Persistent<v8::External> v8_ref_;
+
+  DISALLOW_COPY_AND_ASSIGN(CallbackHolderBase);
+};
+
+template<typename Sig>
+class CallbackHolder : public CallbackHolderBase {
+ public:
+  CallbackHolder(v8::Isolate* isolate,
+                 const base::Callback<Sig>& callback,
+                 int flags)
+      : CallbackHolderBase(isolate), callback(callback), flags(flags) {}
+  base::Callback<Sig> callback;
+  int flags;
+ private:
+  virtual ~CallbackHolder() {}
+
+  DISALLOW_COPY_AND_ASSIGN(CallbackHolder);
+};
+
+
+// This set of templates invokes a base::Callback, converts the return type to a
+// JavaScript value, and returns that value to script via the provided
+// mate::Arguments object.
+//
+// In C++, you can declare the function foo(void), but you can't pass a void
+// expression to foo. As a result, we must specialize the case of Callbacks that
+// have the void return type.
+
+$range ARITY 0..MAX_ARITY
+$for ARITY [[
+$var INV_ARITY = MAX_ARITY - ARITY
+$range ARG 1..INV_ARITY
+$range VOID INV_ARITY+1..MAX_ARITY
+
+$if ARITY == 0 [[
+template<typename R$for ARG [[, typename P$(ARG) = void]]>
+struct Invoker {
+]] $else [[
+template<typename R$for ARG [[, typename P$(ARG)]]>
+struct Invoker<R$for ARG [[, P$(ARG)]]$for VOID [[, void]]> {
+]]
+
+  inline static MATE_METHOD_RETURN_TYPE Go(
+      Arguments& args,
+      const base::Callback<R($for ARG , [[P$(ARG)]])>& callback$for ARG [[,
+      const P$(ARG)& a$(ARG)]]) {
+    MATE_METHOD_RETURN(callback.Run($for ARG, [[a$(ARG)]]));
+  }
+};
+template<$for ARG , [[typename P$(ARG)]]>
+struct Invoker<void$for ARG [[, P$(ARG)]]$for VOID [[, void]]> {
+  inline static MATE_METHOD_RETURN_TYPE Go(
+      Arguments& args,
+      const base::Callback<void($for ARG , [[P$(ARG)]])>& callback$for ARG [[,
+      const P$(ARG)& a$(ARG)]]) {
+    callback.Run($for ARG, [[a$(ARG)]]);
+    MATE_METHOD_RETURN_UNDEFINED();
+  }
+};
+
+
+]]
+
+template<typename T>
+bool GetNextArgument(Arguments* args, int create_flags, bool is_first,
+                     T* result) {
+  if (is_first && (create_flags & HolderIsFirstArgument) != 0) {
+    return args->GetHolder(result);
+  } else {
+    return args->GetNext(result);
+  }
+}
+
+// For advanced use cases, we allow callers to request the unparsed Arguments
+// object and poke around in it directly.
+inline bool GetNextArgument(Arguments* args, int create_flags, bool is_first,
+                            Arguments* result) {
+  *result = *args;
+  return true;
+}
+inline bool GetNextArgument(Arguments* args, int create_flags, bool is_first,
+                            Arguments** result) {
+  *result = args;
+  return true;
+}
+
+// It's common for clients to just need the isolate, so we make that easy.
+inline bool GetNextArgument(Arguments* args, int create_flags,
+                            bool is_first, v8::Isolate** result) {
+  *result = args->isolate();
+  return true;
+}
+
+
+// DispatchToCallback converts all the JavaScript arguments to C++ types and
+// invokes the base::Callback.
+template<typename Sig>
+struct Dispatcher {
+};
+
+$range ARITY 0..MAX_ARITY
+$for ARITY [[
+$range ARG 1..ARITY
+
+template<typename R$for ARG [[, typename P$(ARG)]]>
+struct Dispatcher<R($for ARG , [[P$(ARG)]])> {
+  static MATE_METHOD(DispatchToCallback) {
+    Arguments args(info);
+    v8::Handle<v8::External> v8_holder;
+    CHECK(args.GetData(&v8_holder));
+    CallbackHolderBase* holder_base = reinterpret_cast<CallbackHolderBase*>(
+        v8_holder->Value());
+
+    typedef CallbackHolder<R($for ARG , [[P$(ARG)]])> HolderT;
+    HolderT* holder = static_cast<HolderT*>(holder_base);
+
+$if ARITY != 0 [[
+
+
+$for ARG [[    typename CallbackParamTraits<P$(ARG)>::LocalType a$(ARG);
+
+]]
+    if ($for ARG  ||
+        [[!GetNextArgument(&args, holder->flags, $if ARG == 1 [[true]] $else [[false]], &a$(ARG))]]) {
+      args.ThrowError();
+      MATE_METHOD_RETURN_UNDEFINED();
+    }
+
+]]
+
+    return Invoker<R$for ARG [[, P$(ARG)]]>::Go(args, holder->callback$for ARG [[, a$(ARG)]]);
+  }
+};
+
+]]
+
+}  // namespace internal
+
+
+// CreateFunctionTemplate creates a v8::FunctionTemplate that will create
+// JavaScript functions that execute a provided C++ function or base::Callback.
+// JavaScript arguments are automatically converted via mate::Converter, as is
+// the return value of the C++ function, if any.
+template<typename Sig>
+v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(
+    v8::Isolate* isolate, const base::Callback<Sig> callback,
+    int callback_flags = 0) {
+  typedef internal::CallbackHolder<Sig> HolderT;
+  HolderT* holder = new HolderT(isolate, callback, callback_flags);
+
+  return v8::FunctionTemplate::New(
+#if NODE_VERSION_AT_LEAST(0, 11, 11)
+      isolate,
+#endif
+      &internal::Dispatcher<Sig>::DispatchToCallback,
+      ConvertToV8<v8::Handle<v8::External> >(isolate,
+                                             holder->GetHandle(isolate)));
+}
+
+}  // namespace mate
+
+#endif  // NATIVE_MATE_FUNCTION_TEMPLATE_H_
