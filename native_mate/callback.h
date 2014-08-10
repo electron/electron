@@ -282,7 +282,7 @@ struct Converter<base::Callback<Sig> > {
       return false;
 
     internal::SafeV8Function function(
-        new RefCountedPersistent<v8::Function>(val));
+        new RefCountedPersistent<v8::Function>(isolate, val));
     *out = base::Bind(&internal::V8FunctionInvoker<Sig>::Go, isolate, function);
     return true;
   }

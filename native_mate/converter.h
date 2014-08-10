@@ -200,7 +200,7 @@ inline v8::Handle<v8::String> StringToV8(
 }
 
 v8::Handle<v8::String> StringToSymbol(v8::Isolate* isolate,
-                                                 const base::StringPiece& val);
+                                      const base::StringPiece& input);
 
 template<typename T>
 bool ConvertFromV8(v8::Isolate* isolate, v8::Handle<v8::Value> input,

@@ -16,20 +16,15 @@ namespace mate {
 template <typename T>
 class ScopedPersistent {
  public:
-  ScopedPersistent(v8::Isolate* isolate = NULL) : isolate_(isolate) {
-  }
+  ScopedPersistent() : isolate_(v8::Isolate::GetCurrent()) {}
 
-  ScopedPersistent(v8::Handle<v8::Value> handle, v8::Isolate* isolate = NULL)
+  ScopedPersistent(v8::Isolate* isolate, v8::Handle<v8::Value> handle)
       : isolate_(isolate) {
-    reset(v8::Handle<T>::Cast(handle));
+    reset(isolate, v8::Handle<T>::Cast(handle));
   }
 
   ~ScopedPersistent() {
     reset();
-  }
-
-  void reset(v8::Handle<T> handle) {
-    reset(GetIsolate(handle), handle);
   }
 
   void reset(v8::Isolate* isolate, v8::Handle<T> handle) {
@@ -50,7 +45,7 @@ class ScopedPersistent {
   }
 
   v8::Handle<T> NewHandle() const {
-    return NewHandle(GetIsolate(handle_));
+    return NewHandle(isolate_);
   }
 
   v8::Handle<T> NewHandle(v8::Isolate* isolate) const {
@@ -67,36 +62,6 @@ class ScopedPersistent {
   v8::Isolate* isolate() const { return isolate_; }
 
  private:
-  template <typename U>
-  v8::Isolate* GetIsolate(v8::Handle<U> object_handle) const {
-    // Only works for v8::Object and its subclasses. Add specialisations for
-    // anything else.
-    if (!object_handle.IsEmpty())
-      return GetIsolate(object_handle->CreationContext());
-    return GetIsolate();
-  }
-#if NODE_VERSION_AT_LEAST(0, 11, 0)
-  v8::Isolate* GetIsolate(v8::Handle<v8::Context> context_handle) const {
-    if (!context_handle.IsEmpty())
-      return context_handle->GetIsolate();
-    return GetIsolate();
-  }
-#endif
-  v8::Isolate* GetIsolate(
-      v8::Handle<v8::ObjectTemplate> template_handle) const {
-    return GetIsolate();
-  }
-  template <typename U>
-  v8::Isolate* GetIsolate(const U& any_handle) const {
-    return GetIsolate();
-  }
-  v8::Isolate* GetIsolate() const {
-    if (isolate_)
-      return isolate_;
-    else
-      return v8::Isolate::GetCurrent();
-  }
-
   v8::Isolate* isolate_;
   v8::Persistent<T> handle_;
 
@@ -109,8 +74,8 @@ class RefCountedPersistent : public ScopedPersistent<T>,
  public:
   RefCountedPersistent() {}
 
-  explicit RefCountedPersistent(v8::Handle<v8::Value> handle)
-    : ScopedPersistent<T>(handle) {
+  RefCountedPersistent(v8::Isolate* isolate, v8::Handle<v8::Value> handle)
+    : ScopedPersistent<T>(isolate, handle) {
   }
 
  protected:
