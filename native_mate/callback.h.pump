@@ -1,0 +1,111 @@
+$$ This is a pump file for generating file templates.  Pump is a python
+$$ script that is part of the Google Test suite of utilities.  Description
+$$ can be found here:
+$$
+$$ http://code.google.com/p/googletest/wiki/PumpManual
+$$
+$var MAX_ARITY = 6
+// Copyright (c) 2014 GitHub, Inc. All rights reserved.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+#include "base/bind.h"
+#include "base/callback.h"
+#include "native_mate/function_template.h"
+#include "native_mate/locker.h"
+#include "native_mate/scoped_persistent.h"
+
+namespace mate {
+
+namespace internal {
+
+typedef scoped_refptr<RefCountedPersistent<v8::Function> > SafeV8Function;
+
+// Helper to convert type to V8 with storage type (const T& to T).
+template<typename T>
+v8::Handle<v8::Value> ConvertToV8(v8::Isolate* isolate, T a) {
+  return Converter<typename base::internal::CallbackParamTraits<T>::StorageType>
+      ::ToV8(isolate, a);
+}
+
+// This set of templates invokes a V8::Function by converting the C++ types.
+template<typename Sig>
+struct V8FunctionInvoker;
+
+$range ARITY 0..MAX_ARITY
+$for ARITY [[
+$range ARG 1..ARITY
+
+template<typename R$for ARG [[, typename P$(ARG)]]>
+struct V8FunctionInvoker<R($for ARG , [[P$(ARG)]])> {
+  static R Go(v8::Isolate* isolate, SafeV8Function function$for ARG [[, P$(ARG) a$(ARG)]]) {
+    R ret;
+    Locker locker(isolate);
+    MATE_HANDLE_SCOPE(isolate);
+    v8::Handle<v8::Function> holder = function->NewHandle();
+
+$if ARITY == 0 [[
+    v8::Handle<v8::Value> val(holder->Call(holder, 0, NULL));
+]] $else [[
+    v8::Handle<v8::Value> args[] = {
+$for ARG [[
+
+        ConvertToV8(isolate, a$(ARG)),
+]]
+
+    };
+    v8::Handle<v8::Value> val(holder->Call(holder, arraysize(args), args));
+]]
+
+    Converter<R>::FromV8(isolate, val, &ret);
+    return ret;
+  }
+};
+
+template<$for ARG , [[typename P$(ARG)]]>
+struct V8FunctionInvoker<void($for ARG , [[P$(ARG)]])> {
+  static void Go(v8::Isolate* isolate, SafeV8Function function$for ARG [[, P$(ARG) a$(ARG)]]) {
+    Locker locker(isolate);
+    MATE_HANDLE_SCOPE(isolate);
+    v8::Handle<v8::Function> holder = function->NewHandle();
+
+$if ARITY == 0 [[
+    holder->Call(holder, 0, NULL);
+]] $else [[
+    v8::Handle<v8::Value> args[] = {
+$for ARG [[
+
+        ConvertToV8(isolate, a$(ARG)),
+]]
+
+    };
+    holder->Call(holder, arraysize(args), args);
+]]
+
+  }
+};
+
+]]
+
+}  // namespace internal
+
+template<typename Sig>
+struct Converter<base::Callback<Sig> > {
+  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+                                    const base::Callback<Sig>& val) {
+    return CreateFunctionTemplate(isolate, val)->GetFunction();
+  }
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
+                     base::Callback<Sig>* out) {
+    if (!val->IsFunction())
+      return false;
+
+    internal::SafeV8Function function(
+        new RefCountedPersistent<v8::Function>(val));
+    *out = base::Bind(&internal::V8FunctionInvoker<Sig>::Go, isolate, function);
+    return true;
+  }
+};
+
+}  // namespace mate

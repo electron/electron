@@ -56,7 +56,7 @@ class ScopedPersistent {
   v8::Handle<T> NewHandle(v8::Isolate* isolate) const {
     if (handle_.IsEmpty())
       return v8::Local<T>();
-    return v8::Local<T>::New(isolate, handle_);
+    return MATE_PERSISTENT_TO_LOCAL(T, isolate, handle_);
   }
 
   template<typename P, typename C>
