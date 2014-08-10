@@ -35,14 +35,14 @@ class ScopedPersistent {
   void reset(v8::Isolate* isolate, v8::Handle<T> handle) {
     if (!handle.IsEmpty()) {
       isolate_ = isolate;
-      handle_.Reset(isolate, handle);
+      MATE_PERSISTENT_ASSIGN(T, isolate, handle_, handle);
     } else {
       reset();
     }
   }
 
   void reset() {
-    handle_.Reset();
+    MATE_PERSISTENT_RESET(handle_);
   }
 
   bool IsEmpty() const {
@@ -59,10 +59,9 @@ class ScopedPersistent {
     return v8::Local<T>::New(isolate, handle_);
   }
 
-  template<typename P>
-  void SetWeak(P* parameter,
-               typename v8::WeakCallbackData<T, P>::Callback callback) {
-    handle_.SetWeak(parameter, callback);
+  template<typename P, typename C>
+  void SetWeak(P* parameter, C callback) {
+    MATE_PERSISTENT_SET_WEAK(handle_, parameter, callback);
   }
 
   v8::Isolate* isolate() const { return isolate_; }
@@ -76,11 +75,13 @@ class ScopedPersistent {
       return GetIsolate(object_handle->CreationContext());
     return GetIsolate();
   }
+#if NODE_VERSION_AT_LEAST(0, 11, 0)
   v8::Isolate* GetIsolate(v8::Handle<v8::Context> context_handle) const {
     if (!context_handle.IsEmpty())
       return context_handle->GetIsolate();
     return GetIsolate();
   }
+#endif
   v8::Isolate* GetIsolate(
       v8::Handle<v8::ObjectTemplate> template_handle) const {
     return GetIsolate();

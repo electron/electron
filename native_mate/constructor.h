@@ -126,7 +126,7 @@ class Constructor {
 
   Constructor(const base::StringPiece& name) : name_(name) {}
   virtual ~Constructor() {
-    constructor_.Reset();
+    MATE_PERSISTENT_RESET(constructor_);
   }
 
   v8::Handle<v8::FunctionTemplate> GetFunctionTemplate(
@@ -136,7 +136,8 @@ class Constructor {
           isolate, base::Bind(&Constructor::New, factory));
       constructor->InstanceTemplate()->SetInternalFieldCount(1);
       constructor->SetClassName(StringToV8(isolate, name_));
-      constructor_.Reset(isolate, constructor);
+      MATE_PERSISTENT_ASSIGN(v8::FunctionTemplate, isolate, constructor_,
+                             constructor);
     }
 
     return MATE_PERSISTENT_TO_LOCAL(
@@ -144,9 +145,8 @@ class Constructor {
   }
 
  private:
-  static void New(const WrappableFactoryFunction& factory,
-                  v8::Isolate* isolate,
-                  Arguments* args) {
+  static MATE_METHOD_RETURN_TYPE New(const WrappableFactoryFunction& factory,
+                                     v8::Isolate* isolate, Arguments* args) {
     Wrappable* object = internal::InvokeFactory(args, factory);
     if (object)
       object->Wrap(isolate, args->GetThis());
