@@ -16,7 +16,7 @@ void ObjectLifeMonitor::BindTo(v8::Isolate* isolate,
   target->SetHiddenValue(MATE_STRING_NEW(isolate, "destructor"), destructor);
 
   ObjectLifeMonitor* olm = new ObjectLifeMonitor();
-  olm->handle_.reset(target);
+  olm->handle_.reset(isolate, target);
   olm->handle_.SetWeak(olm, WeakCallback);
 }
 
