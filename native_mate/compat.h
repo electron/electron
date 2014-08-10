@@ -38,6 +38,7 @@
   v8::Integer::NewFromUnsigned(isolate, data)
 #define MATE_EXTERNAL_NEW(isolate, data) v8::External::New(isolate, data)
 #define MATE_BOOLEAN_NEW(isolate, data) v8::Boolean::New(isolate, data)
+#define MATE_OBJECT_NEW(isolate) v8::Object::New(isolate)
 
 #define MATE_SET_INTERNAL_FIELD_POINTER(object, index, value) \
     object->SetAlignedPointerInInternalField(index, value)
@@ -95,6 +96,7 @@
   v8::Integer::NewFromUnsigned(data)
 #define MATE_EXTERNAL_NEW(isolate, data) v8::External::New(data)
 #define MATE_BOOLEAN_NEW(isolate, data) v8::Boolean::New(data)
+#define MATE_OBJECT_NEW(isolate) v8::Object::New()
 
 #define MATE_SET_INTERNAL_FIELD_POINTER(object, index, value) \
     object->SetPointerInInternalField(index, value)
