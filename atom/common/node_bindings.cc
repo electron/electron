@@ -7,13 +7,13 @@
 #include <string>
 #include <vector>
 
-#include "atom/common/browser_v8_locker.h"
 #include "base/command_line.h"
 #include "base/base_paths.h"
 #include "base/files/file_path.h"
 #include "base/message_loop/message_loop.h"
 #include "base/path_service.h"
 #include "content/public/browser/browser_thread.h"
+#include "native_mate/locker.h"
 
 #if defined(OS_WIN)
 #include "base/strings/utf_string_conversions.h"
@@ -246,7 +246,7 @@ void NodeBindings::UvRunOnce() {
   node::Environment* env = uv_env() ? uv_env() : global_env;
 
   // Use Locker in browser process.
-  BrowserV8Locker locker(env->isolate());
+  mate::Locker locker(env->isolate());
   v8::HandleScope handle_scope(env->isolate());
 
   // Enter node context while dealing with uv events.

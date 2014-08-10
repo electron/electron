@@ -7,10 +7,9 @@
 #include <string>
 
 #include "atom/common/atom_version.h"
-#include "atom/common/native_mate_converters/function_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
-#include "base/callback.h"
 #include "base/logging.h"
+#include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"

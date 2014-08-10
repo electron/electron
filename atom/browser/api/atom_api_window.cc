@@ -6,10 +6,8 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_window.h"
-#include "atom/common/native_mate_converters/function_converter.h"
-#include "base/bind.h"
-#include "base/callback.h"
 #include "content/public/browser/render_process_host.h"
+#include "native_mate/callback.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/point.h"
