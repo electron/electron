@@ -6,11 +6,13 @@
 
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/atom_url_request_context_getter.h"
 #include "atom/browser/window_list.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/resource_dispatcher_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -52,6 +54,12 @@ net::URLRequestContextGetter* AtomBrowserClient::CreateRequestContext(
     content::ProtocolHandlerScopedVector protocol_interceptors) {
   return static_cast<AtomBrowserContext*>(browser_context)->
       CreateRequestContext(protocol_handlers);
+}
+
+void AtomBrowserClient::ResourceDispatcherHostCreated() {
+  resource_dispatcher_delegate_.reset(new AtomResourceDispatcherHostDelegate);
+  content::ResourceDispatcherHost::Get()->SetDelegate(
+      resource_dispatcher_delegate_.get());
 }
 
 void AtomBrowserClient::OverrideWebkitPrefs(
