@@ -28,7 +28,9 @@ namespace brightray {
 
 namespace {
 
-const char kChromeUIDevToolsURL[] = "chrome-devtools://devtools/devtools.html?can_dock=true";
+const char kChromeUIDevToolsURL[] = "chrome-devtools://devtools/devtools.html?"
+                                    "can_dock=true&&"
+                                    "experiments=true";
 const char kDevToolsBoundsPref[] = "brightray.devtools.bounds";
 
 const char kFrontendHostId[] = "id";
