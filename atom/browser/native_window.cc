@@ -45,8 +45,6 @@
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/codec/png_codec.h"
-#include "ui/gfx/image/image.h"
-#include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
@@ -70,9 +68,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
   options.Get(switches::kFrame, &has_frame_);
 
   // Read icon before window is created.
-  gfx::ImageSkia icon;
-  if (options.Get(switches::kIcon, &icon))
-    icon_.reset(new gfx::Image(icon));
+  options.Get(switches::kIcon, &icon_);
 
   // Read iframe security before any navigation.
   options.Get(switches::kNodeIntegration, &node_integration_);

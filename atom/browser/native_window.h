@@ -21,6 +21,7 @@
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
 #include "native_mate/scoped_persistent.h"
+#include "ui/gfx/image/image_skia.h"
 
 struct WebPreferences;
 
@@ -34,7 +35,6 @@ class WebContents;
 }
 
 namespace gfx {
-class Image;
 class Point;
 class Rect;
 class Size;
@@ -252,7 +252,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   bool has_frame_;
 
   // Window icon.
-  scoped_ptr<gfx::Image> icon_;
+  gfx::ImageSkia icon_;
 
  private:
   // Schedule a notification unresponsive event.

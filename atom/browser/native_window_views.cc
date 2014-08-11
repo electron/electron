@@ -28,8 +28,6 @@
 #include "ui/aura/window.h"
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/hit_test.h"
-#include "ui/gfx/image/image.h"
-#include "ui/gfx/image/image_skia.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/controls/webview/webview.h"
@@ -492,10 +490,7 @@ bool NativeWindowViews::ShouldHandleSystemCommands() const {
 }
 
 gfx::ImageSkia NativeWindowViews::GetWindowAppIcon() {
-  if (icon_)
-    return *(icon_->ToImageSkia());
-  else
-    return gfx::ImageSkia();
+  return icon_;
 }
 
 gfx::ImageSkia NativeWindowViews::GetWindowIcon() {
