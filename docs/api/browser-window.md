@@ -18,6 +18,9 @@ win.show();
 You can also create a window without chrome by using
 [Frameless Window](frameless-window.md) API.
 
+Security strategy of web pages showed by `BrowserWindow` is a bit different from
+normal browsers, see [Web Security](web-security.md) for more.
+
 ## Class: BrowserWindow
 
 `BrowserWindow` is an
