@@ -4,6 +4,8 @@
 
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 
+#include <string>
+
 #include "base/logging.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/resource_request_info.h"
