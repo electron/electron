@@ -2,17 +2,11 @@
 
 ## Prerequisites
 
-* Windows 8
+* Windows 2008 at least
 * Visual Studio 2013
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
 * 32bit [node.js](http://nodejs.org/)
 * [git](http://git-scm.com)
-
-If you are using Visual Studio 2013 __Express__ then you also need following
-softwares:
-
-* [WDK](http://www.microsoft.com/en-us/download/details.aspx?id=11800)
-  * `Build Environments` is required.
 
 The instructions below are executed under [cygwin](http://www.cygwin.com),
 but it's not a requirement, you can also build atom-shell under the Windows
