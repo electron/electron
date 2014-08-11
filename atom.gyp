@@ -636,7 +636,10 @@
                 # Gyp action requires a output file, add a fake one here.
                 '<(PRODUCT_DIR)/dummy_file',
               ],
-              'action': [ 'strip', '<@(_inputs)' ],
+              'action': [
+                'tools/posix/strip.sh',
+                '<@(_inputs)',
+              ],
             },
           ],
         }],  # OS=="linux"
