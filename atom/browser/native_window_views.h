@@ -16,7 +16,6 @@
 
 namespace views {
 class UnhandledKeyboardEventHandler;
-class Widget;
 }
 
 namespace atom {

@@ -27,6 +27,8 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
+#include "brightray/browser/inspectable_web_contents.h"
+#include "brightray/browser/inspectable_web_contents_view.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/invalidate_type.h"
 #include "content/public/browser/navigation_entry.h"
@@ -48,8 +50,6 @@
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
-#include "vendor/brightray/browser/inspectable_web_contents.h"
-#include "vendor/brightray/browser/inspectable_web_contents_view.h"
 #include "webkit/common/webpreferences.h"
 
 using content::NavigationEntry;

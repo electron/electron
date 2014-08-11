@@ -9,20 +9,18 @@
 #include <string>
 #include <vector>
 
-#include "base/basictypes.h"
+#include "atom/browser/native_window_observer.h"
+#include "atom/browser/ui/accelerator_util.h"
 #include "base/cancelable_callback.h"
-#include "base/compiler_specific.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
-#include "atom/browser/native_window_observer.h"
-#include "atom/browser/ui/accelerator_util.h"
+#include "brightray/browser/default_web_contents_delegate.h"
+#include "brightray/browser/inspectable_web_contents_delegate.h"
+#include "brightray/browser/inspectable_web_contents_impl.h"
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
 #include "native_mate/scoped_persistent.h"
-#include "vendor/brightray/browser/default_web_contents_delegate.h"
-#include "vendor/brightray/browser/inspectable_web_contents_delegate.h"
-#include "vendor/brightray/browser/inspectable_web_contents_impl.h"
 
 struct WebPreferences;
 
