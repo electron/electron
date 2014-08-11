@@ -120,6 +120,11 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   shell_ = shell;
 }
 
+// Enable the window to be larger than screen.
+- (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
+  return frameRect;
+}
+
 - (IBAction)reload:(id)sender {
   shell_->GetWebContents()->GetController().ReloadIgnoringCache(false);
 }
