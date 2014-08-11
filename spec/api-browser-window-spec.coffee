@@ -79,6 +79,18 @@ describe 'browser-window module', ->
       assert.equal after[0], size[0]
       assert.equal after[1], size[1]
 
+    it 'can set the window larger than screen', ->
+      # No way to reliably set size when window has not been shown on Linux.
+      return if process.platform is 'linux'
+
+      size = require('screen').getPrimaryDisplay().size
+      size.width += 100
+      size.height += 100
+      w.setSize size.width, size.height
+      after = w.getSize()
+      assert.equal after[0], size.width
+      assert.equal after[1], size.height
+
   describe 'BrowserWindow.setContentSize(width, height)', ->
     it 'sets the content size', ->
       # No way to reliably set size when window has not been shown on Linux.
