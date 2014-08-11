@@ -54,8 +54,9 @@ normal browsers, see [Web Security](web-security.md) for more.
   * `show` Boolean - Whether window should be shown when created
   * `frame` Boolean - Specify `false` to create a
     [Frameless Window](frameless-window.md)
-  * `node-integration` String - Can be `all`, `except-iframe`,
-    `manual-enable-iframe` or `disable`.
+  * `node-integration` String - Default value is `except-iframe`, can also be
+    `all`, `manual-enable-iframe` or `disable`, see
+     [Web Security](web-security.md) for more informations.
   * `accept-first-mouse` Boolean - Whether the web view accepts a single
      mouse-down event that simultaneously activates the window
   * `auto-hide-menu-bar` Boolean - Auto hide the menu bar unless the `Alt`
@@ -79,35 +80,6 @@ normal browsers, see [Web Security](web-security.md) for more.
 Creates a new `BrowserWindow` with native properties set by the `options`.
 Usually you only need to set the `width` and `height`, other properties will
 have decent default values.
-
-By default the `node-integration` option is `except-iframe`, which means node
-integration is disabled in all iframes, . You can also set it to `all`, with
-which node integration is available to the main page and all its iframes, or
-`manual-enable-iframe`, which is like `except-iframe`, but would enable iframes
-whose name is suffixed by `-enable-node-integration`. And setting to `disable`
-would disable the node integration in both the main page and its iframes.
-
-An example of enable node integration in iframe with `node-integration` set to
-`manual-enable-iframe`:
-
-```html
-<!-- iframe with node integration enabled -->
-<iframe name="gh-enable-node-integration" src="https://github.com"></iframe>
-
-<!-- iframe with node integration disabled -->
-<iframe src="http://jandan.net"></iframe>
-```
-
-And in atom-shell, the security limitation of iframe is stricter than normal
-browser, by default iframe is sandboxed with all permissions except the
-`allow-same-origin`, which means iframe could not access parent's js context.
-
-If you want to enable things like `parent.window.process.exit()` in iframe,
-you should explicitly set `sandbox` to `none`:
-
-```html
-<iframe sandbox="none" src="https://github.com"></iframe>
-```
 
 ### Event: 'page-title-updated'
 
