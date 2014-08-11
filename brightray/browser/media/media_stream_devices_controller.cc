@@ -47,21 +47,6 @@ MediaStreamDevicesController::~MediaStreamDevicesController() {
 }
 
 bool MediaStreamDevicesController::TakeAction() {
-  // Tab capture is allowed for extensions only and infobar is not shown for
-  // extensions.
-  if (request_.audio_type == content::MEDIA_TAB_AUDIO_CAPTURE ||
-      request_.video_type == content::MEDIA_TAB_VIDEO_CAPTURE) {
-    Deny();
-    return true;
-  }
-
-  // Deny the request if the security origin is empty, this happens with
-  // file access without |--allow-file-access-from-files| flag.
-  if (request_.security_origin.is_empty()) {
-    Deny();
-    return true;
-  }
-
   // Deny the request if there is no device attached to the OS.
   if (!HasAnyAvailableDevice()) {
     Deny();
