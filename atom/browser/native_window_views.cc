@@ -114,7 +114,12 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
       menu_bar_alt_pressed_(false),
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
       use_content_size_(false),
-      resizable_(true) {
+      resizable_(true),
+      // We need to set a default maximum window size here otherwise Windows
+      // will not allow us to resize the window larger than scree.
+      // Setting directly to INT_MAX somehow doesn't work, so we just devide
+      // by 10, which should still be large enough.
+      maximum_size_(INT_MAX / 10, INT_MAX / 10) {
   options.Get(switches::kResizable, &resizable_);
   options.Get(switches::kTitle, &title_);
   options.Get(switches::kAutoHideMenuBar, &menu_bar_autohide_);
