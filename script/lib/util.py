@@ -19,10 +19,12 @@ def tempdir(prefix=''):
   atexit.register(shutil.rmtree, directory)
   return directory
 
+
 def enable_verbose_execute():
   print 'Running in verbose mode'
   global verbose_mode
   verbose_mode = True
+
 
 @contextlib.contextmanager
 def scoped_cwd(path):

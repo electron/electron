@@ -34,6 +34,7 @@ def main():
   touch_config_gypi()
   update_atom_shell()
 
+
 def parse_args():
   parser = argparse.ArgumentParser(description='Bootstrap this project')
   parser.add_argument('-u', '--url',
@@ -46,6 +47,7 @@ def parse_args():
                       action='store_true',
                       help='Prints the output of the subprocesses')
   return parser.parse_args()
+
 
 def update_submodules():
   execute(['git', 'submodule', 'sync'])
