@@ -5,7 +5,7 @@ import os
 import sys
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, NODE_VERSION
-from lib.util import execute, scoped_cwd
+from lib.util import execute, scoped_cwd, enable_verbose_execute
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -18,6 +18,8 @@ def main():
   os.chdir(SOURCE_ROOT)
 
   args = parse_args()
+  if args.verbose:
+    enable_verbose_execute()
   update_submodules()
   update_node_modules('.')
   update_atom_modules('atom/browser/default_app')
@@ -32,7 +34,6 @@ def main():
   touch_config_gypi()
   update_atom_shell()
 
-
 def parse_args():
   parser = argparse.ArgumentParser(description='Bootstrap this project')
   parser.add_argument('-u', '--url',
@@ -41,8 +42,10 @@ def parse_args():
                       'libchromiumcontent\'s script/upload script',
                       default=BASE_URL,
                       required=False)
+  parser.add_argument('-v', '--verbose',
+                      action='store_true',
+                      help='Prints the output of the subprocesses')
   return parser.parse_args()
-
 
 def update_submodules():
   execute(['git', 'submodule', 'sync'])

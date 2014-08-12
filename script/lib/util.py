@@ -12,12 +12,17 @@ import urllib2
 import os
 import zipfile
 
+verbose_mode = False
 
 def tempdir(prefix=''):
   directory = tempfile.mkdtemp(prefix=prefix)
   atexit.register(shutil.rmtree, directory)
   return directory
 
+def enable_verbose_execute():
+  print 'Running in verbose mode'
+  global verbose_mode
+  verbose_mode = True
 
 @contextlib.contextmanager
 def scoped_cwd(path):
@@ -126,7 +131,10 @@ def safe_mkdir(path):
 
 def execute(argv):
   try:
-    return subprocess.check_output(argv, stderr=subprocess.STDOUT)
+    output = subprocess.check_output(argv, stderr=subprocess.STDOUT)
+    if verbose_mode:
+      print output
+    return output
   except subprocess.CalledProcessError as e:
     print e.output
     raise e
