@@ -34,6 +34,7 @@ class App : public mate::EventEmitter,
   virtual void OnActivateWithNoOpenWindows() OVERRIDE;
   virtual void OnWillFinishLaunching() OVERRIDE;
   virtual void OnFinishLaunching() OVERRIDE;
+  virtual std::string GetDataPath();
 
   // mate::Wrappable implementations:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
