@@ -313,7 +313,7 @@ void NativeWindowViews::SetResizable(bool resizable) {
     if (resizable)
       style |= WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME;
     else
-      style &= ~(WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME);
+      style = (style & ~(WS_MAXIMIZEBOX | WS_THICKFRAME)) | WS_MINIMIZEBOX;
     ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, style);
   }
 #endif
