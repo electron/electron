@@ -78,9 +78,16 @@ std::string App::GetDataPath() {
   CHECK(PathService::Get(base::DIR_APP_DATA, &path));
 #endif
 
-  base::FilePath dataPath = path.Append(base::FilePath::FromUTF8Unsafe(Browser::Get()->GetName()));
+  base::FilePath data_path = path.Append(
+    base::FilePath::FromUTF8Unsafe(Browser::Get()->GetName()));
 
-  return dataPath.value();
+  // FilePath.value() returns a std::wstring in windows and 
+  // std::string on other platforms.
+  std::vector<char> writable(data_path.value().begin(),
+    data_path.value().end());
+  writable.push_back('\0');
+
+  return &writable[0];
 }
 
 mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
