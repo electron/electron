@@ -207,11 +207,13 @@ def download_libchromiumcontent_symbols(url):
 
 
 def create_symbols():
+  directory = 'Atom-Shell.breakpad.syms'
+  rm_rf(os.path.join(OUT_DIR, directory))
+
   build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
   subprocess.check_output([sys.executable, build, '-c', 'Release',
                            '-t', 'atom_dump_symbols'])
 
-  directory = 'Atom-Shell.breakpad.syms'
   shutil.copytree(os.path.join(OUT_DIR, directory),
                   os.path.join(DIST_DIR, directory),
                   symlinks=True)
