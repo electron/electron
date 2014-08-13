@@ -28,4 +28,4 @@ class AtomAccessTokenStore : public content::AccessTokenStore {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_ATOWSER_ATOM_ACCESS_TOKEN_STORE_H_
+#endif  // ATOM_BROWSER_ATOM_ACCESS_TOKEN_STORE_H_
