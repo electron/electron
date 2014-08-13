@@ -156,6 +156,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         job_factory_factory_.Run(protocol_handlers_, protocol_interceptors_));
     if (user_job_factory) {
       storage_->set_job_factory(user_job_factory.release());
+      protocol_handlers_.clear();
+      protocol_interceptors_.weak_clear();
       return url_request_context_.get();
     }
 
