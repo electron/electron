@@ -5,6 +5,7 @@
 #include "atom/browser/api/atom_api_app.h"
 
 #include <string>
+#include <vector>
 
 #include "base/values.h"
 #include "base/command_line.h"
@@ -81,7 +82,7 @@ std::string App::GetDataPath() {
   base::FilePath data_path = path.Append(
     base::FilePath::FromUTF8Unsafe(Browser::Get()->GetName()));
 
-  // FilePath.value() returns a std::wstring in windows and 
+  // FilePath.value() returns a std::wstring in windows and
   // std::string on other platforms.
   std::vector<char> writable(data_path.value().begin(),
     data_path.value().end());
