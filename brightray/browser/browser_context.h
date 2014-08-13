@@ -11,6 +11,10 @@
 class PrefRegistrySimple;
 class PrefService;
 
+namespace browser_context {
+class URLRequestJobFactory;
+}
+
 namespace brightray {
 
 class DownloadManagerDelegate;
@@ -37,6 +41,12 @@ class BrowserContext : public content::BrowserContext {
   // Subclasses should override this to provide a custom NetworkDelegate
   // implementation.
   virtual scoped_ptr<NetworkDelegate> CreateNetworkDelegate();
+
+  // Subclasses should override this to provide a custom URLRequestJobFactory
+  // implementation.
+  virtual scoped_ptr<net::URLRequestJobFactory> CreateURLRequestJobFactory(
+      const content::ProtocolHandlerMap& protocol_handlers,
+      const content::ProtocolHandlerScopedVector& protocol_interceptors);
 
   virtual base::FilePath GetPath() const OVERRIDE;
 

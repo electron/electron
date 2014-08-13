@@ -20,6 +20,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_context.h"
 #include "content/public/browser/storage_partition.h"
+#include "net/url_request/url_request_job_factory_impl.h"
 
 #if defined(OS_LINUX)
 #include "base/nix/xdg_util.h"
@@ -109,6 +110,7 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
       BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
       BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::FILE),
       base::Bind(&BrowserContext::CreateNetworkDelegate, base::Unretained(this)),
+      base::Bind(&BrowserContext::CreateURLRequestJobFactory, base::Unretained(this)),
       protocol_handlers,
       protocol_interceptors.Pass());
   resource_context_->set_url_request_context_getter(url_request_getter_.get());
@@ -117,6 +119,12 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
 
 scoped_ptr<NetworkDelegate> BrowserContext::CreateNetworkDelegate() {
   return make_scoped_ptr(new NetworkDelegate).Pass();
+}
+
+scoped_ptr<net::URLRequestJobFactory> BrowserContext::CreateURLRequestJobFactory(
+    const content::ProtocolHandlerMap& protocol_handlers,
+    const content::ProtocolHandlerScopedVector& protocol_interceptors) {
+  return scoped_ptr<net::URLRequestJobFactory>();
 }
 
 base::FilePath BrowserContext::GetPath() const {

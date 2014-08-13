@@ -45,12 +45,14 @@ URLRequestContextGetter::URLRequestContextGetter(
     base::MessageLoop* io_loop,
     base::MessageLoop* file_loop,
     base::Callback<scoped_ptr<NetworkDelegate>(void)> network_delegate_factory,
+    URLRequestJobFactoryFactory job_factory_factory,
     content::ProtocolHandlerMap* protocol_handlers,
     content::ProtocolHandlerScopedVector protocol_interceptors)
     : base_path_(base_path),
       io_loop_(io_loop),
       file_loop_(file_loop),
       network_delegate_factory_(network_delegate_factory),
+      job_factory_factory_(job_factory_factory),
       protocol_interceptors_(protocol_interceptors.Pass()) {
   // Must first be created on the UI thread.
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
@@ -148,6 +150,14 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     net::HttpCache* main_cache = new net::HttpCache(
         network_session_params, main_backend);
     storage_->set_http_transaction_factory(main_cache);
+
+    // Give user a chance to create their own job factory.
+    scoped_ptr<net::URLRequestJobFactory> user_job_factory(
+        job_factory_factory_.Run(protocol_handlers_, protocol_interceptors_));
+    if (user_job_factory) {
+      storage_->set_job_factory(user_job_factory.release());
+      return url_request_context_.get();
+    }
 
     scoped_ptr<net::URLRequestJobFactoryImpl> job_factory(
         new net::URLRequestJobFactoryImpl());
