@@ -25,6 +25,8 @@
 #include "base/nix/xdg_util.h"
 #endif
 
+using content::BrowserThread;
+
 namespace brightray {
 
 class BrowserContext::ResourceContext : public content::ResourceContext {
@@ -79,7 +81,7 @@ void BrowserContext::Initialize() {
   base::PrefServiceFactory prefs_factory;
   prefs_factory.SetUserPrefsFile(prefs_path,
       JsonPrefStore::GetTaskRunnerForFile(
-          prefs_path, content::BrowserThread::GetBlockingPool()));
+          prefs_path, BrowserThread::GetBlockingPool()));
 
   auto registry = make_scoped_refptr(new PrefRegistrySimple);
   RegisterInternalPrefs(registry);
@@ -89,9 +91,9 @@ void BrowserContext::Initialize() {
 }
 
 BrowserContext::~BrowserContext() {
-  content::BrowserThread::DeleteSoon(content::BrowserThread::IO,
-                                     FROM_HERE,
-                                     resource_context_.release());
+  BrowserThread::DeleteSoon(BrowserThread::IO,
+                            FROM_HERE,
+                            resource_context_.release());
 }
 
 void BrowserContext::RegisterInternalPrefs(PrefRegistrySimple* registry) {
@@ -102,14 +104,10 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
     content::ProtocolHandlerMap* protocol_handlers,
     content::ProtocolHandlerScopedVector protocol_interceptors) {
   DCHECK(!url_request_getter_);
-  auto io_loop = content::BrowserThread::UnsafeGetMessageLoopForThread(
-      content::BrowserThread::IO);
-  auto file_loop = content::BrowserThread::UnsafeGetMessageLoopForThread(
-      content::BrowserThread::FILE);
   url_request_getter_ = new URLRequestContextGetter(
       GetPath(),
-      io_loop,
-      file_loop,
+      BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
+      BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::FILE),
       base::Bind(&BrowserContext::CreateNetworkDelegate, base::Unretained(this)),
       protocol_handlers,
       protocol_interceptors.Pass());

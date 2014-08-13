@@ -36,6 +36,8 @@
 #include "net/url_request/url_request_job_factory_impl.h"
 #include "webkit/browser/quota/special_storage_policy.h"
 
+using content::BrowserThread;
+
 namespace brightray {
 
 URLRequestContextGetter::URLRequestContextGetter(
@@ -51,7 +53,7 @@ URLRequestContextGetter::URLRequestContextGetter(
       network_delegate_factory_(network_delegate_factory),
       protocol_interceptors_(protocol_interceptors.Pass()) {
   // Must first be created on the UI thread.
-  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
+  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 
   std::swap(protocol_handlers_, *protocol_handlers);
 
@@ -67,7 +69,7 @@ net::HostResolver* URLRequestContextGetter::host_resolver() {
 }
 
 net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
-  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
+  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
 
   if (!url_request_context_.get()) {
     url_request_context_.reset(new net::URLRequestContext());
@@ -117,8 +119,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
             net::CACHE_BACKEND_DEFAULT,
             cache_path,
             0,
-            content::BrowserThread::GetMessageLoopProxyForThread(
-                content::BrowserThread::CACHE));
+            BrowserThread::GetMessageLoopProxyForThread(BrowserThread::CACHE));
 
     net::HttpNetworkSession::Params network_session_params;
     network_session_params.cert_verifier =
@@ -163,7 +164,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     job_factory->SetProtocolHandler(
         content::kFileScheme,
         new net::FileProtocolHandler(
-            content::BrowserThread::GetBlockingPool()->
+            BrowserThread::GetBlockingPool()->
                 GetTaskRunnerWithShutdownBehavior(
                     base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
 
@@ -187,8 +188,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
 scoped_refptr<base::SingleThreadTaskRunner>
     URLRequestContextGetter::GetNetworkTaskRunner() const {
-  return content::BrowserThread::GetMessageLoopProxyForThread(
-      content::BrowserThread::IO);
+  return BrowserThread::GetMessageLoopProxyForThread(BrowserThread::IO);
 }
 
 }  // namespace brightray
