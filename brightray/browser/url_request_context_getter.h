@@ -26,8 +26,8 @@ namespace brightray {
 class NetworkDelegate;
 
 typedef base::Callback<scoped_ptr<net::URLRequestJobFactory>(
-    const content::ProtocolHandlerMap& protocol_handlers,
-    content::ProtocolHandlerScopedVector protocol_interceptors)> URLRequestJobFactoryFactory;
+    content::ProtocolHandlerMap* protocol_handlers,
+    content::ProtocolHandlerScopedVector* protocol_interceptors)> URLRequestJobFactoryFactory;
 
 class URLRequestContextGetter : public net::URLRequestContextGetter {
  public:

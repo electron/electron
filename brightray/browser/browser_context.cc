@@ -122,8 +122,8 @@ scoped_ptr<NetworkDelegate> BrowserContext::CreateNetworkDelegate() {
 }
 
 scoped_ptr<net::URLRequestJobFactory> BrowserContext::CreateURLRequestJobFactory(
-    const content::ProtocolHandlerMap& protocol_handlers,
-    content::ProtocolHandlerScopedVector protocol_interceptors) {
+    content::ProtocolHandlerMap* protocol_handlers,
+    content::ProtocolHandlerScopedVector* protocol_interceptors) {
   return scoped_ptr<net::URLRequestJobFactory>();
 }
 
