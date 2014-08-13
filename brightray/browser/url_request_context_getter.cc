@@ -153,7 +153,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     // Give user a chance to create their own job factory.
     scoped_ptr<net::URLRequestJobFactory> user_job_factory(
-        job_factory_factory_.Run(protocol_handlers_, protocol_interceptors_));
+        job_factory_factory_.Run(protocol_handlers_, protocol_interceptors_.Pass()));
     if (user_job_factory) {
       storage_->set_job_factory(user_job_factory.release());
       protocol_handlers_.clear();

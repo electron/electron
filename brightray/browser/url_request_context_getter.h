@@ -27,7 +27,7 @@ class NetworkDelegate;
 
 typedef base::Callback<scoped_ptr<net::URLRequestJobFactory>(
     const content::ProtocolHandlerMap& protocol_handlers,
-    const content::ProtocolHandlerScopedVector& protocol_interceptors)> URLRequestJobFactoryFactory;
+    content::ProtocolHandlerScopedVector protocol_interceptors)> URLRequestJobFactoryFactory;
 
 class URLRequestContextGetter : public net::URLRequestContextGetter {
  public:

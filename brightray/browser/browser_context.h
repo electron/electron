@@ -51,7 +51,7 @@ class BrowserContext : public content::BrowserContext {
   // implementation.
   virtual scoped_ptr<net::URLRequestJobFactory> CreateURLRequestJobFactory(
       const content::ProtocolHandlerMap& protocol_handlers,
-      const content::ProtocolHandlerScopedVector& protocol_interceptors);
+      content::ProtocolHandlerScopedVector protocol_interceptors);
 
   virtual base::FilePath GetPath() const OVERRIDE;
 
