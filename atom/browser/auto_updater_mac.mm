@@ -48,11 +48,13 @@ void AutoUpdater::SetFeedURL(const std::string& feed) {
     [[g_updater rac_valuesForKeyPath:@"state" observer:g_updater]
       subscribeNext:^(NSNumber *stateNumber) {
         int state = [stateNumber integerValue];
-        if (state == SQRLUpdaterStateCheckingForUpdate) {
-          delegate->OnCheckingForUpdate();
-        } else if (state == SQRLUpdaterStateDownloadingUpdate) {
-          delegate->OnUpdateAvailable();
-        }
+        // Dispatching the event on main thread.
+        dispatch_async(dispatch_get_main_queue(), ^{
+          if (state == SQRLUpdaterStateCheckingForUpdate)
+            delegate->OnCheckingForUpdate();
+          else if (state == SQRLUpdaterStateDownloadingUpdate)
+            delegate->OnUpdateAvailable();
+        });
     }];
   }
 }
@@ -89,4 +91,5 @@ void AutoUpdater::CheckForUpdates() {
         delegate->OnError(base::SysNSStringToUTF8(error.localizedDescription));
       }];
 }
+
 }  // namespace auto_updater
