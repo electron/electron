@@ -4,6 +4,8 @@
 
 #include "atom/browser/atom_access_token_store.h"
 
+#include <utility>
+
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/atom_url_request_context_getter.h"
 
@@ -33,7 +35,14 @@ AtomAccessTokenStore::~AtomAccessTokenStore() {
 void AtomAccessTokenStore::LoadAccessTokens(
     const LoadAccessTokensCallbackType& callback) {
   AccessTokenSet access_token_set;
-  access_token_set[GURL(kGeolocationProviderUrl)];
+
+  // Equivelent to access_token_set[kGeolocationProviderUrl].
+  // Somehow base::string16 is causing compilation errors when used in a pair
+  // of std::map on Linux, this can work around it.
+  std::pair<GURL, base::string16> token_pair;
+  token_pair.first = GURL(kGeolocationProviderUrl);
+  access_token_set.insert(token_pair);
+
   callback.Run(access_token_set,
                AtomBrowserContext::Get()->url_request_context_getter());
 }
