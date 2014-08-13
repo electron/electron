@@ -7,7 +7,6 @@
 #include <utility>
 
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/net/atom_url_request_context_getter.h"
 
 #ifndef GOOGLEAPIS_API_KEY
 #define GOOGLEAPIS_API_KEY "AIzaSyAQfxPJiounkhOjODEO5ZieffeBv6yft2Q"

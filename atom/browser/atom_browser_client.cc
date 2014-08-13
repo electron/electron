@@ -9,7 +9,6 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/native_window.h"
-#include "atom/browser/net/atom_url_request_context_getter.h"
 #include "atom/browser/window_list.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -47,14 +46,6 @@ AtomBrowserClient::AtomBrowserClient()
 }
 
 AtomBrowserClient::~AtomBrowserClient() {
-}
-
-net::URLRequestContextGetter* AtomBrowserClient::CreateRequestContext(
-    content::BrowserContext* browser_context,
-    content::ProtocolHandlerMap* protocol_handlers,
-    content::ProtocolHandlerScopedVector protocol_interceptors) {
-  return static_cast<AtomBrowserContext*>(browser_context)->
-      CreateRequestContext(protocol_handlers);
 }
 
 void AtomBrowserClient::ResourceDispatcherHostCreated() {

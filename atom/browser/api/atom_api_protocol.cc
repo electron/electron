@@ -7,7 +7,6 @@
 #include "base/stl_util.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/adapter_request_job.h"
-#include "atom/browser/net/atom_url_request_context_getter.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "content/public/browser/browser_thread.h"
@@ -152,8 +151,8 @@ class CustomProtocolHandler : public ProtocolHandler {
 
 }  // namespace
 
-Protocol::Protocol() : job_factory_(
-    AtomBrowserContext::Get()->url_request_context_getter()->job_factory()) {
+Protocol::Protocol()
+    : job_factory_(AtomBrowserContext::Get()->job_factory()) {
 }
 
 Protocol::JsProtocolHandler Protocol::GetProtocolHandler(

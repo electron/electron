@@ -5,72 +5,55 @@
 #include "atom/browser/atom_browser_context.h"
 
 #include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/net/atom_url_request_context_getter.h"
+#include "atom/browser/net/atom_url_request_job_factory.h"
+#include "base/threading/sequenced_worker_pool.h"
+#include "base/threading/worker_pool.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/resource_context.h"
-#include "vendor/brightray/browser/network_delegate.h"
-
-namespace atom {
+#include "content/public/common/url_constants.h"
+#include "net/url_request/data_protocol_handler.h"
+#include "net/url_request/file_protocol_handler.h"
+#include "net/url_request/protocol_intercept_job_factory.h"
 
 using content::BrowserThread;
 
-class AtomResourceContext : public content::ResourceContext {
- public:
-  AtomResourceContext() : getter_(NULL) {}
-
-  void set_url_request_context_getter(AtomURLRequestContextGetter* getter) {
-    getter_ = getter;
-  }
-
- protected:
-  virtual net::HostResolver* GetHostResolver() OVERRIDE {
-    DCHECK(getter_);
-    return getter_->host_resolver();
-  }
-
-  virtual net::URLRequestContext* GetRequestContext() OVERRIDE {
-    DCHECK(getter_);
-    return getter_->GetURLRequestContext();
-  }
-
-  virtual bool AllowMicAccess(const GURL& origin) OVERRIDE {
-    return true;
-  }
-
-  virtual bool AllowCameraAccess(const GURL& origin) OVERRIDE {
-    return true;
-  }
-
- private:
-  AtomURLRequestContextGetter* getter_;
-
-  DISALLOW_COPY_AND_ASSIGN(AtomResourceContext);
-};
+namespace atom {
 
 AtomBrowserContext::AtomBrowserContext()
-    : resource_context_(new AtomResourceContext) {
+    : job_factory_(NULL) {
 }
 
 AtomBrowserContext::~AtomBrowserContext() {
 }
 
-AtomURLRequestContextGetter* AtomBrowserContext::CreateRequestContext(
-    content::ProtocolHandlerMap* protocol_handlers) {
-  DCHECK(!url_request_getter_);
-  url_request_getter_ = new AtomURLRequestContextGetter(
-      GetPath(),
-      BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
-      BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::FILE),
-      base::Bind(&AtomBrowserContext::CreateNetworkDelegate,
-                 base::Unretained(this)),
-      protocol_handlers);
+scoped_ptr<net::URLRequestJobFactory>
+AtomBrowserContext::CreateURLRequestJobFactory(
+    content::ProtocolHandlerMap* handlers,
+    content::ProtocolHandlerScopedVector* interceptors) {
+  job_factory_ = new AtomURLRequestJobFactory;
+  scoped_ptr<AtomURLRequestJobFactory> job_factory(job_factory_);
 
-  resource_context_->set_url_request_context_getter(url_request_getter_.get());
-  return url_request_getter_.get();
-}
+  for (content::ProtocolHandlerMap::iterator it = handlers->begin();
+       it != handlers->end(); ++it)
+    job_factory->SetProtocolHandler(it->first, it->second.release());
+  handlers->clear();
 
-content::ResourceContext* AtomBrowserContext::GetResourceContext() {
-  return resource_context_.get();
+  job_factory->SetProtocolHandler(
+      content::kDataScheme, new net::DataProtocolHandler);
+  job_factory->SetProtocolHandler(
+      content::kFileScheme, new net::FileProtocolHandler(
+          BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
+              base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
+
+  // Set up interceptors in the reverse order.
+  scoped_ptr<net::URLRequestJobFactory> top_job_factory =
+      job_factory.PassAs<net::URLRequestJobFactory>();
+  content::ProtocolHandlerScopedVector::reverse_iterator it;
+  for (it = interceptors->rbegin(); it != interceptors->rend(); ++it)
+    top_job_factory.reset(new net::ProtocolInterceptJobFactory(
+        top_job_factory.Pass(), make_scoped_ptr(*it)));
+  interceptors->weak_clear();
+
+  return top_job_factory.Pass();
 }
 
 // static

@@ -117,8 +117,6 @@
       'atom/browser/native_window_observer.h',
       'atom/browser/net/adapter_request_job.cc',
       'atom/browser/net/adapter_request_job.h',
-      'atom/browser/net/atom_url_request_context_getter.cc',
-      'atom/browser/net/atom_url_request_context_getter.h',
       'atom/browser/net/atom_url_request_job_factory.cc',
       'atom/browser/net/atom_url_request_job_factory.h',
       'atom/browser/net/url_request_string_job.cc',

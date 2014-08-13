@@ -5,13 +5,11 @@
 #ifndef ATOM_BROWSER_ATOM_BROWSER_CONTEXT_H_
 #define ATOM_BROWSER_ATOM_BROWSER_CONTEXT_H_
 
-#include "base/memory/scoped_ptr.h"
 #include "brightray/browser/browser_context.h"
 
 namespace atom {
 
-class AtomResourceContext;
-class AtomURLRequestContextGetter;
+class AtomURLRequestJobFactory;
 
 class AtomBrowserContext : public brightray::BrowserContext {
  public:
@@ -21,22 +19,16 @@ class AtomBrowserContext : public brightray::BrowserContext {
   // Returns the browser context singleton.
   static AtomBrowserContext* Get();
 
-  // Creates or returns the request context.
-  AtomURLRequestContextGetter* CreateRequestContext(
-      content::ProtocolHandlerMap*);
-
-  AtomURLRequestContextGetter* url_request_context_getter() const {
-    DCHECK(url_request_getter_);
-    return url_request_getter_.get();
-  }
+  AtomURLRequestJobFactory* job_factory() const { return job_factory_; }
 
  protected:
-  // content::BrowserContext implementations:
-  virtual content::ResourceContext* GetResourceContext() OVERRIDE;
+  // brightray::BrowserContext:
+  virtual scoped_ptr<net::URLRequestJobFactory> CreateURLRequestJobFactory(
+      content::ProtocolHandlerMap* handlers,
+      content::ProtocolHandlerScopedVector* interceptors) OVERRIDE;
 
  private:
-  scoped_ptr<AtomResourceContext> resource_context_;
-  scoped_refptr<AtomURLRequestContextGetter> url_request_getter_;
+  AtomURLRequestJobFactory* job_factory_;  // Weak reference.
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);
 };
