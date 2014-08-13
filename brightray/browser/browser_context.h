@@ -13,10 +13,6 @@
 class PrefRegistrySimple;
 class PrefService;
 
-namespace browser_context {
-class URLRequestJobFactory;
-}
-
 namespace brightray {
 
 class DownloadManagerDelegate;

@@ -7,7 +7,6 @@
 #include "browser/download_manager_delegate.h"
 #include "browser/inspectable_web_contents_impl.h"
 #include "browser/network_delegate.h"
-#include "browser/url_request_context_getter.h"
 #include "common/application_info.h"
 
 #include "base/environment.h"
@@ -20,7 +19,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_context.h"
 #include "content/public/browser/storage_partition.h"
-#include "net/url_request/url_request_job_factory_impl.h"
 
 #if defined(OS_LINUX)
 #include "base/nix/xdg_util.h"
