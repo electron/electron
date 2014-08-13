@@ -25,6 +25,7 @@ class AtomBrowserClient : public brightray::BrowserClient {
       content::ProtocolHandlerMap* protocol_handlers,
       content::ProtocolHandlerScopedVector protocol_interceptors) OVERRIDE;
   virtual void ResourceDispatcherHostCreated() OVERRIDE;
+  virtual content::AccessTokenStore* CreateAccessTokenStore() OVERRIDE;
   virtual void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
                                    const GURL& url,
                                    WebPreferences* prefs) OVERRIDE;

@@ -4,6 +4,7 @@
 
 #include "atom/browser/atom_browser_client.h"
 
+#include "atom/browser/atom_access_token_store.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
@@ -60,6 +61,10 @@ void AtomBrowserClient::ResourceDispatcherHostCreated() {
   resource_dispatcher_delegate_.reset(new AtomResourceDispatcherHostDelegate);
   content::ResourceDispatcherHost::Get()->SetDelegate(
       resource_dispatcher_delegate_.get());
+}
+
+content::AccessTokenStore* AtomBrowserClient::CreateAccessTokenStore() {
+  return new AtomAccessTokenStore;
 }
 
 void AtomBrowserClient::OverrideWebkitPrefs(
