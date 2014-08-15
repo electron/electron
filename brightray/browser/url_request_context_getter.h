@@ -25,6 +25,10 @@ namespace brightray {
 
 class NetworkDelegate;
 
+typedef base::Callback<scoped_ptr<net::URLRequestJobFactory>(
+    content::ProtocolHandlerMap* protocol_handlers,
+    content::ProtocolHandlerScopedVector* protocol_interceptors)> URLRequestJobFactoryFactory;
+
 class URLRequestContextGetter : public net::URLRequestContextGetter {
  public:
   URLRequestContextGetter(
@@ -32,6 +36,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
       base::MessageLoop* io_loop,
       base::MessageLoop* file_loop,
       base::Callback<scoped_ptr<NetworkDelegate>(void)>,
+      URLRequestJobFactoryFactory job_factory_factory,
       content::ProtocolHandlerMap* protocol_handlers,
       content::ProtocolHandlerScopedVector protocol_interceptors);
   virtual ~URLRequestContextGetter();
@@ -48,6 +53,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   base::MessageLoop* file_loop_;
 
   base::Callback<scoped_ptr<NetworkDelegate>(void)> network_delegate_factory_;
+  URLRequestJobFactoryFactory job_factory_factory_;
 
   scoped_ptr<net::ProxyConfigService> proxy_config_service_;
   scoped_ptr<NetworkDelegate> network_delegate_;

@@ -5,6 +5,8 @@
 #ifndef BRIGHTRAY_BROWSER_BROWSER_CONTEXT_H_
 #define BRIGHTRAY_BROWSER_BROWSER_CONTEXT_H_
 
+#include "browser/url_request_context_getter.h"
+
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/content_browser_client.h"
 
@@ -15,7 +17,6 @@ namespace brightray {
 
 class DownloadManagerDelegate;
 class NetworkDelegate;
-class URLRequestContextGetter;
 
 class BrowserContext : public content::BrowserContext {
  public:
@@ -28,6 +29,10 @@ class BrowserContext : public content::BrowserContext {
       content::ProtocolHandlerMap* protocol_handlers,
       content::ProtocolHandlerScopedVector protocol_interceptors);
 
+  net::URLRequestContextGetter* url_request_context_getter() const {
+    return url_request_getter_.get();
+  }
+
   PrefService* prefs() { return prefs_.get(); }
 
  protected:
@@ -37,6 +42,12 @@ class BrowserContext : public content::BrowserContext {
   // Subclasses should override this to provide a custom NetworkDelegate
   // implementation.
   virtual scoped_ptr<NetworkDelegate> CreateNetworkDelegate();
+
+  // Subclasses should override this to provide a custom URLRequestJobFactory
+  // implementation.
+  virtual scoped_ptr<net::URLRequestJobFactory> CreateURLRequestJobFactory(
+      content::ProtocolHandlerMap* protocol_handlers,
+      content::ProtocolHandlerScopedVector* protocol_interceptors);
 
   virtual base::FilePath GetPath() const OVERRIDE;
 

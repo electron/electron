@@ -7,7 +7,6 @@
 #include "browser/download_manager_delegate.h"
 #include "browser/inspectable_web_contents_impl.h"
 #include "browser/network_delegate.h"
-#include "browser/url_request_context_getter.h"
 #include "common/application_info.h"
 
 #include "base/environment.h"
@@ -24,6 +23,8 @@
 #if defined(OS_LINUX)
 #include "base/nix/xdg_util.h"
 #endif
+
+using content::BrowserThread;
 
 namespace brightray {
 
@@ -79,7 +80,7 @@ void BrowserContext::Initialize() {
   base::PrefServiceFactory prefs_factory;
   prefs_factory.SetUserPrefsFile(prefs_path,
       JsonPrefStore::GetTaskRunnerForFile(
-          prefs_path, content::BrowserThread::GetBlockingPool()));
+          prefs_path, BrowserThread::GetBlockingPool()));
 
   auto registry = make_scoped_refptr(new PrefRegistrySimple);
   RegisterInternalPrefs(registry);
@@ -89,9 +90,9 @@ void BrowserContext::Initialize() {
 }
 
 BrowserContext::~BrowserContext() {
-  content::BrowserThread::DeleteSoon(content::BrowserThread::IO,
-                                     FROM_HERE,
-                                     resource_context_.release());
+  BrowserThread::DeleteSoon(BrowserThread::IO,
+                            FROM_HERE,
+                            resource_context_.release());
 }
 
 void BrowserContext::RegisterInternalPrefs(PrefRegistrySimple* registry) {
@@ -102,15 +103,12 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
     content::ProtocolHandlerMap* protocol_handlers,
     content::ProtocolHandlerScopedVector protocol_interceptors) {
   DCHECK(!url_request_getter_);
-  auto io_loop = content::BrowserThread::UnsafeGetMessageLoopForThread(
-      content::BrowserThread::IO);
-  auto file_loop = content::BrowserThread::UnsafeGetMessageLoopForThread(
-      content::BrowserThread::FILE);
   url_request_getter_ = new URLRequestContextGetter(
       GetPath(),
-      io_loop,
-      file_loop,
+      BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
+      BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::FILE),
       base::Bind(&BrowserContext::CreateNetworkDelegate, base::Unretained(this)),
+      base::Bind(&BrowserContext::CreateURLRequestJobFactory, base::Unretained(this)),
       protocol_handlers,
       protocol_interceptors.Pass());
   resource_context_->set_url_request_context_getter(url_request_getter_.get());
@@ -119,6 +117,12 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
 
 scoped_ptr<NetworkDelegate> BrowserContext::CreateNetworkDelegate() {
   return make_scoped_ptr(new NetworkDelegate).Pass();
+}
+
+scoped_ptr<net::URLRequestJobFactory> BrowserContext::CreateURLRequestJobFactory(
+    content::ProtocolHandlerMap* protocol_handlers,
+    content::ProtocolHandlerScopedVector* protocol_interceptors) {
+  return scoped_ptr<net::URLRequestJobFactory>();
 }
 
 base::FilePath BrowserContext::GetPath() const {

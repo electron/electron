@@ -36,6 +36,8 @@
 #include "net/url_request/url_request_job_factory_impl.h"
 #include "webkit/browser/quota/special_storage_policy.h"
 
+using content::BrowserThread;
+
 namespace brightray {
 
 URLRequestContextGetter::URLRequestContextGetter(
@@ -43,15 +45,17 @@ URLRequestContextGetter::URLRequestContextGetter(
     base::MessageLoop* io_loop,
     base::MessageLoop* file_loop,
     base::Callback<scoped_ptr<NetworkDelegate>(void)> network_delegate_factory,
+    URLRequestJobFactoryFactory job_factory_factory,
     content::ProtocolHandlerMap* protocol_handlers,
     content::ProtocolHandlerScopedVector protocol_interceptors)
     : base_path_(base_path),
       io_loop_(io_loop),
       file_loop_(file_loop),
       network_delegate_factory_(network_delegate_factory),
+      job_factory_factory_(job_factory_factory),
       protocol_interceptors_(protocol_interceptors.Pass()) {
   // Must first be created on the UI thread.
-  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
+  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 
   std::swap(protocol_handlers_, *protocol_handlers);
 
@@ -67,7 +71,7 @@ net::HostResolver* URLRequestContextGetter::host_resolver() {
 }
 
 net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
-  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
+  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
 
   if (!url_request_context_.get()) {
     url_request_context_.reset(new net::URLRequestContext());
@@ -117,8 +121,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
             net::CACHE_BACKEND_DEFAULT,
             cache_path,
             0,
-            content::BrowserThread::GetMessageLoopProxyForThread(
-                content::BrowserThread::CACHE));
+            BrowserThread::GetMessageLoopProxyForThread(BrowserThread::CACHE));
 
     net::HttpNetworkSession::Params network_session_params;
     network_session_params.cert_verifier =
@@ -148,6 +151,14 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         network_session_params, main_backend);
     storage_->set_http_transaction_factory(main_cache);
 
+    // Give user a chance to create their own job factory.
+    scoped_ptr<net::URLRequestJobFactory> user_job_factory(
+        job_factory_factory_.Run(&protocol_handlers_, &protocol_interceptors_));
+    if (user_job_factory) {
+      storage_->set_job_factory(user_job_factory.release());
+      return url_request_context_.get();
+    }
+
     scoped_ptr<net::URLRequestJobFactoryImpl> job_factory(
         new net::URLRequestJobFactoryImpl());
     for (auto it = protocol_handlers_.begin(),
@@ -163,7 +174,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     job_factory->SetProtocolHandler(
         content::kFileScheme,
         new net::FileProtocolHandler(
-            content::BrowserThread::GetBlockingPool()->
+            BrowserThread::GetBlockingPool()->
                 GetTaskRunnerWithShutdownBehavior(
                     base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
 
@@ -187,8 +198,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
 scoped_refptr<base::SingleThreadTaskRunner>
     URLRequestContextGetter::GetNetworkTaskRunner() const {
-  return content::BrowserThread::GetMessageLoopProxyForThread(
-      content::BrowserThread::IO);
+  return BrowserThread::GetMessageLoopProxyForThread(BrowserThread::IO);
 }
 
 }  // namespace brightray
