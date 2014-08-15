@@ -19,7 +19,7 @@ using content::BrowserThread;
 namespace atom {
 
 AtomBrowserContext::AtomBrowserContext()
-    : job_factory_(NULL) {
+    : job_factory_(new AtomURLRequestJobFactory) {
 }
 
 AtomBrowserContext::~AtomBrowserContext() {
@@ -29,7 +29,6 @@ scoped_ptr<net::URLRequestJobFactory>
 AtomBrowserContext::CreateURLRequestJobFactory(
     content::ProtocolHandlerMap* handlers,
     content::ProtocolHandlerScopedVector* interceptors) {
-  job_factory_ = new AtomURLRequestJobFactory;
   scoped_ptr<AtomURLRequestJobFactory> job_factory(job_factory_);
 
   for (content::ProtocolHandlerMap::iterator it = handlers->begin();

@@ -4,7 +4,6 @@
 
 #include "atom/browser/api/atom_api_protocol.h"
 
-#include "base/stl_util.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/adapter_request_job.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
@@ -153,6 +152,7 @@ class CustomProtocolHandler : public ProtocolHandler {
 
 Protocol::Protocol()
     : job_factory_(AtomBrowserContext::Get()->job_factory()) {
+  CHECK(job_factory_);
 }
 
 Protocol::JsProtocolHandler Protocol::GetProtocolHandler(
@@ -323,10 +323,6 @@ namespace {
 
 void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
                 v8::Handle<v8::Context> context, void* priv) {
-  // Make sure the job factory has been created.
-  atom::AtomBrowserContext::Get()->url_request_context_getter()->
-      GetURLRequestContext();
-
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("protocol", atom::api::Protocol::Create(isolate));
