@@ -14,10 +14,12 @@
 #include "base/threading/worker_pool.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cookie_store_factory.h"
+#include "content/public/common/content_switches.h"
 #include "content/public/common/url_constants.h"
 #include "net/base/host_mapping_rules.h"
 #include "net/cert/cert_verifier.h"
 #include "net/cookies/cookie_monster.h"
+#include "net/dns/mapped_host_resolver.h"
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_cache.h"
 #include "net/http/http_server_properties_impl.h"
@@ -119,6 +121,15 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     scoped_ptr<net::HostResolver> host_resolver(
         net::HostResolver::CreateDefaultResolver(NULL));
+
+    // --host-resolver-rules
+    if (command_line.HasSwitch(switches::kHostResolverRules)) {
+      scoped_ptr<net::MappedHostResolver> remapped_resolver(
+          new net::MappedHostResolver(host_resolver.Pass()));
+      remapped_resolver->SetRulesFromString(
+          command_line.GetSwitchValueASCII(switches::kHostResolverRules));
+      host_resolver = remapped_resolver.PassAs<net::HostResolver>();
+    }
 
     net::DhcpProxyScriptFetcherFactory dhcp_factory;
     storage_->set_proxy_service(
