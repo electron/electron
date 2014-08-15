@@ -8,6 +8,7 @@
 
 * [Synopsis](api/synopsis.md)
 * [Process object](api/process.md)
+* [Supported Chrome command line switches](api/chrome-command-line-switches.md)
 
 Modules for browser side:
 
