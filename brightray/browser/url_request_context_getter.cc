@@ -8,14 +8,18 @@
 
 #include "browser/network_delegate.h"
 
+#include "base/command_line.h"
 #include "base/strings/string_util.h"
 #include "base/threading/sequenced_worker_pool.h"
 #include "base/threading/worker_pool.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cookie_store_factory.h"
+#include "content/public/common/content_switches.h"
 #include "content/public/common/url_constants.h"
+#include "net/base/host_mapping_rules.h"
 #include "net/cert/cert_verifier.h"
 #include "net/cookies/cookie_monster.h"
+#include "net/dns/mapped_host_resolver.h"
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_cache.h"
 #include "net/http/http_server_properties_impl.h"
@@ -39,6 +43,27 @@
 using content::BrowserThread;
 
 namespace brightray {
+
+namespace {
+
+// Comma-separated list of rules that control how hostnames are mapped.
+//
+// For example:
+//    "MAP * 127.0.0.1" --> Forces all hostnames to be mapped to 127.0.0.1
+//    "MAP *.google.com proxy" --> Forces all google.com subdomains to be
+//                                 resolved to "proxy".
+//    "MAP test.com [::1]:77 --> Forces "test.com" to resolve to IPv6 loopback.
+//                               Will also force the port of the resulting
+//                               socket address to be 77.
+//    "MAP * baz, EXCLUDE www.google.com" --> Remaps everything to "baz",
+//                                            except for "www.google.com".
+//
+// These mappings apply to the endpoint host in a net::URLRequest (the TCP
+// connect and host resolver in a direct connection, and the CONNECT in an http
+// proxy connection, and the endpoint host in a SOCKS proxy connection).
+const char kHostRules[]                     = "host-rules";
+
+}  // namespace
 
 URLRequestContextGetter::URLRequestContextGetter(
     const base::FilePath& base_path,
@@ -73,6 +98,8 @@ net::HostResolver* URLRequestContextGetter::host_resolver() {
 net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
 
+  const CommandLine& command_line = *CommandLine::ForCurrentProcess();
+
   if (!url_request_context_.get()) {
     url_request_context_.reset(new net::URLRequestContext());
     network_delegate_ = network_delegate_factory_.Run().Pass();
@@ -94,6 +121,15 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     scoped_ptr<net::HostResolver> host_resolver(
         net::HostResolver::CreateDefaultResolver(NULL));
+
+    // --host-resolver-rules
+    if (command_line.HasSwitch(switches::kHostResolverRules)) {
+      scoped_ptr<net::MappedHostResolver> remapped_resolver(
+          new net::MappedHostResolver(host_resolver.Pass()));
+      remapped_resolver->SetRulesFromString(
+          command_line.GetSwitchValueASCII(switches::kHostResolverRules));
+      host_resolver = remapped_resolver.PassAs<net::HostResolver>();
+    }
 
     net::DhcpProxyScriptFetcherFactory dhcp_factory;
     storage_->set_proxy_service(
@@ -141,6 +177,13 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     network_session_params.http_server_properties =
         url_request_context_->http_server_properties();
     network_session_params.ignore_certificate_errors = false;
+
+    // --host-rules
+    if (command_line.HasSwitch(kHostRules)) {
+      host_mapping_rules_.reset(new net::HostMappingRules);
+      host_mapping_rules_->SetRulesFromString(command_line.GetSwitchValueASCII(kHostRules));
+      network_session_params.host_mapping_rules = host_mapping_rules_.get();
+    }
 
     // Give |storage_| ownership at the end in case it's |mapped_host_resolver|.
     storage_->set_host_resolver(host_resolver.Pass());
