@@ -68,7 +68,7 @@ void App::OnFinishLaunching() {
   Emit("ready");
 }
 
-std::string App::GetDataPath() {
+base::FilePath App::GetDataPath() {
   base::FilePath path;
 #if defined(OS_LINUX)
   scoped_ptr<base::Environment> env(base::Environment::Create());
@@ -80,15 +80,9 @@ std::string App::GetDataPath() {
 #endif
 
   base::FilePath data_path = path.Append(
-    base::FilePath::FromUTF8Unsafe(Browser::Get()->GetName()));
+      base::FilePath::FromUTF8Unsafe(Browser::Get()->GetName()));
 
-  // FilePath.value() returns a std::wstring in windows and
-  // std::string on other platforms.
-  std::vector<char> writable(data_path.value().begin(),
-    data_path.value().end());
-  writable.push_back('\0');
-
-  return &writable[0];
+  return data_path;
 }
 
 mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
