@@ -10,6 +10,7 @@
 #include "base/compiler_specific.h"
 #include "atom/browser/api/event_emitter.h"
 #include "atom/browser/browser_observer.h"
+#include "atom/common/native_mate_converters/file_path_converter.h"
 #include "native_mate/handle.h"
 
 namespace atom {
@@ -34,6 +35,7 @@ class App : public mate::EventEmitter,
   virtual void OnActivateWithNoOpenWindows() OVERRIDE;
   virtual void OnWillFinishLaunching() OVERRIDE;
   virtual void OnFinishLaunching() OVERRIDE;
+  virtual base::FilePath GetDataPath();
 
   // mate::Wrappable implementations:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(

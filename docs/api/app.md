@@ -87,6 +87,15 @@ executed. It is possible that a window cancels the quitting by returning
 Quit the application directly, it will not try to close all windows so cleanup
 code will not run.
 
+## app.getDataPath()
+
+Returns the right data path for the OS appended with the app name.
+
+ * `%APPDATA%\My App Name` (`C:\Users\[username]\AppData\Roaming\My App Name`)
+   in Windows
+ * `~/.config/My App Name` in Linux
+ * `/Users/[username]/Library/Application Support/My App Name` in OS X
+
 ## app.getVersion()
 
 Returns the version of loaded application, if no version is found in
