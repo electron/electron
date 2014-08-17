@@ -133,6 +133,20 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   shell_->OpenDevTools();
 }
 
+// Returns an empty array for AXChildren attribute, this will force the
+// SpeechSynthesisServer to use its classical way of speaking the selected text:
+// by invoking the "Command+C" for current application and then speak out
+// what's in the clipboard. Otherwise the "Text to Speech" would always speak
+// out window's title.
+// This behavior is taken by both FireFox and Chrome, see also FireFox's bug on
+// more of how SpeechSynthesisServer chose which text to read:
+// https://bugzilla.mozilla.org/show_bug.cgi?id=674612
+- (id)accessibilityAttributeValue:(NSString*)attribute {
+  if ([attribute isEqualToString:@"AXChildren"])
+    return [NSArray array];
+  return [super accessibilityAttributeValue:attribute];
+}
+
 @end
 
 @interface ControlRegionView : NSView {
