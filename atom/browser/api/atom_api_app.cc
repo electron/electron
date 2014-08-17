@@ -79,10 +79,8 @@ base::FilePath App::GetDataPath() {
   CHECK(PathService::Get(base::DIR_APP_DATA, &path));
 #endif
 
-  base::FilePath data_path = path.Append(
-      base::FilePath::FromUTF8Unsafe(Browser::Get()->GetName()));
-
-  return data_path;
+  return path.Append(base::FilePath::FromUTF8Unsafe(
+      Browser::Get()->GetName()));
 }
 
 mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(

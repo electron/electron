@@ -89,12 +89,11 @@ code will not run.
 
 ## app.getDataPath()
 
-Returns the right data path for the OS appended with the app name.
+Returns the path for storing configuration files, with app name appended.
 
- * `%APPDATA%\My App Name` (`C:\Users\[username]\AppData\Roaming\My App Name`)
-   in Windows
- * `~/.config/My App Name` in Linux
- * `/Users/[username]/Library/Application Support/My App Name` in OS X
+ * `%APPDATA%\MyAppName` on Windows
+ * `~/.config/MyAppName` on Linux
+ * `~/Library/Application Support/MyAppName` on OS X
 
 ## app.getVersion()
 
