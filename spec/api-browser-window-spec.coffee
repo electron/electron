@@ -76,15 +76,6 @@ describe 'browser-window module', ->
       assert.equal after[0], size[0]
       assert.equal after[1], size[1]
 
-    it 'can set the window larger than screen', ->
-      size = require('screen').getPrimaryDisplay().size
-      size.width += 100
-      size.height += 100
-      w.setSize size.width, size.height
-      after = w.getSize()
-      assert.equal after[0], size.width
-      assert.equal after[1], size.height
-
   describe 'BrowserWindow.setContentSize(width, height)', ->
     it 'sets the content size', ->
       size = [400, 400]
@@ -109,6 +100,26 @@ describe 'browser-window module', ->
       size = w.getSize()
       assert.equal size[0], 400
       assert.equal size[1], 400
+
+  describe '"enable-larger-than-screen" option', ->
+    beforeEach ->
+      w.destroy()
+      w = new BrowserWindow(show: true, width: 400, height: 400, 'enable-larger-than-screen': true)
+
+    it 'can move the window out of screen', ->
+      w.setPosition -10, -10
+      after = w.getPosition()
+      assert.equal after[0], -10
+      assert.equal after[1], -10
+
+    it 'can set the window larger than screen', ->
+      size = require('screen').getPrimaryDisplay().size
+      size.width += 100
+      size.height += 100
+      w.setSize size.width, size.height
+      after = w.getSize()
+      assert.equal after[0], size.width
+      assert.equal after[1], size.height
 
   describe 'beforeunload handler', ->
     it 'returning true would not prevent close', (done) ->

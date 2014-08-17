@@ -58,6 +58,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
                            const mate::Dictionary& options)
     : content::WebContentsObserver(web_contents),
       has_frame_(true),
+      enable_larger_than_screen_(false),
       is_closed_(false),
       node_integration_("except-iframe"),
       has_dialog_attached_(false),
@@ -66,6 +67,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       inspectable_web_contents_(
           brightray::InspectableWebContents::Create(web_contents)) {
   options.Get(switches::kFrame, &has_frame_);
+  options.Get(switches::kEnableLargerThanScreen, &enable_larger_than_screen_);
 
   // Read icon before window is created.
   options.Get(switches::kIcon, &icon_);

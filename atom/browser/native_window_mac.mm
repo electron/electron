@@ -108,10 +108,12 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 @end
 
 @interface AtomNSWindow : EventProcessingWindow {
- @protected
+ @private
   atom::NativeWindowMac* shell_;
+  bool enable_larger_than_screen_;
 }
 - (void)setShell:(atom::NativeWindowMac*)shell;
+- (void)setEnableLargerThanScreen:(bool)enable;
 @end
 
 @implementation AtomNSWindow
@@ -120,9 +122,16 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   shell_ = shell;
 }
 
+- (void)setEnableLargerThanScreen:(bool)enable {
+  enable_larger_than_screen_ = enable;
+}
+
 // Enable the window to be larger than screen.
 - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
-  return frameRect;
+  if (enable_larger_than_screen_)
+    return frameRect;
+  else
+    return [super constrainFrameRect:frameRect toScreen:screen];
 }
 
 - (IBAction)reload:(id)sender {
@@ -213,6 +222,7 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
                     defer:YES];
 
   [atomWindow setShell:this];
+  [atomWindow setEnableLargerThanScreen:enable_larger_than_screen_];
   window_.reset(atomWindow);
 
   AtomNSWindowDelegate* delegate =

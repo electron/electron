@@ -51,6 +51,9 @@ const char kZoomFactor[] = "zoom-factor";
 // The menu bar is hidden unless "Alt" is pressed.
 const char kAutoHideMenuBar[] = "auto-hide-menu-bar";
 
+// Enable window to be resized larger than screen.
+const char kEnableLargerThanScreen[] = "enable-larger-than-screen";
+
 }  // namespace switches
 
 }  // namespace atom

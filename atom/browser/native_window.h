@@ -251,6 +251,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Whether window has standard frame.
   bool has_frame_;
 
+  // Whether window can be resized larger than screen.
+  bool enable_larger_than_screen_;
+
   // Window icon.
   gfx::ImageSkia icon_;
 

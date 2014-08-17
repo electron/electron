@@ -61,6 +61,8 @@ normal browsers, see [Web Security](web-security.md) for more.
      mouse-down event that simultaneously activates the window
   * `auto-hide-menu-bar` Boolean - Auto hide the menu bar unless the `Alt`
     key is pressed.
+  * `enable-larger-than-screen` Boolean - Enable the window to be resized larger
+    than screen.
   * `web-preferences` Object - Settings of web page's features
     * `javascript` Boolean
     * `web-security` Boolean
