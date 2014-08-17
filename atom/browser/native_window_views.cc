@@ -124,7 +124,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
     // will not allow us to resize the window larger than scree.
     // Setting directly to INT_MAX somehow doesn't work, so we just devide
     // by 10, which should still be large enough.
-    maximum_size_.set(INT_MAX / 10, INT_MAX / 10);
+    maximum_size_.SetSize(INT_MAX / 10, INT_MAX / 10);
 
   int width = 800, height = 600;
   options.Get(switches::kWidth, &width);
