@@ -101,10 +101,8 @@ int MenuBar::GetAcceleratorIndex(base::char16 key) {
 
 void MenuBar::ActivateAccelerator(base::char16 key) {
   int i = GetAcceleratorIndex(key);
-  if (i != -1) {
-    SetAcceleratorVisibility(false);
+  if (i != -1)
     static_cast<SubmenuButton*>(child_at(i))->Activate();
-  }
 }
 
 int MenuBar::GetItemCount() const {
@@ -143,6 +141,9 @@ void MenuBar::ButtonPressed(views::Button* sender, const ui::Event& event) {
 
 void MenuBar::OnMenuButtonClicked(views::View* source,
                                   const gfx::Point& point) {
+  // Hide the accelerator when a submenu is activated.
+  SetAcceleratorVisibility(false);
+
   if (!menu_model_)
     return;
 
