@@ -31,6 +31,16 @@ class MenuBar : public views::View,
   // Replaces current menu with a new one.
   void SetMenu(ui::MenuModel* menu_model);
 
+  // Shows underline under accelerators.
+  void SetAcceleratorVisibility(bool visible);
+
+  // Returns which submenu has accelerator |key|, -1 would be returned when
+  // there is no matching submenu.
+  int GetAcceleratorIndex(base::char16 key);
+
+  // Shows the submenu whose accelerator is |key|.
+  void ActivateAccelerator(base::char16 key);
+
   // Returns there are how many items in the root menu.
   int GetItemCount() const;
 

@@ -9,11 +9,9 @@
 #endif
 
 #include "atom/browser/ui/views/menu_delegate.h"
-#include "base/strings/string_util.h"
-#include "base/strings/utf_string_conversions.h"
+#include "atom/browser/ui/views/submenu_button.h"
 #include "ui/base/models/menu_model.h"
 #include "ui/views/background.h"
-#include "ui/views/controls/button/menu_button.h"
 #include "ui/views/layout/box_layout.h"
 
 #if defined(OS_WIN)
@@ -31,13 +29,6 @@ const char kViewClassName[] = "AtomMenuBar";
 
 // Default color of the menu bar.
 const SkColor kDefaultColor = SkColorSetARGB(255, 233, 233, 233);
-
-// Filter out the "&" in menu label.
-base::string16 FilterMenuButtonLabel(const base::string16& label) {
-  base::string16 out;
-  base::RemoveChars(label, base::ASCIIToUTF16("&").c_str(), &out);
-  return out;
-}
 
 #if defined(USE_X11)
 void GetMenuBarColor(SkColor* enabled, SkColor* disabled, SkColor* highlight,
@@ -79,8 +70,7 @@ void MenuBar::SetMenu(ui::MenuModel* model) {
   RemoveAllChildViews(true);
 
   for (int i = 0; i < model->GetItemCount(); ++i) {
-    views::MenuButton* button = new views::MenuButton(
-        this, FilterMenuButtonLabel(model->GetLabelAt(i)), this, false);
+    SubmenuButton* button = new SubmenuButton(this, model->GetLabelAt(i), this);
     button->set_tag(i);
 
 #if defined(USE_X11)
@@ -88,10 +78,33 @@ void MenuBar::SetMenu(ui::MenuModel* model) {
     button->SetDisabledColor(disabled_color_);
     button->SetHighlightColor(highlight_color_);
     button->SetHoverColor(hover_color_);
+    button->SetUnderlineColor(enabled_color_);
+#elif defined(OS_WIN)
+    button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_GRAYTEXT));
 #endif
 
     AddChildView(button);
   }
+}
+
+void MenuBar::SetAcceleratorVisibility(bool visible) {
+  for (int i = 0; i < child_count(); ++i)
+    static_cast<SubmenuButton*>(child_at(i))->SetAcceleratorVisibility(visible);
+}
+
+int MenuBar::GetAcceleratorIndex(base::char16 key) {
+  for (int i = 0; i < child_count(); ++i) {
+    SubmenuButton* button = static_cast<SubmenuButton*>(child_at(i));
+    if (button->accelerator() == key)
+      return i;
+  }
+  return -1;
+}
+
+void MenuBar::ActivateAccelerator(base::char16 key) {
+  int i = GetAcceleratorIndex(key);
+  if (i != -1)
+    static_cast<SubmenuButton*>(child_at(i))->Activate();
 }
 
 int MenuBar::GetItemCount() const {
@@ -130,6 +143,9 @@ void MenuBar::ButtonPressed(views::Button* sender, const ui::Event& event) {
 
 void MenuBar::OnMenuButtonClicked(views::View* source,
                                   const gfx::Point& point) {
+  // Hide the accelerator when a submenu is activated.
+  SetAcceleratorVisibility(false);
+
   if (!menu_model_)
     return;
 
