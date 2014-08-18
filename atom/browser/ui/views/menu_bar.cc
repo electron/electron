@@ -46,10 +46,10 @@ void GetMenuBarColor(SkColor* enabled, SkColor* disabled, SkColor* highlight,
   fake_menu_bar.Own(gtk_menu_bar_new());
 
   GtkStyle* style = gtk_rc_get_style(fake_menu_bar.get());
-  *enabled = libgtk2ui::GdkColorToSkColor(style->text[GTK_STATE_NORMAL]);
-  *disabled = libgtk2ui::GdkColorToSkColor(style->text[GTK_STATE_INSENSITIVE]);
-  *highlight = libgtk2ui::GdkColorToSkColor(style->text[GTK_STATE_SELECTED]);
-  *hover = libgtk2ui::GdkColorToSkColor(style->text[GTK_STATE_PRELIGHT]);
+  *enabled = libgtk2ui::GdkColorToSkColor(style->fg[GTK_STATE_NORMAL]);
+  *disabled = libgtk2ui::GdkColorToSkColor(style->fg[GTK_STATE_INSENSITIVE]);
+  *highlight = libgtk2ui::GdkColorToSkColor(style->fg[GTK_STATE_SELECTED]);
+  *hover = libgtk2ui::GdkColorToSkColor(style->fg[GTK_STATE_PRELIGHT]);
   *background = libgtk2ui::GdkColorToSkColor(style->bg[GTK_STATE_NORMAL]);
 }
 #endif
