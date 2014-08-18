@@ -90,6 +90,17 @@ void MenuBar::SetAcceleratorVisibility(bool visible) {
     static_cast<SubmenuButton*>(child_at(i))->SetAcceleratorVisibility(visible);
 }
 
+void MenuBar::ActivateAccelerator(base::char16 key) {
+  for (int i = 0; i < child_count(); ++i) {
+    SubmenuButton* button = static_cast<SubmenuButton*>(child_at(i));
+    if (button->accelerator() == key) {
+      SetAcceleratorVisibility(false);
+      button->Activate();
+      return;
+    }
+  }
+}
+
 int MenuBar::GetItemCount() const {
   return menu_model_->GetItemCount();
 }

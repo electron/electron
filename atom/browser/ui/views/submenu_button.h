@@ -20,14 +20,18 @@ class SubmenuButton : public views::MenuButton {
   void SetAcceleratorVisibility(bool visible);
   void SetUnderlineColor(SkColor color);
 
+  base::char16 accelerator() const { return accelerator_; }
+
   // views::MenuButton:
   virtual void OnPaint(gfx::Canvas* canvas) OVERRIDE;
 
  private:
-  void GetUnderlinePosition(
+  bool GetUnderlinePosition(
       const base::string16& text, int* start, int* end);
   void GetCharacterPosition(
       const base::string16& text, int index, int* pos);
+
+  base::char16 accelerator_;
 
   bool show_underline_;
 

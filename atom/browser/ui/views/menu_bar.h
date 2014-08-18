@@ -34,6 +34,9 @@ class MenuBar : public views::View,
   // Shows underline under accelerators.
   void SetAcceleratorVisibility(bool visible);
 
+  // Shows the submenu whose accelerator is |key|.
+  void ActivateAccelerator(base::char16 key);
+
   // Returns there are how many items in the root menu.
   int GetItemCount() const;
 
