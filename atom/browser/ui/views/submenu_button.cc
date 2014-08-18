@@ -34,11 +34,10 @@ SubmenuButton::SubmenuButton(views::ButtonListener* listener,
       text_width_(0),
       text_height_(0),
       underline_color_(SK_ColorBLACK) {
-  if (GetUnderlinePosition(title, &underline_start_, &underline_end_)) {
+  if (GetUnderlinePosition(title, &accelerator_, &underline_start_,
+                           &underline_end_))
     gfx::Canvas::SizeStringInt(text(), font_list(), &text_width_,
                                &text_height_, 0, 0);
-    accelerator_ = text()[underline_start_];
-  }
 }
 
 SubmenuButton::~SubmenuButton() {
@@ -68,11 +67,13 @@ void SubmenuButton::OnPaint(gfx::Canvas* canvas) {
   }
 }
 
-bool SubmenuButton::GetUnderlinePosition(
-    const base::string16& text, int* start, int* end) {
+bool SubmenuButton::GetUnderlinePosition(const base::string16& text,
+                                         base::char16* accelerator,
+                                         int* start, int* end) {
   int pos, span;
   base::string16 trimmed = gfx::RemoveAcceleratorChar(text, '&', &pos, &span);
   if (pos > -1 && span != 0) {
+    *accelerator = base::ToUpperASCII(trimmed[pos]);
     GetCharacterPosition(trimmed, pos, start);
     GetCharacterPosition(trimmed, pos + span, end);
     return true;
