@@ -31,6 +31,9 @@ class MenuBar : public views::View,
   // Replaces current menu with a new one.
   void SetMenu(ui::MenuModel* menu_model);
 
+  // Shows underline under accelerators.
+  void SetAcceleratorVisibility(bool visible);
+
   // Returns there are how many items in the root menu.
   int GetItemCount() const;
 

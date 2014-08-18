@@ -17,6 +17,7 @@ class SubmenuButton : public views::MenuButton {
                 views::MenuButtonListener* menu_button_listener);
   virtual ~SubmenuButton();
 
+  void SetAcceleratorVisibility(bool visible);
   void SetUnderlineColor(SkColor color);
 
   // views::MenuButton:
@@ -27,6 +28,8 @@ class SubmenuButton : public views::MenuButton {
       const base::string16& text, int* start, int* end);
   void GetCharacterPosition(
       const base::string16& text, int index, int* pos);
+
+  bool show_underline_;
 
   int underline_start_;
   int underline_end_;

@@ -85,6 +85,11 @@ void MenuBar::SetMenu(ui::MenuModel* model) {
   }
 }
 
+void MenuBar::SetAcceleratorVisibility(bool visible) {
+  for (int i = 0; i < child_count(); ++i)
+    static_cast<SubmenuButton*>(child_at(i))->SetAcceleratorVisibility(visible);
+}
+
 int MenuBar::GetItemCount() const {
   return menu_model_->GetItemCount();
 }

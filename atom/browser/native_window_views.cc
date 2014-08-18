@@ -572,6 +572,11 @@ void NativeWindowViews::HandleKeyboardEvent(
     const content::NativeWebKeyboardEvent& event) {
   keyboard_event_handler_->HandleKeyboardEvent(event, GetFocusManager());
 
+  if (menu_bar_ && menu_bar_visible_ && IsAltKey(event)) {
+    menu_bar_->SetAcceleratorVisibility(
+        event.type == blink::WebInputEvent::RawKeyDown);
+  }
+
   if (!menu_bar_autohide_)
     return;
 
@@ -626,6 +631,10 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
 void NativeWindowViews::SetMenuBarVisibility(bool visible) {
   if (!menu_bar_)
     return;
+
+  // Always show the accelerator when the auto-hide menu bar shows.
+  if (menu_bar_autohide_)
+    menu_bar_->SetAcceleratorVisibility(visible);
 
   menu_bar_visible_ = visible;
   if (visible) {

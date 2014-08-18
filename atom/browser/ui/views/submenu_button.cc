@@ -27,6 +27,7 @@ SubmenuButton::SubmenuButton(views::ButtonListener* listener,
                              views::MenuButtonListener* menu_button_listener)
     : views::MenuButton(listener, FilterAccecelator(title),
                         menu_button_listener, false),
+      show_underline_(false),
       underline_start_(-1),
       underline_end_(-1),
       text_width_(0),
@@ -40,6 +41,14 @@ SubmenuButton::SubmenuButton(views::ButtonListener* listener,
 SubmenuButton::~SubmenuButton() {
 }
 
+void SubmenuButton::SetAcceleratorVisibility(bool visible) {
+  if (visible == show_underline_)
+    return;
+
+  show_underline_ = visible;
+  SchedulePaint();
+}
+
 void SubmenuButton::SetUnderlineColor(SkColor color) {
   underline_color_ = color;
 }
@@ -47,7 +56,7 @@ void SubmenuButton::SetUnderlineColor(SkColor color) {
 void SubmenuButton::OnPaint(gfx::Canvas* canvas) {
   views::MenuButton::OnPaint(canvas);
 
-  if (underline_start_ != underline_end_) {
+  if (show_underline_ && (underline_start_ != underline_end_)) {
     int padding = (width() - text_width_) / 2;
     int underline_height = (height() + text_height_) / 2 - 2;
     canvas->DrawLine(gfx::Point(underline_start_ + padding, underline_height),
