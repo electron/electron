@@ -90,14 +90,20 @@ void MenuBar::SetAcceleratorVisibility(bool visible) {
     static_cast<SubmenuButton*>(child_at(i))->SetAcceleratorVisibility(visible);
 }
 
-void MenuBar::ActivateAccelerator(base::char16 key) {
+int MenuBar::GetAcceleratorIndex(base::char16 key) {
   for (int i = 0; i < child_count(); ++i) {
     SubmenuButton* button = static_cast<SubmenuButton*>(child_at(i));
-    if (button->accelerator() == key) {
-      SetAcceleratorVisibility(false);
-      button->Activate();
-      return;
-    }
+    if (button->accelerator() == key)
+      return i;
+  }
+  return -1;
+}
+
+void MenuBar::ActivateAccelerator(base::char16 key) {
+  int i = GetAcceleratorIndex(key);
+  if (i != -1) {
+    SetAcceleratorVisibility(false);
+    static_cast<SubmenuButton*>(child_at(i))->Activate();
   }
 }
 

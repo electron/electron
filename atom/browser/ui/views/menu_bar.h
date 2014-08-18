@@ -34,6 +34,10 @@ class MenuBar : public views::View,
   // Shows underline under accelerators.
   void SetAcceleratorVisibility(bool visible);
 
+  // Returns which submenu has accelerator |key|, -1 would be returned when
+  // there is no matching submenu.
+  int GetAcceleratorIndex(base::char16 key);
+
   // Shows the submenu whose accelerator is |key|.
   void ActivateAccelerator(base::char16 key);
 
