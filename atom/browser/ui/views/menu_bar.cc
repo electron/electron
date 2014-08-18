@@ -9,11 +9,9 @@
 #endif
 
 #include "atom/browser/ui/views/menu_delegate.h"
-#include "base/strings/string_util.h"
-#include "base/strings/utf_string_conversions.h"
+#include "atom/browser/ui/views/submenu_button.h"
 #include "ui/base/models/menu_model.h"
 #include "ui/views/background.h"
-#include "ui/views/controls/button/menu_button.h"
 #include "ui/views/layout/box_layout.h"
 
 #if defined(OS_WIN)
@@ -31,13 +29,6 @@ const char kViewClassName[] = "AtomMenuBar";
 
 // Default color of the menu bar.
 const SkColor kDefaultColor = SkColorSetARGB(255, 233, 233, 233);
-
-// Filter out the "&" in menu label.
-base::string16 FilterMenuButtonLabel(const base::string16& label) {
-  base::string16 out;
-  base::RemoveChars(label, base::ASCIIToUTF16("&").c_str(), &out);
-  return out;
-}
 
 #if defined(USE_X11)
 void GetMenuBarColor(SkColor* enabled, SkColor* disabled, SkColor* highlight,
@@ -79,8 +70,7 @@ void MenuBar::SetMenu(ui::MenuModel* model) {
   RemoveAllChildViews(true);
 
   for (int i = 0; i < model->GetItemCount(); ++i) {
-    views::MenuButton* button = new views::MenuButton(
-        this, FilterMenuButtonLabel(model->GetLabelAt(i)), this, false);
+    SubmenuButton* button = new SubmenuButton(this, model->GetLabelAt(i), this);
     button->set_tag(i);
 
 #if defined(USE_X11)
@@ -88,6 +78,7 @@ void MenuBar::SetMenu(ui::MenuModel* model) {
     button->SetDisabledColor(disabled_color_);
     button->SetHighlightColor(highlight_color_);
     button->SetHoverColor(hover_color_);
+    button->SetUnderlineColor(enabled_color_);
 #endif
 
     AddChildView(button);

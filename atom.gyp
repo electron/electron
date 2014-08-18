@@ -150,6 +150,8 @@
       'atom/browser/ui/views/global_menu_bar_x11.h',
       'atom/browser/ui/views/menu_bar.cc',
       'atom/browser/ui/views/menu_bar.h',
+      'atom/browser/ui/views/submenu_button.cc',
+      'atom/browser/ui/views/submenu_button.h',
       'atom/browser/ui/views/menu_delegate.cc',
       'atom/browser/ui/views/menu_delegate.h',
       'atom/browser/ui/views/menu_layout.cc',
