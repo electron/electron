@@ -71,10 +71,10 @@ void SubmenuButton::OnPaint(gfx::Canvas* canvas) {
 bool SubmenuButton::GetUnderlinePosition(
     const base::string16& text, int* start, int* end) {
   int pos, span;
-  gfx::RemoveAcceleratorChar(text, '&', &pos, &span);
+  base::string16 trimmed = gfx::RemoveAcceleratorChar(text, '&', &pos, &span);
   if (pos > -1 && span != 0) {
-    GetCharacterPosition(text, pos, start);
-    GetCharacterPosition(text, pos + span, end);
+    GetCharacterPosition(trimmed, pos, start);
+    GetCharacterPosition(trimmed, pos + span, end);
     return true;
   }
 
@@ -83,10 +83,9 @@ bool SubmenuButton::GetUnderlinePosition(
 
 void SubmenuButton::GetCharacterPosition(
     const base::string16& text, int index, int* pos) {
-  int width, height;
-  gfx::Canvas::SizeStringInt(text.substr(0, index), font_list(), &width,
-                             &height, 0, 0);
-  *pos = width;
+  int height;
+  gfx::Canvas::SizeStringInt(text.substr(0, index), font_list(), pos, &height,
+                             0, 0);
 }
 
 }  // namespace atom
