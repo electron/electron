@@ -79,6 +79,8 @@ void MenuBar::SetMenu(ui::MenuModel* model) {
     button->SetHighlightColor(highlight_color_);
     button->SetHoverColor(hover_color_);
     button->SetUnderlineColor(enabled_color_);
+#elif defined(OS_WIN)
+    button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_GRAYTEXT));
 #endif
 
     AddChildView(button);
