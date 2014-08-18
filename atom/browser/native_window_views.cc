@@ -572,22 +572,24 @@ void NativeWindowViews::HandleKeyboardEvent(
     const content::NativeWebKeyboardEvent& event) {
   keyboard_event_handler_->HandleKeyboardEvent(event, GetFocusManager());
 
-  if (menu_bar_) {
-    // Toggle accelerator when "Alt" is pressed.
-    if (menu_bar_visible_ && IsAltKey(event))
-      menu_bar_->SetAcceleratorVisibility(
-          event.type == blink::WebInputEvent::RawKeyDown);
+  if (!menu_bar_)
+    return;
 
-    // Show the submenu when "Alt+Key" is pressed.
-    if (event.type == blink::WebInputEvent::RawKeyDown && !IsAltKey(event) &&
-        IsAltModifier(event)) {
-      if (!menu_bar_visible_ &&
-          (menu_bar_->GetAcceleratorIndex(event.windowsKeyCode) != -1)) {
-        SetMenuBarVisibility(true);
-        Layout();
-      }
-      menu_bar_->ActivateAccelerator(event.windowsKeyCode);
+  // Show accelerator when "Alt" is pressed.
+  if (menu_bar_visible_ && IsAltKey(event))
+    menu_bar_->SetAcceleratorVisibility(
+        event.type == blink::WebInputEvent::RawKeyDown);
+
+  // Show the submenu when "Alt+Key" is pressed.
+  if (event.type == blink::WebInputEvent::RawKeyDown && !IsAltKey(event) &&
+      IsAltModifier(event)) {
+    if (!menu_bar_visible_ &&
+        (menu_bar_->GetAcceleratorIndex(event.windowsKeyCode) != -1)) {
+      SetMenuBarVisibility(true);
+      Layout();
     }
+    menu_bar_->ActivateAccelerator(event.windowsKeyCode);
+    return;
   }
 
   if (!menu_bar_autohide_)
