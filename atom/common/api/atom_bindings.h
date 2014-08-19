@@ -5,8 +5,6 @@
 #ifndef ATOM_COMMON_API_ATOM_BINDINGS_H_
 #define ATOM_COMMON_API_ATOM_BINDINGS_H_
 
-#include "base/basictypes.h"
-#include "base/callback_forward.h"
 #include "base/strings/string16.h"
 #include "v8/include/v8.h"
 

@@ -54,23 +54,15 @@ void UvOnCallback(uv_async_t* handle) {
   g_v8_callback.Run();
 }
 
+void Crash() {
+  static_cast<DummyClass*>(NULL)->crash = true;
+}
+
 // Called when there is a fatal error in V8, we just crash the process here so
 // we can get the stack trace.
 void FatalErrorCallback(const char* location, const char* message) {
   LOG(ERROR) << "Fatal error in V8: " << location << " " << message;
-  static_cast<DummyClass*>(NULL)->crash = true;
-}
-
-v8::Handle<v8::Value> DumpStackFrame(v8::Isolate* isolate,
-                                     v8::Handle<v8::StackFrame> stack_frame) {
-  mate::Dictionary frame_dict(isolate);
-  frame_dict.Set("line", stack_frame->GetLineNumber());
-  frame_dict.Set("column", stack_frame->GetColumn());
-  return mate::ConvertToV8(isolate, frame_dict);;
-}
-
-void Crash() {
-  static_cast<DummyClass*>(NULL)->crash = true;
+  Crash();
 }
 
 void ActivateUVLoop() {
@@ -79,19 +71,6 @@ void ActivateUVLoop() {
 
 void Log(const base::string16& message) {
   logging::LogMessage("CONSOLE", 0, 0).stream() << message;
-}
-
-v8::Handle<v8::Value> GetCurrentStackTrace(v8::Isolate* isolate,
-                                           int stack_limit) {
-  v8::Local<v8::StackTrace> stack_trace = v8::StackTrace::CurrentStackTrace(
-      isolate, stack_limit, v8::StackTrace::kDetailed);
-
-  int frame_count = stack_trace->GetFrameCount();
-  v8::Local<v8::Array> result = v8::Array::New(isolate, frame_count);
-  for (int i = 0; i < frame_count; ++i)
-    result->Set(i, DumpStackFrame(isolate, stack_trace->GetFrame(i)));
-
-  return result;
 }
 
 void ScheduleCallback(const base::Closure& callback) {
@@ -117,7 +96,6 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
   dict.SetMethod("crash", &Crash);
   dict.SetMethod("activateUvLoop", &ActivateUVLoop);
   dict.SetMethod("log", &Log);
-  dict.SetMethod("getCurrentStackTrace", &GetCurrentStackTrace);
   dict.SetMethod("scheduleCallback", &ScheduleCallback);
 
   v8::Handle<v8::Object> versions;
