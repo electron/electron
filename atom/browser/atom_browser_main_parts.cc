@@ -8,6 +8,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/javascript_environment.h"
+#include "atom/browser/node_debugger.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/node_bindings.h"
 #include "base/command_line.h"
@@ -56,6 +57,9 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   js_env_.reset(new JavascriptEnvironment);
 
   node_bindings_->Initialize();
+
+  // Support the "--debug" switch.
+  node_debugger_.reset(new NodeDebugger);
 
   // Create the global environment.
   global_env = node_bindings_->CreateEnvironment(js_env_->context());
