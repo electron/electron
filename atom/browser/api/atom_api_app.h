@@ -7,11 +7,16 @@
 
 #include <string>
 
-#include "base/compiler_specific.h"
 #include "atom/browser/api/event_emitter.h"
 #include "atom/browser/browser_observer.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
+#include "base/callback.h"
 #include "native_mate/handle.h"
+
+class GURL;
+
+namespace base {
+class FilePath;
+}
 
 namespace atom {
 
@@ -20,6 +25,8 @@ namespace api {
 class App : public mate::EventEmitter,
             public BrowserObserver {
  public:
+  typedef base::Callback<void(std::string)> ResolveProxyCallback;
+
   static mate::Handle<App> Create(v8::Isolate* isolate);
 
  protected:
@@ -35,13 +42,15 @@ class App : public mate::EventEmitter,
   virtual void OnActivateWithNoOpenWindows() OVERRIDE;
   virtual void OnWillFinishLaunching() OVERRIDE;
   virtual void OnFinishLaunching() OVERRIDE;
-  virtual base::FilePath GetDataPath();
 
   // mate::Wrappable implementations:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate);
 
  private:
+  base::FilePath GetDataPath();
+  void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
+
   DISALLOW_COPY_AND_ASSIGN(App);
 };
 

@@ -111,6 +111,14 @@ to the spec of npm modules. So usually you should also specify a `productName`
 field, which is your application's full capitalized name, and it will be
 preferred over `name` by atom-shell.
 
+## app.resolveProxy(url, callback)
+
+* `url` URL
+* `callback` Function
+
+Resolves the proxy information for `url`, the `callback` would be called with
+`callback(proxy)` when the request is done.
+
 ## app.commandLine.appendSwitch(switch, [value])
 
 Append a switch [with optional value] to Chromium's command line.

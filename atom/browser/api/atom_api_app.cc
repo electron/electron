@@ -7,14 +7,21 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/atom_browser_context.h"
+#include "atom/browser/browser.h"
+#include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/native_mate_converters/gurl_converter.h"
 #include "base/values.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/path_service.h"
-#include "atom/browser/browser.h"
+#include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "net/proxy/proxy_service.h"
+#include "net/url_request/url_request_context.h"
+#include "net/url_request/url_request_context_getter.h"
 
 #include "atom/common/node_includes.h"
 
@@ -27,6 +34,46 @@ using atom::Browser;
 namespace atom {
 
 namespace api {
+
+namespace {
+
+class ResolveProxyHelper {
+ public:
+  ResolveProxyHelper(const GURL& url, App::ResolveProxyCallback callback)
+      : callback_(callback) {
+    net::ProxyService* proxy_service = AtomBrowserContext::Get()->
+        url_request_context_getter()->GetURLRequestContext()->proxy_service();
+
+    // Start the request.
+    int result = proxy_service->ResolveProxy(
+        url, &proxy_info_,
+        base::Bind(&ResolveProxyHelper::OnResolveProxyCompleted,
+                   base::Unretained(this)),
+        &pac_req_, net::BoundNetLog());
+
+    // Completed synchronously.
+    if (result != net::ERR_IO_PENDING)
+      OnResolveProxyCompleted(result);
+  }
+
+  void OnResolveProxyCompleted(int result) {
+    std::string proxy;
+    if (result == net::OK)
+      proxy = proxy_info_.ToPacString();
+    callback_.Run(proxy);
+
+    delete this;
+  }
+
+ private:
+  App::ResolveProxyCallback callback_;
+  net::ProxyInfo proxy_info_;
+  net::ProxyService::PacRequest* pac_req_;
+
+  DISALLOW_COPY_AND_ASSIGN(ResolveProxyHelper);
+};
+
+}  // namespace
 
 App::App() {
   Browser::Get()->AddObserver(this);
@@ -76,11 +123,15 @@ base::FilePath App::GetDataPath() {
                                     base::nix::kXdgConfigHomeEnvVar,
                                     base::nix::kDotConfigDir);
 #else
-  CHECK(PathService::Get(base::DIR_APP_DATA, &path));
+  PathService::Get(base::DIR_APP_DATA, &path);
 #endif
 
   return path.Append(base::FilePath::FromUTF8Unsafe(
       Browser::Get()->GetName()));
+}
+
+void App::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
+  new ResolveProxyHelper(url, callback);
 }
 
 mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
@@ -99,7 +150,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
                                        base::Unretained(browser)))
       .SetMethod("setName", base::Bind(&Browser::SetName,
                                        base::Unretained(browser)))
-      .SetMethod("getDataPath", &App::GetDataPath);
+      .SetMethod("getDataPath", &App::GetDataPath)
+      .SetMethod("resolveProxy", &App::ResolveProxy);
 }
 
 // static
