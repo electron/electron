@@ -61,7 +61,11 @@ namespace {
 // These mappings apply to the endpoint host in a net::URLRequest (the TCP
 // connect and host resolver in a direct connection, and the CONNECT in an http
 // proxy connection, and the endpoint host in a SOCKS proxy connection).
-const char kHostRules[]                     = "host-rules";
+const char kHostRules[] = "host-rules";
+
+// Don't use a proxy server, always make direct connections. Overrides any
+// other proxy server flags that are passed.
+const char kNoProxyServer[] = "no-proxy-server";
 
 }  // namespace
 
@@ -132,14 +136,17 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     }
 
     net::DhcpProxyScriptFetcherFactory dhcp_factory;
-    storage_->set_proxy_service(
-        net::CreateProxyServiceUsingV8ProxyResolver(
-            proxy_config_service_.release(),
-            new net::ProxyScriptFetcherImpl(url_request_context_.get()),
-            dhcp_factory.Create(url_request_context_.get()),
-            host_resolver.get(),
-            NULL,
-            url_request_context_->network_delegate()));
+    if (command_line.HasSwitch(kNoProxyServer))
+      storage_->set_proxy_service(net::ProxyService::CreateDirect());
+    else
+      storage_->set_proxy_service(
+          net::CreateProxyServiceUsingV8ProxyResolver(
+              proxy_config_service_.release(),
+              new net::ProxyScriptFetcherImpl(url_request_context_.get()),
+              dhcp_factory.Create(url_request_context_.get()),
+              host_resolver.get(),
+              NULL,
+              url_request_context_->network_delegate()));
 
     storage_->set_cert_verifier(net::CertVerifier::CreateDefault());
     storage_->set_transport_security_state(new net::TransportSecurityState);
