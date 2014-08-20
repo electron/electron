@@ -10,3 +10,6 @@ notifications:
     on_failure: change
 
 script: './script/cibuild'
+
+git:
+  depth: 10
