@@ -18,6 +18,16 @@ app.on('ready', function() {
 
 Enables remote debug over HTTP on the specified `port`.
 
+## --proxy-server=`address:port`
+
+Uses a specified proxy server, overrides system settings. This switch only
+affects HTTP and HTTPS requests.
+
+## --no-proxy-server
+
+Don't use a proxy server, always make direct connections. Overrides any other
+proxy server flags that are passed.
+
 ## --host-rules=`rules`
 
 Comma-separated list of `rules` that control how hostnames are mapped.
