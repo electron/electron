@@ -4,6 +4,8 @@
 
 #include "atom/browser/node_debugger.h"
 
+#include <string>
+
 #include "atom/common/atom_version.h"
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
@@ -54,10 +56,6 @@ NodeDebugger::~NodeDebugger() {
 
 // static
 void NodeDebugger::DispatchDebugMessagesInMainThread(uv_async_t* handle) {
-  if (!global_env)
-    return;
-
-  v8::Isolate::Scope isolate_scope(global_env->isolate());
   v8::Debug::ProcessDebugMessages();
 }
 
