@@ -8,7 +8,6 @@
 #include "browser/url_request_context_getter.h"
 
 #include "content/public/browser/browser_context.h"
-#include "content/public/browser/content_browser_client.h"
 
 class PrefRegistrySimple;
 class PrefService;
@@ -16,9 +15,9 @@ class PrefService;
 namespace brightray {
 
 class DownloadManagerDelegate;
-class NetworkDelegate;
 
-class BrowserContext : public content::BrowserContext {
+class BrowserContext : public content::BrowserContext,
+                       public brightray::URLRequestContextGetter::Delegate {
  public:
   BrowserContext();
   ~BrowserContext();
@@ -39,15 +38,11 @@ class BrowserContext : public content::BrowserContext {
   // Subclasses should override this to register custom preferences.
   virtual void RegisterPrefs(PrefRegistrySimple* pref_registry) {}
 
-  // Subclasses should override this to provide a custom NetworkDelegate
-  // implementation.
-  virtual scoped_ptr<NetworkDelegate> CreateNetworkDelegate();
-
-  // Subclasses should override this to provide a custom URLRequestJobFactory
-  // implementation.
-  virtual scoped_ptr<net::URLRequestJobFactory> CreateURLRequestJobFactory(
+  // URLRequestContextGetter::Delegate:
+  virtual net::NetworkDelegate* CreateNetworkDelegate() OVERRIDE;
+  virtual net::URLRequestJobFactory* CreateURLRequestJobFactory(
       content::ProtocolHandlerMap* protocol_handlers,
-      content::ProtocolHandlerScopedVector* protocol_interceptors);
+      content::ProtocolHandlerScopedVector* protocol_interceptors) OVERRIDE;
 
   virtual base::FilePath GetPath() const OVERRIDE;
 
