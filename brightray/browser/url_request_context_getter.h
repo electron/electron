@@ -47,13 +47,13 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
       content::ProtocolHandlerScopedVector protocol_interceptors);
   virtual ~URLRequestContextGetter();
 
-  net::HostResolver* host_resolver();
+  // net::URLRequestContextGetter:
   virtual net::URLRequestContext* GetURLRequestContext() OVERRIDE;
+  virtual scoped_refptr<base::SingleThreadTaskRunner> GetNetworkTaskRunner() const OVERRIDE;
+
+  net::HostResolver* host_resolver();
 
  private:
-  virtual scoped_refptr<base::SingleThreadTaskRunner>
-      GetNetworkTaskRunner() const OVERRIDE;
-
   Delegate* delegate_;
 
   base::FilePath base_path_;

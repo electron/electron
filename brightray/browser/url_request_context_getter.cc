@@ -116,6 +116,9 @@ URLRequestContextGetter::URLRequestContextGetter(
 
   std::swap(protocol_handlers_, *protocol_handlers);
 
+  // We must create the proxy config service on the UI loop on Linux because it
+  // must synchronously run on the glib message loop. This will be passed to
+  // the URLRequestContextStorage on the IO thread in GetURLRequestContext().
   proxy_config_service_.reset(net::ProxyService::CreateSystemProxyConfigService(
       io_loop_->message_loop_proxy(), file_loop_));
 }
@@ -131,28 +134,24 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
 
   const CommandLine& command_line = *CommandLine::ForCurrentProcess();
-
   if (!url_request_context_.get()) {
-    url_request_context_.reset(new net::URLRequestContext());
+    url_request_context_.reset(new net::URLRequestContext);
     network_delegate_.reset(delegate_->CreateNetworkDelegate());
     url_request_context_->set_network_delegate(network_delegate_.get());
-    storage_.reset(
-        new net::URLRequestContextStorage(url_request_context_.get()));
+
+    storage_.reset(new net::URLRequestContextStorage(url_request_context_.get()));
     auto cookie_config = content::CookieStoreConfig(
         base_path_.Append(FILE_PATH_LITERAL("Cookies")),
         content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
-        nullptr,
-        nullptr);
+        NULL, NULL);
     storage_->set_cookie_store(content::CreateCookieStore(cookie_config));
     storage_->set_server_bound_cert_service(new net::ServerBoundCertService(
         new net::DefaultServerBoundCertStore(NULL),
         base::WorkerPool::GetTaskRunner(true)));
-    storage_->set_http_user_agent_settings(
-        new net::StaticHttpUserAgentSettings(
-            "en-us,en", base::EmptyString()));
+    storage_->set_http_user_agent_settings(new net::StaticHttpUserAgentSettings(
+        "en-us,en", base::EmptyString()));
 
-    scoped_ptr<net::HostResolver> host_resolver(
-        net::HostResolver::CreateDefaultResolver(NULL));
+    scoped_ptr<net::HostResolver> host_resolver(net::HostResolver::CreateDefaultResolver(NULL));
 
     // --host-resolver-rules
     if (command_line.HasSwitch(switches::kHostResolverRules)) {
@@ -189,33 +188,19 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         new net::HttpServerPropertiesImpl);
     storage_->set_http_server_properties(server_properties.Pass());
 
-    base::FilePath cache_path = base_path_.Append(FILE_PATH_LITERAL("Cache"));
-    net::HttpCache::DefaultBackend* main_backend =
-        new net::HttpCache::DefaultBackend(
-            net::DISK_CACHE,
-            net::CACHE_BACKEND_DEFAULT,
-            cache_path,
-            0,
-            BrowserThread::GetMessageLoopProxyForThread(BrowserThread::CACHE));
-
     net::HttpNetworkSession::Params network_session_params;
-    network_session_params.cert_verifier =
-        url_request_context_->cert_verifier();
+    network_session_params.cert_verifier = url_request_context_->cert_verifier();
+    network_session_params.proxy_service = url_request_context_->proxy_service();
+    network_session_params.ssl_config_service = url_request_context_->ssl_config_service();
+    network_session_params.network_delegate = url_request_context_->network_delegate();
+    network_session_params.http_server_properties = url_request_context_->http_server_properties();
+    network_session_params.ignore_certificate_errors = false;
     network_session_params.transport_security_state =
         url_request_context_->transport_security_state();
     network_session_params.server_bound_cert_service =
         url_request_context_->server_bound_cert_service();
-    network_session_params.proxy_service =
-        url_request_context_->proxy_service();
-    network_session_params.ssl_config_service =
-        url_request_context_->ssl_config_service();
     network_session_params.http_auth_handler_factory =
         url_request_context_->http_auth_handler_factory();
-    network_session_params.network_delegate =
-        url_request_context_->network_delegate();
-    network_session_params.http_server_properties =
-        url_request_context_->http_server_properties();
-    network_session_params.ignore_certificate_errors = false;
 
     // --host-rules
     if (command_line.HasSwitch(kHostRules)) {
@@ -226,12 +211,17 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     // Give |storage_| ownership at the end in case it's |mapped_host_resolver|.
     storage_->set_host_resolver(host_resolver.Pass());
-    network_session_params.host_resolver =
-        url_request_context_->host_resolver();
+    network_session_params.host_resolver = url_request_context_->host_resolver();
 
-    net::HttpCache* main_cache = new net::HttpCache(
-        network_session_params, main_backend);
-    storage_->set_http_transaction_factory(main_cache);
+    base::FilePath cache_path = base_path_.Append(FILE_PATH_LITERAL("Cache"));
+    net::HttpCache::DefaultBackend* backend =
+        new net::HttpCache::DefaultBackend(
+            net::DISK_CACHE,
+            net::CACHE_BACKEND_DEFAULT,
+            cache_path,
+            0,
+            BrowserThread::GetMessageLoopProxyForThread(BrowserThread::CACHE));
+    storage_->set_http_transaction_factory(new net::HttpCache(network_session_params, backend));
 
     storage_->set_job_factory(delegate_->CreateURLRequestJobFactory(
         &protocol_handlers_, &protocol_interceptors_));
@@ -240,8 +230,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   return url_request_context_.get();
 }
 
-scoped_refptr<base::SingleThreadTaskRunner>
-    URLRequestContextGetter::GetNetworkTaskRunner() const {
+scoped_refptr<base::SingleThreadTaskRunner> URLRequestContextGetter::GetNetworkTaskRunner() const {
   return BrowserThread::GetMessageLoopProxyForThread(BrowserThread::IO);
 }
 
