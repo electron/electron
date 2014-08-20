@@ -5,8 +5,15 @@
 #ifndef ATOM_COMMON_API_ATOM_BINDINGS_H_
 #define ATOM_COMMON_API_ATOM_BINDINGS_H_
 
+#include <list>
+
 #include "base/strings/string16.h"
 #include "v8/include/v8.h"
+#include "vendor/node/deps/uv/include/uv.h"
+
+namespace node {
+class Environment;
+}
 
 namespace atom {
 
@@ -20,6 +27,13 @@ class AtomBindings {
   virtual void BindTo(v8::Isolate* isolate, v8::Handle<v8::Object> process);
 
  private:
+  void ActivateUVLoop(v8::Isolate* isolate);
+
+  static void OnCallNextTick(uv_async_t* handle);
+
+  uv_async_t call_next_tick_async_;
+  std::list<node::Environment*> pending_next_ticks_;
+
   DISALLOW_COPY_AND_ASSIGN(AtomBindings);
 };
 
