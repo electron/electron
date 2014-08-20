@@ -121,6 +121,8 @@
       'atom/browser/net/atom_url_request_job_factory.h',
       'atom/browser/net/url_request_string_job.cc',
       'atom/browser/net/url_request_string_job.h',
+      'atom/browser/node_debugger.cc',
+      'atom/browser/node_debugger.h',
       'atom/browser/ui/accelerator_util.cc',
       'atom/browser/ui/accelerator_util.h',
       'atom/browser/ui/accelerator_util_mac.mm',

@@ -13,6 +13,7 @@ class AtomBindings;
 class Browser;
 class JavascriptEnvironment;
 class NodeBindings;
+class NodeDebugger;
 
 class AtomBrowserMainParts : public brightray::BrowserMainParts {
  public:
@@ -40,6 +41,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   scoped_ptr<JavascriptEnvironment> js_env_;
   scoped_ptr<NodeBindings> node_bindings_;
   scoped_ptr<AtomBindings> atom_bindings_;
+  scoped_ptr<NodeDebugger> node_debugger_;
 
   static AtomBrowserMainParts* self_;
 
