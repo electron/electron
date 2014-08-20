@@ -73,6 +73,32 @@ const char kProxyServer[] = "proxy-server";
 
 }  // namespace
 
+net::URLRequestJobFactory* URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
+    content::ProtocolHandlerMap* protocol_handlers,
+    content::ProtocolHandlerScopedVector* protocol_interceptors) {
+  scoped_ptr<net::URLRequestJobFactoryImpl> job_factory(new net::URLRequestJobFactoryImpl);
+
+  for (auto it = protocol_handlers->begin(); it != protocol_handlers->end(); ++it)
+    job_factory->SetProtocolHandler(it->first, it->second.release());
+  protocol_handlers->clear();
+
+  job_factory->SetProtocolHandler(content::kDataScheme, new net::DataProtocolHandler);
+  job_factory->SetProtocolHandler(content::kFileScheme, new net::FileProtocolHandler(
+      BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
+          base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
+
+  // Set up interceptors in the reverse order.
+  scoped_ptr<net::URLRequestJobFactory> top_job_factory =
+      job_factory.PassAs<net::URLRequestJobFactory>();
+  for (content::ProtocolHandlerScopedVector::reverse_iterator i = protocol_interceptors->rbegin();
+       i != protocol_interceptors->rend(); ++i)
+    top_job_factory.reset(new net::ProtocolInterceptJobFactory(
+        top_job_factory.Pass(), make_scoped_ptr(*i)));
+  protocol_interceptors->weak_clear();
+
+  return top_job_factory.release();
+}
+
 URLRequestContextGetter::URLRequestContextGetter(
     Delegate* delegate,
     const base::FilePath& base_path,
@@ -137,6 +163,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
       host_resolver = remapped_resolver.PassAs<net::HostResolver>();
     }
 
+    // --proxy-server
     net::DhcpProxyScriptFetcherFactory dhcp_factory;
     if (command_line.HasSwitch(kNoProxyServer))
       storage_->set_proxy_service(net::ProxyService::CreateDirect());
@@ -206,46 +233,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         network_session_params, main_backend);
     storage_->set_http_transaction_factory(main_cache);
 
-    // Give user a chance to create their own job factory.
-    scoped_ptr<net::URLRequestJobFactory> user_job_factory(
-        delegate_->CreateURLRequestJobFactory(&protocol_handlers_, &protocol_interceptors_));
-    if (user_job_factory) {
-      storage_->set_job_factory(user_job_factory.release());
-      return url_request_context_.get();
-    }
-
-    scoped_ptr<net::URLRequestJobFactoryImpl> job_factory(
-        new net::URLRequestJobFactoryImpl());
-    for (auto it = protocol_handlers_.begin(),
-        end = protocol_handlers_.end(); it != end; ++it) {
-      bool set_protocol = job_factory->SetProtocolHandler(
-          it->first, it->second.release());
-      DCHECK(set_protocol);
-      (void)set_protocol;  // silence unused-variable warning in Release builds on Windows
-    }
-    protocol_handlers_.clear();
-    job_factory->SetProtocolHandler(
-        content::kDataScheme, new net::DataProtocolHandler);
-    job_factory->SetProtocolHandler(
-        content::kFileScheme,
-        new net::FileProtocolHandler(
-            BrowserThread::GetBlockingPool()->
-                GetTaskRunnerWithShutdownBehavior(
-                    base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
-
-    // Set up interceptors in the reverse order.
-    scoped_ptr<net::URLRequestJobFactory> top_job_factory =
-        job_factory.PassAs<net::URLRequestJobFactory>();
-    for (content::ProtocolHandlerScopedVector::reverse_iterator i =
-             protocol_interceptors_.rbegin();
-         i != protocol_interceptors_.rend();
-         ++i) {
-      top_job_factory.reset(new net::ProtocolInterceptJobFactory(
-          top_job_factory.Pass(), make_scoped_ptr(*i)));
-    }
-    protocol_interceptors_.weak_clear();
-
-    storage_->set_job_factory(top_job_factory.release());
+    storage_->set_job_factory(delegate_->CreateURLRequestJobFactory(
+        &protocol_handlers_, &protocol_interceptors_));
   }
 
   return url_request_context_.get();

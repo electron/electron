@@ -32,12 +32,10 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     Delegate() {}
     virtual ~Delegate() {}
 
-    virtual net::NetworkDelegate* CreateNetworkDelegate() { return NULL; };
+    virtual net::NetworkDelegate* CreateNetworkDelegate() { return NULL; }
     virtual net::URLRequestJobFactory* CreateURLRequestJobFactory(
         content::ProtocolHandlerMap* protocol_handlers,
-        content::ProtocolHandlerScopedVector* protocol_interceptors) {
-      return NULL;
-    };
+        content::ProtocolHandlerScopedVector* protocol_interceptors);
   };
 
   URLRequestContextGetter(
