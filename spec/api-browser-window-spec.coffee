@@ -102,6 +102,8 @@ describe 'browser-window module', ->
       assert.equal size[1], 400
 
   describe '"enable-larger-than-screen" option', ->
+    return if process.platform is 'linux'
+
     beforeEach ->
       w.destroy()
       w = new BrowserWindow(show: true, width: 400, height: 400, 'enable-larger-than-screen': true)
