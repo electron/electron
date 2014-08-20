@@ -104,25 +104,24 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
     content::ProtocolHandlerScopedVector protocol_interceptors) {
   DCHECK(!url_request_getter_);
   url_request_getter_ = new URLRequestContextGetter(
+      this,
       GetPath(),
       BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
       BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::FILE),
-      base::Bind(&BrowserContext::CreateNetworkDelegate, base::Unretained(this)),
-      base::Bind(&BrowserContext::CreateURLRequestJobFactory, base::Unretained(this)),
       protocol_handlers,
       protocol_interceptors.Pass());
   resource_context_->set_url_request_context_getter(url_request_getter_.get());
   return url_request_getter_.get();
 }
 
-scoped_ptr<NetworkDelegate> BrowserContext::CreateNetworkDelegate() {
-  return make_scoped_ptr(new NetworkDelegate).Pass();
+net::NetworkDelegate* BrowserContext::CreateNetworkDelegate() {
+  return new NetworkDelegate;
 }
 
-scoped_ptr<net::URLRequestJobFactory> BrowserContext::CreateURLRequestJobFactory(
+net::URLRequestJobFactory* BrowserContext::CreateURLRequestJobFactory(
     content::ProtocolHandlerMap* protocol_handlers,
     content::ProtocolHandlerScopedVector* protocol_interceptors) {
-  return scoped_ptr<net::URLRequestJobFactory>();
+  return NULL;
 }
 
 base::FilePath BrowserContext::GetPath() const {

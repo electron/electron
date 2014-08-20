@@ -5,7 +5,6 @@
 #ifndef BRIGHTRAY_BROWSER_URL_REQUEST_CONTEXT_GETTER_H_
 #define BRIGHTRAY_BROWSER_URL_REQUEST_CONTEXT_GETTER_H_
 
-#include "base/callback.h"
 #include "base/files/file_path.h"
 #include "base/memory/scoped_ptr.h"
 #include "content/public/browser/content_browser_client.h"
@@ -18,26 +17,34 @@ class MessageLoop;
 namespace net {
 class HostMappingRules;
 class HostResolver;
+class NetworkDelegate;
 class ProxyConfigService;
 class URLRequestContextStorage;
+class URLRequestJobFactory;
 }
 
 namespace brightray {
 
-class NetworkDelegate;
-
-typedef base::Callback<scoped_ptr<net::URLRequestJobFactory>(
-    content::ProtocolHandlerMap* protocol_handlers,
-    content::ProtocolHandlerScopedVector* protocol_interceptors)> URLRequestJobFactoryFactory;
-
 class URLRequestContextGetter : public net::URLRequestContextGetter {
  public:
+  class Delegate {
+   public:
+    Delegate() {}
+    virtual ~Delegate() {}
+
+    virtual net::NetworkDelegate* CreateNetworkDelegate() { return NULL; };
+    virtual net::URLRequestJobFactory* CreateURLRequestJobFactory(
+        content::ProtocolHandlerMap* protocol_handlers,
+        content::ProtocolHandlerScopedVector* protocol_interceptors) {
+      return NULL;
+    };
+  };
+
   URLRequestContextGetter(
+      Delegate* delegate,
       const base::FilePath& base_path,
       base::MessageLoop* io_loop,
       base::MessageLoop* file_loop,
-      base::Callback<scoped_ptr<NetworkDelegate>(void)>,
-      URLRequestJobFactoryFactory job_factory_factory,
       content::ProtocolHandlerMap* protocol_handlers,
       content::ProtocolHandlerScopedVector protocol_interceptors);
   virtual ~URLRequestContextGetter();
@@ -49,15 +56,14 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   virtual scoped_refptr<base::SingleThreadTaskRunner>
       GetNetworkTaskRunner() const OVERRIDE;
 
+  Delegate* delegate_;
+
   base::FilePath base_path_;
   base::MessageLoop* io_loop_;
   base::MessageLoop* file_loop_;
 
-  base::Callback<scoped_ptr<NetworkDelegate>(void)> network_delegate_factory_;
-  URLRequestJobFactoryFactory job_factory_factory_;
-
   scoped_ptr<net::ProxyConfigService> proxy_config_service_;
-  scoped_ptr<NetworkDelegate> network_delegate_;
+  scoped_ptr<net::NetworkDelegate> network_delegate_;
   scoped_ptr<net::URLRequestContextStorage> storage_;
   scoped_ptr<net::URLRequestContext> url_request_context_;
   scoped_ptr<net::HostMappingRules> host_mapping_rules_;

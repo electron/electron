@@ -74,18 +74,16 @@ const char kProxyServer[] = "proxy-server";
 }  // namespace
 
 URLRequestContextGetter::URLRequestContextGetter(
+    Delegate* delegate,
     const base::FilePath& base_path,
     base::MessageLoop* io_loop,
     base::MessageLoop* file_loop,
-    base::Callback<scoped_ptr<NetworkDelegate>(void)> network_delegate_factory,
-    URLRequestJobFactoryFactory job_factory_factory,
     content::ProtocolHandlerMap* protocol_handlers,
     content::ProtocolHandlerScopedVector protocol_interceptors)
-    : base_path_(base_path),
+    : delegate_(delegate),
+      base_path_(base_path),
       io_loop_(io_loop),
       file_loop_(file_loop),
-      network_delegate_factory_(network_delegate_factory),
-      job_factory_factory_(job_factory_factory),
       protocol_interceptors_(protocol_interceptors.Pass()) {
   // Must first be created on the UI thread.
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
@@ -110,7 +108,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
   if (!url_request_context_.get()) {
     url_request_context_.reset(new net::URLRequestContext());
-    network_delegate_ = network_delegate_factory_.Run().Pass();
+    network_delegate_.reset(delegate_->CreateNetworkDelegate());
     url_request_context_->set_network_delegate(network_delegate_.get());
     storage_.reset(
         new net::URLRequestContextStorage(url_request_context_.get()));
@@ -210,7 +208,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     // Give user a chance to create their own job factory.
     scoped_ptr<net::URLRequestJobFactory> user_job_factory(
-        job_factory_factory_.Run(&protocol_handlers_, &protocol_interceptors_));
+        delegate_->CreateURLRequestJobFactory(&protocol_handlers_, &protocol_interceptors_));
     if (user_job_factory) {
       storage_->set_job_factory(user_job_factory.release());
       return url_request_context_.get();
