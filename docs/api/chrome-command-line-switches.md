@@ -1,8 +1,8 @@
 # Supported Chrome command line switches
 
 Following command lines switches in Chrome browser are also Supported in
-atom-shell, you can use [app.commandLine.appendSwitch](append-switch) to append
-them in your app's main script before the [ready](ready) event of [app](app)
+atom-shell, you can use [app.commandLine.appendSwitch][append-switch] to append
+them in your app's main script before the [ready][ready] event of [app][app]
 module is emitted:
 
 ```javascript
@@ -40,6 +40,6 @@ connection, and the endpoint host in a `SOCKS` proxy connection).
 
 Like `--host-rules` but these `rules` only apply to the host resolver.
 
-[app](app.md)
-[append-switch](app.md#appcommandlineappendswitchswitch-value)
-[ready](app.md##event-ready)
+[app]: app.md
+[append-switch]: app.md#appcommandlineappendswitchswitch-value
+[ready]: app.md#event-ready

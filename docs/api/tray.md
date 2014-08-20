@@ -36,7 +36,7 @@ rely on `clicked` event and always attach a context menu to the tray icon.
 
 ## Class: Tray
 
-`Tray` is an [EventEmitter](event-emitter).
+`Tray` is an [EventEmitter][event-emitter].
 
 ### new Tray(image)
 

@@ -9,10 +9,10 @@ the browser side (e.g. the browser process), atom-shell has provided the
 
 ### `--debug=[port]`
 
-When this switch is used atom-shell would listen for V8 debugger protocol on
-`port`, the `port` is `5858` by default.
+When this switch is used atom-shell would listen for V8 debugger protocol
+messages on `port`, the `port` is `5858` by default.
 
-### `debug-brk=[port]`
+### `--debug-brk=[port]`
 
 Like `--debug` but pauses the script on the first line.
 
@@ -22,7 +22,7 @@ __Note:__ Atom Shell uses node v0.11.13, which currently doesn't work very well
 with node-inspector, and the browser process would crash if you inspect the
 `process` object under node-inspector's console.
 
-### 1. Start the [node-inspector](node-inspector) server
+### 1. Start the [node-inspector][node-inspector] server
 
 ```bash
 $ node-inspector
@@ -46,4 +46,4 @@ $ atom-shell --debug-brk your/app
 
 Open http://127.0.0.1:8080/debug?port=5858 in the Chrome browser.
 
-[node-inspector](https://github.com/node-inspector/node-inspector)
+[node-inspector]: https://github.com/node-inspector/node-inspector

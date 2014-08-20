@@ -7,7 +7,7 @@ convenient.
 ## Overriding `X-Frame-Options` header
 
 May websites (including Google and Youtube) use the
-[X-Frame-Options](x-frame-options) header to disable access to their websites
+[X-Frame-Options][x-frame-options] header to disable access to their websites
 in `iframe`s. In atom-shell you can add a `disable-x-frame-options` string in
 the `iframe`'s name to disable this:
 
@@ -59,4 +59,4 @@ An example of enable node integration in `iframe` with `node-integration` set to
 <iframe src="http://jandan.net"></iframe>
 ```
 
-[x-frame-options](https://developer.mozilla.org/en-US/docs/Web/HTTP/X-Frame-Options)
+[x-frame-options]: https://developer.mozilla.org/en-US/docs/Web/HTTP/X-Frame-Options
