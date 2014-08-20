@@ -67,6 +67,10 @@ const char kHostRules[] = "host-rules";
 // other proxy server flags that are passed.
 const char kNoProxyServer[] = "no-proxy-server";
 
+// Uses a specified proxy server, overrides system settings. This switch only
+// affects HTTP and HTTPS requests.
+const char kProxyServer[] = "proxy-server";
+
 }  // namespace
 
 URLRequestContextGetter::URLRequestContextGetter(
@@ -138,6 +142,9 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     net::DhcpProxyScriptFetcherFactory dhcp_factory;
     if (command_line.HasSwitch(kNoProxyServer))
       storage_->set_proxy_service(net::ProxyService::CreateDirect());
+    else if (command_line.HasSwitch(kProxyServer))
+      storage_->set_proxy_service(net::ProxyService::CreateFixed(
+          command_line.GetSwitchValueASCII(kProxyServer)));
     else
       storage_->set_proxy_service(
           net::CreateProxyServiceUsingV8ProxyResolver(
