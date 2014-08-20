@@ -25,8 +25,7 @@ AtomBrowserContext::AtomBrowserContext()
 AtomBrowserContext::~AtomBrowserContext() {
 }
 
-scoped_ptr<net::URLRequestJobFactory>
-AtomBrowserContext::CreateURLRequestJobFactory(
+net::URLRequestJobFactory* AtomBrowserContext::CreateURLRequestJobFactory(
     content::ProtocolHandlerMap* handlers,
     content::ProtocolHandlerScopedVector* interceptors) {
   scoped_ptr<AtomURLRequestJobFactory> job_factory(job_factory_);
@@ -52,7 +51,7 @@ AtomBrowserContext::CreateURLRequestJobFactory(
         top_job_factory.Pass(), make_scoped_ptr(*it)));
   interceptors->weak_clear();
 
-  return top_job_factory.Pass();
+  return top_job_factory.release();
 }
 
 // static
