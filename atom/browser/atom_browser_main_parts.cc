@@ -13,10 +13,6 @@
 #include "atom/common/node_bindings.h"
 #include "base/command_line.h"
 
-#if defined(OS_WIN)
-#include "ui/gfx/win/dpi.h"
-#endif
-
 #if defined(USE_X11)
 #include "chrome/browser/ui/libgtk2ui/gtk2_util.h"
 #endif
@@ -79,10 +75,6 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 #if defined(USE_X11)
   libgtk2ui::GtkInitFromCommandLine(*CommandLine::ForCurrentProcess());
 #endif
-
-  // Make sure the url request job factory is created before the ready event.
-  static_cast<content::BrowserContext*>(AtomBrowserContext::Get())->
-      GetRequestContext();
 
 #if !defined(OS_MACOSX)
   // The corresponding call in OS X is in AtomApplicationDelegate.
