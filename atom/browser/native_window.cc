@@ -142,8 +142,9 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     Center();
   }
   int min_height = 0, min_width = 0;
-  if (options.Get(switches::kMinHeight, &min_height) ||
-      options.Get(switches::kMinWidth, &min_width)) {
+  bool has_min_height = options.Get(switches::kMinHeight, &min_height);
+  bool has_min_width = options.Get(switches::kMinWidth, &min_width);
+  if (has_min_height || has_min_width) {
     SetMinimumSize(gfx::Size(min_width, min_height));
   }
   int max_height = -1, max_width = -1;
