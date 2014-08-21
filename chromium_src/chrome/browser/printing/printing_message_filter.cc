@@ -87,11 +87,8 @@ void RenderParamsFromPrintSettings(const printing::PrintSettings& settings,
 
 }  // namespace
 
-PrintingMessageFilter::PrintingMessageFilter(int render_process_id,
-                                             Profile* profile)
+PrintingMessageFilter::PrintingMessageFilter(int render_process_id)
     : BrowserMessageFilter(PrintMsgStart),
-      // profile_io_data_(ProfileIOData::FromResourceContext(
-      //     profile->GetResourceContext())),
       render_process_id_(render_process_id),
       queue_(g_browser_process->print_job_manager()->queue()) {
   DCHECK(queue_);

@@ -15,8 +15,6 @@
 #endif
 
 struct PrintHostMsg_ScriptedPrint_Params;
-class Profile;
-class ProfileIOData;
 
 namespace base {
 class DictionaryValue;
@@ -37,7 +35,7 @@ class PrintQueriesQueue;
 // renderer process on the IPC thread.
 class PrintingMessageFilter : public content::BrowserMessageFilter {
  public:
-  PrintingMessageFilter(int render_process_id, Profile* profile);
+  explicit PrintingMessageFilter(int render_process_id);
 
   // content::BrowserMessageFilter methods.
   virtual void OverrideThreadForMessage(
