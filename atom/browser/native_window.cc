@@ -249,18 +249,10 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
     return;
   }
 
-  gfx::Rect flipped_y_rect = rect;
-  flipped_y_rect.set_y(-rect.y());
-
-  gfx::Size size;
-  if (flipped_y_rect.IsEmpty())
-    size = render_widget_host_view->GetViewBounds().size();
-  else
-    size = flipped_y_rect.size();
-
   GetWebContents()->GetRenderViewHost()->CopyFromBackingStore(
-      flipped_y_rect,
-      size,
+      rect,
+      rect.IsEmpty() ? render_widget_host_view->GetViewBounds().size() :
+                       rect.size(),
       base::Bind(&NativeWindow::OnCapturePageDone,
                  weak_factory_.GetWeakPtr(),
                  callback),
