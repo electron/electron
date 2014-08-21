@@ -39,9 +39,6 @@ class PrintViewManagerBase : public content::NotificationObserver,
   // this function. Returns false if printing is impossible at the moment.
   virtual bool PrintNow();
 
-  // Whether to block scripted printing for our tab or not.
-  void UpdateScriptedPrintingBlocked();
-
   // PrintedPagesSource implementation.
   virtual base::string16 RenderSourceName() OVERRIDE;
 

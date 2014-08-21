@@ -295,10 +295,6 @@ IPC_MESSAGE_ROUTED0(PrintMsg_PrintPages)
 IPC_MESSAGE_ROUTED1(PrintMsg_PrintingDone,
                     bool /* success */)
 
-// Tells the render view whether scripted printing is blocked or not.
-IPC_MESSAGE_ROUTED1(PrintMsg_SetScriptedPrintingBlocked,
-                    bool /* blocked */)
-
 // Tells the render view to switch the CSS to print media type, renders every
 // requested pages for print preview using the given |settings|. This gets
 // called multiple times as the user updates settings.
@@ -307,9 +303,6 @@ IPC_MESSAGE_ROUTED1(PrintMsg_PrintPreview,
 
 // Like PrintMsg_PrintPages, but using the print preview document's frame/node.
 IPC_MESSAGE_ROUTED0(PrintMsg_PrintForSystemDialog)
-
-// Tells a renderer to stop blocking script initiated printing.
-IPC_MESSAGE_ROUTED0(PrintMsg_ResetScriptedPrintCount)
 
 // Messages sent from the renderer to the browser.
 

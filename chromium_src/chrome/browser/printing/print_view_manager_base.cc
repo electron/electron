@@ -73,12 +73,6 @@ bool PrintViewManagerBase::PrintNow() {
   return PrintNowInternal(new PrintMsg_PrintPages(routing_id()));
 }
 
-void PrintViewManagerBase::UpdateScriptedPrintingBlocked() {
-  Send(new PrintMsg_SetScriptedPrintingBlocked(
-       routing_id(),
-       !printing_enabled_));
-}
-
 void PrintViewManagerBase::NavigationStopped() {
   // Cancel the current job, wait for the worker to finish.
   TerminatePrintJob(true);
@@ -206,7 +200,6 @@ void PrintViewManagerBase::OnShowInvalidPrinterSettingsError() {
 
 void PrintViewManagerBase::DidStartLoading(
     content::RenderViewHost* render_view_host) {
-  UpdateScriptedPrintingBlocked();
 }
 
 bool PrintViewManagerBase::OnMessageReceived(const IPC::Message& message) {

@@ -276,23 +276,6 @@ class PrintWebViewHelper
 
   // Script Initiated Printing ------------------------------------------------
 
-  // Return true if script initiated printing is currently
-  // allowed. |user_initiated| should be true when a user event triggered the
-  // script, most likely by pressing a print button on the page.
-  bool IsScriptInitiatedPrintAllowed(blink::WebFrame* frame,
-                                     bool user_initiated);
-
-  // Returns true if script initiated printing occurs too often.
-  bool IsScriptInitiatedPrintTooFrequent(blink::WebFrame* frame);
-
-  // Reset the counter for script initiated printing.
-  // Scripted printing will be allowed to continue.
-  void ResetScriptedPrintCount();
-
-  // Increment the counter for script initiated printing.
-  // Scripted printing will be blocked for a limited amount of time.
-  void IncrementScriptedPrintCount();
-
   // Shows scripted print preview when options from plugin are availible.
   void ShowScriptedPrintPreview();
 
@@ -318,11 +301,6 @@ class PrintWebViewHelper
   bool is_scripted_print_throttling_disabled_;
   bool is_print_ready_metafile_sent_;
   bool ignore_css_margins_;
-
-  // Used for scripted initiated printing blocking.
-  base::Time last_cancelled_script_print_;
-  int user_cancelled_scripted_print_count_;
-  bool is_scripted_printing_blocked_;
 
   // Let the browser process know of a printing failure. Only set to false when
   // the failure came from the browser in the first place.
