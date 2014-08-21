@@ -10,6 +10,8 @@
 #ifndef CHROME_BROWSER_BROWSER_PROCESS_H_
 #define CHROME_BROWSER_BROWSER_PROCESS_H_
 
+#include <string>
+
 #include "base/basictypes.h"
 #include "base/memory/scoped_ptr.h"
 
