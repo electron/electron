@@ -11,6 +11,7 @@
 #include "atom/common/options_switches.h"
 #include "atom/renderer/api/atom_renderer_bindings.h"
 #include "atom/renderer/atom_render_view_observer.h"
+#include "chrome/renderer/printing/print_web_view_helper.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "base/command_line.h"
@@ -105,6 +106,7 @@ void AtomRendererClient::RenderFrameCreated(
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
+  new printing::PrintWebViewHelper(render_view);
   new AtomRenderViewObserver(render_view, this);
 }
 
