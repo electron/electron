@@ -54,6 +54,9 @@ const char kAutoHideMenuBar[] = "auto-hide-menu-bar";
 // Enable window to be resized larger than screen.
 const char kEnableLargerThanScreen[] = "enable-larger-than-screen";
 
+// Forces to use dark theme on Linux.
+const char kDarkTheme[] = "dark-theme";
+
 }  // namespace switches
 
 }  // namespace atom

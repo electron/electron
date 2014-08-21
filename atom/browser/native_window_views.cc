@@ -150,6 +150,19 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
 
   window_->Init(params);
 
+#if defined(USE_X11)
+  bool use_dark_theme = false;
+  if (options.Get(switches::kDarkTheme, &use_dark_theme) && use_dark_theme) {
+    XDisplay* xdisplay = gfx::GetXDisplay();
+    XChangeProperty(xdisplay, GetAcceleratedWidget(),
+                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", False),
+                    XInternAtom(xdisplay, "UTF8_STRING", False),
+                    8, PropModeReplace,
+                    reinterpret_cast<const unsigned char*>("dark"),
+                    4);
+  }
+#endif
+
   // Add web view.
   SetLayoutManager(new MenuLayout(kMenuBarHeight));
   set_background(views::Background::CreateStandardPanelBackground());

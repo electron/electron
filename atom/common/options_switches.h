@@ -34,6 +34,7 @@ extern const char kWebPreferences[];
 extern const char kZoomFactor[];
 extern const char kAutoHideMenuBar[];
 extern const char kEnableLargerThanScreen[];
+extern const char kDarkTheme[];
 
 }  // namespace switches
 

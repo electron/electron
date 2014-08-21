@@ -63,6 +63,8 @@ normal browsers, see [Web Security](web-security.md) for more.
     key is pressed.
   * `enable-larger-than-screen` Boolean - Enable the window to be resized larger
     than screen.
+  * `dark-theme` Boolean - Forces using dark theme for the window, only works on
+    some GTK+3 desktop environments.
   * `web-preferences` Object - Settings of web page's features
     * `javascript` Boolean
     * `web-security` Boolean
