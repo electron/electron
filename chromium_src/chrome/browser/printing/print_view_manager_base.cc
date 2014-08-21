@@ -31,15 +31,6 @@
 #include "printing/printed_document.h"
 #include "ui/base/l10n/l10n_util.h"
 
-#if defined(OS_WIN)
-#include "base/command_line.h"
-#include "chrome/common/chrome_switches.h"
-#endif
-
-#if defined(ENABLE_FULL_PRINTING)
-#include "chrome/browser/printing/print_error_dialog.h"
-#endif
-
 using base::TimeDelta;
 using content::BrowserThread;
 
@@ -181,10 +172,6 @@ void PrintViewManagerBase::OnPrintingFailed(int cookie) {
     NOTREACHED();
     return;
   }
-
-#if defined(ENABLE_FULL_PRINTING)
-  chrome::ShowPrintErrorDialog();
-#endif
 
   ReleasePrinterQuery();
 

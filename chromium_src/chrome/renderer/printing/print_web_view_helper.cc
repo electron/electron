@@ -395,7 +395,7 @@ PrintMsg_Print_Params CalculatePrintParamsForCss(
 }
 
 bool IsPrintPreviewEnabled() {
-  return true;
+  return false;
 }
 
 }  // namespace
