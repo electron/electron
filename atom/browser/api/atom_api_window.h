@@ -97,11 +97,12 @@ class Window : public mate::EventEmitter,
   void FocusOnWebView();
   void BlurWebView();
   bool IsWebViewFocused();
-  void CapturePage(mate::Arguments* args);
   void SetRepresentedFilename(const std::string& filename);
   std::string GetRepresentedFilename();
   void SetDocumentEdited(bool edited);
   bool IsDocumentEdited();
+  void CapturePage(mate::Arguments* args);
+  void Print();
 
   // APIs for WebContents.
   mate::Handle<WebContents> GetWebContents(v8::Isolate* isolate) const;

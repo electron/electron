@@ -195,11 +195,16 @@ std::string NativeWindow::GetRepresentedFilename() {
 void NativeWindow::SetDocumentEdited(bool edited) {
 }
 
+bool NativeWindow::IsDocumentEdited() {
+  return false;
+}
+
 void NativeWindow::SetMenu(ui::MenuModel* menu) {
 }
 
-bool NativeWindow::IsDocumentEdited() {
-  return false;
+void NativeWindow::Print() {
+  printing::PrintViewManagerBasic::FromWebContents(GetWebContents())->
+      PrintNow();
 }
 
 bool NativeWindow::HasModalDialog() {
