@@ -88,37 +88,6 @@ void PrintWebViewHelper::PrintPageInternal(
   Send(new PrintHostMsg_DidPrintPage(routing_id(), page_params));
 }
 
-bool PrintWebViewHelper::RenderPreviewPage(
-    int page_number,
-    const PrintMsg_Print_Params& print_params) {
-  // Calculate the dpi adjustment.
-  double actual_shrink = static_cast<float>(print_params.desired_dpi /
-                                            print_params.dpi);
-  scoped_ptr<Metafile> draft_metafile;
-  Metafile* initial_render_metafile = print_preview_context_.metafile();
-
-  if (print_preview_context_.IsModifiable() && is_print_ready_metafile_sent_) {
-    draft_metafile.reset(new PreviewMetafile);
-    initial_render_metafile = draft_metafile.get();
-  }
-
-  base::TimeTicks begin_time = base::TimeTicks::Now();
-  RenderPage(print_params, page_number, print_preview_context_.prepared_frame(),
-             true, initial_render_metafile, &actual_shrink, NULL, NULL);
-  print_preview_context_.RenderedPreviewPage(
-      base::TimeTicks::Now() - begin_time);
-
-  if (draft_metafile.get()) {
-    draft_metafile->FinishDocument();
-  } else if (print_preview_context_.IsModifiable() &&
-             print_preview_context_.generate_draft_pages()) {
-    DCHECK(!draft_metafile.get());
-    draft_metafile.reset(
-        print_preview_context_.metafile()->GetMetafileForCurrentPage());
-  }
-  return PreviewPageRendered(page_number, draft_metafile.get());
-}
-
 void PrintWebViewHelper::RenderPage(
     const PrintMsg_Print_Params& params, int page_number, WebFrame* frame,
     bool is_preview, Metafile* metafile, double* actual_shrink,
@@ -154,22 +123,10 @@ void PrintWebViewHelper::RenderPage(
                                            kPointsPerInch, dpi)));
   }
 
-  if (!is_preview) {
-    // Since WebKit extends the page width depending on the magical scale factor
-    // we make sure the canvas covers the worst case scenario (x2.0 currently).
-    // PrintContext will then set the correct clipping region.
-    page_size = gfx::Size(
-        static_cast<int>(page_layout_in_points.content_width *
-                         params.max_shrink),
-        static_cast<int>(page_layout_in_points.content_height *
-                         params.max_shrink));
-  }
-
   float webkit_page_shrink_factor = frame->getPrintPageShrink(page_number);
   float scale_factor = css_scale_factor * webkit_page_shrink_factor;
 
-  gfx::Rect canvas_area =
-      params.display_header_footer ? gfx::Rect(page_size) : content_area;
+  gfx::Rect canvas_area = content_area;
 
   SkBaseDevice* device = metafile->StartPageForVectorCanvas(
       page_size, canvas_area, scale_factor);
@@ -178,19 +135,6 @@ void PrintWebViewHelper::RenderPage(
   // can't be a stack object.
   skia::RefPtr<skia::VectorCanvas> canvas =
       skia::AdoptRef(new skia::VectorCanvas(device));
-
-  if (is_preview) {
-    MetafileSkiaWrapper::SetMetafileOnCanvas(*canvas, metafile);
-    skia::SetIsDraftMode(*canvas, is_print_ready_metafile_sent_);
-    skia::SetIsPreviewMetafile(*canvas, is_preview);
-  }
-
-  if (params.display_header_footer) {
-    // |page_number| is 0-based, so 1 is added.
-    PrintHeaderAndFooter(canvas.get(), page_number + 1,
-        print_preview_context_.total_page_count(), scale_factor,
-        page_layout_in_points, *header_footer_info_, params);
-  }
 
   float webkit_scale_factor = RenderPageContent(frame, page_number, canvas_area,
                                                 content_area, scale_factor,

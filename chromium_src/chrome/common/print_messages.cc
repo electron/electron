@@ -21,12 +21,8 @@ PrintMsg_Print_Params::PrintMsg_Print_Params()
     document_cookie(0),
     selection_only(false),
     supports_alpha_blend(false),
-    preview_ui_id(-1),
-    preview_request_id(0),
-    is_first_request(false),
     print_scaling_option(blink::WebPrintScalingOptionSourceSize),
     print_to_pdf(false),
-    display_header_footer(false),
     title(),
     url(),
     should_print_backgrounds(false) {
@@ -47,12 +43,8 @@ void PrintMsg_Print_Params::Reset() {
   document_cookie = 0;
   selection_only = false;
   supports_alpha_blend = false;
-  preview_ui_id = -1;
-  preview_request_id = 0;
-  is_first_request = false;
   print_scaling_option = blink::WebPrintScalingOptionSourceSize;
   print_to_pdf = false;
-  display_header_footer = false;
   title = base::string16();
   url = base::string16();
   should_print_backgrounds = false;
@@ -68,14 +60,3 @@ void PrintMsg_PrintPages_Params::Reset() {
   params.Reset();
   pages = std::vector<int>();
 }
-
-PrintHostMsg_RequestPrintPreview_Params::
-    PrintHostMsg_RequestPrintPreview_Params()
-    : is_modifiable(false),
-      webnode_only(false),
-      has_selection(false),
-      selection_only(false) {
-}
-
-PrintHostMsg_RequestPrintPreview_Params::
-    ~PrintHostMsg_RequestPrintPreview_Params() {}

@@ -18,26 +18,6 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
 
-#if defined(ENABLE_FULL_PRINTING)
-#include "chrome/browser/ui/webui/print_preview/print_preview_ui.h"
-#endif
-
-#if defined(OS_CHROMEOS)
-#include <fcntl.h>
-
-#include <map>
-
-#include "base/file_util.h"
-#include "base/lazy_instance.h"
-#include "chrome/browser/printing/print_dialog_cloud.h"
-#endif
-
-#if defined(OS_ANDROID)
-#include "base/strings/string_number_conversions.h"
-#include "chrome/browser/printing/print_view_manager_basic.h"
-#include "printing/printing_context_android.h"
-#endif
-
 using content::BrowserThread;
 
 namespace {
@@ -80,7 +60,6 @@ void RenderParamsFromPrintSettings(const printing::PrintSettings& settings,
   params->selection_only = settings.selection_only();
   params->supports_alpha_blend = settings.supports_alpha_blend();
   params->should_print_backgrounds = settings.should_print_backgrounds();
-  params->display_header_footer = settings.display_header_footer();
   params->title = settings.title();
   params->url = settings.url();
 }
@@ -119,21 +98,12 @@ bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message,
 #if defined(OS_WIN)
     IPC_MESSAGE_HANDLER(PrintHostMsg_DuplicateSection, OnDuplicateSection)
 #endif
-#if defined(OS_CHROMEOS) || defined(OS_ANDROID)
-    IPC_MESSAGE_HANDLER(PrintHostMsg_AllocateTempFileForPrinting,
-                        OnAllocateTempFileForPrinting)
-    IPC_MESSAGE_HANDLER(PrintHostMsg_TempFileForPrintingWritten,
-                        OnTempFileForPrintingWritten)
-#endif
     IPC_MESSAGE_HANDLER(PrintHostMsg_IsPrintingEnabled, OnIsPrintingEnabled)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(PrintHostMsg_GetDefaultPrintSettings,
                                     OnGetDefaultPrintSettings)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(PrintHostMsg_ScriptedPrint, OnScriptedPrint)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(PrintHostMsg_UpdatePrintSettings,
                                     OnUpdatePrintSettings)
-#if defined(ENABLE_FULL_PRINTING)
-    IPC_MESSAGE_HANDLER(PrintHostMsg_CheckForCancel, OnCheckForCancel)
-#endif
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
   return handled;
@@ -149,102 +119,6 @@ void PrintingMessageFilter::OnDuplicateSection(
   shared_buf.GiveToProcess(base::GetCurrentProcessHandle(), browser_handle);
 }
 #endif
-
-#if defined(OS_CHROMEOS) || defined(OS_ANDROID)
-void PrintingMessageFilter::OnAllocateTempFileForPrinting(
-    int render_view_id,
-    base::FileDescriptor* temp_file_fd,
-    int* sequence_number) {
-#if defined(OS_CHROMEOS)
-  // TODO(thestig): Use |render_view_id| for Chrome OS.
-  DCHECK_CURRENTLY_ON(BrowserThread::FILE);
-  temp_file_fd->fd = *sequence_number = -1;
-  temp_file_fd->auto_close = false;
-
-  SequenceToPathMap* map = &g_printing_file_descriptor_map.Get().map;
-  *sequence_number = g_printing_file_descriptor_map.Get().sequence++;
-
-  base::FilePath path;
-  if (base::CreateTemporaryFile(&path)) {
-    int fd = open(path.value().c_str(), O_WRONLY);
-    if (fd >= 0) {
-      SequenceToPathMap::iterator it = map->find(*sequence_number);
-      if (it != map->end()) {
-        NOTREACHED() << "Sequence number already in use. seq=" <<
-            *sequence_number;
-      } else {
-        (*map)[*sequence_number] = path;
-        temp_file_fd->fd = fd;
-        temp_file_fd->auto_close = true;
-      }
-    }
-  }
-#elif defined(OS_ANDROID)
-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  content::WebContents* wc = GetWebContentsForRenderView(render_view_id);
-  if (!wc)
-    return;
-  printing::PrintViewManagerBasic* print_view_manager =
-      printing::PrintViewManagerBasic::FromWebContents(wc);
-  // The file descriptor is originally created in & passed from the Android
-  // side, and it will handle the closing.
-  const base::FileDescriptor& file_descriptor =
-      print_view_manager->file_descriptor();
-  temp_file_fd->fd = file_descriptor.fd;
-  temp_file_fd->auto_close = false;
-#endif
-}
-
-void PrintingMessageFilter::OnTempFileForPrintingWritten(int render_view_id,
-                                                         int sequence_number) {
-#if defined(OS_CHROMEOS)
-  DCHECK_CURRENTLY_ON(BrowserThread::FILE);
-  SequenceToPathMap* map = &g_printing_file_descriptor_map.Get().map;
-  SequenceToPathMap::iterator it = map->find(sequence_number);
-  if (it == map->end()) {
-    NOTREACHED() << "Got a sequence that we didn't pass to the "
-                    "renderer: " << sequence_number;
-    return;
-  }
-  BrowserThread::PostTask(
-      BrowserThread::UI, FROM_HERE,
-      base::Bind(&PrintingMessageFilter::CreatePrintDialogForFile,
-                 this, render_view_id, it->second));
-
-  // Erase the entry in the map.
-  map->erase(it);
-#elif defined(OS_ANDROID)
-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  content::WebContents* wc = GetWebContentsForRenderView(render_view_id);
-  if (!wc)
-    return;
-  printing::PrintViewManagerBasic* print_view_manager =
-      printing::PrintViewManagerBasic::FromWebContents(wc);
-  const base::FileDescriptor& file_descriptor =
-      print_view_manager->file_descriptor();
-  printing::PrintingContextAndroid::PdfWritingDone(file_descriptor.fd, true);
-  // Invalidate the file descriptor so it doesn't accidentally get reused.
-  print_view_manager->set_file_descriptor(base::FileDescriptor(-1, false));
-#endif
-}
-#endif  // defined(OS_CHROMEOS) || defined(OS_ANDROID)
-
-#if defined(OS_CHROMEOS)
-void PrintingMessageFilter::CreatePrintDialogForFile(
-    int render_view_id,
-    const base::FilePath& path) {
-  content::WebContents* wc = GetWebContentsForRenderView(render_view_id);
-  if (!wc)
-    return;
-  print_dialog_cloud::CreatePrintDialogForFile(
-      wc->GetBrowserContext(),
-      wc->GetTopLevelNativeWindow(),
-      path,
-      wc->GetTitle(),
-      base::string16(),
-      std::string("application/pdf"));
-}
-#endif  // defined(OS_CHROMEOS)
 
 content::WebContents* PrintingMessageFilter::GetWebContentsForRenderView(
     int render_view_id) {
@@ -410,18 +284,6 @@ void PrintingMessageFilter::OnScriptedPrintReply(
   }
 }
 
-#if defined(OS_ANDROID)
-void PrintingMessageFilter::UpdateFileDescriptor(int render_view_id, int fd) {
-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  content::WebContents* wc = GetWebContentsForRenderView(render_view_id);
-  if (!wc)
-    return;
-  printing::PrintViewManagerBasic* print_view_manager =
-      printing::PrintViewManagerBasic::FromWebContents(wc);
-  print_view_manager->set_file_descriptor(base::FileDescriptor(fd, false));
-}
-#endif
-
 void PrintingMessageFilter::OnUpdatePrintSettings(
     int document_cookie, const base::DictionaryValue& job_settings,
     IPC::Message* reply_msg) {
@@ -464,13 +326,3 @@ void PrintingMessageFilter::OnUpdatePrintSettingsReply(
     }
   }
 }
-
-#if defined(ENABLE_FULL_PRINTING)
-void PrintingMessageFilter::OnCheckForCancel(int32 preview_ui_id,
-                                             int preview_request_id,
-                                             bool* cancel) {
-  PrintPreviewUI::GetCurrentPrintPreviewStatus(preview_ui_id,
-                                               preview_request_id,
-                                               cancel);
-}
-#endif
