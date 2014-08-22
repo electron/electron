@@ -672,10 +672,10 @@ bool PrintWebViewHelper::GetPrintFrame(blink::WebLocalFrame** frame) {
   return true;
 }
 
-void PrintWebViewHelper::OnPrintPages() {
+void PrintWebViewHelper::OnPrintPages(bool silent, bool print_background) {
   blink::WebLocalFrame* frame;
   if (GetPrintFrame(&frame))
-    Print(frame, blink::WebNode());
+    Print(frame, blink::WebNode(), silent, print_background);
 }
 
 void PrintWebViewHelper::GetPageSizeAndContentAreaFromPageLayout(
@@ -701,14 +701,6 @@ void PrintWebViewHelper::UpdateFrameMarginsCssInfo(
   if (!settings.GetInteger(kSettingMarginsType, &margins_type))
     margins_type = DEFAULT_MARGINS;
   ignore_css_margins_ = (margins_type != DEFAULT_MARGINS);
-}
-
-bool PrintWebViewHelper::IsPrintToPdfRequested(
-    const base::DictionaryValue& job_settings) {
-  bool print_to_pdf = false;
-  if (!job_settings.GetBoolean(kSettingPrintToPDF, &print_to_pdf))
-    NOTREACHED();
-  return print_to_pdf;
 }
 
 void PrintWebViewHelper::OnPrintingDone(bool success) {
@@ -743,7 +735,9 @@ void PrintWebViewHelper::PrintNode(const blink::WebNode& node) {
 }
 
 void PrintWebViewHelper::Print(blink::WebLocalFrame* frame,
-                               const blink::WebNode& node) {
+                               const blink::WebNode& node,
+                               bool silent,
+                               bool print_background) {
   // If still not finished with earlier print request simply ignore.
   if (prep_frame_view_)
     return;
@@ -763,11 +757,13 @@ void PrintWebViewHelper::Print(blink::WebLocalFrame* frame,
   }
 
   // Ask the browser to show UI to retrieve the final print settings.
-  if (!GetPrintSettingsFromUser(frame_ref.GetFrame(), node,
-                                expected_page_count)) {
+  if (!silent && !GetPrintSettingsFromUser(frame_ref.GetFrame(), node,
+                                           expected_page_count)) {
     DidFinishPrinting(OK);  // Release resources and fail silently.
     return;
   }
+
+  print_pages_params_->params.should_print_backgrounds = print_background;
 
   // Render Pages for printing.
   if (!RenderPagesForPrint(frame_ref.GetFrame(), node)) {

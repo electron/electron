@@ -16,7 +16,30 @@
 
 #include "atom/common/node_includes.h"
 
+namespace {
+
+struct PrintSettings {
+  bool silent;
+  bool print_backgournd;
+};
+
+}  // namespace
+
 namespace mate {
+
+template<>
+struct Converter<PrintSettings> {
+  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+                     PrintSettings* out) {
+    mate::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+    if (!dict.Get("silent", &(out->silent)) ||
+        !dict.Get("printBackground", &(out->print_backgournd)))
+      return false;
+    return true;
+  }
+};
 
 template<>
 struct Converter<gfx::Rect> {
@@ -334,8 +357,14 @@ void Window::CapturePage(mate::Arguments* args) {
       rect, base::Bind(&OnCapturePageDone, args->isolate(), callback));
 }
 
-void Window::Print() {
-  window_->Print();
+void Window::Print(mate::Arguments* args) {
+  PrintSettings settings = { false, false };;
+  if (args->Length() == 1 && !args->GetNext(&settings)) {
+    args->ThrowError();
+    return;
+  }
+
+  window_->Print(settings.silent, settings.print_backgournd);
 }
 
 mate::Handle<WebContents> Window::GetWebContents(v8::Isolate* isolate) const {

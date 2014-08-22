@@ -81,7 +81,7 @@ class PrintWebViewHelper
                          bool user_initiated) OVERRIDE;
 
   // Message handlers ---------------------------------------------------------
-  void OnPrintPages();
+  void OnPrintPages(bool silent, bool print_background);
   void OnPrintingDone(bool success);
 
   // Get |page_size| and |content_area| information from
@@ -94,12 +94,12 @@ class PrintWebViewHelper
   // Update |ignore_css_margins_| based on settings.
   void UpdateFrameMarginsCssInfo(const base::DictionaryValue& settings);
 
-  // Returns true if the current destination printer is PRINT_TO_PDF.
-  bool IsPrintToPdfRequested(const base::DictionaryValue& settings);
-
   // Main printing code -------------------------------------------------------
 
-  void Print(blink::WebLocalFrame* frame, const blink::WebNode& node);
+  void Print(blink::WebLocalFrame* frame,
+             const blink::WebNode& node,
+             bool silent = false,
+             bool print_background = false);
 
   // Notification when printing is done - signal tear-down/free resources.
   void DidFinishPrinting(PrintingResult result);

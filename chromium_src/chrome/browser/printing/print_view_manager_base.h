@@ -37,7 +37,7 @@ class PrintViewManagerBase : public content::NotificationObserver,
   // Prints the current document immediately. Since the rendering is
   // asynchronous, the actual printing will not be completed on the return of
   // this function. Returns false if printing is impossible at the moment.
-  virtual bool PrintNow();
+  virtual bool PrintNow(bool silent, bool print_background);
 
   // PrintedPagesSource implementation.
   virtual base::string16 RenderSourceName() OVERRIDE;

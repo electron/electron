@@ -102,7 +102,7 @@ class Window : public mate::EventEmitter,
   void SetDocumentEdited(bool edited);
   bool IsDocumentEdited();
   void CapturePage(mate::Arguments* args);
-  void Print();
+  void Print(mate::Arguments* args);
 
   // APIs for WebContents.
   mate::Handle<WebContents> GetWebContents(v8::Isolate* isolate) const;

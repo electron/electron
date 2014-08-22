@@ -157,7 +157,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
                            const CapturePageCallback& callback);
 
   // Print current page.
-  virtual void Print();
+  virtual void Print(bool silent, bool print_background);
 
   // The same with closing a tab in a real browser.
   //

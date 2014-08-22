@@ -202,9 +202,9 @@ bool NativeWindow::IsDocumentEdited() {
 void NativeWindow::SetMenu(ui::MenuModel* menu) {
 }
 
-void NativeWindow::Print() {
+void NativeWindow::Print(bool silent, bool print_background) {
   printing::PrintViewManagerBasic::FromWebContents(GetWebContents())->
-      PrintNow();
+      PrintNow(silent, print_background);
 }
 
 bool NativeWindow::HasModalDialog() {

@@ -22,7 +22,6 @@ PrintMsg_Print_Params::PrintMsg_Print_Params()
     selection_only(false),
     supports_alpha_blend(false),
     print_scaling_option(blink::WebPrintScalingOptionSourceSize),
-    print_to_pdf(false),
     title(),
     url(),
     should_print_backgrounds(false) {
@@ -44,7 +43,6 @@ void PrintMsg_Print_Params::Reset() {
   selection_only = false;
   supports_alpha_blend = false;
   print_scaling_option = blink::WebPrintScalingOptionSourceSize;
-  print_to_pdf = false;
   title.clear();
   url.clear();
   should_print_backgrounds = false;

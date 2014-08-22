@@ -40,7 +40,6 @@ struct PrintMsg_Print_Params {
   bool selection_only;
   bool supports_alpha_blend;
   blink::WebPrintScalingOption print_scaling_option;
-  bool print_to_pdf;
   base::string16 title;
   base::string16 url;
   bool should_print_backgrounds;
@@ -107,9 +106,6 @@ IPC_STRUCT_TRAITS_BEGIN(PrintMsg_Print_Params)
 
   // Specifies the page scaling option for preview printing.
   IPC_STRUCT_TRAITS_MEMBER(print_scaling_option)
-
-  // True if print to pdf is requested.
-  IPC_STRUCT_TRAITS_MEMBER(print_to_pdf)
 
   // Title string to be printed as header if requested by the user.
   IPC_STRUCT_TRAITS_MEMBER(title)
@@ -187,7 +183,9 @@ IPC_STRUCT_END()
 
 // Tells the render view to switch the CSS to print media type, renders every
 // requested pages and switch back the CSS to display media type.
-IPC_MESSAGE_ROUTED0(PrintMsg_PrintPages)
+IPC_MESSAGE_ROUTED2(PrintMsg_PrintPages,
+                    bool /* silent print */,
+                    bool /* print page's background */)
 
 // Tells the render view that printing is done so it can clean up.
 IPC_MESSAGE_ROUTED1(PrintMsg_PrintingDone,

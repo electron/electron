@@ -60,8 +60,9 @@ PrintViewManagerBase::~PrintViewManagerBase() {
   DisconnectFromCurrentPrintJob();
 }
 
-bool PrintViewManagerBase::PrintNow() {
-  return PrintNowInternal(new PrintMsg_PrintPages(routing_id()));
+bool PrintViewManagerBase::PrintNow(bool silent, bool print_background) {
+  return PrintNowInternal(new PrintMsg_PrintPages(
+      routing_id(), silent, print_background));
 }
 
 void PrintViewManagerBase::NavigationStopped() {
