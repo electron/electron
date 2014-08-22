@@ -2,8 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_PRINTING_PRINTING_MESSAGE_FILTER_H_
-#define ATOM_BROWSER_PRINTING_PRINTING_MESSAGE_FILTER_H_
+#ifndef CHROME_BROWSER_PRINTING_PRINTING_MESSAGE_FILTER_H_
+#define CHROME_BROWSER_PRINTING_PRINTING_MESSAGE_FILTER_H_
+
+#include <string>
 
 #include "base/compiler_specific.h"
 #include "content/public/browser/browser_message_filter.h"
@@ -12,8 +14,12 @@
 #include "base/memory/shared_memory.h"
 #endif
 
-struct PrintMsg_PrintPages_Params;
 struct PrintHostMsg_ScriptedPrint_Params;
+
+namespace base {
+class DictionaryValue;
+class FilePath;
+}
 
 namespace content {
 class WebContents;
@@ -21,10 +27,9 @@ class WebContents;
 
 namespace printing {
 class PrinterQuery;
+class PrintJobManager;
 class PrintQueriesQueue;
 }
-
-namespace atom {
 
 // This class filters out incoming printing related IPC messages for the
 // renderer process on the IPC thread.
@@ -49,21 +54,29 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
   // Must be called on the UI thread.
   content::WebContents* GetWebContentsForRenderView(int render_view_id);
 
+  // GetPrintSettingsForRenderView must be called via PostTask and
+  // base::Bind.  Collapse the settings-specific params into a
+  // struct to avoid running into issues with too many params
+  // to base::Bind.
+  struct GetPrintSettingsForRenderViewParams;
+
   // Retrieve print settings.  Uses |render_view_id| to get a parent
   // for any UI created if needed.
   void GetPrintSettingsForRenderView(
       int render_view_id,
-      bool ask_user_for_settings,
-      PrintHostMsg_ScriptedPrint_Params params,
-      const base::Callback<void(const PrintMsg_PrintPages_Params&)>callback,
+      GetPrintSettingsForRenderViewParams params,
+      const base::Closure& callback,
+      scoped_refptr<printing::PrinterQuery> printer_query);
+
+  void OnGetPrintSettingsFailed(
+      const base::Closure& callback,
       scoped_refptr<printing::PrinterQuery> printer_query);
 
   // Get the default print setting.
   void OnGetDefaultPrintSettings(IPC::Message* reply_msg);
   void OnGetDefaultPrintSettingsReply(
       scoped_refptr<printing::PrinterQuery> printer_query,
-      IPC::Message* reply_msg,
-      const PrintMsg_PrintPages_Params& params);
+      IPC::Message* reply_msg);
 
   // The renderer host have to show to the user the print dialog and returns
   // the selected print settings. The task is handled by the print worker
@@ -72,8 +85,7 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
                        IPC::Message* reply_msg);
   void OnScriptedPrintReply(
       scoped_refptr<printing::PrinterQuery> printer_query,
-      IPC::Message* reply_msg,
-      const PrintMsg_PrintPages_Params& params);
+      IPC::Message* reply_msg);
 
   const int render_process_id_;
 
@@ -82,6 +94,4 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
   DISALLOW_COPY_AND_ASSIGN(PrintingMessageFilter);
 };
 
-}  // namespace atom
-
-#endif  // ATOM_BROWSER_PRINTING_PRINTING_MESSAGE_FILTER_H_
+#endif  // CHROME_BROWSER_PRINTING_PRINTING_MESSAGE_FILTER_H_
