@@ -38,9 +38,6 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
   explicit PrintingMessageFilter(int render_process_id);
 
   // content::BrowserMessageFilter methods.
-  virtual void OverrideThreadForMessage(
-      const IPC::Message& message,
-      content::BrowserThread::ID* thread) OVERRIDE;
   virtual bool OnMessageReceived(const IPC::Message& message,
                                  bool* message_was_ok) OVERRIDE;
 
@@ -75,9 +72,6 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
       const base::Closure& callback,
       scoped_refptr<printing::PrinterQuery> printer_query);
 
-  // Checks if printing is enabled.
-  void OnIsPrintingEnabled(bool* is_enabled);
-
   // Get the default print setting.
   void OnGetDefaultPrintSettings(IPC::Message* reply_msg);
   void OnGetDefaultPrintSettingsReply(
@@ -90,16 +84,6 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
   void OnScriptedPrint(const PrintHostMsg_ScriptedPrint_Params& params,
                        IPC::Message* reply_msg);
   void OnScriptedPrintReply(
-      scoped_refptr<printing::PrinterQuery> printer_query,
-      IPC::Message* reply_msg);
-
-  // Modify the current print settings based on |job_settings|. The task is
-  // handled by the print worker thread and the UI thread. The reply occurs on
-  // the IO thread.
-  void OnUpdatePrintSettings(int document_cookie,
-                             const base::DictionaryValue& job_settings,
-                             IPC::Message* reply_msg);
-  void OnUpdatePrintSettingsReply(
       scoped_refptr<printing::PrinterQuery> printer_query,
       IPC::Message* reply_msg);
 

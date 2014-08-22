@@ -185,10 +185,6 @@ IPC_STRUCT_END()
 
 // Messages sent from the browser to the renderer.
 
-// Tells the render frame to initiate printing or print preview for a particular
-// node, depending on which mode the render frame is in.
-IPC_MESSAGE_ROUTED0(PrintMsg_PrintNodeUnderContextMenu)
-
 // Tells the render view to switch the CSS to print media type, renders every
 // requested pages and switch back the CSS to display media type.
 IPC_MESSAGE_ROUTED0(PrintMsg_PrintPages)
@@ -206,10 +202,6 @@ IPC_SYNC_MESSAGE_ROUTED1_1(PrintHostMsg_DuplicateSection,
                            base::SharedMemoryHandle /* renderer handle */,
                            base::SharedMemoryHandle /* browser handle */)
 #endif
-
-// Check if printing is enabled.
-IPC_SYNC_MESSAGE_ROUTED0_1(PrintHostMsg_IsPrintingEnabled,
-                           bool /* is_enabled */)
 
 // Tells the browser that the renderer is done calculating the number of
 // rendered pages according to the specified settings.
@@ -234,13 +226,6 @@ IPC_MESSAGE_ROUTED1(PrintHostMsg_DidPrintPage,
 IPC_SYNC_MESSAGE_ROUTED0_1(PrintHostMsg_GetDefaultPrintSettings,
                            PrintMsg_Print_Params /* default_settings */)
 
-// The renderer wants to update the current print settings with new
-// |job_settings|.
-IPC_SYNC_MESSAGE_ROUTED2_1(PrintHostMsg_UpdatePrintSettings,
-                           int /* document_cookie */,
-                           base::DictionaryValue /* job_settings */,
-                           PrintMsg_PrintPages_Params /* current_settings */)
-
 // It's the renderer that controls the printing process when it is generated
 // by javascript. This step is about showing UI to the user to select the
 // final print settings. The output parameter is the same as
@@ -249,28 +234,6 @@ IPC_SYNC_MESSAGE_ROUTED1_1(PrintHostMsg_ScriptedPrint,
                            PrintHostMsg_ScriptedPrint_Params,
                            PrintMsg_PrintPages_Params
                                /* settings chosen by the user*/)
-
-#if defined(OS_CHROMEOS) || defined(OS_ANDROID)
-// Asks the browser to create a temporary file for the renderer to fill
-// in resulting NativeMetafile in printing.
-IPC_SYNC_MESSAGE_CONTROL1_2(PrintHostMsg_AllocateTempFileForPrinting,
-                            int /* render_view_id */,
-                            base::FileDescriptor /* temp file fd */,
-                            int /* fd in browser*/) // Used only by Chrome OS.
-IPC_MESSAGE_CONTROL2(PrintHostMsg_TempFileForPrintingWritten,
-                     int /* render_view_id */,
-                     int /* fd in browser */) // Used only by Chrome OS.
-#endif
-
-// Notify the browser of the default page layout according to the currently
-// selected printer and page size.
-// |printable_area_in_points| Specifies the printable area in points.
-// |has_custom_page_size_style| is true when the printing frame has a custom
-// page size css otherwise false.
-IPC_MESSAGE_ROUTED3(PrintHostMsg_DidGetDefaultPageLayout,
-                    printing::PageSizeMargins /* page layout in points */,
-                    gfx::Rect /* printable area in points */,
-                    bool /* has custom page size style */)
 
 // This is sent when there are invalid printer settings.
 IPC_MESSAGE_ROUTED0(PrintHostMsg_ShowInvalidPrinterSettingsError)

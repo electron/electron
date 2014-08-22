@@ -50,20 +50,6 @@ namespace {
 
 const double kMinDpi = 1.0;
 
-const char kPageLoadScriptFormat[] =
-    "document.open(); document.write(%s); document.close();";
-
-const char kPageSetupScriptFormat[] = "setup(%s);";
-
-void ExecuteScript(blink::WebFrame* frame,
-                   const char* script_format,
-                   const base::Value& parameters) {
-  std::string json;
-  base::JSONWriter::Write(&parameters, &json);
-  std::string script = base::StringPrintf(script_format, json.c_str());
-  frame->executeScript(blink::WebString(base::UTF8ToUTF16(script)));
-}
-
 int GetDPI(const PrintMsg_Print_Params* print_params) {
 #if defined(OS_MACOSX)
   // On the Mac, the printable area is in points, don't do any scaling based
@@ -368,60 +354,6 @@ blink::WebView* FrameReference::view() {
 }
 
 // static - Not anonymous so that platform implementations can use it.
-void PrintWebViewHelper::PrintHeaderAndFooter(
-    blink::WebCanvas* canvas,
-    int page_number,
-    int total_pages,
-    float webkit_scale_factor,
-    const PageSizeMargins& page_layout,
-    const base::DictionaryValue& header_footer_info,
-    const PrintMsg_Print_Params& params) {
-  skia::VectorPlatformDeviceSkia* device =
-      static_cast<skia::VectorPlatformDeviceSkia*>(canvas->getTopDevice());
-  device->setDrawingArea(SkPDFDevice::kMargin_DrawingArea);
-
-  SkAutoCanvasRestore auto_restore(canvas, true);
-  canvas->scale(1 / webkit_scale_factor, 1 / webkit_scale_factor);
-
-  blink::WebSize page_size(page_layout.margin_left + page_layout.margin_right +
-                            page_layout.content_width,
-                            page_layout.margin_top + page_layout.margin_bottom +
-                            page_layout.content_height);
-
-  blink::WebView* web_view = blink::WebView::create(NULL);
-  web_view->settings()->setJavaScriptEnabled(true);
-
-  blink::WebLocalFrame* frame = blink::WebLocalFrame::create(NULL);
-  web_view->setMainFrame(frame);
-
-  base::StringValue html("Print Preview");
-  // Load page with script to avoid async operations.
-  ExecuteScript(frame, kPageLoadScriptFormat, html);
-
-  scoped_ptr<base::DictionaryValue> options(header_footer_info.DeepCopy());
-  options->SetDouble("width", page_size.width);
-  options->SetDouble("height", page_size.height);
-  options->SetDouble("topMargin", page_layout.margin_top);
-  options->SetDouble("bottomMargin", page_layout.margin_bottom);
-  options->SetString("pageNumber",
-                     base::StringPrintf("%d/%d", page_number, total_pages));
-
-  ExecuteScript(frame, kPageSetupScriptFormat, *options);
-
-  blink::WebPrintParams webkit_params(page_size);
-  webkit_params.printerDPI = GetDPI(&params);
-
-  frame->printBegin(webkit_params);
-  frame->printPage(0, canvas);
-  frame->printEnd();
-
-  web_view->close();
-  frame->close();
-
-  device->setDrawingArea(SkPDFDevice::kContent_DrawingArea);
-}
-
-// static - Not anonymous so that platform implementations can use it.
 float PrintWebViewHelper::RenderPageContent(blink::WebFrame* frame,
                                             int page_number,
                                             const gfx::Rect& canvas_area,
@@ -697,24 +629,14 @@ void PrepareFrameAndViewForPrint::FinishPrinting() {
 PrintWebViewHelper::PrintWebViewHelper(content::RenderView* render_view)
     : content::RenderViewObserver(render_view),
       content::RenderViewObserverTracker<PrintWebViewHelper>(render_view),
-      reset_prep_frame_view_(false),
       is_print_ready_metafile_sent_(false),
       ignore_css_margins_(false),
       notify_browser_of_print_failure_(true),
       print_node_in_progress_(false),
-      is_loading_(false),
       weak_ptr_factory_(this) {
 }
 
 PrintWebViewHelper::~PrintWebViewHelper() {}
-
-void PrintWebViewHelper::DidStartLoading() {
-  is_loading_ = true;
-}
-
-void PrintWebViewHelper::DidStopLoading() {
-  is_loading_ = false;
-}
 
 // Prints |frame| which called window.print().
 void PrintWebViewHelper::PrintPage(blink::WebLocalFrame* frame,
@@ -794,12 +716,6 @@ void PrintWebViewHelper::OnPrintingDone(bool success) {
   if (!success)
     LOG(ERROR) << "Failure in OnPrintingDone";
   DidFinishPrinting(success ? OK : FAIL_PRINT);
-}
-
-bool PrintWebViewHelper::IsPrintingEnabled() {
-  bool result = false;
-  Send(new PrintHostMsg_IsPrintingEnabled(routing_id(), &result));
-  return result;
 }
 
 void PrintWebViewHelper::PrintNode(const blink::WebNode& node) {
