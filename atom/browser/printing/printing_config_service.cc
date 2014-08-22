@@ -83,6 +83,10 @@ void PrintingConfigService::GetPrintSettings(
                               weak_factory_.GetWeakPtr(), printer_query,
                               callback)));
   } else {
+    BrowserThread::PostTask(
+        BrowserThread::IO, FROM_HERE,
+        base::Bind(&PrintingConfigService::OnGetSettingsFailed,
+                   weak_factory_.GetWeakPtr(), printer_query, callback));
   }
 }
 
