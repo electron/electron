@@ -66,22 +66,13 @@ void GlobalShortcut::UnregisterAll() {
   GlobalShortcutListener::GetInstance()->UnregisterAccelerators(this);
 }
 
-// static
 mate::ObjectTemplateBuilder GlobalShortcut::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
-      .SetMethod("register",
-                 base::Bind(&GlobalShortcut::Register,
-                            base::Unretained(this)))
-      .SetMethod("isRegistered",
-                 base::Bind(&GlobalShortcut::IsRegistered,
-                            base::Unretained(this)))
-      .SetMethod("unregister",
-                 base::Bind(&GlobalShortcut::Unregister,
-                            base::Unretained(this)))
-      .SetMethod("unregisterAll",
-                 base::Bind(&GlobalShortcut::UnregisterAll,
-                            base::Unretained(this)));
+      .SetMethod("register", &GlobalShortcut::Register)
+      .SetMethod("isRegistered", &GlobalShortcut::IsRegistered)
+      .SetMethod("unregister", &GlobalShortcut::Unregister)
+      .SetMethod("unregisterAll", &GlobalShortcut::UnregisterAll);
 }
 
 // static
