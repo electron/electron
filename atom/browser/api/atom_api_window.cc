@@ -34,9 +34,8 @@ struct Converter<PrintSettings> {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
-    if (!dict.Get("silent", &(out->silent)) ||
-        !dict.Get("printBackground", &(out->print_backgournd)))
-      return false;
+    dict.Get("silent", &(out->silent));
+    dict.Get("printBackground", &(out->print_backgournd));
     return true;
   }
 };
