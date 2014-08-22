@@ -16,10 +16,11 @@ IGNORE_FILES = [
   os.path.join('atom', 'browser', 'ui', 'cocoa', 'atom_menu_controller.h'),
   os.path.join('atom', 'browser', 'ui', 'gtk', 'gtk_custom_menu.cc'),
   os.path.join('atom', 'browser', 'ui', 'gtk', 'gtk_custom_menu_item.cc'),
-  os.path.join('atom', 'common', 'api', 'api_messages.cc'),
   os.path.join('atom', 'common', 'api', 'api_messages.h'),
   os.path.join('atom', 'common', 'api', 'atom_extensions.h'),
   os.path.join('atom', 'common', 'atom_version.h'),
+  os.path.join('atom', 'common', 'common_message_generator.cc'),
+  os.path.join('atom', 'common', 'common_message_generator.h'),
   os.path.join('atom', 'common', 'swap_or_assign.h'),
 ]
 

@@ -16,7 +16,29 @@
 
 #include "atom/common/node_includes.h"
 
+namespace {
+
+struct PrintSettings {
+  bool silent;
+  bool print_backgournd;
+};
+
+}  // namespace
+
 namespace mate {
+
+template<>
+struct Converter<PrintSettings> {
+  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+                     PrintSettings* out) {
+    mate::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+    dict.Get("silent", &(out->silent));
+    dict.Get("printBackground", &(out->print_backgournd));
+    return true;
+  }
+};
 
 template<>
 struct Converter<gfx::Rect> {
@@ -303,6 +325,22 @@ bool Window::IsWebViewFocused() {
   return window_->IsWebViewFocused();
 }
 
+void Window::SetRepresentedFilename(const std::string& filename) {
+  window_->SetRepresentedFilename(filename);
+}
+
+std::string Window::GetRepresentedFilename() {
+  return window_->GetRepresentedFilename();
+}
+
+void Window::SetDocumentEdited(bool edited) {
+  window_->SetDocumentEdited(edited);
+}
+
+bool Window::IsDocumentEdited() {
+  return window_->IsDocumentEdited();
+}
+
 void Window::CapturePage(mate::Arguments* args) {
   gfx::Rect rect;
   base::Callback<void(v8::Handle<v8::Value>)> callback;
@@ -318,20 +356,14 @@ void Window::CapturePage(mate::Arguments* args) {
       rect, base::Bind(&OnCapturePageDone, args->isolate(), callback));
 }
 
-void Window::SetRepresentedFilename(const std::string& filename) {
-  window_->SetRepresentedFilename(filename);
-}
+void Window::Print(mate::Arguments* args) {
+  PrintSettings settings = { false, false };;
+  if (args->Length() == 1 && !args->GetNext(&settings)) {
+    args->ThrowError();
+    return;
+  }
 
-std::string Window::GetRepresentedFilename() {
-  return window_->GetRepresentedFilename();
-}
-
-void Window::SetDocumentEdited(bool edited) {
-  window_->SetDocumentEdited(edited);
-}
-
-bool Window::IsDocumentEdited() {
-  return window_->IsDocumentEdited();
+  window_->Print(settings.silent, settings.print_backgournd);
 }
 
 mate::Handle<WebContents> Window::GetWebContents(v8::Isolate* isolate) const {
@@ -386,7 +418,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setRepresentedFilename", &Window::SetRepresentedFilename)
       .SetMethod("getRepresentedFilename", &Window::GetRepresentedFilename)
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)
-      .SetMethod("IsDocumentEdited", &Window::IsDocumentEdited)
+      .SetMethod("isDocumentEdited", &Window::IsDocumentEdited)
       .SetMethod("_openDevTools", &Window::OpenDevTools)
       .SetMethod("closeDevTools", &Window::CloseDevTools)
       .SetMethod("isDevToolsOpened", &Window::IsDevToolsOpened)
@@ -395,6 +427,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("blurWebView", &Window::BlurWebView)
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)
       .SetMethod("capturePage", &Window::CapturePage)
+      .SetMethod("print", &Window::Print)
       .SetMethod("_getWebContents", &Window::GetWebContents)
       .SetMethod("_getDevToolsWebContents", &Window::GetDevToolsWebContents);
 }

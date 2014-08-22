@@ -20,6 +20,8 @@ class AtomBrowserClient : public brightray::BrowserClient {
 
  protected:
   // content::ContentBrowserClient:
+  virtual void RenderProcessWillLaunch(
+      content::RenderProcessHost* host) OVERRIDE;
   virtual void ResourceDispatcherHostCreated() OVERRIDE;
   virtual content::AccessTokenStore* CreateAccessTokenStore() OVERRIDE;
   virtual void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,

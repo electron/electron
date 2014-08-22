@@ -29,6 +29,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
+#include "chrome/browser/printing/print_view_manager_basic.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/invalidate_type.h"
 #include "content/public/browser/navigation_entry.h"
@@ -66,6 +67,8 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       weak_factory_(this),
       inspectable_web_contents_(
           brightray::InspectableWebContents::Create(web_contents)) {
+  printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
+
   options.Get(switches::kFrame, &has_frame_);
   options.Get(switches::kEnableLargerThanScreen, &enable_larger_than_screen_);
 
@@ -192,11 +195,16 @@ std::string NativeWindow::GetRepresentedFilename() {
 void NativeWindow::SetDocumentEdited(bool edited) {
 }
 
+bool NativeWindow::IsDocumentEdited() {
+  return false;
+}
+
 void NativeWindow::SetMenu(ui::MenuModel* menu) {
 }
 
-bool NativeWindow::IsDocumentEdited() {
-  return false;
+void NativeWindow::Print(bool silent, bool print_background) {
+  printing::PrintViewManagerBasic::FromWebContents(GetWebContents())->
+      PrintNow(silent, print_background);
 }
 
 bool NativeWindow::HasModalDialog() {

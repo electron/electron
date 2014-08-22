@@ -10,6 +10,7 @@
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
+#include "chrome/browser/printing/printing_message_filter.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/resource_dispatcher_host.h"
@@ -46,6 +47,11 @@ AtomBrowserClient::AtomBrowserClient()
 }
 
 AtomBrowserClient::~AtomBrowserClient() {
+}
+
+void AtomBrowserClient::RenderProcessWillLaunch(
+    content::RenderProcessHost* host) {
+  host->AddFilter(new PrintingMessageFilter(host->GetID()));
 }
 
 void AtomBrowserClient::ResourceDispatcherHostCreated() {

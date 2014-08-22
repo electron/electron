@@ -7,6 +7,8 @@
 
 #include "brightray/browser/browser_context.h"
 
+class BrowserProcess;
+
 namespace atom {
 
 class AtomURLRequestJobFactory;
@@ -28,6 +30,9 @@ class AtomBrowserContext : public brightray::BrowserContext {
       content::ProtocolHandlerScopedVector* interceptors) OVERRIDE;
 
  private:
+  // A fake BrowserProcess object that used to feed the source code from chrome.
+  scoped_ptr<BrowserProcess> fake_browser_process_;
+
   AtomURLRequestJobFactory* job_factory_;  // Weak reference.
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);

@@ -8,6 +8,7 @@
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "base/threading/sequenced_worker_pool.h"
 #include "base/threading/worker_pool.h"
+#include "chrome/browser/browser_process.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/url_constants.h"
 #include "net/url_request/data_protocol_handler.h"
@@ -19,7 +20,8 @@ using content::BrowserThread;
 namespace atom {
 
 AtomBrowserContext::AtomBrowserContext()
-    : job_factory_(new AtomURLRequestJobFactory) {
+    : fake_browser_process_(new BrowserProcess),
+      job_factory_(new AtomURLRequestJobFactory) {
 }
 
 AtomBrowserContext::~AtomBrowserContext() {

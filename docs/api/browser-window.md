@@ -338,7 +338,7 @@ Changes the title of native window to `title`.
 Returns the title of the native window.
 
 **Note:** The title of web page can be different from the title of the native
-**window.
+window.
 
 ### BrowserWindow.flashFrame()
 
@@ -408,10 +408,10 @@ Starts inspecting element at position (`x`, `y`).
 ### BrowserWindow.capturePage([rect, ]callback)
 
 * `rect` Object - The area of page to be captured
-  * `x`
-  * `y`
-  * `width`
-  * `height`
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
 * `callback` Function
 
 Captures the snapshot of page within `rect`, upon completion `callback` would be
@@ -425,6 +425,19 @@ encode it and use data URL to embed the image in HTML.
 **Note:** Be sure to read documents on remote buffer in
 [remote](remote.md) if you are going to use this API in renderer
 process.
+
+### BrowserWindow.print([options])
+
+* `options` Object
+  * `silent` Boolean - Don't ask user for print settings, defaults to `false`
+  * `printBackground` Boolean - Also prints the background color and image of
+    the web page, defaults to `false`.
+
+Prints window's web page. When `silent` is set to `false`, atom-shell will pick
+up system's default printer and default settings for printing.
+
+Calling `window.print()` in web page is equivalent to call
+`BrowserWindow.print({silent: false, printBackground: false})`.
 
 ### BrowserWindow.loadUrl(url)
 

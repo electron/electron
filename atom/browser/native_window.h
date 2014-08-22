@@ -136,8 +136,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void SetRepresentedFilename(const std::string& filename);
   virtual std::string GetRepresentedFilename();
   virtual void SetDocumentEdited(bool edited);
-  virtual void SetMenu(ui::MenuModel* menu);
   virtual bool IsDocumentEdited();
+  virtual void SetMenu(ui::MenuModel* menu);
   virtual bool HasModalDialog();
   virtual gfx::NativeWindow GetNativeWindow() = 0;
 
@@ -155,6 +155,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // done.
   virtual void CapturePage(const gfx::Rect& rect,
                            const CapturePageCallback& callback);
+
+  // Print current page.
+  virtual void Print(bool silent, bool print_background);
 
   // The same with closing a tab in a real browser.
   //
