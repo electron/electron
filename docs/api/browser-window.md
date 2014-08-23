@@ -340,9 +340,11 @@ Returns the title of the native window.
 **Note:** The title of web page can be different from the title of the native
 window.
 
-### BrowserWindow.flashFrame()
+### BrowserWindow.flashFrame(flag)
+ 
+* `flag` Boolean
 
-Flashes the window to attract user's attention.
+Starts or stops flashing the window to attract user's attention.
 
 ### BrowserWindow.setSkipTaskbar(skip)
 
