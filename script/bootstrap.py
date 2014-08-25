@@ -22,7 +22,6 @@ def main():
     enable_verbose_execute()
   update_submodules()
   update_node_modules('.')
-  update_atom_modules('atom/browser/default_app')
   update_atom_modules('spec')
   bootstrap_brightray(args.url)
   if sys.platform == 'cygwin':

@@ -2,7 +2,6 @@ var app = require('app');
 var dialog = require('dialog');
 var fs = require('fs');
 var path = require('path');
-var optimist = require('optimist');
 
 // Quit when all windows are closed and no other one is listening to this.
 app.on('window-all-closed', function() {
@@ -10,14 +9,27 @@ app.on('window-all-closed', function() {
     app.quit();
 });
 
-var argv = optimist(process.argv.slice(1)).boolean('ci').argv;
+// Parse command line options.
+var argv = process.argv.slice(1);
+var option = { file: null, version: null };
+for (var i in argv) {
+  if (argv[i] == '--version' || argv[i] == '-v') {
+    option.version = true;
+    break;
+  } else if (argv[i][0] == '-') {
+    continue;
+  } else {
+    option.file = argv[i];
+    break;
+  }
+}
 
 // Start the specified app if there is one specified in command line, otherwise
 // start the default app.
-if (argv._.length > 0) {
+if (option.file) {
   try {
     // Override app name and version.
-    var packagePath = path.resolve(argv._[0]);
+    var packagePath = path.resolve(option.file);
     var packageJsonPath = path.join(packagePath, 'package.json');
     if (fs.existsSync(packageJsonPath)) {
       var packageJson = JSON.parse(fs.readFileSync(packageJsonPath));
@@ -48,7 +60,7 @@ if (argv._.length > 0) {
       throw e;
     }
   }
-} else if (argv.version) {
+} else if (option.version) {
   console.log('v' + process.versions['atom-shell']);
   process.exit(0);
 } else {
