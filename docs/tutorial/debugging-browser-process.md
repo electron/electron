@@ -33,13 +33,13 @@ $ node-inspector
 You can either start atom-shell with a debug flag like:
 
 ```bash
-$ atom-shell --debug your/app
+$ atom-shell --debug=5858 your/app
 ```
 
 or, to pause your script on the first line:
 
 ```bash
-$ atom-shell --debug-brk your/app
+$ atom-shell --debug-brk=5858 your/app
 ```
 
 ### 3. Load the debugger UI
