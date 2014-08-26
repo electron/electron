@@ -35,10 +35,12 @@
 #include "ui/views/widget/widget.h"
 
 #if defined(USE_X11)
+#include "atom/browser/browser.h"
 #include "atom/browser/ui/views/global_menu_bar_x11.h"
 #include "atom/browser/ui/views/frameless_view.h"
 #include "base/environment.h"
 #include "base/nix/xdg_util.h"
+#include "base/strings/stringprintf.h"
 #include "chrome/browser/ui/libgtk2ui/unity_service.h"
 #include "ui/gfx/x/x11_types.h"
 #include "ui/views/window/native_frame_view.h"
@@ -60,6 +62,10 @@ const int kMenuBarHeight = 25;
 #endif
 
 #if defined(USE_X11)
+// Counts how many window has already been created, it will be used to set the
+// window role for X11.
+int kWindowsCreated = 0;
+
 bool ShouldUseGlobalMenuBar() {
   // Some DE would pretend to be Unity but don't have global application menu,
   // so we can not trust unity::IsRunning().
@@ -146,11 +152,21 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   bool skip_taskbar = false;
   if (options.Get(switches::kSkipTaskbar, &skip_taskbar) && skip_taskbar)
     params.type = views::Widget::InitParams::TYPE_BUBBLE;
+
+  // Set WM_WINDOW_ROLE.
+  params.wm_role_name = base::StringPrintf(
+      "%s/%s/%d", "Atom Shell", Browser::Get()->GetName().c_str(),
+      ++kWindowsCreated);
+
+  // Set WM_CLASS.
+  params.wm_class_name = "atom-shell";
+  params.wm_class_class = "Atom Shell";
 #endif
 
   window_->Init(params);
 
 #if defined(USE_X11)
+  // Set _GTK_THEME_VARIANT to dark if we have "dark-theme" option set.
   bool use_dark_theme = false;
   if (options.Get(switches::kDarkTheme, &use_dark_theme) && use_dark_theme) {
     XDisplay* xdisplay = gfx::GetXDisplay();
