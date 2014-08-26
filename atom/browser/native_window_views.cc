@@ -8,12 +8,6 @@
 #include <shobjidl.h>
 #endif
 
-#if defined(USE_X11)
-#include <X11/extensions/XInput2.h>
-#include <X11/extensions/Xrandr.h>
-#include <X11/Xlib.h>
-#endif
-
 #include <string>
 #include <vector>
 
@@ -38,6 +32,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/ui/views/global_menu_bar_x11.h"
 #include "atom/browser/ui/views/frameless_view.h"
+#include "atom/browser/ui/x/x_window_utils.h"
 #include "base/environment.h"
 #include "base/nix/xdg_util.h"
 #include "base/strings/stringprintf.h"
@@ -66,29 +61,6 @@ const int kMenuBarHeight = 25;
 // Counts how many window has already been created, it will be used to set the
 // window role for X11.
 int kWindowsCreated = 0;
-
-::Atom GetAtom(const char* name) {
-  return XInternAtom(gfx::GetXDisplay(), name, false);
-}
-
-void SetWMSpecState(::Window xwindow, bool enabled, ::Atom state) {
-  XEvent xclient;
-  memset(&xclient, 0, sizeof(xclient));
-  xclient.type = ClientMessage;
-  xclient.xclient.window = xwindow;
-  xclient.xclient.message_type = GetAtom("_NET_WM_STATE");
-  xclient.xclient.format = 32;
-  xclient.xclient.data.l[0] = enabled ? 1 : 0;
-  xclient.xclient.data.l[1] = state;
-  xclient.xclient.data.l[2] = None;
-  xclient.xclient.data.l[3] = 1;
-  xclient.xclient.data.l[4] = 0;
-
-  XDisplay* xdisplay = gfx::GetXDisplay();
-  XSendEvent(xdisplay, DefaultRootWindow(xdisplay), False,
-             SubstructureRedirectMask | SubstructureNotifyMask,
-             &xclient);
-}
 
 bool ShouldUseGlobalMenuBar() {
   // Some DE would pretend to be Unity but don't have global application menu,
@@ -145,9 +117,14 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
       use_content_size_(false),
       resizable_(true) {
-  options.Get(switches::kResizable, &resizable_);
   options.Get(switches::kTitle, &title_);
   options.Get(switches::kAutoHideMenuBar, &menu_bar_autohide_);
+
+#if defined(OS_WIN)
+  // On Windows we rely on the CanResize() to indicate whether window can be
+  // resized, and it should be set before window is created.
+  options.Get(switches::kResizable, &resizable_);
+#endif
 
   if (enable_larger_than_screen_)
     // We need to set a default maximum window size here otherwise Windows
@@ -294,6 +271,15 @@ bool NativeWindowViews::IsFullscreen() {
 }
 
 void NativeWindowViews::SetSize(const gfx::Size& size) {
+#if defined(USE_X11)
+  // On Linux the minimum and maximum size should be updated with window size
+  // when window is not resizable.
+  if (!resizable_) {
+    SetMaximumSize(size);
+    SetMinimumSize(size);
+  }
+#endif
+
   window_->SetSize(size);
 }
 
@@ -313,8 +299,7 @@ void NativeWindowViews::SetContentSize(const gfx::Size& size) {
   }
 
   gfx::Rect bounds = window_->GetWindowBoundsInScreen();
-  bounds.set_size(size);
-  window_->SetBounds(ContentBoundsToWindowBounds(bounds));
+  SetSize(ContentBoundsToWindowBounds(gfx::Rect(bounds.origin(), size)).size());
 }
 
 gfx::Size NativeWindowViews::GetContentSize() {
@@ -361,8 +346,6 @@ gfx::Size NativeWindowViews::GetMaximumSize() {
 }
 
 void NativeWindowViews::SetResizable(bool resizable) {
-  resizable_ = resizable;
-
 #if defined(OS_WIN)
   if (has_frame_) {
     // WS_MAXIMIZEBOX => Maximize button
@@ -375,9 +358,21 @@ void NativeWindowViews::SetResizable(bool resizable) {
       style = (style & ~(WS_MAXIMIZEBOX | WS_THICKFRAME)) | WS_MINIMIZEBOX;
     ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, style);
   }
+#elif defined(USE_X11)
+  if (resizable != resizable_) {
+    // On Linux there is no "resizable" property of a window, we have to set
+    // both the minimum and maximum size to the window size to achieve it.
+    if (resizable) {
+      SetMaximumSize(gfx::Size());
+      SetMinimumSize(gfx::Size());
+    } else {
+      SetMaximumSize(GetSize());
+      SetMinimumSize(GetSize());
+    }
+  }
 #endif
 
-  // FIXME Implement me for X11.
+  resizable_ = resizable;
 }
 
 bool NativeWindowViews::IsResizable() {

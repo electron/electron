@@ -164,6 +164,8 @@
       'atom/browser/ui/win/notify_icon_host.h',
       'atom/browser/ui/win/notify_icon.cc',
       'atom/browser/ui/win/notify_icon.h',
+      'atom/browser/ui/x/x_window_utils.cc',
+      'atom/browser/ui/x/x_window_utils.h',
       'atom/browser/window_list.cc',
       'atom/browser/window_list.h',
       'atom/browser/window_list_observer.h',
