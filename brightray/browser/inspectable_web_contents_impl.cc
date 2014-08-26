@@ -21,6 +21,7 @@
 #include "content/public/browser/devtools_client_host.h"
 #include "content/public/browser/devtools_http_handler.h"
 #include "content/public/browser/devtools_manager.h"
+#include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 
@@ -28,6 +29,12 @@ namespace brightray {
 
 namespace {
 
+const double kPresetZoomFactors[] = { 0.25, 0.333, 0.5, 0.666, 0.75, 0.9, 1.0,
+                                      1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0,
+                                      5.0 };
+
+const char kDevToolsScheme[] = "chrome-devtools";
+const char kDevToolsHost[] = "devtools";
 const char kChromeUIDevToolsURL[] = "chrome-devtools://devtools/devtools.html?"
                                     "can_dock=true&&"
                                     "experiments=true";
@@ -79,6 +86,32 @@ bool ParseMessage(const std::string& message,
   *id = 0;
   dict->GetInteger(kFrontendHostId, id);
   return true;
+}
+
+double GetZoomLevelForWebContents(content::WebContents* web_contents) {
+  content::HostZoomMap* host_zoom_map = content::HostZoomMap::GetForBrowserContext(
+      web_contents->GetBrowserContext());
+  return host_zoom_map->GetZoomLevelForHostAndScheme(kDevToolsScheme, kDevToolsHost);
+}
+
+void SetZoomLevelForWebContents(content::WebContents* web_contents, double level) {
+  content::HostZoomMap* host_zoom_map = content::HostZoomMap::GetForBrowserContext(
+      web_contents->GetBrowserContext());
+  return host_zoom_map->SetZoomLevelForHostAndScheme(kDevToolsScheme, kDevToolsHost, level);
+}
+
+double GetNextZoomLevel(double level, bool out) {
+  double factor = content::ZoomLevelToZoomFactor(level);
+  size_t size = arraysize(kPresetZoomFactors);
+  for (size_t i = 0; i < size; ++i) {
+    if (!content::ZoomValuesEqual(kPresetZoomFactors[i], factor))
+      continue;
+    if (out && i > 0)
+      return content::ZoomFactorToZoomLevel(kPresetZoomFactors[i - 1]);
+    if (!out && i != size - 1)
+      return content::ZoomFactorToZoomLevel(kPresetZoomFactors[i + 1]);
+  }
+  return level;
 }
 
 }  // namespace
@@ -245,12 +278,17 @@ void InspectableWebContentsImpl::SearchInPath(
 }
 
 void InspectableWebContentsImpl::ZoomIn() {
+  double level = GetZoomLevelForWebContents(devtools_web_contents());
+  SetZoomLevelForWebContents(devtools_web_contents(), GetNextZoomLevel(level, false));
 }
 
 void InspectableWebContentsImpl::ZoomOut() {
+  double level = GetZoomLevelForWebContents(devtools_web_contents());
+  SetZoomLevelForWebContents(devtools_web_contents(), GetNextZoomLevel(level, true));
 }
 
 void InspectableWebContentsImpl::ResetZoom() {
+  SetZoomLevelForWebContents(devtools_web_contents(), 0.);
 }
 
 void InspectableWebContentsImpl::DispatchOnEmbedder(
