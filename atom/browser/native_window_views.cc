@@ -42,6 +42,7 @@
 #include "base/nix/xdg_util.h"
 #include "base/strings/stringprintf.h"
 #include "chrome/browser/ui/libgtk2ui/unity_service.h"
+#include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/x11_types.h"
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
@@ -65,6 +66,29 @@ const int kMenuBarHeight = 25;
 // Counts how many window has already been created, it will be used to set the
 // window role for X11.
 int kWindowsCreated = 0;
+
+::Atom GetAtom(const char* name) {
+  return XInternAtom(gfx::GetXDisplay(), name, false);
+}
+
+void SetWMSpecState(::Window xwindow, bool enabled, ::Atom state) {
+  XEvent xclient;
+  memset(&xclient, 0, sizeof(xclient));
+  xclient.type = ClientMessage;
+  xclient.xclient.window = xwindow;
+  xclient.xclient.message_type = GetAtom("_NET_WM_STATE");
+  xclient.xclient.format = 32;
+  xclient.xclient.data.l[0] = enabled ? 1 : 0;
+  xclient.xclient.data.l[1] = state;
+  xclient.xclient.data.l[2] = None;
+  xclient.xclient.data.l[3] = 1;
+  xclient.xclient.data.l[4] = 0;
+
+  XDisplay* xdisplay = gfx::GetXDisplay();
+  XSendEvent(xdisplay, DefaultRootWindow(xdisplay), False,
+             SubstructureRedirectMask | SubstructureNotifyMask,
+             &xclient);
+}
 
 bool ShouldUseGlobalMenuBar() {
   // Some DE would pretend to be Unity but don't have global application menu,
@@ -148,16 +172,10 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   params.remove_standard_frame = !has_frame_;
 
 #if defined(USE_X11)
-  // FIXME Find out how to do this dynamically on Linux.
-  bool skip_taskbar = false;
-  if (options.Get(switches::kSkipTaskbar, &skip_taskbar) && skip_taskbar)
-    params.type = views::Widget::InitParams::TYPE_BUBBLE;
-
   // Set WM_WINDOW_ROLE.
   params.wm_role_name = base::StringPrintf(
       "%s/%s/%d", "Atom Shell", Browser::Get()->GetName().c_str(),
       ++kWindowsCreated);
-
   // Set WM_CLASS.
   params.wm_class_name = "atom-shell";
   params.wm_class_class = "Atom Shell";
@@ -176,6 +194,16 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
                     8, PropModeReplace,
                     reinterpret_cast<const unsigned char*>("dark"),
                     4);
+  }
+
+  // Before the window is mapped the SetWMSpecState can not work, so we have
+  // to manually set the _NET_WM_STATE.
+  bool skip_taskbar = false;
+  if (options.Get(switches::kSkipTaskbar, &skip_taskbar) && skip_taskbar) {
+    std::vector<::Atom> state_atom_list;
+    state_atom_list.push_back(GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
+    ui::SetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", "ATOM",
+                             state_atom_list);
   }
 #endif
 
@@ -405,6 +433,9 @@ void NativeWindowViews::SetSkipTaskbar(bool skip) {
     taskbar->DeleteTab(GetAcceleratedWidget());
   else
     taskbar->AddTab(GetAcceleratedWidget());
+#elif defined(USE_X11)
+  SetWMSpecState(GetAcceleratedWidget(), skip,
+                 GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
 #endif
 }
 
