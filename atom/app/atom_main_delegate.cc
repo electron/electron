@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "atom/app/atom_content_client.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/renderer/atom_renderer_client.h"
 #include "base/command_line.h"
@@ -20,18 +21,6 @@ AtomMainDelegate::AtomMainDelegate() {
 }
 
 AtomMainDelegate::~AtomMainDelegate() {
-}
-
-void AtomMainDelegate::AddDataPackFromPath(
-    ui::ResourceBundle* bundle, const base::FilePath& pak_dir) {
-#if defined(OS_WIN)
-  bundle->AddDataPackFromPath(
-      pak_dir.Append(FILE_PATH_LITERAL("ui_resources_200_percent.pak")),
-      ui::SCALE_FACTOR_200P);
-  bundle->AddDataPackFromPath(
-      pak_dir.Append(FILE_PATH_LITERAL("webkit_resources_200_percent.pak")),
-      ui::SCALE_FACTOR_200P);
-#endif
 }
 
 bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
@@ -97,6 +86,22 @@ content::ContentRendererClient*
     AtomMainDelegate::CreateContentRendererClient() {
   renderer_client_.reset(new AtomRendererClient);
   return renderer_client_.get();
+}
+
+scoped_ptr<brightray::ContentClient> AtomMainDelegate::CreateContentClient() {
+  return scoped_ptr<brightray::ContentClient>(new AtomContentClient).Pass();
+}
+
+void AtomMainDelegate::AddDataPackFromPath(
+    ui::ResourceBundle* bundle, const base::FilePath& pak_dir) {
+#if defined(OS_WIN)
+  bundle->AddDataPackFromPath(
+      pak_dir.Append(FILE_PATH_LITERAL("ui_resources_200_percent.pak")),
+      ui::SCALE_FACTOR_200P);
+  bundle->AddDataPackFromPath(
+      pak_dir.Append(FILE_PATH_LITERAL("webkit_resources_200_percent.pak")),
+      ui::SCALE_FACTOR_200P);
+#endif
 }
 
 }  // namespace atom

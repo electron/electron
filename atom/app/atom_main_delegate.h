@@ -16,24 +16,23 @@ class AtomMainDelegate : public brightray::MainDelegate {
   ~AtomMainDelegate();
 
  protected:
-  // brightray::MainDelegate:
-  virtual void AddDataPackFromPath(
-      ui::ResourceBundle* bundle, const base::FilePath& pak_dir) OVERRIDE;
-
   // content::ContentMainDelegate:
   virtual bool BasicStartupComplete(int* exit_code) OVERRIDE;
   virtual void PreSandboxStartup() OVERRIDE;
+  virtual content::ContentBrowserClient* CreateContentBrowserClient() OVERRIDE;
+  virtual content::ContentRendererClient*
+      CreateContentRendererClient() OVERRIDE;
 
+  // brightray::MainDelegate:
+  virtual scoped_ptr<brightray::ContentClient> CreateContentClient() OVERRIDE;
+  virtual void AddDataPackFromPath(
+      ui::ResourceBundle* bundle, const base::FilePath& pak_dir) OVERRIDE;
 #if defined(OS_MACOSX)
   virtual void OverrideChildProcessPath() OVERRIDE;
   virtual void OverrideFrameworkBundlePath() OVERRIDE;
 #endif
 
  private:
-  virtual content::ContentBrowserClient* CreateContentBrowserClient() OVERRIDE;
-  virtual content::ContentRendererClient*
-      CreateContentRendererClient() OVERRIDE;
-
   brightray::ContentClient content_client_;
   scoped_ptr<content::ContentBrowserClient> browser_client_;
   scoped_ptr<content::ContentRendererClient> renderer_client_;
