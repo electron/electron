@@ -8,7 +8,7 @@ hostPathMap = {}
 hostPathMapNextKey = 0
 
 getHostForPath = (path) ->
-  key = "extension-#{hostPathMapNextKey}"
+  key = "extension-#{++hostPathMapNextKey}"
   hostPathMap[key] = path
   key
 
@@ -22,6 +22,8 @@ app.once 'ready', ->
   protocol.registerProtocol 'chrome-extension', (request) ->
     parsed = url.parse request.url
     return unless parsed.hostname and parsed.path?
+
+    return unless /extension-\d+/.test parsed.hostname
 
     directory = getPathForHost parsed.hostname
     return new protocol.RequestFileJob(path.join(directory, parsed.path))
