@@ -4,6 +4,9 @@
 
 #include "atom/app/atom_content_client.h"
 
+#include <string>
+#include <vector>
+
 namespace atom {
 
 AtomContentClient::AtomContentClient() {

@@ -5,6 +5,9 @@
 #ifndef ATOM_APP_ATOM_CONTENT_CLIENT_H_
 #define ATOM_APP_ATOM_CONTENT_CLIENT_H_
 
+#include <string>
+#include <vector>
+
 #include "brightray/common/content_client.h"
 
 namespace atom {
