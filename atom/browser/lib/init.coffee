@@ -52,6 +52,9 @@ setImmediate ->
       detail: message
       buttons: ['OK']
 
+  # Load the chrome extension support.
+  require './chrome-extension.js'
+
   # Load the RPC server.
   require './rpc-server.js'
 

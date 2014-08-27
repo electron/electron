@@ -28,6 +28,7 @@
       'atom/browser/api/lib/protocol.coffee',
       'atom/browser/api/lib/tray.coffee',
       'atom/browser/api/lib/web-contents.coffee',
+      'atom/browser/lib/chrome-extension.coffee',
       'atom/browser/lib/init.coffee',
       'atom/browser/lib/objects-registry.coffee',
       'atom/browser/lib/rpc-server.coffee',
