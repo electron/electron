@@ -8,7 +8,7 @@ hostPathMap = {}
 hostPathMapNextKey = 0
 
 getHostForPath = (path) ->
-  key = "#{++hostPathMapNextKey}"
+  key = "extension-#{hostPathMapNextKey}"
   hostPathMap[key] = path
   key
 
