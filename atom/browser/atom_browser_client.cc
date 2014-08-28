@@ -85,6 +85,12 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->allow_displaying_insecure_content = true;
   prefs->allow_running_insecure_content = true;
 
+  // Turn off web security for devtools.
+  if (url.SchemeIs("chrome-devtools")) {
+    prefs->web_security_enabled = false;
+    return;
+  }
+
   NativeWindow* window = NativeWindow::FromRenderView(
       render_view_host->GetProcess()->GetID(),
       render_view_host->GetRoutingID());

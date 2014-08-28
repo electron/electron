@@ -138,6 +138,14 @@ Emitted when window loses focus.
 
 Emitted when window gains focus.
 
+### Event: 'devtools-opened'
+
+Emitted when devtools is opened.
+
+### Event: 'devtools-closed'
+
+Emitted when devtools is closed.
+
 ### Class Method: BrowserWindow.getAllWindows()
 
 Returns an array of all opened browser windows.
@@ -157,6 +165,21 @@ Find a window according to the `webContents` it owns
 * `id` Integer
 
 Find a window according to its ID.
+
+### Class Method: BrowserWindow.addDevToolsExtension(path)
+
+* `path` String
+
+Adds devtools extension located at `path`, and returns extension's name.
+
+The extension will be remembered so you only need to call this API once, this
+API is not for programming use.
+
+### Class Method: BrowserWindow.removeDevToolsExtension(name)
+
+* `name` String
+
+Remove the devtools extension whose name is `name`.
 
 ### BrowserWindow.webContents
 
@@ -341,7 +364,7 @@ Returns the title of the native window.
 window.
 
 ### BrowserWindow.flashFrame(flag)
- 
+
 * `flag` Boolean
 
 Starts or stops flashing the window to attract user's attention.
