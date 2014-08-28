@@ -52,9 +52,6 @@ setImmediate ->
       detail: message
       buttons: ['OK']
 
-  # Load the chrome extension support.
-  require './chrome-extension.js'
-
   # Load the RPC server.
   require './rpc-server.js'
 
@@ -79,6 +76,9 @@ setImmediate ->
     app.setName packageJson.productName
   else if packageJson.name?
     app.setName packageJson.name
+
+  # Load the chrome extension support.
+  require './chrome-extension.js'
 
   # Finally load app's main.js and transfer control to C++.
   module._load path.join(packagePath, packageJson.main), module, true
