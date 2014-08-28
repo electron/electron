@@ -74,6 +74,7 @@ BEGIN
             VALUE "OriginalFilename", "atom.exe"
             VALUE "ProductName", "Atom-Shell"
             VALUE "ProductVersion", "0.15.9"
+            VALUE "SquirrelAwareVersion", "1"
         END
     END
     BLOCK "VarFileInfo"
