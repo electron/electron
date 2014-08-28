@@ -39,6 +39,7 @@
       'atom/common/api/lib/screen.coffee',
       'atom/common/api/lib/shell.coffee',
       'atom/common/lib/init.coffee',
+      'atom/renderer/lib/chrome-api.coffee',
       'atom/renderer/lib/init.coffee',
       'atom/renderer/lib/inspector.coffee',
       'atom/renderer/lib/override.coffee',

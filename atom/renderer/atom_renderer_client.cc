@@ -199,6 +199,10 @@ bool AtomRendererClient::IsNodeBindingEnabled(blink::WebFrame* frame) {
   // Node integration is enabled in main frame unless explictly disabled.
   else if (frame == main_frame_)
     return true;
+  // Enable node integration in chrome extensions.
+  else if (frame != NULL &&
+           GURL(frame->document().url()).SchemeIs("chrome-extension"))
+    return true;
   else if (node_integration_ == MANUAL_ENABLE_IFRAME &&
            frame != NULL &&
            frame->uniqueName().utf8().find(kSecurityEnableNodeIntegration)
