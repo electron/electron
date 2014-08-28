@@ -36,8 +36,8 @@ BrowserWindow::openDevTools = ->
   @devToolsWebContents.once 'destroyed', => @devToolsWebContents = null
 
   # Emit devtools events.
-  @devToolsWebContents.once 'did-finish-load', => @emit 'dev-tools-opened'
-  @devToolsWebContents.once 'destroyed', => @emit 'dev-tools-closed'
+  @devToolsWebContents.once 'did-finish-load', => @emit 'devtools-opened'
+  @devToolsWebContents.once 'destroyed', => @emit 'devtools-closed'
 
 BrowserWindow::toggleDevTools = ->
   if @isDevToolsOpened() then @closeDevTools() else @openDevTools()

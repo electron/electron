@@ -84,5 +84,5 @@ app.once 'ready', ->
   init = BrowserWindow::_init
   BrowserWindow::_init = ->
     init.call this
-    @on 'dev-tools-opened', ->
+    @on 'devtools-opened', ->
       @_loadDevToolsExtensions Object.keys(extensionInfoMap).map (key) -> extensionInfoMap[key]

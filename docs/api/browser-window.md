@@ -138,11 +138,11 @@ Emitted when window loses focus.
 
 Emitted when window gains focus.
 
-### Event: 'dev-tools-opened'
+### Event: 'devtools-opened'
 
 Emitted when devtools is opened.
 
-### Event: 'dev-tools-closed'
+### Event: 'devtools-closed'
 
 Emitted when devtools is closed.
 
@@ -349,7 +349,7 @@ Returns the title of the native window.
 window.
 
 ### BrowserWindow.flashFrame(flag)
- 
+
 * `flag` Boolean
 
 Starts or stops flashing the window to attract user's attention.
