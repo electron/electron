@@ -4,6 +4,7 @@
 * [Application distribution](tutorial/application-distribution.md)
 * [Use native node modules](tutorial/use-native-node-modules.md)
 * [Debugging browser process](tutorial/debugging-browser-process.md)
+* [DevTools extension](tutorial/devtools-extension.md)
 
 ## API references
 

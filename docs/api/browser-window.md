@@ -166,6 +166,21 @@ Find a window according to the `webContents` it owns
 
 Find a window according to its ID.
 
+### Class Method: BrowserWindow.addDevToolsExtension(path)
+
+* `path` String
+
+Adds devtools extension located at `path`, and returns extension's name.
+
+The extension will be remembered so you only need to call this API once, this
+API is not for programming use.
+
+### Class Method: BrowserWindow.removeDevToolsExtension(name)
+
+* `name` String
+
+Remove the devtools extension whose name is `name`.
+
 ### BrowserWindow.webContents
 
 The `WebContents` object this window owns, all web page related events and
