@@ -336,6 +336,17 @@ void InspectableWebContentsImpl::WebContentsDestroyed() {
   frontend_host_.reset();
 }
 
+bool InspectableWebContentsImpl::AddMessageToConsole(
+    content::WebContents* source,
+    int32 level,
+    const base::string16& message,
+    int32 line_no,
+    const base::string16& source_id) {
+  logging::LogMessage("CONSOLE", line_no, level).stream() << "\"" <<
+      message << "\", source: " << source_id << " (" << line_no << ")";
+  return true;
+}
+
 void InspectableWebContentsImpl::HandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {

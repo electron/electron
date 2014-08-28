@@ -107,6 +107,11 @@ class InspectableWebContentsImpl :
 
   // content::WebContentsDelegate
 
+  virtual bool AddMessageToConsole(content::WebContents* source,
+                                   int32 level,
+                                   const base::string16& message,
+                                   int32 line_no,
+                                   const base::string16& source_id) OVERRIDE;
   virtual void HandleKeyboardEvent(
       content::WebContents*, const content::NativeWebKeyboardEvent&) OVERRIDE;
   virtual void CloseContents(content::WebContents* source) OVERRIDE;
