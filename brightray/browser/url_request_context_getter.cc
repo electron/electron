@@ -90,8 +90,8 @@ net::URLRequestJobFactory* URLRequestContextGetter::Delegate::CreateURLRequestJo
   // Set up interceptors in the reverse order.
   scoped_ptr<net::URLRequestJobFactory> top_job_factory =
       job_factory.PassAs<net::URLRequestJobFactory>();
-  for (content::URLRequestInterceptorScopedVector::reverse_iterator i = protocol_interceptors->rbegin();
-       i != protocol_interceptors->rend(); ++i)
+  content::URLRequestInterceptorScopedVector::reverse_iterator i;
+  for (i = protocol_interceptors->rbegin(); i != protocol_interceptors->rend(); ++i)
     top_job_factory.reset(new net::URLRequestInterceptingJobFactory(
         top_job_factory.Pass(), make_scoped_ptr(*i)));
   protocol_interceptors->weak_clear();
