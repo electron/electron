@@ -68,6 +68,7 @@ class Target : public content::DevToolsTarget {
   explicit Target(WebContents* web_contents);
 
   virtual std::string GetId() const OVERRIDE { return id_; }
+  virtual std::string GetParentId() const { return std::string(); }
   virtual std::string GetType() const OVERRIDE { return kTargetTypePage; }
   virtual std::string GetTitle() const OVERRIDE { return title_; }
   virtual std::string GetDescription() const OVERRIDE { return std::string(); }
@@ -134,8 +135,8 @@ DevToolsDelegate::DevToolsDelegate(
     content::BrowserContext* browser_context)
     : browser_context_(browser_context) {
   std::string frontend_url;
-  devtools_http_handler_ =
-      DevToolsHttpHandler::Start(CreateSocketFactory(), frontend_url, this);
+  devtools_http_handler_ = DevToolsHttpHandler::Start(
+      CreateSocketFactory(), frontend_url, this, base::FilePath());
 }
 
 DevToolsDelegate::~DevToolsDelegate() {

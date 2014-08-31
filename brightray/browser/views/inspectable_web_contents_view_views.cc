@@ -138,7 +138,6 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked) {
     params.delegate = new DevToolsWindowDelegate(this,
                                                  devtools_window_web_view_,
                                                  devtools_window_.get());
-    params.top_level = true;
     params.bounds = inspectable_web_contents()->GetDevToolsBounds();
 #if defined(USE_X11)
     // In X11 the window frame is drawn by the application.

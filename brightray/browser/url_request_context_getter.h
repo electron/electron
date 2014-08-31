@@ -35,7 +35,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     virtual net::NetworkDelegate* CreateNetworkDelegate() { return NULL; }
     virtual net::URLRequestJobFactory* CreateURLRequestJobFactory(
         content::ProtocolHandlerMap* protocol_handlers,
-        content::ProtocolHandlerScopedVector* protocol_interceptors);
+        content::URLRequestInterceptorScopedVector* protocol_interceptors);
   };
 
   URLRequestContextGetter(
@@ -44,7 +44,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
       base::MessageLoop* io_loop,
       base::MessageLoop* file_loop,
       content::ProtocolHandlerMap* protocol_handlers,
-      content::ProtocolHandlerScopedVector protocol_interceptors);
+      content::URLRequestInterceptorScopedVector protocol_interceptors);
   virtual ~URLRequestContextGetter();
 
   // net::URLRequestContextGetter:
@@ -66,7 +66,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   scoped_ptr<net::URLRequestContext> url_request_context_;
   scoped_ptr<net::HostMappingRules> host_mapping_rules_;
   content::ProtocolHandlerMap protocol_handlers_;
-  content::ProtocolHandlerScopedVector protocol_interceptors_;
+  content::URLRequestInterceptorScopedVector protocol_interceptors_;
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestContextGetter);
 };

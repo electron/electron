@@ -26,7 +26,7 @@ class BrowserContext : public content::BrowserContext,
 
   net::URLRequestContextGetter* CreateRequestContext(
       content::ProtocolHandlerMap* protocol_handlers,
-      content::ProtocolHandlerScopedVector protocol_interceptors);
+      content::URLRequestInterceptorScopedVector protocol_interceptors);
 
   net::URLRequestContextGetter* url_request_context_getter() const {
     return url_request_getter_.get();
@@ -42,7 +42,7 @@ class BrowserContext : public content::BrowserContext,
   virtual net::NetworkDelegate* CreateNetworkDelegate() OVERRIDE;
   virtual net::URLRequestJobFactory* CreateURLRequestJobFactory(
       content::ProtocolHandlerMap* protocol_handlers,
-      content::ProtocolHandlerScopedVector* protocol_interceptors) OVERRIDE;
+      content::URLRequestInterceptorScopedVector* protocol_interceptors) OVERRIDE;
 
   virtual base::FilePath GetPath() const OVERRIDE;
 
@@ -61,35 +61,11 @@ class BrowserContext : public content::BrowserContext,
   virtual net::URLRequestContextGetter*
       GetMediaRequestContextForStoragePartition(
           const base::FilePath& partition_path, bool in_memory);
-  virtual void RequestMidiSysExPermission(
-      int render_process_id,
-      int render_view_id,
-      int bridge_id,
-      const GURL& requesting_frame,
-      bool user_gesture,
-      const MidiSysExPermissionCallback& callback) OVERRIDE;
-  virtual void CancelMidiSysExPermissionRequest(
-      int render_process_id,
-      int render_view_id,
-      int bridge_id,
-      const GURL& requesting_frame) OVERRIDE;
-  virtual void RequestProtectedMediaIdentifierPermission(
-      int render_process_id,
-      int render_view_id,
-      int bridge_id,
-      int group_id,
-      const GURL& requesting_frame,
-      const ProtectedMediaIdentifierPermissionCallback& callback) OVERRIDE;
-  virtual void CancelProtectedMediaIdentifierPermissionRequests(int group_id) OVERRIDE;
   virtual content::ResourceContext* GetResourceContext() OVERRIDE;
-  virtual content::DownloadManagerDelegate*
-      GetDownloadManagerDelegate() OVERRIDE;
-  virtual content::GeolocationPermissionContext*
-      GetGeolocationPermissionContext() OVERRIDE;
-  virtual content::BrowserPluginGuestManagerDelegate*
-      GetGuestManagerDelegate() OVERRIDE;
-  virtual quota::SpecialStoragePolicy*
-      GetSpecialStoragePolicy() OVERRIDE;
+  virtual content::DownloadManagerDelegate* GetDownloadManagerDelegate() OVERRIDE;
+  virtual content::BrowserPluginGuestManager* GetGuestManager() OVERRIDE;
+  virtual quota::SpecialStoragePolicy* GetSpecialStoragePolicy() OVERRIDE;
+  virtual content::PushMessagingService* GetPushMessagingService() OVERRIDE;
 
   base::FilePath path_;
   scoped_ptr<ResourceContext> resource_context_;

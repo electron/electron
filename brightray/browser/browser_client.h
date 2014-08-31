@@ -36,7 +36,7 @@ class BrowserClient : public content::ContentBrowserClient {
   virtual net::URLRequestContextGetter* CreateRequestContext(
       content::BrowserContext* browser_context,
       content::ProtocolHandlerMap* protocol_handlers,
-      content::ProtocolHandlerScopedVector protocol_interceptors) OVERRIDE;
+      content::URLRequestInterceptorScopedVector protocol_interceptors) OVERRIDE;
 
  private:
   virtual content::BrowserMainParts* CreateBrowserMainParts(

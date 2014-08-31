@@ -156,8 +156,7 @@ void InspectableWebContentsImpl::ShowDevTools() {
     embedder_message_dispatcher_.reset(
         new DevToolsEmbedderMessageDispatcher(this));
 
-    auto create_params = content::WebContents::CreateParams(
-        web_contents_->GetBrowserContext());
+    content::WebContents::CreateParams create_params(web_contents_->GetBrowserContext());
     devtools_web_contents_.reset(content::WebContents::Create(create_params));
 
     Observe(devtools_web_contents_.get());
