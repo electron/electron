@@ -62,6 +62,14 @@
           'NDEBUG',
           'USING_V8_SHARED',
           'WEBKIT_DLL',
+          # From skia_for_chromium_defines.gypi:
+          'SK_SUPPORT_LEGACY_GETTOPDEVICE',
+          'SK_SUPPORT_LEGACY_BITMAP_CONFIG',
+          'SK_SUPPORT_LEGACY_DEVICE_VIRTUAL_ISOPAQUE',
+          'SK_SUPPORT_LEGACY_N32_NAME',
+          'SK_SUPPORT_LEGACY_SETCONFIG',
+          'SK_IGNORE_ETC1_SUPPORT',
+          'SK_IGNORE_GPU_DITHER',
         ],
         'msvs_configuration_attributes': {
           'OutputDirectory': '<(DEPTH)\\build\\$(ConfigurationName)', 
