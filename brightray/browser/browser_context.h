@@ -40,9 +40,6 @@ class BrowserContext : public content::BrowserContext,
 
   // URLRequestContextGetter::Delegate:
   virtual net::NetworkDelegate* CreateNetworkDelegate() OVERRIDE;
-  virtual net::URLRequestJobFactory* CreateURLRequestJobFactory(
-      content::ProtocolHandlerMap* protocol_handlers,
-      content::URLRequestInterceptorScopedVector* protocol_interceptors) OVERRIDE;
 
   virtual base::FilePath GetPath() const OVERRIDE;
 

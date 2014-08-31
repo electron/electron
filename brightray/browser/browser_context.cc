@@ -118,12 +118,6 @@ net::NetworkDelegate* BrowserContext::CreateNetworkDelegate() {
   return new NetworkDelegate;
 }
 
-net::URLRequestJobFactory* BrowserContext::CreateURLRequestJobFactory(
-    content::ProtocolHandlerMap* protocol_handlers,
-    content::URLRequestInterceptorScopedVector* protocol_interceptors) {
-  return NULL;
-}
-
 base::FilePath BrowserContext::GetPath() const {
   return path_;
 }
