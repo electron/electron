@@ -13,7 +13,8 @@
 #include "content/public/common/url_constants.h"
 #include "net/url_request/data_protocol_handler.h"
 #include "net/url_request/file_protocol_handler.h"
-#include "net/url_request/protocol_intercept_job_factory.h"
+#include "net/url_request/url_request_intercepting_job_factory.h"
+#include "url/url_constants.h"
 
 using content::BrowserThread;
 
@@ -29,7 +30,7 @@ AtomBrowserContext::~AtomBrowserContext() {
 
 net::URLRequestJobFactory* AtomBrowserContext::CreateURLRequestJobFactory(
     content::ProtocolHandlerMap* handlers,
-    content::ProtocolHandlerScopedVector* interceptors) {
+    content::URLRequestInterceptorScopedVector* interceptors) {
   scoped_ptr<AtomURLRequestJobFactory> job_factory(job_factory_);
 
   for (content::ProtocolHandlerMap::iterator it = handlers->begin();
@@ -38,18 +39,18 @@ net::URLRequestJobFactory* AtomBrowserContext::CreateURLRequestJobFactory(
   handlers->clear();
 
   job_factory->SetProtocolHandler(
-      content::kDataScheme, new net::DataProtocolHandler);
+      url::kDataScheme, new net::DataProtocolHandler);
   job_factory->SetProtocolHandler(
-      content::kFileScheme, new net::FileProtocolHandler(
+      url::kFileScheme, new net::FileProtocolHandler(
           BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
               base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
 
   // Set up interceptors in the reverse order.
   scoped_ptr<net::URLRequestJobFactory> top_job_factory =
       job_factory.PassAs<net::URLRequestJobFactory>();
-  content::ProtocolHandlerScopedVector::reverse_iterator it;
+  content::URLRequestInterceptorScopedVector::reverse_iterator it;
   for (it = interceptors->rbegin(); it != interceptors->rend(); ++it)
-    top_job_factory.reset(new net::ProtocolInterceptJobFactory(
+    top_job_factory.reset(new net::URLRequestInterceptingJobFactory(
         top_job_factory.Pass(), make_scoped_ptr(*it)));
   interceptors->weak_clear();
 
