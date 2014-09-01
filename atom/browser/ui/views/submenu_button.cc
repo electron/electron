@@ -34,9 +34,10 @@ SubmenuButton::SubmenuButton(views::ButtonListener* listener,
       text_width_(0),
       text_height_(0),
       underline_color_(SK_ColorBLACK) {
+  SetStyle(views::Button::STYLE_TEXTBUTTON);
   if (GetUnderlinePosition(title, &accelerator_, &underline_start_,
                            &underline_end_))
-    gfx::Canvas::SizeStringInt(text(), font_list(), &text_width_,
+    gfx::Canvas::SizeStringInt(GetText(), GetFontList(), &text_width_,
                                &text_height_, 0, 0);
 }
 
@@ -85,7 +86,7 @@ bool SubmenuButton::GetUnderlinePosition(const base::string16& text,
 void SubmenuButton::GetCharacterPosition(
     const base::string16& text, int index, int* pos) {
   int height;
-  gfx::Canvas::SizeStringInt(text.substr(0, index), font_list(), pos, &height,
+  gfx::Canvas::SizeStringInt(text.substr(0, index), GetFontList(), pos, &height,
                              0, 0);
 }
 

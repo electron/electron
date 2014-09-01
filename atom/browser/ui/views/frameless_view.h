@@ -38,9 +38,9 @@ class FramelessView : public views::NonClientFrameView {
   virtual void UpdateWindowTitle() OVERRIDE;
 
   // Overridden from View:
-  virtual gfx::Size GetPreferredSize() OVERRIDE;
-  virtual gfx::Size GetMinimumSize() OVERRIDE;
-  virtual gfx::Size GetMaximumSize() OVERRIDE;
+  virtual gfx::Size GetPreferredSize() const OVERRIDE;
+  virtual gfx::Size GetMinimumSize() const OVERRIDE;
+  virtual gfx::Size GetMaximumSize() const OVERRIDE;
   virtual const char* GetClassName() const OVERRIDE;
 
   // Not owned.

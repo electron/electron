@@ -74,10 +74,10 @@ void MenuBar::SetMenu(ui::MenuModel* model) {
     button->set_tag(i);
 
 #if defined(USE_X11)
-    button->SetEnabledColor(enabled_color_);
-    button->SetDisabledColor(disabled_color_);
-    button->SetHighlightColor(highlight_color_);
-    button->SetHoverColor(hover_color_);
+    button->SetTextColor(views::Button::STATE_NORMAL, enabled_color_);
+    button->SetTextColor(views::Button::STATE_DISABLED, disabled_color_);
+    button->SetTextColor(views::Button::STATE_PRESSED, highlight_color_);
+    button->SetTextColor(views::Button::STATE_HOVERED, hover_color_);
     button->SetUnderlineColor(enabled_color_);
 #elif defined(OS_WIN)
     button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_GRAYTEXT));

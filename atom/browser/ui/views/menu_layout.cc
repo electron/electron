@@ -30,7 +30,7 @@ void MenuLayout::Layout(views::View* host) {
   menu_bar->SetBoundsRect(menu_Bar_bounds);
 }
 
-gfx::Size MenuLayout::GetPreferredSize(views::View* host) {
+gfx::Size MenuLayout::GetPreferredSize(const views::View* host) const {
   gfx::Size size = views::FillLayout::GetPreferredSize(host);
   if (!HasMenu(host))
     return size;
@@ -39,7 +39,8 @@ gfx::Size MenuLayout::GetPreferredSize(views::View* host) {
   return size;
 }
 
-int MenuLayout::GetPreferredHeightForWidth(views::View* host, int width) {
+int MenuLayout::GetPreferredHeightForWidth(
+    const views::View* host, int width) const {
   int height = views::FillLayout::GetPreferredHeightForWidth(host, width);
   if (!HasMenu(host))
     return height;

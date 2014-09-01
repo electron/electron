@@ -73,7 +73,7 @@ bool MenuDelegate::IsTriggerableEvent(views::MenuItemView* source,
   return delegate()->IsTriggerableEvent(source, e);
 }
 
-bool MenuDelegate::GetAccelerator(int id, ui::Accelerator* accelerator) {
+bool MenuDelegate::GetAccelerator(int id, ui::Accelerator* accelerator) const {
   return delegate()->GetAccelerator(id, accelerator);
 }
 
