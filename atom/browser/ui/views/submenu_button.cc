@@ -8,6 +8,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/text_utils.h"
+#include "ui/views/controls/button/label_button_border.h"
 
 namespace atom {
 
@@ -34,7 +35,11 @@ SubmenuButton::SubmenuButton(views::ButtonListener* listener,
       text_width_(0),
       text_height_(0),
       underline_color_(SK_ColorBLACK) {
-  SetStyle(views::Button::STYLE_TEXTBUTTON);
+#if defined(OS_LINUX)
+  // Dont' use native style border.
+  SetBorder(CreateDefaultBorder().PassAs<views::Border>());
+#endif
+
   if (GetUnderlinePosition(title, &accelerator_, &underline_start_,
                            &underline_end_))
     gfx::Canvas::SizeStringInt(GetText(), GetFontList(), &text_width_,
