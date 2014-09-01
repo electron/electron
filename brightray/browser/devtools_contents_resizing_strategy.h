@@ -15,27 +15,21 @@
 class DevToolsContentsResizingStrategy {
  public:
   DevToolsContentsResizingStrategy();
-  DevToolsContentsResizingStrategy(
-      const gfx::Insets& insets,
-      const gfx::Size& min_size);
-  explicit DevToolsContentsResizingStrategy(const gfx::Rect& bounds);
+  explicit DevToolsContentsResizingStrategy(
+      const gfx::Rect& bounds);
 
   void CopyFrom(const DevToolsContentsResizingStrategy& strategy);
   bool Equals(const DevToolsContentsResizingStrategy& strategy);
 
-  const gfx::Insets& insets() const { return insets_; }
-  const gfx::Size& min_size() const { return min_size_; }
   const gfx::Rect& bounds() const { return bounds_; }
+  bool hide_inspected_contents() const { return hide_inspected_contents_; }
 
  private:
-  // Insets of contents inside DevTools.
-  gfx::Insets insets_;
-
-  // Minimum size of contents.
-  gfx::Size min_size_;
-
   // Contents bounds. When non-empty, used instead of insets.
   gfx::Rect bounds_;
+
+  // Determines whether inspected contents is visible.
+  bool hide_inspected_contents_;
 
   DISALLOW_COPY_AND_ASSIGN(DevToolsContentsResizingStrategy);
 };
@@ -48,8 +42,6 @@ class DevToolsContentsResizingStrategy {
 void ApplyDevToolsContentsResizingStrategy(
     const DevToolsContentsResizingStrategy& strategy,
     const gfx::Size& container_size,
-    const gfx::Rect& old_devtools_bounds,
-    const gfx::Rect& old_contents_bounds,
     gfx::Rect* new_devtools_bounds,
     gfx::Rect* new_contents_bounds);
 

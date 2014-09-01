@@ -212,9 +212,8 @@ void InspectableWebContentsImpl::CloseWindow() {
   devtools_web_contents()->DispatchBeforeUnload(false);
 }
 
-void InspectableWebContentsImpl::SetContentsResizingStrategy(
-    const gfx::Insets& insets, const gfx::Size& min_size) {
-  DevToolsContentsResizingStrategy strategy(insets, min_size);
+void InspectableWebContentsImpl::SetInspectedPageBounds(const gfx::Rect& rect) {
+  DevToolsContentsResizingStrategy strategy(rect);
   if (contents_resizing_strategy_.Equals(strategy))
     return;
 

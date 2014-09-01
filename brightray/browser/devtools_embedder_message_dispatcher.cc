@@ -23,33 +23,20 @@ bool GetValue(const base::ListValue& list, int pos, bool& value) {
   return list.GetBoolean(pos, &value);
 }
 
-bool GetValue(const base::ListValue& list, int pos, gfx::Insets& insets) {
+bool GetValue(const base::ListValue& list, int pos, gfx::Rect& rect) {
   const base::DictionaryValue* dict;
   if (!list.GetDictionary(pos, &dict))
     return false;
-  int top = 0;
-  int left = 0;
-  int bottom = 0;
-  int right = 0;
-  if (!dict->GetInteger("top", &top) ||
-      !dict->GetInteger("left", &left) ||
-      !dict->GetInteger("bottom", &bottom) ||
-      !dict->GetInteger("right", &right))
-    return false;
-  insets.Set(top, left, bottom, right);
-  return true;
-}
-
-bool GetValue(const base::ListValue& list, int pos, gfx::Size& size) {
-  const base::DictionaryValue* dict;
-  if (!list.GetDictionary(pos, &dict))
-    return false;
+  int x = 0;
+  int y = 0;
   int width = 0;
   int height = 0;
-  if (!dict->GetInteger("width", &width) ||
+  if (!dict->GetInteger("x", &x) ||
+      !dict->GetInteger("y", &y) ||
+      !dict->GetInteger("width", &width) ||
       !dict->GetInteger("height", &height))
     return false;
-  size.SetSize(width, height);
+  rect.SetRect(x, y, width, height);
   return true;
 }
 
@@ -191,8 +178,8 @@ DevToolsEmbedderMessageDispatcher::DevToolsEmbedderMessageDispatcher(
   RegisterHandler("closeWindow",
       BindToListParser(base::Bind(&Delegate::CloseWindow,
                                   base::Unretained(delegate))));
-  RegisterHandler("setContentsResizingStrategy",
-      BindToListParser(base::Bind(&Delegate::SetContentsResizingStrategy,
+  RegisterHandler("setInspectedPageBounds",
+      BindToListParser(base::Bind(&Delegate::SetInspectedPageBounds,
                                   base::Unretained(delegate))));
   RegisterHandler("inspectElementCompleted",
       BindToListParser(base::Bind(&Delegate::InspectElementCompleted,
