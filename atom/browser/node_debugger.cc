@@ -44,10 +44,12 @@ NodeDebugger::NodeDebugger() {
   if (use_debug_agent) {
     if (!port_str.empty())
       base::StringToInt(port_str, &port);
+#if 0
     v8::Debug::EnableAgent("atom-shell " ATOM_VERSION, port,
                            wait_for_connection);
     v8::Debug::SetDebugMessageDispatchHandler(DispatchDebugMessagesInMsgThread,
                                               false);
+#endif
   }
 }
 
