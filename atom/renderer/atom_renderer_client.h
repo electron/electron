@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "content/public/renderer/content_renderer_client.h"
+#include "content/public/renderer/render_process_observer.h"
 
 namespace node {
 class Environment;
@@ -19,7 +20,8 @@ namespace atom {
 class AtomRendererBindings;
 class NodeBindings;
 
-class AtomRendererClient : public content::ContentRendererClient {
+class AtomRendererClient : public content::ContentRendererClient,
+                           public content::RenderProcessObserver {
  public:
   AtomRendererClient();
   virtual ~AtomRendererClient();
@@ -40,6 +42,9 @@ class AtomRendererClient : public content::ContentRendererClient {
     MANUAL_ENABLE_IFRAME,
     DISABLE,
   };
+
+  // content::RenderProcessObserver:
+  virtual void WebKitInitialized() OVERRIDE;
 
   // content::ContentRendererClient:
   virtual void RenderThreadStarted() OVERRIDE;
