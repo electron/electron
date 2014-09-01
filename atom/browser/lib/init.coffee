@@ -47,7 +47,7 @@ setImmediate ->
     message = error.stack ? "#{error.name}: #{error.message}"
     require('dialog').showMessageBox
       type: 'warning'
-      title: 'An javascript error occured in the browser'
+      title: 'A javascript error occured in the browser'
       message: 'uncaughtException'
       detail: message
       buttons: ['OK']
