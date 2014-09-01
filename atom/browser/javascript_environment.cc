@@ -7,7 +7,9 @@
 namespace atom {
 
 JavascriptEnvironment::JavascriptEnvironment()
-    : isolate_(v8::Isolate::GetCurrent()),
+    : isolate_holder_(gin::IsolateHolder::kNonStrictMode),
+      isolate_(isolate_holder_.isolate()),
+      isolate_scope_(isolate_),
       locker_(isolate_),
       handle_scope_(isolate_),
       context_(isolate_, v8::Context::New(isolate_)),
