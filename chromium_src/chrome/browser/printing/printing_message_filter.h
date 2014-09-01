@@ -38,8 +38,7 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
   explicit PrintingMessageFilter(int render_process_id);
 
   // content::BrowserMessageFilter methods.
-  virtual bool OnMessageReceived(const IPC::Message& message,
-                                 bool* message_was_ok) OVERRIDE;
+  virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
 
  private:
   virtual ~PrintingMessageFilter();

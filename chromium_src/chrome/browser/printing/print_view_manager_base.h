@@ -23,6 +23,7 @@ class RenderViewHost;
 namespace printing {
 
 class JobEventDetails;
+class PdfToEmfConverter;
 class PrintJob;
 class PrintJobWorkerOwner;
 class PrintQueriesQueue;
@@ -62,10 +63,6 @@ class PrintViewManagerBase : public content::NotificationObserver,
   virtual void Observe(int type,
                        const content::NotificationSource& source,
                        const content::NotificationDetails& details) OVERRIDE;
-
-  // content::WebContentsObserver implementation.
-  virtual void DidStartLoading(
-      content::RenderViewHost* render_view_host) OVERRIDE;
 
   // Cancels the print job.
   virtual void NavigationStopped() OVERRIDE;
@@ -143,7 +140,8 @@ class PrintViewManagerBase : public content::NotificationObserver,
   // print settings are being loaded.
   bool inside_inner_message_loop_;
 
-#if defined(OS_POSIX) && !defined(OS_MACOSX)
+#if (defined(OS_POSIX) && !defined(OS_MACOSX)) || \
+    defined(WIN_PDF_METAFILE_FOR_PRINTING)
   // Set to true when OnDidPrintPage() should be expecting the first page.
   bool expecting_first_page_;
 #endif
