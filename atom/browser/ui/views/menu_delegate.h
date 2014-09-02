@@ -35,7 +35,7 @@ class MenuDelegate : public views::MenuDelegate {
   virtual bool IsTriggerableEvent(views::MenuItemView* source,
                                   const ui::Event& e) OVERRIDE;
   virtual bool GetAccelerator(int id,
-                              ui::Accelerator* accelerator) OVERRIDE;
+                              ui::Accelerator* accelerator) const OVERRIDE;
   virtual base::string16 GetLabel(int id) const OVERRIDE;
   virtual const gfx::FontList* GetLabelFontList(int id) const OVERRIDE;
   virtual bool IsCommandEnabled(int id) const OVERRIDE;

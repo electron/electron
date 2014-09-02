@@ -8,8 +8,8 @@ import subprocess
 import sys
 import tarfile
 
-from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, NODE_VERSION, \
-                       TARGET_PLATFORM, DIST_ARCH
+from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, TARGET_PLATFORM, \
+                       DIST_ARCH
 from lib.util import scoped_cwd, rm_rf, get_atom_shell_version, make_zip, \
                      safe_mkdir, execute
 
@@ -20,7 +20,7 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
 OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'Release')
 NODE_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'node')
-DIST_HEADERS_NAME = 'node-{0}'.format(NODE_VERSION)
+DIST_HEADERS_NAME = 'node-{0}'.format(ATOM_SHELL_VERSION)
 DIST_HEADERS_DIR = os.path.join(DIST_DIR, DIST_HEADERS_NAME)
 
 SYMBOL_NAME = {

@@ -8,7 +8,7 @@ import subprocess
 import sys
 import tempfile
 
-from lib.config import DIST_ARCH, NODE_VERSION, TARGET_PLATFORM
+from lib.config import DIST_ARCH, TARGET_PLATFORM
 from lib.util import get_atom_shell_version, scoped_cwd, safe_mkdir, execute, \
                      s3_config, s3put
 from lib.github import GitHub
@@ -51,7 +51,7 @@ def main():
 
   # Upload node's headers to S3.
   bucket, access_key, secret_key = s3_config()
-  upload_node(bucket, access_key, secret_key, NODE_VERSION)
+  upload_node(bucket, access_key, secret_key, ATOM_SHELL_VERSION)
 
   if args.publish_release:
     # Press the publish button.
@@ -60,7 +60,7 @@ def main():
     # Upload the SHASUMS.txt.
     execute([sys.executable,
              os.path.join(SOURCE_ROOT, 'script', 'upload-checksums.py'),
-             '-v', NODE_VERSION])
+             '-v', ATOM_SHELL_VERSION])
 
 
 def parse_args():

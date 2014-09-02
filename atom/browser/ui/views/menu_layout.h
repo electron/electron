@@ -16,8 +16,9 @@ class MenuLayout : public views::FillLayout {
 
   // views::LayoutManager:
   virtual void Layout(views::View* host) OVERRIDE;
-  virtual gfx::Size GetPreferredSize(views::View* host) OVERRIDE;
-  virtual int GetPreferredHeightForWidth(views::View* host, int width) OVERRIDE;
+  virtual gfx::Size GetPreferredSize(const views::View* host) const OVERRIDE;
+  virtual int GetPreferredHeightForWidth(
+      const views::View* host, int width) const OVERRIDE;
 
  private:
   bool HasMenu(const views::View* host) const;

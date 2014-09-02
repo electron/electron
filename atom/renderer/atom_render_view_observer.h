@@ -5,6 +5,7 @@
 #ifndef ATOM_RENDERER_ATOM_RENDER_VIEW_OBSERVER_H_
 #define ATOM_RENDERER_ATOM_RENDER_VIEW_OBSERVER_H_
 
+#include "base/strings/string16.h"
 #include "content/public/renderer/render_view_observer.h"
 
 namespace base {

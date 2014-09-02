@@ -95,16 +95,16 @@ void FramelessView::UpdateWindowIcon() {
 void FramelessView::UpdateWindowTitle() {
 }
 
-gfx::Size FramelessView::GetPreferredSize() {
+gfx::Size FramelessView::GetPreferredSize() const {
   return frame_->non_client_view()->GetWindowBoundsForClientBounds(
       gfx::Rect(frame_->client_view()->GetPreferredSize())).size();
 }
 
-gfx::Size FramelessView::GetMinimumSize() {
+gfx::Size FramelessView::GetMinimumSize() const {
   return window_->GetMinimumSize();
 }
 
-gfx::Size FramelessView::GetMaximumSize() {
+gfx::Size FramelessView::GetMaximumSize() const {
   return window_->GetMaximumSize();
 }
 

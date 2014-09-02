@@ -27,7 +27,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   // brightray::URLRequestContextGetter::Delegate:
   virtual net::URLRequestJobFactory* CreateURLRequestJobFactory(
       content::ProtocolHandlerMap* handlers,
-      content::ProtocolHandlerScopedVector* interceptors) OVERRIDE;
+      content::URLRequestInterceptorScopedVector* interceptors) OVERRIDE;
 
  private:
   // A fake BrowserProcess object that used to feed the source code from chrome.

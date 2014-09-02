@@ -63,10 +63,9 @@ PrintingMessageFilter::PrintingMessageFilter(int render_process_id)
 PrintingMessageFilter::~PrintingMessageFilter() {
 }
 
-bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message,
-                                              bool* message_was_ok) {
+bool PrintingMessageFilter::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
-  IPC_BEGIN_MESSAGE_MAP_EX(PrintingMessageFilter, message, *message_was_ok)
+  IPC_BEGIN_MESSAGE_MAP(PrintingMessageFilter, message)
 #if defined(OS_WIN)
     IPC_MESSAGE_HANDLER(PrintHostMsg_DuplicateSection, OnDuplicateSection)
 #endif

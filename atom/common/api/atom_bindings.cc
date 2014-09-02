@@ -61,7 +61,6 @@ AtomBindings::AtomBindings() {
   call_next_tick_async_.data = this;
 
   uv_async_init(uv_default_loop(), &g_callback_uv_handle, UvOnCallback);
-  v8::V8::SetFatalErrorHandler(FatalErrorCallback);
 }
 
 AtomBindings::~AtomBindings() {
@@ -69,6 +68,8 @@ AtomBindings::~AtomBindings() {
 
 void AtomBindings::BindTo(v8::Isolate* isolate,
                           v8::Handle<v8::Object> process) {
+  v8::V8::SetFatalErrorHandler(FatalErrorCallback);
+
   mate::Dictionary dict(isolate, process);
   dict.SetMethod("crash", &Crash);
   dict.SetMethod("log", &Log);

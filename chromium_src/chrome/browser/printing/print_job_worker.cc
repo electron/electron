@@ -120,39 +120,19 @@ void PrintJobWorker::SetSettings(
   DCHECK_EQ(message_loop(), base::MessageLoop::current());
 
   BrowserThread::PostTask(
-      BrowserThread::UI, FROM_HERE,
-      base::Bind(&HoldRefCallback, make_scoped_refptr(owner_),
+      BrowserThread::UI,
+      FROM_HERE,
+      base::Bind(&HoldRefCallback,
+                 make_scoped_refptr(owner_),
                  base::Bind(&PrintJobWorker::UpdatePrintSettings,
-                            base::Unretained(this), new_settings)));
+                            base::Unretained(this),
+                            base::Owned(new_settings))));
 }
 
 void PrintJobWorker::UpdatePrintSettings(
     const base::DictionaryValue* const new_settings) {
-  // Create new PageRanges based on |new_settings|.
-  PageRanges new_ranges;
-  const base::ListValue* page_range_array;
-  if (new_settings->GetList(kSettingPageRange, &page_range_array)) {
-    for (size_t index = 0; index < page_range_array->GetSize(); ++index) {
-      const base::DictionaryValue* dict;
-      if (!page_range_array->GetDictionary(index, &dict))
-        continue;
-
-      PageRange range;
-      if (!dict->GetInteger(kSettingPageRangeFrom, &range.from) ||
-          !dict->GetInteger(kSettingPageRangeTo, &range.to)) {
-        continue;
-      }
-
-      // Page numbers are 1-based in the dictionary.
-      // Page numbers are 0-based for the printing context.
-      range.from--;
-      range.to--;
-      new_ranges.push_back(range);
-    }
-  }
   PrintingContext::Result result =
-      printing_context_->UpdatePrintSettings(*new_settings, new_ranges);
-  delete new_settings;
+      printing_context_->UpdatePrintSettings(*new_settings);
   GetSettingsDone(result);
 }
 
@@ -218,8 +198,6 @@ void PrintJobWorker::StartPrinting(PrintedDocument* new_document) {
   base::string16 document_name =
       printing::SimplifyDocumentTitle(document_->name());
   if (document_name.empty()) {
-    // document_name = printing::SimplifyDocumentTitle(
-    //     l10n_util::GetStringUTF16(IDS_DEFAULT_PRINT_DOCUMENT_TITLE));
   }
   PrintingContext::Result result =
       printing_context_->NewDocument(document_name);
@@ -272,8 +250,8 @@ void PrintJobWorker::OnNewPage() {
 
   while (true) {
     // Is the page available?
-    scoped_refptr<PrintedPage> page;
-    if (!document_->GetPage(page_number_.ToInt(), &page)) {
+    scoped_refptr<PrintedPage> page = document_->GetPage(page_number_.ToInt());
+    if (!page) {
       // We need to wait for the page to be available.
       base::MessageLoop::current()->PostDelayedTask(
           FROM_HERE,

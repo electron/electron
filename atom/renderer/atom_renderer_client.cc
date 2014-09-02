@@ -14,10 +14,12 @@
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
+#include "content/public/renderer/render_thread.h"
 #include "base/command_line.h"
 #include "native_mate/converter.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
+#include "third_party/WebKit/public/web/WebKit.h"
 
 #include "atom/common/node_includes.h"
 
@@ -83,7 +85,7 @@ AtomRendererClient::AtomRendererClient()
 AtomRendererClient::~AtomRendererClient() {
 }
 
-void AtomRendererClient::RenderThreadStarted() {
+void AtomRendererClient::WebKitInitialized() {
   if (!IsNodeBindingEnabled())
     return;
 
@@ -94,10 +96,14 @@ void AtomRendererClient::RenderThreadStarted() {
 
   // Create a default empty environment which would be used when we need to
   // run V8 code out of a window context (like running a uv callback).
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* isolate = blink::mainThreadIsolate();
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> context = v8::Context::New(isolate);
   global_env = node::Environment::New(context);
+}
+
+void AtomRendererClient::RenderThreadStarted() {
+  content::RenderThread::Get()->AddObserver(this);
 }
 
 void AtomRendererClient::RenderFrameCreated(

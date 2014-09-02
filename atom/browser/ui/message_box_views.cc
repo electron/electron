@@ -71,7 +71,7 @@ class MessageDialog : public views::WidgetDelegate,
   virtual views::ClientView* CreateClientView(views::Widget* widget) OVERRIDE;
 
   // Overridden from views::View:
-  virtual gfx::Size GetPreferredSize() OVERRIDE;
+  virtual gfx::Size GetPreferredSize() const OVERRIDE;
   virtual void Layout() OVERRIDE;
   virtual bool AcceleratorPressed(const ui::Accelerator& accelerator) OVERRIDE;
 
@@ -160,7 +160,6 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
   views::Widget::InitParams params;
   params.delegate = this;
   params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
-  params.top_level = true;
   if (parent_) {
     params.parent = parent_->GetNativeWindow();
     params.opacity = views::Widget::InitParams::TRANSLUCENT_WINDOW;
@@ -264,7 +263,7 @@ views::ClientView* MessageDialog::CreateClientView(views::Widget* widget) {
   return new MessageDialogClientView(this, widget);
 }
 
-gfx::Size MessageDialog::GetPreferredSize() {
+gfx::Size MessageDialog::GetPreferredSize() const {
   gfx::Size size(0, buttons_[0]->GetPreferredSize().height());
   for (size_t i = 0; i < buttons_.size(); ++i)
     size.Enlarge(buttons_[i]->GetPreferredSize().width(), 0);

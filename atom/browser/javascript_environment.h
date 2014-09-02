@@ -6,7 +6,7 @@
 #define ATOM_BROWSER_JAVASCRIPT_ENVIRONMENT_H_
 
 #include "base/basictypes.h"
-#include "v8/include/v8.h"
+#include "gin/public/isolate_holder.h"
 
 namespace atom {
 
@@ -20,7 +20,9 @@ class JavascriptEnvironment {
   }
 
  private:
+  gin::IsolateHolder isolate_holder_;
   v8::Isolate* isolate_;
+  v8::Isolate::Scope isolate_scope_;
   v8::Locker locker_;
   v8::HandleScope handle_scope_;
   v8::UniquePersistent<v8::Context> context_;
