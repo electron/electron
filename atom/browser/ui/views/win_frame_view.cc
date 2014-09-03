@@ -39,12 +39,12 @@ int WinFrameView::NonClientHitTest(const gfx::Point& point) {
     return FramelessView::NonClientHitTest(point);
 }
 
-gfx::Size WinFrameView::GetMinimumSize() {
+gfx::Size WinFrameView::GetMinimumSize() const {
   gfx::Size size = FramelessView::GetMinimumSize();
   return gfx::win::DIPToScreenSize(size);
 }
 
-gfx::Size WinFrameView::GetMaximumSize() {
+gfx::Size WinFrameView::GetMaximumSize() const {
   gfx::Size size = FramelessView::GetMaximumSize();
   return gfx::win::DIPToScreenSize(size);
 }
