@@ -10,8 +10,7 @@
 #include "base/bind.h"
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
-#include "net/socket/stream_socket.h"
-#include "net/socket/tcp_server_socket.h"
+#include "net/socket/tcp_listen_socket.h"
 #include "v8/include/v8-debug.h"
 
 namespace atom {
@@ -39,23 +38,19 @@ NodeDebugger::NodeDebugger()
     if (!port_str.empty())
       base::StringToInt(port_str, &port);
 
-    if (!thread_.Start()) {
+    // Start a new IO thread.
+    base::Thread::Options options;
+    options.message_loop_type = base::MessageLoop::TYPE_IO;
+    if (!thread_.StartWithOptions(options)) {
       LOG(ERROR) << "Unable to start debugger thread";
       return;
     }
 
-    net::IPAddressNumber ip_number;
-    if (!net::ParseIPLiteralToNumber("127.0.0.1", &ip_number)) {
-      LOG(ERROR) << "Unable to convert ip address";
-      return;
-    }
-
-    server_socket_.reset(new net::TCPServerSocket(NULL, net::NetLog::Source()));
-    server_socket_->Listen(net::IPEndPoint(ip_number, port), 1);
-
+    // Start the server in new IO thread.
     thread_.message_loop()->PostTask(
         FROM_HERE,
-        base::Bind(&NodeDebugger::DoAcceptLoop, weak_factory_.GetWeakPtr()));
+        base::Bind(&NodeDebugger::StartServer, weak_factory_.GetWeakPtr(),
+                   port));
   }
 }
 
@@ -63,7 +58,30 @@ NodeDebugger::~NodeDebugger() {
   thread_.Stop();
 }
 
-void NodeDebugger::DoAcceptLoop() {
+void NodeDebugger::StartServer(int port) {
+  server_ = net::TCPListenSocket::CreateAndListen("127.0.0.1", port, this);
+  if (!server_) {
+    LOG(ERROR) << "Cannot start debugger server";
+    return;
+  }
+}
+
+void NodeDebugger::DidAccept(net::StreamListenSocket* server,
+                             scoped_ptr<net::StreamListenSocket> socket) {
+  // Only accept one session.
+  if (accepted_socket_)
+    return;
+
+  accepted_socket_ = socket.Pass();
+}
+
+void NodeDebugger::DidRead(net::StreamListenSocket* socket,
+                           const char* data,
+                           int len) {
+}
+
+void NodeDebugger::DidClose(net::StreamListenSocket* socket) {
+  accepted_socket_.reset();
 }
 
 }  // namespace atom

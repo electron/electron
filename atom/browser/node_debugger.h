@@ -8,26 +8,30 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/threading/thread.h"
-
-namespace net {
-class StreamSocket;
-class TCPServerSocket;
-}
+#include "net/socket/stream_listen_socket.h"
 
 namespace atom {
 
 // Add support for node's "--debug" switch.
-class NodeDebugger {
+class NodeDebugger : public net::StreamListenSocket::Delegate {
  public:
   NodeDebugger();
   virtual ~NodeDebugger();
 
  private:
-  void DoAcceptLoop();
+  void StartServer(int port);
+
+  // net::StreamListenSocket::Delegate:
+  virtual void DidAccept(net::StreamListenSocket* server,
+                         scoped_ptr<net::StreamListenSocket> socket) OVERRIDE;
+  virtual void DidRead(net::StreamListenSocket* socket,
+                       const char* data,
+                       int len) OVERRIDE;
+  virtual void DidClose(net::StreamListenSocket* socket) OVERRIDE;
 
   base::Thread thread_;
-  scoped_ptr<net::TCPServerSocket> server_socket_;
-  scoped_ptr<net::StreamSocket> accepted_socket_;
+  scoped_ptr<net::StreamListenSocket> server_;
+  scoped_ptr<net::StreamListenSocket> accepted_socket_;
 
   base::WeakPtrFactory<NodeDebugger> weak_factory_;
 
