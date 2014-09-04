@@ -5,8 +5,14 @@
 #ifndef ATOM_BROWSER_NODE_DEBUGGER_H_
 #define ATOM_BROWSER_NODE_DEBUGGER_H_
 
-#include "base/basictypes.h"
-#include "vendor/node/deps/uv/include/uv.h"
+#include "base/memory/scoped_ptr.h"
+#include "base/memory/weak_ptr.h"
+#include "base/threading/thread.h"
+
+namespace net {
+class StreamSocket;
+class TCPServerSocket;
+}
 
 namespace atom {
 
@@ -17,10 +23,13 @@ class NodeDebugger {
   virtual ~NodeDebugger();
 
  private:
-  static void DispatchDebugMessagesInMainThread(uv_async_t* handle);
-  static void DispatchDebugMessagesInMsgThread();
+  void DoAcceptLoop();
 
-  static uv_async_t dispatch_debug_messages_async_;
+  base::Thread thread_;
+  scoped_ptr<net::TCPServerSocket> server_socket_;
+  scoped_ptr<net::StreamSocket> accepted_socket_;
+
+  base::WeakPtrFactory<NodeDebugger> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(NodeDebugger);
 };

@@ -7,24 +7,18 @@
 #include <string>
 
 #include "atom/common/atom_version.h"
+#include "base/bind.h"
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
-#include "v8/include/v8.h"
+#include "net/socket/stream_socket.h"
+#include "net/socket/tcp_server_socket.h"
 #include "v8/include/v8-debug.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
-// static
-uv_async_t NodeDebugger::dispatch_debug_messages_async_;
-
-NodeDebugger::NodeDebugger() {
-  uv_async_init(uv_default_loop(),
-                &dispatch_debug_messages_async_,
-                DispatchDebugMessagesInMainThread);
-  uv_unref(reinterpret_cast<uv_handle_t*>(&dispatch_debug_messages_async_));
-
+NodeDebugger::NodeDebugger()
+    : thread_("NodeDebugger"),
+      weak_factory_(this) {
   bool use_debug_agent = false;
   int port = 5858;
   bool wait_for_connection = false;
@@ -44,26 +38,32 @@ NodeDebugger::NodeDebugger() {
   if (use_debug_agent) {
     if (!port_str.empty())
       base::StringToInt(port_str, &port);
-#if 0
-    v8::Debug::EnableAgent("atom-shell " ATOM_VERSION, port,
-                           wait_for_connection);
-    v8::Debug::SetDebugMessageDispatchHandler(DispatchDebugMessagesInMsgThread,
-                                              false);
-#endif
+
+    if (!thread_.Start()) {
+      LOG(ERROR) << "Unable to start debugger thread";
+      return;
+    }
+
+    net::IPAddressNumber ip_number;
+    if (!net::ParseIPLiteralToNumber("127.0.0.1", &ip_number)) {
+      LOG(ERROR) << "Unable to convert ip address";
+      return;
+    }
+
+    server_socket_.reset(new net::TCPServerSocket(NULL, net::NetLog::Source()));
+    server_socket_->Listen(net::IPEndPoint(ip_number, port), 1);
+
+    thread_.message_loop()->PostTask(
+        FROM_HERE,
+        base::Bind(&NodeDebugger::DoAcceptLoop, weak_factory_.GetWeakPtr()));
   }
 }
 
 NodeDebugger::~NodeDebugger() {
+  thread_.Stop();
 }
 
-// static
-void NodeDebugger::DispatchDebugMessagesInMainThread(uv_async_t* handle) {
-  v8::Debug::ProcessDebugMessages();
-}
-
-// static
-void NodeDebugger::DispatchDebugMessagesInMsgThread() {
-  uv_async_send(&dispatch_debug_messages_async_);
+void NodeDebugger::DoAcceptLoop() {
 }
 
 }  // namespace atom
