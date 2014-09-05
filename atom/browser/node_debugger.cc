@@ -56,6 +56,9 @@ NodeDebugger::NodeDebugger(v8::Isolate* isolate)
     isolate_->SetData(kIsolateSlot, this);
     v8::Debug::SetMessageHandler(DebugMessageHandler);
 
+    if (wait_for_connection)
+      v8::Debug::DebugBreak(isolate_);
+
     // Start a new IO thread.
     base::Thread::Options options;
     options.message_loop_type = base::MessageLoop::TYPE_IO;
