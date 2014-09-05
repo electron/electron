@@ -5,22 +5,51 @@
 #ifndef ATOM_BROWSER_NODE_DEBUGGER_H_
 #define ATOM_BROWSER_NODE_DEBUGGER_H_
 
-#include "base/basictypes.h"
-#include "vendor/node/deps/uv/include/uv.h"
+#include <string>
+
+#include "base/memory/scoped_ptr.h"
+#include "base/memory/weak_ptr.h"
+#include "base/threading/thread.h"
+#include "net/socket/stream_listen_socket.h"
+#include "v8/include/v8-debug.h"
 
 namespace atom {
 
 // Add support for node's "--debug" switch.
-class NodeDebugger {
+class NodeDebugger : public net::StreamListenSocket::Delegate {
  public:
-  NodeDebugger();
+  explicit NodeDebugger(v8::Isolate* isolate);
   virtual ~NodeDebugger();
 
- private:
-  static void DispatchDebugMessagesInMainThread(uv_async_t* handle);
-  static void DispatchDebugMessagesInMsgThread();
+  bool IsRunning() const;
 
-  static uv_async_t dispatch_debug_messages_async_;
+ private:
+  void StartServer(int port);
+  void CloseSession();
+  void OnMessage(const std::string& message);
+  void SendMessage(const std::string& message);
+  void SendConnectMessage();
+
+  static void DebugMessageHandler(const v8::Debug::Message& message);
+
+  // net::StreamListenSocket::Delegate:
+  virtual void DidAccept(net::StreamListenSocket* server,
+                         scoped_ptr<net::StreamListenSocket> socket) OVERRIDE;
+  virtual void DidRead(net::StreamListenSocket* socket,
+                       const char* data,
+                       int len) OVERRIDE;
+  virtual void DidClose(net::StreamListenSocket* socket) OVERRIDE;
+
+  v8::Isolate* isolate_;
+
+  base::Thread thread_;
+  scoped_ptr<net::StreamListenSocket> server_;
+  scoped_ptr<net::StreamListenSocket> accepted_socket_;
+
+  std::string buffer_;
+  int content_length_;
+
+  base::WeakPtrFactory<NodeDebugger> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(NodeDebugger);
 };

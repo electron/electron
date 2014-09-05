@@ -6,25 +6,33 @@
 
 #include <string>
 
-#include "atom/common/atom_version.h"
+#include "base/bind.h"
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
-#include "v8/include/v8.h"
-#include "v8/include/v8-debug.h"
+#include "base/strings/stringprintf.h"
+#include "base/strings/utf_string_conversions.h"
+#include "content/public/browser/browser_thread.h"
+#include "net/socket/tcp_listen_socket.h"
 
 #include "atom/common/node_includes.h"
 
 namespace atom {
 
-// static
-uv_async_t NodeDebugger::dispatch_debug_messages_async_;
+namespace {
 
-NodeDebugger::NodeDebugger() {
-  uv_async_init(uv_default_loop(),
-                &dispatch_debug_messages_async_,
-                DispatchDebugMessagesInMainThread);
-  uv_unref(reinterpret_cast<uv_handle_t*>(&dispatch_debug_messages_async_));
+// NodeDebugger is stored in Isolate's data, slots 0, 1, 3 have already been
+// taken by gin, blink and node, using 2 is a safe option for now.
+const int kIsolateSlot = 2;
 
+const char* kContentLength = "Content-Length";
+
+}  // namespace
+
+NodeDebugger::NodeDebugger(v8::Isolate* isolate)
+    : isolate_(isolate),
+      thread_("NodeDebugger"),
+      content_length_(-1),
+      weak_factory_(this) {
   bool use_debug_agent = false;
   int port = 5858;
   bool wait_for_connection = false;
@@ -44,26 +52,151 @@ NodeDebugger::NodeDebugger() {
   if (use_debug_agent) {
     if (!port_str.empty())
       base::StringToInt(port_str, &port);
-#if 0
-    v8::Debug::EnableAgent("atom-shell " ATOM_VERSION, port,
-                           wait_for_connection);
-    v8::Debug::SetDebugMessageDispatchHandler(DispatchDebugMessagesInMsgThread,
-                                              false);
-#endif
+
+    isolate_->SetData(kIsolateSlot, this);
+    v8::Debug::SetMessageHandler(DebugMessageHandler);
+
+    if (wait_for_connection)
+      v8::Debug::DebugBreak(isolate_);
+
+    // Start a new IO thread.
+    base::Thread::Options options;
+    options.message_loop_type = base::MessageLoop::TYPE_IO;
+    if (!thread_.StartWithOptions(options)) {
+      LOG(ERROR) << "Unable to start debugger thread";
+      return;
+    }
+
+    // Start the server in new IO thread.
+    thread_.message_loop()->PostTask(
+        FROM_HERE,
+        base::Bind(&NodeDebugger::StartServer, weak_factory_.GetWeakPtr(),
+                   port));
   }
 }
 
 NodeDebugger::~NodeDebugger() {
+  thread_.Stop();
+}
+
+bool NodeDebugger::IsRunning() const {
+  return thread_.IsRunning();
+}
+
+void NodeDebugger::StartServer(int port) {
+  server_ = net::TCPListenSocket::CreateAndListen("127.0.0.1", port, this);
+  if (!server_) {
+    LOG(ERROR) << "Cannot start debugger server";
+    return;
+  }
+}
+
+void NodeDebugger::CloseSession() {
+  accepted_socket_.reset();
+}
+
+void NodeDebugger::OnMessage(const std::string& message) {
+  if (message.find("\"type\":\"request\",\"command\":\"disconnect\"}") !=
+          std::string::npos)
+    CloseSession();
+
+  base::string16 message16 = base::UTF8ToUTF16(message);
+  v8::Debug::SendCommand(
+      isolate_,
+      reinterpret_cast<const uint16_t*>(message16.data()), message16.size());
+
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(&v8::Debug::ProcessDebugMessages));
+}
+
+void NodeDebugger::SendMessage(const std::string& message) {
+  if (accepted_socket_) {
+    std::string header = base::StringPrintf(
+        "%s: %d\r\n\r\n", kContentLength, static_cast<int>(message.size()));
+    accepted_socket_->Send(header);
+    accepted_socket_->Send(message);
+  }
+}
+
+void NodeDebugger::SendConnectMessage() {
+  accepted_socket_->Send(base::StringPrintf(
+      "Type: connect\r\n"
+      "V8-Version: %s\r\n"
+      "Protocol-Version: 1\r\n"
+      "Embedding-Host: %s\r\n"
+      "%s: 0\r\n",
+      v8::V8::GetVersion(), "Atom-Shell", kContentLength), true);
 }
 
 // static
-void NodeDebugger::DispatchDebugMessagesInMainThread(uv_async_t* handle) {
-  v8::Debug::ProcessDebugMessages();
+void NodeDebugger::DebugMessageHandler(const v8::Debug::Message& message) {
+  NodeDebugger* self = static_cast<NodeDebugger*>(
+      message.GetIsolate()->GetData(kIsolateSlot));
+
+  if (self) {
+    std::string message8(*v8::String::Utf8Value(message.GetJSON()));
+    self->thread_.message_loop()->PostTask(
+        FROM_HERE,
+        base::Bind(&NodeDebugger::SendMessage, self->weak_factory_.GetWeakPtr(),
+                   message8));
+  }
 }
 
-// static
-void NodeDebugger::DispatchDebugMessagesInMsgThread() {
-  uv_async_send(&dispatch_debug_messages_async_);
+void NodeDebugger::DidAccept(net::StreamListenSocket* server,
+                             scoped_ptr<net::StreamListenSocket> socket) {
+  // Only accept one session.
+  if (accepted_socket_) {
+    socket->Send(std::string("Remote debugging session already active"), true);
+    return;
+  }
+
+  accepted_socket_ = socket.Pass();
+  SendConnectMessage();
+}
+
+void NodeDebugger::DidRead(net::StreamListenSocket* socket,
+                           const char* data,
+                           int len) {
+  buffer_.append(data, len);
+
+  do {
+    if (buffer_.size() == 0)
+      return;
+
+    // Read the "Content-Length" header.
+    if (content_length_ < 0) {
+      size_t pos = buffer_.find("\r\n\r\n");
+      if (pos == std::string::npos)
+        return;
+
+      // We can be sure that the header is "Content-Length: xxx\r\n".
+      std::string content_length = buffer_.substr(16, pos - 16);
+      if (!base::StringToInt(content_length, &content_length_)) {
+        DidClose(accepted_socket_.get());
+        return;
+      }
+
+      // Strip header from buffer.
+      buffer_ = buffer_.substr(pos + 4);
+    }
+
+    // Read the message.
+    if (buffer_.size() >= static_cast<size_t>(content_length_)) {
+      std::string message = buffer_.substr(0, content_length_);
+      buffer_ = buffer_.substr(content_length_);
+
+      OnMessage(message);
+
+      // Get ready for next message.
+      content_length_ = -1;
+    }
+  } while (true);
+}
+
+void NodeDebugger::DidClose(net::StreamListenSocket* socket) {
+  // If we lost the connection, then simulate a disconnect msg:
+  OnMessage("{\"seq\":1,\"type\":\"request\",\"command\":\"disconnect\"}");
 }
 
 }  // namespace atom

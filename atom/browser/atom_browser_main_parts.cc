@@ -12,6 +12,7 @@
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/node_bindings.h"
 #include "base/command_line.h"
+#include "v8/include/v8-debug.h"
 
 #if defined(USE_X11)
 #include "chrome/browser/ui/libgtk2ui/gtk2_util.h"
@@ -55,10 +56,14 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   node_bindings_->Initialize();
 
   // Support the "--debug" switch.
-  node_debugger_.reset(new NodeDebugger);
+  node_debugger_.reset(new NodeDebugger(js_env_->isolate()));
 
   // Create the global environment.
   global_env = node_bindings_->CreateEnvironment(js_env_->context());
+
+  // Make sure node can get correct environment when debugging.
+  if (node_debugger_->IsRunning())
+    global_env->AssignToContext(v8::Debug::GetDebugContext());
 
   // Add atom-shell extended APIs.
   atom_bindings_->BindTo(js_env_->isolate(), global_env->process_object());
