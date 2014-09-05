@@ -28,6 +28,7 @@ class NodeDebugger : public net::StreamListenSocket::Delegate {
   void CloseSession();
   void OnMessage(const std::string& message);
   void SendMessage(const std::string& message);
+  void SendConnectMessage();
 
   static void DebugMessageHandler(const v8::Debug::Message& message);
 

@@ -24,6 +24,8 @@ namespace {
 // taken by gin, blink and node, using 2 is a safe option for now.
 const int kIsolateSlot = 2;
 
+const char* kContentLength = "Content-Length";
+
 }  // namespace
 
 NodeDebugger::NodeDebugger(v8::Isolate* isolate)
@@ -105,11 +107,21 @@ void NodeDebugger::OnMessage(const std::string& message) {
 
 void NodeDebugger::SendMessage(const std::string& message) {
   if (accepted_socket_) {
-    std::string header = base::StringPrintf("Content-Length: %d\r\n\r\n",
-                                            static_cast<int>(message.size()));
+    std::string header = base::StringPrintf(
+        "%s: %d\r\n\r\n", kContentLength, static_cast<int>(message.size()));
     accepted_socket_->Send(header);
     accepted_socket_->Send(message);
   }
+}
+
+void NodeDebugger::SendConnectMessage() {
+  accepted_socket_->Send(base::StringPrintf(
+      "Type: connect\r\n"
+      "V8-Version: %s\r\n"
+      "Protocol-Version: 1\r\n"
+      "Embedding-Host: %s\r\n"
+      "%s: 0\r\n",
+      v8::V8::GetVersion(), "Atom-Shell", kContentLength), true);
 }
 
 // static
@@ -132,6 +144,7 @@ void NodeDebugger::DidAccept(net::StreamListenSocket* server,
   }
 
   accepted_socket_ = socket.Pass();
+  SendConnectMessage();
 }
 
 void NodeDebugger::DidRead(net::StreamListenSocket* socket,
