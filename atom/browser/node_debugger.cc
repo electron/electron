@@ -6,17 +6,29 @@
 
 #include <string>
 
-#include "atom/common/atom_version.h"
 #include "base/bind.h"
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/stringprintf.h"
+#include "base/strings/utf_string_conversions.h"
+#include "content/public/browser/browser_thread.h"
 #include "net/socket/tcp_listen_socket.h"
-#include "v8/include/v8-debug.h"
+
+#include "atom/common/node_includes.h"
 
 namespace atom {
 
-NodeDebugger::NodeDebugger()
-    : thread_("NodeDebugger"),
+namespace {
+
+// NodeDebugger is stored in Isolate's data, slots 0, 1, 3 have already been
+// taken by gin, blink and node, using 2 is a safe option for now.
+const int kIsolateSlot = 2;
+
+}  // namespace
+
+NodeDebugger::NodeDebugger(v8::Isolate* isolate)
+    : isolate_(isolate),
+      thread_("NodeDebugger"),
       content_length_(-1),
       weak_factory_(this) {
   bool use_debug_agent = false;
@@ -39,6 +51,9 @@ NodeDebugger::NodeDebugger()
     if (!port_str.empty())
       base::StringToInt(port_str, &port);
 
+    isolate_->SetData(kIsolateSlot, this);
+    v8::Debug::SetMessageHandler(DebugMessageHandler);
+
     // Start a new IO thread.
     base::Thread::Options options;
     options.message_loop_type = base::MessageLoop::TYPE_IO;
@@ -59,11 +74,52 @@ NodeDebugger::~NodeDebugger() {
   thread_.Stop();
 }
 
+bool NodeDebugger::IsRunning() const {
+  return thread_.IsRunning();
+}
+
 void NodeDebugger::StartServer(int port) {
   server_ = net::TCPListenSocket::CreateAndListen("127.0.0.1", port, this);
   if (!server_) {
     LOG(ERROR) << "Cannot start debugger server";
     return;
+  }
+}
+
+void NodeDebugger::CloseSession() {
+  accepted_socket_.reset();
+}
+
+void NodeDebugger::OnMessage(const std::string& message) {
+  if (message.find("\"type\":\"request\",\"command\":\"disconnect\"}") !=
+          std::string::npos)
+    CloseSession();
+
+  base::string16 message16 = base::UTF8ToUTF16(message);
+  v8::Debug::SendCommand(isolate_, message16.data(), message16.size());
+
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(&v8::Debug::ProcessDebugMessages));
+}
+
+void NodeDebugger::SendMessage(const std::string& message) {
+  if (accepted_socket_) {
+    std::string header = base::StringPrintf("Content-Length: %d\r\n\r\n",
+                                            static_cast<int>(message.size()));
+    accepted_socket_->Send(header);
+    accepted_socket_->Send(message);
+  }
+}
+
+// static
+void NodeDebugger::DebugMessageHandler(const v8::Debug::Message& message) {
+  NodeDebugger* self = static_cast<NodeDebugger*>(
+      message.GetIsolate()->GetData(kIsolateSlot));
+
+  if (self) {
+    std::string message8(*v8::String::Utf8Value(message.GetJSON()));
+    self->SendMessage(message8);
   }
 }
 
@@ -109,6 +165,8 @@ void NodeDebugger::DidRead(net::StreamListenSocket* socket,
       std::string message = buffer_.substr(0, content_length_);
       buffer_ = buffer_.substr(content_length_);
 
+      OnMessage(message);
+
       // Get ready for next message.
       content_length_ = -1;
     }
@@ -116,7 +174,8 @@ void NodeDebugger::DidRead(net::StreamListenSocket* socket,
 }
 
 void NodeDebugger::DidClose(net::StreamListenSocket* socket) {
-  accepted_socket_.reset();
+  // If we lost the connection, then simulate a disconnect msg:
+  OnMessage("{\"seq\":1,\"type\":\"request\",\"command\":\"disconnect\"}");
 }
 
 }  // namespace atom

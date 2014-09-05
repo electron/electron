@@ -11,17 +11,25 @@
 #include "base/memory/weak_ptr.h"
 #include "base/threading/thread.h"
 #include "net/socket/stream_listen_socket.h"
+#include "v8/include/v8-debug.h"
 
 namespace atom {
 
 // Add support for node's "--debug" switch.
 class NodeDebugger : public net::StreamListenSocket::Delegate {
  public:
-  NodeDebugger();
+  explicit NodeDebugger(v8::Isolate* isolate);
   virtual ~NodeDebugger();
+
+  bool IsRunning() const;
 
  private:
   void StartServer(int port);
+  void CloseSession();
+  void OnMessage(const std::string& message);
+  void SendMessage(const std::string& message);
+
+  static void DebugMessageHandler(const v8::Debug::Message& message);
 
   // net::StreamListenSocket::Delegate:
   virtual void DidAccept(net::StreamListenSocket* server,
@@ -30,6 +38,8 @@ class NodeDebugger : public net::StreamListenSocket::Delegate {
                        const char* data,
                        int len) OVERRIDE;
   virtual void DidClose(net::StreamListenSocket* socket) OVERRIDE;
+
+  v8::Isolate* isolate_;
 
   base::Thread thread_;
   scoped_ptr<net::StreamListenSocket> server_;
