@@ -35,6 +35,13 @@ app.on('ready', function() {
             type: 'separator'
           },
           {
+            label: 'Services',
+            submenu: []
+          },
+          {
+            type: 'separator'
+          },
+          {
             label: 'Hide Atom Shell',
             accelerator: 'Command+H',
             selector: 'hide:'
