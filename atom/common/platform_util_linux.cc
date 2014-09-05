@@ -19,6 +19,7 @@ void XDGUtil(const std::string& util, const std::string& arg) {
   argv.push_back(arg);
 
   base::LaunchOptions options;
+  options.allow_new_privs = true;
   // xdg-open can fall back on mailcap which eventually might plumb through
   // to a command that needs a terminal.  Set the environment variable telling
   // it that we definitely don't have a terminal available and that it should
