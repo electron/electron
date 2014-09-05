@@ -101,7 +101,9 @@ void NodeDebugger::OnMessage(const std::string& message) {
     CloseSession();
 
   base::string16 message16 = base::UTF8ToUTF16(message);
-  v8::Debug::SendCommand(isolate_, message16.data(), message16.size());
+  v8::Debug::SendCommand(
+      isolate_,
+      reinterpret_cast<const uint16_t*>(message16.data()), message16.size());
 
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
