@@ -17,6 +17,7 @@ namespace atom {
 
 NodeDebugger::NodeDebugger()
     : thread_("NodeDebugger"),
+      content_length_(-1),
       weak_factory_(this) {
   bool use_debug_agent = false;
   int port = 5858;
@@ -69,8 +70,10 @@ void NodeDebugger::StartServer(int port) {
 void NodeDebugger::DidAccept(net::StreamListenSocket* server,
                              scoped_ptr<net::StreamListenSocket> socket) {
   // Only accept one session.
-  if (accepted_socket_)
+  if (accepted_socket_) {
+    socket->Send(std::string("Remote debugging session already active"), true);
     return;
+  }
 
   accepted_socket_ = socket.Pass();
 }
@@ -78,6 +81,38 @@ void NodeDebugger::DidAccept(net::StreamListenSocket* server,
 void NodeDebugger::DidRead(net::StreamListenSocket* socket,
                            const char* data,
                            int len) {
+  buffer_.append(data, len);
+
+  do {
+    if (buffer_.size() == 0)
+      return;
+
+    // Read the "Content-Length" header.
+    if (content_length_ < 0) {
+      size_t pos = buffer_.find("\r\n\r\n");
+      if (pos == std::string::npos)
+        return;
+
+      // We can be sure that the header is "Content-Length: xxx\r\n".
+      std::string content_length = buffer_.substr(16, pos - 16);
+      if (!base::StringToInt(content_length, &content_length_)) {
+        DidClose(accepted_socket_.get());
+        return;
+      }
+
+      // Strip header from buffer.
+      buffer_ = buffer_.substr(pos + 4);
+    }
+
+    // Read the message.
+    if (buffer_.size() >= static_cast<size_t>(content_length_)) {
+      std::string message = buffer_.substr(0, content_length_);
+      buffer_ = buffer_.substr(content_length_);
+
+      // Get ready for next message.
+      content_length_ = -1;
+    }
+  } while (true);
 }
 
 void NodeDebugger::DidClose(net::StreamListenSocket* socket) {

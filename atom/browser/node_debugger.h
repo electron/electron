@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_NODE_DEBUGGER_H_
 #define ATOM_BROWSER_NODE_DEBUGGER_H_
 
+#include <string>
+
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/threading/thread.h"
@@ -32,6 +34,9 @@ class NodeDebugger : public net::StreamListenSocket::Delegate {
   base::Thread thread_;
   scoped_ptr<net::StreamListenSocket> server_;
   scoped_ptr<net::StreamListenSocket> accepted_socket_;
+
+  std::string buffer_;
+  int content_length_;
 
   base::WeakPtrFactory<NodeDebugger> weak_factory_;
 
