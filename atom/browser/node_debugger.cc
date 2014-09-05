@@ -136,7 +136,10 @@ void NodeDebugger::DebugMessageHandler(const v8::Debug::Message& message) {
 
   if (self) {
     std::string message8(*v8::String::Utf8Value(message.GetJSON()));
-    self->SendMessage(message8);
+    self->thread_.message_loop()->PostTask(
+        FROM_HERE,
+        base::Bind(&NodeDebugger::SendMessage, self->weak_factory_.GetWeakPtr(),
+                   message8));
   }
 }
 
