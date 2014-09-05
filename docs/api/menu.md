@@ -43,6 +43,13 @@ var template = [
         type: 'separator'
       },
       {
+        label: 'Services',
+        submenu: []
+      },
+      {
+        type: 'separator'
+      },
+      {
         label: 'Hide Atom Shell',
         accelerator: 'Command+H',
         selector: 'hide:'
@@ -141,6 +148,10 @@ var template = [
       },
     ]
   },
+  {
+    label: 'Help',
+    submenu: []
+  },
 ];
 
 menu = Menu.buildFromTemplate(template);
@@ -175,7 +186,7 @@ emulating default Cocoa menu behaviors, usually you would just use the
 * `template` Array
 
 Generally, the `template` is just an array of `options` for constructing
-`MenuItem`, the usage can be referenced above.
+[MenuItem](menu-item.md), the usage can be referenced above.
 
 You can also attach other fields to element of the `template`, and they will
 become properties of the constructed menu items.
@@ -202,3 +213,34 @@ Inserts the `menuItem` to the `pos` position of the menu.
 ### Menu.items
 
 Get the array containing the menu's items.
+
+## Notes on OS X application menu
+
+OS X has a completely different style of application menu from Windows and
+Linux, and here are some notes on making your app's menu more native-like.
+
+### Standard menus
+
+On OS X there are many system defined standard menus, like the `Services` and
+`Windows` menus. To make your menu a standard menu, you can just set your menu's
+label to one of followings, and atom-shell will recognize them and make them
+become standard menus:
+
+* `Window`
+* `Help`
+* `Services`
+
+### Standard menu item actions
+
+OS X has provided standard actions for some menu items (which are called
+`selector`s), like `About xxx`, `Hide xxx`, and `Hide Others`. To set the action
+of a menu item to a standard action, you can set the `selector` attribute of the
+menu item.
+
+### Main menu's name
+
+On OS X the label of application menu's first item is always your app's name,
+no matter what label you set. To change it you have to change your app's name
+by modifying your app bundle's `Info.plist` file. See
+[About Information Property List Files](https://developer.apple.com/library/ios/documentation/general/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html)
+for more.
