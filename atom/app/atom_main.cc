@@ -18,7 +18,6 @@
 #include "atom/app/atom_main_delegate.h"
 #include "atom/common/crash_reporter/win/crash_service_main.h"
 #include "base/environment.h"
-#include "base/win/registry.h"
 #include "content/public/app/startup_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
 #include "ui/gfx/win/dpi.h"
@@ -35,13 +34,6 @@ int Start(int argc, char *argv[]);
 }
 
 #if defined(OS_WIN)
-
-namespace {
-
-const wchar_t kRegistryProfilePath[] = L"SOFTWARE\\Google\\Chrome\\Profile";
-const wchar_t kHighDPISupportW[] = L"high-dpi-support";
-
-}  // namespace
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   int argc = 0;
@@ -109,10 +101,6 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   atom::AtomMainDelegate delegate;
 
   // Now chrome relies on a regkey to enable high dpi support.
-  base::win::RegKey high_dpi_key(HKEY_CURRENT_USER);
-  high_dpi_key.CreateKey(kRegistryProfilePath, KEY_SET_VALUE);
-  high_dpi_key.WriteValue(kHighDPISupportW, 1);
-
   gfx::EnableHighDPISupport();
 
   content::ContentMainParams params(&delegate);
