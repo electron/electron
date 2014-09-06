@@ -10,13 +10,21 @@ fileDialogProperties =
 
 messageBoxTypes = ['none', 'info', 'warning']
 
+parseArgs = (window, options, callback) ->
+  unless window is null or window?.constructor is BrowserWindow
+    # Shift.
+    callback = options
+    options = window
+    window = null
+  if not callback? and typeof options is 'function'
+    # Shift.
+    callback = options
+    options = null
+  [window, options, callback]
+
 module.exports =
-  showOpenDialog: (window, options, callback) ->
-    unless window?.constructor is BrowserWindow
-      # Shift.
-      callback = options
-      options = window
-      window = null
+  showOpenDialog: (args...) ->
+    [window, options, callback] = parseArgs args...
 
     options ?= title: 'Open', properties: ['openFile']
     options.properties ?= ['openFile']
@@ -44,11 +52,7 @@ module.exports =
                            wrappedCallback
 
   showSaveDialog: (window, options, callback) ->
-    unless window?.constructor is BrowserWindow
-      # Shift.
-      callback = options
-      options = window
-      window = null
+    [window, options, callback] = parseArgs args...
 
     options ?= title: 'Save'
     options.title ?= ''
@@ -68,11 +72,7 @@ module.exports =
                            wrappedCallback
 
   showMessageBox: (window, options, callback) ->
-    unless window?.constructor is BrowserWindow
-      # Shift.
-      callback = options
-      options = window
-      window = null
+    [window, options, callback] = parseArgs args...
 
     options ?= type: 'none'
     options.type ?= 'none'
