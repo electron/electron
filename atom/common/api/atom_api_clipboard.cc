@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 
-#include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/dictionary.h"
 #include "ui/base/clipboard/clipboard.h"
 
@@ -50,9 +49,17 @@ std::string Read(const std::string& format_string,
   return data;
 }
 
+<<<<<<< HEAD
 string16 ReadText(ui::Clipboard::Buffer buffer) {
   string16 data;
   ui::Clipboard::GetForCurrentThread()->ReadText(buffer, &data);
+=======
+std::string ReadText() {
+  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
+
+  std::string data;
+  clipboard->ReadAsciiText(ui::Clipboard::BUFFER_STANDARD, &data);
+>>>>>>> parent of 7c14c27... Return unicode string in clipboard.readText(), fixes atom/atom#2145.
   return data;
 }
 
