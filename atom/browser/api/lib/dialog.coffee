@@ -51,7 +51,7 @@ module.exports =
                            window,
                            wrappedCallback
 
-  showSaveDialog: (window, options, callback) ->
+  showSaveDialog: (args...) ->
     [window, options, callback] = parseArgs args...
 
     options ?= title: 'Save'
@@ -71,7 +71,7 @@ module.exports =
                            window,
                            wrappedCallback
 
-  showMessageBox: (window, options, callback) ->
+  showMessageBox: (args...) ->
     [window, options, callback] = parseArgs args...
 
     options ?= type: 'none'
