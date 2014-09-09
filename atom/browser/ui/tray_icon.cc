@@ -12,8 +12,18 @@ TrayIcon::TrayIcon() {
 TrayIcon::~TrayIcon() {
 }
 
+void TrayIcon::SetTitle(const std::string& title) {
+}
+
+void TrayIcon::SetHighlightMode(bool highlight) {
+}
+
 void TrayIcon::NotifyClicked() {
   FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnClicked());
+}
+
+void TrayIcon::NotifyDoubleClicked() {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDoubleClicked());
 }
 
 }  // namespace atom

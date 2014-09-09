@@ -36,6 +36,10 @@ void Tray::OnClicked() {
   Emit("clicked");
 }
 
+void Tray::OnDoubleClicked() {
+  Emit("double-clicked");
+}
+
 void Tray::SetImage(const gfx::ImageSkia& image) {
   tray_icon_->SetImage(image);
 }
@@ -46,6 +50,14 @@ void Tray::SetPressedImage(const gfx::ImageSkia& image) {
 
 void Tray::SetToolTip(const std::string& tool_tip) {
   tray_icon_->SetToolTip(tool_tip);
+}
+
+void Tray::SetTitle(const std::string& title) {
+  tray_icon_->SetTitle(title);
+}
+
+void Tray::SetHighlightMode(bool highlight) {
+  tray_icon_->SetHighlightMode(highlight);
 }
 
 void Tray::SetContextMenu(Menu* menu) {
@@ -59,6 +71,8 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setImage", &Tray::SetImage)
       .SetMethod("setPressedImage", &Tray::SetPressedImage)
       .SetMethod("setToolTip", &Tray::SetToolTip)
+      .SetMethod("setTitle", &Tray::SetTitle)
+      .SetMethod("setHighlightMode", &Tray::SetHighlightMode)
       .SetMethod("_setContextMenu", &Tray::SetContextMenu);
 }
 

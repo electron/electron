@@ -13,6 +13,7 @@
 }
 - (id)initWithIcon:(atom::TrayIconCocoa*)icon;
 - (void)handleClick:(id)sender;
+- (void)handleDoubleClick:(id)sender;
 
 @end // @interface StatusItemController
 
@@ -24,8 +25,11 @@
 }
 
 - (void)handleClick:(id)sender {
-  DCHECK(trayIcon_);
   trayIcon_->NotifyClicked();
+}
+
+- (void)handleDoubleClick:(id)sender {
+  trayIcon_->NotifyDoubleClicked();
 }
 
 @end
@@ -40,6 +44,7 @@ TrayIconCocoa::TrayIconCocoa() {
   [item_ setEnabled:YES];
   [item_ setTarget:controller_];
   [item_ setAction:@selector(handleClick:)];
+  [item_ setDoubleAction:@selector(handleDoubleClick:)];
   [item_ setHighlightMode:YES];
 }
 
@@ -66,6 +71,14 @@ void TrayIconCocoa::SetPressedImage(const gfx::ImageSkia& image) {
 
 void TrayIconCocoa::SetToolTip(const std::string& tool_tip) {
   [item_ setToolTip:base::SysUTF8ToNSString(tool_tip)];
+}
+
+void TrayIconCocoa::SetTitle(const std::string& title) {
+  [item_ setTitle:base::SysUTF8ToNSString(title)];
+}
+
+void TrayIconCocoa::SetHighlightMode(bool highlight) {
+  [item_ setHighlightMode:highlight];
 }
 
 void TrayIconCocoa::SetContextMenu(ui::SimpleMenuModel* menu_model) {

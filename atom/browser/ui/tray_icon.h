@@ -31,12 +31,21 @@ class TrayIcon {
   // status icon (e.g. Ubuntu Unity).
   virtual void SetToolTip(const std::string& tool_tip) = 0;
 
+  // Sets the title displayed aside of the status icon in the status bar. This
+  // only works on OS X.
+  virtual void SetTitle(const std::string& title);
+
+  // Sets whether the status icon is highlighted when it is clicked. This only
+  // works on OS X.
+  virtual void SetHighlightMode(bool highlight);
+
   // Set the context menu for this icon.
   virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) = 0;
 
   void AddObserver(TrayIconObserver* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(TrayIconObserver* obs) { observers_.RemoveObserver(obs); }
   void NotifyClicked();
+  void NotifyDoubleClicked();
 
  protected:
   TrayIcon();
