@@ -23,7 +23,7 @@ struct Converter<file_dialog::Filter> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      file_dialog::Filter* out) {
-    mate::Dictionary dict(isolate);
+    mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
     if (!dict.Get("name", &(out->first)))

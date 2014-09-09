@@ -346,11 +346,9 @@ void NativeWindow::AppendExtraCommandLineSwitches(
   // This set of options are not availabe in WebPreferences, so we have to pass
   // them via command line and enable them in renderer procss.
   bool b;
-  mate::Dictionary web_preferences(web_preferences_.isolate(),
-                                   web_preferences_.NewHandle());
   for (size_t i = 0; i < arraysize(kWebRuntimeFeatures); ++i) {
     const char* feature = kWebRuntimeFeatures[i];
-    if (web_preferences.Get(feature, &b))
+    if (web_preferences_.Get(feature, &b))
       command_line->AppendSwitchASCII(feature, b ? "true" : "false");
   }
 }
@@ -361,25 +359,23 @@ void NativeWindow::OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs) {
 
   bool b;
   std::vector<base::FilePath> list;
-  mate::Dictionary web_preferences(web_preferences_.isolate(),
-                                   web_preferences_.NewHandle());
-  if (web_preferences.Get("javascript", &b))
+  if (web_preferences_.Get("javascript", &b))
     prefs->javascript_enabled = b;
-  if (web_preferences.Get("web-security", &b))
+  if (web_preferences_.Get("web-security", &b))
     prefs->web_security_enabled = b;
-  if (web_preferences.Get("images", &b))
+  if (web_preferences_.Get("images", &b))
     prefs->images_enabled = b;
-  if (web_preferences.Get("java", &b))
+  if (web_preferences_.Get("java", &b))
     prefs->java_enabled = b;
-  if (web_preferences.Get("text-areas-are-resizable", &b))
+  if (web_preferences_.Get("text-areas-are-resizable", &b))
     prefs->text_areas_are_resizable = b;
-  if (web_preferences.Get("webgl", &b))
+  if (web_preferences_.Get("webgl", &b))
     prefs->experimental_webgl_enabled = b;
-  if (web_preferences.Get("webaudio", &b))
+  if (web_preferences_.Get("webaudio", &b))
     prefs->webaudio_enabled = b;
-  if (web_preferences.Get("plugins", &b))
+  if (web_preferences_.Get("plugins", &b))
     prefs->plugins_enabled = b;
-  if (web_preferences.Get("extra-plugin-dirs", &list))
+  if (web_preferences_.Get("extra-plugin-dirs", &list))
     for (size_t i = 0; i < list.size(); ++i)
       content::PluginService::GetInstance()->AddExtraPluginDir(list[i]);
 }
