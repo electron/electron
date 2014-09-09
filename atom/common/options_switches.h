@@ -36,6 +36,15 @@ extern const char kAutoHideMenuBar[];
 extern const char kEnableLargerThanScreen[];
 extern const char kDarkTheme[];
 
+extern const char kExperimentalFeatures[];
+extern const char kExperimentalCanvasFeatures[];
+extern const char kSubpixelFontScaling[];
+extern const char kOverlayScrollbars[];
+extern const char kOverlayFullscreenVideo[];
+extern const char kSharedWorker[];
+extern const int kWebRuntimeFeaturesFlagsSize;
+extern const char* kWebRuntimeFeaturesFlags[];
+
 }  // namespace switches
 
 }  // namespace atom
