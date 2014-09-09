@@ -54,6 +54,9 @@ class InspectableWebContentsImpl :
   virtual void SetDelegate(InspectableWebContentsDelegate* delegate) {
     delegate_ = delegate;
   }
+  virtual InspectableWebContentsDelegate* GetDelegate() const {
+    return delegate_;
+  }
 
   content::WebContents* devtools_web_contents() {
     return devtools_web_contents_.get();

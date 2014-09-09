@@ -1,5 +1,6 @@
 #include "browser/views/inspectable_web_contents_view_views.h"
 
+#include "browser/inspectable_web_contents_delegate.h"
 #include "browser/inspectable_web_contents_impl.h"
 
 #include "base/strings/utf_string_conversions.h"
@@ -25,6 +26,10 @@ class DevToolsWindowDelegate : public views::ClientView,
         title_(base::ASCIIToUTF16("Developer Tools")) {
     // A WidgetDelegate should be deleted on DeleteDelegate.
     set_owned_by_client();
+
+    InspectableWebContentsDelegate* delegate = shell->inspectable_web_contents()->GetDelegate();
+    if (delegate)
+      icon_ = delegate->GetDevToolsWindowIcon();
   }
   virtual ~DevToolsWindowDelegate() {}
 
@@ -34,6 +39,8 @@ class DevToolsWindowDelegate : public views::ClientView,
   virtual bool CanResize() const OVERRIDE { return true; }
   virtual bool CanMaximize() const OVERRIDE { return false; }
   virtual base::string16 GetWindowTitle() const OVERRIDE { return title_; }
+  virtual gfx::ImageSkia GetWindowAppIcon() OVERRIDE { return GetWindowIcon(); }
+  virtual gfx::ImageSkia GetWindowIcon() OVERRIDE { return icon_; }
   virtual views::Widget* GetWidget() OVERRIDE { return widget_; }
   virtual const views::Widget* GetWidget() const OVERRIDE { return widget_; }
   virtual views::View* GetContentsView() OVERRIDE { return view_; }
@@ -50,6 +57,7 @@ class DevToolsWindowDelegate : public views::ClientView,
   views::View* view_;
   views::Widget* widget_;
   base::string16 title_;
+  gfx::ImageSkia icon_;
 
   DISALLOW_COPY_AND_ASSIGN(DevToolsWindowDelegate);
 };
@@ -144,6 +152,7 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked) {
     params.remove_standard_frame = true;
 #endif
     devtools_window_->Init(params);
+    devtools_window_->UpdateWindowIcon();
   }
 
   ShowDevTools();

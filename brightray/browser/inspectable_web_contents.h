@@ -29,6 +29,7 @@ class InspectableWebContents {
 
   // The delegate manages its own life.
   virtual void SetDelegate(InspectableWebContentsDelegate* delegate) = 0;
+  virtual InspectableWebContentsDelegate* GetDelegate() const = 0;
 };
 
 }  // namespace brightray

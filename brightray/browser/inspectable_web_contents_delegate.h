@@ -3,11 +3,16 @@
 
 #include <string>
 
+#include "ui/gfx/image/image_skia.h"
+
 namespace brightray {
 
 class InspectableWebContentsDelegate {
  public:
   virtual ~InspectableWebContentsDelegate() {}
+
+  // Returns the icon of devtools window.
+  virtual gfx::ImageSkia GetDevToolsWindowIcon();
 
   // Requested by WebContents of devtools.
   virtual void DevToolsSaveToFile(
