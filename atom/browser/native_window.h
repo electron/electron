@@ -20,7 +20,7 @@
 #include "brightray/browser/inspectable_web_contents_impl.h"
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
-#include "native_mate/scoped_persistent.h"
+#include "native_mate/persistent_dictionary.h"
 #include "ui/gfx/image/image_skia.h"
 
 struct WebPreferences;
@@ -298,7 +298,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   base::CancelableClosure window_unresposive_closure_;
 
   // Web preferences.
-  mate::ScopedPersistent<v8::Object> web_preferences_;
+  mate::PersistentDictionary web_preferences_;
 
   // Page's default zoom factor.
   double zoom_factor_;

@@ -80,6 +80,12 @@ normal browsers, see [Web Security](web-security.md) for more.
       should use `__dirname` or `process.resourcesPath` to join the paths to
       make them absolute, using relative paths would make atom-shell search
       under current working directory.
+    * `experimental-features` Boolean
+    * `experimental-canvas-features` Boolean
+    * `subpixel-font-scaling` Boolean
+    * `overlay-scrollbars` Boolean
+    * `overlay-fullscreen-video` Boolean
+    * `shared-worker` Boolean
 
 Creates a new `BrowserWindow` with native properties set by the `options`.
 Usually you only need to set the `width` and `height`, other properties will

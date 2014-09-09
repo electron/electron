@@ -61,6 +61,8 @@ class AtomRendererClient : public content::ContentRendererClient,
                           bool is_server_redirect,
                           bool* send_referrer) OVERRIDE;
 
+  void EnableWebRuntimeFeatures();
+
   std::vector<node::Environment*> web_page_envs_;
 
   scoped_ptr<NodeBindings> node_bindings_;
