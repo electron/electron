@@ -156,8 +156,7 @@ void InspectableWebContentsImpl::ShowDevTools() {
     embedder_message_dispatcher_.reset(
         new DevToolsEmbedderMessageDispatcher(this));
 
-    auto create_params = content::WebContents::CreateParams(
-        web_contents_->GetBrowserContext());
+    content::WebContents::CreateParams create_params(web_contents_->GetBrowserContext());
     devtools_web_contents_.reset(content::WebContents::Create(create_params));
 
     Observe(devtools_web_contents_.get());
@@ -213,9 +212,8 @@ void InspectableWebContentsImpl::CloseWindow() {
   devtools_web_contents()->DispatchBeforeUnload(false);
 }
 
-void InspectableWebContentsImpl::SetContentsResizingStrategy(
-    const gfx::Insets& insets, const gfx::Size& min_size) {
-  DevToolsContentsResizingStrategy strategy(insets, min_size);
+void InspectableWebContentsImpl::SetInspectedPageBounds(const gfx::Rect& rect) {
+  DevToolsContentsResizingStrategy strategy(rect);
   if (contents_resizing_strategy_.Equals(strategy))
     return;
 

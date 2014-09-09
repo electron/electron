@@ -138,7 +138,6 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked) {
     params.delegate = new DevToolsWindowDelegate(this,
                                                  devtools_window_web_view_,
                                                  devtools_window_.get());
-    params.top_level = true;
     params.bounds = inspectable_web_contents()->GetDevToolsBounds();
 #if defined(USE_X11)
     // In X11 the window frame is drawn by the application.
@@ -163,12 +162,9 @@ void InspectableWebContentsViewViews::Layout() {
   }
 
   gfx::Size container_size(width(), height());
-  gfx::Rect old_devtools_bounds(devtools_web_view_->bounds());
-  gfx::Rect old_contents_bounds(contents_web_view_->bounds());
   gfx::Rect new_devtools_bounds;
   gfx::Rect new_contents_bounds;
   ApplyDevToolsContentsResizingStrategy(strategy_, container_size,
-      old_devtools_bounds, old_contents_bounds,
       &new_devtools_bounds, &new_contents_bounds);
 
   // DevTools cares about the specific position, so we have to compensate RTL

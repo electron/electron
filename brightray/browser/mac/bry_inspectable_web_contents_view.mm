@@ -54,13 +54,12 @@ using namespace brightray;
       // Place the devToolsView under contentsView, notice that we didn't set
       // sizes for them until the setContentsResizingStrategy message.
       [self addSubview:devToolsView positioned:NSWindowBelow relativeTo:nil];
-      [self update];
+      [self adjustSubviews];
 
       // Focus on web view.
       devToolsWebContents->RestoreFocus();
     } else {
       gfx::ScopedNSDisableScreenUpdates disabler;
-      devToolsWebContents->RemoveOverlayView();
       [devToolsView removeFromSuperview];
       [self adjustSubviews];
     }
@@ -115,20 +114,6 @@ using namespace brightray;
 
 - (void)setContentsResizingStrategy:(const DevToolsContentsResizingStrategy&)strategy {
   strategy_.CopyFrom(strategy);
-  [self update];
-}
-
-- (void)update {
-  if (!devtools_docked_)
-    return;
-
-  auto contents = inspectableWebContentsView_->inspectable_web_contents()->GetWebContents();
-  auto devToolsWebContents = inspectableWebContentsView_->inspectable_web_contents()->devtools_web_contents();
-
-  gfx::ScopedNSDisableScreenUpdates disabler;
-  devToolsWebContents->SetOverlayView(
-      contents,
-      gfx::Point(strategy_.insets().left(), strategy_.insets().top()));
   [self adjustSubviews];
 }
 
@@ -152,8 +137,6 @@ using namespace brightray;
   gfx::Rect new_contents_bounds;
   ApplyDevToolsContentsResizingStrategy(
       strategy_, gfx::Size(NSSizeToCGSize([self bounds].size)),
-      [self flipNSRectToRect:[devToolsView bounds]],
-      [self flipNSRectToRect:[contentsView bounds]],
       &new_devtools_bounds, &new_contents_bounds);
   [devToolsView setFrame:[self flipRectToNSRect:new_devtools_bounds]];
   [contentsView setFrame:[self flipRectToNSRect:new_contents_bounds]];

@@ -15,7 +15,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cookie_store_factory.h"
 #include "content/public/common/content_switches.h"
-#include "content/public/common/url_constants.h"
 #include "net/base/host_mapping_rules.h"
 #include "net/cert/cert_verifier.h"
 #include "net/cookies/cookie_monster.h"
@@ -33,11 +32,12 @@
 #include "net/ssl/ssl_config_service_defaults.h"
 #include "net/url_request/data_protocol_handler.h"
 #include "net/url_request/file_protocol_handler.h"
-#include "net/url_request/protocol_intercept_job_factory.h"
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_storage.h"
+#include "net/url_request/url_request_intercepting_job_factory.h"
 #include "net/url_request/url_request_job_factory_impl.h"
+#include "url/url_constants.h"
 #include "webkit/browser/quota/special_storage_policy.h"
 
 using content::BrowserThread;
@@ -75,24 +75,24 @@ const char kProxyServer[] = "proxy-server";
 
 net::URLRequestJobFactory* URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
     content::ProtocolHandlerMap* protocol_handlers,
-    content::ProtocolHandlerScopedVector* protocol_interceptors) {
+    content::URLRequestInterceptorScopedVector* protocol_interceptors) {
   scoped_ptr<net::URLRequestJobFactoryImpl> job_factory(new net::URLRequestJobFactoryImpl);
 
   for (auto it = protocol_handlers->begin(); it != protocol_handlers->end(); ++it)
     job_factory->SetProtocolHandler(it->first, it->second.release());
   protocol_handlers->clear();
 
-  job_factory->SetProtocolHandler(content::kDataScheme, new net::DataProtocolHandler);
-  job_factory->SetProtocolHandler(content::kFileScheme, new net::FileProtocolHandler(
+  job_factory->SetProtocolHandler(url::kDataScheme, new net::DataProtocolHandler);
+  job_factory->SetProtocolHandler(url::kFileScheme, new net::FileProtocolHandler(
       BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
           base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
 
   // Set up interceptors in the reverse order.
   scoped_ptr<net::URLRequestJobFactory> top_job_factory =
       job_factory.PassAs<net::URLRequestJobFactory>();
-  for (content::ProtocolHandlerScopedVector::reverse_iterator i = protocol_interceptors->rbegin();
-       i != protocol_interceptors->rend(); ++i)
-    top_job_factory.reset(new net::ProtocolInterceptJobFactory(
+  content::URLRequestInterceptorScopedVector::reverse_iterator i;
+  for (i = protocol_interceptors->rbegin(); i != protocol_interceptors->rend(); ++i)
+    top_job_factory.reset(new net::URLRequestInterceptingJobFactory(
         top_job_factory.Pass(), make_scoped_ptr(*i)));
   protocol_interceptors->weak_clear();
 
@@ -105,7 +105,7 @@ URLRequestContextGetter::URLRequestContextGetter(
     base::MessageLoop* io_loop,
     base::MessageLoop* file_loop,
     content::ProtocolHandlerMap* protocol_handlers,
-    content::ProtocolHandlerScopedVector protocol_interceptors)
+    content::URLRequestInterceptorScopedVector protocol_interceptors)
     : delegate_(delegate),
       base_path_(base_path),
       io_loop_(io_loop),

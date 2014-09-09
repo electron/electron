@@ -101,7 +101,7 @@ void BrowserContext::RegisterInternalPrefs(PrefRegistrySimple* registry) {
 
 net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
     content::ProtocolHandlerMap* protocol_handlers,
-    content::ProtocolHandlerScopedVector protocol_interceptors) {
+    content::URLRequestInterceptorScopedVector protocol_interceptors) {
   DCHECK(!url_request_getter_);
   url_request_getter_ = new URLRequestContextGetter(
       this,
@@ -116,12 +116,6 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
 
 net::NetworkDelegate* BrowserContext::CreateNetworkDelegate() {
   return new NetworkDelegate;
-}
-
-net::URLRequestJobFactory* BrowserContext::CreateURLRequestJobFactory(
-    content::ProtocolHandlerMap* protocol_handlers,
-    content::ProtocolHandlerScopedVector* protocol_interceptors) {
-  return NULL;
 }
 
 base::FilePath BrowserContext::GetPath() const {
@@ -158,36 +152,6 @@ net::URLRequestContextGetter*
   return GetRequestContext();
 }
 
-void BrowserContext::RequestMidiSysExPermission(
-    int render_process_id,
-    int render_view_id,
-    int bridge_id,
-    const GURL& requesting_frame,
-    bool user_gesture,
-    const MidiSysExPermissionCallback& callback) {
-  callback.Run(false);
-}
-
-void BrowserContext::CancelMidiSysExPermissionRequest(
-    int render_process_id,
-    int render_view_id,
-    int bridge_id,
-    const GURL& requesting_frame) {
-}
-
-void BrowserContext::RequestProtectedMediaIdentifierPermission(
-    int render_process_id,
-    int render_view_id,
-    int bridge_id,
-    int group_id,
-    const GURL& requesting_frame,
-    const ProtectedMediaIdentifierPermissionCallback& callback) {
-  callback.Run(false);
-}
-
-void BrowserContext::CancelProtectedMediaIdentifierPermissionRequests(int group_id) {
-}
-
 content::ResourceContext* BrowserContext::GetResourceContext() {
   return resource_context_.get();
 }
@@ -198,17 +162,16 @@ content::DownloadManagerDelegate* BrowserContext::GetDownloadManagerDelegate() {
   return download_manager_delegate_.get();
 }
 
-content::GeolocationPermissionContext*
-    BrowserContext::GetGeolocationPermissionContext() {
-  return nullptr;
+content::BrowserPluginGuestManager* BrowserContext::GetGuestManager() {
+  return NULL;
 }
 
 quota::SpecialStoragePolicy* BrowserContext::GetSpecialStoragePolicy() {
-  return nullptr;
+  return NULL;
 }
 
-content::BrowserPluginGuestManagerDelegate* BrowserContext::GetGuestManagerDelegate() {
-  return nullptr;
+content::PushMessagingService* BrowserContext::GetPushMessagingService() {
+  return NULL;
 }
 
 }  // namespace brightray

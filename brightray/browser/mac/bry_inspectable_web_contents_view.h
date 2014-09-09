@@ -28,7 +28,4 @@ using brightray::InspectableWebContentsViewMac;
 - (void)setIsDocked:(BOOL)docked;
 - (void)setContentsResizingStrategy:(const DevToolsContentsResizingStrategy&)strategy;
 
-// Adjust docked devtools to the contents resizing strategy.
-- (void)update;
-
 @end
