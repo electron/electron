@@ -36,7 +36,9 @@ const double kPresetZoomFactors[] = { 0.25, 0.333, 0.5, 0.666, 0.75, 0.9, 1.0,
 const char kDevToolsScheme[] = "chrome-devtools";
 const char kDevToolsHost[] = "devtools";
 const char kChromeUIDevToolsURL[] = "chrome-devtools://devtools/devtools.html?"
-                                    "can_dock=true&&"
+                                    "can_dock=true&"
+                                    "toolbarColor=rgba(223,223,223,1)&"
+                                    "textColor=rgba(0,0,0,1)&"
                                     "experiments=true";
 const char kDevToolsBoundsPref[] = "brightray.devtools.bounds";
 
