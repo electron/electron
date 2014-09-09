@@ -301,7 +301,7 @@ bool NativeWindowMac::IsFocused() {
 }
 
 void NativeWindowMac::Show() {
-  [window_ makeKeyAndOrderFront:nil];
+  [window_ orderFrontRegardless];
 }
 
 void NativeWindowMac::Hide() {
