@@ -82,7 +82,7 @@ This is only implmented on OS X.
 
 ### Tray.setHighlightMode(highlight)
 
-* `highlight` String
+* `highlight` Boolean
 
 Sets whether the tray icon is highlighted when it is clicked.
 
