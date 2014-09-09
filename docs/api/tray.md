@@ -48,6 +48,12 @@ Creates a new tray icon associated with the `image`.
 
 Emitted when the tray icon is clicked.
 
+### Event: 'double-clicked'
+
+Emitted when the tray icon is double clicked.
+
+This is only implmented on OS X.
+
 ### Tray.setImage(image)
 
 * `image` [Image](image.md)
@@ -64,8 +70,28 @@ Sets the `image` associated with this tray icon when pressed.
 
 * `toolTip` String
 
+Sets the hover text for this tray icon.
+
+### Tray.setTitle(title)
+
+* `title` String
+
+Sets the title displayed aside of the tray icon in the status bar.
+
+This is only implmented on OS X.
+
+### Tray.setHighlightMode(highlight)
+
+* `highlight` String
+
+Sets whether the tray icon is highlighted when it is clicked.
+
+This is only implmented on OS X.
+
 ### Tray.setContextMenu(menu)
 
 * `menu` Menu
+
+Set the context menu for this icon.
 
 [event-emitter]: http://nodejs.org/api/events.html#events_class_events_eventemitter
