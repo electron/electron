@@ -148,4 +148,30 @@ using namespace brightray;
   inspectableWebContentsView_->inspectable_web_contents()->CloseDevTools();
 }
 
+- (void)windowDidBecomeMain:(NSNotification*)notification {
+  content::WebContents* web_contents =
+      inspectableWebContentsView_->inspectable_web_contents()->devtools_web_contents();
+  if (!web_contents)
+    return;
+
+  web_contents->RestoreFocus();
+
+  content::RenderWidgetHostView* rwhv = web_contents->GetRenderWidgetHostView();
+  if (rwhv)
+    rwhv->SetActive(true);
+}
+
+- (void)windowDidResignMain:(NSNotification*)notification {
+  content::WebContents* web_contents =
+      inspectableWebContentsView_->inspectable_web_contents()->devtools_web_contents();
+  if (!web_contents)
+    return;
+
+  web_contents->StoreFocus();
+
+  content::RenderWidgetHostView* rwhv = web_contents->GetRenderWidgetHostView();
+  if (rwhv)
+    rwhv->SetActive(false);
+}
+
 @end
