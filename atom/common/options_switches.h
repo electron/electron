@@ -42,8 +42,6 @@ extern const char kSubpixelFontScaling[];
 extern const char kOverlayScrollbars[];
 extern const char kOverlayFullscreenVideo[];
 extern const char kSharedWorker[];
-extern const int kWebRuntimeFeaturesFlagsSize;
-extern const char* kWebRuntimeFeaturesFlags[];
 
 }  // namespace switches
 

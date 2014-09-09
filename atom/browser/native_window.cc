@@ -55,6 +55,20 @@ using content::NavigationEntry;
 
 namespace atom {
 
+namespace {
+
+// Array of available web runtime features.
+const char* kWebRuntimeFeatures[] = {
+  switches::kExperimentalFeatures,
+  switches::kExperimentalCanvasFeatures,
+  switches::kSubpixelFontScaling,
+  switches::kOverlayScrollbars,
+  switches::kOverlayFullscreenVideo,
+  switches::kSharedWorker,
+};
+
+}  // namespace
+
 NativeWindow::NativeWindow(content::WebContents* web_contents,
                            const mate::Dictionary& options)
     : content::WebContentsObserver(web_contents),
@@ -332,13 +346,12 @@ void NativeWindow::AppendExtraCommandLineSwitches(
   // This set of options are not availabe in WebPreferences, so we have to pass
   // them via command line and enable them in renderer procss.
   bool b;
-  std::string web_runtime_features;
   mate::Dictionary web_preferences(web_preferences_.isolate(),
                                    web_preferences_.NewHandle());
-  for (int i = 0; i < switches::kWebRuntimeFeaturesFlagsSize; ++i) {
-    const char* feature_flag = switches::kWebRuntimeFeaturesFlags[i];
-    if (web_preferences.Get(feature_flag, &b))
-      command_line->AppendSwitchASCII(feature_flag, b ? "true" : "false");
+  for (size_t i = 0; i < arraysize(kWebRuntimeFeatures); ++i) {
+    const char* feature = kWebRuntimeFeatures[i];
+    if (web_preferences.Get(feature, &b))
+      command_line->AppendSwitchASCII(feature, b ? "true" : "false");
   }
 }
 

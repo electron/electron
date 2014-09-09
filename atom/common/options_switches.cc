@@ -57,23 +57,13 @@ const char kEnableLargerThanScreen[] = "enable-larger-than-screen";
 // Forces to use dark theme on Linux.
 const char kDarkTheme[] = "dark-theme";
 
-// Array of availabe web runtime features.
-const char kExperimentalFeatures[] = "experimental-features";
+// Web runtime features.
+const char kExperimentalFeatures[]       = "experimental-features";
 const char kExperimentalCanvasFeatures[] = "experimental-canvas-features";
-const char kSubpixelFontScaling[] = "subpixel-font-scaling";
-const char kOverlayScrollbars[] = "overlay-scrollbars";
-const char kOverlayFullscreenVideo[] = "overlay-fullscreen-video";
-const char kSharedWorker[] = "shared-worker";
-
-const int kWebRuntimeFeaturesFlagsSize = 6;
-const char* kWebRuntimeFeaturesFlags[kWebRuntimeFeaturesFlagsSize] = {
-  kExperimentalFeatures,
-  kExperimentalCanvasFeatures,
-  kSubpixelFontScaling,
-  kOverlayScrollbars,
-  kOverlayFullscreenVideo,
-  kSharedWorker,
-};
+const char kSubpixelFontScaling[]        = "subpixel-font-scaling";
+const char kOverlayScrollbars[]          = "overlay-scrollbars";
+const char kOverlayFullscreenVideo[]     = "overlay-fullscreen-video";
+const char kSharedWorker[]               = "shared-worker";
 
 }  // namespace switches
 
