@@ -17,6 +17,8 @@
       'native_mate/locker.h',
       'native_mate/object_template_builder.cc',
       'native_mate/object_template_builder.h',
+      'native_mate/persistent_dictionary.cc',
+      'native_mate/persistent_dictionary.h',
       'native_mate/scoped_persistent.h',
       'native_mate/template_util.h',
       'native_mate/try_catch.cc',

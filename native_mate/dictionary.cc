@@ -19,9 +19,13 @@ Dictionary::Dictionary(v8::Isolate* isolate,
 Dictionary::~Dictionary() {
 }
 
+v8::Handle<v8::Object> Dictionary::GetHandle() const {
+  return object_;
+}
+
 v8::Handle<v8::Value> Converter<Dictionary>::ToV8(v8::Isolate* isolate,
                                                   Dictionary val) {
-  return val.object_;
+  return val.GetHandle();
 }
 
 bool Converter<Dictionary>::FromV8(v8::Isolate* isolate,
