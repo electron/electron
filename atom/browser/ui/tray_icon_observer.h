@@ -10,6 +10,7 @@ namespace atom {
 class TrayIconObserver {
  public:
   virtual void OnClicked() {}
+  virtual void OnDoubleClicked() {}
 
  protected:
   virtual ~TrayIconObserver() {}

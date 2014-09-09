@@ -36,6 +36,10 @@ void Tray::OnClicked() {
   Emit("clicked");
 }
 
+void Tray::OnDoubleClicked() {
+  Emit("double-clicked");
+}
+
 void Tray::SetImage(const gfx::ImageSkia& image) {
   tray_icon_->SetImage(image);
 }

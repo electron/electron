@@ -13,6 +13,7 @@
 }
 - (id)initWithIcon:(atom::TrayIconCocoa*)icon;
 - (void)handleClick:(id)sender;
+- (void)handleDoubleClick:(id)sender;
 
 @end // @interface StatusItemController
 
@@ -24,8 +25,11 @@
 }
 
 - (void)handleClick:(id)sender {
-  DCHECK(trayIcon_);
   trayIcon_->NotifyClicked();
+}
+
+- (void)handleDoubleClick:(id)sender {
+  trayIcon_->NotifyDoubleClicked();
 }
 
 @end
@@ -40,6 +44,7 @@ TrayIconCocoa::TrayIconCocoa() {
   [item_ setEnabled:YES];
   [item_ setTarget:controller_];
   [item_ setAction:@selector(handleClick:)];
+  [item_ setDoubleAction:@selector(handleDoubleClick:)];
   [item_ setHighlightMode:YES];
 }
 

@@ -37,6 +37,7 @@ class Tray : public mate::EventEmitter,
 
   // TrayIcon implementations:
   virtual void OnClicked() OVERRIDE;
+  virtual void OnDoubleClicked() OVERRIDE;
 
   void SetImage(const gfx::ImageSkia& image);
   void SetPressedImage(const gfx::ImageSkia& image);
