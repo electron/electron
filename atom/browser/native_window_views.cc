@@ -613,6 +613,10 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
   return NULL;
 }
 
+gfx::ImageSkia NativeWindowViews::GetDevToolsWindowIcon() {
+  return GetWindowAppIcon();
+}
+
 void NativeWindowViews::HandleMouseDown() {
   // Hide menu bar when web view is clicked.
   if (menu_bar_autohide_ && menu_bar_visible_) {

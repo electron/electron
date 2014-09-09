@@ -105,6 +105,9 @@ class NativeWindowViews : public NativeWindow,
   virtual views::NonClientFrameView* CreateNonClientFrameView(
       views::Widget* widget) OVERRIDE;
 
+  // brightray::InspectableWebContentsDelegate:
+  virtual gfx::ImageSkia GetDevToolsWindowIcon() OVERRIDE;
+
   // content::WebContentsDelegate:
   virtual void HandleMouseDown() OVERRIDE;
   virtual void HandleKeyboardEvent(
