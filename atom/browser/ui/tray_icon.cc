@@ -12,6 +12,9 @@ TrayIcon::TrayIcon() {
 TrayIcon::~TrayIcon() {
 }
 
+void TrayIcon::SetTitle(const std::string& title) {
+}
+
 void TrayIcon::NotifyClicked() {
   FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnClicked());
 }

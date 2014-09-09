@@ -31,6 +31,10 @@ class TrayIcon {
   // status icon (e.g. Ubuntu Unity).
   virtual void SetToolTip(const std::string& tool_tip) = 0;
 
+  // Sets the title displayed aside of the status icon in the status bar. This
+  // only works on OS X.
+  virtual void SetTitle(const std::string& title);
+
   // Set the context menu for this icon.
   virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) = 0;
 

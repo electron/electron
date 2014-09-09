@@ -48,6 +48,10 @@ void Tray::SetToolTip(const std::string& tool_tip) {
   tray_icon_->SetToolTip(tool_tip);
 }
 
+void Tray::SetTitle(const std::string& title) {
+  tray_icon_->SetTitle(title);
+}
+
 void Tray::SetContextMenu(Menu* menu) {
   tray_icon_->SetContextMenu(menu->model());
 }
@@ -59,6 +63,7 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setImage", &Tray::SetImage)
       .SetMethod("setPressedImage", &Tray::SetPressedImage)
       .SetMethod("setToolTip", &Tray::SetToolTip)
+      .SetMethod("setTitle", &Tray::SetTitle)
       .SetMethod("_setContextMenu", &Tray::SetContextMenu);
 }
 
