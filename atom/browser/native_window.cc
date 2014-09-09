@@ -325,6 +325,21 @@ void NativeWindow::AppendExtraCommandLineSwitches(
   if (zoom_factor_ != 1.0)
     command_line->AppendSwitchASCII(switches::kZoomFactor,
                                     base::DoubleToString(zoom_factor_));
+
+  if (web_preferences_.IsEmpty())
+    return;
+
+  // This set of options are not availabe in WebPreferences, so we have to pass
+  // them via command line and enable them in renderer procss.
+  bool b;
+  std::string web_runtime_features;
+  mate::Dictionary web_preferences(web_preferences_.isolate(),
+                                   web_preferences_.NewHandle());
+  for (int i = 0; i < switches::kWebRuntimeFeaturesFlagsSize; ++i) {
+    const char* feature_flag = switches::kWebRuntimeFeaturesFlags[i];
+    if (web_preferences.Get(feature_flag, &b))
+      command_line->AppendSwitchASCII(feature_flag, b ? "true" : "false");
+  }
 }
 
 void NativeWindow::OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs) {

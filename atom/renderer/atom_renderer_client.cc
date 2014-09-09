@@ -20,6 +20,7 @@
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebKit.h"
+#include "third_party/WebKit/public/web/WebRuntimeFeatures.h"
 
 #include "atom/common/node_includes.h"
 
@@ -33,6 +34,19 @@ const char* kSecurityExceptIframe = "except-iframe";
 const char* kSecurityManualEnableIframe = "manual-enable-iframe";
 const char* kSecurityDisable = "disable";
 const char* kSecurityEnableNodeIntegration = "enable-node-integration";
+
+bool IsSwitchEnabled(base::CommandLine* command_line,
+                     const char* switch_string,
+                     bool* enabled) {
+  std::string value = command_line->GetSwitchValueASCII(switch_string);
+  if (value == "true")
+    *enabled = true;
+  else if (value == "false")
+    *enabled = false;
+  else
+    return false;
+  return true;
+}
 
 // Helper class to forward the WillReleaseScriptContext message to the client.
 class AtomRenderFrameObserver : public content::RenderFrameObserver {
@@ -86,6 +100,8 @@ AtomRendererClient::~AtomRendererClient() {
 }
 
 void AtomRendererClient::WebKitInitialized() {
+  EnableWebRuntimeFeatures();
+
   if (!IsNodeBindingEnabled())
     return;
 
@@ -218,6 +234,23 @@ bool AtomRendererClient::IsNodeBindingEnabled(blink::WebFrame* frame) {
     return false;
   else
     return true;
+}
+
+void AtomRendererClient::EnableWebRuntimeFeatures() {
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  bool b;
+  if (IsSwitchEnabled(command_line, switches::kExperimentalFeatures, &b))
+    blink::WebRuntimeFeatures::enableExperimentalFeatures(b);
+  if (IsSwitchEnabled(command_line, switches::kExperimentalCanvasFeatures, &b))
+    blink::WebRuntimeFeatures::enableExperimentalCanvasFeatures(b);
+  if (IsSwitchEnabled(command_line, switches::kSubpixelFontScaling, &b))
+    blink::WebRuntimeFeatures::enableSubpixelFontScaling(b);
+  if (IsSwitchEnabled(command_line, switches::kOverlayScrollbars, &b))
+    blink::WebRuntimeFeatures::enableOverlayScrollbars(b);
+  if (IsSwitchEnabled(command_line, switches::kOverlayFullscreenVideo, &b))
+    blink::WebRuntimeFeatures::enableOverlayFullscreenVideo(b);
+  if (IsSwitchEnabled(command_line, switches::kSharedWorker, &b))
+    blink::WebRuntimeFeatures::enableSharedWorker(b);
 }
 
 }  // namespace atom
