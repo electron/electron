@@ -72,6 +72,10 @@ void TrayIconCocoa::SetTitle(const std::string& title) {
   [item_ setTitle:base::SysUTF8ToNSString(title)];
 }
 
+void TrayIconCocoa::SetHighlightMode(bool highlight) {
+  [item_ setHighlightMode:highlight];
+}
+
 void TrayIconCocoa::SetContextMenu(ui::SimpleMenuModel* menu_model) {
   menu_.reset([[AtomMenuController alloc] initWithModel:menu_model]);
   [item_ setMenu:[menu_ menu]];

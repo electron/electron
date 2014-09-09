@@ -42,6 +42,7 @@ class Tray : public mate::EventEmitter,
   void SetPressedImage(const gfx::ImageSkia& image);
   void SetToolTip(const std::string& tool_tip);
   void SetTitle(const std::string& title);
+  void SetHighlightMode(bool highlight);
   void SetContextMenu(Menu* menu);
 
  private:

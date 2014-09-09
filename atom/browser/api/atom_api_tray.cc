@@ -52,6 +52,10 @@ void Tray::SetTitle(const std::string& title) {
   tray_icon_->SetTitle(title);
 }
 
+void Tray::SetHighlightMode(bool highlight) {
+  tray_icon_->SetHighlightMode(highlight);
+}
+
 void Tray::SetContextMenu(Menu* menu) {
   tray_icon_->SetContextMenu(menu->model());
 }
@@ -64,6 +68,7 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setPressedImage", &Tray::SetPressedImage)
       .SetMethod("setToolTip", &Tray::SetToolTip)
       .SetMethod("setTitle", &Tray::SetTitle)
+      .SetMethod("setHighlightMode", &Tray::SetHighlightMode)
       .SetMethod("_setContextMenu", &Tray::SetContextMenu);
 }
 

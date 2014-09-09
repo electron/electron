@@ -35,6 +35,10 @@ class TrayIcon {
   // only works on OS X.
   virtual void SetTitle(const std::string& title);
 
+  // Sets whether the status icon is highlighted when it is clicked. This only
+  // works on OS X.
+  virtual void SetHighlightMode(bool highlight);
+
   // Set the context menu for this icon.
   virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) = 0;
 
