@@ -24,11 +24,9 @@ namespace mate {
 //
 class Dictionary {
  public:
-  Dictionary(v8::Isolate* isolate = v8::Isolate::GetCurrent());
+  Dictionary();
   Dictionary(v8::Isolate* isolate, v8::Handle<v8::Object> object);
   ~Dictionary();
-
-  static Dictionary CreateEmpty(v8::Isolate* isolate);
 
   template<typename T>
   bool Get(const base::StringPiece& key, T* out) const {
