@@ -19,11 +19,11 @@ using extensions::GlobalShortcutListenerMac;
 
 namespace {
 
-// The media keys subtype. No official docs found, but widely known.
+// The media/volume keys subtype. No official docs found, but widely known.
 // http://lists.apple.com/archives/cocoa-dev/2007/Aug/msg00499.html
-const int kSystemDefinedEventMediaKeysSubtype = 8;
+const int kSystemDefinedEventMediaAndVolumeKeysSubtype = 8;
 
-ui::KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
+ui::KeyboardCode MediaOrVolumeKeyCodeToKeyboardCode(int key_code) {
   switch (key_code) {
     case NX_KEYTYPE_PLAY:
       return ui::VKEY_MEDIA_PLAY_PAUSE;
@@ -33,17 +33,26 @@ ui::KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
     case NX_KEYTYPE_NEXT:
     case NX_KEYTYPE_FAST:
       return ui::VKEY_MEDIA_NEXT_TRACK;
+    case NX_KEYTYPE_SOUND_UP:
+      return ui::VKEY_VOLUME_UP;
+    case NX_KEYTYPE_SOUND_DOWN:
+      return ui::VKEY_VOLUME_DOWN;
+    case NX_KEYTYPE_MUTE:
+      return ui::VKEY_VOLUME_MUTE;
   }
   return ui::VKEY_UNKNOWN;
 }
 
-bool IsMediaKey(const ui::Accelerator& accelerator) {
+bool IsMediaOrVolumeKey(const ui::Accelerator& accelerator) {
   if (accelerator.modifiers() != 0)
     return false;
   return (accelerator.key_code() == ui::VKEY_MEDIA_NEXT_TRACK ||
           accelerator.key_code() == ui::VKEY_MEDIA_PREV_TRACK ||
           accelerator.key_code() == ui::VKEY_MEDIA_PLAY_PAUSE ||
-          accelerator.key_code() == ui::VKEY_MEDIA_STOP);
+          accelerator.key_code() == ui::VKEY_MEDIA_STOP ||
+          accelerator.key_code() == ui::VKEY_VOLUME_UP ||
+          accelerator.key_code() == ui::VKEY_VOLUME_DOWN ||
+          accelerator.key_code() == ui::VKEY_VOLUME_MUTE);
 }
 
 }  // namespace
@@ -77,8 +86,8 @@ GlobalShortcutListenerMac::~GlobalShortcutListenerMac() {
 
   // If keys are still registered, make sure we stop the tap. Again, this
   // should never happen.
-  if (IsAnyMediaKeyRegistered())
-    StopWatchingMediaKeys();
+  if (IsAnyMediaOrVolumeKeyRegistered())
+    StopWatchingMediaOrVolumeKeys();
 
   if (IsAnyHotKeyRegistered())
     StopWatchingHotKeys();
@@ -114,9 +123,11 @@ void GlobalShortcutListenerMac::OnHotKeyEvent(EventHotKeyID hot_key_id) {
   NotifyKeyPressed(accelerator);
 }
 
-bool GlobalShortcutListenerMac::OnMediaKeyEvent(int media_key_code) {
+bool GlobalShortcutListenerMac::OnMediaOrVolumeKeyEvent(
+    int media_or_volume_key_code) {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-  ui::KeyboardCode key_code = MediaKeyCodeToKeyboardCode(media_key_code);
+  ui::KeyboardCode key_code = MediaOrVolumeKeyCodeToKeyboardCode(
+      media_or_volume_key_code);
   // Create an accelerator corresponding to the keyCode.
   ui::Accelerator accelerator(key_code, 0);
   // Look for a match with a bound hot_key.
@@ -133,10 +144,10 @@ bool GlobalShortcutListenerMac::RegisterAcceleratorImpl(
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
   DCHECK(accelerator_ids_.find(accelerator) == accelerator_ids_.end());
 
-  if (IsMediaKey(accelerator)) {
-    if (!IsAnyMediaKeyRegistered()) {
-      // If this is the first media key registered, start the event tap.
-      StartWatchingMediaKeys();
+  if (IsMediaOrVolumeKey(accelerator)) {
+    if (!IsAnyMediaOrVolumeKeyRegistered()) {
+      // If this is the first media/volume key registered, start the event tap.
+      StartWatchingMediaOrVolumeKeys();
     }
   } else {
     // Register hot_key if they are non-media keyboard shortcuts.
@@ -161,7 +172,7 @@ void GlobalShortcutListenerMac::UnregisterAcceleratorImpl(
   DCHECK(accelerator_ids_.find(accelerator) != accelerator_ids_.end());
 
   // Unregister the hot_key if it's a keyboard shortcut.
-  if (!IsMediaKey(accelerator))
+  if (!IsMediaOrVolumeKey(accelerator))
     UnregisterHotKey(accelerator);
 
   // Remove hot_key from the mappings.
@@ -169,11 +180,11 @@ void GlobalShortcutListenerMac::UnregisterAcceleratorImpl(
   id_accelerators_.erase(key_id);
   accelerator_ids_.erase(accelerator);
 
-  if (IsMediaKey(accelerator)) {
-    // If we unregistered a media key, and now no media keys are registered,
-    // stop the media key tap.
-    if (!IsAnyMediaKeyRegistered())
-      StopWatchingMediaKeys();
+  if (IsMediaOrVolumeKey(accelerator)) {
+    // If we unregistered a media/volume key, and now no media/volume keys are registered,
+    // stop the media/volume key tap.
+    if (!IsAnyMediaOrVolumeKeyRegistered())
+      StopWatchingMediaOrVolumeKeys();
   } else {
     // If we unregistered a hot key, and no more hot keys are registered, remove
     // the hot key handler.
@@ -226,12 +237,12 @@ void GlobalShortcutListenerMac::UnregisterHotKey(
   id_hot_key_refs_.erase(key_id);
 }
 
-void GlobalShortcutListenerMac::StartWatchingMediaKeys() {
+void GlobalShortcutListenerMac::StartWatchingMediaOrVolumeKeys() {
   // Make sure there's no existing event tap.
   DCHECK(event_tap_ == NULL);
   DCHECK(event_tap_source_ == NULL);
 
-  // Add an event tap to intercept the system defined media key events.
+  // Add an event tap to intercept the system defined media/volume key events.
   event_tap_ = CGEventTapCreate(kCGSessionEventTap,
       kCGHeadInsertEventTap,
       kCGEventTapOptionDefault,
@@ -254,7 +265,7 @@ void GlobalShortcutListenerMac::StartWatchingMediaKeys() {
       kCFRunLoopCommonModes);
 }
 
-void GlobalShortcutListenerMac::StopWatchingMediaKeys() {
+void GlobalShortcutListenerMac::StopWatchingMediaOrVolumeKeys() {
   CFRunLoopRemoveSource(CFRunLoopGetCurrent(), event_tap_source_,
       kCFRunLoopCommonModes);
   // Ensure both event tap and source are initialized.
@@ -287,11 +298,11 @@ void GlobalShortcutListenerMac::StopWatchingHotKeys() {
   event_handler_ = NULL;
 }
 
-bool GlobalShortcutListenerMac::IsAnyMediaKeyRegistered() {
-  // Iterate through registered accelerators, looking for media keys.
+bool GlobalShortcutListenerMac::IsAnyMediaOrVolumeKeyRegistered() {
+  // Iterate through registered accelerators, looking for media/volume keys.
   AcceleratorIdMap::iterator it;
   for (it = accelerator_ids_.begin(); it != accelerator_ids_.end(); ++it) {
-    if (IsMediaKey(it->first))
+    if (IsMediaOrVolumeKey(it->first))
       return true;
   }
   return false;
@@ -300,7 +311,7 @@ bool GlobalShortcutListenerMac::IsAnyMediaKeyRegistered() {
 bool GlobalShortcutListenerMac::IsAnyHotKeyRegistered() {
   AcceleratorIdMap::iterator it;
   for (it = accelerator_ids_.begin(); it != accelerator_ids_.end(); ++it) {
-    if (!IsMediaKey(it->first))
+    if (!IsMediaOrVolumeKey(it->first))
       return true;
   }
   return false;
@@ -329,20 +340,24 @@ CGEventRef GlobalShortcutListenerMac::EventTapCallback(
     return event;
   }
 
-  // Ignore events that are not system defined media keys.
+  // Ignore events that are not system defined media/volume keys.
   if (type != NX_SYSDEFINED ||
       [ns_event type] != NSSystemDefined ||
-      [ns_event subtype] != kSystemDefinedEventMediaKeysSubtype) {
+      [ns_event subtype] != kSystemDefinedEventMediaAndVolumeKeysSubtype) {
     return event;
   }
 
   NSInteger data1 = [ns_event data1];
-  // Ignore media keys that aren't previous, next and play/pause.
+  // Ignore media keys that aren't previous, next and play/pause and
+  // volume keys that aren't up, down and mute.
   // Magical constants are from http://weblog.rogueamoeba.com/2007/09/29/
   int key_code = (data1 & 0xFFFF0000) >> 16;
   if (key_code != NX_KEYTYPE_PLAY && key_code != NX_KEYTYPE_NEXT &&
       key_code != NX_KEYTYPE_PREVIOUS && key_code != NX_KEYTYPE_FAST &&
-      key_code != NX_KEYTYPE_REWIND) {
+      key_code != NX_KEYTYPE_REWIND &&
+      key_code != NX_KEYTYPE_SOUND_UP &&
+      key_code != NX_KEYTYPE_SOUND_DOWN &&
+      key_code != NX_KEYTYPE_MUTE) {
     return event;
   }
 
@@ -353,8 +368,8 @@ CGEventRef GlobalShortcutListenerMac::EventTapCallback(
   if (!is_key_pressed)
     return event;
 
-  // Now we have a media key that we care about. Send it to the caller.
-  bool was_handled = shortcut_listener->OnMediaKeyEvent(key_code);
+  // Now we have a media/volume key that we care about. Send it to the caller.
+  bool was_handled = shortcut_listener->OnMediaOrVolumeKeyEvent(key_code);
 
   // Prevent event from proagating to other apps if handled by Chrome.
   if (was_handled)

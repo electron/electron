@@ -21,8 +21,8 @@ namespace extensions {
 // forwards its output to the base class for processing.
 //
 // This class does two things:
-// 1. Intercepts media keys. Uses an event tap for intercepting media keys
-// (PlayPause, NextTrack, PreviousTrack).
+// 1. Intercepts media/volume keys. Uses an event tap for intercepting media keys
+// (PlayPause, NextTrack, PreviousTrack) and volume keys(VolumeUp, VolumeDown, VolumeMute).
 // 2. Binds keyboard shortcuts (hot keys). Carbon RegisterEventHotKey API for
 // binding to non-media key global hot keys (eg. Command-Shift-1).
 class GlobalShortcutListenerMac : public GlobalShortcutListener {
@@ -38,7 +38,7 @@ class GlobalShortcutListenerMac : public GlobalShortcutListener {
 
   // Keyboard event callbacks.
   void OnHotKeyEvent(EventHotKeyID hot_key_id);
-  bool OnMediaKeyEvent(int key_code);
+  bool OnMediaOrVolumeKeyEvent(int key_code);
 
   // GlobalShortcutListener implementation.
   virtual void StartListening() OVERRIDE;
@@ -52,16 +52,16 @@ class GlobalShortcutListenerMac : public GlobalShortcutListener {
   bool RegisterHotKey(const ui::Accelerator& accelerator, KeyId hot_key_id);
   void UnregisterHotKey(const ui::Accelerator& accelerator);
 
-  // Enable and disable the media key event tap.
-  void StartWatchingMediaKeys();
-  void StopWatchingMediaKeys();
+  // Enable and disable the media/volume key event tap.
+  void StartWatchingMediaOrVolumeKeys();
+  void StopWatchingMediaOrVolumeKeys();
 
   // Enable and disable the hot key event handler.
   void StartWatchingHotKeys();
   void StopWatchingHotKeys();
 
-  // Whether or not any media keys are currently registered.
-  bool IsAnyMediaKeyRegistered();
+  // Whether or not any media/volume keys are currently registered.
+  bool IsAnyMediaOrVolumeKeyRegistered();
 
   // Whether or not any hot keys are currently registered.
   bool IsAnyHotKeyRegistered();
@@ -80,7 +80,7 @@ class GlobalShortcutListenerMac : public GlobalShortcutListener {
   // The hotkey identifier for the next global shortcut that is added.
   KeyId hot_key_id_;
 
-  // A map of all hotkeys (media keys and shortcuts) mapping to their
+  // A map of all hotkeys (media/volume keys and shortcuts) mapping to their
   // corresponding hotkey IDs. For quickly finding if an accelerator is
   // registered.
   AcceleratorIdMap accelerator_ids_;
@@ -91,7 +91,7 @@ class GlobalShortcutListenerMac : public GlobalShortcutListener {
   // Keyboard shortcut IDs to hotkeys map for unregistration.
   IdHotKeyRefMap id_hot_key_refs_;
 
-  // Event tap for intercepting mac media keys.
+  // Event tap for intercepting mac media/volume keys.
   CFMachPortRef event_tap_;
   CFRunLoopSourceRef event_tap_source_;
 
