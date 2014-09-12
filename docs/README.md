@@ -5,6 +5,7 @@
 * [Use native node modules](tutorial/use-native-node-modules.md)
 * [Debugging browser process](tutorial/debugging-browser-process.md)
 * [DevTools extension](tutorial/devtools-extension.md)
+* [Use Selenium and WebDriver](tutorial/use-selenium-and-webdriver.md)
 
 ## API references
 
