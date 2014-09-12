@@ -104,6 +104,7 @@ def main():
   download_libchromiumcontent_symbols(args.url)
   create_symbols()
   copy_binaries()
+  copy_chromedriver()
   copy_headers()
   copy_license()
 
@@ -112,6 +113,7 @@ def main():
 
   create_version()
   create_dist_zip()
+  create_chromedriver_zip()
   create_symbols_zip()
   create_header_tarball()
 
@@ -140,6 +142,11 @@ def copy_binaries():
     shutil.copytree(os.path.join(OUT_DIR, directory),
                     os.path.join(DIST_DIR, directory),
                     symlinks=True)
+
+
+def copy_chromedriver():
+  build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
+  execute([sys.executable, build, '-c', 'Release', '-t', 'copy_chromedriver'])
 
 
 def copy_headers():
@@ -230,6 +237,20 @@ def create_dist_zip():
       files += SYSTEM_LIBRARIES
     dirs = TARGET_DIRECTORIES[TARGET_PLATFORM]
     make_zip(zip_file, files, dirs)
+
+
+def create_chromedriver_zip():
+  dist_name = 'chromedriver-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
+                                                    TARGET_PLATFORM, DIST_ARCH)
+  zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
+
+  with scoped_cwd(DIST_DIR):
+    files = ['LICENSE']
+    if TARGET_PLATFORM == 'win32':
+      files += ['chromedriver.exe']
+    else:
+      files += ['chromedriver']
+    make_zip(zip_file, files, [])
 
 
 def create_symbols_zip():
