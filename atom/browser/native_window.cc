@@ -67,6 +67,14 @@ const char* kWebRuntimeFeatures[] = {
   switches::kSharedWorker,
 };
 
+std::string RemoveWhitespace(const std::string& str) {
+  std::string trimmed;
+  if (base::RemoveChars(str, " ", &trimmed))
+    return trimmed;
+  else
+    return str;
+}
+
 }  // namespace
 
 NativeWindow::NativeWindow(content::WebContents* web_contents,
@@ -106,8 +114,8 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
   // Override the user agent to contain application and atom-shell's version.
   Browser* browser = Browser::Get();
   std::string product_name = base::StringPrintf(
-      "%s/%s Chrome/%s Atom-Shell/" ATOM_VERSION_STRING,
-      browser->GetName().c_str(),
+      "%s/%s Chrome/%s AtomShell/" ATOM_VERSION_STRING,
+      RemoveWhitespace(browser->GetName()).c_str(),
       browser->GetVersion().c_str(),
       CHROME_VERSION_STRING);
   web_contents->GetMutableRendererPrefs()->user_agent_override =
