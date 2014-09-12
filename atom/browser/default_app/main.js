@@ -11,11 +11,13 @@ app.on('window-all-closed', function() {
 
 // Parse command line options.
 var argv = process.argv.slice(1);
-var option = { file: null, version: null };
+var option = { file: null, version: null, webdriver: null };
 for (var i in argv) {
   if (argv[i] == '--version' || argv[i] == '-v') {
     option.version = true;
     break;
+  } else if (argv[i] == '--test-type=webdriver') {
+    option.webdriver = true;
   } else if (argv[i][0] == '-') {
     continue;
   } else {
@@ -26,7 +28,7 @@ for (var i in argv) {
 
 // Start the specified app if there is one specified in command line, otherwise
 // start the default app.
-if (option.file) {
+if (option.file && !option.webdriver) {
   try {
     // Override app name and version.
     var packagePath = path.resolve(option.file);
