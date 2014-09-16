@@ -7,12 +7,18 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/chrome_version.h"
+
 namespace atom {
 
 AtomContentClient::AtomContentClient() {
 }
 
 AtomContentClient::~AtomContentClient() {
+}
+
+std::string AtomContentClient::GetProduct() const {
+  return "Chrome/" CHROME_VERSION_STRING;
 }
 
 void AtomContentClient::AddAdditionalSchemes(

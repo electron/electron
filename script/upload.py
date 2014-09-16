@@ -26,6 +26,9 @@ DIST_NAME = 'atom-shell-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
 SYMBOLS_NAME = 'atom-shell-{0}-{1}-{2}-symbols.zip'.format(ATOM_SHELL_VERSION,
                                                            TARGET_PLATFORM,
                                                            DIST_ARCH)
+CHROMEDRIVER_NAME = 'chromedriver-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
+                                                          TARGET_PLATFORM,
+                                                          DIST_ARCH)
 
 
 def main():
@@ -48,6 +51,8 @@ def main():
   release_id = create_or_get_release_draft(github, args.version)
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, DIST_NAME))
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, SYMBOLS_NAME))
+  upload_atom_shell(github, release_id,
+                    os.path.join(DIST_DIR, CHROMEDRIVER_NAME))
 
   # Upload node's headers to S3.
   bucket, access_key, secret_key = s3_config()

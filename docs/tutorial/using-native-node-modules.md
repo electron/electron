@@ -1,4 +1,4 @@
-# Use native Node modules
+# Usng native Node modules
 
 The native Node modules are supported by atom-shell, but since atom-shell is
 using a different V8 version from official Node, you need to use `apm` instead

@@ -2,8 +2,9 @@
 
 * [Quick start](tutorial/quick-start.md)
 * [Application distribution](tutorial/application-distribution.md)
-* [Use native node modules](tutorial/use-native-node-modules.md)
+* [Using native node modules](tutorial/using-native-node-modules.md)
 * [Debugging browser process](tutorial/debugging-browser-process.md)
+* [Using Selenium and WebDriver](tutorial/using-selenium-and-webdriver.md)
 * [DevTools extension](tutorial/devtools-extension.md)
 
 ## API references
