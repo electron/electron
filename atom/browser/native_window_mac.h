@@ -65,6 +65,7 @@ class NativeWindowMac : public NativeWindow {
   virtual bool IsDocumentEdited() OVERRIDE;
   virtual bool HasModalDialog() OVERRIDE;
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
+  virtual void SetProgressBar(double progress) OVERRIDE;
 
   // Returns true if |point| in local Cocoa coordinate system falls within
   // the draggable region.
