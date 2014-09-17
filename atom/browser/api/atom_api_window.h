@@ -103,6 +103,7 @@ class Window : public mate::EventEmitter,
   bool IsDocumentEdited();
   void CapturePage(mate::Arguments* args);
   void Print(mate::Arguments* args);
+  void SetProgressBar(double progress);
 
   // APIs for WebContents.
   mate::Handle<WebContents> GetWebContents(v8::Isolate* isolate) const;

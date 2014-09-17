@@ -71,6 +71,7 @@ class NativeWindowViews : public NativeWindow,
   virtual bool IsKiosk() OVERRIDE;
   virtual void SetMenu(ui::MenuModel* menu_model) OVERRIDE;
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
+  virtual void SetProgressBar(double value) OVERRIDE;
 
   gfx::AcceleratedWidget GetAcceleratedWidget();
 
