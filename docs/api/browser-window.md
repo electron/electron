@@ -497,7 +497,7 @@ Change to indeterminate mode when progress > 1.
 
 On Linux platform, only supports Unity desktop environment, you need to specify
 the `*.desktop` file name to `desktopName` field in `package.json`. By default,
-it will assume `atom-shell.desktop`.
+it will assume `app.getName().desktop`.
 
 ## Class: WebContents
 
