@@ -77,6 +77,12 @@ setImmediate ->
   else if packageJson.name?
     app.setName packageJson.name
 
+  # Set application's desktop name.
+  if packageJson.desktopName?
+    app.setDesktopName packageJson.desktopName
+  else 
+    app.setDesktopName 'atom-shell.desktop'
+
   # Load the chrome extension support.
   require './chrome-extension.js'
 

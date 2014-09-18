@@ -501,6 +501,10 @@ void NativeWindowViews::SetProgressBar(double progress) {
                               static_cast<int>(progress * 100),
                               progress);
   }
+#elif defined(USE_X11)
+  if (unity::IsRunning()) {
+    unity::SetProgressFraction(progress);
+  }
 #endif
 }
 
