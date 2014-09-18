@@ -497,7 +497,9 @@ void NativeWindowViews::SetProgressBar(double progress) {
   } else if (progress < 0) {
     taskbar->SetProgressState(frame, TBPF_NOPROGRESS);
   } else if (progress >= 0) {
-    taskbar->SetProgressValue(frame, static_cast<int>(progress*100), progress);
+    taskbar->SetProgressValue(frame,
+                              static_cast<int>(progress * 100),
+                              progress);
   }
 #endif
 }
