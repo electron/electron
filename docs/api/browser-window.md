@@ -86,6 +86,8 @@ normal browsers, see [Web Security](web-security.md) for more.
     * `overlay-scrollbars` Boolean
     * `overlay-fullscreen-video` Boolean
     * `shared-worker` Boolean
+    * `direct-write` Boolean - Whether the DirectWrite font rendering system on
+       Windows is enabled
 
 Creates a new `BrowserWindow` with native properties set by the `options`.
 Usually you only need to set the `width` and `height`, other properties will

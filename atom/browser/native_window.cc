@@ -41,6 +41,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
+#include "content/public/common/content_switches.h"
 #include "content/public/common/renderer_preferences.h"
 #include "content/public/common/user_agent.h"
 #include "ipc/ipc_message_macros.h"
@@ -351,9 +352,15 @@ void NativeWindow::AppendExtraCommandLineSwitches(
   if (web_preferences_.IsEmpty())
     return;
 
+  bool b;
+#if defined(OS_WIN)
+  // Check if DirectWrite is disabled.
+  if (web_preferences_.Get(switches::kDirectWrite, &b) && !b)
+    command_line->AppendSwitch(::switches::kDisableDirectWrite);
+#endif
+
   // This set of options are not availabe in WebPreferences, so we have to pass
   // them via command line and enable them in renderer procss.
-  bool b;
   for (size_t i = 0; i < arraysize(kWebRuntimeFeatures); ++i) {
     const char* feature = kWebRuntimeFeatures[i];
     if (web_preferences_.Get(feature, &b))

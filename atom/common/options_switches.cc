@@ -57,6 +57,9 @@ const char kEnableLargerThanScreen[] = "enable-larger-than-screen";
 // Forces to use dark theme on Linux.
 const char kDarkTheme[] = "dark-theme";
 
+// Enable DirectWrite on Windows.
+const char kDirectWrite[] = "direct-write";
+
 // Web runtime features.
 const char kExperimentalFeatures[]       = "experimental-features";
 const char kExperimentalCanvasFeatures[] = "experimental-canvas-features";
