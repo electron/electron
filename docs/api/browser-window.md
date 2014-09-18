@@ -486,6 +486,19 @@ Sets the `menu` as the window top menu.
 
 __Note:__ This API is not available on OS X.
 
+### BrowserWindow.setProgressBar(progress)
+
+* `progress` Double
+
+Sets progress value in progress bar. Valid range is [0, 1.0].
+
+Remove progress bar when progress < 0;
+Change to indeterminate mode when progress > 1.
+
+On Linux platform, only supports Unity desktop environment, you need to specify
+the `*.desktop` file name to `desktopName` field in `package.json`. By default,
+it will assume `atom-shell.desktop`.
+
 ## Class: WebContents
 
 A `WebContents` is responsible for rendering and controlling a web page.
