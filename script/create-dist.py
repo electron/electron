@@ -147,6 +147,10 @@ def copy_binaries():
 def copy_chromedriver():
   build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
   execute([sys.executable, build, '-c', 'Release', '-t', 'copy_chromedriver'])
+  binary = 'chromedriver'
+  if TARGET_PLATFORM == 'win32':
+    binary += '.exe'
+  shutil.copy2(os.path.join(OUT_DIR, binary), DIST_DIR)
 
 
 def copy_headers():
