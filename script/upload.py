@@ -10,12 +10,14 @@ import tempfile
 
 from lib.config import DIST_ARCH, TARGET_PLATFORM
 from lib.util import execute, get_atom_shell_version, parse_version, \
-                     scoped_cwd, safe_mkdir, s3_config, s3put
+                     get_chromedriver_version, scoped_cwd, safe_mkdir, \
+                     s3_config, s3put
 from lib.github import GitHub
 
 
 ATOM_SHELL_REPO = 'atom/atom-shell'
 ATOM_SHELL_VERSION = get_atom_shell_version()
+CHROMEDRIVER_VERSION = get_chromedriver_version()
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'Release')
@@ -26,7 +28,7 @@ DIST_NAME = 'atom-shell-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
 SYMBOLS_NAME = 'atom-shell-{0}-{1}-{2}-symbols.zip'.format(ATOM_SHELL_VERSION,
                                                            TARGET_PLATFORM,
                                                            DIST_ARCH)
-CHROMEDRIVER_NAME = 'chromedriver-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
+CHROMEDRIVER_NAME = 'chromedriver-{0}-{1}-{2}.zip'.format(CHROMEDRIVER_VERSION,
                                                           TARGET_PLATFORM,
                                                           DIST_ARCH)
 

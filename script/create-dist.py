@@ -11,7 +11,7 @@ import tarfile
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, TARGET_PLATFORM, \
                        DIST_ARCH
 from lib.util import scoped_cwd, rm_rf, get_atom_shell_version, make_zip, \
-                     safe_mkdir, execute
+                     safe_mkdir, execute, get_chromedriver_version
 
 
 ATOM_SHELL_VERSION = get_atom_shell_version()
@@ -240,7 +240,7 @@ def create_dist_zip():
 
 
 def create_chromedriver_zip():
-  dist_name = 'chromedriver-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
+  dist_name = 'chromedriver-{0}-{1}-{2}.zip'.format(get_chromedriver_version(),
                                                     TARGET_PLATFORM, DIST_ARCH)
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 

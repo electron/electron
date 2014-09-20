@@ -146,6 +146,13 @@ def get_atom_shell_version():
   return subprocess.check_output(['git', 'describe', '--tags']).strip()
 
 
+def get_chromedriver_version():
+  SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
+  chromedriver = os.path.join(SOURCE_ROOT, 'out', 'Release', 'chromedriver')
+  output = subprocess.check_output([chromedriver, '-v']).strip()
+  return 'v' + output[13:]
+
+
 def parse_version(version):
   if version[0] == 'v':
     version = version[1:]
