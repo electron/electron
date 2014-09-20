@@ -134,6 +134,13 @@ void App::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
   new ResolveProxyHelper(url, callback);
 }
 
+void App::SetDesktopName(const std::string& desktop_name) {
+#if defined(OS_LINUX)
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  env->SetVar("CHROME_DESKTOP", desktop_name);
+#endif
+}
+
 mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   Browser* browser = Browser::Get();
@@ -151,7 +158,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("setName", base::Bind(&Browser::SetName,
                                        base::Unretained(browser)))
       .SetMethod("getDataPath", &App::GetDataPath)
-      .SetMethod("resolveProxy", &App::ResolveProxy);
+      .SetMethod("resolveProxy", &App::ResolveProxy)
+      .SetMethod("setDesktopName", &App::SetDesktopName);
 }
 
 // static

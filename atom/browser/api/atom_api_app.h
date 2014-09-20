@@ -50,6 +50,7 @@ class App : public mate::EventEmitter,
  private:
   base::FilePath GetDataPath();
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
+  void SetDesktopName(const std::string& desktop_name);
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };

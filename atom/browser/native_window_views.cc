@@ -43,7 +43,9 @@
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
 #include "base/win/scoped_comptr.h"
+#include "base/win/windows_version.h"
 #include "ui/base/win/shell.h"
+#include "ui/views/win/hwnd_util.h"
 #endif
 
 namespace atom {
@@ -477,6 +479,33 @@ void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
 
 gfx::NativeWindow NativeWindowViews::GetNativeWindow() {
   return window_->GetNativeWindow();
+}
+
+void NativeWindowViews::SetProgressBar(double progress) {
+#if defined(OS_WIN)
+  if (base::win::GetVersion() < base::win::VERSION_WIN7)
+    return;
+  base::win::ScopedComPtr<ITaskbarList3> taskbar;
+  if (FAILED(taskbar.CreateInstance(CLSID_TaskbarList, NULL,
+                                    CLSCTX_INPROC_SERVER) ||
+      FAILED(taskbar->HrInit()))) {
+    return;
+  }
+  HWND frame = views::HWNDForNativeWindow(GetNativeWindow());
+  if (progress > 1.0) {
+    taskbar->SetProgressState(frame, TBPF_INDETERMINATE);
+  } else if (progress < 0) {
+    taskbar->SetProgressState(frame, TBPF_NOPROGRESS);
+  } else if (progress >= 0) {
+    taskbar->SetProgressValue(frame,
+                              static_cast<int>(progress * 100),
+                              progress);
+  }
+#elif defined(USE_X11)
+  if (unity::IsRunning()) {
+    unity::SetProgressFraction(progress);
+  }
+#endif
 }
 
 gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() {

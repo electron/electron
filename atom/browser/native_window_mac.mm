@@ -193,6 +193,39 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 
 @end
 
+@interface AtomProgressBar : NSProgressIndicator
+@end
+
+@implementation AtomProgressBar
+
+- (void)drawRect:(NSRect)dirtyRect {
+  if (self.style != NSProgressIndicatorBarStyle)
+    return;
+  // Draw edges of rounded rect.
+  NSRect rect = NSInsetRect([self bounds], 1.0, 1.0);
+  CGFloat radius = rect.size.height / 2;
+  NSBezierPath* bezier_path = [NSBezierPath bezierPathWithRoundedRect:rect xRadius:radius yRadius:radius];
+  [bezier_path setLineWidth:2.0];
+  [[NSColor grayColor] set];
+  [bezier_path stroke];
+
+  // Fill the rounded rect.
+  rect = NSInsetRect(rect, 2.0, 2.0);
+  radius = rect.size.height / 2;
+  bezier_path = [NSBezierPath bezierPathWithRoundedRect:rect xRadius:radius yRadius:radius];
+  [bezier_path setLineWidth:1.0];
+  [bezier_path addClip];
+
+  // Calculate the progress width.
+  rect.size.width = floor(rect.size.width * ([self doubleValue] / [self maxValue]));
+
+  // Fill the progress bar with color blue.
+  [[NSColor colorWithSRGBRed:0.2 green:0.6 blue:1 alpha:1] set];
+  NSRectFill(rect);
+}
+
+@end
+
 namespace atom {
 
 NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
@@ -515,6 +548,39 @@ bool NativeWindowMac::HasModalDialog() {
 
 gfx::NativeWindow NativeWindowMac::GetNativeWindow() {
   return window_;
+}
+
+void NativeWindowMac::SetProgressBar(double progress) {
+  NSDockTile* dock_tile = [NSApp dockTile];
+
+  // For the first time API invoked, we need to create a ContentView in DockTile.
+  if (dock_tile.contentView == NULL) {
+    NSImageView* image_view = [[NSImageView alloc] init];
+    [image_view setImage:[NSApp applicationIconImage]];
+    [dock_tile setContentView:image_view];
+
+    NSProgressIndicator* progress_indicator = [[AtomProgressBar alloc]
+        initWithFrame:NSMakeRect(0.0f, 0.0f, dock_tile.size.width, 15.0)];
+    [progress_indicator setStyle:NSProgressIndicatorBarStyle];
+    [progress_indicator setIndeterminate:NO];
+    [progress_indicator setBezeled:YES];
+    [progress_indicator setMinValue:0];
+    [progress_indicator setMaxValue:1];
+    [progress_indicator setHidden:NO];
+    [image_view addSubview:progress_indicator];
+  }
+
+  NSProgressIndicator* progress_indicator =
+      static_cast<NSProgressIndicator*>([[[dock_tile contentView] subviews]
+           objectAtIndex:0]);
+  if (progress < 0) {
+    [progress_indicator setHidden:YES];
+  } else if (progress > 1) {
+    [progress_indicator setIndeterminate:YES];
+  } else {
+    [progress_indicator setDoubleValue:progress];
+  }
+  [dock_tile display];
 }
 
 bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {

@@ -366,6 +366,10 @@ void Window::Print(mate::Arguments* args) {
   window_->Print(settings.silent, settings.print_backgournd);
 }
 
+void Window::SetProgressBar(double progress) {
+  window_->SetProgressBar(progress);
+}
+
 mate::Handle<WebContents> Window::GetWebContents(v8::Isolate* isolate) const {
   return WebContents::Create(isolate, window_->GetWebContents());
 }
@@ -428,6 +432,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)
       .SetMethod("capturePage", &Window::CapturePage)
       .SetMethod("print", &Window::Print)
+      .SetMethod("setProgressBar", &Window::SetProgressBar)
       .SetMethod("_getWebContents", &Window::GetWebContents)
       .SetMethod("_getDevToolsWebContents", &Window::GetDevToolsWebContents);
 }
