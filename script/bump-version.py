@@ -4,7 +4,7 @@ import os
 import re
 import sys
 
-from lib.util import execute, get_atom_shell_version, scoped_cwd
+from lib.util import execute, get_atom_shell_version, parse_version, scoped_cwd
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -33,17 +33,6 @@ def main():
     update_info_plist(version)
     tag_version(version)
     git_push()
-
-
-def parse_version(version):
-  if version[0] == 'v':
-    version = version[1:]
-
-  vs = version.split('.')
-  if len(vs) > 4:
-    return vs[0:4]
-  else:
-    return vs + ['0'] * (4 - len(vs))
 
 
 def increase_version(versions, index):

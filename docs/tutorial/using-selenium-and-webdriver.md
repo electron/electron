@@ -13,6 +13,10 @@ can find archives of `chromedriver`, there is no difference between atom-shell's
 distribution of `chromedriver` and upstream ones, so in order to use
 `chromedriver` together with atom-shell, you will need some special setup.
 
+Also notice that only minor version update releases (e.g. `vX.X.0` releases)
+include `chromedriver` archives, because `chromedriver` doesn't change as
+frequent as atom-shell itself.
+
 ## Setting up with WebDriverJs
 
 [WebDriverJs](https://code.google.com/p/selenium/wiki/WebDriverJs) provided

@@ -146,6 +146,17 @@ def get_atom_shell_version():
   return subprocess.check_output(['git', 'describe', '--tags']).strip()
 
 
+def parse_version(version):
+  if version[0] == 'v':
+    version = version[1:]
+
+  vs = version.split('.')
+  if len(vs) > 4:
+    return vs[0:4]
+  else:
+    return vs + ['0'] * (4 - len(vs))
+
+
 def s3_config():
   config = (os.environ.get('ATOM_SHELL_S3_BUCKET', ''),
             os.environ.get('ATOM_SHELL_S3_ACCESS_KEY', ''),

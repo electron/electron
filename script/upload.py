@@ -9,8 +9,8 @@ import sys
 import tempfile
 
 from lib.config import DIST_ARCH, TARGET_PLATFORM
-from lib.util import get_atom_shell_version, scoped_cwd, safe_mkdir, execute, \
-                     s3_config, s3put
+from lib.util import execute, get_atom_shell_version, parse_version, \
+                     scoped_cwd, safe_mkdir, s3_config, s3put
 from lib.github import GitHub
 
 
@@ -51,8 +51,11 @@ def main():
   release_id = create_or_get_release_draft(github, args.version)
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, DIST_NAME))
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, SYMBOLS_NAME))
-  upload_atom_shell(github, release_id,
-                    os.path.join(DIST_DIR, CHROMEDRIVER_NAME))
+
+  # Upload chromedriver for minor version update.
+  if parse_version(args.version)[2] == '0':
+    upload_atom_shell(github, release_id,
+                      os.path.join(DIST_DIR, CHROMEDRIVER_NAME))
 
   # Upload node's headers to S3.
   bucket, access_key, secret_key = s3_config()
