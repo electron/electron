@@ -576,8 +576,11 @@ void NativeWindowMac::SetProgressBar(double progress) {
   if (progress < 0) {
     [progress_indicator setHidden:YES];
   } else if (progress > 1) {
+    [progress_indicator setHidden:NO];
     [progress_indicator setIndeterminate:YES];
+    [progress_indicator setDoubleValue:1];
   } else {
+    [progress_indicator setHidden:NO];
     [progress_indicator setDoubleValue:progress];
   }
   [dock_tile display];
