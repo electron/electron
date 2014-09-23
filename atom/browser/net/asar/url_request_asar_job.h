@@ -27,7 +27,7 @@ class URLRequestAsarJob : public net::URLRequestJob {
  public:
   URLRequestAsarJob(net::URLRequest* request,
                     net::NetworkDelegate* network_delegate,
-                    const base::FilePath& asar_path,
+                    const scoped_refptr<Archive>& archive,
                     const base::FilePath& file_path,
                     const scoped_refptr<base::TaskRunner>& file_task_runner);
 
@@ -53,12 +53,13 @@ class URLRequestAsarJob : public net::URLRequestJob {
   // Callback after data is asynchronously read from the file into |buf|.
   void DidRead(scoped_refptr<net::IOBuffer> buf, int result);
 
-  Archive archive_;
+  const scoped_refptr<Archive> archive_;
   Archive::FileInfo file_info_;
   base::FilePath file_path_;
 
   scoped_ptr<net::FileStream> stream_;
   int64 remaining_bytes_;
+
   const scoped_refptr<base::TaskRunner> file_task_runner_;
 
   base::WeakPtrFactory<URLRequestAsarJob> weak_ptr_factory_;

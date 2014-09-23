@@ -6,6 +6,7 @@
 #define ATOM_COMMON_ASAR_ARCHIVE_H_
 
 #include "base/files/file_path.h"
+#include "base/memory/ref_counted.h"
 #include "base/memory/scoped_ptr.h"
 
 namespace base {
@@ -14,7 +15,7 @@ class DictionaryValue;
 
 namespace asar {
 
-class Archive {
+class Archive : public base::RefCounted<Archive> {
  public:
   struct FileInfo {
     uint32 size;
@@ -22,7 +23,6 @@ class Archive {
   };
 
   explicit Archive(const base::FilePath& path);
-  virtual ~Archive();
 
   // Read and parse the header.
   bool Init();
@@ -33,6 +33,9 @@ class Archive {
   base::FilePath path() const { return path_; }
 
  private:
+  friend class base::RefCounted<Archive>;
+  virtual ~Archive();
+
   base::FilePath path_;
   uint32 header_size_;
   scoped_ptr<base::DictionaryValue> header_;

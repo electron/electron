@@ -5,7 +5,11 @@
 #include "atom/browser/net/asar/asar_protocol_handler.h"
 
 #include "atom/browser/net/asar/url_request_asar_job.h"
+#include "atom/common/asar/archive.h"
+#include "base/stl_util.h"
 #include "net/base/filename_util.h"
+#include "net/base/net_errors.h"
+#include "net/url_request/url_request_error_job.h"
 #include "net/url_request/url_request_file_job.h"
 
 namespace asar {
@@ -51,14 +55,24 @@ net::URLRequestJob* AsarProtocolHandler::MaybeCreateJob(
   base::FilePath full_path;
   net::FileURLToFilePath(request->url(), &full_path);
 
-  // Create asar:// job when the path contains "xxx.asar/".
+  // Create asar:// job when the path contains "xxx.asar/", otherwise treat the
+  // URL request as file://.
   base::FilePath asar_path, relative_path;
-  if (GetAsarPath(full_path, &asar_path, &relative_path))
-    return new URLRequestAsarJob(request, network_delegate, asar_path,
-                                 relative_path, file_task_runner_);
-  else
+  if (!GetAsarPath(full_path, &asar_path, &relative_path))
     return new net::URLRequestFileJob(request, network_delegate, full_path,
                                       file_task_runner_);
+
+  // Create a cache of Archive.
+  if (!ContainsKey(archives_, asar_path)) {
+    scoped_refptr<Archive> archive(new Archive(asar_path));
+    if (!archive->Init())
+      return new net::URLRequestErrorJob(request, network_delegate,
+                                         net::ERR_FILE_NOT_FOUND);
+    archives_[asar_path] = archive;
+  }
+
+  return new URLRequestAsarJob(request, network_delegate, archives_[asar_path],
+                               relative_path, file_task_runner_);
 }
 
 bool AsarProtocolHandler::IsSafeRedirectTarget(const GURL& location) const {

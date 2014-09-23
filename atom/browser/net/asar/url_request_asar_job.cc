@@ -17,11 +17,11 @@ namespace asar {
 URLRequestAsarJob::URLRequestAsarJob(
     net::URLRequest* request,
     net::NetworkDelegate* network_delegate,
-    const base::FilePath& asar_path,
+    const scoped_refptr<Archive>& archive,
     const base::FilePath& file_path,
     const scoped_refptr<base::TaskRunner>& file_task_runner)
     : net::URLRequestJob(request, network_delegate),
-      archive_(asar_path),
+      archive_(archive),
       file_path_(file_path),
       stream_(new net::FileStream(file_task_runner)),
       remaining_bytes_(0),
@@ -31,7 +31,7 @@ URLRequestAsarJob::URLRequestAsarJob(
 URLRequestAsarJob::~URLRequestAsarJob() {}
 
 void URLRequestAsarJob::Start() {
-  if (!archive_.Init() || !archive_.GetFileInfo(file_path_, &file_info_)) {
+  if (!archive_->GetFileInfo(file_path_, &file_info_)) {
     NotifyDone(net::URLRequestStatus(net::URLRequestStatus::FAILED,
                                      net::ERR_FILE_NOT_FOUND));
     return;
@@ -42,7 +42,7 @@ void URLRequestAsarJob::Start() {
   int flags = base::File::FLAG_OPEN |
               base::File::FLAG_READ |
               base::File::FLAG_ASYNC;
-  int rv = stream_->Open(archive_.path(), flags,
+  int rv = stream_->Open(archive_->path(), flags,
                          base::Bind(&URLRequestAsarJob::DidOpen,
                                     weak_ptr_factory_.GetWeakPtr()));
   if (rv != net::ERR_IO_PENDING)

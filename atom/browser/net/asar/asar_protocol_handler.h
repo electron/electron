@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_NET_ASAR_ASAR_PROTOCOL_HANDLER_H_
 #define ATOM_BROWSER_NET_ASAR_ASAR_PROTOCOL_HANDLER_H_
 
+#include "base/containers/hash_tables.h"
+#include "base/files/file_path.h"
 #include "base/memory/ref_counted.h"
 #include "net/url_request/url_request_job_factory.h"
 
@@ -13,6 +15,8 @@ class TaskRunner;
 }
 
 namespace asar {
+
+class Archive;
 
 class AsarProtocolHandler : public net::URLRequestJobFactory::ProtocolHandler {
  public:
@@ -28,6 +32,9 @@ class AsarProtocolHandler : public net::URLRequestJobFactory::ProtocolHandler {
 
  private:
   const scoped_refptr<base::TaskRunner> file_task_runner_;
+
+  mutable base::hash_map<base::FilePath,  // NOLINT
+                         scoped_refptr<Archive> > archives_;
 
   DISALLOW_COPY_AND_ASSIGN(AsarProtocolHandler);
 };
