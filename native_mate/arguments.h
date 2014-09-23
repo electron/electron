@@ -73,8 +73,9 @@ class Arguments {
 
   v8::Handle<v8::Value> PeekNext() const;
 
-  void ThrowError() const;
-  void ThrowTypeError(const std::string& message) const;
+  v8::Handle<v8::Value> ThrowError() const;
+  v8::Handle<v8::Value> ThrowError(const std::string& message) const;
+  v8::Handle<v8::Value> ThrowTypeError(const std::string& message) const;
 
   v8::Isolate* isolate() const { return isolate_; }
 

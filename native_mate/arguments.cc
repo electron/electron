@@ -32,17 +32,25 @@ v8::Handle<v8::Value> Arguments::PeekNext() const {
   return (*info_)[next_];
 }
 
-void Arguments::ThrowError() const {
+v8::Handle<v8::Value> Arguments::ThrowError() const {
   if (insufficient_arguments_)
     return ThrowTypeError("Insufficient number of arguments.");
 
-  ThrowTypeError(base::StringPrintf(
+  return ThrowTypeError(base::StringPrintf(
       "Error processing argument %d.", next_ - 1));
 }
 
-void Arguments::ThrowTypeError(const std::string& message) const {
+v8::Handle<v8::Value> Arguments::ThrowError(const std::string& message) const {
+  MATE_THROW_EXCEPTION(isolate_, v8::Exception::Error(
+      StringToV8(isolate_, message)));
+  return MATE_UNDEFINED(isolate_);
+}
+
+v8::Handle<v8::Value> Arguments::ThrowTypeError(
+    const std::string& message) const {
   MATE_THROW_EXCEPTION(isolate_, v8::Exception::TypeError(
       StringToV8(isolate_, message)));
+  return MATE_UNDEFINED(isolate_);
 }
 
 }  // namespace mate
