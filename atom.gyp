@@ -192,6 +192,8 @@
       'atom/common/api/object_life_monitor.h',
       'atom/common/asar/archive.cc',
       'atom/common/asar/archive.h',
+      'atom/common/asar/archive_factory.cc',
+      'atom/common/asar/archive_factory.h',
       'atom/common/common_message_generator.cc',
       'atom/common/common_message_generator.h',
       'atom/common/crash_reporter/crash_reporter.cc',

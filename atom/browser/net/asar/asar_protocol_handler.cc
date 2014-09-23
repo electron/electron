@@ -5,8 +5,6 @@
 #include "atom/browser/net/asar/asar_protocol_handler.h"
 
 #include "atom/browser/net/asar/url_request_asar_job.h"
-#include "atom/common/asar/archive.h"
-#include "base/stl_util.h"
 #include "net/base/filename_util.h"
 #include "net/base/net_errors.h"
 #include "net/url_request/url_request_error_job.h"
@@ -62,16 +60,12 @@ net::URLRequestJob* AsarProtocolHandler::MaybeCreateJob(
     return new net::URLRequestFileJob(request, network_delegate, full_path,
                                       file_task_runner_);
 
-  // Create a cache of Archive.
-  if (!ContainsKey(archives_, asar_path)) {
-    scoped_refptr<Archive> archive(new Archive(asar_path));
-    if (!archive->Init())
-      return new net::URLRequestErrorJob(request, network_delegate,
-                                         net::ERR_FILE_NOT_FOUND);
-    archives_[asar_path] = archive;
-  }
+  scoped_refptr<Archive> archive = archive_factory_.GetOrCreate(asar_path);
+  if (!archive)
+    return new net::URLRequestErrorJob(request, network_delegate,
+                                       net::ERR_FILE_NOT_FOUND);
 
-  return new URLRequestAsarJob(request, network_delegate, archives_[asar_path],
+  return new URLRequestAsarJob(request, network_delegate, archive,
                                relative_path, file_task_runner_);
 }
 
