@@ -44,7 +44,9 @@ bool GetNodeFromPath(std::string path,
 
 }  // namespace
 
-Archive::Archive(const base::FilePath& path) : path_(path) {
+Archive::Archive(const base::FilePath& path)
+    : path_(path),
+      header_size_(0) {
 }
 
 Archive::~Archive() {
@@ -94,6 +96,7 @@ bool Archive::Init() {
     return false;
   }
 
+  header_size_ = 8 + size;
   header_.reset(static_cast<base::DictionaryValue*>(value));
   return true;
 }
@@ -119,8 +122,9 @@ bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) {
   int size;
   if (!node->GetInteger("size", &size))
     return false;
-  info->size = static_cast<uint32>(size);
 
+  info->offset += header_size_;
+  info->size = static_cast<uint32>(size);
   return true;
 }
 

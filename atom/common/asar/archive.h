@@ -34,6 +34,7 @@ class Archive {
 
  private:
   base::FilePath path_;
+  uint32 header_size_;
   scoped_ptr<base::DictionaryValue> header_;
 
   DISALLOW_COPY_AND_ASSIGN(Archive);
