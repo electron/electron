@@ -1,6 +1,7 @@
 asar = process.atomBinding 'asar'
 fs = require 'fs'
 path = require 'path'
+util = require 'util'
 
 # Separate asar package's path from full path.
 splitPath = (p) ->
@@ -33,10 +34,10 @@ createNotFoundError = (asarPath, filePath) ->
   error
 
 # Override fs APIs.
-statSync = fs.statSync
-fs.statSync = (p) ->
+lstatSync = fs.lstatSync
+fs.lstatSync = (p) ->
   [isAsar, asarPath, filePath] = splitPath p
-  return statSync p unless isAsar
+  return lstatSync p unless isAsar
 
   archive = asar.createArchive asarPath
   throw new Error("Invalid package #{asarPath}") unless archive
@@ -46,10 +47,10 @@ fs.statSync = (p) ->
 
   asarStatsToFsStats stats
 
-stat = fs.stat
-fs.stat = (p, callback) ->
+lstat = fs.lstat
+fs.lstat = (p, callback) ->
   [isAsar, asarPath, filePath] = splitPath p
-  return stat p, callback unless isAsar
+  return lstat p, callback unless isAsar
 
   archive = asar.createArchive asarPath
   return callback throw new Error("Invalid package #{asarPath}") unless archive
@@ -58,6 +59,22 @@ fs.stat = (p, callback) ->
   return callback createNotFoundError(asarPath, filePath) unless stats
 
   callback undefined, asarStatsToFsStats stats
+
+statSync = fs.statSync
+fs.statSync = (p) ->
+  [isAsar, asarPath, filePath] = splitPath p
+  return statSync p unless isAsar
+
+  # Do not distinguish links for now.
+  fs.lstatSync p
+
+stat = fs.stat
+fs.stat = (p, callback) ->
+  [isAsar, asarPath, filePath] = splitPath p
+  return stat p, callback unless isAsar
+
+  # Do not distinguish links for now.
+  fs.lstat p, callback
 
 statSyncNoException = fs.statSyncNoException
 fs.statSyncNoException = (p) ->
@@ -91,7 +108,7 @@ fs.existsSync = (p) ->
   archive.stat(filePath) isnt false
 
 readFile = fs.readFile
-fs.readFile = (p, callback) ->
+fs.readFile = (p, options, callback) ->
   [isAsar, asarPath, filePath] = splitPath p
   return readFile.apply this, arguments unless isAsar
 
@@ -101,15 +118,29 @@ fs.readFile = (p, callback) ->
   info = archive.getFileInfo filePath
   return callback createNotFoundError(asarPath, filePath) unless info
 
+  if typeof options is 'function'
+    callback = options
+    options = undefined
+
+  if not options
+    options = encoding: null, flag: 'r'
+  else if util.isString options
+    options = encoding: options, flag: 'r'
+  else if not util.isObject options
+    throw new TypeError('Bad arguments')
+
+  flag = options.flag || 'r'
+  encoding = options.encoding
+
   buffer = new Buffer(info.size)
-  fs.open archive.path, 'r', (error, fd) ->
+  fs.open archive.path, flag, (error, fd) ->
     return callback error if error
     fs.read fd, buffer, 0, info.size, info.offset, (error) ->
       fs.close fd, ->
-        callback error, buffer
+        callback error, if encoding then buffer.toString encoding else buffer
 
 readFileSync = fs.readFileSync
-fs.readFileSync = (p) ->
+fs.readFileSync = (p, options) ->
   [isAsar, asarPath, filePath] = splitPath p
   return readFileSync.apply this, arguments unless isAsar
 
@@ -119,8 +150,18 @@ fs.readFileSync = (p) ->
   info = archive.getFileInfo filePath
   throw createNotFoundError(asarPath, filePath) unless info
 
+  if not options
+    options = encoding: null, flag: 'r'
+  else if util.isString options
+    options = encoding: options, flag: 'r'
+  else if not util.isObject options
+    throw new TypeError('Bad arguments')
+
+  flag = options.flag || 'r'
+  encoding = options.encoding
+
   buffer = new Buffer(info.size)
-  fd = fs.openSync archive.path, 'r'
+  fd = fs.openSync archive.path, flag
   fs.readSync fd, buffer, 0, info.size, info.offset
   fs.closeSync fd
-  buffer
+  if encoding then buffer.toString encoding else buffer
