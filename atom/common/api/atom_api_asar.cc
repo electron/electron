@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <vector>
+
 #include "atom/common/asar/archive.h"
 #include "atom/common/asar/archive_factory.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -16,13 +18,13 @@ namespace {
 
 class Archive : public mate::Wrappable {
  public:
-  static v8::Handle<v8::Value> Create(mate::Arguments* args,
+  static v8::Handle<v8::Value> Create(v8::Isolate* isolate,
                                       const base::FilePath& path) {
     static asar::ArchiveFactory archive_factory;
     scoped_refptr<asar::Archive> archive = archive_factory.GetOrCreate(path);
     if (!archive)
-      return v8::False(args->isolate());
-    return (new Archive(archive))->GetWrapper(args->isolate());
+      return v8::False(isolate);
+    return (new Archive(archive))->GetWrapper(isolate);
   }
 
  protected:
@@ -30,24 +32,24 @@ class Archive : public mate::Wrappable {
   virtual ~Archive() {}
 
   // Reads the offset and size of file.
-  v8::Handle<v8::Value> GetFileInfo(mate::Arguments* args,
+  v8::Handle<v8::Value> GetFileInfo(v8::Isolate* isolate,
                                     const base::FilePath& path) {
     asar::Archive::FileInfo info;
     if (!archive_->GetFileInfo(path, &info))
-      return v8::False(args->isolate());
-    mate::Dictionary dict(args->isolate(), v8::Object::New(args->isolate()));
+      return v8::False(isolate);
+    mate::Dictionary dict(isolate, v8::Object::New(isolate));
     dict.Set("size", info.size);
     dict.Set("offset", info.offset);
     return dict.GetHandle();
   }
 
   // Returns a fake result of fs.stat(path).
-  v8::Handle<v8::Value> Stat(mate::Arguments* args,
+  v8::Handle<v8::Value> Stat(v8::Isolate* isolate,
                              const base::FilePath& path) {
     asar::Archive::Stats stats;
     if (!archive_->Stat(path, &stats))
-      return v8::False(args->isolate());
-    mate::Dictionary dict(args->isolate(), v8::Object::New(args->isolate()));
+      return v8::False(isolate);
+    mate::Dictionary dict(isolate, v8::Object::New(isolate));
     dict.Set("size", stats.size);
     dict.Set("offset", stats.offset);
     dict.Set("isFile", stats.is_file);
@@ -56,12 +58,22 @@ class Archive : public mate::Wrappable {
     return dict.GetHandle();
   }
 
+  // Returns all files under a directory.
+  v8::Handle<v8::Value> Readdir(v8::Isolate* isolate,
+                                const base::FilePath& path) {
+    std::vector<base::FilePath> files;
+    if (!archive_->Readdir(path, &files))
+      return v8::False(isolate);
+    return mate::ConvertToV8(isolate, files);
+  }
+
   // mate::Wrappable:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate) {
     return mate::ObjectTemplateBuilder(isolate)
         .SetValue("path", archive_->path())
         .SetMethod("getFileInfo", &Archive::GetFileInfo)
-        .SetMethod("stat", &Archive::Stat);
+        .SetMethod("stat", &Archive::Stat)
+        .SetMethod("readdir", &Archive::Readdir);
   }
 
  private:

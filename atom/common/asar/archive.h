@@ -5,6 +5,8 @@
 #ifndef ATOM_COMMON_ASAR_ARCHIVE_H_
 #define ATOM_COMMON_ASAR_ARCHIVE_H_
 
+#include <vector>
+
 #include "base/files/file_path.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/scoped_ptr.h"
@@ -40,6 +42,9 @@ class Archive : public base::RefCounted<Archive> {
 
   // Fs.stat(path).
   bool Stat(const base::FilePath& path, Stats* stats);
+
+  // Fs.readdir(path).
+  bool Readdir(const base::FilePath& path, std::vector<base::FilePath>* files);
 
   base::FilePath path() const { return path_; }
   base::DictionaryValue* header() const { return header_.get(); }

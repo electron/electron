@@ -162,4 +162,25 @@ bool Archive::Stat(const base::FilePath& path, Stats* stats) {
   return FillFileInfoWithNode(stats, header_size_, node);
 }
 
+bool Archive::Readdir(const base::FilePath& path,
+                      std::vector<base::FilePath>* list) {
+  if (!header_)
+    return false;
+
+  const base::DictionaryValue* node;
+  if (!GetNodeFromPath(path.AsUTF8Unsafe(), header_.get(), &node))
+    return false;
+
+  const base::DictionaryValue* files;
+  if (!node->GetDictionaryWithoutPathExpansion("files", &files))
+    return false;
+
+  base::DictionaryValue::Iterator iter(*files);
+  while (!iter.IsAtEnd()) {
+    list->push_back(base::FilePath::FromUTF8Unsafe(iter.key()));
+    iter.Advance();
+  }
+  return true;
+}
+
 }  // namespace asar

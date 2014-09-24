@@ -162,6 +162,36 @@ fs.readFileSync = (p, options) ->
 
   buffer = new Buffer(info.size)
   fd = fs.openSync archive.path, flag
-  fs.readSync fd, buffer, 0, info.size, info.offset
-  fs.closeSync fd
+  try
+    fs.readSync fd, buffer, 0, info.size, info.offset
+  catch e
+    throw e
+  finally
+    fs.closeSync fd
   if encoding then buffer.toString encoding else buffer
+
+readdir = fs.readdir
+fs.readdir = (p, callback) ->
+  [isAsar, asarPath, filePath] = splitPath p
+  return readdir.apply this, arguments unless isAsar
+
+  archive = asar.createArchive asarPath
+  return callback throw new Error("Invalid package #{asarPath}") unless archive
+
+  files = archive.readdir filePath
+  return callback createNotFoundError(asarPath, filePath) unless files
+
+  callback undefined, files
+
+readdirSync = fs.readdirSync
+fs.readdirSync = (p) ->
+  [isAsar, asarPath, filePath] = splitPath p
+  return readdirSync.apply this, arguments unless isAsar
+
+  archive = asar.createArchive asarPath
+  throw new Error("Invalid package #{asarPath}") unless archive
+
+  files = archive.readdir filePath
+  throw createNotFoundError(asarPath, filePath) unless files
+
+  files
