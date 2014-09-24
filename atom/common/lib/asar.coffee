@@ -191,7 +191,8 @@ fs.readdir = (p, callback) ->
   files = archive.readdir filePath
   return callback createNotFoundError(asarPath, filePath) unless files
 
-  callback undefined, files
+  process.nextTick ->
+    callback undefined, files
 
 readdirSync = fs.readdirSync
 fs.readdirSync = (p) ->
