@@ -31,6 +31,7 @@ class Archive : public base::RefCounted<Archive> {
   bool GetFileInfo(const base::FilePath& path, FileInfo* info);
 
   base::FilePath path() const { return path_; }
+  base::DictionaryValue* header() const { return header_.get(); }
 
  private:
   friend class base::RefCounted<Archive>;

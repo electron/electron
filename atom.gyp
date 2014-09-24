@@ -178,6 +178,7 @@
       'atom/browser/window_list.h',
       'atom/browser/window_list_observer.h',
       'atom/common/api/api_messages.h',
+      'atom/common/api/atom_api_asar.cc',
       'atom/common/api/atom_api_clipboard.cc',
       'atom/common/api/atom_api_crash_reporter.cc',
       'atom/common/api/atom_api_id_weak_map.cc',
