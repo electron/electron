@@ -28,6 +28,11 @@ bool GetChildNode(const std::string& name,
 bool GetNodeFromPath(std::string path,
                      const base::DictionaryValue* root,
                      const base::DictionaryValue** out) {
+  if (path == "") {
+    *out = root;
+    return true;
+  }
+
   for (size_t delimiter_position = path.find('/');
        delimiter_position != std::string::npos;
        delimiter_position = path.find('/')) {
