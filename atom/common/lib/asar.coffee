@@ -14,8 +14,18 @@ splitPath = (p) ->
   return [false, p]
 
 # Convert asar archive's Stats object to fs's Stats object.
+nextInode = 0
+uid = if process.getuid? then process.getuid() else 0
+gid = if process.getgid? then process.getgid() else 0
 asarStatsToFsStats = (stats) ->
   {
+    dev: 1,
+    ino: ++nextInode,
+    mode: 33188,
+    nlink: 1,
+    uid: uid,
+    gid: gid,
+    rdev: 0,
     size: stats.size
     isFile: -> stats.isFile
     isDirectory: -> stats.isDirectory
