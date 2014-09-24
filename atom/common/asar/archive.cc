@@ -42,6 +42,24 @@ bool GetNodeFromPath(std::string path,
   return GetChildNode(path, root, out);
 }
 
+bool FillFileInfoWithNode(Archive::FileInfo* info,
+                          uint32 header_size,
+                          const base::DictionaryValue* node) {
+  std::string offset;
+  if (!node->GetString("offset", &offset))
+    return false;
+  if (!base::StringToUint64(offset, &info->offset))
+    return false;
+
+  int size;
+  if (!node->GetInteger("size", &size))
+    return false;
+
+  info->offset += header_size;
+  info->size = static_cast<uint32>(size);
+  return true;
+}
+
 }  // namespace
 
 Archive::Archive(const base::FilePath& path)
@@ -113,19 +131,30 @@ bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) {
   if (node->GetString("link", &link))
     return GetFileInfo(base::FilePath::FromUTF8Unsafe(link), info);
 
-  std::string offset;
-  if (!node->GetString("offset", &offset))
-    return false;
-  if (!base::StringToUint64(offset, &info->offset))
+  return FillFileInfoWithNode(info, header_size_, node);
+}
+
+bool Archive::Stat(const base::FilePath& path, Stats* stats) {
+  if (!header_)
     return false;
 
-  int size;
-  if (!node->GetInteger("size", &size))
+  const base::DictionaryValue* node;
+  if (!GetNodeFromPath(path.AsUTF8Unsafe(), header_.get(), &node))
     return false;
 
-  info->offset += header_size_;
-  info->size = static_cast<uint32>(size);
-  return true;
+  if (node->HasKey("link")) {
+    stats->is_file = false;
+    stats->is_link = true;
+    return true;
+  }
+
+  if (node->HasKey("files")) {
+    stats->is_file = false;
+    stats->is_directory = true;
+    return true;
+  }
+
+  return FillFileInfoWithNode(stats, header_size_, node);
 }
 
 }  // namespace asar

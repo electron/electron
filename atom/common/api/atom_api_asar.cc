@@ -29,6 +29,7 @@ class Archive : public mate::Wrappable {
   explicit Archive(scoped_refptr<asar::Archive> archive) : archive_(archive) {}
   virtual ~Archive() {}
 
+  // Reads the offset and size of file.
   v8::Handle<v8::Value> GetFileInfo(mate::Arguments* args,
                                     const base::FilePath& path) {
     asar::Archive::FileInfo info;
@@ -40,11 +41,27 @@ class Archive : public mate::Wrappable {
     return dict.GetHandle();
   }
 
+  // Returns a fake result of fs.stat(path).
+  v8::Handle<v8::Value> Stat(mate::Arguments* args,
+                             const base::FilePath& path) {
+    asar::Archive::Stats stats;
+    if (!archive_->Stat(path, &stats))
+      return args->ThrowError("Can not find file");
+    mate::Dictionary dict(args->isolate(), v8::Object::New(args->isolate()));
+    dict.Set("size", stats.size);
+    dict.Set("offset", stats.offset);
+    dict.Set("isFile", stats.is_file);
+    dict.Set("isDirectory", stats.is_directory);
+    dict.Set("isLink", stats.is_link);
+    return dict.GetHandle();
+  }
+
   // mate::Wrappable:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate) {
     return mate::ObjectTemplateBuilder(isolate)
         .SetValue("path", archive_->path())
-        .SetMethod("getFileInfo", &Archive::GetFileInfo);
+        .SetMethod("getFileInfo", &Archive::GetFileInfo)
+        .SetMethod("stat", &Archive::Stat);
   }
 
  private:

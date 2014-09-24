@@ -18,8 +18,16 @@ namespace asar {
 class Archive : public base::RefCounted<Archive> {
  public:
   struct FileInfo {
+    FileInfo() : size(0), offset(0) {}
     uint32 size;
     uint64 offset;
+  };
+
+  struct Stats : public FileInfo {
+    Stats() : is_file(true), is_directory(false), is_link(false) {}
+    bool is_file;
+    bool is_directory;
+    bool is_link;
   };
 
   explicit Archive(const base::FilePath& path);
@@ -29,6 +37,9 @@ class Archive : public base::RefCounted<Archive> {
 
   // Get the info of a file.
   bool GetFileInfo(const base::FilePath& path, FileInfo* info);
+
+  // Fs.stat(path).
+  bool Stat(const base::FilePath& path, Stats* stats);
 
   base::FilePath path() const { return path_; }
   base::DictionaryValue* header() const { return header_.get(); }
