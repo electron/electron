@@ -58,14 +58,15 @@ setImmediate ->
   # Now we try to load app's package.json.
   packageJson = null
 
-  packagePath = path.join process.resourcesPath, 'app'
-  try
-    # First we try to load process.resourcesPath/app
-    packageJson = JSON.parse(fs.readFileSync(path.join(packagePath, 'package.json')))
-  catch error
-    # If not found then we load browser/default_app
-    packagePath = path.join process.resourcesPath, 'default_app'
-    packageJson = JSON.parse(fs.readFileSync(path.join(packagePath, 'package.json')))
+  searchPaths = [ 'app', 'app.asar', 'default_app' ]
+  for packagePath in searchPaths
+    try
+      packagePath = path.join process.resourcesPath, packagePath
+      packageJson = JSON.parse(fs.readFileSync(path.join(packagePath, 'package.json')))
+    catch e
+      continue
+
+  throw new Error("Unable to find a valid app") unless packageJson?
 
   # Set application's version.
   app = require 'app'

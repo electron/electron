@@ -77,10 +77,8 @@ Archive::~Archive() {
 
 bool Archive::Init() {
   base::File file(path_, base::File::FLAG_OPEN | base::File::FLAG_READ);
-  if (!file.IsValid()) {
-    PLOG(ERROR) << "Unable to open " << path_.value();
+  if (!file.IsValid())
     return false;
-  }
 
   std::vector<char> buf;
   int len;
