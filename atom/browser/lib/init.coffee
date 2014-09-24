@@ -80,7 +80,7 @@ setImmediate ->
   # Set application's desktop name.
   if packageJson.desktopName?
     app.setDesktopName packageJson.desktopName
-  else 
+  else
     app.setDesktopName '#{app.getName()}.desktop'
 
   # Load the chrome extension support.

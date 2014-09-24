@@ -33,3 +33,6 @@ global.clearImmediate = timers.clearImmediate
 if process.type is 'browser'
   global.setTimeout = wrapWithActivateUvLoop timers.setTimeout
   global.setInterval = wrapWithActivateUvLoop timers.setInterval
+
+# Add support for asar packages.
+require './asar'

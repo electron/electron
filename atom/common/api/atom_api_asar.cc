@@ -21,7 +21,7 @@ class Archive : public mate::Wrappable {
     static asar::ArchiveFactory archive_factory;
     scoped_refptr<asar::Archive> archive = archive_factory.GetOrCreate(path);
     if (!archive)
-      return args->ThrowError("Invalid asar archive");
+      return v8::False(args->isolate());
     return (new Archive(archive))->GetWrapper(args->isolate());
   }
 
@@ -34,7 +34,7 @@ class Archive : public mate::Wrappable {
                                     const base::FilePath& path) {
     asar::Archive::FileInfo info;
     if (!archive_->GetFileInfo(path, &info))
-      return args->ThrowError("Can not find file");
+      return v8::False(args->isolate());
     mate::Dictionary dict(args->isolate(), v8::Object::New(args->isolate()));
     dict.Set("size", info.size);
     dict.Set("offset", info.offset);
@@ -46,7 +46,7 @@ class Archive : public mate::Wrappable {
                              const base::FilePath& path) {
     asar::Archive::Stats stats;
     if (!archive_->Stat(path, &stats))
-      return args->ThrowError("Can not find file");
+      return v8::False(args->isolate());
     mate::Dictionary dict(args->isolate(), v8::Object::New(args->isolate()));
     dict.Set("size", stats.size);
     dict.Set("offset", stats.offset);
