@@ -52,6 +52,10 @@ setImmediate ->
       detail: message
       buttons: ['OK']
 
+  # Emit 'exit' event on quit.
+  require('app').on 'quit', ->
+    process.emit 'exit'
+
   # Load the RPC server.
   require './rpc-server.js'
 

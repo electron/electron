@@ -24,6 +24,10 @@ require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init.js')
 global.require = require
 global.module = module
 
+# Emit the 'exit' event when page is unloading.
+window.addEventListener 'unload', ->
+  process.emit 'exit'
+
 # Set the __filename to the path of html file if it's file: or asar: protocol.
 if window.location.protocol in ['file:', 'asar:']
   pathname =
