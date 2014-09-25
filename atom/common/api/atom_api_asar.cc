@@ -75,6 +75,11 @@ class Archive : public mate::Wrappable {
     return mate::ConvertToV8(isolate, new_path);
   }
 
+  // Free the resources used by archive.
+  void Destroy() {
+    archive_.reset();
+  }
+
   // mate::Wrappable:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate) {
     return mate::ObjectTemplateBuilder(isolate)
@@ -82,7 +87,8 @@ class Archive : public mate::Wrappable {
         .SetMethod("getFileInfo", &Archive::GetFileInfo)
         .SetMethod("stat", &Archive::Stat)
         .SetMethod("readdir", &Archive::Readdir)
-        .SetMethod("copyFileOut", &Archive::CopyFileOut);
+        .SetMethod("copyFileOut", &Archive::CopyFileOut)
+        .SetMethod("destroy", &Archive::Destroy);
   }
 
  private:
