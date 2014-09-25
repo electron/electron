@@ -7,9 +7,8 @@
 
 #include <vector>
 
-#include "base/containers/hash_tables.h"
+#include "base/containers/scoped_ptr_hash_map.h"
 #include "base/files/file_path.h"
-#include "base/memory/ref_counted.h"
 #include "base/memory/scoped_ptr.h"
 
 namespace base {
@@ -22,7 +21,7 @@ class ScopedTemporaryFile;
 
 // This class represents an asar package, and provides methods to read
 // information from it.
-class Archive : public base::RefCounted<Archive> {
+class Archive {
  public:
   struct FileInfo {
     FileInfo() : size(0), offset(0) {}
@@ -38,6 +37,7 @@ class Archive : public base::RefCounted<Archive> {
   };
 
   explicit Archive(const base::FilePath& path);
+  virtual ~Archive();
 
   // Read and parse the header.
   bool Init();
@@ -58,16 +58,12 @@ class Archive : public base::RefCounted<Archive> {
   base::DictionaryValue* header() const { return header_.get(); }
 
  private:
-  friend class base::RefCounted<Archive>;
-  virtual ~Archive();
-
   base::FilePath path_;
   uint32 header_size_;
   scoped_ptr<base::DictionaryValue> header_;
 
   // Cached external temporary files.
-  base::hash_map<base::FilePath,  // NOLINT
-                 scoped_refptr<ScopedTemporaryFile> > external_files_;
+  base::ScopedPtrHashMap<base::FilePath, ScopedTemporaryFile> external_files_;
 
   DISALLOW_COPY_AND_ASSIGN(Archive);
 };

@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_NET_ASAR_ASAR_PROTOCOL_HANDLER_H_
 
 #include "atom/common/asar/archive_factory.h"
+#include "base/memory/ref_counted.h"
 #include "net/url_request/url_request_job_factory.h"
 
 namespace base {

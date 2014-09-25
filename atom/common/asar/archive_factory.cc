@@ -5,25 +5,24 @@
 #include "atom/common/asar/archive_factory.h"
 
 #include "atom/common/asar/archive.h"
-#include "base/stl_util.h"
 
 namespace asar {
 
 ArchiveFactory::ArchiveFactory() {}
 
-ArchiveFactory::~ArchiveFactory() {}
+ArchiveFactory::~ArchiveFactory() {
+}
 
-scoped_refptr<Archive> ArchiveFactory::GetOrCreate(const base::FilePath& path) {
-  // Create a cache of Archive.
-  if (!ContainsKey(archives_, path)) {
-    scoped_refptr<Archive> archive(new Archive(path));
+Archive* ArchiveFactory::GetOrCreate(const base::FilePath& path) {
+  if (!archives_.contains(path)) {
+    scoped_ptr<Archive> archive(new Archive(path));
     if (!archive->Init())
-      return NULL;
-    archives_[path] = archive;
-    return archive;
+      return nullptr;
+
+    archives_.set(path, archive.Pass());
   }
 
-  return archives_[path];
+  return archives_.get(path);
 }
 
 }  // namespace asar

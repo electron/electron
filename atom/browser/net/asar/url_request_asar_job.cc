@@ -17,7 +17,7 @@ namespace asar {
 URLRequestAsarJob::URLRequestAsarJob(
     net::URLRequest* request,
     net::NetworkDelegate* network_delegate,
-    const scoped_refptr<Archive>& archive,
+    Archive* archive,
     const base::FilePath& file_path,
     const scoped_refptr<base::TaskRunner>& file_task_runner)
     : net::URLRequestJob(request, network_delegate),
@@ -31,7 +31,7 @@ URLRequestAsarJob::URLRequestAsarJob(
 URLRequestAsarJob::~URLRequestAsarJob() {}
 
 void URLRequestAsarJob::Start() {
-  if (!archive_->GetFileInfo(file_path_, &file_info_)) {
+  if (!archive_ || !archive_->GetFileInfo(file_path_, &file_info_)) {
     NotifyDone(net::URLRequestStatus(net::URLRequestStatus::FAILED,
                                      net::ERR_FILE_NOT_FOUND));
     return;

@@ -6,7 +6,6 @@
 #define ATOM_COMMON_ASAR_SCOPED_TEMPORARY_FILE_H_
 
 #include "base/files/file_path.h"
-#include "base/memory/ref_counted.h"
 
 namespace asar {
 
@@ -14,9 +13,10 @@ namespace asar {
 // object goes out of scope.  Note that since deletion occurs during the
 // destructor, no further error handling is possible if the directory fails to
 // be deleted.  As a result, deletion is not guaranteed by this class.
-class ScopedTemporaryFile : public base::RefCounted<ScopedTemporaryFile> {
+class ScopedTemporaryFile {
  public:
   ScopedTemporaryFile();
+  virtual ~ScopedTemporaryFile();
 
   // Init an empty temporary file.
   bool Init();
@@ -27,9 +27,6 @@ class ScopedTemporaryFile : public base::RefCounted<ScopedTemporaryFile> {
   base::FilePath path() const { return path_; }
 
  private:
-  friend class base::RefCounted<ScopedTemporaryFile>;
-  virtual ~ScopedTemporaryFile();
-
   base::FilePath path_;
 
   DISALLOW_COPY_AND_ASSIGN(ScopedTemporaryFile);

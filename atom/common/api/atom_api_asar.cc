@@ -21,21 +21,21 @@ class Archive : public mate::Wrappable {
   static v8::Handle<v8::Value> Create(v8::Isolate* isolate,
                                       const base::FilePath& path) {
     static asar::ArchiveFactory archive_factory;
-    scoped_refptr<asar::Archive> archive = archive_factory.GetOrCreate(path);
+    asar::Archive* archive = archive_factory.GetOrCreate(path);
     if (!archive)
       return v8::False(isolate);
     return (new Archive(archive))->GetWrapper(isolate);
   }
 
  protected:
-  explicit Archive(scoped_refptr<asar::Archive> archive) : archive_(archive) {}
+  explicit Archive(asar::Archive* archive) : archive_(archive) {}
   virtual ~Archive() {}
 
   // Reads the offset and size of file.
   v8::Handle<v8::Value> GetFileInfo(v8::Isolate* isolate,
                                     const base::FilePath& path) {
     asar::Archive::FileInfo info;
-    if (!archive_->GetFileInfo(path, &info))
+    if (!archive_ || !archive_->GetFileInfo(path, &info))
       return v8::False(isolate);
     mate::Dictionary dict(isolate, v8::Object::New(isolate));
     dict.Set("size", info.size);
@@ -47,7 +47,7 @@ class Archive : public mate::Wrappable {
   v8::Handle<v8::Value> Stat(v8::Isolate* isolate,
                              const base::FilePath& path) {
     asar::Archive::Stats stats;
-    if (!archive_->Stat(path, &stats))
+    if (!archive_ || !archive_->Stat(path, &stats))
       return v8::False(isolate);
     mate::Dictionary dict(isolate, v8::Object::New(isolate));
     dict.Set("size", stats.size);
@@ -62,7 +62,7 @@ class Archive : public mate::Wrappable {
   v8::Handle<v8::Value> Readdir(v8::Isolate* isolate,
                                 const base::FilePath& path) {
     std::vector<base::FilePath> files;
-    if (!archive_->Readdir(path, &files))
+    if (!archive_ || !archive_->Readdir(path, &files))
       return v8::False(isolate);
     return mate::ConvertToV8(isolate, files);
   }
@@ -71,7 +71,7 @@ class Archive : public mate::Wrappable {
   v8::Handle<v8::Value> CopyFileOut(v8::Isolate* isolate,
                                     const base::FilePath& path) {
     base::FilePath new_path;
-    if (!archive_->CopyFileOut(path, &new_path))
+    if (!archive_ || !archive_->CopyFileOut(path, &new_path))
       return v8::False(isolate);
     return mate::ConvertToV8(isolate, new_path);
   }
@@ -87,7 +87,7 @@ class Archive : public mate::Wrappable {
   }
 
  private:
-  scoped_refptr<asar::Archive> archive_;
+  asar::Archive* archive_;
 
   DISALLOW_COPY_AND_ASSIGN(Archive);
 };

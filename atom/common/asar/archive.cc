@@ -12,7 +12,6 @@
 #include "base/logging.h"
 #include "base/pickle.h"
 #include "base/json/json_string_value_serializer.h"
-#include "base/stl_util.h"
 #include "base/strings/string_number_conversions.h"
 
 namespace asar {
@@ -184,8 +183,8 @@ bool Archive::Readdir(const base::FilePath& path,
 }
 
 bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
-  if (ContainsKey(external_files_, path)) {
-    *out = external_files_[path]->path();
+  if (external_files_.contains(path)) {
+    *out = external_files_.get(path)->path();
     return true;
   }
 
@@ -193,12 +192,12 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
   if (!GetFileInfo(path, &info))
     return false;
 
-  scoped_refptr<ScopedTemporaryFile> temp_file(new ScopedTemporaryFile);
+  scoped_ptr<ScopedTemporaryFile> temp_file(new ScopedTemporaryFile);
   if (!temp_file->InitFromFile(path_, info.offset, info.size))
     return false;
 
-  external_files_[path] = temp_file;
   *out = temp_file->path();
+  external_files_.set(path, temp_file.Pass());
   return true;
 }
 

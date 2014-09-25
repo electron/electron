@@ -45,7 +45,9 @@ AsarProtocolHandler::AsarProtocolHandler(
     const scoped_refptr<base::TaskRunner>& file_task_runner)
     : file_task_runner_(file_task_runner) {}
 
-AsarProtocolHandler::~AsarProtocolHandler() {}
+AsarProtocolHandler::~AsarProtocolHandler() {
+  LOG(ERROR) << "~AsarProtocolHandler";
+}
 
 net::URLRequestJob* AsarProtocolHandler::MaybeCreateJob(
     net::URLRequest* request,
@@ -60,7 +62,7 @@ net::URLRequestJob* AsarProtocolHandler::MaybeCreateJob(
     return new net::URLRequestFileJob(request, network_delegate, full_path,
                                       file_task_runner_);
 
-  scoped_refptr<Archive> archive = archive_factory_.GetOrCreate(asar_path);
+  Archive* archive = archive_factory_.GetOrCreate(asar_path);
   if (!archive)
     return new net::URLRequestErrorJob(request, network_delegate,
                                        net::ERR_FILE_NOT_FOUND);
