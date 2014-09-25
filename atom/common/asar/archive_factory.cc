@@ -10,8 +10,7 @@ namespace asar {
 
 ArchiveFactory::ArchiveFactory() {}
 
-ArchiveFactory::~ArchiveFactory() {
-}
+ArchiveFactory::~ArchiveFactory() {}
 
 Archive* ArchiveFactory::GetOrCreate(const base::FilePath& path) {
   if (!archives_.contains(path)) {

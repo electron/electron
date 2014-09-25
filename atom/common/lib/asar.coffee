@@ -3,6 +3,13 @@ fs = require 'fs'
 path = require 'path'
 util = require 'util'
 
+# Cache asar archive objects.
+cachedArchives = {}
+getOrCreateArchive = (p) ->
+  unless cachedArchives[p]?
+    cachedArchives[p] = asar.createArchive p
+  cachedArchives[p]
+
 # Separate asar package's path from full path.
 splitPath = (p) ->
   components = p.split path.sep
@@ -49,7 +56,7 @@ fs.lstatSync = (p) ->
   [isAsar, asarPath, filePath] = splitPath p
   return lstatSync p unless isAsar
 
-  archive = asar.createArchive asarPath
+  archive = getOrCreateArchive asarPath
   throw new Error("Invalid package #{asarPath}") unless archive
 
   stats = archive.stat filePath
@@ -62,10 +69,10 @@ fs.lstat = (p, callback) ->
   [isAsar, asarPath, filePath] = splitPath p
   return lstat p, callback unless isAsar
 
-  archive = asar.createArchive asarPath
+  archive = getOrCreateArchive asarPath
   return callback throw new Error("Invalid package #{asarPath}") unless archive
 
-  stats = asar.createArchive(asarPath).stat filePath
+  stats = getOrCreateArchive(asarPath).stat filePath
   return callback createNotFoundError(asarPath, filePath) unless stats
 
   callback undefined, asarStatsToFsStats stats
@@ -91,9 +98,9 @@ fs.statSyncNoException = (p) ->
   [isAsar, asarPath, filePath] = splitPath p
   return statSyncNoException p unless isAsar
 
-  archive = asar.createArchive asarPath
+  archive = getOrCreateArchive asarPath
   return false unless archive
-  stats = asar.createArchive(asarPath).stat filePath
+  stats = archive.stat filePath
   return false unless stats
   asarStatsToFsStats stats
 
@@ -102,7 +109,7 @@ fs.exists = (p, callback) ->
   [isAsar, asarPath, filePath] = splitPath p
   return exists p, callback unless isAsar
 
-  archive = asar.createArchive asarPath
+  archive = getOrCreateArchive asarPath
   return callback throw new Error("Invalid package #{asarPath}") unless archive
 
   callback archive.stat(filePath) isnt false
@@ -112,7 +119,7 @@ fs.existsSync = (p) ->
   [isAsar, asarPath, filePath] = splitPath p
   return existsSync p unless isAsar
 
-  archive = asar.createArchive asarPath
+  archive = getOrCreateArchive asarPath
   return false unless archive
 
   archive.stat(filePath) isnt false
@@ -122,7 +129,7 @@ fs.readFile = (p, options, callback) ->
   [isAsar, asarPath, filePath] = splitPath p
   return readFile.apply this, arguments unless isAsar
 
-  archive = asar.createArchive asarPath
+  archive = getOrCreateArchive asarPath
   return callback throw new Error("Invalid package #{asarPath}") unless archive
 
   info = archive.getFileInfo filePath
@@ -154,7 +161,7 @@ fs.readFileSync = (p, options) ->
   [isAsar, asarPath, filePath] = splitPath p
   return readFileSync.apply this, arguments unless isAsar
 
-  archive = asar.createArchive asarPath
+  archive = getOrCreateArchive asarPath
   throw new Error("Invalid package #{asarPath}") unless archive
 
   info = archive.getFileInfo filePath
@@ -185,7 +192,7 @@ fs.readdir = (p, callback) ->
   [isAsar, asarPath, filePath] = splitPath p
   return readdir.apply this, arguments unless isAsar
 
-  archive = asar.createArchive asarPath
+  archive = getOrCreateArchive asarPath
   return callback throw new Error("Invalid package #{asarPath}") unless archive
 
   files = archive.readdir filePath
@@ -199,7 +206,7 @@ fs.readdirSync = (p) ->
   [isAsar, asarPath, filePath] = splitPath p
   return readdirSync.apply this, arguments unless isAsar
 
-  archive = asar.createArchive asarPath
+  archive = getOrCreateArchive asarPath
   throw new Error("Invalid package #{asarPath}") unless archive
 
   files = archive.readdir filePath

@@ -20,16 +20,15 @@ class Archive : public mate::Wrappable {
  public:
   static v8::Handle<v8::Value> Create(v8::Isolate* isolate,
                                       const base::FilePath& path) {
-    static asar::ArchiveFactory archive_factory;
-    asar::Archive* archive = archive_factory.GetOrCreate(path);
-    if (!archive)
+    scoped_ptr<asar::Archive> archive(new asar::Archive(path));
+    if (!archive->Init())
       return v8::False(isolate);
-    return (new Archive(archive))->GetWrapper(isolate);
+    return (new Archive(archive.Pass()))->GetWrapper(isolate);
   }
 
  protected:
-  explicit Archive(asar::Archive* archive) : archive_(archive) {}
-  virtual ~Archive() {}
+  explicit Archive(scoped_ptr<asar::Archive> archive)
+      : archive_(archive.Pass()) {}
 
   // Reads the offset and size of file.
   v8::Handle<v8::Value> GetFileInfo(v8::Isolate* isolate,
@@ -87,7 +86,7 @@ class Archive : public mate::Wrappable {
   }
 
  private:
-  asar::Archive* archive_;
+  scoped_ptr<asar::Archive> archive_;
 
   DISALLOW_COPY_AND_ASSIGN(Archive);
 };
