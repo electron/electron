@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "base/containers/hash_tables.h"
 #include "base/files/file_path.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/scoped_ptr.h"
@@ -17,6 +18,10 @@ class DictionaryValue;
 
 namespace asar {
 
+class ScopedTemporaryFile;
+
+// This class represents an asar package, and provides methods to read
+// information from it.
 class Archive : public base::RefCounted<Archive> {
  public:
   struct FileInfo {
@@ -46,6 +51,9 @@ class Archive : public base::RefCounted<Archive> {
   // Fs.readdir(path).
   bool Readdir(const base::FilePath& path, std::vector<base::FilePath>* files);
 
+  // Copy the file into a temporary file, and return the new path.
+  bool CopyFileOut(const base::FilePath& path, base::FilePath* out);
+
   base::FilePath path() const { return path_; }
   base::DictionaryValue* header() const { return header_.get(); }
 
@@ -56,6 +64,10 @@ class Archive : public base::RefCounted<Archive> {
   base::FilePath path_;
   uint32 header_size_;
   scoped_ptr<base::DictionaryValue> header_;
+
+  // Cached external temporary files.
+  base::hash_map<base::FilePath,  // NOLINT
+                 scoped_refptr<ScopedTemporaryFile> > external_files_;
 
   DISALLOW_COPY_AND_ASSIGN(Archive);
 };

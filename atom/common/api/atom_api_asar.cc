@@ -67,13 +67,23 @@ class Archive : public mate::Wrappable {
     return mate::ConvertToV8(isolate, files);
   }
 
+  // Copy the file out into a temporary file and returns the new path.
+  v8::Handle<v8::Value> CopyFileOut(v8::Isolate* isolate,
+                                    const base::FilePath& path) {
+    base::FilePath new_path;
+    if (!archive_->CopyFileOut(path, &new_path))
+      return v8::False(isolate);
+    return mate::ConvertToV8(isolate, new_path);
+  }
+
   // mate::Wrappable:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate) {
     return mate::ObjectTemplateBuilder(isolate)
         .SetValue("path", archive_->path())
         .SetMethod("getFileInfo", &Archive::GetFileInfo)
         .SetMethod("stat", &Archive::Stat)
-        .SetMethod("readdir", &Archive::Readdir);
+        .SetMethod("readdir", &Archive::Readdir)
+        .SetMethod("copyFileOut", &Archive::CopyFileOut);
   }
 
  private:

@@ -196,6 +196,8 @@
       'atom/common/asar/archive.h',
       'atom/common/asar/archive_factory.cc',
       'atom/common/asar/archive_factory.h',
+      'atom/common/asar/scoped_temporary_file.cc',
+      'atom/common/asar/scoped_temporary_file.h',
       'atom/common/common_message_generator.cc',
       'atom/common/common_message_generator.h',
       'atom/common/crash_reporter/crash_reporter.cc',
