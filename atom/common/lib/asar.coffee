@@ -18,14 +18,11 @@ process.on 'exit', ->
 
 # Separate asar package's path from full path.
 splitPath = (p) ->
-  return [false, p] unless typeof p is 'string'
-  components = p.split path.sep
-  for c, i in components by -1
-    if path.extname(c) is '.asar'
-      asarPath = components.slice(0, i + 1).join path.sep
-      filePath = components.slice(i + 1).join path.sep
-      return [true, asarPath, filePath]
-  return [false, p]
+  return [false] if typeof p isnt 'string'
+  return [true, p, ''] if p.substr(-5) is '.asar'
+  index = p.lastIndexOf ".asar#{path.sep}"
+  return [false] if index is -1
+  [true, p.substr(0, index + 5), p.substr(index + 6)]
 
 # Convert asar archive's Stats object to fs's Stats object.
 nextInode = 0
