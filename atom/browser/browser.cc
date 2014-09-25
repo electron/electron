@@ -37,6 +37,8 @@ void Browser::Quit() {
 }
 
 void Browser::Shutdown() {
+  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnQuit());
+
   is_quiting_ = true;
   base::MessageLoop::current()->Quit();
 }
