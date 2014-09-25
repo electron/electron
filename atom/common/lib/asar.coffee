@@ -1,4 +1,5 @@
 asar = process.atomBinding 'asar'
+child_process = require 'child_process'
 fs = require 'fs'
 path = require 'path'
 util = require 'util'
@@ -218,15 +219,26 @@ fs.readdirSync = (p) ->
 
   files
 
-dlopen = process.dlopen
-require('module')._extensions['.node'] = process.dlopen = (module, p) ->
-  [isAsar, asarPath, filePath] = splitPath p
-  return dlopen.apply this, arguments unless isAsar
+# Override APIs that rely on passing file path instead of content to C++.
+overrideAPI = (module, name, arg = 0) ->
+  old = module[name]
+  module[name] = ->
+    p = arguments[arg]
+    [isAsar, asarPath, filePath] = splitPath p
+    return old.apply this, arguments unless isAsar
 
-  archive = getOrCreateArchive asarPath
-  throw new Error("Invalid package #{asarPath}") unless archive
+    archive = getOrCreateArchive asarPath
+    throw new Error("Invalid package #{asarPath}") unless archive
 
-  newPath = archive.copyFileOut filePath
-  throw createNotFoundError(asarPath, filePath) unless newPath
+    newPath = archive.copyFileOut filePath
+    throw createNotFoundError(asarPath, filePath) unless newPath
 
-  dlopen module, newPath
+    arguments[arg] = newPath
+    old.apply this, arguments
+
+overrideAPI process, 'dlopen', 1
+overrideAPI require('module')._extensions, '.node', 1
+overrideAPI fs, 'open'
+overrideAPI fs, 'openSync'
+overrideAPI child_process, 'fork'
+overrideAPI child_process, 'execFile'

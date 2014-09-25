@@ -4,6 +4,8 @@
 
 #include "atom/common/asar/scoped_temporary_file.h"
 
+#include <vector>
+
 #include "base/file_util.h"
 #include "base/threading/thread_restrictions.h"
 
