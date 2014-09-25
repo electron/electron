@@ -5,7 +5,8 @@
 #ifndef ATOM_BROWSER_NET_ASAR_ASAR_PROTOCOL_HANDLER_H_
 #define ATOM_BROWSER_NET_ASAR_ASAR_PROTOCOL_HANDLER_H_
 
-#include "atom/common/asar/archive_factory.h"
+#include "base/containers/scoped_ptr_hash_map.h"
+#include "base/files/file_path.h"
 #include "base/memory/ref_counted.h"
 #include "net/url_request/url_request_job_factory.h"
 
@@ -15,11 +16,15 @@ class TaskRunner;
 
 namespace asar {
 
+class Archive;
+
 class AsarProtocolHandler : public net::URLRequestJobFactory::ProtocolHandler {
  public:
   explicit AsarProtocolHandler(
       const scoped_refptr<base::TaskRunner>& file_task_runner);
   virtual ~AsarProtocolHandler();
+
+  Archive* GetOrCreateAsarArchive(const base::FilePath& path) const;
 
   // net::URLRequestJobFactory::ProtocolHandler:
   virtual net::URLRequestJob* MaybeCreateJob(
@@ -30,7 +35,7 @@ class AsarProtocolHandler : public net::URLRequestJobFactory::ProtocolHandler {
  private:
   const scoped_refptr<base::TaskRunner> file_task_runner_;
 
-  mutable ArchiveFactory archive_factory_;
+  mutable base::ScopedPtrHashMap<base::FilePath, Archive> archives_;
 
   DISALLOW_COPY_AND_ASSIGN(AsarProtocolHandler);
 };

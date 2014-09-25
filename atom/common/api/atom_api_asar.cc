@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "atom/common/asar/archive.h"
-#include "atom/common/asar/archive_factory.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
