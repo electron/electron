@@ -220,3 +220,16 @@ fs.readdirSync = (p) ->
   throw createNotFoundError(asarPath, filePath) unless files
 
   files
+
+dlopen = process.dlopen
+require('module')._extensions['.node'] = process.dlopen = (module, p) ->
+  [isAsar, asarPath, filePath] = splitPath p
+  return dlopen.apply this, arguments unless isAsar
+
+  archive = getOrCreateArchive asarPath
+  throw new Error("Invalid package #{asarPath}") unless archive
+
+  newPath = archive.copyFileOut filePath
+  throw createNotFoundError(asarPath, filePath) unless newPath
+
+  dlopen module, newPath
