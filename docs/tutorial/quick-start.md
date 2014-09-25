@@ -8,8 +8,8 @@ a variant of the Node.js runtime which is focused on desktop applications
 instead of web servers.
 
 It doesn't mean atom-shell is a JavaScript binding to GUI libraries. Instead,
-atom-shell uses web pages as its GUI, so you could also see it as a minimal Chromium
-browser, controlled by JavaScript.
+atom-shell uses web pages as its GUI, so you could also see it as a minimal
+Chromium browser, controlled by JavaScript.
 
 ### The browser side
 
@@ -18,9 +18,11 @@ are two types of JavaScript scripts: the server side scripts and the client side
 scripts. Server-side JavaScript is that which runs on the Node.js
 runtime, while client-side JavaScript runs inside the user's browser.
 
-In atom-shell we have similar concepts: Since atom-shell displays a GUI by showing
-web pages, we have **scripts that run in the web page**, and also **scripts run by the atom-shell runtime**, which creates those web pages.
-Like Node.js, we call them **client scripts**, and **browser scripts** (meaning the browser replaces the concept of the server here).
+In atom-shell we have similar concepts: Since atom-shell displays a GUI by
+showing web pages, we have **scripts that run in the web page**, and also
+**scripts run by the atom-shell runtime**, which creates those web pages.
+Like Node.js, we call them **client scripts**, and **browser scripts**
+(meaning the browser replaces the concept of the server here).
 
 In traditional Node.js applications, communication between server and
 client is usually facilitated via web sockets. In atom-shell, we have provided
@@ -30,19 +32,20 @@ support.
 
 ### Web page and Node.js
 
-Normal web pages are designed to not reach outside of the browser, which makes them
-unsuitable for interacting with native systems. Atom-shell provides Node.js APIs
-in web pages so you can access native resources from web pages, just like
+Normal web pages are designed to not reach outside of the browser, which makes
+them unsuitable for interacting with native systems. Atom-shell provides Node.js
+APIs in web pages so you can access native resources from web pages, just like
 [Node-Webkit](https://github.com/rogerwang/node-webkit).
 
 But unlike Node-Webkit, you cannot do native GUI related operations in web
-pages. Instead you need to do them on the browser side by sending messages to it, or
-using the easy [remote](../api/remote.md) module.
+pages. Instead you need to do them on the browser side by sending messages to
+it, or using the easy [remote](../api/remote.md) module.
 
 
 ## Write your first atom-shell app
 
-Generally, an atom-shell app would be structured like this (see the   [hello-atom](https://github.com/dougnukem/hello-atom) repo for reference):
+Generally, an atom-shell app would be structured like this (see the
+[hello-atom](https://github.com/dougnukem/hello-atom) repo for reference):
 
 ```text
 your-app/
@@ -51,10 +54,10 @@ your-app/
 └── index.html
 ```
 
-The format of `package.json` is exactly the same as that of Node's modules, and the
-script specified by the `main` field is the startup script of your app, which
-will run on the browser side. An example of your `package.json` might look like
-this:
+The format of `package.json` is exactly the same as that of Node's modules, and
+the script specified by the `main` field is the startup script of your app,
+which will run on the browser side. An example of your `package.json` might look
+like this:
 
 ```json
 {
@@ -123,8 +126,8 @@ Finally the `index.html` is the web page you want to show:
 
 After you're done writing your app, you can create a distribution by
 following the [Application distribution](./application-distribution.md) guide
-and then execute the packaged app. 
-You can also just use the downloaded atom-shell binary to execute your app directly.
+and then execute the packaged app. You can also just use the downloaded
+atom-shell binary to execute your app directly.
 
 On Windows:
 
@@ -144,4 +147,5 @@ On Mac OS X:
 $ ./Atom.app/Contents/MacOS/Atom your-app/
 ```
 
-`Atom.app` here is part of the atom-shell's release package, you can download it from [here](https://github.com/atom/atom-shell/releases).
+`Atom.app` here is part of the atom-shell's release package, you can download
+it from [here](https://github.com/atom/atom-shell/releases).
