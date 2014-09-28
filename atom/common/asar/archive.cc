@@ -18,14 +18,31 @@ namespace asar {
 
 namespace {
 
-bool GetChildNode(const std::string& name,
-                  const base::DictionaryValue* root,
+bool GetNodeFromPath(std::string path,
+                     const base::DictionaryValue* root,
+                     const base::DictionaryValue** out);
+
+// Gets sub-file "name" from "dir".
+bool GetChildNode(const base::DictionaryValue* root,
+                  const std::string& name,
+                  const base::DictionaryValue* dir,
                   const base::DictionaryValue** out) {
+  // Test for symbol linked directory.
+  std::string link;
+  if (dir->GetStringWithoutPathExpansion("link", &link)) {
+    const base::DictionaryValue* linked_node = NULL;
+    if (!GetNodeFromPath(link, root, &linked_node))
+      return false;
+    dir = linked_node;
+  }
+
+  // Otherwise search for the "files" map.
   const base::DictionaryValue* files = NULL;
-  return root->GetDictionaryWithoutPathExpansion("files", &files) &&
+  return dir->GetDictionaryWithoutPathExpansion("files", &files) &&
          files->GetDictionaryWithoutPathExpansion(name, out);
 }
 
+// Gets the node of "path" from "root".
 bool GetNodeFromPath(std::string path,
                      const base::DictionaryValue* root,
                      const base::DictionaryValue** out) {
@@ -34,18 +51,19 @@ bool GetNodeFromPath(std::string path,
     return true;
   }
 
+  const base::DictionaryValue* dir = root;
   for (size_t delimiter_position = path.find('/');
        delimiter_position != std::string::npos;
        delimiter_position = path.find('/')) {
     const base::DictionaryValue* child = NULL;
-    if (!GetChildNode(path.substr(0, delimiter_position), root, &child))
+    if (!GetChildNode(root, path.substr(0, delimiter_position), dir, &child))
       return false;
 
-    root = child;
+    dir = child;
     path.erase(0, delimiter_position + 1);
   }
 
-  return GetChildNode(path, root, out);
+  return GetChildNode(root, path, dir, out);
 }
 
 bool FillFileInfoWithNode(Archive::FileInfo* info,
