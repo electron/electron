@@ -29,3 +29,28 @@ describe 'asar package', ->
         p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
         throws = -> fs.readFileSync p
         assert.throws throws, /ENOENT/
+
+    describe 'fs.readFile', ->
+      it 'reads a normal file', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar', 'file1'
+        fs.readFile p, (err, content) ->
+          assert.equal String(content), 'file1\n'
+          done()
+
+      it 'reads a linked file', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar', 'link1'
+        fs.readFile p, (err, content) ->
+          assert.equal String(content), 'file1\n'
+          done()
+
+      it 'reads a file from linked directory', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar', 'link2', 'link2', 'file1'
+        fs.readFile p, (err, content) ->
+          assert.equal String(content), 'file1\n'
+          done()
+
+      it 'throws ENOENT error when can not find a file', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
+        fs.readFile p, (err, content) ->
+          assert.equal err.code, 'ENOENT'
+          done()
