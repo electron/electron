@@ -129,6 +129,7 @@ fs.existsSync = (p) ->
 
   archive.stat(filePath) isnt false
 
+open = fs.open
 readFile = fs.readFile
 fs.readFile = (p, options, callback) ->
   [isAsar, asarPath, filePath] = splitPath p
@@ -155,12 +156,13 @@ fs.readFile = (p, options, callback) ->
   encoding = options.encoding
 
   buffer = new Buffer(info.size)
-  fs.open archive.path, flag, (error, fd) ->
+  open archive.path, flag, (error, fd) ->
     return callback error if error
     fs.read fd, buffer, 0, info.size, info.offset, (error) ->
       fs.close fd, ->
         callback error, if encoding then buffer.toString encoding else buffer
 
+openSync = fs.openSync
 readFileSync = fs.readFileSync
 fs.readFileSync = (p, options) ->
   [isAsar, asarPath, filePath] = splitPath p
@@ -183,7 +185,7 @@ fs.readFileSync = (p, options) ->
   encoding = options.encoding
 
   buffer = new Buffer(info.size)
-  fd = fs.openSync archive.path, flag
+  fd = openSync archive.path, flag
   try
     fs.readSync fd, buffer, 0, info.size, info.offset
   catch e
