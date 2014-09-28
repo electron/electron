@@ -135,15 +135,15 @@ fs.readFile = (p, options, callback) ->
   [isAsar, asarPath, filePath] = splitPath p
   return readFile.apply this, arguments unless isAsar
 
+  if typeof options is 'function'
+    callback = options
+    options = undefined
+
   archive = getOrCreateArchive asarPath
   return callback throw new Error("Invalid package #{asarPath}") unless archive
 
   info = archive.getFileInfo filePath
   return callback createNotFoundError(asarPath, filePath) unless info
-
-  if typeof options is 'function'
-    callback = options
-    options = undefined
 
   if not options
     options = encoding: null, flag: 'r'
