@@ -80,7 +80,7 @@ fs.lstat = (p, callback) ->
   stats = getOrCreateArchive(asarPath).stat filePath
   return callback createNotFoundError(asarPath, filePath) unless stats
 
-  callback null, asarStatsToFsStats stats
+  process.nextTick -> callback null, asarStatsToFsStats stats
 
 statSync = fs.statSync
 fs.statSync = (p) ->
@@ -96,7 +96,7 @@ fs.stat = (p, callback) ->
   return stat p, callback unless isAsar
 
   # Do not distinguish links for now.
-  fs.lstat p, callback
+  process.nextTick -> fs.lstat p, callback
 
 statSyncNoException = fs.statSyncNoException
 fs.statSyncNoException = (p) ->
@@ -117,7 +117,7 @@ fs.exists = (p, callback) ->
   archive = getOrCreateArchive asarPath
   return callback throw new Error("Invalid package #{asarPath}") unless archive
 
-  callback archive.stat(filePath) isnt false
+  process.nextTick -> callback archive.stat(filePath) isnt false
 
 existsSync = fs.existsSync
 fs.existsSync = (p) ->
@@ -205,8 +205,7 @@ fs.readdir = (p, callback) ->
   files = archive.readdir filePath
   return callback createNotFoundError(asarPath, filePath) unless files
 
-  process.nextTick ->
-    callback null, files
+  process.nextTick -> callback null, files
 
 readdirSync = fs.readdirSync
 fs.readdirSync = (p) ->
