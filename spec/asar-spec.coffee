@@ -214,3 +214,18 @@ describe 'asar package', ->
         stats = fs.readdir p, (err, stats) ->
           assert.equal err.code, 'ENOENT'
           done()
+
+    describe 'fs.openSync', ->
+      it 'opens a normal/linked/under-linked-directory file', ->
+        for file in ['file1', 'link1', path.join('link2', 'file1')]
+          p = path.join fixtures, 'asar', 'a.asar', file
+          fd = fs.openSync p, 'r'
+          buffer = new Buffer(6)
+          fs.readSync fd, buffer, 0, 6, 0
+          assert.equal String(buffer), 'file1\n'
+          fs.closeSync fd
+
+      it 'throws ENOENT error when can not find file', ->
+        p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
+        throws = -> fs.openSync p
+        assert.throws throws, /ENOENT/
