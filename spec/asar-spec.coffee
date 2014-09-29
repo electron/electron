@@ -162,7 +162,7 @@ describe 'asar package', ->
 
       it 'throws ENOENT error when can not find file', (done) ->
         p = path.join fixtures, 'asar', 'a.asar', 'file4'
-        fs.lstat p, (err, stats) ->
+        stats = fs.lstat p, (err, stats) ->
           assert.equal err.code, 'ENOENT'
           done()
 
@@ -170,7 +170,7 @@ describe 'asar package', ->
       it 'reads dirs from root', ->
         p = path.join fixtures, 'asar', 'a.asar'
         dirs = fs.readdirSync p
-        assert.deepEqual dirs, ['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2']
+        assert.deepEqual dirs, ['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js']
 
       it 'reads dirs from a normal dir', ->
         p = path.join fixtures, 'asar', 'a.asar', 'dir1'
@@ -192,7 +192,7 @@ describe 'asar package', ->
         p = path.join fixtures, 'asar', 'a.asar'
         dirs = fs.readdir p, (err, dirs) ->
           assert.equal err, null
-          assert.deepEqual dirs, ['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2']
+          assert.deepEqual dirs, ['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js']
           done()
 
       it 'reads dirs from a normal dir', (done) ->
@@ -246,3 +246,18 @@ describe 'asar package', ->
         fs.open p, (err, stats) ->
           assert.equal err.code, 'ENOENT'
           done()
+
+    describe 'child_process.fork', ->
+      child_process = require 'child_process'
+
+      it 'opens a normal js file', (done) ->
+        child = child_process.fork path.join(fixtures, 'asar', 'a.asar', 'ping.js')
+        child.on 'message', (msg) ->
+          assert.equal msg, 'message'
+          done()
+        child.send 'message'
+
+      it 'throws ENOENT error when can not find file', ->
+        p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
+        throws = -> child_process.fork p
+        assert.throws throws, /ENOENT/
