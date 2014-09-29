@@ -34,18 +34,21 @@ describe 'asar package', ->
       it 'reads a normal file', (done) ->
         p = path.join fixtures, 'asar', 'a.asar', 'file1'
         fs.readFile p, (err, content) ->
+          assert.equal err, null
           assert.equal String(content), 'file1\n'
           done()
 
       it 'reads a linked file', (done) ->
         p = path.join fixtures, 'asar', 'a.asar', 'link1'
         fs.readFile p, (err, content) ->
+          assert.equal err, null
           assert.equal String(content), 'file1\n'
           done()
 
       it 'reads a file from linked directory', (done) ->
         p = path.join fixtures, 'asar', 'a.asar', 'link2', 'link2', 'file1'
         fs.readFile p, (err, content) ->
+          assert.equal err, null
           assert.equal String(content), 'file1\n'
           done()
 
@@ -97,3 +100,50 @@ describe 'asar package', ->
           p = path.join fixtures, 'asar', 'a.asar', file
           throws = -> fs.lstatSync p
           assert.throws throws, /ENOENT/
+
+    describe 'fs.lstat', ->
+      it 'returns information of a normal file', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar', 'link2', 'file1'
+        stats = fs.lstat p, (err, stats) ->
+          assert.equal err, null
+          assert.equal stats.isFile(), true
+          assert.equal stats.isDirectory(), false
+          assert.equal stats.isSymbolicLink(), false
+          assert.equal stats.size, 6
+          done()
+
+      it 'returns information of a normal directory', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar', 'dir1'
+        stats = fs.lstat p, (err, stats) ->
+          assert.equal err, null
+          assert.equal stats.isFile(), false
+          assert.equal stats.isDirectory(), true
+          assert.equal stats.isSymbolicLink(), false
+          assert.equal stats.size, 0
+          done()
+
+      it 'returns information of a linked file', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar', 'link2', 'link1'
+        stats = fs.lstat p, (err, stats) ->
+          assert.equal err, null
+          assert.equal stats.isFile(), false
+          assert.equal stats.isDirectory(), false
+          assert.equal stats.isSymbolicLink(), true
+          assert.equal stats.size, 0
+          done()
+
+      it 'returns information of a linked directory', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar', 'link2', 'link2'
+        stats = fs.lstat p, (err, stats) ->
+          assert.equal err, null
+          assert.equal stats.isFile(), false
+          assert.equal stats.isDirectory(), false
+          assert.equal stats.isSymbolicLink(), true
+          assert.equal stats.size, 0
+          done()
+
+      it 'throws ENOENT error when can not find a file', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar', 'file4'
+        stats = fs.lstat p, (err, stats) ->
+          assert.equal err.code, 'ENOENT'
+          done()
