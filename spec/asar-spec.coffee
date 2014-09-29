@@ -54,3 +54,46 @@ describe 'asar package', ->
         fs.readFile p, (err, content) ->
           assert.equal err.code, 'ENOENT'
           done()
+
+    describe 'fs.lstatSync', ->
+      it 'returns information of a normal file', ->
+        for file in ['file1', 'file2', 'file3', path.join('dir1', 'file1'), path.join('link2', 'file1')]
+          p = path.join fixtures, 'asar', 'a.asar', file
+          stats = fs.lstatSync p
+          assert.equal stats.isFile(), true
+          assert.equal stats.isDirectory(), false
+          assert.equal stats.isSymbolicLink(), false
+          assert.equal stats.size, 6
+
+      it 'returns information of a normal directory', ->
+        for file in ['dir1', 'dir2', 'dir3']
+          p = path.join fixtures, 'asar', 'a.asar', file
+          stats = fs.lstatSync p
+          assert.equal stats.isFile(), false
+          assert.equal stats.isDirectory(), true
+          assert.equal stats.isSymbolicLink(), false
+          assert.equal stats.size, 0
+
+      it 'returns information of a linked file', ->
+        for file in ['link1', path.join('dir1', 'link1'), path.join('link2', 'link2')]
+          p = path.join fixtures, 'asar', 'a.asar', file
+          stats = fs.lstatSync p
+          assert.equal stats.isFile(), false
+          assert.equal stats.isDirectory(), false
+          assert.equal stats.isSymbolicLink(), true
+          assert.equal stats.size, 0
+
+      it 'returns information of a linked directory', ->
+        for file in ['link2', path.join('dir1', 'link2'), path.join('link2', 'link2')]
+          p = path.join fixtures, 'asar', 'a.asar', file
+          stats = fs.lstatSync p
+          assert.equal stats.isFile(), false
+          assert.equal stats.isDirectory(), false
+          assert.equal stats.isSymbolicLink(), true
+          assert.equal stats.size, 0
+
+      it 'throws ENOENT error when can not find a file', ->
+        for file in ['file4', 'file5', path.join('dir1', 'file4')]
+          p = path.join fixtures, 'asar', 'a.asar', file
+          throws = -> fs.lstatSync p
+          assert.throws throws, /ENOENT/
