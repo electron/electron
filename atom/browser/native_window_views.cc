@@ -499,7 +499,7 @@ void NativeWindowViews::SetProgressBar(double progress) {
   } else if (progress >= 0) {
     taskbar->SetProgressValue(frame,
                               static_cast<int>(progress * 100),
-                              progress);
+                              100);
   }
 #elif defined(USE_X11)
   if (unity::IsRunning()) {
