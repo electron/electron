@@ -22,9 +22,8 @@ bool GetNodeFromPath(std::string path,
                      const base::DictionaryValue* root,
                      const base::DictionaryValue** out);
 
-// Gets sub-file "name" from "dir".
-bool GetChildNode(const base::DictionaryValue* root,
-                  const std::string& name,
+// Gets the "files" from "dir".
+bool GetFilesNode(const base::DictionaryValue* root,
                   const base::DictionaryValue* dir,
                   const base::DictionaryValue** out) {
   // Test for symbol linked directory.
@@ -36,9 +35,16 @@ bool GetChildNode(const base::DictionaryValue* root,
     dir = linked_node;
   }
 
-  // Otherwise search for the "files" map.
+  return dir->GetDictionaryWithoutPathExpansion("files", out);
+}
+
+// Gets sub-file "name" from "dir".
+bool GetChildNode(const base::DictionaryValue* root,
+                  const std::string& name,
+                  const base::DictionaryValue* dir,
+                  const base::DictionaryValue** out) {
   const base::DictionaryValue* files = NULL;
-  return dir->GetDictionaryWithoutPathExpansion("files", &files) &&
+  return GetFilesNode(root, dir, &files) &&
          files->GetDictionaryWithoutPathExpansion(name, out);
 }
 
@@ -189,7 +195,7 @@ bool Archive::Readdir(const base::FilePath& path,
     return false;
 
   const base::DictionaryValue* files;
-  if (!node->GetDictionaryWithoutPathExpansion("files", &files))
+  if (!GetFilesNode(header_.get(), node, &files))
     return false;
 
   base::DictionaryValue::Iterator iter(*files);
