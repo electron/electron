@@ -59,6 +59,14 @@ describe 'asar package', ->
           done()
 
     describe 'fs.lstatSync', ->
+      it 'returns information of root', ->
+        p = path.join fixtures, 'asar', 'a.asar'
+        stats = fs.lstatSync p
+        assert.equal stats.isFile(), false
+        assert.equal stats.isDirectory(), true
+        assert.equal stats.isSymbolicLink(), false
+        assert.equal stats.size, 0
+
       it 'returns information of a normal file', ->
         for file in ['file1', 'file2', 'file3', path.join('dir1', 'file1'), path.join('link2', 'file1')]
           p = path.join fixtures, 'asar', 'a.asar', file
@@ -102,6 +110,16 @@ describe 'asar package', ->
           assert.throws throws, /ENOENT/
 
     describe 'fs.lstat', ->
+      it 'returns information of root', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar'
+        stats = fs.lstat p, (err, stats) ->
+          assert.equal err, null
+          assert.equal stats.isFile(), false
+          assert.equal stats.isDirectory(), true
+          assert.equal stats.isSymbolicLink(), false
+          assert.equal stats.size, 0
+          done()
+
       it 'returns information of a normal file', (done) ->
         p = path.join fixtures, 'asar', 'a.asar', 'link2', 'file1'
         stats = fs.lstat p, (err, stats) ->
