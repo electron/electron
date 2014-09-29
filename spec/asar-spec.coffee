@@ -25,7 +25,7 @@ describe 'asar package', ->
         p = path.join fixtures, 'asar', 'a.asar', 'link2', 'link2', 'file1'
         assert.equal fs.readFileSync(p).toString(), 'file1\n'
 
-      it 'throws ENOENT error when can not find a file', ->
+      it 'throws ENOENT error when can not find file', ->
         p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
         throws = -> fs.readFileSync p
         assert.throws throws, /ENOENT/
@@ -52,7 +52,7 @@ describe 'asar package', ->
           assert.equal String(content), 'file1\n'
           done()
 
-      it 'throws ENOENT error when can not find a file', (done) ->
+      it 'throws ENOENT error when can not find file', (done) ->
         p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
         fs.readFile p, (err, content) ->
           assert.equal err.code, 'ENOENT'
@@ -103,7 +103,7 @@ describe 'asar package', ->
           assert.equal stats.isSymbolicLink(), true
           assert.equal stats.size, 0
 
-      it 'throws ENOENT error when can not find a file', ->
+      it 'throws ENOENT error when can not find file', ->
         for file in ['file4', 'file5', path.join('dir1', 'file4')]
           p = path.join fixtures, 'asar', 'a.asar', file
           throws = -> fs.lstatSync p
@@ -160,7 +160,7 @@ describe 'asar package', ->
           assert.equal stats.size, 0
           done()
 
-      it 'throws ENOENT error when can not find a file', (done) ->
+      it 'throws ENOENT error when can not find file', (done) ->
         p = path.join fixtures, 'asar', 'a.asar', 'file4'
         stats = fs.lstat p, (err, stats) ->
           assert.equal err.code, 'ENOENT'
@@ -181,3 +181,36 @@ describe 'asar package', ->
         p = path.join fixtures, 'asar', 'a.asar', 'link2', 'link2'
         dirs = fs.readdirSync p
         assert.deepEqual dirs, ['file1', 'file2', 'file3', 'link1', 'link2']
+
+      it 'throws ENOENT error when can not find file', ->
+        p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
+        throws = -> fs.readdirSync p
+        assert.throws throws, /ENOENT/
+
+    describe 'fs.readdir', ->
+      it 'reads dirs from root', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar'
+        dirs = fs.readdir p, (err, dirs) ->
+          assert.equal err, null
+          assert.deepEqual dirs, ['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2']
+          done()
+
+      it 'reads dirs from a normal dir', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar', 'dir1'
+        dirs = fs.readdir p, (err, dirs) ->
+          assert.equal err, null
+          assert.deepEqual dirs, ['file1', 'file2', 'file3', 'link1', 'link2']
+          done()
+
+      it 'reads dirs from a linked dir', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar', 'link2', 'link2'
+        dirs = fs.readdir p, (err, dirs) ->
+          assert.equal err, null
+          assert.deepEqual dirs, ['file1', 'file2', 'file3', 'link1', 'link2']
+          done()
+
+      it 'throws ENOENT error when can not find file', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
+        stats = fs.readdir p, (err, stats) ->
+          assert.equal err.code, 'ENOENT'
+          done()
