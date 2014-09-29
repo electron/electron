@@ -147,3 +147,19 @@ describe 'asar package', ->
         stats = fs.lstat p, (err, stats) ->
           assert.equal err.code, 'ENOENT'
           done()
+
+    describe 'fs.readdirSync', ->
+      it 'reads dirs from root', ->
+        p = path.join fixtures, 'asar', 'a.asar'
+        dirs = fs.readdirSync p
+        assert.deepEqual dirs, ['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2']
+
+      it 'reads dirs from a normal dir', ->
+        p = path.join fixtures, 'asar', 'a.asar', 'dir1'
+        dirs = fs.readdirSync p
+        assert.deepEqual dirs, ['file1', 'file2', 'file3', 'link1', 'link2']
+
+      it 'reads dirs from a linked dir', ->
+        p = path.join fixtures, 'asar', 'a.asar', 'link2', 'link2'
+        dirs = fs.readdirSync p
+        assert.deepEqual dirs, ['file1', 'file2', 'file3', 'link1', 'link2']
