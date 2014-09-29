@@ -221,7 +221,7 @@ fs.readdirSync = (p) ->
   files
 
 # Override APIs that rely on passing file path instead of content to C++.
-overrideAPI = (module, name, arg = 0) ->
+overrideAPISync = (module, name, arg = 0) ->
   old = module[name]
   module[name] = ->
     p = arguments[arg]
@@ -237,9 +237,28 @@ overrideAPI = (module, name, arg = 0) ->
     arguments[arg] = newPath
     old.apply this, arguments
 
-overrideAPI process, 'dlopen', 1
-overrideAPI require('module')._extensions, '.node', 1
+overrideAPI = (module, name, arg = 0) ->
+  old = module[name]
+  module[name] = ->
+    p = arguments[arg]
+    [isAsar, asarPath, filePath] = splitPath p
+    return old.apply this, arguments unless isAsar
+
+    callback = arguments[arguments.length - 1]
+    return overrideAPISync module, name, arg unless typeof callback is 'function'
+
+    archive = getOrCreateArchive asarPath
+    return callback new Error("Invalid package #{asarPath}") unless archive
+
+    newPath = archive.copyFileOut filePath
+    return callback  createNotFoundError(asarPath, filePath) unless newPath
+
+    arguments[arg] = newPath
+    old.apply this, arguments
+
 overrideAPI fs, 'open'
-overrideAPI fs, 'openSync'
-overrideAPI child_process, 'fork'
 overrideAPI child_process, 'execFile'
+overrideAPISync process, 'dlopen', 1
+overrideAPISync require('module')._extensions, '.node', 1
+overrideAPISync fs, 'openSync'
+overrideAPISync child_process, 'fork'
