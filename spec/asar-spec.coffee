@@ -162,7 +162,7 @@ describe 'asar package', ->
 
       it 'throws ENOENT error when can not find file', (done) ->
         p = path.join fixtures, 'asar', 'a.asar', 'file4'
-        stats = fs.lstat p, (err, stats) ->
+        fs.lstat p, (err, stats) ->
           assert.equal err.code, 'ENOENT'
           done()
 
@@ -211,7 +211,7 @@ describe 'asar package', ->
 
       it 'throws ENOENT error when can not find file', (done) ->
         p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
-        stats = fs.readdir p, (err, stats) ->
+        fs.readdir p, (err, stats) ->
           assert.equal err.code, 'ENOENT'
           done()
 
@@ -229,3 +229,20 @@ describe 'asar package', ->
         p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
         throws = -> fs.openSync p
         assert.throws throws, /ENOENT/
+
+    describe 'fs.open', ->
+      it 'opens a normal file', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar', 'file1'
+        fs.open p, 'r', (err, fd) ->
+          assert.equal err, null
+          buffer = new Buffer(6)
+          fs.read fd, buffer, 0, 6, 0, (err) ->
+            assert.equal err, null
+            assert.equal String(buffer), 'file1\n'
+            fs.close fd, done
+
+      it 'throws ENOENT error when can not find file', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
+        fs.open p, (err, stats) ->
+          assert.equal err.code, 'ENOENT'
+          done()
