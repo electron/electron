@@ -80,7 +80,7 @@ fs.lstat = (p, callback) ->
   stats = getOrCreateArchive(asarPath).stat filePath
   return callback createNotFoundError(asarPath, filePath) unless stats
 
-  callback undefined, asarStatsToFsStats stats
+  callback null, asarStatsToFsStats stats
 
 statSync = fs.statSync
 fs.statSync = (p) ->
@@ -206,7 +206,7 @@ fs.readdir = (p, callback) ->
   return callback createNotFoundError(asarPath, filePath) unless files
 
   process.nextTick ->
-    callback undefined, files
+    callback null, files
 
 readdirSync = fs.readdirSync
 fs.readdirSync = (p) ->
