@@ -261,3 +261,30 @@ describe 'asar package', ->
         p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
         throws = -> child_process.fork p
         assert.throws throws, /ENOENT/
+
+  describe 'asar protocol', ->
+    it 'can request a file in package', (done) ->
+      p = path.resolve fixtures, 'asar', 'a.asar', 'file1'
+      $.get "asar:#{p}", (data) ->
+        assert.equal data, 'file1\n'
+        done()
+
+    it 'can request a linked file in package', (done) ->
+      p = path.resolve fixtures, 'asar', 'a.asar', 'link2', 'link1'
+      $.get "asar:#{p}", (data) ->
+        assert.equal data, 'file1\n'
+        done()
+
+    it 'can request a file in filesystem', (done) ->
+      p = path.resolve fixtures, 'asar', 'file'
+      $.get "asar:#{p}", (data) ->
+        assert.equal data, 'file\n'
+        done()
+
+    it 'gets 404 when file is not found', (done) ->
+      p = path.resolve fixtures, 'asar', 'a.asar', 'no-exist'
+      $.ajax
+        url: "asar:#{p}"
+        error: (err) ->
+          assert.equal err.status, 404
+          done()
