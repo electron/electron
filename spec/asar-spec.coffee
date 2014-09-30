@@ -166,6 +166,43 @@ describe 'asar package', ->
           assert.equal err.code, 'ENOENT'
           done()
 
+    describe 'fs.realpathSync', ->
+      it 'returns real path root', ->
+        parent = fs.realpathSync path.join(fixtures, 'asar')
+        p = 'a.asar'
+        r = fs.realpathSync path.join(parent, p)
+        assert.equal r, path.join(parent, p)
+
+      it 'returns real path of a normal file', ->
+        parent = fs.realpathSync path.join(fixtures, 'asar')
+        p = path.join 'a.asar', 'file1'
+        r = fs.realpathSync path.join(parent, p)
+        assert.equal r, path.join(parent, p)
+
+      it 'returns real path of a normal directory', ->
+        parent = fs.realpathSync path.join(fixtures, 'asar')
+        p = path.join 'a.asar', 'dir1'
+        r = fs.realpathSync path.join(parent, p)
+        assert.equal r, path.join(parent, p)
+
+      it 'returns real path of a linked file', ->
+        parent = fs.realpathSync path.join(fixtures, 'asar')
+        p = path.join 'a.asar', 'link2', 'link1'
+        r = fs.realpathSync path.join(parent, p)
+        assert.equal r, path.join(parent, 'a.asar', 'file1')
+
+      it 'returns real path of a linked directory', ->
+        parent = fs.realpathSync path.join(fixtures, 'asar')
+        p = path.join 'a.asar', 'link2', 'link2'
+        r = fs.realpathSync path.join(parent, p)
+        assert.equal r, path.join(parent, 'a.asar', 'dir1')
+
+      it 'throws ENOENT error when can not find file', ->
+        parent = fs.realpathSync path.join(fixtures, 'asar')
+        p = path.join 'a.asar', 'not-exist'
+        throws = -> fs.realpathSync path.join(parent, p)
+        assert.throws throws, /ENOENT/
+
     describe 'fs.readdirSync', ->
       it 'reads dirs from root', ->
         p = path.join fixtures, 'asar', 'a.asar'
