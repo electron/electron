@@ -1,7 +1,7 @@
 {
   'variables': {
     'clang': 0,
-    'node_module_version': 14,
+    'openssl_no_asm': 1,
     'conditions': [
       ['OS=="mac" or OS=="linux"', {
         'clang': 1,
@@ -100,10 +100,6 @@
       ['_target_name in ["node_lib", "atom_lib"]', {
         'include_dirs': [
           'vendor/brightray/vendor/download/libchromiumcontent/src/v8/include',
-        ],
-        'defines': [
-          # Override NODE_MODULE_VERSION
-          'NODE_MODULE_VERSION=<(node_module_version)',
         ],
       }],
       ['_target_name=="libuv"', {

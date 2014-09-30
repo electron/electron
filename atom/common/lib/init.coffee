@@ -6,7 +6,7 @@ process.atomBinding = (name) ->
   try
     process.binding "atom_#{process.type}_#{name}"
   catch e
-    process.binding "atom_common_#{name}" if e.message is 'No such module'
+    process.binding "atom_common_#{name}" if /No such module/.test e.message
 
 # Add common/api/lib to module search paths.
 globalPaths = Module.globalPaths
