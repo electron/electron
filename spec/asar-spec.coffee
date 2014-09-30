@@ -203,6 +203,54 @@ describe 'asar package', ->
         throws = -> fs.realpathSync path.join(parent, p)
         assert.throws throws, /ENOENT/
 
+    describe 'fs.realpath', ->
+      it 'returns real path root', (done) ->
+        parent = fs.realpathSync path.join(fixtures, 'asar')
+        p = 'a.asar'
+        fs.realpath path.join(parent, p), (err, r) ->
+          assert.equal err, null
+          assert.equal r, path.join(parent, p)
+          done()
+
+      it 'returns real path of a normal file', (done) ->
+        parent = fs.realpathSync path.join(fixtures, 'asar')
+        p = path.join 'a.asar', 'file1'
+        fs.realpath path.join(parent, p), (err, r) ->
+          assert.equal err, null
+          assert.equal r, path.join(parent, p)
+          done()
+
+      it 'returns real path of a normal directory', (done) ->
+        parent = fs.realpathSync path.join(fixtures, 'asar')
+        p = path.join 'a.asar', 'dir1'
+        fs.realpath path.join(parent, p), (err, r) ->
+          assert.equal err, null
+          assert.equal r, path.join(parent, p)
+          done()
+
+      it 'returns real path of a linked file', (done) ->
+        parent = fs.realpathSync path.join(fixtures, 'asar')
+        p = path.join 'a.asar', 'link2', 'link1'
+        fs.realpath path.join(parent, p), (err, r) ->
+          assert.equal err, null
+          assert.equal r, path.join(parent, 'a.asar', 'file1')
+          done()
+
+      it 'returns real path of a linked directory', (done) ->
+        parent = fs.realpathSync path.join(fixtures, 'asar')
+        p = path.join 'a.asar', 'link2', 'link2'
+        fs.realpath path.join(parent, p), (err, r) ->
+          assert.equal err, null
+          assert.equal r, path.join(parent, 'a.asar', 'dir1')
+          done()
+
+      it 'throws ENOENT error when can not find file', (done) ->
+        parent = fs.realpathSync path.join(fixtures, 'asar')
+        p = path.join 'a.asar', 'not-exist'
+        fs.realpath path.join(parent, p), (err, stats) ->
+          assert.equal err.code, 'ENOENT'
+          done()
+
     describe 'fs.readdirSync', ->
       it 'reads dirs from root', ->
         p = path.join fixtures, 'asar', 'a.asar'
