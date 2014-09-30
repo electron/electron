@@ -7,7 +7,7 @@
 
 #include "node_version.h"
 
-#if (NODE_MODULE_VERSION > 0x000B) // Node 0.11+
+#if NODE_VERSION_AT_LEAST(0, 11, 0)
 
 #define MATE_HANDLE_SCOPE(isolate) v8::HandleScope handle_scope(isolate)
 
