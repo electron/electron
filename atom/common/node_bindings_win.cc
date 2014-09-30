@@ -39,7 +39,7 @@ void NodeBindingsWin::PollEvents() {
     ULONG_PTR key;
     OVERLAPPED* overlapped;
 
-    timeout = uv_get_poll_timeout(uv_loop_);
+    timeout = uv_backend_timeout(uv_loop_);
     GetQueuedCompletionStatus(uv_loop_->iocp,
                               &bytes,
                               &key,
