@@ -122,6 +122,25 @@ fs.realpathSync = (p) ->
 
   path.join realpathSync(asarPath), real
 
+realpath = fs.realpath
+fs.realpath = (p, cache, callback) ->
+  [isAsar, asarPath, filePath] = splitPath p
+  return realpath.apply this, arguments unless isAsar
+
+  if typeof cache is 'function'
+    callback = cache
+    cache = undefined
+
+  archive = getOrCreateArchive asarPath
+  return callback new Error("Invalid package #{asarPath}") unless archive
+
+  real = archive.realpath filePath
+  return callback createNotFoundError(asarPath, filePath) unless real
+
+  realpath asarPath, (err, p) ->
+    return callback err if err
+    callback null, path.join(p, real)
+
 exists = fs.exists
 fs.exists = (p, callback) ->
   [isAsar, asarPath, filePath] = splitPath p
