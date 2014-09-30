@@ -1,7 +1,7 @@
 {
   'variables': {
     'clang': 0,
-    'node_module_version': 15,
+    'node_module_version': 14,
     'conditions': [
       ['OS=="mac" or OS=="linux"', {
         'clang': 1,
