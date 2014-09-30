@@ -118,7 +118,7 @@ fs.realpathSync = (p) ->
   throw new Error("Invalid package #{asarPath}") unless archive
 
   real = archive.realpath filePath
-  throw createNotFoundError(asarPath, filePath) unless real
+  throw createNotFoundError(asarPath, filePath) if real is false
 
   path.join realpathSync(asarPath), real
 
@@ -135,7 +135,7 @@ fs.realpath = (p, cache, callback) ->
   return callback new Error("Invalid package #{asarPath}") unless archive
 
   real = archive.realpath filePath
-  return callback createNotFoundError(asarPath, filePath) unless real
+  return callback createNotFoundError(asarPath, filePath) if real is false
 
   realpath asarPath, (err, p) ->
     return callback err if err
