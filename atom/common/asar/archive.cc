@@ -18,6 +18,12 @@ namespace asar {
 
 namespace {
 
+#if defined(OS_WIN)
+const char kSeparators[] = "\\/";
+#else
+const char kSeparators[] = "/";
+#endif
+
 bool GetNodeFromPath(std::string path,
                      const base::DictionaryValue* root,
                      const base::DictionaryValue** out);
@@ -58,9 +64,9 @@ bool GetNodeFromPath(std::string path,
   }
 
   const base::DictionaryValue* dir = root;
-  for (size_t delimiter_position = path.find('/');
+  for (size_t delimiter_position = path.find_first_of(kSeparators);
        delimiter_position != std::string::npos;
-       delimiter_position = path.find('/')) {
+       delimiter_position = path.find_first_of(kSeparators)) {
     const base::DictionaryValue* child = NULL;
     if (!GetChildNode(root, path.substr(0, delimiter_position), dir, &child))
       return false;
