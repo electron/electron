@@ -51,6 +51,9 @@ class Archive {
   // Fs.readdir(path).
   bool Readdir(const base::FilePath& path, std::vector<base::FilePath>* files);
 
+  // Fs.realpath(path).
+  bool Realpath(const base::FilePath& path, base::FilePath* realpath);
+
   // Copy the file into a temporary file, and return the new path.
   bool CopyFileOut(const base::FilePath& path, base::FilePath* out);
 

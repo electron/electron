@@ -75,7 +75,7 @@ fs.lstat = (p, callback) ->
   return lstat p, callback unless isAsar
 
   archive = getOrCreateArchive asarPath
-  return callback throw new Error("Invalid package #{asarPath}") unless archive
+  return callback new Error("Invalid package #{asarPath}") unless archive
 
   stats = getOrCreateArchive(asarPath).stat filePath
   return callback createNotFoundError(asarPath, filePath) unless stats
@@ -109,13 +109,26 @@ fs.statSyncNoException = (p) ->
   return false unless stats
   asarStatsToFsStats stats
 
+realpathSync = fs.realpathSync
+fs.realpathSync = (p) ->
+  [isAsar, asarPath, filePath] = splitPath p
+  return realpathSync.apply this, arguments unless isAsar
+
+  archive = getOrCreateArchive asarPath
+  throw new Error("Invalid package #{asarPath}") unless archive
+
+  real = archive.realpath filePath
+  throw createNotFoundError(asarPath, filePath) unless real
+
+  path.join realpathSync(asarPath), real
+
 exists = fs.exists
 fs.exists = (p, callback) ->
   [isAsar, asarPath, filePath] = splitPath p
   return exists p, callback unless isAsar
 
   archive = getOrCreateArchive asarPath
-  return callback throw new Error("Invalid package #{asarPath}") unless archive
+  return callback new Error("Invalid package #{asarPath}") unless archive
 
   process.nextTick -> callback archive.stat(filePath) isnt false
 
@@ -140,7 +153,7 @@ fs.readFile = (p, options, callback) ->
     options = undefined
 
   archive = getOrCreateArchive asarPath
-  return callback throw new Error("Invalid package #{asarPath}") unless archive
+  return callback new Error("Invalid package #{asarPath}") unless archive
 
   info = archive.getFileInfo filePath
   return callback createNotFoundError(asarPath, filePath) unless info
@@ -200,7 +213,7 @@ fs.readdir = (p, callback) ->
   return readdir.apply this, arguments unless isAsar
 
   archive = getOrCreateArchive asarPath
-  return callback throw new Error("Invalid package #{asarPath}") unless archive
+  return callback new Error("Invalid package #{asarPath}") unless archive
 
   files = archive.readdir filePath
   return callback createNotFoundError(asarPath, filePath) unless files

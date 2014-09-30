@@ -206,6 +206,24 @@ bool Archive::Readdir(const base::FilePath& path,
   return true;
 }
 
+bool Archive::Realpath(const base::FilePath& path, base::FilePath* realpath) {
+  if (!header_)
+    return false;
+
+  const base::DictionaryValue* node;
+  if (!GetNodeFromPath(path.AsUTF8Unsafe(), header_.get(), &node))
+    return false;
+
+  std::string link;
+  if (node->GetString("link", &link)) {
+    *realpath = base::FilePath::FromUTF8Unsafe(link);
+    return true;
+  }
+
+  *realpath = path;
+  return true;
+}
+
 bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
   if (external_files_.contains(path)) {
     *out = external_files_.get(path)->path();

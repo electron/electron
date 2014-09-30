@@ -65,6 +65,15 @@ class Archive : public mate::Wrappable {
     return mate::ConvertToV8(isolate, files);
   }
 
+  // Returns the path of file with symbol link resolved.
+  v8::Handle<v8::Value> Realpath(v8::Isolate* isolate,
+                                 const base::FilePath& path) {
+    base::FilePath realpath;
+    if (!archive_ || !archive_->Realpath(path, &realpath))
+      return v8::False(isolate);
+    return mate::ConvertToV8(isolate, realpath);
+  }
+
   // Copy the file out into a temporary file and returns the new path.
   v8::Handle<v8::Value> CopyFileOut(v8::Isolate* isolate,
                                     const base::FilePath& path) {
@@ -86,6 +95,7 @@ class Archive : public mate::Wrappable {
         .SetMethod("getFileInfo", &Archive::GetFileInfo)
         .SetMethod("stat", &Archive::Stat)
         .SetMethod("readdir", &Archive::Readdir)
+        .SetMethod("realpath", &Archive::Realpath)
         .SetMethod("copyFileOut", &Archive::CopyFileOut)
         .SetMethod("destroy", &Archive::Destroy);
   }
