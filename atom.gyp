@@ -539,6 +539,7 @@
             'vendor/breakpad/src',
           ],
           'cflags': [
+            '-Wno-deprecated-declarations',
             '-Wno-empty-body',
           ],
           'dependencies': [
