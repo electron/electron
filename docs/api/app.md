@@ -45,6 +45,10 @@ terminating the application.
 See description of `window-all-closed` for the differences between `will-quit`
 and it.
 
+## Event: quit
+
+Emitted when application is quitting.
+
 ## Event: open-file
 
 * `event` Event

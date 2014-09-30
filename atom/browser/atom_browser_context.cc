@@ -6,6 +6,7 @@
 
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
+#include "atom/browser/net/asar/asar_protocol_handler.h"
 #include "base/threading/sequenced_worker_pool.h"
 #include "base/threading/worker_pool.h"
 #include "chrome/browser/browser_process.h"
@@ -19,6 +20,12 @@
 using content::BrowserThread;
 
 namespace atom {
+
+namespace {
+
+const char* kAsarScheme = "asar";
+
+}  // namespace
 
 AtomBrowserContext::AtomBrowserContext()
     : fake_browser_process_(new BrowserProcess),
@@ -42,6 +49,10 @@ net::URLRequestJobFactory* AtomBrowserContext::CreateURLRequestJobFactory(
       url::kDataScheme, new net::DataProtocolHandler);
   job_factory->SetProtocolHandler(
       url::kFileScheme, new net::FileProtocolHandler(
+          BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
+              base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
+  job_factory->SetProtocolHandler(
+      kAsarScheme, new asar::AsarProtocolHandler(
           BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
               base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
 

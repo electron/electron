@@ -36,6 +36,7 @@ class App : public mate::EventEmitter,
   // BrowserObserver implementations:
   virtual void OnWillQuit(bool* prevent_default) OVERRIDE;
   virtual void OnWindowAllClosed() OVERRIDE;
+  virtual void OnQuit() OVERRIDE;
   virtual void OnOpenFile(bool* prevent_default,
                           const std::string& file_path) OVERRIDE;
   virtual void OnOpenURL(const std::string& url) OVERRIDE;

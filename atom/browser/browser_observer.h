@@ -18,6 +18,9 @@ class BrowserObserver {
   // method will not be called, instead it will call OnWillQuit.
   virtual void OnWindowAllClosed() {}
 
+  // The browser is quitting.
+  virtual void OnQuit() {}
+
   // The browser has opened a file by double clicking in Finder or dragging the
   // file to the Dock icon. (OS X only)
   virtual void OnOpenFile(bool* prevent_default,

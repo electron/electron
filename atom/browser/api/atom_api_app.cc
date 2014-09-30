@@ -91,6 +91,10 @@ void App::OnWindowAllClosed() {
   Emit("window-all-closed");
 }
 
+void App::OnQuit() {
+  Emit("quit");
+}
+
 void App::OnOpenFile(bool* prevent_default, const std::string& file_path) {
   base::ListValue args;
   args.AppendString(file_path);
