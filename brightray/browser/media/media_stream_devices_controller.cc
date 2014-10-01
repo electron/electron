@@ -6,6 +6,7 @@
 
 #include "browser/media/media_capture_devices_dispatcher.h"
 
+#include "content/public/browser/desktop_media_id.h"
 #include "content/public/common/media_stream_request.h"
 
 namespace brightray {
@@ -47,6 +48,15 @@ MediaStreamDevicesController::~MediaStreamDevicesController() {
 }
 
 bool MediaStreamDevicesController::TakeAction() {
+  // Do special handling of desktop screen cast.
+  if (request_.audio_type == content::MEDIA_TAB_AUDIO_CAPTURE ||
+      request_.video_type == content::MEDIA_TAB_VIDEO_CAPTURE ||
+      request_.audio_type == content::MEDIA_LOOPBACK_AUDIO_CAPTURE ||
+      request_.video_type == content::MEDIA_DESKTOP_VIDEO_CAPTURE) {
+    HandleUserMediaRequest();
+    return true;
+  }
+
   // Deny the request if there is no device attached to the OS.
   if (!HasAnyAvailableDevice()) {
     Deny();
@@ -145,6 +155,45 @@ void MediaStreamDevicesController::Deny() {
   cb.Run(content::MediaStreamDevices(),
          content::MEDIA_DEVICE_PERMISSION_DENIED,
          scoped_ptr<content::MediaStreamUI>());
+}
+
+void MediaStreamDevicesController::HandleUserMediaRequest() {
+  content::MediaStreamDevices devices;
+
+  if (request_.audio_type == content::MEDIA_TAB_AUDIO_CAPTURE) {
+    devices.push_back(content::MediaStreamDevice(
+        content::MEDIA_TAB_AUDIO_CAPTURE, "", ""));
+  }
+  if (request_.video_type == content::MEDIA_TAB_VIDEO_CAPTURE) {
+    devices.push_back(content::MediaStreamDevice(
+        content::MEDIA_TAB_VIDEO_CAPTURE, "", ""));
+  }
+  if (request_.audio_type == content::MEDIA_LOOPBACK_AUDIO_CAPTURE) {
+    devices.push_back(content::MediaStreamDevice(
+        content::MEDIA_LOOPBACK_AUDIO_CAPTURE, "loopback", "System Audio"));
+  }
+  if (request_.video_type == content::MEDIA_DESKTOP_VIDEO_CAPTURE) {
+    content::DesktopMediaID screen_id;
+    // If the device id wasn't specified then this is a screen capture request
+    // (i.e. chooseDesktopMedia() API wasn't used to generate device id).
+    if (request_.requested_video_device_id.empty()) {
+      screen_id = content::DesktopMediaID(content::DesktopMediaID::TYPE_SCREEN,
+                                          -1  /* kFullDesktopScreenId */);
+    } else {
+      screen_id =
+          content::DesktopMediaID::Parse(request_.requested_video_device_id);
+    }
+
+    devices.push_back(
+        content::MediaStreamDevice(content::MEDIA_DESKTOP_VIDEO_CAPTURE,
+                                   screen_id.ToString(), "Screen"));
+  }
+
+  callback_.Run(
+      devices,
+      devices.empty() ? content::MEDIA_DEVICE_INVALID_STATE :
+                        content::MEDIA_DEVICE_OK,
+      scoped_ptr<content::MediaStreamUI>());
 }
 
 }  // namespace brightray
