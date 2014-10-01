@@ -189,11 +189,12 @@ void MediaStreamDevicesController::HandleUserMediaRequest() {
                                    screen_id.ToString(), "Screen"));
   }
 
-  callback_.Run(
-      devices,
-      devices.empty() ? content::MEDIA_DEVICE_INVALID_STATE :
-                        content::MEDIA_DEVICE_OK,
-      scoped_ptr<content::MediaStreamUI>());
+  content::MediaResponseCallback cb = callback_;
+  callback_.Reset();
+  cb.Run(devices,
+         devices.empty() ? content::MEDIA_DEVICE_INVALID_STATE :
+                           content::MEDIA_DEVICE_OK,
+         scoped_ptr<content::MediaStreamUI>());
 }
 
 }  // namespace brightray
