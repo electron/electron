@@ -75,6 +75,9 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
 
   for (size_t i = 0; i < buttons.size(); ++i) {
     NSString* title = base::SysUTF8ToNSString(buttons[i]);
+    // An empty title causes crash on OS X.
+    if (buttons[i].empty())
+      title = @"(empty)";
     NSButton* button = [alert addButtonWithTitle:title];
     [button setTag:i];
   }
