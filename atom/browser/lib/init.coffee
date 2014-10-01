@@ -67,6 +67,7 @@ setImmediate ->
     try
       packagePath = path.join process.resourcesPath, packagePath
       packageJson = JSON.parse(fs.readFileSync(path.join(packagePath, 'package.json')))
+      break
     catch e
       continue
 
