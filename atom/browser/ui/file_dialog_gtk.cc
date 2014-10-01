@@ -21,6 +21,7 @@
 #include "chrome/browser/ui/libgtk2ui/gtk2_signal.h"
 #include "ui/aura/window.h"
 #include "ui/aura/window_tree_host.h"
+#include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
 
 namespace file_dialog {
 
@@ -114,6 +115,11 @@ class FileChooserDialog {
     g_signal_connect(dialog_, "response",
                      G_CALLBACK(OnFileDialogResponseThunk), this);
     gtk_widget_show_all(dialog_);
+
+    // We need to call gtk_window_present after making the widgets visible to
+    // make sure window gets correctly raised and gets focus.
+    int time = views::X11DesktopHandler::get()->wm_user_time_ms();
+    gtk_window_present_with_time(GTK_WINDOW(dialog_), time);
   }
 
   void RunSaveAsynchronous(const SaveDialogCallback& callback) {
