@@ -159,7 +159,6 @@ void MediaCaptureDevicesDispatcher::OnAudioStreamStopped(
 void MediaCaptureDevicesDispatcher::OnCreatingAudioStream(
     int render_process_id,
     int render_view_id) {
-  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
 }
 
 }  // namespace brightray

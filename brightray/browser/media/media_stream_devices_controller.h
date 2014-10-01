@@ -26,6 +26,9 @@ class MediaStreamDevicesController {
   void Deny();
 
  private:
+  // Handle the request of desktop or tab screen cast.
+  void HandleUserMediaRequest();
+
   // The original request for access to devices.
   const content::MediaStreamRequest request_;
 
