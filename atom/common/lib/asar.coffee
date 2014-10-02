@@ -30,6 +30,9 @@ nextInode = 0
 uid = if process.getuid? then process.getuid() else 0
 gid = if process.getgid? then process.getgid() else 0
 asarStatsToFsStats = (stats) ->
+  
+  fakeTime = new Date();
+  
   {
     dev: 1,
     ino: ++nextInode,
@@ -38,10 +41,10 @@ asarStatsToFsStats = (stats) ->
     uid: uid,
     gid: gid,
     rdev: 0,
-    atime: stats.atime || new Date(),
-    birthtime: stats.birthtime || new Date(),
-    mtime: stats.mtime || new Date(),
-    ctime: stats.ctime || new Date(),
+    atime: stats.atime || fakeTime,
+    birthtime: stats.birthtime || fakeTime,
+    mtime: stats.mtime || fakeTime,
+    ctime: stats.ctime || fakeTime,
     size: stats.size,
     isFile: -> stats.isFile
     isDirectory: -> stats.isDirectory
