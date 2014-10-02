@@ -29,9 +29,9 @@ splitPath = (p) ->
 nextInode = 0
 uid = if process.getuid? then process.getuid() else 0
 gid = if process.getgid? then process.getgid() else 0
+fakeTime = new Date();
+
 asarStatsToFsStats = (stats) ->
-  
-  fakeTime = new Date();
   
   {
     dev: 1,
