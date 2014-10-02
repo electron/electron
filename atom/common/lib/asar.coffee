@@ -38,7 +38,11 @@ asarStatsToFsStats = (stats) ->
     uid: uid,
     gid: gid,
     rdev: 0,
-    size: stats.size
+    atime: stats.atime || new Date(),
+    birthtime: stats.birthtime || new Date(),
+    mtime: stats.mtime || new Date(),
+    ctime: stats.ctime || new Date(),
+    size: stats.size,
     isFile: -> stats.isFile
     isDirectory: -> stats.isDirectory
     isSymbolicLink: -> stats.isLink
