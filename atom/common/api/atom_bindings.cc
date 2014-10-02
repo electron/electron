@@ -8,6 +8,7 @@
 #include <string>
 
 #include "atom/common/atom_version.h"
+#include "atom/common/chrome_version.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/logging.h"
 #include "native_mate/callback.h"
@@ -78,9 +79,12 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
       base::Bind(&AtomBindings::ActivateUVLoop, base::Unretained(this)));
 
   v8::Handle<v8::Object> versions;
-  if (dict.Get("versions", &versions))
+  if (dict.Get("versions", &versions)) {
     versions->Set(mate::StringToV8(isolate, "atom-shell"),
                   mate::StringToV8(isolate, ATOM_VERSION_STRING));
+    versions->Set(mate::StringToV8(isolate, "chrome"),
+                  mate::StringToV8(isolate, CHROME_VERSION_STRING));
+  }
 }
 
 void AtomBindings::ActivateUVLoop(v8::Isolate* isolate) {
