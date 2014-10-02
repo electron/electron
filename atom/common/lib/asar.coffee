@@ -32,7 +32,6 @@ gid = if process.getgid? then process.getgid() else 0
 fakeTime = new Date();
 
 asarStatsToFsStats = (stats) ->
-  
   {
     dev: 1,
     ino: ++nextInode,
