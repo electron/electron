@@ -97,6 +97,7 @@
       'conditions': [
         ['OS=="linux"', {
           'cflags_cc': [
+            '-Wno-deprecated-declarations',
             '-fno-rtti',
           ],
           'link_settings': {
