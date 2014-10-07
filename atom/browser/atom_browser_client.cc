@@ -11,6 +11,7 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
 #include "chrome/browser/printing/printing_message_filter.h"
+#include "chrome/browser/speech/tts_message_filter.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/resource_dispatcher_host.h"
@@ -51,7 +52,9 @@ AtomBrowserClient::~AtomBrowserClient() {
 
 void AtomBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
+  int id = host->GetID();
   host->AddFilter(new PrintingMessageFilter(host->GetID()));
+  host->AddFilter(new TtsMessageFilter(id, host->GetBrowserContext()));
 }
 
 void AtomBrowserClient::ResourceDispatcherHostCreated() {

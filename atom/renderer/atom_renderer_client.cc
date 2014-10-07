@@ -12,6 +12,7 @@
 #include "atom/renderer/api/atom_renderer_bindings.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
+#include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_thread.h"
@@ -130,7 +131,7 @@ void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
 
 blink::WebSpeechSynthesizer* AtomRendererClient::OverrideSpeechSynthesizer(
     blink::WebSpeechSynthesizerClient* client) {
-  return NULL;
+  return new TtsDispatcher(client);
 }
 
 void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,
