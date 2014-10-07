@@ -128,6 +128,11 @@ void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
   new AtomRenderViewObserver(render_view, this);
 }
 
+blink::WebSpeechSynthesizer* AtomRendererClient::OverrideSpeechSynthesizer(
+    blink::WebSpeechSynthesizerClient* client) {
+  return NULL;
+}
+
 void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,
                                                 v8::Handle<v8::Context> context,
                                                 int extension_group,
