@@ -73,6 +73,11 @@ void AtomMainDelegate::PreSandboxStartup() {
   // Disable renderer sandbox for most of node's functions.
   command_line->AppendSwitch(switches::kNoSandbox);
 
+#if defined(OS_MACOSX)
+  // Enable AVFoundation.
+  command_line->AppendSwitch("enable-avfoundation");
+#endif
+
   // Add a flag to mark the end of switches added by atom-shell.
   command_line->AppendSwitch("atom-shell-switches-end");
 }
