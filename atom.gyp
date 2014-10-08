@@ -101,6 +101,8 @@
       'atom/browser/atom_javascript_dialog_manager.h',
       'atom/browser/atom_resource_dispatcher_host_delegate.cc',
       'atom/browser/atom_resource_dispatcher_host_delegate.h',
+      'atom/browser/atom_speech_recognition_manager_delegate.cc',
+      'atom/browser/atom_speech_recognition_manager_delegate.h',
       'atom/browser/browser.cc',
       'atom/browser/browser.h',
       'atom/browser/browser_linux.cc',

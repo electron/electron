@@ -31,6 +31,7 @@
     # files on non-linux.
     ['OS!="linux" and OS!="openbsd" and OS!="freebsd"', {
       'sources/': [
+        ['exclude', '(^|/)library_loaders/'],
         ['exclude', '_linux(_unittest)?\\.(h|cc)$'],
         ['exclude', '(^|/)linux_[^/]*\\.(h|cc)$'],
         ['exclude', '(^|/)linux/'],
