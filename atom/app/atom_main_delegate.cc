@@ -8,9 +8,11 @@
 
 #include "atom/app/atom_content_client.h"
 #include "atom/browser/atom_browser_client.h"
+#include "atom/common/google_api_key.h"
 #include "atom/renderer/atom_renderer_client.h"
 #include "base/command_line.h"
 #include "base/debug/stack_trace.h"
+#include "base/environment.h"
 #include "base/logging.h"
 #include "content/public/common/content_switches.h"
 #include "ui/base/resource/resource_bundle.h"
@@ -52,6 +54,11 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 void AtomMainDelegate::PreSandboxStartup() {
   brightray::MainDelegate::PreSandboxStartup();
 
+  // Set google API key.
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  if (!env->HasVar("GOOGLE_API_KEY"))
+    env->SetVar("GOOGLE_API_KEY", GOOGLEAPIS_API_KEY);
+
   CommandLine* command_line = CommandLine::ForCurrentProcess();
   std::string process_type = command_line->GetSwitchValueASCII(
       switches::kProcessType);
@@ -72,6 +79,11 @@ void AtomMainDelegate::PreSandboxStartup() {
 
   // Disable renderer sandbox for most of node's functions.
   command_line->AppendSwitch(switches::kNoSandbox);
+
+#if defined(OS_MACOSX)
+  // Enable AVFoundation.
+  command_line->AppendSwitch("enable-avfoundation");
+#endif
 
   // Add a flag to mark the end of switches added by atom-shell.
   command_line->AppendSwitch("atom-shell-switches-end");

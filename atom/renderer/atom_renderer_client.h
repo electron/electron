@@ -50,6 +50,8 @@ class AtomRendererClient : public content::ContentRendererClient,
   virtual void RenderThreadStarted() OVERRIDE;
   virtual void RenderFrameCreated(content::RenderFrame* render_frame) OVERRIDE;
   virtual void RenderViewCreated(content::RenderView*) OVERRIDE;
+  virtual blink::WebSpeechSynthesizer* OverrideSpeechSynthesizer(
+      blink::WebSpeechSynthesizerClient* client);
   virtual void DidCreateScriptContext(blink::WebFrame* frame,
                                       v8::Handle<v8::Context> context,
                                       int extension_group,
