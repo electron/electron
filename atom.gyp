@@ -216,6 +216,7 @@
       'atom/common/crash_reporter/win/crash_service_main.h',
       'atom/common/draggable_region.cc',
       'atom/common/draggable_region.h',
+      'atom/common/google_api_key.h',
       'atom/common/linux/application_info.cc',
       'atom/common/native_mate_converters/accelerator_converter.cc',
       'atom/common/native_mate_converters/accelerator_converter.h',
