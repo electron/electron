@@ -4,6 +4,8 @@
 
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 
+#include <string>
+
 #include "base/callback.h"
 
 namespace atom {
@@ -50,6 +52,7 @@ void AtomSpeechRecognitionManagerDelegate::OnAudioLevelsChange(
 
 void AtomSpeechRecognitionManagerDelegate::GetDiagnosticInformation(
     bool* can_report_metrics, std::string* hardware_info) {
+  *can_report_metrics = false;
 }
 
 void AtomSpeechRecognitionManagerDelegate::CheckRecognitionIsAllowed(
