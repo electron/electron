@@ -282,6 +282,7 @@
       'chromium_src/chrome/browser/speech/tts_controller.h',
       'chromium_src/chrome/browser/speech/tts_controller_impl.cc',
       'chromium_src/chrome/browser/speech/tts_controller_impl.h',
+      'chromium_src/chrome/browser/speech/tts_linux.cc',
       'chromium_src/chrome/browser/speech/tts_mac.mm',
       'chromium_src/chrome/browser/speech/tts_message_filter.cc',
       'chromium_src/chrome/browser/speech/tts_message_filter.h',
@@ -308,6 +309,7 @@
       'chromium_src/chrome/renderer/printing/print_web_view_helper.h',
       'chromium_src/chrome/renderer/tts_dispatcher.cc',
       'chromium_src/chrome/renderer/tts_dispatcher.h',
+      'chromium_src/library_loaders/libspeechd_loader.cc',
       '<@(native_mate_files)',
     ],
     'framework_sources': [
@@ -563,7 +565,7 @@
             'vendor/breakpad/src',
           ],
           'cflags': [
-            '-Wno-deprecated-declarations',
+            '-Wno-deprecated-register',
             '-Wno-empty-body',
           ],
           'dependencies': [
