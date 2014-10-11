@@ -138,9 +138,8 @@ void MediaCaptureDevicesDispatcher::OnMediaRequestStateChanged(
     int render_view_id,
     int page_request_id,
     const GURL& security_origin,
-    const content::MediaStreamDevice& device,
+    content::MediaStreamType stream_type,
     content::MediaRequestState state) {
-  DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
 }
 
 void MediaCaptureDevicesDispatcher::OnAudioStreamPlaying(

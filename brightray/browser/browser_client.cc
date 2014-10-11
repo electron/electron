@@ -69,11 +69,11 @@ net::URLRequestContextGetter* BrowserClient::CreateRequestContext(
 void BrowserClient::ShowDesktopNotification(
     const content::ShowDesktopNotificationHostMsgParams& params,
     content::RenderFrameHost* render_frame_host,
-    content::DesktopNotificationDelegate* delegate,
+    scoped_ptr<content::DesktopNotificationDelegate> delegate,
     base::Closure* cancel_callback) {
   auto presenter = notification_presenter();
   if (presenter)
-    presenter->ShowNotification(params, delegate, cancel_callback);
+    presenter->ShowNotification(params, delegate.Pass(), cancel_callback);
 }
 
 content::MediaObserver* BrowserClient::GetMediaObserver() {

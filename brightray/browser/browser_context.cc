@@ -174,4 +174,8 @@ content::PushMessagingService* BrowserContext::GetPushMessagingService() {
   return NULL;
 }
 
+content::SSLHostStateDelegate* BrowserContext::GetSSLHostStateDelegate() {
+  return nullptr;
+}
+
 }  // namespace brightray

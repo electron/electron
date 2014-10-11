@@ -96,8 +96,7 @@ class Target : public content::DevToolsTarget {
 };
 
 Target::Target(WebContents* web_contents) {
-  agent_host_ =
-      DevToolsAgentHost::GetOrCreateFor(web_contents->GetRenderViewHost());
+  agent_host_ = DevToolsAgentHost::GetOrCreateFor(web_contents);
   id_ = agent_host_->GetId();
   title_ = base::UTF16ToUTF8(web_contents->GetTitle());
   url_ = web_contents->GetURL();
@@ -109,10 +108,7 @@ Target::Target(WebContents* web_contents) {
 }
 
 bool Target::Activate() const {
-  RenderViewHost* rvh = agent_host_->GetRenderViewHost();
-  if (!rvh)
-    return false;
-  WebContents* web_contents = WebContents::FromRenderViewHost(rvh);
+  WebContents* web_contents = agent_host_->GetWebContents();
   if (!web_contents)
     return false;
   web_contents->GetDelegate()->ActivateContents(web_contents);
@@ -120,10 +116,10 @@ bool Target::Activate() const {
 }
 
 bool Target::Close() const {
-  RenderViewHost* rvh = agent_host_->GetRenderViewHost();
-  if (!rvh)
+  WebContents* web_contents = agent_host_->GetWebContents();
+  if (!web_contents)
     return false;
-  rvh->ClosePage();
+  web_contents->GetRenderViewHost()->ClosePage();
   return true;
 }
 
@@ -176,13 +172,12 @@ DevToolsDelegate::CreateNewTarget(const GURL& url) {
 
 void DevToolsDelegate::EnumerateTargets(TargetCallback callback) {
   TargetList targets;
-  std::vector<RenderViewHost*> rvh_list =
-      content::DevToolsAgentHost::GetValidRenderViewHosts();
-  for (std::vector<RenderViewHost*>::iterator it = rvh_list.begin();
-       it != rvh_list.end(); ++it) {
-    WebContents* web_contents = WebContents::FromRenderViewHost(*it);
-    if (web_contents)
-      targets.push_back(new Target(web_contents));
+  std::vector<WebContents*> wc_list =
+      content::DevToolsAgentHost::GetInspectableWebContents();
+  for (std::vector<WebContents*>::iterator it = wc_list.begin();
+       it != wc_list.end();
+       ++it) {
+    targets.push_back(new Target(*it));
   }
   callback.Run(targets);
 }

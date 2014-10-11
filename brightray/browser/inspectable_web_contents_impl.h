@@ -11,7 +11,8 @@
 #include "browser/devtools_contents_resizing_strategy.h"
 #include "browser/devtools_embedder_message_dispatcher.h"
 
-#include "content/public/browser/devtools_frontend_host_delegate.h"
+#include "content/public/browser/devtools_client_host.h"
+#include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "ui/gfx/rect.h"
@@ -20,7 +21,6 @@ class PrefRegistrySimple;
 
 namespace content {
 class DevToolsAgentHost;
-class DevToolsClientHost;
 }
 
 namespace brightray {
@@ -30,10 +30,11 @@ class InspectableWebContentsView;
 
 class InspectableWebContentsImpl :
     public InspectableWebContents,
-    content::DevToolsFrontendHostDelegate,
-    content::WebContentsObserver,
-    content::WebContentsDelegate,
-    DevToolsEmbedderMessageDispatcher::Delegate {
+    public content::DevToolsFrontendHost::Delegate,
+    public content::DevToolsClientHost,
+    public content::WebContentsObserver,
+    public content::WebContentsDelegate,
+    public DevToolsEmbedderMessageDispatcher::Delegate {
  public:
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
 
@@ -92,19 +93,19 @@ class InspectableWebContentsImpl :
   virtual void ZoomOut() OVERRIDE;
   virtual void ResetZoom() OVERRIDE;
 
-  // content::DevToolsFrontendHostDelegate
+  // content::DevToolsClientHost:
+  virtual void DispatchOnInspectorFrontend(const std::string& message) override;
+  virtual void InspectedContentsClosing() override;
+  virtual void ReplacedWithAnotherClient() override;
 
-  virtual void DispatchOnEmbedder(const std::string& message) OVERRIDE;
-  virtual void InspectedContentsClosing() OVERRIDE;
+  // content::DevToolsFrontendHostDelegate:
+  virtual void HandleMessageFromDevToolsFrontend(const std::string& message) override;
+  virtual void HandleMessageFromDevToolsFrontendToBackend(const std::string& message) override;
 
   // content::WebContentsObserver
 
-  virtual void AboutToNavigateRenderView(
-      content::RenderViewHost* render_view_host) OVERRIDE;
-  virtual void DidFinishLoad(int64 frame_id,
-                             const GURL& validated_url,
-                             bool is_main_frame,
-                             content::RenderViewHost*) OVERRIDE;
+  virtual void DidFinishLoad(content::RenderFrameHost* render_frame_host,
+                             const GURL& validated_url) OVERRIDE;
   virtual void WebContentsDestroyed() OVERRIDE;
 
   // content::WebContentsDelegate

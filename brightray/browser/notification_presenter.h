@@ -2,6 +2,7 @@
 #define BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_H_
 
 #include "base/callback_forward.h"
+#include "base/memory/scoped_ptr.h"
 
 namespace content {
 class DesktopNotificationDelegate;
@@ -18,7 +19,7 @@ class NotificationPresenter {
 
   virtual void ShowNotification(
       const content::ShowDesktopNotificationHostMsgParams&,
-      content::DesktopNotificationDelegate* delegate,
+      scoped_ptr<content::DesktopNotificationDelegate> delegate,
       base::Closure* cancel_callback) = 0;
 };
 
