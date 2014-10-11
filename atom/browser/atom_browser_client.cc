@@ -18,8 +18,8 @@
 #include "content/public/browser/resource_dispatcher_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/web_preferences.h"
 #include "ui/base/l10n/l10n_util.h"
-#include "webkit/common/webpreferences.h"
 
 namespace atom {
 
@@ -76,7 +76,7 @@ content::AccessTokenStore* AtomBrowserClient::CreateAccessTokenStore() {
 void AtomBrowserClient::OverrideWebkitPrefs(
     content::RenderViewHost* render_view_host,
     const GURL& url,
-    WebPreferences* prefs) {
+    content::WebPreferences* prefs) {
   prefs->javascript_enabled = true;
   prefs->web_security_enabled = true;
   prefs->javascript_can_open_windows_automatically = true;

@@ -17,10 +17,10 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/common/print_messages.h"
+#include "content/public/common/web_preferences.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_thread.h"
 #include "content/public/renderer/render_view.h"
-#include "content/public/renderer/web_preferences.h"
 #include "net/base/escape.h"
 #include "printing/metafile.h"
 #include "printing/metafile_impl.h"
@@ -42,7 +42,8 @@
 #include "third_party/WebKit/public/web/WebView.h"
 #include "third_party/WebKit/public/web/WebViewClient.h"
 #include "ui/base/resource/resource_bundle.h"
-#include "webkit/common/webpreferences.h"
+
+using content::WebPreferences;
 
 namespace printing {
 
@@ -547,7 +548,7 @@ void PrepareFrameAndViewForPrint::CopySelection(
 
   blink::WebView* web_view = blink::WebView::create(this);
   owns_web_view_ = true;
-  content::ApplyWebPreferences(prefs, web_view);
+  content::RenderView::ApplyWebPreferences(prefs, web_view);
   web_view->setMainFrame(blink::WebLocalFrame::create(this));
   frame_.Reset(web_view->mainFrame()->toWebLocalFrame());
   node_to_print_.reset();

@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include <set>
+#include <string>
 
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "base/bind.h"
@@ -31,14 +32,27 @@ struct Converter<std::set<T> > {
 };
 
 template<>
-struct Converter<TracingController::Options> {
+struct Converter<base::debug::CategoryFilter> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
-                     TracingController::Options* out) {
-    if (!val->IsNumber())
+                     base::debug::CategoryFilter* out) {
+    std::string filter;
+    if (!ConvertFromV8(isolate, val, &filter))
       return false;
-    *out = static_cast<TracingController::Options>(val->IntegerValue());
+    *out = base::debug::CategoryFilter(filter);
     return true;
+  }
+};
+
+template<>
+struct Converter<base::debug::TraceOptions> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
+                     base::debug::TraceOptions* out) {
+    std::string options;
+    if (!ConvertFromV8(isolate, val, &options))
+      return false;
+    return out->SetFromString(options);
   }
 };
 

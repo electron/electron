@@ -44,13 +44,13 @@
 #include "content/public/common/content_switches.h"
 #include "content/public/common/renderer_preferences.h"
 #include "content/public/common/user_agent.h"
+#include "content/public/common/web_preferences.h"
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/size.h"
-#include "webkit/common/webpreferences.h"
 
 using content::NavigationEntry;
 
@@ -248,9 +248,8 @@ bool NativeWindow::IsDevToolsOpened() {
 
 void NativeWindow::InspectElement(int x, int y) {
   OpenDevTools();
-  content::RenderViewHost* rvh = GetWebContents()->GetRenderViewHost();
   scoped_refptr<content::DevToolsAgentHost> agent(
-      content::DevToolsAgentHost::GetOrCreateFor(rvh));
+      content::DevToolsAgentHost::GetOrCreateFor(GetWebContents()));
   agent->InspectElement(x, y);
 }
 
@@ -287,7 +286,7 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
       base::Bind(&NativeWindow::OnCapturePageDone,
                  weak_factory_.GetWeakPtr(),
                  callback),
-      SkBitmap::kARGB_8888_Config);
+      kAlpha_8_SkColorType);
 }
 
 void NativeWindow::DestroyWebContents() {
@@ -368,7 +367,8 @@ void NativeWindow::AppendExtraCommandLineSwitches(
   }
 }
 
-void NativeWindow::OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs) {
+void NativeWindow::OverrideWebkitPrefs(const GURL& url,
+                                       content::WebPreferences* prefs) {
   if (web_preferences_.IsEmpty())
     return;
 

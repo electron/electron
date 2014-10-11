@@ -52,11 +52,8 @@ class WebContents : public mate::EventEmitter,
   // content::WebContentsObserver implementations:
   virtual void RenderViewDeleted(content::RenderViewHost*) OVERRIDE;
   virtual void RenderProcessGone(base::TerminationStatus status) OVERRIDE;
-  virtual void DidFinishLoad(
-      int64 frame_id,
-      const GURL& validated_url,
-      bool is_main_frame,
-      content::RenderViewHost* render_view_host) OVERRIDE;
+  virtual void DidFinishLoad(content::RenderFrameHost* render_frame_host,
+                             const GURL& validated_url) OVERRIDE;
   virtual void DidStartLoading(
       content::RenderViewHost* render_view_host) OVERRIDE;
   virtual void DidStopLoading(

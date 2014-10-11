@@ -35,10 +35,10 @@ void WebContents::RenderProcessGone(base::TerminationStatus status) {
   Emit("crashed");
 }
 
-void WebContents::DidFinishLoad(int64 frame_id,
-                                const GURL& validated_url,
-                                bool is_main_frame,
-                                content::RenderViewHost* render_view_host) {
+void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
+                                const GURL& validated_url) {
+  bool is_main_frame = !render_frame_host->GetParent();
+
   base::ListValue args;
   args.AppendBoolean(is_main_frame);
   Emit("did-frame-finish-load", args);
