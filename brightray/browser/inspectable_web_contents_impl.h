@@ -102,8 +102,8 @@ class InspectableWebContentsImpl :
   virtual void HandleMessageFromDevToolsFrontend(const std::string& message) override;
   virtual void HandleMessageFromDevToolsFrontendToBackend(const std::string& message) override;
 
-  // content::WebContentsObserver
-
+  // content::WebContentsObserver:
+  virtual void AboutToNavigateRenderView(content::RenderViewHost* render_view_host) override;
   virtual void DidFinishLoad(content::RenderFrameHost* render_frame_host,
                              const GURL& validated_url) OVERRIDE;
   virtual void WebContentsDestroyed() OVERRIDE;
@@ -120,10 +120,10 @@ class InspectableWebContentsImpl :
   virtual void CloseContents(content::WebContents* source) OVERRIDE;
 
   scoped_ptr<content::WebContents> web_contents_;
-  scoped_ptr<content::DevToolsClientHost> frontend_host_;
   scoped_ptr<content::WebContents> devtools_web_contents_;
   scoped_ptr<InspectableWebContentsView> view_;
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
+  scoped_ptr<content::DevToolsFrontendHost> frontend_host_;
 
   DevToolsContentsResizingStrategy contents_resizing_strategy_;
   gfx::Rect devtools_bounds_;

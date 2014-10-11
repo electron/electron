@@ -165,8 +165,9 @@ void InspectableWebContentsImpl::ShowDevTools() {
     devtools_web_contents_->SetDelegate(this);
 
     agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(web_contents_.get());
-    content::DevToolsManager::GetInstance()->RegisterDevToolsClientHostFor(
-        agent_host_, this);
+    frontend_host_.reset(content::DevToolsFrontendHost::Create(
+        web_contents_->GetRenderViewHost(), this));
+    content::DevToolsManager::GetInstance()->RegisterDevToolsClientHostFor(agent_host_, this);
 
     GURL devtools_url(kChromeUIDevToolsURL);
     devtools_web_contents_->GetController().LoadURL(
@@ -321,6 +322,12 @@ void InspectableWebContentsImpl::InspectedContentsClosing() {
 }
 
 void InspectableWebContentsImpl::ReplacedWithAnotherClient() {
+}
+
+void InspectableWebContentsImpl::AboutToNavigateRenderView(
+    content::RenderViewHost* render_view_host) {
+  frontend_host_.reset(content::DevToolsFrontendHost::Create(
+      render_view_host, this));
 }
 
 void InspectableWebContentsImpl::DidFinishLoad(content::RenderFrameHost* render_frame_host,
