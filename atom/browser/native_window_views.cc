@@ -67,9 +67,12 @@ int kWindowsCreated = 0;
 bool ShouldUseGlobalMenuBar() {
   // Some DE would pretend to be Unity but don't have global application menu,
   // so we can not trust unity::IsRunning().
+  // When Unity's GlobalMenu is running $UBUNTU_MENUPROXY should be set to
+  // something like "libappmenu.so".
   scoped_ptr<base::Environment> env(base::Environment::Create());
-  return unity::IsRunning() && (base::nix::GetDesktopEnvironment(env.get()) ==
-      base::nix::DESKTOP_ENVIRONMENT_UNITY);
+  std::string name;
+  return env && env->GetVar("UBUNTU_MENUPROXY", &name) &&
+         !name.empty() && name != "0";
 }
 #endif
 
