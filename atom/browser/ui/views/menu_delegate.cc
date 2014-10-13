@@ -35,14 +35,13 @@ void MenuDelegate::RunMenu(ui::MenuModel* model, views::MenuButton* button) {
   id_ = button->tag();
   views::MenuItemView* item = BuildMenu(model);
 
-  views::MenuRunner menu_runner(item);
+  views::MenuRunner menu_runner(item, views::MenuRunner::CONTEXT_MENU);
   ignore_result(menu_runner.RunMenuAt(
       button->GetWidget()->GetTopLevelWidget(),
       button,
       bounds,
       views::MENU_ANCHOR_TOPRIGHT,
-      ui::MENU_SOURCE_MOUSE,
-      views::MenuRunner::HAS_MNEMONICS | views::MenuRunner::CONTEXT_MENU));
+      ui::MENU_SOURCE_MOUSE));
 }
 
 views::MenuItemView* MenuDelegate::BuildMenu(ui::MenuModel* model) {
