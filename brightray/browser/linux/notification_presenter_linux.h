@@ -27,7 +27,7 @@ class NotificationPresenterLinux : public NotificationPresenter {
   // NotificationPresenter:
   virtual void ShowNotification(
       const content::ShowDesktopNotificationHostMsgParams&,
-      content::DesktopNotificationDelegate* delegate,
+      scoped_ptr<content::DesktopNotificationDelegate> delegate,
       base::Closure* cancel_callback) OVERRIDE;
 
   void CancelNotification(NotifyNotification* notification);

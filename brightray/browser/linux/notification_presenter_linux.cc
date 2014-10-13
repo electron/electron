@@ -52,13 +52,15 @@ NotificationPresenterLinux::~NotificationPresenterLinux() {
 
 void NotificationPresenterLinux::ShowNotification(
     const content::ShowDesktopNotificationHostMsgParams& params,
-    content::DesktopNotificationDelegate* delegate,
+    scoped_ptr<content::DesktopNotificationDelegate> delegate_ptr,
     base::Closure* cancel_callback) {
   std::string title = base::UTF16ToUTF8(params.title);
   std::string body = base::UTF16ToUTF8(params.body);
   NotifyNotification* notification = notify_notification_new(title.c_str(), body.c_str(), nullptr);
 
-  g_object_set_data(G_OBJECT(notification), "delegate", delegate);
+  content::DesktopNotificationDelegate* delegate = delegate_ptr.release();
+
+  g_object_set_data_full(G_OBJECT(notification), "delegate", delegate, operator delete);
   g_signal_connect(notification, "closed", G_CALLBACK(OnNotificationClosedThunk), this);
   notify_notification_add_action(notification, "default", "View", OnNotificationViewThunk, this,
                                  nullptr);
