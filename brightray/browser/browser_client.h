@@ -42,10 +42,10 @@ class BrowserClient : public content::ContentBrowserClient {
   virtual content::BrowserMainParts* CreateBrowserMainParts(
       const content::MainFunctionParams&) OVERRIDE;
   virtual void ShowDesktopNotification(
-      const content::ShowDesktopNotificationHostMsgParams&,
+      const content::ShowDesktopNotificationHostMsgParams& params,
       content::RenderFrameHost* render_frame_host,
-      content::DesktopNotificationDelegate* delegate,
-      base::Closure* cancel_callback) OVERRIDE;
+      scoped_ptr<content::DesktopNotificationDelegate> delegate,
+      base::Closure* cancel_callback) override;
   virtual content::MediaObserver* GetMediaObserver() OVERRIDE;
   virtual void GetAdditionalAllowedSchemesForFileSystem(
       std::vector<std::string>* additional_schemes) OVERRIDE;

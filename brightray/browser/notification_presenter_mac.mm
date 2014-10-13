@@ -41,20 +41,20 @@ NotificationPresenterMac::~NotificationPresenterMac() {
 
 void NotificationPresenterMac::ShowNotification(
     const content::ShowDesktopNotificationHostMsgParams& params,
-    content::DesktopNotificationDelegate* delegate,
+    scoped_ptr<content::DesktopNotificationDelegate> delegate,
     base::Closure* cancel_callback) {
   auto notification = [[NSUserNotification alloc] init];
   notification.title = base::SysUTF16ToNSString(params.title);
   notification.informativeText = base::SysUTF16ToNSString(params.body);
 
-  notifications_map_[delegate].reset(notification);
+  notifications_map_[delegate.get()].reset(notification);
   [NSUserNotificationCenter.defaultUserNotificationCenter deliverNotification:notification];
 
   if (cancel_callback)
     *cancel_callback = base::Bind(
         &NotificationPresenterMac::CancelNotification,
         base::Unretained(this),
-        delegate);
+        delegate.release());
 }
 
 content::DesktopNotificationDelegate* NotificationPresenterMac::GetDelegateFromNotification(
@@ -67,8 +67,10 @@ content::DesktopNotificationDelegate* NotificationPresenterMac::GetDelegateFromN
 }
 
 void NotificationPresenterMac::RemoveNotification(content::DesktopNotificationDelegate* delegate) {
-  if (ContainsKey(notifications_map_, delegate))
+  if (ContainsKey(notifications_map_, delegate)) {
+    delete delegate;
     notifications_map_.erase(delegate);
+  }
 }
 
 void NotificationPresenterMac::CancelNotification(content::DesktopNotificationDelegate* delegate) {

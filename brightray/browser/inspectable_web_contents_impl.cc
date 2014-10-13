@@ -164,13 +164,10 @@ void InspectableWebContentsImpl::ShowDevTools() {
     Observe(devtools_web_contents_.get());
     devtools_web_contents_->SetDelegate(this);
 
-    agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(
-        web_contents_->GetRenderViewHost());
-    frontend_host_.reset(
-        content::DevToolsClientHost::CreateDevToolsFrontendHost(
-            devtools_web_contents_.get(), this));
-    content::DevToolsManager::GetInstance()->RegisterDevToolsClientHostFor(
-        agent_host_, frontend_host_.get());
+    agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(web_contents_.get());
+    frontend_host_.reset(content::DevToolsFrontendHost::Create(
+        web_contents_->GetRenderViewHost(), this));
+    content::DevToolsManager::GetInstance()->RegisterDevToolsClientHostFor(agent_host_, this);
 
     GURL devtools_url(kChromeUIDevToolsURL);
     devtools_web_contents_->GetController().LoadURL(
@@ -291,8 +288,7 @@ void InspectableWebContentsImpl::ResetZoom() {
   SetZoomLevelForWebContents(devtools_web_contents(), 0.);
 }
 
-void InspectableWebContentsImpl::DispatchOnEmbedder(
-    const std::string& message) {
+void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(const std::string& message) {
   std::string method;
   base::ListValue params;
   int id;
@@ -309,31 +305,43 @@ void InspectableWebContentsImpl::DispatchOnEmbedder(
   }
 }
 
+void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontendToBackend(
+    const std::string& message) {
+  content::DevToolsManager::GetInstance()->DispatchOnInspectorBackend(
+      this, message);
+}
+
+void InspectableWebContentsImpl::DispatchOnInspectorFrontend(
+    const std::string& message) {
+  std::string code = "InspectorFrontendAPI.dispatchMessage(" + message + ");";
+  base::string16 javascript = base::UTF8ToUTF16(code);
+  web_contents()->GetMainFrame()->ExecuteJavaScript(javascript);
+}
+
 void InspectableWebContentsImpl::InspectedContentsClosing() {
+}
+
+void InspectableWebContentsImpl::ReplacedWithAnotherClient() {
 }
 
 void InspectableWebContentsImpl::AboutToNavigateRenderView(
     content::RenderViewHost* render_view_host) {
-  content::DevToolsClientHost::SetupDevToolsFrontendClient(
-      web_contents()->GetRenderViewHost());
+  frontend_host_.reset(content::DevToolsFrontendHost::Create(
+      render_view_host, this));
 }
 
-void InspectableWebContentsImpl::DidFinishLoad(int64 frame_id,
-                                               const GURL& validated_url,
-                                               bool is_main_frame,
-                                               content::RenderViewHost*) {
-  if (!is_main_frame)
+void InspectableWebContentsImpl::DidFinishLoad(content::RenderFrameHost* render_frame_host,
+                                               const GURL& validated_url) {
+  if (render_frame_host->GetParent())
     return;
 
   view_->ShowDevTools();
 }
 
 void InspectableWebContentsImpl::WebContentsDestroyed() {
-  content::DevToolsManager::GetInstance()->ClientHostClosing(
-      frontend_host_.get());
+  content::DevToolsManager::GetInstance()->ClientHostClosing(this);
   Observe(nullptr);
   agent_host_ = nullptr;
-  frontend_host_.reset();
 }
 
 bool InspectableWebContentsImpl::AddMessageToConsole(

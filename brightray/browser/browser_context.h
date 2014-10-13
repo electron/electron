@@ -63,6 +63,7 @@ class BrowserContext : public content::BrowserContext,
   virtual content::BrowserPluginGuestManager* GetGuestManager() OVERRIDE;
   virtual quota::SpecialStoragePolicy* GetSpecialStoragePolicy() OVERRIDE;
   virtual content::PushMessagingService* GetPushMessagingService() OVERRIDE;
+  virtual content::SSLHostStateDelegate* GetSSLHostStateDelegate() override;
 
   base::FilePath path_;
   scoped_ptr<ResourceContext> resource_context_;

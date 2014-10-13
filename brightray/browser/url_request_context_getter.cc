@@ -27,8 +27,8 @@
 #include "net/proxy/proxy_script_fetcher_impl.h"
 #include "net/proxy/proxy_service.h"
 #include "net/proxy/proxy_service_v8.h"
-#include "net/ssl/default_server_bound_cert_store.h"
-#include "net/ssl/server_bound_cert_service.h"
+#include "net/ssl/channel_id_service.h"
+#include "net/ssl/default_channel_id_store.h"
 #include "net/ssl/ssl_config_service_defaults.h"
 #include "net/url_request/data_protocol_handler.h"
 #include "net/url_request/file_protocol_handler.h"
@@ -145,8 +145,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
         NULL, NULL);
     storage_->set_cookie_store(content::CreateCookieStore(cookie_config));
-    storage_->set_server_bound_cert_service(new net::ServerBoundCertService(
-        new net::DefaultServerBoundCertStore(NULL),
+    storage_->set_channel_id_service(new net::ChannelIDService(
+        new net::DefaultChannelIDStore(NULL),
         base::WorkerPool::GetTaskRunner(true)));
     storage_->set_http_user_agent_settings(new net::StaticHttpUserAgentSettings(
         "en-us,en", base::EmptyString()));
@@ -197,8 +197,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     network_session_params.ignore_certificate_errors = false;
     network_session_params.transport_security_state =
         url_request_context_->transport_security_state();
-    network_session_params.server_bound_cert_service =
-        url_request_context_->server_bound_cert_service();
+    network_session_params.channel_id_service =
+        url_request_context_->channel_id_service();
     network_session_params.http_auth_handler_factory =
         url_request_context_->http_auth_handler_factory();
 
