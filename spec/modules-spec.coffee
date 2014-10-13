@@ -22,7 +22,7 @@ describe 'third-party module', ->
     it 'emits file events correctly', (done) ->
       pathwatcher = require 'pathwatcher'
       temp.mkdir 'dir', (err, dir) ->
-        assert err == null
+        assert err == null, String(err)
         file = path.join dir, 'file'
         fs.writeFileSync file, 'content'
         watcher = pathwatcher.watch file, (event) ->
