@@ -60,14 +60,13 @@ void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
   if (!SetForegroundWindow(window_))
     return;
 
-  views::MenuRunner menu_runner(menu_model_);
+  views::MenuRunner menu_runner(menu_model_, views::MenuRunner::CONTEXT_MENU);
   ignore_result(menu_runner.RunMenuAt(
       NULL,
       NULL,
       gfx::Rect(cursor_pos, gfx::Size()),
       views::MENU_ANCHOR_TOPLEFT,
-      ui::MENU_SOURCE_MOUSE,
-      views::MenuRunner::HAS_MNEMONICS | views::MenuRunner::CONTEXT_MENU));
+      ui::MENU_SOURCE_MOUSE));
 }
 
 void NotifyIcon::ResetIcon() {
