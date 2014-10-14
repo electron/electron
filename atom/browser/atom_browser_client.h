@@ -28,7 +28,7 @@ class AtomBrowserClient : public brightray::BrowserClient {
   virtual content::AccessTokenStore* CreateAccessTokenStore() OVERRIDE;
   virtual void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
                                    const GURL& url,
-                                   WebPreferences* prefs) OVERRIDE;
+                                   content::WebPreferences* prefs) OVERRIDE;
   virtual bool ShouldSwapBrowsingInstancesForNavigation(
       content::SiteInstance* site_instance,
       const GURL& current_url,

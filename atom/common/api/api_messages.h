@@ -9,6 +9,7 @@
 #include "base/values.h"
 #include "content/public/common/common_param_traits.h"
 #include "ipc/ipc_message_macros.h"
+#include "ui/gfx/ipc/gfx_param_traits.h"
 
 // The message starter should be declared in ipc/ipc_message_start.h. Since
 // we don't want to patch Chromium, we just pretend to be Content Shell.

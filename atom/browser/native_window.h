@@ -23,8 +23,6 @@
 #include "native_mate/persistent_dictionary.h"
 #include "ui/gfx/image/image_skia.h"
 
-struct WebPreferences;
-
 namespace base {
 class CommandLine;
 }
@@ -32,6 +30,7 @@ class CommandLine;
 namespace content {
 class BrowserContext;
 class WebContents;
+struct WebPreferences;
 }
 
 namespace gfx {
@@ -178,7 +177,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Called when renderer process is going to be started.
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
                                       int child_process_id);
-  void OverrideWebkitPrefs(const GURL& url, WebPreferences* prefs);
+  void OverrideWebkitPrefs(const GURL& url, content::WebPreferences* prefs);
 
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.

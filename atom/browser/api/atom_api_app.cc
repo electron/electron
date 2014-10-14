@@ -19,6 +19,7 @@
 #include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "net/base/load_flags.h"
 #include "net/proxy/proxy_service.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
@@ -46,10 +47,10 @@ class ResolveProxyHelper {
 
     // Start the request.
     int result = proxy_service->ResolveProxy(
-        url, &proxy_info_,
+        url, net::LOAD_NORMAL, &proxy_info_,
         base::Bind(&ResolveProxyHelper::OnResolveProxyCompleted,
                    base::Unretained(this)),
-        &pac_req_, net::BoundNetLog());
+        &pac_req_, nullptr, net::BoundNetLog());
 
     // Completed synchronously.
     if (result != net::ERR_IO_PENDING)

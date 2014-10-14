@@ -99,7 +99,7 @@ void URLRequestAsarJob::DidOpen(int result) {
     return;
   }
 
-  int rv = stream_->Seek(net::FROM_BEGIN,
+  int rv = stream_->Seek(base::File::FROM_BEGIN,
                          file_info_.offset,
                          base::Bind(&URLRequestAsarJob::DidSeek,
                                     weak_ptr_factory_.GetWeakPtr()));

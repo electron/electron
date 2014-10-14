@@ -145,7 +145,7 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
     views::LabelButton* button = new views::LabelButton(
         this, base::UTF8ToUTF16(buttons[i]));
     button->set_tag(i);
-    button->set_min_size(gfx::Size(60, 30));
+    button->SetMinSize(gfx::Size(60, 30));
     button->SetStyle(views::Button::STYLE_BUTTON);
     button->SetGroup(kButtonGroup);
 

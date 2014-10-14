@@ -91,7 +91,7 @@ bool StringToAccelerator(const std::string& description,
     LOG(ERROR) << "The accelerator string can only contain ASCII characters";
     return false;
   }
-  std::string shortcut(StringToLowerASCII(description));
+  std::string shortcut(base::StringToLowerASCII(description));
 
   std::vector<std::string> tokens;
   base::SplitString(shortcut, '+', &tokens);
