@@ -35,7 +35,7 @@ if window.location.protocol in ['file:', 'asar:']
       window.location.pathname.substr 1
     else
       window.location.pathname
-  global.__filename = decodeURIComponent pathname
+  global.__filename = path.normalize decodeURIComponent(pathname)
   global.__dirname = path.dirname global.__filename
 
   # Set module's filename so relative require can work as expected.
