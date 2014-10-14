@@ -158,8 +158,8 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
       "%s/%s/%d", "Atom Shell", Browser::Get()->GetName().c_str(),
       ++kWindowsCreated);
   // Set WM_CLASS.
-  params.wm_class_name = "atom-shell";
-  params.wm_class_class = "Atom Shell";
+  params.wm_class_name = "atom";
+  params.wm_class_class = "Atom";
 #endif
 
   window_->Init(params);
