@@ -373,3 +373,22 @@ describe 'asar package', ->
         error: (err) ->
           assert.equal err.status, 404
           done()
+
+    it 'sets __dirname correctly', (done) ->
+      url = require 'url'
+      remote = require 'remote'
+      ipc = remote.require 'ipc'
+      BrowserWindow = remote.require 'browser-window'
+
+      after ->
+        w.destroy()
+        ipc.removeAllListeners 'dirname'
+
+      w = new BrowserWindow(show: false, width: 400, height: 400)
+      p = path.resolve fixtures, 'asar', 'web.asar', 'index.html'
+      u = url.format protocol: 'asar', slashed: false, pathname: p
+      console.log u
+      w.loadUrl u
+      ipc.on 'dirname', (event, dirname) ->
+        assert.equal dirname, path.dirname(p)
+        done()
