@@ -35,7 +35,9 @@ void MenuDelegate::RunMenu(ui::MenuModel* model, views::MenuButton* button) {
   id_ = button->tag();
   views::MenuItemView* item = BuildMenu(model);
 
-  views::MenuRunner menu_runner(item, views::MenuRunner::CONTEXT_MENU);
+  views::MenuRunner menu_runner(
+      item,
+      views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS);
   ignore_result(menu_runner.RunMenuAt(
       button->GetWidget()->GetTopLevelWidget(),
       button,

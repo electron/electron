@@ -17,7 +17,9 @@ MenuViews::MenuViews() {
 
 void MenuViews::Popup(Window* window) {
   gfx::Point cursor = gfx::Screen::GetNativeScreen()->GetCursorScreenPoint();
-  views::MenuRunner menu_runner(model(), views::MenuRunner::CONTEXT_MENU);
+  views::MenuRunner menu_runner(
+      model(),
+      views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS);
   ignore_result(menu_runner.RunMenuAt(
       static_cast<NativeWindowViews*>(window->window())->widget(),
       NULL,

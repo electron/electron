@@ -60,7 +60,9 @@ void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
   if (!SetForegroundWindow(window_))
     return;
 
-  views::MenuRunner menu_runner(menu_model_, views::MenuRunner::CONTEXT_MENU);
+  views::MenuRunner menu_runner(
+      menu_model_,
+      views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS);
   ignore_result(menu_runner.RunMenuAt(
       NULL,
       NULL,
