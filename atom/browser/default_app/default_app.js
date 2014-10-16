@@ -12,8 +12,6 @@ app.on('window-all-closed', function() {
 });
 
 app.on('ready', function() {
-  app.commandLine.appendSwitch('js-flags', '--harmony_collections');
-
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
@@ -155,11 +153,11 @@ app.on('ready', function() {
         label: 'File',
         submenu: [
           {
-            label: 'Open',
+            label: '&Open',
             accelerator: 'Ctrl+O',
           },
           {
-            label: 'Close',
+            label: '&Close',
             accelerator: 'Ctrl+W',
             click: function() { mainWindow.close(); }
           },
@@ -169,16 +167,16 @@ app.on('ready', function() {
         label: 'View',
         submenu: [
           {
-            label: 'Reload',
+            label: '&Reload',
             accelerator: 'Ctrl+R',
             click: function() { mainWindow.restart(); }
           },
           {
-            label: 'Enter Fullscreen',
+            label: '&Enter Fullscreen',
             click: function() { mainWindow.setFullScreen(true); }
           },
           {
-            label: 'Toggle DevTools',
+            label: '&Toggle DevTools',
             accelerator: 'Alt+Ctrl+I',
             click: function() { mainWindow.toggleDevTools(); }
           },
