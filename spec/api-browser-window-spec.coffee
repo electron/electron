@@ -5,6 +5,8 @@ remote = require 'remote'
 
 BrowserWindow = remote.require 'browser-window'
 
+isCI = remote.process.argv[1] == '--ci'
+
 describe 'browser-window module', ->
   fixtures = path.resolve __dirname, 'fixtures'
 
@@ -58,6 +60,7 @@ describe 'browser-window module', ->
 
   describe 'BrowserWindow.show()', ->
     it 'should focus on window', ->
+      return if isCI
       w.show()
       assert w.isFocused()
 
