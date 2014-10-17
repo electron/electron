@@ -16,6 +16,7 @@ app.on('ready', function() {
     width: 800,
     height: 600,
     resizable: false,
+    'auto-hide-menu-bar': true,
     'use-content-size': true,
   });
   mainWindow.loadUrl('file://' + __dirname + '/index.html');
@@ -150,7 +151,7 @@ app.on('ready', function() {
   } else {
     var template = [
       {
-        label: 'File',
+        label: '&File',
         submenu: [
           {
             label: '&Open',
@@ -164,7 +165,7 @@ app.on('ready', function() {
         ]
       },
       {
-        label: 'View',
+        label: '&View',
         submenu: [
           {
             label: '&Reload',
