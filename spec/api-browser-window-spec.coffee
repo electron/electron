@@ -57,8 +57,13 @@ describe 'browser-window module', ->
       w.loadUrl 'about:blank'
 
   describe 'BrowserWindow.show()', ->
-    it 'should not focus window', ->
+    it 'should focus on window', ->
       w.show()
+      assert w.isFocused()
+
+  describe 'BrowserWindow.showInactive()', ->
+    it 'should not focus on window', ->
+      w.showInactive()
       assert !w.isFocused()
 
   describe 'BrowserWindow.focus()', ->
