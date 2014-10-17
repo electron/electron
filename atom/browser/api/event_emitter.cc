@@ -10,10 +10,36 @@
 #include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/values.h"
+#include "native_mate/arguments.h"
+#include "native_mate/object_template_builder.h"
 
 #include "atom/common/node_includes.h"
 
 namespace mate {
+
+namespace {
+
+v8::Persistent<v8::ObjectTemplate> event_template;
+
+void PreventDefault(mate::Arguments* args) {
+  args->GetThis()->SetHiddenValue(
+      StringToV8(args->isolate(), "prevent_default"),
+      v8::True(args->isolate()));
+}
+
+// Create a pure JavaScript Event object.
+v8::Local<v8::Object> CreateEventObject(v8::Isolate* isolate) {
+  if (event_template.IsEmpty()) {
+    event_template.Reset(isolate, ObjectTemplateBuilder(isolate)
+        .SetMethod("preventDefault", &PreventDefault)
+        .Build());
+  }
+
+  return v8::Local<v8::ObjectTemplate>::New(
+      isolate, event_template)->NewInstance();
+}
+
+}  // namespace
 
 EventEmitter::EventEmitter() {
 }
@@ -38,15 +64,22 @@ bool EventEmitter::Emit(const base::StringPiece& name,
   v8::Handle<v8::Context> context = isolate->GetCurrentContext();
   scoped_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
 
-  mate::Handle<mate::Event> event = mate::Event::Create(isolate);
-  if (sender && message)
-    event->SetSenderAndMessage(sender, message);
+  v8::Handle<v8::Object> event;
+  bool use_native_event = sender && message;
+
+  if (use_native_event) {
+    mate::Handle<mate::Event> native_event = mate::Event::Create(isolate);
+    native_event->SetSenderAndMessage(sender, message);
+    event = v8::Handle<v8::Object>::Cast(native_event.ToV8());
+  } else {
+    event = CreateEventObject(isolate);
+  }
 
   // v8_args = [name, event, args...];
   std::vector<v8::Handle<v8::Value>> v8_args;
   v8_args.reserve(args.GetSize() + 2);
   v8_args.push_back(mate::StringToV8(isolate, name));
-  v8_args.push_back(event.ToV8());
+  v8_args.push_back(event);
   for (size_t i = 0; i < args.GetSize(); i++) {
     const base::Value* value(NULL);
     if (args.Get(i, &value))
@@ -57,7 +90,17 @@ bool EventEmitter::Emit(const base::StringPiece& name,
   node::MakeCallback(isolate, GetWrapper(isolate), "emit", v8_args.size(),
                      &v8_args[0]);
 
-  return event->prevent_default();
+  if (use_native_event) {
+    Handle<Event> native_event;
+    if (ConvertFromV8(isolate, event, &native_event))
+      return native_event->prevent_default();
+  }
+
+  v8::Handle<v8::Value> prevent_default =
+      event->GetHiddenValue(StringToSymbol(isolate, "prevent_default"));
+  if (prevent_default.IsEmpty())
+    return false;
+  return prevent_default->BooleanValue();
 }
 
 }  // namespace mate
