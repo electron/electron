@@ -101,6 +101,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void Focus(bool focus) = 0;
   virtual bool IsFocused() = 0;
   virtual void Show() = 0;
+  virtual void ShowInactive() = 0;
   virtual void Hide() = 0;
   virtual bool IsVisible() = 0;
   virtual void Maximize() = 0;

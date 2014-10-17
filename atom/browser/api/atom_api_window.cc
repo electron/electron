@@ -153,6 +153,10 @@ void Window::Show() {
   window_->Show();
 }
 
+void Window::ShowInactive() {
+  window_->ShowInactive();
+}
+
 void Window::Hide() {
   window_->Hide();
 }
@@ -388,6 +392,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("focus", &Window::Focus)
       .SetMethod("isFocused", &Window::IsFocused)
       .SetMethod("show", &Window::Show)
+      .SetMethod("showInactive", &Window::ShowInactive)
       .SetMethod("hide", &Window::Hide)
       .SetMethod("isVisible", &Window::IsVisible)
       .SetMethod("maximize", &Window::Maximize)

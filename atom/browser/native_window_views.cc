@@ -232,6 +232,10 @@ bool NativeWindowViews::IsFocused() {
 }
 
 void NativeWindowViews::Show() {
+  window_->Show();
+}
+
+void NativeWindowViews::ShowInactive() {
   window_->ShowInactive();
 }
 

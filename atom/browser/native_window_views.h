@@ -38,6 +38,7 @@ class NativeWindowViews : public NativeWindow,
   virtual void Focus(bool focus) OVERRIDE;
   virtual bool IsFocused() OVERRIDE;
   virtual void Show() OVERRIDE;
+  virtual void ShowInactive() OVERRIDE;
   virtual void Hide() OVERRIDE;
   virtual bool IsVisible() OVERRIDE;
   virtual void Maximize() OVERRIDE;

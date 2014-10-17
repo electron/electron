@@ -59,6 +59,7 @@ class Window : public mate::EventEmitter,
   void Focus();
   bool IsFocused();
   void Show();
+  void ShowInactive();
   void Hide();
   bool IsVisible();
   void Maximize();
