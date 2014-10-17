@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_ATOM_BROWSER_MAIN_PARTS_H_
 #define ATOM_BROWSER_ATOM_BROWSER_MAIN_PARTS_H_
 
+#include "base/timer/timer.h"
 #include "brightray/browser/browser_main_parts.h"
 
 namespace atom {
@@ -42,6 +43,8 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   scoped_ptr<NodeBindings> node_bindings_;
   scoped_ptr<AtomBindings> atom_bindings_;
   scoped_ptr<NodeDebugger> node_debugger_;
+
+  base::Timer gc_timer_;
 
   static AtomBrowserMainParts* self_;
 

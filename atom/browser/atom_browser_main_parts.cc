@@ -28,7 +28,8 @@ AtomBrowserMainParts* AtomBrowserMainParts::self_ = NULL;
 AtomBrowserMainParts::AtomBrowserMainParts()
     : browser_(new Browser),
       node_bindings_(NodeBindings::Create(true)),
-      atom_bindings_(new AtomBindings) {
+      atom_bindings_(new AtomBindings),
+      gc_timer_(true, true) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
   self_ = this;
 }
@@ -74,6 +75,13 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   // a chance to setup everything.
   node_bindings_->PrepareMessageLoop();
   node_bindings_->RunMessageLoop();
+
+  // Start idle gc.
+  gc_timer_.Start(
+      FROM_HERE, base::TimeDelta::FromMinutes(1),
+      base::Bind(base::IgnoreResult(&v8::Isolate::IdleNotification),
+                 base::Unretained(js_env_->isolate()),
+                 1000));
 
   brightray::BrowserMainParts::PreMainMessageLoopRun();
 
