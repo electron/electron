@@ -11,6 +11,12 @@
 
 namespace mate {
 
+namespace {
+
+v8::Persistent<v8::ObjectTemplate> template_;
+
+}  // namespace
+
 Event::Event()
     : sender_(NULL),
       message_(NULL),
@@ -21,9 +27,14 @@ Event::~Event() {
 }
 
 ObjectTemplateBuilder Event::GetObjectTemplateBuilder(v8::Isolate* isolate) {
-  return ObjectTemplateBuilder(isolate)
-      .SetMethod("preventDefault", &Event::PreventDefault)
-      .SetMethod("sendReply", &Event::SendReply);
+  if (template_.IsEmpty())
+    template_.Reset(isolate, ObjectTemplateBuilder(isolate)
+        .SetMethod("preventDefault", &Event::PreventDefault)
+        .SetMethod("sendReply", &Event::SendReply)
+        .Build());
+
+  return ObjectTemplateBuilder(
+      isolate, v8::Local<v8::ObjectTemplate>::New(isolate, template_));
 }
 
 void Event::SetSenderAndMessage(content::WebContents* sender,
