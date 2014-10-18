@@ -232,7 +232,11 @@ Returns whether the window is focused.
 
 ### BrowserWindow.show()
 
-Shows the window.
+Shows and gives focus to the window.
+
+### BrowserWindow.showInactive()
+
+Shows the window but doesn't focus on it.
 
 ### BrowserWindow.hide()
 
