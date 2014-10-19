@@ -135,7 +135,9 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 }
 
 - (IBAction)reload:(id)sender {
-  shell_->GetWebContents()->GetController().ReloadIgnoringCache(false);
+  content::WebContents* web_contents = shell_->GetWebContents();
+  content::NavigationController::LoadURLParams params(web_contents->GetURL());
+  web_contents->GetController().LoadURLWithParams(params);
 }
 
 - (IBAction)showDevTools:(id)sender {
