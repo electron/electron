@@ -2,6 +2,10 @@
   "name": "atom-shell",
   "version": "1.0.0",
   "description": "Install atom-shell prebuilts using npm",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mafintosh/atom-shell"
+  },
   "scripts": {
     "install": "./install.js"
   },
@@ -15,5 +19,9 @@
   },
   "devDependencies": {},
   "author": "Mathias Buus",
-  "license": "MIT"
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mafintosh/atom-shell/issues"
+  },
+  "homepage": "https://github.com/mafintosh/atom-shell"
 }
