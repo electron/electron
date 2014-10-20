@@ -7,7 +7,7 @@
     "url": "https://github.com/mafintosh/atom-shell"
   },
   "scripts": {
-    "install": "./install.js"
+    "install": "node install.js"
   },
   "bin": {
     "atom-shell": "run.bat"
