@@ -1,0 +1,5 @@
+node_modules
+*.zip
+darwin/
+win32/
+linux/

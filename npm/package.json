@@ -1,0 +1,19 @@
+{
+  "name": "atom-shell",
+  "version": "1.0.0",
+  "description": "Install atom-shell prebuilts using npm",
+  "scripts": {
+    "install": "./install.js"
+  },
+  "bin": {
+    "atom-shell": "./darwin.sh"
+  },
+  "main": "install.js",
+  "dependencies": {
+    "extract-zip": "^1.0.3",
+    "nugget": "^1.1.2"
+  },
+  "devDependencies": {},
+  "author": "Mathias Buus",
+  "license": "MIT"
+}
