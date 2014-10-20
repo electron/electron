@@ -10,9 +10,9 @@
     "install": "./install.js"
   },
   "bin": {
-    "atom-shell": "./darwin.sh"
+    "atom-shell": "run.bat"
   },
-  "main": "install.js",
+  "main": "index.js",
   "dependencies": {
     "extract-zip": "^1.0.3",
     "nugget": "^1.1.2"
