@@ -7,7 +7,8 @@
     "url": "https://github.com/mafintosh/atom-shell"
   },
   "scripts": {
-    "install": "node install.js"
+    "install": "node install.js",
+    "test": "tape test/*.js"
   },
   "bin": {
     "atom-shell": "run.bat"
@@ -17,7 +18,9 @@
     "extract-zip": "^1.0.3",
     "nugget": "^1.1.2"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "tape": "^3.0.1"
+  },
   "author": "Mathias Buus",
   "license": "MIT",
   "bugs": {
