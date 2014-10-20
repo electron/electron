@@ -37,3 +37,19 @@ Then you can run your app using:
 ```
 atom-shell your-app/
 ```
+
+## Programmatic usage
+
+If you require `atom-shell` inside your node app it will return the file path to the binary.
+Use this to spawn atom shell
+
+``` js
+var atom = require('atom-shell')
+var proc = require('child_process')
+
+// will something similar to print /Users/maf/.../Atom
+console.log(atom)
+
+// spawn atom-shell
+var child = proc.spawn(atom)
+```
