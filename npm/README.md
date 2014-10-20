@@ -1,5 +1,7 @@
 # atom-shell
 
+[![build status](http://img.shields.io/travis/mafintosh/atom-shell.svg?style=flat)](http://travis-ci.org/mafintosh/atom-shell)
+
 Install [atom-shell](https://github.com/atom/atom-shell) prebuilt binaries for command-line use using npm.
 
 Works on Mac, Windows and Linux OSes that Atom Shell supports (e.g. Atom Shell [does not support Windows XP](https://github.com/atom/atom-shell/issues/691)).
