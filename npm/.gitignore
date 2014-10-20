@@ -1,4 +1,3 @@
 node_modules
 *.zip
 dist
-run.bat
