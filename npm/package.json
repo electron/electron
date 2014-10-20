@@ -1,6 +1,6 @@
 {
   "name": "atom-shell",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Install atom-shell prebuilts using npm",
   "scripts": {
     "install": "./install.js"
