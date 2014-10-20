@@ -1,6 +1,8 @@
 # atom-shell
 
-Install [atom-shell](https://github.com/atom/atom-shell) prebuilt binaries for command-line use using npm. Works on Mac, Windows and Linux.
+Install [atom-shell](https://github.com/atom/atom-shell) prebuilt binaries for command-line use using npm.
+
+Works on Mac, Windows and Linux OSes that Atom Shell supports (e.g. Atom Shell [does not support Windows XP](https://github.com/atom/atom-shell/issues/691)).
 
 Atom Shell is a javascript runtime that bundles Node.js and Chromium. You use it similar to the `node` command on the command line for executing javascript programs. This module helps you easily install the `atom-shell` command for use on the command line without having to compile anything.
 
