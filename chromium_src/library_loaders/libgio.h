@@ -24,9 +24,11 @@ class LibGioLoader {
   typeof(&::g_settings_get_child) g_settings_get_child;
   typeof(&::g_settings_get_string) g_settings_get_string;
   typeof(&::g_settings_get_boolean) g_settings_get_boolean;
-  typeof(&::g_settings_get_int) g_settings_get_int;
+  typeof(&::g_settings_get_uint) g_settings_get_uint;
   typeof(&::g_settings_get_strv) g_settings_get_strv;
+  typeof(&::g_settings_is_writable) g_settings_is_writable;
   typeof(&::g_settings_list_schemas) g_settings_list_schemas;
+  typeof(&::g_settings_list_keys) g_settings_list_keys;
 
 
  private:

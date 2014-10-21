@@ -85,14 +85,14 @@ bool LibGioLoader::Load(const std::string& library_name) {
   }
 
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBGIO_H_DLOPEN)
-  g_settings_get_int =
-      reinterpret_cast<typeof(this->g_settings_get_int)>(
-          dlsym(library_, "g_settings_get_int"));
+  g_settings_get_uint =
+      reinterpret_cast<typeof(this->g_settings_get_uint)>(
+          dlsym(library_, "g_settings_get_uint"));
 #endif
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBGIO_H_DT_NEEDED)
-  g_settings_get_int = &::g_settings_get_int;
+  g_settings_get_uint = &::g_settings_get_uint;
 #endif
-  if (!g_settings_get_int) {
+  if (!g_settings_get_uint) {
     CleanUp(true);
     return false;
   }
@@ -111,6 +111,19 @@ bool LibGioLoader::Load(const std::string& library_name) {
   }
 
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBGIO_H_DLOPEN)
+  g_settings_is_writable =
+      reinterpret_cast<typeof(this->g_settings_is_writable)>(
+          dlsym(library_, "g_settings_is_writable"));
+#endif
+#if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBGIO_H_DT_NEEDED)
+  g_settings_is_writable = &::g_settings_is_writable;
+#endif
+  if (!g_settings_is_writable) {
+    CleanUp(true);
+    return false;
+  }
+
+#if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBGIO_H_DLOPEN)
   g_settings_list_schemas =
       reinterpret_cast<typeof(this->g_settings_list_schemas)>(
           dlsym(library_, "g_settings_list_schemas"));
@@ -123,6 +136,18 @@ bool LibGioLoader::Load(const std::string& library_name) {
     return false;
   }
 
+#if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBGIO_H_DLOPEN)
+  g_settings_list_keys =
+      reinterpret_cast<typeof(this->g_settings_list_keys)>(
+          dlsym(library_, "g_settings_list_keys"));
+#endif
+#if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBGIO_H_DT_NEEDED)
+  g_settings_list_keys = &::g_settings_list_keys;
+#endif
+  if (!g_settings_list_keys) {
+    CleanUp(true);
+    return false;
+  }
 
   loaded_ = true;
   return true;
@@ -140,8 +165,10 @@ void LibGioLoader::CleanUp(bool unload) {
   g_settings_get_child = NULL;
   g_settings_get_string = NULL;
   g_settings_get_boolean = NULL;
-  g_settings_get_int = NULL;
+  g_settings_get_uint = NULL;
   g_settings_get_strv = NULL;
+  g_settings_is_writable = NULL;
   g_settings_list_schemas = NULL;
+  g_settings_list_keys = NULL;
 
 }
