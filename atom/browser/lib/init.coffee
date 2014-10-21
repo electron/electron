@@ -14,6 +14,8 @@ process.argv.splice 1, 1
 # Pick out switches appended by atom-shell.
 startMark = process.argv.indexOf '--atom-shell-switches-start'
 endMark = process.argv.indexOf '--atom-shell-switches-end'
+# And --force-device-scale-factor on Linux.
+endMark++ if process.platform is 'linux'
 process.argv.splice startMark, endMark - startMark + 1
 
 # Add browser/api/lib to require's search paths,
