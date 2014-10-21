@@ -561,6 +561,10 @@
               '-rpath \$$ORIGIN',
               # Make native module dynamic loading work.
               '-rdynamic',
+              '<!@(pkg-config --libs-only-L --libs-only-other dbus-1)',
+            ],
+            'libraries': [
+              '<!@(pkg-config --libs-only-l dbus-1)',
             ],
           },
           # Required settings of using breakpad.
@@ -568,6 +572,7 @@
             'vendor/breakpad/src',
           ],
           'cflags': [
+            '<!@(pkg-config --cflags dbus-1)',
             '-Wno-deprecated-register',
             '-Wno-empty-body',
             '-Wno-reserved-user-defined-literal',
