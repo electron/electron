@@ -570,6 +570,7 @@
           'cflags': [
             '-Wno-deprecated-register',
             '-Wno-empty-body',
+            '-Wno-reserved-user-defined-literal',
           ],
           'dependencies': [
             'vendor/breakpad/breakpad.gyp:breakpad_client',
