@@ -24,7 +24,7 @@ var paths = {
 
 if (!paths[platform]) throw new Error('Unknown platform: '+platform)
 
-nugget(url, {target:name, dir:__dirname, resume:true}, function(err) {
+nugget(url, {target:name, dir:__dirname, resume:true, verbose:true}, function(err) {
   if (err) return onerror(err)
   fs.writeFileSync(path.join(__dirname, 'run.bat'), '"'+paths[platform]+'"')
   extract(path.join(__dirname, name), {dir:path.join(__dirname, 'dist')}, function(err) {
