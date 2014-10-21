@@ -26,6 +26,24 @@ bool SchemaExists(const LibGioLoader& libgio_loader, const char* schema_name) {
   return false;
 }
 
+bool KeyExists(const LibGioLoader& libgio_loader, GSettings* client,
+               const char* key) {
+  gchar** keys = libgio_loader.g_settings_list_keys(client);
+  if (!keys)
+    return false;
+
+  gchar** iter = keys;
+  while (*iter) {
+    if (strcmp(*iter, key) == 0)
+      break;
+    iter++;
+  }
+
+  bool exists = *iter != NULL;
+  g_strfreev(keys);
+  return exists;
+}
+
 void GetDPIFromGSettings(guint* scale_factor) {
   LibGioLoader libgio_loader;
 
@@ -43,23 +61,9 @@ void GetDPIFromGSettings(guint* scale_factor) {
     return;
   }
 
-  gchar** keys = libgio_loader.g_settings_list_keys(client);
-  if (!keys) {
-    g_object_unref(client);
-    return;
-  }
-
-  // Check if the "scale-factor" settings exsits.
-  gchar** iter = keys;
-  while (*iter) {
-    if (strcmp(*iter, kScaleFactor) == 0)
-      break;
-    iter++;
-  }
-  if (*iter)
+  if (KeyExists(libgio_loader, client, kScaleFactor))
     *scale_factor = libgio_loader.g_settings_get_uint(client, kScaleFactor);
 
-  g_strfreev(keys);
   g_object_unref(client);
 }
 
