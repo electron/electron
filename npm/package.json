@@ -16,7 +16,7 @@
   "main": "index.js",
   "dependencies": {
     "extract-zip": "^1.0.3",
-    "nugget": "^1.1.2"
+    "nugget": "^1.2.0"
   },
   "devDependencies": {
     "tape": "^3.0.1"
