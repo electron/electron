@@ -16,6 +16,16 @@ namespace {
 const char* kInterfaceSchema = "org.gnome.desktop.interface";
 const char* kScaleFactor = "scaling-factor";
 
+bool SchemaExists(const LibGioLoader& libgio_loader, const char* schema_name) {
+  const gchar* const* schemas = libgio_loader.g_settings_list_schemas();
+  while (*schemas) {
+    if (strcmp(schema_name, static_cast<const char*>(*schemas)) == 0)
+      return true;
+    schemas++;
+  }
+  return false;
+}
+
 void GetDPIFromGSettings(guint* scale_factor) {
   LibGioLoader libgio_loader;
 
@@ -26,8 +36,9 @@ void GetDPIFromGSettings(guint* scale_factor) {
     return;
   }
 
-  GSettings* client = libgio_loader.g_settings_new(kInterfaceSchema);
-  if (!client) {
+  GSettings* client = nullptr;
+  if (!SchemaExists(libgio_loader, kInterfaceSchema) ||
+      !(client = libgio_loader.g_settings_new(kInterfaceSchema))) {
     VLOG(1) << "Cannot create gsettings client.";
     return;
   }
