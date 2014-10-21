@@ -96,6 +96,7 @@
       'atom/browser/atom_browser_context.h',
       'atom/browser/atom_browser_main_parts.cc',
       'atom/browser/atom_browser_main_parts.h',
+      'atom/browser/atom_browser_main_parts_linux.cc',
       'atom/browser/atom_browser_main_parts_mac.mm',
       'atom/browser/atom_javascript_dialog_manager.cc',
       'atom/browser/atom_javascript_dialog_manager.h',
@@ -312,7 +313,10 @@
       'chromium_src/chrome/renderer/printing/print_web_view_helper.h',
       'chromium_src/chrome/renderer/tts_dispatcher.cc',
       'chromium_src/chrome/renderer/tts_dispatcher.h',
+      'chromium_src/library_loaders/libgio_loader.cc',
+      'chromium_src/library_loaders/libgio.h',
       'chromium_src/library_loaders/libspeechd_loader.cc',
+      'chromium_src/library_loaders/libspeechd.h',
       '<@(native_mate_files)',
     ],
     'framework_sources': [

@@ -38,6 +38,10 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 #endif
 
  private:
+#if defined(USE_X11)
+  void SetDPIFromGSettings();
+#endif
+
   scoped_ptr<Browser> browser_;
   scoped_ptr<JavascriptEnvironment> js_env_;
   scoped_ptr<NodeBindings> node_bindings_;

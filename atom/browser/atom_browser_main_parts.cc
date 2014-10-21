@@ -50,6 +50,10 @@ brightray::BrowserContext* AtomBrowserMainParts::CreateBrowserContext() {
 void AtomBrowserMainParts::PostEarlyInitialization() {
   brightray::BrowserMainParts::PostEarlyInitialization();
 
+#if defined(USE_X11)
+  SetDPIFromGSettings();
+#endif
+
   // The ProxyResolverV8 has setup a complete V8 environment, in order to avoid
   // conflicts we only initialize our V8 environment after that.
   js_env_.reset(new JavascriptEnvironment);
