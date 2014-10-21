@@ -14,11 +14,9 @@ namespace atom {
 namespace {
 
 const char* kInterfaceSchema = "org.gnome.desktop.interface";
-const char* kScaleFactor = "scale-factor";
+const char* kScaleFactor = "scaling-factor";
 
-}  // namespace
-
-void AtomBrowserMainParts::SetDPIFromGSettings() {
+void GetDPIFromGSettings(guint* scale_factor) {
   LibGioLoader libgio_loader;
 
   // Try also without .0 at the end; on some systems this may be required.
@@ -47,18 +45,23 @@ void AtomBrowserMainParts::SetDPIFromGSettings() {
       break;
     iter++;
   }
-
-  if (*iter) {
-    guint scale_factor = libgio_loader.g_settings_get_uint(
-        client, kScaleFactor);
-    if (scale_factor >= 1) {
-      base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
-          switches::kForceDeviceScaleFactor, base::UintToString(scale_factor));
-    }
-  }
+  if (*iter)
+    *scale_factor = libgio_loader.g_settings_get_uint(client, kScaleFactor);
 
   g_strfreev(keys);
   g_object_unref(client);
+}
+
+}  // namespace
+
+void AtomBrowserMainParts::SetDPIFromGSettings() {
+  guint scale_factor = 1;
+  GetDPIFromGSettings(&scale_factor);
+  if (scale_factor == 0)
+    scale_factor = 1;
+
+  base::CommandLine::ForCurrentProcess()->AppendSwitchASCII(
+      switches::kForceDeviceScaleFactor, base::UintToString(scale_factor));
 }
 
 }  // namespace atom
