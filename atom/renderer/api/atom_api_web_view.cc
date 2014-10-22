@@ -4,8 +4,11 @@
 
 #include "atom/renderer/api/atom_api_web_view.h"
 
+#include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "third_party/WebKit/public/web/WebDocument.h"
+#include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
@@ -49,13 +52,24 @@ double WebView::GetZoomFactor() const {
   return blink::WebView::zoomLevelToZoomFactor(GetZoomLevel());
 }
 
+v8::Handle<v8::Value> WebView::RegisterEmbedderCustomElement(
+    const base::string16& name, v8::Handle<v8::Object> options) {
+  blink::WebCustomElement::addEmbedderCustomElementName(name);
+
+  auto document = blink::WebLocalFrame::frameForCurrentContext()->document();
+  blink::WebExceptionCode ec = 0;
+  return document.registerEmbedderCustomElement(name, options, ec);
+}
+
 mate::ObjectTemplateBuilder WebView::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("setZoomLevel", &WebView::SetZoomLevel)
       .SetMethod("getZoomLevel", &WebView::GetZoomLevel)
       .SetMethod("setZoomFactor", &WebView::SetZoomFactor)
-      .SetMethod("getZoomFactor", &WebView::GetZoomFactor);
+      .SetMethod("getZoomFactor", &WebView::GetZoomFactor)
+      .SetMethod("registerEmbedderCustomElement",
+                 &WebView::RegisterEmbedderCustomElement);
 }
 
 // static

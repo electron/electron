@@ -29,6 +29,9 @@ class WebView : public mate::Wrappable {
   double SetZoomFactor(double factor);
   double GetZoomFactor() const;
 
+  v8::Handle<v8::Value> RegisterEmbedderCustomElement(
+      const base::string16& name, v8::Handle<v8::Object> options);
+
   // mate::Wrappable:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate);
