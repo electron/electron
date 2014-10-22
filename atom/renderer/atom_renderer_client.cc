@@ -18,6 +18,7 @@
 #include "content/public/renderer/render_thread.h"
 #include "base/command_line.h"
 #include "native_mate/converter.h"
+#include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebKit.h"
@@ -98,6 +99,9 @@ AtomRendererClient::~AtomRendererClient() {
 
 void AtomRendererClient::WebKitInitialized() {
   EnableWebRuntimeFeatures();
+
+  blink::WebCustomElement::addEmbedderCustomElementName("webview");
+  blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
 
   if (!IsNodeBindingEnabled())
     return;

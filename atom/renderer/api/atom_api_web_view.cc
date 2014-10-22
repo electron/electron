@@ -8,7 +8,6 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
-#include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
@@ -54,8 +53,6 @@ double WebView::GetZoomFactor() const {
 
 v8::Handle<v8::Value> WebView::RegisterEmbedderCustomElement(
     const base::string16& name, v8::Handle<v8::Object> options) {
-  blink::WebCustomElement::addEmbedderCustomElementName(name);
-
   auto document = blink::WebLocalFrame::frameForCurrentContext()->document();
   blink::WebExceptionCode ec = 0;
   return document.registerEmbedderCustomElement(name, options, ec);
