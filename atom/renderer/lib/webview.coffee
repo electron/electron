@@ -66,7 +66,7 @@ class Partition
 # Represents the internal state of the WebView node.
 class WebView
   constructor: (@webviewNode) ->
-    v8Util.setHiddenValue webviewNode, 'internal', this
+    v8Util.setHiddenValue @webviewNode, 'internal', this
     @attached = false
     @pendingGuestCreation = false
     @elementAttached = false
@@ -471,7 +471,7 @@ registerBrowserPluginElement = ->
     @style.height = '100%'
 
   proto.attributeChangedCallback = (name, oldValue, newValue) ->
-    internal = v8Util.getHiddenValue 'internal'
+    internal = v8Util.getHiddenValue this, 'internal'
     return unless internal
     internal.handleBrowserPluginAttributeMutation name, oldValue, newValue
 
@@ -495,18 +495,18 @@ registerWebViewElement = ->
     new WebView(this)
 
   proto.attributeChangedCallback = (name, oldValue, newValue) ->
-    internal = v8Util.getHiddenValue 'internal'
+    internal = v8Util.getHiddenValue this, 'internal'
     return unless internal
     internal.handleWebviewAttributeMutation name, oldValue, newValue
 
   proto.detachedCallback = ->
-    internal = v8Util.getHiddenValue 'internal'
+    internal = v8Util.getHiddenValue this, 'internal'
     return unless internal
     internal.elementAttached = false
     internal.reset()
 
   proto.attachedCallback = ->
-    internal = v8Util.getHiddenValue 'internal'
+    internal = v8Util.getHiddenValue this, 'internal'
     return unless internal
     unless internal.elementAttached
       internal.elementAttached = true
