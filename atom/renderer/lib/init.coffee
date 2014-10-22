@@ -56,3 +56,5 @@ else if location.protocol is 'chrome-extension:'
 else
   # Override default web functions.
   require path.join(__dirname, 'override')
+  # Load webview tag implementation.
+  require path.join(__dirname, 'webview')

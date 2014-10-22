@@ -7,6 +7,7 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/asar/asar_protocol_handler.h"
+#include "atom/browser/web_view/web_view_manager.h"
 #include "base/threading/sequenced_worker_pool.h"
 #include "base/threading/worker_pool.h"
 #include "chrome/browser/browser_process.h"
@@ -66,6 +67,12 @@ net::URLRequestJobFactory* AtomBrowserContext::CreateURLRequestJobFactory(
   interceptors->weak_clear();
 
   return top_job_factory.release();
+}
+
+content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
+  if (!guest_manager_)
+    guest_manager_.reset(new WebViewManager(this));
+  return guest_manager_.get();
 }
 
 // static

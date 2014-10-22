@@ -12,6 +12,7 @@ class BrowserProcess;
 namespace atom {
 
 class AtomURLRequestJobFactory;
+class WebViewManager;
 
 class AtomBrowserContext : public brightray::BrowserContext {
  public:
@@ -27,11 +28,15 @@ class AtomBrowserContext : public brightray::BrowserContext {
   // brightray::URLRequestContextGetter::Delegate:
   virtual net::URLRequestJobFactory* CreateURLRequestJobFactory(
       content::ProtocolHandlerMap* handlers,
-      content::URLRequestInterceptorScopedVector* interceptors) OVERRIDE;
+      content::URLRequestInterceptorScopedVector* interceptors) override;
+
+  // content::BrowserContext:
+  virtual content::BrowserPluginGuestManager* GetGuestManager() override;
 
  private:
   // A fake BrowserProcess object that used to feed the source code from chrome.
   scoped_ptr<BrowserProcess> fake_browser_process_;
+  scoped_ptr<WebViewManager> guest_manager_;
 
   AtomURLRequestJobFactory* job_factory_;  // Weak reference.
 
