@@ -27,16 +27,16 @@ class DevToolsDelegate : public content::DevToolsHttpHandlerDelegate {
   void Stop();
 
   // DevToolsHttpProtocolHandler::Delegate overrides.
-  virtual std::string GetDiscoveryPageHTML() OVERRIDE;
-  virtual bool BundlesFrontendResources() OVERRIDE;
-  virtual base::FilePath GetDebugFrontendDir() OVERRIDE;
-  virtual std::string GetPageThumbnailData(const GURL& url) OVERRIDE;
+  virtual std::string GetDiscoveryPageHTML() override;
+  virtual bool BundlesFrontendResources() override;
+  virtual base::FilePath GetDebugFrontendDir() override;
+  virtual std::string GetPageThumbnailData(const GURL& url) override;
   virtual scoped_ptr<content::DevToolsTarget> CreateNewTarget(
-      const GURL& url) OVERRIDE;
-  virtual void EnumerateTargets(TargetCallback callback) OVERRIDE;
+      const GURL& url) override;
+  virtual void EnumerateTargets(TargetCallback callback) override;
   virtual scoped_ptr<net::StreamListenSocket> CreateSocketForTethering(
       net::StreamListenSocket::Delegate* delegate,
-      std::string* name) OVERRIDE;
+      std::string* name) override;
 
   content::DevToolsHttpHandler* devtools_http_handler() {
     return devtools_http_handler_;

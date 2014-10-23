@@ -55,14 +55,14 @@ class BundledDataSource : public content::URLDataSource {
   }
 
   // content::URLDataSource implementation.
-  virtual std::string GetSource() const OVERRIDE {
+  virtual std::string GetSource() const override {
     return kChromeUIDevToolsBundledHost;
   }
 
   virtual void StartDataRequest(const std::string& path,
                                 int render_process_id,
                                 int render_view_id,
-                                const GotDataCallback& callback) OVERRIDE {
+                                const GotDataCallback& callback) override {
     std::string filename = PathWithoutParams(path);
 
     int resource_id =
@@ -77,11 +77,11 @@ class BundledDataSource : public content::URLDataSource {
     callback.Run(bytes);
   }
 
-  virtual std::string GetMimeType(const std::string& path) const OVERRIDE {
+  virtual std::string GetMimeType(const std::string& path) const override {
     return GetMimeTypeForPath(path);
   }
 
-  virtual bool ShouldAddContentSecurityPolicy() const OVERRIDE {
+  virtual bool ShouldAddContentSecurityPolicy() const override {
     return false;
   }
 

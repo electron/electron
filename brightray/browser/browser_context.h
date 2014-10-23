@@ -39,30 +39,30 @@ class BrowserContext : public content::BrowserContext,
   virtual void RegisterPrefs(PrefRegistrySimple* pref_registry) {}
 
   // URLRequestContextGetter::Delegate:
-  virtual net::NetworkDelegate* CreateNetworkDelegate() OVERRIDE;
+  virtual net::NetworkDelegate* CreateNetworkDelegate() override;
 
-  virtual base::FilePath GetPath() const OVERRIDE;
+  virtual base::FilePath GetPath() const override;
 
  private:
   class ResourceContext;
 
   void RegisterInternalPrefs(PrefRegistrySimple* pref_registry);
 
-  virtual bool IsOffTheRecord() const OVERRIDE;
-  virtual net::URLRequestContextGetter* GetRequestContext() OVERRIDE;
+  virtual bool IsOffTheRecord() const override;
+  virtual net::URLRequestContextGetter* GetRequestContext() override;
   virtual net::URLRequestContextGetter* GetRequestContextForRenderProcess(
       int renderer_child_id);
-  virtual net::URLRequestContextGetter* GetMediaRequestContext() OVERRIDE;
+  virtual net::URLRequestContextGetter* GetMediaRequestContext() override;
   virtual net::URLRequestContextGetter* GetMediaRequestContextForRenderProcess(
-      int renderer_child_id) OVERRIDE;
+      int renderer_child_id) override;
   virtual net::URLRequestContextGetter*
       GetMediaRequestContextForStoragePartition(
           const base::FilePath& partition_path, bool in_memory);
-  virtual content::ResourceContext* GetResourceContext() OVERRIDE;
-  virtual content::DownloadManagerDelegate* GetDownloadManagerDelegate() OVERRIDE;
-  virtual content::BrowserPluginGuestManager* GetGuestManager() OVERRIDE;
-  virtual quota::SpecialStoragePolicy* GetSpecialStoragePolicy() OVERRIDE;
-  virtual content::PushMessagingService* GetPushMessagingService() OVERRIDE;
+  virtual content::ResourceContext* GetResourceContext() override;
+  virtual content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
+  virtual content::BrowserPluginGuestManager* GetGuestManager() override;
+  virtual quota::SpecialStoragePolicy* GetSpecialStoragePolicy() override;
+  virtual content::PushMessagingService* GetPushMessagingService() override;
   virtual content::SSLHostStateDelegate* GetSSLHostStateDelegate() override;
 
   base::FilePath path_;

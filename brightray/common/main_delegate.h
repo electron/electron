@@ -49,11 +49,11 @@ class MainDelegate : public content::ContentMainDelegate {
   virtual void OverrideFrameworkBundlePath();
 #endif
 
-  virtual bool BasicStartupComplete(int* exit_code) OVERRIDE;
-  virtual void PreSandboxStartup() OVERRIDE;
+  virtual bool BasicStartupComplete(int* exit_code) override;
+  virtual void PreSandboxStartup() override;
 
  private:
-  virtual content::ContentBrowserClient* CreateContentBrowserClient() OVERRIDE;
+  virtual content::ContentBrowserClient* CreateContentBrowserClient() override;
 
   void InitializeResourceBundle();
 

@@ -16,10 +16,10 @@ class DefaultWebContentsDelegate : public content::WebContentsDelegate {
   virtual void RequestMediaAccessPermission(
       content::WebContents*,
       const content::MediaStreamRequest&,
-      const content::MediaResponseCallback&) OVERRIDE;
+      const content::MediaResponseCallback&) override;
 #if defined(OS_MACOSX)
   virtual void HandleKeyboardEvent(
-      content::WebContents*, const content::NativeWebKeyboardEvent&) OVERRIDE;
+      content::WebContents*, const content::NativeWebKeyboardEvent&) override;
 #endif
 };
 

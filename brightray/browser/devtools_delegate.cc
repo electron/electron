@@ -67,24 +67,24 @@ class Target : public content::DevToolsTarget {
  public:
   explicit Target(WebContents* web_contents);
 
-  virtual std::string GetId() const OVERRIDE { return id_; }
+  virtual std::string GetId() const override { return id_; }
   virtual std::string GetParentId() const { return std::string(); }
-  virtual std::string GetType() const OVERRIDE { return kTargetTypePage; }
-  virtual std::string GetTitle() const OVERRIDE { return title_; }
-  virtual std::string GetDescription() const OVERRIDE { return std::string(); }
-  virtual GURL GetURL() const OVERRIDE { return url_; }
-  virtual GURL GetFaviconURL() const OVERRIDE { return favicon_url_; }
-  virtual base::TimeTicks GetLastActivityTime() const OVERRIDE {
+  virtual std::string GetType() const override { return kTargetTypePage; }
+  virtual std::string GetTitle() const override { return title_; }
+  virtual std::string GetDescription() const override { return std::string(); }
+  virtual GURL GetURL() const override { return url_; }
+  virtual GURL GetFaviconURL() const override { return favicon_url_; }
+  virtual base::TimeTicks GetLastActivityTime() const override {
     return last_activity_time_;
   }
-  virtual bool IsAttached() const OVERRIDE {
+  virtual bool IsAttached() const override {
     return agent_host_->IsAttached();
   }
-  virtual scoped_refptr<DevToolsAgentHost> GetAgentHost() const OVERRIDE {
+  virtual scoped_refptr<DevToolsAgentHost> GetAgentHost() const override {
     return agent_host_;
   }
-  virtual bool Activate() const OVERRIDE;
-  virtual bool Close() const OVERRIDE;
+  virtual bool Activate() const override;
+  virtual bool Close() const override;
 
  private:
   scoped_refptr<DevToolsAgentHost> agent_host_;

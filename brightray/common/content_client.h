@@ -16,11 +16,11 @@ class ContentClient : public content::ContentClient {
   ~ContentClient();
 
  private:
-  virtual std::string GetProduct() const OVERRIDE;
-  virtual std::string GetUserAgent() const OVERRIDE;
+  virtual std::string GetProduct() const override;
+  virtual std::string GetUserAgent() const override;
   virtual base::StringPiece GetDataResource(int resource_id,
-                                            ui::ScaleFactor) const OVERRIDE;
-  virtual gfx::Image& GetNativeImageNamed(int resource_id) const OVERRIDE;
+                                            ui::ScaleFactor) const override;
+  virtual gfx::Image& GetNativeImageNamed(int resource_id) const override;
 
   DISALLOW_COPY_AND_ASSIGN(ContentClient);
 };

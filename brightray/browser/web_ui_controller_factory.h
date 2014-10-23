@@ -19,14 +19,14 @@ class WebUIControllerFactory : public content::WebUIControllerFactory {
   virtual ~WebUIControllerFactory();
 
   virtual content::WebUI::TypeID GetWebUIType(
-      content::BrowserContext* browser_context, const GURL& url) const OVERRIDE;
+      content::BrowserContext* browser_context, const GURL& url) const override;
   virtual bool UseWebUIForURL(content::BrowserContext* browser_context,
-                              const GURL& url) const OVERRIDE;
+                              const GURL& url) const override;
   virtual bool UseWebUIBindingsForURL(content::BrowserContext* browser_context,
-                                      const GURL& url) const OVERRIDE;
+                                      const GURL& url) const override;
   virtual content::WebUIController* CreateWebUIControllerForURL(
       content::WebUI* web_ui,
-      const GURL& url) const OVERRIDE;
+      const GURL& url) const override;
 
   static WebUIControllerFactory* GetInstance();
 

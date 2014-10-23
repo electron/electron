@@ -34,20 +34,20 @@ class DevToolsWindowDelegate : public views::ClientView,
   virtual ~DevToolsWindowDelegate() {}
 
   // views::WidgetDelegate:
-  virtual void DeleteDelegate() OVERRIDE { delete this; }
-  virtual views::View* GetInitiallyFocusedView() OVERRIDE { return view_; }
-  virtual bool CanResize() const OVERRIDE { return true; }
-  virtual bool CanMaximize() const OVERRIDE { return false; }
-  virtual base::string16 GetWindowTitle() const OVERRIDE { return title_; }
-  virtual gfx::ImageSkia GetWindowAppIcon() OVERRIDE { return GetWindowIcon(); }
-  virtual gfx::ImageSkia GetWindowIcon() OVERRIDE { return icon_; }
-  virtual views::Widget* GetWidget() OVERRIDE { return widget_; }
-  virtual const views::Widget* GetWidget() const OVERRIDE { return widget_; }
-  virtual views::View* GetContentsView() OVERRIDE { return view_; }
+  virtual void DeleteDelegate() override { delete this; }
+  virtual views::View* GetInitiallyFocusedView() override { return view_; }
+  virtual bool CanResize() const override { return true; }
+  virtual bool CanMaximize() const override { return false; }
+  virtual base::string16 GetWindowTitle() const override { return title_; }
+  virtual gfx::ImageSkia GetWindowAppIcon() override { return GetWindowIcon(); }
+  virtual gfx::ImageSkia GetWindowIcon() override { return icon_; }
+  virtual views::Widget* GetWidget() override { return widget_; }
+  virtual const views::Widget* GetWidget() const override { return widget_; }
+  virtual views::View* GetContentsView() override { return view_; }
   virtual views::ClientView* CreateClientView(views::Widget* widget) { return this; }
 
   // views::ClientView:
-  virtual bool CanClose() OVERRIDE {
+  virtual bool CanClose() override {
     shell_->inspectable_web_contents()->CloseDevTools();
     return false;
   }

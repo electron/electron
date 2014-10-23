@@ -17,44 +17,44 @@ class NetworkDelegate : public net::NetworkDelegate {
  protected:
   virtual int OnBeforeURLRequest(net::URLRequest* request,
                                  const net::CompletionCallback& callback,
-                                 GURL* new_url) OVERRIDE;
+                                 GURL* new_url) override;
   virtual int OnBeforeSendHeaders(net::URLRequest* request,
                                   const net::CompletionCallback& callback,
-                                  net::HttpRequestHeaders* headers) OVERRIDE;
+                                  net::HttpRequestHeaders* headers) override;
   virtual void OnSendHeaders(net::URLRequest* request,
-                             const net::HttpRequestHeaders& headers) OVERRIDE;
+                             const net::HttpRequestHeaders& headers) override;
   virtual int OnHeadersReceived(
       net::URLRequest* request,
       const net::CompletionCallback& callback,
       const net::HttpResponseHeaders* original_response_headers,
       scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
-      GURL* allowed_unsafe_redirect_url) OVERRIDE;
+      GURL* allowed_unsafe_redirect_url) override;
   virtual void OnBeforeRedirect(net::URLRequest* request,
-                                const GURL& new_location) OVERRIDE;
-  virtual void OnResponseStarted(net::URLRequest* request) OVERRIDE;
+                                const GURL& new_location) override;
+  virtual void OnResponseStarted(net::URLRequest* request) override;
   virtual void OnRawBytesRead(const net::URLRequest& request,
-                              int bytes_read) OVERRIDE;
-  virtual void OnCompleted(net::URLRequest* request, bool started) OVERRIDE;
-  virtual void OnURLRequestDestroyed(net::URLRequest* request) OVERRIDE;
+                              int bytes_read) override;
+  virtual void OnCompleted(net::URLRequest* request, bool started) override;
+  virtual void OnURLRequestDestroyed(net::URLRequest* request) override;
   virtual void OnPACScriptError(int line_number,
-                                const base::string16& error) OVERRIDE;
+                                const base::string16& error) override;
   virtual AuthRequiredResponse OnAuthRequired(
       net::URLRequest* request,
       const net::AuthChallengeInfo& auth_info,
       const AuthCallback& callback,
-      net::AuthCredentials* credentials) OVERRIDE;
+      net::AuthCredentials* credentials) override;
   virtual bool OnCanGetCookies(const net::URLRequest& request,
-                               const net::CookieList& cookie_list) OVERRIDE;
+                               const net::CookieList& cookie_list) override;
   virtual bool OnCanSetCookie(const net::URLRequest& request,
                               const std::string& cookie_line,
-                              net::CookieOptions* options) OVERRIDE;
+                              net::CookieOptions* options) override;
   virtual bool OnCanAccessFile(const net::URLRequest& request,
-                               const base::FilePath& path) const OVERRIDE;
+                               const base::FilePath& path) const override;
   virtual bool OnCanThrottleRequest(
-      const net::URLRequest& request) const OVERRIDE;
+      const net::URLRequest& request) const override;
   virtual int OnBeforeSocketStreamConnect(
       net::SocketStream* stream,
-      const net::CompletionCallback& callback) OVERRIDE;
+      const net::CompletionCallback& callback) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(NetworkDelegate);

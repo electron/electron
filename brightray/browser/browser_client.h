@@ -36,20 +36,20 @@ class BrowserClient : public content::ContentBrowserClient {
   virtual net::URLRequestContextGetter* CreateRequestContext(
       content::BrowserContext* browser_context,
       content::ProtocolHandlerMap* protocol_handlers,
-      content::URLRequestInterceptorScopedVector protocol_interceptors) OVERRIDE;
+      content::URLRequestInterceptorScopedVector protocol_interceptors) override;
 
  private:
   virtual content::BrowserMainParts* CreateBrowserMainParts(
-      const content::MainFunctionParams&) OVERRIDE;
+      const content::MainFunctionParams&) override;
   virtual void ShowDesktopNotification(
       const content::ShowDesktopNotificationHostMsgParams& params,
       content::RenderFrameHost* render_frame_host,
       scoped_ptr<content::DesktopNotificationDelegate> delegate,
       base::Closure* cancel_callback) override;
-  virtual content::MediaObserver* GetMediaObserver() OVERRIDE;
+  virtual content::MediaObserver* GetMediaObserver() override;
   virtual void GetAdditionalAllowedSchemesForFileSystem(
-      std::vector<std::string>* additional_schemes) OVERRIDE;
-  virtual base::FilePath GetDefaultDownloadDirectory() OVERRIDE;
+      std::vector<std::string>* additional_schemes) override;
+  virtual base::FilePath GetDefaultDownloadDirectory() override;
 
   BrowserMainParts* browser_main_parts_;
   scoped_ptr<NotificationPresenter> notification_presenter_;

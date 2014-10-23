@@ -37,23 +37,23 @@ class BrowserContext::ResourceContext : public content::ResourceContext {
   }
 
  private:
-  virtual net::HostResolver* GetHostResolver() OVERRIDE {
+  virtual net::HostResolver* GetHostResolver() override {
     return getter_->host_resolver();
   }
 
-  virtual net::URLRequestContext* GetRequestContext() OVERRIDE {
+  virtual net::URLRequestContext* GetRequestContext() override {
     return getter_->GetURLRequestContext();
   }
 
   // FIXME: We should probably allow clients to override this to implement more
   // restrictive policies.
-  virtual bool AllowMicAccess(const GURL& origin) OVERRIDE {
+  virtual bool AllowMicAccess(const GURL& origin) override {
     return true;
   }
 
   // FIXME: We should probably allow clients to override this to implement more
   // restrictive policies.
-  virtual bool AllowCameraAccess(const GURL& origin) OVERRIDE {
+  virtual bool AllowCameraAccess(const GURL& origin) override {
     return true;
   }
 
