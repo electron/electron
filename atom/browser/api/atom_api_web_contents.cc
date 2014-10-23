@@ -19,6 +19,12 @@ namespace atom {
 
 namespace api {
 
+namespace {
+
+v8::Persistent<v8::ObjectTemplate> template_;
+
+}  // namespace
+
 WebContents::WebContents(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
       web_contents_(web_contents) {
@@ -166,28 +172,33 @@ bool WebContents::SendIPCMessage(const base::string16& channel,
 
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return mate::ObjectTemplateBuilder(isolate)
-      .SetMethod("isAlive", &WebContents::IsAlive)
-      .SetMethod("loadUrl", &WebContents::LoadURL)
-      .SetMethod("getUrl", &WebContents::GetURL)
-      .SetMethod("getTitle", &WebContents::GetTitle)
-      .SetMethod("isLoading", &WebContents::IsLoading)
-      .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
-      .SetMethod("stop", &WebContents::Stop)
-      .SetMethod("reload", &WebContents::Reload)
-      .SetMethod("reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
-      .SetMethod("canGoBack", &WebContents::CanGoBack)
-      .SetMethod("canGoForward", &WebContents::CanGoForward)
-      .SetMethod("canGoToOffset", &WebContents::CanGoToOffset)
-      .SetMethod("goBack", &WebContents::GoBack)
-      .SetMethod("goForward", &WebContents::GoForward)
-      .SetMethod("goToIndex", &WebContents::GoToIndex)
-      .SetMethod("goToOffset", &WebContents::GoToOffset)
-      .SetMethod("getRoutingId", &WebContents::GetRoutingID)
-      .SetMethod("getProcessId", &WebContents::GetProcessID)
-      .SetMethod("isCrashed", &WebContents::IsCrashed)
-      .SetMethod("_executeJavaScript", &WebContents::ExecuteJavaScript)
-      .SetMethod("_send", &WebContents::SendIPCMessage);
+  if (template_.IsEmpty())
+    template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
+        .SetMethod("isAlive", &WebContents::IsAlive)
+        .SetMethod("loadUrl", &WebContents::LoadURL)
+        .SetMethod("getUrl", &WebContents::GetURL)
+        .SetMethod("getTitle", &WebContents::GetTitle)
+        .SetMethod("isLoading", &WebContents::IsLoading)
+        .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
+        .SetMethod("stop", &WebContents::Stop)
+        .SetMethod("reload", &WebContents::Reload)
+        .SetMethod("reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
+        .SetMethod("canGoBack", &WebContents::CanGoBack)
+        .SetMethod("canGoForward", &WebContents::CanGoForward)
+        .SetMethod("canGoToOffset", &WebContents::CanGoToOffset)
+        .SetMethod("goBack", &WebContents::GoBack)
+        .SetMethod("goForward", &WebContents::GoForward)
+        .SetMethod("goToIndex", &WebContents::GoToIndex)
+        .SetMethod("goToOffset", &WebContents::GoToOffset)
+        .SetMethod("getRoutingId", &WebContents::GetRoutingID)
+        .SetMethod("getProcessId", &WebContents::GetProcessID)
+        .SetMethod("isCrashed", &WebContents::IsCrashed)
+        .SetMethod("_executeJavaScript", &WebContents::ExecuteJavaScript)
+        .SetMethod("_send", &WebContents::SendIPCMessage)
+        .Build());
+
+  return mate::ObjectTemplateBuilder(
+      isolate, v8::Local<v8::ObjectTemplate>::New(isolate, template_));
 }
 
 void WebContents::OnRendererMessage(const base::string16& channel,
