@@ -6,6 +6,10 @@ webView = require 'web-view'
 nextId = 1
 getNextId = -> nextId++
 
+# FIXME
+# Discarded after Chrome 39
+PLUGIN_METHOD_ATTACH = '-internal-attach'
+
 # Attributes.
 WEB_VIEW_ATTRIBUTE_ALLOWTRANSPARENCY = 'allowtransparency'
 WEB_VIEW_ATTRIBUTE_AUTOSIZE = 'autosize'
@@ -283,11 +287,13 @@ class WebView
       @partition.fromAttribute newValue, @hasNavigated()
 
   handleBrowserPluginAttributeMutation: (name, oldValue, newValue) ->
-    if name is 'internalinstanceid' and !oldValue and !!newValue
-      @browserPluginNode.removeAttribute 'internalinstanceid'
-      @internalInstanceId = parseInt newValue
+    # FIXME
+    # internalbindings => internalInstanceid after Chrome 39
+    if name is 'internalbindings' and !oldValue and !!newValue
+      @browserPluginNode.removeAttribute 'internalbindings'
+      # FIXME
+      # @internalInstanceId = parseInt newValue
 
-      console.log 'internalinstanceid', @internalInstanceId
       if !!@guestInstanceId and @guestInstanceId != 0
         isNewWindow = if @deferredAttachState then @deferredAttachState.isNewWindow else false
         params = @buildAttachParams isNewWindow
@@ -297,6 +303,7 @@ class WebView
         #   @guestInstanceId,
         #   params,
         #   (w) => @contentWindow = w
+        @browserPluginNode[PLUGIN_METHOD_ATTACH] @guestInstanceId, params
 
   onSizeChanged: (webViewEvent) ->
     newWidth = webViewEvent.newWidth
@@ -348,7 +355,9 @@ class WebView
 
   # Returns if <object> is in the render tree.
   isPluginInRenderTree: ->
-    !!@internalInstanceId && @internalInstanceId != 0
+    # FIXME
+    # !!@internalInstanceId && @internalInstanceId != 0
+    'function' == typeof this.browserPluginNode[PLUGIN_METHOD_ATTACH]
 
   hasNavigated: ->
     not @beforeFirstNavigation
@@ -458,6 +467,7 @@ class WebView
     @deferredAttachState = null
     # FIXME
     # guestViewInternalNatives.AttachGuest @internalInstanceId, @guestInstanceId, params, (w) => @contentWindow = w
+    @browserPluginNode[PLUGIN_METHOD_ATTACH] @guestInstanceId, params
 
 # Registers browser plugin <object> custom element.
 registerBrowserPluginElement = ->
