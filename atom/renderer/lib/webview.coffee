@@ -1,4 +1,5 @@
 v8Util = process.atomBinding 'v8_util'
+guestViewInternal = require './guest-view-internal'
 webView = require 'web-view'
 
 # ID generator.
@@ -114,8 +115,7 @@ class WebView
     # heard back from createGuest yet. We will not reset the flag in this case so
     # that we don't end up allocating a second guest.
     if @guestInstanceId
-      # FIXME
-      # GuestViewInternal.destroyGuest @guestInstanceId
+      guestViewInternal.destroyGuest @guestInstanceId
       @guestInstanceId = undefined
       @beforeFirstNavigation = true
       @validPartitionId = true
@@ -287,6 +287,7 @@ class WebView
       @browserPluginNode.removeAttribute 'internalinstanceid'
       @internalInstanceId = parseInt newValue
 
+      console.log 'internalinstanceid', @internalInstanceId
       if !!@guestInstanceId and @guestInstanceId != 0
         isNewWindow = if @deferredAttachState then @deferredAttachState.isNewWindow else false
         params = @buildAttachParams isNewWindow
@@ -378,18 +379,17 @@ class WebView
     @parseSrcAttribute result
 
   createGuest: ->
-    return if @pendingGuestCreation?
+    return if @pendingGuestCreation
     storagePartitionId =
       @webviewNode.getAttribute(WEB_VIEW_ATTRIBUTE_PARTITION) or
       @webviewNode[WEB_VIEW_ATTRIBUTE_PARTITION]
     params = storagePartitionId: storagePartitionId
-    # FIXME
-    # GuestViewInternal.createGuest 'webview', params, (guestInstanceId) =>
-    #   @pendingGuestCreation = false
-    #   unless @elementAttached
-    #     GuestViewInternal.destroyGuest guestInstanceId
-    #     return
-    #   @attachWindow guestInstanceId, false
+    guestViewInternal.createGuest 'webview', params, (guestInstanceId) =>
+      @pendingGuestCreation = false
+      unless @elementAttached
+        guestViewInternal.destroyGuest guestInstanceId
+        return
+      @attachWindow guestInstanceId, false
     @pendingGuestCreation = true
 
   onFrameNameChanged: (name) ->
@@ -452,7 +452,7 @@ class WebView
     params = @buildAttachParams isNewWindow
 
     unless @isPluginInRenderTree()
-      @deferredAttachState =  isNewWindow: isNewWindow
+      @deferredAttachState = isNewWindow: isNewWindow
       return true
 
     @deferredAttachState = null

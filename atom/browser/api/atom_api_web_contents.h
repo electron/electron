@@ -59,11 +59,11 @@ class WebContents : public mate::EventEmitter,
   explicit WebContents(const mate::Dictionary& options);
   ~WebContents();
 
-  // mate::Wrappable implementations:
+  // mate::Wrappable:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) OVERRIDE;
 
-  // content::WebContentsObserver implementations:
+  // content::WebContentsObserver:
   virtual void RenderViewDeleted(content::RenderViewHost*) OVERRIDE;
   virtual void RenderProcessGone(base::TerminationStatus status) OVERRIDE;
   virtual void DidFinishLoad(content::RenderFrameHost* render_frame_host,
@@ -75,6 +75,22 @@ class WebContents : public mate::EventEmitter,
   virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
   virtual void WebContentsDestroyed() OVERRIDE;
 
+  // content::BrowserPluginGuestDelegate:
+  virtual void WillAttach(content::WebContents* embedder_web_contents,
+                          const base::DictionaryValue& extra_params) final;
+  virtual void DidAttach() final;
+  virtual int GetGuestInstanceID() const final;
+  virtual void ElementSizeChanged(const gfx::Size& old_size,
+                                  const gfx::Size& new_size) final;
+  virtual void GuestSizeChanged(const gfx::Size& old_size,
+                                const gfx::Size& new_size) final;
+  virtual void RequestPointerLockPermission(
+      bool user_gesture,
+      bool last_unlocked_by_target,
+      const base::Callback<void(bool)>& callback) final;
+  virtual void RegisterDestructionCallback(
+      const DestructionCallback& callback) final;
+
  private:
   // Called when received a message from renderer.
   void OnRendererMessage(const base::string16& channel,
@@ -84,6 +100,11 @@ class WebContents : public mate::EventEmitter,
   void OnRendererMessageSync(const base::string16& channel,
                              const base::ListValue& args,
                              IPC::Message* message);
+
+  // Unique ID for a guest WebContents.
+  int guest_instance_id_;
+
+  DestructionCallback destruction_callback_;
 
   // Stores the WebContents that managed by this class.
   scoped_ptr<content::WebContents> storage_;

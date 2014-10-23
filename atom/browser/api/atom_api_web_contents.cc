@@ -30,10 +30,14 @@ v8::Persistent<v8::ObjectTemplate> template_;
 }  // namespace
 
 WebContents::WebContents(content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents) {
+    : content::WebContentsObserver(web_contents),
+      guest_instance_id_(-1) {
 }
 
-WebContents::WebContents(const mate::Dictionary& options) {
+WebContents::WebContents(const mate::Dictionary& options)
+    : guest_instance_id_(-1) {
+  options.Get("guestInstances", &guest_instance_id_);
+
   content::WebContents::CreateParams params(AtomBrowserContext::Get());
   bool is_guest;
   if (options.Get("isGuest", &is_guest) && is_guest)
@@ -44,6 +48,7 @@ WebContents::WebContents(const mate::Dictionary& options) {
 }
 
 WebContents::~WebContents() {
+  Destroy();
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
@@ -95,8 +100,47 @@ void WebContents::WebContentsDestroyed() {
   Emit("destroyed");
 }
 
+void WebContents::WillAttach(content::WebContents* embedder_web_contents,
+                             const base::DictionaryValue& extra_params) {
+  LOG(ERROR) << "WillAttach";
+}
+
+void WebContents::DidAttach() {
+  LOG(ERROR) << "DidAttach";
+}
+
+int WebContents::GetGuestInstanceID() const {
+  return guest_instance_id_;
+}
+
+void WebContents::ElementSizeChanged(const gfx::Size& old_size,
+                                     const gfx::Size& new_size) {
+  LOG(ERROR) << "ElementSizeChanged";
+}
+
+void WebContents::GuestSizeChanged(const gfx::Size& old_size,
+                                   const gfx::Size& new_size) {
+  LOG(ERROR) << "GuestSizeChanged";
+}
+
+void WebContents::RequestPointerLockPermission(
+    bool user_gesture,
+    bool last_unlocked_by_target,
+    const base::Callback<void(bool)>& callback) {
+  callback.Run(true);
+}
+
+void WebContents::RegisterDestructionCallback(
+    const DestructionCallback& callback) {
+  LOG(ERROR) << "RegisterDestructionCallback";
+  destruction_callback_ = callback;
+}
+
 void WebContents::Destroy() {
   if (storage_) {
+    if (!destruction_callback_.is_null())
+      destruction_callback_.Run();
+
     Observe(nullptr);
     storage_.reset();
   }

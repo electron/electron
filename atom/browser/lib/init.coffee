@@ -61,6 +61,9 @@ setImmediate ->
   # Load the RPC server.
   require './rpc-server.js'
 
+  # Load the guest view manager.
+  require './guest-view-manager.js'
+
   # Now we try to load app's package.json.
   packageJson = null
 
