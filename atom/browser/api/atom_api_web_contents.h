@@ -6,19 +6,31 @@
 #define ATOM_BROWSER_API_ATOM_API_WEB_CONTENTS_H_
 
 #include "atom/browser/api/event_emitter.h"
+#include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "native_mate/handle.h"
+
+namespace mate {
+class Dictionary;
+}
 
 namespace atom {
 
 namespace api {
 
 class WebContents : public mate::EventEmitter,
+                    public content::BrowserPluginGuestDelegate,
                     public content::WebContentsObserver {
  public:
-  static mate::Handle<WebContents> Create(v8::Isolate* isolate,
-                                          content::WebContents* web_contents);
+  // Create from an existing WebContents.
+  static mate::Handle<WebContents> CreateFrom(
+      v8::Isolate* isolate, content::WebContents* web_contents);
 
+  // Create a new WebContents.
+  static mate::Handle<WebContents> Create(
+      v8::Isolate* isolate, const mate::Dictionary& options);
+
+  void Destroy();
   bool IsAlive() const;
   void LoadURL(const GURL& url);
   GURL GetURL() const;
@@ -44,6 +56,8 @@ class WebContents : public mate::EventEmitter,
 
  protected:
   explicit WebContents(content::WebContents* web_contents);
+  explicit WebContents(const mate::Dictionary& options);
+  ~WebContents();
 
   // mate::Wrappable implementations:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
@@ -71,7 +85,8 @@ class WebContents : public mate::EventEmitter,
                              const base::ListValue& args,
                              IPC::Message* message);
 
-  content::WebContents* web_contents_;  // Weak.
+  // Stores the WebContents that managed by this class.
+  scoped_ptr<content::WebContents> storage_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

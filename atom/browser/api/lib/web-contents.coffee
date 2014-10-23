@@ -1,4 +1,5 @@
 EventEmitter = require('events').EventEmitter
+binding = process.atomBinding 'web_contents'
 ipc = require 'ipc'
 
 module.exports.wrap = (webContents) ->
@@ -38,5 +39,13 @@ module.exports.wrap = (webContents) ->
     Object.defineProperty event, 'returnValue', set: (value) -> event.sendReply JSON.stringify(value)
     Object.defineProperty event, 'sender', value: webContents
     ipc.emit channel, event, args...
+
+  webContents
+
+module.exports.create = (options={}) ->
+  webContents = @wrap binding.create(options)
+
+  # Ensure the webContents is destroyed on exit.
+  process.on 'exit', -> webContents.destroy()
 
   webContents

@@ -4,6 +4,7 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 
+#include "atom/browser/atom_browser_context.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -13,7 +14,10 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
+#include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+
+#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -26,8 +30,20 @@ v8::Persistent<v8::ObjectTemplate> template_;
 }  // namespace
 
 WebContents::WebContents(content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents),
-      web_contents_(web_contents) {
+    : content::WebContentsObserver(web_contents) {
+}
+
+WebContents::WebContents(const mate::Dictionary& options) {
+  content::WebContents::CreateParams params(AtomBrowserContext::Get());
+  bool is_guest;
+  if (options.Get("isGuest", &is_guest) && is_guest)
+    params.guest_delegate = this;
+
+  storage_.reset(content::WebContents::Create(params));
+  Observe(storage_.get());
+}
+
+WebContents::~WebContents() {
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
@@ -75,8 +91,15 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 
 void WebContents::WebContentsDestroyed() {
   // The RenderViewDeleted was not called when the WebContents is destroyed.
-  RenderViewDeleted(web_contents_->GetRenderViewHost());
+  RenderViewDeleted(web_contents()->GetRenderViewHost());
   Emit("destroyed");
+}
+
+void WebContents::Destroy() {
+  if (storage_) {
+    Observe(nullptr);
+    storage_.reset();
+  }
 }
 
 bool WebContents::IsAlive() const {
@@ -174,6 +197,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   if (template_.IsEmpty())
     template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
+        .SetMethod("destroy", &WebContents::Destroy)
         .SetMethod("isAlive", &WebContents::IsAlive)
         .SetMethod("loadUrl", &WebContents::LoadURL)
         .SetMethod("getUrl", &WebContents::GetURL)
@@ -215,11 +239,31 @@ void WebContents::OnRendererMessageSync(const base::string16& channel,
 }
 
 // static
-mate::Handle<WebContents> WebContents::Create(
+mate::Handle<WebContents> WebContents::CreateFrom(
     v8::Isolate* isolate, content::WebContents* web_contents) {
   return mate::CreateHandle(isolate, new WebContents(web_contents));
+}
+
+// static
+mate::Handle<WebContents> WebContents::Create(
+    v8::Isolate* isolate, const mate::Dictionary& options) {
+  return mate::CreateHandle(isolate, new WebContents(options));
 }
 
 }  // namespace api
 
 }  // namespace atom
+
+
+namespace {
+
+void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
+                v8::Handle<v8::Context> context, void* priv) {
+  v8::Isolate* isolate = context->GetIsolate();
+  mate::Dictionary dict(isolate, exports);
+  dict.SetMethod("create", &atom::api::WebContents::Create);
+}
+
+}  // namespace
+
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_web_contents, Initialize)

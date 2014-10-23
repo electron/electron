@@ -375,12 +375,12 @@ void Window::SetProgressBar(double progress) {
 }
 
 mate::Handle<WebContents> Window::GetWebContents(v8::Isolate* isolate) const {
-  return WebContents::Create(isolate, window_->GetWebContents());
+  return WebContents::CreateFrom(isolate, window_->GetWebContents());
 }
 
 mate::Handle<WebContents> Window::GetDevToolsWebContents(
     v8::Isolate* isolate) const {
-  return WebContents::Create(isolate, window_->GetDevToolsWebContents());
+  return WebContents::CreateFrom(isolate, window_->GetDevToolsWebContents());
 }
 
 // static
