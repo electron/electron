@@ -18,6 +18,9 @@ app.on('ready', function() {
     resizable: false,
     'auto-hide-menu-bar': true,
     'use-content-size': true,
+    'web-preferences': {
+      'plugins': true,
+    },
   });
   mainWindow.loadUrl('file://' + __dirname + '/index.html');
   mainWindow.focus();

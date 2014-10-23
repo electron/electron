@@ -22,9 +22,6 @@ class AtomBrowserContext : public brightray::BrowserContext {
   // Returns the browser context singleton.
   static AtomBrowserContext* Get();
 
-  AtomURLRequestJobFactory* job_factory() const { return job_factory_; }
-
- protected:
   // brightray::URLRequestContextGetter::Delegate:
   virtual net::URLRequestJobFactory* CreateURLRequestJobFactory(
       content::ProtocolHandlerMap* handlers,
@@ -32,6 +29,8 @@ class AtomBrowserContext : public brightray::BrowserContext {
 
   // content::BrowserContext:
   virtual content::BrowserPluginGuestManager* GetGuestManager() override;
+
+  AtomURLRequestJobFactory* job_factory() const { return job_factory_; }
 
  private:
   // A fake BrowserProcess object that used to feed the source code from chrome.

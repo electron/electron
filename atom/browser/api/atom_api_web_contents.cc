@@ -44,6 +44,7 @@ WebContents::WebContents(const mate::Dictionary& options)
     params.guest_delegate = this;
 
   storage_.reset(content::WebContents::Create(params));
+  storage_->SetDelegate(this);
   Observe(storage_.get());
 }
 
@@ -94,6 +95,9 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
   return handled;
 }
 
+void WebContents::RenderViewReady() {
+}
+
 void WebContents::WebContentsDestroyed() {
   // The RenderViewDeleted was not called when the WebContents is destroyed.
   RenderViewDeleted(web_contents()->GetRenderViewHost());
@@ -103,6 +107,12 @@ void WebContents::WebContentsDestroyed() {
 void WebContents::WillAttach(content::WebContents* embedder_web_contents,
                              const base::DictionaryValue& extra_params) {
   LOG(ERROR) << "WillAttach";
+}
+
+content::WebContents* WebContents::CreateNewGuestWindow(
+    const content::WebContents::CreateParams& create_params) {
+  LOG(ERROR) << "CreateNewGuestWindow";
+  return nullptr;
 }
 
 void WebContents::DidAttach() {
@@ -137,6 +147,7 @@ void WebContents::RegisterDestructionCallback(
 }
 
 void WebContents::Destroy() {
+  LOG(ERROR) << "Destroy";
   if (storage_) {
     if (!destruction_callback_.is_null())
       destruction_callback_.Run();

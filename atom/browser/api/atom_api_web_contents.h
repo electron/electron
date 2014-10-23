@@ -7,6 +7,7 @@
 
 #include "atom/browser/api/event_emitter.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
+#include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "native_mate/handle.h"
 
@@ -20,6 +21,7 @@ namespace api {
 
 class WebContents : public mate::EventEmitter,
                     public content::BrowserPluginGuestDelegate,
+                    public content::WebContentsDelegate,
                     public content::WebContentsObserver {
  public:
   // Create from an existing WebContents.
@@ -54,6 +56,10 @@ class WebContents : public mate::EventEmitter,
   bool SendIPCMessage(const base::string16& channel,
                       const base::ListValue& args);
 
+  content::WebContents* web_contents() const {
+    return content::WebContentsObserver::web_contents();
+  }
+
  protected:
   explicit WebContents(content::WebContents* web_contents);
   explicit WebContents(const mate::Dictionary& options);
@@ -61,35 +67,38 @@ class WebContents : public mate::EventEmitter,
 
   // mate::Wrappable:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) OVERRIDE;
+      v8::Isolate* isolate) override;
 
   // content::WebContentsObserver:
-  virtual void RenderViewDeleted(content::RenderViewHost*) OVERRIDE;
-  virtual void RenderProcessGone(base::TerminationStatus status) OVERRIDE;
+  virtual void RenderViewDeleted(content::RenderViewHost*) override;
+  virtual void RenderProcessGone(base::TerminationStatus status) override;
   virtual void DidFinishLoad(content::RenderFrameHost* render_frame_host,
-                             const GURL& validated_url) OVERRIDE;
+                             const GURL& validated_url) override;
   virtual void DidStartLoading(
-      content::RenderViewHost* render_view_host) OVERRIDE;
+      content::RenderViewHost* render_view_host) override;
   virtual void DidStopLoading(
-      content::RenderViewHost* render_view_host) OVERRIDE;
-  virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
-  virtual void WebContentsDestroyed() OVERRIDE;
+      content::RenderViewHost* render_view_host) override;
+  virtual bool OnMessageReceived(const IPC::Message& message) override;
+  virtual void RenderViewReady() override;
+  virtual void WebContentsDestroyed() override;
 
   // content::BrowserPluginGuestDelegate:
   virtual void WillAttach(content::WebContents* embedder_web_contents,
-                          const base::DictionaryValue& extra_params) final;
-  virtual void DidAttach() final;
-  virtual int GetGuestInstanceID() const final;
+                          const base::DictionaryValue& extra_params) override;
+  virtual content::WebContents* CreateNewGuestWindow(
+      const content::WebContents::CreateParams& create_params) override;
+  virtual void DidAttach() override;
+  virtual int GetGuestInstanceID() const override;
   virtual void ElementSizeChanged(const gfx::Size& old_size,
-                                  const gfx::Size& new_size) final;
+                                  const gfx::Size& new_size) override;
   virtual void GuestSizeChanged(const gfx::Size& old_size,
-                                const gfx::Size& new_size) final;
+                                const gfx::Size& new_size) override;
   virtual void RequestPointerLockPermission(
       bool user_gesture,
       bool last_unlocked_by_target,
-      const base::Callback<void(bool)>& callback) final;
+      const base::Callback<void(bool)>& callback) override;
   virtual void RegisterDestructionCallback(
-      const DestructionCallback& callback) final;
+      const DestructionCallback& callback) override;
 
  private:
   // Called when received a message from renderer.
