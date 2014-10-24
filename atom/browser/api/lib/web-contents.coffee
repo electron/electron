@@ -22,6 +22,14 @@ module.exports.wrap = (webContents) ->
     else
       webContents.once 'did-finish-load', @_executeJavaScript.bind(this, code)
 
+  # Init guest web view.
+  webContents.on 'internal-did-attach', (event, params) ->
+    min = width: params.minwidth, height: params.minheight
+    max = width: params.maxwidth, height: params.maxheight
+    @setAutoSize params.autosize, min, max
+    if params.src
+      @loadUrl params.src
+
   # The processId and routingId and identify a webContents.
   webContents.getId = -> "#{@getProcessId()}-#{@getRoutingId()}"
   webContents.equal = (other) -> @getId() is other.getId()
@@ -32,10 +40,10 @@ module.exports.wrap = (webContents) ->
     process.emit 'ATOM_BROWSER_RELEASE_RENDER_VIEW', "#{processId}-#{routingId}"
 
   # Dispatch IPC messages to the ipc module.
-  webContents.on 'ipc-message', (event, channel, args...) =>
+  webContents.on 'ipc-message', (event, channel, args...) ->
     Object.defineProperty event, 'sender', value: webContents
     ipc.emit channel, event, args...
-  webContents.on 'ipc-message-sync', (event, channel, args...) =>
+  webContents.on 'ipc-message-sync', (event, channel, args...) ->
     Object.defineProperty event, 'returnValue', set: (value) -> event.sendReply JSON.stringify(value)
     Object.defineProperty event, 'sender', value: webContents
     ipc.emit channel, event, args...

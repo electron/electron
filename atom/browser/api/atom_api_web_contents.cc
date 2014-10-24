@@ -6,6 +6,7 @@
 
 #include "atom/browser/atom_browser_context.h"
 #include "atom/common/api/api_messages.h"
+#include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
@@ -31,11 +32,13 @@ v8::Persistent<v8::ObjectTemplate> template_;
 
 WebContents::WebContents(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
-      guest_instance_id_(-1) {
+      guest_instance_id_(-1),
+      auto_size_enabled_(false) {
 }
 
 WebContents::WebContents(const mate::Dictionary& options)
-    : guest_instance_id_(-1) {
+    : guest_instance_id_(-1),
+      auto_size_enabled_(false) {
   options.Get("guestInstances", &guest_instance_id_);
 
   content::WebContents::CreateParams params(AtomBrowserContext::Get());
@@ -106,17 +109,19 @@ void WebContents::WebContentsDestroyed() {
 
 void WebContents::WillAttach(content::WebContents* embedder_web_contents,
                              const base::DictionaryValue& extra_params) {
-  LOG(ERROR) << "WillAttach";
+  embedder_web_contents_ = embedder_web_contents;
+  extra_params_.reset(extra_params.DeepCopy());
 }
 
 content::WebContents* WebContents::CreateNewGuestWindow(
     const content::WebContents::CreateParams& create_params) {
-  LOG(ERROR) << "CreateNewGuestWindow";
   return nullptr;
 }
 
 void WebContents::DidAttach() {
-  LOG(ERROR) << "DidAttach";
+  base::ListValue args;
+  args.Append(extra_params_.release());
+  Emit("internal-did-attach", args);
 }
 
 int WebContents::GetGuestInstanceID() const {
@@ -125,29 +130,30 @@ int WebContents::GetGuestInstanceID() const {
 
 void WebContents::ElementSizeChanged(const gfx::Size& old_size,
                                      const gfx::Size& new_size) {
-  LOG(ERROR) << "ElementSizeChanged";
+  element_size_ = new_size;
 }
 
 void WebContents::GuestSizeChanged(const gfx::Size& old_size,
                                    const gfx::Size& new_size) {
-  LOG(ERROR) << "GuestSizeChanged";
+  if (!auto_size_enabled_)
+    return;
+  guest_size_ = new_size;
+  GuestSizeChangedDueToAutoSize(old_size, new_size);
 }
 
 void WebContents::RequestPointerLockPermission(
     bool user_gesture,
     bool last_unlocked_by_target,
-    const base::Callback<void(bool)>& callback) {
+    const base::Callback<void(bool enabled)>& callback) {
   callback.Run(true);
 }
 
 void WebContents::RegisterDestructionCallback(
     const DestructionCallback& callback) {
-  LOG(ERROR) << "RegisterDestructionCallback";
   destruction_callback_ = callback;
 }
 
 void WebContents::Destroy() {
-  LOG(ERROR) << "Destroy";
   if (storage_) {
     if (!destruction_callback_.is_null())
       destruction_callback_.Run();
@@ -248,6 +254,33 @@ bool WebContents::SendIPCMessage(const base::string16& channel,
   return Send(new AtomViewMsg_Message(routing_id(), channel, args));
 }
 
+void WebContents::SetAutoSize(bool enabled,
+                              const gfx::Size& min_size,
+                              const gfx::Size& max_size) {
+  min_auto_size_ = min_size;
+  min_auto_size_.SetToMin(max_size);
+  max_auto_size_ = max_size;
+  max_auto_size_.SetToMax(min_size);
+
+  enabled &= !min_auto_size_.IsEmpty() && !max_auto_size_.IsEmpty();
+  if (!enabled && !auto_size_enabled_)
+    return;
+
+  auto_size_enabled_ = enabled;
+
+  if (!attached())
+    return;
+
+  content::RenderViewHost* rvh = web_contents()->GetRenderViewHost();
+  if (auto_size_enabled_) {
+    rvh->EnableAutoResize(min_auto_size_, max_auto_size_);
+  } else {
+    rvh->DisableAutoResize(element_size_);
+    guest_size_ = element_size_;
+    GuestSizeChangedDueToAutoSize(guest_size_, element_size_);
+  }
+}
+
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   if (template_.IsEmpty())
@@ -274,6 +307,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("isCrashed", &WebContents::IsCrashed)
         .SetMethod("_executeJavaScript", &WebContents::ExecuteJavaScript)
         .SetMethod("_send", &WebContents::SendIPCMessage)
+        .SetMethod("setAutoSize", &WebContents::SetAutoSize)
         .Build());
 
   return mate::ObjectTemplateBuilder(
@@ -283,7 +317,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
 void WebContents::OnRendererMessage(const base::string16& channel,
                                     const base::ListValue& args) {
   // webContents.emit(channel, new Event(), args...);
-  Emit(base::UTF16ToUTF8(channel), args, web_contents(), NULL);
+  Emit(base::UTF16ToUTF8(channel), args);
 }
 
 void WebContents::OnRendererMessageSync(const base::string16& channel,
@@ -291,6 +325,16 @@ void WebContents::OnRendererMessageSync(const base::string16& channel,
                                         IPC::Message* message) {
   // webContents.emit(channel, new Event(sender, message), args...);
   Emit(base::UTF16ToUTF8(channel), args, web_contents(), message);
+}
+
+void WebContents::GuestSizeChangedDueToAutoSize(const gfx::Size& old_size,
+                                                const gfx::Size& new_size) {
+  base::ListValue args;
+  args.AppendInteger(old_size.width());
+  args.AppendInteger(old_size.height());
+  args.AppendInteger(new_size.width());
+  args.AppendInteger(new_size.height());
+  Emit("size-changed", args);
 }
 
 // static

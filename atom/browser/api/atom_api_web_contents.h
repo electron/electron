@@ -56,6 +56,14 @@ class WebContents : public mate::EventEmitter,
   bool SendIPCMessage(const base::string16& channel,
                       const base::ListValue& args);
 
+  // Toggles autosize mode for corresponding <webview>.
+  void SetAutoSize(bool enabled,
+                   const gfx::Size& min_size,
+                   const gfx::Size& max_size);
+
+  // Returns whether this guest has an associated embedder.
+  bool attached() const { return !!embedder_web_contents_; }
+
   content::WebContents* web_contents() const {
     return content::WebContentsObserver::web_contents();
   }
@@ -96,7 +104,7 @@ class WebContents : public mate::EventEmitter,
   virtual void RequestPointerLockPermission(
       bool user_gesture,
       bool last_unlocked_by_target,
-      const base::Callback<void(bool)>& callback) override;
+      const base::Callback<void(bool enabled)>& callback) override;
   virtual void RegisterDestructionCallback(
       const DestructionCallback& callback) override;
 
@@ -110,13 +118,41 @@ class WebContents : public mate::EventEmitter,
                              const base::ListValue& args,
                              IPC::Message* message);
 
+  void GuestSizeChangedDueToAutoSize(const gfx::Size& old_size,
+                                     const gfx::Size& new_size);
+
   // Unique ID for a guest WebContents.
   int guest_instance_id_;
 
   DestructionCallback destruction_callback_;
 
+  // The extra parameters associated with this guest view passed
+  // in from JavaScript. This will typically be the view instance ID,
+  // the API to use, and view-specific parameters. These parameters
+  // are passed along to new guests that are created from this guest.
+  scoped_ptr<base::DictionaryValue> extra_params_;
+
   // Stores the WebContents that managed by this class.
   scoped_ptr<content::WebContents> storage_;
+
+  // The WebContents that attaches this guest view.
+  content::WebContents* embedder_web_contents_;
+
+  // The size of the container element.
+  gfx::Size element_size_;
+
+  // The size of the guest content. Note: In autosize mode, the container
+  // element may not match the size of the guest.
+  gfx::Size guest_size_;
+
+  // Indicates whether autosize mode is enabled or not.
+  bool auto_size_enabled_;
+
+  // The maximum size constraints of the container element in autosize mode.
+  gfx::Size max_auto_size_;
+
+  // The minimum size constraints of the container element in autosize mode.
+  gfx::Size min_auto_size_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

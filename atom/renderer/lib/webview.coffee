@@ -3,8 +3,8 @@ guestViewInternal = require './guest-view-internal'
 webView = require 'web-view'
 
 # ID generator.
-nextId = 1
-getNextId = -> nextId++
+nextId = 0
+getNextId = -> ++nextId
 
 # FIXME
 # Discarded after Chrome 39
@@ -45,7 +45,7 @@ class Partition
 
   toAttribute: ->
     return '' unless @validPartitionId
-    (@persistStorage ? 'persist:' : '') + @storagePartitionId
+    (if @persistStorage then 'persist:' else '') + @storagePartitionId
 
   fromAttribute: (value, hasNavigated) ->
     result = {}
@@ -223,15 +223,14 @@ class WebView
       return unless @guestInstanceId
       # Convert autosize attribute to boolean.
       autosize = @webviewNode.hasAttribute WEB_VIEW_ATTRIBUTE_AUTOSIZE
-      # FIXME
-      # GuestViewInternal.setAutoSize @guestInstanceId,
-      #   enableAutoSize: autosize,
-      #   min:
-      #     width: parseInt @minwidth ? 0
-      #     height: parseInt @minheight ? 0
-      #   max:
-      #     width: parseInt @maxwidth ? 0
-      #     height: parseInt @maxheight ? 0
+      guestViewInternal.setAutoSize @guestInstanceId,
+        enableAutoSize: autosize,
+        min:
+          width: parseInt @minwidth || 0
+          height: parseInt @minheight || 0
+        max:
+          width: parseInt @maxwidth || 0
+          height: parseInt @maxheight || 0
     else if name is WEB_VIEW_ATTRIBUTE_ALLOWTRANSPARENCY
       # We treat null attribute (attribute removed) and the empty string as
       # one case.
@@ -450,7 +449,7 @@ class WebView
     minwidth: parseInt @minwidth || 0
     name: @name
     # We don't need to navigate new window from here.
-    src: isNewWindow ? undefined : @src
+    src: if isNewWindow then undefined else @src
     # If we have a partition from the opener, that will also be already
     # set via this.onAttach().
     storagePartitionId: @partition.toAttribute()

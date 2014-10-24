@@ -2,6 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#ifndef ATOM_COMMON_NATIVE_MATE_CONVERTERS_GFX_CONVERTER_H_
+#define ATOM_COMMON_NATIVE_MATE_CONVERTERS_GFX_CONVERTER_H_
+
 #include "native_mate/dictionary.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
@@ -94,3 +97,5 @@ struct Converter<gfx::Display> {
 };
 
 }  // namespace mate
+
+#endif  // ATOM_COMMON_NATIVE_MATE_CONVERTERS_GFX_CONVERTER_H_

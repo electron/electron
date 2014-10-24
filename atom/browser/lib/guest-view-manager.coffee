@@ -32,3 +32,6 @@ ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_CREATE_GUEST', (event, type, params, reque
 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_DESTROY_GUEST', (event, guestInstanceId) ->
   destroyGuest guestInstanceId
+
+ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_AUTO_SIZE', (event, guestInstanceId, params) ->
+  guestInstances[id]?.setAutoSize params.enableAutoSize, params.min, params.max
