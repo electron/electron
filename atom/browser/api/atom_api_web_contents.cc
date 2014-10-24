@@ -293,6 +293,10 @@ void WebContents::SetUserAgent(const std::string& user_agent) {
   web_contents()->SetUserAgentOverride(user_agent);
 }
 
+void WebContents::InsertCSS(const std::string& css) {
+  web_contents()->InsertCSS(css);
+}
+
 void WebContents::ExecuteJavaScript(const base::string16& code) {
   web_contents()->GetMainFrame()->ExecuteJavaScript(code);
 }
@@ -365,6 +369,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("getProcessId", &WebContents::GetProcessID)
         .SetMethod("isCrashed", &WebContents::IsCrashed)
         .SetMethod("setUserAgent", &WebContents::SetUserAgent)
+        .SetMethod("insertCSS", &WebContents::InsertCSS)
         .SetMethod("_executeJavaScript", &WebContents::ExecuteJavaScript)
         .SetMethod("_send", &WebContents::SendIPCMessage)
         .SetMethod("setAutoSize", &WebContents::SetAutoSize)

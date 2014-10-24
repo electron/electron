@@ -612,6 +612,12 @@ Whether the renderer process has crashed.
 
 Overrides the user agent for this page.
 
+### WebContents.insertCSS(css)
+
+* `css` String
+
+Injects CSS into this page.
+
 ### WebContents.executeJavaScript(code)
 
 * `code` String

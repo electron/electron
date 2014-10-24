@@ -55,6 +55,7 @@ class WebContents : public mate::EventEmitter,
   int GetProcessID() const;
   bool IsCrashed() const;
   void SetUserAgent(const std::string& user_agent);
+  void InsertCSS(const std::string& css);
   void ExecuteJavaScript(const base::string16& code);
   bool SendIPCMessage(const base::string16& channel,
                       const base::ListValue& args);
