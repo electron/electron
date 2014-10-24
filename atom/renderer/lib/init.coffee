@@ -47,6 +47,11 @@ else
   global.__filename = __filename
   global.__dirname = __dirname
 
+if '--guest' in process.argv
+  # This is a guest web view.
+  isGuest = true
+  require('web-frame').setName 'ATOM_SHELL_GUEST_WEB_VIEW'
+
 if location.protocol is 'chrome-devtools:'
   # Override some inspector APIs.
   require path.join(__dirname, 'inspector')

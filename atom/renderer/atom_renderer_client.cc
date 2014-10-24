@@ -214,6 +214,10 @@ bool AtomRendererClient::ShouldFork(blink::WebFrame* frame,
                                     bool is_initial_navigation,
                                     bool is_server_redirect,
                                     bool* send_referrer) {
+  // Never fork renderer process for guests.
+  if (frame->uniqueName().utf8() == "ATOM_SHELL_GUEST_WEB_VIEW")
+    return false;
+
   // Handle all the navigations and reloads in browser.
   // FIXME We only support GET here because http method will be ignored when
   // the OpenURLFromTab is triggered, which means form posting would not work,

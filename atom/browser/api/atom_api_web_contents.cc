@@ -160,7 +160,7 @@ content::WebContents* WebContents::CreateNewGuestWindow(
 void WebContents::DidAttach() {
   base::ListValue args;
   args.Append(extra_params_.release());
-  Emit("internal-did-attach", args);
+  Emit("did-attach", args);
 }
 
 int WebContents::GetGuestInstanceID() const {

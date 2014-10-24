@@ -26,10 +26,6 @@ module.exports.wrap = (webContents) ->
   webContents.getId = -> "#{@getProcessId()}-#{@getRoutingId()}"
   webContents.equal = (other) -> @getId() is other.getId()
 
-  # Set frame name of WebContents.
-  webContents.setName = (name) ->
-    @send 'ATOM_SHELL_WEB_CONTENTS_SET_NAME', name
-
   # Tell the rpc server that a render view has been deleted and we need to
   # release all objects owned by it.
   webContents.on 'render-view-deleted', (event, processId, routingId) ->

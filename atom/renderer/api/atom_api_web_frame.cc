@@ -24,6 +24,10 @@ WebFrame::WebFrame()
 WebFrame::~WebFrame() {
 }
 
+void WebFrame::SetName(const std::string& name) {
+  web_frame_->setName(blink::WebString::fromUTF8(name));
+}
+
 double WebFrame::SetZoomLevel(double level) {
   return web_frame_->view()->setZoomLevel(level);
 }
@@ -50,6 +54,7 @@ v8::Handle<v8::Value> WebFrame::RegisterEmbedderCustomElement(
 mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
+      .SetMethod("setName", &WebFrame::SetName)
       .SetMethod("setZoomLevel", &WebFrame::SetZoomLevel)
       .SetMethod("getZoomLevel", &WebFrame::GetZoomLevel)
       .SetMethod("setZoomFactor", &WebFrame::SetZoomFactor)

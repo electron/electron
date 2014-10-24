@@ -11,6 +11,7 @@
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
+#include "base/command_line.h"
 #include "chrome/browser/printing/printing_message_filter.h"
 #include "chrome/browser/speech/tts_message_filter.h"
 #include "content/public/browser/render_process_host.h"
@@ -148,6 +149,9 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 
   if (window != NULL)
     window->AppendExtraCommandLineSwitches(command_line, child_process_id);
+  else
+    // If we can not find a owner window then it is a guest web view.
+    command_line->AppendSwitch("guest");
 
   dying_render_process_ = NULL;
 }

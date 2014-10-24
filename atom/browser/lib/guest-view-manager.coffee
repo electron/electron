@@ -26,7 +26,7 @@ createGuest = (embedder, params) ->
     destroyGuest id
 
   # Init guest web view after attached.
-  guest.once 'internal-did-attach', (event, params) ->
+  guest.once 'did-attach', (event, params) ->
     min = width: params.minwidth, height: params.minheight
     max = width: params.maxwidth, height: params.maxheight
     @setAutoSize params.autosize, min, max

@@ -175,11 +175,6 @@ class WebView
       # No setter.
       enumerable: true
 
-    Object.defineProperty @webviewNode, 'name',
-      get: => @name
-      set: (value) => @webviewNode.setAttribute 'name', value
-      enumerable: true
-
     Object.defineProperty @webviewNode, 'partition',
       get: => @partition.toAttribute()
       set: (value) =>
@@ -243,19 +238,6 @@ class WebView
       return unless @guestInstanceId
 
       guestViewInternal.setAllowTransparency @guestInstanceId, @allowtransparency
-    else if name is 'name'
-      # We treat null attribute (attribute removed) and the empty string as
-      # one case.
-      oldValue ?= ''
-      newValue ?= ''
-
-      return if oldValue is newValue
-      @name = newValue
-
-      return unless @guestInstanceId
-
-      # FIXME
-      # WebViewInternal.setName @guestInstanceId, newValue
     else if name is 'src'
       # We treat null attribute (attribute removed) and the empty string as
       # one case.
@@ -399,13 +381,6 @@ class WebView
       @attachWindow guestInstanceId, false
     @pendingGuestCreation = true
 
-  onFrameNameChanged: (name) ->
-    @name ?= ''
-    if @name is ''
-      @webviewNode.removeAttribute 'name'
-    else
-      @webviewNode.setAttribute 'name', @name
-
   @dispatchEvent = (webViewEvent) ->
     @webviewNode.dispatchEvent webViewEvent
 
@@ -446,7 +421,6 @@ class WebView
     maxwidth: parseInt @maxwidth || 0
     minheight: parseInt @minheight || 0
     minwidth: parseInt @minwidth || 0
-    name: @name
     # We don't need to navigate new window from here.
     src: if isNewWindow then undefined else @src
     # If we have a partition from the opener, that will also be already
@@ -520,7 +494,7 @@ registerWebViewElement = ->
       internal.elementAttached = true
       internal.parseAttributes()
 
-  window.WebView = webView.registerEmbedderCustomElement 'webview',
+  window.WebView = webFrame.registerEmbedderCustomElement 'webview',
     prototype: proto
 
   # Delete the callbacks so developers cannot call them and produce unexpected

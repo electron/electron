@@ -5,6 +5,8 @@
 #ifndef ATOM_RENDERER_API_ATOM_API_WEB_FRAME_H_
 #define ATOM_RENDERER_API_ATOM_API_WEB_FRAME_H_
 
+#include <string>
+
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
 
@@ -23,6 +25,8 @@ class WebFrame : public mate::Wrappable {
  private:
   WebFrame();
   virtual ~WebFrame();
+
+  void SetName(const std::string& name);
 
   double SetZoomLevel(double level);
   double GetZoomLevel() const;
