@@ -1,6 +1,9 @@
 ipc = require 'ipc'
+webFrame = require 'web-frame'
 
 requestId = 0
+
+ipc.on 'ATOM_SHELL_WEB_CONTENTS_SET_NAME', (name) ->
 
 module.exports =
   createGuest: (type, params, callback) ->

@@ -1,6 +1,6 @@
 v8Util = process.atomBinding 'v8_util'
 guestViewInternal = require './guest-view-internal'
-webView = require 'web-view'
+webFrame = require 'web-frame'
 
 # ID generator.
 nextId = 0
@@ -487,7 +487,7 @@ registerBrowserPluginElement = ->
     # Load the plugin immediately.
     unused = this.nonExistentAttribute
 
-  WebView.BrowserPlugin = webView.registerEmbedderCustomElement 'browserplugin',
+  WebView.BrowserPlugin = webFrame.registerEmbedderCustomElement 'browserplugin',
     extends: 'object', prototype: proto
 
   delete proto.createdCallback

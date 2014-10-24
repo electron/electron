@@ -33,7 +33,7 @@ Modules for web page:
 
 * [ipc (renderer)](api/ipc-renderer.md)
 * [remote](api/remote.md)
-* [web-view](api/web-view.md)
+* [web-frame](api/web-frame.md)
 
 Modules for both sides:
 

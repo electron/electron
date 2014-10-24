@@ -2,27 +2,27 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_RENDERER_API_ATOM_API_WEB_VIEW_H_
-#define ATOM_RENDERER_API_ATOM_API_WEB_VIEW_H_
+#ifndef ATOM_RENDERER_API_ATOM_API_WEB_FRAME_H_
+#define ATOM_RENDERER_API_ATOM_API_WEB_FRAME_H_
 
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
 
 namespace blink {
-class WebView;
+class WebLocalFrame;
 }
 
 namespace atom {
 
 namespace api {
 
-class WebView : public mate::Wrappable {
+class WebFrame : public mate::Wrappable {
  public:
-  static mate::Handle<WebView> Create(v8::Isolate* isolate);
+  static mate::Handle<WebFrame> Create(v8::Isolate* isolate);
 
  private:
-  WebView();
-  virtual ~WebView();
+  WebFrame();
+  virtual ~WebFrame();
 
   double SetZoomLevel(double level);
   double GetZoomLevel() const;
@@ -36,13 +36,13 @@ class WebView : public mate::Wrappable {
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate);
 
-  blink::WebView* web_view_;
+  blink::WebLocalFrame* web_frame_;
 
-  DISALLOW_COPY_AND_ASSIGN(WebView);
+  DISALLOW_COPY_AND_ASSIGN(WebFrame);
 };
 
 }  // namespace api
 
 }  // namespace atom
 
-#endif  // ATOM_RENDERER_API_ATOM_API_WEB_VIEW_H_
+#endif  // ATOM_RENDERER_API_ATOM_API_WEB_FRAME_H_
