@@ -170,7 +170,14 @@ void WebContents::WillAttach(content::WebContents* embedder_web_contents,
 
 content::WebContents* WebContents::CreateNewGuestWindow(
     const content::WebContents::CreateParams& create_params) {
-  return nullptr;
+  auto web_contents = content::WebContents::Create(create_params);
+  // TODO Currently we just retain the web_contents on V8's heap, which will be
+  // garbage collected later, we should provide a way to let users make use of
+  // this WebContents.
+  mate::Handle<WebContents> managed = CreateFrom(
+      v8::Isolate::GetCurrent(), web_contents);
+  managed->storage_.reset(web_contents);
+  return web_contents;
 }
 
 void WebContents::DidAttach() {
