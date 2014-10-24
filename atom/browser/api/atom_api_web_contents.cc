@@ -15,6 +15,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
+#include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -44,7 +45,11 @@ WebContents::WebContents(const mate::Dictionary& options)
       auto_size_enabled_(false) {
   options.Get("guestInstanceId", &guest_instance_id_);
 
-  content::WebContents::CreateParams params(AtomBrowserContext::Get());
+  auto browser_context = AtomBrowserContext::Get();
+  content::SiteInstance* site_instance = content::SiteInstance::CreateForURL(
+      browser_context, GURL("chrome-guest://fake-host"));
+
+  content::WebContents::CreateParams params(browser_context, site_instance);
   bool is_guest;
   if (options.Get("isGuest", &is_guest) && is_guest)
     params.guest_delegate = this;
