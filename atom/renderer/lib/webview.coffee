@@ -242,8 +242,7 @@ class WebView
 
       return unless @guestInstanceId
 
-      # FIXME
-      # WebViewInternal.setAllowTransparency @guestInstanceId, @allowtransparency
+      guestViewInternal.setAllowTransparency @guestInstanceId, @allowtransparency
     else if name is 'name'
       # We treat null attribute (attribute removed) and the empty string as
       # one case.

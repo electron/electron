@@ -22,14 +22,6 @@ module.exports.wrap = (webContents) ->
     else
       webContents.once 'did-finish-load', @_executeJavaScript.bind(this, code)
 
-  # Init guest web view.
-  webContents.on 'internal-did-attach', (event, params) ->
-    min = width: params.minwidth, height: params.minheight
-    max = width: params.maxwidth, height: params.maxheight
-    @setAutoSize params.autosize, min, max
-    if params.src
-      @loadUrl params.src
-
   # The processId and routingId and identify a webContents.
   webContents.getId = -> "#{@getProcessId()}-#{@getRoutingId()}"
   webContents.equal = (other) -> @getId() is other.getId()

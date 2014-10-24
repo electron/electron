@@ -22,7 +22,18 @@ createGuest = (embedder, params) ->
   webViewManager.addGuest id, embedder, guest
 
   # Destroy guest when the embedder is gone.
-  embedder.once 'render-view-deleted', -> destroyGuest id
+  embedder.once 'render-view-deleted', ->
+    destroyGuest id
+
+  # Init guest web view after attached.
+  guest.once 'internal-did-attach', (event, params) ->
+    min = width: params.minwidth, height: params.minheight
+    max = width: params.maxwidth, height: params.maxheight
+    @setAutoSize params.autosize, min, max
+    if params.src
+      @loadUrl params.src
+    if params.allowtransparency?
+      @setAllowTransparency params.allowtransparency
 
   id
 
@@ -35,8 +46,11 @@ destroyGuest = (id) ->
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_CREATE_GUEST', (event, type, params, requestId) ->
   event.sender.send "ATOM_SHELL_RESPONSE_#{requestId}", createGuest(event.sender, params)
 
-ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_DESTROY_GUEST', (event, guestInstanceId) ->
-  destroyGuest guestInstanceId
+ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_DESTROY_GUEST', (event, id) ->
+  destroyGuest id
 
-ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_AUTO_SIZE', (event, guestInstanceId, params) ->
+ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_AUTO_SIZE', (event, id, params) ->
   guestInstances[id]?.setAutoSize params.enableAutoSize, params.min, params.max
+
+ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_ALLOW_TRANSPARENCY', (event, id, allowtransparency) ->
+  guestInstances[id]?.setAllowTransparency allowtransparency

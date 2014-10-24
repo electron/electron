@@ -61,6 +61,9 @@ class WebContents : public mate::EventEmitter,
                    const gfx::Size& min_size,
                    const gfx::Size& max_size);
 
+  // Sets the transparency of the guest.
+  void SetAllowTransparency(bool allow);
+
   // Returns whether this is a guest view.
   bool is_guest() const { return guest_instance_id_ != -1; }
 
@@ -128,6 +131,9 @@ class WebContents : public mate::EventEmitter,
   int guest_instance_id_;
 
   DestructionCallback destruction_callback_;
+
+  // Stores whether the contents of the guest can be transparent.
+  bool guest_opaque_;
 
   // The extra parameters associated with this guest view passed
   // in from JavaScript. This will typically be the view instance ID,

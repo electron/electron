@@ -13,3 +13,6 @@ module.exports =
 
   setAutoSize: (guestInstanceId, params) ->
     ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_AUTO_SIZE', guestInstanceId, params
+
+  setAllowTransparency: (guestInstanceId, allowtransparency) ->
+    ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_ALLOW_TRANSPARENCY', guestInstanceId, allowtransparency

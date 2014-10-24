@@ -34,11 +34,13 @@ v8::Persistent<v8::ObjectTemplate> template_;
 WebContents::WebContents(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
       guest_instance_id_(-1),
+      guest_opaque_(true),
       auto_size_enabled_(false) {
 }
 
 WebContents::WebContents(const mate::Dictionary& options)
     : guest_instance_id_(-1),
+      guest_opaque_(true),
       auto_size_enabled_(false) {
   options.Get("guestInstanceId", &guest_instance_id_);
 
@@ -102,6 +104,13 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 void WebContents::RenderViewReady() {
   if (!is_guest())
     return;
+
+  // We don't want to accidentally set the opacity of an interstitial page.
+  // WebContents::GetRenderWidgetHostView will return the RWHV of an
+  // interstitial page if one is showing at this time. We only want opacity
+  // to apply to web pages.
+  web_contents()->GetRenderViewHost()->GetView()->
+      SetBackgroundOpaque(guest_opaque_);
 
   content::RenderViewHost* rvh = web_contents()->GetRenderViewHost();
   if (auto_size_enabled_) {
@@ -291,6 +300,17 @@ void WebContents::SetAutoSize(bool enabled,
   }
 }
 
+void WebContents::SetAllowTransparency(bool allow) {
+  if (guest_opaque_ != allow)
+    return;
+
+  guest_opaque_ = !allow;
+  if (!web_contents()->GetRenderViewHost()->GetView())
+    return;
+
+  web_contents()->GetRenderViewHost()->GetView()->SetBackgroundOpaque(!allow);
+}
+
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   if (template_.IsEmpty())
@@ -318,6 +338,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("_executeJavaScript", &WebContents::ExecuteJavaScript)
         .SetMethod("_send", &WebContents::SendIPCMessage)
         .SetMethod("setAutoSize", &WebContents::SetAutoSize)
+        .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
         .Build());
 
   return mate::ObjectTemplateBuilder(
