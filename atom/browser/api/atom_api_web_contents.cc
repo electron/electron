@@ -83,6 +83,17 @@ content::WebContents* WebContents::OpenURLFromTab(
   return web_contents();
 }
 
+void WebContents::HandleKeyboardEvent(
+    content::WebContents* source,
+    const content::NativeWebKeyboardEvent& event) {
+  if (!attached())
+    return;
+
+  // Send the unhandled keyboard events back to the embedder to reprocess them.
+  embedder_web_contents_->GetDelegate()->HandleKeyboardEvent(
+      web_contents(), event);
+}
+
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
   base::ListValue args;
   args.AppendInteger(render_view_host->GetProcess()->GetID());

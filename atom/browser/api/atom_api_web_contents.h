@@ -88,9 +88,12 @@ class WebContents : public mate::EventEmitter,
       v8::Isolate* isolate) override;
 
   // content::WebContentsDelegate:
-  virtual content::WebContents* OpenURLFromTab(
+  content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
+  void HandleKeyboardEvent(
+      content::WebContents* source,
+      const content::NativeWebKeyboardEvent& event) override;
 
   // content::WebContentsObserver:
   virtual void RenderViewDeleted(content::RenderViewHost*) override;
