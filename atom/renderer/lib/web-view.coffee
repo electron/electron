@@ -1,6 +1,7 @@
 v8Util = process.atomBinding 'v8_util'
 guestViewInternal = require './guest-view-internal'
 webFrame = require 'web-frame'
+remote = require 'remote'
 
 # ID generator.
 nextId = 0
@@ -357,8 +358,7 @@ class WebView
       return
 
     # Navigate to |this.src|.
-    # FIXME
-    # WebViewInternal.navigate @guestInstanceId, @src
+    remote.getGuestWebContents(@guestInstanceId).loadUrl @src
 
   parseAttributes: ->
     return unless @elementAttached

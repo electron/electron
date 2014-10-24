@@ -157,3 +157,10 @@ ipc.on 'ATOM_BROWSER_MEMBER_GET', (event, id, name) ->
 
 ipc.on 'ATOM_BROWSER_DEREFERENCE', (event, storeId) ->
   objectsRegistry.remove event.sender.getId(), storeId
+
+ipc.on 'ATOM_BROWSER_GUEST_WEB_CONTENTS', (event, guestInstanceId) ->
+  try
+    guestViewManager = require './guest-view-manager'
+    event.returnValue = valueToMeta event.sender, guestViewManager.getGuest(guestInstanceId)
+  catch e
+    event.returnValue = errorToMeta e

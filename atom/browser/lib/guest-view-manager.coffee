@@ -54,3 +54,7 @@ ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_AUTO_SIZE', (event, id, params) ->
 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_ALLOW_TRANSPARENCY', (event, id, allowtransparency) ->
   guestInstances[id]?.setAllowTransparency allowtransparency
+
+# Returns WebContents from its guest id.
+exports.getGuest = (id) ->
+  guestInstances[id]

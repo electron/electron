@@ -129,3 +129,8 @@ exports.createFunctionWithReturnValue = (returnValue) ->
   func = -> returnValue
   v8Util.setHiddenValue func, 'returnValue', true
   func
+
+# Get the guest WebContents from guestInstanceId.
+exports.getGuestWebContents = (guestInstanceId) ->
+  meta = ipc.sendChannelSync 'ATOM_BROWSER_GUEST_WEB_CONTENTS', guestInstanceId
+  metaToValue meta
