@@ -14,11 +14,16 @@ createGuest = (embedder, params) ->
   webViewManager ?= process.atomBinding 'web_view_manager'
 
   id = getNextInstanceId embedder
-  guestInstances[id] = webContents.create
+  guest = webContents.create
     isGuest: true
     guestInstanceId: id
     storagePartitionId: params.storagePartitionId
-  webViewManager.addGuest id, embedder, guestInstances[id]
+  guestInstances[id] = guest
+  webViewManager.addGuest id, embedder, guest
+
+  # Destroy guest when the embedder is gone.
+  embedder.once 'render-view-deleted', -> destroyGuest id
+
   id
 
 # Destroy an existing guest instance.
