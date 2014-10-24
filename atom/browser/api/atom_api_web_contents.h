@@ -100,10 +100,17 @@ class WebContents : public mate::EventEmitter,
   virtual void RenderProcessGone(base::TerminationStatus status) override;
   virtual void DidFinishLoad(content::RenderFrameHost* render_frame_host,
                              const GURL& validated_url) override;
+  virtual void DidFailLoad(content::RenderFrameHost* render_frame_host,
+                           const GURL& validated_url,
+                           int error_code,
+                           const base::string16& error_description) override;
   virtual void DidStartLoading(
       content::RenderViewHost* render_view_host) override;
   virtual void DidStopLoading(
       content::RenderViewHost* render_view_host) override;
+  virtual void DidGetRedirectForResourceRequest(
+      content::RenderViewHost* render_view_host,
+      const content::ResourceRedirectDetails& details) override;
   virtual bool OnMessageReceived(const IPC::Message& message) override;
   virtual void RenderViewReady() override;
   virtual void WebContentsDestroyed() override;

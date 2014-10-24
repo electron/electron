@@ -15,6 +15,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
+#include "content/public/browser/resource_request_details.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "native_mate/dictionary.h"
@@ -117,12 +118,33 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
     Emit("did-finish-load");
 }
 
+void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
+                              const GURL& validated_url,
+                              int error_code,
+                              const base::string16& error_description) {
+  base::ListValue args;
+  args.AppendInteger(error_code);
+  args.AppendString(error_description);
+  Emit("did-fail-load", args);
+}
+
 void WebContents::DidStartLoading(content::RenderViewHost* render_view_host) {
   Emit("did-start-loading");
 }
 
 void WebContents::DidStopLoading(content::RenderViewHost* render_view_host) {
   Emit("did-stop-loading");
+}
+
+void WebContents::DidGetRedirectForResourceRequest(
+    content::RenderViewHost* render_view_host,
+    const content::ResourceRedirectDetails& details) {
+  base::ListValue args;
+  args.AppendString(details.url.spec());
+  args.AppendString(details.new_url.spec());
+  args.AppendBoolean(
+      details.resource_type == content::RESOURCE_TYPE_MAIN_FRAME);
+  Emit("did-get-redirect-request", args);
 }
 
 bool WebContents::OnMessageReceived(const IPC::Message& message) {

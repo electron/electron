@@ -512,14 +512,19 @@ A `WebContents` is responsible for rendering and controlling a web page.
 `WebContents` is an
 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
 
-### Event: 'crashed'
-
-Emitted when the renderer process is crashed.
-
 ### Event: 'did-finish-load'
 
 Emitted when the navigation is done, i.e. the spinner of the tab will stop
-spinning, and the onload event was dispatched.
+spinning, and the `onload` event was dispatched.
+
+### Event: 'did-fail-load'
+
+* `event` Event
+* `errorCode` Integer
+* `errorDescription` String
+
+This event is like `did-finish-load`, but emitted when the load failed or was
+cancelled, e.g. `window.stop()` is invoked.
 
 ### Event: 'did-frame-finish-load'
 
@@ -530,7 +535,28 @@ Emitted when a frame has done navigation.
 
 ### Event: 'did-start-loading'
 
+Corresponds to the points in time when the spinner of the tab starts spinning.
+
 ### Event: 'did-stop-loading'
+
+Corresponds to the points in time when the spinner of the tab stops spinning.
+
+### Event: 'did-get-redirect-request'
+
+* `event` Event
+* `oldUrl` String
+* `newUrl` String
+* `isMainFrame` Boolean
+
+Emitted when a redirect was received while requesting a resource.
+
+### Event: 'crashed'
+
+Emitted when the renderer process is crashed.
+
+### Event: 'destroyed'
+
+Emitted when the WebContents is destroyed.
 
 ### WebContents.loadUrl(url)
 
