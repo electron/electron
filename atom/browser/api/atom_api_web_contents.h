@@ -61,6 +61,9 @@ class WebContents : public mate::EventEmitter,
                    const gfx::Size& min_size,
                    const gfx::Size& max_size);
 
+  // Returns whether this is a guest view.
+  bool is_guest() const { return guest_instance_id_ != -1; }
+
   // Returns whether this guest has an associated embedder.
   bool attached() const { return !!embedder_web_contents_; }
 

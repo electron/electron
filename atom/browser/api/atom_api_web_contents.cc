@@ -14,6 +14,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/web_contents.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -39,7 +40,7 @@ WebContents::WebContents(content::WebContents* web_contents)
 WebContents::WebContents(const mate::Dictionary& options)
     : guest_instance_id_(-1),
       auto_size_enabled_(false) {
-  options.Get("guestInstances", &guest_instance_id_);
+  options.Get("guestInstanceId", &guest_instance_id_);
 
   content::WebContents::CreateParams params(AtomBrowserContext::Get());
   bool is_guest;
@@ -99,6 +100,15 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 }
 
 void WebContents::RenderViewReady() {
+  if (!is_guest())
+    return;
+
+  content::RenderViewHost* rvh = web_contents()->GetRenderViewHost();
+  if (auto_size_enabled_) {
+    rvh->EnableAutoResize(min_auto_size_, max_auto_size_);
+  } else {
+    rvh->DisableAutoResize(element_size_);
+  }
 }
 
 void WebContents::WebContentsDestroyed() {
