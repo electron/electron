@@ -58,6 +58,26 @@ WebContents::~WebContents() {
   Destroy();
 }
 
+content::WebContents* WebContents::OpenURLFromTab(
+    content::WebContents* source,
+    const content::OpenURLParams& params) {
+  if (params.disposition != CURRENT_TAB)
+      return NULL;
+
+  content::NavigationController::LoadURLParams load_url_params(params.url);
+  load_url_params.referrer = params.referrer;
+  load_url_params.transition_type = params.transition;
+  load_url_params.extra_headers = params.extra_headers;
+  load_url_params.should_replace_current_entry =
+      params.should_replace_current_entry;
+  load_url_params.is_renderer_initiated = params.is_renderer_initiated;
+  load_url_params.transferred_global_request_id =
+      params.transferred_global_request_id;
+
+  web_contents()->GetController().LoadURLWithParams(load_url_params);
+  return web_contents();
+}
+
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
   base::ListValue args;
   args.AppendInteger(render_view_host->GetProcess()->GetID());

@@ -83,6 +83,11 @@ class WebContents : public mate::EventEmitter,
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
 
+  // content::WebContentsDelegate:
+  virtual content::WebContents* OpenURLFromTab(
+      content::WebContents* source,
+      const content::OpenURLParams& params) override;
+
   // content::WebContentsObserver:
   virtual void RenderViewDeleted(content::RenderViewHost*) override;
   virtual void RenderProcessGone(base::TerminationStatus status) override;
