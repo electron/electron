@@ -494,6 +494,41 @@ registerWebViewElement = ->
       internal.elementAttached = true
       internal.parseAttributes()
 
+  # Public-facing API methods.
+  methods = [
+    "getUrl"
+    "getTitle"
+    "isLoading"
+    "isWaitingForResponse"
+    "stop"
+    "reload"
+    "reloadIngoringCache"
+    "canGoBack"
+    "canGoForward"
+    "canGoToOffset"
+    "goBack"
+    "goForward"
+    "goToIndex"
+    "goToOffset"
+    "isCrashed"
+    "executeJavaScript"
+    "send"
+    # "getUserAgent"
+    # "getZoom"
+    # "insertCSS"
+    # "print"
+    # "setUserAgentOverride"
+    # "setZoom"
+    # "terminate"
+  ]
+
+  # Forward proto.foo* method calls to WebView.foo*.
+  createHandler = (m) ->
+    (args...) ->
+      internal = v8Util.getHiddenValue this, 'internal'
+      remote.getGuestWebContents(internal.guestInstanceId)[m]  args...
+  proto[m] = createHandler m for m in methods
+
   window.WebView = webFrame.registerEmbedderCustomElement 'webview',
     prototype: proto
 

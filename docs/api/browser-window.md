@@ -602,7 +602,7 @@ Navigates to the specified absolute index.
 
 Navigates to the specified offset from the "current entry".
 
-### WebContents.IsCrashed()
+### WebContents.isCrashed()
 
 Whether the renderer process has crashed.
 
