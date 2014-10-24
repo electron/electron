@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_WEB_CONTENTS_H_
 #define ATOM_BROWSER_API_ATOM_API_WEB_CONTENTS_H_
 
+#include <string>
+
 #include "atom/browser/api/event_emitter.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -52,6 +54,7 @@ class WebContents : public mate::EventEmitter,
   int GetRoutingID() const;
   int GetProcessID() const;
   bool IsCrashed() const;
+  void SetUserAgent(const std::string& user_agent);
   void ExecuteJavaScript(const base::string16& code);
   bool SendIPCMessage(const base::string16& channel,
                       const base::ListValue& args);

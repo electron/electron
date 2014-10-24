@@ -606,6 +606,12 @@ Navigates to the specified offset from the "current entry".
 
 Whether the renderer process has crashed.
 
+### WebContents.setUserAgent(userAgent)
+
+* `userAgent` String
+
+Overrides the user agent for this page.
+
 ### WebContents.executeJavaScript(code)
 
 * `code` String

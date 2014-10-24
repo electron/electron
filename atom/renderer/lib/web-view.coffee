@@ -513,11 +513,10 @@ registerWebViewElement = ->
     "isCrashed"
     "executeJavaScript"
     "send"
-    # "getUserAgent"
+    "setUserAgent"
     # "getZoom"
     # "insertCSS"
     # "print"
-    # "setUserAgentOverride"
     # "setZoom"
     # "terminate"
   ]

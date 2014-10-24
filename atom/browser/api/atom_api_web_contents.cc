@@ -289,6 +289,10 @@ bool WebContents::IsCrashed() const {
   return web_contents()->IsCrashed();
 }
 
+void WebContents::SetUserAgent(const std::string& user_agent) {
+  web_contents()->SetUserAgentOverride(user_agent);
+}
+
 void WebContents::ExecuteJavaScript(const base::string16& code) {
   web_contents()->GetMainFrame()->ExecuteJavaScript(code);
 }
@@ -360,6 +364,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("getRoutingId", &WebContents::GetRoutingID)
         .SetMethod("getProcessId", &WebContents::GetProcessID)
         .SetMethod("isCrashed", &WebContents::IsCrashed)
+        .SetMethod("setUserAgent", &WebContents::SetUserAgent)
         .SetMethod("_executeJavaScript", &WebContents::ExecuteJavaScript)
         .SetMethod("_send", &WebContents::SendIPCMessage)
         .SetMethod("setAutoSize", &WebContents::SetAutoSize)
