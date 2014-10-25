@@ -6,4 +6,4 @@ upstream node:
 * `process.type` String - Process's type, can be `browser` or `renderer`.
 * `process.versions['atom-shell']` String - Version of atom-shell.
 * `process.versions['chrome']` String - Version of Chromium.
-* `process.resourcesPath` String - Path to JavaScript source codes.
+* `process.resourcesPath` String - Path to JavaScript source code.
