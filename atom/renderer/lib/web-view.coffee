@@ -98,6 +98,7 @@ class WebView
     @setupWebviewNodeProperties()
 
     @viewInstanceId = getNextId()
+    guestViewInternal.registerEvents this, @viewInstanceId
 
     shadowRoot.appendChild @browserPluginNode
 
@@ -515,10 +516,6 @@ registerWebViewElement = ->
     "executeJavaScript"
     "insertCSS"
     "send"
-    # "getZoom"
-    # "print"
-    # "setZoom"
-    # "terminate"
   ]
 
   # Forward proto.foo* method calls to WebView.foo*.

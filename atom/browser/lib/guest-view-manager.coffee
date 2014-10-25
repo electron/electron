@@ -2,6 +2,17 @@ ipc = require 'ipc'
 webContents = require 'web-contents'
 webViewManager = null  # Doesn't exist in early initialization.
 
+supportedWebViewEvents = [
+  'did-finish-load'
+  'did-fail-load'
+  'did-frame-finish-load'
+  'did-start-loading'
+  'did-stop-loading'
+  'did-get-redirect-request'
+  'crashed'
+  'destroyed'
+]
+
 nextInstanceId = 0
 guestInstances = {}
 
@@ -27,6 +38,7 @@ createGuest = (embedder, params) ->
 
   # Init guest web view after attached.
   guest.once 'did-attach', (event, params) ->
+    @viewInstanceId = params.instanceId
     min = width: params.minwidth, height: params.minheight
     max = width: params.maxwidth, height: params.maxheight
     @setAutoSize params.autosize, min, max
@@ -34,6 +46,12 @@ createGuest = (embedder, params) ->
       @loadUrl params.src
     if params.allowtransparency?
       @setAllowTransparency params.allowtransparency
+
+  # Dispatch events to embedder.
+  for event in supportedWebViewEvents
+    do (event) ->
+      guest.on event, (_, args...) ->
+        embedder.send "ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-#{guest.viewInstanceId}", event, args...
 
   id
 
