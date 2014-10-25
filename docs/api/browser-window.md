@@ -18,9 +18,6 @@ win.show();
 You can also create a window without chrome by using
 [Frameless Window](frameless-window.md) API.
 
-Security strategy of web pages showed by `BrowserWindow` is a bit different from
-normal browsers, see [Web Security](web-security.md) for more.
-
 ## Class: BrowserWindow
 
 `BrowserWindow` is an
@@ -55,8 +52,7 @@ normal browsers, see [Web Security](web-security.md) for more.
   * `frame` Boolean - Specify `false` to create a
     [Frameless Window](frameless-window.md)
   * `node-integration` String - Default value is `except-iframe`, can also be
-    `all`, `manual-enable-iframe` or `disable`, see
-     [Web Security](web-security.md) for more informations.
+    `all`, `manual-enable-iframe` or `disable`.
   * `accept-first-mouse` Boolean - Whether the web view accepts a single
      mouse-down event that simultaneously activates the window
   * `auto-hide-menu-bar` Boolean - Auto hide the menu bar unless the `Alt`

@@ -7,7 +7,6 @@
 #include "atom/browser/atom_access_token_store.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
@@ -57,12 +56,6 @@ void AtomBrowserClient::RenderProcessWillLaunch(
   int id = host->GetID();
   host->AddFilter(new PrintingMessageFilter(host->GetID()));
   host->AddFilter(new TtsMessageFilter(id, host->GetBrowserContext()));
-}
-
-void AtomBrowserClient::ResourceDispatcherHostCreated() {
-  resource_dispatcher_delegate_.reset(new AtomResourceDispatcherHostDelegate);
-  content::ResourceDispatcherHost::Get()->SetDelegate(
-      resource_dispatcher_delegate_.get());
 }
 
 content::SpeechRecognitionManagerDelegate*
