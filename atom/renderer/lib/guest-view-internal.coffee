@@ -9,6 +9,8 @@ WEB_VIEW_EVENTS =
   'did-start-loading': []
   'did-stop-loading': []
   'did-get-redirect-request': ['oldUrl', 'newUrl', 'isMainFrame']
+  'console-message': ['level', 'message', 'line', 'sourceId']
+  'close': []
   'crashed': []
   'destroyed': []
 

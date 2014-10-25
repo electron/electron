@@ -64,6 +64,24 @@ WebContents::~WebContents() {
   Destroy();
 }
 
+bool WebContents::AddMessageToConsole(content::WebContents* source,
+                                      int32 level,
+                                      const base::string16& message,
+                                      int32 line_no,
+                                      const base::string16& source_id) {
+  base::ListValue args;
+  args.AppendInteger(level);
+  args.AppendString(message);
+  args.AppendInteger(line_no);
+  args.AppendString(source_id);
+  Emit("console-message", args);
+  return true;
+}
+
+void WebContents::CloseContents(content::WebContents* source) {
+  Emit("close");
+}
+
 content::WebContents* WebContents::OpenURLFromTab(
     content::WebContents* source,
     const content::OpenURLParams& params) {

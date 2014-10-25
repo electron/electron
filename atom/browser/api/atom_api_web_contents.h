@@ -88,6 +88,12 @@ class WebContents : public mate::EventEmitter,
       v8::Isolate* isolate) override;
 
   // content::WebContentsDelegate:
+  bool AddMessageToConsole(content::WebContents* source,
+                           int32 level,
+                           const base::string16& message,
+                           int32 line_no,
+                           const base::string16& source_id) override;
+  void CloseContents(content::WebContents* source) override;
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
