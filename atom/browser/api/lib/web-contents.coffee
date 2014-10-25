@@ -43,9 +43,4 @@ module.exports.wrap = (webContents) ->
   webContents
 
 module.exports.create = (options={}) ->
-  webContents = @wrap binding.create(options)
-
-  # Ensure the webContents is destroyed on exit.
-  process.on 'exit', -> webContents.destroy()
-
-  webContents
+  @wrap binding.create(options)
