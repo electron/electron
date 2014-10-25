@@ -20,12 +20,18 @@ dispatchEvent = (webView, event, args...) ->
   domEvent = new Event(event)
   for f, i in WEB_VIEW_EVENTS[event]
     domEvent[f] = args[i]
-  webView.webviewNode.dispatchEvent domEvent
+  webView.dispatchEvent domEvent
 
 module.exports =
   registerEvents: (webView, viewInstanceId) ->
     ipc.on "ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-#{viewInstanceId}", (event, args...) ->
       dispatchEvent webView, event, args...
+
+    ipc.on 'ATOM_SHELL_GUEST_VIEW_INTERNAL_SIZE_CHANGED', (args...) ->
+      domEvent = new Event('size-changed')
+      for f, i in ['oldWidth', 'oldHeight', 'newWidth', 'newHeight']
+        domEvent[f] = args[i]
+      webView.onSizeChanged domEvent
 
   createGuest: (type, params, callback) ->
     requestId++

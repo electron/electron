@@ -56,6 +56,10 @@ createGuest = (embedder, params) ->
       guest.on event, (_, args...) ->
         embedder.send "ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-#{guest.viewInstanceId}", event, args...
 
+  # Autosize.
+  guest.on 'size-changed', (_, args...) ->
+    embedder.send "ATOM_SHELL_GUEST_VIEW_INTERNAL_SIZE_CHANGED", args...
+
   id
 
 # Destroy an existing guest instance.

@@ -382,7 +382,7 @@ class WebView
       @attachWindow guestInstanceId, false
     @pendingGuestCreation = true
 
-  @dispatchEvent = (webViewEvent) ->
+  dispatchEvent: (webViewEvent) ->
     @webviewNode.dispatchEvent webViewEvent
 
   # Adds an 'on<event>' property on the webview, which can be used to set/unset
