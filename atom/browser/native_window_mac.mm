@@ -604,8 +604,10 @@ bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {
 }
 
 void NativeWindowMac::HandleMouseEvent(NSEvent* event) {
-  NSPoint current_mouse_location =
-      [window_ convertBaseToScreen:[event locationInWindow]];
+  NSPoint eventLoc = [event locationInWindow];
+  NSRect mouseRect = [window_ convertRectToScreen:NSMakeRect(eventLoc.x, eventLoc.y, 0, 0)];
+  NSPoint current_mouse_location = mouseRect.origin;
+
 
   if ([event type] == NSLeftMouseDown) {
     NSPoint frame_origin = [window_ frame].origin;
