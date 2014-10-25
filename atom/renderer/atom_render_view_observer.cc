@@ -76,13 +76,6 @@ bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
 
 void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
                                               const base::ListValue& args) {
-  if (!render_view()->GetWebView())
-    return;
-
-  blink::WebFrame* frame = render_view()->GetWebView()->mainFrame();
-  if (!renderer_client_->IsNodeBindingEnabled(frame))
-    return;
-
   renderer_client_->atom_bindings()->OnBrowserMessage(
       render_view(), channel, args);
 }

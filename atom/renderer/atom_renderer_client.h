@@ -26,8 +26,6 @@ class AtomRendererClient : public content::ContentRendererClient,
   AtomRendererClient();
   virtual ~AtomRendererClient();
 
-  bool IsNodeBindingEnabled(blink::WebFrame* frame = NULL);
-
   // Forwarded by RenderFrameObserver.
   void WillReleaseScriptContext(blink::WebFrame* frame,
                                 v8::Handle<v8::Context> context,
@@ -69,9 +67,6 @@ class AtomRendererClient : public content::ContentRendererClient,
 
   scoped_ptr<NodeBindings> node_bindings_;
   scoped_ptr<AtomRendererBindings> atom_bindings_;
-
-  // The level of node integration we should support.
-  NodeIntegration node_integration_;
 
   // The main frame.
   blink::WebFrame* main_frame_;

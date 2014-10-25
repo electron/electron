@@ -20,37 +20,19 @@ globalPaths.push path.join(process.resourcesPath, 'app')
 # Import common settings.
 require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init.js')
 
-# Expose global variables.
-global.require = require
-global.module = module
-
-# Emit the 'exit' event when page is unloading.
-window.addEventListener 'unload', ->
-  process.emit 'exit'
-
-# Set the __filename to the path of html file if it's file: or asar: protocol.
-if window.location.protocol in ['file:', 'asar:']
-  pathname =
-    if process.platform is 'win32' and window.location.pathname[0] is '/'
-      window.location.pathname.substr 1
-    else
-      window.location.pathname
-  global.__filename = path.normalize decodeURIComponent(pathname)
-  global.__dirname = path.dirname global.__filename
-
-  # Set module's filename so relative require can work as expected.
-  module.filename = global.__filename
-
-  # Also search for module under the html file.
-  module.paths = module.paths.concat Module._nodeModulePaths(global.__dirname)
-else
-  global.__filename = __filename
-  global.__dirname = __dirname
-
-if '--guest' in process.argv
-  # This is a guest web view.
-  isGuest = true
-  require('web-frame').setName 'ATOM_SHELL_GUEST_WEB_VIEW'
+# Process command line arguments.
+isGuest = false
+nodeIntegration = 'all'
+for arg in process.argv
+  if arg is '--guest'
+    # This is a guest web view.
+    isGuest = true
+    # Set the frame name to make AtomRendererClient recognize this guest.
+    require('web-frame').setName 'ATOM_SHELL_GUEST_WEB_VIEW'
+  else
+    index = arg.indexOf '--node-integration='
+    continue unless index == 0
+    nodeIntegration = arg.substr arg.indexOf('=') + 1
 
 if location.protocol is 'chrome-devtools:'
   # Override some inspector APIs.
@@ -63,3 +45,44 @@ else
   require path.join(__dirname, 'override')
   # Load webview tag implementation.
   require path.join(__dirname, 'web-view') unless isGuest
+
+if nodeIntegration in ['true', 'all', 'except-iframe', 'manual-enable-iframe']
+  # Export node bindings to global.
+  global.require = require
+  global.module = module
+
+  # Set the __filename to the path of html file if it's file: or asar: protocol.
+  if window.location.protocol in ['file:', 'asar:']
+    pathname =
+      if process.platform is 'win32' and window.location.pathname[0] is '/'
+        window.location.pathname.substr 1
+      else
+        window.location.pathname
+    global.__filename = path.normalize decodeURIComponent(pathname)
+    global.__dirname = path.dirname global.__filename
+
+    # Set module's filename so relative require can work as expected.
+    module.filename = global.__filename
+
+    # Also search for module under the html file.
+    module.paths = module.paths.concat Module._nodeModulePaths(global.__dirname)
+  else
+    global.__filename = __filename
+    global.__dirname = __dirname
+
+  # Redirect window.onerror to uncaughtException.
+  window.onerror = (error) ->
+    if global.process.listeners('uncaughtException').length > 0
+      global.process.emit 'uncaughtException', error
+      true
+    else
+      false
+
+  # Emit the 'exit' event when page is unloading.
+  window.addEventListener 'unload', ->
+    process.emit 'exit'
+else
+  # There still some native initialization codes needs "process", delete the
+  # global reference after they are done.
+  setImmediate ->
+    delete global.process

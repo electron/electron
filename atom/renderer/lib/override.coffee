@@ -1,10 +1,3 @@
-# Redirect window.onerror to uncaughtException.
-window.onerror = (error) ->
-  if global.process.listeners('uncaughtException').length > 0
-    global.process.emit 'uncaughtException', error
-    true
-  else
-    false
 
 # Override default window.close, see:
 # https://github.com/atom/atom-shell/issues/70
