@@ -37,7 +37,7 @@ createGuest = (embedder, params) ->
 
   # Destroy guest when the embedder is gone.
   embedder.once 'render-view-deleted', ->
-    destroyGuest id
+    destroyGuest id if guestInstances[id]?
 
   # Init guest web view after attached.
   guest.once 'did-attach', (event, params) ->
