@@ -21,7 +21,7 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
   NSApplication* application = [AtomApplication sharedApplication];
 
   AtomApplicationDelegate* delegate = [AtomApplicationDelegate alloc];
-  [NSApp setDelegate:delegate];
+  [NSApp setDelegate:(id<NSFileManagerDelegate>)delegate];
 
   base::FilePath frameworkPath = brightray::MainApplicationBundlePath()
       .Append("Contents")
