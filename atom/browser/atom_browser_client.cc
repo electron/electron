@@ -9,13 +9,14 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/web_view/web_view_renderer_state.h"
 #include "atom/browser/window_list.h"
+#include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "chrome/browser/printing/printing_message_filter.h"
 #include "chrome/browser/speech/tts_message_filter.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
-#include "content/public/browser/resource_dispatcher_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/web_preferences.h"
@@ -140,11 +141,17 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
       window = *iter;
   }
 
-  if (window != NULL)
+  if (window != NULL) {
     window->AppendExtraCommandLineSwitches(command_line, child_process_id);
-  else
-    // If we can not find a owner window then it is a guest web view.
-    command_line->AppendSwitch("guest");
+  } else {
+    // Append commnad line arguments for guest web view.
+    WebViewRendererState::WebViewInfo info;
+    if (WebViewRendererState::GetInstance()->GetInfo(child_process_id, &info)) {
+      command_line->AppendSwitch("guest");
+      command_line->AppendSwitchASCII(switches::kNodeIntegration,
+                                      info.node_integration ? "true" : "false");
+    }
+  }
 
   dying_render_process_ = NULL;
 }

@@ -6,8 +6,11 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/web_view/web_view_renderer_state.h"
 #include "base/bind.h"
 #include "base/stl_util.h"
+#include "content/public/browser/browser_thread.h"
+#include "content/public/browser/render_process_host.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 
@@ -39,11 +42,29 @@ WebViewManager::~WebViewManager() {
 
 void WebViewManager::AddGuest(int guest_instance_id,
                               content::WebContents* embedder,
-                              content::WebContents* web_contents) {
-  web_contents_map_[guest_instance_id] = {web_contents, embedder};
+                              content::WebContents* web_contents,
+                              bool node_integration) {
+  web_contents_map_[guest_instance_id] = { web_contents, embedder };
+
+  WebViewRendererState::WebViewInfo web_view_info = { node_integration };
+  content::BrowserThread::PostTask(
+      content::BrowserThread::IO,
+      FROM_HERE,
+      base::Bind(&WebViewRendererState::AddGuest,
+                 base::Unretained(WebViewRendererState::GetInstance()),
+                 web_contents->GetRenderProcessHost()->GetID(),
+                 web_view_info));
 }
 
 void WebViewManager::RemoveGuest(int guest_instance_id) {
+  auto web_contents = web_contents_map_[guest_instance_id].web_contents;
+  content::BrowserThread::PostTask(
+      content::BrowserThread::IO, FROM_HERE,
+      base::Bind(
+          &WebViewRendererState::RemoveGuest,
+          base::Unretained(WebViewRendererState::GetInstance()),
+          web_contents->GetRenderProcessHost()->GetID()));
+
   web_contents_map_.erase(guest_instance_id);
 }
 

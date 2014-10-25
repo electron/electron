@@ -73,6 +73,15 @@ bounds specified by the attributes `minwidth`, `minheight`, `maxwidth`, and
 enabled. When `autosize` is enabled, the `webview` container size cannot be less
 than the minimum values or greater than the maximum.
 
+### nodeintegration
+
+```html
+<webview src="http://www.google.com/" nodeintegration></webview>
+```
+
+If "on", the guest page in `webview` will have node integration and can use node
+APIs like `require` and `process` to access low level system resources.
+
 ## Methods
 
 ### `<webview>`.getUrl()

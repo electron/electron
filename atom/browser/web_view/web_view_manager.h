@@ -22,7 +22,8 @@ class WebViewManager : public content::BrowserPluginGuestManager {
 
   void AddGuest(int guest_instance_id,
                 content::WebContents* embedder,
-                content::WebContents* web_contents);
+                content::WebContents* web_contents,
+                bool node_integration);
   void RemoveGuest(int guest_instance_id);
 
  protected:

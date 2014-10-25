@@ -19,6 +19,7 @@ WEB_VIEW_ATTRIBUTE_MAXWIDTH = 'maxwidth'
 WEB_VIEW_ATTRIBUTE_MINHEIGHT = 'minheight'
 WEB_VIEW_ATTRIBUTE_MINWIDTH = 'minwidth'
 WEB_VIEW_ATTRIBUTE_PARTITION = 'partition'
+WEB_VIEW_ATTRIBUTE_NODEINTEGRATION = 'nodeintegration'
 AUTO_SIZE_ATTRIBUTES = [
   WEB_VIEW_ATTRIBUTE_AUTOSIZE,
   WEB_VIEW_ATTRIBUTE_MAXHEIGHT,
@@ -373,7 +374,9 @@ class WebView
     storagePartitionId =
       @webviewNode.getAttribute(WEB_VIEW_ATTRIBUTE_PARTITION) or
       @webviewNode[WEB_VIEW_ATTRIBUTE_PARTITION]
-    params = storagePartitionId: storagePartitionId
+    params =
+      storagePartitionId: storagePartitionId
+      nodeIntegration: @webviewNode.hasAttribute WEB_VIEW_ATTRIBUTE_NODEINTEGRATION
     guestViewInternal.createGuest 'webview', params, (guestInstanceId) =>
       @pendingGuestCreation = false
       unless @elementAttached

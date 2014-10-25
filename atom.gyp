@@ -181,6 +181,8 @@
       'atom/browser/ui/x/x_window_utils.h',
       'atom/browser/web_view/web_view_manager.cc',
       'atom/browser/web_view/web_view_manager.h',
+      'atom/browser/web_view/web_view_renderer_state.cc',
+      'atom/browser/web_view/web_view_renderer_state.h',
       'atom/browser/window_list.cc',
       'atom/browser/window_list.h',
       'atom/browser/window_list_observer.h',

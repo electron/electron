@@ -16,7 +16,6 @@ app.on('ready', function() {
     width: 800,
     height: 600,
     resizable: false,
-    'node-integration': true,
     'auto-hide-menu-bar': true,
     'use-content-size': true,
     'web-preferences': {

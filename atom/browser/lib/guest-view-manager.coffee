@@ -33,7 +33,7 @@ createGuest = (embedder, params) ->
     guestInstanceId: id
     storagePartitionId: params.storagePartitionId
   guestInstances[id] = guest
-  webViewManager.addGuest id, embedder, guest
+  webViewManager.addGuest id, embedder, guest, params.nodeIntegration
 
   # Destroy guest when the embedder is gone.
   embedder.once 'render-view-deleted', ->
