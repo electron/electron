@@ -51,8 +51,8 @@ You can also create a window without chrome by using
   * `show` Boolean - Whether window should be shown when created
   * `frame` Boolean - Specify `false` to create a
     [Frameless Window](frameless-window.md)
-  * `node-integration` String - Default value is `except-iframe`, can also be
-    `all`, `manual-enable-iframe` or `disable`.
+  * `node-integration` Boolean - Whether node integration is enabled, default
+     is `true`
   * `accept-first-mouse` Boolean - Whether the web view accepts a single
      mouse-down event that simultaneously activates the window
   * `auto-hide-menu-bar` Boolean - Auto hide the menu bar unless the `Alt`

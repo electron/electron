@@ -22,7 +22,7 @@ require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init.js')
 
 # Process command line arguments.
 isGuest = false
-nodeIntegration = 'all'
+nodeIntegration = 'false'
 for arg in process.argv
   if arg is '--guest'
     # This is a guest web view.

@@ -288,8 +288,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // The windows has been closed.
   bool is_closed_;
 
-  // The security token of iframe.
-  std::string node_integration_;
+  // Whether node integration is enabled.
+  bool node_integration_;
 
   // There is a dialog that has been attached to window.
   bool has_dialog_attached_;
