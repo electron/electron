@@ -23,9 +23,8 @@ process.argv.splice startMark, endMark - startMark + 1
 globalPaths = module.globalPaths
 globalPaths.push path.join process.resourcesPath, 'atom', 'browser', 'api', 'lib'
 
-# Do loading in next tick since we still need some initialize work before
-# native bindings can work.
-setImmediate ->
+# Following operations need extra bindings by AtomBindings.
+process.once 'BIND_DONE', ->
   # Import common settings.
   require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init.js')
 

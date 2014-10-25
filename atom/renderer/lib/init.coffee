@@ -84,5 +84,5 @@ if nodeIntegration in ['true', 'all', 'except-iframe', 'manual-enable-iframe']
 else
   # There still some native initialization codes needs "process", delete the
   # global reference after they are done.
-  setImmediate ->
+  process.once 'BIND_DONE', ->
     delete global.process
