@@ -78,6 +78,21 @@ bool WebContents::AddMessageToConsole(content::WebContents* source,
   return true;
 }
 
+bool WebContents::ShouldCreateWebContents(
+    content::WebContents* web_contents,
+    int route_id,
+    WindowContainerType window_container_type,
+    const base::string16& frame_name,
+    const GURL& target_url,
+    const std::string& partition_id,
+    content::SessionStorageNamespace* session_storage_namespace) {
+  base::ListValue args;
+  args.AppendString(target_url.spec());
+  args.AppendString(partition_id);
+  Emit("new-window", args);
+  return false;
+}
+
 void WebContents::CloseContents(content::WebContents* source) {
   Emit("close");
 }
@@ -210,14 +225,8 @@ void WebContents::WillAttach(content::WebContents* embedder_web_contents,
 
 content::WebContents* WebContents::CreateNewGuestWindow(
     const content::WebContents::CreateParams& create_params) {
-  auto web_contents = content::WebContents::Create(create_params);
-  // TODO Currently we just retain the web_contents on V8's heap, which will be
-  // garbage collected later, we should provide a way to let users make use of
-  // this WebContents.
-  mate::Handle<WebContents> managed = CreateFrom(
-      v8::Isolate::GetCurrent(), web_contents);
-  managed->storage_.reset(web_contents);
-  return web_contents;
+  NOTREACHED() << "Should not create new window from guest";
+  return nullptr;
 }
 
 void WebContents::DidAttach() {

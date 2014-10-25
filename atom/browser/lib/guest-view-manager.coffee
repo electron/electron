@@ -10,6 +10,7 @@ supportedWebViewEvents = [
   'did-stop-loading'
   'did-get-redirect-request'
   'console-message'
+  'new-window'
   'close'
   'crashed'
   'destroyed'
