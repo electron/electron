@@ -1,11 +1,11 @@
 # menu
 
 The `Menu` class is used to create native menus that can be used as
-application menu and context menu. Each menu is consisted of multiple menu
+application menus and context menus. Each menu consists of multiple menu
 items, and each menu item can have a submenu.
 
-An example of creating a menu dynamically in web page by using the
-[remote](remote.md) module, and show it when user right clicks
+Below is an example of creating a menu dynamically in a web page by using
+the [remote](remote.md) module, and showing it when the user right clicks
 the page:
 
 ```html
