@@ -29,7 +29,7 @@ std::string Browser::GetExecutableFileProductName() const {
 }
 
 int Browser::DockBounce(BounceType type) {
-  return [[AtomApplication sharedApplication] requestUserAttention:type];
+  return [[AtomApplication sharedApplication] requestUserAttention:(NSRequestUserAttentionType)type];
 }
 
 void Browser::DockCancelBounce(int rid) {
