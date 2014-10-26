@@ -21,17 +21,14 @@ globalPaths.push path.join(process.resourcesPath, 'app')
 require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init.js')
 
 # Process command line arguments.
-isGuest = false
 nodeIntegration = 'false'
 for arg in process.argv
-  if arg is '--guest'
+  if arg.indexOf('--guest-instance-id=') == 0
     # This is a guest web view.
-    isGuest = true
+    process.guestInstanceId = parseInt arg.substr(arg.indexOf('=') + 1)
     # Set the frame name to make AtomRendererClient recognize this guest.
     require('web-frame').setName 'ATOM_SHELL_GUEST_WEB_VIEW'
-  else
-    index = arg.indexOf '--node-integration='
-    continue unless index == 0
+  else if arg.indexOf('--node-integration=') == 0
     nodeIntegration = arg.substr arg.indexOf('=') + 1
 
 if location.protocol is 'chrome-devtools:'
@@ -44,7 +41,7 @@ else
   # Override default web functions.
   require path.join(__dirname, 'override')
   # Load webview tag implementation.
-  require path.join(__dirname, 'web-view') unless isGuest
+  require path.join(__dirname, 'web-view') unless process.guestInstanceId?
 
 if nodeIntegration in ['true', 'all', 'except-iframe', 'manual-enable-iframe']
   # Export node bindings to global.

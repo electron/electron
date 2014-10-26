@@ -13,6 +13,7 @@
 #include "atom/browser/window_list.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
+#include "base/strings/string_number_conversions.h"
 #include "chrome/browser/printing/printing_message_filter.h"
 #include "chrome/browser/speech/tts_message_filter.h"
 #include "content/public/browser/render_process_host.h"
@@ -147,9 +148,12 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     // Append commnad line arguments for guest web view.
     WebViewRendererState::WebViewInfo info;
     if (WebViewRendererState::GetInstance()->GetInfo(child_process_id, &info)) {
-      command_line->AppendSwitch("guest");
-      command_line->AppendSwitchASCII(switches::kNodeIntegration,
-                                      info.node_integration ? "true" : "false");
+      command_line->AppendSwitchASCII(
+          switches::kGuestInstanceID,
+          base::IntToString(info.guest_instance_id));
+      command_line->AppendSwitchASCII(
+          switches::kNodeIntegration,
+          info.node_integration ? "true" : "false");
     }
   }
 

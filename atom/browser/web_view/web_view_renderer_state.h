@@ -20,6 +20,7 @@ class WebViewManager;
 class WebViewRendererState {
  public:
   struct WebViewInfo {
+    int guest_instance_id;
     bool node_integration;
   };
 

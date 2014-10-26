@@ -94,11 +94,15 @@ ipc.on 'ATOM_BROWSER_GLOBAL', (event, name) ->
   catch e
     event.returnValue = errorToMeta e
 
-ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event) ->
+ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event, guestInstanceId) ->
   try
     BrowserWindow = require 'browser-window'
-    window = BrowserWindow.fromWebContents event.sender
-    window = BrowserWindow.fromDevToolsWebContents event.sender unless window?
+    if guestInstanceId?
+      guestViewManager = require './guest-view-manager'
+      window = BrowserWindow.fromWebContents guestViewManager.getEmbedder(guestInstanceId)
+    else
+      window = BrowserWindow.fromWebContents event.sender
+      window = BrowserWindow.fromDevToolsWebContents event.sender unless window?
     event.returnValue = valueToMeta event.sender, window
   catch e
     event.returnValue = errorToMeta e

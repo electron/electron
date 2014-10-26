@@ -32,7 +32,7 @@ createGuest = (embedder, params) ->
     isGuest: true
     guestInstanceId: id
     storagePartitionId: params.storagePartitionId
-  guestInstances[id] = guest
+  guestInstances[id] = {guest, embedder}
   webViewManager.addGuest id, embedder, guest, params.nodeIntegration
 
   # Destroy guest when the embedder is gone.
@@ -65,7 +65,7 @@ createGuest = (embedder, params) ->
 # Destroy an existing guest instance.
 destroyGuest = (id) ->
   webViewManager.removeGuest id
-  guestInstances[id].destroy()
+  guestInstances[id].guest.destroy()
   delete guestInstances[id]
 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_CREATE_GUEST', (event, type, params, requestId) ->
@@ -75,11 +75,15 @@ ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_DESTROY_GUEST', (event, id) ->
   destroyGuest id
 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_AUTO_SIZE', (event, id, params) ->
-  guestInstances[id]?.setAutoSize params.enableAutoSize, params.min, params.max
+  guestInstances[id]?.guest.setAutoSize params.enableAutoSize, params.min, params.max
 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_ALLOW_TRANSPARENCY', (event, id, allowtransparency) ->
-  guestInstances[id]?.setAllowTransparency allowtransparency
+  guestInstances[id]?.guest.setAllowTransparency allowtransparency
 
 # Returns WebContents from its guest id.
 exports.getGuest = (id) ->
-  guestInstances[id]
+  guestInstances[id]?.guest
+
+# Returns the embedder of the guest.
+exports.getEmbedder = (id) ->
+  guestInstances[id]?.embedder
