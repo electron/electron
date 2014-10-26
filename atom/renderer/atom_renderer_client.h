@@ -45,21 +45,25 @@ class AtomRendererClient : public content::ContentRendererClient,
   virtual void WebKitInitialized() OVERRIDE;
 
   // content::ContentRendererClient:
-  virtual void RenderThreadStarted() OVERRIDE;
-  virtual void RenderFrameCreated(content::RenderFrame* render_frame) OVERRIDE;
-  virtual void RenderViewCreated(content::RenderView*) OVERRIDE;
-  virtual blink::WebSpeechSynthesizer* OverrideSpeechSynthesizer(
-      blink::WebSpeechSynthesizerClient* client);
-  virtual void DidCreateScriptContext(blink::WebFrame* frame,
-                                      v8::Handle<v8::Context> context,
-                                      int extension_group,
-                                      int world_id) OVERRIDE;
-  virtual bool ShouldFork(blink::WebFrame* frame,
-                          const GURL& url,
-                          const std::string& http_method,
-                          bool is_initial_navigation,
-                          bool is_server_redirect,
-                          bool* send_referrer) OVERRIDE;
+  void RenderThreadStarted() override;
+  void RenderFrameCreated(content::RenderFrame* render_frame) override;
+  void RenderViewCreated(content::RenderView*) override;
+  blink::WebSpeechSynthesizer* OverrideSpeechSynthesizer(
+      blink::WebSpeechSynthesizerClient* client) override;
+  bool OverrideCreatePlugin(content::RenderFrame* render_frame,
+                            blink::WebLocalFrame* frame,
+                            const blink::WebPluginParams& params,
+                            blink::WebPlugin** plugin) override;
+  void DidCreateScriptContext(blink::WebFrame* frame,
+                              v8::Handle<v8::Context> context,
+                              int extension_group,
+                              int world_id) override;
+  bool ShouldFork(blink::WebFrame* frame,
+                  const GURL& url,
+                  const std::string& http_method,
+                  bool is_initial_navigation,
+                  bool is_server_redirect,
+                  bool* send_referrer) override;
 
   void EnableWebRuntimeFeatures();
 

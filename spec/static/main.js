@@ -141,7 +141,6 @@ app.on('ready', function() {
     width: 800,
     height: 600,
     'web-preferences': {
-      plugins: true,  // Required by <webview>.
       javascript: true  // Test whether web-preferences crashes.
     },
   });

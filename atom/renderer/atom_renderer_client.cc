@@ -13,6 +13,7 @@
 #include "atom/renderer/atom_render_view_observer.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "chrome/renderer/tts_dispatcher.h"
+#include "content/public/common/content_constants.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_thread.h"
@@ -20,6 +21,7 @@
 #include "native_mate/converter.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
+#include "third_party/WebKit/public/web/WebPluginParams.h"
 #include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebRuntimeFeatures.h"
 
@@ -110,6 +112,20 @@ void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
 blink::WebSpeechSynthesizer* AtomRendererClient::OverrideSpeechSynthesizer(
     blink::WebSpeechSynthesizerClient* client) {
   return new TtsDispatcher(client);
+}
+
+bool AtomRendererClient::OverrideCreatePlugin(
+    content::RenderFrame* render_frame,
+    blink::WebLocalFrame* frame,
+    const blink::WebPluginParams& params,
+    blink::WebPlugin** plugin) {
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  if (params.mimeType.utf8() == content::kBrowserPluginMimeType ||
+      command_line->HasSwitch(switches::kEnablePlugins))
+    return false;
+
+  *plugin = nullptr;
+  return true;
 }
 
 void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,

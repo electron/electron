@@ -36,6 +36,7 @@ extern const char kAutoHideMenuBar[];
 extern const char kEnableLargerThanScreen[];
 extern const char kDarkTheme[];
 extern const char kDirectWrite[];
+extern const char kEnablePlugins[];
 
 extern const char kExperimentalFeatures[];
 extern const char kExperimentalCanvasFeatures[];

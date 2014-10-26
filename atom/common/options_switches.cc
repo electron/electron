@@ -60,6 +60,9 @@ const char kDarkTheme[] = "dark-theme";
 // Enable DirectWrite on Windows.
 const char kDirectWrite[] = "direct-write";
 
+// Enable plugins.
+const char kEnablePlugins[] = "enable-plugins";
+
 // Web runtime features.
 const char kExperimentalFeatures[]       = "experimental-features";
 const char kExperimentalCanvasFeatures[] = "experimental-canvas-features";

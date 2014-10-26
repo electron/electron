@@ -362,6 +362,10 @@ void NativeWindow::AppendExtraCommandLineSwitches(
     command_line->AppendSwitch(::switches::kDisableDirectWrite);
 #endif
 
+  // Check if plugins are enabled.
+  if (web_preferences_.Get("plugins", &b) && b)
+    command_line->AppendSwitch(switches::kEnablePlugins);
+
   // This set of options are not availabe in WebPreferences, so we have to pass
   // them via command line and enable them in renderer procss.
   for (size_t i = 0; i < arraysize(kWebRuntimeFeatures); ++i) {
@@ -392,8 +396,6 @@ void NativeWindow::OverrideWebkitPrefs(const GURL& url,
     prefs->experimental_webgl_enabled = b;
   if (web_preferences_.Get("webaudio", &b))
     prefs->webaudio_enabled = b;
-  if (web_preferences_.Get("plugins", &b))
-    prefs->plugins_enabled = b;
   if (web_preferences_.Get("extra-plugin-dirs", &list))
     for (size_t i = 0; i < list.size(); ++i)
       content::PluginService::GetInstance()->AddExtraPluginDir(list[i]);
