@@ -7,15 +7,17 @@
 #include "atom/browser/atom_access_token_store.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/web_view/web_view_renderer_state.h"
 #include "atom/browser/window_list.h"
+#include "atom/common/options_switches.h"
+#include "base/command_line.h"
+#include "base/strings/string_number_conversions.h"
 #include "chrome/browser/printing/printing_message_filter.h"
 #include "chrome/browser/speech/tts_message_filter.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
-#include "content/public/browser/resource_dispatcher_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/web_preferences.h"
@@ -58,12 +60,6 @@ void AtomBrowserClient::RenderProcessWillLaunch(
   host->AddFilter(new TtsMessageFilter(id, host->GetBrowserContext()));
 }
 
-void AtomBrowserClient::ResourceDispatcherHostCreated() {
-  resource_dispatcher_delegate_.reset(new AtomResourceDispatcherHostDelegate);
-  content::ResourceDispatcherHost::Get()->SetDelegate(
-      resource_dispatcher_delegate_.get());
-}
-
 content::SpeechRecognitionManagerDelegate*
     AtomBrowserClient::GetSpeechRecognitionManagerDelegate() {
   return new AtomSpeechRecognitionManagerDelegate;
@@ -80,7 +76,7 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->javascript_enabled = true;
   prefs->web_security_enabled = true;
   prefs->javascript_can_open_windows_automatically = true;
-  prefs->plugins_enabled = false;
+  prefs->plugins_enabled = true;
   prefs->dom_paste_enabled = true;
   prefs->java_enabled = false;
   prefs->allow_scripts_to_close_windows = true;
@@ -146,8 +142,20 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
       window = *iter;
   }
 
-  if (window != NULL)
+  if (window != NULL) {
     window->AppendExtraCommandLineSwitches(command_line, child_process_id);
+  } else {
+    // Append commnad line arguments for guest web view.
+    WebViewRendererState::WebViewInfo info;
+    if (WebViewRendererState::GetInstance()->GetInfo(child_process_id, &info)) {
+      command_line->AppendSwitchASCII(
+          switches::kGuestInstanceID,
+          base::IntToString(info.guest_instance_id));
+      command_line->AppendSwitchASCII(
+          switches::kNodeIntegration,
+          info.node_integration ? "true" : "false");
+    }
+  }
 
   dying_render_process_ = NULL;
 }

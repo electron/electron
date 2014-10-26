@@ -1,4 +1,5 @@
 EventEmitter = require('events').EventEmitter
+process = global.process
 ipc = process.atomBinding('ipc')
 
 class Ipc extends EventEmitter

@@ -387,7 +387,6 @@ describe 'asar package', ->
       w = new BrowserWindow(show: false, width: 400, height: 400)
       p = path.resolve fixtures, 'asar', 'web.asar', 'index.html'
       u = url.format protocol: 'asar', slashed: false, pathname: p
-      console.log u
       w.loadUrl u
       ipc.on 'dirname', (event, dirname) ->
         assert.equal dirname, path.dirname(p)

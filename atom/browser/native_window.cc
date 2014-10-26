@@ -84,7 +84,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       has_frame_(true),
       enable_larger_than_screen_(false),
       is_closed_(false),
-      node_integration_("except-iframe"),
+      node_integration_(true),
       has_dialog_attached_(false),
       zoom_factor_(1.0),
       weak_factory_(this),
@@ -94,12 +94,16 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
 
   options.Get(switches::kFrame, &has_frame_);
   options.Get(switches::kEnableLargerThanScreen, &enable_larger_than_screen_);
+  options.Get(switches::kNodeIntegration, &node_integration_);
 
   // Read icon before window is created.
   options.Get(switches::kIcon, &icon_);
 
-  // Read iframe security before any navigation.
-  options.Get(switches::kNodeIntegration, &node_integration_);
+  // Be compatible with old API of "node-integration" option.
+  std::string old_string_token;
+  if (options.Get(switches::kNodeIntegration, &old_string_token) &&
+      old_string_token != "disable")
+    node_integration_ = true;
 
   // Read the web preferences.
   options.Get(switches::kWebPreferences, &web_preferences_);
@@ -341,7 +345,7 @@ void NativeWindow::AppendExtraCommandLineSwitches(
     base::CommandLine* command_line, int child_process_id) {
   // Append --node-integration to renderer process.
   command_line->AppendSwitchASCII(switches::kNodeIntegration,
-                                  node_integration_);
+                                  node_integration_ ? "true" : "false");
 
   // Append --zoom-factor.
   if (zoom_factor_ != 1.0)
@@ -357,6 +361,10 @@ void NativeWindow::AppendExtraCommandLineSwitches(
   if (web_preferences_.Get(switches::kDirectWrite, &b) && !b)
     command_line->AppendSwitch(::switches::kDisableDirectWrite);
 #endif
+
+  // Check if plugins are enabled.
+  if (web_preferences_.Get("plugins", &b) && b)
+    command_line->AppendSwitch(switches::kEnablePlugins);
 
   // This set of options are not availabe in WebPreferences, so we have to pass
   // them via command line and enable them in renderer procss.
@@ -388,8 +396,6 @@ void NativeWindow::OverrideWebkitPrefs(const GURL& url,
     prefs->experimental_webgl_enabled = b;
   if (web_preferences_.Get("webaudio", &b))
     prefs->webaudio_enabled = b;
-  if (web_preferences_.Get("plugins", &b))
-    prefs->plugins_enabled = b;
   if (web_preferences_.Get("extra-plugin-dirs", &list))
     for (size_t i = 0; i < list.size(); ++i)
       content::PluginService::GetInstance()->AddExtraPluginDir(list[i]);

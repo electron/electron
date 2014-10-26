@@ -1,6 +1,7 @@
+process = global.process
 ipc = require 'ipc'
-CallbacksRegistry = require 'callbacks-registry'
 v8Util = process.atomBinding 'v8_util'
+CallbacksRegistry = require 'callbacks-registry'
 
 callbacksRegistry = new CallbacksRegistry
 
@@ -110,7 +111,7 @@ exports.require = (module) ->
 windowCache = null
 exports.getCurrentWindow = ->
   return windowCache if windowCache?
-  meta = ipc.sendChannelSync 'ATOM_BROWSER_CURRENT_WINDOW'
+  meta = ipc.sendChannelSync 'ATOM_BROWSER_CURRENT_WINDOW', process.guestInstanceId
   windowCache = metaToValue meta
 
 # Get a global object in browser.
@@ -129,3 +130,8 @@ exports.createFunctionWithReturnValue = (returnValue) ->
   func = -> returnValue
   v8Util.setHiddenValue func, 'returnValue', true
   func
+
+# Get the guest WebContents from guestInstanceId.
+exports.getGuestWebContents = (guestInstanceId) ->
+  meta = ipc.sendChannelSync 'ATOM_BROWSER_GUEST_WEB_CONTENTS', guestInstanceId
+  metaToValue meta

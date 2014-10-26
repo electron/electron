@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_API_EVENT_EMITTER_H_
 #define ATOM_BROWSER_API_EVENT_EMITTER_H_
 
+#include <vector>
+
 #include "native_mate/wrappable.h"
 
 namespace base {
@@ -23,6 +25,9 @@ namespace mate {
 
 // Provide helperers to emit event in JavaScript.
 class EventEmitter : public Wrappable {
+ public:
+  typedef std::vector<v8::Handle<v8::Value>> Arguments;
+
  protected:
   EventEmitter();
 
@@ -35,6 +40,13 @@ class EventEmitter : public Wrappable {
   // this.emit(name, new Event(sender, message), args...);
   bool Emit(const base::StringPiece& name, const base::ListValue& args,
             content::WebContents* sender, IPC::Message* message);
+
+  // Lower level implementations.
+  bool Emit(v8::Isolate* isolate,
+            const base::StringPiece& name,
+            Arguments args,
+            content::WebContents* sender = nullptr,
+            IPC::Message* message = nullptr);
 
  private:
   DISALLOW_COPY_AND_ASSIGN(EventEmitter);

@@ -18,9 +18,6 @@ win.show();
 You can also create a window without chrome by using
 [Frameless Window](frameless-window.md) API.
 
-Security strategy of web pages showed by `BrowserWindow` is a bit different from
-normal browsers, see [Web Security](web-security.md) for more.
-
 ## Class: BrowserWindow
 
 `BrowserWindow` is an
@@ -54,9 +51,8 @@ normal browsers, see [Web Security](web-security.md) for more.
   * `show` Boolean - Whether window should be shown when created
   * `frame` Boolean - Specify `false` to create a
     [Frameless Window](frameless-window.md)
-  * `node-integration` String - Default value is `except-iframe`, can also be
-    `all`, `manual-enable-iframe` or `disable`, see
-     [Web Security](web-security.md) for more informations.
+  * `node-integration` Boolean - Whether node integration is enabled, default
+     is `true`
   * `accept-first-mouse` Boolean - Whether the web view accepts a single
      mouse-down event that simultaneously activates the window
   * `auto-hide-menu-bar` Boolean - Auto hide the menu bar unless the `Alt`
@@ -512,14 +508,19 @@ A `WebContents` is responsible for rendering and controlling a web page.
 `WebContents` is an
 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
 
-### Event: 'crashed'
-
-Emitted when the renderer process is crashed.
-
 ### Event: 'did-finish-load'
 
 Emitted when the navigation is done, i.e. the spinner of the tab will stop
-spinning, and the onload event was dispatched.
+spinning, and the `onload` event was dispatched.
+
+### Event: 'did-fail-load'
+
+* `event` Event
+* `errorCode` Integer
+* `errorDescription` String
+
+This event is like `did-finish-load`, but emitted when the load failed or was
+cancelled, e.g. `window.stop()` is invoked.
 
 ### Event: 'did-frame-finish-load'
 
@@ -530,7 +531,28 @@ Emitted when a frame has done navigation.
 
 ### Event: 'did-start-loading'
 
+Corresponds to the points in time when the spinner of the tab starts spinning.
+
 ### Event: 'did-stop-loading'
+
+Corresponds to the points in time when the spinner of the tab stops spinning.
+
+### Event: 'did-get-redirect-request'
+
+* `event` Event
+* `oldUrl` String
+* `newUrl` String
+* `isMainFrame` Boolean
+
+Emitted when a redirect was received while requesting a resource.
+
+### Event: 'crashed'
+
+Emitted when the renderer process is crashed.
+
+### Event: 'destroyed'
+
+Emitted when the WebContents is destroyed.
 
 ### WebContents.loadUrl(url)
 
@@ -602,9 +624,21 @@ Navigates to the specified absolute index.
 
 Navigates to the specified offset from the "current entry".
 
-### WebContents.IsCrashed()
+### WebContents.isCrashed()
 
 Whether the renderer process has crashed.
+
+### WebContents.setUserAgent(userAgent)
+
+* `userAgent` String
+
+Overrides the user agent for this page.
+
+### WebContents.insertCSS(css)
+
+* `css` String
+
+Injects CSS into this page.
 
 ### WebContents.executeJavaScript(code)
 

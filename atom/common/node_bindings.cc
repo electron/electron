@@ -68,6 +68,7 @@ REFERENCE_MODULE(atom_browser_power_monitor);
 REFERENCE_MODULE(atom_browser_protocol);
 REFERENCE_MODULE(atom_browser_global_shortcut);
 REFERENCE_MODULE(atom_browser_tray);
+REFERENCE_MODULE(atom_browser_web_contents);
 REFERENCE_MODULE(atom_browser_window);
 REFERENCE_MODULE(atom_common_asar);
 REFERENCE_MODULE(atom_common_clipboard);
@@ -77,7 +78,7 @@ REFERENCE_MODULE(atom_common_screen);
 REFERENCE_MODULE(atom_common_shell);
 REFERENCE_MODULE(atom_common_v8_util);
 REFERENCE_MODULE(atom_renderer_ipc);
-REFERENCE_MODULE(atom_renderer_web_view);
+REFERENCE_MODULE(atom_renderer_web_frame);
 #undef REFERENCE_MODULE
 
 namespace atom {

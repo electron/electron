@@ -94,11 +94,15 @@ ipc.on 'ATOM_BROWSER_GLOBAL', (event, name) ->
   catch e
     event.returnValue = errorToMeta e
 
-ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event) ->
+ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event, guestInstanceId) ->
   try
     BrowserWindow = require 'browser-window'
-    window = BrowserWindow.fromWebContents event.sender
-    window = BrowserWindow.fromDevToolsWebContents event.sender unless window?
+    if guestInstanceId?
+      guestViewManager = require './guest-view-manager'
+      window = BrowserWindow.fromWebContents guestViewManager.getEmbedder(guestInstanceId)
+    else
+      window = BrowserWindow.fromWebContents event.sender
+      window = BrowserWindow.fromDevToolsWebContents event.sender unless window?
     event.returnValue = valueToMeta event.sender, window
   catch e
     event.returnValue = errorToMeta e
@@ -157,3 +161,10 @@ ipc.on 'ATOM_BROWSER_MEMBER_GET', (event, id, name) ->
 
 ipc.on 'ATOM_BROWSER_DEREFERENCE', (event, storeId) ->
   objectsRegistry.remove event.sender.getId(), storeId
+
+ipc.on 'ATOM_BROWSER_GUEST_WEB_CONTENTS', (event, guestInstanceId) ->
+  try
+    guestViewManager = require './guest-view-manager'
+    event.returnValue = valueToMeta event.sender, guestViewManager.getGuest(guestInstanceId)
+  catch e
+    event.returnValue = errorToMeta e

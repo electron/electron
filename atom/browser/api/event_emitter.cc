@@ -4,8 +4,6 @@
 
 #include "atom/browser/api/event_emitter.h"
 
-#include <vector>
-
 #include "atom/browser/api/event.h"
 #include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "base/memory/scoped_ptr.h"
@@ -64,6 +62,23 @@ bool EventEmitter::Emit(const base::StringPiece& name,
   v8::Handle<v8::Context> context = isolate->GetCurrentContext();
   scoped_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
 
+  // v8_args = [args...];
+  Arguments v8_args;
+  v8_args.reserve(args.GetSize());
+  for (size_t i = 0; i < args.GetSize(); i++) {
+    const base::Value* value(NULL);
+    if (args.Get(i, &value))
+      v8_args.push_back(converter->ToV8Value(value, context));
+  }
+
+  return Emit(isolate, name, v8_args, sender, message);
+}
+
+bool EventEmitter::Emit(v8::Isolate* isolate,
+                        const base::StringPiece& name,
+                        Arguments args,
+                        content::WebContents* sender,
+                        IPC::Message* message) {
   v8::Handle<v8::Object> event;
   bool use_native_event = sender && message;
 
@@ -75,20 +90,13 @@ bool EventEmitter::Emit(const base::StringPiece& name,
     event = CreateEventObject(isolate);
   }
 
-  // v8_args = [name, event, args...];
-  std::vector<v8::Handle<v8::Value>> v8_args;
-  v8_args.reserve(args.GetSize() + 2);
-  v8_args.push_back(mate::StringToV8(isolate, name));
-  v8_args.push_back(event);
-  for (size_t i = 0; i < args.GetSize(); i++) {
-    const base::Value* value(NULL);
-    if (args.Get(i, &value))
-      v8_args.push_back(converter->ToV8Value(value, context));
-  }
+  // args = [name, event, args...];
+  args.insert(args.begin(), event);
+  args.insert(args.begin(), mate::StringToV8(isolate, name));
 
-  // this.emit.apply(this, v8_args);
-  node::MakeCallback(isolate, GetWrapper(isolate), "emit", v8_args.size(),
-                     &v8_args[0]);
+  // this.emit.apply(this, args);
+  node::MakeCallback(isolate, GetWrapper(isolate), "emit", args.size(),
+                     &args[0]);
 
   if (use_native_event) {
     Handle<Event> native_event;

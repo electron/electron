@@ -6,13 +6,11 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_window.h"
+#include "atom/common/native_mate_converters/gfx_converter.h"
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/callback.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
-#include "ui/gfx/point.h"
-#include "ui/gfx/rect.h"
-#include "ui/gfx/size.h"
 
 #include "atom/common/node_includes.h"
 
@@ -36,23 +34,6 @@ struct Converter<PrintSettings> {
       return false;
     dict.Get("silent", &(out->silent));
     dict.Get("printBackground", &(out->print_backgournd));
-    return true;
-  }
-};
-
-template<>
-struct Converter<gfx::Rect> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
-                     gfx::Rect* out) {
-    if (!val->IsObject())
-      return false;
-    mate::Dictionary dict(isolate, val->ToObject());
-    int x, y, width, height;
-    if (!dict.Get("x", &x) || !dict.Get("y", &y) ||
-        !dict.Get("width", &width) || !dict.Get("height", &height))
-      return false;
-    *out = gfx::Rect(x, y, width, height);
     return true;
   }
 };
@@ -375,12 +356,12 @@ void Window::SetProgressBar(double progress) {
 }
 
 mate::Handle<WebContents> Window::GetWebContents(v8::Isolate* isolate) const {
-  return WebContents::Create(isolate, window_->GetWebContents());
+  return WebContents::CreateFrom(isolate, window_->GetWebContents());
 }
 
 mate::Handle<WebContents> Window::GetDevToolsWebContents(
     v8::Isolate* isolate) const {
-  return WebContents::Create(isolate, window_->GetDevToolsWebContents());
+  return WebContents::CreateFrom(isolate, window_->GetDevToolsWebContents());
 }
 
 // static
