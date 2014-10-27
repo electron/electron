@@ -2,13 +2,13 @@ process = global.process
 ipc = require 'ipc'
 remote = require 'remote'
 
-if process.guestInstanceId?
+unless process.guestInstanceId?
   # Override default window.close.
   window.close = ->
     remote.getCurrentWindow().close()
 
 # Make the browser window or guest view emit "new-window" event.
-window.open = (url, name='', features='') ->
+window.open = (url, frameName='', features='') ->
   options = {}
   for feature in features.split ','
     [name, value] = feature.split '='
@@ -25,7 +25,7 @@ window.open = (url, name='', features='') ->
   options.width ?= 800
   options.height ?= 600
 
-  ipc.send 'ATOM_SHELL_WEB_CONTENTS_WINDOW_OPEN', url, name, features
+  ipc.send 'ATOM_SHELL_WEB_CONTENTS_WINDOW_OPEN', url, frameName, options
 
 # Use the dialog API to implement alert().
 window.alert = (message, title='') ->

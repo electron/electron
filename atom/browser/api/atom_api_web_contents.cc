@@ -88,7 +88,7 @@ bool WebContents::ShouldCreateWebContents(
     content::SessionStorageNamespace* session_storage_namespace) {
   base::ListValue args;
   args.AppendString(target_url.spec());
-  args.AppendString(partition_id);
+  args.AppendString(frame_name);
   Emit("new-window", args);
   return false;
 }

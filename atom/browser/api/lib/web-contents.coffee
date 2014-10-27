@@ -3,8 +3,8 @@ binding = process.atomBinding 'web_contents'
 ipc = require 'ipc'
 
 # Routed window.open messages.
-ipc.on 'ATOM_SHELL_WEB_CONTENTS_WINDOW_OPEN', (event, url, name, features) ->
-  event.sender.emit 'new-window', url, name, features
+ipc.on 'ATOM_SHELL_WEB_CONTENTS_WINDOW_OPEN', (event, args...) ->
+  event.sender.emit 'new-window', event, args...
 
 module.exports.wrap = (webContents) ->
   return null unless webContents.isAlive()
