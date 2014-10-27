@@ -46,3 +46,20 @@ describe '<webview> tag', ->
       webview.setAttribute 'nodeintegration', 'on'
       webview.src = "file://#{fixtures}/pages/d.html"
       document.body.appendChild webview
+
+  describe 'new-window event', ->
+    it 'emits when window.open is called', (done) ->
+      webview.addEventListener 'new-window', (e) ->
+        assert.equal e.url, 'http://host'
+        assert.equal e.frameName, 'host'
+        done()
+      webview.src = "file://#{fixtures}/pages/window-open.html"
+      document.body.appendChild webview
+
+    it 'emits when link with target is called', (done) ->
+      webview.addEventListener 'new-window', (e) ->
+        assert.equal e.url, 'http://host/'
+        assert.equal e.frameName, 'target'
+        done()
+      webview.src = "file://#{fixtures}/pages/target-name.html"
+      document.body.appendChild webview
