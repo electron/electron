@@ -113,6 +113,14 @@ class InspectableWebContentsImpl :
                            const base::string16& message,
                            int32 line_no,
                            const base::string16& source_id) override;
+  bool ShouldCreateWebContents(
+      content::WebContents* web_contents,
+      int route_id,
+      WindowContainerType window_container_type,
+      const base::string16& frame_name,
+      const GURL& target_url,
+      const std::string& partition_id,
+      content::SessionStorageNamespace* session_storage_namespace) override;
   void HandleKeyboardEvent(
       content::WebContents*, const content::NativeWebKeyboardEvent&) override;
   void CloseContents(content::WebContents* source) override;
