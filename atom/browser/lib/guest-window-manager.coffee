@@ -55,14 +55,16 @@ ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', (event, args...) ->
     [url, frameName, options] = args
     event.returnValue = createGuest event.sender, url, options
 
-ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', (event, args...) ->
-  guest = removeGuest args...
+ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', (event, embedderId, guestId) ->
+  return unless BrowserWindow.windows.has guestId
+  guest = removeGuest embedderId, guestId
   guest.destroy()
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', (event, guestId, method, args...) ->
-  guest = BrowserWindow.windows.get guestId
-  guest[method] args...
+  return unless BrowserWindow.windows.has guestId
+  BrowserWindow.windows.get(guestId)[method] args...
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', (event, guestId, method, args...) ->
+  return unless BrowserWindow.windows.has guestId
   guest = BrowserWindow.windows.get guestId
-  guest.webContents?[method] args...
+  BrowserWindow.windows.get(guestId).webContents?[method] args...
