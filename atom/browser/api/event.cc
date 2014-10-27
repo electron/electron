@@ -19,8 +19,7 @@ v8::Persistent<v8::ObjectTemplate> template_;
 
 Event::Event()
     : sender_(NULL),
-      message_(NULL),
-      prevent_default_(false) {
+      message_(NULL) {
 }
 
 Event::~Event() {
@@ -52,8 +51,9 @@ void Event::WebContentsDestroyed() {
   message_ = NULL;
 }
 
-void Event::PreventDefault() {
-  prevent_default_ = true;
+void Event::PreventDefault(v8::Isolate* isolate) {
+  GetWrapper(isolate)->Set(StringToV8(isolate, "defaultPrevented"),
+                           v8::True(isolate));
 }
 
 bool Event::SendReply(const base::string16& json) {

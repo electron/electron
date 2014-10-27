@@ -98,17 +98,7 @@ bool EventEmitter::Emit(v8::Isolate* isolate,
   node::MakeCallback(isolate, GetWrapper(isolate), "emit", args.size(),
                      &args[0]);
 
-  if (use_native_event) {
-    Handle<Event> native_event;
-    if (ConvertFromV8(isolate, event, &native_event))
-      return native_event->prevent_default();
-  }
-
-  v8::Handle<v8::Value> prevent_default =
-      event->GetHiddenValue(StringToSymbol(isolate, "prevent_default"));
-  if (prevent_default.IsEmpty())
-    return false;
-  return prevent_default->BooleanValue();
+  return event->Get(StringToV8(isolate, "defaultPrevented"))->BooleanValue();
 }
 
 }  // namespace mate
