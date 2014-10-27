@@ -62,3 +62,7 @@ ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', (event, args...) ->
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', (event, guestId, method, args...) ->
   guest = BrowserWindow.windows.get guestId
   guest[method] args...
+
+ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', (event, guestId, method, args...) ->
+  guest = BrowserWindow.windows.get guestId
+  guest.webContents?[method] args...

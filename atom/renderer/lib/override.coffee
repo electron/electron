@@ -15,6 +15,9 @@ class FakeWindow
   blur: ->
     ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', @guestId, 'blur'
 
+  eval: (args...) ->
+    ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', @guestId, 'executeJavaScript', args...
+
 unless process.guestInstanceId?
   # Override default window.close.
   window.close = ->
