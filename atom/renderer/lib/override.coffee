@@ -9,6 +9,12 @@ class FakeWindow
   close: ->
     ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', @embedderId, @guestId
 
+  focus: ->
+    ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', @guestId, 'focus'
+
+  blur: ->
+    ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', @guestId, 'blur'
+
 unless process.guestInstanceId?
   # Override default window.close.
   window.close = ->

@@ -58,3 +58,7 @@ ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', (event, args...) ->
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', (event, args...) ->
   guest = removeGuest args...
   guest.destroy()
+
+ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', (event, guestId, method, args...) ->
+  guest = BrowserWindow.windows.get guestId
+  guest[method] args...
