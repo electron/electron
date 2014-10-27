@@ -2,6 +2,13 @@ process = global.process
 ipc = require 'ipc'
 remote = require 'remote'
 
+# Window object returned by "window.open".
+class FakeWindow
+  constructor: (@embedderId, @guestId) ->
+
+  close: ->
+    ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', @embedderId, @guestId
+
 unless process.guestInstanceId?
   # Override default window.close.
   window.close = ->
@@ -25,7 +32,8 @@ window.open = (url, frameName='', features='') ->
   options.width ?= 800
   options.height ?= 600
 
-  ipc.send 'ATOM_SHELL_WEB_CONTENTS_WINDOW_OPEN', url, frameName, options
+  [embedderId, guestId] = ipc.sendSync 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', url, frameName, options
+  new FakeWindow(embedderId, guestId)
 
 # Use the dialog API to implement alert().
 window.alert = (message, title='') ->
