@@ -23,6 +23,10 @@ BrowserWindow::_init = ->
     value: BrowserWindow.windows.add(this)
     enumerable: true
 
+  # Route the "new-window" event to webContents.
+  @on 'new-window', (args...) =>
+    @webContents?.emit 'new-window', args...
+
   # Remove the window from weak map immediately when it's destroyed, since we
   # could be iterating windows before GC happened.
   @once 'closed', =>
