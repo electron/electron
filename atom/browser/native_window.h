@@ -214,6 +214,14 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
       const std::vector<DraggableRegion>& regions) = 0;
 
   // Implementations of content::WebContentsDelegate.
+  bool ShouldCreateWebContents(
+      content::WebContents* web_contents,
+      int route_id,
+      WindowContainerType window_container_type,
+      const base::string16& frame_name,
+      const GURL& target_url,
+      const std::string& partition_id,
+      content::SessionStorageNamespace* session_storage_namespace) override;
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
