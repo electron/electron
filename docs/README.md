@@ -16,8 +16,8 @@
 
 Custom DOM elements:
 
-* [`File` object](app/file-object.md)
-* [`<webview>` tag](app/web-view-tag.md)
+* [`File` object](api/file-object.md)
+* [`<webview>` tag](api/web-view-tag.md)
 
 Modules for browser side:
 
