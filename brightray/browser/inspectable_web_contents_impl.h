@@ -41,12 +41,12 @@ class InspectableWebContentsImpl :
   explicit InspectableWebContentsImpl(content::WebContents*);
   virtual ~InspectableWebContentsImpl();
 
-  virtual InspectableWebContentsView* GetView() const override;
-  virtual content::WebContents* GetWebContents() const override;
+  InspectableWebContentsView* GetView() const override;
+  content::WebContents* GetWebContents() const override;
 
-  virtual void ShowDevTools() override;
-  virtual void CloseDevTools() override;
-  virtual bool IsDevToolsViewShowing() override;
+  void ShowDevTools() override;
+  void CloseDevTools() override;
+  bool IsDevToolsViewShowing() override;
 
   // Return the last position and size of devtools window.
   gfx::Rect GetDevToolsBounds() const;
@@ -65,59 +65,57 @@ class InspectableWebContentsImpl :
 
  private:
   // DevToolsEmbedderMessageDispacher::Delegate
-
-  virtual void ActivateWindow() override;
-  virtual void CloseWindow() override;
-  virtual void SetInspectedPageBounds(const gfx::Rect& rect) override;
-  virtual void InspectElementCompleted() override;
-  virtual void MoveWindow(int x, int y) override;
-  virtual void SetIsDocked(bool docked) override;
-  virtual void OpenInNewTab(const std::string& url) override;
-  virtual void SaveToFile(const std::string& url,
-                          const std::string& content,
-                          bool save_as) override;
-  virtual void AppendToFile(const std::string& url,
-                            const std::string& content) override;
-  virtual void RequestFileSystems() override;
-  virtual void AddFileSystem() override;
-  virtual void RemoveFileSystem(const std::string& file_system_path) override;
-  virtual void UpgradeDraggedFileSystemPermissions(
+  void ActivateWindow() override;
+  void CloseWindow() override;
+  void SetInspectedPageBounds(const gfx::Rect& rect) override;
+  void InspectElementCompleted() override;
+  void MoveWindow(int x, int y) override;
+  void SetIsDocked(bool docked) override;
+  void OpenInNewTab(const std::string& url) override;
+  void SaveToFile(const std::string& url,
+                  const std::string& content,
+                  bool save_as) override;
+  void AppendToFile(const std::string& url,
+                    const std::string& content) override;
+  void RequestFileSystems() override;
+  void AddFileSystem() override;
+  void RemoveFileSystem(const std::string& file_system_path) override;
+  void UpgradeDraggedFileSystemPermissions(
       const std::string& file_system_url) override;
-  virtual void IndexPath(int request_id,
-                         const std::string& file_system_path) override;
-  virtual void StopIndexing(int request_id) override;
-  virtual void SearchInPath(int request_id,
-                            const std::string& file_system_path,
-                            const std::string& query) override;
-  virtual void ZoomIn() override;
-  virtual void ZoomOut() override;
-  virtual void ResetZoom() override;
+  void IndexPath(int request_id,
+                 const std::string& file_system_path) override;
+  void StopIndexing(int request_id) override;
+  void SearchInPath(int request_id,
+                    const std::string& file_system_path,
+                    const std::string& query) override;
+  void ZoomIn() override;
+  void ZoomOut() override;
+  void ResetZoom() override;
 
   // content::DevToolsClientHost:
-  virtual void DispatchOnInspectorFrontend(const std::string& message) override;
-  virtual void InspectedContentsClosing() override;
-  virtual void ReplacedWithAnotherClient() override;
+  void DispatchOnInspectorFrontend(const std::string& message) override;
+  void InspectedContentsClosing() override;
+  void ReplacedWithAnotherClient() override;
 
   // content::DevToolsFrontendHostDelegate:
-  virtual void HandleMessageFromDevToolsFrontend(const std::string& message) override;
-  virtual void HandleMessageFromDevToolsFrontendToBackend(const std::string& message) override;
+  void HandleMessageFromDevToolsFrontend(const std::string& message) override;
+  void HandleMessageFromDevToolsFrontendToBackend(const std::string& message) override;
 
   // content::WebContentsObserver:
-  virtual void AboutToNavigateRenderView(content::RenderViewHost* render_view_host) override;
-  virtual void DidFinishLoad(content::RenderFrameHost* render_frame_host,
-                             const GURL& validated_url) override;
-  virtual void WebContentsDestroyed() override;
+  void AboutToNavigateRenderView(content::RenderViewHost* render_view_host) override;
+  void DidFinishLoad(content::RenderFrameHost* render_frame_host,
+                     const GURL& validated_url) override;
+  void WebContentsDestroyed() override;
 
   // content::WebContentsDelegate
-
-  virtual bool AddMessageToConsole(content::WebContents* source,
-                                   int32 level,
-                                   const base::string16& message,
-                                   int32 line_no,
-                                   const base::string16& source_id) override;
-  virtual void HandleKeyboardEvent(
+  bool AddMessageToConsole(content::WebContents* source,
+                           int32 level,
+                           const base::string16& message,
+                           int32 line_no,
+                           const base::string16& source_id) override;
+  void HandleKeyboardEvent(
       content::WebContents*, const content::NativeWebKeyboardEvent&) override;
-  virtual void CloseContents(content::WebContents* source) override;
+  void CloseContents(content::WebContents* source) override;
 
   scoped_ptr<content::WebContents> web_contents_;
   scoped_ptr<content::WebContents> devtools_web_contents_;
