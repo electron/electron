@@ -1,55 +1,35 @@
 ipc = require 'ipc'
-v8Util = process.atomBinding 'v8_util'
 BrowserWindow = require 'browser-window'
 
-guestWindows = new WeakMap
 frameToGuest = {}
-
-# Callback that registered to "closed" event of guest.
-guestUserCloseCallback = ->
-  embedderId = v8Util.getHiddenValue this, 'embedderId'
-  removeGuest embedderId, @id
-
-# Get all guests created in a window.
-getGuestsFromEmbedder = (embedderWindow) ->
-  unless guestWindows.has embedderWindow
-    guests = []
-    guestWindows.set embedderWindow, guests
-    # Close all guests when window is closed.
-    embedderWindow.on 'closed', ->
-      for guest in guests
-        # Avoid double removing window from guests.
-        guest.removeListener 'closed', guestUserCloseCallback
-        # Just close without emitting "beforeunload" event.
-        guest.destroy()
-  guestWindows.get embedderWindow
-
-# Remove a guest window.
-removeGuest = (embedderId, guestId) ->
-  for frameName, value of frameToGuest when guestId == value
-    delete frameToGuest[frameName]
-  guests = getGuestsFromEmbedder BrowserWindow.windows.get(embedderId)
-  for guest, i in guests
-    if guest.id == guestId
-      guests.splice i, 1
-      return guest
 
 # Create a new guest created by |embedder| with |options|.
 createGuest = (embedder, url, frameName, options) ->
-  return frameToGuest[frameName] if frameName and frameToGuest[frameName]?
-
-  embedderWindow = BrowserWindow.fromWebContents embedder
-  guests = getGuestsFromEmbedder embedderWindow
+  guest = frameToGuest[frameName]
+  if frameName and guest?
+    guest.loadUrl url
+    return guest.id
 
   guest = new BrowserWindow(options)
   guest.loadUrl url
 
-  # Remove self from guest list when user closes guest window.
-  v8Util.setHiddenValue guest, 'embedderId', embedderWindow.id
-  guest.on 'closed', guestUserCloseCallback
+  # When |embedder| is destroyed we should also destroy attached guest, and if
+  # guest is closed by user then we should prevent |embedder| from double
+  # closing guest.
+  closedByEmbedder = ->
+    guest.removeListener 'closed', closedByUser
+    guest.destroy() unless guest.isClosed()
+  closedByUser = ->
+    embedder.removeListener 'render-view-deleted', closedByEmbedder
+  embedder.once 'render-view-deleted', closedByEmbedder
+  guest.once 'closed', closedByUser
 
-  frameToGuest[frameName] = guest.id if frameName
-  guests.push guest
+  if frameName
+    frameToGuest[frameName] = guest
+    guest.frameName = frameName
+    guest.once 'closed', ->
+      delete frameToGuest[frameName]
+
   guest.id
 
 # Routed window.open messages.
@@ -62,8 +42,7 @@ ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', (event, args...) ->
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', (event, guestId) ->
   return unless BrowserWindow.windows.has guestId
-  guest = removeGuest BrowserWindow.fromWebContents(event.sender).id, guestId
-  guest.destroy()
+  BrowserWindow.windows.get(guestId).destroy()
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', (event, guestId, method, args...) ->
   return unless BrowserWindow.windows.has guestId

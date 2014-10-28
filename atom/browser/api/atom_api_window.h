@@ -59,6 +59,7 @@ class Window : public mate::EventEmitter,
   // APIs for NativeWindow.
   void Destroy();
   void Close();
+  bool IsClosed();
   void Focus();
   bool IsFocused();
   void Show();
