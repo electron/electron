@@ -43,19 +43,23 @@ class Window : public mate::EventEmitter,
   virtual ~Window();
 
   // Implementations of NativeWindowObserver:
-  virtual void OnPageTitleUpdated(bool* prevent_default,
-                                  const std::string& title) OVERRIDE;
-  virtual void WillCloseWindow(bool* prevent_default) OVERRIDE;
-  virtual void OnWindowClosed() OVERRIDE;
-  virtual void OnWindowBlur() OVERRIDE;
-  virtual void OnWindowFocus() OVERRIDE;
-  virtual void OnRendererUnresponsive() OVERRIDE;
-  virtual void OnRendererResponsive() OVERRIDE;
+  void OnPageTitleUpdated(bool* prevent_default,
+                          const std::string& title) override;
+  void WillCreatePopupWindow(const base::string16& frame_name,
+                             const GURL& target_url,
+                             const std::string& partition_id) override;
+  void WillCloseWindow(bool* prevent_default) override;
+  void OnWindowClosed() override;
+  void OnWindowBlur() override;
+  void OnWindowFocus() override;
+  void OnRendererUnresponsive() override;
+  void OnRendererResponsive() override;
 
  private:
   // APIs for NativeWindow.
   void Destroy();
   void Close();
+  bool IsClosed();
   void Focus();
   bool IsFocused();
   void Show();

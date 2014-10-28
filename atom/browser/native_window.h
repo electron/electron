@@ -214,43 +214,50 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
       const std::vector<DraggableRegion>& regions) = 0;
 
   // Implementations of content::WebContentsDelegate.
-  virtual content::WebContents* OpenURLFromTab(
+  bool ShouldCreateWebContents(
+      content::WebContents* web_contents,
+      int route_id,
+      WindowContainerType window_container_type,
+      const base::string16& frame_name,
+      const GURL& target_url,
+      const std::string& partition_id,
+      content::SessionStorageNamespace* session_storage_namespace) override;
+  content::WebContents* OpenURLFromTab(
       content::WebContents* source,
-      const content::OpenURLParams& params) OVERRIDE;
-  virtual content::JavaScriptDialogManager*
-      GetJavaScriptDialogManager() OVERRIDE;
-  virtual void BeforeUnloadFired(content::WebContents* tab,
-                                 bool proceed,
-                                 bool* proceed_to_fire_unload) OVERRIDE;
-  virtual void RequestToLockMouse(content::WebContents* web_contents,
-                                  bool user_gesture,
-                                  bool last_unlocked_by_target) OVERRIDE;
-  virtual bool CanOverscrollContent() const OVERRIDE;
-  virtual void ActivateContents(content::WebContents* contents) OVERRIDE;
-  virtual void DeactivateContents(content::WebContents* contents) OVERRIDE;
-  virtual void MoveContents(content::WebContents* source,
-                            const gfx::Rect& pos) OVERRIDE;
-  virtual void CloseContents(content::WebContents* source) OVERRIDE;
-  virtual bool IsPopupOrPanel(
-      const content::WebContents* source) const OVERRIDE;
-  virtual void RendererUnresponsive(content::WebContents* source) OVERRIDE;
-  virtual void RendererResponsive(content::WebContents* source) OVERRIDE;
+      const content::OpenURLParams& params) override;
+  content::JavaScriptDialogManager* GetJavaScriptDialogManager() override;
+  void BeforeUnloadFired(content::WebContents* tab,
+                         bool proceed,
+                         bool* proceed_to_fire_unload) override;
+  void RequestToLockMouse(content::WebContents* web_contents,
+                          bool user_gesture,
+                          bool last_unlocked_by_target) override;
+  bool CanOverscrollContent() const override;
+  void ActivateContents(content::WebContents* contents) override;
+  void DeactivateContents(content::WebContents* contents) override;
+  void MoveContents(content::WebContents* source,
+                    const gfx::Rect& pos) override;
+  void CloseContents(content::WebContents* source) override;
+  bool IsPopupOrPanel(
+      const content::WebContents* source) const override;
+  void RendererUnresponsive(content::WebContents* source) override;
+  void RendererResponsive(content::WebContents* source) override;
 
   // Implementations of content::WebContentsObserver.
-  virtual void BeforeUnloadFired(const base::TimeTicks& proceed_time) OVERRIDE;
-  virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
+  void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
+  bool OnMessageReceived(const IPC::Message& message) override;
 
   // Implementations of content::NotificationObserver.
-  virtual void Observe(int type,
-                       const content::NotificationSource& source,
-                       const content::NotificationDetails& details) OVERRIDE;
+  void Observe(int type,
+               const content::NotificationSource& source,
+               const content::NotificationDetails& details) override;
 
   // Implementations of brightray::InspectableWebContentsDelegate.
-  virtual void DevToolsSaveToFile(const std::string& url,
-                                  const std::string& content,
-                                  bool save_as) OVERRIDE;
-  virtual void DevToolsAppendToFile(const std::string& url,
-                                    const std::string& content) OVERRIDE;
+  void DevToolsSaveToFile(const std::string& url,
+                          const std::string& content,
+                          bool save_as) override;
+  void DevToolsAppendToFile(const std::string& url,
+                            const std::string& content) override;
 
   // Whether window has standard frame.
   bool has_frame_;

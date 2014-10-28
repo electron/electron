@@ -32,10 +32,10 @@ describe 'chromium feature', ->
       assert.notEqual navigator.language, ''
 
   describe 'window.open', ->
-    it 'returns a BrowserWindow object', ->
+    it 'returns a FakeWindow object', ->
       b = window.open 'about:blank', 'test', 'show=no'
-      assert.equal b.constructor.name, 'BrowserWindow'
-      b.destroy()
+      assert.equal b.constructor.name, 'FakeWindow'
+      b.close()
 
   describe 'creating a Uint8Array under browser side', ->
     it 'does not crash', ->

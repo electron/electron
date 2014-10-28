@@ -58,10 +58,11 @@ process.once 'BIND_DONE', ->
     process.emit 'exit'
 
   # Load the RPC server.
-  require './rpc-server.js'
+  require './rpc-server'
 
   # Load the guest view manager.
-  require './guest-view-manager.js'
+  require './guest-view-manager'
+  require './guest-window-manager'
 
   # Now we try to load app's package.json.
   packageJson = null

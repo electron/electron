@@ -546,6 +546,21 @@ Corresponds to the points in time when the spinner of the tab stops spinning.
 
 Emitted when a redirect was received while requesting a resource.
 
+### Event: 'new-window'
+
+* `event` Event
+* `url` String
+* `frameName` String
+* `options` Object
+
+Emitted when the page requested to open a new window for `url`. It could be
+requested by `window.open` or a external link like `<a target='_blank'>`.
+
+By default a new `BrowserWindow` will be created for `url` called, and a proxy
+will be returned to `window.open` to let you have limited control of it.
+
+Calling `event.preventDefault()` can prevent creating new windows.
+
 ### Event: 'crashed'
 
 Emitted when the renderer process is crashed.

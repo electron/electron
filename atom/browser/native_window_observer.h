@@ -7,6 +7,9 @@
 
 #include <string>
 
+#include "base/strings/string16.h"
+#include "url/gurl.h"
+
 namespace atom {
 
 class NativeWindowObserver {
@@ -16,6 +19,11 @@ class NativeWindowObserver {
   // Called when the web page of the window has updated it's document title.
   virtual void OnPageTitleUpdated(bool* prevent_default,
                                   const std::string& title) {}
+
+  // Called when the web page in window wants to create a popup window.
+  virtual void WillCreatePopupWindow(const base::string16& frame_name,
+                                     const GURL& target_url,
+                                     const std::string& partition_id) {}
 
   // Called when the window is gonna closed.
   virtual void WillCloseWindow(bool* prevent_default) {}

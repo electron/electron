@@ -237,7 +237,7 @@ webview.addEventListener('console-message', function(e) {
 ### new-window
 
 * `url` String
-* `partitionId` String
+* `frameName` String
 
 Fired when the guest page attempts to open a new browser window.
 

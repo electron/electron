@@ -30,6 +30,7 @@
       'atom/browser/api/lib/web-contents.coffee',
       'atom/browser/lib/chrome-extension.coffee',
       'atom/browser/lib/guest-view-manager.coffee',
+      'atom/browser/lib/guest-window-manager.coffee',
       'atom/browser/lib/init.coffee',
       'atom/browser/lib/objects-registry.coffee',
       'atom/browser/lib/rpc-server.coffee',

@@ -1,6 +1,7 @@
 EventEmitter = require('events').EventEmitter
 IDWeakMap = require 'id-weak-map'
 app = require 'app'
+ipc = require 'ipc'
 wrapWebContents = require('web-contents').wrap
 
 BrowserWindow = process.atomBinding('window').BrowserWindow
@@ -22,6 +23,12 @@ BrowserWindow::_init = ->
   Object.defineProperty this, 'id',
     value: BrowserWindow.windows.add(this)
     enumerable: true
+
+  # Make new windows requested by links behave like "window.open"
+  @on 'new-window', (event, url, frameName) =>
+    event.sender = @webContents
+    options = show: true, width: 800, height: 600
+    ipc.emit 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', event, url, frameName, options
 
   # Remove the window from weak map immediately when it's destroyed, since we
   # could be iterating windows before GC happened.

@@ -423,6 +423,22 @@ void NativeWindow::NotifyWindowFocus() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowFocus());
 }
 
+bool NativeWindow::ShouldCreateWebContents(
+    content::WebContents* web_contents,
+    int route_id,
+    WindowContainerType window_container_type,
+    const base::string16& frame_name,
+    const GURL& target_url,
+    const std::string& partition_id,
+    content::SessionStorageNamespace* session_storage_namespace) {
+  FOR_EACH_OBSERVER(NativeWindowObserver,
+                    observers_,
+                    WillCreatePopupWindow(frame_name,
+                                          target_url,
+                                          partition_id));
+  return false;
+}
+
 // In atom-shell all reloads and navigations started by renderer process would
 // be redirected to this method, so we can have precise control of how we
 // would open the url (in our case, is to restart the renderer process). See

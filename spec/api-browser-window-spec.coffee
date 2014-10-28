@@ -156,3 +156,20 @@ describe 'browser-window module', ->
       w.on 'onbeforeunload', ->
         done()
       w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-empty-string.html')
+
+  describe 'new-window event', ->
+    it 'emits when window.open is called', (done) ->
+      w.webContents.once 'new-window', (e, url, frameName) ->
+        e.preventDefault()
+        assert.equal url, 'http://host'
+        assert.equal frameName, 'host'
+        done()
+      w.loadUrl "file://#{fixtures}/pages/window-open.html"
+
+    it 'emits when link with target is called', (done) ->
+      w.webContents.once 'new-window', (e, url, frameName) ->
+        e.preventDefault()
+        assert.equal url, 'http://host/'
+        assert.equal frameName, 'target'
+        done()
+      w.loadUrl "file://#{fixtures}/pages/target-name.html"

@@ -82,6 +82,15 @@ void Window::OnPageTitleUpdated(bool* prevent_default,
   *prevent_default = Emit("page-title-updated", args);
 }
 
+void Window::WillCreatePopupWindow(const base::string16& frame_name,
+                                   const GURL& target_url,
+                                   const std::string& partition_id) {
+  base::ListValue args;
+  args.AppendString(target_url.spec());
+  args.AppendString(frame_name);
+  Emit("new-window", args);
+}
+
 void Window::WillCloseWindow(bool* prevent_default) {
   *prevent_default = Emit("close");
 }
@@ -120,6 +129,10 @@ void Window::Destroy() {
 
 void Window::Close() {
   window_->Close();
+}
+
+bool Window::IsClosed() {
+  return window_->IsClosed();
 }
 
 void Window::Focus() {
@@ -370,6 +383,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("destroy", &Window::Destroy)
       .SetMethod("close", &Window::Close)
+      .SetMethod("isClosed", &Window::IsClosed)
       .SetMethod("focus", &Window::Focus)
       .SetMethod("isFocused", &Window::IsFocused)
       .SetMethod("show", &Window::Show)

@@ -96,13 +96,14 @@ describe 'node feature', ->
             setImmediate done
 
   describe 'net.connect', ->
-    it 'emit error when connect to a socket path without listeners', (done) ->
-      return done() if process.platform is 'win32'
+    return unless process.platform is 'darwin'
 
+    it 'emit error when connect to a socket path without listeners', (done) ->
       socketPath = path.join os.tmpdir(), 'atom-shell-test.sock'
       script = path.join(fixtures, 'module', 'create_socket.js')
       child = child_process.fork script, [socketPath]
-      child.on 'exit', ->
+      child.on 'exit', (code) ->
+        assert.equal code, 0
         client = require('net').connect socketPath
         client.on 'error', (error) ->
           assert.equal error.code, 'ECONNREFUSED'
