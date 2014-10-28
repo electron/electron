@@ -3,6 +3,7 @@ v8Util = process.atomBinding 'v8_util'
 BrowserWindow = require 'browser-window'
 
 guestWindows = new WeakMap
+frameToGuest = {}
 
 # Callback that registered to "closed" event of guest.
 guestUserCloseCallback = ->
@@ -25,6 +26,8 @@ getGuestsFromEmbedder = (embedderWindow) ->
 
 # Remove a guest window.
 removeGuest = (embedderId, guestId) ->
+  for frameName, value of frameToGuest when guestId == value
+    delete frameToGuest[frameName]
   guests = getGuestsFromEmbedder BrowserWindow.windows.get(embedderId)
   for guest, i in guests
     if guest.id == guestId
@@ -32,7 +35,9 @@ removeGuest = (embedderId, guestId) ->
       return guest
 
 # Create a new guest created by |embedder| with |options|.
-createGuest = (embedder, url, options) ->
+createGuest = (embedder, url, frameName, options) ->
+  return frameToGuest[frameName] if frameName and frameToGuest[frameName]?
+
   embedderWindow = BrowserWindow.fromWebContents embedder
   guests = getGuestsFromEmbedder embedderWindow
 
@@ -43,8 +48,9 @@ createGuest = (embedder, url, options) ->
   v8Util.setHiddenValue guest, 'embedderId', embedderWindow.id
   guest.on 'closed', guestUserCloseCallback
 
+  frameToGuest[frameName] = guest.id if frameName
   guests.push guest
-  [embedderWindow.id, guest.id]
+  guest.id
 
 # Routed window.open messages.
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', (event, args...) ->
@@ -52,12 +58,11 @@ ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', (event, args...) ->
   if event.sender.isGuest() or event.defaultPrevented
     event.returnValue = null
   else
-    [url, frameName, options] = args
-    event.returnValue = createGuest event.sender, url, options
+    event.returnValue = createGuest event.sender, args...
 
-ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', (event, embedderId, guestId) ->
+ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', (event, guestId) ->
   return unless BrowserWindow.windows.has guestId
-  guest = removeGuest embedderId, guestId
+  guest = removeGuest BrowserWindow.fromWebContents(event.sender).id, guestId
   guest.destroy()
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', (event, guestId, method, args...) ->
@@ -66,5 +71,4 @@ ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', (event, guestId, method,
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', (event, guestId, method, args...) ->
   return unless BrowserWindow.windows.has guestId
-  guest = BrowserWindow.windows.get guestId
   BrowserWindow.windows.get(guestId).webContents?[method] args...

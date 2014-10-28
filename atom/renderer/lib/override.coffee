@@ -4,10 +4,10 @@ remote = require 'remote'
 
 # Window object returned by "window.open".
 class FakeWindow
-  constructor: (@embedderId, @guestId) ->
+  constructor: (@guestId) ->
 
   close: ->
-    ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', @embedderId, @guestId
+    ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', @guestId
 
   focus: ->
     ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', @guestId, 'focus'
@@ -41,8 +41,8 @@ window.open = (url, frameName='', features='') ->
   options.width ?= 800
   options.height ?= 600
 
-  [embedderId, guestId] = ipc.sendSync 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', url, frameName, options
-  new FakeWindow(embedderId, guestId)
+  guestId = ipc.sendSync 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', url, frameName, options
+  new FakeWindow(guestId)
 
 # Use the dialog API to implement alert().
 window.alert = (message, title='') ->
