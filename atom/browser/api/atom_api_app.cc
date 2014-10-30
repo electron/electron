@@ -148,20 +148,15 @@ void App::SetDesktopName(const std::string& desktop_name) {
 
 mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  Browser* browser = Browser::Get();
+  auto browser = base::Unretained(Browser::Get());
   return mate::ObjectTemplateBuilder(isolate)
-      .SetMethod("quit", base::Bind(&Browser::Quit,
-                                    base::Unretained(browser)))
-      .SetMethod("focus", base::Bind(&Browser::Focus,
-                                     base::Unretained(browser)))
-      .SetMethod("getVersion", base::Bind(&Browser::GetVersion,
-                                          base::Unretained(browser)))
-      .SetMethod("setVersion", base::Bind(&Browser::SetVersion,
-                                          base::Unretained(browser)))
-      .SetMethod("getName", base::Bind(&Browser::GetName,
-                                       base::Unretained(browser)))
-      .SetMethod("setName", base::Bind(&Browser::SetName,
-                                       base::Unretained(browser)))
+      .SetMethod("quit", base::Bind(&Browser::Quit, browser))
+      .SetMethod("focus", base::Bind(&Browser::Focus, browser))
+      .SetMethod("getVersion", base::Bind(&Browser::GetVersion, browser))
+      .SetMethod("setVersion", base::Bind(&Browser::SetVersion, browser))
+      .SetMethod("getName", base::Bind(&Browser::GetName, browser))
+      .SetMethod("setName", base::Bind(&Browser::SetName, browser))
+      .SetMethod("isReady", base::Bind(&Browser::is_ready, browser))
       .SetMethod("getDataPath", &App::GetDataPath)
       .SetMethod("resolveProxy", &App::ResolveProxy)
       .SetMethod("setDesktopName", &App::SetDesktopName);
