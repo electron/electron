@@ -184,6 +184,8 @@
       'atom/browser/web_view/web_view_manager.h',
       'atom/browser/web_view/web_view_renderer_state.cc',
       'atom/browser/web_view/web_view_renderer_state.h',
+      'atom/browser/web_dialog_helper.cc',
+      'atom/browser/web_dialog_helper.h',
       'atom/browser/window_list.cc',
       'atom/browser/window_list.h',
       'atom/browser/window_list_observer.h',
