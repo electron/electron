@@ -5,6 +5,7 @@
 #include "atom/browser/api/atom_api_window.h"
 
 #include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "content/public/browser/render_process_host.h"
@@ -118,8 +119,15 @@ void Window::OnRendererResponsive() {
 }
 
 // static
-mate::Wrappable* Window::New(const mate::Dictionary& options) {
-  return new Window(options);
+mate::Wrappable* Window::New(v8::Isolate* isolate,
+                             const mate::Dictionary& options) {
+  if (Browser::Get()->is_ready()) {
+    return new Window(options);
+  } else {
+    isolate->ThrowException(v8::Exception::TypeError(mate::StringToV8(
+        isolate, "Can not create BrowserWindow before app is ready")));
+    return nullptr;
+  }
 }
 
 void Window::Destroy() {

@@ -31,7 +31,8 @@ class WebContents;
 class Window : public mate::EventEmitter,
                public NativeWindowObserver {
  public:
-  static mate::Wrappable* New(const mate::Dictionary& options);
+  static mate::Wrappable* New(v8::Isolate* isolate,
+                              const mate::Dictionary& options);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Handle<v8::ObjectTemplate> prototype);

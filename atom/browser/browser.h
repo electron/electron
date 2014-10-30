@@ -84,6 +84,7 @@ class Browser : public WindowListObserver {
   }
 
   bool is_quiting() const { return is_quiting_; }
+  bool is_ready() const { return is_ready_; }
 
  protected:
   // Returns the version of application bundle or executable file.
@@ -104,6 +105,9 @@ class Browser : public WindowListObserver {
 
   // Observers of the browser.
   ObserverList<BrowserObserver> observers_;
+
+  // Whether "ready" event has been emitted.
+  bool is_ready_;
 
   std::string version_override_;
   std::string name_override_;

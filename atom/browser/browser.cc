@@ -13,7 +13,8 @@
 namespace atom {
 
 Browser::Browser()
-    : is_quiting_(false) {
+    : is_quiting_(false),
+      is_ready_(false) {
   WindowList::AddObserver(this);
 }
 
@@ -93,6 +94,7 @@ void Browser::WillFinishLaunching() {
 }
 
 void Browser::DidFinishLaunching() {
+  is_ready_ = true;
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnFinishLaunching());
 }
 
