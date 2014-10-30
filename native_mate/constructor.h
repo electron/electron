@@ -154,8 +154,6 @@ class Constructor {
     Wrappable* object = internal::InvokeFactory(args, factory);
     if (object)
       object->Wrap(isolate, args->GetThis());
-    else
-      args->ThrowError();
 
     MATE_METHOD_RETURN_UNDEFINED();
   }
