@@ -151,6 +151,11 @@ class Constructor {
  private:
   static MATE_METHOD_RETURN_TYPE New(const WrappableFactoryFunction& factory,
                                      v8::Isolate* isolate, Arguments* args) {
+    if (!args->IsConstructCall()) {
+      args->ThrowError("Requires constructor call");
+      MATE_METHOD_RETURN_UNDEFINED();
+    }
+
     Wrappable* object = internal::InvokeFactory(args, factory);
     if (object)
       object->Wrap(isolate, args->GetThis());

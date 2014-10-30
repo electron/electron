@@ -60,6 +60,10 @@ class Arguments {
     return info_->This();
   }
 
+  bool IsConstructCall() const {
+    return info_->IsConstructCall();
+  }
+
   int Length() const {
     return info_->Length();
   }
