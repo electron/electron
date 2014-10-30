@@ -40,7 +40,7 @@ and displays a "loading..." message during the load time:
       indicator.innerText = "";
     }
     webview.addEventListener("did-start-loading", loadstart);
-    webview.addEventListener("id-stop-loading", loadstop);
+    webview.addEventListener("did-stop-loading", loadstop);
   }
 </script>
 ```
