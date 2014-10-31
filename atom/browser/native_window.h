@@ -51,6 +51,7 @@ namespace atom {
 
 class AtomJavaScriptDialogManager;
 struct DraggableRegion;
+class WebDialogHelper;
 
 class NativeWindow : public brightray::DefaultWebContentsDelegate,
                      public brightray::InspectableWebContentsDelegate,
@@ -229,6 +230,11 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   void BeforeUnloadFired(content::WebContents* tab,
                          bool proceed,
                          bool* proceed_to_fire_unload) override;
+  void RunFileChooser(content::WebContents* web_contents,
+                      const content::FileChooserParams& params) override;
+  void EnumerateDirectory(content::WebContents* web_contents,
+                          int request_id,
+                          const base::FilePath& path) override;
   void RequestToLockMouse(content::WebContents* web_contents,
                           bool user_gesture,
                           bool last_unlocked_by_target) override;
@@ -313,6 +319,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   base::WeakPtrFactory<NativeWindow> weak_factory_;
 
+  scoped_ptr<WebDialogHelper> web_dialog_helper_;
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
 
   // Notice that inspectable_web_contents_ must be placed after dialog_manager_,

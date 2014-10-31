@@ -5,8 +5,6 @@
 #ifndef ATOM_BROWSER_WEB_DIALOG_HELPER_H_
 #define ATOM_BROWSER_WEB_DIALOG_HELPER_H_
 
-#include <vector>
-
 #include "base/memory/weak_ptr.h"
 
 namespace base {
@@ -14,8 +12,8 @@ class FilePath;
 }
 
 namespace content {
+struct FileChooserParams;
 class WebContents;
-class FileChooserParams;
 }
 
 namespace atom {
@@ -24,14 +22,16 @@ class NativeWindow;
 
 class WebDialogHelper {
  public:
-  WebDialogHelper(content::WebContents* web_contents, NativeWindow* window);
+  explicit WebDialogHelper(NativeWindow* window);
   ~WebDialogHelper();
 
-  void RunFileChooser(const content::FileChooserParams& params);
-  void EnumerateDirectory(int request_id, const base::FilePath& path);
+  void RunFileChooser(content::WebContents* web_contents,
+                      const content::FileChooserParams& params);
+  void EnumerateDirectory(content::WebContents* web_contents,
+                          int request_id,
+                          const base::FilePath& path);
 
  private:
-  content::WebContents* web_contents_;
   NativeWindow* window_;
 
   base::WeakPtrFactory<WebDialogHelper> weak_factory_;

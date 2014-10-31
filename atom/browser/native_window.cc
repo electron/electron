@@ -12,6 +12,7 @@
 #include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/ui/file_dialog.h"
+#include "atom/browser/web_dialog_helper.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/atom_version.h"
@@ -481,6 +482,21 @@ void NativeWindow::BeforeUnloadFired(content::WebContents* tab,
     // Cancel unresponsive event when window close is cancelled.
     window_unresposive_closure_.Cancel();
   }
+}
+
+void NativeWindow::RunFileChooser(content::WebContents* web_contents,
+                                  const content::FileChooserParams& params) {
+  if (!web_dialog_helper_)
+    web_dialog_helper_.reset(new WebDialogHelper(this));
+  web_dialog_helper_->RunFileChooser(web_contents, params);
+}
+
+void NativeWindow::EnumerateDirectory(content::WebContents* web_contents,
+                                      int request_id,
+                                      const base::FilePath& path) {
+  if (!web_dialog_helper_)
+    web_dialog_helper_.reset(new WebDialogHelper(this));
+  web_dialog_helper_->EnumerateDirectory(web_contents, request_id, path);
 }
 
 void NativeWindow::RequestToLockMouse(content::WebContents* web_contents,
