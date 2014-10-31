@@ -9,6 +9,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/string_util.h"
 #include "content/public/common/user_agent.h"
+#include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 
 namespace brightray {
@@ -28,6 +29,10 @@ std::string ContentClient::GetProduct() const {
 
 std::string ContentClient::GetUserAgent() const {
   return content::BuildUserAgentFromProduct(GetProduct());
+}
+
+base::string16 ContentClient::GetLocalizedString(int message_id) const {
+  return l10n_util::GetStringUTF16(message_id);
 }
 
 base::StringPiece ContentClient::GetDataResource(
