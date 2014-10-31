@@ -18,25 +18,25 @@ class AtomBrowserClient : public brightray::BrowserClient {
 
  protected:
   // content::ContentBrowserClient:
-  virtual void RenderProcessWillLaunch(
-      content::RenderProcessHost* host) OVERRIDE;
-  virtual content::SpeechRecognitionManagerDelegate*
+  void RenderProcessWillLaunch(
+      content::RenderProcessHost* host) override;
+  content::SpeechRecognitionManagerDelegate*
       GetSpeechRecognitionManagerDelegate() override;
-  virtual content::AccessTokenStore* CreateAccessTokenStore() OVERRIDE;
-  virtual void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
-                                   const GURL& url,
-                                   content::WebPreferences* prefs) OVERRIDE;
-  virtual bool ShouldSwapBrowsingInstancesForNavigation(
+  content::AccessTokenStore* CreateAccessTokenStore() override;
+  void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
+                           const GURL& url,
+                           content::WebPreferences* prefs) override;
+  bool ShouldSwapBrowsingInstancesForNavigation(
       content::SiteInstance* site_instance,
       const GURL& current_url,
-      const GURL& new_url) OVERRIDE;
-  virtual std::string GetApplicationLocale() OVERRIDE;
-  virtual void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
-                                              int child_process_id) OVERRIDE;
+      const GURL& new_url) override;
+  std::string GetApplicationLocale() override;
+  void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
+                                      int child_process_id) override;
 
  private:
-  virtual brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
-      const content::MainFunctionParams&) OVERRIDE;
+  brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
+      const content::MainFunctionParams&) override;
 
   // The render process which would be swapped out soon.
   content::RenderProcessHost* dying_render_process_;
