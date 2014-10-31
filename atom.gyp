@@ -302,6 +302,8 @@
       'chromium_src/chrome/browser/speech/tts_platform.cc',
       'chromium_src/chrome/browser/speech/tts_platform.h',
       'chromium_src/chrome/browser/speech/tts_win.cc',
+      'chromium_src/chrome/browser/ui/browser_dialogs.h',
+      'chromium_src/chrome/browser/ui/cocoa/color_chooser_mac.mm',
       'chromium_src/chrome/browser/ui/libgtk2ui/app_indicator_icon_menu.cc',
       'chromium_src/chrome/browser/ui/libgtk2ui/app_indicator_icon_menu.h',
       'chromium_src/chrome/browser/ui/libgtk2ui/gtk2_status_icon.cc',

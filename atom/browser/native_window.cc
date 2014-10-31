@@ -31,6 +31,7 @@
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
+#include "chrome/browser/ui/browser_dialogs.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/invalidate_type.h"
 #include "content/public/browser/navigation_entry.h"
@@ -482,6 +483,13 @@ void NativeWindow::BeforeUnloadFired(content::WebContents* tab,
     // Cancel unresponsive event when window close is cancelled.
     window_unresposive_closure_.Cancel();
   }
+}
+
+content::ColorChooser* NativeWindow::OpenColorChooser(
+    content::WebContents* web_contents,
+    SkColor color,
+    const std::vector<content::ColorSuggestion>& suggestions) {
+  return chrome::ShowColorChooser(web_contents, color);
 }
 
 void NativeWindow::RunFileChooser(content::WebContents* web_contents,
