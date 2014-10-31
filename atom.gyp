@@ -902,7 +902,7 @@
             {
               'action_name': 'Create node.lib',
               'inputs': [
-                '<(PRODUCT_DIR)/atom.lib',
+                '<(PRODUCT_DIR)/<(project_name).lib',
                 '<(libchromiumcontent_library_dir)/chromiumcontent.dll.lib',
               ],
               'outputs': [
