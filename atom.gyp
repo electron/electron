@@ -332,6 +332,11 @@
       'chromium_src/library_loaders/libspeechd.h',
       '<@(native_mate_files)',
     ],
+    'lib_sources_win': [
+      'chromium_src/chrome/browser/ui/views/color_chooser_dialog.cc',
+      'chromium_src/chrome/browser/ui/views/color_chooser_dialog.h',
+      'chromium_src/chrome/browser/ui/views/color_chooser_win.cc',
+    ],
     'framework_sources': [
       'atom/app/atom_library_main.cc',
       'atom/app/atom_library_main.h',
@@ -551,6 +556,9 @@
       ],
       'conditions': [
         ['OS=="win"', {
+          'sources': [
+            '<@(lib_sources_win)',
+          ],
           'link_settings': {
             'libraries': [
               '-limm32.lib',
