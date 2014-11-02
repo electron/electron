@@ -64,7 +64,6 @@ WebContents::WebContents(const mate::Dictionary& options)
   Observe(storage_.get());
 
   inspectable_web_contents_.reset(brightray::InspectableWebContents::Create(storage_.get()));
-//  inspectable_web_contents()->SetDelegate(this);
 }
 
 WebContents::~WebContents() {

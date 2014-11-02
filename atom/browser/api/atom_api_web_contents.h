@@ -28,15 +28,12 @@ namespace brightray
 
 namespace atom {
 
-class AtomJavaScriptDialogManager;
-
 namespace api {
 
 class WebContents : public mate::EventEmitter,
                     public content::BrowserPluginGuestDelegate,
                     public content::WebContentsDelegate,
                     public content::WebContentsObserver {
-                  //  public brightray::InspectableWebContentsDelegate {
  public:
   // Create from an existing WebContents.
   static mate::Handle<WebContents> CreateFrom(
@@ -100,13 +97,6 @@ class WebContents : public mate::EventEmitter,
     return static_cast<brightray::InspectableWebContentsImpl*>(
         inspectable_web_contents_.get());
   }
-
-  // Devtools
-/*  void DevToolsSaveToFile(const std::string& url,
-                          const std::string& content,
-                          bool save_as) override;
-  void DevToolsAppendToFile(const std::string& url,
-                            const std::string& content) override; */
 
   // mate::Wrappable:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
@@ -204,8 +194,6 @@ class WebContents : public mate::EventEmitter,
 
   // The WebContents that attaches this guest view.
   content::WebContents* embedder_web_contents_;
-
-  scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
 
   // Notice that inspectable_web_contents_ must be placed after dialog_manager_,
   // so we can make sure inspectable_web_contents_ is destroyed before
