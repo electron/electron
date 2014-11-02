@@ -40,8 +40,7 @@ WebContents::WebContents(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
       guest_instance_id_(-1),
       guest_opaque_(true),
-      auto_size_enabled_(false)
-      {
+      auto_size_enabled_(false) {
 }
 
 WebContents::WebContents(const mate::Dictionary& options)
@@ -63,7 +62,8 @@ WebContents::WebContents(const mate::Dictionary& options)
   storage_->SetDelegate(this);
   Observe(storage_.get());
 
-  inspectable_web_contents_.reset(brightray::InspectableWebContents::Create(storage_.get()));
+  inspectable_web_contents_.reset(
+    brightray::InspectableWebContents::Create(storage_.get()));
 }
 
 WebContents::~WebContents() {

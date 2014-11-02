@@ -20,8 +20,7 @@ namespace mate {
 class Dictionary;
 }
 
-namespace brightray
-{
+namespace brightray {
   class InspectableWebContents;
   class InspectableWebContentsImpl;
 }
