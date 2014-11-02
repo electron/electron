@@ -554,9 +554,9 @@ Emitted when a redirect was received while requesting a resource.
 * `options` Object
 
 Emitted when the page requested to open a new window for `url`. It could be
-requested by `window.open` or a external link like `<a target='_blank'>`.
+requested by `window.open` or an external link like `<a target='_blank'>`.
 
-By default a new `BrowserWindow` will be created for `url` called, and a proxy
+By default a new `BrowserWindow` will be created for the `url`, and a proxy
 will be returned to `window.open` to let you have limited control of it.
 
 Calling `event.preventDefault()` can prevent creating new windows.
