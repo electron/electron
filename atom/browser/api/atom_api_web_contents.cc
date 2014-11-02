@@ -10,6 +10,9 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/browser/atom_javascript_dialog_manager.h"
+#include "brightray/browser/inspectable_web_contents.h"
+#include "brightray/browser/inspectable_web_contents_view.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -37,7 +40,8 @@ WebContents::WebContents(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
       guest_instance_id_(-1),
       guest_opaque_(true),
-      auto_size_enabled_(false) {
+      auto_size_enabled_(false)
+      {
 }
 
 WebContents::WebContents(const mate::Dictionary& options)
@@ -58,6 +62,9 @@ WebContents::WebContents(const mate::Dictionary& options)
   storage_.reset(content::WebContents::Create(params));
   storage_->SetDelegate(this);
   Observe(storage_.get());
+
+  inspectable_web_contents_.reset(brightray::InspectableWebContents::Create(storage_.get()));
+//  inspectable_web_contents()->SetDelegate(this);
 }
 
 WebContents::~WebContents() {
@@ -368,6 +375,10 @@ void WebContents::ExecuteJavaScript(const base::string16& code) {
   web_contents()->GetMainFrame()->ExecuteJavaScript(code);
 }
 
+void WebContents::OpenDevTools() {
+  inspectable_web_contents()->ShowDevTools();
+}
+
 bool WebContents::SendIPCMessage(const base::string16& channel,
                                  const base::ListValue& args) {
   return Send(new AtomViewMsg_Message(routing_id(), channel, args));
@@ -442,6 +453,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("setAutoSize", &WebContents::SetAutoSize)
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
         .SetMethod("isGuest", &WebContents::is_guest)
+        .SetMethod("openDevTools", &WebContents::OpenDevTools)
         .Build());
 
   return mate::ObjectTemplateBuilder(
