@@ -376,6 +376,9 @@ void WebContents::ExecuteJavaScript(const base::string16& code) {
 
 void WebContents::OpenDevTools() {
   inspectable_web_contents()->ShowDevTools();
+
+  // force the inspectable web contents to be undocked when it is opened.
+  inspectable_web_contents()->GetView()->SetIsDocked(false);
 }
 
 bool WebContents::SendIPCMessage(const base::string16& channel,
