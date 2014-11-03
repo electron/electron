@@ -519,6 +519,8 @@ registerWebViewElement = ->
     "executeJavaScript"
     "insertCSS",
     "openDevTools",
+    "closeDevTools",
+    "isDevToolsOpened",
     "send"
   ]
 

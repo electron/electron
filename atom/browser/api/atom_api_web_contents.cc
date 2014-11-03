@@ -10,9 +10,8 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/browser/atom_javascript_dialog_manager.h"
-#include "brightray/browser/inspectable_web_contents.h"
 #include "base/strings/utf_string_conversions.h"
+#include "brightray/browser/inspectable_web_contents.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -375,6 +374,14 @@ void WebContents::OpenDevTools() {
   storage_->ShowDevTools();
 }
 
+void WebContents::CloseDevTools() {
+  storage_->CloseDevTools();
+}
+
+bool WebContents::IsDevToolsOpened() {
+  return storage_->IsDevToolsViewShowing();
+}
+
 bool WebContents::SendIPCMessage(const base::string16& channel,
                                  const base::ListValue& args) {
   return Send(new AtomViewMsg_Message(routing_id(), channel, args));
@@ -450,6 +457,8 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
         .SetMethod("isGuest", &WebContents::is_guest)
         .SetMethod("openDevTools", &WebContents::OpenDevTools)
+        .SetMethod("closeDevTools", &WebContents::CloseDevTools)
+        .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
         .Build());
 
   return mate::ObjectTemplateBuilder(

@@ -8,18 +8,18 @@
 #include <string>
 
 #include "atom/browser/api/event_emitter.h"
+#include "brightray/browser/default_web_contents_delegate.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
-#include "brightray/browser/default_web_contents_delegate.h"
 #include "native_mate/handle.h"
-
-namespace mate {
-class Dictionary;
-}
 
 namespace brightray {
 class InspectableWebContents;
+}
+
+namespace mate {
+class Dictionary;
 }
 
 namespace atom {
@@ -63,6 +63,8 @@ class WebContents : public mate::EventEmitter,
   void InsertCSS(const std::string& css);
   void ExecuteJavaScript(const base::string16& code);
   void OpenDevTools();
+  void CloseDevTools();
+  bool IsDevToolsOpened();
   bool SendIPCMessage(const base::string16& channel,
                       const base::ListValue& args);
 
