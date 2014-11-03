@@ -517,7 +517,10 @@ registerWebViewElement = ->
     "isCrashed"
     "setUserAgent"
     "executeJavaScript"
-    "insertCSS"
+    "insertCSS",
+    "openDevTools",
+    "closeDevTools",
+    "isDevToolsOpened",
     "send"
   ]
 

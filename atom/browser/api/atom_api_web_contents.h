@@ -8,10 +8,15 @@
 #include <string>
 
 #include "atom/browser/api/event_emitter.h"
+#include "brightray/browser/default_web_contents_delegate.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "native_mate/handle.h"
+
+namespace brightray {
+class InspectableWebContents;
+}
 
 namespace mate {
 class Dictionary;
@@ -57,6 +62,9 @@ class WebContents : public mate::EventEmitter,
   void SetUserAgent(const std::string& user_agent);
   void InsertCSS(const std::string& css);
   void ExecuteJavaScript(const base::string16& code);
+  void OpenDevTools();
+  void CloseDevTools();
+  bool IsDevToolsOpened();
   bool SendIPCMessage(const base::string16& channel,
                       const base::ListValue& args);
 
@@ -175,7 +183,7 @@ class WebContents : public mate::EventEmitter,
   scoped_ptr<base::DictionaryValue> extra_params_;
 
   // Stores the WebContents that managed by this class.
-  scoped_ptr<content::WebContents> storage_;
+  scoped_ptr<brightray::InspectableWebContents> storage_;
 
   // The WebContents that attaches this guest view.
   content::WebContents* embedder_web_contents_;

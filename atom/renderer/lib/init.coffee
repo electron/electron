@@ -1,6 +1,7 @@
-path   = require 'path'
-url    = require 'url'
-Module = require 'module'
+process = global.process
+path    = require 'path'
+url     = require 'url'
+Module  = require 'module'
 
 # Expose information of current process.
 process.type = 'renderer'
@@ -83,3 +84,5 @@ else
   # global reference after they are done.
   process.once 'BIND_DONE', ->
     delete global.process
+    delete global.setImmediate
+    delete global.clearImmediate

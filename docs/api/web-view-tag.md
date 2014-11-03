@@ -167,7 +167,19 @@ Injects CSS into guest page.
 
 * `code` String
 
-Evaluate `code` in guest page.
+Evaluates `code` in guest page.
+
+### `<webview>`.openDevTools()
+
+Opens a devtools window for guest page.
+
+### `<webview>`.closeDevTools()
+
+Closes the devtools window of guest page.
+
+### `<webview>`.isDevToolsOpened()
+
+Returns whether guest page has a devtools window attached.
 
 ### `<webview>`.send(channel[, args...])
 
