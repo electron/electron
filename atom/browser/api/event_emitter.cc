@@ -20,9 +20,8 @@ namespace {
 v8::Persistent<v8::ObjectTemplate> event_template;
 
 void PreventDefault(mate::Arguments* args) {
-  args->GetThis()->SetHiddenValue(
-      StringToV8(args->isolate(), "prevent_default"),
-      v8::True(args->isolate()));
+  args->GetThis()->Set(StringToV8(args->isolate(), "defaultPrevented"),
+                       v8::True(args->isolate()));
 }
 
 // Create a pure JavaScript Event object.
