@@ -68,6 +68,7 @@ using namespace brightray;
       [devtools_window_ makeKeyAndOrderFront:nil];
     } else {
       [[self window] makeKeyAndOrderFront:nil];
+      [devtools_window_ close];
       devtools_window_.reset();
     }
   }
