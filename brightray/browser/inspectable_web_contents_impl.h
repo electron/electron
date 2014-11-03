@@ -44,6 +44,7 @@ class InspectableWebContentsImpl :
   InspectableWebContentsView* GetView() const override;
   content::WebContents* GetWebContents() const override;
 
+  void SetCanDock(bool can_dock) override;
   void ShowDevTools() override;
   void CloseDevTools() override;
   bool IsDevToolsViewShowing() override;
@@ -133,6 +134,7 @@ class InspectableWebContentsImpl :
 
   DevToolsContentsResizingStrategy contents_resizing_strategy_;
   gfx::Rect devtools_bounds_;
+  bool can_dock_;
 
   scoped_ptr<DevToolsEmbedderMessageDispatcher> embedder_message_dispatcher_;
 

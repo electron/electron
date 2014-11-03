@@ -36,7 +36,7 @@ const double kPresetZoomFactors[] = { 0.25, 0.333, 0.5, 0.666, 0.75, 0.9, 1.0,
 const char kDevToolsScheme[] = "chrome-devtools";
 const char kDevToolsHost[] = "devtools";
 const char kChromeUIDevToolsURL[] = "chrome-devtools://devtools/devtools.html?"
-                                    "can_dock=true&"
+                                    "can_dock=%s&"
                                     "toolbarColor=rgba(223,223,223,1)&"
                                     "textColor=rgba(0,0,0,1)&"
                                     "experiments=true";
@@ -131,6 +131,7 @@ void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
 InspectableWebContentsImpl::InspectableWebContentsImpl(
     content::WebContents* web_contents)
     : web_contents_(web_contents),
+      can_dock_(true),
       delegate_(nullptr) {
   auto context = static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
   auto bounds_dict = context->prefs()->GetDictionary(kDevToolsBoundsPref);
@@ -151,6 +152,10 @@ content::WebContents* InspectableWebContentsImpl::GetWebContents() const {
   return web_contents_.get();
 }
 
+void InspectableWebContentsImpl::SetCanDock(bool can_dock) {
+  can_dock_ = can_dock;
+}
+
 void InspectableWebContentsImpl::ShowDevTools() {
   // Show devtools only after it has done loading, this is to make sure the
   // SetIsDocked is called *BEFORE* ShowDevTools.
@@ -169,7 +174,7 @@ void InspectableWebContentsImpl::ShowDevTools() {
         web_contents_->GetRenderViewHost(), this));
     content::DevToolsManager::GetInstance()->RegisterDevToolsClientHostFor(agent_host_, this);
 
-    GURL devtools_url(kChromeUIDevToolsURL);
+    GURL devtools_url(base::StringPrintf(kChromeUIDevToolsURL, can_dock_ ? "true" : ""));
     devtools_web_contents_->GetController().LoadURL(
         devtools_url,
         content::Referrer(),
@@ -315,7 +320,7 @@ void InspectableWebContentsImpl::DispatchOnInspectorFrontend(
     const std::string& message) {
   std::string code = "InspectorFrontendAPI.dispatchMessage(" + message + ");";
   base::string16 javascript = base::UTF8ToUTF16(code);
-  web_contents()->GetMainFrame()->ExecuteJavaScript(javascript);
+  devtools_web_contents()->GetMainFrame()->ExecuteJavaScript(javascript);
 }
 
 void InspectableWebContentsImpl::InspectedContentsClosing() {
@@ -336,6 +341,10 @@ void InspectableWebContentsImpl::DidFinishLoad(content::RenderFrameHost* render_
     return;
 
   view_->ShowDevTools();
+
+  // If the devtools can dock, "SetIsDocked" will be called by devtools itself.
+  if (!can_dock_)
+    SetIsDocked(false);
 }
 
 void InspectableWebContentsImpl::WebContentsDestroyed() {
