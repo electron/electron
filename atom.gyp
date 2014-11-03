@@ -184,6 +184,8 @@
       'atom/browser/web_view/web_view_manager.h',
       'atom/browser/web_view/web_view_renderer_state.cc',
       'atom/browser/web_view/web_view_renderer_state.h',
+      'atom/browser/web_dialog_helper.cc',
+      'atom/browser/web_dialog_helper.h',
       'atom/browser/window_list.cc',
       'atom/browser/window_list.h',
       'atom/browser/window_list_observer.h',
@@ -300,6 +302,10 @@
       'chromium_src/chrome/browser/speech/tts_platform.cc',
       'chromium_src/chrome/browser/speech/tts_platform.h',
       'chromium_src/chrome/browser/speech/tts_win.cc',
+      'chromium_src/chrome/browser/ui/browser_dialogs.h',
+      'chromium_src/chrome/browser/ui/cocoa/color_chooser_mac.mm',
+      'chromium_src/chrome/browser/ui/views/color_chooser_aura.cc',
+      'chromium_src/chrome/browser/ui/views/color_chooser_aura.h',
       'chromium_src/chrome/browser/ui/libgtk2ui/app_indicator_icon_menu.cc',
       'chromium_src/chrome/browser/ui/libgtk2ui/app_indicator_icon_menu.h',
       'chromium_src/chrome/browser/ui/libgtk2ui/gtk2_status_icon.cc',
@@ -325,6 +331,11 @@
       'chromium_src/library_loaders/libspeechd_loader.cc',
       'chromium_src/library_loaders/libspeechd.h',
       '<@(native_mate_files)',
+    ],
+    'lib_sources_win': [
+      'chromium_src/chrome/browser/ui/views/color_chooser_dialog.cc',
+      'chromium_src/chrome/browser/ui/views/color_chooser_dialog.h',
+      'chromium_src/chrome/browser/ui/views/color_chooser_win.cc',
     ],
     'framework_sources': [
       'atom/app/atom_library_main.cc',
@@ -545,6 +556,9 @@
       ],
       'conditions': [
         ['OS=="win"', {
+          'sources': [
+            '<@(lib_sources_win)',
+          ],
           'link_settings': {
             'libraries': [
               '-limm32.lib',
