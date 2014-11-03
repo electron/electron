@@ -12,8 +12,6 @@
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "brightray/browser/default_web_contents_delegate.h"
-#include "brightray/browser/inspectable_web_contents_delegate.h"
-#include "brightray/browser/inspectable_web_contents_impl.h"
 #include "native_mate/handle.h"
 
 namespace mate {
@@ -21,8 +19,7 @@ class Dictionary;
 }
 
 namespace brightray {
-  class InspectableWebContents;
-  class InspectableWebContentsImpl;
+class InspectableWebContents;
 }
 
 namespace atom {
@@ -91,11 +88,6 @@ class WebContents : public mate::EventEmitter,
   explicit WebContents(content::WebContents* web_contents);
   explicit WebContents(const mate::Dictionary& options);
   ~WebContents();
-
-  brightray::InspectableWebContentsImpl* inspectable_web_contents() const {
-    return static_cast<brightray::InspectableWebContentsImpl*>(
-        inspectable_web_contents_.get());
-  }
 
   // mate::Wrappable:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
@@ -189,15 +181,10 @@ class WebContents : public mate::EventEmitter,
   scoped_ptr<base::DictionaryValue> extra_params_;
 
   // Stores the WebContents that managed by this class.
-  scoped_ptr<content::WebContents> storage_;
+  scoped_ptr<brightray::InspectableWebContents> storage_;
 
   // The WebContents that attaches this guest view.
   content::WebContents* embedder_web_contents_;
-
-  // Notice that inspectable_web_contents_ must be placed after dialog_manager_,
-  // so we can make sure inspectable_web_contents_ is destroyed before
-  // dialog_manager_, otherwise a crash would happen.
-  scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
 
   // The size of the container element.
   gfx::Size element_size_;

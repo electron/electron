@@ -58,12 +58,9 @@ WebContents::WebContents(const mate::Dictionary& options)
   if (options.Get("isGuest", &is_guest) && is_guest)
     params.guest_delegate = this;
 
-  storage_.reset(content::WebContents::Create(params));
-  storage_->SetDelegate(this);
-  Observe(storage_.get());
-
-  inspectable_web_contents_.reset(
-    brightray::InspectableWebContents::Create(storage_.get()));
+  storage_.reset(brightray::InspectableWebContents::Create(params));
+  Observe(storage_->GetWebContents());
+  web_contents()->SetDelegate(this);
 }
 
 WebContents::~WebContents() {
@@ -375,10 +372,10 @@ void WebContents::ExecuteJavaScript(const base::string16& code) {
 }
 
 void WebContents::OpenDevTools() {
-  inspectable_web_contents()->ShowDevTools();
+  storage_->ShowDevTools();
 
-  // force the inspectable web contents to be undocked when it is opened.
-  inspectable_web_contents()->GetView()->SetIsDocked(false);
+  // Force the inspectable web contents to be undocked when it is opened.
+  storage_->GetView()->SetIsDocked(false);
 }
 
 bool WebContents::SendIPCMessage(const base::string16& channel,
