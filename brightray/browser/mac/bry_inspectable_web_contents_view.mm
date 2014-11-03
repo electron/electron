@@ -145,6 +145,7 @@ using namespace brightray;
 #pragma mark - NSWindowDelegate
 
 - (void)windowWillClose:(NSNotification*)notification {
+  [devtools_window_ setDelegate:nil];
   inspectableWebContentsView_->inspectable_web_contents()->CloseDevTools();
 }
 
