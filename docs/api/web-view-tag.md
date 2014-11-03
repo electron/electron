@@ -169,6 +169,10 @@ Injects CSS into guest page.
 
 Evaluate `code` in guest page.
 
+### `<webview>`.openDevTools()
+
+Open a devtools instance for the webview's contents.
+
 ### `<webview>`.send(channel[, args...])
 
 * `channel` String
