@@ -12,7 +12,6 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/browser/atom_javascript_dialog_manager.h"
 #include "brightray/browser/inspectable_web_contents.h"
-#include "brightray/browser/inspectable_web_contents_view.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -372,10 +371,8 @@ void WebContents::ExecuteJavaScript(const base::string16& code) {
 }
 
 void WebContents::OpenDevTools() {
+  storage_->SetCanDock(false);
   storage_->ShowDevTools();
-
-  // Force the inspectable web contents to be undocked when it is opened.
-  storage_->GetView()->SetIsDocked(false);
 }
 
 bool WebContents::SendIPCMessage(const base::string16& channel,
