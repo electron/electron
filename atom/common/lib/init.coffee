@@ -1,6 +1,7 @@
-path   = require 'path'
-timers = require 'timers'
-Module = require 'module'
+process = global.process
+path    = require 'path'
+timers  = require 'timers'
+Module  = require 'module'
 
 process.atomBinding = (name) ->
   try
