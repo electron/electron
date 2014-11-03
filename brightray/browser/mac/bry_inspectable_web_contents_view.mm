@@ -68,6 +68,7 @@ using namespace brightray;
       [devtools_window_ makeKeyAndOrderFront:nil];
     } else {
       [[self window] makeKeyAndOrderFront:nil];
+      [devtools_window_ setDelegate:nil];
       [devtools_window_ close];
       devtools_window_.reset();
     }
@@ -146,7 +147,6 @@ using namespace brightray;
 #pragma mark - NSWindowDelegate
 
 - (void)windowWillClose:(NSNotification*)notification {
-  [devtools_window_ setDelegate:nil];
   inspectableWebContentsView_->inspectable_web_contents()->CloseDevTools();
 }
 
