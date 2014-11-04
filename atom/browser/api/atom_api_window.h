@@ -48,7 +48,8 @@ class Window : public mate::EventEmitter,
                           const std::string& title) override;
   void WillCreatePopupWindow(const base::string16& frame_name,
                              const GURL& target_url,
-                             const std::string& partition_id) override;
+                             const std::string& partition_id,
+                             WindowOpenDisposition disposition) override;
   void WillCloseWindow(bool* prevent_default) override;
   void OnWindowClosed() override;
   void OnWindowBlur() override;

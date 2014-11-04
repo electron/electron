@@ -437,7 +437,8 @@ bool NativeWindow::ShouldCreateWebContents(
                     observers_,
                     WillCreatePopupWindow(frame_name,
                                           target_url,
-                                          partition_id));
+                                          partition_id,
+                                          CURRENT_TAB));
   return false;
 }
 
@@ -448,8 +449,15 @@ bool NativeWindow::ShouldCreateWebContents(
 content::WebContents* NativeWindow::OpenURLFromTab(
     content::WebContents* source,
     const content::OpenURLParams& params) {
-  if (params.disposition != CURRENT_TAB)
-      return NULL;
+  if (params.disposition != CURRENT_TAB) {
+    FOR_EACH_OBSERVER(NativeWindowObserver,
+                      observers_,
+                      WillCreatePopupWindow(base::string16(),
+                                            params.url,
+                                            "",
+                                            params.disposition));
+    return NULL;
+  }
 
   content::NavigationController::LoadURLParams load_url_params(params.url);
   load_url_params.referrer = params.referrer;
