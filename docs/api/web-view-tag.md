@@ -250,6 +250,8 @@ webview.addEventListener('console-message', function(e) {
 
 * `url` String
 * `frameName` String
+* `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
+  `new-window` and `other`
 
 Fired when the guest page attempts to open a new browser window.
 
