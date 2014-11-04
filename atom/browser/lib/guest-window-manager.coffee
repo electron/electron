@@ -34,7 +34,8 @@ createGuest = (embedder, url, frameName, options) ->
 
 # Routed window.open messages.
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', (event, args...) ->
-  event.sender.emit '-new-window', event, args...
+  [url, frameName, options] = args
+  event.sender.emit '-new-window', event, url, frameName, 7
   if event.sender.isGuest() or event.defaultPrevented
     event.returnValue = null
   else
