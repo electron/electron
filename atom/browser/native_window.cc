@@ -438,7 +438,7 @@ bool NativeWindow::ShouldCreateWebContents(
                     WillCreatePopupWindow(frame_name,
                                           target_url,
                                           partition_id,
-                                          CURRENT_TAB));
+                                          NEW_FOREGROUND_TAB));
   return false;
 }
 

@@ -90,7 +90,7 @@ bool WebContents::ShouldCreateWebContents(
   base::ListValue args;
   args.AppendString(target_url.spec());
   args.AppendString(frame_name);
-  args.AppendInteger(CURRENT_TAB);
+  args.AppendInteger(NEW_FOREGROUND_TAB);
   Emit("-new-window", args);
   return false;
 }
