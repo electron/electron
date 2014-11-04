@@ -91,7 +91,7 @@ bool WebContents::ShouldCreateWebContents(
   args.AppendString(target_url.spec());
   args.AppendString(frame_name);
   args.AppendInteger(CURRENT_TAB);
-  Emit("new-window", args);
+  Emit("-new-window", args);
   return false;
 }
 
@@ -107,7 +107,7 @@ content::WebContents* WebContents::OpenURLFromTab(
     args.AppendString(params.url.spec());
     args.AppendString("");
     args.AppendInteger(params.disposition);
-    Emit("new-window", args);
+    Emit("-new-window", args);
     return NULL;
   }
 

@@ -26,6 +26,17 @@ module.exports.wrap = (webContents) ->
   webContents.getId = -> "#{@getProcessId()}-#{@getRoutingId()}"
   webContents.equal = (other) -> @getId() is other.getId()
 
+  # Translate |disposition| to string for 'new-window' event.
+  webContents.on '-new-window', (args..., disposition) ->
+    disposition =
+      switch disposition
+        when 2 then 'default'
+        when 4 then 'foreground-tab'
+        when 5 then 'background-tab'
+        when 6, 7 then 'new-window'
+        else 'other'
+    @emit 'new-window', args..., disposition
+
   # Tell the rpc server that a render view has been deleted and we need to
   # release all objects owned by it.
   webContents.on 'render-view-deleted', (event, processId, routingId) ->

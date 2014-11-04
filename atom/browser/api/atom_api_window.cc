@@ -91,7 +91,7 @@ void Window::WillCreatePopupWindow(const base::string16& frame_name,
   args.AppendString(target_url.spec());
   args.AppendString(frame_name);
   args.AppendInteger(disposition);
-  Emit("new-window", args);
+  Emit("-new-window", args);
 }
 
 void Window::WillCloseWindow(bool* prevent_default) {
