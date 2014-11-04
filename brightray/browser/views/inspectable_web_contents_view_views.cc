@@ -37,7 +37,7 @@ class DevToolsWindowDelegate : public views::ClientView,
   virtual void DeleteDelegate() override { delete this; }
   virtual views::View* GetInitiallyFocusedView() override { return view_; }
   virtual bool CanResize() const override { return true; }
-  virtual bool CanMaximize() const override { return false; }
+  virtual bool CanMaximize() const override { return true; }
   virtual base::string16 GetWindowTitle() const override { return title_; }
   virtual gfx::ImageSkia GetWindowAppIcon() override { return GetWindowIcon(); }
   virtual gfx::ImageSkia GetWindowIcon() override { return icon_; }
