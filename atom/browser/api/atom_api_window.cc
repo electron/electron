@@ -85,11 +85,13 @@ void Window::OnPageTitleUpdated(bool* prevent_default,
 
 void Window::WillCreatePopupWindow(const base::string16& frame_name,
                                    const GURL& target_url,
-                                   const std::string& partition_id) {
+                                   const std::string& partition_id,
+                                   WindowOpenDisposition disposition) {
   base::ListValue args;
   args.AppendString(target_url.spec());
   args.AppendString(frame_name);
-  Emit("new-window", args);
+  args.AppendInteger(disposition);
+  Emit("-new-window", args);
 }
 
 void Window::WillCloseWindow(bool* prevent_default) {

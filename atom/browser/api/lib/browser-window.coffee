@@ -25,7 +25,7 @@ BrowserWindow::_init = ->
     enumerable: true
 
   # Make new windows requested by links behave like "window.open"
-  @on 'new-window', (event, url, frameName) =>
+  @on '-new-window', (event, url, frameName) =>
     event.sender = @webContents
     options = show: true, width: 800, height: 600
     ipc.emit 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', event, url, frameName, options

@@ -551,7 +551,8 @@ Emitted when a redirect was received while requesting a resource.
 * `event` Event
 * `url` String
 * `frameName` String
-* `options` Object
+* `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
+  `new-window` and `other`
 
 Emitted when the page requested to open a new window for `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.

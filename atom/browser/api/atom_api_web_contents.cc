@@ -90,7 +90,8 @@ bool WebContents::ShouldCreateWebContents(
   base::ListValue args;
   args.AppendString(target_url.spec());
   args.AppendString(frame_name);
-  Emit("new-window", args);
+  args.AppendInteger(NEW_FOREGROUND_TAB);
+  Emit("-new-window", args);
   return false;
 }
 
@@ -101,8 +102,14 @@ void WebContents::CloseContents(content::WebContents* source) {
 content::WebContents* WebContents::OpenURLFromTab(
     content::WebContents* source,
     const content::OpenURLParams& params) {
-  if (params.disposition != CURRENT_TAB)
-      return NULL;
+  if (params.disposition != CURRENT_TAB) {
+    base::ListValue args;
+    args.AppendString(params.url.spec());
+    args.AppendString("");
+    args.AppendInteger(params.disposition);
+    Emit("-new-window", args);
+    return NULL;
+  }
 
   content::NavigationController::LoadURLParams load_url_params(params.url);
   load_url_params.referrer = params.referrer;

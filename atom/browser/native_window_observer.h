@@ -8,6 +8,7 @@
 #include <string>
 
 #include "base/strings/string16.h"
+#include "ui/base/window_open_disposition.h"
 #include "url/gurl.h"
 
 namespace atom {
@@ -23,7 +24,8 @@ class NativeWindowObserver {
   // Called when the web page in window wants to create a popup window.
   virtual void WillCreatePopupWindow(const base::string16& frame_name,
                                      const GURL& target_url,
-                                     const std::string& partition_id) {}
+                                     const std::string& partition_id,
+                                     WindowOpenDisposition disposition) {}
 
   // Called when the window is gonna closed.
   virtual void WillCloseWindow(bool* prevent_default) {}
