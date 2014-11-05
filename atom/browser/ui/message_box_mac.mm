@@ -141,4 +141,13 @@ void ShowMessageBox(NativeWindow* parent_window,
                       contextInfo:nil];
 }
 
+void ShowErrorBox(const base::string16& title, const base::string16& content) {
+  NSAlert* alert = [[NSAlert alloc] init];
+  [alert setMessageText:base::SysUTF16ToNSString(title)];
+  [alert setInformativeText:base::SysUTF16ToNSString(content)];
+  [alert setAlertStyle:NSWarningAlertStyle];
+  [alert runModal];
+  [alert release];
+}
+
 }  // namespace atom
