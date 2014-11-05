@@ -26,6 +26,10 @@
 #include "ui/views/window/native_frame_view.h"
 #endif
 
+#if defined(OS_WIN)
+#include "ui/base/win/message_box_win.h"
+#endif
+
 namespace atom {
 
 namespace {
@@ -348,6 +352,12 @@ void ShowMessageBox(NativeWindow* parent_window,
       parent_window, type, buttons, title, message, detail);
   dialog->set_callback(callback);
   dialog->Show();
+}
+
+void ShowErrorBox(const base::string16& title, const base::string16& content) {
+#if defined(OS_WIN)
+  ui::MessageBox(NULL, content, title, MB_OK | MB_ICONERROR | MB_TASKMODAL);
+#endif
 }
 
 }  // namespace atom
