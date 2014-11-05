@@ -45,13 +45,9 @@ process.once 'BIND_DONE', ->
   # Don't quit on fatal error.
   process.on 'uncaughtException', (error) ->
     # Show error in GUI.
-    message = error.stack ? "#{error.name}: #{error.message}"
-    require('dialog').showMessageBox
-      type: 'warning'
-      title: 'A javascript error occured in the browser'
-      message: 'uncaughtException'
-      detail: message
-      buttons: ['OK']
+    stack = error.stack ? "#{error.name}: #{error.message}"
+    message = "Uncaught Exception:\n#{stack}"
+    require('dialog').showErrorBox 'A JavaScript error occured in the browser process', message
 
   # Emit 'exit' event on quit.
   require('app').on 'quit', ->
