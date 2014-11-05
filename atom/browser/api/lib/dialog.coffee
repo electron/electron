@@ -93,5 +93,8 @@ module.exports =
                            window,
                            callback
 
+  showErrorBox: (args...) ->
+    binding.showErrorBox args...
+
 # Mark standard asynchronous functions.
 v8Util.setHiddenValue f, 'asynchronous', true for k, f of module.exports

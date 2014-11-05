@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/callback_forward.h"
+#include "base/strings/string16.h"
 
 namespace atom {
 
@@ -36,6 +37,10 @@ void ShowMessageBox(NativeWindow* parent_window,
                     const std::string& message,
                     const std::string& detail,
                     const MessageBoxCallback& callback);
+
+// Like ShowMessageBox with simplest settings, but safe to call at very early
+// stage of application.
+void ShowErrorBox(const base::string16& title, const base::string16& content);
 
 }  // namespace atom
 

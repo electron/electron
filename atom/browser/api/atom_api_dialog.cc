@@ -103,6 +103,7 @@ void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
                 v8::Handle<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("showMessageBox", &ShowMessageBox);
+  dict.SetMethod("showErrorBox", &atom::ShowErrorBox);
   dict.SetMethod("showOpenDialog", &ShowOpenDialog);
   dict.SetMethod("showSaveDialog", &ShowSaveDialog);
 }
