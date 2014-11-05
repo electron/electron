@@ -154,6 +154,8 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
       command_line->AppendSwitchASCII(
           switches::kNodeIntegration,
           info.node_integration ? "true" : "false");
+      if (info.plugins)
+        command_line->AppendSwitch(switches::kEnablePlugins);
     }
   }
 

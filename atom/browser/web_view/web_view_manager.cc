@@ -43,11 +43,12 @@ WebViewManager::~WebViewManager() {
 void WebViewManager::AddGuest(int guest_instance_id,
                               content::WebContents* embedder,
                               content::WebContents* web_contents,
-                              bool node_integration) {
+                              bool node_integration,
+                              bool plugins) {
   web_contents_map_[guest_instance_id] = { web_contents, embedder };
 
   WebViewRendererState::WebViewInfo web_view_info = {
-    guest_instance_id, node_integration
+    guest_instance_id, node_integration, plugins
   };
   content::BrowserThread::PostTask(
       content::BrowserThread::IO,
