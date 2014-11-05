@@ -50,7 +50,7 @@ and displays a "loading..." message during the load time:
 ### src
 
 ```html
-<webview src="http://www.google.com/"></webview>
+<webview src="https://www.github.com/"></webview>
 ```
 
 Returns the visible URL. Writing to this attribute initiates top-level
@@ -64,7 +64,7 @@ The `src` attribute can also accept data URLs, such as
 ### autosize
 
 ```html
-<webview src="http://www.google.com/" autosize="on" minwidth="576" minheight="432"></webview>
+<webview src="https://www.github.com/" autosize="on" minwidth="576" minheight="432"></webview>
 ```
 
 If "on", the `webview` will container will automatically resize within the
@@ -81,6 +81,14 @@ than the minimum values or greater than the maximum.
 
 If "on", the guest page in `webview` will have node integration and can use node
 APIs like `require` and `process` to access low level system resources.
+
+### plugins
+
+```html
+<webview src="https://www.github.com/" plugins></webview>
+```
+
+If "on", the guest page in `webview` will be able to use browser plugins.
 
 ## Methods
 

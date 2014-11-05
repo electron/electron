@@ -22,6 +22,7 @@ class WebViewRendererState {
   struct WebViewInfo {
     int guest_instance_id;
     bool node_integration;
+    bool plugins;
   };
 
   static WebViewRendererState* GetInstance();
