@@ -370,6 +370,14 @@ void ShowErrorBox(const base::string16& title, const base::string16& content) {
   ui::MessageBox(NULL, content, title, MB_OK | MB_ICONERROR | MB_TASKMODAL);
 #elif defined(USE_X11)
   if (Browser::Get()->is_ready()) {
+    GtkWidget* dialog = gtk_message_dialog_new(
+        NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
+        "%s", base::UTF16ToUTF8(title).c_str());
+    gtk_message_dialog_format_secondary_text(
+        GTK_MESSAGE_DIALOG(dialog),
+        "%s", base::UTF16ToUTF8(content).c_str());
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
   } else {
     fprintf(stderr,
             ANSI_TEXT_BOLD ANSI_BACKGROUND_GRAY
