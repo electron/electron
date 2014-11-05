@@ -7,6 +7,7 @@
 * [Debugging browser process](tutorial/debugging-browser-process.md)
 * [Using Selenium and WebDriver](tutorial/using-selenium-and-webdriver.md)
 * [DevTools extension](tutorial/devtools-extension.md)
+* [Online/offline event detection](tutorial/online-offline-events.md)
 
 ## API references
 
