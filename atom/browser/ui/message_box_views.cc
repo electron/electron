@@ -4,6 +4,10 @@
 
 #include "atom/browser/ui/message_box.h"
 
+#if defined(USE_X11)
+#include <gtk/gtk.h>
+#endif
+
 #include "atom/browser/native_window.h"
 #include "base/callback.h"
 #include "base/message_loop/message_loop.h"
@@ -23,12 +27,19 @@
 #include "ui/wm/core/shadow_types.h"
 
 #if defined(USE_X11)
+#include "atom/browser/browser.h"
 #include "ui/views/window/native_frame_view.h"
 #endif
 
 #if defined(OS_WIN)
 #include "ui/base/win/message_box_win.h"
 #endif
+
+#define ANSI_FOREGROUND_RED   "\x1b[31m"
+#define ANSI_FOREGROUND_BLACK "\x1b[30m"
+#define ANSI_TEXT_BOLD        "\x1b[1m"
+#define ANSI_BACKGROUND_GRAY  "\x1b[47m"
+#define ANSI_RESET            "\x1b[0m"
 
 namespace atom {
 
@@ -357,6 +368,17 @@ void ShowMessageBox(NativeWindow* parent_window,
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
 #if defined(OS_WIN)
   ui::MessageBox(NULL, content, title, MB_OK | MB_ICONERROR | MB_TASKMODAL);
+#elif defined(USE_X11)
+  if (Browser::Get()->is_ready()) {
+  } else {
+    fprintf(stderr,
+            ANSI_TEXT_BOLD ANSI_BACKGROUND_GRAY
+            ANSI_FOREGROUND_RED  "%s\n"
+            ANSI_FOREGROUND_BLACK "%s"
+            ANSI_RESET "\n",
+            base::UTF16ToUTF8(title).c_str(),
+            base::UTF16ToUTF8(content).c_str());
+  }
 #endif
 }
 
