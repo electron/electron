@@ -12,7 +12,7 @@ var onlineStatusWindow;
 
 app.on('ready', function() {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false });
-  onlineStatusWindow.loadUrl('file://' + path.join(__dirname, '/online-status.html'));
+  onlineStatusWindow.loadUrl('file://' + __dirname + '/online-status.html');
 });
 ```
 
@@ -37,7 +37,7 @@ _online-status.html_
 
 There may be instances where one wants to respond to these events in the
 browser process as well.  The browser process however does not have a
-"navigator" object and thus cannot detect these events directly.  Using
+`navigator` object and thus cannot detect these events directly.  Using
 Atom-shell's inter-process communication utilities, the events can be forwarded
 to the browser process and handled as needed, as shown in the following example.
 
@@ -51,10 +51,10 @@ var onlineStatusWindow;
 
 app.on('ready', function() {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false });
-  onlineStatusWindow.loadUrl('file://' + path.join(__dirname, '/online-status.html'));
+  onlineStatusWindow.loadUrl('file://' + __dirname + '/online-status.html');
 });
 
-ipc.on('onlineStatusMessage', function(event, status) {
+ipc.on('online-status-changed', function(event, status) {
   console.log(status);
 });
 ```
@@ -67,7 +67,7 @@ _online-status.html_
     <script>
       var ipc = require('ipc');
       var updateOnlineStatus = function() {
-        ipc.send('onlineStatusMessage', navigator.onLine ? 'online' : 'offline');
+        ipc.send('online-status-changed', navigator.onLine ? 'online' : 'offline');
       };
 
       window.addEventListener('online',  updateOnlineStatus);
