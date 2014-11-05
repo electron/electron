@@ -48,14 +48,7 @@ if (option.file && !option.webdriver) {
   } catch(e) {
     if (e.code == 'MODULE_NOT_FOUND') {
       app.focus();
-      console.error(e.stack);
-      dialog.showMessageBox({
-        type: 'warning',
-        buttons: ['OK'],
-        title: 'Error opening app',
-        message: 'The app provided is not a valid atom-shell app, please read the docs on how to write one:',
-        detail: 'https://github.com/atom/atom-shell/tree/master/docs'
-      });
+      dialog.showErrorBox('Error opening app', 'The app provided is not a valid atom-shell app, please read the docs on how to write one:\nhttps://github.com/atom/atom-shell/tree/master/docs');
       process.exit(1);
     } else {
       console.error('App throwed an error when running', e);

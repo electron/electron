@@ -1,5 +1,6 @@
 binding = process.atomBinding 'dialog'
 v8Util = process.atomBinding 'v8_util'
+app = require 'app'
 BrowserWindow = require 'browser-window'
 
 fileDialogProperties =
@@ -22,8 +23,12 @@ parseArgs = (window, options, callback) ->
     options = null
   [window, options, callback]
 
+checkAppInitialized = ->
+  throw new Error('dialog module can only be used after app is ready') unless app.isReady()
+
 module.exports =
   showOpenDialog: (args...) ->
+    checkAppInitialized()
     [window, options, callback] = parseArgs args...
 
     options ?= title: 'Open', properties: ['openFile']
@@ -52,6 +57,7 @@ module.exports =
                            wrappedCallback
 
   showSaveDialog: (args...) ->
+    checkAppInitialized()
     [window, options, callback] = parseArgs args...
 
     options ?= title: 'Save'
@@ -72,6 +78,7 @@ module.exports =
                            wrappedCallback
 
   showMessageBox: (args...) ->
+    checkAppInitialized()
     [window, options, callback] = parseArgs args...
 
     options ?= type: 'none'
@@ -92,6 +99,9 @@ module.exports =
                            String(options.detail),
                            window,
                            callback
+
+  showErrorBox: (args...) ->
+    binding.showErrorBox args...
 
 # Mark standard asynchronous functions.
 v8Util.setHiddenValue f, 'asynchronous', true for k, f of module.exports
