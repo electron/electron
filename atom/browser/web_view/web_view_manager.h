@@ -24,7 +24,8 @@ class WebViewManager : public content::BrowserPluginGuestManager {
                 content::WebContents* embedder,
                 content::WebContents* web_contents,
                 bool node_integration,
-                bool plugins);
+                bool plugins,
+                const GURL& preload_url);
   void RemoveGuest(int guest_instance_id);
 
  protected:

@@ -156,6 +156,10 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
           info.node_integration ? "true" : "false");
       if (info.plugins)
         command_line->AppendSwitch(switches::kEnablePlugins);
+      if (!info.preload_script.empty())
+        command_line->AppendSwitchPath(
+            switches::kPreloadScript,
+            info.preload_script);
     }
   }
 

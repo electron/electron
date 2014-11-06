@@ -66,6 +66,9 @@ const char kEnablePlugins[] = "enable-plugins";
 // Instancd ID of guest WebContents.
 const char kGuestInstanceID[] = "guest-instance-id";
 
+// Script that will be loaded by guest WebContents before other scripts.
+const char kPreloadScript[] = "preload-script";
+
 // Web runtime features.
 const char kExperimentalFeatures[]       = "experimental-features";
 const char kExperimentalCanvasFeatures[] = "experimental-canvas-features";

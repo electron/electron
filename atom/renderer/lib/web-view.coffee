@@ -21,6 +21,7 @@ WEB_VIEW_ATTRIBUTE_MINWIDTH = 'minwidth'
 WEB_VIEW_ATTRIBUTE_PARTITION = 'partition'
 WEB_VIEW_ATTRIBUTE_NODEINTEGRATION = 'nodeintegration'
 WEB_VIEW_ATTRIBUTE_PLUGINS = 'plugins'
+WEB_VIEW_ATTRIBUTE_PRELOAD = 'preload'
 AUTO_SIZE_ATTRIBUTES = [
   WEB_VIEW_ATTRIBUTE_AUTOSIZE,
   WEB_VIEW_ATTRIBUTE_MAXHEIGHT,
@@ -38,6 +39,8 @@ ERROR_MSG_CONTENTWINDOW_NOT_AVAILABLE = '<webview>: ' +
     'contentWindow is not available at this time. It will become available ' +
     'when the page has finished loading.'
 ERROR_MSG_INVALID_PARTITION_ATTRIBUTE = 'Invalid partition attribute.'
+ERROR_MSG_INVALID_PRELOAD_ATTRIBUTE =
+    'Only "file:" or "asar:" protocol is supported in "preload" attribute.'
 
 # Represents the state of the storage partition.
 class Partition
@@ -379,6 +382,17 @@ class WebView
       storagePartitionId: storagePartitionId
       nodeIntegration: @webviewNode.hasAttribute WEB_VIEW_ATTRIBUTE_NODEINTEGRATION
       plugins: @webviewNode.hasAttribute WEB_VIEW_ATTRIBUTE_PLUGINS
+    if @webviewNode.hasAttribute WEB_VIEW_ATTRIBUTE_PRELOAD
+      preload = @webviewNode.getAttribute WEB_VIEW_ATTRIBUTE_PRELOAD
+      # Get the full path.
+      a = document.createElement 'a'
+      a.href = preload
+      params.preload = a.href
+      # Only support file: or asar: protocol.
+      protocol = params.preload.substr 0, 5
+      unless protocol in ['file:', 'asar:']
+        delete params.preload
+        console.error ERROR_MSG_INVALID_PRELOAD_ATTRIBUTE
     guestViewInternal.createGuest 'webview', params, (guestInstanceId) =>
       @pendingGuestCreation = false
       unless @elementAttached
