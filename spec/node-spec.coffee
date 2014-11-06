@@ -108,3 +108,11 @@ describe 'node feature', ->
         client.on 'error', (error) ->
           assert.equal error.code, 'ECONNREFUSED'
           done()
+
+  describe 'Buffer', ->
+    it 'can be created from WebKit external string', ->
+      p = document.createElement 'p'
+      p.innerText = '闲云潭影日悠悠，物换星移几度秋'
+      b = new Buffer(p.innerText)
+      assert.equal b.toString(), '闲云潭影日悠悠，物换星移几度秋'
+      assert.equal Buffer.byteLength(p.innerText), 45
