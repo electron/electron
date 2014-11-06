@@ -31,6 +31,8 @@ for arg in process.argv
     require('web-frame').setName 'ATOM_SHELL_GUEST_WEB_VIEW'
   else if arg.indexOf('--node-integration=') == 0
     nodeIntegration = arg.substr arg.indexOf('=') + 1
+  else if arg.indexOf('--preload-script=') == 0
+    preloadScript = arg.substr arg.indexOf('=') + 1
 
 if location.protocol is 'chrome-devtools:'
   # Override some inspector APIs.
@@ -86,3 +88,6 @@ else
     delete global.process
     delete global.setImmediate
     delete global.clearImmediate
+
+# Load the script specfied by the "preload" attribute.
+require preloadScript if preloadScript

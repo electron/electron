@@ -7,12 +7,14 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/web_view/web_view_renderer_state.h"
+#include "atom/common/native_mate_converters/gurl_converter.h"
 #include "base/bind.h"
 #include "base/stl_util.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "net/base/filename_util.h"
 
 #include "atom/common/node_includes.h"
 
@@ -44,12 +46,14 @@ void WebViewManager::AddGuest(int guest_instance_id,
                               content::WebContents* embedder,
                               content::WebContents* web_contents,
                               bool node_integration,
-                              bool plugins) {
+                              bool plugins,
+                              const GURL& preload_url) {
   web_contents_map_[guest_instance_id] = { web_contents, embedder };
 
   WebViewRendererState::WebViewInfo web_view_info = {
     guest_instance_id, node_integration, plugins
   };
+  net::FileURLToFilePath(preload_url, &web_view_info.preload_script);
   content::BrowserThread::PostTask(
       content::BrowserThread::IO,
       FROM_HERE,

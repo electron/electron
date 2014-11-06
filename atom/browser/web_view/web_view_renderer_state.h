@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 
+#include "base/files/file_path.h"
 #include "base/memory/singleton.h"
 
 namespace atom {
@@ -23,6 +24,7 @@ class WebViewRendererState {
     int guest_instance_id;
     bool node_integration;
     bool plugins;
+    base::FilePath preload_script;
   };
 
   static WebViewRendererState* GetInstance();
