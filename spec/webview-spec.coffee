@@ -47,6 +47,17 @@ describe '<webview> tag', ->
       webview.src = "file://#{fixtures}/pages/d.html"
       document.body.appendChild webview
 
+  describe 'preload attribute', ->
+    it 'loads the script before other scripts in window', (done) ->
+      listener = (e) ->
+        assert.equal e.message, 'function object object'
+        webview.removeEventListener 'console-message', listener
+        done()
+      webview.addEventListener 'console-message', listener
+      webview.setAttribute 'preload', "#{fixtures}/module/preload.js"
+      webview.src = "file://#{fixtures}/pages/e.html"
+      document.body.appendChild webview
+
   describe 'new-window event', ->
     it 'emits when window.open is called', (done) ->
       webview.addEventListener 'new-window', (e) ->
