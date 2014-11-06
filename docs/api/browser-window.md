@@ -41,7 +41,8 @@ You can also create a window without chrome by using
   * `resizable` Boolean - Whether window is resizable
   * `always-on-top` Boolean - Whether the window should always stay on top of
      other windows
-  * `fullscreen` Boolean - Whether the window should show in fullscreen
+  * `fullscreen` Boolean - Whether the window should show in fullscreen, when
+    set to `false` the fullscreen button would also be hidden on OS X
   * `skip-taskbar` Boolean - Do not show window in taskbar
   * `zoom-factor` Number - The default zoom factor of the page, zoom factor is
     zoom percent / 100, so `3.0` represents `300%`
