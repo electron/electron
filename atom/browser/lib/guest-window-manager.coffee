@@ -7,11 +7,11 @@ frameToGuest = {}
 createGuest = (embedder, url, frameName, options) ->
   guest = frameToGuest[frameName]
   if frameName and guest?
-    guest.loadUrl url
+    guest.loadUrl url {}
     return guest.id
 
   guest = new BrowserWindow(options)
-  guest.loadUrl url
+  guest.loadUrl url {}
 
   # When |embedder| is destroyed we should also destroy attached guest, and if
   # guest is closed by user then we should prevent |embedder| from double

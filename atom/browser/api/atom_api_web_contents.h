@@ -41,14 +41,14 @@ class WebContents : public mate::EventEmitter,
 
   void Destroy();
   bool IsAlive() const;
-  void LoadURL(const GURL& url);
+  void LoadURL(const GURL& url, const mate::Dictionary& options);
   GURL GetURL() const;
   base::string16 GetTitle() const;
   bool IsLoading() const;
   bool IsWaitingForResponse() const;
   void Stop();
-  void Reload();
-  void ReloadIgnoringCache();
+  void Reload(const mate::Dictionary& options);
+  void ReloadIgnoringCache(const mate::Dictionary& options);
   bool CanGoBack() const;
   bool CanGoForward() const;
   bool CanGoToOffset(int offset) const;

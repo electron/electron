@@ -47,7 +47,7 @@ createGuest = (embedder, params) ->
     max = width: params.maxwidth, height: params.maxheight
     @setAutoSize params.autosize, min, max
     if params.src
-      @loadUrl params.src
+      @loadUrl params.src, params.urlOptions
     if params.allowtransparency?
       @setAllowTransparency params.allowtransparency
 
