@@ -90,4 +90,9 @@ else
     delete global.clearImmediate
 
 # Load the script specfied by the "preload" attribute.
-require preloadScript if preloadScript
+if preloadScript
+  try
+    require preloadScript
+  catch error
+    throw error unless error.code is 'MODULE_NOT_FOUND'
+    console.error "Unable to load preload script #{preloadScript}"
