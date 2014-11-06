@@ -90,6 +90,20 @@ APIs like `require` and `process` to access low level system resources.
 
 If "on", the guest page in `webview` will be able to use browser plugins.
 
+### preload
+
+```html
+<webview src="https://www.github.com/" preload="./test.js"></webview>
+```
+
+Specifies a script that will be loaded before other scripts run in the guest
+page. The protocol of script's URL must be either `file:` or `asar:`, because it
+will be loaded by `require` in guest page under the hood.
+
+When the guest page doesn't have node integration this script will still have
+access to all Node APIs, but global objects injected by Node will be deleted
+after this script has done execution.
+
 ## Methods
 
 ### `<webview>`.getUrl()
