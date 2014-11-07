@@ -69,6 +69,11 @@ def main():
              os.path.join(SOURCE_ROOT, 'script', 'upload-checksums.py'),
              '-v', ATOM_SHELL_VERSION])
 
+    # Upload PDBs to Windows symbol server.
+    if TARGET_PLATFORM == 'win32':
+      execute([sys.executable,
+               os.path.join(SOURCE_ROOT, 'script', 'upload-windows-pdb.py')])
+
     # Press the publish button.
     publish_release(github, release_id)
 
