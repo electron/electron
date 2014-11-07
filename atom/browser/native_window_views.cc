@@ -226,6 +226,13 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
       options.Get(switches::kUseContentSize, &use_content_size_) &&
       use_content_size_)
     bounds = ContentBoundsToWindowBounds(bounds);
+  #if defined(OS_WIN)
+  else {
+    // set Window style so that we get a minimize and maximize animation when frameless
+    DWORD frame_style = WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CAPTION;
+    ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
+  }
+  #endif
 
   window_->UpdateWindowIcon();
   window_->CenterWindow(bounds.size());
