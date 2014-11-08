@@ -11,8 +11,6 @@ BrowserWindow::__proto__ = EventEmitter.prototype
 BrowserWindow.windows = new IDWeakMap
 
 BrowserWindow::_init = ->
-  @urlOptions = {}
-
   # Simulate the application menu on platforms other than OS X.
   if process.platform isnt 'darwin'
     menu = app.getApplicationMenu()
@@ -86,23 +84,15 @@ BrowserWindow.fromId = (id) ->
   BrowserWindow.windows.get id
 
 # Helpers.
-BrowserWindow::loadUrl = ->
-  args = [].slice.call arguments
-  unless args.length > 1
-    args.push @urlOptions
-
-  #TODO: This needs fixing!
-  @urlOptions = args[1]
-
-  @webContents.loadUrl.apply @webContents, args
+BrowserWindow::loadUrl = (url, urlOptions={}) -> @webContents.loadUrl url, urlOptions
 
 BrowserWindow::send = -> @webContents.send.apply @webContents, arguments
 
 # Be compatible with old API.
 BrowserWindow::restart = -> @webContents.reload()
 BrowserWindow::getUrl = -> @webContents.getUrl()
-BrowserWindow::reload = -> @webContents.reload(@urlOptions)
-BrowserWindow::reloadIgnoringCache = -> @webContents.reloadIgnoringCache(@urlOptions)
+BrowserWindow::reload = (urlOptions={}) -> @webContents.reload(urlOptions)
+BrowserWindow::reloadIgnoringCache = (urlOptions={}) -> @webContents.reloadIgnoringCache(urlOptions)
 BrowserWindow::getPageTitle = -> @webContents.getTitle()
 BrowserWindow::isLoading = -> @webContents.isLoading()
 BrowserWindow::isWaitingForResponse = -> @webContents.isWaitingForResponse()

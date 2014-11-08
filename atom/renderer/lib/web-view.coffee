@@ -199,10 +199,10 @@ class WebView
       # No setter.
       enumerable: true
 
-    @httpReferrer = @webviewNode.getAttribute 'httpReferrer'
-    Object.defineProperty @webviewNode, 'httpReferrer',
+    @httpReferrer = @webviewNode.getAttribute 'httpreferrer'
+    Object.defineProperty @webviewNode, 'httpreferrer',
       get: => @httpReferrer
-      set: (value) => @webviewNode.setAttribute 'httpReferrer', value
+      set: (value) => @webviewNode.setAttribute 'httpreferrer', value
       enumerable: true
 
   # The purpose of this mutation observer is to catch assignment to the src
@@ -219,7 +219,7 @@ class WebView
     params =
       attributes: true,
       attributeOldValue: true,
-      attributeFilter: ['src', 'partition', 'httpReferrer']
+      attributeFilter: ['src', 'partition', 'httpreferrer']
     @srcAndPartitionObserver.observe @webviewNode, params
 
   # This observer monitors mutations to attributes of the <webview> and
@@ -253,19 +253,18 @@ class WebView
       return unless @guestInstanceId
 
       guestViewInternal.setAllowTransparency @guestInstanceId, @allowtransparency
-    else if name is 'httpReferrer'
+    else if name is 'httpreferrer'
       oldValue ?= ''
       newValue ?= ''
 
       if newValue == '' and oldValue != ''
-        @webviewNode.setAttribute 'httpReferrer', oldValue
+        @webviewNode.setAttribute 'httpreferrer', oldValue
 
       @httpReferrer = newValue
 
       result = {}
-      # I think the right thing to do if you change your referrer is to reload
-      # the src since I've bundled the referrer in with the parseSrcAttribute.
-      # I think it makes sense to do that.
+      # If the httpreferrer changes treat it as though the src changes and reload
+      # the page with the new httpreferrer.
       @parseSrcAttribute result
 
       throw result.error if result.error?
@@ -388,7 +387,7 @@ class WebView
       return
 
     if @httpReferrer
-      @urlOptions = { "httpReferrer": @httpReferrer }
+      @urlOptions = { "httpreferrer": @httpReferrer }
 
     # Navigate to |this.src|.
     remote.getGuestWebContents(@guestInstanceId).loadUrl @src, @urlOptions

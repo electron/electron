@@ -291,7 +291,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
 
   base::string16 http_referrer_;
 
-  if(options.Get("httpReferrer", &http_referrer_))
+  if (options.Get("httpreferrer", &http_referrer_))
     params.referrer = content::Referrer(GURL(http_referrer_).GetAsReferrer(), blink::WebReferrerPolicyDefault);
 
   params.transition_type = content::PAGE_TRANSITION_TYPED;
