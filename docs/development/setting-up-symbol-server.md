@@ -15,7 +15,7 @@ calls, and other compiler optimizations. The only workaround is to build an
 unoptimized local build.
 
 The official symbol server URL for atom-shell is
-http://symbols.mozilla.org/firefox.
+http://54.249.141.255:8086/atom-shell/symbols.
 You cannot visit this URL directly: you must add it to the symbol path of your
 debugging tool. In the examples below, a local cache directory is used to avoid
 repeatedly fetching the PDB from the server.  Replace `c:\code\symbols` with an
@@ -30,7 +30,7 @@ directory on your computer, if you'd prefer a different location for downloaded
 symbols):
 
 ```
-SRV*c:\code\symbols\*http://symbols.mozilla.org/firefox
+SRV*c:\code\symbols\*http://54.249.141.255:8086/atom-shell/symbols
 ```
 
 Set this string as `_NT_SYMBOL_PATH` in the environment, using the Windbg menus,
@@ -38,7 +38,7 @@ or by typing the `.sympath` command. If you would like to get symbols from
 Microsoft's symbol server as well, you should list that first:
 
 ```
-SRV*c:\code\symbols\*http://msdl.microsoft.com/download/symbols;SRV*c:\code\symbols\*http://symbols.mozilla.org/firefox
+SRV*c:\code\symbols\*http://msdl.microsoft.com/download/symbols;SRV*c:\code\symbols\*http://54.249.141.255:8086/atom-shell/symbols
 ```
 
 ## Using the symbol server in Visual Studio
