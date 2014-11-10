@@ -24,6 +24,7 @@ def main():
 
   bucket, access_key, secret_key = s3_config()
   files = glob.glob(SYMBOLS_DIR + '/*.pdb/*/*.pdb')
+  files = [f.lower() for f in files]
   upload_symbols(bucket, access_key, secret_key, files)
 
 
