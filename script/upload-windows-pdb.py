@@ -8,9 +8,10 @@ from lib.util import execute, rm_rf, safe_mkdir, s3put, s3_config
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 SYMBOLS_DIR = 'dist\\symbols'
+DOWNLOAD_DIR = 'vendor\\brightray\\vendor\\download\\libchromiumcontent'
 PDB_LIST = [
   'out\\Release\\atom.exe.pdb',
-  'vendor\\brightray\\vendor\\download\\libchromiumcontent\\Release\\chromiumcontent.dll.pdb',
+  DOWNLOAD_DIR + '\\Release\\chromiumcontent.dll.pdb',
 ]
 
 
@@ -33,7 +34,8 @@ def run_symstore(pdb, dest, product):
 
 
 def upload_symbols(bucket, access_key, secret_key, files):
-  s3put(bucket, access_key, secret_key, SYMBOLS_DIR, 'atom-shell/symbols', files)
+  s3put(bucket, access_key, secret_key, SYMBOLS_DIR, 'atom-shell/symbols',
+        files)
 
 
 if __name__ == '__main__':
