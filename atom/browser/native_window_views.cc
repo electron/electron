@@ -229,8 +229,10 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
 
 #if defined(OS_WIN)
   if (!has_frame_) {
-    // set Window style so that we get a minimize and maximize animation when frameless
-    DWORD frame_style = WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CAPTION;
+    // Set Window style so that we get a minimize and maximize animation when
+    // frameless.
+    DWORD frame_style = WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX |
+                        WS_CAPTION;
     ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
   }
 #endif
