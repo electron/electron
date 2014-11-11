@@ -27,6 +27,11 @@ crashReporter.start({
     * Only string properties are send correctly.
     * Nested objects are not supported.
 
+## crashReporter.getLastCrashReport()
+
+Returns the date and ID of last crash report, when there was no crash report
+sent or the crash reporter is not started, `null` will be returned.
+
 # crash-reporter payload
 
 The crash reporter will send the following data to the `submitUrl` as `POST`:
