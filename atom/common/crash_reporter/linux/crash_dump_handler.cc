@@ -414,7 +414,6 @@ bool IsValidCrashReportId(const char* buf, size_t bytes_read,
 // |buf| should be |expected_len| + 1 characters in size and NULL terminated.
 void HandleCrashReportId(const char* buf, size_t bytes_read,
                          size_t expected_len) {
-  WriteNewline();
   if (!IsValidCrashReportId(buf, bytes_read, expected_len)) {
     static const char msg[] = "Failed to get crash dump id.";
     WriteLog(msg, sizeof(msg) - 1);

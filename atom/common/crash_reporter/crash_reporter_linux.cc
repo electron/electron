@@ -12,9 +12,9 @@
 
 #include "base/debug/crash_logging.h"
 #include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "base/linux_util.h"
 #include "base/logging.h"
-#include "base/path_service.h"
 #include "base/process/memory.h"
 #include "base/memory/singleton.h"
 #include "vendor/breakpad/src/client/linux/handler/exception_handler.h"
@@ -61,7 +61,7 @@ void CrashReporterLinux::InitBreakpad(const std::string& product_name,
                                       const std::string& submit_url,
                                       bool auto_submit,
                                       bool skip_system_crash_handler) {
-  EnableCrashDumping();
+  EnableCrashDumping(product_name);
 
   crash_keys_.SetKeyValue("prod", "Atom-Shell");
   crash_keys_.SetKeyValue("ver", version.c_str());
@@ -76,11 +76,11 @@ void CrashReporterLinux::SetUploadParameters() {
   upload_parameters_["platform"] = "linux";
 }
 
-void CrashReporterLinux::EnableCrashDumping() {
-  base::FilePath tmp_path("/tmp");
-  PathService::Get(base::DIR_TEMP, &tmp_path);
+void CrashReporterLinux::EnableCrashDumping(const std::string& product_name) {
+  std::string dump_dir = "/tmp/" + product_name + " Crashes";
+  base::FilePath dumps_path(dump_dir);
+  base::CreateDirectory(dumps_path);
 
-  base::FilePath dumps_path(tmp_path);
   MinidumpDescriptor minidump_descriptor(dumps_path.value());
   minidump_descriptor.set_size_limit(kMaxMinidumpFileSize);
 
