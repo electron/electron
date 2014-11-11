@@ -75,6 +75,10 @@ uint64_t kernel_timeval_to_ms(struct kernel_timeval *tv) {
   return ret;
 }
 
+bool my_isxdigit(char c) {
+  return (c >= '0' && c <= '9') || ((c | 0x20) >= 'a' && (c | 0x20) <= 'f');
+}
+
 size_t LengthWithoutTrailingSpaces(const char* str, size_t len) {
   while (len > 0 && str[len - 1] == ' ') {
     len--;
@@ -345,13 +349,12 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
     kWgetBinary,
     header,
     post_file,
-    // TODO(zcbenz): Enabling custom upload url.
     info.upload_url,
     "--timeout=60",  // Set a timeout so we don't hang forever.
     "--tries=1",     // Don't retry if the upload fails.
     "--quiet",       // Be silent.
     "-O",            // output reply to /dev/null.
-    "/dev/null",
+    "/dev/fd/3",
     NULL,
   };
   static const char msg[] = "Cannot upload crash dump: cannot exec "
@@ -359,6 +362,95 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
   execve(args[0], const_cast<char**>(args), environ);
   WriteLog(msg, sizeof(msg) - 1);
   sys__exit(1);
+}
+
+// Runs in the helper process to wait for the upload process running
+// ExecUploadProcessOrTerminate() to finish. Returns the number of bytes written
+// to |fd| and save the written contents to |buf|.
+// |buf| needs to be big enough to hold |bytes_to_read| + 1 characters.
+size_t WaitForCrashReportUploadProcess(int fd, size_t bytes_to_read,
+                                       char* buf) {
+  size_t bytes_read = 0;
+
+  // Upload should finish in about 10 seconds. Add a few more 500 ms
+  // internals to account for process startup time.
+  for (size_t wait_count = 0; wait_count < 24; ++wait_count) {
+    struct kernel_pollfd poll_fd;
+    poll_fd.fd = fd;
+    poll_fd.events = POLLIN | POLLPRI | POLLERR;
+    int ret = sys_poll(&poll_fd, 1, 500);
+    if (ret < 0) {
+      // Error
+      break;
+    } else if (ret > 0) {
+      // There is data to read.
+      ssize_t len = HANDLE_EINTR(
+          sys_read(fd, buf + bytes_read, bytes_to_read - bytes_read));
+      if (len < 0)
+        break;
+      bytes_read += len;
+      if (bytes_read == bytes_to_read)
+        break;
+    }
+    // |ret| == 0 -> timed out, continue waiting.
+    // or |bytes_read| < |bytes_to_read| still, keep reading.
+  }
+  buf[bytes_to_read] = 0;  // Always NUL terminate the buffer.
+  return bytes_read;
+}
+
+// |buf| should be |expected_len| + 1 characters in size and NULL terminated.
+bool IsValidCrashReportId(const char* buf, size_t bytes_read,
+                          size_t expected_len) {
+  if (bytes_read != expected_len)
+    return false;
+  for (size_t i = 0; i < bytes_read; ++i) {
+    if (!my_isxdigit(buf[i]) && buf[i] != '-')
+      return false;
+  }
+  return true;
+}
+
+// |buf| should be |expected_len| + 1 characters in size and NULL terminated.
+void HandleCrashReportId(const char* buf, size_t bytes_read,
+                         size_t expected_len) {
+  WriteNewline();
+  if (!IsValidCrashReportId(buf, bytes_read, expected_len)) {
+    static const char msg[] = "Failed to get crash dump id.";
+    WriteLog(msg, sizeof(msg) - 1);
+    WriteNewline();
+
+    static const char id_msg[] = "Report Id: ";
+    WriteLog(id_msg, sizeof(id_msg) - 1);
+    WriteLog(buf, bytes_read);
+    WriteNewline();
+    return;
+  }
+
+  // Write crash dump id to stderr.
+  static const char msg[] = "Crash dump id: ";
+  WriteLog(msg, sizeof(msg) - 1);
+  WriteLog(buf, my_strlen(buf));
+  WriteNewline();
+
+  // Write crash dump id to crash log as: seconds_since_epoch,crash_id
+  struct kernel_timeval tv;
+  if (!sys_gettimeofday(&tv, NULL)) {
+    uint64_t time = kernel_timeval_to_ms(&tv) / 1000;
+    char time_str[kUint64StringSize];
+    const unsigned time_len = my_uint64_len(time);
+    my_uint64tos(time_str, time, time_len);
+
+    const int kLogOpenFlags = O_CREAT | O_WRONLY | O_APPEND | O_CLOEXEC;
+    int log_fd = sys_open("/tmp/uploads.log", kLogOpenFlags, 0600);
+    if (log_fd > 0) {
+      sys_write(log_fd, time_str, time_len);
+      sys_write(log_fd, ",", 1);
+      sys_write(log_fd, buf, my_strlen(buf));
+      sys_write(log_fd, "\n", 1);
+      IGNORE_RET(sys_close(log_fd));
+    }
+  }
 }
 
 }  // namespace
@@ -616,33 +708,13 @@ void HandleCrashDump(const BreakpadInfo& info) {
       // Helper process.
       if (upload_child > 0) {
         IGNORE_RET(sys_close(fds[1]));
-        char id_buf[17];  // Crash report IDs are expected to be 16 chars.
-        ssize_t len = -1;
-        // Upload should finish in about 10 seconds. Add a few more 500 ms
-        // internals to account for process startup time.
-        for (size_t wait_count = 0; wait_count < 24; ++wait_count) {
-          struct kernel_pollfd poll_fd;
-          poll_fd.fd = fds[0];
-          poll_fd.events = POLLIN | POLLPRI | POLLERR;
-          int ret = sys_poll(&poll_fd, 1, 500);
-          if (ret < 0) {
-            // Error
-            break;
-          } else if (ret > 0) {
-            // There is data to read.
-            len = HANDLE_EINTR(sys_read(fds[0], id_buf, sizeof(id_buf) - 1));
-            break;
-          }
-          // ret == 0 -> timed out, continue waiting.
-        }
-        if (len > 0) {
-          // Write crash dump id to stderr.
-          id_buf[len] = 0;
-          static const char msg[] = "\nCrash dump id: ";
-          WriteLog(msg, sizeof(msg) - 1);
-          WriteLog(id_buf, my_strlen(id_buf));
-          WriteLog("\n", 1);
-        }
+
+        const size_t kCrashIdLength = 36;
+        char id_buf[kCrashIdLength + 1];
+        size_t bytes_read =
+            WaitForCrashReportUploadProcess(fds[0], kCrashIdLength, id_buf);
+        HandleCrashReportId(id_buf, bytes_read, kCrashIdLength);
+
         if (sys_waitpid(upload_child, NULL, WNOHANG) == 0) {
           // Upload process is still around, kill it.
           sys_kill(upload_child, SIGKILL);
@@ -664,6 +736,10 @@ void HandleCrashDump(const BreakpadInfo& info) {
 
 size_t WriteLog(const char* buf, size_t nbytes) {
   return sys_write(2, buf, nbytes);
+}
+
+size_t WriteNewline() {
+  return WriteLog("\n", 1);
 }
 
 }  // namespace crash_reporter

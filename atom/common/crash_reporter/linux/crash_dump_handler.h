@@ -32,6 +32,7 @@ struct BreakpadInfo {
 void HandleCrashDump(const BreakpadInfo& info);
 
 size_t WriteLog(const char* buf, size_t nbytes);
+size_t WriteNewline();
 
 }  // namespace crash_reporter
 
