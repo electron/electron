@@ -7,7 +7,7 @@ module is emitted:
 
 ```javascript
 var app = require('app');
-app.commandLine.appendSwitch('remote-debugging-port', '88315');
+app.commandLine.appendSwitch('remote-debugging-port', '8315');
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
 
 app.on('ready', function() {

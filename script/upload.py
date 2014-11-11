@@ -59,18 +59,23 @@ def main():
     upload_atom_shell(github, release_id,
                       os.path.join(DIST_DIR, CHROMEDRIVER_NAME))
 
-  # Upload node's headers to S3.
-  bucket, access_key, secret_key = s3_config()
-  upload_node(bucket, access_key, secret_key, ATOM_SHELL_VERSION)
-
   if args.publish_release:
-    # Press the publish button.
-    publish_release(github, release_id)
+    # Upload node's headers to S3.
+    bucket, access_key, secret_key = s3_config()
+    upload_node(bucket, access_key, secret_key, ATOM_SHELL_VERSION)
 
     # Upload the SHASUMS.txt.
     execute([sys.executable,
              os.path.join(SOURCE_ROOT, 'script', 'upload-checksums.py'),
              '-v', ATOM_SHELL_VERSION])
+
+    # Upload PDBs to Windows symbol server.
+    if TARGET_PLATFORM == 'win32':
+      execute([sys.executable,
+               os.path.join(SOURCE_ROOT, 'script', 'upload-windows-pdb.py')])
+
+    # Press the publish button.
+    publish_release(github, release_id)
 
 
 def parse_args():

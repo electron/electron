@@ -32,7 +32,7 @@ describe 'crash-reporter module', ->
         assert.equal fields['_version'], require('remote').require('app').getVersion()
         assert files['upload_file_minidump']['name']?
 
-        res.end()
+        res.end('abc-123-def')
         server.close()
         done()
     server.listen 0, '127.0.0.1', ->

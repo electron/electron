@@ -183,6 +183,7 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
     '--secret_key', secret_key,
     '--prefix', prefix,
     '--key_prefix', key_prefix,
+    '--no_overwrite',
     '--grant', 'public-read'
   ] + files
 

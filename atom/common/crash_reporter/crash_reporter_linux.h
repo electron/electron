@@ -39,7 +39,7 @@ class CrashReporterLinux : public CrashReporter {
   CrashReporterLinux();
   virtual ~CrashReporterLinux();
 
-  void EnableCrashDumping();
+  void EnableCrashDumping(const std::string& product_name);
 
   static bool CrashDone(const google_breakpad::MinidumpDescriptor& minidump,
                         void* context,
