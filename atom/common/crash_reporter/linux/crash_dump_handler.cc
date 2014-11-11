@@ -441,7 +441,7 @@ void HandleCrashReportId(const char* buf, size_t bytes_read,
     my_uint64tos(time_str, time, time_len);
 
     const int kLogOpenFlags = O_CREAT | O_WRONLY | O_APPEND | O_CLOEXEC;
-    int log_fd = sys_open("/tmp/uploads.log", kLogOpenFlags, 0600);
+    int log_fd = sys_open(g_crash_log_path, kLogOpenFlags, 0600);
     if (log_fd > 0) {
       sys_write(log_fd, time_str, time_len);
       sys_write(log_fd, ",", 1);
@@ -453,6 +453,8 @@ void HandleCrashReportId(const char* buf, size_t bytes_read,
 }
 
 }  // namespace
+
+char g_crash_log_path[256];
 
 void HandleCrashDump(const BreakpadInfo& info) {
   int dumpfd;

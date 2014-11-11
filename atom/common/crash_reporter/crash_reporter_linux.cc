@@ -17,6 +17,7 @@
 #include "base/logging.h"
 #include "base/process/memory.h"
 #include "base/memory/singleton.h"
+#include "base/strings/stringprintf.h"
 #include "vendor/breakpad/src/client/linux/handler/exception_handler.h"
 #include "vendor/breakpad/src/common/linux/linux_libc_support.h"
 
@@ -80,6 +81,10 @@ void CrashReporterLinux::EnableCrashDumping(const std::string& product_name) {
   std::string dump_dir = "/tmp/" + product_name + " Crashes";
   base::FilePath dumps_path(dump_dir);
   base::CreateDirectory(dumps_path);
+
+  std::string log_file = base::StringPrintf(
+      "%s/%s", dump_dir.c_str(), "uploads.log");
+  strncpy(g_crash_log_path, log_file.c_str(), sizeof(g_crash_log_path));
 
   MinidumpDescriptor minidump_descriptor(dumps_path.value());
   minidump_descriptor.set_size_limit(kMaxMinidumpFileSize);

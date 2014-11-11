@@ -34,6 +34,9 @@ void HandleCrashDump(const BreakpadInfo& info);
 size_t WriteLog(const char* buf, size_t nbytes);
 size_t WriteNewline();
 
+// Global variable storing the path of upload log.
+extern char g_crash_log_path[256];
+
 }  // namespace crash_reporter
 
 #endif  // ATOM_COMMON_CRASH_REPORTER_LINUX_CRASH_DUMP_HANDLER_H_
