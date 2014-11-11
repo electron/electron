@@ -289,10 +289,11 @@ bool WebContents::IsAlive() const {
 void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   content::NavigationController::LoadURLParams params(url);
 
-  base::string16 http_referrer_;
+  base::string16 http_referrer;
 
   if (options.Get("httpreferrer", &http_referrer_))
-    params.referrer = content::Referrer(GURL(http_referrer_).GetAsReferrer(), blink::WebReferrerPolicyDefault);
+    params.referrer = content::Referrer(GURL(http_referrer_).GetAsReferrer(),
+      blink::WebReferrerPolicyDefault);
 
   params.transition_type = content::PAGE_TRANSITION_TYPED;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
