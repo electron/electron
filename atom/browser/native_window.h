@@ -318,6 +318,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Web preferences.
   mate::PersistentDictionary web_preferences_;
 
+  // The script to load before page's JavaScript starts to run.
+  base::FilePath preload_script_;
+
   // Page's default zoom factor.
   double zoom_factor_;
 

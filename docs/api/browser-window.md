@@ -61,7 +61,11 @@ You can also create a window without chrome by using
   * `enable-larger-than-screen` Boolean - Enable the window to be resized larger
     than screen.
   * `dark-theme` Boolean - Forces using dark theme for the window, only works on
-    some GTK+3 desktop environments.
+    some GTK+3 desktop environments
+  * `preload` String - Specifies a script that will be loaded before other
+    scripts run in the window. This script will always have access to node APIs
+    no matter whether node integration is turned on for the window, and the path
+    of `preload` script has to be absolute path.
   * `web-preferences` Object - Settings of web page's features
     * `javascript` Boolean
     * `web-security` Boolean

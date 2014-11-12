@@ -31,7 +31,7 @@ for arg in process.argv
     require('web-frame').setName 'ATOM_SHELL_GUEST_WEB_VIEW'
   else if arg.indexOf('--node-integration=') == 0
     nodeIntegration = arg.substr arg.indexOf('=') + 1
-  else if arg.indexOf('--preload-script=') == 0
+  else if arg.indexOf('--preload=') == 0
     preloadScript = arg.substr arg.indexOf('=') + 1
 
 if location.protocol is 'chrome-devtools:'

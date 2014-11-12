@@ -101,6 +101,13 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
   // Read icon before window is created.
   options.Get(switches::kIcon, &icon_);
 
+  // The "preload" option must be absolute path.
+  if (options.Get(switches::kPreloadScript, &preload_script_) &&
+      !preload_script_.IsAbsolute()) {
+    LOG(ERROR) << "Path of \"preload\" script must be absolute.";
+    preload_script_.clear();
+  }
+
   // Be compatible with old API of "node-integration" option.
   std::string old_string_token;
   if (options.Get(switches::kNodeIntegration, &old_string_token) &&
@@ -348,6 +355,10 @@ void NativeWindow::AppendExtraCommandLineSwitches(
   // Append --node-integration to renderer process.
   command_line->AppendSwitchASCII(switches::kNodeIntegration,
                                   node_integration_ ? "true" : "false");
+
+  // Append --preload.
+  if (!preload_script_.empty())
+    command_line->AppendSwitchPath(switches::kPreloadScript, preload_script_);
 
   // Append --zoom-factor.
   if (zoom_factor_ != 1.0)
