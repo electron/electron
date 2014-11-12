@@ -237,6 +237,8 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   }
 #endif
 
+  // TODO(zcbenz): This was used to force using native frame on Windows 2003, we
+  // should check whether setting it in InitParams can work.
   if (has_frame_) {
     window_->set_frame_type(views::Widget::FrameType::FRAME_TYPE_FORCE_NATIVE);
     window_->FrameTypeChanged();
@@ -559,6 +561,38 @@ void NativeWindowViews::SetProgressBar(double progress) {
 #endif
 }
 
+void NativeWindowViews::SetAutoHideMenuBar(bool auto_hide) {
+  menu_bar_autohide_ = auto_hide;
+}
+
+bool NativeWindowViews::IsMenuBarAutoHide() {
+  return menu_bar_autohide_;
+}
+
+void NativeWindowViews::SetMenuBarVisibility(bool visible) {
+  if (!menu_bar_ || menu_bar_visible_ == visible)
+    return;
+
+  // Always show the accelerator when the auto-hide menu bar shows.
+  if (menu_bar_autohide_)
+    menu_bar_->SetAcceleratorVisibility(visible);
+
+  menu_bar_visible_ = visible;
+  if (visible) {
+    DCHECK_EQ(child_count(), 1);
+    AddChildView(menu_bar_.get());
+  } else {
+    DCHECK_EQ(child_count(), 2);
+    RemoveChildView(menu_bar_.get());
+  }
+
+  Layout();
+}
+
+bool NativeWindowViews::IsMenuBarVisible() {
+  return menu_bar_visible_;
+}
+
 gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() {
   return GetNativeWindow()->GetHost()->GetAcceleratedWidget();
 }
@@ -600,10 +634,8 @@ void NativeWindowViews::OnWidgetActivationChanged(
     GetWebContents()->Focus();
 
   // Hide menu bar when window is blured.
-  if (!active && menu_bar_autohide_ && menu_bar_visible_) {
+  if (!active && menu_bar_autohide_ && menu_bar_visible_)
     SetMenuBarVisibility(false);
-    Layout();
-  }
 }
 
 void NativeWindowViews::DeleteDelegate() {
@@ -695,10 +727,8 @@ gfx::ImageSkia NativeWindowViews::GetDevToolsWindowIcon() {
 
 void NativeWindowViews::HandleMouseDown() {
   // Hide menu bar when web view is clicked.
-  if (menu_bar_autohide_ && menu_bar_visible_) {
+  if (menu_bar_autohide_ && menu_bar_visible_)
     SetMenuBarVisibility(false);
-    Layout();
-  }
 }
 
 void NativeWindowViews::HandleKeyboardEvent(
@@ -718,10 +748,8 @@ void NativeWindowViews::HandleKeyboardEvent(
   if (event.type == blink::WebInputEvent::RawKeyDown && !IsAltKey(event) &&
       IsAltModifier(event)) {
     if (!menu_bar_visible_ &&
-        (menu_bar_->GetAcceleratorIndex(event.windowsKeyCode) != -1)) {
+        (menu_bar_->GetAcceleratorIndex(event.windowsKeyCode) != -1))
       SetMenuBarVisibility(true);
-      Layout();
-    }
     menu_bar_->ActivateAccelerator(event.windowsKeyCode);
     return;
   }
@@ -741,7 +769,6 @@ void NativeWindowViews::HandleKeyboardEvent(
     // When a single Alt is released right after a Alt is pressed:
     menu_bar_alt_pressed_ = false;
     SetMenuBarVisibility(!menu_bar_visible_);
-    Layout();
   } else {
     // When any other keys except single Alt have been pressed/released:
     menu_bar_alt_pressed_ = false;
@@ -777,24 +804,6 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
   if (menu_bar_ && menu_bar_visible_)
     window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
   return window_bounds;
-}
-
-void NativeWindowViews::SetMenuBarVisibility(bool visible) {
-  if (!menu_bar_)
-    return;
-
-  // Always show the accelerator when the auto-hide menu bar shows.
-  if (menu_bar_autohide_)
-    menu_bar_->SetAcceleratorVisibility(visible);
-
-  menu_bar_visible_ = visible;
-  if (visible) {
-    DCHECK_EQ(child_count(), 1);
-    AddChildView(menu_bar_.get());
-  } else {
-    DCHECK_EQ(child_count(), 2);
-    RemoveChildView(menu_bar_.get());
-  }
 }
 
 // static

@@ -73,6 +73,10 @@ class NativeWindowViews : public NativeWindow,
   void SetMenu(ui::MenuModel* menu_model) override;
   gfx::NativeWindow GetNativeWindow() override;
   void SetProgressBar(double value) override;
+  void SetAutoHideMenuBar(bool auto_hide) override;
+  bool IsMenuBarAutoHide() override;
+  void SetMenuBarVisibility(bool visible) override;
+  bool IsMenuBarVisible() override;
 
   gfx::AcceleratedWidget GetAcceleratedWidget();
 
@@ -125,9 +129,6 @@ class NativeWindowViews : public NativeWindow,
   // Converts between client area and window area, since we include the menu bar
   // in client area we need to substract/add menu bar's height in convertions.
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& content_bounds);
-
-  // Show/Hide the menu bar.
-  void SetMenuBarVisibility(bool visible);
 
   scoped_ptr<views::Widget> window_;
   views::View* web_view_;  // Managed by inspectable_web_contents_.
