@@ -161,6 +161,12 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Print current page.
   virtual void Print(bool silent, bool print_background);
 
+  // Toggle the menu bar.
+  virtual void SetAutoHideMenuBar(bool auto_hide);
+  virtual bool IsMenuBarAutoHide();
+  virtual void SetMenuBarVisibility(bool visible);
+  virtual bool IsMenuBarVisible();
+
   // The same with closing a tab in a real browser.
   //
   // Should be called by platform code when user want to close the window.

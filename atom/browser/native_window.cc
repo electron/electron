@@ -243,6 +243,20 @@ void NativeWindow::Print(bool silent, bool print_background) {
       PrintNow(silent, print_background);
 }
 
+void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {
+}
+
+bool NativeWindow::IsMenuBarAutoHide() {
+  return false;
+}
+
+void NativeWindow::SetMenuBarVisibility(bool visible) {
+}
+
+bool NativeWindow::IsMenuBarVisible() {
+  return true;
+}
+
 bool NativeWindow::HasModalDialog() {
   return has_dialog_attached_;
 }
