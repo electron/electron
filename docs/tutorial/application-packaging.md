@@ -95,6 +95,17 @@ var win = new BrowserWindow({width: 800, height: 600});
 win.loadUrl('asar:/path/to/example.asar/static/index.html');
 ```
 
+### Treating `asar` archive as normal file
+
+For some cases like verifying the `asar` archive's checksum, we need to read the
+content of `asar` archive as file. For this purpose you can use the built-in
+`original-fs` module which provides original `fs` APIs without `asar` support:
+
+```javascript
+var originalFs = require('original-fs');
+originalFs.readFileSync('/path/to/example.asar');
+```
+
 ## Limitations on Node API
 
 Even though we tried hard to make `asar` archives in the Node API work like
