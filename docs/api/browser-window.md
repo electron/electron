@@ -506,6 +506,31 @@ On Linux platform, only supports Unity desktop environment, you need to specify
 the `*.desktop` file name to `desktopName` field in `package.json`. By default,
 it will assume `app.getName().desktop`.
 
+### BrowserWindow.setAutoHideMenuBar(hide)
+
+* `hide` Boolean
+
+Sets whether the window menu bar should hide itself automatically. Once set the
+menu bar will only show when users press the single `Alt` key.
+
+If the menu bar is already visible, calling `setAutoHideMenuBar(true)` won't
+hide it immediately.
+
+### BrowserWindow.isMenuBarAutoHide()
+
+Returns whether menu bar automatically hides itself.
+
+### BrowserWindow.setMenuBarVisibility(visible)
+
+* `visible` Boolean
+
+Sets whether the menu bar should be visible. If the menu bar is auto-hide, users
+can still bring up the menu bar by pressing the single `Alt` key.
+
+### BrowserWindow.isMenuBarVisible()
+
+Returns whether the menu bar is visible.
+
 ## Class: WebContents
 
 A `WebContents` is responsible for rendering and controlling a web page.
