@@ -111,6 +111,10 @@ class Window : public mate::EventEmitter,
   void CapturePage(mate::Arguments* args);
   void Print(mate::Arguments* args);
   void SetProgressBar(double progress);
+  void SetAutoHideMenuBar(bool auto_hide);
+  bool IsMenuBarAutoHide();
+  void SetMenuBarVisibility(bool visible);
+  bool IsMenuBarVisible();
 
   // APIs for WebContents.
   mate::Handle<WebContents> GetWebContents(v8::Isolate* isolate) const;
