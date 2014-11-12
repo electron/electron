@@ -32,47 +32,47 @@ class NativeWindowViews : public NativeWindow,
   virtual ~NativeWindowViews();
 
   // NativeWindow:
-  virtual void Close() OVERRIDE;
-  virtual void CloseImmediately() OVERRIDE;
-  virtual void Move(const gfx::Rect& pos) OVERRIDE;
-  virtual void Focus(bool focus) OVERRIDE;
-  virtual bool IsFocused() OVERRIDE;
-  virtual void Show() OVERRIDE;
-  virtual void ShowInactive() OVERRIDE;
-  virtual void Hide() OVERRIDE;
-  virtual bool IsVisible() OVERRIDE;
-  virtual void Maximize() OVERRIDE;
-  virtual void Unmaximize() OVERRIDE;
-  virtual bool IsMaximized() OVERRIDE;
-  virtual void Minimize() OVERRIDE;
-  virtual void Restore() OVERRIDE;
-  virtual bool IsMinimized() OVERRIDE;
-  virtual void SetFullscreen(bool fullscreen) OVERRIDE;
-  virtual bool IsFullscreen() OVERRIDE;
-  virtual void SetSize(const gfx::Size& size) OVERRIDE;
-  virtual gfx::Size GetSize() OVERRIDE;
-  virtual void SetContentSize(const gfx::Size& size) OVERRIDE;
-  virtual gfx::Size GetContentSize() OVERRIDE;
-  virtual void SetMinimumSize(const gfx::Size& size) OVERRIDE;
-  virtual gfx::Size GetMinimumSize() OVERRIDE;
-  virtual void SetMaximumSize(const gfx::Size& size) OVERRIDE;
-  virtual gfx::Size GetMaximumSize() OVERRIDE;
-  virtual void SetResizable(bool resizable) OVERRIDE;
-  virtual bool IsResizable() OVERRIDE;
-  virtual void SetAlwaysOnTop(bool top) OVERRIDE;
-  virtual bool IsAlwaysOnTop() OVERRIDE;
-  virtual void Center() OVERRIDE;
-  virtual void SetPosition(const gfx::Point& position) OVERRIDE;
-  virtual gfx::Point GetPosition() OVERRIDE;
-  virtual void SetTitle(const std::string& title) OVERRIDE;
-  virtual std::string GetTitle() OVERRIDE;
-  virtual void FlashFrame(bool flash) OVERRIDE;
-  virtual void SetSkipTaskbar(bool skip) OVERRIDE;
-  virtual void SetKiosk(bool kiosk) OVERRIDE;
-  virtual bool IsKiosk() OVERRIDE;
-  virtual void SetMenu(ui::MenuModel* menu_model) OVERRIDE;
-  virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
-  virtual void SetProgressBar(double value) OVERRIDE;
+  void Close() override;
+  void CloseImmediately() override;
+  void Move(const gfx::Rect& pos) override;
+  void Focus(bool focus) override;
+  bool IsFocused() override;
+  void Show() override;
+  void ShowInactive() override;
+  void Hide() override;
+  bool IsVisible() override;
+  void Maximize() override;
+  void Unmaximize() override;
+  bool IsMaximized() override;
+  void Minimize() override;
+  void Restore() override;
+  bool IsMinimized() override;
+  void SetFullscreen(bool fullscreen) override;
+  bool IsFullscreen() override;
+  void SetSize(const gfx::Size& size) override;
+  gfx::Size GetSize() override;
+  void SetContentSize(const gfx::Size& size) override;
+  gfx::Size GetContentSize() override;
+  void SetMinimumSize(const gfx::Size& size) override;
+  gfx::Size GetMinimumSize() override;
+  void SetMaximumSize(const gfx::Size& size) override;
+  gfx::Size GetMaximumSize() override;
+  void SetResizable(bool resizable) override;
+  bool IsResizable() override;
+  void SetAlwaysOnTop(bool top) override;
+  bool IsAlwaysOnTop() override;
+  void Center() override;
+  void SetPosition(const gfx::Point& position) override;
+  gfx::Point GetPosition() override;
+  void SetTitle(const std::string& title) override;
+  std::string GetTitle() override;
+  void FlashFrame(bool flash) override;
+  void SetSkipTaskbar(bool skip) override;
+  void SetKiosk(bool kiosk) override;
+  bool IsKiosk() override;
+  void SetMenu(ui::MenuModel* menu_model) override;
+  gfx::NativeWindow GetNativeWindow() override;
+  void SetProgressBar(double value) override;
 
   gfx::AcceleratedWidget GetAcceleratedWidget();
 
@@ -81,43 +81,43 @@ class NativeWindowViews : public NativeWindow,
 
  private:
   // NativeWindow:
-  virtual void UpdateDraggableRegions(
-      const std::vector<DraggableRegion>& regions) OVERRIDE;
+  void UpdateDraggableRegions(
+      const std::vector<DraggableRegion>& regions) override;
 
   // views::WidgetObserver:
-  virtual void OnWidgetActivationChanged(
-      views::Widget* widget, bool active) OVERRIDE;
+  void OnWidgetActivationChanged(
+      views::Widget* widget, bool active) override;
 
   // views::WidgetDelegate:
-  virtual void DeleteDelegate() OVERRIDE;
-  virtual views::View* GetInitiallyFocusedView() OVERRIDE;
-  virtual bool CanResize() const OVERRIDE;
-  virtual bool CanMaximize() const OVERRIDE;
-  virtual base::string16 GetWindowTitle() const OVERRIDE;
-  virtual bool ShouldHandleSystemCommands() const OVERRIDE;
-  virtual gfx::ImageSkia GetWindowAppIcon() OVERRIDE;
-  virtual gfx::ImageSkia GetWindowIcon() OVERRIDE;
-  virtual views::Widget* GetWidget() OVERRIDE;
-  virtual const views::Widget* GetWidget() const OVERRIDE;
-  virtual views::View* GetContentsView() OVERRIDE;
-  virtual bool ShouldDescendIntoChildForEventHandling(
+  void DeleteDelegate() override;
+  views::View* GetInitiallyFocusedView() override;
+  bool CanResize() const override;
+  bool CanMaximize() const override;
+  base::string16 GetWindowTitle() const override;
+  bool ShouldHandleSystemCommands() const override;
+  gfx::ImageSkia GetWindowAppIcon() override;
+  gfx::ImageSkia GetWindowIcon() override;
+  views::Widget* GetWidget() override;
+  const views::Widget* GetWidget() const override;
+  views::View* GetContentsView() override;
+  bool ShouldDescendIntoChildForEventHandling(
      gfx::NativeView child,
-     const gfx::Point& location) OVERRIDE;
-  virtual views::ClientView* CreateClientView(views::Widget* widget) OVERRIDE;
-  virtual views::NonClientFrameView* CreateNonClientFrameView(
-      views::Widget* widget) OVERRIDE;
+     const gfx::Point& location) override;
+  views::ClientView* CreateClientView(views::Widget* widget) override;
+  views::NonClientFrameView* CreateNonClientFrameView(
+      views::Widget* widget) override;
 
   // brightray::InspectableWebContentsDelegate:
-  virtual gfx::ImageSkia GetDevToolsWindowIcon() OVERRIDE;
+  gfx::ImageSkia GetDevToolsWindowIcon() override;
 
   // content::WebContentsDelegate:
-  virtual void HandleMouseDown() OVERRIDE;
-  virtual void HandleKeyboardEvent(
+  void HandleMouseDown() override;
+  void HandleKeyboardEvent(
       content::WebContents*,
-      const content::NativeWebKeyboardEvent& event) OVERRIDE;
+      const content::NativeWebKeyboardEvent& event) override;
 
   // views::View:
-  virtual bool AcceleratorPressed(const ui::Accelerator& accelerator) OVERRIDE;
+  bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
 
   // Register accelerators supported by the menu model.
   void RegisterAccelerators(ui::MenuModel* menu_model);
