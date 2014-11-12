@@ -286,8 +286,15 @@ bool WebContents::IsAlive() const {
   return web_contents() != NULL;
 }
 
-void WebContents::LoadURL(const GURL& url) {
+void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   content::NavigationController::LoadURLParams params(url);
+
+  base::string16 http_referrer;
+
+  if (options.Get("httpreferrer", &http_referrer_))
+    params.referrer = content::Referrer(GURL(http_referrer_).GetAsReferrer(),
+      blink::WebReferrerPolicyDefault);
+
   params.transition_type = content::PAGE_TRANSITION_TYPED;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
   web_contents()->GetController().LoadURLWithParams(params);
@@ -313,15 +320,15 @@ void WebContents::Stop() {
   web_contents()->Stop();
 }
 
-void WebContents::Reload() {
+void WebContents::Reload(const mate::Dictionary& options) {
   // Navigating to a URL would always restart the renderer process, we want this
   // because normal reloading will break our node integration.
   // This is done by AtomBrowserClient::ShouldSwapProcessesForNavigation.
-  LoadURL(GetURL());
+  LoadURL(GetURL(), options);
 }
 
-void WebContents::ReloadIgnoringCache() {
-  Reload();
+void WebContents::ReloadIgnoringCache(const mate::Dictionary& options) {
+  Reload(options);
 }
 
 bool WebContents::CanGoBack() const {

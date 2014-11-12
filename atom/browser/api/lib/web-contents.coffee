@@ -26,6 +26,13 @@ module.exports.wrap = (webContents) ->
   webContents.getId = -> "#{@getProcessId()}-#{@getRoutingId()}"
   webContents.equal = (other) -> @getId() is other.getId()
 
+  # Provide a default parameter for urlOptions to be compatible with the old
+  # API.
+  webContents::loadUrl = (url, urlOptions={}) -> loadUrl url, urlOptions
+  webContents::reload = (urlOptions={}) -> reload(urlOptions)
+  webContents::reloadIgnoringCache = (urlOptions={}) ->
+    reloadIgnoringCache(urlOptions)
+
   # Translate |disposition| to string for 'new-window' event.
   webContents.on '-new-window', (args..., disposition) ->
     disposition =

@@ -94,6 +94,8 @@ class WebView
     # on* Event handlers.
     @on = {}
 
+    @urlOptions = {}
+
     @browserPluginNode = @createBrowserPluginNode()
     shadowRoot = @webviewNode.createShadowRoot()
     @partition = new Partition()
@@ -197,6 +199,12 @@ class WebView
       # No setter.
       enumerable: true
 
+    @httpReferrer = @webviewNode.getAttribute 'httpreferrer'
+    Object.defineProperty @webviewNode, 'httpreferrer',
+      get: => @httpReferrer
+      set: (value) => @webviewNode.setAttribute 'httpreferrer', value
+      enumerable: true
+
   # The purpose of this mutation observer is to catch assignment to the src
   # attribute without any changes to its value. This is useful in the case
   # where the webview guest has crashed and navigating to the same address
@@ -211,7 +219,7 @@ class WebView
     params =
       attributes: true,
       attributeOldValue: true,
-      attributeFilter: ['src', 'partition']
+      attributeFilter: ['src', 'partition', 'httpreferrer']
     @srcAndPartitionObserver.observe @webviewNode, params
 
   # This observer monitors mutations to attributes of the <webview> and
@@ -245,6 +253,21 @@ class WebView
       return unless @guestInstanceId
 
       guestViewInternal.setAllowTransparency @guestInstanceId, @allowtransparency
+    else if name is 'httpreferrer'
+      oldValue ?= ''
+      newValue ?= ''
+
+      if newValue == '' and oldValue != ''
+        @webviewNode.setAttribute 'httpreferrer', oldValue
+
+      @httpReferrer = newValue
+
+      result = {}
+      # If the httpreferrer changes treat it as though the src changes and reload
+      # the page with the new httpreferrer.
+      @parseSrcAttribute result
+
+      throw result.error if result.error?
     else if name is 'src'
       # We treat null attribute (attribute removed) and the empty string as
       # one case.
@@ -363,8 +386,11 @@ class WebView
         @createGuest()
       return
 
+    if @httpReferrer
+      @urlOptions = { "httpreferrer": @httpReferrer }
+
     # Navigate to |this.src|.
-    remote.getGuestWebContents(@guestInstanceId).loadUrl @src
+    remote.getGuestWebContents(@guestInstanceId).loadUrl @src, @urlOptions
 
   parseAttributes: ->
     return unless @elementAttached
@@ -447,6 +473,7 @@ class WebView
     # set via this.onAttach().
     storagePartitionId: @partition.toAttribute()
     userAgentOverride: @userAgentOverride
+    urlOptions: @urlOptions
 
   attachWindow: (guestInstanceId, isNewWindow) ->
     @guestInstanceId = guestInstanceId

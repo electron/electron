@@ -84,14 +84,15 @@ BrowserWindow.fromId = (id) ->
   BrowserWindow.windows.get id
 
 # Helpers.
-BrowserWindow::loadUrl = -> @webContents.loadUrl.apply @webContents, arguments
+BrowserWindow::loadUrl = (url, urlOptions={}) -> @webContents.loadUrl url, urlOptions
+
 BrowserWindow::send = -> @webContents.send.apply @webContents, arguments
 
 # Be compatible with old API.
 BrowserWindow::restart = -> @webContents.reload()
 BrowserWindow::getUrl = -> @webContents.getUrl()
-BrowserWindow::reload = -> @webContents.reload()
-BrowserWindow::reloadIgnoringCache = -> @webContents.reloadIgnoringCache()
+BrowserWindow::reload = (urlOptions={}) -> @webContents.reload(urlOptions)
+BrowserWindow::reloadIgnoringCache = (urlOptions={}) -> @webContents.reloadIgnoringCache(urlOptions)
 BrowserWindow::getPageTitle = -> @webContents.getTitle()
 BrowserWindow::isLoading = -> @webContents.isLoading()
 BrowserWindow::isWaitingForResponse = -> @webContents.isWaitingForResponse()
