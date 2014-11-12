@@ -391,3 +391,17 @@ describe 'asar package', ->
       ipc.on 'dirname', (event, dirname) ->
         assert.equal dirname, path.dirname(p)
         done()
+
+  describe 'original-fs module', ->
+    originalFs = require 'original-fs'
+
+    it 'uses the original fs api', ->
+      changedApis = ['readFile', 'stat', 'lstat', 'realpath', 'exists']
+      unchangedApis = ['read', 'write', 'writeFile', 'close']
+      assert.notStrictEqual fs[api], originalFs[api] for api in changedApis
+      assert.strictEqual fs[api], originalFs[api] for api in unchangedApis
+
+    it 'treats .asar as file', ->
+      file = path.join fixtures, 'asar', 'a.asar'
+      stats = originalFs.statSync file
+      assert stats.isFile()
