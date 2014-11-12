@@ -90,8 +90,8 @@ BrowserWindow::send = -> @webContents.send.apply @webContents, arguments
 # Be compatible with old API.
 BrowserWindow::restart = -> @webContents.reload()
 BrowserWindow::getUrl = -> @webContents.getUrl()
-BrowserWindow::reload = -> @webContents.reload()
-BrowserWindow::reloadIgnoringCache = -> @webContents.reloadIgnoringCache()
+BrowserWindow::reload = -> @webContents.reload.apply @webContents, arguments
+BrowserWindow::reloadIgnoringCache = -> @webContents.reloadIgnoringCache.apply @webContents, arguments
 BrowserWindow::getPageTitle = -> @webContents.getTitle()
 BrowserWindow::isLoading = -> @webContents.isLoading()
 BrowserWindow::isWaitingForResponse = -> @webContents.isWaitingForResponse()

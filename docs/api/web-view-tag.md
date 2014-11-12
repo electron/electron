@@ -104,6 +104,14 @@ When the guest page doesn't have node integration this script will still have
 access to all Node APIs, but global objects injected by Node will be deleted
 after this script has done execution.
 
+### httpreferrer
+
+```html
+<webview src="https://www.github.com/" httpreferrer="http://cheng.guru"></webview>
+```
+
+Sets the referrer URL for the guest page.
+
 ## Methods
 
 ### `<webview>`.getUrl()

@@ -286,8 +286,14 @@ bool WebContents::IsAlive() const {
   return web_contents() != NULL;
 }
 
-void WebContents::LoadURL(const GURL& url) {
+void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   content::NavigationController::LoadURLParams params(url);
+
+  GURL http_referrer;
+  if (options.Get("httpreferrer", &http_referrer))
+    params.referrer = content::Referrer(http_referrer.GetAsReferrer(),
+                                        blink::WebReferrerPolicyDefault);
+
   params.transition_type = content::PAGE_TRANSITION_TYPED;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
   web_contents()->GetController().LoadURLWithParams(params);
@@ -313,15 +319,15 @@ void WebContents::Stop() {
   web_contents()->Stop();
 }
 
-void WebContents::Reload() {
+void WebContents::Reload(const mate::Dictionary& options) {
   // Navigating to a URL would always restart the renderer process, we want this
   // because normal reloading will break our node integration.
   // This is done by AtomBrowserClient::ShouldSwapProcessesForNavigation.
-  LoadURL(GetURL());
+  LoadURL(GetURL(), options);
 }
 
-void WebContents::ReloadIgnoringCache() {
-  Reload();
+void WebContents::ReloadIgnoringCache(const mate::Dictionary& options) {
+  Reload(options);
 }
 
 bool WebContents::CanGoBack() const {
@@ -438,14 +444,14 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
         .SetMethod("destroy", &WebContents::Destroy)
         .SetMethod("isAlive", &WebContents::IsAlive)
-        .SetMethod("loadUrl", &WebContents::LoadURL)
+        .SetMethod("_loadUrl", &WebContents::LoadURL)
         .SetMethod("getUrl", &WebContents::GetURL)
         .SetMethod("getTitle", &WebContents::GetTitle)
         .SetMethod("isLoading", &WebContents::IsLoading)
         .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
         .SetMethod("stop", &WebContents::Stop)
-        .SetMethod("reload", &WebContents::Reload)
-        .SetMethod("reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
+        .SetMethod("_reload", &WebContents::Reload)
+        .SetMethod("_reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
         .SetMethod("canGoBack", &WebContents::CanGoBack)
         .SetMethod("canGoForward", &WebContents::CanGoForward)
         .SetMethod("canGoToOffset", &WebContents::CanGoToOffset)

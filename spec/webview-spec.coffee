@@ -58,6 +58,18 @@ describe '<webview> tag', ->
       webview.src = "file://#{fixtures}/pages/e.html"
       document.body.appendChild webview
 
+  describe 'httpreferrer attribute', ->
+    it 'sets the referrer url', (done) ->
+      referrer = 'http://github.com/'
+      listener = (e) ->
+        assert.equal e.message, referrer
+        webview.removeEventListener 'console-message', listener
+        done()
+      webview.addEventListener 'console-message', listener
+      webview.setAttribute 'httpreferrer', referrer
+      webview.src = "file://#{fixtures}/pages/referrer.html"
+      document.body.appendChild webview
+
   describe 'new-window event', ->
     it 'emits when window.open is called', (done) ->
       webview.addEventListener 'new-window', (e) ->

@@ -227,6 +227,16 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
       use_content_size_)
     bounds = ContentBoundsToWindowBounds(bounds);
 
+#if defined(OS_WIN)
+  if (!has_frame_) {
+    // Set Window style so that we get a minimize and maximize animation when
+    // frameless.
+    DWORD frame_style = WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX |
+                        WS_CAPTION;
+    ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
+  }
+#endif
+
   if(has_frame_) {
     window_->set_frame_type(views::Widget::FrameType::FRAME_TYPE_FORCE_NATIVE);
     window_->FrameTypeChanged();
