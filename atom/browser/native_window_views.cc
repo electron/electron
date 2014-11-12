@@ -237,7 +237,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   }
 #endif
 
-  if(has_frame_) {
+  if (has_frame_) {
     window_->set_frame_type(views::Widget::FrameType::FRAME_TYPE_FORCE_NATIVE);
     window_->FrameTypeChanged();
   }
