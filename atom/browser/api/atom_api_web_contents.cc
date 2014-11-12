@@ -289,11 +289,10 @@ bool WebContents::IsAlive() const {
 void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   content::NavigationController::LoadURLParams params(url);
 
-  base::string16 http_referrer;
-
-  if (options.Get("httpreferrer", &http_referrer_))
-    params.referrer = content::Referrer(GURL(http_referrer_).GetAsReferrer(),
-      blink::WebReferrerPolicyDefault);
+  GURL http_referrer;
+  if (options.Get("httpreferrer", &http_referrer))
+    params.referrer = content::Referrer(http_referrer.GetAsReferrer(),
+                                        blink::WebReferrerPolicyDefault);
 
   params.transition_type = content::PAGE_TRANSITION_TYPED;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
@@ -445,14 +444,14 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
         .SetMethod("destroy", &WebContents::Destroy)
         .SetMethod("isAlive", &WebContents::IsAlive)
-        .SetMethod("loadUrl", &WebContents::LoadURL)
+        .SetMethod("_loadUrl", &WebContents::LoadURL)
         .SetMethod("getUrl", &WebContents::GetURL)
         .SetMethod("getTitle", &WebContents::GetTitle)
         .SetMethod("isLoading", &WebContents::IsLoading)
         .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
         .SetMethod("stop", &WebContents::Stop)
-        .SetMethod("reload", &WebContents::Reload)
-        .SetMethod("reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
+        .SetMethod("_reload", &WebContents::Reload)
+        .SetMethod("_reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
         .SetMethod("canGoBack", &WebContents::CanGoBack)
         .SetMethod("canGoForward", &WebContents::CanGoForward)
         .SetMethod("canGoToOffset", &WebContents::CanGoToOffset)

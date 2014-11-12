@@ -94,8 +94,6 @@ class WebView
     # on* Event handlers.
     @on = {}
 
-    @urlOptions = {}
-
     @browserPluginNode = @createBrowserPluginNode()
     shadowRoot = @webviewNode.createShadowRoot()
     @partition = new Partition()
@@ -199,9 +197,9 @@ class WebView
       # No setter.
       enumerable: true
 
-    @httpReferrer = @webviewNode.getAttribute 'httpreferrer'
+    @httpreferrer = @webviewNode.getAttribute 'httpreferrer'
     Object.defineProperty @webviewNode, 'httpreferrer',
-      get: => @httpReferrer
+      get: => @httpreferrer
       set: (value) => @webviewNode.setAttribute 'httpreferrer', value
       enumerable: true
 
@@ -260,7 +258,7 @@ class WebView
       if newValue == '' and oldValue != ''
         @webviewNode.setAttribute 'httpreferrer', oldValue
 
-      @httpReferrer = newValue
+      @httpreferrer = newValue
 
       result = {}
       # If the httpreferrer changes treat it as though the src changes and reload
@@ -386,11 +384,9 @@ class WebView
         @createGuest()
       return
 
-    if @httpReferrer
-      @urlOptions = { "httpreferrer": @httpReferrer }
-
     # Navigate to |this.src|.
-    remote.getGuestWebContents(@guestInstanceId).loadUrl @src, @urlOptions
+    urlOptions = if @httpreferrer then {@httpreferrer} else {}
+    remote.getGuestWebContents(@guestInstanceId).loadUrl @src, urlOptions
 
   parseAttributes: ->
     return unless @elementAttached
@@ -473,7 +469,7 @@ class WebView
     # set via this.onAttach().
     storagePartitionId: @partition.toAttribute()
     userAgentOverride: @userAgentOverride
-    urlOptions: @urlOptions
+    httpreferrer: @httpreferrer
 
   attachWindow: (guestInstanceId, isNewWindow) ->
     @guestInstanceId = guestInstanceId
