@@ -237,6 +237,11 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   }
 #endif
 
+  if (has_frame_) {
+    window_->set_frame_type(views::Widget::FrameType::FRAME_TYPE_FORCE_NATIVE);
+    window_->FrameTypeChanged();
+  }
+
   window_->UpdateWindowIcon();
   window_->CenterWindow(bounds.size());
   Layout();
@@ -670,11 +675,9 @@ views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {
 views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
     views::Widget* widget) {
 #if defined(OS_WIN)
-  if (ui::win::IsAeroGlassEnabled()) {
     WinFrameView* frame_view =  new WinFrameView;
     frame_view->Init(this, widget);
     return frame_view;
-  }
 #elif defined(OS_LINUX)
   if (has_frame_) {
     return new views::NativeFrameView(widget);
