@@ -136,6 +136,16 @@ describe 'browser-window module', ->
       assert.equal after[0], size.width
       assert.equal after[1], size.height
 
+  describe '"preload" options', ->
+    it 'loads the script before other scripts in window', (done) ->
+      preload = path.join fixtures, 'module', 'set-global.js'
+      remote.require('ipc').once 'preload', (event, test) ->
+        assert.equal(test, 'preload')
+        done()
+      w.destroy()
+      w = new BrowserWindow(show: false, width: 400, height: 400, preload: preload)
+      w.loadUrl 'file://' + path.join(fixtures, 'api', 'preload.html')
+
   describe 'beforeunload handler', ->
     it 'returning true would not prevent close', (done) ->
       w.on 'closed', ->
