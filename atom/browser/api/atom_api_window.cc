@@ -378,6 +378,22 @@ void Window::SetProgressBar(double progress) {
   window_->SetProgressBar(progress);
 }
 
+void Window::SetAutoHideMenuBar(bool auto_hide) {
+  window_->SetAutoHideMenuBar(auto_hide);
+}
+
+bool Window::IsMenuBarAutoHide() {
+  return window_->IsMenuBarAutoHide();
+}
+
+void Window::SetMenuBarVisibility(bool visible) {
+  window_->SetMenuBarVisibility(visible);
+}
+
+bool Window::IsMenuBarVisible() {
+  return window_->IsMenuBarVisible();
+}
+
 mate::Handle<WebContents> Window::GetWebContents(v8::Isolate* isolate) const {
   return WebContents::CreateFrom(isolate, window_->GetWebContents());
 }
@@ -443,6 +459,10 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("capturePage", &Window::CapturePage)
       .SetMethod("print", &Window::Print)
       .SetMethod("setProgressBar", &Window::SetProgressBar)
+      .SetMethod("setAutoHideMenuBar", &Window::SetAutoHideMenuBar)
+      .SetMethod("isMenuBarAutoHide", &Window::IsMenuBarAutoHide)
+      .SetMethod("setMenuBarVisibility", &Window::SetMenuBarVisibility)
+      .SetMethod("isMenuBarVisible", &Window::IsMenuBarVisible)
       .SetMethod("_getWebContents", &Window::GetWebContents)
       .SetMethod("_getDevToolsWebContents", &Window::GetDevToolsWebContents);
 }
