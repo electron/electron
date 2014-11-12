@@ -675,20 +675,18 @@ views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {
 views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
     views::Widget* widget) {
 #if defined(OS_WIN)
-    WinFrameView* frame_view =  new WinFrameView;
-    frame_view->Init(this, widget);
-    return frame_view;
-#elif defined(OS_LINUX)
+  WinFrameView* frame_view = new WinFrameView;
+  frame_view->Init(this, widget);
+  return frame_view;
+#else
   if (has_frame_) {
     return new views::NativeFrameView(widget);
   } else {
-    FramelessView* frame_view =  new FramelessView;
+    FramelessView* frame_view = new FramelessView;
     frame_view->Init(this, widget);
     return frame_view;
   }
 #endif
-
-  return NULL;
 }
 
 gfx::ImageSkia NativeWindowViews::GetDevToolsWindowIcon() {
