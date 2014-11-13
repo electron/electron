@@ -105,7 +105,7 @@ class FileDialog {
                                              NULL,
                                              IID_PPV_ARGS(&folder_item));
     if (SUCCEEDED(hr))
-      GetPtr()->SetDefaultFolder(folder_item);
+      GetPtr()->SetFolder(folder_item);
   }
 
   scoped_ptr<T> dialog_;
