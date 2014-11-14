@@ -556,11 +556,12 @@ registerWebViewElement = ->
     "isCrashed"
     "setUserAgent"
     "executeJavaScript"
-    "insertCSS",
-    "openDevTools",
-    "closeDevTools",
-    "isDevToolsOpened",
+    "insertCSS"
+    "openDevTools"
+    "closeDevTools"
+    "isDevToolsOpened"
     "send"
+    "getId"
   ]
 
   # Forward proto.foo* method calls to WebView.foo*.
