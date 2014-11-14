@@ -6,6 +6,7 @@
 
 #if defined(OS_WIN)
 #include <shobjidl.h>
+#include <dwmapi.h>
 #endif
 
 #include <string>
@@ -231,11 +232,33 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   if (!has_frame_) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
-    DWORD frame_style = WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX |
-                        WS_CAPTION;
-    ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
+    //
+    // Many thanks to http://stackoverflow.com/a/17713810 for providing guidance
+    // on how to do this.
+    HWND hwnd = GetAcceleratedWidget();
+
+    DWORD frame_style = WS_THICKFRAME | WS_CAPTION | WS_MINIMIZEBOX |
+      WS_MAXIMIZEBOX | WS_SYSMENU | WS_POPUP;
+    ::SetWindowLong(hwnd, GWL_STYLE, frame_style);
+
+    ::SetWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER |
+      SWP_NOACTIVATE | SWP_FRAMECHANGED | SWP_ASYNCWINDOWPOS | SWP_NOSIZE |
+      SWP_NOMOVE);
+
+    if (ui::win::IsAeroGlassEnabled()) {
+      // Add Aero shadow around window.
+      const MARGINS shadow = { 1, 1, 1, 1 };
+      ::DwmExtendFrameIntoClientArea(hwnd, &shadow);
+
+      // To remove the window border we need to hook into the windows WndProc
+      // and handle the WM_NCCALCSIZE message.
+      DWORD hpid;
+      ::GetWindowThreadProcessId(hwnd, &hpid);
+      ::SetWindowsHookEx(WH_CALLWNDPROC, (HOOKPROC)
+        NativeWindowViews::BorderlessWindowHook, NULL, hpid);
+    }
   }
-#endif
+  #endif
 
   // TODO(zcbenz): This was used to force using native frame on Windows 2003, we
   // should check whether setting it in InitParams can work.
@@ -252,6 +275,16 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
 NativeWindowViews::~NativeWindowViews() {
   window_->RemoveObserver(this);
 }
+
+#if defined(OS_WIN)
+LRESULT CALLBACK NativeWindowViews::BorderlessWindowHook(HWND hwnd, UINT msg,
+  WPARAM wparam, LPARAM lparam)
+{
+  if(msg == WM_NCCALCSIZE) return 0;
+
+  return ::DefWindowProc(hwnd, msg, wparam, lparam);
+}
+#endif
 
 void NativeWindowViews::Close() {
   window_->Close();

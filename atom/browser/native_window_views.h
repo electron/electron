@@ -84,6 +84,11 @@ class NativeWindowViews : public NativeWindow,
   views::Widget* widget() const { return window_.get(); }
 
  private:
+#if defined(OS_WIN)
+ static LRESULT CALLBACK BorderlessWindowHook(HWND hwnd, UINT msg, WPARAM wparam,
+   LPARAM lparam);
+#endif
+
   // NativeWindow:
   void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) override;
