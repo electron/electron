@@ -22,8 +22,8 @@ Studio will come in the future.
 
 ## Getting the code
 
-```bash
-$ git clone https://github.com/atom/atom-shell.git
+```powershell
+git clone https://github.com/atom/atom-shell.git
 ```
 
 ## Bootstrapping
@@ -32,23 +32,23 @@ The bootstrap script will download all necessary build dependencies and create
 build project files. Notice that we're using `ninja` to build atom-shell so
 there is no Visual Studio project generated.
 
-```bash
-$ cd atom-shell
-$ python script/bootstrap.py
+```powershell
+cd atom-shell
+python script\bootstrap.py
 ```
 
 ## Building
 
 Build both Release and Debug targets:
 
-```bash
-$ python script/build.py
+```powershell
+python script\build.py
 ```
 
 You can also only build the Debug target:
 
-```bash
-$ python script/build.py -c Debug
+```powershell
+python script\build.py -c Debug
 ```
 
 After building is done, you can find `atom.exe` under `out\Debug`.
@@ -60,8 +60,8 @@ Currently atom-shell can only be built for 32bit target on Windows, support for
 
 ## Tests
 
-```bash
-$ python script/test.py
+```powershell
+python script\test.py
 ```
 
 ## Troubleshooting
@@ -107,6 +107,6 @@ Try reinstalling 32bit node.js.
 
 Simply making that directory [should fix the problem](http://stackoverflow.com/a/25095327/102704):
 
-```bash
-mkdir /cygdrive/c/Users/USERNAME/AppData/Roaming/npm
+```powershell
+mkdir ~\AppData\Roaming\npm
 ```
