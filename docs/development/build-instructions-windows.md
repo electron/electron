@@ -5,7 +5,7 @@
 * Windows 2008 at least
 * Visual Studio 2013
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
-* 32bit [node.js](http://nodejs.org/)
+* 32bit [node.js](http://nodejs.org/download/)
 * [git](http://git-scm.com)
 
 The instructions below are executed under [cygwin](http://www.cygwin.com),
@@ -102,3 +102,11 @@ you have installed python under `C:\Python27`):
 ### LNK1181: cannot open input file 'kernel32.lib'
 
 Try reinstalling 32bit node.js.
+
+### Error: ENOENT, stat 'C:\Users\USERNAME\AppData\Roaming\npm'
+
+Simply making that directory [should fix the problem](http://stackoverflow.com/a/25095327/102704):
+
+```bash
+mkdir /cygdrive/c/Users/USERNAME/AppData/Roaming/npm
+```
