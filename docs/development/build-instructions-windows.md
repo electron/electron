@@ -2,15 +2,16 @@
 
 ## Prerequisites
 
-* Windows 2008 at least
-* Visual Studio 2013
+* Windows 7 / Server 2008 R2 or higher
+* Visual Studio 2013 - [download VS 2013 Community Edition for
+  free](http://www.visualstudio.com/products/visual-studio-community-vs)
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
 * 32bit [node.js](http://nodejs.org/download/)
 * [git](http://git-scm.com)
 
-The instructions below are executed under [cygwin](http://www.cygwin.com),
-but it's not a requirement, you can also build atom-shell under the Windows
-command prompt or other terminals.
+If you don't have a Windows installation at the moment,
+[modern.ie](https://www.modern.ie/en-us/virtualization-tools#downloads) has
+timebombed versions of Windows that you can use to build Atom Shell.
 
 The building of atom-shell is done entirely with command-line scripts, so you
 can use any editor you like to develop atom-shell, but it also means you can
@@ -22,8 +23,8 @@ Studio will come in the future.
 
 ## Getting the code
 
-```bash
-$ git clone https://github.com/atom/atom-shell.git
+```powershell
+git clone https://github.com/atom/atom-shell.git
 ```
 
 ## Bootstrapping
@@ -32,23 +33,23 @@ The bootstrap script will download all necessary build dependencies and create
 build project files. Notice that we're using `ninja` to build atom-shell so
 there is no Visual Studio project generated.
 
-```bash
-$ cd atom-shell
-$ python script/bootstrap.py
+```powershell
+cd atom-shell
+python script\bootstrap.py
 ```
 
 ## Building
 
 Build both Release and Debug targets:
 
-```bash
-$ python script/build.py
+```powershell
+python script\build.py
 ```
 
 You can also only build the Debug target:
 
-```bash
-$ python script/build.py -c Debug
+```powershell
+python script\build.py -c Debug
 ```
 
 After building is done, you can find `atom.exe` under `out\Debug`.
@@ -60,8 +61,8 @@ Currently atom-shell can only be built for 32bit target on Windows, support for
 
 ## Tests
 
-```bash
-$ python script/test.py
+```powershell
+python script\test.py
 ```
 
 ## Troubleshooting
@@ -73,7 +74,7 @@ the `VS2012 Command Prompt` console to execute the build scripts.
 
 ### Assertion failed: ((handle))->activecnt >= 0
 
-When building under cygwin, you could see `bootstrap.py` failed with following
+If building under Cygwin, you may see `bootstrap.py` failed with following
 error:
 
 ```
@@ -91,8 +92,8 @@ Traceback (most recent call last):
 subprocess.CalledProcessError: Command '['npm.cmd', 'install']' returned non-zero exit status 3
 ```
 
-This is caused by a bug when using cygwin python and win32 node together. The
-solution is to use the win32 python to execute the bootstrap script (supposing
+This is caused by a bug when using Cygwin python and Win32 node together. The
+solution is to use the Win32 python to execute the bootstrap script (supposing
 you have installed python under `C:\Python27`):
 
 ```bash
@@ -107,6 +108,6 @@ Try reinstalling 32bit node.js.
 
 Simply making that directory [should fix the problem](http://stackoverflow.com/a/25095327/102704):
 
-```bash
-mkdir /cygdrive/c/Users/USERNAME/AppData/Roaming/npm
+```powershell
+mkdir ~\AppData\Roaming\npm
 ```
