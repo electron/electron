@@ -25,7 +25,7 @@ var paths = {
 var argv = {
   darwin: '"$@"',
   linux: '"$@"',
-  win32: '"$@"' // 90% sure this isn't right
+  win32: '%*' // does this work with " " in the args?
 }
 
 if (!paths[platform]) throw new Error('Unknown platform: '+platform)
