@@ -69,7 +69,7 @@ the `VS2012 Command Prompt` console to execute the build scripts.
 
 ### Assertion failed: ((handle))->activecnt >= 0
 
-When building under cygwin, you could see `bootstrap.py` failed with following
+If building under Cygwin, you may see `bootstrap.py` failed with following
 error:
 
 ```
@@ -87,8 +87,8 @@ Traceback (most recent call last):
 subprocess.CalledProcessError: Command '['npm.cmd', 'install']' returned non-zero exit status 3
 ```
 
-This is caused by a bug when using cygwin python and win32 node together. The
-solution is to use the win32 python to execute the bootstrap script (supposing
+This is caused by a bug when using Cygwin python and Win32 node together. The
+solution is to use the Win32 python to execute the bootstrap script (supposing
 you have installed python under `C:\Python27`):
 
 ```bash
