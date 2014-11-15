@@ -1,6 +1,6 @@
 {
   "name": "atom-shell",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Install atom-shell prebuilts using npm",
   "repository": {
     "type": "git",
