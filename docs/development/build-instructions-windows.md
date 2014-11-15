@@ -8,10 +8,6 @@
 * 32bit [node.js](http://nodejs.org/download/)
 * [git](http://git-scm.com)
 
-The instructions below are executed under [cygwin](http://www.cygwin.com),
-but it's not a requirement, you can also build atom-shell under the Windows
-command prompt or other terminals.
-
 The building of atom-shell is done entirely with command-line scripts, so you
 can use any editor you like to develop atom-shell, but it also means you can
 not use Visual Studio for the development. Support of building with Visual
