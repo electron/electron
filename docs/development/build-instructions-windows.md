@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-* Windows 2008 at least
-* Visual Studio 2013
+* Windows 7 / Server 2008 R2 or higher
+* Visual Studio 2013 - [download VS 2013 Community Edition for free](http://www.visualstudio.com/products/visual-studio-community-vs)
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
 * 32bit [node.js](http://nodejs.org/download/)
 * [git](http://git-scm.com)
