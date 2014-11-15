@@ -9,6 +9,10 @@
 * 32bit [node.js](http://nodejs.org/download/)
 * [git](http://git-scm.com)
 
+If you don't have a Windows installation at the moment,
+[modern.ie](https://www.modern.ie/en-us/virtualization-tools#downloads) has
+timebombed versions of Windows that you can use to build Atom Shell.
+
 The building of atom-shell is done entirely with command-line scripts, so you
 can use any editor you like to develop atom-shell, but it also means you can
 not use Visual Studio for the development. Support of building with Visual
