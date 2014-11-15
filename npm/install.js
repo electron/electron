@@ -22,11 +22,17 @@ var paths = {
   win32: path.join(__dirname, './dist/atom.exe')
 }
 
+var argv = {
+  darwin: '"$@"',
+  linux: '"$@"',
+  win32: '"$@"' // 90% sure this isn't right
+}
+
 if (!paths[platform]) throw new Error('Unknown platform: '+platform)
 
 nugget(url, {target:name, dir:__dirname, resume:true, verbose:true}, function(err) {
   if (err) return onerror(err)
-  fs.writeFileSync(path.join(__dirname, 'run.bat'), '"'+paths[platform]+'"')
+  fs.writeFileSync(path.join(__dirname, 'run.bat'), '"'+paths[platform]+'" '+argv[platform])
   extract(path.join(__dirname, name), {dir:path.join(__dirname, 'dist')}, function(err) {
     if (err) return onerror(err)
   })
