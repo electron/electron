@@ -251,10 +251,13 @@ int EventFlagsFromNSEvent(NSEvent* event) {
 }
 
 - (NSMenu*)menu {
-  if (!menu_ && model_) {
-    menu_.reset([[self menuFromModel:model_] retain]);
-    [menu_ setDelegate:self];
-  }
+  if (menu_)
+    return menu_.get();
+
+  menu_.reset([[NSMenu alloc] initWithTitle:@""]);
+  [menu_ setDelegate:self];
+  if (model_)
+    [self populateWithModel:model_];
   return menu_.get();
 }
 
