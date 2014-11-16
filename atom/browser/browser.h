@@ -100,8 +100,8 @@ class Browser : public WindowListObserver {
 
  private:
   // WindowListObserver implementations:
-  virtual void OnWindowCloseCancelled(NativeWindow* window) OVERRIDE;
-  virtual void OnWindowAllClosed() OVERRIDE;
+  void OnWindowCloseCancelled(NativeWindow* window) override;
+  void OnWindowAllClosed() override;
 
   // Observers of the browser.
   ObserverList<BrowserObserver> observers_;
