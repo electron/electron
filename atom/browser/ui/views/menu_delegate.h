@@ -38,6 +38,7 @@ class MenuDelegate : public views::MenuDelegate {
   base::string16 GetLabel(int id) const override;
   const gfx::FontList* GetLabelFontList(int id) const override;
   bool IsCommandEnabled(int id) const override;
+  bool IsCommandVisible(int id) const override;
   bool IsItemChecked(int id) const override;
   void SelectionChanged(views::MenuItemView* menu) override;
   void WillShowMenu(views::MenuItemView* menu) override;

@@ -90,6 +90,10 @@ bool MenuDelegate::IsCommandEnabled(int id) const {
   return delegate()->IsCommandEnabled(id);
 }
 
+bool MenuDelegate::IsCommandVisible(int id) const {
+  return delegate()->IsCommandVisible(id);
+}
+
 bool MenuDelegate::IsItemChecked(int id) const {
   return delegate()->IsItemChecked(id);
 }
