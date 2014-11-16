@@ -41,17 +41,17 @@ class Menu : public mate::Wrappable,
   virtual ~Menu();
 
   // ui::SimpleMenuModel::Delegate implementations:
-  virtual bool IsCommandIdChecked(int command_id) const OVERRIDE;
-  virtual bool IsCommandIdEnabled(int command_id) const OVERRIDE;
-  virtual bool IsCommandIdVisible(int command_id) const OVERRIDE;
-  virtual bool GetAcceleratorForCommandId(
+  bool IsCommandIdChecked(int command_id) const override;
+  bool IsCommandIdEnabled(int command_id) const override;
+  bool IsCommandIdVisible(int command_id) const override;
+  bool GetAcceleratorForCommandId(
       int command_id,
-      ui::Accelerator* accelerator) OVERRIDE;
-  virtual bool IsItemForCommandIdDynamic(int command_id) const OVERRIDE;
-  virtual base::string16 GetLabelForCommandId(int command_id) const OVERRIDE;
-  virtual base::string16 GetSublabelForCommandId(int command_id) const OVERRIDE;
-  virtual void ExecuteCommand(int command_id, int event_flags) OVERRIDE;
-  virtual void MenuWillShow(ui::SimpleMenuModel* source) OVERRIDE;
+      ui::Accelerator* accelerator) override;
+  bool IsItemForCommandIdDynamic(int command_id) const override;
+  base::string16 GetLabelForCommandId(int command_id) const override;
+  base::string16 GetSublabelForCommandId(int command_id) const override;
+  void ExecuteCommand(int command_id, int event_flags) override;
+  void MenuWillShow(ui::SimpleMenuModel* source) override;
 
   virtual void AttachToWindow(Window* window);
   virtual void Popup(Window* window) = 0;
