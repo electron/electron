@@ -30,25 +30,24 @@ class MenuDelegate : public views::MenuDelegate {
 
  protected:
   // views::MenuDelegate:
-  virtual void ExecuteCommand(int id) OVERRIDE;
-  virtual void ExecuteCommand(int id, int mouse_event_flags) OVERRIDE;
-  virtual bool IsTriggerableEvent(views::MenuItemView* source,
-                                  const ui::Event& e) OVERRIDE;
-  virtual bool GetAccelerator(int id,
-                              ui::Accelerator* accelerator) const OVERRIDE;
-  virtual base::string16 GetLabel(int id) const OVERRIDE;
-  virtual const gfx::FontList* GetLabelFontList(int id) const OVERRIDE;
-  virtual bool IsCommandEnabled(int id) const OVERRIDE;
-  virtual bool IsItemChecked(int id) const OVERRIDE;
-  virtual void SelectionChanged(views::MenuItemView* menu) OVERRIDE;
-  virtual void WillShowMenu(views::MenuItemView* menu) OVERRIDE;
-  virtual void WillHideMenu(views::MenuItemView* menu) OVERRIDE;
-  virtual views::MenuItemView* GetSiblingMenu(
+  void ExecuteCommand(int id) override;
+  void ExecuteCommand(int id, int mouse_event_flags) override;
+  bool IsTriggerableEvent(views::MenuItemView* source,
+                          const ui::Event& e) override;
+  bool GetAccelerator(int id, ui::Accelerator* accelerator) const override;
+  base::string16 GetLabel(int id) const override;
+  const gfx::FontList* GetLabelFontList(int id) const override;
+  bool IsCommandEnabled(int id) const override;
+  bool IsItemChecked(int id) const override;
+  void SelectionChanged(views::MenuItemView* menu) override;
+  void WillShowMenu(views::MenuItemView* menu) override;
+  void WillHideMenu(views::MenuItemView* menu) override;
+  views::MenuItemView* GetSiblingMenu(
       views::MenuItemView* menu,
       const gfx::Point& screen_point,
       views::MenuAnchorPosition* anchor,
       bool* has_mnemonics,
-      views::MenuButton** button);
+      views::MenuButton** button) override;
 
  private:
   // Gets the cached menu item view from the model.

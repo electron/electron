@@ -26,7 +26,7 @@ class SubmenuButton : public views::MenuButton {
   base::char16 accelerator() const { return accelerator_; }
 
   // views::MenuButton:
-  virtual void OnPaint(gfx::Canvas* canvas) OVERRIDE;
+  void OnPaint(gfx::Canvas* canvas) override;
 
  private:
   bool GetUnderlinePosition(const base::string16& text,
