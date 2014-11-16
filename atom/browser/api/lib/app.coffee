@@ -26,6 +26,7 @@ if process.platform is 'darwin'
     getBadge: bindings.dockGetBadgeText
     hide: bindings.dockHide
     show: bindings.dockShow
+    setMenu: bindings.dockSetMenu
 
 # Be compatible with old API.
 app.once 'ready', -> app.emit 'finish-launching'

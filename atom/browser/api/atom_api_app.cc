@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/browser.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -191,12 +192,15 @@ int DockBounce(const std::string& type) {
     request_id = Browser::Get()->DockBounce(Browser::BOUNCE_INFORMATIONAL);
   return request_id;
 }
+
+void DockSetMenu(atom::api::Menu* menu) {
+  Browser::Get()->DockSetMenu(menu->model());
+}
 #endif
 
 void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
                 v8::Handle<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  Browser* browser = Browser::Get();
   CommandLine* command_line = CommandLine::ForCurrentProcess();
 
   mate::Dictionary dict(isolate, exports);
@@ -206,20 +210,17 @@ void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
                  base::Bind(&CommandLine::AppendArg,
                             base::Unretained(command_line)));
 #if defined(OS_MACOSX)
+  auto browser = base::Unretained(Browser::Get());
   dict.SetMethod("dockBounce", &DockBounce);
   dict.SetMethod("dockCancelBounce",
-                 base::Bind(&Browser::DockCancelBounce,
-                            base::Unretained(browser)));
+                 base::Bind(&Browser::DockCancelBounce, browser));
   dict.SetMethod("dockSetBadgeText",
-                 base::Bind(&Browser::DockSetBadgeText,
-                            base::Unretained(browser)));
+                 base::Bind(&Browser::DockSetBadgeText, browser));
   dict.SetMethod("dockGetBadgeText",
-                 base::Bind(&Browser::DockGetBadgeText,
-                            base::Unretained(browser)));
-  dict.SetMethod("dockHide",
-                 base::Bind(&Browser::DockHide, base::Unretained(browser)));
-  dict.SetMethod("dockShow",
-                 base::Bind(&Browser::DockShow, base::Unretained(browser)));
+                 base::Bind(&Browser::DockGetBadgeText, browser));
+  dict.SetMethod("dockHide", base::Bind(&Browser::DockHide, browser));
+  dict.SetMethod("dockShow", base::Bind(&Browser::DockShow, browser));
+  dict.SetMethod("dockSetMenu", &DockSetMenu);
 #endif
 }
 

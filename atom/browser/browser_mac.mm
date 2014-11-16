@@ -5,6 +5,7 @@
 #include "atom/browser/browser.h"
 
 #import "atom/browser/mac/atom_application.h"
+#import "atom/browser/mac/atom_application_delegate.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
 #import "base/mac/bundle_locations.h"
@@ -58,6 +59,11 @@ void Browser::DockHide() {
 void Browser::DockShow() {
   ProcessSerialNumber psn = { 0, kCurrentProcess };
   TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+}
+
+void Browser::DockSetMenu(ui::MenuModel* model) {
+  AtomApplicationDelegate* delegate = [NSApp delegate];
+  [delegate setApplicationDockMenu:model];
 }
 
 }  // namespace atom

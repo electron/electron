@@ -20,7 +20,7 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
   // Force the NSApplication subclass to be used.
   NSApplication* application = [AtomApplication sharedApplication];
 
-  AtomApplicationDelegate* delegate = [AtomApplicationDelegate alloc];
+  AtomApplicationDelegate* delegate = [[AtomApplicationDelegate alloc] init];
   [NSApp setDelegate:(id<NSFileManagerDelegate>)delegate];
 
   base::FilePath frameworkPath = brightray::MainApplicationBundlePath()

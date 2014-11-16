@@ -70,7 +70,8 @@ int EventFlagsFromNSEvent(NSEvent* event) {
 @synthesize model = model_;
 
 - (id)init {
-  self = [super init];
+  if ((self = [super init]))
+    [self menu];
   return self;
 }
 

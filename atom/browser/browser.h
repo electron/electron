@@ -13,6 +13,10 @@
 #include "atom/browser/browser_observer.h"
 #include "atom/browser/window_list_observer.h"
 
+namespace ui {
+class MenuModel;
+}
+
 namespace atom {
 
 // This class is used for control application-wide operations.
@@ -60,6 +64,9 @@ class Browser : public WindowListObserver {
   // Hide/Show dock.
   void DockHide();
   void DockShow();
+
+  // Set docks' menu.
+  void DockSetMenu(ui::MenuModel* model);
 #endif  // defined(OS_MACOSX)
 
   // Tell the application to open a file.
