@@ -93,6 +93,22 @@ int EventFlagsFromNSEvent(NSEvent* event) {
   [super dealloc];
 }
 
+- (void)populateWithModel:(ui::MenuModel*)model {
+  if (!menu_)
+    return;
+
+  model_ = model;
+  [menu_ removeAllItems];
+
+  const int count = model->GetItemCount();
+  for (int index = 0; index < count; index++) {
+    if (model->GetTypeAt(index) == ui::MenuModel::TYPE_SEPARATOR)
+      [self addSeparatorToMenu:menu_ atIndex:index];
+    else
+      [self addItemToMenu:menu_ atIndex:index fromModel:model];
+  }
+}
+
 - (void)cancel {
   if (isMenuOpen_) {
     [menu_ cancelTracking];
