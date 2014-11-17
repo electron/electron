@@ -13,6 +13,10 @@
 #include "atom/browser/browser_observer.h"
 #include "atom/browser/window_list_observer.h"
 
+namespace base {
+class FilePath;
+}
+
 namespace ui {
 class MenuModel;
 }
@@ -47,6 +51,9 @@ class Browser : public WindowListObserver {
 
   // Overrides the application name.
   void SetName(const std::string& name);
+
+  // Add the |path| to recent documents list.
+  void AddRecentDocument(const base::FilePath& path);
 
 #if defined(OS_MACOSX)
   // Bounce the dock icon.

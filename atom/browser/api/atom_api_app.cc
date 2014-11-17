@@ -158,6 +158,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("getName", base::Bind(&Browser::GetName, browser))
       .SetMethod("setName", base::Bind(&Browser::SetName, browser))
       .SetMethod("isReady", base::Bind(&Browser::is_ready, browser))
+      .SetMethod("addRecentDocument",
+                 base::Bind(&Browser::AddRecentDocument, browser))
       .SetMethod("getDataPath", &App::GetDataPath)
       .SetMethod("resolveProxy", &App::ResolveProxy)
       .SetMethod("setDesktopName", &App::SetDesktopName);

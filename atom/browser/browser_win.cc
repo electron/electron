@@ -39,6 +39,9 @@ void Browser::Focus() {
   EnumWindows(&WindowsEnumerationHandler, reinterpret_cast<LPARAM>(&pid));
 }
 
+void Browser::AddRecentDocument(const base::FilePath& path) {
+}
+
 std::string Browser::GetExecutableFileVersion() const {
   base::FilePath path;
   if (PathService::Get(base::FILE_EXE, &path)) {

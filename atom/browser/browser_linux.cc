@@ -24,6 +24,9 @@ void Browser::Focus() {
   }
 }
 
+void Browser::AddRecentDocument(const base::FilePath& path) {
+}
+
 std::string Browser::GetExecutableFileVersion() const {
   return ATOM_VERSION_STRING;
 }
