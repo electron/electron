@@ -41,7 +41,8 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
 }
 
 void AtomBrowserMainParts::PostDestroyThreads() {
-  [[AtomApplication sharedApplication] setDelegate:nil];
+  [[NSApp delegate] release];
+  [NSApp setDelegate:nil];
 }
 
 }  // namespace atom
