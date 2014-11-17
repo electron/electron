@@ -136,6 +136,30 @@ bar, and on Mac you can visit it from dock menu.
 
 Clears the recent documents list.
 
+## app.setUserTasks(tasks)
+
+* `tasks` Array - Array of `Task` objects
+
+Adds `tasks` to the [Tasks][tasks] category of JumpList on Windows.
+
+The `tasks` is an array of `Task` objects in following format:
+
+* `Task` Object
+  * `program` String - Path of the program to execute, usually you should
+    specify `process.execPath` which opens current program
+  * `arguments` String - The arguments of command line when `program` is
+    executed
+  * `title` String - The string to be displayed in a JumpList
+  * `description` String - Description of this task
+  * `iconPath` String - The absolute path to an icon to be displayed in a
+    JumpList, it can be arbitrary resource file that contains an icon, usually
+    you can specify `process.execPath` to show the icon of the program
+  * `iconIndex` Integer - The icon index in the icon file. If an icon file
+    consists of two or more icons, set this value to identify the icon. If an
+    icon file consists of one icon, this value is 0
+
+**Note:** This API is only available on Windows.
+
 ## app.commandLine.appendSwitch(switch, [value])
 
 Append a switch [with optional value] to Chromium's command line.
@@ -208,3 +232,4 @@ Sets the application [dock menu][dock-menu].
 **Note:** This API is only available on Mac.
 
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
+[tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
