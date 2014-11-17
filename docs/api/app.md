@@ -185,3 +185,13 @@ Hides the dock icon.
 Shows the dock icon.
 
 **Note:** This API is only available on Mac.
+
+## app.dock.setMenu(menu)
+
+* `menu` Menu
+
+Sets the application [dock menu][dock-menu].
+
+**Note:** This API is only available on Mac.
+
+[dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
