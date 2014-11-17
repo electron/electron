@@ -71,7 +71,7 @@ void Browser::ClearRecentDocuments() {
   destinations->RemoveAllDestinations();
 }
 
-void Browser::AddUserTasks(const std::vector<UserTask>& tasks) {
+void Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
   CComPtr<ICustomDestinationList> destinations;
   if (FAILED(destinations.CoCreateInstance(CLSID_DestinationList)))
     return;

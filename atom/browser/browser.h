@@ -96,7 +96,7 @@ class Browser : public WindowListObserver {
   };
 
   // Add a custom task to jump list.
-  void AddUserTasks(const std::vector<UserTask>& tasks);
+  void SetUserTasks(const std::vector<UserTask>& tasks);
 
   // Set the application user model ID, called when "SetName" is called.
   void SetAppUserModelID(const std::string& name);

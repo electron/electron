@@ -189,8 +189,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("clearRecentDocuments",
                  base::Bind(&Browser::ClearRecentDocuments, browser))
 #if defined(OS_WIN)
-      .SetMethod("addUserTasks",
-                 base::Bind(&Browser::AddUserTasks, browser))
+      .SetMethod("setUserTasks",
+                 base::Bind(&Browser::SetUserTasks, browser))
 #endif
       .SetMethod("getDataPath", &App::GetDataPath)
       .SetMethod("resolveProxy", &App::ResolveProxy)
