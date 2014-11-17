@@ -42,10 +42,12 @@ struct Converter<Browser::UserTask> {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
-    return dict.Get("program", &(out->program)) &&
-           dict.Get("arguments", &(out->arguments)) &&
-           dict.Get("title", &(out->title)) &&
-           dict.Get("description", &(out->description));
+    if (!dict.Get("program", &(out->program)) ||
+        !dict.Get("title", &(out->title)))
+      return false;
+    dict.Get("arguments", &(out->arguments));
+    dict.Get("description", &(out->description));
+    return true;
   }
 };
 
