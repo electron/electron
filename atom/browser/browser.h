@@ -13,6 +13,10 @@
 #include "atom/browser/browser_observer.h"
 #include "atom/browser/window_list_observer.h"
 
+#if defined(OS_WIN)
+#include "base/strings/string16.h"
+#endif
+
 namespace base {
 class FilePath;
 }
@@ -76,6 +80,11 @@ class Browser : public WindowListObserver {
   void DockSetMenu(ui::MenuModel* model);
 #endif  // defined(OS_MACOSX)
 
+#if defined(OS_WIN)
+  // Set the application user model ID, called when "SetName" is called.
+  void SetAppUserModelID(const std::string& name);
+#endif
+
   // Tell the application to open a file.
   bool OpenFile(const std::string& file_path);
 
@@ -125,6 +134,10 @@ class Browser : public WindowListObserver {
 
   std::string version_override_;
   std::string name_override_;
+
+#if defined(OS_WIN)
+  base::string16 app_user_model_id_;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(Browser);
 };

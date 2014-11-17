@@ -54,9 +54,15 @@ void Browser::AddRecentDocument(const base::FilePath& path) {
   if (SUCCEEDED(hr)) {
     SHARDAPPIDINFO info;
     info.psi = item;
-    info.pszAppID = L"Atom";
+    info.pszAppID = app_user_model_id_.c_str();
     SHAddToRecentDocs(SHARD_APPIDINFO, &info);
   }
+}
+
+void Browser::SetAppUserModelID(const std::string& name) {
+  app_user_model_id_ = base::UTF8ToUTF16(
+      base::StringPrintf("atom-shell.app.%s", name));
+  SetCurrentProcessExplicitAppUserModelID(app_user_model_id_.c_str());
 }
 
 std::string Browser::GetExecutableFileVersion() const {
