@@ -33,6 +33,25 @@
 
 using atom::Browser;
 
+namespace mate {
+
+template<>
+struct Converter<Browser::UserTask> {
+  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+                     Browser::UserTask* out) {
+    mate::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+    return dict.Get("program", &(out->program)) &&
+           dict.Get("arguments", &(out->arguments)) &&
+           dict.Get("title", &(out->title)) &&
+           dict.Get("description", &(out->description));
+  }
+};
+
+}  // namespace mate
+
+
 namespace atom {
 
 namespace api {
@@ -162,6 +181,10 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
                  base::Bind(&Browser::AddRecentDocument, browser))
       .SetMethod("clearRecentDocuments",
                  base::Bind(&Browser::ClearRecentDocuments, browser))
+#if defined(OS_WIN)
+      .SetMethod("addUserTasks",
+                 base::Bind(&Browser::AddUserTasks, browser))
+#endif
       .SetMethod("getDataPath", &App::GetDataPath)
       .SetMethod("resolveProxy", &App::ResolveProxy)
       .SetMethod("setDesktopName", &App::SetDesktopName);

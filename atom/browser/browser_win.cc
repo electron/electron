@@ -5,6 +5,7 @@
 #include "atom/browser/browser.h"
 
 #include <atlbase.h>
+#include <propkey.h>
 #include <windows.h>
 #include <shlobj.h>
 #include <shobjidl.h>
@@ -16,6 +17,7 @@
 #include "base/path_service.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/win/win_util.h"
 #include "base/win/windows_version.h"
 #include "atom/common/atom_version.h"
 
@@ -67,6 +69,47 @@ void Browser::ClearRecentDocuments() {
   if (FAILED(destinations->SetAppID(app_user_model_id_.c_str())))
     return;
   destinations->RemoveAllDestinations();
+}
+
+void Browser::AddUserTasks(const std::vector<UserTask>& tasks) {
+  CComPtr<ICustomDestinationList> destinations;
+  if (FAILED(destinations.CoCreateInstance(CLSID_DestinationList)))
+    return;
+  if (FAILED(destinations->SetAppID(app_user_model_id_.c_str())))
+    return;
+
+  // Start a transaction that updates the JumpList of this application.
+  UINT max_slots;
+  CComPtr<IObjectArray> removed;
+  if (FAILED(destinations->BeginList(&max_slots, IID_PPV_ARGS(&removed))))
+    return;
+
+  CComPtr<IObjectCollection> collection;
+  if (FAILED(collection.CoCreateInstance(CLSID_EnumerableObjectCollection)))
+    return;
+
+  for (auto& task : tasks) {
+    CComPtr<IShellLink> link;
+    if (FAILED(link.CoCreateInstance(CLSID_ShellLink)) ||
+        FAILED(link->SetPath(task.program.value().c_str())) ||
+        FAILED(link->SetArguments(task.arguments.c_str())) ||
+        FAILED(link->SetDescription(task.description.c_str())))
+      return;
+
+    CComQIPtr<IPropertyStore> property_store = link;
+    if (!base::win::SetStringValueForPropertyStore(property_store, PKEY_Title,
+                                                   task.title.c_str()))
+      return;
+
+    if (FAILED(collection->AddObject(link)))
+      return;
+  }
+
+  // When the list is empty "AddUserTasks" could fail, so we don't check return
+  // value for it.
+  CComQIPtr<IObjectArray> task_array = collection;
+  destinations->AddUserTasks(task_array);
+  destinations->CommitList();
 }
 
 void Browser::SetAppUserModelID(const std::string& name) {

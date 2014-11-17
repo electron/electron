@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_BROWSER_H_
 
 #include <string>
+#include <vector>
 
 #include "base/basictypes.h"
 #include "base/compiler_specific.h"
@@ -14,6 +15,7 @@
 #include "atom/browser/window_list_observer.h"
 
 #if defined(OS_WIN)
+#include "base/files/file_path.h"
 #include "base/strings/string16.h"
 #endif
 
@@ -84,6 +86,16 @@ class Browser : public WindowListObserver {
 #endif  // defined(OS_MACOSX)
 
 #if defined(OS_WIN)
+  struct UserTask {
+    base::FilePath program;
+    base::string16 arguments;
+    base::string16 title;
+    base::string16 description;
+  };
+
+  // Add a custom task to jump list.
+  void AddUserTasks(const std::vector<UserTask>& tasks);
+
   // Set the application user model ID, called when "SetName" is called.
   void SetAppUserModelID(const std::string& name);
 #endif
