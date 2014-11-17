@@ -23,6 +23,9 @@ void Browser::AddRecentDocument(const base::FilePath& path) {
   [[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:u];
 }
 
+void Browser::ClearRecentDocuments() {
+}
+
 std::string Browser::GetExecutableFileVersion() const {
   NSDictionary* infoDictionary = base::mac::OuterBundle().infoDictionary;
   NSString *version = [infoDictionary objectForKey:@"CFBundleVersion"];

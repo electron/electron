@@ -59,6 +59,16 @@ void Browser::AddRecentDocument(const base::FilePath& path) {
   }
 }
 
+void Browser::ClearRecentDocuments() {
+  CComPtr<IApplicationDestinations> destinations;
+  if (FAILED(destinations.CoCreateInstance(CLSID_ApplicationDestinations,
+                                           NULL, CLSCTX_INPROC_SERVER)))
+    return;
+  if (FAILED(destinations->SetAppID(app_user_model_id_.c_str())))
+    return;
+  destinations->RemoveAllDestinations();
+}
+
 void Browser::SetAppUserModelID(const std::string& name) {
   app_user_model_id_ = base::UTF8ToUTF16(
       base::StringPrintf("atom-shell.app.%s", name));

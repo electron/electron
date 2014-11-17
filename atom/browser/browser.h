@@ -59,6 +59,9 @@ class Browser : public WindowListObserver {
   // Add the |path| to recent documents list.
   void AddRecentDocument(const base::FilePath& path);
 
+  // Clear the recent documents list.
+  void ClearRecentDocuments();
+
 #if defined(OS_MACOSX)
   // Bounce the dock icon.
   enum BounceType {
