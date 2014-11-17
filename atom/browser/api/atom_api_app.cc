@@ -35,6 +35,7 @@ using atom::Browser;
 
 namespace mate {
 
+#if defined(OS_WIN)
 template<>
 struct Converter<Browser::UserTask> {
   static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
@@ -45,11 +46,15 @@ struct Converter<Browser::UserTask> {
     if (!dict.Get("program", &(out->program)) ||
         !dict.Get("title", &(out->title)))
       return false;
+    if (dict.Get("iconPath", &(out->icon_path)) &&
+        !dict.Get("iconIndex", &(out->icon_index)))
+      return false;
     dict.Get("arguments", &(out->arguments));
     dict.Get("description", &(out->description));
     return true;
   }
 };
+#endif
 
 }  // namespace mate
 

@@ -96,6 +96,11 @@ void Browser::AddUserTasks(const std::vector<UserTask>& tasks) {
         FAILED(link->SetDescription(task.description.c_str())))
       return;
 
+    if (!task.icon_path.empty() &&
+        FAILED(link->SetIconLocation(task.icon_path.value().c_str(),
+                                     task.icon_index)))
+      return;
+
     CComQIPtr<IPropertyStore> property_store = link;
     if (!base::win::SetStringValueForPropertyStore(property_store, PKEY_Title,
                                                    task.title.c_str()))

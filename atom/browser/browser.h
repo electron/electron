@@ -91,6 +91,8 @@ class Browser : public WindowListObserver {
     base::string16 arguments;
     base::string16 title;
     base::string16 description;
+    base::FilePath icon_path;
+    int icon_index;
   };
 
   // Add a custom task to jump list.
