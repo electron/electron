@@ -4,14 +4,19 @@
 
 #include "atom/browser/browser.h"
 
+#include <atlbase.h>
 #include <windows.h>
+#include <shlobj.h>
+#include <shobjidl.h>
 
 #include "base/base_paths.h"
 #include "base/file_version_info.h"
 #include "base/files/file_path.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/path_service.h"
+#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/win/windows_version.h"
 #include "atom/common/atom_version.h"
 
 namespace atom {
@@ -40,6 +45,18 @@ void Browser::Focus() {
 }
 
 void Browser::AddRecentDocument(const base::FilePath& path) {
+  if (base::win::GetVersion() < base::win::VERSION_WIN7)
+    return;
+
+  CComPtr<IShellItem> item;
+  HRESULT hr = SHCreateItemFromParsingName(
+      path.value().c_str(), NULL, IID_PPV_ARGS(&item));
+  if (SUCCEEDED(hr)) {
+    SHARDAPPIDINFO info;
+    info.psi = item;
+    info.pszAppID = L"Atom";
+    SHAddToRecentDocs(SHARD_APPIDINFO, &info);
+  }
 }
 
 std::string Browser::GetExecutableFileVersion() const {
