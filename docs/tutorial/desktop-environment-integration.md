@@ -132,4 +132,10 @@ The user tasks will still show even after your application closes, so the icon
 and program path specified for a task should exist until your application is
 uninstalled.
 
+## Unity integration (Linux)
+
+In Unity, you can add custom entries to its launcher via modifying `.desktop`
+file, see [Adding shortcuts to a launcher][unity-launcher].
+
 [app-registration]:http://msdn.microsoft.com/en-us/library/windows/desktop/ee872121(v=vs.85).aspx
+[unity-launcher]:https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
