@@ -123,6 +123,19 @@ preferred over `name` by atom-shell.
 Resolves the proxy information for `url`, the `callback` would be called with
 `callback(proxy)` when the request is done.
 
+## app.addRecentDocument(path)
+
+* `path` String
+
+Adds `path` to recent documents list.
+
+This list is managed by the system, on Windows you can visit the list from task
+bar, and on Mac you can visit it from dock menu.
+
+## app.clearRecentDocuments()
+
+Clears the recent documents list.
+
 ## app.commandLine.appendSwitch(switch, [value])
 
 Append a switch [with optional value] to Chromium's command line.
