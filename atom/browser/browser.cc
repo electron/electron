@@ -70,6 +70,10 @@ std::string Browser::GetName() const {
 
 void Browser::SetName(const std::string& name) {
   name_override_ = name;
+
+#if defined(OS_WIN)
+  SetAppUserModelID(name);
+#endif
 }
 
 bool Browser::OpenFile(const std::string& file_path) {

@@ -33,20 +33,19 @@ class App : public mate::EventEmitter,
   App();
   virtual ~App();
 
-  // BrowserObserver implementations:
-  virtual void OnWillQuit(bool* prevent_default) OVERRIDE;
-  virtual void OnWindowAllClosed() OVERRIDE;
-  virtual void OnQuit() OVERRIDE;
-  virtual void OnOpenFile(bool* prevent_default,
-                          const std::string& file_path) OVERRIDE;
-  virtual void OnOpenURL(const std::string& url) OVERRIDE;
-  virtual void OnActivateWithNoOpenWindows() OVERRIDE;
-  virtual void OnWillFinishLaunching() OVERRIDE;
-  virtual void OnFinishLaunching() OVERRIDE;
+  // BrowserObserver:
+  void OnWillQuit(bool* prevent_default) override;
+  void OnWindowAllClosed() override;
+  void OnQuit() override;
+  void OnOpenFile(bool* prevent_default, const std::string& file_path) override;
+  void OnOpenURL(const std::string& url) override;
+  void OnActivateWithNoOpenWindows() override;
+  void OnWillFinishLaunching() override;
+  void OnFinishLaunching() override;
 
-  // mate::Wrappable implementations:
-  virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate);
+  // mate::Wrappable:
+  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
 
  private:
   base::FilePath GetDataPath();

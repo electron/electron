@@ -39,6 +39,9 @@ class MenuModel;
 // to the contents of the model after calling this will not be noticed.
 - (id)initWithModel:(ui::MenuModel*)model;
 
+// Populate current NSMenu with |model|.
+- (void)populateWithModel:(ui::MenuModel*)model;
+
 // Programmatically close the constructed menu.
 - (void)cancel;
 

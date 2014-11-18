@@ -4,6 +4,7 @@
 * [Application distribution](tutorial/application-distribution.md)
 * [Application packaging](tutorial/application-packaging.md)
 * [Using native node modules](tutorial/using-native-node-modules.md)
+* [Desktop environment integration](tutorial/desktop-environment-integration.md)
 * [Debugging browser process](tutorial/debugging-browser-process.md)
 * [Using Selenium and WebDriver](tutorial/using-selenium-and-webdriver.md)
 * [DevTools extension](tutorial/devtools-extension.md)

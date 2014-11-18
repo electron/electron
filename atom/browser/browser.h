@@ -6,12 +6,26 @@
 #define ATOM_BROWSER_BROWSER_H_
 
 #include <string>
+#include <vector>
 
 #include "base/basictypes.h"
 #include "base/compiler_specific.h"
 #include "base/observer_list.h"
 #include "atom/browser/browser_observer.h"
 #include "atom/browser/window_list_observer.h"
+
+#if defined(OS_WIN)
+#include "base/files/file_path.h"
+#include "base/strings/string16.h"
+#endif
+
+namespace base {
+class FilePath;
+}
+
+namespace ui {
+class MenuModel;
+}
 
 namespace atom {
 
@@ -44,6 +58,12 @@ class Browser : public WindowListObserver {
   // Overrides the application name.
   void SetName(const std::string& name);
 
+  // Add the |path| to recent documents list.
+  void AddRecentDocument(const base::FilePath& path);
+
+  // Clear the recent documents list.
+  void ClearRecentDocuments();
+
 #if defined(OS_MACOSX)
   // Bounce the dock icon.
   enum BounceType {
@@ -60,7 +80,27 @@ class Browser : public WindowListObserver {
   // Hide/Show dock.
   void DockHide();
   void DockShow();
+
+  // Set docks' menu.
+  void DockSetMenu(ui::MenuModel* model);
 #endif  // defined(OS_MACOSX)
+
+#if defined(OS_WIN)
+  struct UserTask {
+    base::FilePath program;
+    base::string16 arguments;
+    base::string16 title;
+    base::string16 description;
+    base::FilePath icon_path;
+    int icon_index;
+  };
+
+  // Add a custom task to jump list.
+  void SetUserTasks(const std::vector<UserTask>& tasks);
+
+  // Set the application user model ID, called when "SetName" is called.
+  void SetAppUserModelID(const std::string& name);
+#endif
 
   // Tell the application to open a file.
   bool OpenFile(const std::string& file_path);
@@ -100,8 +140,8 @@ class Browser : public WindowListObserver {
 
  private:
   // WindowListObserver implementations:
-  virtual void OnWindowCloseCancelled(NativeWindow* window) OVERRIDE;
-  virtual void OnWindowAllClosed() OVERRIDE;
+  void OnWindowCloseCancelled(NativeWindow* window) override;
+  void OnWindowAllClosed() override;
 
   // Observers of the browser.
   ObserverList<BrowserObserver> observers_;
@@ -111,6 +151,10 @@ class Browser : public WindowListObserver {
 
   std::string version_override_;
   std::string name_override_;
+
+#if defined(OS_WIN)
+  base::string16 app_user_model_id_;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(Browser);
 };

@@ -4,7 +4,16 @@
 
 #import <Cocoa/Cocoa.h>
 
+#import "atom/browser/ui/cocoa/atom_menu_controller.h"
+
 @interface AtomApplicationDelegate : NSObject<NSApplicationDelegate> {
+ @private
+  base::scoped_nsobject<AtomMenuController> menu_controller_;
 }
+
+- (id)init;
+
+// Sets the menu that will be returned in "applicationDockMenu:".
+- (void)setApplicationDockMenu:(ui::MenuModel*)model;
 
 @end

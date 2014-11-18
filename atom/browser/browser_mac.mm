@@ -5,15 +5,25 @@
 #include "atom/browser/browser.h"
 
 #import "atom/browser/mac/atom_application.h"
+#import "atom/browser/mac/atom_application_delegate.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
 #import "base/mac/bundle_locations.h"
+#import "base/mac/foundation_util.h"
 #include "base/strings/sys_string_conversions.h"
 
 namespace atom {
 
 void Browser::Focus() {
   [[AtomApplication sharedApplication] activateIgnoringOtherApps:YES];
+}
+
+void Browser::AddRecentDocument(const base::FilePath& path) {
+  NSURL* u = [NSURL fileURLWithPath:base::mac::FilePathToNSString(path)];
+  [[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:u];
+}
+
+void Browser::ClearRecentDocuments() {
 }
 
 std::string Browser::GetExecutableFileVersion() const {
@@ -58,6 +68,11 @@ void Browser::DockHide() {
 void Browser::DockShow() {
   ProcessSerialNumber psn = { 0, kCurrentProcess };
   TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+}
+
+void Browser::DockSetMenu(ui::MenuModel* model) {
+  AtomApplicationDelegate* delegate = [NSApp delegate];
+  [delegate setApplicationDockMenu:model];
 }
 
 }  // namespace atom

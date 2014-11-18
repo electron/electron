@@ -70,7 +70,8 @@ int EventFlagsFromNSEvent(NSEvent* event) {
 @synthesize model = model_;
 
 - (id)init {
-  self = [super init];
+  if ((self = [super init]))
+    [self menu];
   return self;
 }
 
@@ -91,6 +92,22 @@ int EventFlagsFromNSEvent(NSEvent* event) {
 
   model_ = NULL;
   [super dealloc];
+}
+
+- (void)populateWithModel:(ui::MenuModel*)model {
+  if (!menu_)
+    return;
+
+  model_ = model;
+  [menu_ removeAllItems];
+
+  const int count = model->GetItemCount();
+  for (int index = 0; index < count; index++) {
+    if (model->GetTypeAt(index) == ui::MenuModel::TYPE_SEPARATOR)
+      [self addSeparatorToMenu:menu_ atIndex:index];
+    else
+      [self addItemToMenu:menu_ atIndex:index fromModel:model];
+  }
 }
 
 - (void)cancel {
@@ -235,10 +252,13 @@ int EventFlagsFromNSEvent(NSEvent* event) {
 }
 
 - (NSMenu*)menu {
-  if (!menu_ && model_) {
-    menu_.reset([[self menuFromModel:model_] retain]);
-    [menu_ setDelegate:self];
-  }
+  if (menu_)
+    return menu_.get();
+
+  menu_.reset([[NSMenu alloc] initWithTitle:@""]);
+  [menu_ setDelegate:self];
+  if (model_)
+    [self populateWithModel:model_];
   return menu_.get();
 }
 

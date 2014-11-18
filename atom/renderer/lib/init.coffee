@@ -37,9 +37,11 @@ for arg in process.argv
 if location.protocol is 'chrome-devtools:'
   # Override some inspector APIs.
   require path.join(__dirname, 'inspector')
+  nodeIntegration = 'true'
 else if location.protocol is 'chrome-extension:'
   # Add implementations of chrome API.
   require path.join(__dirname, 'chrome-api')
+  nodeIntegration = 'true'
 else
   # Override default web functions.
   require path.join(__dirname, 'override')
