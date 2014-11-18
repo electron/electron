@@ -19,7 +19,7 @@ __JumpList:__
 
 __Application dock menu:__
 
-<img src="https://cloud.githubusercontent.com/assets/639601/5069610/2aa80758-6e97-11e4-8cfb-c1a414a10774.png" height="274" width="332" >
+<img src="https://cloud.githubusercontent.com/assets/639601/5069610/2aa80758-6e97-11e4-8cfb-c1a414a10774.png" height="353" width="428" >
 
 To add a file to recent documents, you can use
 [app.addRecentDocument][addrecentdocument] API:
@@ -161,16 +161,41 @@ __Progress bar in Unity launcher:__
 ![Unity Launcher](https://cloud.githubusercontent.com/assets/639601/5081747/4a0a589e-6f0f-11e4-803f-91594716a546.png)
 
 To set the progress bar for a Window, you can use the
-[BrowserWindow.setProgressBar](setprogressbar) API:
+[BrowserWindow.setProgressBar][setprogressbar] API:
 
 ```javascript
 var window = new BrowserWindow({...});
 window.setProgresssBar(0.5);
 ```
 
-[addrecentdocument]:../api/app.md#appaddrecentdocumentpath
-[clearrecentdocuments]:../api/app.md#appclearrecentdocuments
-[setusertaskstasks]:../api/app.md#appsetusertaskstasks
-[setprogressbar]:../api/browser-window.md#browserwindowsetprogressbarprogress
-[app-registration]:http://msdn.microsoft.com/en-us/library/windows/desktop/ee872121(v=vs.85).aspx
-[unity-launcher]:https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
+## Represented file of window (OS X)
+
+On OS X a window can set its represented file, so the file's icon can show in
+title bar, and when users Command-Click or Control-Click on the tile a path
+popup will show.
+
+You can also set edited state of a window so the file icon can indicate whether
+the document in this window has been modified.
+
+__Represented file popup menu:__
+
+<img src="https://cloud.githubusercontent.com/assets/639601/5082061/670a949a-6f14-11e4-987a-9aaa04b23c1d.png" height="232" width="663" >
+
+To set the represented file of window, you can use the
+[BrowserWindow.setRepresentedFilename][setrepresentedfilename] and
+[BrowserWindow.setDocumentEdited][setdocumentedited] APIs:
+
+```javascript
+var window = new BrowserWindow({...});
+window.setRepresentedFilename('/etc/passwd');
+window.setDocumentEdited(true);
+```
+
+[addrecentdocument]: ../api/app.md#appaddrecentdocumentpath
+[clearrecentdocuments]: ../api/app.md#appclearrecentdocuments
+[setusertaskstasks]: ../api/app.md#appsetusertaskstasks
+[setprogressbar]: ../api/browser-window.md#browserwindowsetprogressbarprogress
+[setrepresentedfilename]: ../api/browser-window.md#browserwindowsetrepresentedfilenamefilename
+[setdocumentedited]: ../api/browser-window.md#browserwindowsetdocumenteditededited
+[app-registration]: http://msdn.microsoft.com/en-us/library/windows/desktop/ee872121(v=vs.85).aspx
+[unity-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
