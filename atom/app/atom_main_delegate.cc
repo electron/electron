@@ -89,6 +89,10 @@ void AtomMainDelegate::PreSandboxStartup() {
   command_line->AppendSwitch("atom-shell-switches-end");
 }
 
+void AtomMainDelegate::ProcessExiting(const std::string& process_type) {
+  LOG(ERROR) << "ProcessExiting: " << process_type;
+}
+
 content::ContentBrowserClient* AtomMainDelegate::CreateContentBrowserClient() {
   browser_client_.reset(new AtomBrowserClient);
   return browser_client_.get();

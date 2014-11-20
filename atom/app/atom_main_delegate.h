@@ -19,6 +19,7 @@ class AtomMainDelegate : public brightray::MainDelegate {
   // content::ContentMainDelegate:
   virtual bool BasicStartupComplete(int* exit_code) OVERRIDE;
   virtual void PreSandboxStartup() OVERRIDE;
+  virtual void ProcessExiting(const std::string& process_type) OVERRIDE;
   virtual content::ContentBrowserClient* CreateContentBrowserClient() OVERRIDE;
   virtual content::ContentRendererClient*
       CreateContentRendererClient() OVERRIDE;
