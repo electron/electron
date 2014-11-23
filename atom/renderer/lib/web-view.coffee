@@ -545,7 +545,7 @@ registerWebViewElement = ->
     "isWaitingForResponse"
     "stop"
     "reload"
-    "reloadIngoringCache"
+    "reloadIgnoringCache"
     "canGoBack"
     "canGoForward"
     "canGoToOffset"
