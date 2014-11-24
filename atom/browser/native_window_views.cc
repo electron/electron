@@ -35,7 +35,6 @@
 #include "atom/browser/ui/x/x_window_utils.h"
 #include "base/environment.h"
 #include "base/nix/xdg_util.h"
-#include "base/strings/stringprintf.h"
 #include "chrome/browser/ui/libgtk2ui/unity_service.h"
 #include "dbus/bus.h"
 #include "dbus/object_proxy.h"
@@ -63,10 +62,6 @@ const int kMenuBarHeight = 25;
 #endif
 
 #if defined(USE_X11)
-// Counts how many window has already been created, it will be used to set the
-// window role for X11.
-int kWindowsCreated = 0;
-
 // Returns true if the bus name "com.canonical.AppMenu.Registrar" is available.
 bool ShouldUseGlobalMenuBar() {
   dbus::Bus::Options options;
@@ -183,9 +178,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
 
 #if defined(USE_X11)
   // Set WM_WINDOW_ROLE.
-  params.wm_role_name = base::StringPrintf(
-      "%s/%s/%d", "Atom Shell", Browser::Get()->GetName().c_str(),
-      ++kWindowsCreated);
+  params.wm_role_name = "atom-shell app";
   // Set WM_CLASS.
   params.wm_class_name = "atom";
   params.wm_class_class = "Atom";
