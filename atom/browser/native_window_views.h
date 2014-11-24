@@ -113,6 +113,10 @@ class NativeWindowViews : public NativeWindow,
 
   // brightray::InspectableWebContentsDelegate:
   gfx::ImageSkia GetDevToolsWindowIcon() override;
+#if defined(USE_X11)
+  void GetDevToolsWindowWMClass(
+      std::string* name, std::string* class_name) override;
+#endif
 
   // content::WebContentsDelegate:
   void HandleMouseDown() override;

@@ -720,6 +720,14 @@ gfx::ImageSkia NativeWindowViews::GetDevToolsWindowIcon() {
   return GetWindowAppIcon();
 }
 
+#if defined(USE_X11)
+void NativeWindowViews::GetDevToolsWindowWMClass(
+    std::string* name, std::string* class_name) {
+  *class_name = Browser::Get()->GetName();
+  *name = base::StringToLowerASCII(*class_name);
+}
+#endif
+
 void NativeWindowViews::HandleMouseDown() {
   // Hide menu bar when web view is clicked.
   if (menu_bar_autohide_ && menu_bar_visible_)
