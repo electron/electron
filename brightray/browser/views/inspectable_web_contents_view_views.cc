@@ -147,6 +147,14 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked) {
                                                  devtools_window_web_view_,
                                                  devtools_window_.get());
     params.bounds = inspectable_web_contents()->GetDevToolsBounds();
+
+#if defined(USE_X11)
+    params.wm_role_name = "devtools";
+    InspectableWebContentsDelegate* delegate = inspectable_web_contents()->GetDelegate();
+    if (delegate)
+      delegate->GetDevToolsWindowWMClass(&params.wm_class_name, &params.wm_class_class);
+#endif
+
     devtools_window_->Init(params);
     devtools_window_->UpdateWindowIcon();
   }

@@ -19,6 +19,12 @@ class InspectableWebContentsDelegate {
       const std::string& url, const std::string& content, bool save_as) {}
   virtual void DevToolsAppendToFile(
       const std::string& url, const std::string& content) {}
+
+#if defined(USE_X11)
+  // Called when creating devtools window.
+  virtual void GetDevToolsWindowWMClass(
+      std::string* name, std::string* class_name) {}
+#endif
 };
 
 }  // namespace brightray
