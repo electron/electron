@@ -71,7 +71,7 @@ void Browser::DockShow() {
 }
 
 void Browser::DockSetMenu(ui::MenuModel* model) {
-  AtomApplicationDelegate* delegate = [NSApp delegate];
+  AtomApplicationDelegate* delegate = (AtomApplicationDelegate*)[NSApp delegate];
   [delegate setApplicationDockMenu:model];
 }
 
