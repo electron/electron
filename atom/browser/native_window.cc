@@ -50,11 +50,15 @@
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/codec/png_codec.h"
+#include "ui/gfx/geometry/size_conversions.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
+#include "ui/gfx/screen.h"
 #include "ui/gfx/size.h"
 
 using content::NavigationEntry;
+using content::RenderWidgetHostView;
+using content::RenderWidgetHost;
 
 namespace atom {
 
@@ -289,31 +293,43 @@ void NativeWindow::BlurWebView() {
 }
 
 bool NativeWindow::IsWebViewFocused() {
-  content::RenderWidgetHostView* host_view =
+  RenderWidgetHostView* host_view =
       GetWebContents()->GetRenderViewHost()->GetView();
   return host_view && host_view->HasFocus();
 }
 
 void NativeWindow::CapturePage(const gfx::Rect& rect,
                                const CapturePageCallback& callback) {
-  content::RenderViewHost* render_view_host =
-      GetWebContents()->GetRenderViewHost();
-  content::RenderWidgetHostView* render_widget_host_view =
-      render_view_host->GetView();
-
-  if (!render_widget_host_view) {
+  content::WebContents* contents = GetWebContents();
+  RenderWidgetHostView* const view = contents->GetRenderWidgetHostView();
+  RenderWidgetHost* const host = view ? view->GetRenderWidgetHost() : nullptr;
+  if (!view || !host) {
     callback.Run(std::vector<unsigned char>());
     return;
   }
 
-  GetWebContents()->GetRenderViewHost()->CopyFromBackingStore(
-      rect,
-      rect.IsEmpty() ? render_widget_host_view->GetViewBounds().size() :
-                       rect.size(),
+  // Capture full page if user doesn't specify a |rect|.
+  const gfx::Size view_size = rect.IsEmpty() ? view->GetViewBounds().size() :
+                                               rect.size();
+
+  // By default, the requested bitmap size is the view size in screen
+  // coordinates.  However, if there's more pixel detail available on the
+  // current system, increase the requested bitmap size to capture it all.
+  gfx::Size bitmap_size = view_size;
+  const gfx::NativeView native_view = view->GetNativeView();
+  gfx::Screen* const screen = gfx::Screen::GetScreenFor(native_view);
+  const float scale =
+      screen->GetDisplayNearestWindow(native_view).device_scale_factor();
+  if (scale > 1.0f)
+    bitmap_size = gfx::ToCeiledSize(gfx::ScaleSize(view_size, scale));
+
+  host->CopyFromBackingStore(
+      rect.IsEmpty() ? gfx::Rect(view_size) : rect,
+      bitmap_size,
       base::Bind(&NativeWindow::OnCapturePageDone,
                  weak_factory_.GetWeakPtr(),
                  callback),
-      kAlpha_8_SkColorType);
+      kBGRA_8888_SkColorType);
 }
 
 void NativeWindow::DestroyWebContents() {
@@ -698,6 +714,7 @@ void NativeWindow::NotifyWindowUnresponsive() {
 void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
                                      bool succeed,
                                      const SkBitmap& bitmap) {
+  SkAutoLockPixels screen_capture_lock(bitmap);
   std::vector<unsigned char> data;
   if (succeed)
     gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, true, &data);
