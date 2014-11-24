@@ -35,7 +35,7 @@
 #include "atom/browser/ui/x/x_window_utils.h"
 #include "base/environment.h"
 #include "base/nix/xdg_util.h"
-#include "base/strings/stringprintf.h"
+#include "base/strings/string_util.h"
 #include "chrome/browser/ui/libgtk2ui/unity_service.h"
 #include "dbus/bus.h"
 #include "dbus/object_proxy.h"
@@ -63,10 +63,6 @@ const int kMenuBarHeight = 25;
 #endif
 
 #if defined(USE_X11)
-// Counts how many window has already been created, it will be used to set the
-// window role for X11.
-int kWindowsCreated = 0;
-
 // Returns true if the bus name "com.canonical.AppMenu.Registrar" is available.
 bool ShouldUseGlobalMenuBar() {
   dbus::Bus::Options options;
@@ -182,13 +178,12 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   params.remove_standard_frame = !has_frame_;
 
 #if defined(USE_X11)
+  std::string name = Browser::Get()->GetName();
   // Set WM_WINDOW_ROLE.
-  params.wm_role_name = base::StringPrintf(
-      "%s/%s/%d", "Atom Shell", Browser::Get()->GetName().c_str(),
-      ++kWindowsCreated);
+  params.wm_role_name = "browser-window";
   // Set WM_CLASS.
-  params.wm_class_name = "atom";
-  params.wm_class_class = "Atom";
+  params.wm_class_name = base::StringToLowerASCII(name);
+  params.wm_class_class = name;
 #endif
 
   window_->Init(params);
@@ -724,6 +719,14 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
 gfx::ImageSkia NativeWindowViews::GetDevToolsWindowIcon() {
   return GetWindowAppIcon();
 }
+
+#if defined(USE_X11)
+void NativeWindowViews::GetDevToolsWindowWMClass(
+    std::string* name, std::string* class_name) {
+  *class_name = Browser::Get()->GetName();
+  *name = base::StringToLowerASCII(*class_name);
+}
+#endif
 
 void NativeWindowViews::HandleMouseDown() {
   // Hide menu bar when web view is clicked.
