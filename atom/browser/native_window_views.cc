@@ -35,6 +35,7 @@
 #include "atom/browser/ui/x/x_window_utils.h"
 #include "base/environment.h"
 #include "base/nix/xdg_util.h"
+#include "base/strings/string_util.h"
 #include "chrome/browser/ui/libgtk2ui/unity_service.h"
 #include "dbus/bus.h"
 #include "dbus/object_proxy.h"
@@ -177,11 +178,12 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   params.remove_standard_frame = !has_frame_;
 
 #if defined(USE_X11)
+  std::string name = Browser::Get()->GetName();
   // Set WM_WINDOW_ROLE.
-  params.wm_role_name = "atom-shell app";
+  params.wm_role_name = "browser-window";
   // Set WM_CLASS.
-  params.wm_class_name = "atom";
-  params.wm_class_class = "Atom";
+  params.wm_class_name = base::StringToLowerASCII(name);
+  params.wm_class_class = name;
 #endif
 
   window_->Init(params);
