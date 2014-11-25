@@ -6,7 +6,10 @@ import sys
 
 
 SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))
-
+WINDOWS_NODE_PATHs = [
+  'C:/Program Files/nodejs',
+  'C:/Program Files (x86)/nodejs',
+]
 
 def main():
   input_file = sys.argv[1]
@@ -26,7 +29,7 @@ def main():
 
 
 def find_node():
-  PATHs = os.environ['PATH'].split(os.pathsep)
+  PATHs = WINDOWS_NODE_PATHs + os.environ['PATH'].split(os.pathsep)
   for path in PATHs:
     full_path = os.path.join(path, 'node.exe')
     if os.path.exists(full_path):
