@@ -80,7 +80,7 @@ class Window : public mate::EventEmitter,
   void Minimize();
   void Restore();
   bool IsMinimized();
-  void SetFullscreen(bool fullscreen);
+  void SetFullScreen(bool fullscreen);
   bool IsFullscreen();
   void SetSize(int width, int height);
   std::vector<int> GetSize();

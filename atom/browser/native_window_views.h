@@ -48,7 +48,7 @@ class NativeWindowViews : public NativeWindow,
   void Minimize() override;
   void Restore() override;
   bool IsMinimized() override;
-  void SetFullscreen(bool fullscreen) override;
+  void SetFullScreen(bool fullscreen) override;
   bool IsFullscreen() override;
   void SetSize(const gfx::Size& size) override;
   gfx::Size GetSize() override;

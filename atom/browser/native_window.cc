@@ -204,7 +204,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   }
   bool fullscreen;
   if (options.Get(switches::kFullscreen, &fullscreen) && fullscreen) {
-    SetFullscreen(true);
+    SetFullScreen(true);
   }
   bool skip;
   if (options.Get(switches::kSkipTaskbar, &skip) && skip) {

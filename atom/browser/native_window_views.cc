@@ -318,7 +318,7 @@ bool NativeWindowViews::IsMinimized() {
   return window_->IsMinimized();
 }
 
-void NativeWindowViews::SetFullscreen(bool fullscreen) {
+void NativeWindowViews::SetFullScreen(bool fullscreen) {
   window_->SetFullscreen(fullscreen);
 #if defined(OS_WIN)
   // There is no native fullscreen state on Windows.
@@ -498,7 +498,7 @@ void NativeWindowViews::SetSkipTaskbar(bool skip) {
 }
 
 void NativeWindowViews::SetKiosk(bool kiosk) {
-  SetFullscreen(kiosk);
+  SetFullScreen(kiosk);
 }
 
 bool NativeWindowViews::IsKiosk() {

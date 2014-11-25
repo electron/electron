@@ -217,8 +217,8 @@ bool Window::IsMinimized() {
   return window_->IsMinimized();
 }
 
-void Window::SetFullscreen(bool fullscreen) {
-  window_->SetFullscreen(fullscreen);
+void Window::SetFullScreen(bool fullscreen) {
+  window_->SetFullScreen(fullscreen);
 }
 
 bool Window::IsFullscreen() {
@@ -446,7 +446,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("minimize", &Window::Minimize)
       .SetMethod("restore", &Window::Restore)
       .SetMethod("isMinimized", &Window::IsMinimized)
-      .SetMethod("setFullScreen", &Window::SetFullscreen)
+      .SetMethod("setFullScreen", &Window::SetFullScreen)
       .SetMethod("isFullScreen", &Window::IsFullscreen)
       .SetMethod("getSize", &Window::GetSize)
       .SetMethod("setSize", &Window::SetSize)

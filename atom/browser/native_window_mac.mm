@@ -400,7 +400,7 @@ bool NativeWindowMac::IsMinimized() {
   return [window_ isMiniaturized];
 }
 
-void NativeWindowMac::SetFullscreen(bool fullscreen) {
+void NativeWindowMac::SetFullScreen(bool fullscreen) {
   if (fullscreen == IsFullscreen())
     return;
 
@@ -545,10 +545,10 @@ void NativeWindowMac::SetKiosk(bool kiosk) {
         NSApplicationPresentationDisableHideApplication;
     [NSApp setPresentationOptions:options];
     is_kiosk_ = true;
-    SetFullscreen(true);
+    SetFullScreen(true);
   } else if (!kiosk && is_kiosk_) {
     is_kiosk_ = false;
-    SetFullscreen(false);
+    SetFullScreen(false);
     [NSApp setPresentationOptions:kiosk_options_];
   }
 }
