@@ -11,6 +11,7 @@ WINDOWS_NODE_PATHs = [
   'C:/Program Files (x86)/nodejs',
 ] + os.environ['PATH'].split(os.pathsep)
 
+
 def main():
   input_file = sys.argv[1]
   output_dir = os.path.dirname(sys.argv[2])
