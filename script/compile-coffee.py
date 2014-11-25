@@ -22,7 +22,8 @@ def main():
   if sys.platform in ['win32', 'cygwin']:
     node = find_node()
     if not node:
-      print 'Node.js is required for building atom-shell at paths:\n' + '\n'.join(WINDOWS_NODE_PATHs)
+      print 'Node.js is required for building atom-shell at paths:\n' + \
+            '\n'.join(WINDOWS_NODE_PATHs)
       return 1
     subprocess.check_call(['node', coffee, '-c', '-o', output_dir, input_file],
                           executable=node)
