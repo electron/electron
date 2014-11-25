@@ -13,7 +13,6 @@
 
 #include "atom/browser/ui/views/menu_bar.h"
 #include "atom/browser/ui/views/menu_layout.h"
-#include "atom/browser/ui/views/window_state_watcher.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
@@ -33,6 +32,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/ui/views/global_menu_bar_x11.h"
 #include "atom/browser/ui/views/frameless_view.h"
+#include "atom/browser/ui/x/window_state_watcher.h"
 #include "atom/browser/ui/x/x_window_utils.h"
 #include "base/environment.h"
 #include "base/nix/xdg_util.h"
@@ -189,10 +189,10 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
 
   window_->Init(params);
 
+#if defined(USE_X11)
   // Start monitoring window states.
   window_state_watcher_.reset(new WindowStateWatcher(this));
 
-#if defined(USE_X11)
   // Set _GTK_THEME_VARIANT to dark if we have "dark-theme" option set.
   bool use_dark_theme = false;
   if (options.Get(switches::kDarkTheme, &use_dark_theme) && use_dark_theme) {
