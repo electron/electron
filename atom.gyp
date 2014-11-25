@@ -352,7 +352,7 @@
       'sk', 'sl', 'sr', 'sv', 'sw', 'ta', 'te', 'th', 'tr', 'uk',
       'vi', 'zh-CN', 'zh-TW',
     ],
-    'atom_source_root': '<!(python tools/atom_source_root.py)',
+    'atom_source_root': '<!(["python", "tools/atom_source_root.py"])',
     'conditions': [
       ['OS=="win"', {
         'app_sources': [
