@@ -466,6 +466,32 @@ void NativeWindow::NotifyWindowFocus() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowFocus());
 }
 
+void NativeWindow::NotifyWindowMaximize() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowMaximize());
+}
+
+void NativeWindow::NotifyWindowUnmaximize() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowUnmaximize());
+}
+
+void NativeWindow::NotifyWindowMinimize() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowMinimize());
+}
+
+void NativeWindow::NotifyWindowRestore() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowRestore());
+}
+
+void NativeWindow::NotifyWindowEnterFullScreen() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnWindowEnterFullScreen());
+}
+
+void NativeWindow::NotifyWindowLeaveFullScreen() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnWindowLeaveFullScreen());
+}
+
 bool NativeWindow::ShouldCreateWebContents(
     content::WebContents* web_contents,
     int route_id,

@@ -112,6 +112,30 @@ void Window::OnWindowFocus() {
   Emit("focus");
 }
 
+void Window::OnWindowMaximize() {
+  Emit("maximize");
+}
+
+void Window::OnWindowUnmaximize() {
+  Emit("unmaximize");
+}
+
+void Window::OnWindowMinimize() {
+  Emit("minimize");
+}
+
+void Window::OnWindowRestore() {
+  Emit("restore");
+}
+
+void Window::OnWindowEnterFullScreen() {
+  Emit("enter-full-screen");
+}
+
+void Window::OnWindowLeaveFullScreen() {
+  Emit("leave-full-screen");
+}
+
 void Window::OnRendererUnresponsive() {
   Emit("unresponsive");
 }

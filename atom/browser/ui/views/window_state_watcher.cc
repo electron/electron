@@ -4,13 +4,31 @@
 
 #include "atom/browser/ui/views/window_state_watcher.h"
 
+#if defined(USE_X11)
+#include <X11/Xlib.h>
+#endif
+
 #include "ui/events/platform/platform_event_source.h"
 
 namespace atom {
 
+namespace {
+
+const char* kAtomsToCache[] = {
+  "_NET_WM_STATE",
+  NULL,
+};
+
+}  // namespace
+
 WindowStateWatcher::WindowStateWatcher(NativeWindowViews* window)
     : window_(window),
-      widget_(window->GetAcceleratedWidget()) {
+      widget_(window->GetAcceleratedWidget()),
+#if defined(USE_X11)
+      atom_cache_(gfx::GetXDisplay(), kAtomsToCache),
+#endif
+      was_minimized_(false),
+      was_maximized_(false) {
   ui::PlatformEventSource::GetInstance()->AddPlatformEventObserver(this);
 }
 
@@ -19,10 +37,50 @@ WindowStateWatcher::~WindowStateWatcher() {
 }
 
 void WindowStateWatcher::WillProcessEvent(const ui::PlatformEvent& event) {
-  LOG(ERROR) << "WillProcessEvent";
+  if (IsWindowStateEvent(event)) {
+    was_minimized_ = window_->IsMinimized();
+    was_maximized_ = window_->IsMaximized();
+  }
 }
 
 void WindowStateWatcher::DidProcessEvent(const ui::PlatformEvent& event) {
+  if (IsWindowStateEvent(event)) {
+    bool is_minimized = window_->IsMinimized();
+    bool is_maximized = window_->IsMaximized();
+    bool is_fullscreen = window_->IsFullscreen();
+    if (is_minimized != was_minimized_) {
+      if (is_minimized)
+        window_->NotifyWindowMinimize();
+      else
+        window_->NotifyWindowRestore();
+    } else if (is_maximized != was_maximized_) {
+      if (is_maximized)
+        window_->NotifyWindowMaximize();
+      else
+        window_->NotifyWindowUnmaximize();
+    } else {
+      // If this is neither a "maximize" or "minimize" event, then we think it
+      // is a "fullscreen" event.
+      // The "IsFullscreen()" becomes true immediately before "WillProcessEvent"
+      // is called, so we can not handle this like "maximize" and "minimize" by
+      // watching whether they have changed.
+      if (is_fullscreen)
+        window_->NotifyWindowEnterFullScreen();
+      else
+        window_->NotifyWindowLeaveFullScreen();
+    }
+  }
+}
+
+bool WindowStateWatcher::IsWindowStateEvent(const ui::PlatformEvent& event) {
+#if defined(USE_X11)
+  ::Atom changed_atom = event->xproperty.atom;
+  return (changed_atom == atom_cache_.GetAtom("_NET_WM_STATE") &&
+          event->type == PropertyNotify &&
+          event->xproperty.window == widget_);
+#else
+  return false;
+#endif
 }
 
 }  // namespace atom

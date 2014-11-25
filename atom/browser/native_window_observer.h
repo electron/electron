@@ -39,6 +39,14 @@ class NativeWindowObserver {
   // Called when window gains focus.
   virtual void OnWindowFocus() {}
 
+  // Called when window state changed.
+  virtual void OnWindowMaximize() {}
+  virtual void OnWindowUnmaximize() {}
+  virtual void OnWindowMinimize() {}
+  virtual void OnWindowRestore() {}
+  virtual void OnWindowEnterFullScreen() {}
+  virtual void OnWindowLeaveFullScreen() {}
+
   // Called when renderer is hung.
   virtual void OnRendererUnresponsive() {}
 

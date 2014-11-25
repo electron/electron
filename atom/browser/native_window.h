@@ -192,6 +192,12 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   void NotifyWindowClosed();
   void NotifyWindowBlur();
   void NotifyWindowFocus();
+  void NotifyWindowMaximize();
+  void NotifyWindowUnmaximize();
+  void NotifyWindowMinimize();
+  void NotifyWindowRestore();
+  void NotifyWindowEnterFullScreen();
+  void NotifyWindowLeaveFullScreen();
 
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);
