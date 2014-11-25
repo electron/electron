@@ -81,11 +81,36 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
     shell_->ClipWebView();
 }
 
+- (void)windowDidMiniaturize:(NSNotification*)notification {
+  shell_->NotifyWindowMinimize();
+}
+
+- (void)windowDidDeminiaturize:(NSNotification*)notification {
+  shell_->NotifyWindowRestore();
+}
+
+- (BOOL)windowShouldZoom:(NSWindow*)window toFrame:(NSRect)newFrame {
+  // Cocoa doen't have concept of maximize/unmaximize, so wee need to emulate
+  // them by calculating size change when zooming.
+  if (newFrame.size.width < [window frame].size.width ||
+      newFrame.size.height < [window frame].size.height)
+    shell_->NotifyWindowUnmaximize();
+  else
+    shell_->NotifyWindowMaximize();
+  return YES;
+}
+
+- (void)windowDidEnterFullScreen:(NSNotification*)notification {
+  shell_->NotifyWindowEnterFullScreen();
+}
+
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
   if (!shell_->has_frame()) {
     NSWindow* window = shell_->GetNativeWindow();
     [[window standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
   }
+
+  shell_->NotifyWindowLeaveFullScreen();
 }
 
 - (void)windowWillClose:(NSNotification*)notification {
