@@ -185,6 +185,7 @@ describe 'browser-window module', ->
       w.loadUrl "file://#{fixtures}/pages/target-name.html"
 
   describe 'maximize event', ->
+    return if isCI and process.platform is 'linux'
     it 'emits when window is maximized', (done) ->
       @timeout 10000
       w.once 'maximize', -> done()
@@ -192,6 +193,7 @@ describe 'browser-window module', ->
       w.maximize()
 
   describe 'unmaximize event', ->
+    return if isCI and process.platform is 'linux'
     it 'emits when window is unmaximized', (done) ->
       @timeout 10000
       w.once 'unmaximize', -> done()
@@ -200,6 +202,7 @@ describe 'browser-window module', ->
       w.unmaximize()
 
   describe 'minimize event', ->
+    return if isCI and process.platform is 'linux'
     it 'emits when window is minimized', (done) ->
       @timeout 10000
       w.once 'minimize', -> done()
@@ -207,6 +210,7 @@ describe 'browser-window module', ->
       w.minimize()
 
   describe 'restore event', ->
+    return if isCI and process.platform is 'linux'
     it 'emits when window is restored', (done) ->
       @timeout 10000
       w.once 'restore', -> done()
