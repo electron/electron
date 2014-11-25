@@ -204,7 +204,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   }
   bool fullscreen;
   if (options.Get(switches::kFullscreen, &fullscreen) && fullscreen) {
-    SetFullscreen(true);
+    SetFullScreen(true);
   }
   bool skip;
   if (options.Get(switches::kSkipTaskbar, &skip) && skip) {
@@ -464,6 +464,32 @@ void NativeWindow::NotifyWindowBlur() {
 
 void NativeWindow::NotifyWindowFocus() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowFocus());
+}
+
+void NativeWindow::NotifyWindowMaximize() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowMaximize());
+}
+
+void NativeWindow::NotifyWindowUnmaximize() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowUnmaximize());
+}
+
+void NativeWindow::NotifyWindowMinimize() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowMinimize());
+}
+
+void NativeWindow::NotifyWindowRestore() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowRestore());
+}
+
+void NativeWindow::NotifyWindowEnterFullScreen() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnWindowEnterFullScreen());
+}
+
+void NativeWindow::NotifyWindowLeaveFullScreen() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnWindowLeaveFullScreen());
 }
 
 bool NativeWindow::ShouldCreateWebContents(

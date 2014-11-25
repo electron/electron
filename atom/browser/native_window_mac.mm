@@ -81,11 +81,36 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
     shell_->ClipWebView();
 }
 
+- (void)windowDidMiniaturize:(NSNotification*)notification {
+  shell_->NotifyWindowMinimize();
+}
+
+- (void)windowDidDeminiaturize:(NSNotification*)notification {
+  shell_->NotifyWindowRestore();
+}
+
+- (BOOL)windowShouldZoom:(NSWindow*)window toFrame:(NSRect)newFrame {
+  // Cocoa doen't have concept of maximize/unmaximize, so wee need to emulate
+  // them by calculating size change when zooming.
+  if (newFrame.size.width < [window frame].size.width ||
+      newFrame.size.height < [window frame].size.height)
+    shell_->NotifyWindowUnmaximize();
+  else
+    shell_->NotifyWindowMaximize();
+  return YES;
+}
+
+- (void)windowDidEnterFullScreen:(NSNotification*)notification {
+  shell_->NotifyWindowEnterFullScreen();
+}
+
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
   if (!shell_->has_frame()) {
     NSWindow* window = shell_->GetNativeWindow();
     [[window standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
   }
+
+  shell_->NotifyWindowLeaveFullScreen();
 }
 
 - (void)windowWillClose:(NSNotification*)notification {
@@ -375,7 +400,7 @@ bool NativeWindowMac::IsMinimized() {
   return [window_ isMiniaturized];
 }
 
-void NativeWindowMac::SetFullscreen(bool fullscreen) {
+void NativeWindowMac::SetFullScreen(bool fullscreen) {
   if (fullscreen == IsFullscreen())
     return;
 
@@ -520,10 +545,10 @@ void NativeWindowMac::SetKiosk(bool kiosk) {
         NSApplicationPresentationDisableHideApplication;
     [NSApp setPresentationOptions:options];
     is_kiosk_ = true;
-    SetFullscreen(true);
+    SetFullScreen(true);
   } else if (!kiosk && is_kiosk_) {
     is_kiosk_ = false;
-    SetFullscreen(false);
+    SetFullScreen(false);
     [NSApp setPresentationOptions:kiosk_options_];
   }
 }

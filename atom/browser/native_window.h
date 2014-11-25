@@ -111,7 +111,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void Minimize() = 0;
   virtual void Restore() = 0;
   virtual bool IsMinimized() = 0;
-  virtual void SetFullscreen(bool fullscreen) = 0;
+  virtual void SetFullScreen(bool fullscreen) = 0;
   virtual bool IsFullscreen() = 0;
   virtual void SetSize(const gfx::Size& size) = 0;
   virtual gfx::Size GetSize() = 0;
@@ -192,6 +192,12 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   void NotifyWindowClosed();
   void NotifyWindowBlur();
   void NotifyWindowFocus();
+  void NotifyWindowMaximize();
+  void NotifyWindowUnmaximize();
+  void NotifyWindowMinimize();
+  void NotifyWindowRestore();
+  void NotifyWindowEnterFullScreen();
+  void NotifyWindowLeaveFullScreen();
 
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);

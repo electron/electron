@@ -22,6 +22,7 @@ namespace atom {
 
 class GlobalMenuBarX11;
 class MenuBar;
+class WindowStateWatcher;
 
 class NativeWindowViews : public NativeWindow,
                           public views::WidgetDelegateView,
@@ -47,7 +48,7 @@ class NativeWindowViews : public NativeWindow,
   void Minimize() override;
   void Restore() override;
   bool IsMinimized() override;
-  void SetFullscreen(bool fullscreen) override;
+  void SetFullScreen(bool fullscreen) override;
   bool IsFullscreen() override;
   void SetSize(const gfx::Size& size) override;
   gfx::Size GetSize() override;
@@ -110,6 +111,9 @@ class NativeWindowViews : public NativeWindow,
   views::ClientView* CreateClientView(views::Widget* widget) override;
   views::NonClientFrameView* CreateNonClientFrameView(
       views::Widget* widget) override;
+#if defined(OS_WIN)
+  bool ExecuteWindowsCommand(int command_id) override;
+#endif
 
   // brightray::InspectableWebContentsDelegate:
   gfx::ImageSkia GetDevToolsWindowIcon() override;
@@ -144,6 +148,13 @@ class NativeWindowViews : public NativeWindow,
 
 #if defined(USE_X11)
   scoped_ptr<GlobalMenuBarX11> global_menu_bar_;
+
+  // Handles window state events.
+  scoped_ptr<WindowStateWatcher> window_state_watcher_;
+#elif defined(OS_WIN)
+  // Records window was whether restored from minimized state or maximized
+  // state.
+  bool is_minimized_;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.

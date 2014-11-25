@@ -43,7 +43,7 @@ class Window : public mate::EventEmitter,
   explicit Window(const mate::Dictionary& options);
   virtual ~Window();
 
-  // Implementations of NativeWindowObserver:
+  // NativeWindowObserver:
   void OnPageTitleUpdated(bool* prevent_default,
                           const std::string& title) override;
   void WillCreatePopupWindow(const base::string16& frame_name,
@@ -54,6 +54,12 @@ class Window : public mate::EventEmitter,
   void OnWindowClosed() override;
   void OnWindowBlur() override;
   void OnWindowFocus() override;
+  void OnWindowMaximize() override;
+  void OnWindowUnmaximize() override;
+  void OnWindowMinimize() override;
+  void OnWindowRestore() override;
+  void OnWindowEnterFullScreen() override;
+  void OnWindowLeaveFullScreen() override;
   void OnRendererUnresponsive() override;
   void OnRendererResponsive() override;
 
@@ -74,7 +80,7 @@ class Window : public mate::EventEmitter,
   void Minimize();
   void Restore();
   bool IsMinimized();
-  void SetFullscreen(bool fullscreen);
+  void SetFullScreen(bool fullscreen);
   bool IsFullscreen();
   void SetSize(int width, int height);
   std::vector<int> GetSize();

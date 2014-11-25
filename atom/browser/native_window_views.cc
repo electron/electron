@@ -32,6 +32,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/ui/views/global_menu_bar_x11.h"
 #include "atom/browser/ui/views/frameless_view.h"
+#include "atom/browser/ui/x/window_state_watcher.h"
 #include "atom/browser/ui/x/x_window_utils.h"
 #include "base/environment.h"
 #include "base/nix/xdg_util.h"
@@ -144,6 +145,9 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
+#if defined(OS_WIN)
+      is_minimized_(false),
+#endif
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
       use_content_size_(false),
       resizable_(true) {
@@ -189,6 +193,9 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   window_->Init(params);
 
 #if defined(USE_X11)
+  // Start monitoring window states.
+  window_state_watcher_.reset(new WindowStateWatcher(this));
+
   // Set _GTK_THEME_VARIANT to dark if we have "dark-theme" option set.
   bool use_dark_theme = false;
   if (options.Get(switches::kDarkTheme, &use_dark_theme) && use_dark_theme) {
@@ -311,8 +318,15 @@ bool NativeWindowViews::IsMinimized() {
   return window_->IsMinimized();
 }
 
-void NativeWindowViews::SetFullscreen(bool fullscreen) {
+void NativeWindowViews::SetFullScreen(bool fullscreen) {
   window_->SetFullscreen(fullscreen);
+#if defined(OS_WIN)
+  // There is no native fullscreen state on Windows.
+  if (fullscreen)
+    NotifyWindowEnterFullScreen();
+  else
+    NotifyWindowLeaveFullScreen();
+#endif
 }
 
 bool NativeWindowViews::IsFullscreen() {
@@ -484,7 +498,7 @@ void NativeWindowViews::SetSkipTaskbar(bool skip) {
 }
 
 void NativeWindowViews::SetKiosk(bool kiosk) {
-  SetFullscreen(kiosk);
+  SetFullScreen(kiosk);
 }
 
 bool NativeWindowViews::IsKiosk() {
@@ -715,6 +729,27 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
   }
 #endif
 }
+
+#if defined(OS_WIN)
+bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
+  // Windows uses the 4 lower order bits of |command_id| for type-specific
+  // information so we must exclude this when comparing.
+  static const int sc_mask = 0xFFF0;
+  if ((command_id & sc_mask) == SC_MINIMIZE) {
+    NotifyWindowMinimize();
+    is_minimized_ = true;
+  } else if ((command_id & sc_mask) == SC_RESTORE) {
+    if (is_minimized_)
+      NotifyWindowRestore();
+    else
+      NotifyWindowUnmaximize();
+    is_minimized_ = false;
+  } else if ((command_id & sc_mask) == SC_MAXIMIZE) {
+    NotifyWindowMaximize();
+  }
+  return false;
+}
+#endif
 
 gfx::ImageSkia NativeWindowViews::GetDevToolsWindowIcon() {
   return GetWindowAppIcon();

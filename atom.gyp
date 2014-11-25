@@ -179,6 +179,8 @@
       'atom/browser/ui/win/notify_icon_host.h',
       'atom/browser/ui/win/notify_icon.cc',
       'atom/browser/ui/win/notify_icon.h',
+      'atom/browser/ui/x/window_state_watcher.cc',
+      'atom/browser/ui/x/window_state_watcher.h',
       'atom/browser/ui/x/x_window_utils.cc',
       'atom/browser/ui/x/x_window_utils.h',
       'atom/browser/web_view/web_view_manager.cc',
