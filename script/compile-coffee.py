@@ -7,8 +7,8 @@ import sys
 
 SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))
 WINDOWS_NODE_PATHs = [
-  'C:/Program Files/nodejs',
   'C:/Program Files (x86)/nodejs',
+  'C:/Program Files/nodejs',
 ] + os.environ['PATH'].split(os.pathsep)
 
 
