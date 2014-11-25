@@ -13,6 +13,7 @@
 
 #include "atom/browser/ui/views/menu_bar.h"
 #include "atom/browser/ui/views/menu_layout.h"
+#include "atom/browser/ui/views/window_state_watcher.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
@@ -187,6 +188,9 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
 #endif
 
   window_->Init(params);
+
+  // Start monitoring window states.
+  window_state_watcher_.reset(new WindowStateWatcher(this));
 
 #if defined(USE_X11)
   // Set _GTK_THEME_VARIANT to dark if we have "dark-theme" option set.

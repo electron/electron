@@ -22,6 +22,7 @@ namespace atom {
 
 class GlobalMenuBarX11;
 class MenuBar;
+class WindowStateWatcher;
 
 class NativeWindowViews : public NativeWindow,
                           public views::WidgetDelegateView,
@@ -145,6 +146,9 @@ class NativeWindowViews : public NativeWindow,
 #if defined(USE_X11)
   scoped_ptr<GlobalMenuBarX11> global_menu_bar_;
 #endif
+
+  // Handles window state events.
+  scoped_ptr<WindowStateWatcher> window_state_watcher_;
 
   // Handles unhandled keyboard messages coming back from the renderer process.
   scoped_ptr<views::UnhandledKeyboardEventHandler> keyboard_event_handler_;

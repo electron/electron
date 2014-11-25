@@ -175,6 +175,8 @@
       'atom/browser/ui/views/submenu_button.h',
       'atom/browser/ui/views/win_frame_view.cc',
       'atom/browser/ui/views/win_frame_view.h',
+      'atom/browser/ui/views/window_state_watcher.cc',
+      'atom/browser/ui/views/window_state_watcher.h',
       'atom/browser/ui/win/notify_icon_host.cc',
       'atom/browser/ui/win/notify_icon_host.h',
       'atom/browser/ui/win/notify_icon.cc',
