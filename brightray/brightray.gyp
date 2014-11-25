@@ -101,11 +101,14 @@
             '-fno-rtti',
           ],
           'link_settings': {
+            'ldflags': [
+              '<!@(pkg-config --libs-only-L --libs-only-other gtk+-2.0 libnotify dbus-1 x11 xrandr xext gconf-2.0)',
+            ],
             'libraries': [
               '<(brightray_source_root)/<(libchromiumcontent_library_dir)/libchromiumcontent.so',
               '<(brightray_source_root)/<(libchromiumcontent_library_dir)/libchromiumviews.a',
               '-lpthread',
-              '<!@(pkg-config --libs gtk+-2.0 libnotify)',
+              '<!@(pkg-config --libs-only-l gtk+-2.0 libnotify dbus-1 x11 xrandr xext gconf-2.0)',
             ],
           },
         }],
