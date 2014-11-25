@@ -186,21 +186,30 @@ describe 'browser-window module', ->
 
   describe 'maximize event', ->
     it 'emits when window is maximized', (done) ->
+      @timeout 10000
       w.once 'maximize', -> done()
+      w.show()
       w.maximize()
 
   describe 'unmaximize event', ->
     it 'emits when window is unmaximized', (done) ->
+      @timeout 10000
       w.once 'unmaximize', -> done()
+      w.show()
+      w.maximize()
       w.unmaximize()
 
   describe 'minimize event', ->
     it 'emits when window is minimized', (done) ->
+      @timeout 10000
       w.once 'minimize', -> done()
+      w.show()
       w.minimize()
 
   describe 'restore event', ->
     it 'emits when window is restored', (done) ->
+      @timeout 10000
       w.once 'restore', -> done()
+      w.show()
       w.minimize()
       w.restore()
