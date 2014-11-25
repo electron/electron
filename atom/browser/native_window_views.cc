@@ -145,6 +145,9 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
+#if defined(OS_WIN)
+      is_minimized_(false),
+#endif
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
       use_content_size_(false),
       resizable_(true) {
@@ -317,6 +320,13 @@ bool NativeWindowViews::IsMinimized() {
 
 void NativeWindowViews::SetFullscreen(bool fullscreen) {
   window_->SetFullscreen(fullscreen);
+#if defined(OS_WIN)
+  // There is no native fullscreen state on Windows.
+  if (fullscreen)
+    NotifyWindowEnterFullScreen();
+  else
+    NotifyWindowLeaveFullScreen();
+#endif
 }
 
 bool NativeWindowViews::IsFullscreen() {
@@ -719,6 +729,27 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
   }
 #endif
 }
+
+#if defined(OS_WIN)
+bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
+  // Windows uses the 4 lower order bits of |command_id| for type-specific
+  // information so we must exclude this when comparing.
+  static const int sc_mask = 0xFFF0;
+  if ((command_id & sc_mask) == SC_MINIMIZE) {
+    NotifyWindowMinimize();
+    is_minimized_ = true;
+  } else if ((command_id & sc_mask) == SC_RESTORE) {
+    if (is_minimized_)
+      NotifyWindowRestore();
+    else
+      NotifyWindowUnmaximize();
+    is_minimized_ = false;
+  } else if ((command_id & sc_mask) == SC_MAXIMIZE) {
+    NotifyWindowMaximize();
+  }
+  return false;
+}
+#endif
 
 gfx::ImageSkia NativeWindowViews::GetDevToolsWindowIcon() {
   return GetWindowAppIcon();

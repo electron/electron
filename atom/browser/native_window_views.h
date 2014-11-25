@@ -111,6 +111,9 @@ class NativeWindowViews : public NativeWindow,
   views::ClientView* CreateClientView(views::Widget* widget) override;
   views::NonClientFrameView* CreateNonClientFrameView(
       views::Widget* widget) override;
+#if defined(OS_WIN)
+  bool ExecuteWindowsCommand(int command_id) override;
+#endif
 
   // brightray::InspectableWebContentsDelegate:
   gfx::ImageSkia GetDevToolsWindowIcon() override;
@@ -148,6 +151,10 @@ class NativeWindowViews : public NativeWindow,
 
   // Handles window state events.
   scoped_ptr<WindowStateWatcher> window_state_watcher_;
+#elif defined(OS_WIN)
+  // Records window was whether restored from minimized state or maximized
+  // state.
+  bool is_minimized_;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.
