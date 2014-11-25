@@ -183,3 +183,24 @@ describe 'browser-window module', ->
         assert.equal frameName, 'target'
         done()
       w.loadUrl "file://#{fixtures}/pages/target-name.html"
+
+  describe 'maximize event', ->
+    it 'emits when window is maximized', (done) ->
+      w.once 'maximize', -> done()
+      w.maximize()
+
+  describe 'unmaximize event', ->
+    it 'emits when window is unmaximized', (done) ->
+      w.once 'unmaximize', -> done()
+      w.unmaximize()
+
+  describe 'minimize event', ->
+    it 'emits when window is minimized', (done) ->
+      w.once 'minimize', -> done()
+      w.minimize()
+
+  describe 'restore event', ->
+    it 'emits when window is restored', (done) ->
+      w.once 'restore', -> done()
+      w.minimize()
+      w.restore()
