@@ -147,6 +147,30 @@ Emitted when window loses focus.
 
 Emitted when window gains focus.
 
+### Event: 'maximize'
+
+Emitted when window is maximized.
+
+### Event: 'unmaximize'
+
+Emitted when window exits from maximized state.
+
+### Event: 'minimize'
+
+Emitted when window is minimized.
+
+### Event: 'restore'
+
+Emitted when window is restored from minimized state.
+
+### Event: 'enter-full-screen'
+
+Emitted when window enters full screen state.
+
+### Event: 'leave-full-screen'
+
+Emitted when window leaves full screen state.
+
 ### Event: 'devtools-opened'
 
 Emitted when devtools is opened.
