@@ -5,6 +5,7 @@
 #include "atom/browser/api/atom_api_menu_views.h"
 
 #include "atom/browser/native_window_views.h"
+#include "content/public/browser/render_widget_host_view.h"
 #include "ui/gfx/screen.h"
 #include "ui/views/controls/menu/menu_runner.h"
 
@@ -16,14 +17,24 @@ MenuViews::MenuViews() {
 }
 
 void MenuViews::Popup(Window* window) {
-  gfx::Point cursor = gfx::Screen::GetNativeScreen()->GetCursorScreenPoint();
+  PopupAtPoint(window, gfx::Screen::GetNativeScreen()->GetCursorScreenPoint());
+}
+
+void MenuViews::PopupAt(Window* window, int x, int y) {
+  NativeWindow* nativeWindowViews = static_cast<NativeWindow*>(window->window());
+  content::RenderWidgetHostView* view = nativeWindowViews->GetWebContents()->GetRenderWidgetHostView();
+  gfx::Point viewOrigin = view->GetViewBounds().origin();
+  PopupAtPoint(window, gfx::Point(viewOrigin.x() + x, viewOrigin.y() + y));
+}
+
+void MenuViews::PopupAtPoint(Window* window, gfx::Point point) {
   views::MenuRunner menu_runner(
       model(),
       views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS);
   ignore_result(menu_runner.RunMenuAt(
       static_cast<NativeWindowViews*>(window->window())->widget(),
       NULL,
-      gfx::Rect(cursor, gfx::Size()),
+      gfx::Rect(point, gfx::Size()),
       views::MENU_ANCHOR_TOPLEFT,
       ui::MENU_SOURCE_MOUSE));
 }

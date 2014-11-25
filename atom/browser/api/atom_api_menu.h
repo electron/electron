@@ -55,6 +55,7 @@ class Menu : public mate::Wrappable,
 
   virtual void AttachToWindow(Window* window);
   virtual void Popup(Window* window) = 0;
+  virtual void PopupAt(Window* window, int x, int y) = 0;
 
   scoped_ptr<ui::SimpleMenuModel> model_;
   Menu* parent_;
