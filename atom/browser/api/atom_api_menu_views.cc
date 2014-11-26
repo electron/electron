@@ -21,9 +21,10 @@ void MenuViews::Popup(Window* window) {
 }
 
 void MenuViews::PopupAt(Window* window, int x, int y) {
-  NativeWindow* nativeWindowViews = static_cast<NativeWindow*>(window->window());
-  content::RenderWidgetHostView* view = nativeWindowViews->GetWebContents()->GetRenderWidgetHostView();
-  gfx::Point viewOrigin = view->GetViewBounds().origin();
+  NativeWindow* nativeWindowViews =
+    static_cast<NativeWindow*>(window->window());
+  gfx::Point viewOrigin = nativeWindowViews->GetWebContents()
+    ->GetRenderWidgetHostView()->GetViewBounds().origin();
   PopupAtPoint(window, gfx::Point(viewOrigin.x() + x, viewOrigin.y() + y));
 }
 
