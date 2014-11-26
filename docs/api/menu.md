@@ -191,11 +191,15 @@ Generally, the `template` is just an array of `options` for constructing
 You can also attach other fields to element of the `template`, and they will
 become properties of the constructed menu items.
 
-### Menu.popup(browserWindow)
+### Menu.popup(browserWindow, [x, y])
 
 * `browserWindow` BrowserWindow
+* `x` Number
+* `y` Number
 
-Popups the this as context menu in the `browserWindow`.
+Popups this menu as a context menu in the `browserWindow`. You can optionally
+provide a `(x,y)` coordinate to place the menu at, otherwise it will be placed
+at the current mouse cursor position.
 
 ### Menu.append(menuItem)
 
