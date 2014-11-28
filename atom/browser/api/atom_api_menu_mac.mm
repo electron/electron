@@ -46,6 +46,21 @@ void MenuMac::Popup(Window* window) {
                    forView:web_contents->GetContentNativeView()];
 }
 
+void MenuMac::PopupAt(Window* window, int x, int y) {
+  base::scoped_nsobject<AtomMenuController> menu_controller(
+      [[AtomMenuController alloc] initWithModel:model_.get()]);
+
+  NativeWindow* native_window = window->window();
+  content::WebContents* web_contents = native_window->GetWebContents();
+  NSView* view = web_contents->GetContentNativeView();
+  NSMenu* menu = [menu_controller menu];
+
+  // Show the menu.
+  [menu popUpMenuPositioningItem:[menu itemAtIndex:0]
+                      atLocation:NSMakePoint(x, [view frame].size.height - y)
+                          inView:view];
+}
+
 // static
 void Menu::SetApplicationMenu(Menu* base_menu) {
   MenuMac* menu = static_cast<MenuMac*>(base_menu);

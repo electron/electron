@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_API_ATOM_API_MENU_VIEWS_H_
 
 #include "atom/browser/api/atom_api_menu.h"
+#include "ui/gfx/screen.h"
 
 namespace atom {
 
@@ -17,8 +18,10 @@ class MenuViews : public Menu {
 
  protected:
   virtual void Popup(Window* window) OVERRIDE;
+  virtual void PopupAt(Window* window, int x, int y) OVERRIDE;
 
  private:
+  void PopupAtPoint(Window* window, gfx::Point point);
   DISALLOW_COPY_AND_ASSIGN(MenuViews);
 };
 

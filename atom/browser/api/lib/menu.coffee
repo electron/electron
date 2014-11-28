@@ -45,9 +45,12 @@ Menu::_init = ->
           break
         v8Util.setHiddenValue group[0], 'checked', true unless checked
 
-Menu::popup = (window) ->
+Menu::popup = (window, x, y) ->
   throw new TypeError('Invalid window') unless window?.constructor is BrowserWindow
-  @_popup window
+  if x? and y?
+    @_popupAt(window, x, y)
+  else
+    @_popup window
 
 Menu::append = (item) ->
   @insert @getItemCount(), item
