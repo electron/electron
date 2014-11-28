@@ -19,7 +19,7 @@ namespace {
 
 struct PrintSettings {
   bool silent;
-  bool print_backgournd;
+  bool print_background;
 };
 
 }  // namespace
@@ -34,7 +34,7 @@ struct Converter<PrintSettings> {
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
     dict.Get("silent", &(out->silent));
-    dict.Get("printBackground", &(out->print_backgournd));
+    dict.Get("printBackground", &(out->print_background));
     return true;
   }
 };
@@ -395,7 +395,7 @@ void Window::Print(mate::Arguments* args) {
     return;
   }
 
-  window_->Print(settings.silent, settings.print_backgournd);
+  window_->Print(settings.silent, settings.print_background);
 }
 
 void Window::SetProgressBar(double progress) {
