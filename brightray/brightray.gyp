@@ -3,7 +3,7 @@
     'brightray.gypi',
   ],
   'variables': {
-    'brightray_source_root': '<!(python tools/brightray_source_root.py)',
+    'brightray_source_root': '<!(["python", "tools/brightray_source_root.py"])',
   },
   'targets': [
     {
