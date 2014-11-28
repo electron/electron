@@ -52,13 +52,26 @@ Emitted when the tray icon is clicked.
 
 Emitted when the tray icon is double clicked.
 
-This is only implemented on OS X.
+__Note:__ This is only implemented on OS X.
+
+### Event: 'balloon-show'
+
+Emitted when the tray balloon shows.
+
+__Note:__ This is only implemented on Windows.
 
 ### Event: 'balloon-clicked'
 
 Emitted when the tray balloon is clicked.
 
-This is only implemented on Windows.
+__Note:__ This is only implemented on Windows.
+
+### Event: 'balloon-closed'
+
+Emitted when the tray balloon is closed because of timeout or user manually
+closes it.
+
+__Note:__ This is only implemented on Windows.
 
 ### Tray.destroy()
 
