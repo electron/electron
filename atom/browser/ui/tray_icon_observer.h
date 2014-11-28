@@ -11,6 +11,7 @@ class TrayIconObserver {
  public:
   virtual void OnClicked() {}
   virtual void OnDoubleClicked() {}
+  virtual void OnBalloonClicked() {}
 
  protected:
   virtual ~TrayIconObserver() {}

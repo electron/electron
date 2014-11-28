@@ -35,6 +35,9 @@ class NotifyIcon : public TrayIcon {
   // otherwise displays the context menu if there is one.
   void HandleClickEvent(const gfx::Point& cursor_pos, bool left_button_click);
 
+  // Handles a click on the balloon from the user.
+  void HandleBalloonClickEvent();
+
   // Re-creates the status tray icon now after the taskbar has been created.
   void ResetIcon();
 

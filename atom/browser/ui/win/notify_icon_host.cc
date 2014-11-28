@@ -132,6 +132,10 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
       return TRUE;
 
     switch (lparam) {
+      case TB_INDETERMINATE:
+        win_icon->HandleBalloonClickEvent();
+        return TRUE;
+
       case WM_LBUTTONDOWN:
       case WM_RBUTTONDOWN:
       case WM_CONTEXTMENU:

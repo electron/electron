@@ -31,4 +31,8 @@ void TrayIcon::NotifyDoubleClicked() {
   FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDoubleClicked());
 }
 
+void TrayIcon::NotifyBalloonClicked() {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnBalloonClicked());
+}
+
 }  // namespace atom

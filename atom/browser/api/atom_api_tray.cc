@@ -41,6 +41,10 @@ void Tray::OnDoubleClicked() {
   Emit("double-clicked");
 }
 
+void Tray::OnBalloonClicked() {
+  Emit("balloon-clicked");
+}
+
 void Tray::Destroy() {
   tray_icon_.reset();
 }
