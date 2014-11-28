@@ -132,6 +132,18 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
       return TRUE;
 
     switch (lparam) {
+      case TB_CHECKBUTTON:
+        win_icon->NotifyBalloonShow();
+        return TRUE;
+
+      case TB_INDETERMINATE:
+        win_icon->NotifyBalloonClicked();
+        return TRUE;
+
+      case TB_HIDEBUTTON:
+        win_icon->NotifyBalloonClosed();
+        return TRUE;
+
       case WM_LBUTTONDOWN:
       case WM_RBUTTONDOWN:
       case WM_CONTEXTMENU:

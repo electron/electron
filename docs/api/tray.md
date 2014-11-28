@@ -52,7 +52,26 @@ Emitted when the tray icon is clicked.
 
 Emitted when the tray icon is double clicked.
 
-This is only implmented on OS X.
+__Note:__ This is only implemented on OS X.
+
+### Event: 'balloon-show'
+
+Emitted when the tray balloon shows.
+
+__Note:__ This is only implemented on Windows.
+
+### Event: 'balloon-clicked'
+
+Emitted when the tray balloon is clicked.
+
+__Note:__ This is only implemented on Windows.
+
+### Event: 'balloon-closed'
+
+Emitted when the tray balloon is closed because of timeout or user manually
+closes it.
+
+__Note:__ This is only implemented on Windows.
 
 ### Tray.destroy()
 
@@ -91,6 +110,13 @@ This is only implmented on OS X.
 Sets whether the tray icon is highlighted when it is clicked.
 
 This is only implmented on OS X.
+
+### Tray.displayBalloon(options)
+
+* `options` Object
+  * `icon` [Image](image.md)
+  * `title` String
+  * `content` String
 
 ### Tray.setContextMenu(menu)
 

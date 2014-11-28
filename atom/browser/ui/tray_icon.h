@@ -39,6 +39,12 @@ class TrayIcon {
   // works on OS X.
   virtual void SetHighlightMode(bool highlight);
 
+  // Displays a notification balloon with the specified contents.
+  // Depending on the platform it might not appear by the icon tray.
+  virtual void DisplayBalloon(const gfx::ImageSkia& icon,
+                              const base::string16& title,
+                              const base::string16& contents);
+
   // Set the context menu for this icon.
   virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) = 0;
 
@@ -46,6 +52,9 @@ class TrayIcon {
   void RemoveObserver(TrayIconObserver* obs) { observers_.RemoveObserver(obs); }
   void NotifyClicked();
   void NotifyDoubleClicked();
+  void NotifyBalloonShow();
+  void NotifyBalloonClicked();
+  void NotifyBalloonClosed();
 
  protected:
   TrayIcon();

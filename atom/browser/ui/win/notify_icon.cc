@@ -118,19 +118,36 @@ void NotifyIcon::SetToolTip(const std::string& tool_tip) {
     LOG(WARNING) << "Unable to set tooltip for status tray icon";
 }
 
+void NotifyIcon::DisplayBalloon(const gfx::ImageSkia& icon,
+                                const base::string16& title,
+                                const base::string16& contents) {
+  NOTIFYICONDATA icon_data;
+  InitIconData(&icon_data);
+  icon_data.uFlags = NIF_INFO;
+  icon_data.dwInfoFlags = NIIF_INFO;
+  wcscpy_s(icon_data.szInfoTitle, title.c_str());
+  wcscpy_s(icon_data.szInfo, contents.c_str());
+  icon_data.uTimeout = 0;
+
+  base::win::Version win_version = base::win::GetVersion();
+  if (!icon.isNull() && win_version != base::win::VERSION_PRE_XP) {
+    balloon_icon_.Set(IconUtil::CreateHICONFromSkBitmap(*icon.bitmap()));
+    icon_data.hBalloonIcon = balloon_icon_.Get();
+    icon_data.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON;
+  }
+
+  BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
+  if (!result)
+    LOG(WARNING) << "Unable to create status tray balloon.";
+}
+
 void NotifyIcon::SetContextMenu(ui::SimpleMenuModel* menu_model) {
   menu_model_ = menu_model;
 }
 
 void NotifyIcon::InitIconData(NOTIFYICONDATA* icon_data) {
-  if (base::win::GetVersion() >= base::win::VERSION_VISTA) {
-    memset(icon_data, 0, sizeof(NOTIFYICONDATA));
-    icon_data->cbSize = sizeof(NOTIFYICONDATA);
-  } else {
-    memset(icon_data, 0, NOTIFYICONDATA_V3_SIZE);
-    icon_data->cbSize = NOTIFYICONDATA_V3_SIZE;
-  }
-
+  memset(icon_data, 0, sizeof(NOTIFYICONDATA));
+  icon_data->cbSize = sizeof(NOTIFYICONDATA);
   icon_data->hWnd = window_;
   icon_data->uID = icon_id_;
 }

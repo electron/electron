@@ -17,6 +17,7 @@ class ImageSkia;
 
 namespace mate {
 class Arguments;
+class Dictionary;
 }
 
 namespace atom {
@@ -42,6 +43,9 @@ class Tray : public mate::EventEmitter,
   // TrayIconObserver:
   void OnClicked() override;
   void OnDoubleClicked() override;
+  void OnBalloonShow() override;
+  void OnBalloonClicked() override;
+  void OnBalloonClosed() override;
 
   void Destroy();
   void SetImage(mate::Arguments* args, const gfx::ImageSkia& image);
@@ -49,6 +53,7 @@ class Tray : public mate::EventEmitter,
   void SetToolTip(mate::Arguments* args, const std::string& tool_tip);
   void SetTitle(mate::Arguments* args, const std::string& title);
   void SetHighlightMode(mate::Arguments* args, bool highlight);
+  void DisplayBalloon(mate::Arguments* args, const mate::Dictionary& options);
   void SetContextMenu(mate::Arguments* args, Menu* menu);
 
  private:
