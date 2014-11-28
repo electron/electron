@@ -136,14 +136,8 @@ void NotifyIcon::DisplayBalloon(const gfx::ImageSkia& icon,
   base::win::Version win_version = base::win::GetVersion();
   if (!icon.isNull() && win_version != base::win::VERSION_PRE_XP) {
     balloon_icon_.Set(IconUtil::CreateHICONFromSkBitmap(*icon.bitmap()));
-    if (win_version >= base::win::VERSION_VISTA) {
-      icon_data.hBalloonIcon = balloon_icon_.Get();
-      icon_data.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON;
-    } else {
-      icon_data.hIcon = balloon_icon_.Get();
-      icon_data.uFlags |= NIF_ICON;
-      icon_data.dwInfoFlags = NIIF_USER;
-    }
+    icon_data.hBalloonIcon = balloon_icon_.Get();
+    icon_data.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON;
   }
 
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
@@ -156,14 +150,8 @@ void NotifyIcon::SetContextMenu(ui::SimpleMenuModel* menu_model) {
 }
 
 void NotifyIcon::InitIconData(NOTIFYICONDATA* icon_data) {
-  if (base::win::GetVersion() >= base::win::VERSION_VISTA) {
-    memset(icon_data, 0, sizeof(NOTIFYICONDATA));
-    icon_data->cbSize = sizeof(NOTIFYICONDATA);
-  } else {
-    memset(icon_data, 0, NOTIFYICONDATA_V3_SIZE);
-    icon_data->cbSize = NOTIFYICONDATA_V3_SIZE;
-  }
-
+  memset(icon_data, 0, sizeof(NOTIFYICONDATA));
+  icon_data->cbSize = sizeof(NOTIFYICONDATA);
   icon_data->hWnd = window_;
   icon_data->uID = icon_id_;
 }
