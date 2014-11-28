@@ -19,12 +19,16 @@ MenuMac::MenuMac() {
 }
 
 void MenuMac::Popup(Window* window) {
+  NativeWindow* native_window = window->window();
+  if (!native_window)
+    return;
+  content::WebContents* web_contents = native_window->GetWebContents();
+  if (!web_contents)
+    return;
+
+  NSWindow* nswindow = native_window->GetNativeWindow();
   base::scoped_nsobject<AtomMenuController> menu_controller(
       [[AtomMenuController alloc] initWithModel:model_.get()]);
-
-  NativeWindow* native_window = window->window();
-  NSWindow* nswindow = native_window->GetNativeWindow();
-  content::WebContents* web_contents = native_window->GetWebContents();
 
   // Fake out a context menu event.
   NSEvent* currentEvent = [NSApp currentEvent];
@@ -47,13 +51,17 @@ void MenuMac::Popup(Window* window) {
 }
 
 void MenuMac::PopupAt(Window* window, int x, int y) {
-  base::scoped_nsobject<AtomMenuController> menu_controller(
-      [[AtomMenuController alloc] initWithModel:model_.get()]);
-
   NativeWindow* native_window = window->window();
+  if (!native_window)
+    return;
   content::WebContents* web_contents = native_window->GetWebContents();
+  if (!web_contents)
+    return;
+
   NSView* view = web_contents->GetContentNativeView();
   NSMenu* menu = [menu_controller menu];
+  base::scoped_nsobject<AtomMenuController> menu_controller(
+      [[AtomMenuController alloc] initWithModel:model_.get()]);
 
   // Show the menu.
   [menu popUpMenuPositioningItem:[menu itemAtIndex:0]

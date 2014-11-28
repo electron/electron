@@ -21,7 +21,8 @@ class MenuViews : public Menu {
   virtual void PopupAt(Window* window, int x, int y) OVERRIDE;
 
  private:
-  void PopupAtPoint(Window* window, gfx::Point point);
+  void PopupAtPoint(Window* window, const gfx::Point& point);
+
   DISALLOW_COPY_AND_ASSIGN(MenuViews);
 };
 
