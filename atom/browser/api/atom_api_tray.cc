@@ -9,6 +9,7 @@
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/ui/tray_icon.h"
 #include "atom/common/native_mate_converters/image_converter.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 
@@ -74,6 +75,23 @@ void Tray::SetHighlightMode(mate::Arguments* args, bool highlight) {
   tray_icon_->SetHighlightMode(highlight);
 }
 
+void Tray::DisplayBalloon(mate::Arguments* args,
+                          const mate::Dictionary& options) {
+  if (!CheckTrayLife(args))
+    return;
+
+  gfx::ImageSkia icon;
+  options.Get("icon", &icon);
+  base::string16 title, content;
+  if (!options.Get("title", &title) ||
+      !options.Get("content", &content)) {
+    args->ThrowError("'title' and 'content' must be defined");
+    return;
+  }
+
+  tray_icon_->DisplayBalloon(icon, title, content);
+}
+
 void Tray::SetContextMenu(mate::Arguments* args, Menu* menu) {
   if (!CheckTrayLife(args))
     return;
@@ -99,6 +117,7 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setToolTip", &Tray::SetToolTip)
       .SetMethod("setTitle", &Tray::SetTitle)
       .SetMethod("setHighlightMode", &Tray::SetHighlightMode)
+      .SetMethod("displayBalloon", &Tray::DisplayBalloon)
       .SetMethod("_setContextMenu", &Tray::SetContextMenu);
 }
 
