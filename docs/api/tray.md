@@ -54,6 +54,10 @@ Emitted when the tray icon is double clicked.
 
 This is only implmented on OS X.
 
+### Tray.destroy()
+
+Destroys the tray icon immediately.
+
 ### Tray.setImage(image)
 
 * `image` [Image](image.md)

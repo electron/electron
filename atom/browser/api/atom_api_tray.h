@@ -15,6 +15,10 @@ namespace gfx {
 class ImageSkia;
 }
 
+namespace mate {
+class Arguments;
+}
+
 namespace atom {
 
 class TrayIcon;
@@ -39,14 +43,17 @@ class Tray : public mate::EventEmitter,
   void OnClicked() override;
   void OnDoubleClicked() override;
 
-  void SetImage(const gfx::ImageSkia& image);
-  void SetPressedImage(const gfx::ImageSkia& image);
-  void SetToolTip(const std::string& tool_tip);
-  void SetTitle(const std::string& title);
-  void SetHighlightMode(bool highlight);
-  void SetContextMenu(Menu* menu);
+  void Destroy();
+  void SetImage(mate::Arguments* args, const gfx::ImageSkia& image);
+  void SetPressedImage(mate::Arguments* args, const gfx::ImageSkia& image);
+  void SetToolTip(mate::Arguments* args, const std::string& tool_tip);
+  void SetTitle(mate::Arguments* args, const std::string& title);
+  void SetHighlightMode(mate::Arguments* args, bool highlight);
+  void SetContextMenu(mate::Arguments* args, Menu* menu);
 
  private:
+  bool CheckTrayLife(mate::Arguments* args);
+
   scoped_ptr<TrayIcon> tray_icon_;
 
   DISALLOW_COPY_AND_ASSIGN(Tray);

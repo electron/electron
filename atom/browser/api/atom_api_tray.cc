@@ -40,34 +40,60 @@ void Tray::OnDoubleClicked() {
   Emit("double-clicked");
 }
 
-void Tray::SetImage(const gfx::ImageSkia& image) {
+void Tray::Destroy() {
+  tray_icon_.reset();
+}
+
+void Tray::SetImage(mate::Arguments* args, const gfx::ImageSkia& image) {
+  if (!CheckTrayLife(args))
+    return;
   tray_icon_->SetImage(image);
 }
 
-void Tray::SetPressedImage(const gfx::ImageSkia& image) {
+void Tray::SetPressedImage(mate::Arguments* args, const gfx::ImageSkia& image) {
+  if (!CheckTrayLife(args))
+    return;
   tray_icon_->SetPressedImage(image);
 }
 
-void Tray::SetToolTip(const std::string& tool_tip) {
+void Tray::SetToolTip(mate::Arguments* args, const std::string& tool_tip) {
+  if (!CheckTrayLife(args))
+    return;
   tray_icon_->SetToolTip(tool_tip);
 }
 
-void Tray::SetTitle(const std::string& title) {
+void Tray::SetTitle(mate::Arguments* args, const std::string& title) {
+  if (!CheckTrayLife(args))
+    return;
   tray_icon_->SetTitle(title);
 }
 
-void Tray::SetHighlightMode(bool highlight) {
+void Tray::SetHighlightMode(mate::Arguments* args, bool highlight) {
+  if (!CheckTrayLife(args))
+    return;
   tray_icon_->SetHighlightMode(highlight);
 }
 
-void Tray::SetContextMenu(Menu* menu) {
+void Tray::SetContextMenu(mate::Arguments* args, Menu* menu) {
+  if (!CheckTrayLife(args))
+    return;
   tray_icon_->SetContextMenu(menu->model());
+}
+
+bool Tray::CheckTrayLife(mate::Arguments* args) {
+  if (!tray_icon_) {
+    args->ThrowError("Tray is already destroyed");
+    return false;
+  } else {
+    return true;
+  }
 }
 
 // static
 void Tray::BuildPrototype(v8::Isolate* isolate,
                           v8::Handle<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
+      .SetMethod("destroy", &Tray::Destroy)
       .SetMethod("setImage", &Tray::SetImage)
       .SetMethod("setPressedImage", &Tray::SetPressedImage)
       .SetMethod("setToolTip", &Tray::SetToolTip)
