@@ -100,8 +100,6 @@ void NotifyIcon::SetImage(const gfx::ImageSkia& image) {
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
     LOG(WARNING) << "Error setting status tray icon image";
-  else
-    host_->UpdateIconVisibilityInBackground(this);
 }
 
 void NotifyIcon::SetPressedImage(const gfx::ImageSkia& image) {

@@ -16,16 +16,6 @@ namespace atom {
 
 class NotifyIcon;
 
-// A class that's responsible for increasing, if possible, the visibility
-// of a status tray icon on the taskbar. The default implementation sends
-// a task to a worker thread each time EnqueueChange is called.
-class NotifyIconHostStateChangerProxy {
- public:
-  // Called by NotifyIconHost to request upgraded visibility on the icon
-  // represented by the |icon_id|, |window| pair.
-  virtual void EnqueueChange(UINT icon_id, HWND window) = 0;
-};
-
 class NotifyIconHost {
  public:
   NotifyIconHost();
@@ -33,8 +23,6 @@ class NotifyIconHost {
 
   NotifyIcon* CreateNotifyIcon();
   void Remove(NotifyIcon* notify_icon);
-
-  void UpdateIconVisibilityInBackground(NotifyIcon* notify_icon);
 
  private:
   typedef std::vector<NotifyIcon*> NotifyIcons;
@@ -66,10 +54,6 @@ class NotifyIconHost {
   // The message ID of the "TaskbarCreated" message, sent to us when we need to
   // reset our status icons.
   UINT taskbar_created_message_;
-
-  // Manages changes performed on a background thread to manipulate visibility
-  // of notification icons.
-  scoped_ptr<NotifyIconHostStateChangerProxy> state_changer_proxy_;
 
   DISALLOW_COPY_AND_ASSIGN(NotifyIconHost);
 };

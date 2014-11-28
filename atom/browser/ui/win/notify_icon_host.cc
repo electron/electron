@@ -12,7 +12,6 @@
 #include "base/threading/non_thread_safe.h"
 #include "base/threading/thread.h"
 #include "base/win/wrapped_window_proc.h"
-#include "chrome/browser/ui/views/status_icons/status_tray_state_changer_win.h"
 #include "ui/gfx/screen.h"
 #include "ui/gfx/win/hwnd_util.h"
 
@@ -28,68 +27,6 @@ const UINT kBaseIconId = 2;
 const wchar_t kNotifyIconHostWindowClass[] = L"AtomShell_NotifyIconHostWindow";
 
 }  // namespace
-
-// Default implementation for NotifyIconHostStateChangerProxy that communicates
-// to Exporer.exe via COM.  It spawns a background thread with a fresh COM
-// apartment and requests that the visibility be increased unless the user
-// has explicitly set the icon to be hidden.
-class NotifyIconHostStateChangerProxyImpl
-    : public NotifyIconHostStateChangerProxy,
-      public base::NonThreadSafe {
- public:
-  NotifyIconHostStateChangerProxyImpl()
-      : pending_requests_(0),
-        worker_thread_("NotifyIconCOMWorkerThread"),
-        weak_factory_(this) {
-    worker_thread_.init_com_with_mta(false);
-  }
-
-  virtual void EnqueueChange(UINT icon_id, HWND window) OVERRIDE {
-    DCHECK(CalledOnValidThread());
-    if (pending_requests_ == 0)
-      worker_thread_.Start();
-
-    ++pending_requests_;
-    worker_thread_.message_loop_proxy()->PostTaskAndReply(
-        FROM_HERE,
-        base::Bind(
-            &NotifyIconHostStateChangerProxyImpl::EnqueueChangeOnWorkerThread,
-            icon_id,
-            window),
-        base::Bind(&NotifyIconHostStateChangerProxyImpl::ChangeDone,
-                   weak_factory_.GetWeakPtr()));
-  }
-
- private:
-  // Must be called only on |worker_thread_|, to ensure the correct COM
-  // apartment.
-  static void EnqueueChangeOnWorkerThread(UINT icon_id, HWND window) {
-    // It appears that IUnknowns are coincidentally compatible with
-    // scoped_refptr.  Normally I wouldn't depend on that but it seems that
-    // base::win::IUnknownImpl itself depends on that coincidence so it's
-    // already being assumed elsewhere.
-    scoped_refptr<StatusTrayStateChangerWin> status_tray_state_changer(
-        new StatusTrayStateChangerWin(icon_id, window));
-    status_tray_state_changer->EnsureTrayIconVisible();
-  }
-
-  // Called on UI thread.
-  void ChangeDone() {
-    DCHECK(CalledOnValidThread());
-    DCHECK_GT(pending_requests_, 0);
-
-    if (--pending_requests_ == 0)
-      worker_thread_.Stop();
-  }
-
- private:
-  int pending_requests_;
-  base::Thread worker_thread_;
-  base::WeakPtrFactory<NotifyIconHostStateChangerProxyImpl> weak_factory_;
-
-  DISALLOW_COPY_AND_ASSIGN(NotifyIconHostStateChangerProxyImpl);
-};
-
 
 NotifyIconHost::NotifyIconHost()
     : next_icon_id_(1),
@@ -149,15 +86,6 @@ void NotifyIconHost::Remove(NotifyIcon* icon) {
   }
 
   notify_icons_.erase(i);
-}
-
-void NotifyIconHost::UpdateIconVisibilityInBackground(
-    NotifyIcon* notify_icon) {
-  if (!state_changer_proxy_.get())
-    state_changer_proxy_.reset(new NotifyIconHostStateChangerProxyImpl);
-
-  state_changer_proxy_->EnqueueChange(notify_icon->icon_id(),
-                                      notify_icon->window());
 }
 
 LRESULT CALLBACK NotifyIconHost::WndProcStatic(HWND hwnd,

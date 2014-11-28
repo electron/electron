@@ -315,8 +315,6 @@
       'chromium_src/chrome/browser/ui/libgtk2ui/gtk2_status_icon.h',
       'chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.cc',
       'chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.h',
-      'chromium_src/chrome/browser/ui/views/status_icons/status_tray_state_changer_win.cc',
-      'chromium_src/chrome/browser/ui/views/status_icons/status_tray_state_changer_win.h',
       'chromium_src/chrome/common/print_messages.cc',
       'chromium_src/chrome/common/print_messages.h',
       'chromium_src/chrome/common/tts_messages.h',
