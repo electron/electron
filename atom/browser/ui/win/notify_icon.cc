@@ -71,10 +71,6 @@ void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
       ui::MENU_SOURCE_MOUSE));
 }
 
-void NotifyIcon::HandleBalloonClickEvent() {
-  NotifyBalloonClicked();
-}
-
 void NotifyIcon::ResetIcon() {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);

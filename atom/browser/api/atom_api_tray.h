@@ -43,7 +43,9 @@ class Tray : public mate::EventEmitter,
   // TrayIconObserver:
   void OnClicked() override;
   void OnDoubleClicked() override;
+  void OnBalloonShow() override;
   void OnBalloonClicked() override;
+  void OnBalloonClosed() override;
 
   void Destroy();
   void SetImage(mate::Arguments* args, const gfx::ImageSkia& image);

@@ -52,7 +52,9 @@ class TrayIcon {
   void RemoveObserver(TrayIconObserver* obs) { observers_.RemoveObserver(obs); }
   void NotifyClicked();
   void NotifyDoubleClicked();
+  void NotifyBalloonShow();
   void NotifyBalloonClicked();
+  void NotifyBalloonClosed();
 
  protected:
   TrayIcon();

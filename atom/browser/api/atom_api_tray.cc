@@ -41,8 +41,16 @@ void Tray::OnDoubleClicked() {
   Emit("double-clicked");
 }
 
+void Tray::OnBalloonShow() {
+  Emit("balloon-show");
+}
+
 void Tray::OnBalloonClicked() {
   Emit("balloon-clicked");
+}
+
+void Tray::OnBalloonClosed() {
+  Emit("balloon-closed");
 }
 
 void Tray::Destroy() {
