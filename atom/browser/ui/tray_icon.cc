@@ -18,6 +18,11 @@ void TrayIcon::SetTitle(const std::string& title) {
 void TrayIcon::SetHighlightMode(bool highlight) {
 }
 
+void TrayIcon::DisplayBalloon(const gfx::ImageSkia& icon,
+                              const base::string16& title,
+                              const base::string16& contents) {
+}
+
 void TrayIcon::NotifyClicked() {
   FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnClicked());
 }

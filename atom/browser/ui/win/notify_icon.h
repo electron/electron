@@ -46,6 +46,9 @@ class NotifyIcon : public TrayIcon {
   void SetImage(const gfx::ImageSkia& image) override;
   void SetPressedImage(const gfx::ImageSkia& image) override;
   void SetToolTip(const std::string& tool_tip) override;
+  void DisplayBalloon(const gfx::ImageSkia& icon,
+                      const base::string16& title,
+                      const base::string16& contents) override;
   void SetContextMenu(ui::SimpleMenuModel* menu_model) override;
 
  private:
@@ -65,6 +68,9 @@ class NotifyIcon : public TrayIcon {
 
   // The currently-displayed icon for the window.
   base::win::ScopedHICON icon_;
+
+  // The currently-displayed icon for the notification balloon.
+  base::win::ScopedHICON balloon_icon_;
 
   // The context menu.
   ui::SimpleMenuModel* menu_model_;
