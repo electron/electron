@@ -8,7 +8,7 @@ var fs = require('fs')
 
 var platform = os.platform()
 var arch = os.arch()
-var version = '0.18.0'
+var version = '0.19.5'
 var name = 'atom-shell-v'+version+'-'+platform+'-'+arch+'.zip'
 var url = 'https://github.com/atom/atom-shell/releases/download/v'+version+'/atom-shell-v'+version+'-'+platform+'-'+arch+'.zip'
 
