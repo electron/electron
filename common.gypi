@@ -79,6 +79,7 @@
             '-Wno-unused-variable',
             '-Wno-deprecated-declarations',
             '-Wno-return-type',
+            '-Wno-gnu-folding-constant',
           ],
         },
         'conditions': [
