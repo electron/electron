@@ -12,9 +12,6 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "browser/browser_context.h"
-#include "browser/inspectable_web_contents.h"
-#include "browser/default_web_contents_delegate.h"
-#include "browser/inspectable_web_contents_delegate.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_http_handler.h"
 #include "content/public/browser/devtools_target.h"
@@ -25,7 +22,7 @@
 #include "content/public/common/content_switches.h"
 #include "content/public/common/url_constants.h"
 #include "content/public/common/user_agent.h"
-#include "net/socket/tcp_listen_socket.h"
+#include "net/socket/tcp_server_socket.h"
 #include "ui/base/resource/resource_bundle.h"
 
 using content::DevToolsAgentHost;
@@ -43,8 +40,28 @@ namespace {
 const int kIDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE = 25500;
 
 const char kTargetTypePage[] = "page";
+const char kTargetTypeServiceWorker[] = "service_worker";
+const char kTargetTypeOther[] = "other";
 
-net::StreamListenSocketFactory* CreateSocketFactory() {
+class TCPServerSocketFactory
+    : public content::DevToolsHttpHandler::ServerSocketFactory {
+ public:
+  TCPServerSocketFactory(const std::string& address, int port, int backlog)
+      : content::DevToolsHttpHandler::ServerSocketFactory(
+            address, port, backlog) {}
+
+ private:
+  // content::DevToolsHttpHandler::ServerSocketFactory.
+  scoped_ptr<net::ServerSocket> Create() const override {
+    return scoped_ptr<net::ServerSocket>(
+        new net::TCPServerSocket(NULL, net::NetLog::Source()));
+  }
+
+  DISALLOW_COPY_AND_ASSIGN(TCPServerSocketFactory);
+};
+
+scoped_ptr<content::DevToolsHttpHandler::ServerSocketFactory>
+CreateSocketFactory() {
   const CommandLine& command_line = *CommandLine::ForCurrentProcess();
   // See if the user specified a port on the command line (useful for
   // automation). If not, use an ephemeral port by specifying 0.
@@ -60,75 +77,77 @@ net::StreamListenSocketFactory* CreateSocketFactory() {
       DLOG(WARNING) << "Invalid http debugger port number " << temp_port;
     }
   }
-  return new net::TCPListenSocketFactory("127.0.0.1", port);
+  return scoped_ptr<content::DevToolsHttpHandler::ServerSocketFactory>(
+      new TCPServerSocketFactory("127.0.0.1", port, 1));
 }
 
 class Target : public content::DevToolsTarget {
  public:
-  explicit Target(WebContents* web_contents);
+  explicit Target(scoped_refptr<DevToolsAgentHost> agent_host);
 
-  virtual std::string GetId() const override { return id_; }
-  virtual std::string GetParentId() const { return std::string(); }
-  virtual std::string GetType() const override { return kTargetTypePage; }
-  virtual std::string GetTitle() const override { return title_; }
-  virtual std::string GetDescription() const override { return std::string(); }
-  virtual GURL GetURL() const override { return url_; }
-  virtual GURL GetFaviconURL() const override { return favicon_url_; }
-  virtual base::TimeTicks GetLastActivityTime() const override {
+  virtual std::string GetId() const OVERRIDE { return agent_host_->GetId(); }
+  virtual std::string GetParentId() const OVERRIDE { return std::string(); }
+  virtual std::string GetType() const OVERRIDE {
+    switch (agent_host_->GetType()) {
+      case DevToolsAgentHost::TYPE_WEB_CONTENTS:
+        return kTargetTypePage;
+      case DevToolsAgentHost::TYPE_SERVICE_WORKER:
+        return kTargetTypeServiceWorker;
+      default:
+        break;
+    }
+    return kTargetTypeOther;
+  }
+  virtual std::string GetTitle() const OVERRIDE {
+    return agent_host_->GetTitle();
+  }
+  virtual std::string GetDescription() const OVERRIDE { return std::string(); }
+  virtual GURL GetURL() const OVERRIDE { return agent_host_->GetURL(); }
+  virtual GURL GetFaviconURL() const OVERRIDE { return favicon_url_; }
+  virtual base::TimeTicks GetLastActivityTime() const OVERRIDE {
     return last_activity_time_;
   }
-  virtual bool IsAttached() const override {
+  virtual bool IsAttached() const OVERRIDE {
     return agent_host_->IsAttached();
   }
-  virtual scoped_refptr<DevToolsAgentHost> GetAgentHost() const override {
+  virtual scoped_refptr<DevToolsAgentHost> GetAgentHost() const OVERRIDE {
     return agent_host_;
   }
-  virtual bool Activate() const override;
-  virtual bool Close() const override;
+  virtual bool Activate() const OVERRIDE;
+  virtual bool Close() const OVERRIDE;
 
  private:
   scoped_refptr<DevToolsAgentHost> agent_host_;
-  std::string id_;
-  std::string title_;
-  GURL url_;
   GURL favicon_url_;
   base::TimeTicks last_activity_time_;
 };
 
-Target::Target(WebContents* web_contents) {
-  agent_host_ = DevToolsAgentHost::GetOrCreateFor(web_contents);
-  id_ = agent_host_->GetId();
-  title_ = base::UTF16ToUTF8(web_contents->GetTitle());
-  url_ = web_contents->GetURL();
-  content::NavigationController& controller = web_contents->GetController();
-  content::NavigationEntry* entry = controller.GetActiveEntry();
-  if (entry != NULL && entry->GetURL().is_valid())
-    favicon_url_ = entry->GetFavicon().url;
-  last_activity_time_ = web_contents->GetLastActiveTime();
+Target::Target(scoped_refptr<DevToolsAgentHost> agent_host)
+    : agent_host_(agent_host) {
+  if (WebContents* web_contents = agent_host_->GetWebContents()) {
+    content::NavigationController& controller = web_contents->GetController();
+    content::NavigationEntry* entry = controller.GetActiveEntry();
+    if (entry != NULL && entry->GetURL().is_valid())
+      favicon_url_ = entry->GetFavicon().url;
+    last_activity_time_ = web_contents->GetLastActiveTime();
+  }
 }
 
 bool Target::Activate() const {
-  WebContents* web_contents = agent_host_->GetWebContents();
-  if (!web_contents)
-    return false;
-  web_contents->GetDelegate()->ActivateContents(web_contents);
-  return true;
+  return agent_host_->Activate();
 }
 
 bool Target::Close() const {
-  WebContents* web_contents = agent_host_->GetWebContents();
-  if (!web_contents)
-    return false;
-  web_contents->GetRenderViewHost()->ClosePage();
-  return true;
+  return agent_host_->Close();
 }
 
 }  // namespace
 
 namespace brightray {
 
-DevToolsDelegate::DevToolsDelegate(
-    content::BrowserContext* browser_context)
+// DevToolsDelegate --------------------------------------------------------
+
+DevToolsDelegate::DevToolsDelegate(content::BrowserContext* browser_context)
     : browser_context_(browser_context) {
   std::string frontend_url;
   devtools_http_handler_ = DevToolsHttpHandler::Start(
@@ -156,37 +175,48 @@ base::FilePath DevToolsDelegate::GetDebugFrontendDir() {
   return base::FilePath();
 }
 
-std::string DevToolsDelegate::GetPageThumbnailData(const GURL& url) {
-  return std::string();
-}
-
-scoped_ptr<DevToolsTarget>
-DevToolsDelegate::CreateNewTarget(const GURL& url) {
-  content::WebContents::CreateParams create_params(
-      new brightray::BrowserContext());
-  brightray::InspectableWebContents* web_contents =
-      brightray::InspectableWebContents::Create(create_params);
-  web_contents->SetDelegate(new brightray::InspectableWebContentsDelegate());
-  return scoped_ptr<DevToolsTarget>(new Target(web_contents->GetWebContents()));
-}
-
-void DevToolsDelegate::EnumerateTargets(TargetCallback callback) {
-  TargetList targets;
-  std::vector<WebContents*> wc_list =
-      content::DevToolsAgentHost::GetInspectableWebContents();
-  for (std::vector<WebContents*>::iterator it = wc_list.begin();
-       it != wc_list.end();
-       ++it) {
-    targets.push_back(new Target(*it));
-  }
-  callback.Run(targets);
-}
-
 scoped_ptr<net::StreamListenSocket>
 DevToolsDelegate::CreateSocketForTethering(
     net::StreamListenSocket::Delegate* delegate,
     std::string* name) {
   return scoped_ptr<net::StreamListenSocket>();
+}
+
+// DevToolsManagerDelegate ---------------------------------------------------
+
+DevToolsManagerDelegate::DevToolsManagerDelegate(
+    content::BrowserContext* browser_context)
+    : browser_context_(browser_context) {
+}
+
+DevToolsManagerDelegate::~DevToolsManagerDelegate() {
+}
+
+base::DictionaryValue* DevToolsManagerDelegate::HandleCommand(
+    content::DevToolsAgentHost* agent_host,
+    base::DictionaryValue* command) {
+  return NULL;
+}
+
+std::string DevToolsManagerDelegate::GetPageThumbnailData(
+    const GURL& url) {
+  return std::string();
+}
+
+scoped_ptr<content::DevToolsTarget>
+DevToolsManagerDelegate::CreateNewTarget(const GURL& url) {
+  return scoped_ptr<content::DevToolsTarget>();
+}
+
+void DevToolsManagerDelegate::EnumerateTargets(TargetCallback callback) {
+  TargetList targets;
+  content::DevToolsAgentHost::List agents =
+      content::DevToolsAgentHost::GetOrCreateAll();
+  for (content::DevToolsAgentHost::List::iterator it = agents.begin();
+       it != agents.end(); ++it) {
+    targets.push_back(new Target(*it));
+  }
+  callback.Run(targets);
 }
 
 }  // namespace brightray
