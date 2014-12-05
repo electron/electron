@@ -166,7 +166,7 @@ content::BrowserPluginGuestManager* BrowserContext::GetGuestManager() {
   return NULL;
 }
 
-quota::SpecialStoragePolicy* BrowserContext::GetSpecialStoragePolicy() {
+storage::SpecialStoragePolicy* BrowserContext::GetSpecialStoragePolicy() {
   return NULL;
 }
 
