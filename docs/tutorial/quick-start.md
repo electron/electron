@@ -144,8 +144,8 @@ $ ./atom-shell/atom your-app/
 On Mac OS X:
 
 ```bash
-$ ./Atom.app/Contents/MacOS/Atom your-app/
+$ ./AtomShell.app/Contents/MacOS/AtomShell your-app/
 ```
 
-`Atom.app` here is part of the atom-shell's release package, you can download
+`AtomShell.app` here is part of the atom-shell's release package, you can download
 it from [here](https://github.com/atom/atom-shell/releases).

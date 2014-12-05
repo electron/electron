@@ -2,13 +2,13 @@
 
 To distribute your app with atom-shell, you should name the folder of your app
 as `app`, and put it under atom-shell's resources directory (on OS X it is
-`Atom.app/Contents/Resources/`, and on Linux and Windows it is `resources/`),
+`AtomShell.app/Contents/Resources/`, and on Linux and Windows it is `resources/`),
 like this:
 
 On Mac OS X:
 
 ```text
-atom-shell/Atom.app/Contents/Resources/app/
+atom-shell/AtomShell.app/Contents/Resources/app/
 ├── package.json
 ├── main.js
 └── index.html
@@ -23,7 +23,7 @@ atom-shell/resources/app
 └── index.html
 ```
 
-Then execute `Atom.app` (or `atom` on Linux, and `atom.exe` on Windows), and
+Then execute `AtomShell.app` (or `atom` on Linux, and `atom.exe` on Windows), and
 atom-shell will start as your app. The `atom-shell` directory would then be
 your distribution that should be delivered to final users.
 

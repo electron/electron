@@ -58,7 +58,7 @@ TARGET_BINARIES = {
 }
 TARGET_DIRECTORIES = {
   'darwin': [
-    'Atom.app',
+    'AtomShell.app',
   ],
   'win32': [
     'resources',

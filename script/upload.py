@@ -90,7 +90,7 @@ def parse_args():
 
 def get_atom_shell_build_version():
   if TARGET_PLATFORM == 'darwin':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Release', 'Atom.app',
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Release', 'AtomShell.app',
                               'Contents', 'MacOS', 'Atom')
   elif TARGET_PLATFORM == 'win32':
     atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Release', 'atom.exe')
