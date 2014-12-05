@@ -4,7 +4,7 @@
       'vendor/native_mate/native_mate_files.gypi',
     ],
     'project_name': 'atom',
-    'product_name': 'Atom',
+    'product_name': 'AtomShell',
     'framework_name': 'Atom Framework',
     'app_sources': [
       'atom/app/atom_main.cc',
