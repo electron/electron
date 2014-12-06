@@ -19,18 +19,28 @@ base::FilePath GetFrameworksPath() {
                                                .Append("Frameworks");
 }
 
+std::string GetApplicationName() {
+  std::string name = brightray::MainApplicationBundlePath().BaseName().AsUTF8Unsafe();
+  return name.substr(0, name.length() - 4/*.app*/);
+}
+
 }  // namespace
 
 void AtomMainDelegate::OverrideFrameworkBundlePath() {
-  base::mac::SetOverrideFrameworkBundlePath(
-      GetFrameworksPath().Append("Atom Framework.framework"));
+  base::FilePath bundlePath = GetFrameworksPath();
+  std::string app_name = GetApplicationName();
+
+  base::mac::SetOverrideFrameworkBundlePath(bundlePath
+      .Append(app_name + " Framework.framework"));
 }
 
 void AtomMainDelegate::OverrideChildProcessPath() {
-  base::FilePath helper_path = GetFrameworksPath().Append("Atom Helper.app")
+  std::string app_name = GetApplicationName();
+
+  base::FilePath helper_path = GetFrameworksPath().Append(app_name + " Helper.app")
                                                   .Append("Contents")
                                                   .Append("MacOS")
-                                                  .Append("Atom Helper");
+                                                  .Append(app_name + " Helper");
   PathService::Override(content::CHILD_PROCESS_EXE, helper_path);
 }
 
