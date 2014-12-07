@@ -68,13 +68,14 @@ class BundledDataSource : public content::URLDataSource {
     int resource_id =
         content::DevToolsHttpHandler::GetFrontendResourceId(filename);
 
-    DLOG_IF(WARNING, -1 == resource_id) << "Unable to find dev tool resource: "
-        << filename << ". If you compiled with debug_devtools=1, try running"
-        " with --debug-devtools.";
+    DLOG_IF(WARNING, resource_id == -1)
+        << "Unable to find dev tool resource: " << filename
+        << ". If you compiled with debug_devtools=1, try running with "
+           "--debug-devtools.";
     const ResourceBundle& rb = ResourceBundle::GetSharedInstance();
     scoped_refptr<base::RefCountedStaticMemory> bytes(rb.LoadDataResourceBytes(
         resource_id));
-    callback.Run(bytes);
+    callback.Run(bytes.get());
   }
 
   virtual std::string GetMimeType(const std::string& path) const override {

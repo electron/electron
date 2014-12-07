@@ -142,19 +142,6 @@ void MediaCaptureDevicesDispatcher::OnMediaRequestStateChanged(
     content::MediaRequestState state) {
 }
 
-void MediaCaptureDevicesDispatcher::OnAudioStreamPlaying(
-    int render_process_id,
-    int render_frame_id,
-    int stream_id,
-    const ReadPowerAndClipCallback& power_read_callback) {
-}
-
-void MediaCaptureDevicesDispatcher::OnAudioStreamStopped(
-    int render_process_id,
-    int render_frame_id,
-    int stream_id) {
-}
-
 void MediaCaptureDevicesDispatcher::OnCreatingAudioStream(
     int render_process_id,
     int render_view_id) {
