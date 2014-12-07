@@ -8,10 +8,9 @@
 #include "base/memory/scoped_ptr.h"
 #include "chrome/common/print_messages.h"
 #include "content/public/renderer/render_thread.h"
-#include "printing/metafile.h"
-#include "printing/metafile_impl.h"
 #include "printing/metafile_skia_wrapper.h"
 #include "printing/page_size_margins.h"
+#include "printing/pdf_metafile_skia.h"
 #include "skia/ext/platform_device.h"
 #include "skia/ext/vector_canvas.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
@@ -27,9 +26,8 @@ namespace printing {
 using blink::WebFrame;
 
 bool PrintWebViewHelper::PrintPagesNative(blink::WebFrame* frame,
-                                          int page_count,
-                                          const gfx::Size& canvas_size) {
-  NativeMetafile metafile;
+                                          int page_count) {
+  PdfMetafileSkia metafile;
   if (!metafile.Init())
     return false;
 
@@ -56,7 +54,7 @@ bool PrintWebViewHelper::PrintPagesNative(blink::WebFrame* frame,
   page_params.params = params.params;
   for (size_t i = 0; i < printed_pages.size(); ++i) {
     page_params.page_number = printed_pages[i];
-    PrintPageInternal(page_params, canvas_size, frame, &metafile);
+    PrintPageInternal(page_params, frame, &metafile);
   }
 
   // blink::printEnd() for PDF should be called before metafile is closed.
@@ -119,9 +117,8 @@ bool PrintWebViewHelper::PrintPagesNative(blink::WebFrame* frame,
 
 void PrintWebViewHelper::PrintPageInternal(
     const PrintMsg_PrintPage_Params& params,
-    const gfx::Size& canvas_size,
     WebFrame* frame,
-    Metafile* metafile) {
+    PdfMetafileSkia* metafile) {
   PageSizeMargins page_layout_in_points;
   double scale_factor = 1.0f;
   ComputePageLayoutInPointsForCss(frame, params.page_number, params.params,

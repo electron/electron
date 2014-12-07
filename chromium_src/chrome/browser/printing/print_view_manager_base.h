@@ -23,7 +23,7 @@ class RenderViewHost;
 namespace printing {
 
 class JobEventDetails;
-class PdfToEmfConverter;
+class MetafilePlayer;
 class PrintJob;
 class PrintJobWorkerOwner;
 class PrintQueriesQueue;
@@ -35,10 +35,12 @@ class PrintViewManagerBase : public content::NotificationObserver,
  public:
   virtual ~PrintViewManagerBase();
 
+#if !defined(DISABLE_BASIC_PRINTING)
   // Prints the current document immediately. Since the rendering is
   // asynchronous, the actual printing will not be completed on the return of
   // this function. Returns false if printing is impossible at the moment.
   virtual bool PrintNow(bool silent, bool print_background);
+#endif  // !DISABLE_BASIC_PRINTING
 
   // PrintedPagesSource implementation.
   virtual base::string16 RenderSourceName() OVERRIDE;
@@ -140,11 +142,10 @@ class PrintViewManagerBase : public content::NotificationObserver,
   // print settings are being loaded.
   bool inside_inner_message_loop_;
 
-#if (defined(OS_POSIX) && !defined(OS_MACOSX)) || \
-    defined(WIN_PDF_METAFILE_FOR_PRINTING)
+#if !defined(OS_MACOSX)
   // Set to true when OnDidPrintPage() should be expecting the first page.
   bool expecting_first_page_;
-#endif
+#endif  // OS_MACOSX
 
   // The document cookie of the current PrinterQuery.
   int cookie_;

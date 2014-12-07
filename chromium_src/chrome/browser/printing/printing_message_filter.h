@@ -15,6 +15,8 @@
 #endif
 
 struct PrintHostMsg_ScriptedPrint_Params;
+class Profile;
+class ProfileIOData;
 
 namespace base {
 class DictionaryValue;
@@ -26,18 +28,21 @@ class WebContents;
 }
 
 namespace printing {
-class PrinterQuery;
+
 class PrintJobManager;
 class PrintQueriesQueue;
-}
+class PrinterQuery;
 
 // This class filters out incoming printing related IPC messages for the
 // renderer process on the IPC thread.
 class PrintingMessageFilter : public content::BrowserMessageFilter {
  public:
-  explicit PrintingMessageFilter(int render_process_id);
+  PrintingMessageFilter(int render_process_id);
 
   // content::BrowserMessageFilter methods.
+  virtual void OverrideThreadForMessage(
+      const IPC::Message& message,
+      content::BrowserThread::ID* thread) OVERRIDE;
   virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
 
  private:
@@ -47,6 +52,25 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
   // Used to pass resulting EMF from renderer to browser in printing.
   void OnDuplicateSection(base::SharedMemoryHandle renderer_handle,
                           base::SharedMemoryHandle* browser_handle);
+#endif
+
+#if defined(OS_CHROMEOS) || defined(OS_ANDROID)
+  // Used to ask the browser allocate a temporary file for the renderer
+  // to fill in resulting PDF in renderer.
+  void OnAllocateTempFileForPrinting(int render_view_id,
+                                     base::FileDescriptor* temp_file_fd,
+                                     int* sequence_number);
+  void OnTempFileForPrintingWritten(int render_view_id, int sequence_number);
+#endif
+
+#if defined(OS_CHROMEOS)
+  void CreatePrintDialogForFile(int render_view_id, const base::FilePath& path);
+#endif
+
+#if defined(OS_ANDROID)
+  // Updates the file descriptor for the PrintViewManagerBasic of a given
+  // render_view_id.
+  void UpdateFileDescriptor(int render_view_id, int fd);
 #endif
 
   // Given a render_view_id get the corresponding WebContents.
@@ -59,38 +83,33 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
   // to base::Bind.
   struct GetPrintSettingsForRenderViewParams;
 
-  // Retrieve print settings.  Uses |render_view_id| to get a parent
-  // for any UI created if needed.
-  void GetPrintSettingsForRenderView(
-      int render_view_id,
-      GetPrintSettingsForRenderViewParams params,
-      const base::Closure& callback,
-      scoped_refptr<printing::PrinterQuery> printer_query);
-
-  void OnGetPrintSettingsFailed(
-      const base::Closure& callback,
-      scoped_refptr<printing::PrinterQuery> printer_query);
-
   // Get the default print setting.
   void OnGetDefaultPrintSettings(IPC::Message* reply_msg);
-  void OnGetDefaultPrintSettingsReply(
-      scoped_refptr<printing::PrinterQuery> printer_query,
-      IPC::Message* reply_msg);
+  void OnGetDefaultPrintSettingsReply(scoped_refptr<PrinterQuery> printer_query,
+                                      IPC::Message* reply_msg);
 
   // The renderer host have to show to the user the print dialog and returns
   // the selected print settings. The task is handled by the print worker
   // thread and the UI thread. The reply occurs on the IO thread.
   void OnScriptedPrint(const PrintHostMsg_ScriptedPrint_Params& params,
                        IPC::Message* reply_msg);
-  void OnScriptedPrintReply(
-      scoped_refptr<printing::PrinterQuery> printer_query,
-      IPC::Message* reply_msg);
+  void OnScriptedPrintReply(scoped_refptr<PrinterQuery> printer_query,
+                            IPC::Message* reply_msg);
+
+#if defined(ENABLE_FULL_PRINTING)
+  // Check to see if print preview has been cancelled.
+  void OnCheckForCancel(int32 preview_ui_id,
+                        int preview_request_id,
+                        bool* cancel);
+#endif
 
   const int render_process_id_;
 
-  scoped_refptr<printing::PrintQueriesQueue> queue_;
+  scoped_refptr<PrintQueriesQueue> queue_;
 
   DISALLOW_COPY_AND_ASSIGN(PrintingMessageFilter);
 };
+
+}  // namespace printing
 
 #endif  // CHROME_BROWSER_PRINTING_PRINTING_MESSAGE_FILTER_H_

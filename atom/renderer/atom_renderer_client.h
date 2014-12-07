@@ -27,7 +27,7 @@ class AtomRendererClient : public content::ContentRendererClient,
   virtual ~AtomRendererClient();
 
   // Forwarded by RenderFrameObserver.
-  void WillReleaseScriptContext(blink::WebFrame* frame,
+  void WillReleaseScriptContext(blink::WebLocalFrame* frame,
                                 v8::Handle<v8::Context> context,
                                 int world_id);
 

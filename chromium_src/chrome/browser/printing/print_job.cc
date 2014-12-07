@@ -32,29 +32,25 @@ void HoldRefCallback(const scoped_refptr<printing::PrintJobWorkerOwner>& owner,
 namespace printing {
 
 PrintJob::PrintJob()
-    : ui_message_loop_(base::MessageLoop::current()),
-      source_(NULL),
+    : source_(NULL),
       worker_(),
       settings_(),
       is_job_pending_(false),
       is_canceling_(false),
       quit_factory_(this) {
-  DCHECK(ui_message_loop_);
   // This is normally a UI message loop, but in unit tests, the message loop is
   // of the 'default' type.
   DCHECK(base::MessageLoopForUI::IsCurrent() ||
-         ui_message_loop_->type() == base::MessageLoop::TYPE_DEFAULT);
-  ui_message_loop_->AddDestructionObserver(this);
+         base::MessageLoop::current()->type() ==
+             base::MessageLoop::TYPE_DEFAULT);
 }
 
 PrintJob::~PrintJob() {
-  ui_message_loop_->RemoveDestructionObserver(this);
   // The job should be finished (or at least canceled) when it is destroyed.
   DCHECK(!is_job_pending_);
   DCHECK(!is_canceling_);
-  if (worker_.get())
-    DCHECK(worker_->message_loop() == NULL);
-  DCHECK_EQ(ui_message_loop_, base::MessageLoop::current());
+  DCHECK(!worker_ || !worker_->IsRunning());
+  DCHECK(RunsTasksOnCurrentThread());
 }
 
 void PrintJob::Initialize(PrintJobWorkerOwner* job,
@@ -85,7 +81,7 @@ void PrintJob::Initialize(PrintJobWorkerOwner* job,
 void PrintJob::Observe(int type,
                        const content::NotificationSource& source,
                        const content::NotificationDetails& details) {
-  DCHECK_EQ(ui_message_loop_, base::MessageLoop::current());
+  DCHECK(RunsTasksOnCurrentThread());
   switch (type) {
     case chrome::NOTIFICATION_PRINT_JOB_EVENT: {
       OnNotifyPrintJobEvent(*content::Details<JobEventDetails>(details).ptr());
@@ -107,10 +103,6 @@ PrintJobWorker* PrintJob::DetachWorker(PrintJobWorkerOwner* new_owner) {
   return NULL;
 }
 
-base::MessageLoop* PrintJob::message_loop() {
-  return ui_message_loop_;
-}
-
 const PrintSettings& PrintJob::settings() const {
   return settings_;
 }
@@ -122,23 +114,20 @@ int PrintJob::cookie() const {
   return document_->cookie();
 }
 
-void PrintJob::WillDestroyCurrentMessageLoop() {
-  NOTREACHED();
-}
-
 void PrintJob::StartPrinting() {
-  DCHECK_EQ(ui_message_loop_, base::MessageLoop::current());
-  DCHECK(worker_->message_loop());
+  DCHECK(RunsTasksOnCurrentThread());
+  DCHECK(worker_->IsRunning());
   DCHECK(!is_job_pending_);
-  if (!worker_->message_loop() || is_job_pending_)
+  if (!worker_->IsRunning() || is_job_pending_)
     return;
 
   // Real work is done in PrintJobWorker::StartPrinting().
-  worker_->message_loop()->PostTask(
-      FROM_HERE,
-      base::Bind(&HoldRefCallback, make_scoped_refptr(this),
-                 base::Bind(&PrintJobWorker::StartPrinting,
-                            base::Unretained(worker_.get()), document_)));
+  worker_->PostTask(FROM_HERE,
+                    base::Bind(&HoldRefCallback,
+                               make_scoped_refptr(this),
+                               base::Bind(&PrintJobWorker::StartPrinting,
+                                          base::Unretained(worker_.get()),
+                                          document_)));
   // Set the flag right now.
   is_job_pending_ = true;
 
@@ -152,7 +141,7 @@ void PrintJob::StartPrinting() {
 }
 
 void PrintJob::Stop() {
-  DCHECK_EQ(ui_message_loop_, base::MessageLoop::current());
+  DCHECK(RunsTasksOnCurrentThread());
 
   if (quit_factory_.HasWeakPtrs()) {
     // In case we're running a nested message loop to wait for a job to finish,
@@ -164,7 +153,7 @@ void PrintJob::Stop() {
   // Be sure to live long enough.
   scoped_refptr<PrintJob> handle(this);
 
-  if (worker_->message_loop()) {
+  if (worker_->IsRunning()) {
     ControlledWorkerShutdown();
   } else {
     // Flush the cached document.
@@ -180,10 +169,8 @@ void PrintJob::Cancel() {
   // Be sure to live long enough.
   scoped_refptr<PrintJob> handle(this);
 
-  DCHECK_EQ(ui_message_loop_, base::MessageLoop::current());
-  base::MessageLoop* worker_loop =
-      worker_.get() ? worker_->message_loop() : NULL;
-  if (worker_loop) {
+  DCHECK(RunsTasksOnCurrentThread());
+  if (worker_ && worker_->IsRunning()) {
     // Call this right now so it renders the context invalid. Do not use
     // InvokeLater since it would take too much time.
     worker_->Cancel();
@@ -237,14 +224,15 @@ void PrintJob::UpdatePrintedDocument(PrintedDocument* new_document) {
     settings_ = document_->settings();
   }
 
-  if (worker_.get() && worker_->message_loop()) {
+  if (worker_) {
     DCHECK(!is_job_pending_);
     // Sync the document with the worker.
-    worker_->message_loop()->PostTask(
-        FROM_HERE,
-        base::Bind(&HoldRefCallback, make_scoped_refptr(this),
-                   base::Bind(&PrintJobWorker::OnDocumentChanged,
-                              base::Unretained(worker_.get()), document_)));
+    worker_->PostTask(FROM_HERE,
+                      base::Bind(&HoldRefCallback,
+                                 make_scoped_refptr(this),
+                                 base::Bind(&PrintJobWorker::OnDocumentChanged,
+                                            base::Unretained(worker_.get()),
+                                            document_)));
   }
 }
 
@@ -264,7 +252,6 @@ void PrintJob::OnNotifyPrintJobEvent(const JobEventDetails& event_details) {
     }
     case JobEventDetails::NEW_DOC:
     case JobEventDetails::NEW_PAGE:
-    case JobEventDetails::PAGE_DONE:
     case JobEventDetails::JOB_DONE:
     case JobEventDetails::ALL_PAGES_REQUESTED: {
       // Don't care.
@@ -276,6 +263,8 @@ void PrintJob::OnNotifyPrintJobEvent(const JobEventDetails& event_details) {
           FROM_HERE, base::Bind(&PrintJob::OnDocumentDone, this));
       break;
     }
+    case JobEventDetails::PAGE_DONE:
+      break;
     default: {
       NOTREACHED();
       break;
@@ -300,7 +289,7 @@ void PrintJob::OnDocumentDone() {
 }
 
 void PrintJob::ControlledWorkerShutdown() {
-  DCHECK_EQ(ui_message_loop_, base::MessageLoop::current());
+  DCHECK(RunsTasksOnCurrentThread());
 
   // The deadlock this code works around is specific to window messaging on
   // Windows, so we aren't likely to need it on any other platforms.

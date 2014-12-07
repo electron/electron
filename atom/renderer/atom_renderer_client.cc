@@ -161,7 +161,7 @@ void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,
 }
 
 void AtomRendererClient::WillReleaseScriptContext(
-    blink::WebFrame* frame,
+    blink::WebLocalFrame* frame,
     v8::Handle<v8::Context> context,
     int world_id) {
   node::Environment* env = node::Environment::GetCurrent(context);

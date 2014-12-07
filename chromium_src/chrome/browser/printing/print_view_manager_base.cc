@@ -24,10 +24,13 @@
 #include "content/public/browser/notification_source.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
-#include "grit/generated_resources.h"
-#include "printing/metafile_impl.h"
+#include "printing/pdf_metafile_skia.h"
 #include "printing/printed_document.h"
 #include "ui/base/l10n/l10n_util.h"
+
+#if defined(ENABLE_FULL_PRINTING)
+#include "chrome/browser/printing/print_error_dialog.h"
+#endif
 
 using base::TimeDelta;
 using content::BrowserThread;
@@ -35,11 +38,6 @@ using content::BrowserThread;
 namespace printing {
 
 namespace {
-
-#if defined(OS_WIN) && !defined(WIN_PDF_METAFILE_FOR_PRINTING)
-// Limits memory usage by raster to 64 MiB.
-const int kMaxRasterSizeInPixels = 16*1024*1024;
-#endif
 
 }  // namespace
 
@@ -50,11 +48,10 @@ PrintViewManagerBase::PrintViewManagerBase(content::WebContents* web_contents)
       inside_inner_message_loop_(false),
       cookie_(0),
       queue_(g_browser_process->print_job_manager()->queue()) {
-  DCHECK(queue_);
-#if (defined(OS_POSIX) && !defined(OS_MACOSX)) || \
-    defined(WIN_PDF_METAFILE_FOR_PRINTING)
+  DCHECK(queue_.get());
+#if !defined(OS_MACOSX)
   expecting_first_page_ = true;
-#endif
+#endif  // OS_MACOSX
   printing_enabled_ = true;
 }
 
@@ -63,10 +60,12 @@ PrintViewManagerBase::~PrintViewManagerBase() {
   DisconnectFromCurrentPrintJob();
 }
 
+#if !defined(DISABLE_BASIC_PRINTING)
 bool PrintViewManagerBase::PrintNow(bool silent, bool print_background) {
   return PrintNowInternal(new PrintMsg_PrintPages(
       routing_id(), silent, print_background));
 }
+#endif  // !DISABLE_BASIC_PRINTING
 
 void PrintViewManagerBase::NavigationStopped() {
   // Cancel the current job, wait for the worker to finish.
@@ -117,13 +116,12 @@ void PrintViewManagerBase::OnDidPrintPage(
     return;
   }
 
-#if (defined(OS_WIN) && !defined(WIN_PDF_METAFILE_FOR_PRINTING)) || \
-    defined(OS_MACOSX)
+#if defined(OS_MACOSX)
   const bool metafile_must_be_valid = true;
-#elif defined(OS_POSIX) || defined(WIN_PDF_METAFILE_FOR_PRINTING)
+#else
   const bool metafile_must_be_valid = expecting_first_page_;
   expecting_first_page_ = false;
-#endif
+#endif  // OS_MACOSX
 
   base::SharedMemory shared_buf(params.metafile_data_handle, true);
   if (metafile_must_be_valid) {
@@ -134,7 +132,7 @@ void PrintViewManagerBase::OnDidPrintPage(
     }
   }
 
-  scoped_ptr<NativeMetafile> metafile(new NativeMetafile);
+  scoped_ptr<PdfMetafileSkia> metafile(new PdfMetafileSkia);
   if (metafile_must_be_valid) {
     if (!metafile->InitFromData(shared_buf.memory(), params.data_size)) {
       NOTREACHED() << "Invalid metafile header";
@@ -143,32 +141,10 @@ void PrintViewManagerBase::OnDidPrintPage(
     }
   }
 
-#if defined(OS_WIN) && !defined(WIN_PDF_METAFILE_FOR_PRINTING)
-  bool big_emf = (params.data_size && params.data_size >= kMetafileMaxSize);
-  int raster_size =
-      std::min(params.page_size.GetArea(), kMaxRasterSizeInPixels);
-  if (big_emf) {
-    scoped_ptr<NativeMetafile> raster_metafile(
-        metafile->RasterizeMetafile(raster_size));
-    if (raster_metafile.get()) {
-      metafile.swap(raster_metafile);
-    } else if (big_emf) {
-      // Don't fall back to emf here.
-      NOTREACHED() << "size:" << params.data_size;
-      TerminatePrintJob(true);
-      web_contents()->Stop();
-      return;
-    }
-  }
-#endif  // OS_WIN && !WIN_PDF_METAFILE_FOR_PRINTING
-
-#if !defined(WIN_PDF_METAFILE_FOR_PRINTING)
+#if !defined(OS_WIN)
   // Update the rendered document. It will send notifications to the listener.
   document->SetPage(params.page_number,
-                    metafile.release(),
-#if defined(OS_WIN)
-                    params.actual_shrink,
-#endif  // OS_WIN
+                    metafile.PassAs<MetafilePlayer>(),
                     params.page_size,
                     params.content_area);
 
@@ -180,19 +156,8 @@ void PrintViewManagerBase::OnDidPrintPage(
         params.data_size);
 
     document->DebugDumpData(bytes, FILE_PATH_LITERAL(".pdf"));
-
-    if (!pdf_to_emf_converter_)
-      pdf_to_emf_converter_ = PdfToEmfConverter::CreateDefault();
-
-    const int kPrinterDpi = print_job_->settings().dpi();
-    pdf_to_emf_converter_->Start(
-        bytes,
-        printing::PdfRenderSettings(params.content_area, kPrinterDpi, true),
-        base::Bind(&PrintViewManagerBase::OnPdfToEmfConverted,
-                   base::Unretained(this),
-                   params));
   }
-#endif  // !WIN_PDF_METAFILE_FOR_PRINTING
+#endif  // !OS_WIN
 }
 
 void PrintViewManagerBase::OnPrintingFailed(int cookie) {
@@ -386,10 +351,9 @@ void PrintViewManagerBase::DisconnectFromCurrentPrintJob() {
     // DO NOT wait for the job to finish.
     ReleasePrintJob();
   }
-#if (defined(OS_POSIX) && !defined(OS_MACOSX)) || \
-    defined(WIN_PDF_METAFILE_FOR_PRINTING)
+#if !defined(OS_MACOSX)
   expecting_first_page_ = true;
-#endif
+#endif  // OS_MACOSX
 }
 
 void PrintViewManagerBase::PrintingDone(bool success) {
@@ -481,12 +445,12 @@ bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
   // The job was initiated by a script. Time to get the corresponding worker
   // thread.
   scoped_refptr<PrinterQuery> queued_query = queue_->PopPrinterQuery(cookie);
-  if (!queued_query) {
+  if (!queued_query.get()) {
     NOTREACHED();
     return false;
   }
 
-  if (!CreateNewPrintJob(queued_query)) {
+  if (!CreateNewPrintJob(queued_query.get())) {
     // Don't kill anything.
     return false;
   }
@@ -512,8 +476,6 @@ void PrintViewManagerBase::ReleasePrinterQuery() {
 
   int cookie = cookie_;
   cookie_ = 0;
-  queue_->SetDestination(NULL);
-
 
   printing::PrintJobManager* print_job_manager =
       g_browser_process->print_job_manager();
@@ -523,7 +485,7 @@ void PrintViewManagerBase::ReleasePrinterQuery() {
 
   scoped_refptr<printing::PrinterQuery> printer_query;
   printer_query = queue_->PopPrinterQuery(cookie);
-  if (!printer_query)
+  if (!printer_query.get())
     return;
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,

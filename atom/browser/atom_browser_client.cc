@@ -56,7 +56,7 @@ AtomBrowserClient::~AtomBrowserClient() {
 void AtomBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
   int id = host->GetID();
-  host->AddFilter(new PrintingMessageFilter(host->GetID()));
+  host->AddFilter(new printing::PrintingMessageFilter(host->GetID()));
   host->AddFilter(new TtsMessageFilter(id, host->GetBrowserContext()));
 }
 
