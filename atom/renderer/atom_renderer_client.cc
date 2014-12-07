@@ -92,7 +92,7 @@ void AtomRendererClient::WebKitInitialized() {
   v8::Isolate* isolate = blink::mainThreadIsolate();
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> context = v8::Context::New(isolate);
-  global_env = node::Environment::New(context);
+  global_env = node::Environment::New(context, uv_default_loop());
 }
 
 void AtomRendererClient::RenderThreadStarted() {
