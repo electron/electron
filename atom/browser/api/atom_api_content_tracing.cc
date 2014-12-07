@@ -69,14 +69,17 @@ void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
   dict.SetMethod("startRecording", base::Bind(
       &TracingController::EnableRecording, base::Unretained(controller)));
   dict.SetMethod("stopRecording", base::Bind(
-      &TracingController::DisableRecording, base::Unretained(controller)));
+      &TracingController::DisableRecording,
+      base::Unretained(controller),
+      nullptr));
   dict.SetMethod("startMonitoring", base::Bind(
       &TracingController::EnableMonitoring, base::Unretained(controller)));
   dict.SetMethod("stopMonitoring", base::Bind(
       &TracingController::DisableMonitoring, base::Unretained(controller)));
   dict.SetMethod("captureMonitoringSnapshot", base::Bind(
       &TracingController::CaptureMonitoringSnapshot,
-      base::Unretained(controller)));
+      base::Unretained(controller),
+      nullptr));
   dict.SetMethod("getTraceBufferPercentFull", base::Bind(
       &TracingController::GetTraceBufferPercentFull,
       base::Unretained(controller)));

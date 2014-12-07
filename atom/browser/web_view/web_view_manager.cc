@@ -75,14 +75,13 @@ void WebViewManager::RemoveGuest(int guest_instance_id) {
   web_contents_map_.erase(guest_instance_id);
 }
 
-void WebViewManager::MaybeGetGuestByInstanceIDOrKill(
-    int guest_instance_id,
-    int embedder_render_process_id,
-    const GuestByInstanceIDCallback& callback) {
+content::WebContents* WebViewManager::GetGuestByInstanceID(
+    content::WebContents* embedder_web_contents,
+    int guest_instance_id) {
   if (ContainsKey(web_contents_map_, guest_instance_id))
-    callback.Run(web_contents_map_[guest_instance_id].web_contents);
+    return web_contents_map_[guest_instance_id].web_contents;
   else
-    callback.Run(nullptr);
+    return nullptr;
 }
 
 bool WebViewManager::ForEachGuest(content::WebContents* embedder_web_contents,

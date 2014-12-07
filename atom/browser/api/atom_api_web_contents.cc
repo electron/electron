@@ -225,26 +225,10 @@ void WebContents::WebContentsDestroyed() {
   Emit("destroyed");
 }
 
-void WebContents::WillAttach(content::WebContents* embedder_web_contents,
-                             const base::DictionaryValue& extra_params) {
-  embedder_web_contents_ = embedder_web_contents;
-  extra_params_.reset(extra_params.DeepCopy());
-}
-
-content::WebContents* WebContents::CreateNewGuestWindow(
-    const content::WebContents::CreateParams& create_params) {
-  NOTREACHED() << "Should not create new window from guest";
-  return nullptr;
-}
-
-void WebContents::DidAttach() {
+void WebContents::DidAttach(int guest_proxy_routing_id) {
   base::ListValue args;
   args.Append(extra_params_.release());
   Emit("did-attach", args);
-}
-
-int WebContents::GetGuestInstanceID() const {
-  return guest_instance_id_;
 }
 
 void WebContents::ElementSizeChanged(const gfx::Size& old_size,
@@ -260,16 +244,14 @@ void WebContents::GuestSizeChanged(const gfx::Size& old_size,
   GuestSizeChangedDueToAutoSize(old_size, new_size);
 }
 
-void WebContents::RequestPointerLockPermission(
-    bool user_gesture,
-    bool last_unlocked_by_target,
-    const base::Callback<void(bool enabled)>& callback) {
-  callback.Run(true);
-}
-
 void WebContents::RegisterDestructionCallback(
     const DestructionCallback& callback) {
   destruction_callback_ = callback;
+}
+
+void WebContents::WillAttach(content::WebContents* embedder_web_contents,
+                             int browser_plugin_instance_id) {
+  embedder_web_contents_ = embedder_web_contents;
 }
 
 void WebContents::Destroy() {
@@ -294,7 +276,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
     params.referrer = content::Referrer(http_referrer.GetAsReferrer(),
                                         blink::WebReferrerPolicyDefault);
 
-  params.transition_type = content::PAGE_TRANSITION_TYPED;
+  params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
   web_contents()->GetController().LoadURLWithParams(params);
 }

@@ -138,22 +138,14 @@ class WebContents : public mate::EventEmitter,
   virtual void WebContentsDestroyed() override;
 
   // content::BrowserPluginGuestDelegate:
-  virtual void WillAttach(content::WebContents* embedder_web_contents,
-                          const base::DictionaryValue& extra_params) override;
-  virtual content::WebContents* CreateNewGuestWindow(
-      const content::WebContents::CreateParams& create_params) override;
-  virtual void DidAttach() override;
-  virtual int GetGuestInstanceID() const override;
-  virtual void ElementSizeChanged(const gfx::Size& old_size,
-                                  const gfx::Size& new_size) override;
-  virtual void GuestSizeChanged(const gfx::Size& old_size,
-                                const gfx::Size& new_size) override;
-  virtual void RequestPointerLockPermission(
-      bool user_gesture,
-      bool last_unlocked_by_target,
-      const base::Callback<void(bool enabled)>& callback) override;
-  virtual void RegisterDestructionCallback(
-      const DestructionCallback& callback) override;
+  void DidAttach(int guest_proxy_routing_id) final;
+  void ElementSizeChanged(const gfx::Size& old_size,
+                          const gfx::Size& new_size) final;
+  void GuestSizeChanged(const gfx::Size& old_size,
+                        const gfx::Size& new_size) final;
+  void RegisterDestructionCallback(const DestructionCallback& callback) final;
+  void WillAttach(content::WebContents* embedder_web_contents,
+                  int browser_plugin_instance_id) final;
 
  private:
   // Called when received a message from renderer.

@@ -8,6 +8,7 @@
 #include <map>
 
 #include "content/public/browser/browser_plugin_guest_manager.h"
+#include "url/gurl.h"
 
 namespace content {
 class BrowserContext;
@@ -30,12 +31,11 @@ class WebViewManager : public content::BrowserPluginGuestManager {
 
  protected:
   // content::BrowserPluginGuestManager:
-  virtual void MaybeGetGuestByInstanceIDOrKill(
-      int guest_instance_id,
-      int embedder_render_process_id,
-      const GuestByInstanceIDCallback& callback) override;
-  virtual bool ForEachGuest(content::WebContents* embedder_web_contents,
-                            const GuestCallback& callback) override;
+  content::WebContents* GetGuestByInstanceID(
+      content::WebContents* embedder_web_contents,
+      int browser_plugin_instance_id) override;
+  bool ForEachGuest(content::WebContents* embedder_web_contents,
+                    const GuestCallback& callback) override;
 
  private:
   struct WebContentsWithEmbedder {
