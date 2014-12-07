@@ -132,6 +132,8 @@ def safe_mkdir(path):
 
 
 def execute(argv):
+  if verbose_mode:
+    print ' '.join(argv)
   try:
     output = subprocess.check_output(argv, stderr=subprocess.STDOUT)
     if verbose_mode:
