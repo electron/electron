@@ -5,7 +5,7 @@ import os
 import sys
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL
-from lib.util import execute, scoped_cwd, enable_verbose_execute
+from lib.util import execute, execute_stdout, scoped_cwd, enable_verbose_execute
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -49,19 +49,19 @@ def parse_args():
 
 
 def update_submodules():
-  execute(['git', 'submodule', 'sync'])
-  execute(['git', 'submodule', 'update', '--init', '--recursive'])
+  execute_stdout(['git', 'submodule', 'sync'])
+  execute_stdout(['git', 'submodule', 'update', '--init', '--recursive'])
 
 
 def bootstrap_brightray(url):
   bootstrap = os.path.join(VENDOR_DIR, 'brightray', 'script', 'bootstrap')
-  execute([sys.executable, bootstrap, '--commit', LIBCHROMIUMCONTENT_COMMIT,
-           url])
+  execute_stdout([sys.executable, bootstrap, '--commit', LIBCHROMIUMCONTENT_COMMIT,
+                  url])
 
 
 def update_node_modules(dirname):
   with scoped_cwd(dirname):
-    execute([NPM, 'install'])
+    execute_stdout([NPM, 'install'])
 
 
 def update_atom_modules(dirname):
@@ -70,20 +70,20 @@ def update_atom_modules(dirname):
     if sys.platform in ['win32', 'cygwin']:
       apm = os.path.join(SOURCE_ROOT, 'node_modules', 'atom-package-manager',
                          'bin', 'apm.cmd')
-    execute([apm, 'install'])
+    execute_stdout([apm, 'install'])
 
 
 def update_win32_python():
   with scoped_cwd(VENDOR_DIR):
     if not os.path.exists('python_26'):
-      execute(['git', 'clone', PYTHON_26_URL])
+      execute_stdout(['git', 'clone', PYTHON_26_URL])
 
 
 def install_runas():
   # TODO This is needed by the tools/win/register_msdia80_dll.js, should move
   # this to a better place.
   with scoped_cwd(os.path.join(SOURCE_ROOT, 'tools', 'win')):
-    execute([NPM, 'install', 'runas'])
+    execute_stdout([NPM, 'install', 'runas'])
 
 
 def create_chrome_version_h():
@@ -112,7 +112,7 @@ def touch_config_gypi():
 
 def update_atom_shell():
   update = os.path.join(SOURCE_ROOT, 'script', 'update.py')
-  execute([sys.executable, update])
+  execute_stdout([sys.executable, update])
 
 
 if __name__ == '__main__':
