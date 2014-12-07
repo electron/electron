@@ -43,7 +43,7 @@ python script\bootstrap.py
 Build both Release and Debug targets:
 
 ```powershell
-python script\build.py
+python script\build.py -v
 ```
 
 You can also only build the Debug target:
