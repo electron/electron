@@ -60,8 +60,8 @@ def update_submodules():
 
 def bootstrap_brightray(url):
   bootstrap = os.path.join(VENDOR_DIR, 'brightray', 'script', 'bootstrap')
-  execute_stdout([sys.executable, bootstrap, '--commit', LIBCHROMIUMCONTENT_COMMIT,
-                  url])
+  execute_stdout([sys.executable, bootstrap, '--commit',
+                  LIBCHROMIUMCONTENT_COMMIT, url])
 
 
 def update_node_modules(dirname):
