@@ -14,12 +14,17 @@ PYTHON_26_URL = 'https://chromium.googlesource.com/chromium/deps/python_26'
 NPM = 'npm.cmd' if sys.platform in ['win32', 'cygwin'] else 'npm'
 
 
+verbose_mode = False
+
+
 def main():
   os.chdir(SOURCE_ROOT)
 
   args = parse_args()
   if args.verbose:
     enable_verbose_execute()
+    global verbose_mode
+    verbose_mode = True
   update_submodules()
   update_node_modules('.')
   update_atom_modules('spec')
@@ -61,7 +66,10 @@ def bootstrap_brightray(url):
 
 def update_node_modules(dirname):
   with scoped_cwd(dirname):
-    execute_stdout([NPM, 'install'])
+    if verbose_mode:
+      execute_stdout([NPM, 'install', '--verbose'])
+    else:
+      execute_stdout([NPM, 'install'])
 
 
 def update_atom_modules(dirname):
