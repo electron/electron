@@ -144,6 +144,18 @@ def execute(argv):
     raise e
 
 
+def execute_stdout(argv):
+  if verbose_mode:
+    print ' '.join(argv)
+    try:
+      subprocess.check_call(argv)
+    except subprocess.CalledProcessError as e:
+      print e.output
+      raise e
+  else:
+    return execute(argv)
+
+
 def get_atom_shell_version():
   return subprocess.check_output(['git', 'describe', '--tags']).strip()
 
