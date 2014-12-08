@@ -1,42 +1,20 @@
 v8Util = process.atomBinding 'v8_util'
 guestViewInternal = require './guest-view-internal'
+webViewConstants = require './web-view-constants'
 webFrame = require 'web-frame'
 remote = require 'remote'
+
+AUTO_SIZE_ATTRIBUTES = [
+  webViewConstants.ATTRIBUTE_AUTOSIZE,
+  webViewConstants.ATTRIBUTE_MAXHEIGHT,
+  webViewConstants.ATTRIBUTE_MAXWIDTH,
+  webViewConstants.ATTRIBUTE_MINHEIGHT,
+  webViewConstants.ATTRIBUTE_MINWIDTH,
+]
 
 # ID generator.
 nextId = 0
 getNextId = -> ++nextId
-
-# Attributes.
-WEB_VIEW_ATTRIBUTE_ALLOWTRANSPARENCY = 'allowtransparency'
-WEB_VIEW_ATTRIBUTE_AUTOSIZE = 'autosize'
-WEB_VIEW_ATTRIBUTE_MAXHEIGHT = 'maxheight'
-WEB_VIEW_ATTRIBUTE_MAXWIDTH = 'maxwidth'
-WEB_VIEW_ATTRIBUTE_MINHEIGHT = 'minheight'
-WEB_VIEW_ATTRIBUTE_MINWIDTH = 'minwidth'
-WEB_VIEW_ATTRIBUTE_PARTITION = 'partition'
-WEB_VIEW_ATTRIBUTE_NODEINTEGRATION = 'nodeintegration'
-WEB_VIEW_ATTRIBUTE_PLUGINS = 'plugins'
-WEB_VIEW_ATTRIBUTE_PRELOAD = 'preload'
-AUTO_SIZE_ATTRIBUTES = [
-  WEB_VIEW_ATTRIBUTE_AUTOSIZE,
-  WEB_VIEW_ATTRIBUTE_MAXHEIGHT,
-  WEB_VIEW_ATTRIBUTE_MAXWIDTH,
-  WEB_VIEW_ATTRIBUTE_MINHEIGHT,
-  WEB_VIEW_ATTRIBUTE_MINWIDTH,
-]
-
-# Error messages.
-ERROR_MSG_ALREADY_NAVIGATED =
-    'The object has already navigated, so its partition cannot be changed.'
-ERROR_MSG_CANNOT_INJECT_SCRIPT = '<webview>: ' +
-    'Script cannot be injected into content until the page has loaded.'
-ERROR_MSG_CONTENTWINDOW_NOT_AVAILABLE = '<webview>: ' +
-    'contentWindow is not available at this time. It will become available ' +
-    'when the page has finished loading.'
-ERROR_MSG_INVALID_PARTITION_ATTRIBUTE = 'Invalid partition attribute.'
-ERROR_MSG_INVALID_PRELOAD_ATTRIBUTE =
-    'Only "file:" or "asar:" protocol is supported in "preload" attribute.'
 
 # Represents the state of the storage partition.
 class Partition
@@ -52,7 +30,7 @@ class Partition
   fromAttribute: (value, hasNavigated) ->
     result = {}
     if hasNavigated
-      result.error = ERROR_MSG_ALREADY_NAVIGATED
+      result.error = webViewConstants.ERROR_MSG_ALREADY_NAVIGATED
       return result
     value ?= ''
 
@@ -61,7 +39,7 @@ class Partition
       value = value.substr LEN
       unless value
         @validPartitionId = false
-        result.error = ERROR_MSG_INVALID_PARTITION_ATTRIBUTE
+        result.error = webViewConstants.ERROR_MSG_INVALID_PARTITION_ATTRIBUTE
         return result
       @persistStorage = true
     else
@@ -153,7 +131,7 @@ class WebView
 
   # Validation helper function for executeScript() and insertCSS().
   validateExecuteCodeCall: ->
-    throw new Error(ERROR_MSG_CANNOT_INJECT_SCRIPT) unless @guestInstanceId
+    throw new Error(webViewConstants.ERROR_MSG_CANNOT_INJECT_SCRIPT) unless @guestInstanceId
 
   setupAutoSizeProperties: ->
     for attributeName in AUTO_SIZE_ATTRIBUTES
@@ -166,10 +144,10 @@ class WebView
   setupWebviewNodeProperties: ->
     @setupAutoSizeProperties()
 
-    Object.defineProperty @webviewNode, WEB_VIEW_ATTRIBUTE_ALLOWTRANSPARENCY,
+    Object.defineProperty @webviewNode, webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY,
       get: => @allowtransparency
       set: (value) =>
-        @webviewNode.setAttribute WEB_VIEW_ATTRIBUTE_ALLOWTRANSPARENCY, value
+        @webviewNode.setAttribute webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY, value
       enumerable: true
 
     # We cannot use {writable: true} property descriptor because we want a
@@ -177,7 +155,7 @@ class WebView
     Object.defineProperty @webviewNode, 'contentWindow',
       get: =>
         return @contentWindow if @contentWindow?
-        window.console.error ERROR_MSG_CONTENTWINDOW_NOT_AVAILABLE
+        window.console.error webViewConstants.ERROR_MSG_CONTENTWINDOW_NOT_AVAILABLE
       # No setter.
       enumerable: true
 
@@ -229,7 +207,7 @@ class WebView
       this[name] = newValue
       return unless @guestInstanceId
       # Convert autosize attribute to boolean.
-      autosize = @webviewNode.hasAttribute WEB_VIEW_ATTRIBUTE_AUTOSIZE
+      autosize = @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_AUTOSIZE
       guestViewInternal.setAutoSize @guestInstanceId,
         enableAutoSize: autosize,
         min:
@@ -238,7 +216,7 @@ class WebView
         max:
           width: parseInt @maxwidth || 0
           height: parseInt @maxheight || 0
-    else if name is WEB_VIEW_ATTRIBUTE_ALLOWTRANSPARENCY
+    else if name is webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY
       # We treat null attribute (attribute removed) and the empty string as
       # one case.
       oldValue ?= ''
@@ -314,33 +292,33 @@ class WebView
 
     # Check the current bounds to make sure we do not resize <webview>
     # outside of current constraints.
-    if node.hasAttribute(WEB_VIEW_ATTRIBUTE_MAXWIDTH) and
-       node[WEB_VIEW_ATTRIBUTE_MAXWIDTH]
-      maxWidth = node[WEB_VIEW_ATTRIBUTE_MAXWIDTH]
+    if node.hasAttribute(webViewConstants.ATTRIBUTE_MAXWIDTH) and
+       node[webViewConstants.ATTRIBUTE_MAXWIDTH]
+      maxWidth = node[webViewConstants.ATTRIBUTE_MAXWIDTH]
     else
       maxWidth = width
 
-    if node.hasAttribute(WEB_VIEW_ATTRIBUTE_MINWIDTH) and
-       node[WEB_VIEW_ATTRIBUTE_MINWIDTH]
-      minWidth = node[WEB_VIEW_ATTRIBUTE_MINWIDTH]
+    if node.hasAttribute(webViewConstants.ATTRIBUTE_MINWIDTH) and
+       node[webViewConstants.ATTRIBUTE_MINWIDTH]
+      minWidth = node[webViewConstants.ATTRIBUTE_MINWIDTH]
     else
       minWidth = width
     minWidth = maxWidth if minWidth > maxWidth
 
-    if node.hasAttribute(WEB_VIEW_ATTRIBUTE_MAXHEIGHT) and
-       node[WEB_VIEW_ATTRIBUTE_MAXHEIGHT]
-      maxHeight = node[WEB_VIEW_ATTRIBUTE_MAXHEIGHT]
+    if node.hasAttribute(webViewConstants.ATTRIBUTE_MAXHEIGHT) and
+       node[webViewConstants.ATTRIBUTE_MAXHEIGHT]
+      maxHeight = node[webViewConstants.ATTRIBUTE_MAXHEIGHT]
     else
       maxHeight = height
 
-    if node.hasAttribute(WEB_VIEW_ATTRIBUTE_MINHEIGHT) and
-       node[WEB_VIEW_ATTRIBUTE_MINHEIGHT]
-      minHeight = node[WEB_VIEW_ATTRIBUTE_MINHEIGHT]
+    if node.hasAttribute(webViewConstants.ATTRIBUTE_MINHEIGHT) and
+       node[webViewConstants.ATTRIBUTE_MINHEIGHT]
+      minHeight = node[webViewConstants.ATTRIBUTE_MINHEIGHT]
     else
       minHeight = height
     minHeight = maxHeight if minHeight > maxHeight
 
-    if not @webviewNode.hasAttribute WEB_VIEW_ATTRIBUTE_AUTOSIZE or
+    if not @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_AUTOSIZE or
        (newWidth >= minWidth and
         newWidth <= maxWidth and
         newHeight >= minHeight and
@@ -360,7 +338,7 @@ class WebView
 
   parseSrcAttribute: (result) ->
     unless @partition.validPartitionId
-      result.error = ERROR_MSG_INVALID_PARTITION_ATTRIBUTE
+      result.error = webViewConstants.ERROR_MSG_INVALID_PARTITION_ATTRIBUTE
       return
     @src = @webviewNode.getAttribute 'src'
 
@@ -386,14 +364,14 @@ class WebView
   createGuest: ->
     return if @pendingGuestCreation
     storagePartitionId =
-      @webviewNode.getAttribute(WEB_VIEW_ATTRIBUTE_PARTITION) or
-      @webviewNode[WEB_VIEW_ATTRIBUTE_PARTITION]
+      @webviewNode.getAttribute(webViewConstants.ATTRIBUTE_PARTITION) or
+      @webviewNode[webViewConstants.ATTRIBUTE_PARTITION]
     params =
       storagePartitionId: storagePartitionId
-      nodeIntegration: @webviewNode.hasAttribute WEB_VIEW_ATTRIBUTE_NODEINTEGRATION
-      plugins: @webviewNode.hasAttribute WEB_VIEW_ATTRIBUTE_PLUGINS
-    if @webviewNode.hasAttribute WEB_VIEW_ATTRIBUTE_PRELOAD
-      preload = @webviewNode.getAttribute WEB_VIEW_ATTRIBUTE_PRELOAD
+      nodeIntegration: @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_NODEINTEGRATION
+      plugins: @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_PLUGINS
+    if @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_PRELOAD
+      preload = @webviewNode.getAttribute webViewConstants.ATTRIBUTE_PRELOAD
       # Get the full path.
       a = document.createElement 'a'
       a.href = preload
@@ -402,7 +380,7 @@ class WebView
       protocol = params.preload.substr 0, 5
       unless protocol in ['file:', 'asar:']
         delete params.preload
-        console.error ERROR_MSG_INVALID_PRELOAD_ATTRIBUTE
+        console.error webViewConstants.ERROR_MSG_INVALID_PRELOAD_ATTRIBUTE
     guestViewInternal.createGuest 'webview', params, (guestInstanceId) =>
       @pendingGuestCreation = false
       unless @elementAttached
@@ -445,7 +423,7 @@ class WebView
 
   buildAttachParams: (isNewWindow) ->
     allowtransparency: @allowtransparency || false
-    autosize: @webviewNode.hasAttribute WEB_VIEW_ATTRIBUTE_AUTOSIZE
+    autosize: @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_AUTOSIZE
     instanceId: @viewInstanceId
     maxheight: parseInt @maxheight || 0
     maxwidth: parseInt @maxwidth || 0
