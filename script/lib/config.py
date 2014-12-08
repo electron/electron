@@ -23,3 +23,13 @@ TARGET_PLATFORM = {
   'linux2': 'linux',
   'win32': 'win32',
 }[sys.platform]
+
+verbose_mode = False
+
+def enable_verbose_mode():
+  print 'Running in verbose mode'
+  global verbose_mode
+  verbose_mode = True
+
+def is_verbose_mode():
+  return verbose_mode
