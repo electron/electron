@@ -25,7 +25,7 @@ there is no Xcode project generated.
 
 ```bash
 $ cd atom-shell
-$ ./script/bootstrap.py
+$ ./script/bootstrap.py -v
 ```
 
 ## Building
