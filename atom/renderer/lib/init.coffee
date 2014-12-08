@@ -46,7 +46,7 @@ else
   # Override default web functions.
   require path.join(__dirname, 'override')
   # Load webview tag implementation.
-  require path.join(__dirname, 'web-view') unless process.guestInstanceId?
+  require path.join(__dirname, 'web-view/web-view') unless process.guestInstanceId?
 
 if nodeIntegration in ['true', 'all', 'except-iframe', 'manual-enable-iframe']
   # Export node bindings to global.
