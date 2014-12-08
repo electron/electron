@@ -33,7 +33,7 @@ base::FilePath MainDelegate::GetResourcesPakFilePath() {
 }
 
 void MainDelegate::OverrideFrameworkBundlePath() {
-  base::FilePath helper_path = GetFrameworksPath().Append(GetApplicationName() + ".framework");
+  base::FilePath helper_path = GetFrameworksPath().Append(GetApplicationName() + " Framework.framework");
 
   base::mac::SetOverrideFrameworkBundlePath(helper_path);
 }
