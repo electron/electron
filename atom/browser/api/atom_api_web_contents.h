@@ -163,16 +163,14 @@ class WebContents : public mate::EventEmitter,
   // Unique ID for a guest WebContents.
   int guest_instance_id_;
 
+  // |element_instance_id_| is an identifer that's unique to a particular
+  // element.
+  int element_instance_id_;
+
   DestructionCallback destruction_callback_;
 
   // Stores whether the contents of the guest can be transparent.
   bool guest_opaque_;
-
-  // The extra parameters associated with this guest view passed
-  // in from JavaScript. This will typically be the view instance ID,
-  // the API to use, and view-specific parameters. These parameters
-  // are passed along to new guests that are created from this guest.
-  scoped_ptr<base::DictionaryValue> extra_params_;
 
   // Stores the WebContents that managed by this class.
   scoped_ptr<brightray::InspectableWebContents> storage_;

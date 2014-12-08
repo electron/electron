@@ -49,6 +49,7 @@
       'atom/renderer/lib/override.coffee',
       'atom/renderer/lib/web-view/guest-view-internal.coffee',
       'atom/renderer/lib/web-view/web-view.coffee',
+      'atom/renderer/lib/web-view/web-view-constants.coffee',
       'atom/renderer/api/lib/ipc.coffee',
       'atom/renderer/api/lib/remote.coffee',
       'atom/renderer/api/lib/web-frame.coffee',

@@ -37,12 +37,14 @@ v8::Persistent<v8::ObjectTemplate> template_;
 WebContents::WebContents(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
       guest_instance_id_(-1),
+      element_instance_id_(-1),
       guest_opaque_(true),
       auto_size_enabled_(false) {
 }
 
 WebContents::WebContents(const mate::Dictionary& options)
     : guest_instance_id_(-1),
+      element_instance_id_(-1),
       guest_opaque_(true),
       auto_size_enabled_(false) {
   options.Get("guestInstanceId", &guest_instance_id_);
@@ -226,9 +228,7 @@ void WebContents::WebContentsDestroyed() {
 }
 
 void WebContents::DidAttach(int guest_proxy_routing_id) {
-  base::ListValue args;
-  args.Append(extra_params_.release());
-  Emit("did-attach", args);
+  Emit("did-attach");
 }
 
 void WebContents::ElementSizeChanged(const gfx::Size& old_size,
@@ -252,6 +252,7 @@ void WebContents::RegisterDestructionCallback(
 void WebContents::WillAttach(content::WebContents* embedder_web_contents,
                              int browser_plugin_instance_id) {
   embedder_web_contents_ = embedder_web_contents;
+  element_instance_id_ = browser_plugin_instance_id;
 }
 
 void WebContents::Destroy() {

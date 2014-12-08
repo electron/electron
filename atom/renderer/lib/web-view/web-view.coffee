@@ -7,10 +7,6 @@ remote = require 'remote'
 nextId = 0
 getNextId = -> ++nextId
 
-# FIXME
-# Discarded after Chrome 39
-PLUGIN_METHOD_ATTACH = '-internal-attach'
-
 # Attributes.
 WEB_VIEW_ATTRIBUTE_ALLOWTRANSPARENCY = 'allowtransparency'
 WEB_VIEW_ATTRIBUTE_AUTOSIZE = 'autosize'
@@ -103,6 +99,8 @@ class WebView
     @setupWebviewNodeProperties()
 
     @viewInstanceId = getNextId()
+
+    # UPSTREAM: new WebViewEvents(this, this.viewInstanceId);
     guestViewInternal.registerEvents this, @viewInstanceId
 
     shadowRoot.appendChild @browserPluginNode
@@ -126,6 +124,7 @@ class WebView
     # heard back from createGuest yet. We will not reset the flag in this case so
     # that we don't end up allocating a second guest.
     if @guestInstanceId
+      # FIXME
       guestViewInternal.destroyGuest @guestInstanceId
       @guestInstanceId = undefined
       @beforeFirstNavigation = true
@@ -295,23 +294,14 @@ class WebView
       @partition.fromAttribute newValue, @hasNavigated()
 
   handleBrowserPluginAttributeMutation: (name, oldValue, newValue) ->
-    # FIXME
-    # internalbindings => internalInstanceid after Chrome 39
-    if name is 'internalbindings' and !oldValue and !!newValue
-      @browserPluginNode.removeAttribute 'internalbindings'
-      # FIXME
-      # @internalInstanceId = parseInt newValue
+    if name is 'internalinstanceid' and !oldValue and !!newValue
+      @browserPluginNode.removeAttribute 'internalinstanceid'
+      @internalInstanceId = parseInt newValue
 
       if !!@guestInstanceId and @guestInstanceId != 0
         isNewWindow = if @deferredAttachState then @deferredAttachState.isNewWindow else false
         params = @buildAttachParams isNewWindow
-        # FIXME
-        # guestViewInternalNatives.AttachGuest
-        #   @internalInstanceId,
-        #   @guestInstanceId,
-        #   params,
-        #   (w) => @contentWindow = w
-        @browserPluginNode[PLUGIN_METHOD_ATTACH] @guestInstanceId, params
+        guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, params, (w) => @contentWindow = w
 
   onSizeChanged: (webViewEvent) ->
     newWidth = webViewEvent.newWidth
@@ -363,9 +353,7 @@ class WebView
 
   # Returns if <object> is in the render tree.
   isPluginInRenderTree: ->
-    # FIXME
-    # !!@internalInstanceId && @internalInstanceId != 0
-    'function' == typeof this.browserPluginNode[PLUGIN_METHOD_ATTACH]
+    !!@internalInstanceId && @internalInstanceId != 0
 
   hasNavigated: ->
     not @beforeFirstNavigation
@@ -480,9 +468,7 @@ class WebView
       return true
 
     @deferredAttachState = null
-    # FIXME
-    # guestViewInternalNatives.AttachGuest @internalInstanceId, @guestInstanceId, params, (w) => @contentWindow = w
-    @browserPluginNode[PLUGIN_METHOD_ATTACH] @guestInstanceId, params
+    guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, params, (w) => @contentWindow = w
 
 # Registers browser plugin <object> custom element.
 registerBrowserPluginElement = ->

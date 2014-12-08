@@ -5,6 +5,7 @@
 #include "atom/renderer/api/atom_api_web_frame.h"
 
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "content/public/renderer/render_frame.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
@@ -51,6 +52,10 @@ v8::Handle<v8::Value> WebFrame::RegisterEmbedderCustomElement(
   return web_frame_->document().registerEmbedderCustomElement(name, options, c);
 }
 
+void WebFrame::AttachGuest(int id) {
+  content::RenderFrame::FromWebFrame(web_frame_)->AttachGuest(id);
+}
+
 mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
@@ -60,7 +65,8 @@ mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
       .SetMethod("setZoomFactor", &WebFrame::SetZoomFactor)
       .SetMethod("getZoomFactor", &WebFrame::GetZoomFactor)
       .SetMethod("registerEmbedderCustomElement",
-                 &WebFrame::RegisterEmbedderCustomElement);
+                 &WebFrame::RegisterEmbedderCustomElement)
+      .SetMethod("attachGuest", &WebFrame::AttachGuest);
 }
 
 // static
