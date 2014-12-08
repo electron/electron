@@ -5,7 +5,7 @@ import os
 import sys
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL
-from lib.util import execute, execute_stdout, scoped_cwd, enable_verbose_execute
+from lib.util import execute_stdout, scoped_cwd, enable_verbose_execute
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
