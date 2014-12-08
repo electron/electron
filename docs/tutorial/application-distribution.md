@@ -27,6 +27,35 @@ Then execute `Atom.app` (or `atom` on Linux, and `atom.exe` on Windows), and
 atom-shell will start as your app. The `atom-shell` directory would then be
 your distribution that should be delivered to final users.
 
+## Renaming Atom Shell for your app
+
+The best way to rename Atom Shell is to change the `atom.gyp` file, then build
+from source. Open up `atom.gyp` and change the first lines:
+
+```
+'project_name': 'atom',
+'product_name': 'Atom',
+'framework_name': 'Atom Framework',
+```
+
+Once you make the change, re-run `script/bootstrap` then run the command:
+
+```sh
+script/build.py -c Release -t $whatever_you_chose_for_project_name
+```
+
+If your app is OS X / Linux-only, you can also simply rename the "Atom.app"
+folder as well as the names under "Framework" (i.e. "Atom Framework.framework"
+=> "MyApp Framework.framework"), but this will break loading native Node
+modules on Windows.
+
+Fixing this is complicated, but a Grunt task has been created that will handle
+this automatically,
+[grunt-build-atom-shell](https://github.com/paulcbetts/grunt-build-atom-shell).
+This task will automatically handle editing the .gyp file, building from
+source, then rebuilding your app's native Node modules to match the new
+executable name.
+
 ## Packaging your app into a file
 
 Apart from shipping your app by copying all its sources files, you can also
