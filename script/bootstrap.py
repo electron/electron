@@ -4,8 +4,9 @@ import argparse
 import os
 import sys
 
-from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL
-from lib.util import execute_stdout, scoped_cwd, enable_verbose_execute
+from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, \
+                       enable_verbose_mode, is_verbose_mode
+from lib.util import execute_stdout, scoped_cwd
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -14,17 +15,12 @@ PYTHON_26_URL = 'https://chromium.googlesource.com/chromium/deps/python_26'
 NPM = 'npm.cmd' if sys.platform in ['win32', 'cygwin'] else 'npm'
 
 
-verbose_mode = False
-
-
 def main():
   os.chdir(SOURCE_ROOT)
 
   args = parse_args()
   if args.verbose:
-    enable_verbose_execute()
-    global verbose_mode
-    verbose_mode = True
+    enable_verbose_mode()
   update_submodules()
   update_node_modules('.')
   update_atom_modules('spec')
@@ -66,7 +62,7 @@ def bootstrap_brightray(url):
 
 def update_node_modules(dirname):
   with scoped_cwd(dirname):
-    if verbose_mode:
+    if is_verbose_mode():
       execute_stdout([NPM, 'install', '--verbose'])
     else:
       execute_stdout([NPM, 'install'])
