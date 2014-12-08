@@ -12,18 +12,12 @@ import urllib2
 import os
 import zipfile
 
-verbose_mode = False
+from config import is_verbose_mode
 
 def tempdir(prefix=''):
   directory = tempfile.mkdtemp(prefix=prefix)
   atexit.register(shutil.rmtree, directory)
   return directory
-
-
-def enable_verbose_execute():
-  print 'Running in verbose mode'
-  global verbose_mode
-  verbose_mode = True
 
 
 @contextlib.contextmanager
@@ -132,11 +126,11 @@ def safe_mkdir(path):
 
 
 def execute(argv):
-  if verbose_mode:
+  if is_verbose_mode():
     print ' '.join(argv)
   try:
     output = subprocess.check_output(argv, stderr=subprocess.STDOUT)
-    if verbose_mode:
+    if is_verbose_mode():
       print output
     return output
   except subprocess.CalledProcessError as e:
@@ -145,7 +139,7 @@ def execute(argv):
 
 
 def execute_stdout(argv):
-  if verbose_mode:
+  if is_verbose_mode():
     print ' '.join(argv)
     try:
       subprocess.check_call(argv)
@@ -153,7 +147,7 @@ def execute_stdout(argv):
       print e.output
       raise e
   else:
-    return execute(argv)
+    execute(argv)
 
 
 def get_atom_shell_version():
