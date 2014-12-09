@@ -13,6 +13,11 @@
 
 namespace atom {
 
+std::string GetApplicationName() {
+  std::string name = brightray::MainApplicationBundlePath().BaseName().AsUTF8Unsafe();
+  return name.substr(0, name.length() - 4/*.app*/);
+}
+
 void AtomBrowserMainParts::PreMainMessageLoopStart() {
   // Initialize locale setting.
   l10n_util::OverrideLocaleWithCocoaLocale();
@@ -26,7 +31,7 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
   base::FilePath frameworkPath = brightray::MainApplicationBundlePath()
       .Append("Contents")
       .Append("Frameworks")
-      .Append("Atom Framework.framework");
+      .Append(GetApplicationName() + " Framework.framework");
   NSBundle* frameworkBundle = [NSBundle
        bundleWithPath:base::mac::FilePathToNSString(frameworkPath)];
   NSNib* mainNib = [[NSNib alloc] initWithNibNamed:@"MainMenu"
