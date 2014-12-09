@@ -180,8 +180,6 @@ class WebViewImpl
     params =
       instanceId: @viewInstanceId
       userAgentOverride: @userAgentOverride
-      nodeIntegration: @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_NODEINTEGRATION
-      plugins: @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_PLUGINS
     for attributeName, attribute of @attributes
       params[attributeName] = attribute.getValue()
     if @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_PRELOAD

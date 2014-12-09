@@ -87,7 +87,7 @@ attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
     destroyGuest oldGuestInstanceId
 
   webViewManager.addGuest guestInstanceId, elementInstanceId, embedder, guest,
-    nodeIntegration: params.nodeIntegration
+    nodeIntegration: params.nodeintegration
     plugins: params.plugins
     preloadUrl: params.preload ? ''
 
