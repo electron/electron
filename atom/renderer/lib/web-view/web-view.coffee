@@ -4,15 +4,6 @@ webViewConstants = require './web-view-constants'
 webFrame = require 'web-frame'
 remote = require 'remote'
 
-# Attributes.
-AUTO_SIZE_ATTRIBUTES = [
-  webViewConstants.ATTRIBUTE_AUTOSIZE,
-  webViewConstants.ATTRIBUTE_MAXHEIGHT,
-  webViewConstants.ATTRIBUTE_MAXWIDTH,
-  webViewConstants.ATTRIBUTE_MINHEIGHT,
-  webViewConstants.ATTRIBUTE_MINWIDTH,
-]
-
 # ID generator.
 nextId = 0
 getNextId = -> ++nextId
@@ -34,13 +25,11 @@ class WebView
     @browserPluginNode = @createBrowserPluginNode()
     shadowRoot = @webviewNode.createShadowRoot()
     @setupWebViewAttributes()
-    @setupWebViewSrcAttributeMutationObserver()
     @setupFocusPropagation()
     @setupWebviewNodeProperties()
 
     @viewInstanceId = getNextId()
 
-    # UPSTREAM: new WebViewEvents(this, this.viewInstanceId);
     guestViewInternal.registerEvents this, @viewInstanceId
 
     shadowRoot.appendChild @browserPluginNode
@@ -95,9 +84,6 @@ class WebView
     throw new Error(webViewConstants.ERROR_MSG_CANNOT_INJECT_SCRIPT) unless @guestInstanceId
 
   setupWebviewNodeProperties: ->
-    for attributeName of @attributes
-      @attributes[attributeName].define()
-
     # We cannot use {writable: true} property descriptor because we want a
     # dynamic getter value.
     Object.defineProperty @webviewNode, 'contentWindow',
@@ -107,94 +93,17 @@ class WebView
       # No setter.
       enumerable: true
 
-  # The purpose of this mutation observer is to catch assignment to the src
-  # attribute without any changes to its value. This is useful in the case
-  # where the webview guest has crashed and navigating to the same address
-  # spawns off a new process.
-  setupWebViewSrcAttributeMutationObserver: ->
-    @srcAndPartitionObserver = new MutationObserver (mutations) =>
-      for mutation in mutations
-        oldValue = mutation.oldValue
-        newValue = @attributes[mutation.attributeName].getValue()
-        return if oldValue isnt newValue
-        @handleWebviewAttributeMutation mutation.attributeName, oldValue, newValue
-    params =
-      attributes: true,
-      attributeOldValue: true,
-      attributeFilter: [
-        webViewConstants.ATTRIBUTE_SRC
-        webViewConstants.ATTRIBUTE_PARTITION
-        webViewConstants.ATTRIBUTE_HTTPREFERRER
-      ]
-    @srcAndPartitionObserver.observe @webviewNode, params
-
   # This observer monitors mutations to attributes of the <webview> and
   # updates the BrowserPlugin properties accordingly. In turn, updating
   # a BrowserPlugin property will update the corresponding BrowserPlugin
   # attribute, if necessary. See BrowserPlugin::UpdateDOMAttribute for more
   # details.
   handleWebviewAttributeMutation: (attributeName, oldValue, newValue) ->
-    # Certain changes (such as internally-initiated changes) to attributes should
-    # not be handled normally.
-    if @attributes[attributeName]?.ignoreNextMutation
-      @attributes[attributeName].ignoreNextMutation = false
+    if not @attributes[attributeName] or @attributes[attributeName].ignoreMutation
       return
 
-    if attributeName in AUTO_SIZE_ATTRIBUTES
-      return unless @guestInstanceId
-      guestViewInternal.setAutoSize @guestInstanceId,
-        enableAutoSize: @attributes[webViewConstants.ATTRIBUTE_AUTOSIZE].getValue(),
-        min:
-          width: parseInt @attributes[webViewConstants.ATTRIBUTE_MINWIDTH].getValue() || 0
-          height: parseInt @attributes[webViewConstants.ATTRIBUTE_MINHEIGHT].getValue() || 0
-        max:
-          width: parseInt @attributes[webViewConstants.ATTRIBUTE_MAXWIDTH].getValue() || 0
-          height: parseInt @attributes[webViewConstants.ATTRIBUTE_MAXHEIGHT].getValue() || 0
-    else if attributeName is webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY
-      # We treat null attribute (attribute removed) and the empty string as
-      # one case.
-      oldValue ?= ''
-      newValue ?= ''
-
-      return if oldValue is newValue and not @guestInstanceId
-
-      guestViewInternal.setAllowTransparency @guestInstanceId, @attributes[webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY].getValue()
-    else if attributeName is webViewConstants.ATTRIBUTE_HTTPREFERRER
-      oldValue ?= ''
-      newValue ?= ''
-
-      if newValue == '' and oldValue != ''
-        @webviewNode.setAttribute webViewConstants.ATTRIBUTE_HTTPREFERRER, oldValue
-
-      @attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].setValue newValue
-
-      # If the httpreferrer changes treat it as though the src changes and reload
-      # the page with the new httpreferrer.
-      @parseSrcAttribute()
-    else if attributeName is webViewConstants.ATTRIBUTE_SRC
-      # We treat null attribute (attribute removed) and the empty string as
-      # one case.
-      oldValue ?= ''
-      newValue ?= ''
-      # Once we have navigated, we don't allow clearing the src attribute.
-      # Once <webview> enters a navigated state, it cannot return to a
-      # placeholder state.
-      if newValue == '' and oldValue != ''
-        # src attribute changes normally initiate a navigation. We suppress
-        # the next src attribute handler call to avoid reloading the page
-        # on every guest-initiated navigation.
-        @ignoreNextSrcAttributeChange = true
-        @webviewNode.setAttribute webViewConstants.ATTRIBUTE_SRC, oldValue
-        return
-
-      if @ignoreNextSrcAttributeChange
-        # Don't allow the src mutation observer to see this change.
-        @srcAndPartitionObserver.takeRecords()
-        @ignoreNextSrcAttributeChange = false
-        return
-      @parseSrcAttribute()
-    else if attributeName is webViewConstants.ATTRIBUTE_PARTITION
-      @attributes[webViewConstants.ATTRIBUTE_PARTITION].handleMutation oldValue, newValue
+    # Let the changed attribute handle its own mutation;
+    @attributes[attributeName].handleMutation oldValue, newValue
 
   handleBrowserPluginAttributeMutation: (attributeName, oldValue, newValue) ->
     if attributeName is webViewConstants.ATTRIBUTE_INTERNALINSTANCEID and !oldValue and !!newValue
@@ -330,25 +239,19 @@ class WebView
     if isTopLevel and (oldValue != newValue)
       # Touching the src attribute triggers a navigation. To avoid
       # triggering a page reload on every guest-initiated navigation,
-      # we use the flag ignoreNextSrcAttributeChange here.
-      this.ignoreNextSrcAttributeChange = true
-      this.webviewNode.setAttribute webViewConstants.ATTRIBUTE_SRC, newValue
+      # we do not handle this mutation
+      @attributes[webViewConstants.ATTRIBUTE_SRC].setValueIgnoreMutation newValue
 
   onAttach: (storagePartitionId) ->
     @attributes[webViewConstants.ATTRIBUTE_PARTITION].setValue storagePartitionId
 
   buildAttachParams: ->
-    instanceId: @viewInstanceId
-    userAgentOverride: @userAgentOverride
-    # Attributes:
-    allowtransparency: @attributes[webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY].getValue()
-    autosize: @attributes[webViewConstants.ATTRIBUTE_AUTOSIZE].getValue()
-    maxheight: parseInt @attributes[webViewConstants.ATTRIBUTE_MAXHEIGHT].getValue() || 0
-    maxwidth: parseInt @attributes[webViewConstants.ATTRIBUTE_MAXWIDTH].getValue() || 0
-    minheight: parseInt @attributes[webViewConstants.ATTRIBUTE_MINHEIGHT].getValue() || 0
-    minwidth: parseInt @attributes[webViewConstants.ATTRIBUTE_MINWIDTH].getValue() || 0
-    src: @attributes[webViewConstants.ATTRIBUTE_SRC].getValue()
-    httpreferrer: @attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].getValue()
+    params =
+      instanceId: @viewInstanceId
+      userAgentOverride: @userAgentOverride
+    for attributeName, attribute of @attributes
+      params[attributeName] = attribute.getValue()
+    params
 
   attachWindow: (guestInstanceId) ->
     @guestInstanceId = guestInstanceId
