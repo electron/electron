@@ -1,4 +1,4 @@
-WebView = require './web-view'
+WebViewImpl = require './web-view'
 guestViewInternal = require './guest-view-internal'
 webViewConstants = require './web-view-constants'
 
@@ -144,7 +144,7 @@ class HttpReferrerAttribute extends WebViewAttribute
     @webViewImpl.parseSrcAttribute()
 
 # Sets up all of the webview attributes.
-WebView::setupWebViewAttributes = ->
+WebViewImpl::setupWebViewAttributes = ->
   @attributes = {}
 
   @attributes[webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY] = new AllowTransparencyAttribute(this)

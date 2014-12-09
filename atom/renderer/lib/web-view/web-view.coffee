@@ -9,7 +9,7 @@ nextId = 0
 getNextId = -> ++nextId
 
 # Represents the internal state of the WebView node.
-class WebView
+class WebViewImpl
   constructor: (@webviewNode) ->
     v8Util.setHiddenValue @webviewNode, 'internal', this
     @attached = false
@@ -37,7 +37,7 @@ class WebView
   createBrowserPluginNode: ->
     # We create BrowserPlugin as a custom element in order to observe changes
     # to attributes synchronously.
-    browserPluginNode = new WebView.BrowserPlugin()
+    browserPluginNode = new WebViewImpl.BrowserPlugin()
     v8Util.setHiddenValue browserPluginNode, 'internal', this
     browserPluginNode
 
@@ -282,7 +282,7 @@ registerBrowserPluginElement = ->
     # Load the plugin immediately.
     unused = this.nonExistentAttribute
 
-  WebView.BrowserPlugin = webFrame.registerEmbedderCustomElement 'browserplugin',
+  WebViewImpl.BrowserPlugin = webFrame.registerEmbedderCustomElement 'browserplugin',
     extends: 'object', prototype: proto
 
   delete proto.createdCallback
@@ -295,7 +295,7 @@ registerWebViewElement = ->
   proto = Object.create HTMLObjectElement.prototype
 
   proto.createdCallback = ->
-    new WebView(this)
+    new WebViewImpl(this)
 
   proto.attributeChangedCallback = (name, oldValue, newValue) ->
     internal = v8Util.getHiddenValue this, 'internal'
@@ -342,7 +342,7 @@ registerWebViewElement = ->
     "getId"
   ]
 
-  # Forward proto.foo* method calls to WebView.foo*.
+  # Forward proto.foo* method calls to WebViewImpl.foo*.
   createHandler = (m) ->
     (args...) ->
       internal = v8Util.getHiddenValue this, 'internal'
@@ -367,4 +367,4 @@ listener = (event) ->
   window.removeEventListener event.type, listener, useCapture
 window.addEventListener 'readystatechange', listener, true
 
-module.exports = WebView
+module.exports = WebViewImpl
