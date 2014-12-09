@@ -12,6 +12,7 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
+#include "content/public/browser/navigation_details.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -188,6 +189,13 @@ void WebContents::DidGetRedirectForResourceRequest(
   args.AppendBoolean(
       details.resource_type == content::RESOURCE_TYPE_MAIN_FRAME);
   Emit("did-get-redirect-request", args);
+}
+
+void WebContents::DidNavigateMainFrame(
+    const content::LoadCommittedDetails& details,
+    const content::FrameNavigateParams& params) {
+  if (details.is_navigation_to_different_page())
+    Emit("did-navigate-to-different-page");
 }
 
 bool WebContents::OnMessageReceived(const IPC::Message& message) {

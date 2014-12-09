@@ -138,19 +138,6 @@ class WebViewImpl
     return if @pendingGuestCreation
     params =
       storagePartitionId: @attributes[webViewConstants.ATTRIBUTE_PARTITION].getValue()
-      nodeIntegration: @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_NODEINTEGRATION
-      plugins: @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_PLUGINS
-    if @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_PRELOAD
-      preload = @webviewNode.getAttribute webViewConstants.ATTRIBUTE_PRELOAD
-      # Get the full path.
-      a = document.createElement 'a'
-      a.href = preload
-      params.preload = a.href
-      # Only support file: or asar: protocol.
-      protocol = params.preload.substr 0, 5
-      unless protocol in ['file:', 'asar:']
-        delete params.preload
-        console.error webViewConstants.ERROR_MSG_INVALID_PRELOAD_ATTRIBUTE
     guestViewInternal.createGuest 'webview', params, (guestInstanceId) =>
       @pendingGuestCreation = false
       unless @elementAttached
@@ -193,8 +180,21 @@ class WebViewImpl
     params =
       instanceId: @viewInstanceId
       userAgentOverride: @userAgentOverride
+      nodeIntegration: @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_NODEINTEGRATION
+      plugins: @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_PLUGINS
     for attributeName, attribute of @attributes
       params[attributeName] = attribute.getValue()
+    if @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_PRELOAD
+      preload = @webviewNode.getAttribute webViewConstants.ATTRIBUTE_PRELOAD
+      # Get the full path.
+      a = document.createElement 'a'
+      a.href = preload
+      params.preload = a.href
+      # Only support file: or asar: protocol.
+      protocol = params.preload.substr 0, 5
+      unless protocol in ['file:', 'asar:']
+        delete params.preload
+        console.error webViewConstants.ERROR_MSG_INVALID_PRELOAD_ATTRIBUTE
     params
 
   attachWindow: (guestInstanceId) ->

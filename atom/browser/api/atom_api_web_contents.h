@@ -118,24 +118,25 @@ class WebContents : public mate::EventEmitter,
       const content::NativeWebKeyboardEvent& event) override;
 
   // content::WebContentsObserver:
-  virtual void RenderViewDeleted(content::RenderViewHost*) override;
-  virtual void RenderProcessGone(base::TerminationStatus status) override;
-  virtual void DidFinishLoad(content::RenderFrameHost* render_frame_host,
-                             const GURL& validated_url) override;
-  virtual void DidFailLoad(content::RenderFrameHost* render_frame_host,
-                           const GURL& validated_url,
-                           int error_code,
-                           const base::string16& error_description) override;
-  virtual void DidStartLoading(
-      content::RenderViewHost* render_view_host) override;
-  virtual void DidStopLoading(
-      content::RenderViewHost* render_view_host) override;
-  virtual void DidGetRedirectForResourceRequest(
+  void RenderViewDeleted(content::RenderViewHost*) override;
+  void RenderProcessGone(base::TerminationStatus status) override;
+  void DidFinishLoad(content::RenderFrameHost* render_frame_host,
+                     const GURL& validated_url) override;
+  void DidFailLoad(content::RenderFrameHost* render_frame_host,
+                   const GURL& validated_url,
+                   int error_code,
+                   const base::string16& error_description) override;
+  void DidStartLoading(content::RenderViewHost* render_view_host) override;
+  void DidStopLoading(content::RenderViewHost* render_view_host) override;
+  void DidGetRedirectForResourceRequest(
       content::RenderViewHost* render_view_host,
       const content::ResourceRedirectDetails& details) override;
-  virtual bool OnMessageReceived(const IPC::Message& message) override;
-  virtual void RenderViewReady() override;
-  virtual void WebContentsDestroyed() override;
+  void DidNavigateMainFrame(
+      const content::LoadCommittedDetails& details,
+      const content::FrameNavigateParams& params) override;
+  bool OnMessageReceived(const IPC::Message& message) override;
+  void RenderViewReady() override;
+  void WebContentsDestroyed() override;
 
   // content::BrowserPluginGuestDelegate:
   void DidAttach(int guest_proxy_routing_id) final;

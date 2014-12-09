@@ -35,12 +35,13 @@ createGuest = (embedder, params) ->
     guestInstanceId: id
     storagePartitionId: params.storagePartitionId
   guestInstances[id] = {guest, embedder}
-  preload = params.preload ? ''
-  webViewManager.addGuest id, embedder, guest, params.nodeIntegration, params.plugins, preload
 
-  # Destroy guest when the embedder is gone.
-  embedder.once 'render-view-deleted', ->
+  # Destroy guest when the embedder is gone or navigated.
+  destroyEvents = ['destroyed', 'crashed', 'did-navigate-to-different-page']
+  destroy = ->
     destroyGuest id if guestInstances[id]?
+    embedder.removeListener event, destroy for event in destroyEvents
+  embedder.once event, destroy for event in destroyEvents
 
   # Init guest web view after attached.
   guest.once 'did-attach', ->
@@ -84,6 +85,11 @@ attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
 
     return unless guestInstances[oldGuestInstanceId]?
     destroyGuest oldGuestInstanceId
+
+  webViewManager.addGuest guestInstanceId, elementInstanceId, embedder, guest,
+    nodeIntegration: params.nodeIntegration
+    plugins: params.plugins
+    preloadUrl: params.preload ? ''
 
   guest.attachParams = params
   embedderElementsMap[key] = guestInstanceId
