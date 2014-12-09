@@ -27,7 +27,6 @@ class WebView
 
     @beforeFirstNavigation = true
     @contentWindow = null
-    @validPartitionId = true
     # Used to save some state upon deferred attachment.
     # If <object> bindings is not available, we defer attachment.
     # This state contains whether or not the attachment request was for
@@ -74,7 +73,6 @@ class WebView
       guestViewInternal.destroyGuest @guestInstanceId
       @guestInstanceId = undefined
       @beforeFirstNavigation = true
-      @validPartitionId = true
       @attributes[webViewConstants.ATTRIBUTE_PARTITION].validPartitionId = true
       @contentWindow = null
     @internalInstanceId = 0
@@ -103,10 +101,9 @@ class WebView
 
   setupAutoSizeProperties: ->
     for attributeName in AUTO_SIZE_ATTRIBUTES
-      @attributes[attributeName].setValue @webviewNode.getAttribute(attributeName)
       Object.defineProperty @webviewNode, attributeName,
         get: => @attributes[attributeName].getValue()
-        set: (value) => @webviewNode.setAttribute attributeName, value
+        set: (value) => @attributes[attributeName].setValue value
         enumerable: true
 
   setupWebviewNodeProperties: ->
@@ -114,8 +111,7 @@ class WebView
 
     Object.defineProperty @webviewNode, webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY,
       get: => @attributes[webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY].getValue()
-      set: (value) =>
-        @webviewNode.setAttribute webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY, value
+      set: (value) => @attributes[webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY].setValue value
       enumerable: true
 
     # We cannot use {writable: true} property descriptor because we want a
@@ -129,22 +125,17 @@ class WebView
 
     Object.defineProperty @webviewNode, webViewConstants.ATTRIBUTE_PARTITION,
       get: => @attributes[webViewConstants.ATTRIBUTE_PARTITION].getValue()
-      set: (value) =>
-        result = @attributes[webViewConstants.ATTRIBUTE_PARTITION].setValue value
-        throw result.error if result.error?
-        @webviewNode.setAttribute webViewConstants.ATTRIBUTE_PARTITION, value
+      set: (value) => @attributes[webViewConstants.ATTRIBUTE_PARTITION].setValue value
       enumerable: true
 
-    @attributes[webViewConstants.ATTRIBUTE_SRC].setValue @webviewNode.getAttribute(webViewConstants.ATTRIBUTE_SRC)
     Object.defineProperty @webviewNode, webViewConstants.ATTRIBUTE_SRC,
       get: => @attributes[webViewConstants.ATTRIBUTE_SRC].getValue()
-      set: (value) => @webviewNode.setAttribute webViewConstants.ATTRIBUTE_SRC, value
+      set: (value) => @attributes[webViewConstants.ATTRIBUTE_SRC].setValue value
       enumerable: true
 
-    @attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].setValue @webviewNode.getAttribute(webViewConstants.ATTRIBUTE_HTTPREFERRER)
     Object.defineProperty @webviewNode, webViewConstants.ATTRIBUTE_HTTPREFERRER,
       get: => @attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].getValue()
-      set: (value) => @webviewNode.setAttribute webViewConstants.ATTRIBUTE_HTTPREFERRER, value
+      set: (value) => @attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].setValue value
       enumerable: true
 
   # The purpose of this mutation observer is to catch assignment to the src
@@ -155,7 +146,7 @@ class WebView
     @srcAndPartitionObserver = new MutationObserver (mutations) =>
       for mutation in mutations
         oldValue = mutation.oldValue
-        newValue = @webviewNode.getAttribute mutation.attributeName
+        newValue = @attributes[mutation.attributeName].getValue()
         return if oldValue isnt newValue
         @handleWebviewAttributeMutation mutation.attributeName, oldValue, newValue
     params =
@@ -173,33 +164,33 @@ class WebView
   # a BrowserPlugin property will update the corresponding BrowserPlugin
   # attribute, if necessary. See BrowserPlugin::UpdateDOMAttribute for more
   # details.
-  handleWebviewAttributeMutation: (name, oldValue, newValue) ->
-    if name in AUTO_SIZE_ATTRIBUTES
-      @attributes[name].setValue newValue
+  handleWebviewAttributeMutation: (attributeName, oldValue, newValue) ->
+    # Certain changes (such as internally-initiated changes) to attributes should
+    # not be handled normally.
+    if @attributes[attributeName]?.ignoreNextMutation
+      @attributes[attributeName].ignoreNextMutation = false
+      return
+
+    if attributeName in AUTO_SIZE_ATTRIBUTES
       return unless @guestInstanceId
-      # Convert autosize attribute to boolean.
-      autosize = @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_AUTOSIZE
       guestViewInternal.setAutoSize @guestInstanceId,
-        enableAutoSize: autosize,
+        enableAutoSize: @attributes[webViewConstants.ATTRIBUTE_AUTOSIZE].getValue(),
         min:
           width: parseInt @attributes[webViewConstants.ATTRIBUTE_MINWIDTH].getValue() || 0
           height: parseInt @attributes[webViewConstants.ATTRIBUTE_MINHEIGHT].getValue() || 0
         max:
           width: parseInt @attributes[webViewConstants.ATTRIBUTE_MAXWIDTH].getValue() || 0
           height: parseInt @attributes[webViewConstants.ATTRIBUTE_MAXHEIGHT].getValue() || 0
-    else if name is webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY
+    else if attributeName is webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY
       # We treat null attribute (attribute removed) and the empty string as
       # one case.
       oldValue ?= ''
       newValue ?= ''
 
-      return if oldValue is newValue
-      @attributes[webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY].setValue(newValue != '')
-
-      return unless @guestInstanceId
+      return if oldValue is newValue and not @guestInstanceId
 
       guestViewInternal.setAllowTransparency @guestInstanceId, @attributes[webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY].getValue()
-    else if name is webViewConstants.ATTRIBUTE_HTTPREFERRER
+    else if attributeName is webViewConstants.ATTRIBUTE_HTTPREFERRER
       oldValue ?= ''
       newValue ?= ''
 
@@ -208,19 +199,16 @@ class WebView
 
       @attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].setValue newValue
 
-      result = {}
       # If the httpreferrer changes treat it as though the src changes and reload
       # the page with the new httpreferrer.
-      @parseSrcAttribute result
-
-      throw result.error if result.error?
-    else if name is webViewConstants.ATTRIBUTE_SRC
+      @parseSrcAttribute()
+    else if attributeName is webViewConstants.ATTRIBUTE_SRC
       # We treat null attribute (attribute removed) and the empty string as
       # one case.
       oldValue ?= ''
       newValue ?= ''
       # Once we have navigated, we don't allow clearing the src attribute.
-      # Once <webview> enters a navigated state, it cannot be return back to a
+      # Once <webview> enters a navigated state, it cannot return to a
       # placeholder state.
       if newValue == '' and oldValue != ''
         # src attribute changes normally initiate a navigation. We suppress
@@ -228,22 +216,19 @@ class WebView
         # on every guest-initiated navigation.
         @ignoreNextSrcAttributeChange = true
         @webviewNode.setAttribute webViewConstants.ATTRIBUTE_SRC, oldValue
-      @src = newValue
+        return
+
       if @ignoreNextSrcAttributeChange
         # Don't allow the src mutation observer to see this change.
         @srcAndPartitionObserver.takeRecords()
         @ignoreNextSrcAttributeChange = false
         return
-      result = {}
-      @parseSrcAttribute result
+      @parseSrcAttribute()
+    else if attributeName is webViewConstants.ATTRIBUTE_PARTITION
+      @attributes[webViewConstants.ATTRIBUTE_PARTITION].handleMutation oldValue, newValue
 
-      throw result.error if result.error?
-    else if name is webViewConstants.ATTRIBUTE_PARTITION
-      # Note that throwing error here won't synchronously propagate.
-      @attributes[webViewConstants.ATTRIBUTE_PARTITION].setValue newValue
-
-  handleBrowserPluginAttributeMutation: (name, oldValue, newValue) ->
-    if name is webViewConstants.ATTRIBUTE_INTERNALINSTANCEID and !oldValue and !!newValue
+  handleBrowserPluginAttributeMutation: (attributeName, oldValue, newValue) ->
+    if attributeName is webViewConstants.ATTRIBUTE_INTERNALINSTANCEID and !oldValue and !!newValue
       @browserPluginNode.removeAttribute webViewConstants.ATTRIBUTE_INTERNALINSTANCEID
       @internalInstanceId = parseInt newValue
 
@@ -289,7 +274,7 @@ class WebView
       minHeight = height
     minHeight = maxHeight if minHeight > maxHeight
 
-    if not @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_AUTOSIZE or
+    if not @attributes[webViewConstants.ATTRIBUTE_AUTOSIZE].getValue() or
        (newWidth >= minWidth and
         newWidth <= maxWidth and
         newHeight >= minHeight and
@@ -307,13 +292,10 @@ class WebView
   hasNavigated: ->
     not @beforeFirstNavigation
 
-  parseSrcAttribute: (result) ->
-    unless @attributes[webViewConstants.ATTRIBUTE_PARTITION].validPartitionId
-      result.error = webViewConstants.ERROR_MSG_INVALID_PARTITION_ATTRIBUTE
+  parseSrcAttribute: ->
+    if not @attributes[webViewConstants.ATTRIBUTE_PARTITION].validPartitionId or
+       not @attributes[webViewConstants.ATTRIBUTE_SRC].getValue()
       return
-    @attributes[webViewConstants.ATTRIBUTE_SRC].setValue @webviewNode.getAttribute(webViewConstants.ATTRIBUTE_SRC)
-
-    return unless @attributes[webViewConstants.ATTRIBUTE_SRC].getValue()
 
     unless @guestInstanceId?
       if @beforeFirstNavigation
@@ -329,17 +311,12 @@ class WebView
   parseAttributes: ->
     return unless @elementAttached
     hasNavigated = @hasNavigated()
-    attributeValue = @webviewNode.getAttribute webViewConstants.ATTRIBUTE_PARTITION
-    result = @attributes[webViewConstants.ATTRIBUTE_PARTITION].setValue attributeValue
-    @parseSrcAttribute result
+    @parseSrcAttribute()
 
   createGuest: ->
     return if @pendingGuestCreation
-    storagePartitionId =
-      @webviewNode.getAttribute(webViewConstants.ATTRIBUTE_PARTITION) or
-      @webviewNode[webViewConstants.ATTRIBUTE_PARTITION]
     params =
-      storagePartitionId: storagePartitionId
+      storagePartitionId: @attributes[webViewConstants.ATTRIBUTE_PARTITION].getValue()
       nodeIntegration: @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_NODEINTEGRATION
       plugins: @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_PLUGINS
     if @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_PRELOAD
@@ -390,12 +367,11 @@ class WebView
       this.webviewNode.setAttribute webViewConstants.ATTRIBUTE_SRC, newValue
 
   onAttach: (storagePartitionId) ->
-    @webviewNode.setAttribute webViewConstants.ATTRIBUTE_PARTITION, storagePartitionId
     @attributes[webViewConstants.ATTRIBUTE_PARTITION].setValue storagePartitionId
 
   buildAttachParams: (isNewWindow) ->
-    allowtransparency: @attributes[webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY].getValue() || false
-    autosize: @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_AUTOSIZE
+    allowtransparency: @attributes[webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY].getValue()
+    autosize: @attributes[webViewConstants.ATTRIBUTE_AUTOSIZE].getValue()
     instanceId: @viewInstanceId
     maxheight: parseInt @attributes[webViewConstants.ATTRIBUTE_MAXHEIGHT].getValue() || 0
     maxwidth: parseInt @attributes[webViewConstants.ATTRIBUTE_MAXWIDTH].getValue() || 0
