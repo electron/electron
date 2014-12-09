@@ -35,7 +35,7 @@ there is no Visual Studio project generated.
 
 ```powershell
 cd atom-shell
-python script\bootstrap.py
+python script\bootstrap.py -v
 ```
 
 ## Building
