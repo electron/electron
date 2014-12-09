@@ -27,11 +27,6 @@ class WebView
 
     @beforeFirstNavigation = true
     @contentWindow = null
-    # Used to save some state upon deferred attachment.
-    # If <object> bindings is not available, we defer attachment.
-    # This state contains whether or not the attachment request was for
-    # newwindow.
-    @deferredAttachState = null
 
     # on* Event handlers.
     @on = {}
@@ -206,10 +201,9 @@ class WebView
       @browserPluginNode.removeAttribute webViewConstants.ATTRIBUTE_INTERNALINSTANCEID
       @internalInstanceId = parseInt newValue
 
-      if !!@guestInstanceId and @guestInstanceId != 0
-        isNewWindow = if @deferredAttachState then @deferredAttachState.isNewWindow else false
-        params = @buildAttachParams isNewWindow
-        guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, params, (w) => @contentWindow = w
+      return unless @guestInstanceId
+
+      guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, params, (w) => @contentWindow = w
 
   onSizeChanged: (webViewEvent) ->
     newWidth = webViewEvent.newWidth
@@ -309,7 +303,7 @@ class WebView
       unless @elementAttached
         guestViewInternal.destroyGuest guestInstanceId
         return
-      @attachWindow guestInstanceId, false
+      @attachWindow guestInstanceId
     @pendingGuestCreation = true
 
   dispatchEvent: (webViewEvent) ->
@@ -343,31 +337,26 @@ class WebView
   onAttach: (storagePartitionId) ->
     @attributes[webViewConstants.ATTRIBUTE_PARTITION].setValue storagePartitionId
 
-  buildAttachParams: (isNewWindow) ->
+  buildAttachParams: ->
+    instanceId: @viewInstanceId
+    userAgentOverride: @userAgentOverride
+    # Attributes:
     allowtransparency: @attributes[webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY].getValue()
     autosize: @attributes[webViewConstants.ATTRIBUTE_AUTOSIZE].getValue()
-    instanceId: @viewInstanceId
     maxheight: parseInt @attributes[webViewConstants.ATTRIBUTE_MAXHEIGHT].getValue() || 0
     maxwidth: parseInt @attributes[webViewConstants.ATTRIBUTE_MAXWIDTH].getValue() || 0
     minheight: parseInt @attributes[webViewConstants.ATTRIBUTE_MINHEIGHT].getValue() || 0
     minwidth: parseInt @attributes[webViewConstants.ATTRIBUTE_MINWIDTH].getValue() || 0
-    # We don't need to navigate new window from here.
-    src: if isNewWindow then undefined else @attributes[webViewConstants.ATTRIBUTE_SRC].getValue()
-    # If we have a partition from the opener, that will also be already
-    # set via this.onAttach().
-    storagePartitionId: @attributes[webViewConstants.ATTRIBUTE_PARTITION].getValue()
-    userAgentOverride: @userAgentOverride
+    src: @attributes[webViewConstants.ATTRIBUTE_SRC].getValue()
     httpreferrer: @attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].getValue()
 
-  attachWindow: (guestInstanceId, isNewWindow) ->
+  attachWindow: (guestInstanceId) ->
     @guestInstanceId = guestInstanceId
-    params = @buildAttachParams isNewWindow
+    params = @buildAttachParams()
 
     unless @isPluginInRenderTree()
-      @deferredAttachState = isNewWindow: isNewWindow
       return true
 
-    @deferredAttachState = null
     guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, params, (w) => @contentWindow = w
 
 # Registers browser plugin <object> custom element.
