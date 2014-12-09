@@ -6,10 +6,16 @@ module.exports =
   ATTRIBUTE_MAXWIDTH: 'maxwidth'
   ATTRIBUTE_MINHEIGHT: 'minheight'
   ATTRIBUTE_MINWIDTH: 'minwidth'
+  ATTRIBUTE_NAME: 'name'
   ATTRIBUTE_PARTITION: 'partition'
+  ATTRIBUTE_SRC: 'src'
+  ATTRIBUTE_HTTPREFERRER: 'httpreferrer'
   ATTRIBUTE_NODEINTEGRATION: 'nodeintegration'
   ATTRIBUTE_PLUGINS: 'plugins'
   ATTRIBUTE_PRELOAD: 'preload'
+
+  # Internal attribute.
+  ATTRIBUTE_INTERNALINSTANCEID: 'internalinstanceid'
 
   # Error messages.
   ERROR_MSG_ALREADY_NAVIGATED: 'The object has already navigated, so its partition cannot be changed.'

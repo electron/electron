@@ -36,17 +36,19 @@ for arg in process.argv
 
 if location.protocol is 'chrome-devtools:'
   # Override some inspector APIs.
-  require path.join(__dirname, 'inspector')
+  require './inspector'
   nodeIntegration = 'true'
 else if location.protocol is 'chrome-extension:'
   # Add implementations of chrome API.
-  require path.join(__dirname, 'chrome-api')
+  require './chrome-api'
   nodeIntegration = 'true'
 else
   # Override default web functions.
-  require path.join(__dirname, 'override')
+  require './override'
   # Load webview tag implementation.
-  require path.join(__dirname, 'web-view/web-view') unless process.guestInstanceId?
+  unless process.guestInstanceId?
+    require './web-view/web-view'
+    require './web-view/web-view-attributes'
 
 if nodeIntegration in ['true', 'all', 'except-iframe', 'manual-enable-iframe']
   # Export node bindings to global.
