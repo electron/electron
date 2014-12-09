@@ -38,7 +38,7 @@ there is no `Makefile` generated.
 
 ```bash
 $ cd atom-shell
-$ ./script/bootstrap.py
+$ ./script/bootstrap.py -v
 ```
 
 ## Building

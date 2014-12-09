@@ -60,7 +60,6 @@
       'atom/app/atom_content_client.h',
       'atom/app/atom_main_delegate.cc',
       'atom/app/atom_main_delegate.h',
-      'atom/app/atom_main_delegate_mac.mm',
       'atom/browser/api/atom_api_app.cc',
       'atom/browser/api/atom_api_app.h',
       'atom/browser/api/atom_api_auto_updater.cc',
