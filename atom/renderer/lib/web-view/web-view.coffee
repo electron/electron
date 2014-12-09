@@ -134,22 +134,6 @@ class WebViewImpl
       # changed.
       @dispatchEvent webViewEvent
 
-  parseSrcAttribute: ->
-    if not @attributes[webViewConstants.ATTRIBUTE_PARTITION].validPartitionId or
-       not @attributes[webViewConstants.ATTRIBUTE_SRC].getValue()
-      return
-
-    unless @guestInstanceId?
-      if @beforeFirstNavigation
-        @beforeFirstNavigation = false
-        @createGuest()
-      return
-
-    # Navigate to |this.src|.
-    httpreferrer = @attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].getValue()
-    urlOptions = if httpreferrer then {httpreferrer} else {}
-    remote.getGuestWebContents(@guestInstanceId).loadUrl @attributes[webViewConstants.ATTRIBUTE_SRC].getValue(), urlOptions
-
   createGuest: ->
     return if @pendingGuestCreation
     params =
@@ -272,7 +256,7 @@ registerWebViewElement = ->
     return unless internal
     unless internal.elementAttached
       internal.elementAttached = true
-      internal.parseSrcAttribute()
+      internal.attributes[webViewConstants.ATTRIBUTE_SRC].parse()
 
   # Public-facing API methods.
   methods = [

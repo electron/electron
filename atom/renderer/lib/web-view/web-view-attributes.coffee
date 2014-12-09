@@ -1,6 +1,7 @@
 WebViewImpl = require './web-view'
 guestViewInternal = require './guest-view-internal'
 webViewConstants = require './web-view-constants'
+remote = require 'remote'
 
 # Attribute objects.
 # Default implementation of a WebView attribute.
@@ -54,7 +55,7 @@ class AllowTransparencyAttribute extends BooleanAttribute
 
   handleMutation: (oldValue, newValue) ->
     return unless @webViewImpl.guestInstanceId
-    guestViewInternal.setAllowTransparency @webViewImpl.guestInstanceId, @webViewImpl.attributes[webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY].getValue()
+    guestViewInternal.setAllowTransparency @webViewImpl.guestInstanceId, @getValue()
 
 # Attribute used to define the demension limits of autosizing.
 class AutosizeDimensionAttribute extends WebViewAttribute
@@ -116,7 +117,7 @@ class SrcAttribute extends WebViewAttribute
       # on every guest-initiated navigation.
       @setValueIgnoreMutation oldValue
       return
-    @webViewImpl.parseSrcAttribute()
+    @parse()
 
   # The purpose of this mutation observer is to catch assignment to the src
   # attribute without any changes to its value. This is useful in the case
@@ -135,13 +136,30 @@ class SrcAttribute extends WebViewAttribute
       attributeFilter: [@name]
     @observer.observe @webViewImpl.webviewNode, params
 
+  parse: ->
+    if not @webViewImpl.elementAttached or
+       not @webViewImpl.attributes[webViewConstants.ATTRIBUTE_PARTITION].validPartitionId or
+       not @.getValue()
+      return
+
+    unless @webViewImpl.guestInstanceId?
+      if @webViewImpl.beforeFirstNavigation
+        @webViewImpl.beforeFirstNavigation = false
+        @webViewImpl.createGuest()
+      return
+
+    # Navigate to |this.src|.
+    httpreferrer = @webViewImpl.attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].getValue()
+    urlOptions = if httpreferrer then {httpreferrer} else {}
+    remote.getGuestWebContents(@webViewImpl.guestInstanceId).loadUrl @getValue(), urlOptions
+
 # Attribute specifies HTTP referrer.
 class HttpReferrerAttribute extends WebViewAttribute
   constructor: (webViewImpl) ->
     super webViewConstants.ATTRIBUTE_HTTPREFERRER, webViewImpl
 
   handleMutation: (oldValue, newValue) ->
-    @webViewImpl.parseSrcAttribute()
+    SrcAttribute::parse.call this
 
 # Sets up all of the webview attributes.
 WebViewImpl::setupWebViewAttributes = ->
