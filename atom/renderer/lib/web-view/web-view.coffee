@@ -41,9 +41,6 @@ class WebViewImpl
     v8Util.setHiddenValue browserPluginNode, 'internal', this
     browserPluginNode
 
-  getGuestInstanceId: ->
-    @guestInstanceId
-
   # Resets some state upon reattaching <webview> element to the DOM.
   reset: ->
     # If guestInstanceId is defined then the <webview> has navigated and has
@@ -78,10 +75,6 @@ class WebViewImpl
     @webviewNode.addEventListener 'blur', (e) =>
       # Blur the BrowserPlugin when the <webview> loses focus.
       @browserPluginNode.blur()
-
-  # Validation helper function for executeScript() and insertCSS().
-  validateExecuteCodeCall: ->
-    throw new Error(webViewConstants.ERROR_MSG_CANNOT_INJECT_SCRIPT) unless @guestInstanceId
 
   setupWebviewNodeProperties: ->
     # We cannot use {writable: true} property descriptor because we want a
@@ -125,31 +118,10 @@ class WebViewImpl
 
     # Check the current bounds to make sure we do not resize <webview>
     # outside of current constraints.
-    if node.hasAttribute(webViewConstants.ATTRIBUTE_MAXWIDTH) and
-       node[webViewConstants.ATTRIBUTE_MAXWIDTH]
-      maxWidth = node[webViewConstants.ATTRIBUTE_MAXWIDTH]
-    else
-      maxWidth = width
-
-    if node.hasAttribute(webViewConstants.ATTRIBUTE_MINWIDTH) and
-       node[webViewConstants.ATTRIBUTE_MINWIDTH]
-      minWidth = node[webViewConstants.ATTRIBUTE_MINWIDTH]
-    else
-      minWidth = width
-    minWidth = maxWidth if minWidth > maxWidth
-
-    if node.hasAttribute(webViewConstants.ATTRIBUTE_MAXHEIGHT) and
-       node[webViewConstants.ATTRIBUTE_MAXHEIGHT]
-      maxHeight = node[webViewConstants.ATTRIBUTE_MAXHEIGHT]
-    else
-      maxHeight = height
-
-    if node.hasAttribute(webViewConstants.ATTRIBUTE_MINHEIGHT) and
-       node[webViewConstants.ATTRIBUTE_MINHEIGHT]
-      minHeight = node[webViewConstants.ATTRIBUTE_MINHEIGHT]
-    else
-      minHeight = height
-    minHeight = maxHeight if minHeight > maxHeight
+    maxWidth = @attributes[webViewConstants.ATTRIBUTE_MAXWIDTH].getValue() | width
+    maxHeight = @attributes[webViewConstants.ATTRIBUTE_MAXHEIGHT].getValue() | width
+    minWidth = @attributes[webViewConstants.ATTRIBUTE_MINWIDTH].getValue() | width
+    minHeight = @attributes[webViewConstants.ATTRIBUTE_MINHEIGHT].getValue() | width
 
     if not @attributes[webViewConstants.ATTRIBUTE_AUTOSIZE].getValue() or
        (newWidth >= minWidth and
@@ -161,13 +133,6 @@ class WebViewImpl
       # Only fire the DOM event if the size of the <webview> has actually
       # changed.
       @dispatchEvent webViewEvent
-
-  # Returns if <object> is in the render tree.
-  isPluginInRenderTree: ->
-    !!@internalInstanceId && @internalInstanceId != 0
-
-  hasNavigated: ->
-    not @beforeFirstNavigation
 
   parseSrcAttribute: ->
     if not @attributes[webViewConstants.ATTRIBUTE_PARTITION].validPartitionId or
@@ -184,11 +149,6 @@ class WebViewImpl
     httpreferrer = @attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].getValue()
     urlOptions = if httpreferrer then {httpreferrer} else {}
     remote.getGuestWebContents(@guestInstanceId).loadUrl @attributes[webViewConstants.ATTRIBUTE_SRC].getValue(), urlOptions
-
-  parseAttributes: ->
-    return unless @elementAttached
-    hasNavigated = @hasNavigated()
-    @parseSrcAttribute()
 
   createGuest: ->
     return if @pendingGuestCreation
@@ -257,8 +217,7 @@ class WebViewImpl
     @guestInstanceId = guestInstanceId
     params = @buildAttachParams()
 
-    unless @isPluginInRenderTree()
-      return true
+    return true unless @internalInstanceId
 
     guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, params, (w) => @contentWindow = w
 
@@ -313,7 +272,7 @@ registerWebViewElement = ->
     return unless internal
     unless internal.elementAttached
       internal.elementAttached = true
-      internal.parseAttributes()
+      internal.parseSrcAttribute()
 
   # Public-facing API methods.
   methods = [
