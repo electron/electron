@@ -15,16 +15,22 @@ class WebViewAttribute
   # Sets the attribute's value.
   setValue: (value) -> @webViewImpl.webviewNode.setAttribute(@name, value || '')
 
+  # Defines this attribute as a property on the webview node.
+  define: ->
+    Object.defineProperty @webViewImpl.webviewNode, @name,
+      get: => @getValue()
+      set: (value) => @setValue value
+      enumerable: true
+
   # Called when the attribute's value changes.
   handleMutation: ->
 
-# Attribute specifying whether transparency is allowed in the webview.
+# An attribute that is treated as a Boolean.
 class BooleanAttribute extends WebViewAttribute
   constructor: (name, webViewImpl) ->
     super name, webViewImpl
 
   getValue: ->
-    # This attribute is treated as a boolean, and is retrieved as such.
     @webViewImpl.webviewNode.hasAttribute @name
 
   setValue: (value) ->

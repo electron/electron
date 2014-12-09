@@ -99,20 +99,9 @@ class WebView
   validateExecuteCodeCall: ->
     throw new Error(webViewConstants.ERROR_MSG_CANNOT_INJECT_SCRIPT) unless @guestInstanceId
 
-  setupAutoSizeProperties: ->
-    for attributeName in AUTO_SIZE_ATTRIBUTES
-      Object.defineProperty @webviewNode, attributeName,
-        get: => @attributes[attributeName].getValue()
-        set: (value) => @attributes[attributeName].setValue value
-        enumerable: true
-
   setupWebviewNodeProperties: ->
-    @setupAutoSizeProperties()
-
-    Object.defineProperty @webviewNode, webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY,
-      get: => @attributes[webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY].getValue()
-      set: (value) => @attributes[webViewConstants.ATTRIBUTE_ALLOWTRANSPARENCY].setValue value
-      enumerable: true
+    for attributeName of @attributes
+      @attributes[attributeName].define()
 
     # We cannot use {writable: true} property descriptor because we want a
     # dynamic getter value.
@@ -121,21 +110,6 @@ class WebView
         return @contentWindow if @contentWindow?
         window.console.error webViewConstants.ERROR_MSG_CONTENTWINDOW_NOT_AVAILABLE
       # No setter.
-      enumerable: true
-
-    Object.defineProperty @webviewNode, webViewConstants.ATTRIBUTE_PARTITION,
-      get: => @attributes[webViewConstants.ATTRIBUTE_PARTITION].getValue()
-      set: (value) => @attributes[webViewConstants.ATTRIBUTE_PARTITION].setValue value
-      enumerable: true
-
-    Object.defineProperty @webviewNode, webViewConstants.ATTRIBUTE_SRC,
-      get: => @attributes[webViewConstants.ATTRIBUTE_SRC].getValue()
-      set: (value) => @attributes[webViewConstants.ATTRIBUTE_SRC].setValue value
-      enumerable: true
-
-    Object.defineProperty @webviewNode, webViewConstants.ATTRIBUTE_HTTPREFERRER,
-      get: => @attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].getValue()
-      set: (value) => @attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].setValue value
       enumerable: true
 
   # The purpose of this mutation observer is to catch assignment to the src
