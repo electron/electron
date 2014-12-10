@@ -43,9 +43,9 @@ TARGET_BINARIES = {
     'libGLESv2.dll',
     'msvcp120.dll',
     'msvcr120.dll',
+    'content_resources_200_percent.pak',
     'ui_resources_200_percent.pak',
     'vccorlib120.dll',
-    'webkit_resources_200_percent.pak',
     'xinput1_3.dll',
   ],
   'linux': [

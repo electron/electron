@@ -39,9 +39,6 @@ int WinFrameView::NonClientHitTest(const gfx::Point& point) {
     return FramelessView::NonClientHitTest(point);
 }
 
-void WinFrameView::SizeConstraintsChanged() override {
-}
-
 gfx::Size WinFrameView::GetMinimumSize() const {
   gfx::Size size = FramelessView::GetMinimumSize();
   return gfx::win::DIPToScreenSize(size);

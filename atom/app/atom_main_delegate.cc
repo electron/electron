@@ -111,7 +111,7 @@ void AtomMainDelegate::AddDataPackFromPath(
       pak_dir.Append(FILE_PATH_LITERAL("ui_resources_200_percent.pak")),
       ui::SCALE_FACTOR_200P);
   bundle->AddDataPackFromPath(
-      pak_dir.Append(FILE_PATH_LITERAL("webkit_resources_200_percent.pak")),
+      pak_dir.Append(FILE_PATH_LITERAL("content_resources_200_percent.pak")),
       ui::SCALE_FACTOR_200P);
 #endif
 }
