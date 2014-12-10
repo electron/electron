@@ -3,6 +3,12 @@ guestViewInternal = require './guest-view-internal'
 webViewConstants = require './web-view-constants'
 remote = require 'remote'
 
+# Helper function to resolve url set in attribute.
+a = document.createElement 'a'
+resolveUrl = (url) ->
+  a.href = url
+  a.href
+
 # Attribute objects.
 # Default implementation of a WebView attribute.
 class WebViewAttribute
@@ -107,6 +113,12 @@ class SrcAttribute extends WebViewAttribute
     super webViewConstants.ATTRIBUTE_SRC, webViewImpl
     @setupMutationObserver()
 
+  getValue: ->
+    if @webViewImpl.webviewNode.hasAttribute @name
+      resolveUrl @webViewImpl.webviewNode.getAttribute(@name)
+    else
+      ''
+
   handleMutation: (oldValue, newValue) ->
     # Once we have navigated, we don't allow clearing the src attribute.
     # Once <webview> enters a navigated state, it cannot return to a
@@ -157,9 +169,6 @@ class SrcAttribute extends WebViewAttribute
 class HttpReferrerAttribute extends WebViewAttribute
   constructor: (webViewImpl) ->
     super webViewConstants.ATTRIBUTE_HTTPREFERRER, webViewImpl
-
-  handleMutation: (oldValue, newValue) ->
-    SrcAttribute::parse.call this
 
 # Sets up all of the webview attributes.
 WebViewImpl::setupWebViewAttributes = ->
