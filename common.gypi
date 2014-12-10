@@ -12,6 +12,8 @@
         'msvs_express': 0,
       }],
     ],
+    # Required by breakpad.
+    'os_bsd': 0,
     # Reflects node's config.gypi.
     'component%': 'static_library',
     'python': 'python',
