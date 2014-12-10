@@ -18,6 +18,7 @@ class WinFrameView : public FramelessView {
   gfx::Rect GetWindowBoundsForClientBounds(
       const gfx::Rect& client_bounds) const override;
   int NonClientHitTest(const gfx::Point& point) override;
+  void SizeConstraintsChanged() override;
 
   // views::View:
   gfx::Size GetMinimumSize() const override;
