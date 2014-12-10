@@ -529,6 +529,8 @@
       'defines': [
         # This is defined in skia/skia_common.gypi.
         'SK_SUPPORT_LEGACY_GETTOPDEVICE',
+        # Disable warnings for g_settings_list_schemas.
+        'GLIB_DISABLE_DEPRECATION_WARNINGS',
       ],
       'sources': [
         '<@(lib_sources)',
