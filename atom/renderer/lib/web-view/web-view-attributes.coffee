@@ -170,6 +170,20 @@ class HttpReferrerAttribute extends WebViewAttribute
   constructor: (webViewImpl) ->
     super webViewConstants.ATTRIBUTE_HTTPREFERRER, webViewImpl
 
+# Attribute that set preload script.
+class PreloadAttribute extends WebViewAttribute
+  constructor: (webViewImpl) ->
+    super webViewConstants.ATTRIBUTE_PRELOAD, webViewImpl
+
+  getValue: ->
+    return '' unless @webViewImpl.webviewNode.hasAttribute @name
+    preload = resolveUrl @webViewImpl.webviewNode.getAttribute(@name)
+    protocol = preload.substr 0, 5
+    unless protocol in ['file:', 'asar:']
+      console.error webViewConstants.ERROR_MSG_INVALID_PRELOAD_ATTRIBUTE
+      preload = ''
+    preload
+
 # Sets up all of the webview attributes.
 WebViewImpl::setupWebViewAttributes = ->
   @attributes = {}
@@ -181,6 +195,7 @@ WebViewImpl::setupWebViewAttributes = ->
   @attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER] = new HttpReferrerAttribute(this)
   @attributes[webViewConstants.ATTRIBUTE_NODEINTEGRATION] = new BooleanAttribute(webViewConstants.ATTRIBUTE_NODEINTEGRATION, this)
   @attributes[webViewConstants.ATTRIBUTE_PLUGINS] = new BooleanAttribute(webViewConstants.ATTRIBUTE_PLUGINS, this)
+  @attributes[webViewConstants.ATTRIBUTE_PRELOAD] = new PreloadAttribute(this)
 
   autosizeAttributes = [
     webViewConstants.ATTRIBUTE_MAXHEIGHT

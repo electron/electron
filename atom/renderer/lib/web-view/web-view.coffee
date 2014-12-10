@@ -182,17 +182,6 @@ class WebViewImpl
       userAgentOverride: @userAgentOverride
     for attributeName, attribute of @attributes
       params[attributeName] = attribute.getValue()
-    if @webviewNode.hasAttribute webViewConstants.ATTRIBUTE_PRELOAD
-      preload = @webviewNode.getAttribute webViewConstants.ATTRIBUTE_PRELOAD
-      # Get the full path.
-      a = document.createElement 'a'
-      a.href = preload
-      params.preload = a.href
-      # Only support file: or asar: protocol.
-      protocol = params.preload.substr 0, 5
-      unless protocol in ['file:', 'asar:']
-        delete params.preload
-        console.error webViewConstants.ERROR_MSG_INVALID_PRELOAD_ATTRIBUTE
     params
 
   attachWindow: (guestInstanceId) ->
