@@ -11,6 +11,7 @@
 #include "base/memory/scoped_ptr.h"
 #include "atom/browser/native_window.h"
 
+@class FullSizeContentView;
 class SkRegion;
 
 namespace atom {
@@ -97,6 +98,9 @@ class NativeWindowMac : public NativeWindow {
       const std::vector<DraggableRegion>& regions);
 
   base::scoped_nsobject<NSWindow> window_;
+
+  // The view that will fill the whole frameless window.
+  base::scoped_nsobject<FullSizeContentView> content_view_;
 
   bool is_kiosk_;
 

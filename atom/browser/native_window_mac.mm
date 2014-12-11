@@ -25,6 +25,31 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 - (CGFloat)roundedCornerRadius;
 @end
 
+// This view always takes the size of its superview. It is intended to be used
+// as a NSWindow's contentView.  It is needed because NSWindow's implementation
+// explicitly resizes the contentView at inopportune times.
+@interface FullSizeContentView : NSView
+@end
+
+@implementation FullSizeContentView
+
+// This method is directly called by NSWindow during a window resize on OSX
+// 10.10.0, beta 2. We must override it to prevent the content view from
+// shrinking.
+- (void)setFrameSize:(NSSize)size {
+  if ([self superview])
+    size = [[self superview] bounds].size;
+  [super setFrameSize:size];
+}
+
+// The contentView gets moved around during certain full-screen operations.
+// This is less than ideal, and should eventually be removed.
+- (void)viewDidMoveToSuperview {
+  [self setFrame:[[self superview] bounds]];
+}
+
+@end
+
 @interface AtomNSWindowDelegate : NSObject<NSWindowDelegate> {
  @private
   atom::NativeWindowMac* shell_;
@@ -690,9 +715,24 @@ void NativeWindowMac::InstallView() {
     [view setFrame:[[window_ contentView] bounds]];
     [[window_ contentView] addSubview:view];
   } else {
-    NSView* frameView = [[window_ contentView] superview];
-    [view setFrame:[frameView bounds]];
-    [frameView addSubview:view];
+    if (base::mac::IsOSYosemiteOrLater()) {
+      // In OSX 10.10, adding subviews to the root view for the NSView hierarchy
+      // produces warnings. To eliminate the warnings, we resize the contentView
+      // to fill the window, and add subviews to that.
+      // http://crbug.com/380412
+      content_view_.reset([[FullSizeContentView alloc] init]);
+      [content_view_
+          setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+      [content_view_ setFrame:[[[window_ contentView] superview] bounds]];
+      [window_ setContentView:content_view_];
+
+      [view setFrame:[content_view_ bounds]];
+      [content_view_ addSubview:view];
+    } else {
+      NSView* frameView = [[window_ contentView] superview];
+      [view setFrame:[frameView bounds]];
+      [frameView addSubview:view];
+    }
 
     ClipWebView();
 
