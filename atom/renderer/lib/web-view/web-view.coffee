@@ -105,7 +105,7 @@ class WebViewImpl
 
       return unless @guestInstanceId
 
-      guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, params, (w) => @contentWindow = w
+      guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, @buildAttachParams(), (w) => @contentWindow = w
 
   onSizeChanged: (webViewEvent) ->
     newWidth = webViewEvent.newWidth
