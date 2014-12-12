@@ -27,9 +27,9 @@ WinFrameView::~WinFrameView() {
 
 gfx::Rect WinFrameView::GetWindowBoundsForClientBounds(
     const gfx::Rect& client_bounds) const {
-  gfx::Size size(client_bounds.size());
-  ClientAreaSizeToWindowSize(&size);
-  return gfx::Rect(client_bounds.origin(), size);
+  return views::GetWindowBoundsForClientBounds(
+      static_cast<views::View*>(const_cast<WinFrameView*>(this)),
+      client_bounds);
 }
 
 int WinFrameView::NonClientHitTest(const gfx::Point& point) {
@@ -51,14 +51,6 @@ gfx::Size WinFrameView::GetMaximumSize() const {
 
 const char* WinFrameView::GetClassName() const {
   return kViewClassName;
-}
-
-void WinFrameView::ClientAreaSizeToWindowSize(gfx::Size* size) const {
-  // AdjustWindowRect seems to return a wrong window size.
-  gfx::Size window = frame_->GetWindowBoundsInScreen().size();
-  gfx::Size client = frame_->GetClientAreaBoundsInScreen().size();
-  size->set_width(size->width() + window.width() - client.width());
-  size->set_height(size->height() + window.height() - client.height());
 }
 
 }  // namespace atom
