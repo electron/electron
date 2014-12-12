@@ -42,7 +42,7 @@ You can also only build the `Debug` target:
 $ ./script/build.py -c Debug
 ```
 
-After building is done, you can find `Atom.app` under `out/Debug`.
+After building is done, you can find `AtomShell.app` under `out/Debug`.
 
 ## 32bit support
 

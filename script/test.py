@@ -12,8 +12,8 @@ def main():
   os.chdir(SOURCE_ROOT)
 
   if sys.platform == 'darwin':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Debug', 'Atom.app',
-                              'Contents', 'MacOS', 'Atom')
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Debug', 'AtomShell.app',
+                              'Contents', 'MacOS', 'AtomShell')
   elif sys.platform == 'win32':
     atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Debug', 'atom.exe')
   else:
