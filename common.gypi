@@ -6,11 +6,6 @@
       ['OS=="mac" or OS=="linux"', {
         'clang': 1,
       }],
-      ['OS=="win" and (MSVS_VERSION=="2013e" or MSVS_VERSION=="2012e" or MSVS_VERSION=="2010e")', {
-        'msvs_express': 1,
-      },{
-        'msvs_express': 0,
-      }],
     ],
     # Required by breakpad.
     'os_bsd': 0,

@@ -28,7 +28,6 @@ def main():
     download_and_unzip('ReactiveCocoa')
     download_and_unzip('Squirrel')
   elif sys.platform in ['cygwin', 'win32']:
-    download_and_unzip('atl')
     download_and_unzip('directxsdk')
     download_and_unzip('vs2012_crt')
 
