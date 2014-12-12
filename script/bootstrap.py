@@ -21,18 +21,18 @@ def main():
   args = parse_args()
   if args.verbose:
     enable_verbose_mode()
-  update_submodules()
-  update_node_modules('.')
-  update_atom_modules('spec')
-  bootstrap_brightray(args.url)
   if sys.platform == 'cygwin':
     update_win32_python()
+  update_submodules()
+  update_node_modules('.')
+  bootstrap_brightray(args.url)
   if sys.platform in ['win32', 'cygwin']:
     install_runas()
 
   create_chrome_version_h()
   touch_config_gypi()
   update_atom_shell()
+  update_atom_modules('spec')
 
 
 def parse_args():
