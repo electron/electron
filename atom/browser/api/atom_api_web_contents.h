@@ -118,42 +118,35 @@ class WebContents : public mate::EventEmitter,
       const content::NativeWebKeyboardEvent& event) override;
 
   // content::WebContentsObserver:
-  virtual void RenderViewDeleted(content::RenderViewHost*) override;
-  virtual void RenderProcessGone(base::TerminationStatus status) override;
-  virtual void DidFinishLoad(content::RenderFrameHost* render_frame_host,
-                             const GURL& validated_url) override;
-  virtual void DidFailLoad(content::RenderFrameHost* render_frame_host,
-                           const GURL& validated_url,
-                           int error_code,
-                           const base::string16& error_description) override;
-  virtual void DidStartLoading(
-      content::RenderViewHost* render_view_host) override;
-  virtual void DidStopLoading(
-      content::RenderViewHost* render_view_host) override;
-  virtual void DidGetRedirectForResourceRequest(
+  void RenderViewDeleted(content::RenderViewHost*) override;
+  void RenderProcessGone(base::TerminationStatus status) override;
+  void DidFinishLoad(content::RenderFrameHost* render_frame_host,
+                     const GURL& validated_url) override;
+  void DidFailLoad(content::RenderFrameHost* render_frame_host,
+                   const GURL& validated_url,
+                   int error_code,
+                   const base::string16& error_description) override;
+  void DidStartLoading(content::RenderViewHost* render_view_host) override;
+  void DidStopLoading(content::RenderViewHost* render_view_host) override;
+  void DidGetRedirectForResourceRequest(
       content::RenderViewHost* render_view_host,
       const content::ResourceRedirectDetails& details) override;
-  virtual bool OnMessageReceived(const IPC::Message& message) override;
-  virtual void RenderViewReady() override;
-  virtual void WebContentsDestroyed() override;
+  void DidNavigateMainFrame(
+      const content::LoadCommittedDetails& details,
+      const content::FrameNavigateParams& params) override;
+  bool OnMessageReceived(const IPC::Message& message) override;
+  void RenderViewReady() override;
+  void WebContentsDestroyed() override;
 
   // content::BrowserPluginGuestDelegate:
-  virtual void WillAttach(content::WebContents* embedder_web_contents,
-                          const base::DictionaryValue& extra_params) override;
-  virtual content::WebContents* CreateNewGuestWindow(
-      const content::WebContents::CreateParams& create_params) override;
-  virtual void DidAttach() override;
-  virtual int GetGuestInstanceID() const override;
-  virtual void ElementSizeChanged(const gfx::Size& old_size,
-                                  const gfx::Size& new_size) override;
-  virtual void GuestSizeChanged(const gfx::Size& old_size,
-                                const gfx::Size& new_size) override;
-  virtual void RequestPointerLockPermission(
-      bool user_gesture,
-      bool last_unlocked_by_target,
-      const base::Callback<void(bool enabled)>& callback) override;
-  virtual void RegisterDestructionCallback(
-      const DestructionCallback& callback) override;
+  void DidAttach(int guest_proxy_routing_id) final;
+  void ElementSizeChanged(const gfx::Size& old_size,
+                          const gfx::Size& new_size) final;
+  void GuestSizeChanged(const gfx::Size& old_size,
+                        const gfx::Size& new_size) final;
+  void RegisterDestructionCallback(const DestructionCallback& callback) final;
+  void WillAttach(content::WebContents* embedder_web_contents,
+                  int browser_plugin_instance_id) final;
 
  private:
   // Called when received a message from renderer.
@@ -171,16 +164,14 @@ class WebContents : public mate::EventEmitter,
   // Unique ID for a guest WebContents.
   int guest_instance_id_;
 
+  // |element_instance_id_| is an identifer that's unique to a particular
+  // element.
+  int element_instance_id_;
+
   DestructionCallback destruction_callback_;
 
   // Stores whether the contents of the guest can be transparent.
   bool guest_opaque_;
-
-  // The extra parameters associated with this guest view passed
-  // in from JavaScript. This will typically be the view instance ID,
-  // the API to use, and view-specific parameters. These parameters
-  // are passed along to new guests that are created from this guest.
-  scoped_ptr<base::DictionaryValue> extra_params_;
 
   // Stores the WebContents that managed by this class.
   scoped_ptr<brightray::InspectableWebContents> storage_;

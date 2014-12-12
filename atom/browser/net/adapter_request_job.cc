@@ -22,7 +22,7 @@ AdapterRequestJob::AdapterRequestJob(ProtocolHandler* protocol_handler,
 }
 
 void AdapterRequestJob::Start() {
-  DCHECK(!real_job_);
+  DCHECK(!real_job_.get());
   content::BrowserThread::PostTask(
       content::BrowserThread::UI,
       FROM_HERE,
@@ -31,35 +31,35 @@ void AdapterRequestJob::Start() {
 }
 
 void AdapterRequestJob::Kill() {
-  if (real_job_)  // Kill could happen when real_job_ is created.
+  if (real_job_.get())  // Kill could happen when real_job_ is created.
     real_job_->Kill();
 }
 
 bool AdapterRequestJob::ReadRawData(net::IOBuffer* buf,
                                     int buf_size,
                                     int *bytes_read) {
-  DCHECK(real_job_);
+  DCHECK(!real_job_.get());
   return real_job_->ReadRawData(buf, buf_size, bytes_read);
 }
 
 bool AdapterRequestJob::IsRedirectResponse(GURL* location,
                                            int* http_status_code) {
-  DCHECK(real_job_);
+  DCHECK(!real_job_.get());
   return real_job_->IsRedirectResponse(location, http_status_code);
 }
 
 net::Filter* AdapterRequestJob::SetupFilter() const {
-  DCHECK(real_job_);
+  DCHECK(!real_job_.get());
   return real_job_->SetupFilter();
 }
 
 bool AdapterRequestJob::GetMimeType(std::string* mime_type) const {
-  DCHECK(real_job_);
+  DCHECK(!real_job_.get());
   return real_job_->GetMimeType(mime_type);
 }
 
 bool AdapterRequestJob::GetCharset(std::string* charset) {
-  DCHECK(real_job_);
+  DCHECK(!real_job_.get());
   return real_job_->GetCharset(charset);
 }
 

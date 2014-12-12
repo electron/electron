@@ -36,6 +36,7 @@ class FramelessView : public views::NonClientFrameView {
   void ResetWindowControls() override;
   void UpdateWindowIcon() override;
   void UpdateWindowTitle() override;
+  void SizeConstraintsChanged() override;
 
   // Overridden from View:
   gfx::Size GetPreferredSize() const override;

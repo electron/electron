@@ -72,8 +72,6 @@ Window::Window(const mate::Dictionary& options)
 Window::~Window() {
   if (window_)
     Destroy();
-
-  Emit("destroyed");
 }
 
 void Window::OnPageTitleUpdated(bool* prevent_default,

@@ -18,6 +18,8 @@ supportedWebViewEvents = [
 
 nextInstanceId = 0
 guestInstances = {}
+embedderElementsMap = {}
+reverseEmbedderElementsMap = {}
 
 # Generate guestInstanceId.
 getNextInstanceId = (webContents) ->
@@ -33,15 +35,19 @@ createGuest = (embedder, params) ->
     guestInstanceId: id
     storagePartitionId: params.storagePartitionId
   guestInstances[id] = {guest, embedder}
-  preload = params.preload ? ''
-  webViewManager.addGuest id, embedder, guest, params.nodeIntegration, params.plugins, preload
 
-  # Destroy guest when the embedder is gone.
-  embedder.once 'render-view-deleted', ->
+  # Destroy guest when the embedder is gone or navigated.
+  destroyEvents = ['destroyed', 'crashed', 'did-navigate-to-different-page']
+  destroy = ->
     destroyGuest id if guestInstances[id]?
+    embedder.removeListener event, destroy for event in destroyEvents
+  embedder.once event, destroy for event in destroyEvents
 
   # Init guest web view after attached.
-  guest.once 'did-attach', (event, params) ->
+  guest.once 'did-attach', ->
+    params = @attachParams
+    delete @attachParams
+
     @viewInstanceId = params.instanceId
     min = width: params.minwidth, height: params.minheight
     max = width: params.maxwidth, height: params.maxheight
@@ -66,14 +72,46 @@ createGuest = (embedder, params) ->
 
   id
 
+# Attach the guest to an element of embedder.
+attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
+  guest = guestInstances[guestInstanceId].guest
+
+  # Destroy the old guest when attaching.
+  key = "#{embedder.getId()}-#{elementInstanceId}"
+  oldGuestInstanceId = embedderElementsMap[key]
+  if oldGuestInstanceId?
+    # Reattachment to the same guest is not currently supported.
+    return unless oldGuestInstanceId != guestInstanceId
+
+    return unless guestInstances[oldGuestInstanceId]?
+    destroyGuest oldGuestInstanceId
+
+  webViewManager.addGuest guestInstanceId, elementInstanceId, embedder, guest,
+    nodeIntegration: params.nodeintegration
+    plugins: params.plugins
+    preloadUrl: params.preload ? ''
+
+  guest.attachParams = params
+  embedderElementsMap[key] = guestInstanceId
+  reverseEmbedderElementsMap[guestInstanceId] = key
+
 # Destroy an existing guest instance.
 destroyGuest = (id) ->
   webViewManager.removeGuest id
   guestInstances[id].guest.destroy()
   delete guestInstances[id]
 
+  key = reverseEmbedderElementsMap[id]
+  if key?
+    delete reverseEmbedderElementsMap[id]
+    delete embedderElementsMap[key]
+
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_CREATE_GUEST', (event, type, params, requestId) ->
   event.sender.send "ATOM_SHELL_RESPONSE_#{requestId}", createGuest(event.sender, params)
+
+ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_ATTACH_GUEST', (event, elementInstanceId, guestInstanceId, params, requestId) ->
+  attachGuest event.sender, elementInstanceId, guestInstanceId, params
+  event.sender.send "ATOM_SHELL_RESPONSE_#{requestId}"
 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_DESTROY_GUEST', (event, id) ->
   destroyGuest id

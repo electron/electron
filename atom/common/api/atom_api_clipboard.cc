@@ -58,8 +58,7 @@ base::string16 ReadText(ui::ClipboardType type) {
 }
 
 void WriteText(const base::string16& text, ui::ClipboardType type) {
-  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  ui::ScopedClipboardWriter writer(clipboard, type);
+  ui::ScopedClipboardWriter writer(type);
   writer.WriteText(text);
 }
 

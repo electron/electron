@@ -8,6 +8,9 @@ formidable = require 'formidable'
 BrowserWindow = remote.require 'browser-window'
 
 describe 'crash-reporter module', ->
+  # We have trouble makeing crash reporter work on Yosemite.
+  return if process.platform is 'darwin'
+
   fixtures = path.resolve __dirname, 'fixtures'
 
   w = null

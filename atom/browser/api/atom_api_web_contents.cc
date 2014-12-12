@@ -12,6 +12,7 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
+#include "content/public/browser/navigation_details.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -37,12 +38,14 @@ v8::Persistent<v8::ObjectTemplate> template_;
 WebContents::WebContents(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
       guest_instance_id_(-1),
+      element_instance_id_(-1),
       guest_opaque_(true),
       auto_size_enabled_(false) {
 }
 
 WebContents::WebContents(const mate::Dictionary& options)
     : guest_instance_id_(-1),
+      element_instance_id_(-1),
       guest_opaque_(true),
       auto_size_enabled_(false) {
   options.Get("guestInstanceId", &guest_instance_id_);
@@ -188,6 +191,13 @@ void WebContents::DidGetRedirectForResourceRequest(
   Emit("did-get-redirect-request", args);
 }
 
+void WebContents::DidNavigateMainFrame(
+    const content::LoadCommittedDetails& details,
+    const content::FrameNavigateParams& params) {
+  if (details.is_navigation_to_different_page())
+    Emit("did-navigate-to-different-page");
+}
+
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(WebContents, message)
@@ -225,26 +235,8 @@ void WebContents::WebContentsDestroyed() {
   Emit("destroyed");
 }
 
-void WebContents::WillAttach(content::WebContents* embedder_web_contents,
-                             const base::DictionaryValue& extra_params) {
-  embedder_web_contents_ = embedder_web_contents;
-  extra_params_.reset(extra_params.DeepCopy());
-}
-
-content::WebContents* WebContents::CreateNewGuestWindow(
-    const content::WebContents::CreateParams& create_params) {
-  NOTREACHED() << "Should not create new window from guest";
-  return nullptr;
-}
-
-void WebContents::DidAttach() {
-  base::ListValue args;
-  args.Append(extra_params_.release());
-  Emit("did-attach", args);
-}
-
-int WebContents::GetGuestInstanceID() const {
-  return guest_instance_id_;
+void WebContents::DidAttach(int guest_proxy_routing_id) {
+  Emit("did-attach");
 }
 
 void WebContents::ElementSizeChanged(const gfx::Size& old_size,
@@ -260,16 +252,15 @@ void WebContents::GuestSizeChanged(const gfx::Size& old_size,
   GuestSizeChangedDueToAutoSize(old_size, new_size);
 }
 
-void WebContents::RequestPointerLockPermission(
-    bool user_gesture,
-    bool last_unlocked_by_target,
-    const base::Callback<void(bool enabled)>& callback) {
-  callback.Run(true);
-}
-
 void WebContents::RegisterDestructionCallback(
     const DestructionCallback& callback) {
   destruction_callback_ = callback;
+}
+
+void WebContents::WillAttach(content::WebContents* embedder_web_contents,
+                             int browser_plugin_instance_id) {
+  embedder_web_contents_ = embedder_web_contents;
+  element_instance_id_ = browser_plugin_instance_id;
 }
 
 void WebContents::Destroy() {
@@ -294,7 +285,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
     params.referrer = content::Referrer(http_referrer.GetAsReferrer(),
                                         blink::WebReferrerPolicyDefault);
 
-  params.transition_type = content::PAGE_TRANSITION_TYPED;
+  params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
   web_contents()->GetController().LoadURLWithParams(params);
 }

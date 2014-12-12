@@ -11,11 +11,8 @@
 #include "chrome/browser/printing/print_job_worker_owner.h"
 #include "printing/print_job_constants.h"
 
-class PrintingUIWebContentsObserver;
-
 namespace base {
 class DictionaryValue;
-class MessageLoop;
 }
 
 namespace printing {
@@ -32,13 +29,12 @@ class PrinterQuery : public PrintJobWorkerOwner {
     ASK_USER,
   };
 
-  PrinterQuery();
+  PrinterQuery(int render_process_id, int render_view_id);
 
   // PrintJobWorkerOwner implementation.
   virtual void GetSettingsDone(const PrintSettings& new_settings,
                                PrintingContext::Result result) OVERRIDE;
   virtual PrintJobWorker* DetachWorker(PrintJobWorkerOwner* new_owner) OVERRIDE;
-  virtual base::MessageLoop* message_loop() OVERRIDE;
   virtual const PrintSettings& settings() const OVERRIDE;
   virtual int cookie() const OVERRIDE;
 
@@ -48,18 +44,14 @@ class PrinterQuery : public PrintJobWorkerOwner {
   // |ask_for_user_settings| is DEFAULTS.
   void GetSettings(
       GetSettingsAskParam ask_user_for_settings,
-      scoped_ptr<PrintingUIWebContentsObserver> web_contents_observer,
       int expected_page_count,
       bool has_selection,
       MarginType margin_type,
       const base::Closure& callback);
 
   // Updates the current settings with |new_settings| dictionary values.
-  void SetSettings(const base::DictionaryValue& new_settings,
+  void SetSettings(scoped_ptr<base::DictionaryValue> new_settings,
                    const base::Closure& callback);
-
-  // Set a destination for the worker.
-  void SetWorkerDestination(PrintDestinationInterface* destination);
 
   // Stops the worker thread since the client is done with this object.
   void StopWorker();
@@ -77,10 +69,6 @@ class PrinterQuery : public PrintJobWorkerOwner {
 
   // Lazy create the worker thread. There is one worker thread per print job.
   void StartWorker(const base::Closure& callback);
-
-  // Main message loop reference. Used to send notifications in the right
-  // thread.
-  base::MessageLoop* const io_message_loop_;
 
   // All the UI is done in a worker thread because many Win32 print functions
   // are blocking and enters a message loop without your consent. There is one

@@ -44,11 +44,13 @@
       'atom/common/lib/init.coffee',
       'atom/common/lib/asar.coffee',
       'atom/renderer/lib/chrome-api.coffee',
-      'atom/renderer/lib/guest-view-internal.coffee',
       'atom/renderer/lib/init.coffee',
       'atom/renderer/lib/inspector.coffee',
       'atom/renderer/lib/override.coffee',
-      'atom/renderer/lib/web-view.coffee',
+      'atom/renderer/lib/web-view/guest-view-internal.coffee',
+      'atom/renderer/lib/web-view/web-view.coffee',
+      'atom/renderer/lib/web-view/web-view-attributes.coffee',
+      'atom/renderer/lib/web-view/web-view-constants.coffee',
       'atom/renderer/api/lib/ipc.coffee',
       'atom/renderer/api/lib/remote.coffee',
       'atom/renderer/api/lib/web-frame.coffee',
@@ -282,6 +284,7 @@
       'chromium_src/chrome/browser/printing/print_job_manager.h',
       'chromium_src/chrome/browser/printing/print_job_worker.cc',
       'chromium_src/chrome/browser/printing/print_job_worker.h',
+      'chromium_src/chrome/browser/printing/print_job_worker_owner.cc',
       'chromium_src/chrome/browser/printing/print_job_worker_owner.h',
       'chromium_src/chrome/browser/printing/print_view_manager_base.cc',
       'chromium_src/chrome/browser/printing/print_view_manager_base.h',
@@ -292,8 +295,6 @@
       'chromium_src/chrome/browser/printing/printer_query.h',
       'chromium_src/chrome/browser/printing/printing_message_filter.cc',
       'chromium_src/chrome/browser/printing/printing_message_filter.h',
-      'chromium_src/chrome/browser/printing/printing_ui_web_contents_observer.cc',
-      'chromium_src/chrome/browser/printing/printing_ui_web_contents_observer.h',
       'chromium_src/chrome/browser/speech/tts_controller.h',
       'chromium_src/chrome/browser/speech/tts_controller_impl.cc',
       'chromium_src/chrome/browser/speech/tts_controller_impl.h',
@@ -308,10 +309,6 @@
       'chromium_src/chrome/browser/ui/cocoa/color_chooser_mac.mm',
       'chromium_src/chrome/browser/ui/views/color_chooser_aura.cc',
       'chromium_src/chrome/browser/ui/views/color_chooser_aura.h',
-      'chromium_src/chrome/browser/ui/libgtk2ui/app_indicator_icon_menu.cc',
-      'chromium_src/chrome/browser/ui/libgtk2ui/app_indicator_icon_menu.h',
-      'chromium_src/chrome/browser/ui/libgtk2ui/gtk2_status_icon.cc',
-      'chromium_src/chrome/browser/ui/libgtk2ui/gtk2_status_icon.h',
       'chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.cc',
       'chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.h',
       'chromium_src/chrome/common/print_messages.cc',
@@ -322,7 +319,7 @@
       'chromium_src/chrome/renderer/printing/print_web_view_helper.cc',
       'chromium_src/chrome/renderer/printing/print_web_view_helper_linux.cc',
       'chromium_src/chrome/renderer/printing/print_web_view_helper_mac.mm',
-      'chromium_src/chrome/renderer/printing/print_web_view_helper_win.cc',
+      'chromium_src/chrome/renderer/printing/print_web_view_helper_pdf_win.cc',
       'chromium_src/chrome/renderer/printing/print_web_view_helper.h',
       'chromium_src/chrome/renderer/tts_dispatcher.cc',
       'chromium_src/chrome/renderer/tts_dispatcher.h',
@@ -479,10 +476,10 @@
                 '<(libchromiumcontent_library_dir)/libEGL.dll',
                 '<(libchromiumcontent_library_dir)/libGLESv2.dll',
                 '<(libchromiumcontent_resources_dir)/icudtl.dat',
+                '<(libchromiumcontent_resources_dir)/content_resources_200_percent.pak',
                 '<(libchromiumcontent_resources_dir)/content_shell.pak',
                 '<(libchromiumcontent_resources_dir)/ui_resources_200_percent.pak',
-                '<(libchromiumcontent_resources_dir)/webkit_resources_200_percent.pak',
-                'external_binaries/d3dcompiler_43.dll',
+                'external_binaries/d3dcompiler_46.dll',
                 'external_binaries/msvcp120.dll',
                 'external_binaries/msvcr120.dll',
                 'external_binaries/vccorlib120.dll',
@@ -528,6 +525,8 @@
       'defines': [
         # This is defined in skia/skia_common.gypi.
         'SK_SUPPORT_LEGACY_GETTOPDEVICE',
+        # Disable warnings for g_settings_list_schemas.
+        'GLIB_DISABLE_DEPRECATION_WARNINGS',
       ],
       'sources': [
         '<@(lib_sources)',
@@ -884,13 +883,14 @@
             {
               'action_name': 'Make Empty Paks',
               'inputs': [
-                'tools/posix/make_locale_paks.sh',
+                'tools/make_locale_paks.py',
               ],
               'outputs': [
                 '<(PRODUCT_DIR)/locales'
               ],
               'action': [
-                'tools/posix/make_locale_paks.sh',
+                'python',
+                'tools/make_locale_paks.py',
                 '<(PRODUCT_DIR)',
                 '<@(locales)',
               ],
@@ -932,31 +932,5 @@
         },  # target generate_node_lib
       ],
     }],  # OS==win
-    # Using Visual Studio Express.
-    ['msvs_express==1', {
-      'target_defaults': {
-        'defines!': [
-          '_SECURE_ATL',
-        ],
-        'msvs_settings': {
-          'VCLibrarianTool': {
-            'AdditionalLibraryDirectories': [
-              '<(atom_source_root)/external_binaries/atl/lib',
-            ],
-          },
-          'VCLinkerTool': {
-            'AdditionalLibraryDirectories': [
-              '<(atom_source_root)/external_binaries/atl/lib',
-            ],
-            'AdditionalDependencies': [
-              'atls.lib',
-            ],
-          },
-        },
-        'msvs_system_include_dirs': [
-          '<(atom_source_root)/external_binaries/atl/include',
-        ],
-      },
-    }],  # msvs_express==1
   ],
 }

@@ -35,6 +35,7 @@ class WebFrame : public mate::Wrappable {
 
   v8::Handle<v8::Value> RegisterEmbedderCustomElement(
       const base::string16& name, v8::Handle<v8::Object> options);
+  void AttachGuest(int element_instance_id);
 
   // mate::Wrappable:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(

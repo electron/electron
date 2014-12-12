@@ -208,12 +208,3 @@ describe 'browser-window module', ->
       w.once 'minimize', -> done()
       w.show()
       w.minimize()
-
-  describe 'restore event', ->
-    return if isCI and process.platform is 'linux'
-    it 'emits when window is restored', (done) ->
-      @timeout 10000
-      w.once 'restore', -> done()
-      w.show()
-      w.minimize()
-      w.restore()

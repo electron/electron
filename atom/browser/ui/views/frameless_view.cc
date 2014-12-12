@@ -95,6 +95,9 @@ void FramelessView::UpdateWindowIcon() {
 void FramelessView::UpdateWindowTitle() {
 }
 
+void FramelessView::SizeConstraintsChanged() {
+}
+
 gfx::Size FramelessView::GetPreferredSize() const {
   return frame_->non_client_view()->GetWindowBoundsForClientBounds(
       gfx::Rect(frame_->client_view()->GetPreferredSize())).size();

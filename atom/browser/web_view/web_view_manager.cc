@@ -32,6 +32,19 @@ struct Converter<content::WebContents*> {
   }
 };
 
+template<>
+struct Converter<atom::WebViewManager::WebViewOptions> {
+  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+                     atom::WebViewManager::WebViewOptions* out) {
+    Dictionary options;
+    if (!ConvertFromV8(isolate, val, &options))
+      return false;
+    return options.Get("nodeIntegration", &(out->node_integration)) &&
+           options.Get("plugins", &(out->plugins)) &&
+           options.Get("preloadUrl", &(out->preload_url));
+  }
+};
+
 }  // namespace mate
 
 namespace atom {
@@ -43,17 +56,16 @@ WebViewManager::~WebViewManager() {
 }
 
 void WebViewManager::AddGuest(int guest_instance_id,
+                              int element_instance_id,
                               content::WebContents* embedder,
                               content::WebContents* web_contents,
-                              bool node_integration,
-                              bool plugins,
-                              const GURL& preload_url) {
+                              const WebViewOptions& options) {
   web_contents_map_[guest_instance_id] = { web_contents, embedder };
 
   WebViewRendererState::WebViewInfo web_view_info = {
-    guest_instance_id, node_integration, plugins
+    guest_instance_id, options.node_integration, options.plugins
   };
-  net::FileURLToFilePath(preload_url, &web_view_info.preload_script);
+  net::FileURLToFilePath(options.preload_url, &web_view_info.preload_script);
   content::BrowserThread::PostTask(
       content::BrowserThread::IO,
       FROM_HERE,
@@ -61,6 +73,10 @@ void WebViewManager::AddGuest(int guest_instance_id,
                  base::Unretained(WebViewRendererState::GetInstance()),
                  web_contents->GetRenderProcessHost()->GetID(),
                  web_view_info));
+
+  // Map the element in embedder to guest.
+  ElementInstanceKey key(embedder, element_instance_id);
+  element_instance_id_to_guest_map_[key] = guest_instance_id;
 }
 
 void WebViewManager::RemoveGuest(int guest_instance_id) {
@@ -71,18 +87,28 @@ void WebViewManager::RemoveGuest(int guest_instance_id) {
           &WebViewRendererState::RemoveGuest,
           base::Unretained(WebViewRendererState::GetInstance()),
           web_contents->GetRenderProcessHost()->GetID()));
-
   web_contents_map_.erase(guest_instance_id);
+
+  // Remove the record of element in embedder too.
+  for (const auto& element : element_instance_id_to_guest_map_)
+    if (element.second == guest_instance_id) {
+      element_instance_id_to_guest_map_.erase(element.first);
+      break;
+    }
 }
 
-void WebViewManager::MaybeGetGuestByInstanceIDOrKill(
-    int guest_instance_id,
-    int embedder_render_process_id,
-    const GuestByInstanceIDCallback& callback) {
+content::WebContents* WebViewManager::GetGuestByInstanceID(
+    content::WebContents* embedder,
+    int element_instance_id) {
+  ElementInstanceKey key(embedder, element_instance_id);
+  if (!ContainsKey(element_instance_id_to_guest_map_, key))
+    return nullptr;
+
+  int guest_instance_id = element_instance_id_to_guest_map_[key];
   if (ContainsKey(web_contents_map_, guest_instance_id))
-    callback.Run(web_contents_map_[guest_instance_id].web_contents);
+    return web_contents_map_[guest_instance_id].web_contents;
   else
-    callback.Run(nullptr);
+    return nullptr;
 }
 
 bool WebViewManager::ForEachGuest(content::WebContents* embedder_web_contents,

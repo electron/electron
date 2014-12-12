@@ -32,10 +32,6 @@ void TrayIconGtk::SetImage(const gfx::ImageSkia& image) {
   icon_->set_delegate(this);
 }
 
-void TrayIconGtk::SetPressedImage(const gfx::ImageSkia& image) {
-  icon_->SetPressedImage(image);
-}
-
 void TrayIconGtk::SetToolTip(const std::string& tool_tip) {
   icon_->SetToolTip(base::UTF8ToUTF16(tool_tip));
 }

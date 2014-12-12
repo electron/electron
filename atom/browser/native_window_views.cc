@@ -49,6 +49,7 @@
 #include "base/win/scoped_comptr.h"
 #include "base/win/windows_version.h"
 #include "ui/base/win/shell.h"
+#include "ui/gfx/win/dpi.h"
 #include "ui/views/win/hwnd_util.h"
 #endif
 
@@ -837,8 +838,15 @@ void NativeWindowViews::RegisterAccelerators(ui::MenuModel* menu_model) {
 
 gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
     const gfx::Rect& bounds) {
+#if defined(OS_WIN)
+  gfx::Rect dpi_bounds = gfx::win::DIPToScreenRect(bounds);
+  gfx::Rect window_bounds = gfx::win::ScreenToDIPRect(
+      window_->non_client_view()->GetWindowBoundsForClientBounds(dpi_bounds));
+#else
   gfx::Rect window_bounds =
       window_->non_client_view()->GetWindowBoundsForClientBounds(bounds);
+#endif
+
   if (menu_bar_ && menu_bar_visible_)
     window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
   return window_bounds;

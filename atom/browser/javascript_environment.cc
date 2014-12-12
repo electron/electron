@@ -7,8 +7,7 @@
 namespace atom {
 
 JavascriptEnvironment::JavascriptEnvironment()
-    : isolate_holder_(gin::IsolateHolder::kNonStrictMode),
-      isolate_(isolate_holder_.isolate()),
+    : isolate_(isolate_holder_.isolate()),
       isolate_scope_(isolate_),
       locker_(isolate_),
       handle_scope_(isolate_),

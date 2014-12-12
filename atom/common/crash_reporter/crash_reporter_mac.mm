@@ -4,6 +4,7 @@
 
 #include "atom/common/crash_reporter/crash_reporter_mac.h"
 
+#include "base/mac/mac_util.h"
 #include "base/memory/singleton.h"
 #include "base/strings/sys_string_conversions.h"
 #import "vendor/breakpad/src/client/apple/Framework/BreakpadDefines.h"
@@ -54,7 +55,19 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
   [parameters setValue:base::SysUTF8ToNSString(dump_dir)
                 forKey:@BREAKPAD_DUMP_DIRECTORY];
 
+  // Temporarily run Breakpad in-process on 10.10 and later because APIs that
+  // it depends on got broken (http://crbug.com/386208).
+  // This can catch crashes in the browser process only.
+  if (base::mac::IsOSYosemiteOrLater()) {
+    [parameters setObject:[NSNumber numberWithBool:YES]
+                   forKey:@BREAKPAD_IN_PROCESS];
+  }
+
   breakpad_ = BreakpadCreate(parameters);
+  if (!breakpad_) {
+    LOG(ERROR) << "Failed to initialize breakpad";
+    return;
+  }
 
   for (StringMap::const_iterator iter = upload_parameters_.begin();
        iter != upload_parameters_.end(); ++iter) {

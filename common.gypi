@@ -6,12 +6,9 @@
       ['OS=="mac" or OS=="linux"', {
         'clang': 1,
       }],
-      ['OS=="win" and (MSVS_VERSION=="2013e" or MSVS_VERSION=="2012e" or MSVS_VERSION=="2010e")', {
-        'msvs_express': 1,
-      },{
-        'msvs_express': 0,
-      }],
     ],
+    # Required by breakpad.
+    'os_bsd': 0,
     # Reflects node's config.gypi.
     'component%': 'static_library',
     'python': 'python',
@@ -33,6 +30,7 @@
     'uv_parent_path': 'vendor/node/deps/uv',
     'uv_use_dtrace': 'false',
     'v8_postmortem_support': 'false',
+    'v8_enable_i18n_support': 'false',
     # Required by Linux (empty for now, should support it in future).
     'sysroot': '',
   },

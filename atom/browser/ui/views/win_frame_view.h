@@ -25,8 +25,6 @@ class WinFrameView : public FramelessView {
   const char* GetClassName() const override;
 
  private:
-  void ClientAreaSizeToWindowSize(gfx::Size* size) const;
-
   DISALLOW_COPY_AND_ASSIGN(WinFrameView);
 };
 
