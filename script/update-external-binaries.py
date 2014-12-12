@@ -7,7 +7,7 @@ import os
 from lib.util import safe_mkdir, rm_rf, extract_zip, tempdir, download
 
 
-VERSION = 'v0.2.0'
+VERSION = 'v0.3.0'
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 FRAMEWORKS_URL = 'https://github.com/atom/atom-shell-frameworks/releases' \
                  '/download/' + VERSION

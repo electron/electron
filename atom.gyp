@@ -479,7 +479,7 @@
                 '<(libchromiumcontent_resources_dir)/content_resources_200_percent.pak',
                 '<(libchromiumcontent_resources_dir)/content_shell.pak',
                 '<(libchromiumcontent_resources_dir)/ui_resources_200_percent.pak',
-                'external_binaries/d3dcompiler_43.dll',
+                'external_binaries/d3dcompiler_46.dll',
                 'external_binaries/msvcp120.dll',
                 'external_binaries/msvcr120.dll',
                 'external_binaries/vccorlib120.dll',
