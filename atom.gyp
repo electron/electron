@@ -883,13 +883,14 @@
             {
               'action_name': 'Make Empty Paks',
               'inputs': [
-                'tools/posix/make_locale_paks.sh',
+                'tools/make_locale_paks.py',
               ],
               'outputs': [
                 '<(PRODUCT_DIR)/locales'
               ],
               'action': [
-                'tools/posix/make_locale_paks.sh',
+                'python',
+                'tools/make_locale_paks.py',
                 '<(PRODUCT_DIR)',
                 '<@(locales)',
               ],
