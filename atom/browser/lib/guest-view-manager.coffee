@@ -68,7 +68,7 @@ createGuest = (embedder, params) ->
 
   # Autosize.
   guest.on 'size-changed', (_, args...) ->
-    embedder.send "ATOM_SHELL_GUEST_VIEW_INTERNAL_SIZE_CHANGED", args...
+    embedder.send "ATOM_SHELL_GUEST_VIEW_INTERNAL_SIZE_CHANGED-#{guest.viewInstanceId}", args...
 
   id
 
