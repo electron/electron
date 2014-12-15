@@ -81,12 +81,16 @@ void WebViewManager::AddGuest(int guest_instance_id,
 
 void WebViewManager::RemoveGuest(int guest_instance_id) {
   auto web_contents = web_contents_map_[guest_instance_id].web_contents;
-  content::BrowserThread::PostTask(
-      content::BrowserThread::IO, FROM_HERE,
-      base::Bind(
-          &WebViewRendererState::RemoveGuest,
-          base::Unretained(WebViewRendererState::GetInstance()),
-          web_contents->GetRenderProcessHost()->GetID()));
+  
+  if (web_contents) {
+    content::BrowserThread::PostTask(
+        content::BrowserThread::IO, FROM_HERE,
+        base::Bind(
+            &WebViewRendererState::RemoveGuest,
+            base::Unretained(WebViewRendererState::GetInstance()),
+            web_contents->GetRenderProcessHost()->GetID()));
+  }
+
   web_contents_map_.erase(guest_instance_id);
 
   // Remove the record of element in embedder too.
