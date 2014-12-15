@@ -81,7 +81,7 @@ void WebViewManager::AddGuest(int guest_instance_id,
 
 void WebViewManager::RemoveGuest(int guest_instance_id) {
   auto web_contents = web_contents_map_[guest_instance_id].web_contents;
-  
+
   if (web_contents) {
     content::BrowserThread::PostTask(
         content::BrowserThread::IO, FROM_HERE,
