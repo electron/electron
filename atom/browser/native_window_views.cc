@@ -411,17 +411,15 @@ gfx::Size NativeWindowViews::GetMaximumSize() {
 
 void NativeWindowViews::SetResizable(bool resizable) {
 #if defined(OS_WIN)
-  if (has_frame_) {
-    // WS_MAXIMIZEBOX => Maximize button
-    // WS_MINIMIZEBOX => Minimize button
-    // WS_THICKFRAME => Resize handle
-    DWORD style = ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE);
-    if (resizable)
-      style |= WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME;
-    else
-      style = (style & ~(WS_MAXIMIZEBOX | WS_THICKFRAME)) | WS_MINIMIZEBOX;
-    ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, style);
-  }
+  // WS_MAXIMIZEBOX => Maximize button
+  // WS_MINIMIZEBOX => Minimize button
+  // WS_THICKFRAME => Resize handle
+  DWORD style = ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE);
+  if (resizable)
+    style |= WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME;
+  else
+    style = (style & ~(WS_MAXIMIZEBOX | WS_THICKFRAME)) | WS_MINIMIZEBOX;
+  ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, style);
 #elif defined(USE_X11)
   if (resizable != resizable_) {
     // On Linux there is no "resizable" property of a window, we have to set
