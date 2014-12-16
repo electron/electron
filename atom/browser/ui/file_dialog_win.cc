@@ -119,6 +119,17 @@ struct RunState {
   base::MessageLoop* ui_message_loop;
 };
 
+bool CreateDialogThread(RunState* run_state) {
+  base::Thread* thread = new base::Thread("AtomShell_FileDialogThread");
+  thread->init_com_with_mta(false);
+  if (!thread->Start())
+    return false;
+
+  run_state->dialog_thread = thread;
+  run_state->ui_message_loop = base::MessageLoop::current();
+  return true;
+}
+
 void RunOpenDialogInNewThread(const RunState& run_state,
                               atom::NativeWindow* parent,
                               const std::string& title,
@@ -202,16 +213,16 @@ void ShowOpenDialog(atom::NativeWindow* parent,
                     const Filters& filters,
                     int properties,
                     const OpenDialogCallback& callback) {
-  base::Thread* thread = new base::Thread("AtomShell_FileDialogThread");
-  thread->init_com_with_mta(false);
-  if (!thread->Start())
+  RunState run_state;
+  if (!CreateDialogThread(&run_state)) {
+    callback.Run(false, std::vector<base::FilePath>());
     return;
+  }
 
-  RunState state = { thread, base::MessageLoop::current() };
-  thread->message_loop()->PostTask(
+  run_state.dialog_thread->message_loop()->PostTask(
       FROM_HERE,
-      base::Bind(&RunOpenDialogInNewThread, state, parent, title, default_path,
-                 filters, properties, callback));
+      base::Bind(&RunOpenDialogInNewThread, run_state, parent, title,
+                 default_path, filters, properties, callback));
 }
 
 bool ShowSaveDialog(atom::NativeWindow* parent_window,
@@ -259,16 +270,16 @@ void ShowSaveDialog(atom::NativeWindow* parent,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     const SaveDialogCallback& callback) {
-  base::Thread* thread = new base::Thread("AtomShell_FileDialogThread");
-  thread->init_com_with_mta(false);
-  if (!thread->Start())
+  RunState run_state;
+  if (!CreateDialogThread(&run_state)) {
+    callback.Run(false, base::FilePath());
     return;
+  }
 
-  RunState state = { thread, base::MessageLoop::current() };
-  thread->message_loop()->PostTask(
+  run_state.dialog_thread->message_loop()->PostTask(
       FROM_HERE,
-      base::Bind(&RunSaveDialogInNewThread, state, parent, title, default_path,
-                 filters, callback));
+      base::Bind(&RunSaveDialogInNewThread, run_state, parent, title,
+                 default_path, filters, callback));
 }
 
 }  // namespace file_dialog
