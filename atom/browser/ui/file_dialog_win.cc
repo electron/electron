@@ -15,6 +15,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/threading/thread.h"
 #include "base/win/registry.h"
 #include "third_party/wtl/include/atlapp.h"
 #include "third_party/wtl/include/atldlgs.h"
@@ -113,6 +114,26 @@ class FileDialog {
   DISALLOW_COPY_AND_ASSIGN(FileDialog);
 };
 
+struct RunState {
+  base::Thread* dialog_thread;
+  base::MessageLoop* ui_message_loop;
+};
+
+void RunOpenDialogInNewThread(const RunState& run_state,
+                              atom::NativeWindow* parent,
+                              const std::string& title,
+                              const base::FilePath& default_path,
+                              const Filters& filters,
+                              int properties,
+                              const OpenDialogCallback& callback) {
+  std::vector<base::FilePath> paths;
+  bool result = ShowOpenDialog(parent, title, default_path, filters, properties,
+                               &paths);
+  run_state.ui_message_loop->PostTask(FROM_HERE,
+                                      base::Bind(callback, result, paths));
+  run_state.ui_message_loop->DeleteSoon(FROM_HERE, run_state.dialog_thread);
+}
+
 }  // namespace
 
 bool ShowOpenDialog(atom::NativeWindow* parent_window,
@@ -162,20 +183,27 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
   return true;
 }
 
-void ShowOpenDialog(atom::NativeWindow* parent_window,
+void ShowOpenDialog(atom::NativeWindow* parent,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     int properties,
                     const OpenDialogCallback& callback) {
-  std::vector<base::FilePath> paths;
-  bool result = ShowOpenDialog(parent_window,
-                               title,
-                               default_path,
-                               filters,
-                               properties,
-                               &paths);
-  callback.Run(result, paths);
+  base::Thread* thread = new base::Thread("AtomShell_FileDialogThread");
+  thread->init_com_with_mta(false);
+  if (!thread->Start())
+    return;
+
+  if (parent)
+    EnableWindow(
+        static_cast<atom::NativeWindowViews*>(parent)->GetAcceleratedWidget(),
+        FALSE);
+
+  RunState state = { thread, base::MessageLoop::current() };
+  thread->message_loop()->PostTask(
+      FROM_HERE,
+      base::Bind(&RunOpenDialogInNewThread, state, parent, title, default_path,
+                 filters, properties, callback));
 }
 
 bool ShowSaveDialog(atom::NativeWindow* parent_window,
