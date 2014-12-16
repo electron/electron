@@ -489,6 +489,18 @@ std::string NativeWindowViews::GetTitle() {
 }
 
 void NativeWindowViews::FlashFrame(bool flash) {
+#if defined(OS_WIN)
+  // The Chromium's implementation has a bug stopping flash.
+  if (!flash) {
+    FLASHWINFO fwi;
+    fwi.cbSize = sizeof(fwi);
+    fwi.hwnd = GetAcceleratedWidget();
+    fwi.dwFlags = FLASHW_STOP;
+    fwi.uCount = 0;
+    FlashWindowEx(&fwi);
+    return;
+  }
+#endif
   window_->FlashFrame(flash);
 }
 
