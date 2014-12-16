@@ -672,6 +672,10 @@ bool NativeWindowViews::CanMaximize() const {
   return resizable_;
 }
 
+bool NativeWindowViews::CanMinimize() const {
+  return true;
+}
+
 base::string16 NativeWindowViews::GetWindowTitle() const {
   return base::UTF8ToUTF16(title_);
 }

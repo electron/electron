@@ -98,6 +98,7 @@ class NativeWindowViews : public NativeWindow,
   views::View* GetInitiallyFocusedView() override;
   bool CanResize() const override;
   bool CanMaximize() const override;
+  bool CanMinimize() const override;
   base::string16 GetWindowTitle() const override;
   bool ShouldHandleSystemCommands() const override;
   gfx::ImageSkia GetWindowAppIcon() override;
