@@ -26,6 +26,7 @@
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/window/client_view.h"
+#include "ui/views/widget/native_widget_private.h"
 #include "ui/views/widget/widget.h"
 
 #if defined(USE_X11)
@@ -50,7 +51,6 @@
 #include "base/win/windows_version.h"
 #include "ui/base/win/shell.h"
 #include "ui/gfx/win/dpi.h"
-#include "ui/views/widget/native_widget_private.h"
 #include "ui/views/win/hwnd_util.h"
 #endif
 
