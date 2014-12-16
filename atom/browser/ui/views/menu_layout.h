@@ -9,9 +9,11 @@
 
 namespace atom {
 
+class NativeWindowViews;
+
 class MenuLayout : public views::FillLayout {
  public:
-  explicit MenuLayout(int menu_height);
+  MenuLayout(NativeWindowViews* window, int menu_height);
   virtual ~MenuLayout();
 
   // views::LayoutManager:
@@ -23,6 +25,7 @@ class MenuLayout : public views::FillLayout {
  private:
   bool HasMenu(const views::View* host) const;
 
+  NativeWindowViews* window_;
   int menu_height_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuLayout);

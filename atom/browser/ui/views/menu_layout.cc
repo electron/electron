@@ -4,16 +4,47 @@
 
 #include "atom/browser/ui/views/menu_layout.h"
 
+#if defined(OS_WIN)
+#include "atom/browser/native_window_views.h"
+#endif
+
 namespace atom {
 
-MenuLayout::MenuLayout(int menu_height)
-    : menu_height_(menu_height) {
+namespace {
+
+#if defined(OS_WIN)
+gfx::Rect SubstractBorderSize(gfx::Rect bounds) {
+  int border_width = GetSystemMetrics(SM_CXSIZEFRAME) - 1;
+  int border_height = GetSystemMetrics(SM_CYSIZEFRAME) - 1;
+  bounds.set_x(bounds.x() + border_width);
+  bounds.set_y(bounds.y() + border_height);
+  bounds.set_width(bounds.width() - 2 * border_width);
+  bounds.set_height(bounds.height() - 2 * border_height);
+  return bounds;
+}
+#endif
+
+}  // namespace
+
+MenuLayout::MenuLayout(NativeWindowViews* window, int menu_height)
+    : window_(window),
+      menu_height_(menu_height) {
 }
 
 MenuLayout::~MenuLayout() {
 }
 
 void MenuLayout::Layout(views::View* host) {
+#if defined(OS_WIN)
+  // Reserve border space for maximized frameless window so we won't have the
+  // content go outside of screen.
+  if (!window_->has_frame() && window_->IsMaximized()) {
+    gfx::Rect bounds = SubstractBorderSize(host->GetContentsBounds());
+    host->child_at(0)->SetBoundsRect(bounds);
+    return;
+  }
+#endif
+
   if (!HasMenu(host)) {
     views::FillLayout::Layout(host);
     return;

@@ -221,7 +221,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
 #endif
 
   // Add web view.
-  SetLayoutManager(new MenuLayout(kMenuBarHeight));
+  SetLayoutManager(new MenuLayout(this, kMenuBarHeight));
   set_background(views::Background::CreateStandardPanelBackground());
   AddChildView(web_view_);
 
