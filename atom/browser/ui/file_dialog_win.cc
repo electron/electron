@@ -15,6 +15,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/threading/thread.h"
 #include "base/win/registry.h"
 #include "third_party/wtl/include/atlapp.h"
 #include "third_party/wtl/include/atldlgs.h"
@@ -113,6 +114,50 @@ class FileDialog {
   DISALLOW_COPY_AND_ASSIGN(FileDialog);
 };
 
+struct RunState {
+  base::Thread* dialog_thread;
+  base::MessageLoop* ui_message_loop;
+};
+
+bool CreateDialogThread(RunState* run_state) {
+  base::Thread* thread = new base::Thread("AtomShell_FileDialogThread");
+  thread->init_com_with_mta(false);
+  if (!thread->Start())
+    return false;
+
+  run_state->dialog_thread = thread;
+  run_state->ui_message_loop = base::MessageLoop::current();
+  return true;
+}
+
+void RunOpenDialogInNewThread(const RunState& run_state,
+                              atom::NativeWindow* parent,
+                              const std::string& title,
+                              const base::FilePath& default_path,
+                              const Filters& filters,
+                              int properties,
+                              const OpenDialogCallback& callback) {
+  std::vector<base::FilePath> paths;
+  bool result = ShowOpenDialog(parent, title, default_path, filters, properties,
+                               &paths);
+  run_state.ui_message_loop->PostTask(FROM_HERE,
+                                      base::Bind(callback, result, paths));
+  run_state.ui_message_loop->DeleteSoon(FROM_HERE, run_state.dialog_thread);
+}
+
+void RunSaveDialogInNewThread(const RunState& run_state,
+                              atom::NativeWindow* parent,
+                              const std::string& title,
+                              const base::FilePath& default_path,
+                              const Filters& filters,
+                              const SaveDialogCallback& callback) {
+  base::FilePath path;
+  bool result = ShowSaveDialog(parent, title, default_path, filters, &path);
+  run_state.ui_message_loop->PostTask(FROM_HERE,
+                                      base::Bind(callback, result, path));
+  run_state.ui_message_loop->DeleteSoon(FROM_HERE, run_state.dialog_thread);
+}
+
 }  // namespace
 
 bool ShowOpenDialog(atom::NativeWindow* parent_window,
@@ -162,20 +207,22 @@ bool ShowOpenDialog(atom::NativeWindow* parent_window,
   return true;
 }
 
-void ShowOpenDialog(atom::NativeWindow* parent_window,
+void ShowOpenDialog(atom::NativeWindow* parent,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     int properties,
                     const OpenDialogCallback& callback) {
-  std::vector<base::FilePath> paths;
-  bool result = ShowOpenDialog(parent_window,
-                               title,
-                               default_path,
-                               filters,
-                               properties,
-                               &paths);
-  callback.Run(result, paths);
+  RunState run_state;
+  if (!CreateDialogThread(&run_state)) {
+    callback.Run(false, std::vector<base::FilePath>());
+    return;
+  }
+
+  run_state.dialog_thread->message_loop()->PostTask(
+      FROM_HERE,
+      base::Bind(&RunOpenDialogInNewThread, run_state, parent, title,
+                 default_path, filters, properties, callback));
 }
 
 bool ShowSaveDialog(atom::NativeWindow* parent_window,
@@ -218,15 +265,21 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
   return true;
 }
 
-void ShowSaveDialog(atom::NativeWindow* parent_window,
+void ShowSaveDialog(atom::NativeWindow* parent,
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters,
                     const SaveDialogCallback& callback) {
-  base::FilePath path;
-  bool result = ShowSaveDialog(parent_window, title, default_path, filters,
-                               &path);
-  callback.Run(result, path);
+  RunState run_state;
+  if (!CreateDialogThread(&run_state)) {
+    callback.Run(false, base::FilePath());
+    return;
+  }
+
+  run_state.dialog_thread->message_loop()->PostTask(
+      FROM_HERE,
+      base::Bind(&RunSaveDialogInNewThread, run_state, parent, title,
+                 default_path, filters, callback));
 }
 
 }  // namespace file_dialog
