@@ -50,6 +50,7 @@
 #include "base/win/windows_version.h"
 #include "ui/base/win/shell.h"
 #include "ui/gfx/win/dpi.h"
+#include "ui/views/widget/native_widget_private.h"
 #include "ui/views/win/hwnd_util.h"
 #endif
 
@@ -296,7 +297,10 @@ bool NativeWindowViews::IsVisible() {
 }
 
 void NativeWindowViews::Maximize() {
-  window_->Maximize();
+  if (IsVisible())
+    window_->Maximize();
+  else
+    window_->native_widget_private()->ShowWithWindowState(ui::SHOW_STATE_MAXIMIZED);
 }
 
 void NativeWindowViews::Unmaximize() {
@@ -308,7 +312,10 @@ bool NativeWindowViews::IsMaximized() {
 }
 
 void NativeWindowViews::Minimize() {
-  window_->Minimize();
+  if (IsVisible())
+    window_->Minimize();
+  else
+    window_->native_widget_private()->ShowWithWindowState(ui::SHOW_STATE_MINIMIZED);
 }
 
 void NativeWindowViews::Restore() {
@@ -320,7 +327,10 @@ bool NativeWindowViews::IsMinimized() {
 }
 
 void NativeWindowViews::SetFullScreen(bool fullscreen) {
-  window_->SetFullscreen(fullscreen);
+  if (IsVisible())
+    window_->SetFullscreen(fullscreen);
+  else
+    window_->native_widget_private()->ShowWithWindowState(ui::SHOW_STATE_FULLSCREEN);
 #if defined(OS_WIN)
   // There is no native fullscreen state on Windows.
   if (fullscreen)
