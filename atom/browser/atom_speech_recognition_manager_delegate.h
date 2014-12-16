@@ -20,28 +20,28 @@ class AtomSpeechRecognitionManagerDelegate
   virtual ~AtomSpeechRecognitionManagerDelegate();
 
   // content::SpeechRecognitionEventListener:
-  virtual void OnRecognitionStart(int session_id) override;
-  virtual void OnAudioStart(int session_id) override;
-  virtual void OnEnvironmentEstimationComplete(int session_id) override;
-  virtual void OnSoundStart(int session_id) override;
-  virtual void OnSoundEnd(int session_id) override;
-  virtual void OnAudioEnd(int session_id) override;
-  virtual void OnRecognitionEnd(int session_id) override;
-  virtual void OnRecognitionResults(
+  void OnRecognitionStart(int session_id) override;
+  void OnAudioStart(int session_id) override;
+  void OnEnvironmentEstimationComplete(int session_id) override;
+  void OnSoundStart(int session_id) override;
+  void OnSoundEnd(int session_id) override;
+  void OnAudioEnd(int session_id) override;
+  void OnRecognitionEnd(int session_id) override;
+  void OnRecognitionResults(
       int session_id, const content::SpeechRecognitionResults& result) override;
-  virtual void OnRecognitionError(
+  void OnRecognitionError(
       int session_id, const content::SpeechRecognitionError& error) override;
-  virtual void OnAudioLevelsChange(int session_id, float volume,
-                                   float noise_volume) override;
+  void OnAudioLevelsChange(int session_id, float volume,
+                           float noise_volume) override;
 
   // content::SpeechRecognitionManagerDelegate:
-  virtual void GetDiagnosticInformation(bool* can_report_metrics,
-                                        std::string* hardware_info) override;
-  virtual void CheckRecognitionIsAllowed(
+  void GetDiagnosticInformation(bool* can_report_metrics,
+                                std::string* hardware_info) override;
+  void CheckRecognitionIsAllowed(
       int session_id,
       base::Callback<void(bool ask_user, bool is_allowed)> callback) override;
-  virtual content::SpeechRecognitionEventListener* GetEventListener() override;
-  virtual bool FilterProfanities(int render_process_id) override;
+  content::SpeechRecognitionEventListener* GetEventListener() override;
+  bool FilterProfanities(int render_process_id) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(AtomSpeechRecognitionManagerDelegate);

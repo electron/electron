@@ -92,7 +92,7 @@ class WebContents : public mate::EventEmitter,
   ~WebContents();
 
   // mate::Wrappable:
-  virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
+  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
 
   // content::WebContentsDelegate:

@@ -456,7 +456,7 @@ DWORD CrashService::AsyncSendDump(void* context) {
         default:
           report_id = L"<unknown>";
           break;
-      };
+      }
     }
 
     VLOG(1) << "dump for pid =" << info->pid << " crash2 id =" << report_id;

@@ -23,12 +23,12 @@ class AtomBrowserContext : public brightray::BrowserContext {
   static AtomBrowserContext* Get();
 
   // brightray::URLRequestContextGetter::Delegate:
-  virtual net::URLRequestJobFactory* CreateURLRequestJobFactory(
+  net::URLRequestJobFactory* CreateURLRequestJobFactory(
       content::ProtocolHandlerMap* handlers,
       content::URLRequestInterceptorScopedVector* interceptors) override;
 
   // content::BrowserContext:
-  virtual content::BrowserPluginGuestManager* GetGuestManager() override;
+  content::BrowserPluginGuestManager* GetGuestManager() override;
 
   AtomURLRequestJobFactory* job_factory() const { return job_factory_; }
 

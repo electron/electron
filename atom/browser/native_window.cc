@@ -439,9 +439,10 @@ void NativeWindow::OverrideWebkitPrefs(const GURL& url,
     prefs->experimental_webgl_enabled = b;
   if (web_preferences_.Get("webaudio", &b))
     prefs->webaudio_enabled = b;
-  if (web_preferences_.Get("extra-plugin-dirs", &list))
+  if (web_preferences_.Get("extra-plugin-dirs", &list)) {
     for (size_t i = 0; i < list.size(); ++i)
       content::PluginService::GetInstance()->AddExtraPluginDir(list[i]);
+  }
 }
 
 void NativeWindow::NotifyWindowClosed() {
