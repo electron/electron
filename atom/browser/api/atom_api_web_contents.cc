@@ -111,8 +111,14 @@ content::WebContents* WebContents::OpenURLFromTab(
     args.AppendString("");
     args.AppendInteger(params.disposition);
     Emit("-new-window", args);
-    return NULL;
+    return nullptr;
   }
+
+  // Give user a chance to cancel navigation.
+  base::ListValue args;
+  args.AppendString(params.url.spec());
+  if (Emit("will-navigate", args))
+    return nullptr;
 
   content::NavigationController::LoadURLParams load_url_params(params.url);
   load_url_params.referrer = params.referrer;
