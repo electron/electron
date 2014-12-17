@@ -311,10 +311,10 @@ webview.addEventListener('close', function() {
 * `channel` String
 * `args` Array
 
-Fired when the guest page has sent an asynchronous message to browser process.
+Fired when the guest page has sent an asynchronous message to embedder page.
 
-With `send` method and `ipc-message` event you can easily communicate between
-guest page and embedder page:
+With `sendToHost` method and `ipc-message` event you can easily communicate
+between guest page and embedder page:
 
 ```javascript
 // In embedder page.
@@ -329,7 +329,7 @@ webview.send('ping');
 // In guest page.
 var ipc = require('ipc');
 ipc.on('ping', function() {
-  ipc.send('pong');
+  ipc.sendToHost('pong');
 })
 ```
 
