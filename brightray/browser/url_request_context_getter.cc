@@ -38,7 +38,7 @@
 #include "net/url_request/url_request_intercepting_job_factory.h"
 #include "net/url_request/url_request_job_factory_impl.h"
 #include "url/url_constants.h"
-#include "webkit/browser/quota/special_storage_policy.h"
+#include "storage/browser/quota/special_storage_policy.h"
 
 using content::BrowserThread;
 
@@ -120,7 +120,7 @@ URLRequestContextGetter::URLRequestContextGetter(
   // must synchronously run on the glib message loop. This will be passed to
   // the URLRequestContextStorage on the IO thread in GetURLRequestContext().
   proxy_config_service_.reset(net::ProxyService::CreateSystemProxyConfigService(
-      io_loop_->message_loop_proxy(), file_loop_));
+      io_loop_->message_loop_proxy(), file_loop_->message_loop_proxy()));
 }
 
 URLRequestContextGetter::~URLRequestContextGetter() {

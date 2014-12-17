@@ -60,15 +60,6 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
       const GURL& security_origin,
       content::MediaStreamType stream_type,
       content::MediaRequestState state) override;
-  virtual void OnAudioStreamPlaying(
-      int render_process_id,
-      int render_frame_id,
-      int stream_id,
-      const ReadPowerAndClipCallback& power_read_callback) override;
-  virtual void OnAudioStreamStopped(
-      int render_process_id,
-      int render_frame_id,
-      int stream_id) override;
   virtual void OnCreatingAudioStream(int render_process_id,
                                      int render_view_id) override;
 

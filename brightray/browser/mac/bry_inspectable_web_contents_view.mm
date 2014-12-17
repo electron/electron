@@ -21,8 +21,6 @@ using namespace brightray;
   devtools_docked_ = NO;
 
   auto contents = inspectableWebContentsView_->inspectable_web_contents()->GetWebContents();
-  contents->SetAllowOverlappingViews(true);
-
   auto contentsView = contents->GetNativeView();
   [contentsView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   [self addSubview:contentsView];
@@ -45,8 +43,16 @@ using namespace brightray;
   if (visible == devtools_visible_)
     return;
 
+  auto webContents = inspectableWebContentsView_->inspectable_web_contents()->GetWebContents();
   auto devToolsWebContents = inspectableWebContentsView_->inspectable_web_contents()->devtools_web_contents();
   auto devToolsView = devToolsWebContents->GetNativeView();
+
+  if (visible && devtools_docked_) {
+    webContents->SetAllowOtherViews(true);
+    devToolsWebContents->SetAllowOtherViews(true);
+  } else {
+    webContents->SetAllowOtherViews(false);
+  }
 
   devtools_visible_ = visible;
   if (devtools_docked_) {

@@ -11,7 +11,7 @@
 #include "browser/devtools_contents_resizing_strategy.h"
 #include "browser/devtools_embedder_message_dispatcher.h"
 
-#include "content/public/browser/devtools_client_host.h"
+#include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -31,7 +31,7 @@ class InspectableWebContentsView;
 class InspectableWebContentsImpl :
     public InspectableWebContents,
     public content::DevToolsFrontendHost::Delegate,
-    public content::DevToolsClientHost,
+    public content::DevToolsAgentHostClient,
     public content::WebContentsObserver,
     public content::WebContentsDelegate,
     public DevToolsEmbedderMessageDispatcher::Delegate {
@@ -93,14 +93,15 @@ class InspectableWebContentsImpl :
   void ZoomOut() override;
   void ResetZoom() override;
 
-  // content::DevToolsClientHost:
-  void DispatchOnInspectorFrontend(const std::string& message) override;
-  void InspectedContentsClosing() override;
-  void ReplacedWithAnotherClient() override;
-
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(const std::string& message) override;
   void HandleMessageFromDevToolsFrontendToBackend(const std::string& message) override;
+
+  // content::DevToolsAgentHostClient:
+  void DispatchProtocolMessage(content::DevToolsAgentHost* agent_host,
+                               const std::string& message) override;
+  void AgentHostClosed(content::DevToolsAgentHost* agent_host,
+                       bool replaced) override;
 
   // content::WebContentsObserver:
   void AboutToNavigateRenderView(content::RenderViewHost* render_view_host) override;

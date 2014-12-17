@@ -4,7 +4,6 @@
 
 #include "browser/browser_context.h"
 
-#include "browser/download_manager_delegate.h"
 #include "browser/inspectable_web_contents_impl.h"
 #include "browser/network_delegate.h"
 #include "common/application_info.h"
@@ -45,18 +44,6 @@ class BrowserContext::ResourceContext : public content::ResourceContext {
     return getter_->GetURLRequestContext();
   }
 
-  // FIXME: We should probably allow clients to override this to implement more
-  // restrictive policies.
-  virtual bool AllowMicAccess(const GURL& origin) override {
-    return true;
-  }
-
-  // FIXME: We should probably allow clients to override this to implement more
-  // restrictive policies.
-  virtual bool AllowCameraAccess(const GURL& origin) override {
-    return true;
-  }
-
   URLRequestContextGetter* getter_;
 };
 
@@ -80,13 +67,13 @@ void BrowserContext::Initialize() {
   base::PrefServiceFactory prefs_factory;
   prefs_factory.SetUserPrefsFile(prefs_path,
       JsonPrefStore::GetTaskRunnerForFile(
-          prefs_path, BrowserThread::GetBlockingPool()));
+          prefs_path, BrowserThread::GetBlockingPool()).get());
 
   auto registry = make_scoped_refptr(new PrefRegistrySimple);
-  RegisterInternalPrefs(registry);
-  RegisterPrefs(registry);
+  RegisterInternalPrefs(registry.get());
+  RegisterPrefs(registry.get());
 
-  prefs_ = prefs_factory.Create(registry);
+  prefs_ = prefs_factory.Create(registry.get());
 }
 
 BrowserContext::~BrowserContext() {
@@ -102,7 +89,7 @@ void BrowserContext::RegisterInternalPrefs(PrefRegistrySimple* registry) {
 net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector protocol_interceptors) {
-  DCHECK(!url_request_getter_);
+  DCHECK(!url_request_getter_.get());
   url_request_getter_ = new URLRequestContextGetter(
       this,
       GetPath(),
@@ -157,21 +144,19 @@ content::ResourceContext* BrowserContext::GetResourceContext() {
 }
 
 content::DownloadManagerDelegate* BrowserContext::GetDownloadManagerDelegate() {
-  if (!download_manager_delegate_)
-    download_manager_delegate_.reset(new DownloadManagerDelegate);
-  return download_manager_delegate_.get();
+  return nullptr;
 }
 
 content::BrowserPluginGuestManager* BrowserContext::GetGuestManager() {
-  return NULL;
+  return nullptr;
 }
 
-quota::SpecialStoragePolicy* BrowserContext::GetSpecialStoragePolicy() {
-  return NULL;
+storage::SpecialStoragePolicy* BrowserContext::GetSpecialStoragePolicy() {
+  return nullptr;
 }
 
 content::PushMessagingService* BrowserContext::GetPushMessagingService() {
-  return NULL;
+  return nullptr;
 }
 
 content::SSLHostStateDelegate* BrowserContext::GetSSLHostStateDelegate() {

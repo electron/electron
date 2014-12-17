@@ -17,10 +17,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
-#include "content/public/browser/devtools_agent_host.h"
-#include "content/public/browser/devtools_client_host.h"
 #include "content/public/browser/devtools_http_handler.h"
-#include "content/public/browser/devtools_manager.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -33,8 +30,6 @@ const double kPresetZoomFactors[] = { 0.25, 0.333, 0.5, 0.666, 0.75, 0.9, 1.0,
                                       1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0,
                                       5.0 };
 
-const char kDevToolsScheme[] = "chrome-devtools";
-const char kDevToolsHost[] = "devtools";
 const char kChromeUIDevToolsURL[] = "chrome-devtools://devtools/devtools.html?"
                                     "can_dock=%s&"
                                     "toolbarColor=rgba(223,223,223,1)&"
@@ -91,15 +86,11 @@ bool ParseMessage(const std::string& message,
 }
 
 double GetZoomLevelForWebContents(content::WebContents* web_contents) {
-  content::HostZoomMap* host_zoom_map = content::HostZoomMap::GetForBrowserContext(
-      web_contents->GetBrowserContext());
-  return host_zoom_map->GetZoomLevelForHostAndScheme(kDevToolsScheme, kDevToolsHost);
+  return content::HostZoomMap::GetZoomLevel(web_contents);
 }
 
 void SetZoomLevelForWebContents(content::WebContents* web_contents, double level) {
-  content::HostZoomMap* host_zoom_map = content::HostZoomMap::GetForBrowserContext(
-      web_contents->GetBrowserContext());
-  return host_zoom_map->SetZoomLevelForHostAndScheme(kDevToolsScheme, kDevToolsHost, level);
+  content::HostZoomMap::SetZoomLevel(web_contents, level);
 }
 
 double GetNextZoomLevel(double level, bool out) {
@@ -172,13 +163,13 @@ void InspectableWebContentsImpl::ShowDevTools() {
     agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(web_contents_.get());
     frontend_host_.reset(content::DevToolsFrontendHost::Create(
         web_contents_->GetRenderViewHost(), this));
-    content::DevToolsManager::GetInstance()->RegisterDevToolsClientHostFor(agent_host_, this);
+    agent_host_->AttachClient(this);
 
     GURL devtools_url(base::StringPrintf(kChromeUIDevToolsURL, can_dock_ ? "true" : ""));
     devtools_web_contents_->GetController().LoadURL(
         devtools_url,
         content::Referrer(),
-        content::PAGE_TRANSITION_AUTO_TOPLEVEL,
+        ui::PAGE_TRANSITION_AUTO_TOPLEVEL,
         std::string());
   } else {
     view_->ShowDevTools();
@@ -312,21 +303,18 @@ void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(const std::st
 
 void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontendToBackend(
     const std::string& message) {
-  content::DevToolsManager::GetInstance()->DispatchOnInspectorBackend(
-      this, message);
+  agent_host_->DispatchProtocolMessage(message);
 }
 
-void InspectableWebContentsImpl::DispatchOnInspectorFrontend(
-    const std::string& message) {
+void InspectableWebContentsImpl::DispatchProtocolMessage(
+    content::DevToolsAgentHost* agent_host, const std::string& message) {
   std::string code = "InspectorFrontendAPI.dispatchMessage(" + message + ");";
   base::string16 javascript = base::UTF8ToUTF16(code);
-  devtools_web_contents()->GetMainFrame()->ExecuteJavaScript(javascript);
+  web_contents()->GetMainFrame()->ExecuteJavaScript(javascript);
 }
 
-void InspectableWebContentsImpl::InspectedContentsClosing() {
-}
-
-void InspectableWebContentsImpl::ReplacedWithAnotherClient() {
+void InspectableWebContentsImpl::AgentHostClosed(
+    content::DevToolsAgentHost* agent_host, bool replaced) {
 }
 
 void InspectableWebContentsImpl::AboutToNavigateRenderView(
@@ -348,7 +336,7 @@ void InspectableWebContentsImpl::DidFinishLoad(content::RenderFrameHost* render_
 }
 
 void InspectableWebContentsImpl::WebContentsDestroyed() {
-  content::DevToolsManager::GetInstance()->ClientHostClosing(this);
+  agent_host_->DetachClient();
   Observe(nullptr);
   agent_host_ = nullptr;
 }

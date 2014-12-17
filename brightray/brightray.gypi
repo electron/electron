@@ -275,7 +275,9 @@
           4355, # 'this' : used in base member initializer list
           4480, # nonstandard extension used: specifying underlying type for enum
           4481, # nonstandard extension used: override specifier 'override'
+          4510, # default constructor could not be generated
           4512, # assignment operator could not be generated
+          4610, # user defined constructor required
           4702, # unreachable code
           4819, # The file contains a character that cannot be represented in the current code page
         ],
