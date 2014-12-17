@@ -5,8 +5,6 @@
 #ifndef ATOM_COMMON_NATIVE_MATE_CONVERTERS_V8_VALUE_CONVERTER_H_
 #define ATOM_COMMON_NATIVE_MATE_CONVERTERS_V8_VALUE_CONVERTER_H_
 
-#include <map>
-
 #include "base/basictypes.h"
 #include "base/compiler_specific.h"
 #include "v8/include/v8.h"
@@ -34,7 +32,7 @@ class V8ValueConverter {
                            v8::Local<v8::Context> context) const;
 
  private:
-  typedef std::multimap<int, v8::Local<v8::Object> > HashToHandleMap;
+  class FromV8ValueState;
 
   v8::Local<v8::Value> ToV8ValueImpl(v8::Isolate* isolate,
                                      const base::Value* value) const;
@@ -44,21 +42,16 @@ class V8ValueConverter {
       v8::Isolate* isolate,
       const base::DictionaryValue* dictionary) const;
 
-  base::Value* FromV8ValueImpl(v8::Local<v8::Value> value,
-                               HashToHandleMap* unique_map) const;
-  base::Value* FromV8Array(v8::Local<v8::Array> array,
-                           HashToHandleMap* unique_map) const;
+  base::Value* FromV8ValueImpl(FromV8ValueState* state,
+                               v8::Handle<v8::Value> value,
+                               v8::Isolate* isolate) const;
+  base::Value* FromV8Array(v8::Handle<v8::Array> array,
+                           FromV8ValueState* state,
+                           v8::Isolate* isolate) const;
 
   base::Value* FromV8Object(v8::Local<v8::Object> object,
-                            HashToHandleMap* unique_map) const;
-
-  // If |handle| is not in |map|, then add it to |map| and return true.
-  // Otherwise do nothing and return false. Here "A is unique" means that no
-  // other handle B in the map points to the same object as A. Note that A can
-  // be unique even if there already is another handle with the same identity
-  // hash (key) in the map, because two objects can have the same hash.
-  bool UpdateAndCheckUniqueness(HashToHandleMap* map,
-                                v8::Local<v8::Object> handle) const;
+                            FromV8ValueState* state,
+                            v8::Isolate* isolate) const;
 
   // If true, we will convert Date JavaScript objects to doubles.
   bool date_allowed_;
@@ -72,8 +65,6 @@ class V8ValueConverter {
   // If true, undefined and null values are ignored when converting v8 objects
   // into Values.
   bool strip_null_from_objects_;
-
-  bool avoid_identity_hash_for_testing_;
 
   DISALLOW_COPY_AND_ASSIGN(V8ValueConverter);
 };
