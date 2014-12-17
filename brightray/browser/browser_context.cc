@@ -4,7 +4,6 @@
 
 #include "browser/browser_context.h"
 
-#include "browser/download_manager_delegate.h"
 #include "browser/inspectable_web_contents_impl.h"
 #include "browser/network_delegate.h"
 #include "common/application_info.h"
@@ -145,21 +144,19 @@ content::ResourceContext* BrowserContext::GetResourceContext() {
 }
 
 content::DownloadManagerDelegate* BrowserContext::GetDownloadManagerDelegate() {
-  if (!download_manager_delegate_)
-    download_manager_delegate_.reset(new DownloadManagerDelegate);
-  return download_manager_delegate_.get();
+  return nullptr;
 }
 
 content::BrowserPluginGuestManager* BrowserContext::GetGuestManager() {
-  return NULL;
+  return nullptr;
 }
 
 storage::SpecialStoragePolicy* BrowserContext::GetSpecialStoragePolicy() {
-  return NULL;
+  return nullptr;
 }
 
 content::PushMessagingService* BrowserContext::GetPushMessagingService() {
-  return NULL;
+  return nullptr;
 }
 
 content::SSLHostStateDelegate* BrowserContext::GetSSLHostStateDelegate() {

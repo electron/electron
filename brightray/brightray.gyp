@@ -48,8 +48,6 @@
         'browser/devtools_embedder_message_dispatcher.h',
         'browser/devtools_ui.cc',
         'browser/devtools_ui.h',
-        'browser/download_manager_delegate.cc',
-        'browser/download_manager_delegate.h',
         'browser/inspectable_web_contents.cc',
         'browser/inspectable_web_contents.h',
         'browser/inspectable_web_contents_delegate.cc',
