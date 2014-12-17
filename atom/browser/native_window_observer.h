@@ -27,6 +27,9 @@ class NativeWindowObserver {
                                      const std::string& partition_id,
                                      WindowOpenDisposition disposition) {}
 
+  // Called when user is starting an navigation in web page.
+  virtual void WillNavigate(bool* prevent_default, const GURL& url) {}
+
   // Called when the window is gonna closed.
   virtual void WillCloseWindow(bool* prevent_default) {}
 

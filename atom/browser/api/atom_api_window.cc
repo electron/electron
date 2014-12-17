@@ -92,6 +92,12 @@ void Window::WillCreatePopupWindow(const base::string16& frame_name,
   Emit("-new-window", args);
 }
 
+void Window::WillNavigate(bool* prevent_default, const GURL& url) {
+  base::ListValue args;
+  args.AppendString(url.spec());
+  *prevent_default = Emit("will-navigate", args);
+}
+
 void Window::WillCloseWindow(bool* prevent_default) {
   *prevent_default = Emit("close");
 }
