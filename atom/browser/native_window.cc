@@ -169,7 +169,7 @@ NativeWindow* NativeWindow::FromRenderView(int process_id, int routing_id) {
       return window;
   }
 
-  return NULL;
+  return nullptr;
 }
 
 void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
@@ -370,13 +370,13 @@ void NativeWindow::CloseWebContents() {
 
 content::WebContents* NativeWindow::GetWebContents() const {
   if (!inspectable_web_contents_)
-    return NULL;
+    return nullptr;
   return inspectable_web_contents()->GetWebContents();
 }
 
 content::WebContents* NativeWindow::GetDevToolsWebContents() const {
   if (!inspectable_web_contents_)
-    return NULL;
+    return nullptr;
   return inspectable_web_contents()->devtools_web_contents();
 }
 
@@ -524,8 +524,16 @@ content::WebContents* NativeWindow::OpenURLFromTab(
                                             params.url,
                                             "",
                                             params.disposition));
-    return NULL;
+    return nullptr;
   }
+
+  // Give user a chance to prevent navigation.
+  bool prevent_default = false;
+  FOR_EACH_OBSERVER(NativeWindowObserver,
+                    observers_,
+                    WillNavigate(&prevent_default, params.url));
+  if (prevent_default)
+    return nullptr;
 
   content::NavigationController::LoadURLParams load_url_params(params.url);
   load_url_params.referrer = params.referrer;

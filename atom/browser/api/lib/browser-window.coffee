@@ -30,6 +30,10 @@ BrowserWindow::_init = ->
     options = show: true, width: 800, height: 600
     ipc.emit 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', event, url, frameName, options
 
+  # Redirect "will-navigate" to webContents.
+  @on '-will-navigate', (event, url) =>
+    @webContents.emit 'will-navigate', event, url
+
   # Remove the window from weak map immediately when it's destroyed, since we
   # could be iterating windows before GC happened.
   @once 'closed', =>

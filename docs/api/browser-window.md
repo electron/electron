@@ -616,6 +616,19 @@ will be returned to `window.open` to let you have limited control of it.
 
 Calling `event.preventDefault()` can prevent creating new windows.
 
+### Event: 'will-naviagte'
+
+* `event` Event
+* `url` String
+
+Emitted when user or the page wants to start an navigation, it can happen when
+`window.location` object is changed or user clicks a link in the page.
+
+This event will not emit when the navigation is started programmely with APIs
+like `WebContents.loadUrl` and `WebContents.back`.
+
+Calling `event.preventDefault()` can prevent the navigation.
+
 ### Event: 'crashed'
 
 Emitted when the renderer process is crashed.

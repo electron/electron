@@ -50,6 +50,7 @@ class Window : public mate::EventEmitter,
                              const GURL& target_url,
                              const std::string& partition_id,
                              WindowOpenDisposition disposition) override;
+  void WillNavigate(bool* prevent_default, const GURL& url) override;
   void WillCloseWindow(bool* prevent_default) override;
   void OnWindowClosed() override;
   void OnWindowBlur() override;
