@@ -86,3 +86,13 @@ describe '<webview> tag', ->
         done()
       webview.src = "file://#{fixtures}/pages/target-name.html"
       document.body.appendChild webview
+
+  describe 'ipc-message event', ->
+    it 'emits when guest sends a ipc message to browser', (done) ->
+      webview.addEventListener 'ipc-message', (e) ->
+        assert.equal e.channel, 'channel'
+        assert.deepEqual e.args, ['arg1', 'arg2']
+        done()
+      webview.src = "file://#{fixtures}/pages/ipc-message.html"
+      webview.setAttribute 'nodeintegration', 'on'
+      document.body.appendChild webview
