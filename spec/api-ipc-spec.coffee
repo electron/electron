@@ -60,6 +60,14 @@ describe 'ipc module', ->
         done()
       ipc.send 'message', obj
 
+    it 'should work when sending the same object twice in one message', (done) ->
+      obj = key: 'some'
+      ipc.once 'message', (message) ->
+        assert.deepEqual message[0], obj
+        assert.deepEqual message[1], obj
+        done()
+      ipc.send 'message', [obj, obj]
+
   describe 'ipc.sendSync', ->
     it 'can be replied by setting event.returnValue', ->
       msg = ipc.sendSync 'echo', 'test'
