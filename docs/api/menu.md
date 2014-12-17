@@ -155,7 +155,8 @@ var template = [
 ];
 
 menu = Menu.buildFromTemplate(template);
-Menu.setApplicationMenu(menu);
+
+Menu.setApplicationMenu(menu); // Must be called within app.on('ready', function(){ ... });
 ```
 
 ## Class: Menu
