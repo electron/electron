@@ -28,6 +28,12 @@ module.exports =
     ipc.on "ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-#{viewInstanceId}", (event, args...) ->
       dispatchEvent webView, event, args...
 
+    ipc.on "ATOM_SHELL_GUEST_VIEW_INTERNAL_IPC_MESSAGE-#{viewInstanceId}", (channel, args...) ->
+      domEvent = new Event('ipc-message')
+      domEvent.channel = channel
+      domEvent.args = [args...]
+      webView.dispatchEvent domEvent
+
     ipc.on "ATOM_SHELL_GUEST_VIEW_INTERNAL_SIZE_CHANGED-#{viewInstanceId}", (args...) ->
       domEvent = new Event('size-changed')
       for f, i in ['oldWidth', 'oldHeight', 'newWidth', 'newHeight']
