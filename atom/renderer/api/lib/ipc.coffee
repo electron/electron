@@ -16,6 +16,9 @@ class Ipc extends EventEmitter
   sendSync: (args...) ->
     JSON.parse ipc.sendSync('ipc-message-sync', [args...])
 
+  sendToHost: (args...) ->
+    ipc.send 'ipc-message-host', [args...]
+
   # Discarded
   sendChannel: -> @send.apply this, arguments
   sendChannelSync: -> @sendSync.apply this, arguments

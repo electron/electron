@@ -20,3 +20,10 @@ the `channel` event of `ipc` module, and returns by setting `event.returnValue`.
 
 **Note:** Usually developers should never use this API, since sending
 synchronous message would block the whole web page.
+
+## ipc.sendToHost(channel[, args...])
+
+Like `ipc.send` but the message will be sent to the host page instead of the
+browser process.
+
+This is mainly used by the page in `<webview>` to communicate with host page.

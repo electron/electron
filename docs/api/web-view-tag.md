@@ -295,7 +295,7 @@ webview.addEventListener('new-window', function(e) {
 
 ### close
 
-Fired when the guest window attempts to close itself.
+Fired when the guest page attempts to close itself.
 
 The following example code navigates the `webview` to `about:blank` when the
 guest attempts to close itself.
@@ -304,6 +304,33 @@ guest attempts to close itself.
 webview.addEventListener('close', function() {
   webview.src = 'about:blank';
 });
+```
+
+### ipc-message
+
+* `channel` String
+* `args` Array
+
+Fired when the guest page has sent an asynchronous message to embedder page.
+
+With `sendToHost` method and `ipc-message` event you can easily communicate
+between guest page and embedder page:
+
+```javascript
+// In embedder page.
+webview.addEventListener('ipc-message', function(event) {
+  console.log(event.channel);
+  // Prints "pong"
+});
+webview.send('ping');
+```
+
+```javascript
+// In guest page.
+var ipc = require('ipc');
+ipc.on('ping', function() {
+  ipc.sendToHost('pong');
+})
 ```
 
 ### crashed

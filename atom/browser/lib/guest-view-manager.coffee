@@ -66,6 +66,10 @@ createGuest = (embedder, params) ->
       guest.on event, (_, args...) ->
         embedder.send "ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-#{guest.viewInstanceId}", event, args...
 
+  # Dispatch guest's IPC messages to embedder.
+  guest.on 'ipc-message-host', (_, channel, args...) ->
+    embedder.send "ATOM_SHELL_GUEST_VIEW_INTERNAL_IPC_MESSAGE-#{guest.viewInstanceId}", channel, args...
+
   # Autosize.
   guest.on 'size-changed', (_, args...) ->
     embedder.send "ATOM_SHELL_GUEST_VIEW_INTERNAL_SIZE_CHANGED-#{guest.viewInstanceId}", args...
