@@ -274,6 +274,9 @@ void WebContents::Destroy() {
     if (!destruction_callback_.is_null())
       destruction_callback_.Run();
 
+    // When force destroying the "destroyed" event is not emitted.
+    WebContentsDestroyed();
+
     Observe(nullptr);
     storage_.reset();
   }
