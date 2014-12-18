@@ -113,6 +113,10 @@ class WebContents : public mate::EventEmitter,
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
+  void RequestMediaAccessPermission(
+      content::WebContents*,
+      const content::MediaStreamRequest&,
+      const content::MediaResponseCallback&) override;
   void HandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;

@@ -22,6 +22,7 @@
 #include "content/public/browser/web_contents.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "vendor/brightray/browser/media/media_stream_devices_controller.h"
 
 #include "atom/common/node_includes.h"
 
@@ -132,6 +133,14 @@ content::WebContents* WebContents::OpenURLFromTab(
 
   web_contents()->GetController().LoadURLWithParams(load_url_params);
   return web_contents();
+}
+
+void WebContents::RequestMediaAccessPermission(
+    content::WebContents*,
+    const content::MediaStreamRequest& request,
+    const content::MediaResponseCallback& callback) {
+  brightray::MediaStreamDevicesController controller(request, callback);
+  controller.TakeAction();
 }
 
 void WebContents::HandleKeyboardEvent(
