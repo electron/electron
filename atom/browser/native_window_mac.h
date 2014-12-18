@@ -7,6 +7,9 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include <string>
+#include <vector>
+
 #include "base/mac/scoped_nsobject.h"
 #include "base/memory/scoped_ptr.h"
 #include "atom/browser/native_window.h"
@@ -68,6 +71,7 @@ class NativeWindowMac : public NativeWindow {
   virtual bool HasModalDialog() OVERRIDE;
   virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
   virtual void SetProgressBar(double progress) OVERRIDE;
+  virtual void ShowDefinitionForSelection() OVERRIDE;
 
   // Returns true if |point| in local Cocoa coordinate system falls within
   // the draggable region.

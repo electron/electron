@@ -161,6 +161,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Print current page.
   virtual void Print(bool silent, bool print_background);
 
+  // Show popup dictionary.
+  virtual void ShowDefinitionForSelection();
+
   // Toggle the menu bar.
   virtual void SetAutoHideMenuBar(bool auto_hide);
   virtual bool IsMenuBarAutoHide();

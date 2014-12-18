@@ -530,6 +530,11 @@ On Linux platform, only supports Unity desktop environment, you need to specify
 the `*.desktop` file name to `desktopName` field in `package.json`. By default,
 it will assume `app.getName().desktop`.
 
+### BrowserWindow.showDefinitionForSelection()
+
+Show pop-up dictionary that searches the selected word on the page.
+This API is available only on Mac OS.
+
 ### BrowserWindow.setAutoHideMenuBar(hide)
 
 * `hide` Boolean

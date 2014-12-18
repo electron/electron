@@ -642,6 +642,14 @@ void NativeWindowMac::SetProgressBar(double progress) {
   [dock_tile display];
 }
 
+void NativeWindowMac::ShowDefinitionForSelection() {
+  content::WebContents* web_contents = GetWebContents();
+  content::RenderWidgetHostView* rwhv = web_contents->GetRenderWidgetHostView();
+  if (!rwhv)
+    return;
+  rwhv->ShowDefinitionForSelection();
+}
+
 bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {
   if (!draggable_region_)
     return false;
