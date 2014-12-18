@@ -96,6 +96,14 @@ void AtomBrowserClient::OverrideWebkitPrefs(
     return;
   }
 
+  // Custom preferences of guest page.
+  int guest_process_id = render_view_host->GetProcess()->GetID();
+  WebViewRendererState::WebViewInfo info;
+  if (WebViewRendererState::GetInstance()->GetInfo(guest_process_id, &info)) {
+    prefs->web_security_enabled = !info.disable_web_security;
+    return;
+  }
+
   NativeWindow* window = NativeWindow::FromRenderView(
       render_view_host->GetProcess()->GetID(),
       render_view_host->GetRoutingID());
