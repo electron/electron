@@ -14,7 +14,7 @@ namespace api {
 
 class SpellCheckClient : public blink::WebSpellCheckClient {
  public:
-  SpellCheckClient(v8::Isolate* isolate, v8::Local<v8::Object> provider);
+  SpellCheckClient(v8::Isolate* isolate, v8::Handle<v8::Object> provider);
   virtual ~SpellCheckClient();
 
  private:

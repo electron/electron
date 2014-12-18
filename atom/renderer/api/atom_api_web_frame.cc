@@ -5,6 +5,7 @@
 #include "atom/renderer/api/atom_api_web_frame.h"
 
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/renderer/api/atom_api_spell_check_client.h"
 #include "content/public/renderer/render_frame.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -56,6 +57,11 @@ void WebFrame::AttachGuest(int id) {
   content::RenderFrame::FromWebFrame(web_frame_)->AttachGuest(id);
 }
 
+void WebFrame::SetSpellCheckProvider(v8::Isolate* isolate,
+                                     v8::Handle<v8::Object> provider) {
+  spell_check_client_.reset(new SpellCheckClient(isolate, provider));
+}
+
 mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
@@ -66,7 +72,8 @@ mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
       .SetMethod("getZoomFactor", &WebFrame::GetZoomFactor)
       .SetMethod("registerEmbedderCustomElement",
                  &WebFrame::RegisterEmbedderCustomElement)
-      .SetMethod("attachGuest", &WebFrame::AttachGuest);
+      .SetMethod("attachGuest", &WebFrame::AttachGuest)
+      .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider);
 }
 
 // static

@@ -9,7 +9,7 @@ namespace atom {
 namespace api {
 
 SpellCheckClient::SpellCheckClient(v8::Isolate* isolate,
-                                   v8::Local<v8::Object> provider)
+                                   v8::Handle<v8::Object> provider)
     : provider_(isolate, provider) {}
 
 SpellCheckClient::~SpellCheckClient() {}
