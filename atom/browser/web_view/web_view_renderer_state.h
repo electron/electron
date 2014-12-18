@@ -12,6 +12,10 @@
 #include "base/files/file_path.h"
 #include "base/memory/singleton.h"
 
+namespace content {
+class WebContents;
+}
+
 namespace atom {
 
 class WebViewManager;
@@ -22,6 +26,7 @@ class WebViewRendererState {
  public:
   struct WebViewInfo {
     int guest_instance_id;
+    content::WebContents* embedder;
     bool node_integration;
     bool plugins;
     bool disable_web_security;

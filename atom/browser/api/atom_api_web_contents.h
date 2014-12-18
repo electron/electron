@@ -24,6 +24,8 @@ class Dictionary;
 
 namespace atom {
 
+class WebDialogHelper;
+
 namespace api {
 
 class WebContents : public mate::EventEmitter,
@@ -113,6 +115,11 @@ class WebContents : public mate::EventEmitter,
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
+  void RunFileChooser(content::WebContents* web_contents,
+                      const content::FileChooserParams& params) override;
+  void EnumerateDirectory(content::WebContents* web_contents,
+                          int request_id,
+                          const base::FilePath& path) override;
   void RequestMediaAccessPermission(
       content::WebContents*,
       const content::MediaStreamRequest&,
@@ -164,6 +171,8 @@ class WebContents : public mate::EventEmitter,
 
   void GuestSizeChangedDueToAutoSize(const gfx::Size& old_size,
                                      const gfx::Size& new_size);
+
+  scoped_ptr<WebDialogHelper> web_dialog_helper_;
 
   // Unique ID for a guest WebContents.
   int guest_instance_id_;

@@ -65,6 +65,7 @@ void WebViewManager::AddGuest(int guest_instance_id,
 
   WebViewRendererState::WebViewInfo web_view_info = {
     guest_instance_id,
+    embedder,
     options.node_integration,
     options.plugins,
     options.disable_web_security,
