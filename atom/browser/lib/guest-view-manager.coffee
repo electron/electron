@@ -41,6 +41,7 @@ createGuest = (embedder, params) ->
   destroy = ->
     destroyGuest id if guestInstances[id]?
     embedder.removeListener event, destroy for event in destroyEvents
+  embedder.setMaxListeners 100  # we can have lots of <webview> in one page.
   embedder.once event, destroy for event in destroyEvents
 
   # Init guest web view after attached.
