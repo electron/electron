@@ -93,6 +93,7 @@ attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
   webViewManager.addGuest guestInstanceId, elementInstanceId, embedder, guest,
     nodeIntegration: params.nodeintegration
     plugins: params.plugins
+    disableWebSecurity: params.disablewebsecurity
     preloadUrl: params.preload ? ''
 
   guest.attachParams = params

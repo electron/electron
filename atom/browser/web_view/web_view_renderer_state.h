@@ -24,6 +24,7 @@ class WebViewRendererState {
     int guest_instance_id;
     bool node_integration;
     bool plugins;
+    bool disable_web_security;
     base::FilePath preload_script;
   };
 
