@@ -12,6 +12,7 @@ module.exports =
   ATTRIBUTE_HTTPREFERRER: 'httpreferrer'
   ATTRIBUTE_NODEINTEGRATION: 'nodeintegration'
   ATTRIBUTE_PLUGINS: 'plugins'
+  ATTRIBUTE_DISABLEWEBSECURITY: 'disablewebsecurity'
   ATTRIBUTE_PRELOAD: 'preload'
 
   # Internal attribute.

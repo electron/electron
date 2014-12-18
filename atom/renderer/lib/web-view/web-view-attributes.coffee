@@ -195,6 +195,7 @@ WebViewImpl::setupWebViewAttributes = ->
   @attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER] = new HttpReferrerAttribute(this)
   @attributes[webViewConstants.ATTRIBUTE_NODEINTEGRATION] = new BooleanAttribute(webViewConstants.ATTRIBUTE_NODEINTEGRATION, this)
   @attributes[webViewConstants.ATTRIBUTE_PLUGINS] = new BooleanAttribute(webViewConstants.ATTRIBUTE_PLUGINS, this)
+  @attributes[webViewConstants.ATTRIBUTE_DISABLEWEBSECURITY] = new BooleanAttribute(webViewConstants.ATTRIBUTE_DISABLEWEBSECURITY, this)
   @attributes[webViewConstants.ATTRIBUTE_PRELOAD] = new PreloadAttribute(this)
 
   autosizeAttributes = [

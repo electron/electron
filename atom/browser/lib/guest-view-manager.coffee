@@ -40,8 +40,9 @@ createGuest = (embedder, params) ->
   destroyEvents = ['destroyed', 'crashed', 'did-navigate-to-different-page']
   destroy = ->
     destroyGuest id if guestInstances[id]?
-    embedder.removeListener event, destroy for event in destroyEvents
   embedder.once event, destroy for event in destroyEvents
+  guest.once 'destroyed', ->
+    embedder.removeListener event, destroy for event in destroyEvents
 
   # Init guest web view after attached.
   guest.once 'did-attach', ->
@@ -93,6 +94,7 @@ attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
   webViewManager.addGuest guestInstanceId, elementInstanceId, embedder, guest,
     nodeIntegration: params.nodeintegration
     plugins: params.plugins
+    disableWebSecurity: params.disablewebsecurity
     preloadUrl: params.preload ? ''
 
   guest.attachParams = params

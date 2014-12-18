@@ -41,7 +41,8 @@ struct Converter<atom::WebViewManager::WebViewOptions> {
       return false;
     return options.Get("nodeIntegration", &(out->node_integration)) &&
            options.Get("plugins", &(out->plugins)) &&
-           options.Get("preloadUrl", &(out->preload_url));
+           options.Get("preloadUrl", &(out->preload_url)) &&
+           options.Get("disableWebSecurity", &(out->disable_web_security));
   }
 };
 
@@ -63,7 +64,10 @@ void WebViewManager::AddGuest(int guest_instance_id,
   web_contents_map_[guest_instance_id] = { web_contents, embedder };
 
   WebViewRendererState::WebViewInfo web_view_info = {
-    guest_instance_id, options.node_integration, options.plugins
+    guest_instance_id,
+    options.node_integration,
+    options.plugins,
+    options.disable_web_security,
   };
   net::FileURLToFilePath(options.preload_url, &web_view_info.preload_script);
   content::BrowserThread::PostTask(

@@ -50,7 +50,6 @@ class WebViewImpl
     # heard back from createGuest yet. We will not reset the flag in this case so
     # that we don't end up allocating a second guest.
     if @guestInstanceId
-      # FIXME
       guestViewInternal.destroyGuest @guestInstanceId
       @guestInstanceId = undefined
       @beforeFirstNavigation = true

@@ -24,6 +24,7 @@ class WebViewManager : public content::BrowserPluginGuestManager {
   struct WebViewOptions {
     bool node_integration;
     bool plugins;
+    bool disable_web_security;
     GURL preload_url;
   };
 

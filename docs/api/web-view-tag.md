@@ -112,6 +112,14 @@ after this script has done execution.
 
 Sets the referrer URL for the guest page.
 
+### disablewebsecurity
+
+```html
+<webview src="https://www.github.com/" disablewebsecurity></webview>
+```
+
+If "on", the guest page will have web security disabled.
+
 ## Methods
 
 ### `<webview>`.getUrl()
