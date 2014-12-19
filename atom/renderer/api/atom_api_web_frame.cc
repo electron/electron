@@ -60,6 +60,7 @@ void WebFrame::AttachGuest(int id) {
 void WebFrame::SetSpellCheckProvider(v8::Isolate* isolate,
                                      v8::Handle<v8::Object> provider) {
   spell_check_client_.reset(new SpellCheckClient(isolate, provider));
+  web_frame_->view()->setSpellCheckClient(spell_check_client_.get());
 }
 
 mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
