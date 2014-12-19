@@ -426,23 +426,31 @@ Returns whether the window is in kiosk mode.
 
 * `filename` String
 
-__OS X Only:__ Sets the pathname of the file the window represents, and the icon
-of the file will show in window's title bar.
+Sets the pathname of the file the window represents, and the icon of the file
+will show in window's title bar.
+
+__Note__: This API is available only on Mac OS X.
 
 ### BrowserWindow.getRepresentedFilename()
 
-__OS X Only:__ Returns the pathname of the file the window represents.
+Returns the pathname of the file the window represents.
+
+__Note__: This API is available only on Mac OS X.
 
 ### BrowserWindow.setDocumentEdited(edited)
 
 * `edited` Boolean
 
-__OS X Only:__ Specifies whether the window’s document has been edited, and the
-icon in titlebar will become grey when set to `true`.
+Specifies whether the window’s document has been edited, and the icon in title
+bar will become grey when set to `true`.
+
+__Note__: This API is available only on Mac OS X.
 
 ### BrowserWindow.IsDocumentEdited()
 
-__OS X Only:__ Whether the window's document has been edited.
+Whether the window's document has been edited.
+
+__Note__: This API is available only on Mac OS X.
 
 ### BrowserWindow.openDevTools()
 
@@ -532,8 +540,9 @@ it will assume `app.getName().desktop`.
 
 ### BrowserWindow.showDefinitionForSelection()
 
-Show pop-up dictionary that searches the selected word on the page.
-This API is available only on Mac OS.
+Shows pop-up dictionary that searches the selected word on the page.
+
+__Note__: This API is available only on Mac OS X.
 
 ### BrowserWindow.setAutoHideMenuBar(hide)
 

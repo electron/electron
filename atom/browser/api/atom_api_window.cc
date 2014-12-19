@@ -498,8 +498,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setMenuBarVisibility", &Window::SetMenuBarVisibility)
       .SetMethod("isMenuBarVisible", &Window::IsMenuBarVisible)
 #if defined(OS_MACOSX)
-      .SetMethod(
-        "showDefinitionForSelection", &Window::ShowDefinitionForSelection)
+      .SetMethod("showDefinitionForSelection",
+                 &Window::ShowDefinitionForSelection)
 #endif
       .SetMethod("_getWebContents", &Window::GetWebContents)
       .SetMethod("_getDevToolsWebContents", &Window::GetDevToolsWebContents);

@@ -644,6 +644,8 @@ void NativeWindowMac::SetProgressBar(double progress) {
 
 void NativeWindowMac::ShowDefinitionForSelection() {
   content::WebContents* web_contents = GetWebContents();
+  if (!web_contents)
+    return;
   content::RenderWidgetHostView* rwhv = web_contents->GetRenderWidgetHostView();
   if (!rwhv)
     return;
