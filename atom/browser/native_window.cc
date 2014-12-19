@@ -247,6 +247,10 @@ void NativeWindow::Print(bool silent, bool print_background) {
       PrintNow(silent, print_background);
 }
 
+void NativeWindow::ShowDefinitionForSelection() {
+  NOTIMPLEMENTED();
+}
+
 void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {
 }
 

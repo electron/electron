@@ -422,6 +422,12 @@ bool Window::IsMenuBarVisible() {
   return window_->IsMenuBarVisible();
 }
 
+#if defined(OS_MACOSX)
+void Window::ShowDefinitionForSelection() {
+  window_->ShowDefinitionForSelection();
+}
+#endif
+
 mate::Handle<WebContents> Window::GetWebContents(v8::Isolate* isolate) const {
   return WebContents::CreateFrom(isolate, window_->GetWebContents());
 }
@@ -491,6 +497,10 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isMenuBarAutoHide", &Window::IsMenuBarAutoHide)
       .SetMethod("setMenuBarVisibility", &Window::SetMenuBarVisibility)
       .SetMethod("isMenuBarVisible", &Window::IsMenuBarVisible)
+#if defined(OS_MACOSX)
+      .SetMethod(
+        "showDefinitionForSelection", &Window::ShowDefinitionForSelection)
+#endif
       .SetMethod("_getWebContents", &Window::GetWebContents)
       .SetMethod("_getDevToolsWebContents", &Window::GetDevToolsWebContents);
 }

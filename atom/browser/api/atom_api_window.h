@@ -123,6 +123,10 @@ class Window : public mate::EventEmitter,
   void SetMenuBarVisibility(bool visible);
   bool IsMenuBarVisible();
 
+#if defined(OS_MACOSX)
+  void ShowDefinitionForSelection();
+#endif
+
   // APIs for WebContents.
   mate::Handle<WebContents> GetWebContents(v8::Isolate* isolate) const;
   mate::Handle<WebContents> GetDevToolsWebContents(v8::Isolate* isolate) const;
