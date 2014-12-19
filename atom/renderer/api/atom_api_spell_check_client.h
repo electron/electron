@@ -41,8 +41,7 @@ class SpellCheckClient : public blink::WebSpellCheckClient {
       const blink::WebString& word) override;
 
   template<class T>
-  bool CallProviderMethod(const char* method,
-                          const blink::WebString& text,
+  bool CallProviderMethod(const char* method, const blink::WebString& text,
                           T* result);
 
   v8::Isolate* isolate_;
