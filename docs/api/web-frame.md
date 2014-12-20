@@ -31,3 +31,26 @@ limits of 300% and 50% of original size, respectively.
 ## webFrame.getZoomLevel()
 
 Returns the current zoom level.
+
+## webFrame.setSpellCheckProvider(language, autoCorrectWord, provider)
+
+* `language` String
+* `autoCorrectWord` Boolean
+* `provider` Object
+
+Sets a provider for spell checking in input fields and text areas.
+
+The `provider` must be an object that has a `spellCheck` method that returns
+whether the word passed is correctly spelled.
+
+An example of using [node-spellchecker][spellchecker] as provider:
+
+```javascript
+require('web-frame').setSpellCheckProvider("en-US", true, {
+  spellCheck: function(text) {
+    return !(require('spellchecker').isMisspelled(text));
+  }
+});
+```
+
+[spellchecker]: https://github.com/atom/node-spellchecker
