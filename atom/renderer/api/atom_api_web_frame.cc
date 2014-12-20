@@ -57,9 +57,16 @@ void WebFrame::AttachGuest(int id) {
   content::RenderFrame::FromWebFrame(web_frame_)->AttachGuest(id);
 }
 
-void WebFrame::SetSpellCheckProvider(v8::Isolate* isolate,
+void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
+                                     const std::string& language,
                                      v8::Handle<v8::Object> provider) {
-  spell_check_client_.reset(new SpellCheckClient(isolate, provider));
+  v8::Isolate* isolate = args->isolate();
+  if (!provider->Has(mate::StringToV8(isolate, "spellCheck"))) {
+    args->ThrowError("\"spellCheck\" has to be defined");
+    return;
+  }
+
+  spell_check_client_.reset(new SpellCheckClient(isolate, language, provider));
   web_frame_->view()->setSpellCheckClient(spell_check_client_.get());
 }
 

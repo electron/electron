@@ -15,6 +15,10 @@ namespace blink {
 class WebLocalFrame;
 }
 
+namespace mate {
+class Arguments;
+}
+
 namespace atom {
 
 namespace api {
@@ -41,7 +45,8 @@ class WebFrame : public mate::Wrappable {
   void AttachGuest(int element_instance_id);
 
   // Set the provider that will be used by SpellCheckClient for spell check.
-  void SetSpellCheckProvider(v8::Isolate* isolate,
+  void SetSpellCheckProvider(mate::Arguments* args,
+                             const std::string& language,
                              v8::Handle<v8::Object> provider);
 
   // mate::Wrappable:

@@ -323,6 +323,8 @@
       'chromium_src/chrome/renderer/printing/print_web_view_helper_mac.mm',
       'chromium_src/chrome/renderer/printing/print_web_view_helper_pdf_win.cc',
       'chromium_src/chrome/renderer/printing/print_web_view_helper.h',
+      'chromium_src/chrome/renderer/spellchecker/spellcheck_worditerator.cc',
+      'chromium_src/chrome/renderer/spellchecker/spellcheck_worditerator.h',
       'chromium_src/chrome/renderer/tts_dispatcher.cc',
       'chromium_src/chrome/renderer/tts_dispatcher.h',
       'chromium_src/library_loaders/libgio_loader.cc',
