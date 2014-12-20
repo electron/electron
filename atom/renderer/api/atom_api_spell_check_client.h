@@ -6,6 +6,7 @@
 #define ATOM_RENDERER_API_ATOM_API_SPELL_CHECK_CLIENT_H_
 
 #include <string>
+#include <vector>
 
 #include "base/callback.h"
 #include "chrome/renderer/spellchecker/spellcheck_worditerator.h"
@@ -47,12 +48,13 @@ class SpellCheckClient : public blink::WebSpellCheckClient {
   void updateSpellingUIWithMisspelledWord(
       const blink::WebString& word) override;
 
-  template<class T>
-  bool CallProviderMethod(const char* method, const blink::WebString& text,
-                          T* result);
+  // Check the spelling of text.
+  void SpellCheckText(const base::string16& text,
+                      bool stop_at_first_result,
+                      std::vector<blink::WebTextCheckingResult>* results);
 
-  // Call JavaScript to check spelling.
-  bool CheckSpelling(const base::string16& word_to_check);
+  // Call JavaScript to check spelling a word.
+  bool SpellCheckWord(const base::string16& word_to_check);
 
   // Find a possible correctly spelled word for a misspelled word. Computes an
   // empty string if input misspelled word is too long, there is ambiguity, or

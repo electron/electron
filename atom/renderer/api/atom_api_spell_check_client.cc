@@ -4,6 +4,7 @@
 
 #include "atom/renderer/api/atom_api_spell_check_client.h"
 
+#include <algorithm>
 #include <vector>
 
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -13,24 +14,6 @@
 #include "third_party/icu/source/common/unicode/uscript.h"
 #include "third_party/WebKit/public/web/WebTextCheckingCompletion.h"
 #include "third_party/WebKit/public/web/WebTextCheckingResult.h"
-
-#include "atom/common/node_includes.h"
-
-namespace mate {
-
-template<>
-struct Converter<blink::WebTextCheckingResult> {
-  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
-                     blink::WebTextCheckingResult* out) {
-    mate::Dictionary dict;
-    if (!ConvertFromV8(isolate, val, &dict))
-      return false;
-    return dict.Get("location", &(out->location)) &&
-           dict.Get("length", &(out->length));
-  }
-};
-
-}  // namespace mate
 
 namespace atom {
 
@@ -76,35 +59,11 @@ void SpellCheckClient::spellCheck(
     int& misspelling_start,
     int& misspelling_len,
     blink::WebVector<blink::WebString>* optional_suggestions) {
-  if (text.length() == 0 || spell_check_.IsEmpty())
-    return;
-
-  base::string16 word;
-  int word_start;
-  int word_length;
-  if (!text_iterator_.IsInitialized() &&
-      !text_iterator_.Initialize(&character_attributes_, true)) {
-      // We failed to initialize text_iterator_, return as spelled correctly.
-      VLOG(1) << "Failed to initialize SpellcheckWordIterator";
-      return;
-  }
-
-  base::string16 in_word(text);
-  text_iterator_.SetText(in_word.c_str(), in_word.size());
-  while (text_iterator_.GetNextWord(&word, &word_start, &word_length)) {
-    // Found a word (or a contraction) that the spellchecker can check the
-    // spelling of.
-    if (CheckSpelling(word))
-      continue;
-
-    // If the given word is a concatenated word of two or more valid words
-    // (e.g. "hello:hello"), we should treat it as a valid word.
-    if (IsValidContraction(word))
-      continue;
-
-    misspelling_start = word_start;
-    misspelling_len = word_length;
-    return;
+  std::vector<blink::WebTextCheckingResult> results;
+  SpellCheckText(base::string16(text), true, &results);
+  if (results.size() == 1) {
+    misspelling_start = results[0].location;
+    misspelling_len = results[0].length;
   }
 }
 
@@ -132,14 +91,9 @@ void SpellCheckClient::requestCheckingOfText(
     return;
   }
 
-  std::vector<blink::WebTextCheckingResult> result;
-  if (!CallProviderMethod("requestCheckingOfText", textToCheck, &result)) {
-    completionCallback->didCancelCheckingText();
-    return;
-  }
-
-  completionCallback->didFinishCheckingText(result);
-  return;
+  std::vector<blink::WebTextCheckingResult> results;
+  SpellCheckText(text, false, &results);
+  completionCallback->didFinishCheckingText(results);
 }
 
 blink::WebString SpellCheckClient::autoCorrectWord(
@@ -161,25 +115,47 @@ void SpellCheckClient::updateSpellingUIWithMisspelledWord(
     const blink::WebString& word) {
 }
 
-template<class T>
-bool SpellCheckClient::CallProviderMethod(const char* method,
-                                          const blink::WebString& text,
-                                          T* result) {
-  v8::HandleScope handle_scope(isolate_);
+void SpellCheckClient::SpellCheckText(
+    const base::string16& text,
+    bool stop_at_first_result,
+    std::vector<blink::WebTextCheckingResult>* results) {
+  if (text.length() == 0 || spell_check_.IsEmpty())
+    return;
 
-  v8::Handle<v8::Object> provider = provider_.NewHandle();
-  if (!provider->Has(mate::StringToV8(isolate_, method)))
-    return false;
+  base::string16 word;
+  int word_start;
+  int word_length;
+  if (!text_iterator_.IsInitialized() &&
+      !text_iterator_.Initialize(&character_attributes_, true)) {
+      // We failed to initialize text_iterator_, return as spelled correctly.
+      VLOG(1) << "Failed to initialize SpellcheckWordIterator";
+      return;
+  }
 
-  v8::Handle<v8::Value> v8_str =
-      mate::ConvertToV8(isolate_, base::string16(text));
-  v8::Handle<v8::Value> v8_result =
-      node::MakeCallback(isolate_, provider, method, 1, &v8_str);
+  base::string16 in_word(text);
+  text_iterator_.SetText(in_word.c_str(), in_word.size());
+  while (text_iterator_.GetNextWord(&word, &word_start, &word_length)) {
+    // Found a word (or a contraction) that the spellchecker can check the
+    // spelling of.
+    if (SpellCheckWord(word))
+      continue;
 
-  return mate::ConvertFromV8(isolate_, v8_result, result);;
+    // If the given word is a concatenated word of two or more valid words
+    // (e.g. "hello:hello"), we should treat it as a valid word.
+    if (IsValidContraction(word))
+      continue;
+
+    blink::WebTextCheckingResult result;
+    result.location = word_start;
+    result.length = word_length;
+    results->push_back(result);
+
+    if (stop_at_first_result)
+      return;
+  }
 }
 
-bool SpellCheckClient::CheckSpelling(const base::string16& word_to_check) {
+bool SpellCheckClient::SpellCheckWord(const base::string16& word_to_check) {
   if (spell_check_.IsEmpty())
     return true;
 
@@ -260,7 +236,7 @@ bool SpellCheckClient::IsValidContraction(const base::string16& contraction) {
   int word_length;
 
   while (contraction_iterator_.GetNextWord(&word, &word_start, &word_length)) {
-    if (!CheckSpelling(word))
+    if (!SpellCheckWord(word))
       return false;
   }
   return true;
