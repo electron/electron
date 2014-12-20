@@ -38,6 +38,8 @@ namespace api {
 
 namespace {
 
+const int kMaxAutoCorrectWordSize = 8;
+
 bool HasWordCharacters(const base::string16& text, int index) {
   const base::char16* data = text.data();
   int length = text.length();
@@ -139,11 +141,7 @@ void SpellCheckClient::requestCheckingOfText(
 
 blink::WebString SpellCheckClient::autoCorrectWord(
     const blink::WebString& misspelledWord) {
-  base::string16 result;
-  if (!CallProviderMethod("autoCorrectWord", misspelledWord, &result))
-    return blink::WebString();
-
-  return result;
+  return GetAutoCorrectionWord(base::string16(misspelledWord));
 }
 
 void SpellCheckClient::showSpellingUI(bool show) {
@@ -188,6 +186,53 @@ bool SpellCheckClient::CheckSpelling(const base::string16& word_to_check) {
     return result->BooleanValue();
   else
     return true;
+}
+
+base::string16 SpellCheckClient::GetAutoCorrectionWord(
+    const base::string16& word) {
+  base::string16 autocorrect_word;
+
+  int word_length = static_cast<int>(word.size());
+  if (word_length < 2 || word_length > kMaxAutoCorrectWordSize)
+    return autocorrect_word;
+
+  base::char16 misspelled_word[kMaxAutoCorrectWordSize + 1];
+  const base::char16* word_char = word.c_str();
+  for (int i = 0; i <= kMaxAutoCorrectWordSize; ++i) {
+    if (i >= word_length)
+      misspelled_word[i] = 0;
+    else
+      misspelled_word[i] = word_char[i];
+  }
+
+  // Swap adjacent characters and spellcheck.
+  int misspelling_start, misspelling_len;
+  for (int i = 0; i < word_length - 1; i++) {
+    // Swap.
+    std::swap(misspelled_word[i], misspelled_word[i + 1]);
+
+    // Check spelling.
+    misspelling_start = misspelling_len = 0;
+    spellCheck(blink::WebString(misspelled_word, word_length),
+               misspelling_start,
+               misspelling_len,
+               NULL);
+
+    // Make decision: if only one swap produced a valid word, then we want to
+    // return it. If we found two or more, we don't do autocorrection.
+    if (misspelling_len == 0) {
+      if (autocorrect_word.empty()) {
+        autocorrect_word.assign(misspelled_word);
+      } else {
+        autocorrect_word.clear();
+        break;
+      }
+    }
+
+    // Restore the swapped characters.
+    std::swap(misspelled_word[i], misspelled_word[i + 1]);
+  }
+  return autocorrect_word;
 }
 
 // Returns whether or not the given string is a valid contraction.

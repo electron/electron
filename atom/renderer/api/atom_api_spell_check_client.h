@@ -53,6 +53,11 @@ class SpellCheckClient : public blink::WebSpellCheckClient {
   // Call JavaScript to check spelling.
   bool CheckSpelling(const base::string16& word_to_check);
 
+  // Find a possible correctly spelled word for a misspelled word. Computes an
+  // empty string if input misspelled word is too long, there is ambiguity, or
+  // the correct spelling cannot be determined.
+  base::string16 GetAutoCorrectionWord(const base::string16& word);
+
   // Returns whether or not the given word is a contraction of valid words
   // (e.g. "word:word").
   bool IsValidContraction(const base::string16& word);
