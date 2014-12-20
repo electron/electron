@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/memory/scoped_ptr.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
 
@@ -14,9 +15,15 @@ namespace blink {
 class WebLocalFrame;
 }
 
+namespace mate {
+class Arguments;
+}
+
 namespace atom {
 
 namespace api {
+
+class SpellCheckClient;
 
 class WebFrame : public mate::Wrappable {
  public:
@@ -37,9 +44,17 @@ class WebFrame : public mate::Wrappable {
       const base::string16& name, v8::Handle<v8::Object> options);
   void AttachGuest(int element_instance_id);
 
+  // Set the provider that will be used by SpellCheckClient for spell check.
+  void SetSpellCheckProvider(mate::Arguments* args,
+                             const std::string& language,
+                             bool auto_spell_correct_turned_on,
+                             v8::Handle<v8::Object> provider);
+
   // mate::Wrappable:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate);
+
+  scoped_ptr<SpellCheckClient> spell_check_client_;
 
   blink::WebLocalFrame* web_frame_;
 

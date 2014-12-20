@@ -5,6 +5,7 @@
 #include "atom/renderer/api/atom_api_web_frame.h"
 
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/renderer/api/atom_api_spell_check_client.h"
 #include "content/public/renderer/render_frame.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -56,6 +57,20 @@ void WebFrame::AttachGuest(int id) {
   content::RenderFrame::FromWebFrame(web_frame_)->AttachGuest(id);
 }
 
+void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
+                                     const std::string& language,
+                                     bool auto_spell_correct_turned_on,
+                                     v8::Handle<v8::Object> provider) {
+  if (!provider->Has(mate::StringToV8(args->isolate(), "spellCheck"))) {
+    args->ThrowError("\"spellCheck\" has to be defined");
+    return;
+  }
+
+  spell_check_client_.reset(new SpellCheckClient(
+      language, auto_spell_correct_turned_on, args->isolate(), provider));
+  web_frame_->view()->setSpellCheckClient(spell_check_client_.get());
+}
+
 mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
@@ -66,7 +81,8 @@ mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
       .SetMethod("getZoomFactor", &WebFrame::GetZoomFactor)
       .SetMethod("registerEmbedderCustomElement",
                  &WebFrame::RegisterEmbedderCustomElement)
-      .SetMethod("attachGuest", &WebFrame::AttachGuest);
+      .SetMethod("attachGuest", &WebFrame::AttachGuest)
+      .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider);
 }
 
 // static
