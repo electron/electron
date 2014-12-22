@@ -100,7 +100,7 @@ def create_chrome_version_h():
     version = f.read()
   with open(template_file, 'r') as f:
     template = f.read()
-  with open(target_file, 'w+') as f:
+  with open(target_file, 'wb+') as f:
     content = template.replace('{PLACEHOLDER}', version.strip())
     if f.read() != content:
       f.write(content)
