@@ -100,7 +100,11 @@ def create_chrome_version_h():
     version = f.read()
   with open(template_file, 'r') as f:
     template = f.read()
-  with open(target_file, 'wb+') as f:
+  if sys.platform in ['win32', 'cygwin']:
+    open_mode = 'wb+'
+  else:
+    open_mode = 'w+'
+  with open(target_file, open_mode) as f:
     content = template.replace('{PLACEHOLDER}', version.strip())
     if f.read() != content:
       f.write(content)
