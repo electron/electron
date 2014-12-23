@@ -32,6 +32,7 @@
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/ui/browser_dialogs.h"
+#include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/invalidate_type.h"
 #include "content/public/browser/navigation_entry.h"
@@ -59,6 +60,10 @@
 using content::NavigationEntry;
 using content::RenderWidgetHostView;
 using content::RenderWidgetHost;
+
+namespace content {
+CONTENT_EXPORT extern bool g_use_transparent_window;
+}
 
 namespace atom {
 
@@ -88,6 +93,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
                            const mate::Dictionary& options)
     : content::WebContentsObserver(web_contents),
       has_frame_(true),
+      transparent_(false),
       enable_larger_than_screen_(false),
       is_closed_(false),
       node_integration_(true),
@@ -99,8 +105,13 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
   printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
 
   options.Get(switches::kFrame, &has_frame_);
+  options.Get(switches::kTransparent, &transparent_);
   options.Get(switches::kEnableLargerThanScreen, &enable_larger_than_screen_);
   options.Get(switches::kNodeIntegration, &node_integration_);
+
+  // Tell the content module to initialize renderer widget with transparent
+  // mode.
+  content::g_use_transparent_window = transparent_;
 
   // Read icon before window is created.
   options.Get(switches::kIcon, &icon_);
@@ -558,6 +569,18 @@ content::JavaScriptDialogManager* NativeWindow::GetJavaScriptDialogManager() {
     dialog_manager_.reset(new AtomJavaScriptDialogManager);
 
   return dialog_manager_.get();
+}
+
+void NativeWindow::RenderViewCreated(
+    content::RenderViewHost* render_view_host) {
+  if (!transparent_)
+    return;
+
+  content::RenderWidgetHostImpl* impl = content::RenderWidgetHostImpl::FromID(
+      render_view_host->GetProcess()->GetID(),
+      render_view_host->GetRoutingID());
+  if (impl)
+    impl->SetBackgroundOpaque(false);
 }
 
 void NativeWindow::BeforeUnloadFired(content::WebContents* tab,

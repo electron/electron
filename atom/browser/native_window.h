@@ -269,6 +269,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   void RendererResponsive(content::WebContents* source) override;
 
   // Implementations of content::WebContentsObserver.
+  void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
   bool OnMessageReceived(const IPC::Message& message) override;
 
@@ -286,6 +287,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   // Whether window has standard frame.
   bool has_frame_;
+
+  // Whether window is transparent.
+  bool transparent_;
 
   // Whether window can be resized larger than screen.
   bool enable_larger_than_screen_;
