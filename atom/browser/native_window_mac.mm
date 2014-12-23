@@ -314,6 +314,13 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
       [[AtomNSWindowDelegate alloc] initWithShell:this];
   [window_ setDelegate:delegate];
 
+  if (transparent_) {
+    // Make window has transparent background.
+    [window_ setOpaque:NO];
+    [window_ setHasShadow:NO];
+    [window_ setBackgroundColor:[NSColor clearColor]];
+  }
+
   // We will manage window's lifetime ourselves.
   [window_ setReleasedWhenClosed:NO];
 
