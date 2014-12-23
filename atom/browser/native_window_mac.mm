@@ -101,7 +101,7 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   shell_->NotifyWindowBlur();
 }
 
-- (void)windowDidResize:(NSNotification*)otification {
+- (void)windowDidResize:(NSNotification*)notification {
   if (!shell_->has_frame())
     shell_->ClipWebView();
 }
@@ -279,6 +279,29 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 @end
 
 namespace atom {
+
+namespace {
+
+// Convert draggable regions in raw format to SkRegion format. Caller is
+// responsible for deleting the returned SkRegion instance.
+SkRegion* DraggableRegionsToSkRegion(
+    const std::vector<DraggableRegion>& regions) {
+  SkRegion* sk_region = new SkRegion;
+  for (std::vector<DraggableRegion>::const_iterator iter = regions.begin();
+       iter != regions.end();
+       ++iter) {
+    const DraggableRegion& region = *iter;
+    sk_region->op(
+        region.bounds.x(),
+        region.bounds.y(),
+        region.bounds.right(),
+        region.bounds.bottom(),
+        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
+  }
+  return sk_region;
+}
+
+}  // namespace
 
 NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
                                  const mate::Dictionary& options)
@@ -680,7 +703,6 @@ void NativeWindowMac::HandleMouseEvent(NSEvent* event) {
   NSRect mouseRect = [window_ convertRectToScreen:NSMakeRect(eventLoc.x, eventLoc.y, 0, 0)];
   NSPoint current_mouse_location = mouseRect.origin;
 
-
   if ([event type] == NSLeftMouseDown) {
     NSPoint frame_origin = [window_ frame].origin;
     last_mouse_offset_ = NSMakePoint(
@@ -699,8 +721,7 @@ void NativeWindowMac::UpdateDraggableRegions(
   if (has_frame_)
     return;
 
-  UpdateDraggableRegionsForCustomDrag(regions);
-  InstallDraggableRegionViews();
+  draggable_region_.reset(DraggableRegionsToSkRegion(regions));
 }
 
 void NativeWindowMac::HandleKeyboardEvent(
@@ -757,11 +778,16 @@ void NativeWindowMac::InstallView() {
     }
 
     ClipWebView();
+    InstallDraggableRegionView();
 
     [[window_ standardWindowButton:NSWindowZoomButton] setHidden:YES];
     [[window_ standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
     [[window_ standardWindowButton:NSWindowCloseButton] setHidden:YES];
-    [[window_ standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
+
+    // Some third-party OS X utilities check the zoom button's enabled state to
+    // determine whether to show custom UI on hover, so we disable it here to
+    // prevent them from doing so in a frameless app window.
+    [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
   }
 }
 
@@ -771,70 +797,19 @@ void NativeWindowMac::UninstallView() {
 }
 
 void NativeWindowMac::ClipWebView() {
-  NSView* view = GetWebContents()->GetNativeView();
-  view.layer.masksToBounds = YES;
-  view.layer.cornerRadius = kAtomWindowCornerRadius;
-}
-
-void NativeWindowMac::InstallDraggableRegionViews() {
-  DCHECK(!has_frame_);
-
-  // All ControlRegionViews should be added as children of the WebContentsView,
-  // because WebContentsView will be removed and re-added when entering and
-  // leaving fullscreen mode.
   NSView* webView = GetWebContents()->GetNativeView();
-  NSInteger webViewHeight = NSHeight([webView bounds]);
-
-  // Remove all ControlRegionViews that are added last time.
-  // Note that [webView subviews] returns the view's mutable internal array and
-  // it should be copied to avoid mutating the original array while enumerating
-  // it.
-  base::scoped_nsobject<NSArray> subviews([[webView subviews] copy]);
-  for (NSView* subview in subviews.get())
-    if ([subview isKindOfClass:[ControlRegionView class]])
-      [subview removeFromSuperview];
-
-  // Create and add ControlRegionView for each region that needs to be excluded
-  // from the dragging.
-  for (std::vector<gfx::Rect>::const_iterator iter =
-           system_drag_exclude_areas_.begin();
-       iter != system_drag_exclude_areas_.end();
-       ++iter) {
-    base::scoped_nsobject<NSView> controlRegion(
-        [[ControlRegionView alloc] initWithShellWindow:this]);
-    [controlRegion setFrame:NSMakeRect(iter->x(),
-                                       webViewHeight - iter->bottom(),
-                                       iter->width(),
-                                       iter->height())];
-    [webView addSubview:controlRegion];
-  }
+  webView.layer.masksToBounds = YES;
+  webView.layer.cornerRadius = kAtomWindowCornerRadius;
 }
 
-void NativeWindowMac::UpdateDraggableRegionsForCustomDrag(
-    const std::vector<DraggableRegion>& regions) {
-  // We still need one ControlRegionView to cover the whole window such that
-  // mouse events could be captured.
-  NSView* web_view = GetWebContents()->GetNativeView();
-  gfx::Rect window_bounds(
-      0, 0, NSWidth([web_view bounds]), NSHeight([web_view bounds]));
-  system_drag_exclude_areas_.clear();
-  system_drag_exclude_areas_.push_back(window_bounds);
-
-  // Aggregate the draggable areas and non-draggable areas such that hit test
-  // could be performed easily.
-  SkRegion* draggable_region = new SkRegion;
-  for (std::vector<DraggableRegion>::const_iterator iter = regions.begin();
-       iter != regions.end();
-       ++iter) {
-    const DraggableRegion& region = *iter;
-    draggable_region->op(
-        region.bounds.x(),
-        region.bounds.y(),
-        region.bounds.right(),
-        region.bounds.bottom(),
-        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
-  }
-  draggable_region_.reset(draggable_region);
+void NativeWindowMac::InstallDraggableRegionView() {
+  NSView* webView = GetWebContents()->GetNativeView();
+  base::scoped_nsobject<NSView> controlRegion(
+      [[ControlRegionView alloc] initWithShellWindow:this]);
+  [controlRegion setFrame:NSMakeRect(0, 0,
+                                     NSWidth([webView bounds]),
+                                     NSHeight([webView bounds]))];
+  [webView addSubview:controlRegion];
 }
 
 // static

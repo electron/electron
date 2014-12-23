@@ -83,8 +83,6 @@ class NativeWindowMac : public NativeWindow {
   // Clip web view to rounded corner.
   void ClipWebView();
 
-  SkRegion* draggable_region() const { return draggable_region_.get(); }
-
  protected:
   void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) override;
@@ -97,9 +95,10 @@ class NativeWindowMac : public NativeWindow {
  private:
   void InstallView();
   void UninstallView();
-  void InstallDraggableRegionViews();
-  void UpdateDraggableRegionsForCustomDrag(
-      const std::vector<DraggableRegion>& regions);
+
+  // Install the drag view, which will cover the whole window and decides
+  // whehter we can drag.
+  void InstallDraggableRegionView();
 
   base::scoped_nsobject<NSWindow> window_;
 
@@ -112,10 +111,6 @@ class NativeWindowMac : public NativeWindow {
 
   // The presentation options before entering kiosk mode.
   NSApplicationPresentationOptions kiosk_options_;
-
-  // For system drag, the whole window is draggable and the non-draggable areas
-  // have to been explicitly excluded.
-  std::vector<gfx::Rect> system_drag_exclude_areas_;
 
   // For custom drag, the whole window is non-draggable and the draggable region
   // has to been explicitly provided.
