@@ -545,6 +545,10 @@ gfx::Point NativeWindowMac::GetPosition() {
 }
 
 void NativeWindowMac::SetTitle(const std::string& title) {
+  // We don't want the title to show in transparent window.
+  if (transparent_)
+    return;
+
   [window_ setTitle:base::SysUTF8ToNSString(title)];
 }
 
