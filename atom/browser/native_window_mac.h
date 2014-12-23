@@ -26,52 +26,52 @@ class NativeWindowMac : public NativeWindow {
   virtual ~NativeWindowMac();
 
   // NativeWindow implementation.
-  virtual void Close() OVERRIDE;
-  virtual void CloseImmediately() OVERRIDE;
-  virtual void Move(const gfx::Rect& pos) OVERRIDE;
-  virtual void Focus(bool focus) OVERRIDE;
-  virtual bool IsFocused() OVERRIDE;
-  virtual void Show() OVERRIDE;
-  virtual void ShowInactive() OVERRIDE;
-  virtual void Hide() OVERRIDE;
-  virtual bool IsVisible() OVERRIDE;
-  virtual void Maximize() OVERRIDE;
-  virtual void Unmaximize() OVERRIDE;
-  virtual bool IsMaximized() OVERRIDE;
-  virtual void Minimize() OVERRIDE;
-  virtual void Restore() OVERRIDE;
-  virtual bool IsMinimized() OVERRIDE;
-  virtual void SetFullScreen(bool fullscreen) OVERRIDE;
-  virtual bool IsFullscreen() OVERRIDE;
-  virtual void SetSize(const gfx::Size& size) OVERRIDE;
-  virtual gfx::Size GetSize() OVERRIDE;
-  virtual void SetContentSize(const gfx::Size& size) OVERRIDE;
-  virtual gfx::Size GetContentSize() OVERRIDE;
-  virtual void SetMinimumSize(const gfx::Size& size) OVERRIDE;
-  virtual gfx::Size GetMinimumSize() OVERRIDE;
-  virtual void SetMaximumSize(const gfx::Size& size) OVERRIDE;
-  virtual gfx::Size GetMaximumSize() OVERRIDE;
-  virtual void SetResizable(bool resizable) OVERRIDE;
-  virtual bool IsResizable() OVERRIDE;
-  virtual void SetAlwaysOnTop(bool top) OVERRIDE;
-  virtual bool IsAlwaysOnTop() OVERRIDE;
-  virtual void Center() OVERRIDE;
-  virtual void SetPosition(const gfx::Point& position) OVERRIDE;
-  virtual gfx::Point GetPosition() OVERRIDE;
-  virtual void SetTitle(const std::string& title) OVERRIDE;
-  virtual std::string GetTitle() OVERRIDE;
-  virtual void FlashFrame(bool flash) OVERRIDE;
-  virtual void SetSkipTaskbar(bool skip) OVERRIDE;
-  virtual void SetKiosk(bool kiosk) OVERRIDE;
-  virtual bool IsKiosk() OVERRIDE;
-  virtual void SetRepresentedFilename(const std::string& filename) OVERRIDE;
-  virtual std::string GetRepresentedFilename() OVERRIDE;
-  virtual void SetDocumentEdited(bool edited) OVERRIDE;
-  virtual bool IsDocumentEdited() OVERRIDE;
-  virtual bool HasModalDialog() OVERRIDE;
-  virtual gfx::NativeWindow GetNativeWindow() OVERRIDE;
-  virtual void SetProgressBar(double progress) OVERRIDE;
-  virtual void ShowDefinitionForSelection() OVERRIDE;
+  void Close() override;
+  void CloseImmediately() override;
+  void Move(const gfx::Rect& pos) override;
+  void Focus(bool focus) override;
+  bool IsFocused() override;
+  void Show() override;
+  void ShowInactive() override;
+  void Hide() override;
+  bool IsVisible() override;
+  void Maximize() override;
+  void Unmaximize() override;
+  bool IsMaximized() override;
+  void Minimize() override;
+  void Restore() override;
+  bool IsMinimized() override;
+  void SetFullScreen(bool fullscreen) override;
+  bool IsFullscreen() override;
+  void SetSize(const gfx::Size& size) override;
+  gfx::Size GetSize() override;
+  void SetContentSize(const gfx::Size& size) override;
+  gfx::Size GetContentSize() override;
+  void SetMinimumSize(const gfx::Size& size) override;
+  gfx::Size GetMinimumSize() override;
+  void SetMaximumSize(const gfx::Size& size) override;
+  gfx::Size GetMaximumSize() override;
+  void SetResizable(bool resizable) override;
+  bool IsResizable() override;
+  void SetAlwaysOnTop(bool top) override;
+  bool IsAlwaysOnTop() override;
+  void Center() override;
+  void SetPosition(const gfx::Point& position) override;
+  gfx::Point GetPosition() override;
+  void SetTitle(const std::string& title) override;
+  std::string GetTitle() override;
+  void FlashFrame(bool flash) override;
+  void SetSkipTaskbar(bool skip) override;
+  void SetKiosk(bool kiosk) override;
+  bool IsKiosk() override;
+  void SetRepresentedFilename(const std::string& filename) override;
+  std::string GetRepresentedFilename() override;
+  void SetDocumentEdited(bool edited) override;
+  bool IsDocumentEdited() override;
+  bool HasModalDialog() override;
+  gfx::NativeWindow GetNativeWindow() override;
+  void SetProgressBar(double progress) override;
+  void ShowDefinitionForSelection() override;
 
   // Returns true if |point| in local Cocoa coordinate system falls within
   // the draggable region.
@@ -86,13 +86,13 @@ class NativeWindowMac : public NativeWindow {
   SkRegion* draggable_region() const { return draggable_region_.get(); }
 
  protected:
-  virtual void UpdateDraggableRegions(
-      const std::vector<DraggableRegion>& regions) OVERRIDE;
+  void UpdateDraggableRegions(
+      const std::vector<DraggableRegion>& regions) override;
 
   // Implementations of content::WebContentsDelegate.
-  virtual void HandleKeyboardEvent(
+  void HandleKeyboardEvent(
       content::WebContents*,
-      const content::NativeWebKeyboardEvent&) OVERRIDE;
+      const content::NativeWebKeyboardEvent&) override;
 
  private:
   void InstallView();
