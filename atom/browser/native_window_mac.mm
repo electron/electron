@@ -296,9 +296,7 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
       width,
       height);
 
-  AtomNSWindow* atomWindow;
-
-  atomWindow = [[AtomNSWindow alloc]
+  AtomNSWindow* atomWindow = [[AtomNSWindow alloc]
       initWithContentRect:cocoa_bounds
                 styleMask:NSTitledWindowMask | NSClosableWindowMask |
                           NSMiniaturizableWindowMask | NSResizableWindowMask |
@@ -666,7 +664,10 @@ void NativeWindowMac::ShowDefinitionForSelection() {
 bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {
   if (!draggable_region_)
     return false;
-  NSView* webView = GetWebContents()->GetNativeView();
+  content::WebContents* web_contents = GetWebContents();
+  if (!web_contents)
+    return false;
+  NSView* webView = web_contents->GetNativeView();
   NSInteger webViewHeight = NSHeight([webView bounds]);
   // |draggable_region_| is stored in local platform-indepdent coordiate system
   // while |point| is in local Cocoa coordinate system. Do the conversion
