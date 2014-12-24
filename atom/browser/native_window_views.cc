@@ -236,11 +236,14 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
     bounds = ContentBoundsToWindowBounds(bounds);
 
 #if defined(OS_WIN)
-  if (!transparent_ && !has_frame_) {
+  if (!has_frame_) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
     DWORD frame_style = WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX |
                         WS_CAPTION;
+    // We should not show a frame for transparent window.
+    if (transparent_)
+      frame_style &= ~(WS_THICKFRAME | WS_CAPTION);
     ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
   }
 
