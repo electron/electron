@@ -386,6 +386,10 @@ bool NativeWindowMac::IsFocused() {
 }
 
 void NativeWindowMac::Show() {
+  // This method is supposed to put focus on window, however if the app does not
+  // have focus then "makeKeyAndOrderFront" will only show the window.
+  [NSApp activateIgnoringOtherApps:YES];
+
   [window_ makeKeyAndOrderFront:nil];
 }
 
