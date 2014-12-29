@@ -3,8 +3,8 @@
     'includes': [
       'vendor/native_mate/native_mate_files.gypi',
     ],
-    'project_name': 'atom',
-    'product_name': 'Atom',
+    'project_name%': 'atom',
+    'product_name%': 'Atom',
     'app_sources': [
       'atom/app/atom_main.cc',
       'atom/app/atom_main.h',
