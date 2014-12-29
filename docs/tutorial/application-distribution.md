@@ -53,57 +53,67 @@ atom-shell/resources/
 
 More details can be found in [Application packaging](application-packaging.md).
 
-## Renaming atom-shell for your app
+## Rebranding with downloaded binaries
 
-### Renaming by rebuilding
-
-The best way to rename atom-shell is to change the `atom.gyp` file, then build
-from source. Open up `atom.gyp` and change the two lines:
-
-```
-'project_name': 'atom',
-'product_name': 'Atom',
-```
-
-Once you make the change, re-run `script/bootstrap.py` then run the command:
-
-```sh
-script/build.py -c Release -t whatever_you_chose_for_project_name
-```
-
-### Renaming with grunt-build-atom-shell
-
-Manually checking out atom-shell's code and rebuilding could be complicated, so
-a Grunt task has been created that will handle this automatically,
-[grunt-build-atom-shell](https://github.com/paulcbetts/grunt-build-atom-shell).
-
-This task will automatically handle editing the `.gyp` file, building from
-source, then rebuilding your app's native Node modules to match the new
-executable name.
-
-### Renaming the downloaded binaries
+After bundling your app into atom-shell, you will want to rebrand atom-shell
+before distributing it to users.
 
 If you don't care about the executable name on Windows or the helper process
 name on OS X, you can simply rename the downloaded binaries, and there is also a
-grunt task that can download atom-shell for your current platform automatically,
+grunt task that can download prebuilt atom-shell binaries for your current
+platform automatically:
 [grunt-download-atom-shell](https://github.com/atom/grunt-download-atom-shell).
 
-
-#### Windows
+### Windows
 
 You can not rename the `atom.exe` otherwise native modules will not load. But
 you can edit the executable's icon and other information with tools like
 [rcedit](https://github.com/atom/rcedit) or [ResEdit](http://www.resedit.net).
 
-#### OS X
+If you don't use any native Node module, it is fine to rename `atom.exe` to any
+name you want.
+
+### OS X
 
 You can rename `Atom.app` to whatever you want, and you also have to rename the
 `CFBundleDisplayName`, `CFBundleIdentifier` and `CFBundleName` fields in
-following manifest files if they have the keys:
+following manifest files if they have these keys:
 
 * `Atom.app/Contents/Info.plist`
 * `Atom.app/Contents/Frameworks/Atom Helper.app/Contents/Info.plist`
 
-#### Linux
+### Linux
 
 You can rename the `atom` executable to whatever you want.
+
+## Rebranding by rebuilding atom-shell from source
+
+The best way to rename atom-shell is to change the product name and then build
+from source. To do this you need to override the `GYP_DEFINES` environment
+variable and have a clean rebuild:
+
+__Windows__
+
+```cmd
+> set GYP_DEFINES="project_name=myapp product_name=MyApp"
+> python script\bootstrap.py
+> python script\build.py -c Release -t myapp
+```
+
+__Bash__
+
+```bash
+$ export GYP_DEFINES="project_name=myapp product_name=MyApp"
+$ script/bootstrap.py
+$ script/build.py -c Release -t myapp
+```
+
+### grunt-build-atom-shell
+
+Manually checking out atom-shell's code and rebuilding could be complicated, so
+a Grunt task has been created that will handle this automatically:
+[grunt-build-atom-shell](https://github.com/paulcbetts/grunt-build-atom-shell).
+
+This task will automatically handle editing the `.gyp` file, building from
+source, then rebuilding your app's native Node modules to match the new
+executable name.
