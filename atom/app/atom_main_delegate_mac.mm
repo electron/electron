@@ -23,14 +23,15 @@ base::FilePath GetFrameworksPath() {
 
 void AtomMainDelegate::OverrideFrameworkBundlePath() {
   base::mac::SetOverrideFrameworkBundlePath(
-      GetFrameworksPath().Append("Atom Framework.framework"));
+      GetFrameworksPath().Append(PRODUCT_NAME " Framework.framework"));
 }
 
 void AtomMainDelegate::OverrideChildProcessPath() {
-  base::FilePath helper_path = GetFrameworksPath().Append("Atom Helper.app")
-                                                  .Append("Contents")
-                                                  .Append("MacOS")
-                                                  .Append("Atom Helper");
+  base::FilePath helper_path =
+      GetFrameworksPath().Append(PRODUCT_NAME " Helper.app")
+                         .Append("Contents")
+                         .Append("MacOS")
+                         .Append(PRODUCT_NAME " Helper");
   PathService::Override(content::CHILD_PROCESS_EXE, helper_path);
 }
 
