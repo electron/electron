@@ -3,9 +3,8 @@
     'includes': [
       'vendor/native_mate/native_mate_files.gypi',
     ],
-    'project_name': 'atom',
-    'product_name': 'Atom',
-    'framework_name': 'Atom Framework',
+    'project_name%': 'atom',
+    'product_name%': 'Atom',
     'app_sources': [
       'atom/app/atom_main.cc',
       'atom/app/atom_main.h',
@@ -60,6 +59,7 @@
       'atom/app/atom_content_client.h',
       'atom/app/atom_main_delegate.cc',
       'atom/app/atom_main_delegate.h',
+      'atom/app/atom_main_delegate_mac.mm',
       'atom/browser/api/atom_api_app.cc',
       'atom/browser/api/atom_api_app.h',
       'atom/browser/api/atom_api_auto_updater.cc',
@@ -419,7 +419,7 @@
               'destination': '<(PRODUCT_DIR)/<(product_name).app/Contents/Frameworks',
               'files': [
                 '<(PRODUCT_DIR)/<(product_name) Helper.app',
-                '<(PRODUCT_DIR)/<(framework_name).framework',
+                '<(PRODUCT_DIR)/<(product_name) Framework.framework',
                 'external_binaries/Squirrel.framework',
                 'external_binaries/ReactiveCocoa.framework',
                 'external_binaries/Mantle.framework',
@@ -527,6 +527,7 @@
         'vendor/node/node.gyp:node_lib',
       ],
       'defines': [
+        'PRODUCT_NAME="<(product_name)"',
         # This is defined in skia/skia_common.gypi.
         'SK_SUPPORT_LEGACY_GETTOPDEVICE',
         # Disable warnings for g_settings_list_schemas.
@@ -784,7 +785,7 @@
       'targets': [
         {
           'target_name': '<(project_name)_framework',
-          'product_name': '<(framework_name)',
+          'product_name': '<(product_name) Framework',
           'type': 'shared_library',
           'dependencies': [
             '<(project_name)_lib',
@@ -820,7 +821,7 @@
             'LIBRARY_SEARCH_PATHS': [
               '<(libchromiumcontent_library_dir)',
             ],
-            'LD_DYLIB_INSTALL_NAME': '@rpath/<(framework_name).framework/<(framework_name)',
+            'LD_DYLIB_INSTALL_NAME': '@rpath/<(product_name) Framework.framework/<(product_name) Framework',
             'LD_RUNPATH_SEARCH_PATHS': [
               '@loader_path/Libraries',
             ],
@@ -830,14 +831,14 @@
           },
           'copies': [
             {
-              'destination': '<(PRODUCT_DIR)/<(framework_name).framework/Versions/A/Libraries',
+              'destination': '<(PRODUCT_DIR)/<(product_name) Framework.framework/Versions/A/Libraries',
               'files': [
                 '<(libchromiumcontent_library_dir)/ffmpegsumo.so',
                 '<(libchromiumcontent_library_dir)/libchromiumcontent.dylib',
               ],
             },
             {
-              'destination': '<(PRODUCT_DIR)/<(framework_name).framework/Versions/A/Resources',
+              'destination': '<(PRODUCT_DIR)/<(product_name) Framework.framework/Versions/A/Resources',
               'files': [
                 '<(PRODUCT_DIR)/Inspector',
                 '<(PRODUCT_DIR)/crash_report_sender.app',
@@ -849,7 +850,7 @@
               'postbuild_name': 'Add symlinks for framework subdirectories',
               'action': [
                 'tools/mac/create-framework-subdir-symlinks.sh',
-                '<(framework_name)',
+                '<(project_name) Framework',
                 'Libraries',
                 'Frameworks',
               ],
