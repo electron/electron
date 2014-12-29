@@ -528,6 +528,7 @@
         'vendor/node/node.gyp:node_lib',
       ],
       'defines': [
+        'PRODUCT_NAME="<(product_name)"',
         # This is defined in skia/skia_common.gypi.
         'SK_SUPPORT_LEGACY_GETTOPDEVICE',
         # Disable warnings for g_settings_list_schemas.
