@@ -111,3 +111,8 @@ Simply making that directory [should fix the problem](http://stackoverflow.com/a
 ```powershell
 mkdir ~\AppData\Roaming\npm
 ```
+
+### node-gyp is not recognized as an internal or external command
+
+You may get this error if you are using Git Bash for building, you should use
+PowerShell or VS2012 Command Prompt instead.
