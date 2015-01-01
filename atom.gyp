@@ -850,7 +850,7 @@
               'postbuild_name': 'Add symlinks for framework subdirectories',
               'action': [
                 'tools/mac/create-framework-subdir-symlinks.sh',
-                '<(project_name) Framework',
+                '<(product_name) Framework',
                 'Libraries',
                 'Frameworks',
               ],
