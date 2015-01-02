@@ -6,6 +6,7 @@
 
 #include "browser/browser_context.h"
 #include "browser/browser_main_parts.h"
+#include "browser/devtools_delegate.h"
 #include "browser/media/media_capture_devices_dispatcher.h"
 #include "browser/notification_presenter.h"
 
@@ -93,6 +94,10 @@ base::FilePath BrowserClient::GetDefaultDownloadDirectory() {
     path = path.Append(FILE_PATH_LITERAL("Downloads"));
 
   return path;
+}
+
+content::DevToolsManagerDelegate* BrowserClient::GetDevToolsManagerDelegate() {
+  return new DevToolsManagerDelegate(browser_context());
 }
 
 }  // namespace brightray
