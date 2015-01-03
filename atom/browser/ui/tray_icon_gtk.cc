@@ -8,6 +8,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/libgtk2ui/app_indicator_icon.h"
 #include "chrome/browser/ui/libgtk2ui/gtk2_status_icon.h"
+#include "ui/gfx/image/image.h"
 
 namespace atom {
 
@@ -25,10 +26,10 @@ void TrayIconGtk::SetImage(const gfx::Image& image) {
 
   base::string16 empty;
   if (libgtk2ui::AppIndicatorIcon::CouldOpen())
-    icon_.reset(
-        new libgtk2ui::AppIndicatorIcon(base::GenerateGUID(), image, empty));
+    icon_.reset(new libgtk2ui::AppIndicatorIcon(
+        base::GenerateGUID(), image.AsImageSkia(), empty));
   else
-    icon_.reset(new libgtk2ui::Gtk2StatusIcon(image, empty));
+    icon_.reset(new libgtk2ui::Gtk2StatusIcon(image.AsImageSkia(), empty));
   icon_->set_delegate(this);
 }
 
