@@ -43,10 +43,10 @@ class NotifyIcon : public TrayIcon {
   UINT message_id() const { return message_id_; }
 
   // Overridden from TrayIcon:
-  void SetImage(const gfx::ImageSkia& image) override;
-  void SetPressedImage(const gfx::ImageSkia& image) override;
+  void SetImage(const gfx::Image& image) override;
+  void SetPressedImage(const gfx::Image& image) override;
   void SetToolTip(const std::string& tool_tip) override;
-  void DisplayBalloon(const gfx::ImageSkia& icon,
+  void DisplayBalloon(const gfx::Image& icon,
                       const base::string16& title,
                       const base::string16& contents) override;
   void SetContextMenu(ui::SimpleMenuModel* menu_model) override;
