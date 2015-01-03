@@ -106,6 +106,7 @@ bool Converter<gfx::ImageSkia>::FromV8(v8::Isolate* isolate,
   return PopulateImageSkiaRepsFromPath(out, path);
 }
 
+#if !defined(OS_MACOSX)
 bool Converter<gfx::Image>::FromV8(v8::Isolate* isolate,
                                    v8::Handle<v8::Value> val,
                                    gfx::Image* out) {
@@ -116,5 +117,6 @@ bool Converter<gfx::Image>::FromV8(v8::Isolate* isolate,
   *out = gfx::Image(image);
   return true;
 }
+#endif
 
 }  // namespace mate
