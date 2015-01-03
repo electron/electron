@@ -8,9 +8,19 @@
 
 #include "base/mac/foundation_util.h"
 #include "base/mac/scoped_nsobject.h"
+#include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
+
+namespace {
+
+bool IsTemplateImage(const std::string& path) {
+  return (MatchPattern(path, "*Template.*") ||
+          MatchPattern(path, "*Template@*x.*"));
+}
+
+}  // namespace
 
 namespace mate {
 
@@ -40,6 +50,9 @@ bool Converter<gfx::Image>::FromV8(v8::Isolate* isolate,
       initByReferencingFile:base::SysUTF8ToNSString(path)]);
   if (![image isValid])
     return false;
+
+  if (IsTemplateImage(path))
+    [image setTemplate:YES];
 
   *out = gfx::Image(image.release());
   return true;
