@@ -12,6 +12,7 @@
 #include "base/strings/string_util.h"
 #include "ui/gfx/codec/jpeg_codec.h"
 #include "ui/gfx/codec/png_codec.h"
+#include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/base/layout.h"
 
@@ -118,6 +119,17 @@ bool Converter<gfx::ImageSkia>::FromV8(v8::Isolate* isolate,
   }
 
   return false;
+}
+
+bool Converter<gfx::Image>::FromV8(v8::Isolate* isolate,
+                                   v8::Handle<v8::Value> val,
+                                   gfx::Image* out) {
+  gfx::ImageSkia image;
+  if (!ConvertFromV8(isolate, val, &image))
+    return false;
+
+  *out = gfx::Image(image);
+  return true;
 }
 
 }  // namespace mate
