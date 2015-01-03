@@ -23,7 +23,7 @@ class TrayIconGtk : public TrayIcon,
   virtual ~TrayIconGtk();
 
   // TrayIcon:
-  virtual void SetImage(const gfx::ImageSkia& image) OVERRIDE;
+  virtual void SetImage(const gfx::Image& image) OVERRIDE;
   virtual void SetToolTip(const std::string& tool_tip) OVERRIDE;
   virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) OVERRIDE;
 

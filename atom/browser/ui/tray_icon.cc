@@ -12,7 +12,7 @@ TrayIcon::TrayIcon() {
 TrayIcon::~TrayIcon() {
 }
 
-void TrayIcon::SetPressedImage(const gfx::ImageSkia& image) {
+void TrayIcon::SetPressedImage(const gfx::Image& image) {
 }
 
 void TrayIcon::SetTitle(const std::string& title) {
@@ -21,7 +21,7 @@ void TrayIcon::SetTitle(const std::string& title) {
 void TrayIcon::SetHighlightMode(bool highlight) {
 }
 
-void TrayIcon::DisplayBalloon(const gfx::ImageSkia& icon,
+void TrayIcon::DisplayBalloon(const gfx::Image& icon,
                               const base::string16& title,
                               const base::string16& contents) {
 }

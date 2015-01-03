@@ -17,9 +17,9 @@ TrayIconGtk::TrayIconGtk() {
 TrayIconGtk::~TrayIconGtk() {
 }
 
-void TrayIconGtk::SetImage(const gfx::ImageSkia& image) {
+void TrayIconGtk::SetImage(const gfx::Image& image) {
   if (icon_) {
-    icon_->SetImage(image);
+    icon_->SetImage(image.AsImageSkia());
     return;
   }
 

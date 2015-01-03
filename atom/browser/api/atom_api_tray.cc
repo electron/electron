@@ -12,6 +12,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
+#include "ui/gfx/image/image.h"
 
 #include "atom/common/node_includes.h"
 
@@ -19,7 +20,7 @@ namespace atom {
 
 namespace api {
 
-Tray::Tray(const gfx::ImageSkia& image)
+Tray::Tray(const gfx::Image& image)
     : tray_icon_(TrayIcon::Create()) {
   tray_icon_->SetImage(image);
   tray_icon_->AddObserver(this);
@@ -29,7 +30,7 @@ Tray::~Tray() {
 }
 
 // static
-mate::Wrappable* Tray::New(const gfx::ImageSkia& image) {
+mate::Wrappable* Tray::New(const gfx::Image& image) {
   return new Tray(image);
 }
 
@@ -57,13 +58,13 @@ void Tray::Destroy() {
   tray_icon_.reset();
 }
 
-void Tray::SetImage(mate::Arguments* args, const gfx::ImageSkia& image) {
+void Tray::SetImage(mate::Arguments* args, const gfx::Image& image) {
   if (!CheckTrayLife(args))
     return;
   tray_icon_->SetImage(image);
 }
 
-void Tray::SetPressedImage(mate::Arguments* args, const gfx::ImageSkia& image) {
+void Tray::SetPressedImage(mate::Arguments* args, const gfx::Image& image) {
   if (!CheckTrayLife(args))
     return;
   tray_icon_->SetPressedImage(image);
@@ -92,7 +93,7 @@ void Tray::DisplayBalloon(mate::Arguments* args,
   if (!CheckTrayLife(args))
     return;
 
-  gfx::ImageSkia icon;
+  gfx::Image icon;
   options.Get("icon", &icon);
   base::string16 title, content;
   if (!options.Get("title", &title) ||

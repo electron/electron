@@ -90,19 +90,19 @@ void NotifyIcon::ResetIcon() {
     LOG(WARNING) << "Unable to re-create status tray icon.";
 }
 
-void NotifyIcon::SetImage(const gfx::ImageSkia& image) {
+void NotifyIcon::SetImage(const gfx::Image& image) {
   // Create the icon.
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
   icon_data.uFlags = NIF_ICON;
-  icon_.Set(IconUtil::CreateHICONFromSkBitmap(*image.bitmap()));
+  icon_.Set(IconUtil::CreateHICONFromSkBitmap(image.AsBitmap()));
   icon_data.hIcon = icon_.Get();
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
     LOG(WARNING) << "Error setting status tray icon image";
 }
 
-void NotifyIcon::SetPressedImage(const gfx::ImageSkia& image) {
+void NotifyIcon::SetPressedImage(const gfx::Image& image) {
   // Ignore pressed images, since the standard on Windows is to not highlight
   // pressed status icons.
 }
@@ -118,7 +118,7 @@ void NotifyIcon::SetToolTip(const std::string& tool_tip) {
     LOG(WARNING) << "Unable to set tooltip for status tray icon";
 }
 
-void NotifyIcon::DisplayBalloon(const gfx::ImageSkia& icon,
+void NotifyIcon::DisplayBalloon(const gfx::Image& icon,
                                 const base::string16& title,
                                 const base::string16& contents) {
   NOTIFYICONDATA icon_data;
@@ -131,7 +131,7 @@ void NotifyIcon::DisplayBalloon(const gfx::ImageSkia& icon,
 
   base::win::Version win_version = base::win::GetVersion();
   if (!icon.isNull() && win_version != base::win::VERSION_PRE_XP) {
-    balloon_icon_.Set(IconUtil::CreateHICONFromSkBitmap(*icon.bitmap()));
+    balloon_icon_.Set(IconUtil::CreateHICONFromSkBitmap(icon.AsBitmap()));
     icon_data.hBalloonIcon = balloon_icon_.Get();
     icon_data.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON;
   }

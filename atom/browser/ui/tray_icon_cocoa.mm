@@ -53,20 +53,14 @@ TrayIconCocoa::~TrayIconCocoa() {
   [[NSStatusBar systemStatusBar] removeStatusItem:item_];
 }
 
-void TrayIconCocoa::SetImage(const gfx::ImageSkia& image) {
-  if (!image.isNull()) {
-    gfx::Image neutral(image);
-    if (!neutral.IsEmpty())
-      [item_ setImage:neutral.ToNSImage()];
-  }
+void TrayIconCocoa::SetImage(const gfx::Image& image) {
+  if (!image.IsEmpty())
+    [item_ setImage:image.ToNSImage()];
 }
 
-void TrayIconCocoa::SetPressedImage(const gfx::ImageSkia& image) {
-  if (!image.isNull()) {
-    gfx::Image neutral(image);
-    if (!neutral.IsEmpty())
-      [item_ setAlternateImage:neutral.ToNSImage()];
-  }
+void TrayIconCocoa::SetPressedImage(const gfx::Image& image) {
+  if (!image.IsEmpty())
+    [item_ setAlternateImage:image.ToNSImage()];
 }
 
 void TrayIconCocoa::SetToolTip(const std::string& tool_tip) {
