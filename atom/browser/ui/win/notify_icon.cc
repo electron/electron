@@ -10,6 +10,7 @@
 #include "base/win/windows_version.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/gfx/icon_util.h"
+#include "ui/gfx/image/image.h"
 #include "ui/gfx/point.h"
 #include "ui/gfx/rect.h"
 #include "ui/views/controls/menu/menu_runner.h"
@@ -130,7 +131,7 @@ void NotifyIcon::DisplayBalloon(const gfx::Image& icon,
   icon_data.uTimeout = 0;
 
   base::win::Version win_version = base::win::GetVersion();
-  if (!icon.isNull() && win_version != base::win::VERSION_PRE_XP) {
+  if (!icon.IsEmpty() && win_version != base::win::VERSION_PRE_XP) {
     balloon_icon_.Set(IconUtil::CreateHICONFromSkBitmap(icon.AsBitmap()));
     icon_data.hBalloonIcon = balloon_icon_.Get();
     icon_data.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON;
