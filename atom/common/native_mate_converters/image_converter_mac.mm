@@ -10,8 +10,24 @@
 #include "base/mac/scoped_nsobject.h"
 #include "base/strings/sys_string_conversions.h"
 #include "ui/gfx/image/image.h"
+#include "ui/gfx/image/image_skia.h"
 
 namespace mate {
+
+bool Converter<gfx::ImageSkia>::FromV8(v8::Isolate* isolate,
+                                       v8::Handle<v8::Value> val,
+                                       gfx::ImageSkia* out) {
+  gfx::Image image;
+  if (!ConvertFromV8(isolate, val, &image) || image.IsEmpty())
+    return false;
+
+  gfx::ImageSkia image_skia = image.AsImageSkia();
+  if (image_skia.isNull())
+    return false;
+
+  *out = image_skia;
+  return true;
+}
 
 bool Converter<gfx::Image>::FromV8(v8::Isolate* isolate,
                                    v8::Handle<v8::Value> val,
