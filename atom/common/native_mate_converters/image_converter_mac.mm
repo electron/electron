@@ -38,6 +38,9 @@ bool Converter<gfx::Image>::FromV8(v8::Isolate* isolate,
 
   base::scoped_nsobject<NSImage> image([[NSImage alloc]
       initByReferencingFile:base::SysUTF8ToNSString(path)]);
+  if (![image isValid])
+    return false;
+
   *out = gfx::Image(image.release());
   return true;
 }
