@@ -69,7 +69,6 @@ void ShowMessageBox(int type,
 void ShowOpenDialog(const std::string& title,
                     const base::FilePath& default_path,
                     const file_dialog::Filters& filters,
-                    const gfx::ImageSkia& icon,
                     int properties,
                     atom::NativeWindow* window,
                     mate::Arguments* args) {
@@ -91,7 +90,6 @@ void ShowOpenDialog(const std::string& title,
 void ShowSaveDialog(const std::string& title,
                     const base::FilePath& default_path,
                     const file_dialog::Filters& filters,
-                    const gfx::ImageSkia& icon,
                     atom::NativeWindow* window,
                     mate::Arguments* args) {
   v8::Handle<v8::Value> peek = args->PeekNext();

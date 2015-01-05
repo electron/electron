@@ -42,7 +42,6 @@ module.exports =
     options.title ?= ''
     options.defaultPath ?= ''
     options.filters ?= []
-    options.icon ?= null
 
     wrappedCallback =
       if typeof callback is 'function'
@@ -65,7 +64,6 @@ module.exports =
     options.title ?= ''
     options.defaultPath ?= ''
     options.filters ?= []
-    options.icon ?= null
 
     wrappedCallback =
       if typeof callback is 'function'
