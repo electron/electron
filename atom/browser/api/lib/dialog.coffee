@@ -42,6 +42,7 @@ module.exports =
     options.title ?= ''
     options.defaultPath ?= ''
     options.filters ?= []
+    options.icon ?= null
 
     wrappedCallback =
       if typeof callback is 'function'
@@ -64,6 +65,7 @@ module.exports =
     options.title ?= ''
     options.defaultPath ?= ''
     options.filters ?= []
+    options.icon ?= null
 
     wrappedCallback =
       if typeof callback is 'function'
@@ -91,12 +93,12 @@ module.exports =
     options.title ?= ''
     options.message ?= ''
     options.detail ?= ''
+    options.icon ?= null
 
     binding.showMessageBox options.type,
                            options.buttons,
-                           String(options.title),
-                           String(options.message),
-                           String(options.detail),
+                           [options.title, options.message, options.detail],
+                           options.icon,
                            window,
                            callback
 

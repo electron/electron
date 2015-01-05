@@ -11,6 +11,10 @@
 #include "base/callback_forward.h"
 #include "base/strings/string16.h"
 
+namespace gfx {
+class ImageSkia;
+}
+
 namespace atom {
 
 class NativeWindow;
@@ -28,7 +32,8 @@ int ShowMessageBox(NativeWindow* parent_window,
                    const std::vector<std::string>& buttons,
                    const std::string& title,
                    const std::string& message,
-                   const std::string& detail);
+                   const std::string& detail,
+                   const gfx::ImageSkia& icon);
 
 void ShowMessageBox(NativeWindow* parent_window,
                     MessageBoxType type,
@@ -36,6 +41,7 @@ void ShowMessageBox(NativeWindow* parent_window,
                     const std::string& title,
                     const std::string& message,
                     const std::string& detail,
+                    const gfx::ImageSkia& icon,
                     const MessageBoxCallback& callback);
 
 // Like ShowMessageBox with simplest settings, but safe to call at very early

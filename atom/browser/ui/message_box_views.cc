@@ -60,7 +60,8 @@ class MessageDialog : public views::WidgetDelegate,
                 const std::vector<std::string>& buttons,
                 const std::string& title,
                 const std::string& message,
-                const std::string& detail);
+                const std::string& detail,
+                const gfx::ImageSkia& icon);
   virtual ~MessageDialog();
 
   void Show(base::RunLoop* run_loop = NULL);
@@ -75,24 +76,27 @@ class MessageDialog : public views::WidgetDelegate,
 
  private:
   // Overridden from views::WidgetDelegate:
-  virtual base::string16 GetWindowTitle() const;
-  virtual views::Widget* GetWidget() OVERRIDE;
-  virtual const views::Widget* GetWidget() const OVERRIDE;
-  virtual views::View* GetContentsView() OVERRIDE;
-  virtual views::View* GetInitiallyFocusedView() OVERRIDE;
-  virtual ui::ModalType GetModalType() const OVERRIDE;
-  virtual views::NonClientFrameView* CreateNonClientFrameView(
-      views::Widget* widget) OVERRIDE;
-  virtual views::ClientView* CreateClientView(views::Widget* widget) OVERRIDE;
+  base::string16 GetWindowTitle() const override;
+  gfx::ImageSkia GetWindowAppIcon() override;
+  gfx::ImageSkia GetWindowIcon() override;
+  views::Widget* GetWidget() override;
+  const views::Widget* GetWidget() const override;
+  views::View* GetContentsView() override;
+  views::View* GetInitiallyFocusedView() override;
+  ui::ModalType GetModalType() const override;
+  views::NonClientFrameView* CreateNonClientFrameView(
+      views::Widget* widget) override;
+  views::ClientView* CreateClientView(views::Widget* widget) override;
 
   // Overridden from views::View:
-  virtual gfx::Size GetPreferredSize() const OVERRIDE;
-  virtual void Layout() OVERRIDE;
-  virtual bool AcceleratorPressed(const ui::Accelerator& accelerator) OVERRIDE;
+  gfx::Size GetPreferredSize() const override;
+  void Layout() override;
+  bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
 
   // Overridden from views::ButtonListener:
-  virtual void ButtonPressed(views::Button* sender,
-                             const ui::Event& event) OVERRIDE;
+  void ButtonPressed(views::Button* sender, const ui::Event& event) override;
+
+  gfx::ImageSkia icon_;
 
   bool delete_on_close_;
   int result_;
@@ -118,7 +122,7 @@ class MessageDialogClientView : public views::ClientView {
   }
 
   // views::ClientView:
-  virtual bool CanClose() OVERRIDE {
+  bool CanClose() override {
     dialog_->Close();
     return false;
   }
@@ -137,8 +141,10 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
                              const std::vector<std::string>& buttons,
                              const std::string& title,
                              const std::string& message,
-                             const std::string& detail)
-    : delete_on_close_(false),
+                             const std::string& detail,
+                             const gfx::ImageSkia& icon)
+    : icon_(icon),
+      delete_on_close_(false),
       result_(-1),
       title_(base::UTF8ToUTF16(title)),
       parent_(parent_window),
@@ -225,6 +231,14 @@ int MessageDialog::GetResult() const {
 
 ////////////////////////////////////////////////////////////////////////////////
 // MessageDialog, private:
+
+gfx::ImageSkia MessageDialog::GetWindowAppIcon() {
+  return icon_;
+}
+
+gfx::ImageSkia MessageDialog::GetWindowIcon() {
+  return icon_;
+}
 
 base::string16 MessageDialog::GetWindowTitle() const {
   return title_;
@@ -338,7 +352,8 @@ int ShowMessageBox(NativeWindow* parent_window,
                    const std::vector<std::string>& buttons,
                    const std::string& title,
                    const std::string& message,
-                   const std::string& detail) {
+                   const std::string& detail,
+                   const gfx::ImageSkia& icon) {
   MessageDialog dialog(parent_window, type, buttons, title, message, detail);
   {
     base::MessageLoop::ScopedNestableTaskAllower allow(
@@ -357,6 +372,7 @@ void ShowMessageBox(NativeWindow* parent_window,
                     const std::string& title,
                     const std::string& message,
                     const std::string& detail,
+                    const gfx::ImageSkia& icon,
                     const MessageBoxCallback& callback) {
   // The dialog would be deleted when the dialog is closed.
   MessageDialog* dialog = new MessageDialog(
