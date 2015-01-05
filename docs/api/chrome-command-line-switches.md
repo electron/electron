@@ -14,6 +14,10 @@ app.on('ready', function() {
 });
 ```
 
+## --disable-http-cache
+
+Disables the disk cache for HTTP requests.
+
 ## --remote-debugging-port=`port`
 
 Enables remote debug over HTTP on the specified `port`.

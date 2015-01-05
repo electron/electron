@@ -26,6 +26,8 @@ class AtomBrowserContext : public brightray::BrowserContext {
   net::URLRequestJobFactory* CreateURLRequestJobFactory(
       content::ProtocolHandlerMap* handlers,
       content::URLRequestInterceptorScopedVector* interceptors) override;
+  net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
+      const base::FilePath& base_path) override;
 
   // content::BrowserContext:
   content::BrowserPluginGuestManager* GetGuestManager() override;
