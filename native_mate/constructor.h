@@ -156,7 +156,17 @@ class Constructor {
       MATE_METHOD_RETURN_UNDEFINED();
     }
 
-    Wrappable* object = internal::InvokeFactory(args, factory);
+    Wrappable* object;
+    {
+      // Don't continue if the constructor throws an exception.
+      v8::TryCatch try_catch;
+      object = internal::InvokeFactory(args, factory);
+      if (try_catch.HasCaught()) {
+        try_catch.ReThrow();
+        MATE_METHOD_RETURN_UNDEFINED();
+      }
+    }
+
     if (object)
       object->Wrap(isolate, args->GetThis());
     else
