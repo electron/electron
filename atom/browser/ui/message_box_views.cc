@@ -79,6 +79,7 @@ class MessageDialog : public views::WidgetDelegate,
   base::string16 GetWindowTitle() const override;
   gfx::ImageSkia GetWindowAppIcon() override;
   gfx::ImageSkia GetWindowIcon() override;
+  bool ShouldShowWindowIcon() const override;
   views::Widget* GetWidget() override;
   const views::Widget* GetWidget() const override;
   views::View* GetContentsView() override;
@@ -180,6 +181,7 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
 
   views::Widget::InitParams params;
   params.delegate = this;
+  params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
   if (parent_) {
     params.parent = parent_->GetNativeWindow();
@@ -190,6 +192,7 @@ MessageDialog::MessageDialog(NativeWindow* parent_window,
 
   widget_.reset(new views::Widget);
   widget_->Init(params);
+  widget_->UpdateWindowIcon();
 
   // Bind to ESC.
   AddAccelerator(ui::Accelerator(ui::VKEY_ESCAPE, ui::EF_NONE));
@@ -232,6 +235,10 @@ int MessageDialog::GetResult() const {
 ////////////////////////////////////////////////////////////////////////////////
 // MessageDialog, private:
 
+base::string16 MessageDialog::GetWindowTitle() const {
+  return title_;
+}
+
 gfx::ImageSkia MessageDialog::GetWindowAppIcon() {
   return icon_;
 }
@@ -240,8 +247,8 @@ gfx::ImageSkia MessageDialog::GetWindowIcon() {
   return icon_;
 }
 
-base::string16 MessageDialog::GetWindowTitle() const {
-  return title_;
+bool MessageDialog::ShouldShowWindowIcon() const {
+  return true;
 }
 
 views::Widget* MessageDialog::GetWidget() {
@@ -354,7 +361,8 @@ int ShowMessageBox(NativeWindow* parent_window,
                    const std::string& message,
                    const std::string& detail,
                    const gfx::ImageSkia& icon) {
-  MessageDialog dialog(parent_window, type, buttons, title, message, detail);
+  MessageDialog dialog(
+      parent_window, type, buttons, title, message, detail, icon);
   {
     base::MessageLoop::ScopedNestableTaskAllower allow(
         base::MessageLoopForUI::current());
@@ -376,7 +384,7 @@ void ShowMessageBox(NativeWindow* parent_window,
                     const MessageBoxCallback& callback) {
   // The dialog would be deleted when the dialog is closed.
   MessageDialog* dialog = new MessageDialog(
-      parent_window, type, buttons, title, message, detail);
+      parent_window, type, buttons, title, message, detail, icon);
   dialog->set_callback(callback);
   dialog->Show();
 }
