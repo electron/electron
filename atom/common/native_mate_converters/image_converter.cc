@@ -101,6 +101,9 @@ bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
 bool Converter<gfx::ImageSkia>::FromV8(v8::Isolate* isolate,
                                        v8::Handle<v8::Value> val,
                                        gfx::ImageSkia* out) {
+  if (val->IsNull())
+    return true;
+
   base::FilePath path;
   if (!Converter<base::FilePath>::FromV8(isolate, val, &path))
     return false;

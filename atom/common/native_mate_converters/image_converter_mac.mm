@@ -28,20 +28,19 @@ bool Converter<gfx::ImageSkia>::FromV8(v8::Isolate* isolate,
                                        v8::Handle<v8::Value> val,
                                        gfx::ImageSkia* out) {
   gfx::Image image;
-  if (!ConvertFromV8(isolate, val, &image) || image.IsEmpty())
+  if (!ConvertFromV8(isolate, val, &image))
     return false;
 
-  gfx::ImageSkia image_skia = image.AsImageSkia();
-  if (image_skia.isNull())
-    return false;
-
-  *out = image_skia;
+  *out = image.AsImageSkia();
   return true;
 }
 
 bool Converter<gfx::Image>::FromV8(v8::Isolate* isolate,
                                    v8::Handle<v8::Value> val,
                                    gfx::Image* out) {
+  if (val->IsNull())
+    return true;
+
   std::string path;
   if (!ConvertFromV8(isolate, val, &path))
     return false;
