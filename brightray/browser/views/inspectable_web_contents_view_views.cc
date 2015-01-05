@@ -38,6 +38,7 @@ class DevToolsWindowDelegate : public views::ClientView,
   views::View* GetInitiallyFocusedView() override { return view_; }
   bool CanResize() const override { return true; }
   bool CanMaximize() const override { return true; }
+  bool CanMinimize() const override { return true; }
   base::string16 GetWindowTitle() const override { return title_; }
   gfx::ImageSkia GetWindowAppIcon() override { return GetWindowIcon(); }
   gfx::ImageSkia GetWindowIcon() override { return icon_; }
