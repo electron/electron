@@ -8,6 +8,7 @@
 #include "base/files/file_path.h"
 #include "base/memory/scoped_ptr.h"
 #include "content/public/browser/content_browser_client.h"
+#include "net/http/http_cache.h"
 #include "net/url_request/url_request_context_getter.h"
 
 namespace base {
@@ -36,6 +37,8 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     virtual net::URLRequestJobFactory* CreateURLRequestJobFactory(
         content::ProtocolHandlerMap* protocol_handlers,
         content::URLRequestInterceptorScopedVector* protocol_interceptors);
+    virtual net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
+        const base::FilePath& base_path);
   };
 
   URLRequestContextGetter(

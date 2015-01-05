@@ -20,7 +20,6 @@
 #include "net/cookies/cookie_monster.h"
 #include "net/dns/mapped_host_resolver.h"
 #include "net/http/http_auth_handler_factory.h"
-#include "net/http/http_cache.h"
 #include "net/http/http_server_properties_impl.h"
 #include "net/proxy/dhcp_proxy_script_fetcher_factory.h"
 #include "net/proxy/proxy_config_service.h"
@@ -97,6 +96,17 @@ net::URLRequestJobFactory* URLRequestContextGetter::Delegate::CreateURLRequestJo
   protocol_interceptors->weak_clear();
 
   return top_job_factory.release();
+}
+
+net::HttpCache::BackendFactory*
+URLRequestContextGetter::Delegate::CreateHttpCacheBackendFactory(const base::FilePath& base_path) {
+  base::FilePath cache_path = base_path.Append(FILE_PATH_LITERAL("Cache"));
+  return new net::HttpCache::DefaultBackend(
+      net::DISK_CACHE,
+      net::CACHE_BACKEND_DEFAULT,
+      cache_path,
+      0,
+      BrowserThread::GetMessageLoopProxyForThread(BrowserThread::CACHE));
 }
 
 URLRequestContextGetter::URLRequestContextGetter(
@@ -213,14 +223,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     storage_->set_host_resolver(host_resolver.Pass());
     network_session_params.host_resolver = url_request_context_->host_resolver();
 
-    base::FilePath cache_path = base_path_.Append(FILE_PATH_LITERAL("Cache"));
-    net::HttpCache::DefaultBackend* backend =
-        new net::HttpCache::DefaultBackend(
-            net::DISK_CACHE,
-            net::CACHE_BACKEND_DEFAULT,
-            cache_path,
-            0,
-            BrowserThread::GetMessageLoopProxyForThread(BrowserThread::CACHE));
+    net::HttpCache::BackendFactory* backend = delegate_->CreateHttpCacheBackendFactory(base_path_);
     storage_->set_http_transaction_factory(new net::HttpCache(network_session_params, backend));
 
     storage_->set_job_factory(delegate_->CreateURLRequestJobFactory(
