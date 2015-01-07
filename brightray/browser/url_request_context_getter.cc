@@ -212,6 +212,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     network_session_params.http_auth_handler_factory =
         url_request_context_->http_auth_handler_factory();
 
+    // --ignore-certificate-errors
+    if (command_line.HasSwitch(switches::kIgnoreCertificateErrors))
+      network_session_params.ignore_certificate_errors = true;
+
     // --host-rules
     if (command_line.HasSwitch(kHostRules)) {
       host_mapping_rules_.reset(new net::HostMappingRules);
