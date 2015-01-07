@@ -57,3 +57,7 @@ Like `--host-rules` but these `rules` only apply to the host resolver.
 [app]: app.md
 [append-switch]: app.md#appcommandlineappendswitchswitch-value
 [ready]: app.md#event-ready
+
+## --ignore-certificate-errors
+
+Ignore certificate related errors.
