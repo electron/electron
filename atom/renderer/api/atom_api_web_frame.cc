@@ -4,6 +4,11 @@
 
 #include "atom/renderer/api/atom_api_web_frame.h"
 
+// This defines are required by SchemeRegistry.h.
+#define OS(WTF_FEATURE) (defined WTF_OS_##WTF_FEATURE  && WTF_OS_##WTF_FEATURE)  // NOLINT
+#define USE(WTF_FEATURE) (defined WTF_USE_##WTF_FEATURE  && WTF_USE_##WTF_FEATURE)  // NOLINT
+#define ENABLE(WTF_FEATURE) (defined ENABLE_##WTF_FEATURE  && ENABLE_##WTF_FEATURE)  // NOLINT
+
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/renderer/api/atom_api_spell_check_client.h"
 #include "content/public/renderer/render_frame.h"
@@ -12,8 +17,27 @@
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebView.h"
+#include "third_party/WebKit/Source/platform/weborigin/SchemeRegistry.h"
 
 #include "atom/common/node_includes.h"
+
+namespace mate {
+
+template<>
+struct Converter<WTF::String> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
+                     WTF::String* out) {
+    if (!val->IsString())
+      return false;
+
+    v8::String::Value s(val);
+    *out = WTF::String(reinterpret_cast<const base::char16*>(*s), s.length());
+    return true;
+  }
+};
+
+}  // namespace mate
 
 namespace atom {
 
@@ -82,7 +106,9 @@ mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
       .SetMethod("registerEmbedderCustomElement",
                  &WebFrame::RegisterEmbedderCustomElement)
       .SetMethod("attachGuest", &WebFrame::AttachGuest)
-      .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider);
+      .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider)
+      .SetMethod("registerUrlSchemeAsSecure",
+                 &blink::SchemeRegistry::registerURLSchemeAsSecure);
 }
 
 // static

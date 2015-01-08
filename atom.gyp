@@ -550,6 +550,8 @@
         'vendor/brightray/vendor/download/libchromiumcontent/src/v8/include',
         # The `node.h` is using `#include"ares.h"`.
         'vendor/node/deps/cares/include',
+        # The `third_party/WebKit/Source/platform/weborigin/SchemeRegistry.h` is using `platform/PlatformExport.h`.
+        'vendor/brightray/vendor/download/libchromiumcontent/src/third_party/WebKit/Source',
       ],
       'direct_dependent_settings': {
         'include_dirs': [
