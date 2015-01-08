@@ -294,10 +294,7 @@ base::Value* V8ValueConverter::FromV8Array(
     if (!val->HasRealIndexedProperty(i))
       continue;
 
-    // When parsing elements in an array, we use a new state so we can have the
-    // same object showed twice in array.
-    FromV8ValueState new_state;
-    base::Value* child = FromV8ValueImpl(&new_state, child_v8, isolate);
+    base::Value* child = FromV8ValueImpl(state, child_v8, isolate);
     if (child)
       result->Append(child);
     else
