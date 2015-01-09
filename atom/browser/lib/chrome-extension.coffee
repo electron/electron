@@ -32,7 +32,7 @@ getExtensionInfoFromPath = (srcDirectory) ->
       startPage: page
       name: manifest.name
       srcDirectory: srcDirectory
-  extensionInfoMap[manifest.name]
+    extensionInfoMap[manifest.name]
 
 # Load persistented extensions.
 loadedExtensionsPath = path.join app.getDataPath(), 'DevTools Extensions'
@@ -74,8 +74,9 @@ app.once 'ready', ->
 
   BrowserWindow.addDevToolsExtension = (srcDirectory) ->
     extensionInfo = getExtensionInfoFromPath srcDirectory
-    window._loadDevToolsExtensions [extensionInfo] for window in BrowserWindow.getAllWindows()
-    extensionInfo.name
+    if extensionInfo
+      window._loadDevToolsExtensions [extensionInfo] for window in BrowserWindow.getAllWindows()
+      extensionInfo.name
 
   BrowserWindow.removeDevToolsExtension = (name) ->
     delete extensionInfoMap[name]
