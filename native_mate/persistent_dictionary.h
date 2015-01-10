@@ -18,7 +18,7 @@ class PersistentDictionary : public Dictionary {
   PersistentDictionary(v8::Isolate* isolate, v8::Handle<v8::Object> object);
   virtual ~PersistentDictionary();
 
-  virtual v8::Handle<v8::Object> GetHandle() const OVERRIDE;
+  v8::Handle<v8::Object> GetHandle() const override;
 
  private:
   scoped_refptr<RefCountedPersistent<v8::Object> > handle_;
