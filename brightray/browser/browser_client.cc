@@ -69,7 +69,8 @@ net::URLRequestContextGetter* BrowserClient::CreateRequestContext(
 
 void BrowserClient::ShowDesktopNotification(
     const content::ShowDesktopNotificationHostMsgParams& params,
-    content::RenderFrameHost* render_frame_host,
+    content::BrowserContext* browser_context,
+    int render_process_id,
     scoped_ptr<content::DesktopNotificationDelegate> delegate,
     base::Closure* cancel_callback) {
   auto presenter = notification_presenter();
