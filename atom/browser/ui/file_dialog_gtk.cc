@@ -16,7 +16,7 @@
 
 #include "atom/browser/native_window.h"
 #include "base/callback.h"
-#include "base/file_util.h"
+#include "base/files/file_util.h"
 #include "base/strings/string_util.h"
 #include "chrome/browser/ui/libgtk2ui/gtk2_signal.h"
 #include "ui/aura/window.h"

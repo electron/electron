@@ -21,7 +21,7 @@
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
-#include "base/file_util.h"
+#include "base/files/file_util.h"
 #include "base/json/json_writer.h"
 #include "base/prefs/pref_service.h"
 #include "base/message_loop/message_loop.h"
