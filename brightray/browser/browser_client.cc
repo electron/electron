@@ -6,7 +6,7 @@
 
 #include "browser/browser_context.h"
 #include "browser/browser_main_parts.h"
-#include "browser/devtools_delegate.h"
+#include "browser/devtools_manager_delegate.h"
 #include "browser/media/media_capture_devices_dispatcher.h"
 #include "browser/notification_presenter.h"
 
@@ -98,7 +98,7 @@ base::FilePath BrowserClient::GetDefaultDownloadDirectory() {
 }
 
 content::DevToolsManagerDelegate* BrowserClient::GetDevToolsManagerDelegate() {
-  return new DevToolsManagerDelegate(browser_context());
+  return new DevToolsManagerDelegate;
 }
 
 }  // namespace brightray

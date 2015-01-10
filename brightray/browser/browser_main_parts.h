@@ -25,7 +25,7 @@ namespace brightray {
 
 class BrowserContext;
 class WebUIControllerFactory;
-class DevToolsDelegate;
+class RemoteDebuggingServer;
 
 class BrowserMainParts : public content::BrowserMainParts {
  public:
@@ -58,7 +58,7 @@ class BrowserMainParts : public content::BrowserMainParts {
 
   scoped_ptr<BrowserContext> browser_context_;
   scoped_ptr<WebUIControllerFactory> web_ui_controller_factory_;
-  scoped_ptr<DevToolsDelegate> devtools_delegate_;
+  scoped_ptr<RemoteDebuggingServer> remote_debugging_server_;
 
 #if defined(TOOLKIT_VIEWS)
   scoped_ptr<ViewsDelegate> views_delegate_;
