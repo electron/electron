@@ -19,8 +19,8 @@ class MenuMac : public Menu {
  protected:
   MenuMac();
 
-  virtual void Popup(Window* window) OVERRIDE;
-  virtual void PopupAt(Window* window, int x, int y) OVERRIDE;
+  void Popup(Window* window) override;
+  void PopupAt(Window* window, int x, int y) override;
 
   base::scoped_nsobject<AtomMenuController> menu_controller_;
 

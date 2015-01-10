@@ -34,10 +34,10 @@ class Event : public Wrappable,
   virtual ~Event();
 
   // Wrappable implementations:
-  virtual ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate);
+  ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate) override;
 
   // content::WebContentsObserver implementations:
-  virtual void WebContentsDestroyed() OVERRIDE;
+  void WebContentsDestroyed() override;
 
  private:
   // Replyer for the synchronous messages.

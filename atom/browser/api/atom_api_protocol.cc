@@ -53,7 +53,7 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
   }
 
   // AdapterRequestJob:
-  virtual void GetJobTypeInUI() OVERRIDE {
+  void GetJobTypeInUI() override {
     DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
@@ -128,9 +128,9 @@ class CustomProtocolHandler : public ProtocolHandler {
       : registry_(registry), protocol_handler_(protocol_handler) {
   }
 
-  virtual net::URLRequestJob* MaybeCreateJob(
+  net::URLRequestJob* MaybeCreateJob(
       net::URLRequest* request,
-      net::NetworkDelegate* network_delegate) const OVERRIDE {
+      net::NetworkDelegate* network_delegate) const override {
     return new CustomProtocolRequestJob(registry_, protocol_handler_.get(),
                                         request, network_delegate);
   }

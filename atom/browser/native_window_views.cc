@@ -129,7 +129,7 @@ class NativeWindowClientView : public views::ClientView {
   }
   virtual ~NativeWindowClientView() {}
 
-  virtual bool CanClose() OVERRIDE {
+  bool CanClose() override {
     static_cast<NativeWindowViews*>(contents_view())->CloseWebContents();
     return false;
   }

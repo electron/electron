@@ -32,12 +32,12 @@ class URLRequestAsarJob : public net::URLRequestJob {
                     const scoped_refptr<base::TaskRunner>& file_task_runner);
 
   // net::URLRequestJob:
-  virtual void Start() OVERRIDE;
-  virtual void Kill() OVERRIDE;
-  virtual bool ReadRawData(net::IOBuffer* buf,
-                           int buf_size,
-                           int* bytes_read) OVERRIDE;
-  virtual bool GetMimeType(std::string* mime_type) const OVERRIDE;
+  void Start() override;
+  void Kill() override;
+  bool ReadRawData(net::IOBuffer* buf,
+                   int buf_size,
+                   int* bytes_read) override;
+  bool GetMimeType(std::string* mime_type) const override;
 
  protected:
   virtual ~URLRequestAsarJob();

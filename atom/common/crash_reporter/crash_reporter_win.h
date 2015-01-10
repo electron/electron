@@ -21,13 +21,13 @@ class CrashReporterWin : public CrashReporter {
  public:
   static CrashReporterWin* GetInstance();
 
-  virtual void InitBreakpad(const std::string& product_name,
-                            const std::string& version,
-                            const std::string& company_name,
-                            const std::string& submit_url,
-                            bool auto_submit,
-                            bool skip_system_crash_handler) OVERRIDE;
-  virtual void SetUploadParameters() OVERRIDE;
+  void InitBreakpad(const std::string& product_name,
+                    const std::string& version,
+                    const std::string& company_name,
+                    const std::string& submit_url,
+                    bool auto_submit,
+                    bool skip_system_crash_handler) override;
+  void SetUploadParameters() override;
 
  private:
   friend struct DefaultSingletonTraits<CrashReporterWin>;

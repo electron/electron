@@ -22,12 +22,12 @@ class TrayIconCocoa : public TrayIcon {
   TrayIconCocoa();
   virtual ~TrayIconCocoa();
 
-  virtual void SetImage(const gfx::Image& image) OVERRIDE;
-  virtual void SetPressedImage(const gfx::Image& image) OVERRIDE;
-  virtual void SetToolTip(const std::string& tool_tip) OVERRIDE;
-  virtual void SetTitle(const std::string& title) OVERRIDE;
-  virtual void SetHighlightMode(bool highlight) OVERRIDE;
-  virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) OVERRIDE;
+  void SetImage(const gfx::Image& image) override;
+  void SetPressedImage(const gfx::Image& image) override;
+  void SetToolTip(const std::string& tool_tip) override;
+  void SetTitle(const std::string& title) override;
+  void SetHighlightMode(bool highlight) override;
+  void SetContextMenu(ui::SimpleMenuModel* menu_model) override;
 
  private:
   base::scoped_nsobject<NSStatusItem> item_;

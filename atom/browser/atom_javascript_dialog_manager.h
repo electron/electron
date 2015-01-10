@@ -14,7 +14,7 @@ namespace atom {
 class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
  public:
   // content::JavaScriptDialogManager implementations.
-  virtual void RunJavaScriptDialog(
+  void RunJavaScriptDialog(
       content::WebContents* web_contents,
       const GURL& origin_url,
       const std::string& accept_lang,
@@ -22,16 +22,15 @@ class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
       const base::string16& message_text,
       const base::string16& default_prompt_text,
       const DialogClosedCallback& callback,
-      bool* did_suppress_message) OVERRIDE;
-  virtual void RunBeforeUnloadDialog(
+      bool* did_suppress_message) override;
+  void RunBeforeUnloadDialog(
       content::WebContents* web_contents,
       const base::string16& message_text,
       bool is_reload,
-      const DialogClosedCallback& callback) OVERRIDE;
-  virtual void CancelActiveAndPendingDialogs(
-      content::WebContents* web_contents) OVERRIDE {}
-  virtual void WebContentsDestroyed(
-      content::WebContents* web_contents) OVERRIDE {}
+      const DialogClosedCallback& callback) override;
+  void CancelActiveAndPendingDialogs(
+      content::WebContents* web_contents) override {}
+  void WebContentsDestroyed(content::WebContents* web_contents) override {}
 };
 
 }  // namespace atom
