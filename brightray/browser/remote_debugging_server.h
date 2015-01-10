@@ -16,11 +16,11 @@ class DevToolsHttpHandler;
 namespace brightray {
 
 class RemoteDebuggingServer {
-public:
+ public:
   RemoteDebuggingServer(const std::string& ip, uint16 port);
   virtual ~RemoteDebuggingServer();
 
-private:
+ private:
   content::DevToolsHttpHandler* devtools_http_handler_;
 
   DISALLOW_COPY_AND_ASSIGN(RemoteDebuggingServer);
