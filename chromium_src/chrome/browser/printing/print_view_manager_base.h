@@ -43,7 +43,7 @@ class PrintViewManagerBase : public content::NotificationObserver,
 #endif  // !DISABLE_BASIC_PRINTING
 
   // PrintedPagesSource implementation.
-  virtual base::string16 RenderSourceName() OVERRIDE;
+  virtual base::string16 RenderSourceName() override;
 
  protected:
   explicit PrintViewManagerBase(content::WebContents* web_contents);
@@ -52,10 +52,10 @@ class PrintViewManagerBase : public content::NotificationObserver,
   bool PrintNowInternal(IPC::Message* message);
 
   // Terminates or cancels the print job if one was pending.
-  virtual void RenderProcessGone(base::TerminationStatus status) OVERRIDE;
+  virtual void RenderProcessGone(base::TerminationStatus status) override;
 
   // content::WebContentsObserver implementation.
-  virtual bool OnMessageReceived(const IPC::Message& message) OVERRIDE;
+  virtual bool OnMessageReceived(const IPC::Message& message) override;
 
   // IPC Message handlers.
   virtual void OnPrintingFailed(int cookie);
@@ -64,10 +64,10 @@ class PrintViewManagerBase : public content::NotificationObserver,
   // content::NotificationObserver implementation.
   virtual void Observe(int type,
                        const content::NotificationSource& source,
-                       const content::NotificationDetails& details) OVERRIDE;
+                       const content::NotificationDetails& details) override;
 
   // Cancels the print job.
-  virtual void NavigationStopped() OVERRIDE;
+  virtual void NavigationStopped() override;
 
   // IPC Message handlers.
   void OnDidGetPrintedPagesCount(int cookie, int number_pages);

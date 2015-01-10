@@ -45,8 +45,8 @@ class ColorChooserMac : public content::ColorChooser {
   void DidChooseColorInColorPanel(SkColor color);
   void DidCloseColorPabel();
 
-  virtual void End() OVERRIDE;
-  virtual void SetSelectedColor(SkColor color) OVERRIDE;
+  virtual void End() override;
+  virtual void SetSelectedColor(SkColor color) override;
 
  private:
   static ColorChooserMac* current_color_chooser_;

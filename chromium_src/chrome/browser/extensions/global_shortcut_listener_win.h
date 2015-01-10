@@ -26,15 +26,15 @@ class GlobalShortcutListenerWin : public GlobalShortcutListener,
   virtual void OnWndProc(HWND hwnd,
                          UINT message,
                          WPARAM wparam,
-                         LPARAM lparam) OVERRIDE;
+                         LPARAM lparam) override;
 
   // GlobalShortcutListener implementation.
-  virtual void StartListening() OVERRIDE;
-  virtual void StopListening() OVERRIDE;
+  virtual void StartListening() override;
+  virtual void StopListening() override;
   virtual bool RegisterAcceleratorImpl(
-      const ui::Accelerator& accelerator) OVERRIDE;
+      const ui::Accelerator& accelerator) override;
   virtual void UnregisterAcceleratorImpl(
-      const ui::Accelerator& accelerator) OVERRIDE;
+      const ui::Accelerator& accelerator) override;
 
   // Whether this object is listening for global shortcuts.
   bool is_listening_;

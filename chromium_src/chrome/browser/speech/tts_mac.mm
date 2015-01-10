@@ -49,7 +49,7 @@ class TtsPlatformImplMac;
 
 class TtsPlatformImplMac : public TtsPlatformImpl {
  public:
-  virtual bool PlatformImplAvailable() OVERRIDE {
+  virtual bool PlatformImplAvailable() override {
     return true;
   }
 
@@ -58,17 +58,17 @@ class TtsPlatformImplMac : public TtsPlatformImpl {
       const std::string& utterance,
       const std::string& lang,
       const VoiceData& voice,
-      const UtteranceContinuousParameters& params) OVERRIDE;
+      const UtteranceContinuousParameters& params) override;
 
-  virtual bool StopSpeaking() OVERRIDE;
+  virtual bool StopSpeaking() override;
 
-  virtual void Pause() OVERRIDE;
+  virtual void Pause() override;
 
-  virtual void Resume() OVERRIDE;
+  virtual void Resume() override;
 
-  virtual bool IsSpeaking() OVERRIDE;
+  virtual bool IsSpeaking() override;
 
-  virtual void GetVoices(std::vector<VoiceData>* out_voices) OVERRIDE;
+  virtual void GetVoices(std::vector<VoiceData>* out_voices) override;
 
   // Called by ChromeTtsDelegate when we get a callback from the
   // native speech engine.

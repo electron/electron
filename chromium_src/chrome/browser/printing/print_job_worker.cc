@@ -40,8 +40,8 @@ class PrintingContextDelegate : public PrintingContext::Delegate {
   PrintingContextDelegate(int render_process_id, int render_view_id);
   virtual ~PrintingContextDelegate();
 
-  virtual gfx::NativeView GetParentView() OVERRIDE;
-  virtual std::string GetAppLocale() OVERRIDE;
+  virtual gfx::NativeView GetParentView() override;
+  virtual std::string GetAppLocale() override;
 
  private:
   int render_process_id_;

@@ -26,8 +26,8 @@ class ColorChooserDialog
   virtual ~ColorChooserDialog();
 
   // BaseShellDialog:
-  virtual bool IsRunning(gfx::NativeWindow owning_window) const OVERRIDE;
-  virtual void ListenerDestroyed() OVERRIDE;
+  virtual bool IsRunning(gfx::NativeWindow owning_window) const override;
+  virtual void ListenerDestroyed() override;
 
  private:
   struct ExecuteOpenParams {

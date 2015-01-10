@@ -24,8 +24,8 @@ class ColorChooserWin : public content::ColorChooser,
   ~ColorChooserWin();
 
   // content::ColorChooser overrides:
-  virtual void End() OVERRIDE;
-  virtual void SetSelectedColor(SkColor color) OVERRIDE {}
+  virtual void End() override;
+  virtual void SetSelectedColor(SkColor color) override {}
 
   // views::ColorChooserListener overrides:
   virtual void OnColorChosen(SkColor color);

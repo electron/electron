@@ -34,7 +34,7 @@ class TtsPlatformImplWin : public TtsPlatformImpl {
 
   virtual bool IsSpeaking();
 
-  virtual void GetVoices(std::vector<VoiceData>* out_voices) OVERRIDE;
+  virtual void GetVoices(std::vector<VoiceData>* out_voices) override;
 
   // Get the single instance of this class.
   static TtsPlatformImplWin* GetInstance();

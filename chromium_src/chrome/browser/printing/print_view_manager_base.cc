@@ -144,7 +144,7 @@ void PrintViewManagerBase::OnDidPrintPage(
 #if !defined(OS_WIN)
   // Update the rendered document. It will send notifications to the listener.
   document->SetPage(params.page_number,
-                    metafile.PassAs<MetafilePlayer>(),
+                    metafile.Pass(),
                     params.page_size,
                     params.content_area);
 

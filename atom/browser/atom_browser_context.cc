@@ -68,8 +68,7 @@ net::URLRequestJobFactory* AtomBrowserContext::CreateURLRequestJobFactory(
               base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
 
   // Set up interceptors in the reverse order.
-  scoped_ptr<net::URLRequestJobFactory> top_job_factory =
-      job_factory.PassAs<net::URLRequestJobFactory>();
+  scoped_ptr<net::URLRequestJobFactory> top_job_factory = job_factory.Pass();
   content::URLRequestInterceptorScopedVector::reverse_iterator it;
   for (it = interceptors->rbegin(); it != interceptors->rend(); ++it)
     top_job_factory.reset(new net::URLRequestInterceptingJobFactory(
