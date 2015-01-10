@@ -4,7 +4,7 @@ import platform
 import sys
 
 BASE_URL = 'http://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent'
-LIBCHROMIUMCONTENT_COMMIT = '6300862b4b16bd171f00ae566b697098c29743f7'
+LIBCHROMIUMCONTENT_COMMIT = 'f588e31c2f0984b7badd18c7cb17703cf75bfafb'
 
 ARCH = {
     'cygwin': '32bit',
