@@ -69,6 +69,9 @@ const char kGuestInstanceID[] = "guest-instance-id";
 // Script that will be loaded by guest WebContents before other scripts.
 const char kPreloadScript[] = "preload";
 
+// Whether the window should be transparent.
+const char kTransparent[] = "transparent";
+
 // Web runtime features.
 const char kExperimentalFeatures[]       = "experimental-features";
 const char kExperimentalCanvasFeatures[] = "experimental-canvas-features";

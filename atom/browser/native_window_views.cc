@@ -28,6 +28,7 @@
 #include "ui/views/window/client_view.h"
 #include "ui/views/widget/native_widget_private.h"
 #include "ui/views/widget/widget.h"
+#include "ui/wm/core/shadow_types.h"
 
 #if defined(USE_X11)
 #include "atom/browser/browser.h"
@@ -183,6 +184,9 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.remove_standard_frame = !has_frame_;
 
+  if (transparent_)
+    params.opacity = views::Widget::InitParams::TRANSLUCENT_WINDOW;
+
 #if defined(USE_X11)
   std::string name = Browser::Get()->GetName();
   // Set WM_WINDOW_ROLE.
@@ -237,7 +241,17 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
     // frameless.
     DWORD frame_style = WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX |
                         WS_CAPTION;
+    // We should not show a frame for transparent window.
+    if (transparent_)
+      frame_style &= ~(WS_THICKFRAME | WS_CAPTION);
     ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
+  }
+
+  if (transparent_) {
+    // Transparent window on Windows has to have WS_EX_COMPOSITED style.
+    LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
+    ex_style |= WS_EX_COMPOSITED;
+    ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
   }
 #endif
 
@@ -247,6 +261,11 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
     window_->set_frame_type(views::Widget::FrameType::FRAME_TYPE_FORCE_NATIVE);
     window_->FrameTypeChanged();
   }
+
+  // The given window is most likely not rectangular since it uses
+  // transparency and has no standard frame, don't show a shadow for it.
+  if (transparent_ && !has_frame_)
+    wm::SetShadowType(GetNativeWindow(), wm::SHADOW_TYPE_NONE);
 
   window_->UpdateWindowIcon();
   window_->CenterWindow(bounds.size());
