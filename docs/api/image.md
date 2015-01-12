@@ -13,7 +13,10 @@ var window = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
 
 ## Supported formats
 
-Only `PNG` and `JPG` formats are supported, and `PNG` format is preferred.
+On Mac all formats supported by the system can be used, while on Linux and
+Windows only `PNG` and `JPG` formats are supported.
+
+So it is recommended to use `PNG` images for all cases.
 
 ## High resolution image
 
@@ -51,4 +54,22 @@ Following suffixes as DPI denses are also supported:
 * `@2x`
 * `@2.5x`
 * `@3x`
+* `@4x`
+* `@5x`
 
+## Template image
+
+Template images consist of black and clear colors (and an alpha channel).
+Template images are not intended to be used as standalone images and are usually
+mixed with other content to create the desired final appearance.
+
+The most common case is to use template image for menu bar icon so it can adapt
+to both light and dark menu bars.
+
+Template image is only supported on Mac.
+
+To mark an image as template image, its filename should end with the word
+`Template`, examples are:
+
+* `xxxTemplate.png`
+* `xxxTemplate@2x.png`

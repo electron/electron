@@ -80,6 +80,9 @@ const char kOverlayScrollbars[]          = "overlay-scrollbars";
 const char kOverlayFullscreenVideo[]     = "overlay-fullscreen-video";
 const char kSharedWorker[]               = "shared-worker";
 
+// Disable HTTP cache.
+const char kDisableHttpCache[] = "disable-http-cache";
+
 }  // namespace switches
 
 }  // namespace atom

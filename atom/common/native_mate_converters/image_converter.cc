@@ -12,8 +12,11 @@
 #include "base/strings/string_util.h"
 #include "ui/gfx/codec/jpeg_codec.h"
 #include "ui/gfx/codec/png_codec.h"
+#include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/base/layout.h"
+
+#if !defined(OS_MACOSX)
 
 namespace mate {
 
@@ -29,6 +32,8 @@ ScaleFactorPair kScaleFactorPairs[] = {
   { "@2x"    , 2.0f },
   { "@3x"    , 3.0f },
   { "@1x"    , 1.0f },
+  { "@4x"    , 4.0f },
+  { "@5x"    , 5.0f },
   { "@1.25x" , 1.25f },
   { "@1.33x" , 1.33f },
   { "@1.4x"  , 1.4f },
@@ -40,10 +45,6 @@ ScaleFactorPair kScaleFactorPairs[] = {
 float GetScaleFactorFromPath(const base::FilePath& path) {
   std::string filename(path.BaseName().RemoveExtension().AsUTF8Unsafe());
 
-  // There is no scale info in the file path.
-  if (!EndsWith(filename, "x", true))
-    return 1.0f;
-
   // We don't try to convert string to float here because it is very very
   // expensive.
   for (unsigned i = 0; i < arraysize(kScaleFactorPairs); ++i) {
@@ -54,27 +55,9 @@ float GetScaleFactorFromPath(const base::FilePath& path) {
   return 1.0f;
 }
 
-void AppendIfExists(std::vector<base::FilePath>* paths,
-                    const base::FilePath& path) {
-  if (base::PathExists(path))
-    paths->push_back(path);
-}
-
-void PopulatePossibleFilePaths(std::vector<base::FilePath>* paths,
-                               const base::FilePath& path) {
-  AppendIfExists(paths, path);
-
-  std::string filename(path.BaseName().RemoveExtension().AsUTF8Unsafe());
-  if (MatchPattern(filename, "*@*x"))
-    return;
-
-  for (unsigned i = 0; i < arraysize(kScaleFactorPairs); ++i)
-    AppendIfExists(paths,
-                   path.InsertBeforeExtensionASCII(kScaleFactorPairs[i].name));
-}
-
-bool AddImageSkiaRepFromPath(gfx::ImageSkia* image,
-                             const base::FilePath& path) {
+bool AddImageSkiaRep(gfx::ImageSkia* image,
+                     const base::FilePath& path,
+                     double scale_factor) {
   std::string file_contents;
   if (!base::ReadFileToString(path, &file_contents))
     return false;
@@ -89,13 +72,28 @@ bool AddImageSkiaRepFromPath(gfx::ImageSkia* image,
     // Try JPEG.
     decoded.reset(gfx::JPEGCodec::Decode(data, size));
 
-  if (decoded) {
-    image->AddRepresentation(gfx::ImageSkiaRep(
-        *decoded.release(), GetScaleFactorFromPath(path)));
-    return true;
-  }
+  if (!decoded)
+    return false;
 
-  return false;
+  image->AddRepresentation(gfx::ImageSkiaRep(*decoded.release(), scale_factor));
+  return true;
+}
+
+bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
+                                   const base::FilePath& path) {
+  bool succeed = false;
+  std::string filename(path.BaseName().RemoveExtension().AsUTF8Unsafe());
+  if (MatchPattern(filename, "*@*x"))
+    // Don't search for other representations if the DPI has been specified.
+    return AddImageSkiaRep(image, path, GetScaleFactorFromPath(path));
+  else
+    succeed |= AddImageSkiaRep(image, path, 1.0f);
+
+  for (const ScaleFactorPair& pair : kScaleFactorPairs)
+    succeed |= AddImageSkiaRep(image,
+                               path.InsertBeforeExtensionASCII(pair.name),
+                               pair.scale);
+  return succeed;
 }
 
 }  // namespace
@@ -103,21 +101,27 @@ bool AddImageSkiaRepFromPath(gfx::ImageSkia* image,
 bool Converter<gfx::ImageSkia>::FromV8(v8::Isolate* isolate,
                                        v8::Handle<v8::Value> val,
                                        gfx::ImageSkia* out) {
-  base::FilePath path;
-  if (Converter<base::FilePath>::FromV8(isolate, val, &path)) {
-    std::vector<base::FilePath> paths;
-    PopulatePossibleFilePaths(&paths, path);
-    if (paths.empty())
-      return false;
-
-    for (size_t i = 0; i < paths.size(); ++i) {
-      if (!AddImageSkiaRepFromPath(out, paths[i]))
-        return false;
-    }
+  if (val->IsNull())
     return true;
-  }
 
-  return false;
+  base::FilePath path;
+  if (!Converter<base::FilePath>::FromV8(isolate, val, &path))
+    return false;
+
+  return PopulateImageSkiaRepsFromPath(out, path);
+}
+
+bool Converter<gfx::Image>::FromV8(v8::Isolate* isolate,
+                                   v8::Handle<v8::Value> val,
+                                   gfx::Image* out) {
+  gfx::ImageSkia image;
+  if (!ConvertFromV8(isolate, val, &image))
+    return false;
+
+  *out = gfx::Image(image);
+  return true;
 }
 
 }  // namespace mate
+
+#endif  // !defined(OS_MACOSX)

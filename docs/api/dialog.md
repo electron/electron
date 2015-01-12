@@ -76,6 +76,7 @@ would be passed via `callback(filename)`
   * `title` String - Title of the message box, some platforms will not show it
   * `message` String - Content of the message box
   * `detail` String - Extra information of the message
+  * `icon` [Image](image.md)
 * `callback` Function
 
 Shows a message box, it will block until the message box is closed. It returns
@@ -83,3 +84,10 @@ the index of the clicked button.
 
 If a `callback` is passed, the API call would be asynchronous and the result
 would be passed via `callback(response)`
+
+## dialog.showErrorBox(title, content)
+
+Runs a modal dialog that shows an error message.
+
+This API can be called safely before the `ready` event of `app` module emits, it
+is usually used to report errors in early stage of startup.

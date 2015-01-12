@@ -12,7 +12,7 @@
 #include "base/memory/scoped_ptr.h"
 
 namespace gfx {
-class ImageSkia;
+class Image;
 }
 
 namespace mate {
@@ -31,13 +31,13 @@ class Menu;
 class Tray : public mate::EventEmitter,
              public TrayIconObserver {
  public:
-  static mate::Wrappable* New(const gfx::ImageSkia& image);
+  static mate::Wrappable* New(const gfx::Image& image);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Handle<v8::ObjectTemplate> prototype);
 
  protected:
-  explicit Tray(const gfx::ImageSkia& image);
+  explicit Tray(const gfx::Image& image);
   virtual ~Tray();
 
   // TrayIconObserver:
@@ -48,8 +48,8 @@ class Tray : public mate::EventEmitter,
   void OnBalloonClosed() override;
 
   void Destroy();
-  void SetImage(mate::Arguments* args, const gfx::ImageSkia& image);
-  void SetPressedImage(mate::Arguments* args, const gfx::ImageSkia& image);
+  void SetImage(mate::Arguments* args, const gfx::Image& image);
+  void SetPressedImage(mate::Arguments* args, const gfx::Image& image);
   void SetToolTip(mate::Arguments* args, const std::string& tool_tip);
   void SetTitle(mate::Arguments* args, const std::string& title);
   void SetHighlightMode(mate::Arguments* args, bool highlight);

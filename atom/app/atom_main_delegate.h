@@ -26,6 +26,10 @@ class AtomMainDelegate : public brightray::MainDelegate {
   scoped_ptr<brightray::ContentClient> CreateContentClient() override;
   void AddDataPackFromPath(
       ui::ResourceBundle* bundle, const base::FilePath& pak_dir) override;
+#if defined(OS_MACOSX)
+  void OverrideChildProcessPath() override;
+  void OverrideFrameworkBundlePath() override;
+#endif
 
  private:
   brightray::ContentClient content_client_;
