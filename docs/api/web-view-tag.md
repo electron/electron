@@ -67,7 +67,7 @@ The `src` attribute can also accept data URLs, such as
 <webview src="https://www.github.com/" autosize="on" minwidth="576" minheight="432"></webview>
 ```
 
-If "on", the `webview` will container will automatically resize within the
+If "on", the `webview` container will automatically resize within the
 bounds specified by the attributes `minwidth`, `minheight`, `maxwidth`, and
 `maxheight`. These contraints do not impact the `webview` UNLESS `autosize` is
 enabled. When `autosize` is enabled, the `webview` container size cannot be less
