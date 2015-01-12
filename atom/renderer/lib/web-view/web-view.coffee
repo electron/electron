@@ -17,7 +17,6 @@ class WebViewImpl
     @elementAttached = false
 
     @beforeFirstNavigation = true
-    @contentWindow = null
 
     # on* Event handlers.
     @on = {}
@@ -26,7 +25,6 @@ class WebViewImpl
     shadowRoot = @webviewNode.createShadowRoot()
     @setupWebViewAttributes()
     @setupFocusPropagation()
-    @setupWebviewNodeProperties()
 
     @viewInstanceId = getNextId()
 
@@ -54,7 +52,6 @@ class WebViewImpl
       @guestInstanceId = undefined
       @beforeFirstNavigation = true
       @attributes[webViewConstants.ATTRIBUTE_PARTITION].validPartitionId = true
-      @contentWindow = null
     @internalInstanceId = 0
 
   # Sets the <webview>.request property.
@@ -75,16 +72,6 @@ class WebViewImpl
       # Blur the BrowserPlugin when the <webview> loses focus.
       @browserPluginNode.blur()
 
-  setupWebviewNodeProperties: ->
-    # We cannot use {writable: true} property descriptor because we want a
-    # dynamic getter value.
-    Object.defineProperty @webviewNode, 'contentWindow',
-      get: =>
-        return @contentWindow if @contentWindow?
-        window.console.error webViewConstants.ERROR_MSG_CONTENTWINDOW_NOT_AVAILABLE
-      # No setter.
-      enumerable: true
-
   # This observer monitors mutations to attributes of the <webview> and
   # updates the BrowserPlugin properties accordingly. In turn, updating
   # a BrowserPlugin property will update the corresponding BrowserPlugin
@@ -104,7 +91,7 @@ class WebViewImpl
 
       return unless @guestInstanceId
 
-      guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, @buildAttachParams(), (w) => @contentWindow = w
+      guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, @buildAttachParams()
 
   onSizeChanged: (webViewEvent) ->
     newWidth = webViewEvent.newWidth
@@ -189,7 +176,7 @@ class WebViewImpl
 
     return true unless @internalInstanceId
 
-    guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, params, (w) => @contentWindow = w
+    guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, params
 
 # Registers browser plugin <object> custom element.
 registerBrowserPluginElement = ->

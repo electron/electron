@@ -45,10 +45,8 @@ module.exports =
     ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_CREATE_GUEST', type, params, requestId
     ipc.once "ATOM_SHELL_RESPONSE_#{requestId}", callback
 
-  attachGuest: (elementInstanceId, guestInstanceId, params, callback) ->
-    requestId++
-    ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_ATTACH_GUEST', elementInstanceId, guestInstanceId, params, requestId
-    ipc.once "ATOM_SHELL_RESPONSE_#{requestId}", callback
+  attachGuest: (elementInstanceId, guestInstanceId, params) ->
+    ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_ATTACH_GUEST', elementInstanceId, guestInstanceId, params
     webFrame.attachGuest elementInstanceId
 
   destroyGuest: (guestInstanceId) ->
