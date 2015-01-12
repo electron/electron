@@ -66,6 +66,7 @@ You can also create a window without chrome by using
     scripts run in the window. This script will always have access to node APIs
     no matter whether node integration is turned on for the window, and the path
     of `preload` script has to be absolute path.
+  * `transparent` Boolean - Makes the window [transparent](frameless-window.md)
   * `web-preferences` Object - Settings of web page's features
     * `javascript` Boolean
     * `web-security` Boolean
