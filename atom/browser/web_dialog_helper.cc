@@ -61,13 +61,14 @@ void WebDialogHelper::RunFileChooser(content::WebContents* web_contents,
                                     params.default_file_name,
                                     file_dialog::Filters(),
                                     flags,
-                                    &paths))
+                                    &paths)) {
       for (auto& path : paths) {
         content::FileChooserFileInfo info;
         info.file_path = path;
         info.display_name = path.BaseName().value();
         result.push_back(info);
       }
+    }
   }
 
   web_contents->GetRenderViewHost()->FilesSelectedInChooser(
