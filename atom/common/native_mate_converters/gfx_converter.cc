@@ -78,6 +78,21 @@ bool Converter<gfx::Rect>::FromV8(v8::Isolate* isolate,
   return true;
 }
 
+template<>
+struct Converter<gfx::Display::TouchSupport> {
+  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+                                    const gfx::Display::TouchSupport& val) {
+    switch (val) {
+      case gfx::Display::TOUCH_SUPPORT_UNKNOWN:
+        return StringToV8(isolate, "unknown");
+      case gfx::Display::TOUCH_SUPPORT_AVAILABLE:
+        return StringToV8(isolate, "available");
+      case gfx::Display::TOUCH_SUPPORT_UNAVAILABLE:
+        return StringToV8(isolate, "unavailable");
+    }
+  }
+};
+
 v8::Handle<v8::Value> Converter<gfx::Display>::ToV8(v8::Isolate* isolate,
                                                     const gfx::Display& val) {
   mate::Dictionary dict(isolate, v8::Object::New(isolate));
@@ -87,6 +102,8 @@ v8::Handle<v8::Value> Converter<gfx::Display>::ToV8(v8::Isolate* isolate,
   dict.Set("size", val.size());
   dict.Set("workAreaSize", val.work_area_size());
   dict.Set("scaleFactor", val.device_scale_factor());
+  dict.Set("rotation", val.RotationAsDegree());
+  dict.Set("touchSupport", val.touch_support());
   return dict.GetHandle();
 }
 
