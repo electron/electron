@@ -3,6 +3,10 @@
 // found in the LICENSE file.
 
 #include "atom/common/native_mate_converters/gfx_converter.h"
+#include "base/bind.h"
+#include "native_mate/dictionary.h"
+#include "ui/gfx/screen.h"
+
 #include "atom/common/node_includes.h"
 
 namespace {

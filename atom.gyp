@@ -234,6 +234,7 @@
       'atom/common/native_mate_converters/accelerator_converter.cc',
       'atom/common/native_mate_converters/accelerator_converter.h',
       'atom/common/native_mate_converters/file_path_converter.h',
+      'atom/common/native_mate_converters/gfx_converter.cc',
       'atom/common/native_mate_converters/gfx_converter.h',
       'atom/common/native_mate_converters/gurl_converter.h',
       'atom/common/native_mate_converters/image_converter.cc',
