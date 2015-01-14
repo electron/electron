@@ -9,14 +9,18 @@ namespace {
 
 void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
                 v8::Handle<v8::Context> context, void* priv) {
-  gfx::Screen* screen = gfx::Screen::GetNativeScreen();
+  auto screen = base::Unretained(gfx::Screen::GetNativeScreen());
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("getCursorScreenPoint",
-                 base::Bind(&gfx::Screen::GetCursorScreenPoint,
-                            base::Unretained(screen)));
+                 base::Bind(&gfx::Screen::GetCursorScreenPoint, screen));
   dict.SetMethod("getPrimaryDisplay",
-                 base::Bind(&gfx::Screen::GetPrimaryDisplay,
-                            base::Unretained(screen)));
+                 base::Bind(&gfx::Screen::GetPrimaryDisplay, screen));
+  dict.SetMethod("getAllDisplays",
+                 base::Bind(&gfx::Screen::GetAllDisplays, screen));
+  dict.SetMethod("getDisplayNearestPoint",
+                 base::Bind(&gfx::Screen::GetDisplayNearestPoint, screen));
+  dict.SetMethod("getDisplayMatching",
+                 base::Bind(&gfx::Screen::GetDisplayMatching, screen));
 }
 
 }  // namespace
