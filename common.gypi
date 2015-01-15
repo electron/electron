@@ -184,9 +184,7 @@
       ],
       'target_defaults': {
         'cflags_cc': [
-          # Use gnu++11 instead of c++11 here, see:
-          # https://code.google.com/p/chromium/issues/detail?id=224515
-          '-std=gnu++11',
+          '-std=c++11',
         ],
         'xcode_settings': {
           'CC': '/usr/bin/clang',
@@ -199,6 +197,8 @@
           ],
 
           'GCC_C_LANGUAGE_STANDARD': 'c99',  # -std=c99
+          'CLANG_CXX_LIBRARY': 'libc++',  # -stdlib=libc++
+          'CLANG_CXX_LANGUAGE_STANDARD': 'c++11',  # -std=c++11
         },
       },
     }],  # clang==1
