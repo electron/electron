@@ -189,8 +189,13 @@ struct Converter<std::vector<T> > {
 // Convenience functions that deduce T.
 template<typename T>
 v8::Handle<v8::Value> ConvertToV8(v8::Isolate* isolate,
-                                  T input) {
+                                  const T& input) {
   return Converter<T>::ToV8(isolate, input);
+}
+
+inline v8::Handle<v8::Value> ConvertToV8(v8::Isolate* isolate,
+                                         const char* input) {
+  return Converter<const char*>::ToV8(isolate, input);
 }
 
 inline v8::Handle<v8::String> StringToV8(
