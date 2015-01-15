@@ -5,7 +5,6 @@
 #include "atom/browser/api/atom_api_auto_updater.h"
 
 #include "base/time/time.h"
-#include "base/values.h"
 #include "atom/browser/auto_updater.h"
 #include "atom/browser/browser.h"
 #include "native_mate/dictionary.h"
@@ -26,9 +25,7 @@ AutoUpdater::~AutoUpdater() {
 }
 
 void AutoUpdater::OnError(const std::string& error) {
-  base::ListValue args;
-  args.AppendString(error);
-  Emit("error", args);
+  Emit("error", error);
 }
 
 void AutoUpdater::OnCheckingForUpdate() {
@@ -49,13 +46,8 @@ void AutoUpdater::OnUpdateDownloaded(const std::string& release_notes,
                                      const std::string& update_url,
                                      const base::Closure& quit_and_install) {
   quit_and_install_ = quit_and_install;
-
-  base::ListValue args;
-  args.AppendString(release_notes);
-  args.AppendString(release_name);
-  args.AppendDouble(release_date.ToJsTime());
-  args.AppendString(update_url);
-  Emit("update-downloaded-raw", args);
+  Emit("update-downloaded-raw", release_notes, release_name,
+       release_date.ToJsTime(), update_url);
 }
 
 mate::ObjectTemplateBuilder AutoUpdater::GetObjectTemplateBuilder(

@@ -5,9 +5,6 @@
 #include "atom/browser/api/event_emitter.h"
 
 #include "atom/browser/api/event.h"
-#include "atom/common/native_mate_converters/v8_value_converter.h"
-#include "base/memory/scoped_ptr.h"
-#include "base/values.h"
 #include "native_mate/arguments.h"
 #include "native_mate/object_template_builder.h"
 
@@ -41,43 +38,11 @@ v8::Local<v8::Object> CreateEventObject(v8::Isolate* isolate) {
 EventEmitter::EventEmitter() {
 }
 
-bool EventEmitter::Emit(const base::StringPiece& name) {
-  return Emit(name, base::ListValue());
-}
-
-bool EventEmitter::Emit(const base::StringPiece& name,
-                        const base::ListValue& args) {
-  return Emit(name, args, NULL, NULL);
-}
-
-bool EventEmitter::Emit(const base::StringPiece& name,
-                        const base::ListValue& args,
-                        content::WebContents* sender,
-                        IPC::Message* message) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
-
-  v8::Handle<v8::Context> context = isolate->GetCurrentContext();
-  scoped_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
-
-  // v8_args = [args...];
-  Arguments v8_args;
-  v8_args.reserve(args.GetSize());
-  for (size_t i = 0; i < args.GetSize(); i++) {
-    const base::Value* value(NULL);
-    if (args.Get(i, &value))
-      v8_args.push_back(converter->ToV8Value(value, context));
-  }
-
-  return Emit(isolate, name, v8_args, sender, message);
-}
-
-bool EventEmitter::Emit(v8::Isolate* isolate,
-                        const base::StringPiece& name,
-                        Arguments args,
-                        content::WebContents* sender,
-                        IPC::Message* message) {
+bool EventEmitter::CallEmit(v8::Isolate* isolate,
+                            const base::StringPiece& name,
+                            content::WebContents* sender,
+                            IPC::Message* message,
+                            ValueArray args) {
   v8::Handle<v8::Object> event;
   bool use_native_event = sender && message;
 

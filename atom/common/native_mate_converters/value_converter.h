@@ -26,6 +26,8 @@ struct Converter<base::ListValue> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      base::ListValue* out);
+  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+                                    const base::ListValue& val);
 };
 
 }  // namespace mate

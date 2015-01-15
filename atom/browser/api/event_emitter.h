@@ -9,10 +9,6 @@
 
 #include "native_mate/wrappable.h"
 
-namespace base {
-class ListValue;
-}
-
 namespace content {
 class WebContents;
 }
@@ -26,29 +22,39 @@ namespace mate {
 // Provide helperers to emit event in JavaScript.
 class EventEmitter : public Wrappable {
  public:
-  typedef std::vector<v8::Handle<v8::Value>> Arguments;
+  typedef std::vector<v8::Handle<v8::Value>> ValueArray;
 
  protected:
   EventEmitter();
 
-  // this.emit(name, new Event());
-  bool Emit(const base::StringPiece& name);
-
   // this.emit(name, new Event(), args...);
-  bool Emit(const base::StringPiece& name, const base::ListValue& args);
+  template<typename... Args>
+  bool Emit(const base::StringPiece& name, const Args&... args) {
+    return EmitWithSender(name, nullptr, nullptr, args...);
+  }
 
   // this.emit(name, new Event(sender, message), args...);
-  bool Emit(const base::StringPiece& name, const base::ListValue& args,
-            content::WebContents* sender, IPC::Message* message);
+  template<typename... Args>
+  bool EmitWithSender(const base::StringPiece& name,
+                      content::WebContents* sender,
+                      IPC::Message* message,
+                      const Args&... args) {
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Locker locker(isolate);
+    v8::HandleScope handle_scope(isolate);
 
-  // Lower level implementations.
-  bool Emit(v8::Isolate* isolate,
-            const base::StringPiece& name,
-            Arguments args,
-            content::WebContents* sender = nullptr,
-            IPC::Message* message = nullptr);
+    ValueArray converted = { ConvertToV8(isolate, args)... };
+    return CallEmit(isolate, name, sender, message, converted);
+  }
 
  private:
+  // Lower level implementations.
+  bool CallEmit(v8::Isolate* isolate,
+                const base::StringPiece& name,
+                content::WebContents* sender,
+                IPC::Message* message,
+                ValueArray args);
+
   DISALLOW_COPY_AND_ASSIGN(EventEmitter);
 };
 
