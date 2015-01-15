@@ -80,6 +80,7 @@
       'atom/browser/api/atom_api_protocol.cc',
       'atom/browser/api/atom_api_protocol.h',
       'atom/browser/api/atom_api_screen.cc',
+      'atom/browser/api/atom_api_screen.h',
       'atom/browser/api/atom_api_tray.cc',
       'atom/browser/api/atom_api_tray.h',
       'atom/browser/api/atom_api_web_contents.cc',

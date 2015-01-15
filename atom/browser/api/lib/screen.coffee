@@ -1,11 +1,6 @@
-binding = process.atomBinding 'screen'
+EventEmitter = require('events').EventEmitter
 
-checkAppIsReady = ->
-  unless process.type is 'renderer' or require('app').isReady()
-    throw new Error('Can not use screen module before the "ready" event of app module gets emitted')
+screen = process.atomBinding('screen').screen
+screen.__proto__ = EventEmitter.prototype
 
-for name, _ of binding
-  do (name) ->
-    module.exports[name] = (args...) ->
-      checkAppIsReady()
-      binding[name](args...)
+module.exports = screen
