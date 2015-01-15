@@ -83,12 +83,12 @@ struct Converter<gfx::Display::TouchSupport> {
   static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
                                     const gfx::Display::TouchSupport& val) {
     switch (val) {
-      case gfx::Display::TOUCH_SUPPORT_UNKNOWN:
-        return StringToV8(isolate, "unknown");
       case gfx::Display::TOUCH_SUPPORT_AVAILABLE:
         return StringToV8(isolate, "available");
       case gfx::Display::TOUCH_SUPPORT_UNAVAILABLE:
         return StringToV8(isolate, "unavailable");
+      default:
+        return StringToV8(isolate, "unknown");
     }
   }
 };
