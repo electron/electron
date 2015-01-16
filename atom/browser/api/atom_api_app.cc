@@ -12,7 +12,6 @@
 #include "atom/browser/browser.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
-#include "base/values.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
@@ -124,15 +123,11 @@ void App::OnQuit() {
 }
 
 void App::OnOpenFile(bool* prevent_default, const std::string& file_path) {
-  base::ListValue args;
-  args.AppendString(file_path);
-  *prevent_default = Emit("open-file", args);
+  *prevent_default = Emit("open-file", file_path);
 }
 
 void App::OnOpenURL(const std::string& url) {
-  base::ListValue args;
-  args.AppendString(url);
-  Emit("open-url", args);
+  Emit("open-url", url);
 }
 
 void App::OnActivateWithNoOpenWindows() {

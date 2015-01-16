@@ -305,9 +305,7 @@ void Protocol::UninterceptProtocolInIO(const std::string& scheme) {
 
 void Protocol::EmitEventInUI(const std::string& event,
                              const std::string& parameter) {
-  base::ListValue args;
-  args.AppendString(parameter);
-  Emit(event, args);
+  Emit(event, parameter);
 }
 
 // static

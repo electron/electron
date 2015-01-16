@@ -130,6 +130,14 @@
           }],  # OS=="linux"
         ],
       }],
+      ['_type in ["executable", "shared_library"]', {
+        # On some machines setting CLANG_CXX_LIBRARY doesn't work for linker.
+        'xcode_settings': {
+          'OTHER_LDFLAGS': [
+            '-stdlib=libc++'
+          ],
+        },
+      }],
     ],
     'msvs_cygwin_shell': 0, # Strangely setting it to 1 would make building under cygwin fail.
     'msvs_disabled_warnings': [
@@ -184,21 +192,18 @@
       ],
       'target_defaults': {
         'cflags_cc': [
-          # Use gnu++11 instead of c++11 here, see:
-          # https://code.google.com/p/chromium/issues/detail?id=224515
-          '-std=gnu++11',
+          '-std=c++11',
         ],
         'xcode_settings': {
           'CC': '/usr/bin/clang',
           'LDPLUSPLUS': '/usr/bin/clang++',
-          'OTHER_CPLUSPLUSFLAGS': [
-            '$(inherited)', '-std=gnu++11'
-          ],
           'OTHER_CFLAGS': [
             '-fcolor-diagnostics',
           ],
 
           'GCC_C_LANGUAGE_STANDARD': 'c99',  # -std=c99
+          'CLANG_CXX_LIBRARY': 'libc++',  # -stdlib=libc++
+          'CLANG_CXX_LANGUAGE_STANDARD': 'c++11',  # -std=c++11
         },
       },
     }],  # clang==1

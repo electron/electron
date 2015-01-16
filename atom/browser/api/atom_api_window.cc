@@ -8,6 +8,8 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
+#include "atom/common/native_mate_converters/gurl_converter.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/callback.h"
 #include "native_mate/constructor.h"
@@ -76,26 +78,18 @@ Window::~Window() {
 
 void Window::OnPageTitleUpdated(bool* prevent_default,
                                 const std::string& title) {
-  base::ListValue args;
-  args.AppendString(title);
-  *prevent_default = Emit("page-title-updated", args);
+  *prevent_default = Emit("page-title-updated", title);
 }
 
 void Window::WillCreatePopupWindow(const base::string16& frame_name,
                                    const GURL& target_url,
                                    const std::string& partition_id,
                                    WindowOpenDisposition disposition) {
-  base::ListValue args;
-  args.AppendString(target_url.spec());
-  args.AppendString(frame_name);
-  args.AppendInteger(disposition);
-  Emit("-new-window", args);
+  Emit("-new-window", target_url, frame_name, static_cast<int>(disposition));
 }
 
 void Window::WillNavigate(bool* prevent_default, const GURL& url) {
-  base::ListValue args;
-  args.AppendString(url.spec());
-  *prevent_default = Emit("-will-navigate", args);
+  *prevent_default = Emit("-will-navigate", url);
 }
 
 void Window::WillCloseWindow(bool* prevent_default) {

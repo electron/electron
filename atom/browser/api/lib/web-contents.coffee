@@ -48,10 +48,12 @@ module.exports.wrap = (webContents) ->
     process.emit 'ATOM_BROWSER_RELEASE_RENDER_VIEW', "#{processId}-#{routingId}"
 
   # Dispatch IPC messages to the ipc module.
-  webContents.on 'ipc-message', (event, channel, args...) ->
+  webContents.on 'ipc-message', (event, packed) ->
+    [channel, args...] = packed
     Object.defineProperty event, 'sender', value: webContents
     ipc.emit channel, event, args...
-  webContents.on 'ipc-message-sync', (event, channel, args...) ->
+  webContents.on 'ipc-message-sync', (event, packed) ->
+    [channel, args...] = packed
     Object.defineProperty event, 'returnValue', set: (value) -> event.sendReply JSON.stringify(value)
     Object.defineProperty event, 'sender', value: webContents
     ipc.emit channel, event, args...

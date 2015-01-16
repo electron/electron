@@ -88,12 +88,7 @@ bool WebContents::AddMessageToConsole(content::WebContents* source,
                                       const base::string16& message,
                                       int32 line_no,
                                       const base::string16& source_id) {
-  base::ListValue args;
-  args.AppendInteger(level);
-  args.AppendString(message);
-  args.AppendInteger(line_no);
-  args.AppendString(source_id);
-  Emit("console-message", args);
+  Emit("console-message", level, message, line_no, source_id);
   return true;
 }
 
@@ -105,11 +100,10 @@ bool WebContents::ShouldCreateWebContents(
     const GURL& target_url,
     const std::string& partition_id,
     content::SessionStorageNamespace* session_storage_namespace) {
-  base::ListValue args;
-  args.AppendString(target_url.spec());
-  args.AppendString(frame_name);
-  args.AppendInteger(NEW_FOREGROUND_TAB);
-  Emit("-new-window", args);
+  Emit("-new-window",
+       target_url,
+       frame_name,
+       static_cast<int>(NEW_FOREGROUND_TAB));
   return false;
 }
 
@@ -121,18 +115,12 @@ content::WebContents* WebContents::OpenURLFromTab(
     content::WebContents* source,
     const content::OpenURLParams& params) {
   if (params.disposition != CURRENT_TAB) {
-    base::ListValue args;
-    args.AppendString(params.url.spec());
-    args.AppendString("");
-    args.AppendInteger(params.disposition);
-    Emit("-new-window", args);
+    Emit("-new-window", params.url, "", static_cast<int>(params.disposition));
     return nullptr;
   }
 
   // Give user a chance to cancel navigation.
-  base::ListValue args;
-  args.AppendString(params.url.spec());
-  if (Emit("will-navigate", args))
+  if (Emit("will-navigate", params.url))
     return nullptr;
 
   content::NavigationController::LoadURLParams load_url_params(params.url);
@@ -184,10 +172,9 @@ void WebContents::HandleKeyboardEvent(
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
-  base::ListValue args;
-  args.AppendInteger(render_view_host->GetProcess()->GetID());
-  args.AppendInteger(render_view_host->GetRoutingID());
-  Emit("render-view-deleted", args);
+  Emit("render-view-deleted",
+       render_view_host->GetProcess()->GetID(),
+       render_view_host->GetRoutingID());
 }
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
@@ -197,10 +184,7 @@ void WebContents::RenderProcessGone(base::TerminationStatus status) {
 void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
                                 const GURL& validated_url) {
   bool is_main_frame = !render_frame_host->GetParent();
-
-  base::ListValue args;
-  args.AppendBoolean(is_main_frame);
-  Emit("did-frame-finish-load", args);
+  Emit("did-frame-finish-load", is_main_frame);
 
   if (is_main_frame)
     Emit("did-finish-load");
@@ -210,10 +194,7 @@ void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
                               const GURL& validated_url,
                               int error_code,
                               const base::string16& error_description) {
-  base::ListValue args;
-  args.AppendInteger(error_code);
-  args.AppendString(error_description);
-  Emit("did-fail-load", args);
+  Emit("did-fail-load", error_code, error_description);
 }
 
 void WebContents::DidStartLoading(content::RenderViewHost* render_view_host) {
@@ -227,12 +208,10 @@ void WebContents::DidStopLoading(content::RenderViewHost* render_view_host) {
 void WebContents::DidGetRedirectForResourceRequest(
     content::RenderViewHost* render_view_host,
     const content::ResourceRedirectDetails& details) {
-  base::ListValue args;
-  args.AppendString(details.url.spec());
-  args.AppendString(details.new_url.spec());
-  args.AppendBoolean(
-      details.resource_type == content::RESOURCE_TYPE_MAIN_FRAME);
-  Emit("did-get-redirect-request", args);
+  Emit("did-get-redirect-request",
+       details.url,
+       details.new_url,
+       (details.resource_type == content::RESOURCE_TYPE_MAIN_FRAME));
 }
 
 void WebContents::DidNavigateMainFrame(
@@ -526,17 +505,14 @@ void WebContents::OnRendererMessageSync(const base::string16& channel,
                                         const base::ListValue& args,
                                         IPC::Message* message) {
   // webContents.emit(channel, new Event(sender, message), args...);
-  Emit(base::UTF16ToUTF8(channel), args, web_contents(), message);
+  EmitWithSender(base::UTF16ToUTF8(channel), web_contents(), message, args);
 }
 
 void WebContents::GuestSizeChangedDueToAutoSize(const gfx::Size& old_size,
                                                 const gfx::Size& new_size) {
-  base::ListValue args;
-  args.AppendInteger(old_size.width());
-  args.AppendInteger(old_size.height());
-  args.AppendInteger(new_size.width());
-  args.AppendInteger(new_size.height());
-  Emit("size-changed", args);
+  Emit("size-changed",
+       old_size.width(), old_size.height(),
+       new_size.width(), new_size.height());
 }
 
 // static

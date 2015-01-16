@@ -37,4 +37,11 @@ bool Converter<base::ListValue>::FromV8(v8::Isolate* isolate,
   }
 }
 
+v8::Handle<v8::Value> Converter<base::ListValue>::ToV8(
+    v8::Isolate* isolate,
+    const base::ListValue& val) {
+  scoped_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
+  return converter->ToV8Value(&val, isolate->GetCurrentContext());
+}
+
 }  // namespace mate
