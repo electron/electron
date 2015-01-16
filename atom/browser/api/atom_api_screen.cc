@@ -92,6 +92,7 @@ void Screen::OnDisplayRemoved(const gfx::Display& old_display) {
 
 void Screen::OnDisplayMetricsChanged(const gfx::Display& display,
                                      uint32_t changed_metrics) {
+  *FindById(&displays_, display.id()) = display;
   Emit("display-metrics-changed", display, MetricsToArray(changed_metrics));
 }
 
