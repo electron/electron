@@ -130,6 +130,14 @@
           }],  # OS=="linux"
         ],
       }],
+      ['_type in ["executable", "shared_library"]', {
+        # On some machines setting CLANG_CXX_LIBRARY doesn't work for linker.
+        'xcode_settings': {
+          'OTHER_LDFLAGS': [
+            '-stdlib=libc++'
+          ],
+        },
+      }],
     ],
     'msvs_cygwin_shell': 0, # Strangely setting it to 1 would make building under cygwin fail.
     'msvs_disabled_warnings': [
@@ -189,9 +197,6 @@
         'xcode_settings': {
           'CC': '/usr/bin/clang',
           'LDPLUSPLUS': '/usr/bin/clang++',
-          'OTHER_CPLUSPLUSFLAGS': [
-            '$(inherited)', '-std=gnu++11'
-          ],
           'OTHER_CFLAGS': [
             '-fcolor-diagnostics',
           ],
