@@ -5,6 +5,7 @@
 #include "atom/browser/api/atom_api_screen.h"
 
 #include <algorithm>
+#include <string>
 
 #include "atom/browser/browser.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
@@ -21,12 +22,27 @@ namespace api {
 
 namespace {
 
+// Find an item in container according to its ID.
 template<class T>
 typename T::iterator FindById(T* container, int id) {
   auto predicate = [id] (const typename T::value_type& item) -> bool {
     return item.id() == id;
   };
   return std::find_if(container->begin(), container->end(), predicate);
+}
+
+// Convert the changed_metrics bitmask to string array.
+std::vector<std::string> MetricsToArray(uint32_t metrics) {
+  std::vector<std::string> array;
+  if (metrics & gfx::DisplayObserver::DISPLAY_METRIC_BOUNDS)
+    array.push_back("bounds");
+  if (metrics & gfx::DisplayObserver::DISPLAY_METRIC_WORK_AREA)
+    array.push_back("workArea");
+  if (metrics & gfx::DisplayObserver::DISPLAY_METRIC_DEVICE_SCALE_FACTOR)
+    array.push_back("scaleFactor");
+  if (metrics & gfx::DisplayObserver::DISPLAY_METRIC_ROTATION)
+    array.push_back("rotaion");
+  return array;
 }
 
 }  // namespace
@@ -48,6 +64,9 @@ gfx::Display Screen::GetPrimaryDisplay() {
 }
 
 std::vector<gfx::Display> Screen::GetAllDisplays() {
+  // The Screen::GetAllDisplays doesn't update when there is display added or
+  // removed, so we have to manually maintain the displays_ to make it up to
+  // date.
   if (displays_.size() == 0)
     displays_ = screen_->GetAllDisplays();
   return displays_;
@@ -63,17 +82,17 @@ gfx::Display Screen::GetDisplayMatching(const gfx::Rect& match_rect) {
 
 void Screen::OnDisplayAdded(const gfx::Display& new_display) {
   displays_.push_back(new_display);
-  Emit("display-added");
+  Emit("display-added", new_display);
 }
 
 void Screen::OnDisplayRemoved(const gfx::Display& old_display) {
   displays_.erase(FindById(&displays_, old_display.id()));
-  Emit("display-removed");
+  Emit("display-removed", old_display);
 }
 
 void Screen::OnDisplayMetricsChanged(const gfx::Display& display,
                                      uint32_t changed_metrics) {
-  Emit("display-metrics-changed");
+  Emit("display-metrics-changed", display, MetricsToArray(changed_metrics));
 }
 
 mate::ObjectTemplateBuilder Screen::GetObjectTemplateBuilder(
