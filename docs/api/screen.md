@@ -86,7 +86,7 @@ Returns an array of displays that are currently available.
 
 ## screen.getDisplayNearestPoint(point)
 
-* `rect` Object
+* `point` Object
   * `x` Integer
   * `y` Integer
 
