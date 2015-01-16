@@ -127,8 +127,10 @@ int main(int argc, const char* argv[]) {
 
 int main(int argc, const char* argv[]) {
   char* node_indicator = getenv("ATOM_SHELL_INTERNAL_RUN_AS_NODE");
-  if (node_indicator != NULL && strcmp(node_indicator, "1") == 0)
+  if (node_indicator != NULL && strcmp(node_indicator, "1") == 0) {
+    AtomInitializeICU();
     return node::Start(argc, const_cast<char**>(argv));
+  }
 
   return AtomMain(argc, argv);
 }
