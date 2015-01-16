@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/atom_api_screen.h"
 
+#include <algorithm>
+
 #include "atom/browser/browser.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "base/bind.h"
@@ -17,10 +19,24 @@ namespace atom {
 
 namespace api {
 
+namespace {
+
+template<class T>
+typename T::iterator FindById(T* container, int id) {
+  auto predicate = [id] (const typename T::value_type& item) -> bool {
+    return item.id() == id;
+  };
+  return std::find_if(container->begin(), container->end(), predicate);
+}
+
+}  // namespace
+
 Screen::Screen(gfx::Screen* screen) : screen_(screen) {
+  screen_->AddObserver(this);
 }
 
 Screen::~Screen() {
+  screen_->RemoveObserver(this);
 }
 
 gfx::Point Screen::GetCursorScreenPoint() {
@@ -32,7 +48,9 @@ gfx::Display Screen::GetPrimaryDisplay() {
 }
 
 std::vector<gfx::Display> Screen::GetAllDisplays() {
-  return screen_->GetAllDisplays();
+  if (displays_.size() == 0)
+    displays_ = screen_->GetAllDisplays();
+  return displays_;
 }
 
 gfx::Display Screen::GetDisplayNearestPoint(const gfx::Point& point) {
@@ -44,10 +62,12 @@ gfx::Display Screen::GetDisplayMatching(const gfx::Rect& match_rect) {
 }
 
 void Screen::OnDisplayAdded(const gfx::Display& new_display) {
+  displays_.push_back(new_display);
   Emit("display-added");
 }
 
 void Screen::OnDisplayRemoved(const gfx::Display& old_display) {
+  displays_.erase(FindById(&displays_, old_display.id()));
   Emit("display-removed");
 }
 
