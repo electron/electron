@@ -48,7 +48,8 @@ You can also create a window without chrome by using
     zoom percent / 100, so `3.0` represents `300%`
   * `kiosk` Boolean - The kiosk mode
   * `title` String - Default window title
-  * `icon` [Image](image.md) - The window icon
+  * `icon` [Image](image.md) - The window icon, when omitted on Windows the
+    executable's icon would be used as window icon
   * `show` Boolean - Whether window should be shown when created
   * `frame` Boolean - Specify `false` to create a
     [Frameless Window](frameless-window.md)
