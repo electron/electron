@@ -28,6 +28,8 @@
 #include "atom/app/atom_library_main.h"
 #endif  // defined(OS_MACOSX)
 
+#include "base/i18n/icu_util.h"
+
 // Declaration of node::Start.
 namespace node {
 int Start(int argc, char *argv[]);
@@ -89,6 +91,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
       }
     }
     // Now that conversion is done, we can finally start.
+    base::i18n::InitializeICU();
     return node::Start(argc, argv);
   } else if (env->GetVar("ATOM_SHELL_INTERNAL_CRASH_SERVICE",
                          &crash_service_indicator) &&
@@ -113,8 +116,10 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 
 int main(int argc, const char* argv[]) {
   char* node_indicator = getenv("ATOM_SHELL_INTERNAL_RUN_AS_NODE");
-  if (node_indicator != NULL && strcmp(node_indicator, "1") == 0)
+  if (node_indicator != NULL && strcmp(node_indicator, "1") == 0) {
+    base::i18n::InitializeICU();
     return node::Start(argc, const_cast<char**>(argv));
+  }
 
   atom::AtomMainDelegate delegate;
   content::ContentMainParams params(&delegate);
@@ -127,8 +132,10 @@ int main(int argc, const char* argv[]) {
 
 int main(int argc, const char* argv[]) {
   char* node_indicator = getenv("ATOM_SHELL_INTERNAL_RUN_AS_NODE");
-  if (node_indicator != NULL && strcmp(node_indicator, "1") == 0)
+  if (node_indicator != NULL && strcmp(node_indicator, "1") == 0) {
+    AtomInitializeICU();
     return node::Start(argc, const_cast<char**>(argv));
+  }
 
   return AtomMain(argc, argv);
 }

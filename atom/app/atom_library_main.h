@@ -11,6 +11,9 @@
 extern "C" {
 __attribute__((visibility("default")))
 int AtomMain(int argc, const char* argv[]);
+
+__attribute__((visibility("default")))
+void AtomInitializeICU();
 }
 #endif  // OS_MACOSX
 

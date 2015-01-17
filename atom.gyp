@@ -340,8 +340,8 @@
       'chromium_src/chrome/browser/ui/views/color_chooser_win.cc',
     ],
     'framework_sources': [
-      'atom/app/atom_library_main.cc',
       'atom/app/atom_library_main.h',
+      'atom/app/atom_library_main.mm',
     ],
     'locales': [
       'am', 'ar', 'bg', 'bn', 'ca', 'cs', 'da', 'de', 'el', 'en-GB',
@@ -800,6 +800,9 @@
             '.',
             'vendor',
             '<(libchromiumcontent_include_dir)',
+          ],
+          'defines': [
+            'PRODUCT_NAME="<(product_name)"',
           ],
           'export_dependent_settings': [
             '<(project_name)_lib',
