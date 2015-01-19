@@ -35,8 +35,5 @@ if process.type is 'browser'
   global.setTimeout = wrapWithActivateUvLoop timers.setTimeout
   global.setInterval = wrapWithActivateUvLoop timers.setInterval
 
-# Initialize the "original-fs" module before asar support is loaded.
-require 'original-fs'
-
 # Add support for asar packages.
 require './asar'
