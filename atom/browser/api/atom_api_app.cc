@@ -16,6 +16,7 @@
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/path_service.h"
+#include "brightray/browser/brightray_paths.h"
 #include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -25,10 +26,6 @@
 #include "net/url_request/url_request_context_getter.h"
 
 #include "atom/common/node_includes.h"
-
-#if defined(OS_LINUX)
-#include "base/nix/xdg_util.h"
-#endif
 
 using atom::Browser;
 
@@ -142,19 +139,14 @@ void App::OnFinishLaunching() {
   Emit("ready");
 }
 
+void App::SetDataPath(const base::FilePath& path) {
+  PathService::Override(brightray::DIR_USER_DATA, path);
+}
+
 base::FilePath App::GetDataPath() {
   base::FilePath path;
-#if defined(OS_LINUX)
-  scoped_ptr<base::Environment> env(base::Environment::Create());
-  path = base::nix::GetXDGDirectory(env.get(),
-                                    base::nix::kXdgConfigHomeEnvVar,
-                                    base::nix::kDotConfigDir);
-#else
-  PathService::Get(base::DIR_APP_DATA, &path);
-#endif
-
-  return path.Append(base::FilePath::FromUTF8Unsafe(
-      Browser::Get()->GetName()));
+  PathService::Get(brightray::DIR_USER_DATA, &path);
+  return path;
 }
 
 void App::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
@@ -187,6 +179,7 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("setUserTasks",
                  base::Bind(&Browser::SetUserTasks, browser))
 #endif
+      .SetMethod("setDataPath", &App::SetDataPath)
       .SetMethod("getDataPath", &App::GetDataPath)
       .SetMethod("resolveProxy", &App::ResolveProxy)
       .SetMethod("setDesktopName", &App::SetDesktopName);

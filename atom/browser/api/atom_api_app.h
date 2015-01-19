@@ -48,6 +48,7 @@ class App : public mate::EventEmitter,
       v8::Isolate* isolate) override;
 
  private:
+  void SetDataPath(const base::FilePath& path);
   base::FilePath GetDataPath();
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
   void SetDesktopName(const std::string& desktop_name);
