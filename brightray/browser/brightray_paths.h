@@ -13,17 +13,28 @@
 #include "base/base_paths_mac.h"
 #endif
 
+#if defined(OS_POSIX)
+#include "base/base_paths_posix.h"
+#endif
+
 namespace brightray {
 
 enum {
   PATH_START = 1000,
 
   DIR_USER_DATA = PATH_START,  // Directory where user data can be written.
+  DIR_USER_CACHE,  // Directory where user cache can be written.
 
 #if defined(OS_LINUX)
   DIR_APP_DATA,  // Application Data directory under the user profile.
 #else
   DIR_APP_DATA = base::DIR_APP_DATA,
+#endif
+
+#if defined(OS_POSIX)
+  DIR_CACHE = base::DIR_CACHE,  // Directory where to put cache data.
+#else
+  DIR_CACHE = base::DIR_APP_DATA,
 #endif
 
   PATH_END
