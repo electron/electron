@@ -86,13 +86,21 @@ void Screen::OnDisplayAdded(const gfx::Display& new_display) {
 }
 
 void Screen::OnDisplayRemoved(const gfx::Display& old_display) {
-  displays_.erase(FindById(&displays_, old_display.id()));
+  auto iter = FindById(&displays_, old_display.id());
+  if (iter == displays_.end())
+    return;
+
+  displays_.erase(iter);
   Emit("display-removed", old_display);
 }
 
 void Screen::OnDisplayMetricsChanged(const gfx::Display& display,
                                      uint32_t changed_metrics) {
-  *FindById(&displays_, display.id()) = display;
+  auto iter = FindById(&displays_, display.id());
+  if (iter == displays_.end())
+    return;
+
+  *iter = display;
   Emit("display-metrics-changed", display, MetricsToArray(changed_metrics));
 }
 
