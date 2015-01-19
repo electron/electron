@@ -743,7 +743,51 @@ Injects CSS into this page.
 
 * `code` String
 
-Evaluate `code` in page.
+Evaluates `code` in page.
+
+### WebContents.undo()
+
+Executes editing command `undo` in page.
+
+### WebContents.redo()
+
+Executes editing command `redo` in page.
+
+### WebContents.cut()
+
+Executes editing command `cut` in page.
+
+### WebContents.copy()
+
+Executes editing command `copy` in page.
+
+### WebContents.paste()
+
+Executes editing command `paste` in page.
+
+### WebContents.delete()
+
+Executes editing command `delete` in page.
+
+### WebContents.selectAll()
+
+Executes editing command `selectAll` in page.
+
+### WebContents.unselect()
+
+Executes editing command `unselect` in page.
+
+### WebContents.replace(text)
+
+* `text` String
+
+Executes editing command `replace` in page.
+
+### WebContents.replaceMisspelling(text)
+
+* `text` String
+
+Executes editing command `replaceMisspelling` in page.
 
 ### WebContents.send(channel[, args...])
 

@@ -412,6 +412,46 @@ bool WebContents::IsDevToolsOpened() {
   return storage_->IsDevToolsViewShowing();
 }
 
+void WebContents::Undo() {
+  web_contents()->Undo();
+}
+
+void WebContents::Redo() {
+  web_contents()->Redo();
+}
+
+void WebContents::Cut() {
+  web_contents()->Cut();
+}
+
+void WebContents::Copy() {
+  web_contents()->Copy();
+}
+
+void WebContents::Paste() {
+  web_contents()->Paste();
+}
+
+void WebContents::Delete() {
+  web_contents()->Delete();
+}
+
+void WebContents::SelectAll() {
+  web_contents()->SelectAll();
+}
+
+void WebContents::Unselect() {
+  web_contents()->Unselect();
+}
+
+void WebContents::Replace(const base::string16& word) {
+  web_contents()->Replace(word);
+}
+
+void WebContents::ReplaceMisspelling(const base::string16& word) {
+  web_contents()->ReplaceMisspelling(word);
+}
+
 bool WebContents::SendIPCMessage(const base::string16& channel,
                                  const base::ListValue& args) {
   return Send(new AtomViewMsg_Message(routing_id(), channel, args));
@@ -482,13 +522,23 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("setUserAgent", &WebContents::SetUserAgent)
         .SetMethod("insertCSS", &WebContents::InsertCSS)
         .SetMethod("_executeJavaScript", &WebContents::ExecuteJavaScript)
+        .SetMethod("openDevTools", &WebContents::OpenDevTools)
+        .SetMethod("closeDevTools", &WebContents::CloseDevTools)
+        .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
+        .SetMethod("undo", &WebContents::Undo)
+        .SetMethod("redo", &WebContents::Redo)
+        .SetMethod("cut", &WebContents::Cut)
+        .SetMethod("copy", &WebContents::Copy)
+        .SetMethod("paste", &WebContents::Paste)
+        .SetMethod("delete", &WebContents::Delete)
+        .SetMethod("selectAll", &WebContents::SelectAll)
+        .SetMethod("unselect", &WebContents::Unselect)
+        .SetMethod("replace", &WebContents::Replace)
+        .SetMethod("replaceMisspelling", &WebContents::ReplaceMisspelling)
         .SetMethod("_send", &WebContents::SendIPCMessage)
         .SetMethod("setAutoSize", &WebContents::SetAutoSize)
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
         .SetMethod("isGuest", &WebContents::is_guest)
-        .SetMethod("openDevTools", &WebContents::OpenDevTools)
-        .SetMethod("closeDevTools", &WebContents::CloseDevTools)
-        .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
         .Build());
 
   return mate::ObjectTemplateBuilder(

@@ -67,6 +67,20 @@ class WebContents : public mate::EventEmitter,
   void OpenDevTools();
   void CloseDevTools();
   bool IsDevToolsOpened();
+
+  // Editing commands.
+  void Undo();
+  void Redo();
+  void Cut();
+  void Copy();
+  void Paste();
+  void Delete();
+  void SelectAll();
+  void Unselect();
+  void Replace(const base::string16& word);
+  void ReplaceMisspelling(const base::string16& word);
+
+  // Sending messages to browser.
   bool SendIPCMessage(const base::string16& channel,
                       const base::ListValue& args);
 
