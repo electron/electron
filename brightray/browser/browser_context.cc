@@ -9,7 +9,6 @@
 #include "browser/network_delegate.h"
 #include "common/application_info.h"
 
-#include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/prefs/json_pref_store.h"
@@ -20,30 +19,9 @@
 #include "content/public/browser/resource_context.h"
 #include "content/public/browser/storage_partition.h"
 
-#if defined(OS_LINUX)
-#include "base/nix/xdg_util.h"
-#endif
-
 using content::BrowserThread;
 
 namespace brightray {
-
-namespace {
-
-#if defined(OS_LINUX)
-void OverrideLinuxAppDataPath() {
-  base::FilePath path;
-  if (PathService::Get(DIR_APP_DATA, &path))
-    return;
-  scoped_ptr<base::Environment> env(base::Environment::Create());
-  path = base::nix::GetXDGDirectory(env.get(),
-                                    base::nix::kXdgConfigHomeEnvVar,
-                                    base::nix::kDotConfigDir);
-  PathService::Override(DIR_APP_DATA, path);
-}
-#endif
-
-}  // namespace
 
 class BrowserContext::ResourceContext : public content::ResourceContext {
  public:
@@ -69,10 +47,6 @@ BrowserContext::BrowserContext() : resource_context_(new ResourceContext) {
 }
 
 void BrowserContext::Initialize() {
-#if defined(OS_LINUX)
-  OverrideLinuxAppDataPath();
-#endif
-
   if (!PathService::Get(DIR_USER_DATA, &path_)) {
     PathService::Get(DIR_APP_DATA, &path_);
     path_ = path_.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
