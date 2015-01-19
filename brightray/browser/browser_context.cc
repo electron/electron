@@ -33,13 +33,13 @@ namespace {
 #if defined(OS_LINUX)
 void OverrideLinuxAppDataPath() {
   base::FilePath path;
-  if (PathService::Get(base::DIR_APP_DATA, &path))
+  if (PathService::Get(DIR_APP_DATA, &path))
     return;
   scoped_ptr<base::Environment> env(base::Environment::Create());
   path = base::nix::GetXDGDirectory(env.get(),
                                     base::nix::kXdgConfigHomeEnvVar,
                                     base::nix::kDotConfigDir);
-  PathService::Override(base::DIR_APP_DATA, path);
+  PathService::Override(DIR_APP_DATA, path);
 }
 #endif
 
@@ -74,7 +74,7 @@ void BrowserContext::Initialize() {
 #endif
 
   if (!PathService::Get(DIR_USER_DATA, &path_)) {
-    PathService::Get(base::DIR_APP_DATA, &path_);
+    PathService::Get(DIR_APP_DATA, &path_);
     path_ = path_.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
     PathService::Override(DIR_USER_DATA, path_);
   }

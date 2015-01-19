@@ -5,12 +5,26 @@
 #ifndef BROWSER_BRIGHTRAY_PATHS_H_
 #define BROWSER_BRIGHTRAY_PATHS_H_
 
+#include "base/compiler_specific.h"
+
+#if defined(OS_WIN)
+#include "base/base_paths_win.h"
+#elif defined(OS_MACOSX)
+#include "base/base_paths_mac.h"
+#endif
+
 namespace brightray {
 
 enum {
   PATH_START = 1000,
 
   DIR_USER_DATA = PATH_START,  // Directory where user data can be written.
+
+#if defined(OS_LINUX)
+  DIR_APP_DATA,  // Application Data directory under the user profile.
+#else
+  DIR_APP_DATA = base::DIR_APP_DATA,
+#endif
 
   PATH_END
 };
