@@ -44,6 +44,10 @@ process.once 'BIND_DONE', ->
 
   # Don't quit on fatal error.
   process.on 'uncaughtException', (error) ->
+    # Do nothing if the user has a custom uncaught exception handler.
+    if process.listeners('uncaughtException').length > 1
+      return
+
     # Show error in GUI.
     stack = error.stack ? "#{error.name}: #{error.message}"
     message = "Uncaught Exception:\n#{stack}"
