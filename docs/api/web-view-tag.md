@@ -219,6 +219,50 @@ Closes the devtools window of guest page.
 
 Returns whether guest page has a devtools window attached.
 
+### `<webview>`.undo()
+
+Executes editing command `undo` in page.
+
+### `<webview>`.redo()
+
+Executes editing command `redo` in page.
+
+### `<webview>`.cut()
+
+Executes editing command `cut` in page.
+
+### `<webview>`.copy()
+
+Executes editing command `copy` in page.
+
+### `<webview>`.paste()
+
+Executes editing command `paste` in page.
+
+### `<webview>`.delete()
+
+Executes editing command `delete` in page.
+
+### `<webview>`.selectAll()
+
+Executes editing command `selectAll` in page.
+
+### `<webview>`.unselect()
+
+Executes editing command `unselect` in page.
+
+### `<webview>`.replace(text)
+
+* `text` String
+
+Executes editing command `replace` in page.
+
+### `<webview>`.replaceMisspelling(text)
+
+* `text` String
+
+Executes editing command `replaceMisspelling` in page.
+
 ### `<webview>`.send(channel[, args...])
 
 * `channel` String
