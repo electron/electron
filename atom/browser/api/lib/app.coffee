@@ -5,9 +5,6 @@ bindings = process.atomBinding 'app'
 app = bindings.app
 app.__proto__ = EventEmitter.prototype
 
-app.getHomeDir = ->
-  process.env[if process.platform is 'win32' then 'USERPROFILE' else 'HOME']
-
 app.setApplicationMenu = (menu) ->
   require('menu').setApplicationMenu menu
 
@@ -32,6 +29,9 @@ if process.platform is 'darwin'
 app.once 'ready', -> app.emit 'finish-launching'
 app.terminate = app.quit
 app.exit = process.exit
+app.getHomeDir = -> app.getPath 'home'
+app.getDataPath = -> app.getPath 'userData'
+app.setDataPath = (path) -> app.setPath 'userData', path
 
 # Only one App object pemitted.
 module.exports = app

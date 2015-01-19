@@ -16,6 +16,7 @@
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/path_service.h"
+#include "brightray/browser/brightray_paths.h"
 #include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -25,10 +26,6 @@
 #include "net/url_request/url_request_context_getter.h"
 
 #include "atom/common/node_includes.h"
-
-#if defined(OS_LINUX)
-#include "base/nix/xdg_util.h"
-#endif
 
 using atom::Browser;
 
@@ -63,6 +60,30 @@ namespace atom {
 namespace api {
 
 namespace {
+
+// Return the path constant from string.
+int GetPathConstant(const std::string& name) {
+  if (name == "appData")
+    return brightray::DIR_APP_DATA;
+  else if (name == "userData")
+    return brightray::DIR_USER_DATA;
+  else if (name == "cache")
+    return brightray::DIR_CACHE;
+  else if (name == "userCache")
+    return brightray::DIR_USER_CACHE;
+  else if (name == "home")
+    return base::DIR_HOME;
+  else if (name == "temp")
+    return base::DIR_TEMP;
+  else if (name == "userDesktop")
+    return base::DIR_USER_DESKTOP;
+  else if (name == "exe")
+    return base::FILE_EXE;
+  else if (name == "module")
+    return base::FILE_MODULE;
+  else
+    return -1;
+}
 
 class ResolveProxyHelper {
  public:
@@ -142,19 +163,26 @@ void App::OnFinishLaunching() {
   Emit("ready");
 }
 
-base::FilePath App::GetDataPath() {
+base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
+  bool succeed = false;
   base::FilePath path;
-#if defined(OS_LINUX)
-  scoped_ptr<base::Environment> env(base::Environment::Create());
-  path = base::nix::GetXDGDirectory(env.get(),
-                                    base::nix::kXdgConfigHomeEnvVar,
-                                    base::nix::kDotConfigDir);
-#else
-  PathService::Get(base::DIR_APP_DATA, &path);
-#endif
+  int key = GetPathConstant(name);
+  if (key >= 0)
+    succeed = PathService::Get(key, &path);
+  if (!succeed)
+    args->ThrowError("Failed to get path");
+  return path;
+}
 
-  return path.Append(base::FilePath::FromUTF8Unsafe(
-      Browser::Get()->GetName()));
+void App::SetPath(mate::Arguments* args,
+                  const std::string& name,
+                  const base::FilePath& path) {
+  bool succeed = false;
+  int key = GetPathConstant(name);
+  if (key >= 0)
+    succeed = PathService::Override(key, path);
+  if (!succeed)
+    args->ThrowError("Failed to set path");
 }
 
 void App::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
@@ -187,7 +215,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("setUserTasks",
                  base::Bind(&Browser::SetUserTasks, browser))
 #endif
-      .SetMethod("getDataPath", &App::GetDataPath)
+      .SetMethod("setPath", &App::SetPath)
+      .SetMethod("getPath", &App::GetPath)
       .SetMethod("resolveProxy", &App::ResolveProxy)
       .SetMethod("setDesktopName", &App::SetDesktopName);
 }

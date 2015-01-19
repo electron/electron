@@ -91,13 +91,47 @@ executed. It is possible that a window cancels the quitting by returning
 Quit the application directly, it will not try to close all windows so cleanup
 code will not run.
 
-## app.getDataPath()
+## app.getPath(name)
 
-Returns the path for storing configuration files, with app name appended.
+* `name` String
 
- * `%APPDATA%\MyAppName` on Windows
- * `~/.config/MyAppName` on Linux
- * `~/Library/Application Support/MyAppName` on OS X
+Retrieves a path to a special directory or file associated with `name`. On
+failure an `Error` would throw.
+
+You can request following paths by the names:
+
+* `home`: User's home directory
+* `appData`: Per-user application data directory, by default it is pointed to:
+  * `%APPDATA%` on Windows
+  * `$XDG_CONFIG_HOME` or `~/.config` on Linux
+  * `~/Library/Application Support` on OS X
+* `userData`: The directory for storing your app's configuration files, by
+  default it is the `appData` directory appended with your app's name
+* `cache`: Per-user application cache directory, by default it is pointed to:
+  * `%APPDATA%` on Window, which doesn't has a universal place for cache
+  * `$XDG_CACHE_HOME` or `~/.cache` on Linux
+  * `~/Library/Caches` on OS X
+* `userCache`: The directory for placing your app's caches, by default it is the
+ `cache` directory appended with your app's name
+* `temp`: Temporary directory
+* `userDesktop`: The current user's Desktop directory
+* `exe`: The current executable file
+* `module`: The `libchromiumcontent` library
+
+## app.setPath(name, path)
+
+* `name` String
+* `path` String
+
+Overrides the `path` to a special directory or file associated with `name`. if
+the path specifies a directory that does not exist, the directory will be
+created by this method. On failure an `Error` would throw.
+
+You can only override paths of `name`s  defined in `app.getPath`.
+
+By default web pages' cookies and caches will be stored under `userData`
+directory, if you want to change this location, you have to override the
+`userData` path before the `ready` event of `app` module gets emitted.
 
 ## app.getVersion()
 

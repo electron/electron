@@ -18,6 +18,10 @@ namespace base {
 class FilePath;
 }
 
+namespace mate {
+class Arguments;
+}
+
 namespace atom {
 
 namespace api {
@@ -48,7 +52,12 @@ class App : public mate::EventEmitter,
       v8::Isolate* isolate) override;
 
  private:
-  base::FilePath GetDataPath();
+  // Get/Set the pre-defined path in PathService.
+  base::FilePath GetPath(mate::Arguments* args, const std::string& name);
+  void SetPath(mate::Arguments* args,
+               const std::string& name,
+               const base::FilePath& path);
+
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
   void SetDesktopName(const std::string& desktop_name);
 
