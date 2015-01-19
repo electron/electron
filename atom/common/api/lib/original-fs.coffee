@@ -1,6 +1,8 @@
-fs = require 'fs'
+vm = require 'vm'
 
-copied = {}
-copied[k] = v for k, v of fs
-
-module.exports = copied
+# Execute the 'fs.js' and pass the 'exports' to it.
+source = '(function (exports, require, module, __filename, __dirname) { ' +
+         process.binding('natives').fs +
+         '\n});'
+fn = vm.runInThisContext source, { filename: 'fs.js' }
+fn exports, require, module
