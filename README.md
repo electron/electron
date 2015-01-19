@@ -10,6 +10,10 @@ editor](https://github.com/atom/atom).
 Prebuilt binaries of atom-shell for Linux, Windows and Mac can be found on the
 [releases](https://github.com/atom/atom-shell/releases) page.
 
+### Mirrors
+
+- [China Mirror](https://npm.taobao.org/mirrors/atom-shell): Improve download speeds for Chinese user.
+
 ## Documentation
 
 Guides and the API reference are located in the
