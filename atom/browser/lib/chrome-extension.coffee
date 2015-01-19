@@ -34,15 +34,9 @@ getExtensionInfoFromPath = (srcDirectory) ->
       srcDirectory: srcDirectory
     extensionInfoMap[manifest.name]
 
-# Load persistented extensions.
-loadedExtensionsPath = path.join app.getDataPath(), 'DevTools Extensions'
-
-try
-  loadedExtensions = JSON.parse fs.readFileSync(loadedExtensionsPath)
-  loadedExtensions = [] unless Array.isArray loadedExtensions
-  # Preheat the extensionInfo cache.
-  getExtensionInfoFromPath srcDirectory for srcDirectory in loadedExtensions
-catch e
+# The loaded extensions cache and its persistent path.
+loadedExtensions = null
+loadedExtensionsPath = null
 
 # Persistent loaded extensions.
 app.on 'will-quit', ->
@@ -58,6 +52,16 @@ app.on 'will-quit', ->
 app.once 'ready', ->
   protocol = require 'protocol'
   BrowserWindow = require 'browser-window'
+
+  # Load persistented extensions.
+  loadedExtensionsPath = path.join app.getDataPath(), 'DevTools Extensions'
+
+  try
+    loadedExtensions = JSON.parse fs.readFileSync(loadedExtensionsPath)
+    loadedExtensions = [] unless Array.isArray loadedExtensions
+    # Preheat the extensionInfo cache.
+    getExtensionInfoFromPath srcDirectory for srcDirectory in loadedExtensions
+  catch e
 
   # The chrome-extension: can map a extension URL request to real file path.
   protocol.registerProtocol 'chrome-extension', (request) ->
