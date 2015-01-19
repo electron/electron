@@ -48,6 +48,10 @@ class App : public mate::EventEmitter,
       v8::Isolate* isolate) override;
 
  private:
+  // Get/Set the pre-defined path in PathService.
+  base::FilePath GetPath(const std::string& name);
+  void SetPath(const std::string& name, const base::FilePath& path);
+
   void SetDataPath(const base::FilePath& path);
   base::FilePath GetDataPath();
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);

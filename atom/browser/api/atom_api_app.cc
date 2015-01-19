@@ -61,6 +61,16 @@ namespace api {
 
 namespace {
 
+// Return the path constant from string.
+int GetPathConstant(const std::string& name) {
+  if (name == "appData")
+    return brightray::DIR_APP_DATA;
+  else if (name == "userData")
+    return brightray::DIR_USER_DATA;
+  else
+    return -1;
+}
+
 class ResolveProxyHelper {
  public:
   ResolveProxyHelper(const GURL& url, App::ResolveProxyCallback callback)
@@ -139,14 +149,18 @@ void App::OnFinishLaunching() {
   Emit("ready");
 }
 
-void App::SetDataPath(const base::FilePath& path) {
-  PathService::Override(brightray::DIR_USER_DATA, path);
+base::FilePath App::GetPath(const std::string& name) {
+  base::FilePath path;
+  int key = GetPathConstant(name);
+  if (key >= 0)
+    PathService::Get(key, &path);
+  return path;
 }
 
-base::FilePath App::GetDataPath() {
-  base::FilePath path;
-  PathService::Get(brightray::DIR_USER_DATA, &path);
-  return path;
+void App::SetPath(const std::string& name, const base::FilePath& path) {
+  int key = GetPathConstant(name);
+  if (key >= 0)
+    PathService::Override(key, path);
 }
 
 void App::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
@@ -179,8 +193,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("setUserTasks",
                  base::Bind(&Browser::SetUserTasks, browser))
 #endif
-      .SetMethod("setDataPath", &App::SetDataPath)
-      .SetMethod("getDataPath", &App::GetDataPath)
+      .SetMethod("setPath", &App::SetPath)
+      .SetMethod("getPath", &App::GetPath)
       .SetMethod("resolveProxy", &App::ResolveProxy)
       .SetMethod("setDesktopName", &App::SetDesktopName);
 }
