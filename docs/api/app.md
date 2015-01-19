@@ -119,6 +119,10 @@ created by this method. On failure an `Error` would throw.
 
 You can only override paths of `name`s  defined in `app.getPath`.
 
+By default web pages' cookies and caches will be stored under `userData`
+directory, if you want to change this location, you have to override the
+`userData` path before the `ready` event of `app` module gets emitted.
+
 ## app.getVersion()
 
 Returns the version of loaded application, if no version is found in
