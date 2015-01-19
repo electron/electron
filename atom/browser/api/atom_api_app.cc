@@ -67,6 +67,10 @@ int GetPathConstant(const std::string& name) {
     return brightray::DIR_APP_DATA;
   else if (name == "userData")
     return brightray::DIR_USER_DATA;
+  else if (name == "cache")
+    return brightray::DIR_CACHE;
+  else if (name == "userCache")
+    return brightray::DIR_USER_CACHE;
   else if (name == "home")
     return base::DIR_HOME;
   else

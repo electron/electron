@@ -107,6 +107,12 @@ You can request following paths by the names:
   * `~/Library/Application Support` on OS X
 * `userData`: The directory for storing your app's configuration files, by
   default it is the `appData` directory appended with your app's name.
+* `cache`: Per-user application cache directory, by default it is pointed to:
+  * `%APPDATA%` on Window, which doesn't has a universal place for cache
+  * `$XDG_CACHE_HOME` on Linux
+  * `~/Library/Caches` on OS X
+* `userCache`: The directory for placing your app's caches, by default it is the
+ `cache` directory appended with your app's name.
 
 ## app.setPath(name, path)
 

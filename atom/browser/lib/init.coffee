@@ -90,8 +90,9 @@ process.once 'BIND_DONE', ->
   else
     app.setDesktopName '#{app.getName()}.desktop'
 
-  # Set the user data path according to application's name.
+  # Set the user path according to application's name.
   app.setPath 'userData', path.join(app.getPath('appData'), app.getName())
+  app.setPath 'userCache', path.join(app.getPath('cache'), app.getName())
 
   # Load the chrome extension support.
   require './chrome-extension.js'
