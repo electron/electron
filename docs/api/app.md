@@ -91,13 +91,33 @@ executed. It is possible that a window cancels the quitting by returning
 Quit the application directly, it will not try to close all windows so cleanup
 code will not run.
 
-## app.getDataPath()
+## app.getPath(name)
 
-Returns the path for storing configuration files, with app name appended.
+* `name` String
 
- * `%APPDATA%\MyAppName` on Windows
- * `~/.config/MyAppName` on Linux
- * `~/Library/Application Support/MyAppName` on OS X
+Retrieves a path to a special directory or file associated with `name`. On
+failure an `Error` would throw.
+
+You can request following paths by the names:
+
+* `home`: User's home directory
+* `appData`: Per-user application data directory, by default it is pointed to:
+  * `%APPDATA%` on Windows
+  * `~/.config` on Linux
+  * `~/Library/Application Support` on OS X
+* `userData`: The directory for storing your app's configuration files, by
+  default it is the `appData` directory appended with your app's name.
+
+## app.setPath(name, path)
+
+* `name` String
+* `path` String
+
+Overrides the `path` to a special directory or file associated with `name`. if
+the path specifies a directory that does not exist, the directory will be
+created by this method. On failure an `Error` would throw.
+
+You can only override paths of `name`s  defined in `app.getPath`.
 
 ## app.getVersion()
 
