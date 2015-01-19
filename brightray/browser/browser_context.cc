@@ -27,6 +27,23 @@ using content::BrowserThread;
 
 namespace brightray {
 
+namespace {
+
+#if defined(OS_LINUX)
+void OverrideLinuxAppDataPath() {
+  base::FilePath path;
+  if (PathService::Get(base::DIR_APP_DATA, &path))
+    return;
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  path = base::nix::GetXDGDirectory(env.get(),
+                                    base::nix::kXdgConfigHomeEnvVar,
+                                    base::nix::kDotConfigDir);
+  PathService::Override(base::DIR_APP_DATA, path);
+}
+#endif
+
+}  // namespace
+
 class BrowserContext::ResourceContext : public content::ResourceContext {
  public:
   ResourceContext() : getter_(nullptr) {}
@@ -51,16 +68,12 @@ BrowserContext::BrowserContext() : resource_context_(new ResourceContext) {
 }
 
 void BrowserContext::Initialize() {
-  base::FilePath path;
 #if defined(OS_LINUX)
-  scoped_ptr<base::Environment> env(base::Environment::Create());
-  path = base::nix::GetXDGDirectory(env.get(),
-                                    base::nix::kXdgConfigHomeEnvVar,
-                                    base::nix::kDotConfigDir);
-#else
-  CHECK(PathService::Get(base::DIR_APP_DATA, &path));
+  OverrideLinuxAppDataPath();
 #endif
 
+  base::FilePath path;
+  PathService::Get(base::DIR_APP_DATA, &path);
   path_ = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
 
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
