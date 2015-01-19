@@ -4,6 +4,7 @@
 
 #include "browser/browser_context.h"
 
+#include "browser/brightray_paths.h"
 #include "browser/inspectable_web_contents_impl.h"
 #include "browser/network_delegate.h"
 #include "common/application_info.h"
@@ -72,9 +73,11 @@ void BrowserContext::Initialize() {
   OverrideLinuxAppDataPath();
 #endif
 
-  base::FilePath path;
-  PathService::Get(base::DIR_APP_DATA, &path);
-  path_ = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+  if (!PathService::Get(DIR_USER_DATA, &path_)) {
+    PathService::Get(base::DIR_APP_DATA, &path_);
+    path_ = path_.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+    PathService::Override(DIR_USER_DATA, path_);
+  }
 
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
   base::PrefServiceFactory prefs_factory;
