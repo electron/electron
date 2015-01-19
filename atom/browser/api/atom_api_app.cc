@@ -73,6 +73,14 @@ int GetPathConstant(const std::string& name) {
     return brightray::DIR_USER_CACHE;
   else if (name == "home")
     return base::DIR_HOME;
+  else if (name == "temp")
+    return base::DIR_TEMP;
+  else if (name == "userDesktop")
+    return base::DIR_USER_DESKTOP;
+  else if (name == "exe")
+    return base::FILE_EXE;
+  else if (name == "module")
+    return base::FILE_MODULE;
   else
     return -1;
 }
