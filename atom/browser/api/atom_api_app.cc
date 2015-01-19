@@ -151,18 +151,26 @@ void App::OnFinishLaunching() {
   Emit("ready");
 }
 
-base::FilePath App::GetPath(const std::string& name) {
+base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
+  bool succeed = false;
   base::FilePath path;
   int key = GetPathConstant(name);
   if (key >= 0)
-    PathService::Get(key, &path);
+    succeed = PathService::Get(key, &path);
+  if (!succeed)
+    args->ThrowError("Failed to get path");
   return path;
 }
 
-void App::SetPath(const std::string& name, const base::FilePath& path) {
+void App::SetPath(mate::Arguments* args,
+                  const std::string& name,
+                  const base::FilePath& path) {
+  bool succeed = false;
   int key = GetPathConstant(name);
   if (key >= 0)
-    PathService::Override(key, path);
+    succeed = PathService::Override(key, path);
+  if (!succeed)
+    args->ThrowError("Failed to set path");
 }
 
 void App::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
