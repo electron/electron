@@ -4,11 +4,11 @@
 
 #include "browser/browser_context.h"
 
+#include "browser/brightray_paths.h"
 #include "browser/inspectable_web_contents_impl.h"
 #include "browser/network_delegate.h"
 #include "common/application_info.h"
 
-#include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/prefs/json_pref_store.h"
@@ -18,10 +18,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_context.h"
 #include "content/public/browser/storage_partition.h"
-
-#if defined(OS_LINUX)
-#include "base/nix/xdg_util.h"
-#endif
 
 using content::BrowserThread;
 
@@ -51,17 +47,11 @@ BrowserContext::BrowserContext() : resource_context_(new ResourceContext) {
 }
 
 void BrowserContext::Initialize() {
-  base::FilePath path;
-#if defined(OS_LINUX)
-  scoped_ptr<base::Environment> env(base::Environment::Create());
-  path = base::nix::GetXDGDirectory(env.get(),
-                                    base::nix::kXdgConfigHomeEnvVar,
-                                    base::nix::kDotConfigDir);
-#else
-  CHECK(PathService::Get(base::DIR_APP_DATA, &path));
-#endif
-
-  path_ = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+  if (!PathService::Get(DIR_USER_DATA, &path_)) {
+    PathService::Get(DIR_APP_DATA, &path_);
+    path_ = path_.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+    PathService::Override(DIR_USER_DATA, path_);
+  }
 
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
   base::PrefServiceFactory prefs_factory;

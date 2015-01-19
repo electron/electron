@@ -26,6 +26,13 @@
 #include "browser/views/views_delegate.h"
 #endif
 
+#if defined(OS_LINUX)
+#include "base/environment.h"
+#include "base/path_service.h"
+#include "base/nix/xdg_util.h"
+#include "browser/brightray_paths.h"
+#endif
+
 #if defined(OS_WIN)
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/l10n/l10n_util_win.h"
@@ -34,9 +41,9 @@
 
 namespace brightray {
 
-#if defined(OS_WIN)
 namespace {
 
+#if defined(OS_WIN)
 // gfx::Font callbacks
 void AdjustUIFont(LOGFONT* logfont) {
   l10n_util::AdjustUIFont(logfont);
@@ -45,9 +52,22 @@ void AdjustUIFont(LOGFONT* logfont) {
 int GetMinimumFontSize() {
   return 10;
 }
+#endif
+
+#if defined(OS_LINUX)
+void OverrideLinuxAppDataPath() {
+  base::FilePath path;
+  if (PathService::Get(DIR_APP_DATA, &path))
+    return;
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  path = base::nix::GetXDGDirectory(env.get(),
+                                    base::nix::kXdgConfigHomeEnvVar,
+                                    base::nix::kDotConfigDir);
+  PathService::Override(DIR_APP_DATA, path);
+}
+#endif
 
 }  // namespace
-#endif
 
 BrowserMainParts::BrowserMainParts() {
 }
@@ -64,9 +84,12 @@ void BrowserMainParts::PreEarlyInitialization() {
   views::LinuxUI::SetInstance(BuildGtk2UI());
 #endif
 
+#if defined(OS_LINUX)
+  OverrideLinuxAppDataPath();
+#endif
+
   InitProxyResolverV8();
 }
-
 
 void BrowserMainParts::ToolkitInitialized() {
 #if defined(USE_AURA) && defined(USE_X11)
