@@ -190,6 +190,15 @@ def upload_node(bucket, access_key, secret_key, version):
     s3put(bucket, access_key, secret_key, OUT_DIR,
           'atom-shell/dist/{0}'.format(version), [node_lib])
 
+    # Upload the index.json
+    atom_shell = os.path.join(OUT_DIR, 'atom.exe')
+    index_json = os.path.join(OUT_DIR, 'index.json')
+    execute([atom_shell,
+             os.path.join(SOURCE_ROOT, 'script', 'dump-version-info.js'),
+             index_json])
+    s3put(bucket, access_key, secret_key, OUT_DIR, 'atom-shell/dist',
+          [index_json])
+
 
 def auth_token():
   token = os.environ.get('ATOM_SHELL_GITHUB_TOKEN')

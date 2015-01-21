@@ -10,9 +10,10 @@
   ],
 
   "devDependencies": {
-    "atom-package-manager": "0.112.0",
+    "atom-package-manager": "0.122.0",
     "coffee-script": "~1.7.1",
-    "coffeelint": "~1.3.0"
+    "coffeelint": "~1.3.0",
+    "request": "*"
   },
 
   "private": true,
