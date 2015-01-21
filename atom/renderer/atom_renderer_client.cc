@@ -53,10 +53,13 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
         renderer_client_(renderer_client) {}
 
   // content::RenderFrameObserver:
-  virtual void WillReleaseScriptContext(v8::Handle<v8::Context> context,
-                                        int world_id) OVERRIDE {
+  void WillReleaseScriptContext(v8::Handle<v8::Context> context,
+                                int world_id) override {
     renderer_client_->WillReleaseScriptContext(
         render_frame()->GetWebFrame(), context, world_id);
+  }
+  void DidClearWindowObject() override {
+    renderer_client_->DidClearWindowObject();
   }
 
  private:
@@ -70,7 +73,7 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
 AtomRendererClient::AtomRendererClient()
     : node_bindings_(NodeBindings::Create(false)),
       atom_bindings_(new AtomRendererBindings),
-      main_frame_(NULL) {
+      main_frame_(nullptr) {
 }
 
 AtomRendererClient::~AtomRendererClient() {
@@ -133,7 +136,7 @@ void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,
                                                 int extension_group,
                                                 int world_id) {
   // The first web frame is the main frame.
-  if (main_frame_ == NULL)
+  if (main_frame_ == nullptr)
     main_frame_ = frame;
 
   v8::Context::Scope scope(context);
@@ -156,11 +159,14 @@ void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,
   web_page_envs_.push_back(env);
 
   // Make uv loop being wrapped by window context.
-  if (node_bindings_->uv_env() == NULL)
+  if (node_bindings_->uv_env() == nullptr)
     node_bindings_->set_uv_env(env);
 
   // Load everything.
   node_bindings_->LoadEnvironment(env);
+}
+
+void AtomRendererClient::DidClearWindowObject() {
 }
 
 void AtomRendererClient::WillReleaseScriptContext(
@@ -168,7 +174,7 @@ void AtomRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context,
     int world_id) {
   node::Environment* env = node::Environment::GetCurrent(context);
-  if (env == NULL) {
+  if (env == nullptr) {
     LOG(ERROR) << "Encounter a non-node context when releasing script context";
     return;
   }
@@ -190,7 +196,7 @@ void AtomRendererClient::WillReleaseScriptContext(
   // Wrap the uv loop with another environment.
   if (env == node_bindings_->uv_env()) {
     node::Environment* env = web_page_envs_.size() > 0 ? web_page_envs_[0] :
-                                                         NULL;
+                                                         nullptr;
     node_bindings_->set_uv_env(env);
   }
 }

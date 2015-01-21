@@ -30,6 +30,7 @@ class AtomRendererClient : public content::ContentRendererClient,
   void WillReleaseScriptContext(blink::WebLocalFrame* frame,
                                 v8::Handle<v8::Context> context,
                                 int world_id);
+  void DidClearWindowObject();
 
   AtomRendererBindings* atom_bindings() const { return atom_bindings_.get(); }
 
@@ -42,7 +43,7 @@ class AtomRendererClient : public content::ContentRendererClient,
   };
 
   // content::RenderProcessObserver:
-  virtual void WebKitInitialized() OVERRIDE;
+  void WebKitInitialized() override;
 
   // content::ContentRendererClient:
   void RenderThreadStarted() override;
