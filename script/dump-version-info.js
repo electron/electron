@@ -28,7 +28,7 @@ function getInfoForCurrentVersion() {
   json.date = getDate();
   json.apm = getApmVersion();
 
-  var names = ['v8', 'uv', 'zlib', 'openssl', 'modules', 'chrome']
+  var names = ['node', 'v8', 'uv', 'zlib', 'openssl', 'modules', 'chrome']
   for (var i in names) {
     var name = names[i];
     json[name] = process.versions[name];
