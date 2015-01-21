@@ -196,7 +196,8 @@ def upload_node(bucket, access_key, secret_key, version):
     execute([atom_shell,
              os.path.join(SOURCE_ROOT, 'script', 'dump-version-info.js'),
              index_json])
-    s3put(bucket, access_key, secret_key, OUT_DIR, 'atom-shell', [index_json])
+    s3put(bucket, access_key, secret_key, OUT_DIR, 'atom-shell/dist',
+          [index_json])
 
 
 def auth_token():
