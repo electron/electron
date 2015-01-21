@@ -6,14 +6,9 @@
 #define ATOM_RENDERER_ATOM_RENDERER_CLIENT_H_
 
 #include <string>
-#include <vector>
 
 #include "content/public/renderer/content_renderer_client.h"
 #include "content/public/renderer/render_process_observer.h"
-
-namespace node {
-class Environment;
-}
 
 namespace atom {
 
@@ -27,9 +22,6 @@ class AtomRendererClient : public content::ContentRendererClient,
   virtual ~AtomRendererClient();
 
   // Forwarded by RenderFrameObserver.
-  void WillReleaseScriptContext(blink::WebLocalFrame* frame,
-                                v8::Handle<v8::Context> context,
-                                int world_id);
   void DidClearWindowObject();
 
   AtomRendererBindings* atom_bindings() const { return atom_bindings_.get(); }
@@ -67,8 +59,6 @@ class AtomRendererClient : public content::ContentRendererClient,
                   bool* send_referrer) override;
 
   void EnableWebRuntimeFeatures();
-
-  std::vector<node::Environment*> web_page_envs_;
 
   scoped_ptr<NodeBindings> node_bindings_;
   scoped_ptr<AtomRendererBindings> atom_bindings_;
