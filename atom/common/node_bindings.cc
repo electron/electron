@@ -247,9 +247,11 @@ node::Environment* NodeBindings::CreateEnvironment(
   env->set_process_object(process_object);
 
   SetupProcessObject(env, argc, argv, exec_argc, exec_argv);
-  LoadEnvironment(env);
-
   return env;
+}
+
+void NodeBindings::LoadEnvironment(node::Environment* env) {
+  node::LoadEnvironment(env);
 }
 
 void NodeBindings::PrepareMessageLoop() {

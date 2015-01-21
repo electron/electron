@@ -63,8 +63,9 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   // Support the "--debug" switch.
   node_debugger_.reset(new NodeDebugger(js_env_->isolate()));
 
-  // Create the global environment.
+  // Create and load the global environment.
   global_env = node_bindings_->CreateEnvironment(js_env_->context());
+  node_bindings_->LoadEnvironment(global_env);
 
   // Make sure node can get correct environment when debugging.
   if (node_debugger_->IsRunning())

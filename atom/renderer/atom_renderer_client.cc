@@ -148,6 +148,7 @@ void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,
 
   // Setup node environment for each window.
   node::Environment* env = node_bindings_->CreateEnvironment(context);
+  node_bindings_->LoadEnvironment(env);
 
   // Add atom-shell extended APIs.
   atom_bindings_->BindToFrame(frame);
