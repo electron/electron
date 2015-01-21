@@ -28,9 +28,6 @@ class AtomRendererBindings : public AtomBindings {
   AtomRendererBindings();
   virtual ~AtomRendererBindings();
 
-  // Call BindTo for process object of the frame.
-  void BindToFrame(blink::WebFrame* frame);
-
   // Dispatch messages from browser.
   void OnBrowserMessage(content::RenderView* render_view,
                         const base::string16& channel,

@@ -85,9 +85,6 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
     versions->Set(mate::StringToV8(isolate, "chrome"),
                   mate::StringToV8(isolate, CHROME_VERSION_STRING));
   }
-
-  v8::Handle<v8::Value> event = mate::StringToV8(isolate, "BIND_DONE");
-  node::MakeCallback(isolate, process, "emit", 1, &event);
 }
 
 void AtomBindings::ActivateUVLoop(v8::Isolate* isolate) {

@@ -148,10 +148,9 @@ void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,
 
   // Setup node environment for each window.
   node::Environment* env = node_bindings_->CreateEnvironment(context);
-  node_bindings_->LoadEnvironment(env);
 
   // Add atom-shell extended APIs.
-  atom_bindings_->BindToFrame(frame);
+  atom_bindings_->BindTo(env->isolate(), env->process_object());
 
   // Store the created environment.
   web_page_envs_.push_back(env);
@@ -159,6 +158,9 @@ void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,
   // Make uv loop being wrapped by window context.
   if (node_bindings_->uv_env() == NULL)
     node_bindings_->set_uv_env(env);
+
+  // Load everything.
+  node_bindings_->LoadEnvironment(env);
 }
 
 void AtomRendererClient::WillReleaseScriptContext(

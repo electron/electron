@@ -86,12 +86,9 @@ if nodeIntegration in ['true', 'all', 'except-iframe', 'manual-enable-iframe']
   window.addEventListener 'unload', ->
     process.emit 'exit'
 else
-  # There still some native initialization codes needs "process", delete the
-  # global reference after they are done.
-  process.once 'BIND_DONE', ->
-    delete global.process
-    delete global.setImmediate
-    delete global.clearImmediate
+  delete global.process
+  delete global.setImmediate
+  delete global.clearImmediate
 
 # Load the script specfied by the "preload" attribute.
 if preloadScript

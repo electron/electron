@@ -11,7 +11,6 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/values.h"
 #include "content/public/renderer/render_view.h"
-#include "native_mate/converter.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
@@ -35,18 +34,6 @@ AtomRendererBindings::AtomRendererBindings() {
 }
 
 AtomRendererBindings::~AtomRendererBindings() {
-}
-
-void AtomRendererBindings::BindToFrame(blink::WebFrame* frame) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  v8::HandleScope handle_scope(isolate);
-
-  v8::Handle<v8::Context> context = frame->mainWorldScriptContext();
-  if (context.IsEmpty())
-    return;
-
-  v8::Context::Scope scope(context);
-  AtomBindings::BindTo(isolate, GetProcessObject(context));
 }
 
 void AtomRendererBindings::OnBrowserMessage(content::RenderView* render_view,
