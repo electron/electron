@@ -1,4 +1,8 @@
 var app = require('app');
+var fs = require('fs');
+var request = require('request');
+
+var TARGET_URL = 'http://gh-contractor-zcbenz.s3.amazonaws.com/atom-shell/dist/index.json';
 
 function getDate() {
   var today = new Date();
@@ -12,7 +16,7 @@ function getDate() {
   return year + '-' + month + '-' + day;
 }
 
-app.on('ready', function() {
+function getInfoForCurrentVersion() {
   var json = {};
   json.version = process.versions['atom-shell'];
   json.date = getDate();
@@ -34,6 +38,42 @@ app.on('ready', function() {
     'win32-ia32-symbols',
   ];
 
-  console.log(json);
-  process.exit(0);
+  return json;
+}
+
+function getIndexJsInServer(callback) {
+  request(TARGET_URL, function(e, res, body) {
+    if (e)
+      callback(e);
+    else if (res.statusCode != 200)
+      callback(new Error('Server returned ' + res.statusCode));
+    else
+      callback(null, JSON.parse(body));
+  });
+}
+
+function findObjectByVersion(all, version) {
+  for (var i in all)
+    if (all[i].version == version)
+      return i;
+  return -1;
+}
+
+app.on('ready', function() {
+  getIndexJsInServer(function(e, all) {
+    if (e) {
+      console.error(e);
+      process.exit(1);
+    }
+
+    var current = getInfoForCurrentVersion();
+    var found = findObjectByVersion(all, current.version);
+    if (found == -1)
+      all.unshift(current);
+    else
+      all[found] = current;
+
+    fs.writeFileSync(process.argv[2], JSON.stringify(all));
+    process.exit(0);
+  });
 });
