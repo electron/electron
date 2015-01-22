@@ -65,3 +65,19 @@ describe 'chromium feature', ->
         assert.equal event.data, message
         done()
       worker.port.postMessage message
+
+  describe 'iframe', ->
+    iframe = null
+
+    beforeEach ->
+      iframe = document.createElement 'iframe'
+
+    afterEach ->
+      document.body.removeChild iframe
+
+    it 'does not have node integration', (done) ->
+      iframe.src = "file://#{fixtures}/pages/set-global.html"
+      document.body.appendChild iframe
+      iframe.onload = ->
+        assert.equal iframe.contentWindow.test, 'undefined undefined undefined'
+        done()
