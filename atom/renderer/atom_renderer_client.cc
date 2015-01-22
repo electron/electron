@@ -68,7 +68,8 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
 AtomRendererClient::AtomRendererClient()
     : node_bindings_(NodeBindings::Create(false)),
       atom_bindings_(new AtomRendererBindings),
-      main_frame_(nullptr) {
+      main_frame_(nullptr),
+      is_initialized_(false) {
 }
 
 AtomRendererClient::~AtomRendererClient() {
@@ -137,13 +138,6 @@ void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,
   // The first web frame is the main frame.
   main_frame_ = frame;
 
-  v8::Context::Scope scope(context);
-
-  // Check the existance of process object to prevent duplicate initialization.
-  if (context->Global()->Has(
-        mate::StringToV8(context->GetIsolate(), "process")))
-    return;
-
   // Give the node loop a run to make sure everything is ready.
   node_bindings_->RunMessageLoop();
 
@@ -156,12 +150,22 @@ void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,
   // Make uv loop being wrapped by window context.
   if (node_bindings_->uv_env() == nullptr)
     node_bindings_->set_uv_env(env);
-
-  // Load everything.
-  node_bindings_->LoadEnvironment(env);
 }
 
 void AtomRendererClient::DidClearWindowObject() {
+  if (!main_frame_ || is_initialized_)
+    return;
+
+  is_initialized_ = true;
+
+  v8::Local<v8::Context> context = main_frame_->mainWorldScriptContext();
+  v8::Context::Scope scope(context);
+
+  node::Environment* env = node::Environment::GetCurrent(context);
+  DCHECK(env);
+
+  // Load everything.
+  node_bindings_->LoadEnvironment(env);
 }
 
 bool AtomRendererClient::ShouldFork(blink::WebFrame* frame,

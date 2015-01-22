@@ -66,6 +66,9 @@ class AtomRendererClient : public content::ContentRendererClient,
   // The main frame.
   blink::WebFrame* main_frame_;
 
+  // Whether we have already initialized.
+  bool is_initialized_;
+
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
 };
 
