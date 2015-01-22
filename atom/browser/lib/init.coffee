@@ -24,7 +24,7 @@ globalPaths = module.globalPaths
 globalPaths.push path.join process.resourcesPath, 'atom', 'browser', 'api', 'lib'
 
 # Import common settings.
-require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init.js')
+require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
 
 if process.platform is 'win32'
   # Redirect node's console to use our own implementations, since node can not
@@ -52,7 +52,8 @@ process.on 'uncaughtException', (error) ->
   require('dialog').showErrorBox 'A JavaScript error occured in the browser process', message
 
 # Emit 'exit' event on quit.
-require('app').on 'quit', ->
+app = require 'app'
+app.on 'quit', ->
   process.emit 'exit'
 
 # Load the RPC server.
@@ -77,7 +78,6 @@ for packagePath in searchPaths
 throw new Error("Unable to find a valid app") unless packageJson?
 
 # Set application's version.
-app = require 'app'
 app.setVersion packageJson.version if packageJson.version?
 
 # Set application's name.
@@ -90,14 +90,14 @@ else if packageJson.name?
 if packageJson.desktopName?
   app.setDesktopName packageJson.desktopName
 else
-  app.setDesktopName '#{app.getName()}.desktop'
+  app.setDesktopName "#{app.getName()}.desktop"
 
 # Set the user path according to application's name.
 app.setPath 'userData', path.join(app.getPath('appData'), app.getName())
 app.setPath 'userCache', path.join(app.getPath('cache'), app.getName())
 
 # Load the chrome extension support.
-require './chrome-extension.js'
+require './chrome-extension'
 
 # Finally load app's main.js and transfer control to C++.
 module._load path.join(packagePath, packageJson.main), module, true

@@ -19,7 +19,7 @@ globalPaths.push path.join(process.resourcesPath, 'atom', 'renderer', 'api', 'li
 globalPaths.push path.join(process.resourcesPath, 'app')
 
 # Import common settings.
-require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init.js')
+require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
 
 # Process command line arguments.
 nodeIntegration = 'false'
