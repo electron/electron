@@ -105,10 +105,9 @@ def copy_source_file(source, start, destination):
 
 
 def upload_node(bucket, access_key, secret_key, version):
-  os.chdir(DIST_DIR)
-
-  s3put(bucket, access_key, secret_key, DIST_DIR,
-        'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
+  with scoped_cwd(DIST_DIR):
+    s3put(bucket, access_key, secret_key, DIST_DIR,
+          'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
 
   if TARGET_PLATFORM == 'win32':
     # Generate the node.lib.
@@ -127,13 +126,14 @@ def upload_node(bucket, access_key, secret_key, version):
           'atom-shell/dist/{0}'.format(version), [node_lib])
 
     # Upload the index.json
-    atom_shell = os.path.join(OUT_DIR, 'atom.exe')
-    index_json = os.path.join(OUT_DIR, 'index.json')
-    execute([atom_shell,
-             os.path.join(SOURCE_ROOT, 'script', 'dump-version-info.js'),
-             index_json])
-    s3put(bucket, access_key, secret_key, OUT_DIR, 'atom-shell/dist',
-          [index_json])
+    with scoped_cwd(SOURCE_ROOT):
+      atom_shell = os.path.join(OUT_DIR, 'atom.exe')
+      index_json = os.path.relpath(os.path.join(OUT_DIR, 'index.json'))
+      execute([atom_shell,
+               os.path.join('script', 'dump-version-info.js'),
+               index_json])
+      s3put(bucket, access_key, secret_key, OUT_DIR, 'atom-shell/dist',
+            [index_json])
 
 
 def touch_x64_node_lib():
