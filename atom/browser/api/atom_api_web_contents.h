@@ -134,6 +134,9 @@ class WebContents : public mate::EventEmitter,
   void EnumerateDirectory(content::WebContents* web_contents,
                           int request_id,
                           const base::FilePath& path) override;
+  bool CheckMediaAccessPermission(content::WebContents* web_contents,
+                                  const GURL& security_origin,
+                                  content::MediaStreamType type) override;
   void RequestMediaAccessPermission(
       content::WebContents*,
       const content::MediaStreamRequest&,

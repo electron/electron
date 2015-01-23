@@ -152,6 +152,12 @@ void WebContents::EnumerateDirectory(content::WebContents* guest,
   web_dialog_helper_->EnumerateDirectory(guest, request_id, path);
 }
 
+bool WebContents::CheckMediaAccessPermission(content::WebContents* web_contents,
+                                             const GURL& security_origin,
+                                             content::MediaStreamType type) {
+  return true;
+}
+
 void WebContents::RequestMediaAccessPermission(
     content::WebContents*,
     const content::MediaStreamRequest& request,
