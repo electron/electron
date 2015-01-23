@@ -13,12 +13,15 @@ class DefaultWebContentsDelegate : public content::WebContentsDelegate {
   ~DefaultWebContentsDelegate();
 
  protected:
-  virtual void RequestMediaAccessPermission(
+  bool CheckMediaAccessPermission(content::WebContents* web_contents,
+                                  const GURL& security_origin,
+                                  content::MediaStreamType type) override;
+  void RequestMediaAccessPermission(
       content::WebContents*,
       const content::MediaStreamRequest&,
       const content::MediaResponseCallback&) override;
 #if defined(OS_MACOSX)
-  virtual void HandleKeyboardEvent(
+  void HandleKeyboardEvent(
       content::WebContents*, const content::NativeWebKeyboardEvent&) override;
 #endif
 };

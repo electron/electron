@@ -10,6 +10,13 @@ DefaultWebContentsDelegate::DefaultWebContentsDelegate() {
 DefaultWebContentsDelegate::~DefaultWebContentsDelegate() {
 }
 
+bool DefaultWebContentsDelegate::CheckMediaAccessPermission(
+    content::WebContents* web_contents,
+    const GURL& security_origin,
+    content::MediaStreamType type) {
+  return true;
+}
+
 void DefaultWebContentsDelegate::RequestMediaAccessPermission(
     content::WebContents*,
     const content::MediaStreamRequest& request,
