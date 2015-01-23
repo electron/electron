@@ -84,7 +84,6 @@ def main():
   create_symbols()
   copy_binaries()
   copy_chromedriver()
-  copy_headers()
   copy_license()
 
   if TARGET_PLATFORM == 'linux':
