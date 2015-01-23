@@ -58,6 +58,9 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
   dict.SetMethod("activateUvLoop",
       base::Bind(&AtomBindings::ActivateUVLoop, base::Unretained(this)));
 
+  // Do not warn about deprecated APIs.
+  dict.Set("noDeprecation", true);
+
   mate::Dictionary versions;
   if (dict.Get("versions", &versions)) {
     versions.Set("atom-shell", ATOM_VERSION_STRING);
