@@ -10,8 +10,7 @@ import tempfile
 
 from lib.config import DIST_ARCH, TARGET_PLATFORM
 from lib.util import execute, get_atom_shell_version, parse_version, \
-                     get_chromedriver_version, scoped_cwd, safe_mkdir, \
-                     s3_config, s3put
+                     get_chromedriver_version, scoped_cwd
 from lib.github import GitHub
 
 
@@ -60,15 +59,6 @@ def main():
                       os.path.join(DIST_DIR, CHROMEDRIVER_NAME))
 
   if args.publish_release:
-    # Upload node's headers to S3.
-    bucket, access_key, secret_key = s3_config()
-    upload_node(bucket, access_key, secret_key, ATOM_SHELL_VERSION)
-
-    # Upload the SHASUMS.txt.
-    execute([sys.executable,
-             os.path.join(SOURCE_ROOT, 'script', 'upload-checksums.py'),
-             '-v', ATOM_SHELL_VERSION])
-
     # Upload PDBs to Windows symbol server.
     if TARGET_PLATFORM == 'win32':
       execute([sys.executable,
@@ -168,51 +158,12 @@ def publish_release(github, release_id):
   github.repos(ATOM_SHELL_REPO).releases(release_id).patch(data=data)
 
 
-def upload_node(bucket, access_key, secret_key, version):
-  os.chdir(DIST_DIR)
-
-  s3put(bucket, access_key, secret_key, DIST_DIR,
-        'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
-
-  if TARGET_PLATFORM == 'win32':
-    # Generate the node.lib.
-    build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
-    execute([sys.executable, build, '-c', 'Release', '-t', 'generate_node_lib'])
-
-    # Upload the 32bit node.lib.
-    node_lib = os.path.join(OUT_DIR, 'node.lib')
-    s3put(bucket, access_key, secret_key, OUT_DIR,
-          'atom-shell/dist/{0}'.format(version), [node_lib])
-
-    # Upload the fake 64bit node.lib.
-    touch_x64_node_lib()
-    node_lib = os.path.join(OUT_DIR, 'x64', 'node.lib')
-    s3put(bucket, access_key, secret_key, OUT_DIR,
-          'atom-shell/dist/{0}'.format(version), [node_lib])
-
-    # Upload the index.json
-    atom_shell = os.path.join(OUT_DIR, 'atom.exe')
-    index_json = os.path.join(OUT_DIR, 'index.json')
-    execute([atom_shell,
-             os.path.join(SOURCE_ROOT, 'script', 'dump-version-info.js'),
-             index_json])
-    s3put(bucket, access_key, secret_key, OUT_DIR, 'atom-shell/dist',
-          [index_json])
-
-
 def auth_token():
   token = os.environ.get('ATOM_SHELL_GITHUB_TOKEN')
   message = ('Error: Please set the $ATOM_SHELL_GITHUB_TOKEN '
              'environment variable, which is your personal token')
   assert token, message
   return token
-
-
-def touch_x64_node_lib():
-  x64_dir = os.path.join(OUT_DIR, 'x64')
-  safe_mkdir(x64_dir)
-  with open(os.path.join(x64_dir, 'node.lib'), 'w+') as node_lib:
-    node_lib.write('Invalid library')
 
 
 if __name__ == '__main__':
