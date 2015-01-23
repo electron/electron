@@ -57,6 +57,10 @@
 #include "ui/gfx/screen.h"
 #include "ui/gfx/size.h"
 
+#if defined(OS_WIN)
+#include "ui/gfx/switches.h"
+#endif
+
 using content::NavigationEntry;
 using content::RenderWidgetHostView;
 using content::RenderWidgetHost;
