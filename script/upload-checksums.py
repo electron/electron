@@ -8,7 +8,7 @@ import tempfile
 from lib.util import download, rm_rf, s3_config, s3put
 
 
-DIST_URL = 'https://gh-contractor-zcbenz.s3.amazonaws.com/atom-shell/dist/'
+DIST_URL = 'https://atom.io/download/atom-shell/'
 
 
 def main():

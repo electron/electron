@@ -3,7 +3,7 @@ var fs = require('fs');
 var path = require('path');
 var request = require('request');
 
-var TARGET_URL = 'http://gh-contractor-zcbenz.s3.amazonaws.com/atom-shell/dist/index.json';
+var TARGET_URL = 'https://atom.io/download/atom-shell/index.json';
 
 function getDate() {
   var today = new Date();

@@ -53,7 +53,7 @@ where to download headers and which version to use:
 
 ```bash
 $ cd /path-to-module/
-$ HOME=~/.atom-shell-gyp node-gyp rebuild --target=0.16.0 --arch=ia32 --dist-url=https://gh-contractor-zcbenz.s3.amazonaws.com/atom-shell/dist
+$ HOME=~/.atom-shell-gyp node-gyp rebuild --target=0.16.0 --arch=ia32 --dist-url=https://atom.io/download/atom-shell
 ```
 
 The `HOME=~/.atom-shell-gyp` changes where to find development headers. The
@@ -64,7 +64,7 @@ where to download the headers. The `--arch=ia32` says the module is built for
 ### The npm way
 
 ```bash
-export npm_config_disturl=https://gh-contractor-zcbenz.s3.amazonaws.com/atom-shell/dist
+export npm_config_disturl=https://atom.io/download/atom-shell
 export npm_config_target=0.6.0
 export npm_config_arch=ia32
 HOME=~/.atom-shell-gyp npm install module-name
