@@ -28,6 +28,7 @@ Linux and Windows to define some accelerators.
 * `A` to `Z`
 * `F1` to `F24`
 * Punctuations like `~`, `!`, `@`, `#`, `$`, etc.
+* `Plus`
 * `Space`
 * `Backspace`
 * `Delete`
