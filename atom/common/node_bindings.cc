@@ -26,9 +26,6 @@ using content::BrowserThread;
 // Forward declaration of internal node functions.
 namespace node {
 void Init(int*, const char**, int*, const char***);
-void Load(Environment* env);
-void SetupProcessObject(Environment*, int, const char* const*, int,
-                        const char* const*);
 }
 
 // Force all builtin modules to be referenced so they can actually run their
@@ -89,19 +86,6 @@ namespace {
 void UvNoOp(uv_async_t* handle) {
 }
 
-// Moved from node.cc.
-void HandleCloseCb(uv_handle_t* handle) {
-  node::Environment* env = reinterpret_cast<node::Environment*>(handle->data);
-  env->FinishHandleCleanup(handle);
-}
-
-void HandleCleanup(node::Environment* env,
-                   uv_handle_t* handle,
-                   void* arg) {
-  handle->data = env;
-  uv_close(handle, HandleCloseCb);
-}
-
 // Convert the given vector to an array of C-strings. The strings in the
 // returned vector are only guaranteed valid so long as the vector of strings
 // is not modified.
@@ -126,14 +110,14 @@ std::vector<std::string> String16VectorToStringVector(
 
 }  // namespace
 
-node::Environment* global_env = NULL;
+node::Environment* global_env = nullptr;
 
 NodeBindings::NodeBindings(bool is_browser)
     : is_browser_(is_browser),
-      message_loop_(NULL),
+      message_loop_(nullptr),
       uv_loop_(uv_default_loop()),
       embed_closed_(false),
-      uv_env_(NULL),
+      uv_env_(nullptr),
       weak_factory_(this) {
 }
 
@@ -158,7 +142,7 @@ void NodeBindings::Initialize() {
   // Init node.
   // (we assume it would not node::Init would not modify the parameters under
   // embedded mode).
-  node::Init(NULL, NULL, NULL, NULL);
+  node::Init(nullptr, nullptr, nullptr, nullptr);
 }
 
 node::Environment* NodeBindings::CreateEnvironment(
@@ -189,65 +173,12 @@ node::Environment* NodeBindings::CreateEnvironment(
   std::string script_path_str = script_path.AsUTF8Unsafe();
   args.insert(args.begin() + 1, script_path_str.c_str());
 
-  // Convert string vector to const char* array.
   scoped_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
-
-  // Construct the parameters that passed to node::CreateEnvironment:
-  v8::Isolate* isolate = context->GetIsolate();
-  uv_loop_t* loop = uv_default_loop();
-  int argc = args.size();
-  const char** argv = c_argv.get();
-  int exec_argc = 0;
-  const char** exec_argv = NULL;
-
-  using namespace v8;  // NOLINT
-  using namespace node;  // NOLINT
-
-  // Following code are stripped from node::CreateEnvironment in node.cc:
-  HandleScope handle_scope(isolate);
-
-  Context::Scope context_scope(context);
-  Environment* env = Environment::New(context, loop);
-
-  isolate->SetAutorunMicrotasks(false);
-
-  uv_check_init(env->event_loop(), env->immediate_check_handle());
-  uv_unref(
-      reinterpret_cast<uv_handle_t*>(env->immediate_check_handle()));
-
-  uv_idle_init(env->event_loop(), env->immediate_idle_handle());
-
-  uv_prepare_init(env->event_loop(), env->idle_prepare_handle());
-  uv_check_init(env->event_loop(), env->idle_check_handle());
-  uv_unref(reinterpret_cast<uv_handle_t*>(env->idle_prepare_handle()));
-  uv_unref(reinterpret_cast<uv_handle_t*>(env->idle_check_handle()));
-
-  // Register handle cleanups
-  env->RegisterHandleCleanup(
-      reinterpret_cast<uv_handle_t*>(env->immediate_check_handle()),
-      HandleCleanup,
-      nullptr);
-  env->RegisterHandleCleanup(
-      reinterpret_cast<uv_handle_t*>(env->immediate_idle_handle()),
-      HandleCleanup,
-      nullptr);
-  env->RegisterHandleCleanup(
-      reinterpret_cast<uv_handle_t*>(env->idle_prepare_handle()),
-      HandleCleanup,
-      nullptr);
-  env->RegisterHandleCleanup(
-      reinterpret_cast<uv_handle_t*>(env->idle_check_handle()),
-      HandleCleanup,
-      nullptr);
-
-  Local<FunctionTemplate> process_template = FunctionTemplate::New(isolate);
-  process_template->SetClassName(FIXED_ONE_BYTE_STRING(isolate, "process"));
-
-  Local<Object> process_object = process_template->GetFunction()->NewInstance();
-  env->set_process_object(process_object);
-
-  SetupProcessObject(env, argc, argv, exec_argc, exec_argv);
-  return env;
+  return node::CreateEnvironment(context->GetIsolate(),
+                                 uv_default_loop(),
+                                 context,
+                                 args.size(), c_argv.get(),
+                                 0, nullptr);
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
