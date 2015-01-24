@@ -147,15 +147,16 @@ void NodeBindings::Initialize() {
 
 node::Environment* NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context) {
+  CommandLine* command_line = CommandLine::ForCurrentProcess();
   std::vector<std::string> args =
 #if defined(OS_WIN)
-      String16VectorToStringVector(CommandLine::ForCurrentProcess()->argv());
+      String16VectorToStringVector(command_line->argv());
 #else
-      CommandLine::ForCurrentProcess()->argv();
+      command_line->argv();
 #endif
 
   // Feed node the path to initialization script.
-  base::FilePath exec_path(CommandLine::ForCurrentProcess()->argv()[0]);
+  base::FilePath exec_path(command_line->argv()[0]);
   PathService::Get(base::FILE_EXE, &exec_path);
   base::FilePath resources_path =
 #if defined(OS_MACOSX)
@@ -163,13 +164,14 @@ node::Environment* NodeBindings::CreateEnvironment(
                     exec_path.DirName().DirName().DirName().DirName().DirName()
                              .Append("Resources");
 #else
-      exec_path.DirName().AppendASCII("resources");
+      exec_path.DirName().Append(FILE_PATH_LITERAL("resources"));
 #endif
   base::FilePath script_path =
-      resources_path.AppendASCII("atom")
-                    .AppendASCII(is_browser_ ? "browser" : "renderer")
-                    .AppendASCII("lib")
-                    .AppendASCII("init.js");
+      resources_path.Append(FILE_PATH_LITERAL("atom"))
+                    .Append(is_browser_ ? FILE_PATH_LITERAL("browser") :
+                                          FILE_PATH_LITERAL("renderer"))
+                    .Append(FILE_PATH_LITERAL("lib"))
+                    .Append(FILE_PATH_LITERAL("init.js"));
   std::string script_path_str = script_path.AsUTF8Unsafe();
   args.insert(args.begin() + 1, script_path_str.c_str());
 
