@@ -21,9 +21,6 @@ class AtomRendererClient : public content::ContentRendererClient,
   AtomRendererClient();
   virtual ~AtomRendererClient();
 
-  // Forwarded by RenderFrameObserver.
-  void DidClearWindowObject();
-
  private:
   enum NodeIntegration {
     ALL,
@@ -37,7 +34,6 @@ class AtomRendererClient : public content::ContentRendererClient,
 
   // content::ContentRendererClient:
   void RenderThreadStarted() override;
-  void RenderFrameCreated(content::RenderFrame* render_frame) override;
   void RenderViewCreated(content::RenderView*) override;
   blink::WebSpeechSynthesizer* OverrideSpeechSynthesizer(
       blink::WebSpeechSynthesizerClient* client) override;
@@ -63,9 +59,6 @@ class AtomRendererClient : public content::ContentRendererClient,
 
   // The main frame.
   blink::WebFrame* main_frame_;
-
-  // Whether we have already initialized.
-  bool is_initialized_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
 };

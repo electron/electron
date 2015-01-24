@@ -4,7 +4,6 @@
 
 #include "atom/renderer/atom_renderer_client.h"
 
-#include <algorithm>
 #include <string>
 
 #include "atom/common/api/atom_bindings.h"
@@ -14,8 +13,6 @@
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/common/content_constants.h"
-#include "content/public/renderer/render_frame.h"
-#include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_thread.h"
 #include "base/command_line.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
@@ -43,32 +40,12 @@ bool IsSwitchEnabled(base::CommandLine* command_line,
   return true;
 }
 
-// Helper class to forward the messages to the client.
-class AtomRenderFrameObserver : public content::RenderFrameObserver {
- public:
-  AtomRenderFrameObserver(content::RenderFrame* frame,
-                          AtomRendererClient* renderer_client)
-      : content::RenderFrameObserver(frame),
-        renderer_client_(renderer_client) {}
-
-  // content::RenderFrameObserver:
-  void DidClearWindowObject() override {
-    renderer_client_->DidClearWindowObject();
-  }
-
- private:
-  AtomRendererClient* renderer_client_;
-
-  DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
-};
-
 }  // namespace
 
 AtomRendererClient::AtomRendererClient()
     : node_bindings_(NodeBindings::Create(false)),
       atom_bindings_(new AtomBindings),
-      main_frame_(nullptr),
-      is_initialized_(false) {
+      main_frame_(nullptr) {
 }
 
 AtomRendererClient::~AtomRendererClient() {
@@ -95,11 +72,6 @@ void AtomRendererClient::WebKitInitialized() {
 
 void AtomRendererClient::RenderThreadStarted() {
   content::RenderThread::Get()->AddObserver(this);
-}
-
-void AtomRendererClient::RenderFrameCreated(
-    content::RenderFrame* render_frame) {
-  new AtomRenderFrameObserver(render_frame, this);
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
@@ -149,19 +121,6 @@ void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,
   // Make uv loop being wrapped by window context.
   if (node_bindings_->uv_env() == nullptr)
     node_bindings_->set_uv_env(env);
-}
-
-void AtomRendererClient::DidClearWindowObject() {
-  if (!main_frame_ || is_initialized_)
-    return;
-
-  is_initialized_ = true;
-
-  v8::Local<v8::Context> context = main_frame_->mainWorldScriptContext();
-  v8::Context::Scope scope(context);
-
-  node::Environment* env = node::Environment::GetCurrent(context);
-  DCHECK(env);
 
   // Load everything.
   node_bindings_->LoadEnvironment(env);
