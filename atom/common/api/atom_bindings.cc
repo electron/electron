@@ -11,7 +11,6 @@
 #include "atom/common/chrome_version.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/logging.h"
-#include "base/debug/debugger.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
@@ -20,8 +19,11 @@ namespace atom {
 
 namespace {
 
+// Dummy class type that used for crashing the program.
+struct DummyClass { bool crash; };
+
 void Crash() {
-  base::debug::BreakDebugger();
+  static_cast<DummyClass*>(NULL)->crash = true;
 }
 
 // Called when there is a fatal error in V8, we just crash the process here so
