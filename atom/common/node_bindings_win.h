@@ -16,7 +16,7 @@ class NodeBindingsWin : public NodeBindings {
   virtual ~NodeBindingsWin();
 
  private:
-  virtual void PollEvents() OVERRIDE;
+  void PollEvents() override;
 
   DISALLOW_COPY_AND_ASSIGN(NodeBindingsWin);
 };
