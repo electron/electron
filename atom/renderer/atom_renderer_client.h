@@ -12,7 +12,7 @@
 
 namespace atom {
 
-class AtomRendererBindings;
+class AtomBindings;
 class NodeBindings;
 
 class AtomRendererClient : public content::ContentRendererClient,
@@ -23,8 +23,6 @@ class AtomRendererClient : public content::ContentRendererClient,
 
   // Forwarded by RenderFrameObserver.
   void DidClearWindowObject();
-
-  AtomRendererBindings* atom_bindings() const { return atom_bindings_.get(); }
 
  private:
   enum NodeIntegration {
@@ -61,7 +59,7 @@ class AtomRendererClient : public content::ContentRendererClient,
   void EnableWebRuntimeFeatures();
 
   scoped_ptr<NodeBindings> node_bindings_;
-  scoped_ptr<AtomRendererBindings> atom_bindings_;
+  scoped_ptr<AtomBindings> atom_bindings_;
 
   // The main frame.
   blink::WebFrame* main_frame_;

@@ -8,8 +8,9 @@
 #include <vector>
 
 #include "atom/common/api/api_messages.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
-#include "atom/renderer/api/atom_renderer_bindings.h"
 #include "atom/renderer/atom_renderer_client.h"
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
@@ -19,13 +20,31 @@
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
+#include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebView.h"
 
 #include "atom/common/node_includes.h"
 
-using blink::WebFrame;
-
 namespace atom {
+
+namespace {
+
+v8::Handle<v8::Object> GetProcessObject(v8::Isolate* isolate,
+                                        v8::Handle<v8::Context> context) {
+  v8::Handle<v8::String> key = mate::StringToV8(isolate, "process");
+  return context->Global()->Get(key)->ToObject();
+}
+
+std::vector<v8::Handle<v8::Value>> ListValueToVector(
+    v8::Isolate* isolate,
+    const base::ListValue& list) {
+  v8::Handle<v8::Value> array = mate::ConvertToV8(isolate, list);
+  std::vector<v8::Handle<v8::Value>> result;
+  mate::ConvertFromV8(isolate, array, &result);
+  return result;
+}
+
+}  // namespace
 
 AtomRenderViewObserver::AtomRenderViewObserver(
     content::RenderView* render_view,
@@ -82,8 +101,25 @@ void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
   if (!document_created_)
     return;
 
-  renderer_client_->atom_bindings()->OnBrowserMessage(
-      render_view(), channel, args);
+  if (!render_view()->GetWebView())
+    return;
+
+  blink::WebFrame* frame = render_view()->GetWebView()->mainFrame();
+  if (!frame || frame->isWebRemoteFrame())
+    return;
+
+  v8::Isolate* isolate = blink::mainThreadIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  v8::Local<v8::Context> context = frame->mainWorldScriptContext();
+  v8::Context::Scope context_scope(context);
+
+  std::vector<v8::Handle<v8::Value>> arguments = ListValueToVector(
+      isolate, args);
+  arguments.insert(arguments.begin(), mate::ConvertToV8(isolate, channel));
+
+  v8::Handle<v8::Object> process = GetProcessObject(isolate, context);
+  node::MakeCallback(isolate, process, "emit", arguments.size(), &arguments[0]);
 }
 
 }  // namespace atom
