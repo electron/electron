@@ -31,7 +31,8 @@ AtomRenderViewObserver::AtomRenderViewObserver(
     content::RenderView* render_view,
     AtomRendererClient* renderer_client)
     : content::RenderViewObserver(render_view),
-      renderer_client_(renderer_client) {
+      renderer_client_(renderer_client),
+      document_created_(false) {
 }
 
 AtomRenderViewObserver::~AtomRenderViewObserver() {
@@ -39,6 +40,8 @@ AtomRenderViewObserver::~AtomRenderViewObserver() {
 
 void AtomRenderViewObserver::DidCreateDocumentElement(
     blink::WebLocalFrame* frame) {
+  document_created_ = true;
+
   // Read --zoom-factor from command line.
   std::string zoom_factor_str = CommandLine::ForCurrentProcess()->
       GetSwitchValueASCII(switches::kZoomFactor);;
@@ -76,6 +79,9 @@ bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
 
 void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
                                               const base::ListValue& args) {
+  if (!document_created_)
+    return;
+
   renderer_client_->atom_bindings()->OnBrowserMessage(
       render_view(), channel, args);
 }
