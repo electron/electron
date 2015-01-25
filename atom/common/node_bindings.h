@@ -27,13 +27,16 @@ class NodeBindings {
   virtual ~NodeBindings();
 
   // Setup V8, libuv.
-  virtual void Initialize();
+  void Initialize();
 
   // Create the environment and load node.js.
-  virtual node::Environment* CreateEnvironment(v8::Handle<v8::Context> context);
+  node::Environment* CreateEnvironment(v8::Handle<v8::Context> context);
+
+  // Load node.js in the environment.
+  void LoadEnvironment(node::Environment* env);
 
   // Prepare for message loop integration.
-  virtual void PrepareMessageLoop();
+  void PrepareMessageLoop();
 
   // Do message loop integration.
   virtual void RunMessageLoop();

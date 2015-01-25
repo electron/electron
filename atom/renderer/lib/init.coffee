@@ -19,7 +19,7 @@ globalPaths.push path.join(process.resourcesPath, 'atom', 'renderer', 'api', 'li
 globalPaths.push path.join(process.resourcesPath, 'app')
 
 # Import common settings.
-require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init.js')
+require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
 
 # Process command line arguments.
 nodeIntegration = 'false'
@@ -86,9 +86,12 @@ if nodeIntegration in ['true', 'all', 'except-iframe', 'manual-enable-iframe']
   window.addEventListener 'unload', ->
     process.emit 'exit'
 else
-  # There still some native initialization codes needs "process", delete the
-  # global reference after they are done.
-  process.once 'BIND_DONE', ->
+  # The Module.runMain will run process._tickCallck() immediately, so we are
+  # able to delete the symbols in this tick even though we used process.nextTick
+  # to schedule it.
+  # It is important that we put this in process.nextTick, if we delete them now
+  # some code in node.js will complain about "process not defined".
+  process.nextTick ->
     delete global.process
     delete global.setImmediate
     delete global.clearImmediate

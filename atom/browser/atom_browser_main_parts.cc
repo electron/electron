@@ -72,6 +72,9 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 
   // Add atom-shell extended APIs.
   atom_bindings_->BindTo(js_env_->isolate(), global_env->process_object());
+
+  // Load everything.
+  node_bindings_->LoadEnvironment(global_env);
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {

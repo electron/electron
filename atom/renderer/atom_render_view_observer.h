@@ -36,6 +36,9 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
   // Weak reference to renderer client.
   AtomRendererClient* renderer_client_;
 
+  // Whether the document object has been created.
+  bool document_created_;
+
   DISALLOW_COPY_AND_ASSIGN(AtomRenderViewObserver);
 };
 

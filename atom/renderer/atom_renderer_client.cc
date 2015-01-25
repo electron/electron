@@ -4,21 +4,17 @@
 
 #include "atom/renderer/atom_renderer_client.h"
 
-#include <algorithm>
 #include <string>
 
+#include "atom/common/api/atom_bindings.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/options_switches.h"
-#include "atom/renderer/api/atom_renderer_bindings.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/common/content_constants.h"
-#include "content/public/renderer/render_frame.h"
-#include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_thread.h"
 #include "base/command_line.h"
-#include "native_mate/converter.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebPluginParams.h"
@@ -44,33 +40,12 @@ bool IsSwitchEnabled(base::CommandLine* command_line,
   return true;
 }
 
-// Helper class to forward the WillReleaseScriptContext message to the client.
-class AtomRenderFrameObserver : public content::RenderFrameObserver {
- public:
-  AtomRenderFrameObserver(content::RenderFrame* frame,
-                          AtomRendererClient* renderer_client)
-      : content::RenderFrameObserver(frame),
-        renderer_client_(renderer_client) {}
-
-  // content::RenderFrameObserver:
-  virtual void WillReleaseScriptContext(v8::Handle<v8::Context> context,
-                                        int world_id) OVERRIDE {
-    renderer_client_->WillReleaseScriptContext(
-        render_frame()->GetWebFrame(), context, world_id);
-  }
-
- private:
-  AtomRendererClient* renderer_client_;
-
-  DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
-};
-
 }  // namespace
 
 AtomRendererClient::AtomRendererClient()
     : node_bindings_(NodeBindings::Create(false)),
-      atom_bindings_(new AtomRendererBindings),
-      main_frame_(NULL) {
+      atom_bindings_(new AtomBindings),
+      main_frame_(nullptr) {
 }
 
 AtomRendererClient::~AtomRendererClient() {
@@ -97,11 +72,6 @@ void AtomRendererClient::WebKitInitialized() {
 
 void AtomRendererClient::RenderThreadStarted() {
   content::RenderThread::Get()->AddObserver(this);
-}
-
-void AtomRendererClient::RenderFrameCreated(
-    content::RenderFrame* render_frame) {
-  new AtomRenderFrameObserver(render_frame, this);
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
@@ -132,16 +102,12 @@ void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,
                                                 v8::Handle<v8::Context> context,
                                                 int extension_group,
                                                 int world_id) {
-  // The first web frame is the main frame.
-  if (main_frame_ == NULL)
-    main_frame_ = frame;
-
-  v8::Context::Scope scope(context);
-
-  // Check the existance of process object to prevent duplicate initialization.
-  if (context->Global()->Has(
-        mate::StringToV8(context->GetIsolate(), "process")))
+  // Only attach node bindings in main frame.
+  if (main_frame_)
     return;
+
+  // The first web frame is the main frame.
+  main_frame_ = frame;
 
   // Give the node loop a run to make sure everything is ready.
   node_bindings_->RunMessageLoop();
@@ -150,46 +116,14 @@ void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,
   node::Environment* env = node_bindings_->CreateEnvironment(context);
 
   // Add atom-shell extended APIs.
-  atom_bindings_->BindToFrame(frame);
-
-  // Store the created environment.
-  web_page_envs_.push_back(env);
+  atom_bindings_->BindTo(env->isolate(), env->process_object());
 
   // Make uv loop being wrapped by window context.
-  if (node_bindings_->uv_env() == NULL)
+  if (node_bindings_->uv_env() == nullptr)
     node_bindings_->set_uv_env(env);
-}
 
-void AtomRendererClient::WillReleaseScriptContext(
-    blink::WebLocalFrame* frame,
-    v8::Handle<v8::Context> context,
-    int world_id) {
-  node::Environment* env = node::Environment::GetCurrent(context);
-  if (env == NULL) {
-    LOG(ERROR) << "Encounter a non-node context when releasing script context";
-    return;
-  }
-
-  // Clear the environment.
-  web_page_envs_.erase(
-      std::remove(web_page_envs_.begin(), web_page_envs_.end(), env),
-      web_page_envs_.end());
-
-  // Notice that we are not disposing the environment object here, because there
-  // may still be pending uv operations in the uv loop, and when they got done
-  // they would be needing the original environment.
-  // So we are leaking the environment object here, just like Chrome leaking the
-  // memory :) . Since it's only leaked when refreshing or unloading, so as long
-  // as we make sure renderer process is restared then the memory would not be
-  // leaked.
-  // env->Dispose();
-
-  // Wrap the uv loop with another environment.
-  if (env == node_bindings_->uv_env()) {
-    node::Environment* env = web_page_envs_.size() > 0 ? web_page_envs_[0] :
-                                                         NULL;
-    node_bindings_->set_uv_env(env);
-  }
+  // Load everything.
+  node_bindings_->LoadEnvironment(env);
 }
 
 bool AtomRendererClient::ShouldFork(blink::WebFrame* frame,

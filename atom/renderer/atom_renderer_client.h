@@ -6,18 +6,13 @@
 #define ATOM_RENDERER_ATOM_RENDERER_CLIENT_H_
 
 #include <string>
-#include <vector>
 
 #include "content/public/renderer/content_renderer_client.h"
 #include "content/public/renderer/render_process_observer.h"
 
-namespace node {
-class Environment;
-}
-
 namespace atom {
 
-class AtomRendererBindings;
+class AtomBindings;
 class NodeBindings;
 
 class AtomRendererClient : public content::ContentRendererClient,
@@ -25,13 +20,6 @@ class AtomRendererClient : public content::ContentRendererClient,
  public:
   AtomRendererClient();
   virtual ~AtomRendererClient();
-
-  // Forwarded by RenderFrameObserver.
-  void WillReleaseScriptContext(blink::WebLocalFrame* frame,
-                                v8::Handle<v8::Context> context,
-                                int world_id);
-
-  AtomRendererBindings* atom_bindings() const { return atom_bindings_.get(); }
 
  private:
   enum NodeIntegration {
@@ -42,11 +30,10 @@ class AtomRendererClient : public content::ContentRendererClient,
   };
 
   // content::RenderProcessObserver:
-  virtual void WebKitInitialized() OVERRIDE;
+  void WebKitInitialized() override;
 
   // content::ContentRendererClient:
   void RenderThreadStarted() override;
-  void RenderFrameCreated(content::RenderFrame* render_frame) override;
   void RenderViewCreated(content::RenderView*) override;
   blink::WebSpeechSynthesizer* OverrideSpeechSynthesizer(
       blink::WebSpeechSynthesizerClient* client) override;
@@ -67,10 +54,8 @@ class AtomRendererClient : public content::ContentRendererClient,
 
   void EnableWebRuntimeFeatures();
 
-  std::vector<node::Environment*> web_page_envs_;
-
   scoped_ptr<NodeBindings> node_bindings_;
-  scoped_ptr<AtomRendererBindings> atom_bindings_;
+  scoped_ptr<AtomBindings> atom_bindings_;
 
   // The main frame.
   blink::WebFrame* main_frame_;
