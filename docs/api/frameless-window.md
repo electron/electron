@@ -30,7 +30,7 @@ var win = new BrowserWindow({ transparent: true, frame: false });
 * Transparent window is not resizable, setting `resizable` to `true` may make
   transprent window stop working on some platforms.
 * The `blur` filter only applies to the web page, so there is no way to apply
-  blur effect to the content bellow the window.
+  blur effect to the content below the window.
 * On Windows transparent window will not work when DWM is disabled.
 * On Linux users have to put `--enable-transparent-visuals --disable-gpu` in
   command line to disable GPU and allow ARGB to make transparent window, this is
