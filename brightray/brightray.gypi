@@ -35,8 +35,8 @@
     'xcode_settings': {
       'ALWAYS_SEARCH_USER_PATHS': 'NO',
       'ARCHS': ['x86_64'],
-      'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++11',
-      'CLANG_CXX_LIBRARY': 'libstdc++',
+      'CLANG_CXX_LANGUAGE_STANDARD': 'c++11',
+      'CLANG_CXX_LIBRARY': 'libc++',
       'COMBINE_HIDPI_IMAGES': 'YES',
       'GCC_ENABLE_CPP_EXCEPTIONS': 'NO',
       'GCC_ENABLE_CPP_RTTI': 'NO',
