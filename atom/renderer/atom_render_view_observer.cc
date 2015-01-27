@@ -29,10 +29,10 @@ namespace atom {
 
 namespace {
 
-v8::Handle<v8::Object> GetProcessObject(v8::Isolate* isolate,
-                                        v8::Handle<v8::Context> context) {
-  v8::Handle<v8::String> key = mate::StringToV8(isolate, "process");
-  return context->Global()->Get(key)->ToObject();
+v8::Handle<v8::Object> GetIPCObject(v8::Isolate* isolate,
+                                    v8::Handle<v8::Context> context) {
+  v8::Handle<v8::String> key = mate::StringToV8(isolate, "ipc");
+  return context->Global()->GetHiddenValue(key)->ToObject();
 }
 
 std::vector<v8::Handle<v8::Value>> ListValueToVector(
@@ -118,8 +118,8 @@ void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
       isolate, args);
   arguments.insert(arguments.begin(), mate::ConvertToV8(isolate, channel));
 
-  v8::Handle<v8::Object> process = GetProcessObject(isolate, context);
-  node::MakeCallback(isolate, process, "emit", arguments.size(), &arguments[0]);
+  v8::Handle<v8::Object> ipc = GetIPCObject(isolate, context);
+  node::MakeCallback(isolate, ipc, "emit", arguments.size(), &arguments[0]);
 }
 
 }  // namespace atom

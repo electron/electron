@@ -1,4 +1,5 @@
 process = global.process
+events  = require 'events'
 path    = require 'path'
 url     = require 'url'
 Module  = require 'module'
@@ -20,6 +21,10 @@ globalPaths.push path.join(process.resourcesPath, 'app')
 
 # Import common settings.
 require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
+
+# The global variable will be used by ipc for event dispatching
+v8Util = process.atomBinding 'v8_util'
+v8Util.setHiddenValue global, 'ipc', new events.EventEmitter
 
 # Process command line arguments.
 nodeIntegration = 'false'
