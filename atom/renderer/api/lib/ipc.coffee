@@ -4,9 +4,6 @@ v8Util  = process.atomBinding 'v8_util'
 # Created by init.coffee.
 ipc = v8Util.getHiddenValue global, 'ipc'
 
-ipc.on 'ATOM_INTERNAL_MESSAGE', (args...) ->
-  @emit args...
-
 ipc.send = (args...) ->
   binding.send 'ipc-message', [args...]
 
