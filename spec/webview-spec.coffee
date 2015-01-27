@@ -58,6 +58,22 @@ describe '<webview> tag', ->
       webview.src = "file://#{fixtures}/pages/e.html"
       document.body.appendChild webview
 
+    it 'receives ipc message in preload script', (done) ->
+      message = 'boom!'
+      listener = (e) ->
+        assert.equal e.channel, 'pong'
+        assert.deepEqual e.args, [message]
+        webview.removeEventListener 'ipc-message', listener
+        done()
+      listener2 = (e) ->
+        webview.send 'ping', message
+        webview.removeEventListener 'did-finish-load', listener2
+      webview.addEventListener 'ipc-message', listener
+      webview.addEventListener 'did-finish-load', listener2
+      webview.setAttribute 'preload', "#{fixtures}/module/preload-ipc.js"
+      webview.src = "file://#{fixtures}/pages/e.html"
+      document.body.appendChild webview
+
   describe 'httpreferrer attribute', ->
     it 'sets the referrer url', (done) ->
       referrer = 'http://github.com/'

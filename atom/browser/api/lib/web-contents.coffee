@@ -9,8 +9,8 @@ module.exports.wrap = (webContents) ->
   webContents.__proto__ = EventEmitter.prototype
 
   # WebContents::send(channel, args..)
-  webContents.send = (args...) ->
-    @_send 'ATOM_INTERNAL_MESSAGE', [args...]
+  webContents.send = (channel, args...) ->
+    @_send channel, [args...]
 
   # Make sure webContents.executeJavaScript would run the code only when the
   # web contents has been loaded.
