@@ -23,14 +23,14 @@ class TrayIconGtk : public TrayIcon,
   virtual ~TrayIconGtk();
 
   // TrayIcon:
-  virtual void SetImage(const gfx::Image& image) OVERRIDE;
-  virtual void SetToolTip(const std::string& tool_tip) OVERRIDE;
-  virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) OVERRIDE;
+  void SetImage(const gfx::Image& image) override;
+  void SetToolTip(const std::string& tool_tip) override;
+  void SetContextMenu(ui::SimpleMenuModel* menu_model) override;
 
  private:
   // views::StatusIconLinux::Delegate:
-  virtual void OnClick() OVERRIDE;
-  virtual bool HasClickAction() OVERRIDE;
+  void OnClick() override;
+  bool HasClickAction() override;
 
   scoped_ptr<views::StatusIconLinux> icon_;
 

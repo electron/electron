@@ -27,10 +27,10 @@ class AsarProtocolHandler : public net::URLRequestJobFactory::ProtocolHandler {
   Archive* GetOrCreateAsarArchive(const base::FilePath& path) const;
 
   // net::URLRequestJobFactory::ProtocolHandler:
-  virtual net::URLRequestJob* MaybeCreateJob(
+  net::URLRequestJob* MaybeCreateJob(
       net::URLRequest* request,
-      net::NetworkDelegate* network_delegate) const OVERRIDE;
-  virtual bool IsSafeRedirectTarget(const GURL& location) const OVERRIDE;
+      net::NetworkDelegate* network_delegate) const override;
+  bool IsSafeRedirectTarget(const GURL& location) const override;
 
  private:
   const scoped_refptr<base::TaskRunner> file_task_runner_;

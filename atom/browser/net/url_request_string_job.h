@@ -20,10 +20,10 @@ class URLRequestStringJob : public net::URLRequestSimpleJob {
                       const std::string& data);
 
   // URLRequestSimpleJob:
-  virtual int GetData(std::string* mime_type,
-                      std::string* charset,
-                      std::string* data,
-                      const net::CompletionCallback& callback) const OVERRIDE;
+  int GetData(std::string* mime_type,
+              std::string* charset,
+              std::string* data,
+              const net::CompletionCallback& callback) const override;
 
  private:
   std::string mime_type_;

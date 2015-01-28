@@ -29,26 +29,26 @@ class TtsControllerImpl : public TtsController {
   static TtsControllerImpl* GetInstance();
 
   // TtsController methods
-  virtual bool IsSpeaking() OVERRIDE;
-  virtual void SpeakOrEnqueue(Utterance* utterance) OVERRIDE;
-  virtual void Stop() OVERRIDE;
-  virtual void Pause() OVERRIDE;
-  virtual void Resume() OVERRIDE;
+  virtual bool IsSpeaking() override;
+  virtual void SpeakOrEnqueue(Utterance* utterance) override;
+  virtual void Stop() override;
+  virtual void Pause() override;
+  virtual void Resume() override;
   virtual void OnTtsEvent(int utterance_id,
                   TtsEventType event_type,
                   int char_index,
-                  const std::string& error_message) OVERRIDE;
+                  const std::string& error_message) override;
   virtual void GetVoices(content::BrowserContext* browser_context,
-                         std::vector<VoiceData>* out_voices) OVERRIDE;
-  virtual void VoicesChanged() OVERRIDE;
+                         std::vector<VoiceData>* out_voices) override;
+  virtual void VoicesChanged() override;
   virtual void AddVoicesChangedDelegate(
-      VoicesChangedDelegate* delegate) OVERRIDE;
+      VoicesChangedDelegate* delegate) override;
   virtual void RemoveVoicesChangedDelegate(
-      VoicesChangedDelegate* delegate) OVERRIDE;
-  virtual void SetTtsEngineDelegate(TtsEngineDelegate* delegate) OVERRIDE;
-  virtual TtsEngineDelegate* GetTtsEngineDelegate() OVERRIDE;
-  virtual void SetPlatformImpl(TtsPlatformImpl* platform_impl) OVERRIDE;
-  virtual int QueueSize() OVERRIDE;
+      VoicesChangedDelegate* delegate) override;
+  virtual void SetTtsEngineDelegate(TtsEngineDelegate* delegate) override;
+  virtual TtsEngineDelegate* GetTtsEngineDelegate() override;
+  virtual void SetPlatformImpl(TtsPlatformImpl* platform_impl) override;
+  virtual int QueueSize() override;
 
  protected:
   TtsControllerImpl();

@@ -27,14 +27,14 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 
  protected:
   // Implementations of brightray::BrowserMainParts.
-  virtual brightray::BrowserContext* CreateBrowserContext() OVERRIDE;
+  brightray::BrowserContext* CreateBrowserContext() override;
 
   // Implementations of content::BrowserMainParts.
-  virtual void PostEarlyInitialization() OVERRIDE;
-  virtual void PreMainMessageLoopRun() OVERRIDE;
+  void PostEarlyInitialization() override;
+  void PreMainMessageLoopRun() override;
 #if defined(OS_MACOSX)
-  virtual void PreMainMessageLoopStart() OVERRIDE;
-  virtual void PostDestroyThreads() OVERRIDE;
+  void PreMainMessageLoopStart() override;
+  void PostDestroyThreads() override;
 #endif
 
  private:

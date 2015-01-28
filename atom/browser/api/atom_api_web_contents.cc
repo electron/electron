@@ -247,14 +247,14 @@ void WebContents::RenderViewReady() {
   // WebContents::GetRenderWidgetHostView will return the RWHV of an
   // interstitial page if one is showing at this time. We only want opacity
   // to apply to web pages.
-  web_contents()->GetRenderViewHost()->GetView()->
-      SetBackgroundOpaque(guest_opaque_);
-
-  content::RenderViewHost* rvh = web_contents()->GetRenderViewHost();
-  if (auto_size_enabled_) {
-    rvh->EnableAutoResize(min_auto_size_, max_auto_size_);
+  if (guest_opaque_) {
+    web_contents()
+        ->GetRenderViewHost()
+        ->GetView()
+        ->SetBackgroundColorToDefault();
   } else {
-    rvh->DisableAutoResize(element_size_);
+    web_contents()->GetRenderViewHost()->GetView()->SetBackgroundColor(
+        SK_ColorTRANSPARENT);
   }
 }
 
@@ -498,7 +498,15 @@ void WebContents::SetAllowTransparency(bool allow) {
   if (!web_contents()->GetRenderViewHost()->GetView())
     return;
 
-  web_contents()->GetRenderViewHost()->GetView()->SetBackgroundOpaque(!allow);
+  if (guest_opaque_) {
+    web_contents()
+        ->GetRenderViewHost()
+        ->GetView()
+        ->SetBackgroundColorToDefault();
+  } else {
+    web_contents()->GetRenderViewHost()->GetView()->SetBackgroundColor(
+        SK_ColorTRANSPARENT);
+  }
 }
 
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(

@@ -225,7 +225,7 @@ void NodeBindings::UvRunOnce() {
   v8::Context::Scope context_scope(env->context());
 
   // Deal with uv events.
-  int r = uv_run(uv_loop_, (uv_run_mode)(UV_RUN_ONCE | UV_RUN_NOWAIT));
+  int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
   if (r == 0 || uv_loop_->stop_flag != 0)
     message_loop_->QuitWhenIdle();  // Quit from uv.
 

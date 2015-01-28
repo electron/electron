@@ -17,10 +17,10 @@ class AtomAccessTokenStore : public content::AccessTokenStore {
   virtual ~AtomAccessTokenStore();
 
   // content::AccessTokenStore:
-  virtual void LoadAccessTokens(
-      const LoadAccessTokensCallbackType& callback) OVERRIDE;
-  virtual void SaveAccessToken(const GURL& server_url,
-                               const base::string16& access_token) OVERRIDE;
+  void LoadAccessTokens(
+      const LoadAccessTokensCallbackType& callback) override;
+  void SaveAccessToken(const GURL& server_url,
+                       const base::string16& access_token) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(AtomAccessTokenStore);

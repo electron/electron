@@ -28,16 +28,16 @@ class AdapterRequestJob : public net::URLRequestJob {
 
  public:
   // net::URLRequestJob:
-  virtual void Start() OVERRIDE;
-  virtual void Kill() OVERRIDE;
-  virtual bool ReadRawData(net::IOBuffer* buf,
-                           int buf_size,
-                           int *bytes_read) OVERRIDE;
-  virtual bool IsRedirectResponse(GURL* location,
-                                  int* http_status_code) OVERRIDE;
-  virtual net::Filter* SetupFilter() const OVERRIDE;
-  virtual bool GetMimeType(std::string* mime_type) const OVERRIDE;
-  virtual bool GetCharset(std::string* charset) OVERRIDE;
+  void Start() override;
+  void Kill() override;
+  bool ReadRawData(net::IOBuffer* buf,
+                   int buf_size,
+                   int *bytes_read) override;
+  bool IsRedirectResponse(GURL* location,
+                          int* http_status_code) override;
+  net::Filter* SetupFilter() const override;
+  bool GetMimeType(std::string* mime_type) const override;
+  bool GetCharset(std::string* charset) override;
 
   base::WeakPtr<AdapterRequestJob> GetWeakPtr();
 

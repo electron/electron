@@ -12,6 +12,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/file_chooser_file_info.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
 namespace atom {
@@ -26,15 +27,19 @@ WebDialogHelper::~WebDialogHelper() {
 
 void WebDialogHelper::RunFileChooser(content::WebContents* web_contents,
                                      const content::FileChooserParams& params) {
-  std::vector<ui::SelectedFileInfo> result;
+  std::vector<content::FileChooserFileInfo> result;
   if (params.mode == content::FileChooserParams::Save) {
     base::FilePath path;
     if (file_dialog::ShowSaveDialog(window_,
                                     base::UTF16ToUTF8(params.title),
                                     params.default_file_name,
                                     file_dialog::Filters(),
-                                    &path))
-      result.push_back(ui::SelectedFileInfo(path, path));
+                                    &path)) {
+      content::FileChooserFileInfo info;
+      info.file_path = path;
+      info.display_name = path.BaseName().value();
+      result.push_back(info);
+    }
   } else {
     int flags = file_dialog::FILE_DIALOG_CREATE_DIRECTORY;
     switch (params.mode) {
@@ -56,9 +61,14 @@ void WebDialogHelper::RunFileChooser(content::WebContents* web_contents,
                                     params.default_file_name,
                                     file_dialog::Filters(),
                                     flags,
-                                    &paths))
-      for (auto& path : paths)
-        result.push_back(ui::SelectedFileInfo(path, path));
+                                    &paths)) {
+      for (auto& path : paths) {
+        content::FileChooserFileInfo info;
+        info.file_path = path;
+        info.display_name = path.BaseName().value();
+        result.push_back(info);
+      }
+    }
   }
 
   web_contents->GetRenderViewHost()->FilesSelectedInChooser(

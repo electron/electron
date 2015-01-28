@@ -33,10 +33,10 @@ class PrinterQuery : public PrintJobWorkerOwner {
 
   // PrintJobWorkerOwner implementation.
   virtual void GetSettingsDone(const PrintSettings& new_settings,
-                               PrintingContext::Result result) OVERRIDE;
-  virtual PrintJobWorker* DetachWorker(PrintJobWorkerOwner* new_owner) OVERRIDE;
-  virtual const PrintSettings& settings() const OVERRIDE;
-  virtual int cookie() const OVERRIDE;
+                               PrintingContext::Result result) override;
+  virtual PrintJobWorker* DetachWorker(PrintJobWorkerOwner* new_owner) override;
+  virtual const PrintSettings& settings() const override;
+  virtual int cookie() const override;
 
   // Initializes the printing context. It is fine to call this function multiple
   // times to reinitialize the settings. |web_contents_observer| can be queried

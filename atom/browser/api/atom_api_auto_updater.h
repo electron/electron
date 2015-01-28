@@ -26,20 +26,20 @@ class AutoUpdater : public mate::EventEmitter,
   virtual ~AutoUpdater();
 
   // AutoUpdaterDelegate implementations.
-  virtual void OnError(const std::string& error) OVERRIDE;
-  virtual void OnCheckingForUpdate() OVERRIDE;
-  virtual void OnUpdateAvailable() OVERRIDE;
-  virtual void OnUpdateNotAvailable() OVERRIDE;
-  virtual void OnUpdateDownloaded(
+  void OnError(const std::string& error) override;
+  void OnCheckingForUpdate() override;
+  void OnUpdateAvailable() override;
+  void OnUpdateNotAvailable() override;
+  void OnUpdateDownloaded(
       const std::string& release_notes,
       const std::string& release_name,
       const base::Time& release_date,
       const std::string& update_url,
-      const base::Closure& quit_and_install) OVERRIDE;
+      const base::Closure& quit_and_install) override;
 
   // mate::Wrappable implementations:
-  virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate);
+  mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
 
  private:
   void QuitAndInstall();

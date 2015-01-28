@@ -41,12 +41,12 @@ class GlobalShortcutListenerMac : public GlobalShortcutListener {
   bool OnMediaOrVolumeKeyEvent(int key_code);
 
   // GlobalShortcutListener implementation.
-  virtual void StartListening() OVERRIDE;
-  virtual void StopListening() OVERRIDE;
+  virtual void StartListening() override;
+  virtual void StopListening() override;
   virtual bool RegisterAcceleratorImpl(
-      const ui::Accelerator& accelerator) OVERRIDE;
+      const ui::Accelerator& accelerator) override;
   virtual void UnregisterAcceleratorImpl(
-      const ui::Accelerator& accelerator) OVERRIDE;
+      const ui::Accelerator& accelerator) override;
 
   // Mac-specific functions for registering hot keys with modifiers.
   bool RegisterHotKey(const ui::Accelerator& accelerator, KeyId hot_key_id);

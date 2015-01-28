@@ -24,9 +24,9 @@ class PowerMonitor : public mate::EventEmitter,
   virtual ~PowerMonitor();
 
   // base::PowerObserver implementations:
-  virtual void OnPowerStateChange(bool on_battery_power) OVERRIDE;
-  virtual void OnSuspend() OVERRIDE;
-  virtual void OnResume() OVERRIDE;
+  void OnPowerStateChange(bool on_battery_power) override;
+  void OnSuspend() override;
+  void OnResume() override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(PowerMonitor);

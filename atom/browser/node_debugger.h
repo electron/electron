@@ -33,12 +33,12 @@ class NodeDebugger : public net::StreamListenSocket::Delegate {
   static void DebugMessageHandler(const v8::Debug::Message& message);
 
   // net::StreamListenSocket::Delegate:
-  virtual void DidAccept(net::StreamListenSocket* server,
-                         scoped_ptr<net::StreamListenSocket> socket) OVERRIDE;
-  virtual void DidRead(net::StreamListenSocket* socket,
-                       const char* data,
-                       int len) OVERRIDE;
-  virtual void DidClose(net::StreamListenSocket* socket) OVERRIDE;
+  void DidAccept(net::StreamListenSocket* server,
+                 scoped_ptr<net::StreamListenSocket> socket) override;
+  void DidRead(net::StreamListenSocket* socket,
+               const char* data,
+               int len) override;
+  void DidClose(net::StreamListenSocket* socket) override;
 
   v8::Isolate* isolate_;
 
