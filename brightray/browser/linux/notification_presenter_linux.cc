@@ -69,7 +69,7 @@ void NotificationPresenterLinux::ShowNotification(
   notify_notification_show(notification, &error);
   if (error) {
     log_and_clear_error(error, "notify_notification_show");
-    delegate->NotificationError();
+    g_object_unref(notification);
     return;
   }
 
