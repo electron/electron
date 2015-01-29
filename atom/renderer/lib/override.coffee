@@ -42,7 +42,11 @@ window.open = (url, frameName='', features='') ->
   options.height ?= 600
 
   guestId = ipc.sendSync 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', url, frameName, options
-  new FakeWindow(guestId)
+  if guestId
+    new FakeWindow(guestId)
+  else
+    console.error 'It is not allowed to open new window from this WebContents'
+    null
 
 # Use the dialog API to implement alert().
 window.alert = (message, title='') ->
