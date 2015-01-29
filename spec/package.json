@@ -5,12 +5,12 @@
   "version": "0.1.0",
 
   "devDependencies": {
-    "formidable": "~1.0.14",
-    "pathwatcher": "2.x",
+    "formidable": "1.0.16",
+    "pathwatcher": "3.x",
     "q": "0.9.7",
-    "mocha": "~1.18.2",
-    "runas": "1.x",
-    "temp": "~0.6.0",
-    "walkdir": "~0.0.7"
+    "mocha": "2.1.0",
+    "runas": "2.x",
+    "temp": "0.8.1",
+    "walkdir": "0.0.7"
   }
 }
