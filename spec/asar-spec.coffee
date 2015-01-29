@@ -328,7 +328,7 @@ describe 'asar package', ->
 
       it 'throws ENOENT error when can not find file', (done) ->
         p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
-        fs.open p, (err, stats) ->
+        fs.open p, 'r', (err, stats) ->
           assert.equal err.code, 'ENOENT'
           done()
 
