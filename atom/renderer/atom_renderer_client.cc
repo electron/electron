@@ -40,6 +40,10 @@ bool IsSwitchEnabled(base::CommandLine* command_line,
   return true;
 }
 
+bool IsGuestFrame(blink::WebFrame* frame) {
+  return frame->uniqueName().utf8() == "ATOM_SHELL_GUEST_WEB_VIEW";
+}
+
 }  // namespace
 
 AtomRendererClient::AtomRendererClient()
@@ -102,12 +106,14 @@ void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,
                                                 v8::Handle<v8::Context> context,
                                                 int extension_group,
                                                 int world_id) {
-  // Only attach node bindings in main frame.
-  if (main_frame_)
-    return;
+  // Only attach node bindings in main frame or guest frame.
+  if (!IsGuestFrame(frame)) {
+    if (main_frame_)
+      return;
 
-  // The first web frame is the main frame.
-  main_frame_ = frame;
+    // The first web frame is the main frame.
+    main_frame_ = frame;
+  }
 
   // Give the node loop a run to make sure everything is ready.
   node_bindings_->RunMessageLoop();
@@ -133,7 +139,7 @@ bool AtomRendererClient::ShouldFork(blink::WebFrame* frame,
                                     bool is_server_redirect,
                                     bool* send_referrer) {
   // Never fork renderer process for guests.
-  if (frame->uniqueName().utf8() == "ATOM_SHELL_GUEST_WEB_VIEW")
+  if (IsGuestFrame(frame))
     return false;
 
   // Handle all the navigations and reloads in browser.
