@@ -25,8 +25,6 @@ namespace atom {
 
 namespace {
 
-const char* kAsarScheme = "asar";
-
 class NoCacheBackend : public net::HttpCache::BackendFactory {
   int CreateBackend(net::NetLog* net_log,
                     scoped_ptr<disk_cache::Backend>* backend,
@@ -59,10 +57,6 @@ net::URLRequestJobFactory* AtomBrowserContext::CreateURLRequestJobFactory(
       url::kDataScheme, new net::DataProtocolHandler);
   job_factory->SetProtocolHandler(
       url::kFileScheme, new asar::AsarProtocolHandler(
-          BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
-              base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
-  job_factory->SetProtocolHandler(
-      kAsarScheme, new asar::AsarProtocolHandler(
           BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
               base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
 

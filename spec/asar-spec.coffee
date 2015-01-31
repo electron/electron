@@ -348,47 +348,47 @@ describe 'asar package', ->
         assert.throws throws, /ENOENT/
 
   describe 'asar protocol', ->
+    url = require 'url'
+    remote = require 'remote'
+    ipc = remote.require 'ipc'
+    BrowserWindow = remote.require 'browser-window'
+
     it 'can request a file in package', (done) ->
       p = path.resolve fixtures, 'asar', 'a.asar', 'file1'
-      $.get "asar:#{p}", (data) ->
+      $.get "file://#{p}", (data) ->
         assert.equal data, 'file1\n'
         done()
 
     it 'can request a linked file in package', (done) ->
       p = path.resolve fixtures, 'asar', 'a.asar', 'link2', 'link1'
-      $.get "asar:#{p}", (data) ->
+      $.get "file://#{p}", (data) ->
         assert.equal data, 'file1\n'
         done()
 
     it 'can request a file in filesystem', (done) ->
       p = path.resolve fixtures, 'asar', 'file'
-      $.get "asar:#{p}", (data) ->
+      $.get "file://#{p}", (data) ->
         assert.equal data, 'file\n'
         done()
 
     it 'gets 404 when file is not found', (done) ->
       p = path.resolve fixtures, 'asar', 'a.asar', 'no-exist'
       $.ajax
-        url: "asar:#{p}"
+        url: "file://#{p}"
         error: (err) ->
           assert.equal err.status, 404
           done()
 
     it 'sets __dirname correctly', (done) ->
-      url = require 'url'
-      remote = require 'remote'
-      ipc = remote.require 'ipc'
-      BrowserWindow = remote.require 'browser-window'
-
       after ->
         w.destroy()
         ipc.removeAllListeners 'dirname'
 
       w = new BrowserWindow(show: false, width: 400, height: 400)
       p = path.resolve fixtures, 'asar', 'web.asar', 'index.html'
-      u = url.format protocol: 'asar', slashed: false, pathname: p
+      u = url.format protocol: 'file', slashed: true, pathname: p
       w.loadUrl u
-      ipc.on 'dirname', (event, dirname) ->
+      ipc.once 'dirname', (event, dirname) ->
         assert.equal dirname, path.dirname(p)
         done()
 
