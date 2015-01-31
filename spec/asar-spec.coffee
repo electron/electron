@@ -392,6 +392,19 @@ describe 'asar package', ->
         assert.equal dirname, path.dirname(p)
         done()
 
+    it 'loads script tag in html', (done) ->
+      after ->
+        w.destroy()
+        ipc.removeAllListeners 'ping'
+
+      w = new BrowserWindow(show: false, width: 400, height: 400)
+      p = path.resolve fixtures, 'asar', 'script.asar', 'index.html'
+      u = url.format protocol: 'file', slashed: true, pathname: p
+      w.loadUrl u
+      ipc.once 'ping', (event, message) ->
+        assert.equal message, 'pong'
+        done()
+
   describe 'original-fs module', ->
     originalFs = require 'original-fs'
 
