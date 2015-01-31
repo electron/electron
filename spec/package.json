@@ -6,7 +6,6 @@
 
   "devDependencies": {
     "formidable": "1.0.16",
-    "pathwatcher": "3.x",
     "q": "0.9.7",
     "mocha": "2.1.0",
     "runas": "2.x",
