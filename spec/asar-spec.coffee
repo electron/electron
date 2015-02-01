@@ -412,3 +412,9 @@ describe 'asar package', ->
       file = path.join fixtures, 'asar', 'a.asar'
       stats = originalFs.statSync file
       assert stats.isFile()
+
+  describe 'graceful-fs module', ->
+    it 'recognize asar archvies', ->
+      gfs = require 'graceful-fs'
+      p = path.join fixtures, 'asar', 'a.asar', 'link1'
+      assert.equal gfs.readFileSync(p).toString(), 'file1\n'
