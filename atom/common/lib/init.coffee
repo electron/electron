@@ -1,4 +1,5 @@
 process = global.process
+fs      = require 'fs'
 path    = require 'path'
 timers  = require 'timers'
 Module  = require 'module'
@@ -36,4 +37,5 @@ if process.type is 'browser'
   global.setInterval = wrapWithActivateUvLoop timers.setInterval
 
 # Add support for asar packages.
-require './asar'
+asar = require './asar'
+asar.wrapFsWithAsar fs
