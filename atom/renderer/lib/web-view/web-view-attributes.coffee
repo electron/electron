@@ -179,7 +179,7 @@ class PreloadAttribute extends WebViewAttribute
     return '' unless @webViewImpl.webviewNode.hasAttribute @name
     preload = resolveUrl @webViewImpl.webviewNode.getAttribute(@name)
     protocol = preload.substr 0, 5
-    unless protocol in ['file:', 'asar:']
+    unless protocol is 'file:'
       console.error webViewConstants.ERROR_MSG_INVALID_PRELOAD_ATTRIBUTE
       preload = ''
     preload
