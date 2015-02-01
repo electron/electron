@@ -39,3 +39,8 @@ if process.type is 'browser'
 # Add support for asar packages.
 asar = require './asar'
 asar.wrapFsWithAsar fs
+
+# Make graceful-fs work with asar.
+source = process.binding 'natives'
+source.originalFs = source.fs
+source.fs = "module.exports = require('fs');"
