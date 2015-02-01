@@ -69,30 +69,26 @@ require('/path/to/example.asar/dir/module.js');
 
 ### Web API
 
-In a web page, files in archive can be requested by using the `asar:` protocol.
-Like the Node API, `asar` archives are treated as directories.
+In a web page, files in archive can be requested with the `file:` protocol. Like
+the Node API, `asar` archives are treated as directories.
 
 For example, to get a file with `$.get`:
 
 ```html
 <script>
 var $ = require('./jquery.min.js');
-$.get('asar:/path/to/example.asar/file.txt', function(data) {
+$.get('file:///path/to/example.asar/file.txt', function(data) {
   console.log(data);
 });
 </script>
 ```
-
-The `asar:` protocol can also be used to request normal files in filesystem,
-just like the `file:` protocol. But unlike `file:` protocol, there are no
-slashes (`//`) after `asar:`.
 
 You can also display a web page in an `asar` archive with `BrowserWindow`:
 
 ```javascript
 var BrowserWindow = require('browser-window');
 var win = new BrowserWindow({width: 800, height: 600});
-win.loadUrl('asar:/path/to/example.asar/static/index.html');
+win.loadUrl('file:///path/to/example.asar/static/index.html');
 ```
 
 ### Treating `asar` archive as normal file

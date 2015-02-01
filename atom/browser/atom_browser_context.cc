@@ -16,7 +16,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/url_constants.h"
 #include "net/url_request/data_protocol_handler.h"
-#include "net/url_request/file_protocol_handler.h"
 #include "net/url_request/url_request_intercepting_job_factory.h"
 #include "url/url_constants.h"
 
@@ -25,8 +24,6 @@ using content::BrowserThread;
 namespace atom {
 
 namespace {
-
-const char* kAsarScheme = "asar";
 
 class NoCacheBackend : public net::HttpCache::BackendFactory {
   int CreateBackend(net::NetLog* net_log,
@@ -59,11 +56,7 @@ net::URLRequestJobFactory* AtomBrowserContext::CreateURLRequestJobFactory(
   job_factory->SetProtocolHandler(
       url::kDataScheme, new net::DataProtocolHandler);
   job_factory->SetProtocolHandler(
-      url::kFileScheme, new net::FileProtocolHandler(
-          BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
-              base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
-  job_factory->SetProtocolHandler(
-      kAsarScheme, new asar::AsarProtocolHandler(
+      url::kFileScheme, new asar::AsarProtocolHandler(
           BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
               base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
 
