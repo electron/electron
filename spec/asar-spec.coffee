@@ -414,7 +414,11 @@ describe 'asar package', ->
       assert stats.isFile()
 
   describe 'graceful-fs module', ->
+    gfs = require 'graceful-fs'
+
     it 'recognize asar archvies', ->
-      gfs = require 'graceful-fs'
       p = path.join fixtures, 'asar', 'a.asar', 'link1'
       assert.equal gfs.readFileSync(p).toString(), 'file1\n'
+
+    it 'does not touch global fs object', ->
+      assert.notEqual fs.readdir, gfs.readdir
