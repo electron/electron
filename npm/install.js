@@ -12,7 +12,7 @@ if ('win32' === platform) {
   // 64-bit is not available under windows.
   arch = 'ia32';
 }
-var version = '0.20.3'
+var version = '0.20.4'
 var name = 'atom-shell-v'+version+'-'+platform+'-'+arch+'.zip'
 var url = 'https://github.com/atom/atom-shell/releases/download/v'+version+'/atom-shell-v'+version+'-'+platform+'-'+arch+'.zip'
 
