@@ -50,6 +50,6 @@ source.fs = """
   var vm = require('vm');
   var fn = vm.runInThisContext(src, { filename: 'fs.js' });
   fn(exports, require, module);
-  var asar = require('#{__dirname}/asar');
+  var asar = require(#{JSON.stringify(__dirname)} + '/asar');
   asar.wrapFsWithAsar(exports);
 """
