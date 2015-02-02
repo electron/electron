@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-* Mac OS X >= 10.8
+* OS X >= 10.8
 * [Xcode](https://developer.apple.com/technologies/tools/) >= 5.1
 * [node.js](http://nodejs.org) (external).
 
