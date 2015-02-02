@@ -141,7 +141,7 @@ On Linux:
 $ ./atom-shell/atom your-app/
 ```
 
-On Mac OS X:
+On OS X:
 
 ```bash
 $ ./Atom.app/Contents/MacOS/Atom your-app/

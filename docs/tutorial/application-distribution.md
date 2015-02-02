@@ -5,7 +5,7 @@ as `app`, and put it under atom-shell's resources directory (on OS X it is
 `Atom.app/Contents/Resources/`, and on Linux and Windows it is `resources/`),
 like this:
 
-On Mac OS X:
+On OS X:
 
 ```text
 atom-shell/Atom.app/Contents/Resources/app/
@@ -37,7 +37,7 @@ To use an `asar` archive to replace the `app` folder, you need to rename the
 archive to `app.asar`, and put it under atom-shell's resources directory like
 bellow, and atom-shell will then try read the archive and start from it.
 
-On Mac OS X:
+On OS X:
 
 ```text
 atom-shell/Atom.app/Contents/Resources/

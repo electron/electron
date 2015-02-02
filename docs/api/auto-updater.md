@@ -1,6 +1,6 @@
 # auto-updater
 
-**This module has only been implemented for Mac OS X.**
+**This module has only been implemented for OS X.**
 
 The `auto-updater` module is a simple wrap around the
 [Squirrel.Mac](https://github.com/Squirrel/Squirrel.Mac) framework.
