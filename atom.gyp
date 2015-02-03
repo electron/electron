@@ -622,7 +622,7 @@
           'rule_name': 'coffee',
           'extension': 'coffee',
           'inputs': [
-            'script/compile-coffee.py',
+            'tools/compile-coffee.py',
           ],
           'conditions': [
             ['OS=="mac"', {
@@ -631,7 +631,7 @@
               ],
               'action': [
                 'python',
-                'script/compile-coffee.py',
+                'tools/compile-coffee.py',
                 '<(RULE_INPUT_PATH)',
                 '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
               ],
@@ -641,7 +641,7 @@
               ],
               'action': [
                 'python',
-                'script/compile-coffee.py',
+                'tools/compile-coffee.py',
                 '<(RULE_INPUT_PATH)',
                 '<(PRODUCT_DIR)/resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
               ],
