@@ -16,12 +16,13 @@ ScopedTemporaryFile::ScopedTemporaryFile() {
 
 ScopedTemporaryFile::~ScopedTemporaryFile() {
   if (!path_.empty()) {
-    // On Windows calling base::DeleteFile on exit will call an API that would
-    // halt the program, so we have to call the win32 API directly.
-#if defined(OS_WIN)
-    ::DeleteFile(path_.value().c_str());
-#else
     base::ThreadRestrictions::ScopedAllowIO allow_io;
+    // On Windows it is very likely the file is already in use (because it is
+    // mostly used for Node native modules), so deleting it now will halt the
+    // program.
+#if defined(OS_WIN)
+    base::DeleteFileAfterReboot(path_);
+#else
     base::DeleteFile(path_, false);
 #endif
   }
