@@ -5,6 +5,8 @@ not use this module until the `ready` event of `app` module gets emitted.
 
 `screen` is an [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
 
+Make sure to note that in the renderer / DevTools, `window.screen` is a reserved DOM property, so writing `screen = require('screen')` won't work. In our examples below, we use `atomScreen` as the variable name instead.
+
 An example of creating a window that fills the whole screen:
 
 ```javascript
@@ -14,8 +16,8 @@ var BrowserWindow = require('browser-window');
 var mainWindow;
 
 app.on('ready', function() {
-  var screen = require('screen');
-  var size = screen.getPrimaryDisplay().workAreaSize;
+  var atomScreen = require('screen');
+  var size = atomScreen.getPrimaryDisplay().workAreaSize;
   mainWindow = new BrowserWindow({ width: size.width, height: size.height });
 });
 ```
@@ -29,8 +31,8 @@ var BrowserWindow = require('browser-window');
 var mainWindow;
 
 app.on('ready', function() {
-  var screen = require('screen');
-  var displays = screen.getAllDisplays();
+  var atomScreen = require('screen');
+  var displays = atomScreen.getAllDisplays();
   var externalDisplay = null;
   for (var i in displays) {
     if (displays[i].bounds.x > 0 || displays[i].bounds.y > 0) {
