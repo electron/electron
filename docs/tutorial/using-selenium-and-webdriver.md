@@ -55,6 +55,7 @@ var driver = new webdriver.Builder().
    withCapabilities({chromeOptions: {
      // Here is the path to your atom-shell binary.
      binary: '/Path-to-Your-App.app/Contents/MacOS/Atom'}}).
+   forBrowser('atom-shell').
    build();
 
 driver.get('http://www.google.com');
