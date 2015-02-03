@@ -87,8 +87,7 @@ net::URLRequestJobFactory* URLRequestContextGetter::Delegate::CreateURLRequestJo
           base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
 
   // Set up interceptors in the reverse order.
-  scoped_ptr<net::URLRequestJobFactory> top_job_factory =
-      job_factory.PassAs<net::URLRequestJobFactory>();
+  scoped_ptr<net::URLRequestJobFactory> top_job_factory = job_factory.Pass();
   content::URLRequestInterceptorScopedVector::reverse_iterator i;
   for (i = protocol_interceptors->rbegin(); i != protocol_interceptors->rend(); ++i)
     top_job_factory.reset(new net::URLRequestInterceptingJobFactory(
@@ -169,7 +168,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
           new net::MappedHostResolver(host_resolver.Pass()));
       remapped_resolver->SetRulesFromString(
           command_line.GetSwitchValueASCII(switches::kHostResolverRules));
-      host_resolver = remapped_resolver.PassAs<net::HostResolver>();
+      host_resolver = remapped_resolver.Pass();
     }
 
     // --proxy-server
