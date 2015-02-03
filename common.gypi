@@ -83,6 +83,8 @@
         'conditions': [
           ['OS=="linux"', {
             'cflags': [
+              '-D_GNU_SOURCE',
+              '-D__STRICT_ANSI__',
               '-Wno-parentheses-equality',
               '-Wno-unused-function',
               '-Wno-sometimes-uninitialized',
@@ -126,6 +128,7 @@
           ['OS=="linux"', {
             'cflags': [
               '-Wno-empty-body',
+              '-D__STRICT_ANSI__'
             ],
           }],  # OS=="linux"
         ],
