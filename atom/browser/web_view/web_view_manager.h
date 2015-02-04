@@ -14,15 +14,13 @@
 
 namespace content {
 class BrowserContext;
+class RenderProcessHost;
 }
 
 namespace atom {
 
 class WebViewManager : public content::BrowserPluginGuestManager {
  public:
-  explicit WebViewManager(content::BrowserContext* context);
-  virtual ~WebViewManager();
-
   struct WebViewInfo {
     int guest_instance_id;
     content::WebContents* embedder;
@@ -31,6 +29,14 @@ class WebViewManager : public content::BrowserPluginGuestManager {
     bool disable_web_security;
     base::FilePath preload_script;
   };
+
+  // Finds the WebViewManager attached with |process| and returns the
+  // WebViewInfo of it.
+  static bool GetInfoForProcess(content::RenderProcessHost* process,
+                                WebViewInfo* info);
+
+  explicit WebViewManager(content::BrowserContext* context);
+  virtual ~WebViewManager();
 
   void AddGuest(int guest_instance_id,
                 int element_instance_id,

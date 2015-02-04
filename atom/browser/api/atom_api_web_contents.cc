@@ -39,10 +39,9 @@ v8::Persistent<v8::ObjectTemplate> template_;
 
 // Get the window that has the |guest| embedded.
 NativeWindow* GetWindowFromGuest(const content::WebContents* guest) {
-  auto manager = AtomBrowserContext::Get()->GetGuestManager();
-  int guest_process_id = guest->GetRenderProcessHost()->GetID();
+  auto process = guest->GetRenderProcessHost();
   WebViewManager::WebViewInfo info;
-  if (!static_cast<WebViewManager*>(manager)->GetInfo(guest_process_id, &info))
+  if (WebViewManager::GetInfoForProcess(process, &info))
     return nullptr;
   return NativeWindow::FromRenderView(
       info.embedder->GetRenderProcessHost()->GetID(),

@@ -42,8 +42,11 @@ struct Converter<atom::WebViewManager::WebViewInfo> {
     if (!options.Get("preloadUrl", &preload_url))
       return false;
 
-    return net::FileURLToFilePath(preload_url, &(out->preload_script)) &&
-           options.Get("nodeIntegration", &(out->node_integration)) &&
+    if (!preload_url.is_empty() &&
+        !net::FileURLToFilePath(preload_url, &(out->preload_script)))
+      return false;
+
+    return options.Get("nodeIntegration", &(out->node_integration)) &&
            options.Get("plugins", &(out->plugins)) &&
            options.Get("disableWebSecurity", &(out->disable_web_security));
   }
@@ -52,6 +55,20 @@ struct Converter<atom::WebViewManager::WebViewInfo> {
 }  // namespace mate
 
 namespace atom {
+
+// static
+bool WebViewManager::GetInfoForProcess(content::RenderProcessHost* process,
+                                       WebViewInfo* info) {
+  if (!process)
+    return false;
+  auto context = process->GetBrowserContext();
+  if (!context)
+    return false;
+  auto manager = context->GetGuestManager();
+  if (!manager)
+    return false;
+  return static_cast<WebViewManager*>(manager)->GetInfo(process->GetID(), info);
+}
 
 WebViewManager::WebViewManager(content::BrowserContext* context) {
 }

@@ -44,19 +44,6 @@ struct FindByProcessId {
   int child_process_id_;
 };
 
-bool GetWebViewInfo(content::RenderProcessHost* host,
-                    WebViewManager::WebViewInfo* info) {
-  if (!host)
-    return false;
-  auto context = host->GetBrowserContext();
-  if (!context)
-    return false;
-  auto manager = context->GetGuestManager();
-  if (!manager)
-    return false;
-  return static_cast<WebViewManager*>(manager)->GetInfo(host->GetID(), info);
-}
-
 }  // namespace
 
 AtomBrowserClient::AtomBrowserClient()
@@ -110,15 +97,15 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   }
 
   // Custom preferences of guest page.
+  auto process = render_view_host->GetProcess();
   WebViewManager::WebViewInfo info;
-  if (GetWebViewInfo(render_view_host->GetProcess(), &info)) {
+  if (WebViewManager::GetInfoForProcess(process, &info)) {
     prefs->web_security_enabled = !info.disable_web_security;
     return;
   }
 
   NativeWindow* window = NativeWindow::FromRenderView(
-      render_view_host->GetProcess()->GetID(),
-      render_view_host->GetRoutingID());
+      process->GetID(), render_view_host->GetRoutingID());
   if (window)
     window->OverrideWebkitPrefs(url, prefs);
 }
@@ -168,7 +155,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     // Append commnad line arguments for guest web view.
     auto child_process = content::RenderProcessHost::FromID(child_process_id);
     WebViewManager::WebViewInfo info;
-    if (GetWebViewInfo(child_process, &info)) {
+    if (WebViewManager::GetInfoForProcess(child_process, &info)) {
       command_line->AppendSwitchASCII(
           switches::kGuestInstanceID,
           base::IntToString(info.guest_instance_id));
