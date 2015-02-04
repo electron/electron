@@ -9,7 +9,7 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/native_window.h"
-#include "atom/browser/web_view/web_view_manager.h"
+#include "atom/browser/web_view_manager.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"

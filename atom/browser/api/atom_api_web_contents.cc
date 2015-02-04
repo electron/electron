@@ -7,7 +7,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_dialog_helper.h"
-#include "atom/browser/web_view/web_view_manager.h"
+#include "atom/browser/web_view_manager.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
