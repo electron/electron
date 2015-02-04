@@ -7,6 +7,8 @@
 
 #include <map>
 
+#include "base/files/file_path.h"
+#include "base/synchronization/lock.h"
 #include "content/public/browser/browser_plugin_guest_manager.h"
 #include "url/gurl.h"
 
@@ -21,19 +23,25 @@ class WebViewManager : public content::BrowserPluginGuestManager {
   explicit WebViewManager(content::BrowserContext* context);
   virtual ~WebViewManager();
 
-  struct WebViewOptions {
+  struct WebViewInfo {
+    int guest_instance_id;
+    content::WebContents* embedder;
     bool node_integration;
     bool plugins;
     bool disable_web_security;
-    GURL preload_url;
+    base::FilePath preload_script;
   };
 
   void AddGuest(int guest_instance_id,
                 int element_instance_id,
                 content::WebContents* embedder,
                 content::WebContents* web_contents,
-                const WebViewOptions& options);
+                WebViewInfo info);
   void RemoveGuest(int guest_instance_id);
+
+  // Looks up the information for the embedder <webview> for a given render
+  // view, if one exists. Called on the IO thread.
+  bool GetInfo(int guest_process_id, WebViewInfo* webview_info);
 
  protected:
   // content::BrowserPluginGuestManager:
@@ -75,6 +83,11 @@ class WebViewManager : public content::BrowserPluginGuestManager {
     }
   };
   std::map<ElementInstanceKey, int> element_instance_id_to_guest_map_;
+
+  typedef std::map<int, WebViewInfo> WebViewInfoMap;
+  WebViewInfoMap webview_info_map_;
+
+  base::Lock lock_;
 
   DISALLOW_COPY_AND_ASSIGN(WebViewManager);
 };

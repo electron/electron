@@ -9,7 +9,7 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/native_window.h"
-#include "atom/browser/web_view/web_view_renderer_state.h"
+#include "atom/browser/web_view/web_view_manager.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -43,6 +43,19 @@ struct FindByProcessId {
 
   int child_process_id_;
 };
+
+bool GetWebViewInfo(content::RenderProcessHost* host,
+                    WebViewManager::WebViewInfo* info) {
+  if (!host)
+    return false;
+  auto context = host->GetBrowserContext();
+  if (!context)
+    return false;
+  auto manager = context->GetGuestManager();
+  if (!manager)
+    return false;
+  return static_cast<WebViewManager*>(manager)->GetInfo(host->GetID(), info);
+}
 
 }  // namespace
 
@@ -97,9 +110,8 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   }
 
   // Custom preferences of guest page.
-  int guest_process_id = render_view_host->GetProcess()->GetID();
-  WebViewRendererState::WebViewInfo info;
-  if (WebViewRendererState::GetInstance()->GetInfo(guest_process_id, &info)) {
+  WebViewManager::WebViewInfo info;
+  if (GetWebViewInfo(render_view_host->GetProcess(), &info)) {
     prefs->web_security_enabled = !info.disable_web_security;
     return;
   }
@@ -154,8 +166,9 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     window->AppendExtraCommandLineSwitches(command_line, child_process_id);
   } else {
     // Append commnad line arguments for guest web view.
-    WebViewRendererState::WebViewInfo info;
-    if (WebViewRendererState::GetInstance()->GetInfo(child_process_id, &info)) {
+    auto child_process = content::RenderProcessHost::FromID(child_process_id);
+    WebViewManager::WebViewInfo info;
+    if (GetWebViewInfo(child_process, &info)) {
       command_line->AppendSwitchASCII(
           switches::kGuestInstanceID,
           base::IntToString(info.guest_instance_id));

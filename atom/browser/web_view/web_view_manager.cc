@@ -6,7 +6,6 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/web_view/web_view_renderer_state.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "base/bind.h"
 #include "base/stl_util.h"
@@ -32,15 +31,20 @@ struct Converter<content::WebContents*> {
 };
 
 template<>
-struct Converter<atom::WebViewManager::WebViewOptions> {
+struct Converter<atom::WebViewManager::WebViewInfo> {
   static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
-                     atom::WebViewManager::WebViewOptions* out) {
+                     atom::WebViewManager::WebViewInfo* out) {
     Dictionary options;
     if (!ConvertFromV8(isolate, val, &options))
       return false;
-    return options.Get("nodeIntegration", &(out->node_integration)) &&
+
+    GURL preload_url;
+    if (!options.Get("preloadUrl", &preload_url))
+      return false;
+
+    return net::FileURLToFilePath(preload_url, &(out->preload_script)) &&
+           options.Get("nodeIntegration", &(out->node_integration)) &&
            options.Get("plugins", &(out->plugins)) &&
-           options.Get("preloadUrl", &(out->preload_url)) &&
            options.Get("disableWebSecurity", &(out->disable_web_security));
   }
 };
@@ -59,20 +63,14 @@ void WebViewManager::AddGuest(int guest_instance_id,
                               int element_instance_id,
                               content::WebContents* embedder,
                               content::WebContents* web_contents,
-                              const WebViewOptions& options) {
+                              WebViewInfo info) {
+  base::AutoLock auto_lock(lock_);
   web_contents_map_[guest_instance_id] = { web_contents, embedder };
 
-  WebViewRendererState::WebViewInfo web_view_info = {
-    guest_instance_id,
-    embedder,
-    options.node_integration,
-    options.plugins,
-    options.disable_web_security,
-  };
-  net::FileURLToFilePath(options.preload_url, &web_view_info.preload_script);
-  WebViewRendererState::GetInstance()->AddGuest(
-      web_contents->GetRenderProcessHost()->GetID(),
-      web_view_info);
+  int guest_process_id = web_contents->GetRenderProcessHost()->GetID();
+  info.guest_instance_id = guest_instance_id;
+  info.embedder = embedder;
+  webview_info_map_[guest_process_id] = info;
 
   // Map the element in embedder to guest.
   ElementInstanceKey key(embedder, element_instance_id);
@@ -80,15 +78,16 @@ void WebViewManager::AddGuest(int guest_instance_id,
 }
 
 void WebViewManager::RemoveGuest(int guest_instance_id) {
+  base::AutoLock auto_lock(lock_);
   if (!ContainsKey(web_contents_map_, guest_instance_id)) {
     return;
   }
 
   auto web_contents = web_contents_map_[guest_instance_id].web_contents;
-  WebViewRendererState::GetInstance()->RemoveGuest(
-      web_contents->GetRenderProcessHost()->GetID());
-
   web_contents_map_.erase(guest_instance_id);
+
+  int guest_process_id = web_contents->GetRenderProcessHost()->GetID();
+  webview_info_map_.erase(guest_process_id);
 
   // Remove the record of element in embedder too.
   for (const auto& element : element_instance_id_to_guest_map_)
@@ -96,6 +95,16 @@ void WebViewManager::RemoveGuest(int guest_instance_id) {
       element_instance_id_to_guest_map_.erase(element.first);
       break;
     }
+}
+
+bool WebViewManager::GetInfo(int guest_process_id, WebViewInfo* webview_info) {
+  base::AutoLock auto_lock(lock_);
+  WebViewInfoMap::iterator iter = webview_info_map_.find(guest_process_id);
+  if (iter != webview_info_map_.end()) {
+    *webview_info = iter->second;
+    return true;
+  }
+  return false;
 }
 
 content::WebContents* WebViewManager::GetGuestByInstanceID(

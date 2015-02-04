@@ -7,7 +7,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_dialog_helper.h"
-#include "atom/browser/web_view/web_view_renderer_state.h"
+#include "atom/browser/web_view/web_view_manager.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -39,9 +39,10 @@ v8::Persistent<v8::ObjectTemplate> template_;
 
 // Get the window that has the |guest| embedded.
 NativeWindow* GetWindowFromGuest(const content::WebContents* guest) {
+  auto manager = AtomBrowserContext::Get()->GetGuestManager();
   int guest_process_id = guest->GetRenderProcessHost()->GetID();
-  WebViewRendererState::WebViewInfo info;
-  if (!WebViewRendererState::GetInstance()->GetInfo(guest_process_id, &info))
+  WebViewManager::WebViewInfo info;
+  if (!static_cast<WebViewManager*>(manager)->GetInfo(guest_process_id, &info))
     return nullptr;
   return NativeWindow::FromRenderView(
       info.embedder->GetRenderProcessHost()->GetID(),
