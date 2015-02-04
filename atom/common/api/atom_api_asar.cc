@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <stddef.h>
+
 #include <vector>
 
 #include "atom_natives.h"  // NOLINT: This file is generated with coffee2c.
