@@ -40,9 +40,6 @@ class WebViewRendererState {
   // view, if one exists. Called on the IO thread.
   bool GetInfo(int guest_process_id, WebViewInfo* webview_info);
 
-  // Returns true if the given renderer is used by webviews.
-  bool IsGuest(int render_process_id);
-
  private:
   friend class WebViewManager;
   friend struct DefaultSingletonTraits<WebViewRendererState>;
