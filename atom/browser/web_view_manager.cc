@@ -34,13 +34,11 @@ void WebViewManager::AddGuest(int guest_instance_id,
                               int element_instance_id,
                               content::WebContents* embedder,
                               content::WebContents* web_contents,
-                              WebViewInfo info) {
+                              const WebViewInfo& info) {
   base::AutoLock auto_lock(lock_);
   web_contents_embdder_map_[guest_instance_id] = { web_contents, embedder };
 
   int guest_process_id = web_contents->GetRenderProcessHost()->GetID();
-  info.guest_instance_id = guest_instance_id;
-  info.embedder = embedder;
   webview_info_map_[guest_process_id] = info;
 
   // Map the element in embedder to guest.

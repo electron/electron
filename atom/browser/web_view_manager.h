@@ -41,7 +41,7 @@ class WebViewManager : public content::BrowserPluginGuestManager {
                 int element_instance_id,
                 content::WebContents* embedder,
                 content::WebContents* web_contents,
-                WebViewInfo info);
+                const WebViewInfo& info);
   void RemoveGuest(int guest_instance_id);
 
   // Looks up the information for the embedder <webview> for a given render

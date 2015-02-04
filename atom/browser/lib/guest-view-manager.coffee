@@ -39,7 +39,7 @@ createGuest = (embedder, params) ->
   # Destroy guest when the embedder is gone or navigated.
   destroyEvents = ['destroyed', 'crashed', 'did-navigate-to-different-page']
   destroy = ->
-    destroyGuest id if guestInstances[id]?
+    destroyGuest embedder, id if guestInstances[id]?
   embedder.once event, destroy for event in destroyEvents
   guest.once 'destroyed', ->
     embedder.removeListener event, destroy for event in destroyEvents
@@ -90,7 +90,7 @@ attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
     return unless oldGuestInstanceId != guestInstanceId
 
     return unless guestInstances[oldGuestInstanceId]?
-    destroyGuest oldGuestInstanceId
+    destroyGuest embedder, oldGuestInstanceId
 
   webViewManager.addGuest guestInstanceId, elementInstanceId, embedder, guest,
     nodeIntegration: params.nodeintegration
@@ -103,8 +103,8 @@ attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
   reverseEmbedderElementsMap[guestInstanceId] = key
 
 # Destroy an existing guest instance.
-destroyGuest = (id) ->
-  webViewManager.removeGuest id
+destroyGuest = (embedder, id) ->
+  webViewManager.removeGuest embedder, id
   guestInstances[id].guest.destroy()
   delete guestInstances[id]
 
@@ -120,7 +120,7 @@ ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_ATTACH_GUEST', (event, elementInstanceId, 
   attachGuest event.sender, elementInstanceId, guestInstanceId, params
 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_DESTROY_GUEST', (event, id) ->
-  destroyGuest id
+  destroyGuest event.sender, id
 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_AUTO_SIZE', (event, id, params) ->
   guestInstances[id]?.guest.setAutoSize params.enableAutoSize, params.min, params.max
