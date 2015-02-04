@@ -35,21 +35,3 @@ global.clearImmediate = timers.clearImmediate
 if process.type is 'browser'
   global.setTimeout = wrapWithActivateUvLoop timers.setTimeout
   global.setInterval = wrapWithActivateUvLoop timers.setInterval
-
-# Add support for asar packages.
-asar = require './asar'
-asar.wrapFsWithAsar fs
-
-# Make graceful-fs work with asar.
-source = process.binding 'natives'
-source.originalFs = source.fs
-source.fs = """
-  var src = '(function (exports, require, module, __filename, __dirname) { ' +
-            process.binding('natives').originalFs +
-            ' });';
-  var vm = require('vm');
-  var fn = vm.runInThisContext(src, { filename: 'fs.js' });
-  fn(exports, require, module);
-  var asar = require(#{JSON.stringify(__dirname)} + '/asar');
-  asar.wrapFsWithAsar(exports);
-"""
