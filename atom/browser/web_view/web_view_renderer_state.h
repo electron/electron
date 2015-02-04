@@ -11,6 +11,7 @@
 
 #include "base/files/file_path.h"
 #include "base/memory/singleton.h"
+#include "base/synchronization/lock.h"
 
 namespace content {
 class WebContents;
@@ -56,6 +57,7 @@ class WebViewRendererState {
   void RemoveGuest(int render_process_id);
 
   WebViewInfoMap webview_info_map_;
+  base::Lock lock_;
 
   DISALLOW_COPY_AND_ASSIGN(WebViewRendererState);
 };
