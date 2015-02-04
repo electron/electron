@@ -2,11 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <stddef.h>
+
 #include <vector>
 
+#include "atom_natives.h"  // NOLINT: This file is generated with coffee2c.
 #include "atom/common/asar/archive.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "native_mate/arguments.h"
+#include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "native_mate/wrappable.h"
@@ -106,10 +110,33 @@ class Archive : public mate::Wrappable {
   DISALLOW_COPY_AND_ASSIGN(Archive);
 };
 
+void InitAsarSupport(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> process,
+                     v8::Handle<v8::Value> require) {
+  // Evaluate asar_init.coffee.
+  v8::Local<v8::Script> asar_init = v8::Script::Compile(v8::String::NewFromUtf8(
+      isolate,
+      node::asar_init_native,
+      v8::String::kNormalString,
+      sizeof(node::asar_init_native) -1));
+  v8::Local<v8::Value> result = asar_init->Run();
+
+  // Initialize asar support.
+  base::Callback<void(v8::Handle<v8::Value>,
+                      v8::Handle<v8::Value>,
+                      std::string)> init;
+  if (mate::ConvertFromV8(isolate, result, &init)) {
+    init.Run(process,
+             require,
+             std::string(node::asar_native, sizeof(node::asar_native) - 1));
+  }
+}
+
 void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
                 v8::Handle<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createArchive", &Archive::Create);
+  dict.SetMethod("initAsarSupport", &InitAsarSupport);
 }
 
 }  // namespace

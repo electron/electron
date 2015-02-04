@@ -41,7 +41,6 @@
       'atom/common/api/lib/original-fs.coffee',
       'atom/common/api/lib/shell.coffee',
       'atom/common/lib/init.coffee',
-      'atom/common/lib/asar.coffee',
       'atom/renderer/lib/chrome-api.coffee',
       'atom/renderer/lib/init.coffee',
       'atom/renderer/lib/inspector.coffee',
@@ -54,6 +53,10 @@
       'atom/renderer/api/lib/remote.coffee',
       'atom/renderer/api/lib/screen.coffee',
       'atom/renderer/api/lib/web-frame.coffee',
+    ],
+    'coffee2c_sources': [
+      'atom/common/lib/asar.coffee',
+      'atom/common/lib/asar_init.coffee',
     ],
     'lib_sources': [
       'atom/app/atom_content_client.cc',
@@ -333,6 +336,7 @@
       'chromium_src/library_loaders/libspeechd_loader.cc',
       'chromium_src/library_loaders/libspeechd.h',
       '<@(native_mate_files)',
+      '<(SHARED_INTERMEDIATE_DIR)/atom_natives.h',
     ],
     'lib_sources_win': [
       'chromium_src/chrome/browser/ui/views/color_chooser_dialog.cc',
@@ -386,7 +390,7 @@
       'target_name': '<(project_name)',
       'type': 'executable',
       'dependencies': [
-        'generated_sources',
+        'compile_coffee',
         '<(project_name)_lib',
       ],
       'sources': [
@@ -524,6 +528,7 @@
       'target_name': '<(project_name)_lib',
       'type': 'static_library',
       'dependencies': [
+        'atom_coffee2c',
         'vendor/brightray/brightray.gyp:brightray',
         'vendor/node/node.gyp:node_lib',
       ],
@@ -542,6 +547,8 @@
         'chromium_src',
         'vendor/brightray',
         'vendor/native_mate',
+        # Include atom_natives.h.
+        '<(SHARED_INTERMEDIATE_DIR)',
         # Include directories for uv and node.
         'vendor/node/src',
         'vendor/node/deps/http_parser',
@@ -612,7 +619,7 @@
       ],
     },  # target <(product_name)_lib
     {
-      'target_name': 'generated_sources',
+      'target_name': 'compile_coffee',
       'type': 'none',
       'sources': [
         '<@(coffee_sources)',
@@ -622,7 +629,7 @@
           'rule_name': 'coffee',
           'extension': 'coffee',
           'inputs': [
-            'script/compile-coffee.py',
+            'tools/compile-coffee.py',
           ],
           'conditions': [
             ['OS=="mac"', {
@@ -631,7 +638,7 @@
               ],
               'action': [
                 'python',
-                'script/compile-coffee.py',
+                'tools/compile-coffee.py',
                 '<(RULE_INPUT_PATH)',
                 '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
               ],
@@ -641,7 +648,7 @@
               ],
               'action': [
                 'python',
-                'script/compile-coffee.py',
+                'tools/compile-coffee.py',
                 '<(RULE_INPUT_PATH)',
                 '<(PRODUCT_DIR)/resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
               ],
@@ -649,7 +656,28 @@
           ],
         },
       ],
-    },  # target generated_sources
+    },  # target compile_coffee
+    {
+      'target_name': 'atom_coffee2c',
+      'type': 'none',
+      'actions': [
+        {
+          'action_name': 'atom_coffee2c',
+          'inputs': [
+            '<@(coffee2c_sources)',
+          ],
+          'outputs': [
+            '<(SHARED_INTERMEDIATE_DIR)/atom_natives.h',
+          ],
+          'action': [
+            'python',
+            'tools/coffee2c.py',
+            '<@(_outputs)',
+            '<@(_inputs)',
+          ],
+        }
+      ],
+    },  # target atom_coffee2c
     {
       'target_name': '<(project_name)_dump_symbols',
       'type': 'none',

@@ -1,4 +1,4 @@
-asar = process.atomBinding 'asar'
+asar = process.binding 'atom_common_asar'
 child_process = require 'child_process'
 path = require 'path'
 util = require 'util'
