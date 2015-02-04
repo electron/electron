@@ -10,7 +10,6 @@
 #include "base/files/file_path.h"
 #include "base/synchronization/lock.h"
 #include "content/public/browser/browser_plugin_guest_manager.h"
-#include "url/gurl.h"
 
 namespace content {
 class BrowserContext;
@@ -59,18 +58,15 @@ class WebViewManager : public content::BrowserPluginGuestManager {
 
  private:
   struct WebContentsWithEmbedder {
-    content::WebContents* web_contents;  // Weak ref.
+    content::WebContents* web_contents;
     content::WebContents* embedder;
   };
-  std::map<int, WebContentsWithEmbedder> web_contents_map_;
+  // guest_instance_id => (web_contents, embedder)
+  std::map<int, WebContentsWithEmbedder> web_contents_embdder_map_;
 
   struct ElementInstanceKey {
     content::WebContents* owner_web_contents;
     int element_instance_id;
-
-    ElementInstanceKey()
-        : owner_web_contents(nullptr),
-          element_instance_id(0) {}
 
     ElementInstanceKey(content::WebContents* owner_web_contents,
                        int element_instance_id)
@@ -88,9 +84,11 @@ class WebViewManager : public content::BrowserPluginGuestManager {
           (element_instance_id == other.element_instance_id);
     }
   };
+  // (web_contents, element_instance_id) => guest_instance_id
   std::map<ElementInstanceKey, int> element_instance_id_to_guest_map_;
 
   typedef std::map<int, WebViewInfo> WebViewInfoMap;
+  // guest_process_id => (guest_instance_id, embedder, ...)
   WebViewInfoMap webview_info_map_;
 
   base::Lock lock_;

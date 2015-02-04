@@ -7,11 +7,8 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
-#include "base/bind.h"
-#include "base/stl_util.h"
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/dictionary.h"
-#include "native_mate/object_template_builder.h"
 #include "net/base/filename_util.h"
 
 #include "atom/common/node_includes.h"
@@ -82,7 +79,7 @@ void WebViewManager::AddGuest(int guest_instance_id,
                               content::WebContents* web_contents,
                               WebViewInfo info) {
   base::AutoLock auto_lock(lock_);
-  web_contents_map_[guest_instance_id] = { web_contents, embedder };
+  web_contents_embdder_map_[guest_instance_id] = { web_contents, embedder };
 
   int guest_process_id = web_contents->GetRenderProcessHost()->GetID();
   info.guest_instance_id = guest_instance_id;
@@ -96,12 +93,11 @@ void WebViewManager::AddGuest(int guest_instance_id,
 
 void WebViewManager::RemoveGuest(int guest_instance_id) {
   base::AutoLock auto_lock(lock_);
-  if (!ContainsKey(web_contents_map_, guest_instance_id)) {
+  if (!ContainsKey(web_contents_embdder_map_, guest_instance_id))
     return;
-  }
 
-  auto web_contents = web_contents_map_[guest_instance_id].web_contents;
-  web_contents_map_.erase(guest_instance_id);
+  auto web_contents = web_contents_embdder_map_[guest_instance_id].web_contents;
+  web_contents_embdder_map_.erase(guest_instance_id);
 
   int guest_process_id = web_contents->GetRenderProcessHost()->GetID();
   webview_info_map_.erase(guest_process_id);
@@ -132,15 +128,15 @@ content::WebContents* WebViewManager::GetGuestByInstanceID(
     return nullptr;
 
   int guest_instance_id = element_instance_id_to_guest_map_[key];
-  if (ContainsKey(web_contents_map_, guest_instance_id))
-    return web_contents_map_[guest_instance_id].web_contents;
+  if (ContainsKey(web_contents_embdder_map_, guest_instance_id))
+    return web_contents_embdder_map_[guest_instance_id].web_contents;
   else
     return nullptr;
 }
 
 bool WebViewManager::ForEachGuest(content::WebContents* embedder_web_contents,
                                   const GuestCallback& callback) {
-  for (auto& item : web_contents_map_)
+  for (auto& item : web_contents_embdder_map_)
     if (item.second.embedder == embedder_web_contents &&
         callback.Run(item.second.web_contents))
       return true;
