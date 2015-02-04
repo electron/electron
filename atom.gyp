@@ -88,6 +88,7 @@
       'atom/browser/api/atom_api_tray.h',
       'atom/browser/api/atom_api_web_contents.cc',
       'atom/browser/api/atom_api_web_contents.h',
+      'atom/browser/api/atom_api_web_view_manager.cc',
       'atom/browser/api/atom_api_window.cc',
       'atom/browser/api/atom_api_window.h',
       'atom/browser/api/event.cc',
