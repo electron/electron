@@ -386,7 +386,7 @@
       'target_name': '<(project_name)',
       'type': 'executable',
       'dependencies': [
-        'generated_sources',
+        'compile_coffee',
         '<(project_name)_lib',
       ],
       'sources': [
@@ -612,7 +612,7 @@
       ],
     },  # target <(product_name)_lib
     {
-      'target_name': 'generated_sources',
+      'target_name': 'compile_coffee',
       'type': 'none',
       'sources': [
         '<@(coffee_sources)',
@@ -649,7 +649,7 @@
           ],
         },
       ],
-    },  # target generated_sources
+    },  # target compile_coffee
     {
       'target_name': '<(project_name)_dump_symbols',
       'type': 'none',
