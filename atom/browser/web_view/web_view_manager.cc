@@ -10,7 +10,6 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "base/bind.h"
 #include "base/stl_util.h"
-#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -71,13 +70,9 @@ void WebViewManager::AddGuest(int guest_instance_id,
     options.disable_web_security,
   };
   net::FileURLToFilePath(options.preload_url, &web_view_info.preload_script);
-  content::BrowserThread::PostTask(
-      content::BrowserThread::IO,
-      FROM_HERE,
-      base::Bind(&WebViewRendererState::AddGuest,
-                 base::Unretained(WebViewRendererState::GetInstance()),
-                 web_contents->GetRenderProcessHost()->GetID(),
-                 web_view_info));
+  WebViewRendererState::GetInstance()->AddGuest(
+      web_contents->GetRenderProcessHost()->GetID(),
+      web_view_info);
 
   // Map the element in embedder to guest.
   ElementInstanceKey key(embedder, element_instance_id);
@@ -90,13 +85,8 @@ void WebViewManager::RemoveGuest(int guest_instance_id) {
   }
 
   auto web_contents = web_contents_map_[guest_instance_id].web_contents;
-
-  content::BrowserThread::PostTask(
-      content::BrowserThread::IO, FROM_HERE,
-      base::Bind(
-          &WebViewRendererState::RemoveGuest,
-          base::Unretained(WebViewRendererState::GetInstance()),
-          web_contents->GetRenderProcessHost()->GetID()));
+  WebViewRendererState::GetInstance()->RemoveGuest(
+      web_contents->GetRenderProcessHost()->GetID());
 
   web_contents_map_.erase(guest_instance_id);
 
