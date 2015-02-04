@@ -347,6 +347,14 @@ describe 'asar package', ->
         throws = -> child_process.fork p
         assert.throws throws, /ENOENT/
 
+      it 'supports asar in the forked js', (done) ->
+        file = path.join fixtures, 'asar', 'a.asar', 'file1'
+        child = child_process.fork path.join(fixtures, 'module', 'asar.js')
+        child.on 'message', (content) ->
+          assert.equal content, fs.readFileSync(file).toString()
+          done()
+        child.send file
+
   describe 'asar protocol', ->
     url = require 'url'
     remote = require 'remote'
