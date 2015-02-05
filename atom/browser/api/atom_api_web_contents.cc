@@ -39,13 +39,13 @@ v8::Persistent<v8::ObjectTemplate> template_;
 
 // Get the window that has the |guest| embedded.
 NativeWindow* GetWindowFromGuest(const content::WebContents* guest) {
-  auto process = guest->GetRenderProcessHost();
   WebViewManager::WebViewInfo info;
-  if (WebViewManager::GetInfoForProcess(process, &info))
+  if (WebViewManager::GetInfoForProcess(guest->GetRenderProcessHost(), &info))
+    return NativeWindow::FromRenderView(
+        info.embedder->GetRenderProcessHost()->GetID(),
+        info.embedder->GetRoutingID());
+  else
     return nullptr;
-  return NativeWindow::FromRenderView(
-      info.embedder->GetRenderProcessHost()->GetID(),
-      info.embedder->GetRoutingID());
 }
 
 }  // namespace

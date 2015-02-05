@@ -3,9 +3,9 @@
 // found in the LICENSE file.
 
 #include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/browser/atom_browser_context.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
+#include "content/public/browser/browser_context.h"
 #include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
 
@@ -56,8 +56,9 @@ atom::WebViewManager* GetWebViewManager(content::WebContents* web_contents) {
   if (context) {
     auto manager = context->GetGuestManager();
     return static_cast<atom::WebViewManager*>(manager);
+  } else {
+    return nullptr;
   }
-  return nullptr;
 }
 
 void AddGuest(int guest_instance_id,
