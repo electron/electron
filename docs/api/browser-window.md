@@ -632,7 +632,7 @@ will be returned to `window.open` to let you have limited control of it.
 
 Calling `event.preventDefault()` can prevent creating new windows.
 
-### Event: 'will-naviagte'
+### Event: 'will-navigate'
 
 * `event` Event
 * `url` String
