@@ -7,7 +7,7 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/asar/asar_protocol_handler.h"
-#include "atom/browser/web_view/web_view_manager.h"
+#include "atom/browser/web_view_manager.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/threading/sequenced_worker_pool.h"
