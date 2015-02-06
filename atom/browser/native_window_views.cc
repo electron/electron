@@ -613,6 +613,22 @@ void NativeWindowViews::SetProgressBar(double progress) {
 #endif
 }
 
+void NativeWindowViews::SetOverlayIcon(gfx::ImageSkia& overlay, std::string& description) {
+#if defined(OS_WIN)
+  if (base::win::GetVersion() < base::win::VERSION_WIN7)
+    return;
+
+  base::win::ScopedComPtr<ITaskbarList3> taskbar;
+  if (FAILED(taskbar.CreateInstance(CLSID_TaskbarList, NULL,
+                                    CLSCTX_INPROC_SERVER) ||
+      FAILED(taskbar->HrInit()))) {
+    return;
+  }
+  HWND frame = views::HWNDForNativeWindow(GetNativeWindow());
+  taskbar->SetOverlayIcon(frame, IconUtil::CreateHICONFromSkiaBitmap(overlay.AsBitmap()), description);
+#endif
+}
+
 void NativeWindowViews::SetAutoHideMenuBar(bool auto_hide) {
   menu_bar_autohide_ = auto_hide;
 }

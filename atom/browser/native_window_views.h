@@ -73,6 +73,7 @@ class NativeWindowViews : public NativeWindow,
   bool IsKiosk() override;
   void SetMenu(ui::MenuModel* menu_model) override;
   gfx::NativeWindow GetNativeWindow() override;
+  void SetOverlayIcon(gfx::ImageSkia& overlay, std::string& description) override;
   void SetProgressBar(double value) override;
   void SetAutoHideMenuBar(bool auto_hide) override;
   bool IsMenuBarAutoHide() override;
