@@ -613,7 +613,9 @@ void NativeWindowViews::SetProgressBar(double progress) {
 #endif
 }
 
-void NativeWindowViews::SetOverlayIcon(gfx::ImageSkia& overlay, const std::string& description) {
+void NativeWindowViews::SetOverlayIcon(
+  const gfx::ImageSkia& overlay,
+  const std::string& description) {
 #if defined(OS_WIN)
   if (base::win::GetVersion() < base::win::VERSION_WIN7)
     return;
@@ -624,8 +626,12 @@ void NativeWindowViews::SetOverlayIcon(gfx::ImageSkia& overlay, const std::strin
       FAILED(taskbar->HrInit()))) {
     return;
   }
+
   HWND frame = views::HWNDForNativeWindow(GetNativeWindow());
-  taskbar->SetOverlayIcon(frame, IconUtil::CreateHICONFromSkiaBitmap(overlay.AsBitmap()), description);
+
+  taskbar->SetOverlayIcon(frame,
+    IconUtil::CreateHICONFromSkiaBitmap(overlay.AsBitmap()),
+    description);
 #endif
 }
 

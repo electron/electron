@@ -118,7 +118,8 @@ class Window : public mate::EventEmitter,
   void CapturePage(mate::Arguments* args);
   void Print(mate::Arguments* args);
   void SetProgressBar(double progress);
-  void SetOverlayIcon(gfx::ImageSkia& overlay, const std::string& description);
+  void SetOverlayIcon(const gfx::ImageSkia& overlay,
+                      const std::string& description);
   void SetAutoHideMenuBar(bool auto_hide);
   bool IsMenuBarAutoHide();
   void SetMenuBarVisibility(bool visible);
