@@ -613,7 +613,7 @@ void NativeWindowViews::SetProgressBar(double progress) {
 #endif
 }
 
-void NativeWindowViews::SetOverlayIcon(gfx::ImageSkia& overlay, std::string& description) {
+void NativeWindowViews::SetOverlayIcon(gfx::ImageSkia& overlay, const std::string& description) {
 #if defined(OS_WIN)
   if (base::win::GetVersion() < base::win::VERSION_WIN7)
     return;

@@ -142,6 +142,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual bool HasModalDialog();
   virtual gfx::NativeWindow GetNativeWindow() = 0;
   virtual void SetProgressBar(double progress) = 0;
+  virtual void SetOverlayIcon(gfx::ImageSkia& overlay, const std::string& description) = 0;
 
   virtual bool IsClosed() const { return is_closed_; }
   virtual void OpenDevTools();
