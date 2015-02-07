@@ -21,7 +21,6 @@
 #include "ui/aura/window.h"
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/hit_test.h"
-#include "ui/gfx/icon_util.h"
 #include "ui/gfx/image/image.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
@@ -53,6 +52,7 @@
 #include "base/win/windows_version.h"
 #include "ui/base/win/shell.h"
 #include "ui/gfx/win/dpi.h"
+#include "ui/gfx/icon_util.h"
 #include "ui/views/win/hwnd_util.h"
 #endif
 
