@@ -405,6 +405,11 @@ void Window::SetProgressBar(double progress) {
   window_->SetProgressBar(progress);
 }
 
+void Window::SetOverlayIcon(const gfx::Image& overlay,
+  const std::string& description) {
+  window_->SetOverlayIcon(overlay, description);
+}
+
 void Window::SetAutoHideMenuBar(bool auto_hide) {
   window_->SetAutoHideMenuBar(auto_hide);
 }
