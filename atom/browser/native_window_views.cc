@@ -630,9 +630,10 @@ void NativeWindowViews::SetOverlayIcon(
 
   HWND frame = views::HWNDForNativeWindow(GetNativeWindow());
 
+  std::wstring wstr = std::wstring(description.begin(), description.end());
   taskbar->SetOverlayIcon(frame,
-    IconUtil::CreateHICONFromSkiaBitmap(overlay.AsBitmap()),
-    description);
+    IconUtil::CreateHICONFromSkBitmap(overlay.AsBitmap()),
+    wstr.c_str());
 #endif
 }
 
