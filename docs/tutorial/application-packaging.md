@@ -7,7 +7,7 @@ source code.
 ## Generating `asar` archive
 
 An [asar][asar] archive is a simple tar-like format that concatenates files
-into a single file, atom-shell can read arbitrary file in it without unpacking
+into a single file, atom-shell can read arbitrary files from it without unpacking
 the whole file.
 
 Following is the steps to package your app into an `asar` archive:
