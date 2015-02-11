@@ -72,6 +72,9 @@ const char kPreloadScript[] = "preload";
 // Whether the window should be transparent.
 const char kTransparent[] = "transparent";
 
+// Window type hint.
+const char kType[] = "type";
+
 // Web runtime features.
 const char kExperimentalFeatures[]       = "experimental-features";
 const char kExperimentalCanvasFeatures[] = "experimental-canvas-features";

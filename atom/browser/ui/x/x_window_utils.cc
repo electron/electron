@@ -4,6 +4,9 @@
 
 #include "atom/browser/ui/x/x_window_utils.h"
 
+#include <X11/Xatom.h>
+
+#include "base/strings/string_util.h"
 #include "ui/base/x/x11_util.h"
 
 namespace atom {
@@ -29,6 +32,18 @@ void SetWMSpecState(::Window xwindow, bool enabled, ::Atom state) {
   XSendEvent(xdisplay, DefaultRootWindow(xdisplay), False,
              SubstructureRedirectMask | SubstructureNotifyMask,
              &xclient);
+}
+
+void SetWindowType(::Window xwindow, const std::string& type) {
+  XDisplay* xdisplay = gfx::GetXDisplay();
+  std::string type_prefix = "_NET_WM_WINDOW_TYPE_";
+  ::Atom window_type = XInternAtom(
+      xdisplay, (type_prefix + StringToUpperASCII(type)).c_str(), False);
+  XChangeProperty(xdisplay, xwindow,
+                  XInternAtom(xdisplay, "_NET_WM_WINDOW_TYPE", False),
+                  XA_ATOM,
+                  32, PropModeReplace,
+                  reinterpret_cast<unsigned char*>(&window_type), 1);
 }
 
 }  // namespace atom

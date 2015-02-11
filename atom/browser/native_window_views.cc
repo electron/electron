@@ -225,6 +225,11 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
     ui::SetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", "ATOM",
                              state_atom_list);
   }
+
+  // Set the _NET_WM_WINDOW_TYPE.
+  std::string window_type;
+  if (options.Get(switches::kType, &window_type))
+    SetWindowType(GetAcceleratedWidget(), window_type);
 #endif
 
   // Add web view.
