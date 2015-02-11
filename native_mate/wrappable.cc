@@ -67,6 +67,8 @@ void* FromV8Impl(v8::Isolate* isolate, v8::Handle<v8::Value> val) {
   if (!val->IsObject())
     return NULL;
   v8::Handle<v8::Object> obj = v8::Handle<v8::Object>::Cast(val);
+  if (obj->InternalFieldCount() != 1)
+    return NULL;
   return MATE_GET_INTERNAL_FIELD_POINTER(obj, 0);
 }
 
