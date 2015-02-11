@@ -16,9 +16,11 @@
 #include "ui/gfx/image/image_skia.h"
 #include "ui/base/layout.h"
 
-#if !defined(OS_MACOSX)
+#include "atom/common/node_includes.h"
 
 namespace mate {
+
+#if !defined(OS_MACOSX)
 
 namespace {
 
@@ -122,6 +124,14 @@ bool Converter<gfx::Image>::FromV8(v8::Isolate* isolate,
   return true;
 }
 
-}  // namespace mate
-
 #endif  // !defined(OS_MACOSX)
+
+v8::Handle<v8::Value> Converter<gfx::Image>::ToV8(v8::Isolate* isolate,
+                                                  const gfx::Image& val) {
+  scoped_refptr<base::RefCountedMemory> png = val.As1xPNGBytes();
+  return node::Buffer::New(isolate,
+                           reinterpret_cast<const char*>(png->front()),
+                           png->size());
+}
+
+}  // namespace mate

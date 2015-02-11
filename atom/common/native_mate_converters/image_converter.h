@@ -26,6 +26,8 @@ struct Converter<gfx::Image> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      gfx::Image* out);
+  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+                                    const gfx::Image& val);
 };
 
 }  // namespace mate
