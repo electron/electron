@@ -2,10 +2,6 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-namespace gfx {
-class Image;
-}
-
 #include "atom/browser/api/atom_api_window.h"
 
 #include "atom/browser/api/atom_api_web_contents.h"
@@ -13,8 +9,8 @@ class Image;
 #include "atom/browser/native_window.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/callback.h"
 #include "native_mate/constructor.h"
@@ -406,7 +402,7 @@ void Window::SetProgressBar(double progress) {
 }
 
 void Window::SetOverlayIcon(const gfx::Image& overlay,
-  const std::string& description) {
+                            const std::string& description) {
   window_->SetOverlayIcon(overlay, description);
 }
 

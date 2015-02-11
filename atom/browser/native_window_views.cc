@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+
 #include "atom/browser/ui/views/menu_bar.h"
 #include "atom/browser/ui/views/menu_layout.h"
 #include "atom/common/draggable_region.h"
@@ -51,8 +52,8 @@
 #include "base/win/scoped_comptr.h"
 #include "base/win/windows_version.h"
 #include "ui/base/win/shell.h"
-#include "ui/gfx/win/dpi.h"
 #include "ui/gfx/icon_util.h"
+#include "ui/gfx/win/dpi.h"
 #include "ui/views/win/hwnd_util.h"
 #endif
 
@@ -614,9 +615,8 @@ void NativeWindowViews::SetProgressBar(double progress) {
 #endif
 }
 
-void NativeWindowViews::SetOverlayIcon(
-  const gfx::Image& overlay,
-  const std::string& description) {
+void NativeWindowViews::SetOverlayIcon(const gfx::Image& overlay,
+                                       const std::string& description) {
 #if defined(OS_WIN)
   if (base::win::GetVersion() < base::win::VERSION_WIN7)
     return;
@@ -632,8 +632,8 @@ void NativeWindowViews::SetOverlayIcon(
 
   std::wstring wstr = std::wstring(description.begin(), description.end());
   taskbar->SetOverlayIcon(frame,
-    IconUtil::CreateHICONFromSkBitmap(overlay.AsBitmap()),
-    wstr.c_str());
+      IconUtil::CreateHICONFromSkBitmap(overlay.AsBitmap()),
+      wstr.c_str());
 #endif
 }
 

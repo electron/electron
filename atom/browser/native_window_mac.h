@@ -72,7 +72,7 @@ class NativeWindowMac : public NativeWindow {
   gfx::NativeWindow GetNativeWindow() override;
   void SetProgressBar(double progress) override;
   void SetOverlayIcon(const gfx::Image& overlay,
-    const std::string& description) override;
+                      const std::string& description) override;
   void ShowDefinitionForSelection() override;
 
   // Returns true if |point| in local Cocoa coordinate system falls within

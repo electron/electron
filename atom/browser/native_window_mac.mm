@@ -678,8 +678,8 @@ void NativeWindowMac::SetProgressBar(double progress) {
   [dock_tile display];
 }
 
-void NativeWindowMac::SetOverlayIcon(const gfx::Image& overlay, 
-  const std::string& description) {
+void NativeWindowMac::SetOverlayIcon(const gfx::Image& overlay,
+                                     const std::string& description) {
 }
 
 void NativeWindowMac::ShowDefinitionForSelection() {

@@ -543,7 +543,6 @@ it will assume `app.getName().desktop`.
 ### BrowserWindow.setOverlayIcon(overlay, description)
 
 * `overlay` [Image](image.md) - the icon to display on the bottom right corner of the Taskbar icon. If this parameter is `null`, the overlay is cleared.
-
 * `description` String - a description that will be provided to Accessibility screenreaders
 
 Sets a 16px overlay onto the current Taskbar icon, usually used to convey some sort of application status or to passively notify the user.
