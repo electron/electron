@@ -4,11 +4,13 @@
 
 #include "atom/common/api/atom_api_native_image.h"
 
+#include <string>
+#include <vector>
+
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
-#include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "ui/base/layout.h"
