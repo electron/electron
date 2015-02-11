@@ -5,10 +5,13 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/dictionary.h"
+#include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/clipboard/clipboard.h"
 #include "ui/base/clipboard/scoped_clipboard_writer.h"
+#include "ui/gfx/image/image.h"
 
 #include "atom/common/node_includes.h"
 
@@ -16,8 +19,7 @@ namespace mate {
 
 template<>
 struct Converter<ui::ClipboardType> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
                      ui::ClipboardType* out) {
     std::string type;
     if (!Converter<std::string>::FromV8(isolate, val, &type))
@@ -62,6 +64,11 @@ void WriteText(const base::string16& text, ui::ClipboardType type) {
   writer.WriteText(text);
 }
 
+gfx::Image ReadImage(ui::ClipboardType type) {
+  SkBitmap bitmap = ui::Clipboard::GetForCurrentThread()->ReadImage(type);
+  return gfx::Image::CreateFrom1xBitmap(bitmap);
+}
+
 void Clear(ui::ClipboardType type) {
   ui::Clipboard::GetForCurrentThread()->Clear(type);
 }
@@ -73,6 +80,7 @@ void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
   dict.SetMethod("_read", &Read);
   dict.SetMethod("_readText", &ReadText);
   dict.SetMethod("_writeText", &WriteText);
+  dict.SetMethod("_readImage", &ReadImage);
   dict.SetMethod("_clear", &Clear);
 }
 
