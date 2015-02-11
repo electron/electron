@@ -9,6 +9,10 @@
 #include "native_mate/wrappable.h"
 #include "ui/gfx/image/image.h"
 
+namespace base {
+class FilePath;
+}
+
 namespace gfx {
 class Size;
 }
@@ -25,6 +29,8 @@ class NativeImage : public mate::Wrappable {
       v8::Isolate* isolate, v8::Handle<v8::Value> buffer);
   static mate::Handle<NativeImage> CreateFromJPEG(
       v8::Isolate* isolate, v8::Handle<v8::Value> buffer);
+  static mate::Handle<NativeImage> CreateFromPath(
+      v8::Isolate* isolate, const base::FilePath& path);
 
  protected:
   explicit NativeImage(const gfx::Image& image);

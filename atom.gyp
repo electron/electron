@@ -207,6 +207,7 @@
       'atom/common/api/atom_api_id_weak_map.h',
       'atom/common/api/atom_api_native_image.cc',
       'atom/common/api/atom_api_native_image.h',
+      'atom/common/api/atom_api_native_image_mac.mm',
       'atom/common/api/atom_api_shell.cc',
       'atom/common/api/atom_api_v8_util.cc',
       'atom/common/api/atom_bindings.cc',
