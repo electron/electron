@@ -98,6 +98,9 @@ namespace {
 
 void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
                 v8::Handle<v8::Context> context, void* priv) {
+  mate::Dictionary dict(context->GetIsolate(), exports);
+  dict.SetMethod("createFromPng", &atom::api::NativeImage::CreateFromPNG);
+  dict.SetMethod("createFromJpeg", &atom::api::NativeImage::CreateFromJPEG);
 }
 
 }  // namespace
