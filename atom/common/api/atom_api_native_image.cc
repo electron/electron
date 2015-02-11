@@ -106,6 +106,8 @@ v8::Persistent<v8::ObjectTemplate> template_;
 
 }  // namespace
 
+NativeImage::NativeImage() {}
+
 NativeImage::NativeImage(const gfx::Image& image) : image_(image) {}
 
 NativeImage::~NativeImage() {}

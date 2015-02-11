@@ -32,6 +32,11 @@ class NativeImage : public mate::Wrappable {
   static mate::Handle<NativeImage> CreateFromPath(
       v8::Isolate* isolate, const base::FilePath& path);
 
+  // The default constructor should only be used by image_converter.cc.
+  NativeImage();
+
+  const gfx::Image& image() const { return image_; }
+
  protected:
   explicit NativeImage(const gfx::Image& image);
   virtual ~NativeImage();

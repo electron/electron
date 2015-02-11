@@ -246,7 +246,6 @@
       'atom/common/native_mate_converters/gurl_converter.h',
       'atom/common/native_mate_converters/image_converter.cc',
       'atom/common/native_mate_converters/image_converter.h',
-      'atom/common/native_mate_converters/image_converter_mac.mm',
       'atom/common/native_mate_converters/string16_converter.h',
       'atom/common/native_mate_converters/v8_value_converter.cc',
       'atom/common/native_mate_converters/v8_value_converter.h',
