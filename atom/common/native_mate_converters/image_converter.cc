@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
@@ -128,10 +129,7 @@ bool Converter<gfx::Image>::FromV8(v8::Isolate* isolate,
 
 v8::Handle<v8::Value> Converter<gfx::Image>::ToV8(v8::Isolate* isolate,
                                                   const gfx::Image& val) {
-  scoped_refptr<base::RefCountedMemory> png = val.As1xPNGBytes();
-  return node::Buffer::New(isolate,
-                           reinterpret_cast<const char*>(png->front()),
-                           png->size());
+  return ConvertToV8(isolate, atom::api::NativeImage::Create(isolate, val));
 }
 
 }  // namespace mate
