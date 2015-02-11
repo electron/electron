@@ -4,10 +4,12 @@
 
 #include "atom/common/api/atom_api_native_image.h"
 
+#include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "ui/gfx/geometry/size.h"
 
 #include "atom/common/node_includes.h"
 
@@ -30,6 +32,8 @@ mate::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
   if (template_.IsEmpty())
     template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
         .SetMethod("toPng", &NativeImage::ToPNG)
+        .SetMethod("isEmpty", &NativeImage::IsEmpty)
+        .SetMethod("getSize", &NativeImage::GetSize)
         .Build());
 
   return mate::ObjectTemplateBuilder(
@@ -41,6 +45,14 @@ v8::Handle<v8::Value> NativeImage::ToPNG(v8::Isolate* isolate) {
   return node::Buffer::New(isolate,
                            reinterpret_cast<const char*>(png->front()),
                            png->size());
+}
+
+bool NativeImage::IsEmpty() {
+  return image_.IsEmpty();
+}
+
+gfx::Size NativeImage::GetSize() {
+  return image_.Size();
 }
 
 // static

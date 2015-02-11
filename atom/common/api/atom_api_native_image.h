@@ -9,6 +9,10 @@
 #include "native_mate/wrappable.h"
 #include "ui/gfx/image/image.h"
 
+namespace gfx {
+class Size;
+}
+
 namespace atom {
 
 namespace api {
@@ -28,6 +32,8 @@ class NativeImage : public mate::Wrappable {
 
  private:
   v8::Handle<v8::Value> ToPNG(v8::Isolate* isolate);
+  bool IsEmpty();
+  gfx::Size GetSize();
 
   gfx::Image image_;
 
