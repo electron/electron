@@ -22,6 +22,7 @@
 #include "ui/aura/window.h"
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/hit_test.h"
+#include "ui/gfx/image/image.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/controls/webview/webview.h"
@@ -51,6 +52,7 @@
 #include "base/win/scoped_comptr.h"
 #include "base/win/windows_version.h"
 #include "ui/base/win/shell.h"
+#include "ui/gfx/icon_util.h"
 #include "ui/gfx/win/dpi.h"
 #include "ui/views/win/hwnd_util.h"
 #endif
@@ -610,6 +612,28 @@ void NativeWindowViews::SetProgressBar(double progress) {
   if (unity::IsRunning()) {
     unity::SetProgressFraction(progress);
   }
+#endif
+}
+
+void NativeWindowViews::SetOverlayIcon(const gfx::Image& overlay,
+                                       const std::string& description) {
+#if defined(OS_WIN)
+  if (base::win::GetVersion() < base::win::VERSION_WIN7)
+    return;
+
+  base::win::ScopedComPtr<ITaskbarList3> taskbar;
+  if (FAILED(taskbar.CreateInstance(CLSID_TaskbarList, NULL,
+                                    CLSCTX_INPROC_SERVER) ||
+      FAILED(taskbar->HrInit()))) {
+    return;
+  }
+
+  HWND frame = views::HWNDForNativeWindow(GetNativeWindow());
+
+  std::wstring wstr = std::wstring(description.begin(), description.end());
+  taskbar->SetOverlayIcon(frame,
+      IconUtil::CreateHICONFromSkBitmap(overlay.AsBitmap()),
+      wstr.c_str());
 #endif
 }
 

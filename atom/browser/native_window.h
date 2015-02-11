@@ -21,7 +21,7 @@
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
 #include "native_mate/persistent_dictionary.h"
-#include "ui/gfx/image/image_skia.h"
+#include "ui/gfx/image/image.h"
 
 namespace base {
 class CommandLine;
@@ -142,6 +142,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual bool HasModalDialog();
   virtual gfx::NativeWindow GetNativeWindow() = 0;
   virtual void SetProgressBar(double progress) = 0;
+  virtual void SetOverlayIcon(const gfx::Image& overlay,
+                              const std::string& description) = 0;
 
   virtual bool IsClosed() const { return is_closed_; }
   virtual void OpenDevTools();

@@ -678,6 +678,10 @@ void NativeWindowMac::SetProgressBar(double progress) {
   [dock_tile display];
 }
 
+void NativeWindowMac::SetOverlayIcon(const gfx::Image& overlay,
+                                     const std::string& description) {
+}
+
 void NativeWindowMac::ShowDefinitionForSelection() {
   content::WebContents* web_contents = GetWebContents();
   if (!web_contents)

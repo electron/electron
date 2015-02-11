@@ -9,6 +9,7 @@
 #include "atom/browser/native_window.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
+#include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/callback.h"
@@ -400,6 +401,11 @@ void Window::SetProgressBar(double progress) {
   window_->SetProgressBar(progress);
 }
 
+void Window::SetOverlayIcon(const gfx::Image& overlay,
+                            const std::string& description) {
+  window_->SetOverlayIcon(overlay, description);
+}
+
 void Window::SetAutoHideMenuBar(bool auto_hide) {
   window_->SetAutoHideMenuBar(auto_hide);
 }
@@ -487,6 +493,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("capturePage", &Window::CapturePage)
       .SetMethod("print", &Window::Print)
       .SetMethod("setProgressBar", &Window::SetProgressBar)
+      .SetMethod("setOverlayIcon", &Window::SetOverlayIcon)
       .SetMethod("setAutoHideMenuBar", &Window::SetAutoHideMenuBar)
       .SetMethod("isMenuBarAutoHide", &Window::IsMenuBarAutoHide)
       .SetMethod("setMenuBarVisibility", &Window::SetMenuBarVisibility)

@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/memory/scoped_ptr.h"
+#include "ui/gfx/image/image.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/browser/api/event_emitter.h"
 #include "native_mate/handle.h"
@@ -118,6 +119,8 @@ class Window : public mate::EventEmitter,
   void CapturePage(mate::Arguments* args);
   void Print(mate::Arguments* args);
   void SetProgressBar(double progress);
+  void SetOverlayIcon(const gfx::Image& overlay,
+                      const std::string& description);
   void SetAutoHideMenuBar(bool auto_hide);
   bool IsMenuBarAutoHide();
   void SetMenuBarVisibility(bool visible);
