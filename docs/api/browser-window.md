@@ -68,6 +68,9 @@ You can also create a window without chrome by using
     no matter whether node integration is turned on for the window, and the path
     of `preload` script has to be absolute path.
   * `transparent` Boolean - Makes the window [transparent](frameless-window.md)
+  * `type` String - Specifies the type of the window, possible types are
+    `desktop`, `dock`, `toolbar`, `splash`, `notification`. This only works on
+    Linux.
   * `web-preferences` Object - Settings of web page's features
     * `javascript` Boolean
     * `web-security` Boolean
