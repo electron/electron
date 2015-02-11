@@ -19,11 +19,15 @@ namespace api {
 
 class NativeImage : public mate::Wrappable {
  public:
-  static mate::Handle<NativeImage> Create(v8::Isolate* isolate,
-                                          const gfx::Image& image);
+  static mate::Handle<NativeImage> Create(
+      v8::Isolate* isolate, const gfx::Image& image);
+  static mate::Handle<NativeImage> CreateFromPNG(
+      v8::Isolate* isolate, v8::Handle<v8::Value> buffer);
+  static mate::Handle<NativeImage> CreateFromJPEG(
+      v8::Isolate* isolate, v8::Handle<v8::Value> buffer);
 
  protected:
-  NativeImage(const gfx::Image& image);
+  explicit NativeImage(const gfx::Image& image);
   virtual ~NativeImage();
 
   // mate::Wrappable:

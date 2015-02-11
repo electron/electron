@@ -66,9 +66,27 @@ gfx::Size NativeImage::GetSize() {
 }
 
 // static
-mate::Handle<NativeImage> NativeImage::Create(v8::Isolate* isolate,
-                                              const gfx::Image& image) {
+mate::Handle<NativeImage> NativeImage::Create(
+    v8::Isolate* isolate, const gfx::Image& image) {
   return mate::CreateHandle(isolate, new NativeImage(image));
+}
+
+// static
+mate::Handle<NativeImage> NativeImage::CreateFromPNG(
+    v8::Isolate* isolate, v8::Handle<v8::Value> buffer) {
+  gfx::Image image = gfx::Image::CreateFrom1xPNGBytes(
+      reinterpret_cast<unsigned char*>(node::Buffer::Data(buffer)),
+      node::Buffer::Length(buffer));
+  return Create(isolate, image);
+}
+
+// static
+mate::Handle<NativeImage> NativeImage::CreateFromJPEG(
+    v8::Isolate* isolate, v8::Handle<v8::Value> buffer) {
+  gfx::Image image = gfx::ImageFrom1xJPEGEncodedData(
+      reinterpret_cast<unsigned char*>(node::Buffer::Data(buffer)),
+      node::Buffer::Length(buffer));
+  return Create(isolate, image);
 }
 
 }  // namespace api
