@@ -10,6 +10,7 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "ui/gfx/geometry/size.h"
+#include "ui/gfx/image/image_util.h"
 
 #include "atom/common/node_includes.h"
 
@@ -32,6 +33,7 @@ mate::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
   if (template_.IsEmpty())
     template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
         .SetMethod("toPng", &NativeImage::ToPNG)
+        .SetMethod("toJpeg", &NativeImage::ToJPEG)
         .SetMethod("isEmpty", &NativeImage::IsEmpty)
         .SetMethod("getSize", &NativeImage::GetSize)
         .Build());
@@ -45,6 +47,14 @@ v8::Handle<v8::Value> NativeImage::ToPNG(v8::Isolate* isolate) {
   return node::Buffer::New(isolate,
                            reinterpret_cast<const char*>(png->front()),
                            png->size());
+}
+
+v8::Handle<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
+  std::vector<unsigned char> output;
+  gfx::JPEG1xEncodedDataFromImage(image_, quality, &output);
+  return node::Buffer::New(isolate,
+                           reinterpret_cast<const char*>(&output.front()),
+                           output.size());
 }
 
 bool NativeImage::IsEmpty() {

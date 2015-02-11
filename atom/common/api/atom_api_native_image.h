@@ -32,6 +32,7 @@ class NativeImage : public mate::Wrappable {
 
  private:
   v8::Handle<v8::Value> ToPNG(v8::Isolate* isolate);
+  v8::Handle<v8::Value> ToJPEG(v8::Isolate* isolate, int quality);
   bool IsEmpty();
   gfx::Size GetSize();
 
