@@ -54,13 +54,11 @@ TrayIconCocoa::~TrayIconCocoa() {
 }
 
 void TrayIconCocoa::SetImage(const gfx::Image& image) {
-  if (!image.IsEmpty())
-    [item_ setImage:image.ToNSImage()];
+  [item_ setImage:image.AsNSImage()];
 }
 
 void TrayIconCocoa::SetPressedImage(const gfx::Image& image) {
-  if (!image.IsEmpty())
-    [item_ setAlternateImage:image.ToNSImage()];
+  [item_ setAlternateImage:image.AsNSImage()];
 }
 
 void TrayIconCocoa::SetToolTip(const std::string& tool_tip) {
