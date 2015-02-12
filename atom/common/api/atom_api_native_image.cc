@@ -10,6 +10,7 @@
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
+#include "base/base64.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
 #include "native_mate/dictionary.h"
@@ -127,6 +128,7 @@ mate::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
     template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
         .SetMethod("toPng", &NativeImage::ToPNG)
         .SetMethod("toJpeg", &NativeImage::ToJPEG)
+        .SetMethod("toDataUrl", &NativeImage::ToDataURL)
         .SetMethod("isEmpty", &NativeImage::IsEmpty)
         .SetMethod("getSize", &NativeImage::GetSize)
         .Build());
@@ -148,6 +150,15 @@ v8::Handle<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
   return node::Buffer::New(isolate,
                            reinterpret_cast<const char*>(&output.front()),
                            output.size());
+}
+
+std::string NativeImage::ToDataURL() {
+  scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
+  std::string data_url;
+  data_url.insert(data_url.end(), png->front(), png->front() + png->size());
+  base::Base64Encode(data_url, &data_url);
+  data_url.insert(0, "data:image/png;base64,");
+  return data_url;
 }
 
 bool NativeImage::IsEmpty() {
