@@ -28,7 +28,6 @@ namespace api {
 
 namespace {
 
-#if !defined(OS_MACOSX)
 struct ScaleFactorPair {
   const char* name;
   float scale;
@@ -102,7 +101,13 @@ bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
                                pair.scale);
   return succeed;
 }
-#endif  // !defined(OS_MACOSX)
+
+#if defined(OS_MACOSX)
+bool IsTemplateImage(const base::FilePath& path) {
+  return (MatchPattern(path.value(), "*Template.*") ||
+          MatchPattern(path.value(), "*Template@*x.*"));
+}
+#endif
 
 v8::Persistent<v8::ObjectTemplate> template_;
 
@@ -175,15 +180,18 @@ mate::Handle<NativeImage> NativeImage::CreateFromJPEG(
   return Create(isolate, image);
 }
 
-#if !defined(OS_MACOSX)
 // static
 mate::Handle<NativeImage> NativeImage::CreateFromPath(
     v8::Isolate* isolate, const base::FilePath& path) {
   gfx::ImageSkia image_skia;
   PopulateImageSkiaRepsFromPath(&image_skia, path);
-  return Create(isolate, gfx::Image(image_skia));
+  gfx::Image image(image_skia);
+#if defined(OS_MACOSX)
+  if (IsTemplateImage(path))
+    MakeTemplateImage(&image);
+#endif
+  return Create(isolate, image);
 }
-#endif  // !defined(OS_MACOSX)
 
 }  // namespace api
 
