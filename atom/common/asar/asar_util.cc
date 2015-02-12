@@ -5,6 +5,7 @@
 #include "atom/common/asar/asar_util.h"
 
 #include <map>
+#include <string>
 
 #include "atom/common/asar/archive.h"
 #include "base/files/file_path.h"
@@ -14,11 +15,10 @@
 
 namespace asar {
 
-typedef std::map<base::FilePath, std::shared_ptr<Archive>> ArchiveMap;
-
 namespace {
 
 // The global instance of ArchiveMap, will be destroyed on exit.
+typedef std::map<base::FilePath, std::shared_ptr<Archive>> ArchiveMap;
 static base::LazyInstance<ArchiveMap> g_archive_map = LAZY_INSTANCE_INITIALIZER;
 
 const base::FilePath::CharType kAsarExtension[] = FILE_PATH_LITERAL(".asar");

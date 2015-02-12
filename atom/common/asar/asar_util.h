@@ -6,6 +6,7 @@
 #define ATOM_COMMON_ASAR_ASAR_UTIL_H_
 
 #include <memory>
+#include <string>
 
 namespace base {
 class FilePath;
