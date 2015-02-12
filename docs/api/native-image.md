@@ -82,25 +82,27 @@ To mark an image as template image, its filename should end with the word
 
 ## nativeImage.createEmpty()
 
-Creates a new `NativeImage` instance that contains empty image.
-
-## nativeImage.createFromPng(buffer)
-
-* `buffer` [Buffer][buffer]
-
-Creates a new `NativeImage` instance from `buffer` with `PNG` format.
-
-## nativeImage.createFromPng(buffer)
-
-* `buffer` [Buffer][buffer]
-
-Creates a new `NativeImage` instance from `buffer` with `JPEG` format.
+Creates an empty `NativeImage` instance.
 
 ## nativeImage.createFromPath(path)
 
 * `path` String
 
 Creates a new `NativeImage` instance from file located at `path`.
+
+## nativeImage.createFromBuffer(buffer[, scaleFactor])
+
+* `buffer` [Buffer][buffer]
+* `scaleFactor` Double
+
+Creates a new `NativeImage` instance from `buffer`. The `scaleFactor` is 1.0 by
+default.
+
+## nativeImage.createFromDataUrl(dataUrl)
+
+* `dataUrl` String
+
+Creates a new `NativeImage` instance from `dataUrl`.
 
 ## Class: NativeImage
 
@@ -110,9 +112,15 @@ This class is used to represent an image.
 
 Returns a [Buffer][buffer] that contains image's `PNG` encoded data.
 
-### NativeImage.isJpeg()
+### NativeImage.toJpeg(quality)
+
+* `quality` Integer
 
 Returns a [Buffer][buffer] that contains image's `JPEG` encoded data.
+
+### NativeImage.toDataUrl()
+
+Returns the data URL of image.
 
 ### NativeImage.isEmpty()
 
