@@ -17,7 +17,7 @@ namespace asar {
 URLRequestAsarJob::URLRequestAsarJob(
     net::URLRequest* request,
     net::NetworkDelegate* network_delegate,
-    Archive* archive,
+    std::shared_ptr<Archive> archive,
     const base::FilePath& file_path,
     const scoped_refptr<base::TaskRunner>& file_task_runner)
     : net::URLRequestJob(request, network_delegate),

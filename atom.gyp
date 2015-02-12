@@ -216,6 +216,8 @@
       'atom/common/api/object_life_monitor.h',
       'atom/common/asar/archive.cc',
       'atom/common/asar/archive.h',
+      'atom/common/asar/asar_util.cc',
+      'atom/common/asar/asar_util.h',
       'atom/common/asar/scoped_temporary_file.cc',
       'atom/common/asar/scoped_temporary_file.h',
       'atom/common/common_message_generator.cc',
