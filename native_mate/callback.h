@@ -18,13 +18,6 @@ namespace internal {
 
 typedef scoped_refptr<RefCountedPersistent<v8::Function> > SafeV8Function;
 
-// Helper to convert type to V8 with storage type (const T& to T).
-template<typename T>
-v8::Handle<v8::Value> ConvertToV8(v8::Isolate* isolate, T a) {
-  return Converter<typename base::internal::CallbackParamTraits<T>::StorageType>
-      ::ToV8(isolate, a);
-}
-
 // This set of templates invokes a V8::Function by converting the C++ types.
 template<typename Sig>
 struct V8FunctionInvoker;
