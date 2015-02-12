@@ -43,13 +43,13 @@ You can also create a window without chrome by using
      other windows
   * `fullscreen` Boolean - Whether the window should show in fullscreen, when
     set to `false` the fullscreen button would also be hidden on OS X
-  * `skip-taskbar` Boolean - Do not show window in taskbar
+  * `skip-taskbar` Boolean - Do not show window in Taskbar
   * `zoom-factor` Number - The default zoom factor of the page, zoom factor is
     zoom percent / 100, so `3.0` represents `300%`
   * `kiosk` Boolean - The kiosk mode
   * `title` String - Default window title
-  * `icon` [Image](image.md) - The window icon, when omitted on Windows the
-    executable's icon would be used as window icon
+  * `icon` [NativeImage](native-image.md) - The window icon, when omitted on
+    Windows the executable's icon would be used as window icon
   * `show` Boolean - Whether window should be shown when created
   * `frame` Boolean - Specify `false` to create a
     [Frameless Window](frameless-window.md)
@@ -415,7 +415,7 @@ Starts or stops flashing the window to attract user's attention.
 
 * `skip` Boolean
 
-Makes the window do not show in taskbar.
+Makes the window do not show in Taskbar.
 
 ### BrowserWindow.setKiosk(flag)
 
@@ -545,8 +545,11 @@ it will assume `app.getName().desktop`.
 
 ### BrowserWindow.setOverlayIcon(overlay, description)
 
-* `overlay` [Image](image.md) - the icon to display on the bottom right corner of the Taskbar icon. If this parameter is `null`, the overlay is cleared.
-* `description` String - a description that will be provided to Accessibility screenreaders
+* `overlay` [NativeImage](native-image.md) - the icon to display on the bottom
+right corner of the Taskbar icon. If this parameter is `null`, the overlay is
+cleared
+* `description` String - a description that will be provided to Accessibility
+screen readers
 
 Sets a 16px overlay onto the current Taskbar icon, usually used to convey some sort of application status or to passively notify the user.
 

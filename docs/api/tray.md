@@ -40,7 +40,7 @@ rely on `clicked` event and always attach a context menu to the tray icon.
 
 ### new Tray(image)
 
-* `image` [Image](image.md)
+* `image` [NativeImage](native-image.md)
 
 Creates a new tray icon associated with the `image`.
 
@@ -79,13 +79,13 @@ Destroys the tray icon immediately.
 
 ### Tray.setImage(image)
 
-* `image` [Image](image.md)
+* `image` [NativeImage](native-image.md)
 
 Sets the `image` associated with this tray icon.
 
 ### Tray.setPressedImage(image)
 
-* `image` [Image](image.md)
+* `image` [NativeImage](native-image.md)
 
 Sets the `image` associated with this tray icon when pressed.
 
@@ -114,7 +114,7 @@ This is only implmented on OS X.
 ### Tray.displayBalloon(options)
 
 * `options` Object
-  * `icon` [Image](image.md)
+  * `icon` [NativeImage](native-image.md)
   * `title` String
   * `content` String
 
