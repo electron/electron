@@ -9,6 +9,8 @@
 #include "native_mate/wrappable.h"
 #include "ui/gfx/image/image.h"
 
+class GURL;
+
 namespace base {
 class FilePath;
 }
@@ -27,11 +29,13 @@ class NativeImage : public mate::Wrappable {
   static mate::Handle<NativeImage> Create(
       v8::Isolate* isolate, const gfx::Image& image);
   static mate::Handle<NativeImage> CreateFromPNG(
-      v8::Isolate* isolate, v8::Handle<v8::Value> buffer);
+      v8::Isolate* isolate, const char* buffer, size_t length);
   static mate::Handle<NativeImage> CreateFromJPEG(
-      v8::Isolate* isolate, v8::Handle<v8::Value> buffer);
+      v8::Isolate* isolate, const char* buffer, size_t length);
   static mate::Handle<NativeImage> CreateFromPath(
       v8::Isolate* isolate, const base::FilePath& path);
+  static mate::Handle<NativeImage> CreateFromDataURL(
+      v8::Isolate* isolate, const GURL& url);
 
   // The default constructor should only be used by image_converter.cc.
   NativeImage();

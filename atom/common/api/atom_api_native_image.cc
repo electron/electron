@@ -9,10 +9,12 @@
 
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
+#include "atom/common/native_mate_converters/gurl_converter.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "net/base/data_url.h"
 #include "ui/base/layout.h"
 #include "ui/gfx/codec/jpeg_codec.h"
 #include "ui/gfx/codec/png_codec.h"
@@ -169,19 +171,17 @@ mate::Handle<NativeImage> NativeImage::Create(
 
 // static
 mate::Handle<NativeImage> NativeImage::CreateFromPNG(
-    v8::Isolate* isolate, v8::Handle<v8::Value> buffer) {
+    v8::Isolate* isolate, const char* buffer, size_t length) {
   gfx::Image image = gfx::Image::CreateFrom1xPNGBytes(
-      reinterpret_cast<unsigned char*>(node::Buffer::Data(buffer)),
-      node::Buffer::Length(buffer));
+      reinterpret_cast<const unsigned char*>(buffer), length);
   return Create(isolate, image);
 }
 
 // static
 mate::Handle<NativeImage> NativeImage::CreateFromJPEG(
-    v8::Isolate* isolate, v8::Handle<v8::Value> buffer) {
+    v8::Isolate* isolate, const char* buffer, size_t length) {
   gfx::Image image = gfx::ImageFrom1xJPEGEncodedData(
-      reinterpret_cast<unsigned char*>(node::Buffer::Data(buffer)),
-      node::Buffer::Length(buffer));
+      reinterpret_cast<const unsigned char*>(buffer), length);
   return Create(isolate, image);
 }
 
@@ -198,6 +198,20 @@ mate::Handle<NativeImage> NativeImage::CreateFromPath(
   return Create(isolate, image);
 }
 
+// static
+mate::Handle<NativeImage> NativeImage::CreateFromDataURL(
+    v8::Isolate* isolate, const GURL& url) {
+  std::string mime_type, charset, data;
+  if (net::DataURL::Parse(url, &mime_type, &charset, &data)) {
+    if (mime_type == "image/png")
+      return CreateFromPNG(isolate, data.c_str(), data.size());
+    else if (mime_type == "image/jpeg")
+      return CreateFromJPEG(isolate, data.c_str(), data.size());
+  }
+
+  return CreateEmpty(isolate);
+}
+
 }  // namespace api
 
 }  // namespace atom
@@ -209,9 +223,9 @@ void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
                 v8::Handle<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createEmpty", &atom::api::NativeImage::CreateEmpty);
-  dict.SetMethod("createFromPng", &atom::api::NativeImage::CreateFromPNG);
-  dict.SetMethod("createFromJpeg", &atom::api::NativeImage::CreateFromJPEG);
   dict.SetMethod("createFromPath", &atom::api::NativeImage::CreateFromPath);
+  dict.SetMethod("createFromDataUrl",
+                 &atom::api::NativeImage::CreateFromDataURL);
 }
 
 }  // namespace
