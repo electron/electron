@@ -23,6 +23,7 @@ namespace api {
 
 class NativeImage : public mate::Wrappable {
  public:
+  static mate::Handle<NativeImage> CreateEmpty(v8::Isolate* isolate);
   static mate::Handle<NativeImage> Create(
       v8::Isolate* isolate, const gfx::Image& image);
   static mate::Handle<NativeImage> CreateFromPNG(

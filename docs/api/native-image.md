@@ -80,6 +80,10 @@ To mark an image as template image, its filename should end with the word
 * `xxxTemplate.png`
 * `xxxTemplate@2x.png`
 
+## nativeImage.createEmpty()
+
+Creates a new `NativeImage` instance that contains empty image.
+
 ## nativeImage.createFromPng(buffer)
 
 * `buffer` [Buffer][buffer]

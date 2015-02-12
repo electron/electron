@@ -157,6 +157,11 @@ gfx::Size NativeImage::GetSize() {
 }
 
 // static
+mate::Handle<NativeImage> NativeImage::CreateEmpty(v8::Isolate* isolate) {
+  return mate::CreateHandle(isolate, new NativeImage);
+}
+
+// static
 mate::Handle<NativeImage> NativeImage::Create(
     v8::Isolate* isolate, const gfx::Image& image) {
   return mate::CreateHandle(isolate, new NativeImage(image));
@@ -203,6 +208,7 @@ namespace {
 void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
                 v8::Handle<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
+  dict.SetMethod("createEmpty", &atom::api::NativeImage::CreateEmpty);
   dict.SetMethod("createFromPng", &atom::api::NativeImage::CreateFromPNG);
   dict.SetMethod("createFromJpeg", &atom::api::NativeImage::CreateFromJPEG);
   dict.SetMethod("createFromPath", &atom::api::NativeImage::CreateFromPath);
