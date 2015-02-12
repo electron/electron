@@ -17,7 +17,10 @@ typedef std::map<base::FilePath, std::shared_ptr<Archive>> ArchiveMap;
 
 namespace {
 
+// The global instance of ArchiveMap, will be destroyed on exit.
 static base::LazyInstance<ArchiveMap> g_archive_map = LAZY_INSTANCE_INITIALIZER;
+
+const base::FilePath::CharType kAsarExtension[] = FILE_PATH_LITERAL(".asar");
 
 }  // namespace
 
@@ -30,6 +33,28 @@ std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path) {
     archive_map[path] = archive;
   }
   return archive_map[path];
+}
+
+bool GetAsarArchivePath(const base::FilePath& full_path,
+                        base::FilePath* asar_path,
+                        base::FilePath* relative_path) {
+  base::FilePath iter = full_path;
+  while (true) {
+    base::FilePath dirname = iter.DirName();
+    if (iter.MatchesExtension(kAsarExtension))
+      break;
+    else if (iter == dirname)
+      return false;
+    iter = dirname;
+  }
+
+  base::FilePath tail;
+  if (!iter.AppendRelativePath(full_path, &tail))
+    return false;
+
+  *asar_path = iter;
+  *relative_path = tail;
+  return true;
 }
 
 }  // namespace asar

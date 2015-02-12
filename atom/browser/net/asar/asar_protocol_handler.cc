@@ -14,35 +14,6 @@
 
 namespace asar {
 
-namespace {
-
-const base::FilePath::CharType kAsarExtension[] = FILE_PATH_LITERAL(".asar");
-
-// Get the relative path in asar archive.
-bool GetAsarPath(const base::FilePath& full_path,
-                 base::FilePath* asar_path,
-                 base::FilePath* relative_path) {
-  base::FilePath iter = full_path;
-  while (true) {
-    base::FilePath dirname = iter.DirName();
-    if (iter.MatchesExtension(kAsarExtension))
-      break;
-    else if (iter == dirname)
-      return false;
-    iter = dirname;
-  }
-
-  base::FilePath tail;
-  if (!iter.AppendRelativePath(full_path, &tail))
-    return false;
-
-  *asar_path = iter;
-  *relative_path = tail;
-  return true;
-}
-
-}  // namespace
-
 AsarProtocolHandler::AsarProtocolHandler(
     const scoped_refptr<base::TaskRunner>& file_task_runner)
     : file_task_runner_(file_task_runner) {}
@@ -59,7 +30,7 @@ net::URLRequestJob* AsarProtocolHandler::MaybeCreateJob(
   // Create asar:// job when the path contains "xxx.asar/", otherwise treat the
   // URL request as file://.
   base::FilePath asar_path, relative_path;
-  if (!GetAsarPath(full_path, &asar_path, &relative_path))
+  if (!GetAsarArchivePath(full_path, &asar_path, &relative_path))
     return new net::URLRequestFileJob(request, network_delegate, full_path,
                                       file_task_runner_);
 
