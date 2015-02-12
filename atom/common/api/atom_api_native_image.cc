@@ -7,11 +7,11 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/asar/asar_util.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "base/base64.h"
-#include "base/files/file_util.h"
 #include "base/strings/string_util.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -86,7 +86,7 @@ bool AddImageSkiaRep(gfx::ImageSkia* image,
                      const base::FilePath& path,
                      double scale_factor) {
   std::string file_contents;
-  if (!base::ReadFileToString(path, &file_contents))
+  if (!asar::ReadFileToString(path, &file_contents))
     return false;
 
   const unsigned char* data =

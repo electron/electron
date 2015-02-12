@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_NET_ASAR_URL_REQUEST_ASAR_JOB_H_
 #define ATOM_BROWSER_NET_ASAR_URL_REQUEST_ASAR_JOB_H_
 
+#include <memory>
 #include <string>
 
 #include "atom/common/asar/archive.h"
@@ -27,7 +28,7 @@ class URLRequestAsarJob : public net::URLRequestJob {
  public:
   URLRequestAsarJob(net::URLRequest* request,
                     net::NetworkDelegate* network_delegate,
-                    Archive* archive,
+                    std::shared_ptr<Archive> archive,
                     const base::FilePath& file_path,
                     const scoped_refptr<base::TaskRunner>& file_task_runner);
 
@@ -53,7 +54,7 @@ class URLRequestAsarJob : public net::URLRequestJob {
   // Callback after data is asynchronously read from the file into |buf|.
   void DidRead(scoped_refptr<net::IOBuffer> buf, int result);
 
-  Archive* archive_;
+  std::shared_ptr<Archive> archive_;
   Archive::FileInfo file_info_;
   base::FilePath file_path_;
 
