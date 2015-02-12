@@ -46,6 +46,7 @@ Modules for both sides:
 
 * [clipboard](api/clipboard.md)
 * [crash-reporter](api/crash-reporter.md)
+* [native-image](api/native-image.md)
 * [screen](api/screen.md)
 * [shell](api/shell.md)
 

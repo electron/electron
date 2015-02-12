@@ -9,4 +9,5 @@ else
     read: (format, type='standard') -> binding._read format, type
     readText: (type='standard') -> binding._readText type
     writeText: (text, type='standard') -> binding._writeText text, type
+    readImage: (type='standard') -> binding._readImage type
     clear: (type='standard') -> binding._clear type

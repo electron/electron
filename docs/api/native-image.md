@@ -1,7 +1,7 @@
-# Image
+# NativeImage
 
-In atom-shell images are represented by their file paths, we currently do not
-support in-memory images or remote images.
+In atom-shell for the APIs that take images, you can pass either file paths or
+`NativeImage` instances. When passing `null`, an empty image will be used.
 
 For example when creating tray or setting window's icon, you can pass image's
 file path as `String` to represent an image:
@@ -11,12 +11,18 @@ var appIcon = new Tray('/Users/somebody/images/icon.png');
 var window = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
 ```
 
+Or read the image from clipboard:
+
+```javascript
+var clipboard = require('clipboard');
+var image = clipboard.readImage();
+var appIcon = new Tray(image);
+```
+
 ## Supported formats
 
-On Mac all formats supported by the system can be used, while on Linux and
-Windows only `PNG` and `JPG` formats are supported.
-
-So it is recommended to use `PNG` images for all cases.
+Currently `PNG` and `JPEG` are supported, and it is recommended to use `PNG`
+because it supports alpha channel and image is usually not compressed.
 
 ## High resolution image
 
@@ -73,3 +79,55 @@ To mark an image as template image, its filename should end with the word
 
 * `xxxTemplate.png`
 * `xxxTemplate@2x.png`
+
+## nativeImage.createEmpty()
+
+Creates an empty `NativeImage` instance.
+
+## nativeImage.createFromPath(path)
+
+* `path` String
+
+Creates a new `NativeImage` instance from file located at `path`.
+
+## nativeImage.createFromBuffer(buffer[, scaleFactor])
+
+* `buffer` [Buffer][buffer]
+* `scaleFactor` Double
+
+Creates a new `NativeImage` instance from `buffer`. The `scaleFactor` is 1.0 by
+default.
+
+## nativeImage.createFromDataUrl(dataUrl)
+
+* `dataUrl` String
+
+Creates a new `NativeImage` instance from `dataUrl`.
+
+## Class: NativeImage
+
+This class is used to represent an image.
+
+### NativeImage.toPng()
+
+Returns a [Buffer][buffer] that contains image's `PNG` encoded data.
+
+### NativeImage.toJpeg(quality)
+
+* `quality` Integer
+
+Returns a [Buffer][buffer] that contains image's `JPEG` encoded data.
+
+### NativeImage.toDataUrl()
+
+Returns the data URL of image.
+
+### NativeImage.isEmpty()
+
+Returns whether the image is empty.
+
+### NativeImage.getSize()
+
+Returns the size of the image.
+
+[buffer]: https://iojs.org/api/buffer.html#buffer_class_buffer
