@@ -65,15 +65,9 @@ float GetScaleFactorFromPath(const base::FilePath& path) {
 }
 
 bool AddImageSkiaRep(gfx::ImageSkia* image,
-                     const base::FilePath& path,
+                     const unsigned char* data,
+                     size_t size,
                      double scale_factor) {
-  std::string file_contents;
-  if (!base::ReadFileToString(path, &file_contents))
-    return false;
-
-  const unsigned char* data =
-      reinterpret_cast<const unsigned char*>(file_contents.data());
-  size_t size = file_contents.size();
   scoped_ptr<SkBitmap> decoded(new SkBitmap());
 
   // Try PNG first.
@@ -86,6 +80,19 @@ bool AddImageSkiaRep(gfx::ImageSkia* image,
 
   image->AddRepresentation(gfx::ImageSkiaRep(*decoded.release(), scale_factor));
   return true;
+}
+
+bool AddImageSkiaRep(gfx::ImageSkia* image,
+                     const base::FilePath& path,
+                     double scale_factor) {
+  std::string file_contents;
+  if (!base::ReadFileToString(path, &file_contents))
+    return false;
+
+  const unsigned char* data =
+      reinterpret_cast<const unsigned char*>(file_contents.data());
+  size_t size = file_contents.size();
+  return AddImageSkiaRep(image, data, size, scale_factor);
 }
 
 bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
@@ -210,6 +217,20 @@ mate::Handle<NativeImage> NativeImage::CreateFromPath(
 }
 
 // static
+mate::Handle<NativeImage> NativeImage::CreateFromBuffer(
+    mate::Arguments* args, v8::Handle<v8::Value> buffer) {
+  double scale_factor = 1.;
+  args->GetNext(&scale_factor);
+
+  gfx::ImageSkia image_skia;
+  AddImageSkiaRep(&image_skia,
+                  reinterpret_cast<unsigned char*>(node::Buffer::Data(buffer)),
+                  node::Buffer::Length(buffer),
+                  scale_factor);
+  return Create(args->isolate(), gfx::Image(image_skia));
+}
+
+// static
 mate::Handle<NativeImage> NativeImage::CreateFromDataURL(
     v8::Isolate* isolate, const GURL& url) {
   std::string mime_type, charset, data;
@@ -235,6 +256,7 @@ void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createEmpty", &atom::api::NativeImage::CreateEmpty);
   dict.SetMethod("createFromPath", &atom::api::NativeImage::CreateFromPath);
+  dict.SetMethod("createFromBuffer", &atom::api::NativeImage::CreateFromBuffer);
   dict.SetMethod("createFromDataUrl",
                  &atom::api::NativeImage::CreateFromDataURL);
 }

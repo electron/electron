@@ -21,6 +21,10 @@ namespace gfx {
 class Size;
 }
 
+namespace mate {
+class Arguments;
+}
+
 namespace atom {
 
 namespace api {
@@ -36,6 +40,8 @@ class NativeImage : public mate::Wrappable {
       v8::Isolate* isolate, const char* buffer, size_t length);
   static mate::Handle<NativeImage> CreateFromPath(
       v8::Isolate* isolate, const base::FilePath& path);
+  static mate::Handle<NativeImage> CreateFromBuffer(
+      mate::Arguments* args, v8::Handle<v8::Value> buffer);
   static mate::Handle<NativeImage> CreateFromDataURL(
       v8::Isolate* isolate, const GURL& url);
 
