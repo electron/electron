@@ -430,3 +430,9 @@ describe 'asar package', ->
 
     it 'does not touch global fs object', ->
       assert.notEqual fs.readdir, gfs.readdir
+
+  describe 'native-image', ->
+    it 'reads image from asar archive', ->
+      p = path.join fixtures, 'asar', 'logo.asar', 'logo.png'
+      logo = require('native-image').createFromPath p
+      assert.deepEqual logo.getSize(), {width: 55, height: 55}
