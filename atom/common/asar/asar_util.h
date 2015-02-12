@@ -23,6 +23,9 @@ bool GetAsarArchivePath(const base::FilePath& full_path,
                         base::FilePath* asar_path,
                         base::FilePath* relative_path);
 
+// Same with base::ReadFileToString but supports asar Archive.
+bool ReadFileToString(const base::FilePath& path, std::string* contents);
+
 }  // namespace asar
 
 #endif  // ATOM_COMMON_ASAR_ASAR_UTIL_H_

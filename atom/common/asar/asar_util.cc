@@ -8,6 +8,7 @@
 
 #include "atom/common/asar/archive.h"
 #include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "base/lazy_instance.h"
 #include "base/stl_util.h"
 
@@ -55,6 +56,28 @@ bool GetAsarArchivePath(const base::FilePath& full_path,
   *asar_path = iter;
   *relative_path = tail;
   return true;
+}
+
+bool ReadFileToString(const base::FilePath& path, std::string* contents) {
+  base::FilePath asar_path, relative_path;
+  if (!GetAsarArchivePath(path, &asar_path, &relative_path))
+    return base::ReadFileToString(path, contents);
+
+  std::shared_ptr<Archive> archive = GetOrCreateAsarArchive(asar_path);
+  if (!archive)
+    return false;
+
+  Archive::FileInfo info;
+  if (!archive->GetFileInfo(relative_path, &info))
+    return false;
+
+  base::File src(asar_path, base::File::FLAG_OPEN | base::File::FLAG_READ);
+  if (!src.IsValid())
+    return false;
+
+  contents->resize(info.size);
+  return static_cast<int>(info.size) == src.Read(
+      info.offset, const_cast<char*>(contents->data()), contents->size());
 }
 
 }  // namespace asar
