@@ -169,7 +169,7 @@ node::Environment* NodeBindings::CreateEnvironment(
       exec_path.DirName().Append(FILE_PATH_LITERAL("resources"));
 #endif
   base::FilePath script_path =
-      resources_path.Append(FILE_PATH_LITERAL("atom"))
+      resources_path.Append(FILE_PATH_LITERAL("atom.asar"))
                     .Append(is_browser_ ? FILE_PATH_LITERAL("browser") :
                                           FILE_PATH_LITERAL("renderer"))
                     .Append(FILE_PATH_LITERAL("lib"))
