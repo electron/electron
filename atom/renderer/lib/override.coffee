@@ -5,6 +5,11 @@ remote = require 'remote'
 # Window object returned by "window.open".
 class FakeWindow
   constructor: (@guestId) ->
+    that = this
+
+    ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED', (guestId) ->
+      if guestId is that.guestId
+        that.closed = true
 
   close: ->
     ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', @guestId
@@ -14,6 +19,9 @@ class FakeWindow
 
   blur: ->
     ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', @guestId, 'blur'
+
+  postMessage: (args...) ->
+    ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', @guestId, 'postMessage', args[0], args[1];
 
   eval: (args...) ->
     ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', @guestId, 'executeJavaScript', args...
@@ -63,3 +71,10 @@ window.confirm = (message, title='') ->
 # But we do not support prompt().
 window.prompt = ->
   throw new Error('prompt() is and will not be supported in atom-shell.')
+
+window.opener =
+  postMessage: (args...) ->
+    ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', 'postMessage', args[0], args[1]
+
+ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', (data, origin) ->
+  window.postMessage(data, origin)
