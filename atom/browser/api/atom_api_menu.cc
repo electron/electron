@@ -6,6 +6,7 @@
 
 #include "atom/browser/native_window.h"
 #include "atom/common/native_mate_converters/accelerator_converter.h"
+#include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/callback.h"
 #include "native_mate/constructor.h"
@@ -103,6 +104,10 @@ void Menu::InsertSubMenuAt(int index,
   model_->InsertSubMenuAt(index, command_id, label, menu->model_.get());
 }
 
+void Menu::SetIcon(int index, const gfx::Image& image) {
+  model_->SetIcon(index, image);
+}
+
 void Menu::SetSublabel(int index, const base::string16& sublabel) {
   model_->SetSublabel(index, sublabel);
 }
@@ -152,6 +157,7 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("insertRadioItem", &Menu::InsertRadioItemAt)
       .SetMethod("insertSeparator", &Menu::InsertSeparatorAt)
       .SetMethod("insertSubMenu", &Menu::InsertSubMenuAt)
+      .SetMethod("setIcon", &Menu::SetIcon)
       .SetMethod("setSublabel", &Menu::SetSublabel)
       .SetMethod("clear", &Menu::Clear)
       .SetMethod("getIndexOfCommandId", &Menu::GetIndexOfCommandId)

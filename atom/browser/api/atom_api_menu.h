@@ -46,9 +46,8 @@ class Menu : public mate::Wrappable,
   bool IsCommandIdChecked(int command_id) const override;
   bool IsCommandIdEnabled(int command_id) const override;
   bool IsCommandIdVisible(int command_id) const override;
-  bool GetAcceleratorForCommandId(
-      int command_id,
-      ui::Accelerator* accelerator) override;
+  bool GetAcceleratorForCommandId(int command_id,
+                                  ui::Accelerator* accelerator) override;
   void ExecuteCommand(int command_id, int event_flags) override;
   void MenuWillShow(ui::SimpleMenuModel* source) override;
 
@@ -73,6 +72,7 @@ class Menu : public mate::Wrappable,
                        int command_id,
                        const base::string16& label,
                        Menu* menu);
+  void SetIcon(int index, const gfx::Image& image);
   void SetSublabel(int index, const base::string16& sublabel);
   void Clear();
   int GetIndexOfCommandId(int command_id);

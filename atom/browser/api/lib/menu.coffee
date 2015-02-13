@@ -35,6 +35,7 @@ Menu::_init = ->
     isCommandIdEnabled: (commandId) => @commandsMap[commandId]?.enabled
     isCommandIdVisible: (commandId) => @commandsMap[commandId]?.visible
     getAcceleratorForCommandId: (commandId) => @commandsMap[commandId]?.accelerator
+    getIconForCommandId: (commandId) => @commandsMap[commandId]?.icon
     executeCommand: (commandId) => @commandsMap[commandId]?.click()
     menuWillShow: =>
       # Make sure radio groups have at least one menu item seleted.
@@ -82,6 +83,7 @@ Menu::insert = (pos, item) ->
       @insertRadioItem pos, item.commandId, item.label, item.groupId
 
   @setSublabel pos, item.sublabel if item.sublabel?
+  @setIcon pos, item.icon if item.icon?
 
   # Make menu accessable to items.
   item.overrideReadOnlyProperty 'menu', this
