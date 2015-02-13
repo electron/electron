@@ -21,7 +21,7 @@ process.argv.splice startMark, endMark - startMark + 1
 # Add browser/api/lib to require's search paths,
 # which contains javascript part of Atom's built-in libraries.
 globalPaths = module.globalPaths
-globalPaths.push path.join process.resourcesPath, 'atom', 'browser', 'api', 'lib'
+globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
 
 # Import common settings.
 require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')

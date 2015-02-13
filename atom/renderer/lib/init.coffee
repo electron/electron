@@ -15,9 +15,10 @@ process.argv.splice 1, 1
 # Add renderer/api/lib to require's search paths, which contains javascript part
 # of Atom's built-in libraries.
 globalPaths = Module.globalPaths
-globalPaths.push path.join(process.resourcesPath, 'atom', 'renderer', 'api', 'lib')
+globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
 # And also app.
 globalPaths.push path.join(process.resourcesPath, 'app')
+globalPaths.push path.join(process.resourcesPath, 'app.asar')
 
 # Import common settings.
 require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
