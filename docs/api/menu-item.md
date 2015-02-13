@@ -13,6 +13,7 @@
   * `label` String
   * `sublabel` String
   * `accelerator` [Accelerator](accelerator.md)
+  * `icon` [NativeImage](native-image.md)
   * `enabled` Boolean
   * `visible` Boolean
   * `checked` Boolean

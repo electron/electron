@@ -9,13 +9,14 @@ class MenuItem
   constructor: (options) ->
     Menu = require 'menu'
 
-    {click, @selector, @type, @label, @sublabel, @accelerator, @enabled, @visible, @checked, @submenu} = options
+    {click, @selector, @type, @label, @sublabel, @accelerator, @icon, @enabled, @visible, @checked, @submenu} = options
 
     @type = 'submenu' if not @type? and @submenu?
     throw new Error('Invalid submenu') if @type is 'submenu' and @submenu?.constructor isnt Menu
 
     @overrideReadOnlyProperty 'type', 'normal'
     @overrideReadOnlyProperty 'accelerator'
+    @overrideReadOnlyProperty 'icon'
     @overrideReadOnlyProperty 'submenu'
     @overrideProperty 'label', ''
     @overrideProperty 'sublabel', ''
