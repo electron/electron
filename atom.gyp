@@ -625,40 +625,31 @@
     {
       'target_name': 'compile_coffee',
       'type': 'none',
-      'sources': [
-        '<@(coffee_sources)',
-      ],
-      'rules': [
+      'actions': [
         {
-          'rule_name': 'coffee',
-          'extension': 'coffee',
+          'action_name': 'compile_coffee',
+          'variables': {
+            'conditions': [
+              ['OS=="mac"', {
+                'resources_path': '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources',
+              },{
+                'resources_path': '<(PRODUCT_DIR)/resources',
+              }],
+            ],
+          },
           'inputs': [
-            'tools/compile-coffee.py',
+            '<@(coffee_sources)',
           ],
-          'conditions': [
-            ['OS=="mac"', {
-              'outputs': [
-                '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
-              ],
-              'action': [
-                'python',
-                'tools/compile-coffee.py',
-                '<(RULE_INPUT_PATH)',
-                '<(PRODUCT_DIR)/<(product_name).app/Contents/Resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
-              ],
-            },{  # OS=="mac"
-              'outputs': [
-                '<(PRODUCT_DIR)/resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
-              ],
-              'action': [
-                'python',
-                'tools/compile-coffee.py',
-                '<(RULE_INPUT_PATH)',
-                '<(PRODUCT_DIR)/resources/<(RULE_INPUT_DIRNAME)/<(RULE_INPUT_ROOT).js',
-              ],
-            }],  # OS=="win" or OS=="linux"
+          'outputs': [
+            '<(resources_path)/atom.asar',
           ],
-        },
+          'action': [
+            'python',
+            'tools/coffee2asar.py',
+            '<@(_outputs)',
+            '<@(_inputs)',
+          ],
+        }
       ],
     },  # target compile_coffee
     {
