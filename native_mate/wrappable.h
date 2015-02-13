@@ -68,6 +68,9 @@ class Wrappable {
 
   virtual ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate);
 
+  // Called after the "_init" method gets called in JavaScript.
+  virtual void AfterInit(v8::Isolate* isolate) {}
+
  private:
   static MATE_WEAK_CALLBACK(WeakCallback, v8::Object, Wrappable);
 

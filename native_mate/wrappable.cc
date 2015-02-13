@@ -29,6 +29,8 @@ void Wrappable::Wrap(v8::Isolate* isolate, v8::Handle<v8::Object> wrapper) {
   v8::Handle<v8::Function> init;
   if (Dictionary(isolate, wrapper).Get("_init", &init))
     init->Call(wrapper, 0, NULL);
+
+  AfterInit(isolate);
 }
 
 // static
