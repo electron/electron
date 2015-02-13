@@ -8,6 +8,7 @@
 #include <string>
 
 #include "atom/browser/api/atom_api_window.h"
+#include "base/callback.h"
 #include "base/memory/scoped_ptr.h"
 #include "ui/base/models/simple_menu_model.h"
 #include "native_mate/wrappable.h"
@@ -15,8 +16,6 @@
 namespace atom {
 
 namespace api {
-
-class MenuMac;
 
 class Menu : public mate::Wrappable,
              public ui::SimpleMenuModel::Delegate {
@@ -40,6 +39,9 @@ class Menu : public mate::Wrappable,
   Menu();
   virtual ~Menu();
 
+  // mate::Wrappable:
+  void AfterInit(v8::Isolate* isolate) override;
+
   // ui::SimpleMenuModel::Delegate implementations:
   bool IsCommandIdChecked(int command_id) const override;
   bool IsCommandIdEnabled(int command_id) const override;
@@ -47,9 +49,6 @@ class Menu : public mate::Wrappable,
   bool GetAcceleratorForCommandId(
       int command_id,
       ui::Accelerator* accelerator) override;
-  bool IsItemForCommandIdDynamic(int command_id) const override;
-  base::string16 GetLabelForCommandId(int command_id) const override;
-  base::string16 GetSublabelForCommandId(int command_id) const override;
   void ExecuteCommand(int command_id, int event_flags) override;
   void MenuWillShow(ui::SimpleMenuModel* source) override;
 
@@ -84,6 +83,14 @@ class Menu : public mate::Wrappable,
   bool IsItemCheckedAt(int index) const;
   bool IsEnabledAt(int index) const;
   bool IsVisibleAt(int index) const;
+
+  // Stored delegate methods.
+  base::Callback<bool(int)> is_checked_;
+  base::Callback<bool(int)> is_enabled_;
+  base::Callback<bool(int)> is_visible_;
+  base::Callback<v8::Handle<v8::Value>(int)> get_accelerator_;
+  base::Callback<void(int)> execute_command_;
+  base::Callback<void()> menu_will_show_;
 
   DISALLOW_COPY_AND_ASSIGN(Menu);
 };
