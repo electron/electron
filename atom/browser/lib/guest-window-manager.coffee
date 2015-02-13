@@ -34,7 +34,7 @@ createGuest = (embedder, url, frameName, options) ->
 
   ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', (event, method, args...) ->
     if embedder.getUrl().indexOf(args[1]) is 0 or args[1] is '*'
-      embedder.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', args[0], args[1];
+      embedder.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', args[0], args[1]
 
   guest.id
 

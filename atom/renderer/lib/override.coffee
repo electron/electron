@@ -21,7 +21,7 @@ class FakeWindow
     ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', @guestId, 'blur'
 
   postMessage: (args...) ->
-    ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', @guestId, 'postMessage', args[0], args[1];
+    ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', @guestId, 'postMessage', args[0], args[1]
 
   eval: (args...) ->
     ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', @guestId, 'executeJavaScript', args...
