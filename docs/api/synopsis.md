@@ -2,7 +2,7 @@
 
 All [node.js's built-in modules](http://nodejs.org/api/) are available in
 atom-shell, and third-party node modules are fully supported too (including the
-[native modules](../tutorial/use-native-node-modules.md)).
+[native modules](../tutorial/using-native-node-modules.md)).
 
 Atom-shell also provides some extra built-in modules for developing native
 desktop applications. Some modules are only available on the browser side, some
