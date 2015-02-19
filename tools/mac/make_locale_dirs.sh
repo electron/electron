@@ -20,6 +20,7 @@
 
 set -eu
 
+
 if [[ ${#} -eq 0 ]]; then
   echo "usage: ${0} locale_dir [...]" >& 2
   exit 1
