@@ -118,7 +118,9 @@ void Browser::NotifyAndShutdown() {
 
 bool Browser::HandleBeforeQuit() {
   bool prevent_default = false;
-  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnBeforeQuit(&prevent_default));
+  FOR_EACH_OBSERVER(BrowserObserver,
+                    observers_,
+                    OnBeforeQuit(&prevent_default));
 
   return !prevent_default;
 }
