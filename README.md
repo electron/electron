@@ -10,6 +10,16 @@ editor](https://github.com/atom/atom).
 Prebuilt binaries of atom-shell for Linux, Windows and Mac can be found on the
 [releases](https://github.com/atom/atom-shell/releases) page.
 
+You can also use [`npm`](https://docs.npmjs.com/) to install prebuilt atom-shell binaries:
+
+```
+# install globally in your PATH
+npm install atom-shell -g
+
+# install as a development dependency
+npm install atom-shell --save-dev
+```
+
 ### Mirrors
 
 - [China Mirror](https://npm.taobao.org/mirrors/atom-shell): Improve download speeds for Chinese user.
