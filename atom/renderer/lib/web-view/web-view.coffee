@@ -186,6 +186,7 @@ registerBrowserPluginElement = ->
     @setAttribute 'type', 'application/browser-plugin'
     @setAttribute 'id', 'browser-plugin-' + getNextId()
     # The <object> node fills in the <webview> container.
+    @style.display = 'block'
     @style.width = '100%'
     @style.height = '100%'
 
