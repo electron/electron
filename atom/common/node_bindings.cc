@@ -174,11 +174,12 @@ node::Environment* NodeBindings::CreateEnvironment(
 #endif
 
   // Feed node the path to initialization script.
-  const char* process_type = is_browser_ ? "browser" : "renderer";
+  base::FilePath::StringType process_type = is_browser_ ?
+      FILE_PATH_LITERAL("browser") : FILE_PATH_LITERAL("renderer");
   base::FilePath resources_path = GetResourcesPath(command_line, is_browser_);
   base::FilePath script_path =
       resources_path.Append(FILE_PATH_LITERAL("atom.asar"))
-                    .Append(FILE_PATH_LITERAL(process_type))
+                    .Append(process_type)
                     .Append(FILE_PATH_LITERAL("lib"))
                     .Append(FILE_PATH_LITERAL("init.js"));
   std::string script_path_str = script_path.AsUTF8Unsafe();
