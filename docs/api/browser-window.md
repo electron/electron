@@ -641,7 +641,7 @@ Emitted when a redirect was received while requesting a resource.
 
 Emitted when the page requested to open a new window for `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.
-Check the next section [Handling Child Windows](#handlingchildwindows) for more information.
+Check the next section [Handling Child Windows](#handling-child-windows) for more information.
 
 Calling `event.preventDefault()` can prevent creating new windows.
 
