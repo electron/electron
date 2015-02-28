@@ -641,9 +641,7 @@ Emitted when a redirect was received while requesting a resource.
 
 Emitted when the page requested to open a new window for `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.
-
-By default a new `BrowserWindow` will be created for the `url`, and a proxy
-will be returned to `window.open` to let you have limited control of it.
+Check the next section [Handling Child Windows](#handlingchildwindows) for more information.
 
 Calling `event.preventDefault()` can prevent creating new windows.
 
@@ -844,3 +842,52 @@ app.on('ready', function() {
    is different from the handlers on browser side.
 2. There is no way to send synchronous messages from browser side to web pages,
    because it would be very easy to cause dead locks.
+
+## Handling Child Windows
+
+When the page contents request opening a new window, either by invoking
+`window.open` or by an external link such as `<a target='_blank'>`, by
+default a new `BrowserWindow` will be created for the `url`, and a proxy
+will be returned to `window.open` to let the page to have limited control over it.
+
+The proxy has some limited standard functionality implemented, which will help
+the page to interact with it. The following methods are avaialable:
+
+### Window.blur()
+
+Removes focus from the child window.
+
+### Window.close()
+
+Forcefully closes the child window without calling its unload event.
+
+### Window.closed
+
+Set to true after the child window gets closed.
+
+### Window.eval(code)
+
+* `code` String
+
+Evaluates the code in the child window.
+
+### Window.focus()
+
+Focuses the child window (brings the window to front).
+
+### Window.postMessage(message, targetOrigin)
+
+* `message` String
+* `targetOrigin` String
+
+Sends a message to the child window with the specified origin or "*" for no origin preference.
+
+In addition to these methods, the child window implements `window.opener` object with no properties
+and a single method:
+
+### window.opener.postMessage(message, targetOrigin)
+
+* `message` String
+* `targetOrigin` String
+
+Sends a message to the parent window with the specified origin or "*" for no origin preference.
