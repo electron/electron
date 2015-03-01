@@ -13,10 +13,10 @@ Prebuilt binaries of atom-shell for Linux, Windows and Mac can be found on the
 You can also use [`npm`](https://docs.npmjs.com/) to install prebuilt atom-shell binaries:
 
 ```
-# install globally in your PATH
+# Install globally in your $PATH
 npm install atom-shell -g
 
-# install as a development dependency
+# Install as a development dependency
 npm install atom-shell --save-dev
 ```
 
