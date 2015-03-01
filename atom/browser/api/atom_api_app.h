@@ -38,6 +38,7 @@ class App : public mate::EventEmitter,
   virtual ~App();
 
   // BrowserObserver:
+  void OnBeforeQuit(bool* prevent_default) override;
   void OnWillQuit(bool* prevent_default) override;
   void OnWindowAllClosed() override;
   void OnQuit() override;

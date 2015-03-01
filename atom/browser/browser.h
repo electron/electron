@@ -136,6 +136,9 @@ class Browser : public WindowListObserver {
   // Send the will-quit message and then shutdown the application.
   void NotifyAndShutdown();
 
+  // Send the before-quit message and start closing windows.
+  bool HandleBeforeQuit();
+
   bool is_quiting_;
 
  private:

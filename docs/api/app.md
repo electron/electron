@@ -34,6 +34,14 @@ user pressed `Cmd + Q`, or the developer called `app.quit()`, atom-shell would
 first try to close all windows and then emit the `will-quit` event, and in
 this case the `window-all-closed` would not be emitted.
 
+## Event: before-quit
+
+* `event` Event
+
+Emitted before the application starts closing its windows.
+Calling `event.preventDefault()` will prevent the default behaviour, which is
+terminating the application.
+
 ## Event: will-quit
 
 * `event` Event
@@ -78,9 +86,9 @@ click on the application's dock icon.
 
 ## app.quit()
 
-Try to close all windows. If all windows are successfully closed, the
-`will-quit` event will be emitted and by default the application would be
-terminated.
+Try to close all windows. The `before-quit` event will first be emitted. If all
+windows are successfully closed, the `will-quit` event will be emitted and by
+default the application would be terminated.
 
 This method guarantees all `beforeunload` and `unload` handlers are correctly
 executed. It is possible that a window cancels the quitting by returning

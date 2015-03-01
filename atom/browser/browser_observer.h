@@ -11,6 +11,9 @@ namespace atom {
 
 class BrowserObserver {
  public:
+  // The browser is about to close all windows.
+  virtual void OnBeforeQuit(bool* prevent_default) {}
+
   // The browser has closed all windows and will quit.
   virtual void OnWillQuit(bool* prevent_default) {}
 

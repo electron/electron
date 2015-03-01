@@ -131,6 +131,10 @@ App::~App() {
   Browser::Get()->RemoveObserver(this);
 }
 
+void App::OnBeforeQuit(bool* prevent_default) {
+  *prevent_default = Emit("before-quit");
+}
+
 void App::OnWillQuit(bool* prevent_default) {
   *prevent_default = Emit("will-quit");
 }

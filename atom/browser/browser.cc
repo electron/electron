@@ -28,7 +28,9 @@ Browser* Browser::Get() {
 }
 
 void Browser::Quit() {
-  is_quiting_ = true;
+  is_quiting_ = HandleBeforeQuit();
+  if (!is_quiting_)
+    return;
 
   atom::WindowList* window_list = atom::WindowList::GetInstance();
   if (window_list->size() == 0)
@@ -112,6 +114,15 @@ void Browser::NotifyAndShutdown() {
   }
 
   Shutdown();
+}
+
+bool Browser::HandleBeforeQuit() {
+  bool prevent_default = false;
+  FOR_EACH_OBSERVER(BrowserObserver,
+                    observers_,
+                    OnBeforeQuit(&prevent_default));
+
+  return !prevent_default;
 }
 
 void Browser::OnWindowCloseCancelled(NativeWindow* window) {
