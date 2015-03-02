@@ -53,7 +53,7 @@ if (option.file && !option.webdriver) {
       dialog.showErrorBox('Error opening app', 'The app provided is not a valid atom-shell app, please read the docs on how to write one:\nhttps://github.com/atom/atom-shell/tree/master/docs');
       process.exit(1);
     } else {
-      console.error('App throwed an error when running', e);
+      console.error('App threw an error when running', e);
       throw e;
     }
   }
