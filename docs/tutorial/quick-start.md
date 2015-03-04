@@ -35,9 +35,9 @@ support.
 Normal web pages are designed to not reach outside of the browser, which makes
 them unsuitable for interacting with native systems. Atom-shell provides Node.js
 APIs in web pages so you can access native resources from web pages, just like
-[Node-Webkit](https://github.com/rogerwang/node-webkit).
+[nw.js](https://github.com/nwjs/nw.js).
 
-But unlike Node-Webkit, you cannot do native GUI related operations in web
+But unlike nw.js, you cannot do native GUI related operations in web
 pages. Instead you need to do them on the browser side by sending messages to
 it, or using the easy [remote](../api/remote.md) module.
 
