@@ -8,15 +8,15 @@ var fs = require('fs')
 
 var platform = os.platform()
 var arch = os.arch()
-if ('win32' === platform) {
+if (platform === 'win32') {
   // 64-bit is not available under windows.
-  arch = 'ia32';
+  arch = 'ia32'
 }
 var version = '0.21.3'
-var name = 'atom-shell-v'+version+'-'+platform+'-'+arch+'.zip'
-var url = 'https://github.com/atom/atom-shell/releases/download/v'+version+'/atom-shell-v'+version+'-'+platform+'-'+arch+'.zip'
+var filename = 'atom-shell-v' + version + '-' + platform + '-' + arch + '.zip'
+var url = 'https://github.com/atom/atom-shell/releases/download/v' + version + '/atom-shell-v' + version + '-' + platform + '-' + arch + '.zip'
 
-var onerror = function(err) {
+function onerror (err) {
   throw err
 }
 
@@ -38,13 +38,13 @@ var argv = {
   win32: '%*' // does this work with " " in the args?
 }
 
-if (!paths[platform]) throw new Error('Unknown platform: '+platform)
+if (!paths[platform]) throw new Error('Unknown platform: ' + platform)
 
-nugget(url, {target:name, dir:__dirname, resume:true, verbose:true}, function(err) {
+nugget(url, {target: filename, dir: __dirname, resume: true, verbose: true}, function (err) {
   if (err) return onerror(err)
   fs.writeFileSync(path.join(__dirname, 'path.txt'), paths[platform])
-  fs.writeFileSync(path.join(__dirname, 'run.bat'), shebang[platform]+'"'+paths[platform]+'" '+argv[platform])
-  extract(path.join(__dirname, name), {dir:path.join(__dirname, 'dist')}, function(err) {
+  fs.writeFileSync(path.join(__dirname, 'run.bat'), shebang[platform] + '"' + paths[platform] + '" ' + argv[platform])
+  extract(path.join(__dirname, name), {dir: path.join(__dirname, 'dist')}, function (err) {
     if (err) return onerror(err)
   })
 })
