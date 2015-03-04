@@ -19,6 +19,7 @@ app.on('ready', function() {
 _online-status.html_
 
 ```html
+<!DOCTYPE html>
 <html>
   <body>
     <script>
@@ -62,6 +63,7 @@ ipc.on('online-status-changed', function(event, status) {
 _online-status.html_
 
 ```html
+<!DOCTYPE html>
 <html>
   <body>
     <script>
