@@ -18,7 +18,7 @@ class FakeWindow
   blur: ->
     ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', @guestId, 'blur'
 
-  postMessage: (message, targetOrigin) ->
+  postMessage: (message, targetOrigin='*') ->
     ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', @guestId, message, targetOrigin
 
   eval: (args...) ->
@@ -75,8 +75,8 @@ window.prompt = ->
   throw new Error('prompt() is and will not be supported in atom-shell.')
 
 window.opener =
-  postMessage: (message, targetOrigin) ->
+  postMessage: (message, targetOrigin='*') ->
     ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', message, targetOrigin
 
-ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', (message, targetOrigin) ->
-  window.postMessage(message, targetOrigin)
+ipc.on 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', (message, targetOrigin) ->
+  window.postMessage message, targetOrigin

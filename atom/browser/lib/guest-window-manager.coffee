@@ -1,4 +1,5 @@
 ipc = require 'ipc'
+v8Util = process.atomBinding 'v8_util'
 BrowserWindow = require 'browser-window'
 
 frameToGuest = {}
@@ -12,6 +13,9 @@ createGuest = (embedder, url, frameName, options) ->
 
   guest = new BrowserWindow(options)
   guest.loadUrl url
+
+  # Remember the embedder, will be used by window.opener methods.
+  v8Util.setHiddenValue guest.webContents, 'embedder', embedder
 
   # When |embedder| is destroyed we should also destroy attached guest, and if
   # guest is closed by user then we should prevent |embedder| from double
@@ -31,10 +35,6 @@ createGuest = (embedder, url, frameName, options) ->
     guest.frameName = frameName
     guest.once 'closed', ->
       delete frameToGuest[frameName]
-
-  ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', (event, message, targetOrigin) ->
-    if embedder.getUrl().indexOf(targetOrigin) is 0 or targetOrigin is '*'
-      embedder.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', message, targetOrigin
 
   guest.id
 
@@ -57,9 +57,14 @@ ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', (event, guestId, method,
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', (event, guestId, message, targetOrigin) ->
   return unless BrowserWindow.windows.has guestId
-  window = BrowserWindow.windows.get(guestId)
-  if window.getUrl().indexOf(targetOrigin) is 0 or targetOrigin is '*'
-    window.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', message, targetOrigin
+  guestContents = BrowserWindow.windows.get(guestId).webContents
+  if guestContents.getUrl().indexOf(targetOrigin) is 0 or targetOrigin is '*'
+    guestContents.send 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', message, targetOrigin
+
+ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', (event, message, targetOrigin) ->
+  embedder = v8Util.getHiddenValue event.sender, 'embedder'
+  if embedder?.getUrl().indexOf(targetOrigin) is 0 or targetOrigin is '*'
+    embedder.send 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', message, targetOrigin
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', (event, guestId, method, args...) ->
   return unless BrowserWindow.windows.has guestId
