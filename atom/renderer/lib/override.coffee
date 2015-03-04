@@ -3,7 +3,7 @@ ipc = require 'ipc'
 remote = require 'remote'
 
 # Window object returned by "window.open".
-class FakeWindow
+class BrowserWindowProxy
   constructor: (@guestId) ->
     ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED', (guestId) =>
       if guestId is @guestId
@@ -53,7 +53,7 @@ window.open = (url, frameName='', features='') ->
 
   guestId = ipc.sendSync 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', url, frameName, options
   if guestId
-    new FakeWindow(guestId)
+    new BrowserWindowProxy(guestId)
   else
     console.error 'It is not allowed to open new window from this WebContents'
     null
