@@ -17,9 +17,11 @@ createGuest = (embedder, url, frameName, options) ->
   # guest is closed by user then we should prevent |embedder| from double
   # closing guest.
   closedByEmbedder = ->
+    embedder.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED', guest.id
     guest.removeListener 'closed', closedByUser
     guest.destroy() unless guest.isClosed()
   closedByUser = ->
+    embedder.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED', guest.id
     embedder.removeListener 'render-view-deleted', closedByEmbedder
   embedder.once 'render-view-deleted', closedByEmbedder
   guest.once 'closed', closedByUser
@@ -29,6 +31,10 @@ createGuest = (embedder, url, frameName, options) ->
     guest.frameName = frameName
     guest.once 'closed', ->
       delete frameToGuest[frameName]
+
+  ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', (event, message, targetOrigin) ->
+    if embedder.getUrl().indexOf(targetOrigin) is 0 or targetOrigin is '*'
+      embedder.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', message, targetOrigin
 
   guest.id
 
@@ -48,6 +54,12 @@ ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', (event, guestId) ->
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', (event, guestId, method, args...) ->
   return unless BrowserWindow.windows.has guestId
   BrowserWindow.windows.get(guestId)[method] args...
+
+ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', (event, guestId, message, targetOrigin) ->
+  return unless BrowserWindow.windows.has guestId
+  window = BrowserWindow.windows.get(guestId)
+  if window.getUrl().indexOf(targetOrigin) is 0 or targetOrigin is '*'
+    window.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', message, targetOrigin
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', (event, guestId, method, args...) ->
   return unless BrowserWindow.windows.has guestId
