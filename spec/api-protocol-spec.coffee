@@ -74,6 +74,23 @@ describe 'protocol module', ->
           assert false, 'Got error: ' + errorType + ' ' + error
           protocol.unregisterProtocol 'atom-file-job'
 
+    it 'returns RequestFileJob should send file from asar archive', (done) ->
+      p = path.join __dirname, 'fixtures', 'asar', 'a.asar', 'file1'
+      job = new protocol.RequestFileJob(p)
+      handler = remote.createFunctionWithReturnValue job
+      protocol.registerProtocol 'atom-file-job', handler
+
+      $.ajax
+        url: 'atom-file-job://' + p
+        success: (data) ->
+          content = require('fs').readFileSync(p)
+          assert.equal data, String(content)
+          protocol.unregisterProtocol 'atom-file-job'
+          done()
+        error: (xhr, errorType, error) ->
+          assert false, 'Got error: ' + errorType + ' ' + error
+          protocol.unregisterProtocol 'atom-file-job'
+
   describe 'protocol.isHandledProtocol', ->
     it 'returns true if the scheme can be handled', ->
       assert.equal protocol.isHandledProtocol('file'), true
