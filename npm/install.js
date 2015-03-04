@@ -44,7 +44,7 @@ nugget(url, {target: filename, dir: __dirname, resume: true, verbose: true}, fun
   if (err) return onerror(err)
   fs.writeFileSync(path.join(__dirname, 'path.txt'), paths[platform])
   fs.writeFileSync(path.join(__dirname, 'run.bat'), shebang[platform] + '"' + paths[platform] + '" ' + argv[platform])
-  extract(path.join(__dirname, name), {dir: path.join(__dirname, 'dist')}, function (err) {
+  extract(path.join(__dirname, filename), {dir: path.join(__dirname, 'dist')}, function (err) {
     if (err) return onerror(err)
   })
 })
