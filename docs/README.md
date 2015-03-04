@@ -20,6 +20,7 @@ Custom DOM elements:
 
 * [`File` object](api/file-object.md)
 * [`<webview>` tag](api/web-view-tag.md)
+* [`window.open` function](api/window-open.md)
 
 Modules for browser side:
 
