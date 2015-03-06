@@ -83,8 +83,8 @@ module.exports =
 
     options ?= type: 'none'
     options.type ?= 'none'
-    options.type = messageBoxTypes.indexOf options.type
-    throw new TypeError('Invalid message box type') unless options.type > -1
+    messageBoxType = messageBoxTypes.indexOf options.type
+    throw new TypeError('Invalid message box type') unless messageBoxType > -1
 
     throw new TypeError('Buttons need to be array') unless Array.isArray options.buttons
 
@@ -93,7 +93,7 @@ module.exports =
     options.detail ?= ''
     options.icon ?= null
 
-    binding.showMessageBox options.type,
+    binding.showMessageBox messageBoxType,
                            options.buttons,
                            [options.title, options.message, options.detail],
                            options.icon,
