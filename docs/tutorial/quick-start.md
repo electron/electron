@@ -138,7 +138,7 @@ $ .\atom-shell\atom.exe your-app\
 On Linux:
 
 ```bash
-$ ./atom-shell/atom your-app/
+$ ./atom-shell/atom-shell your-app/
 ```
 
 On OS X:
