@@ -16,6 +16,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "content/public/browser/navigation_details.h"
+#include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -264,6 +265,15 @@ void WebContents::WebContentsDestroyed() {
   Emit("destroyed");
 }
 
+void WebContents::NavigationEntryCommitted(
+    const content::LoadCommittedDetails& load_details) {
+  content::NavigationEntry* entry = load_details.entry;
+  web_contents()
+      ->GetController()
+      .GetLastCommittedEntry()
+      ->SetVirtualURL(entry->GetOriginalRequestURL());
+}
+
 void WebContents::DidAttach(int guest_proxy_routing_id) {
   Emit("did-attach");
 }
@@ -323,7 +333,10 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
 }
 
 GURL WebContents::GetURL() const {
-  return web_contents()->GetURL();
+  return web_contents()
+                ->GetController()
+                .GetLastCommittedEntry()
+                ->GetVirtualURL();
 }
 
 base::string16 WebContents::GetTitle() const {

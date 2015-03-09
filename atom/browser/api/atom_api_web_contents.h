@@ -165,6 +165,8 @@ class WebContents : public mate::EventEmitter,
   bool OnMessageReceived(const IPC::Message& message) override;
   void RenderViewReady() override;
   void WebContentsDestroyed() override;
+  void NavigationEntryCommitted(
+      const content::LoadCommittedDetails& load_details) override;
 
   // content::BrowserPluginGuestDelegate:
   void DidAttach(int guest_proxy_routing_id) final;
