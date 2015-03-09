@@ -317,10 +317,11 @@ void InspectableWebContentsImpl::AgentHostClosed(
     content::DevToolsAgentHost* agent_host, bool replaced) {
 }
 
-void InspectableWebContentsImpl::AboutToNavigateRenderView(
-    content::RenderViewHost* render_view_host) {
-  frontend_host_.reset(content::DevToolsFrontendHost::Create(
-      render_view_host, this));
+void InspectableWebContentsImpl::AboutToNavigateRenderFrame(
+    content::RenderFrameHost* new_host) {
+  if (new_host->GetParent())
+    return;
+  frontend_host_.reset(content::DevToolsFrontendHost::Create(new_host, this));
 }
 
 void InspectableWebContentsImpl::DidFinishLoad(content::RenderFrameHost* render_frame_host,
@@ -355,6 +356,7 @@ bool InspectableWebContentsImpl::AddMessageToConsole(
 bool InspectableWebContentsImpl::ShouldCreateWebContents(
     content::WebContents* web_contents,
     int route_id,
+    int main_frame_route_id,
     WindowContainerType window_container_type,
     const base::string16& frame_name,
     const GURL& target_url,
