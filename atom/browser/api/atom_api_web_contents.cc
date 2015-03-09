@@ -267,11 +267,8 @@ void WebContents::WebContentsDestroyed() {
 
 void WebContents::NavigationEntryCommitted(
     const content::LoadCommittedDetails& load_details) {
-  content::NavigationEntry* entry = load_details.entry;
-  web_contents()
-      ->GetController()
-      .GetLastCommittedEntry()
-      ->SetVirtualURL(entry->GetOriginalRequestURL());
+  auto entry = web_contents()->GetController().GetLastCommittedEntry();
+  entry->SetVirtualURL(load_details.entry->GetOriginalRequestURL());
 }
 
 void WebContents::DidAttach(int guest_proxy_routing_id) {
@@ -333,10 +330,8 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
 }
 
 GURL WebContents::GetURL() const {
-  return web_contents()
-                ->GetController()
-                .GetLastCommittedEntry()
-                ->GetVirtualURL();
+  auto entry = web_contents()->GetController().GetLastCommittedEntry();
+  return entry->GetVirtualURL();
 }
 
 base::string16 WebContents::GetTitle() const {
