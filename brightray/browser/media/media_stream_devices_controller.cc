@@ -51,7 +51,7 @@ bool MediaStreamDevicesController::TakeAction() {
   // Do special handling of desktop screen cast.
   if (request_.audio_type == content::MEDIA_TAB_AUDIO_CAPTURE ||
       request_.video_type == content::MEDIA_TAB_VIDEO_CAPTURE ||
-      request_.audio_type == content::MEDIA_LOOPBACK_AUDIO_CAPTURE ||
+      request_.audio_type == content::MEDIA_DESKTOP_AUDIO_CAPTURE ||
       request_.video_type == content::MEDIA_DESKTOP_VIDEO_CAPTURE) {
     HandleUserMediaRequest();
     return true;
@@ -59,7 +59,7 @@ bool MediaStreamDevicesController::TakeAction() {
 
   // Deny the request if there is no device attached to the OS.
   if (!HasAnyAvailableDevice()) {
-    Deny();
+    Deny(content::MEDIA_DEVICE_NO_HARDWARE);
     return true;
   }
 
@@ -149,11 +149,11 @@ void MediaStreamDevicesController::Accept() {
   cb.Run(devices, content::MEDIA_DEVICE_OK, scoped_ptr<content::MediaStreamUI>());
 }
 
-void MediaStreamDevicesController::Deny() {
+void MediaStreamDevicesController::Deny(content::MediaStreamRequestResult result) {
   content::MediaResponseCallback cb = callback_;
   callback_.Reset();
   cb.Run(content::MediaStreamDevices(),
-         content::MEDIA_DEVICE_PERMISSION_DENIED,
+         result,
          scoped_ptr<content::MediaStreamUI>());
 }
 
@@ -168,9 +168,9 @@ void MediaStreamDevicesController::HandleUserMediaRequest() {
     devices.push_back(content::MediaStreamDevice(
         content::MEDIA_TAB_VIDEO_CAPTURE, "", ""));
   }
-  if (request_.audio_type == content::MEDIA_LOOPBACK_AUDIO_CAPTURE) {
+  if (request_.audio_type == content::MEDIA_DESKTOP_AUDIO_CAPTURE) {
     devices.push_back(content::MediaStreamDevice(
-        content::MEDIA_LOOPBACK_AUDIO_CAPTURE, "loopback", "System Audio"));
+        content::MEDIA_DESKTOP_AUDIO_CAPTURE, "loopback", "System Audio"));
   }
   if (request_.video_type == content::MEDIA_DESKTOP_VIDEO_CAPTURE) {
     content::DesktopMediaID screen_id;
