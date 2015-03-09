@@ -162,7 +162,7 @@ void InspectableWebContentsImpl::ShowDevTools() {
 
     agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(web_contents_.get());
     frontend_host_.reset(content::DevToolsFrontendHost::Create(
-        web_contents_->GetRenderViewHost(), this));
+        web_contents_->GetMainFrame(), this));
     agent_host_->AttachClient(this);
 
     GURL devtools_url(base::StringPrintf(kChromeUIDevToolsURL, can_dock_ ? "true" : ""));
