@@ -24,6 +24,7 @@
 #include "content/public/common/url_constants.h"
 #include "content/public/common/user_agent.h"
 #include "net/socket/tcp_server_socket.h"
+#include "net/socket/stream_socket.h"
 #include "ui/base/resource/resource_bundle.h"
 
 using content::DevToolsAgentHost;
@@ -65,7 +66,7 @@ class TCPServerSocketFactory
 
 scoped_ptr<content::DevToolsHttpHandler::ServerSocketFactory>
 CreateSocketFactory() {
-  const CommandLine& command_line = *CommandLine::ForCurrentProcess();
+  auto& command_line = *base::CommandLine::ForCurrentProcess();
   // See if the user specified a port on the command line (useful for
   // automation). If not, use an ephemeral port by specifying 0.
   int port = 0;
@@ -151,8 +152,7 @@ class DevToolsDelegate : public content::DevToolsHttpHandlerDelegate {
   std::string GetDiscoveryPageHTML() override;
   bool BundlesFrontendResources() override;
   base::FilePath GetDebugFrontendDir() override;
-  scoped_ptr<net::StreamListenSocket> CreateSocketForTethering(
-      net::StreamListenSocket::Delegate* delegate,
+  scoped_ptr<net::ServerSocket> CreateSocketForTethering(
       std::string* name) override;
 
  private:
@@ -178,11 +178,9 @@ base::FilePath DevToolsDelegate::GetDebugFrontendDir() {
   return base::FilePath();
 }
 
-scoped_ptr<net::StreamListenSocket>
-DevToolsDelegate::CreateSocketForTethering(
-    net::StreamListenSocket::Delegate* delegate,
+scoped_ptr<net::ServerSocket> DevToolsDelegate::CreateSocketForTethering(
     std::string* name) {
-  return scoped_ptr<net::StreamListenSocket>();
+  return scoped_ptr<net::ServerSocket>();
 }
 
 }  // namespace
