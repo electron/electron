@@ -21,7 +21,7 @@ class NotificationPresenterMac : public NotificationPresenter {
   ~NotificationPresenterMac();
 
   virtual void ShowNotification(
-      const content::ShowDesktopNotificationHostMsgParams&,
+      const content::PlatformNotificationData&,
       scoped_ptr<content::DesktopNotificationDelegate> delegate,
       base::Closure* cancel_callback) override;
 

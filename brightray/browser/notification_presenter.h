@@ -6,7 +6,7 @@
 
 namespace content {
 class DesktopNotificationDelegate;
-struct ShowDesktopNotificationHostMsgParams;
+struct PlatformNotificationData;
 }
 
 namespace brightray {
@@ -18,7 +18,7 @@ class NotificationPresenter {
   static NotificationPresenter* Create();
 
   virtual void ShowNotification(
-      const content::ShowDesktopNotificationHostMsgParams&,
+      const content::PlatformNotificationData&,
       scoped_ptr<content::DesktopNotificationDelegate> delegate,
       base::Closure* cancel_callback) = 0;
 };

@@ -8,7 +8,7 @@
 #include "browser/browser_main_parts.h"
 #include "browser/devtools_manager_delegate.h"
 #include "browser/media/media_capture_devices_dispatcher.h"
-#include "browser/notification_presenter.h"
+#include "browser/platform_notification_service_impl.h"
 
 #include "base/base_paths.h"
 #include "base/path_service.h"
@@ -39,14 +39,6 @@ BrowserContext* BrowserClient::browser_context() {
   return browser_main_parts_->browser_context();
 }
 
-NotificationPresenter* BrowserClient::notification_presenter() {
-#if defined(OS_MACOSX) || defined(OS_LINUX)
-  if (!notification_presenter_)
-    notification_presenter_.reset(NotificationPresenter::Create());
-#endif
-  return notification_presenter_.get();
-}
-
 BrowserMainParts* BrowserClient::OverrideCreateBrowserMainParts(
     const content::MainFunctionParams&) {
   return new BrowserMainParts;
@@ -67,19 +59,12 @@ net::URLRequestContextGetter* BrowserClient::CreateRequestContext(
   return context->CreateRequestContext(protocol_handlers, protocol_interceptors.Pass());
 }
 
-void BrowserClient::ShowDesktopNotification(
-    const content::ShowDesktopNotificationHostMsgParams& params,
-    content::BrowserContext* browser_context,
-    int render_process_id,
-    scoped_ptr<content::DesktopNotificationDelegate> delegate,
-    base::Closure* cancel_callback) {
-  auto presenter = notification_presenter();
-  if (presenter)
-    presenter->ShowNotification(params, delegate.Pass(), cancel_callback);
-}
-
 content::MediaObserver* BrowserClient::GetMediaObserver() {
   return MediaCaptureDevicesDispatcher::GetInstance();
+}
+
+content::PlatformNotificationService* BrowserClient::GetPlatformNotificationService() {
+  return PlatformNotificationServiceImpl::GetInstance();
 }
 
 void BrowserClient::GetAdditionalAllowedSchemesForFileSystem(

@@ -71,6 +71,8 @@
         'browser/notification_presenter.h',
         'browser/notification_presenter_mac.h',
         'browser/notification_presenter_mac.mm',
+        'browser/platform_notification_service_impl.cc',
+        'browser/platform_notification_service_impl.h',
         'browser/linux/notification_presenter_linux.h',
         'browser/linux/notification_presenter_linux.cc',
         'browser/remote_debugging_server.cc',
