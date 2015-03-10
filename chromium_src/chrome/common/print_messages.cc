@@ -6,7 +6,7 @@
 
 #include "base/basictypes.h"
 #include "base/strings/string16.h"
-#include "ui/gfx/size.h"
+#include "ui/gfx/geometry/size.h"
 
 PrintMsg_Print_Params::PrintMsg_Print_Params()
   : page_size(),
