@@ -61,7 +61,7 @@ void AtomBrowserClient::RenderProcessWillLaunch(
 }
 
 content::SpeechRecognitionManagerDelegate*
-    AtomBrowserClient::GetSpeechRecognitionManagerDelegate() {
+    AtomBrowserClient::CreateSpeechRecognitionManagerDelegate() {
   return new AtomSpeechRecognitionManagerDelegate;
 }
 
