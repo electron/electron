@@ -120,6 +120,7 @@ class WebContents : public mate::EventEmitter,
   bool ShouldCreateWebContents(
       content::WebContents* web_contents,
       int route_id,
+      int main_frame_route_id,
       WindowContainerType window_container_type,
       const base::string16& frame_name,
       const GURL& target_url,
@@ -161,7 +162,7 @@ class WebContents : public mate::EventEmitter,
   void DidStartLoading(content::RenderViewHost* render_view_host) override;
   void DidStopLoading(content::RenderViewHost* render_view_host) override;
   void DidGetRedirectForResourceRequest(
-      content::RenderViewHost* render_view_host,
+      content::RenderFrameHost* render_frame_host,
       const content::ResourceRedirectDetails& details) override;
   void DidNavigateMainFrame(
       const content::LoadCommittedDetails& details,
@@ -174,13 +175,13 @@ class WebContents : public mate::EventEmitter,
 
   // content::BrowserPluginGuestDelegate:
   void DidAttach(int guest_proxy_routing_id) final;
-  void ElementSizeChanged(const gfx::Size& old_size,
-                          const gfx::Size& new_size) final;
+  void ElementSizeChanged(const gfx::Size& size) final;
   void GuestSizeChanged(const gfx::Size& old_size,
                         const gfx::Size& new_size) final;
   void RegisterDestructionCallback(const DestructionCallback& callback) final;
   void WillAttach(content::WebContents* embedder_web_contents,
-                  int browser_plugin_instance_id) final;
+                  int element_instance_id,
+                  bool is_full_page_plugin) final;
 
  private:
   // Called when received a message from renderer.

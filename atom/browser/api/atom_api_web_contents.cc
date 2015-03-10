@@ -96,6 +96,7 @@ bool WebContents::AddMessageToConsole(content::WebContents* source,
 bool WebContents::ShouldCreateWebContents(
     content::WebContents* web_contents,
     int route_id,
+    int main_frame_route_id,
     WindowContainerType window_container_type,
     const base::string16& frame_name,
     const GURL& target_url,
@@ -222,7 +223,7 @@ void WebContents::DidStopLoading(content::RenderViewHost* render_view_host) {
 }
 
 void WebContents::DidGetRedirectForResourceRequest(
-    content::RenderViewHost* render_view_host,
+    content::RenderFrameHost* render_frame_host,
     const content::ResourceRedirectDetails& details) {
   Emit("did-get-redirect-request",
        details.url,
@@ -284,9 +285,8 @@ void WebContents::DidAttach(int guest_proxy_routing_id) {
   Emit("did-attach");
 }
 
-void WebContents::ElementSizeChanged(const gfx::Size& old_size,
-                                     const gfx::Size& new_size) {
-  element_size_ = new_size;
+void WebContents::ElementSizeChanged(const gfx::Size& size) {
+  element_size_ = size;
 }
 
 void WebContents::GuestSizeChanged(const gfx::Size& old_size,
@@ -303,9 +303,10 @@ void WebContents::RegisterDestructionCallback(
 }
 
 void WebContents::WillAttach(content::WebContents* embedder_web_contents,
-                             int browser_plugin_instance_id) {
+                             int element_instance_id,
+                             bool is_full_page_plugin) {
   embedder_web_contents_ = embedder_web_contents;
-  element_instance_id_ = browser_plugin_instance_id;
+  element_instance_id_ = element_instance_id;
 }
 
 void WebContents::Destroy() {
