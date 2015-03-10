@@ -86,8 +86,8 @@ Start monitoring on all processes.
 Monitoring begins immediately locally, and asynchronously on child processes as
 soon as they receive the `startMonitoring` request.
 
-Once all child processes have acked to the `startMonitoring` request, `callback`
-will be called back.
+Once all child processes have acked to the `startMonitoring` request,
+`callback` will be called back.
 
 ## tracing.stopMonitoring(callback);
 
@@ -115,12 +115,12 @@ Once all child processes have acked to the `captureMonitoringSnapshot` request,
 `callback` will be called back with a file that contains the traced data.
 
 
-## tracing.getTraceBufferPercentFull(callback)
+## tracing.getTraceBufferUsage(callback)
 
 * `callback` Function
 
-Get the maximum across processes of trace buffer percent full state.  When the
-TraceBufferPercentFull value is determined, the `callback` is called.
+Get the maximum across processes of trace buffer percent full state. When the
+TraceBufferUsage value is determined, the `callback` is called.
 
 ## tracing.setWatchEvent(categoryName, eventName, callback)
 
@@ -128,7 +128,8 @@ TraceBufferPercentFull value is determined, the `callback` is called.
 * `eventName` String
 * `callback` Function
 
-`callback` will will be called every time the given event occurs on any process.
+`callback` will will be called every time the given event occurs on any
+process.
 
 ## tracing.cancelWatchEvent()
 
