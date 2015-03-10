@@ -20,6 +20,7 @@
 #include "brightray/browser/inspectable_web_contents_impl.h"
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
+#include "content/public/browser/readback_types.h"
 #include "native_mate/persistent_dictionary.h"
 #include "ui/gfx/image/image.h"
 
@@ -316,8 +317,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   // Called when CapturePage has done.
   void OnCapturePageDone(const CapturePageCallback& callback,
-                         bool succeed,
-                         const SkBitmap& bitmap);
+                         const SkBitmap& bitmap,
+                         content::ReadbackResponse response);
 
   // Notification manager.
   content::NotificationRegistrar registrar_;

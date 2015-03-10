@@ -780,11 +780,11 @@ void NativeWindow::NotifyWindowUnresponsive() {
 }
 
 void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
-                                     bool succeed,
-                                     const SkBitmap& bitmap) {
+                                     const SkBitmap& bitmap,
+                                     content::ReadbackResponse response) {
   SkAutoLockPixels screen_capture_lock(bitmap);
   std::vector<unsigned char> data;
-  if (succeed)
+  if (response == content::READBACK_SUCCESS)
     gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, true, &data);
   callback.Run(data);
 }
