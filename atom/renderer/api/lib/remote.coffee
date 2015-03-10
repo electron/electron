@@ -69,15 +69,18 @@ metaToValue = (meta) ->
                   ret = ipc.sendSync 'ATOM_BROWSER_MEMBER_CALL', meta.id, member.name, wrapArgs(arguments)
                   return metaToValue ret
           else
-            ret.__defineSetter__ member.name, (value) ->
-              # Set member data.
-              ipc.sendSync 'ATOM_BROWSER_MEMBER_SET', meta.id, member.name, value
-              value
+            Object.defineProperty ret, member.name,
+              enumerable: true,
+              configurable: false,
+              set: (value) ->
+                # Set member data.
+                ipc.sendSync 'ATOM_BROWSER_MEMBER_SET', meta.id, member.name, value
+                value
 
-            ret.__defineGetter__ member.name, ->
-              # Get member data.
-              ret = ipc.sendSync 'ATOM_BROWSER_MEMBER_GET', meta.id, member.name
-              metaToValue ret
+              get: ->
+                # Get member data.
+                ret = ipc.sendSync 'ATOM_BROWSER_MEMBER_GET', meta.id, member.name
+                metaToValue ret
 
       # Track delegate object's life time, and tell the browser to clean up
       # when the object is GCed.
