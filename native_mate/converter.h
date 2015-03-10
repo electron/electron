@@ -34,6 +34,15 @@ struct Converter<bool> {
 };
 
 template<>
+struct Converter<unsigned long> {
+  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+                                    unsigned long val);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
+                     unsigned long* out);
+};
+
+template<>
 struct Converter<int32_t> {
   static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
                                     int32_t val);
