@@ -165,7 +165,7 @@ void NodeBindings::Initialize() {
 
 node::Environment* NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context) {
-  CommandLine* command_line = CommandLine::ForCurrentProcess();
+  auto command_line = base::CommandLine::ForCurrentProcess();
   std::vector<std::string> args =
 #if defined(OS_WIN)
       String16VectorToStringVector(command_line->argv());

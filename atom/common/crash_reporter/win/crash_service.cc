@@ -205,7 +205,7 @@ bool CrashService::Initialize(const base::FilePath& operating_dir,
   // reports per day quota. Does not seem to serve any other purpose.
   base::FilePath checkpoint_path = operating_dir.Append(kCheckPointFile);
 
-  CommandLine& cmd_line = *CommandLine::ForCurrentProcess();
+  base::CommandLine& cmd_line = *base::CommandLine::ForCurrentProcess();
 
   base::FilePath dumps_path_to_use = dumps_path;
 

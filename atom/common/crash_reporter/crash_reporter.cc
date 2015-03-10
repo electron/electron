@@ -12,8 +12,8 @@
 namespace crash_reporter {
 
 CrashReporter::CrashReporter() {
-  const CommandLine& command = *CommandLine::ForCurrentProcess();
-  is_browser_ = command.GetSwitchValueASCII(switches::kProcessType).empty();
+  auto command_line = base::CommandLine::ForCurrentProcess();
+  is_browser_ = command->GetSwitchValueASCII(switches::kProcessType).empty();
 }
 
 CrashReporter::~CrashReporter() {
