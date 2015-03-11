@@ -24,7 +24,6 @@
 #include "net/base/escape.h"
 #include "printing/pdf_metafile_skia.h"
 #include "printing/units.h"
-#include "skia/ext/vector_platform_device_skia.h"
 #include "third_party/WebKit/public/platform/WebSize.h"
 #include "third_party/WebKit/public/platform/WebURLRequest.h"
 #include "third_party/WebKit/public/web/WebConsoleMessage.h"

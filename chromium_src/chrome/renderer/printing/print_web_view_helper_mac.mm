@@ -76,20 +76,17 @@ void PrintWebViewHelper::RenderPage(const PrintMsg_Print_Params& params,
   gfx::Rect canvas_area = content_area;
 
   {
-    SkBaseDevice* device = metafile->StartPageForVectorCanvas(
+    skia::PlatformCanvas* canvas = metafile->GetVectorCanvasForNewPage(
         *page_size, canvas_area, scale_factor);
-    if (!device)
+    if (!canvas)
       return;
 
-    skia::RefPtr<skia::VectorCanvas> canvas =
-        skia::AdoptRef(new skia::VectorCanvas(device));
-    blink::WebCanvas* canvas_ptr = canvas.get();
     MetafileSkiaWrapper::SetMetafileOnCanvas(*canvas, metafile);
     skia::SetIsDraftMode(*canvas, is_print_ready_metafile_sent_);
     skia::SetIsPreviewMetafile(*canvas, is_preview);
 
     RenderPageContent(frame, page_number, canvas_area, content_area,
-                      scale_factor, canvas_ptr);
+                      scale_factor, static_cast<blink::WebCanvas*>(canvas));
   }
 
   // Done printing. Close the device context to retrieve the compiled metafile.

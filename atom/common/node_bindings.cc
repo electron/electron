@@ -112,7 +112,8 @@ std::vector<std::string> String16VectorToStringVector(
 }
 #endif
 
-base::FilePath GetResourcesPath(CommandLine* command_line, bool is_browser) {
+base::FilePath GetResourcesPath(base::CommandLine* command_line,
+                                bool is_browser) {
   base::FilePath exec_path(command_line->argv()[0]);
   PathService::Get(base::FILE_EXE, &exec_path);
   base::FilePath resources_path =
