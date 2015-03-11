@@ -11,6 +11,8 @@
 
 namespace atom {
 
+class AtomResourceDispatcherHostDelegate;
+
 class AtomBrowserClient : public brightray::BrowserClient {
  public:
   AtomBrowserClient();
@@ -22,6 +24,7 @@ class AtomBrowserClient : public brightray::BrowserClient {
   content::SpeechRecognitionManagerDelegate*
       CreateSpeechRecognitionManagerDelegate() override;
   content::AccessTokenStore* CreateAccessTokenStore() override;
+  void ResourceDispatcherHostCreated() override;
   void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
                            const GURL& url,
                            content::WebPreferences* prefs) override;
@@ -36,6 +39,8 @@ class AtomBrowserClient : public brightray::BrowserClient {
  private:
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
       const content::MainFunctionParams&) override;
+
+  scoped_ptr<AtomResourceDispatcherHostDelegate> resource_dispatcher_delegate_;
 
   // The render process which would be swapped out soon.
   content::RenderProcessHost* dying_render_process_;
