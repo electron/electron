@@ -731,7 +731,7 @@ void NativeWindow::DevToolsSaveToFile(const std::string& url,
     base::FilePath default_path(base::FilePath::FromUTF8Unsafe(url));
     if (!file_dialog::ShowSaveDialog(this, url, default_path, filters, &path)) {
       base::StringValue url_value(url);
-      CallDevToolsFunction("InspectorFrontendAPI.canceledSaveURL", &url_value);
+      CallDevToolsFunction("DevToolsAPI.canceledSaveURL", &url_value);
       return;
     }
   }
@@ -741,7 +741,7 @@ void NativeWindow::DevToolsSaveToFile(const std::string& url,
 
   // Notify devtools.
   base::StringValue url_value(url);
-  CallDevToolsFunction("InspectorFrontendAPI.savedURL", &url_value);
+  CallDevToolsFunction("DevToolsAPI.savedURL", &url_value);
 }
 
 void NativeWindow::DevToolsAppendToFile(const std::string& url,
@@ -753,7 +753,7 @@ void NativeWindow::DevToolsAppendToFile(const std::string& url,
 
   // Notify devtools.
   base::StringValue url_value(url);
-  CallDevToolsFunction("InspectorFrontendAPI.appendedToURL", &url_value);
+  CallDevToolsFunction("DevToolsAPI.appendedToURL", &url_value);
 }
 
 void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
