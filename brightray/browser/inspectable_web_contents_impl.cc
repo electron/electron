@@ -243,7 +243,7 @@ void InspectableWebContentsImpl::AppendToFile(
 
 void InspectableWebContentsImpl::RequestFileSystems() {
     devtools_web_contents()->GetMainFrame()->ExecuteJavaScript(
-        base::ASCIIToUTF16("InspectorFrontendAPI.fileSystemsLoaded([])"));
+        base::ASCIIToUTF16("DevToolsAPI.fileSystemsLoaded([])"));
 }
 
 void InspectableWebContentsImpl::AddFileSystem() {
@@ -296,7 +296,7 @@ void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(const std::st
   std::string error = embedder_message_dispatcher_->Dispatch(method, &params);
   if (id) {
     std::string ack = base::StringPrintf(
-        "InspectorFrontendAPI.embedderMessageAck(%d, \"%s\");", id, error.c_str());
+        "DevToolsAPI.embedderMessageAck(%d, \"%s\");", id, error.c_str());
     devtools_web_contents()->GetMainFrame()->ExecuteJavaScript(base::UTF8ToUTF16(ack));
   }
 }
@@ -308,7 +308,7 @@ void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontendToBackend(
 
 void InspectableWebContentsImpl::DispatchProtocolMessage(
     content::DevToolsAgentHost* agent_host, const std::string& message) {
-  std::string code = "InspectorFrontendAPI.dispatchMessage(" + message + ");";
+  std::string code = "DevToolsAPI.dispatchMessage(" + message + ");";
   base::string16 javascript = base::UTF8ToUTF16(code);
   web_contents()->GetMainFrame()->ExecuteJavaScript(javascript);
 }
