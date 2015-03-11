@@ -7,6 +7,7 @@ var Menu = require('menu');
 var window = null;
 
 app.commandLine.appendSwitch('js-flags', '--expose_gc');
+app.commandLine.appendSwitch('ignore-certificate-errors');
 
 ipc.on('message', function(event, arg) {
   event.sender.send('message', arg);
