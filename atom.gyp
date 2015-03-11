@@ -492,6 +492,8 @@
                 '<(libchromiumcontent_resources_dir)/content_resources_200_percent.pak',
                 '<(libchromiumcontent_resources_dir)/content_shell.pak',
                 '<(libchromiumcontent_resources_dir)/ui_resources_200_percent.pak',
+                '<(libchromiumcontent_resources_dir)/natives_blob.bin',
+                '<(libchromiumcontent_resources_dir)/snapshot_blob.bin',
                 'external_binaries/d3dcompiler_46.dll',
                 'external_binaries/msvcp120.dll',
                 'external_binaries/msvcr120.dll',
@@ -516,6 +518,8 @@
                 '<(libchromiumcontent_library_dir)/libffmpegsumo.so',
                 '<(libchromiumcontent_resources_dir)/icudtl.dat',
                 '<(libchromiumcontent_resources_dir)/content_shell.pak',
+                '<(libchromiumcontent_resources_dir)/natives_blob.bin',
+                '<(libchromiumcontent_resources_dir)/snapshot_blob.bin',
               ],
             },
             {
@@ -844,6 +848,8 @@
             'atom/common/resources/mac/MainMenu.xib',
             '<(libchromiumcontent_resources_dir)/content_shell.pak',
             '<(libchromiumcontent_resources_dir)/icudtl.dat',
+            '<(libchromiumcontent_resources_dir)/natives_blob.bin',
+            '<(libchromiumcontent_resources_dir)/snapshot_blob.bin',
           ],
           'xcode_settings': {
             'INFOPLIST_FILE': 'atom/common/resources/mac/Info.plist',
