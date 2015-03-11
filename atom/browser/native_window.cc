@@ -77,7 +77,6 @@ namespace {
 const char* kWebRuntimeFeatures[] = {
   switches::kExperimentalFeatures,
   switches::kExperimentalCanvasFeatures,
-  switches::kSubpixelFontScaling,
   switches::kOverlayScrollbars,
   switches::kOverlayFullscreenVideo,
   switches::kSharedWorker,
