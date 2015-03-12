@@ -101,7 +101,7 @@ Sets the hover text for this tray icon.
 
 Sets the title displayed aside of the tray icon in the status bar.
 
-This is only implmented on OS X.
+This is only implemented on OS X.
 
 ### Tray.setHighlightMode(highlight)
 
