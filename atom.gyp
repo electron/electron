@@ -65,6 +65,8 @@
       'atom/app/atom_main_delegate.cc',
       'atom/app/atom_main_delegate.h',
       'atom/app/atom_main_delegate_mac.mm',
+      'atom/app/node_main.cc',
+      'atom/app/node_main.h',
       'atom/browser/api/atom_api_app.cc',
       'atom/browser/api/atom_api_app.h',
       'atom/browser/api/atom_api_auto_updater.cc',
@@ -548,6 +550,8 @@
         'SK_SUPPORT_LEGACY_GETTOPDEVICE',
         # Disable warnings for g_settings_list_schemas.
         'GLIB_DISABLE_DEPRECATION_WARNINGS',
+        # Defined in V8.
+        'V8_USE_EXTERNAL_STARTUP_DATA',
       ],
       'sources': [
         '<@(lib_sources)',
