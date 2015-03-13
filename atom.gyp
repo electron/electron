@@ -281,6 +281,8 @@
       'atom/renderer/atom_render_view_observer.h',
       'atom/renderer/atom_renderer_client.cc',
       'atom/renderer/atom_renderer_client.h',
+      'atom/renderer/guest_view_container.cc',
+      'atom/renderer/guest_view_container.h',
       'chromium_src/chrome/browser/browser_process.cc',
       'chromium_src/chrome/browser/browser_process.h',
       'chromium_src/chrome/browser/chrome_notification_types.h',
@@ -550,8 +552,9 @@
         'SK_SUPPORT_LEGACY_GETTOPDEVICE',
         # Disable warnings for g_settings_list_schemas.
         'GLIB_DISABLE_DEPRECATION_WARNINGS',
-        # Defined in V8.
+        # Defined in Chromium but not exposed in its gyp file.
         'V8_USE_EXTERNAL_STARTUP_DATA',
+        'ENABLE_PLUGINS',
       ],
       'sources': [
         '<@(lib_sources)',

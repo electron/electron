@@ -56,6 +56,7 @@ WebContents::WebContents(content::WebContents* web_contents)
       guest_instance_id_(-1),
       element_instance_id_(-1),
       guest_opaque_(true),
+      guest_sizer_(nullptr),
       auto_size_enabled_(false) {
 }
 
@@ -63,6 +64,7 @@ WebContents::WebContents(const mate::Dictionary& options)
     : guest_instance_id_(-1),
       element_instance_id_(-1),
       guest_opaque_(true),
+      guest_sizer_(nullptr),
       auto_size_enabled_(false) {
   options.Get("guestInstanceId", &guest_instance_id_);
 
@@ -287,6 +289,14 @@ void WebContents::DidAttach(int guest_proxy_routing_id) {
 
 void WebContents::ElementSizeChanged(const gfx::Size& size) {
   element_size_ = size;
+
+  // Only resize if needed.
+  if (!size.IsEmpty())
+    guest_sizer_->SizeContents(size);
+}
+
+content::WebContents* WebContents::GetOwnerWebContents() const {
+  return embedder_web_contents_;
 }
 
 void WebContents::GuestSizeChanged(const gfx::Size& old_size,
@@ -300,6 +310,10 @@ void WebContents::GuestSizeChanged(const gfx::Size& old_size,
 void WebContents::RegisterDestructionCallback(
     const DestructionCallback& callback) {
   destruction_callback_ = callback;
+}
+
+void WebContents::SetGuestSizer(content::GuestSizer* guest_sizer) {
+  guest_sizer_ = guest_sizer;
 }
 
 void WebContents::WillAttach(content::WebContents* embedder_web_contents,
