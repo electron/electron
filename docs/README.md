@@ -5,7 +5,7 @@ Follow this steps to find out where to get the required tools, understand the ba
 
 1. [Installation (download)](https://github.com/atom/atom-shell/releases)
 2. [Quick start](tutorial/quick-start.md)
-3. [Platform Architecture](tutorial/architecture.md)
+3. [Platform Architecture](tutorial/Architecture.md)
 
 ## 2. Advanced topics
 * [Application distribution](tutorial/application-distribution.md)
