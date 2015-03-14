@@ -57,6 +57,7 @@ REFERENCE_MODULE(tls_wrap);
 REFERENCE_MODULE(tty_wrap);
 REFERENCE_MODULE(udp_wrap);
 REFERENCE_MODULE(uv);
+REFERENCE_MODULE(js_stream);
 // Atom Shell's builtin modules.
 REFERENCE_MODULE(atom_browser_app);
 REFERENCE_MODULE(atom_browser_auto_updater);
