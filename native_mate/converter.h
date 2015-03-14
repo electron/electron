@@ -33,6 +33,7 @@ struct Converter<bool> {
                      bool* out);
 };
 
+#if !defined(OS_LINUX)
 template<>
 struct Converter<unsigned long> {
   static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
@@ -41,6 +42,7 @@ struct Converter<unsigned long> {
                      v8::Handle<v8::Value> val,
                      unsigned long* out);
 };
+#endif
 
 template<>
 struct Converter<int32_t> {

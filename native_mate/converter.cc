@@ -31,6 +31,7 @@ bool Converter<bool>::FromV8(Isolate* isolate, Handle<Value> val, bool* out) {
   return true;
 }
 
+#if !defined(OS_LINUX)
 Handle<Value> Converter<unsigned long>::ToV8(Isolate* isolate,
                                              unsigned long val) {
   return MATE_INTEGER_NEW(isolate, val);
@@ -43,7 +44,7 @@ bool Converter<unsigned long>::FromV8(Isolate* isolate, Handle<Value> val,
   *out = val->IntegerValue();
   return true;
 }
-
+#endif
 
 Handle<Value> Converter<int32_t>::ToV8(Isolate* isolate, int32_t val) {
   return MATE_INTEGER_NEW(isolate, val);
