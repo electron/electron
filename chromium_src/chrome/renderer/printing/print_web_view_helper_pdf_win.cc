@@ -210,7 +210,7 @@ void PrintWebViewHelper::PrintPageInternal(
                                                 canvas_area,
                                                 content_area,
                                                 scale_factor,
-                                                canvas.get());
+                                                canvas);
   DCHECK_GT(webkit_scale_factor, 0.0f);
   // Done printing. Close the device context to retrieve the compiled metafile.
   if (!metafile->FinishPage())

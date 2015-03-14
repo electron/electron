@@ -131,7 +131,7 @@ void PrintWebViewHelper::PrintPageInternal(
   gfx::Rect canvas_area = content_area;
 
   skia::PlatformCanvas* canvas = metafile->GetVectorCanvasForNewPage(
-        *page_size, canvas_area, scale_factor);
+      page_size, canvas_area, scale_factor);
   if (!canvas)
     return;
 
@@ -139,7 +139,7 @@ void PrintWebViewHelper::PrintPageInternal(
   skia::SetIsDraftMode(*canvas, is_print_ready_metafile_sent_);
 
   RenderPageContent(frame, params.page_number, canvas_area, content_area,
-                    scale_factor, canvas.get());
+                    scale_factor, canvas);
 
   // Done printing. Close the device context to retrieve the compiled metafile.
   if (!metafile->FinishPage())
