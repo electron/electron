@@ -197,6 +197,15 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
     Emit("did-finish-load");
 }
 
+// this error occurs when host could not be found
+void WebContents::DidFailProvisionalLoad(
+    content::RenderFrameHost* render_frame_host,
+    const GURL& validated_url,
+    int error_code,
+    const base::string16& error_description) {
+  Emit("did-fail-load", error_code, error_description);
+}
+
 void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
                               const GURL& validated_url,
                               int error_code,

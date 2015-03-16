@@ -58,6 +58,11 @@ describe 'browser-window module', ->
         done()
       w.loadUrl 'about:blank'
 
+    it 'should emit did-fail-load event', (done) ->
+      w.webContents.on 'did-fail-load', ->
+        done()
+      w.loadUrl 'file://a.txt'
+
   describe 'BrowserWindow.show()', ->
     it 'should focus on window', ->
       return if isCI
