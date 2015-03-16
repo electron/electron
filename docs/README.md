@@ -1,6 +1,13 @@
-## Tutorials
+# Atom Shell Documentation
 
-* [Quick start](tutorial/quick-start.md)
+## 1. Getting started
+Follow this steps to find out where to get the required tools, understand the basic concepts and develop first application.
+
+1. [Installation (download)](https://github.com/atom/atom-shell/releases)
+2. [Quick start](tutorial/quick-start.md)
+3. [Platform Architecture](tutorial/Architecture.md)
+
+## 2. Advanced topics
 * [Application distribution](tutorial/application-distribution.md)
 * [Application packaging](tutorial/application-packaging.md)
 * [Using native node modules](tutorial/using-native-node-modules.md)
@@ -10,7 +17,7 @@
 * [DevTools extension](tutorial/devtools-extension.md)
 * [Online/offline event detection](tutorial/online-offline-events.md)
 
-## API references
+## 3. References
 
 * [Synopsis](api/synopsis.md)
 * [Process object](api/process.md)
@@ -51,7 +58,7 @@ Modules for both sides:
 * [screen](api/screen.md)
 * [shell](api/shell.md)
 
-## Development
+## 4. Development and contribution
 
 * [Coding style](development/coding-style.md)
 * [Source code directory structure](development/source-code-directory-structure.md)
