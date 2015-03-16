@@ -90,6 +90,30 @@ If you got an error like this:
 libchromiumcontent.so is build with clang 3.0 which is incompatible with newer
 versions of clang. Try using clang 3.0, default version in Ubuntu 12.04.
 
+### libudev.so.0 missing
+
+If you get an error like:
+
+````
+/usr/bin/ld: warning: libudev.so.0, needed by /home/suyash/projects/atom-shell/vendor/brightray/vendor/download/libchromiumcontent/Release/libchromiumcontent.so, not found (try using -rpath or -rpath-link)
+````
+
+and you are on Ubuntu 13.04+, 64 bit system, try doing
+
+```bash
+sudo ln -s /lib/x86_64-linux-gnu/libudev.so.1.3.5 /usr/lib/libudev.so.0
+```
+
+for ubuntu 13.04+ 32 bit systems, try doing
+
+```bash
+sudo ln -s /lib/i386-linux-gnu/libudev.so.1.3.5  /usr/lib/libudev.so.0
+```
+
+also see
+
+https://github.com/nwjs/nw.js/wiki/The-solution-of-lacking-libudev.so.0
+
 ## Tests
 
 ```bash
