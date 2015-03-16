@@ -8,6 +8,7 @@
 #include "atom/browser/net/url_request_string_job.h"
 #include "atom/browser/net/asar/url_request_asar_job.h"
 #include "atom/common/asar/asar_util.h"
+#include "atom/browser/net/url_request_buffer_job.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/net_errors.h"
 #include "net/url_request/url_request_error_job.h"
@@ -84,6 +85,16 @@ void AdapterRequestJob::CreateStringJobAndStart(const std::string& mime_type,
 
   real_job_ = new URLRequestStringJob(
       request(), network_delegate(), mime_type, charset, data);
+  real_job_->Start();
+}
+
+void AdapterRequestJob::CreateBufferJobAndStart(const std::string& mime_type,
+                                                const std::string& charset,
+                                                v8::Local<v8::Object> buffer) {
+  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
+
+  real_job_ = new URLRequestBufferJob(
+      request(), network_delegate(), mime_type, charset, buffer);
   real_job_->Start();
 }
 

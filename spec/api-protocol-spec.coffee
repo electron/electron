@@ -58,6 +58,25 @@ describe 'protocol module', ->
           assert false, 'Got error: ' + errorType + ' ' + error
           protocol.unregisterProtocol 'atom-string-job'
 
+    it 'returns RequestBufferJob should send buffer', (done) ->
+      data = new Buffer("hello")
+      job = new protocol.RequestBufferJob(data: data)
+      handler = remote.createFunctionWithReturnValue job
+      protocol.registerProtocol 'atom-buffer-job', handler
+
+      $.ajax
+        url: 'atom-buffer-job://fake-host'
+        success: (response) ->
+          assert.equal response.length, data.length
+          buf = new Buffer(response.length)
+          buf.write(response)
+          assert buf.equals(data)
+          protocol.unregisterProtocol 'atom-buffer-job'
+          done()
+        error: (xhr, errorType, error) ->
+          assert false, 'Got error: ' + errorType + ' ' + error
+          protocol.unregisterProtocol 'atom-buffer-job'
+
     it 'returns RequestFileJob should send file', (done) ->
       job = new protocol.RequestFileJob(__filename)
       handler = remote.createFunctionWithReturnValue job
