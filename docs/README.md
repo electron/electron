@@ -55,7 +55,7 @@ Modules for both sides:
 
 * [Coding style](development/coding-style.md)
 * [Source code directory structure](development/source-code-directory-structure.md)
-* [Technical differences to NW.js](development/atom-shell-vs-nwjs.md)
+* [Technical differences to NW.js (formerly node-webkit)](development/atom-shell-vs-node-webkit.md)
 * [Build instructions (Mac)](development/build-instructions-mac.md)
 * [Build instructions (Windows)](development/build-instructions-windows.md)
 * [Build instructions (Linux)](development/build-instructions-linux.md)

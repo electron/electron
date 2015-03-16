@@ -1,4 +1,4 @@
-# Technical differences to NW.js
+# Technical differences to NW.js (formerly node-webkit)
 
 Like NW.js, atom-shell provides a platform to write desktop applications
 with JavaScript and HTML, and has Node integration to grant access to low level
