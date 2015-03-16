@@ -17,6 +17,7 @@ BrowserWindow::_init = ->
     @setMenu menu if menu?
 
   @webContents = @getWebContents()
+  @devToolsWebContents = null
   @webContents.once 'destroyed', => @webContents = null
 
   # Remember the window ID.
