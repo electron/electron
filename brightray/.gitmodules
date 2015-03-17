@@ -1,6 +1,6 @@
 [submodule "vendor/libchromiumcontent"]
 	path = vendor/libchromiumcontent
-	url = https://github.com/brightray/libchromiumcontent
+	url = https://github.com/atom/libchromiumcontent
 [submodule "vendor/gyp"]
 	path = vendor/gyp
 	url = https://github.com/svn2github/gyp
