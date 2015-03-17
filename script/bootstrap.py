@@ -16,6 +16,7 @@ NPM = 'npm.cmd' if sys.platform in ['win32', 'cygwin'] else 'npm'
 
 
 def main():
+  check_root()
   os.chdir(SOURCE_ROOT)
 
   args = parse_args()
@@ -47,6 +48,13 @@ def parse_args():
                       action='store_true',
                       help='Prints the output of the subprocesses')
   return parser.parse_args()
+
+def check_root():
+  if os.geteuid() == 0:
+    print "We suggest not running this as root, unless you're really sure."
+    choice = raw_input("Do you want to continue? [y/N]: ")
+    if choice not in ('y', 'Y'):
+      sys.exit(0)
 
 
 def update_submodules():
