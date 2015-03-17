@@ -1,6 +1,5 @@
 ## Guides
 
-* [Quick start](tutorial/quick-start.md)
 * [Application distribution](tutorial/application-distribution.md)
 * [Application packaging](tutorial/application-packaging.md)
 * [Using native node modules](tutorial/using-native-node-modules.md)
@@ -10,6 +9,7 @@
 
 ## Tutorial
 
+* [Quick start](tutorial/quick-start.md)
 * [Desktop environment integration](tutorial/desktop-environment-integration.md)
 * [Online/offline event detection](tutorial/online-offline-events.md)
 
