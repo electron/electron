@@ -4,6 +4,7 @@
 
 #include "atom/app/atom_library_main.h"
 
+#include "atom/app/atom_main_args.h"
 #include "atom/app/atom_main_delegate.h"
 #include "atom/app/node_main.h"
 #include "base/at_exit.h"
@@ -18,6 +19,7 @@ int AtomMain(int argc, const char* argv[]) {
   content::ContentMainParams params(&delegate);
   params.argc = argc;
   params.argv = argv;
+  atom::AtomCommandLine::Init(argc, argv);
   return content::ContentMain(params);
 }
 

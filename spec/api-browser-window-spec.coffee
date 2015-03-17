@@ -5,7 +5,7 @@ remote = require 'remote'
 
 BrowserWindow = remote.require 'browser-window'
 
-isCI = remote.process.argv[1] == '--ci'
+isCI = remote.process.argv[2] == '--ci'
 
 describe 'browser-window module', ->
   fixtures = path.resolve __dirname, 'fixtures'

@@ -17,6 +17,14 @@ describe 'node feature', ->
           done()
         child.send 'message'
 
+      it 'preserves args', (done) ->
+        args = ['--expose_gc', '-test', '1']
+        child = child_process.fork path.join(fixtures, 'module', 'process_args.js'), args
+        child.on 'message', (msg) ->
+          assert.deepEqual args, msg.slice(2)
+          done()
+        child.send 'message'
+
       it 'works in forked process', (done) ->
         child = child_process.fork path.join(fixtures, 'module', 'fork_ping.js')
         child.on 'message', (msg) ->
