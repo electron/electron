@@ -16,10 +16,12 @@ NPM = 'npm.cmd' if sys.platform in ['win32', 'cygwin'] else 'npm'
 
 
 def main():
-  check_root()
   os.chdir(SOURCE_ROOT)
 
   args = parse_args()
+  if (args.yes is False and
+      sys.platform not in ('win32', 'cygwin')):
+    check_root()
   if args.verbose:
     enable_verbose_mode()
   if sys.platform == 'cygwin':
@@ -47,6 +49,10 @@ def parse_args():
   parser.add_argument('-v', '--verbose',
                       action='store_true',
                       help='Prints the output of the subprocesses')
+  parser.add_argument('-y', '--yes', '--assume-yes',
+                      action='store_true',
+                      help='Run non-interactively by assuming "yes" to all ' \
+                           'prompts.')
   return parser.parse_args()
 
 def check_root():
