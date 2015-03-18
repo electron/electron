@@ -19,6 +19,9 @@ def main():
   os.chdir(SOURCE_ROOT)
 
   args = parse_args()
+  if (args.yes is False and
+      sys.platform not in ('win32', 'cygwin')):
+    check_root()
   if args.verbose:
     enable_verbose_mode()
   if sys.platform == 'cygwin':
@@ -46,7 +49,18 @@ def parse_args():
   parser.add_argument('-v', '--verbose',
                       action='store_true',
                       help='Prints the output of the subprocesses')
+  parser.add_argument('-y', '--yes', '--assume-yes',
+                      action='store_true',
+                      help='Run non-interactively by assuming "yes" to all ' \
+                           'prompts.')
   return parser.parse_args()
+
+def check_root():
+  if os.geteuid() == 0:
+    print "We suggest not running this as root, unless you're really sure."
+    choice = raw_input("Do you want to continue? [y/N]: ")
+    if choice not in ('y', 'Y'):
+      sys.exit(0)
 
 
 def update_submodules():
