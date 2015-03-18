@@ -2,7 +2,6 @@ assert = require 'assert'
 http = require 'http'
 https = require 'https'
 path = require 'path'
-pem = require 'pem'
 
 describe 'chromium feature', ->
   fixtures = path.resolve __dirname, 'fixtures'
@@ -11,33 +10,16 @@ describe 'chromium feature', ->
     it 'does not crash', ->
       process.atomBinding('v8_util').takeHeapSnapshot()
 
-  describe 'sending request of https protocol urls', ->
+  describe 'sending request of http protocol urls', ->
     it 'does not crash', (done) ->
       @timeout 5000
-      options = {
-        days: 1,
-        selfSigned: true
-      }
-      pem.createCertificate options, (err, keys) ->
-        server = https.createServer {key: keys.serviceKey, cert: keys.certificate}, (req, res) ->
-          res.end('hello!')
-          server.close()
-          done()
-        server.listen 4300, '127.0.0.1', ->
-          {port} = server.address()
-          $.get "https://127.0.0.1:#{port}", (res) ->
-            assert.equal res, "hello!"
-
-    describe 'sending request of http protocol urls', ->
-      it 'does not crash', (done) ->
-        @timeout 5000
-        server = http.createServer (req, res) ->
-          res.end()
-          server.close()
-          done()
-        server.listen 0, '127.0.0.1', ->
-          {port} = server.address()
-          $.get "http://127.0.0.1:#{port}"
+      server = http.createServer (req, res) ->
+        res.end()
+        server.close()
+        done()
+      server.listen 0, '127.0.0.1', ->
+        {port} = server.address()
+        $.get "http://127.0.0.1:#{port}"
 
   describe 'navigator.webkitGetUserMedia', ->
     it 'calls its callbacks', (done) ->
