@@ -46,6 +46,8 @@ class BrowserContext : public content::BrowserContext,
 
   void RegisterInternalPrefs(PrefRegistrySimple* pref_registry);
 
+  scoped_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(
+      const base::FilePath& partition_path) override;
   bool IsOffTheRecord() const override;
   net::URLRequestContextGetter* GetRequestContext() override;
   net::URLRequestContextGetter* GetRequestContextForRenderProcess(

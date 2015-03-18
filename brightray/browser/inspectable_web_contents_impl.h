@@ -15,7 +15,7 @@
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
-#include "ui/gfx/rect.h"
+#include "ui/gfx/geometry/rect.h"
 
 class PrefRegistrySimple;
 
@@ -104,7 +104,7 @@ class InspectableWebContentsImpl :
                        bool replaced) override;
 
   // content::WebContentsObserver:
-  void AboutToNavigateRenderView(content::RenderViewHost* render_view_host) override;
+  void AboutToNavigateRenderFrame(content::RenderFrameHost* new_host) override;
   void DidFinishLoad(content::RenderFrameHost* render_frame_host,
                      const GURL& validated_url) override;
   void WebContentsDestroyed() override;
@@ -118,6 +118,7 @@ class InspectableWebContentsImpl :
   bool ShouldCreateWebContents(
       content::WebContents* web_contents,
       int route_id,
+      int main_frame_route_id,
       WindowContainerType window_container_type,
       const base::string16& frame_name,
       const GURL& target_url,

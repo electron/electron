@@ -11,7 +11,6 @@ namespace brightray {
 
 class BrowserContext;
 class BrowserMainParts;
-class NotificationPresenter;
 
 class BrowserClient : public content::ContentBrowserClient {
  public:
@@ -22,7 +21,6 @@ class BrowserClient : public content::ContentBrowserClient {
 
   BrowserContext* browser_context();
   BrowserMainParts* browser_main_parts() { return browser_main_parts_; }
-  NotificationPresenter* notification_presenter();
 
  protected:
   // Subclasses should override this to provide their own BrowserMainParts
@@ -41,20 +39,14 @@ class BrowserClient : public content::ContentBrowserClient {
  private:
   content::BrowserMainParts* CreateBrowserMainParts(
       const content::MainFunctionParams&) override;
-  void ShowDesktopNotification(
-      const content::ShowDesktopNotificationHostMsgParams& params,
-      content::BrowserContext* browser_context,
-      int render_process_id,
-      scoped_ptr<content::DesktopNotificationDelegate> delegate,
-      base::Closure* cancel_callback) override;
   content::MediaObserver* GetMediaObserver() override;
+  content::PlatformNotificationService* GetPlatformNotificationService() override;
   void GetAdditionalAllowedSchemesForFileSystem(
       std::vector<std::string>* additional_schemes) override;
   base::FilePath GetDefaultDownloadDirectory() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
 
   BrowserMainParts* browser_main_parts_;
-  scoped_ptr<NotificationPresenter> notification_presenter_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserClient);
 };

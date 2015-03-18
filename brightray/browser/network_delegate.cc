@@ -21,11 +21,25 @@ int NetworkDelegate::OnBeforeURLRequest(
   return net::OK;
 }
 
+void NetworkDelegate::OnResolveProxy(const GURL& url,
+                                     int load_flags,
+                                     const net::ProxyService& proxy_service,
+                                     net::ProxyInfo* result) {
+}
+
+void NetworkDelegate::OnProxyFallback(const net::ProxyServer& bad_proxy, int net_error) {
+}
+
 int NetworkDelegate::OnBeforeSendHeaders(
     net::URLRequest* request,
     const net::CompletionCallback& callback,
     net::HttpRequestHeaders* headers) {
   return net::OK;
+}
+
+void NetworkDelegate::OnBeforeSendProxyHeaders(net::URLRequest* request,
+                                               const net::ProxyInfo& proxy_info,
+                                               net::HttpRequestHeaders* headers) {
 }
 
 void NetworkDelegate::OnSendHeaders(
@@ -92,10 +106,17 @@ bool NetworkDelegate::OnCanThrottleRequest(
   return false;
 }
 
-int NetworkDelegate::OnBeforeSocketStreamConnect(
-    net::SocketStream* socket,
-    const net::CompletionCallback& callback) {
-  return net::OK;
+bool NetworkDelegate::OnCanEnablePrivacyMode(
+    const GURL& url,
+    const GURL& first_party_for_cookies) const {
+  return false;
+}
+
+bool NetworkDelegate::OnCancelURLRequestWithPolicyViolatingReferrerHeader(
+    const net::URLRequest& request,
+    const GURL& target_url,
+    const GURL& referrer_url) const {
+  return false;
 }
 
 }  // namespace brightray

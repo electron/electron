@@ -5,11 +5,12 @@
 #include "browser/browser_main_parts.h"
 
 #include "browser/browser_context.h"
-#include "browser/remote_debugging_server.h"
+#include "browser/devtools_manager_delegate.h"
 #include "browser/web_ui_controller_factory.h"
 
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
+#include "content/public/browser/devtools_http_handler.h"
 #include "content/public/common/content_switches.h"
 #include "net/proxy/proxy_resolver_v8.h"
 
@@ -125,16 +126,9 @@ void BrowserMainParts::PreMainMessageLoopRun() {
       web_ui_controller_factory_.get());
 
   // --remote-debugging-port
-  base::CommandLine* command_line = CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kRemoteDebuggingPort)) {
-    std::string port_str = command_line->GetSwitchValueASCII(switches::kRemoteDebuggingPort);
-    int port;
-    if (base::StringToInt(port_str, &port) && port >= 0 && port < 65535)
-      remote_debugging_server_.reset(
-          new RemoteDebuggingServer("127.0.0.1", static_cast<uint16>(port)));
-    else
-      DLOG(WARNING) << "Invalid http debugger port number " << port;
-  }
+  auto command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kRemoteDebuggingPort))
+    devtools_http_handler_.reset(DevToolsManagerDelegate::CreateHttpHandler());
 }
 
 void BrowserMainParts::PostMainMessageLoopRun() {

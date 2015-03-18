@@ -8,8 +8,8 @@
 #include "base/bind.h"
 #include "base/stl_util.h"
 #include "base/strings/sys_string_conversions.h"
+#include "content/public/common/platform_notification_data.h"
 #include "content/public/browser/desktop_notification_delegate.h"
-#include "content/public/common/show_desktop_notification_params.h"
 
 #import <Foundation/Foundation.h>
 
@@ -40,12 +40,12 @@ NotificationPresenterMac::~NotificationPresenterMac() {
 }
 
 void NotificationPresenterMac::ShowNotification(
-    const content::ShowDesktopNotificationHostMsgParams& params,
+    const content::PlatformNotificationData& data,
     scoped_ptr<content::DesktopNotificationDelegate> delegate,
     base::Closure* cancel_callback) {
   auto notification = [[NSUserNotification alloc] init];
-  notification.title = base::SysUTF16ToNSString(params.title);
-  notification.informativeText = base::SysUTF16ToNSString(params.body);
+  notification.title = base::SysUTF16ToNSString(data.title);
+  notification.informativeText = base::SysUTF16ToNSString(data.body);
 
   notifications_map_[delegate.get()].reset(notification);
   [NSUserNotificationCenter.defaultUserNotificationCenter deliverNotification:notification];

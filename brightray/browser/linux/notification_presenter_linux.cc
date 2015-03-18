@@ -9,7 +9,7 @@
 #include "base/logging.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/desktop_notification_delegate.h"
-#include "content/public/common/show_desktop_notification_params.h"
+#include "content/public/common/platform_notification_data.h"
 #include "common/application_info.h"
 
 namespace brightray {
@@ -51,11 +51,11 @@ NotificationPresenterLinux::~NotificationPresenterLinux() {
 }
 
 void NotificationPresenterLinux::ShowNotification(
-    const content::ShowDesktopNotificationHostMsgParams& params,
+    const content::PlatformNotificationData& data,
     scoped_ptr<content::DesktopNotificationDelegate> delegate_ptr,
     base::Closure* cancel_callback) {
-  std::string title = base::UTF16ToUTF8(params.title);
-  std::string body = base::UTF16ToUTF8(params.body);
+  std::string title = base::UTF16ToUTF8(data.title);
+  std::string body = base::UTF16ToUTF8(data.body);
   NotifyNotification* notification = notify_notification_new(title.c_str(), body.c_str(), nullptr);
 
   content::DesktopNotificationDelegate* delegate = delegate_ptr.release();

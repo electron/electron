@@ -142,7 +142,7 @@ net::HostResolver* URLRequestContextGetter::host_resolver() {
 net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
 
-  const CommandLine& command_line = *CommandLine::ForCurrentProcess();
+  auto& command_line = *base::CommandLine::ForCurrentProcess();
   if (!url_request_context_.get()) {
     url_request_context_.reset(new net::URLRequestContext);
     network_delegate_.reset(delegate_->CreateNetworkDelegate());

@@ -23,7 +23,7 @@ class MediaStreamDevicesController {
 
   // Explicitly accept or deny the request.
   void Accept();
-  void Deny();
+  void Deny(content::MediaStreamRequestResult result);
 
  private:
   // Handle the request of desktop or tab screen cast.

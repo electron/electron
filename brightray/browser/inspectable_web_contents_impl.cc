@@ -162,7 +162,7 @@ void InspectableWebContentsImpl::ShowDevTools() {
 
     agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(web_contents_.get());
     frontend_host_.reset(content::DevToolsFrontendHost::Create(
-        web_contents_->GetRenderViewHost(), this));
+        web_contents_->GetMainFrame(), this));
     agent_host_->AttachClient(this);
 
     GURL devtools_url(base::StringPrintf(kChromeUIDevToolsURL, can_dock_ ? "true" : ""));
@@ -243,7 +243,7 @@ void InspectableWebContentsImpl::AppendToFile(
 
 void InspectableWebContentsImpl::RequestFileSystems() {
     devtools_web_contents()->GetMainFrame()->ExecuteJavaScript(
-        base::ASCIIToUTF16("InspectorFrontendAPI.fileSystemsLoaded([])"));
+        base::ASCIIToUTF16("DevToolsAPI.fileSystemsLoaded([])"));
 }
 
 void InspectableWebContentsImpl::AddFileSystem() {
@@ -296,7 +296,7 @@ void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(const std::st
   std::string error = embedder_message_dispatcher_->Dispatch(method, &params);
   if (id) {
     std::string ack = base::StringPrintf(
-        "InspectorFrontendAPI.embedderMessageAck(%d, \"%s\");", id, error.c_str());
+        "DevToolsAPI.embedderMessageAck(%d, \"%s\");", id, error.c_str());
     devtools_web_contents()->GetMainFrame()->ExecuteJavaScript(base::UTF8ToUTF16(ack));
   }
 }
@@ -308,7 +308,7 @@ void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontendToBackend(
 
 void InspectableWebContentsImpl::DispatchProtocolMessage(
     content::DevToolsAgentHost* agent_host, const std::string& message) {
-  std::string code = "InspectorFrontendAPI.dispatchMessage(" + message + ");";
+  std::string code = "DevToolsAPI.dispatchMessage(" + message + ");";
   base::string16 javascript = base::UTF8ToUTF16(code);
   web_contents()->GetMainFrame()->ExecuteJavaScript(javascript);
 }
@@ -317,10 +317,11 @@ void InspectableWebContentsImpl::AgentHostClosed(
     content::DevToolsAgentHost* agent_host, bool replaced) {
 }
 
-void InspectableWebContentsImpl::AboutToNavigateRenderView(
-    content::RenderViewHost* render_view_host) {
-  frontend_host_.reset(content::DevToolsFrontendHost::Create(
-      render_view_host, this));
+void InspectableWebContentsImpl::AboutToNavigateRenderFrame(
+    content::RenderFrameHost* new_host) {
+  if (new_host->GetParent())
+    return;
+  frontend_host_.reset(content::DevToolsFrontendHost::Create(new_host, this));
 }
 
 void InspectableWebContentsImpl::DidFinishLoad(content::RenderFrameHost* render_frame_host,
@@ -355,6 +356,7 @@ bool InspectableWebContentsImpl::AddMessageToConsole(
 bool InspectableWebContentsImpl::ShouldCreateWebContents(
     content::WebContents* web_contents,
     int route_id,
+    int main_frame_route_id,
     WindowContainerType window_container_type,
     const base::string16& frame_name,
     const GURL& target_url,

@@ -9,6 +9,10 @@
 #include "base/memory/scoped_ptr.h"
 #include "content/public/browser/browser_main_parts.h"
 
+namespace content {
+class DevToolsHttpHandler;
+}
+
 #if defined(TOOLKIT_VIEWS)
 namespace brightray {
 class ViewsDelegate;
@@ -25,7 +29,6 @@ namespace brightray {
 
 class BrowserContext;
 class WebUIControllerFactory;
-class RemoteDebuggingServer;
 
 class BrowserMainParts : public content::BrowserMainParts {
  public:
@@ -58,7 +61,7 @@ class BrowserMainParts : public content::BrowserMainParts {
 
   scoped_ptr<BrowserContext> browser_context_;
   scoped_ptr<WebUIControllerFactory> web_ui_controller_factory_;
-  scoped_ptr<RemoteDebuggingServer> remote_debugging_server_;
+  scoped_ptr<content::DevToolsHttpHandler> devtools_http_handler_;
 
 #if defined(TOOLKIT_VIEWS)
   scoped_ptr<ViewsDelegate> views_delegate_;
