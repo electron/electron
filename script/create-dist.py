@@ -43,6 +43,8 @@ TARGET_BINARIES = {
     'ui_resources_200_percent.pak',
     'vccorlib120.dll',
     'xinput1_3.dll',
+    'natives_blob.bin',
+    'snapshot_blob.bin',
   ],
   'linux': [
     'atom',
@@ -50,6 +52,8 @@ TARGET_BINARIES = {
     'icudtl.dat',
     'libchromiumcontent.so',
     'libffmpegsumo.so',
+    'natives_blob.bin',
+    'snapshot_blob.bin',
   ],
 }
 TARGET_DIRECTORIES = {
