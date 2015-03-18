@@ -52,10 +52,10 @@
 #include "native_mate/dictionary.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/geometry/size_conversions.h"
-#include "ui/gfx/point.h"
-#include "ui/gfx/rect.h"
+#include "ui/gfx/geometry/point.h"
+#include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/screen.h"
-#include "ui/gfx/size.h"
+#include "ui/gfx/geometry/size.h"
 
 #if defined(OS_WIN)
 #include "ui/gfx/switches.h"
@@ -77,7 +77,6 @@ namespace {
 const char* kWebRuntimeFeatures[] = {
   switches::kExperimentalFeatures,
   switches::kExperimentalCanvasFeatures,
-  switches::kSubpixelFontScaling,
   switches::kOverlayScrollbars,
   switches::kOverlayFullscreenVideo,
   switches::kSharedWorker,
@@ -515,6 +514,7 @@ void NativeWindow::NotifyWindowLeaveFullScreen() {
 bool NativeWindow::ShouldCreateWebContents(
     content::WebContents* web_contents,
     int route_id,
+    int main_frame_route_id,
     WindowContainerType window_container_type,
     const base::string16& frame_name,
     const GURL& target_url,
@@ -568,7 +568,8 @@ content::WebContents* NativeWindow::OpenURLFromTab(
   return source;
 }
 
-content::JavaScriptDialogManager* NativeWindow::GetJavaScriptDialogManager() {
+content::JavaScriptDialogManager* NativeWindow::GetJavaScriptDialogManager(
+    content::WebContents* source) {
   if (!dialog_manager_)
     dialog_manager_.reset(new AtomJavaScriptDialogManager);
 
@@ -730,7 +731,7 @@ void NativeWindow::DevToolsSaveToFile(const std::string& url,
     base::FilePath default_path(base::FilePath::FromUTF8Unsafe(url));
     if (!file_dialog::ShowSaveDialog(this, url, default_path, filters, &path)) {
       base::StringValue url_value(url);
-      CallDevToolsFunction("InspectorFrontendAPI.canceledSaveURL", &url_value);
+      CallDevToolsFunction("DevToolsAPI.canceledSaveURL", &url_value);
       return;
     }
   }
@@ -740,7 +741,7 @@ void NativeWindow::DevToolsSaveToFile(const std::string& url,
 
   // Notify devtools.
   base::StringValue url_value(url);
-  CallDevToolsFunction("InspectorFrontendAPI.savedURL", &url_value);
+  CallDevToolsFunction("DevToolsAPI.savedURL", &url_value);
 }
 
 void NativeWindow::DevToolsAppendToFile(const std::string& url,
@@ -752,7 +753,7 @@ void NativeWindow::DevToolsAppendToFile(const std::string& url,
 
   // Notify devtools.
   base::StringValue url_value(url);
-  CallDevToolsFunction("InspectorFrontendAPI.appendedToURL", &url_value);
+  CallDevToolsFunction("DevToolsAPI.appendedToURL", &url_value);
 }
 
 void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
@@ -778,11 +779,11 @@ void NativeWindow::NotifyWindowUnresponsive() {
 }
 
 void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
-                                     bool succeed,
-                                     const SkBitmap& bitmap) {
+                                     const SkBitmap& bitmap,
+                                     content::ReadbackResponse response) {
   SkAutoLockPixels screen_capture_lock(bitmap);
   std::vector<unsigned char> data;
-  if (succeed)
+  if (response == content::READBACK_SUCCESS)
     gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, true, &data);
   callback.Run(data);
 }

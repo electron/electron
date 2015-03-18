@@ -10,6 +10,7 @@
 #include "atom/common/node_bindings.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_render_view_observer.h"
+#include "atom/renderer/guest_view_container.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/common/content_constants.h"
@@ -149,6 +150,17 @@ bool AtomRendererClient::ShouldFork(blink::WebFrame* frame,
   return http_method == "GET";
 }
 
+content::BrowserPluginDelegate* AtomRendererClient::CreateBrowserPluginDelegate(
+    content::RenderFrame* render_frame,
+    const std::string& mime_type,
+    const GURL& original_url) {
+  if (mime_type == content::kBrowserPluginMimeType) {
+    return new GuestViewContainer(render_frame);
+  } else {
+    return nullptr;
+  }
+}
+
 void AtomRendererClient::EnableWebRuntimeFeatures() {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   bool b;
@@ -156,8 +168,6 @@ void AtomRendererClient::EnableWebRuntimeFeatures() {
     blink::WebRuntimeFeatures::enableExperimentalFeatures(b);
   if (IsSwitchEnabled(command_line, switches::kExperimentalCanvasFeatures, &b))
     blink::WebRuntimeFeatures::enableExperimentalCanvasFeatures(b);
-  if (IsSwitchEnabled(command_line, switches::kSubpixelFontScaling, &b))
-    blink::WebRuntimeFeatures::enableSubpixelFontScaling(b);
   if (IsSwitchEnabled(command_line, switches::kOverlayScrollbars, &b))
     blink::WebRuntimeFeatures::enableOverlayScrollbars(b);
   if (IsSwitchEnabled(command_line, switches::kOverlayFullscreenVideo, &b))

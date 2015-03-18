@@ -1,14 +1,11 @@
 window.onload = ->
+  inspectorFrame = document.getElementById('inspector-app-iframe').contentWindow
+
   # Use menu API to show context menu.
-  InspectorFrontendHost.showContextMenuAtPoint = (x, y, items, document) ->
-    createMenu items
+  inspectorFrame.eval 'InspectorFrontendHost.showContextMenuAtPoint = parent.createMenu'
 
   # Use dialog API to override file chooser dialog.
-  WebInspector.createFileSelectorElement = (callback) ->
-    fileSelectorElement = document.createElement 'span'
-    fileSelectorElement.style.display = 'none'
-    fileSelectorElement.click = showFileChooserDialog.bind this, callback
-    return fileSelectorElement
+  inspectorFrame.eval 'WebInspector.createFileSelectorElement = parent.createFileSelectorElement'
 
 convertToMenuTemplate = (items) ->
   template = []
@@ -32,11 +29,11 @@ convertToMenuTemplate = (items) ->
           label: item.label
           enabled: item.enabled
       if item.id?
-        transformed.click = -> InspectorFrontendAPI.contextMenuItemSelected item.id
+        transformed.click = -> DevToolsAPI.contextMenuItemSelected item.id
       template.push transformed
   template
 
-createMenu = (items) ->
+createMenu = (x, y, items, document) ->
   remote = require 'remote'
   Menu = remote.require 'menu'
 
@@ -44,7 +41,7 @@ createMenu = (items) ->
   # The menu is expected to show asynchronously.
   setImmediate ->
     menu.popup remote.getCurrentWindow()
-    InspectorFrontendAPI.contextMenuCleared()
+    DevToolsAPI.contextMenuCleared()
 
 showFileChooserDialog = (callback) ->
   remote = require 'remote'
@@ -57,3 +54,13 @@ pathToHtml5FileObject = (path) ->
   blob = new Blob([fs.readFileSync(path)])
   blob.name = path
   blob
+
+createFileSelectorElement = (callback) ->
+  fileSelectorElement = document.createElement 'span'
+  fileSelectorElement.style.display = 'none'
+  fileSelectorElement.click = showFileChooserDialog.bind this, callback
+  return fileSelectorElement
+
+# Exposed for iframe.
+window.createMenu = createMenu
+window.createFileSelectorElement = createFileSelectorElement

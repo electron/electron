@@ -5,6 +5,8 @@
 #include "atom/app/atom_library_main.h"
 
 #include "atom/app/atom_main_delegate.h"
+#include "atom/app/node_main.h"
+#include "base/at_exit.h"
 #include "base/i18n/icu_util.h"
 #include "base/mac/bundle_locations.h"
 #include "brightray/common/mac/main_application_bundle.h"
@@ -19,12 +21,14 @@ int AtomMain(int argc, const char* argv[]) {
   return content::ContentMain(params);
 }
 
-void AtomInitializeICU() {
+int AtomInitializeICUandStartNode(int argc, char *argv[]) {
+  base::AtExitManager atexit_manager;
   base::mac::SetOverrideFrameworkBundlePath(
       brightray::MainApplicationBundlePath()
           .Append("Contents")
           .Append("Frameworks")
           .Append(PRODUCT_NAME " Framework.framework"));
   base::i18n::InitializeICU();
+  return atom::NodeMain(argc, argv);
 }
 #endif  // OS_MACOSX

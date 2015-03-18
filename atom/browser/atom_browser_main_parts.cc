@@ -93,7 +93,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   brightray::BrowserMainParts::PreMainMessageLoopRun();
 
 #if defined(USE_X11)
-  libgtk2ui::GtkInitFromCommandLine(*CommandLine::ForCurrentProcess());
+  libgtk2ui::GtkInitFromCommandLine(*base::CommandLine::ForCurrentProcess());
 #endif
 
 #if !defined(OS_MACOSX)

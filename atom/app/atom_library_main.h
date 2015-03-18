@@ -13,7 +13,7 @@ __attribute__((visibility("default")))
 int AtomMain(int argc, const char* argv[]);
 
 __attribute__((visibility("default")))
-void AtomInitializeICU();
+int AtomInitializeICUandStartNode(int argc, char *argv[]);
 }
 #endif  // OS_MACOSX
 

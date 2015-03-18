@@ -238,11 +238,12 @@ mate::Handle<App> App::Create(v8::Isolate* isolate) {
 namespace {
 
 void AppendSwitch(const std::string& switch_string, mate::Arguments* args) {
+  auto command_line = base::CommandLine::ForCurrentProcess();
   std::string value;
   if (args->GetNext(&value))
-    CommandLine::ForCurrentProcess()->AppendSwitchASCII(switch_string, value);
+    command_line->AppendSwitchASCII(switch_string, value);
   else
-    CommandLine::ForCurrentProcess()->AppendSwitch(switch_string);
+    command_line->AppendSwitch(switch_string);
 }
 
 #if defined(OS_MACOSX)
@@ -263,13 +264,13 @@ void DockSetMenu(atom::api::Menu* menu) {
 void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
                 v8::Handle<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  CommandLine* command_line = CommandLine::ForCurrentProcess();
+  auto command_line = base::CommandLine::ForCurrentProcess();
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("app", atom::api::App::Create(isolate));
   dict.SetMethod("appendSwitch", &AppendSwitch);
   dict.SetMethod("appendArgument",
-                 base::Bind(&CommandLine::AppendArg,
+                 base::Bind(&base::CommandLine::AppendArg,
                             base::Unretained(command_line)));
 #if defined(OS_MACOSX)
   auto browser = base::Unretained(Browser::Get());

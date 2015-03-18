@@ -57,6 +57,7 @@ REFERENCE_MODULE(tls_wrap);
 REFERENCE_MODULE(tty_wrap);
 REFERENCE_MODULE(udp_wrap);
 REFERENCE_MODULE(uv);
+REFERENCE_MODULE(js_stream);
 // Atom Shell's builtin modules.
 REFERENCE_MODULE(atom_browser_app);
 REFERENCE_MODULE(atom_browser_auto_updater);
@@ -112,7 +113,8 @@ std::vector<std::string> String16VectorToStringVector(
 }
 #endif
 
-base::FilePath GetResourcesPath(CommandLine* command_line, bool is_browser) {
+base::FilePath GetResourcesPath(base::CommandLine* command_line,
+                                bool is_browser) {
   base::FilePath exec_path(command_line->argv()[0]);
   PathService::Get(base::FILE_EXE, &exec_path);
   base::FilePath resources_path =
@@ -165,7 +167,7 @@ void NodeBindings::Initialize() {
 
 node::Environment* NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context) {
-  CommandLine* command_line = CommandLine::ForCurrentProcess();
+  auto command_line = base::CommandLine::ForCurrentProcess();
   std::vector<std::string> args =
 #if defined(OS_WIN)
       String16VectorToStringVector(command_line->argv());

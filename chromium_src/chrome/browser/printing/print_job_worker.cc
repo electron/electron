@@ -192,6 +192,7 @@ void PrintJobWorker::GetSettingsWithUI(
   printing_context_->AskUserForSettings(
       document_page_count,
       has_selection,
+      false,
       base::Bind(&PrintJobWorker::GetSettingsWithUIDone,
                  base::Unretained(this)));
 }

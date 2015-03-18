@@ -130,21 +130,16 @@ void PrintWebViewHelper::PrintPageInternal(
                                           &content_area);
   gfx::Rect canvas_area = content_area;
 
-  SkBaseDevice* device = metafile->StartPageForVectorCanvas(page_size,
-                                                            canvas_area,
-                                                            scale_factor);
-  if (!device)
+  skia::PlatformCanvas* canvas = metafile->GetVectorCanvasForNewPage(
+      page_size, canvas_area, scale_factor);
+  if (!canvas)
     return;
 
-  // The printPage method take a reference to the canvas we pass down, so it
-  // can't be a stack object.
-  skia::RefPtr<skia::VectorCanvas> canvas =
-      skia::AdoptRef(new skia::VectorCanvas(device));
   MetafileSkiaWrapper::SetMetafileOnCanvas(*canvas, metafile);
   skia::SetIsDraftMode(*canvas, is_print_ready_metafile_sent_);
 
   RenderPageContent(frame, params.page_number, canvas_area, content_area,
-                    scale_factor, canvas.get());
+                    scale_factor, canvas);
 
   // Done printing. Close the device context to retrieve the compiled metafile.
   if (!metafile->FinishPage())

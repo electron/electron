@@ -62,31 +62,26 @@ namespace {
 
 void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
                 v8::Handle<v8::Context> context, void* priv) {
-  TracingController* controller = TracingController::GetInstance();
+  auto controller = base::Unretained(TracingController::GetInstance());
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("getCategories", base::Bind(
-      &TracingController::GetCategories, base::Unretained(controller)));
+      &TracingController::GetCategories, controller));
   dict.SetMethod("startRecording", base::Bind(
-      &TracingController::EnableRecording, base::Unretained(controller)));
+      &TracingController::EnableRecording, controller));
   dict.SetMethod("stopRecording", base::Bind(
-      &TracingController::DisableRecording,
-      base::Unretained(controller),
-      nullptr));
+      &TracingController::DisableRecording, controller, nullptr));
   dict.SetMethod("startMonitoring", base::Bind(
-      &TracingController::EnableMonitoring, base::Unretained(controller)));
+      &TracingController::EnableMonitoring, controller));
   dict.SetMethod("stopMonitoring", base::Bind(
-      &TracingController::DisableMonitoring, base::Unretained(controller)));
+      &TracingController::DisableMonitoring, controller));
   dict.SetMethod("captureMonitoringSnapshot", base::Bind(
-      &TracingController::CaptureMonitoringSnapshot,
-      base::Unretained(controller),
-      nullptr));
-  dict.SetMethod("getTraceBufferPercentFull", base::Bind(
-      &TracingController::GetTraceBufferPercentFull,
-      base::Unretained(controller)));
+      &TracingController::CaptureMonitoringSnapshot, controller, nullptr));
+  dict.SetMethod("getTraceBufferUsage", base::Bind(
+      &TracingController::GetTraceBufferUsage, controller));
   dict.SetMethod("setWatchEvent", base::Bind(
-      &TracingController::SetWatchEvent, base::Unretained(controller)));
+      &TracingController::SetWatchEvent, controller));
   dict.SetMethod("cancelWatchEvent", base::Bind(
-      &TracingController::CancelWatchEvent, base::Unretained(controller)));
+      &TracingController::CancelWatchEvent, controller));
 }
 
 }  // namespace

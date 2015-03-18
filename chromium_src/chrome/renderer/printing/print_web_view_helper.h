@@ -19,7 +19,7 @@
 #include "third_party/WebKit/public/platform/WebCanvas.h"
 #include "third_party/WebKit/public/web/WebNode.h"
 #include "third_party/WebKit/public/web/WebPrintParams.h"
-#include "ui/gfx/size.h"
+#include "ui/gfx/geometry/size.h"
 
 struct PrintMsg_Print_Params;
 struct PrintMsg_PrintPage_Params;

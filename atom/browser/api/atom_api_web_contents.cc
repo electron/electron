@@ -56,6 +56,7 @@ WebContents::WebContents(content::WebContents* web_contents)
       guest_instance_id_(-1),
       element_instance_id_(-1),
       guest_opaque_(true),
+      guest_sizer_(nullptr),
       auto_size_enabled_(false) {
 }
 
@@ -63,6 +64,7 @@ WebContents::WebContents(const mate::Dictionary& options)
     : guest_instance_id_(-1),
       element_instance_id_(-1),
       guest_opaque_(true),
+      guest_sizer_(nullptr),
       auto_size_enabled_(false) {
   options.Get("guestInstanceId", &guest_instance_id_);
 
@@ -96,6 +98,7 @@ bool WebContents::AddMessageToConsole(content::WebContents* source,
 bool WebContents::ShouldCreateWebContents(
     content::WebContents* web_contents,
     int route_id,
+    int main_frame_route_id,
     WindowContainerType window_container_type,
     const base::string16& frame_name,
     const GURL& target_url,
@@ -222,7 +225,7 @@ void WebContents::DidStopLoading(content::RenderViewHost* render_view_host) {
 }
 
 void WebContents::DidGetRedirectForResourceRequest(
-    content::RenderViewHost* render_view_host,
+    content::RenderFrameHost* render_frame_host,
     const content::ResourceRedirectDetails& details) {
   Emit("did-get-redirect-request",
        details.url,
@@ -284,9 +287,16 @@ void WebContents::DidAttach(int guest_proxy_routing_id) {
   Emit("did-attach");
 }
 
-void WebContents::ElementSizeChanged(const gfx::Size& old_size,
-                                     const gfx::Size& new_size) {
-  element_size_ = new_size;
+void WebContents::ElementSizeChanged(const gfx::Size& size) {
+  element_size_ = size;
+
+  // Only resize if needed.
+  if (!size.IsEmpty())
+    guest_sizer_->SizeContents(size);
+}
+
+content::WebContents* WebContents::GetOwnerWebContents() const {
+  return embedder_web_contents_;
 }
 
 void WebContents::GuestSizeChanged(const gfx::Size& old_size,
@@ -302,10 +312,15 @@ void WebContents::RegisterDestructionCallback(
   destruction_callback_ = callback;
 }
 
+void WebContents::SetGuestSizer(content::GuestSizer* guest_sizer) {
+  guest_sizer_ = guest_sizer;
+}
+
 void WebContents::WillAttach(content::WebContents* embedder_web_contents,
-                             int browser_plugin_instance_id) {
+                             int element_instance_id,
+                             bool is_full_page_plugin) {
   embedder_web_contents_ = embedder_web_contents;
-  element_instance_id_ = browser_plugin_instance_id;
+  element_instance_id_ = element_instance_id;
 }
 
 void WebContents::Destroy() {

@@ -20,6 +20,7 @@
 #include "brightray/browser/inspectable_web_contents_impl.h"
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
+#include "content/public/browser/readback_types.h"
 #include "native_mate/persistent_dictionary.h"
 #include "ui/gfx/image/image.h"
 
@@ -235,6 +236,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   bool ShouldCreateWebContents(
       content::WebContents* web_contents,
       int route_id,
+      int main_frame_route_id,
       WindowContainerType window_container_type,
       const base::string16& frame_name,
       const GURL& target_url,
@@ -243,7 +245,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
-  content::JavaScriptDialogManager* GetJavaScriptDialogManager() override;
+  content::JavaScriptDialogManager* GetJavaScriptDialogManager(
+      content::WebContents* source) override;
   void BeforeUnloadFired(content::WebContents* tab,
                          bool proceed,
                          bool* proceed_to_fire_unload) override;
@@ -314,8 +317,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   // Called when CapturePage has done.
   void OnCapturePageDone(const CapturePageCallback& callback,
-                         bool succeed,
-                         const SkBitmap& bitmap);
+                         const SkBitmap& bitmap,
+                         content::ReadbackResponse response);
 
   // Notification manager.
   content::NotificationRegistrar registrar_;

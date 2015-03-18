@@ -51,6 +51,10 @@ class AtomRendererClient : public content::ContentRendererClient,
                   bool is_initial_navigation,
                   bool is_server_redirect,
                   bool* send_referrer) override;
+  content::BrowserPluginDelegate* CreateBrowserPluginDelegate(
+      content::RenderFrame* render_frame,
+      const std::string& mime_type,
+      const GURL& original_url) override;
 
   void EnableWebRuntimeFeatures();
 

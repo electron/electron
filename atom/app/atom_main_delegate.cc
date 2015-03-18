@@ -59,7 +59,7 @@ void AtomMainDelegate::PreSandboxStartup() {
   if (!env->HasVar("GOOGLE_API_KEY"))
     env->SetVar("GOOGLE_API_KEY", GOOGLEAPIS_API_KEY);
 
-  CommandLine* command_line = CommandLine::ForCurrentProcess();
+  auto command_line = base::CommandLine::ForCurrentProcess();
   std::string process_type = command_line->GetSwitchValueASCII(
       switches::kProcessType);
 

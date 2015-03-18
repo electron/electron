@@ -184,16 +184,11 @@ void PrintWebViewHelper::PrintPageInternal(
       frame->getPrintPageShrink(params.page_number);
   float scale_factor = css_scale_factor * webkit_page_shrink_factor;
 
-  SkBaseDevice* device = metafile->StartPageForVectorCanvas(page_size,
-                                                            canvas_area,
-                                                            scale_factor);
-  if (!device)
+  skia::PlatformCanvas* canvas = metafile->GetVectorCanvasForNewPage(
+      page_size, canvas_area, scale_factor);
+  if (!canvas)
     return;
 
-  // The printPage method take a reference to the canvas we pass down, so it
-  // can't be a stack object.
-  skia::RefPtr<skia::VectorCanvas> canvas =
-      skia::AdoptRef(new skia::VectorCanvas(device));
   MetafileSkiaWrapper::SetMetafileOnCanvas(*canvas, metafile);
   skia::SetIsDraftMode(*canvas, is_print_ready_metafile_sent_);
 
@@ -215,7 +210,7 @@ void PrintWebViewHelper::PrintPageInternal(
                                                 canvas_area,
                                                 content_area,
                                                 scale_factor,
-                                                canvas.get());
+                                                canvas);
   DCHECK_GT(webkit_scale_factor, 0.0f);
   // Done printing. Close the device context to retrieve the compiled metafile.
   if (!metafile->FinishPage())

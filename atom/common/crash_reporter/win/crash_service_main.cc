@@ -39,8 +39,8 @@ bool GetCrashServiceDirectory(const std::wstring& application_name,
 int Main(const wchar_t* cmd) {
   // Initialize all Chromium things.
   base::AtExitManager exit_manager;
-  CommandLine::Init(0, NULL);
-  CommandLine& cmd_line = *CommandLine::ForCurrentProcess();
+  base::CommandLine::Init(0, NULL);
+  base::CommandLine& cmd_line = *base::CommandLine::ForCurrentProcess();
 
   // Use the application's name as pipe name and output directory.
   if (!cmd_line.HasSwitch(kApplicationName)) {

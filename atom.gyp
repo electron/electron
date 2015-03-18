@@ -65,6 +65,8 @@
       'atom/app/atom_main_delegate.cc',
       'atom/app/atom_main_delegate.h',
       'atom/app/atom_main_delegate_mac.mm',
+      'atom/app/node_main.cc',
+      'atom/app/node_main.h',
       'atom/browser/api/atom_api_app.cc',
       'atom/browser/api/atom_api_app.h',
       'atom/browser/api/atom_api_auto_updater.cc',
@@ -114,6 +116,8 @@
       'atom/browser/atom_browser_main_parts_mac.mm',
       'atom/browser/atom_javascript_dialog_manager.cc',
       'atom/browser/atom_javascript_dialog_manager.h',
+      'atom/browser/atom_resource_dispatcher_host_delegate.cc',
+      'atom/browser/atom_resource_dispatcher_host_delegate.h',
       'atom/browser/atom_speech_recognition_manager_delegate.cc',
       'atom/browser/atom_speech_recognition_manager_delegate.h',
       'atom/browser/browser.cc',
@@ -277,6 +281,8 @@
       'atom/renderer/atom_render_view_observer.h',
       'atom/renderer/atom_renderer_client.cc',
       'atom/renderer/atom_renderer_client.h',
+      'atom/renderer/guest_view_container.cc',
+      'atom/renderer/guest_view_container.h',
       'chromium_src/chrome/browser/browser_process.cc',
       'chromium_src/chrome/browser/browser_process.h',
       'chromium_src/chrome/browser/chrome_notification_types.h',
@@ -492,6 +498,8 @@
                 '<(libchromiumcontent_resources_dir)/content_resources_200_percent.pak',
                 '<(libchromiumcontent_resources_dir)/content_shell.pak',
                 '<(libchromiumcontent_resources_dir)/ui_resources_200_percent.pak',
+                '<(libchromiumcontent_resources_dir)/natives_blob.bin',
+                '<(libchromiumcontent_resources_dir)/snapshot_blob.bin',
                 'external_binaries/d3dcompiler_46.dll',
                 'external_binaries/msvcp120.dll',
                 'external_binaries/msvcr120.dll',
@@ -516,6 +524,8 @@
                 '<(libchromiumcontent_library_dir)/libffmpegsumo.so',
                 '<(libchromiumcontent_resources_dir)/icudtl.dat',
                 '<(libchromiumcontent_resources_dir)/content_shell.pak',
+                '<(libchromiumcontent_resources_dir)/natives_blob.bin',
+                '<(libchromiumcontent_resources_dir)/snapshot_blob.bin',
               ],
             },
             {
@@ -542,6 +552,9 @@
         'SK_SUPPORT_LEGACY_GETTOPDEVICE',
         # Disable warnings for g_settings_list_schemas.
         'GLIB_DISABLE_DEPRECATION_WARNINGS',
+        # Defined in Chromium but not exposed in its gyp file.
+        'V8_USE_EXTERNAL_STARTUP_DATA',
+        'ENABLE_PLUGINS',
       ],
       'sources': [
         '<@(lib_sources)',
@@ -844,6 +857,8 @@
             'atom/common/resources/mac/MainMenu.xib',
             '<(libchromiumcontent_resources_dir)/content_shell.pak',
             '<(libchromiumcontent_resources_dir)/icudtl.dat',
+            '<(libchromiumcontent_resources_dir)/natives_blob.bin',
+            '<(libchromiumcontent_resources_dir)/snapshot_blob.bin',
           ],
           'xcode_settings': {
             'INFOPLIST_FILE': 'atom/common/resources/mac/Info.plist',

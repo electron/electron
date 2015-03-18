@@ -74,7 +74,7 @@ app.once 'ready', ->
     return new protocol.RequestFileJob(path.join(directory, parsed.path))
 
   BrowserWindow::_loadDevToolsExtensions = (extensionInfoArray) ->
-    @devToolsWebContents?.executeJavaScript "WebInspector.addExtensions(#{JSON.stringify(extensionInfoArray)});"
+    @devToolsWebContents?.executeJavaScript "DevToolsAPI.addExtensions(#{JSON.stringify(extensionInfoArray)});"
 
   BrowserWindow.addDevToolsExtension = (srcDirectory) ->
     extensionInfo = getExtensionInfoFromPath srcDirectory
