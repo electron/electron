@@ -54,6 +54,10 @@ HICON ViewsDelegate::GetDefaultWindowIcon() const {
   return LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(1  /* IDR_MAINFRAME */));
 }
 
+HICON ViewsDelegate::GetSmallWindowIcon() const {
+  return GetDefaultWindowIcon();
+}
+
 bool ViewsDelegate::IsWindowInMetro(gfx::NativeWindow window) const {
   return false;
 }
