@@ -7,7 +7,7 @@
 * [Using Selenium and WebDriver](tutorial/using-selenium-and-webdriver.md)
 * [DevTools extension](tutorial/devtools-extension.md)
 
-## Tutorial
+## Tutorials
 
 * [Quick start](tutorial/quick-start.md)
 * [Desktop environment integration](tutorial/desktop-environment-integration.md)
