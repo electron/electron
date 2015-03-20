@@ -362,6 +362,12 @@ describe 'asar package', ->
         assert.equal data, 'file1\n'
         done()
 
+    it 'can request a file in package with unpacked files', (done) ->
+      p = path.resolve fixtures, 'asar', 'unpack.asar', 'a.txt'
+      $.get "file://#{p}", (data) ->
+        assert.equal data, 'a\n'
+        done()
+
     it 'can request a linked file in package', (done) ->
       p = path.resolve fixtures, 'asar', 'a.asar', 'link2', 'link1'
       $.get "file://#{p}", (data) ->
@@ -431,3 +437,8 @@ describe 'asar package', ->
       p = path.join fixtures, 'asar', 'logo.asar', 'logo.png'
       logo = require('native-image').createFromPath p
       assert.deepEqual logo.getSize(), {width: 55, height: 55}
+
+    it 'reads image from asar archive with unpacked files', ->
+      p = path.join fixtures, 'asar', 'unpack.asar', 'atom.png'
+      logo = require('native-image').createFromPath p
+      assert.deepEqual logo.getSize(), {width: 1024, height: 1024}
