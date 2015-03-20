@@ -71,6 +71,13 @@ bool ReadFileToString(const base::FilePath& path, std::string* contents) {
   if (!archive->GetFileInfo(relative_path, &info))
     return false;
 
+  if (info.unpacked) {
+    base::FilePath real_path;
+    // For unpacked file it will return the real path instead of doing the copy.
+    archive->CopyFileOut(relative_path, &real_path);
+    return base::ReadFileToString(real_path, contents);
+  }
+
   base::File src(asar_path, base::File::FLAG_OPEN | base::File::FLAG_READ);
   if (!src.IsValid())
     return false;

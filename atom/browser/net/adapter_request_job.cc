@@ -100,32 +100,13 @@ void AdapterRequestJob::CreateBufferJobAndStart(const std::string& mime_type,
 
 void AdapterRequestJob::CreateFileJobAndStart(const base::FilePath& path) {
   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
-
-  base::FilePath asar_path, relative_path;
-  if (!asar::GetAsarArchivePath(path, &asar_path, &relative_path)) {
-    real_job_ = new net::URLRequestFileJob(
-        request(),
-        network_delegate(),
-        path,
-        content::BrowserThread::GetBlockingPool()->
-            GetTaskRunnerWithShutdownBehavior(
-                base::SequencedWorkerPool::SKIP_ON_SHUTDOWN));
-  } else {
-    auto archive = asar::GetOrCreateAsarArchive(asar_path);
-    if (archive)
-      real_job_ = new asar::URLRequestAsarJob(
-          request(),
-          network_delegate(),
-          archive,
-          relative_path,
-          content::BrowserThread::GetBlockingPool()->
-              GetTaskRunnerWithShutdownBehavior(
-                  base::SequencedWorkerPool::SKIP_ON_SHUTDOWN));
-    else
-      real_job_ = new net::URLRequestErrorJob(
-          request(), network_delegate(), net::ERR_FILE_NOT_FOUND);
-  }
-
+  real_job_ = asar::CreateJobFromPath(
+      path,
+      request(),
+      network_delegate(),
+      content::BrowserThread::GetBlockingPool()->
+          GetTaskRunnerWithShutdownBehavior(
+              base::SequencedWorkerPool::SKIP_ON_SHUTDOWN));
   real_job_->Start();
 }
 

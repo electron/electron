@@ -41,6 +41,7 @@ class Archive : public mate::Wrappable {
       return v8::False(isolate);
     mate::Dictionary dict(isolate, v8::Object::New(isolate));
     dict.Set("size", info.size);
+    dict.Set("unpacked", info.unpacked);
     dict.Set("offset", info.offset);
     return dict.GetHandle();
   }

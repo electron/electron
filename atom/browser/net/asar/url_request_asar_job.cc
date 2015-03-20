@@ -19,10 +19,12 @@ URLRequestAsarJob::URLRequestAsarJob(
     net::NetworkDelegate* network_delegate,
     std::shared_ptr<Archive> archive,
     const base::FilePath& file_path,
+    const Archive::FileInfo& file_info,
     const scoped_refptr<base::TaskRunner>& file_task_runner)
     : net::URLRequestJob(request, network_delegate),
       archive_(archive),
       file_path_(file_path),
+      file_info_(file_info),
       stream_(new net::FileStream(file_task_runner)),
       remaining_bytes_(0),
       file_task_runner_(file_task_runner),
@@ -31,12 +33,6 @@ URLRequestAsarJob::URLRequestAsarJob(
 URLRequestAsarJob::~URLRequestAsarJob() {}
 
 void URLRequestAsarJob::Start() {
-  if (!archive_ || !archive_->GetFileInfo(file_path_, &file_info_)) {
-    NotifyDone(net::URLRequestStatus(net::URLRequestStatus::FAILED,
-                                     net::ERR_FILE_NOT_FOUND));
-    return;
-  }
-
   remaining_bytes_ = static_cast<int64>(file_info_.size);
 
   int flags = base::File::FLAG_OPEN |
