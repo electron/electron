@@ -342,11 +342,6 @@ describe 'asar package', ->
           done()
         child.send 'message'
 
-      it 'throws ENOENT error when can not find file', ->
-        p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
-        throws = -> child_process.fork p
-        assert.throws throws, /ENOENT/
-
       it 'supports asar in the forked js', (done) ->
         file = path.join fixtures, 'asar', 'a.asar', 'file1'
         child = child_process.fork path.join(fixtures, 'module', 'asar.js')
