@@ -123,7 +123,6 @@ describe 'protocol module', ->
           assert.equal response.length, data.length
           buf = new Buffer(response.length)
           buf.write(response)
-          console.log buf, data
           assert buf.equals(data)
           protocol.unregisterProtocol 'atom-file-job'
           done()
