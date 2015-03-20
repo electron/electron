@@ -59,8 +59,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
                      public content::WebContentsObserver,
                      public content::NotificationObserver {
  public:
-  typedef base::Callback<void(const std::vector<unsigned char>& buffer)>
-      CapturePageCallback;
+  typedef base::Callback<void(const SkBitmap& bitmap)> CapturePageCallback;
 
   class DialogScope {
    public:

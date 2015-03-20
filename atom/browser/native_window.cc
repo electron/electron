@@ -322,7 +322,7 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
   RenderWidgetHostView* const view = contents->GetRenderWidgetHostView();
   RenderWidgetHost* const host = view ? view->GetRenderWidgetHost() : nullptr;
   if (!view || !host) {
-    callback.Run(std::vector<unsigned char>());
+    callback.Run(SkBitmap());
     return;
   }
 
@@ -781,11 +781,7 @@ void NativeWindow::NotifyWindowUnresponsive() {
 void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
                                      const SkBitmap& bitmap,
                                      content::ReadbackResponse response) {
-  SkAutoLockPixels screen_capture_lock(bitmap);
-  std::vector<unsigned char> data;
-  if (response == content::READBACK_SUCCESS)
-    gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, true, &data);
-  callback.Run(data);
+  callback.Run(bitmap);
 }
 
 void NativeWindow::CallDevToolsFunction(const std::string& function_name,

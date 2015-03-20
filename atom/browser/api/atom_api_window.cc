@@ -53,10 +53,10 @@ namespace {
 void OnCapturePageDone(
     v8::Isolate* isolate,
     const base::Callback<void(const gfx::Image&)>& callback,
-    const std::vector<unsigned char>& data) {
+    const SkBitmap& bitmap) {
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
-  callback.Run(gfx::Image::CreateFrom1xPNGBytes(&data.front(), data.size()));
+  callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
 }  // namespace
