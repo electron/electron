@@ -16,6 +16,16 @@ class RequestStringJob
     @charset = charset ? 'UTF-8'
     @data = String data
 
+protocol.RequestBufferJob =
+class RequestBufferJob
+  constructor: ({mimeType, encoding, data}) ->
+    if not data instanceof Buffer
+      throw new TypeError('Data should be Buffer')
+
+    @mimeType = mimeType ? 'application/octet-stream'
+    @encoding = encoding ? 'utf8'
+    @data = new Buffer(data)
+
 protocol.RequestFileJob =
 class RequestFileJob
   constructor: (@path) ->

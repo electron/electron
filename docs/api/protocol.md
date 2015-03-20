@@ -74,3 +74,12 @@ mime types.
   * `data` String
 
 Create a request job which sends a string as response.
+
+## Class: protocol.RequestBufferJob(options)
+
+* `options` Object
+  * `mimeType` String - Default is `application/octet-stream`
+  * `encoding` String - Default is `UTF-8`
+  * `data` Buffer
+
+Create a request job which accepts a buffer and sends a string as response.

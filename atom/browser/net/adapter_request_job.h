@@ -10,6 +10,7 @@
 #include "base/memory/weak_ptr.h"
 #include "net/url_request/url_request_job.h"
 #include "net/url_request/url_request_job_factory.h"
+#include "v8/include/v8.h"
 
 namespace base {
 class FilePath;
@@ -50,6 +51,9 @@ class AdapterRequestJob : public net::URLRequestJob {
   void CreateStringJobAndStart(const std::string& mime_type,
                                const std::string& charset,
                                const std::string& data);
+  void CreateBufferJobAndStart(const std::string& mime_type,
+                               const std::string& charset,
+                               v8::Local<v8::Object> buffer);
   void CreateFileJobAndStart(const base::FilePath& path);
   void CreateJobFromProtocolHandlerAndStart();
 
