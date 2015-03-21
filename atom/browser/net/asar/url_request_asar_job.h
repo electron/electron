@@ -24,12 +24,20 @@ class FileStream;
 
 namespace asar {
 
+// Createa a request job according to the file path.
+net::URLRequestJob* CreateJobFromPath(
+    const base::FilePath& full_path,
+    net::URLRequest* request,
+    net::NetworkDelegate* network_delegate,
+    const scoped_refptr<base::TaskRunner> file_task_runner);
+
 class URLRequestAsarJob : public net::URLRequestJob {
  public:
   URLRequestAsarJob(net::URLRequest* request,
                     net::NetworkDelegate* network_delegate,
                     std::shared_ptr<Archive> archive,
                     const base::FilePath& file_path,
+                    const Archive::FileInfo& file_info,
                     const scoped_refptr<base::TaskRunner>& file_task_runner);
 
   // net::URLRequestJob:
@@ -55,8 +63,8 @@ class URLRequestAsarJob : public net::URLRequestJob {
   void DidRead(scoped_refptr<net::IOBuffer> buf, int result);
 
   std::shared_ptr<Archive> archive_;
-  Archive::FileInfo file_info_;
   base::FilePath file_path_;
+  Archive::FileInfo file_info_;
 
   scoped_ptr<net::FileStream> stream_;
   int64 remaining_bytes_;

@@ -81,18 +81,22 @@ bool GetNodeFromPath(std::string path,
 bool FillFileInfoWithNode(Archive::FileInfo* info,
                           uint32 header_size,
                           const base::DictionaryValue* node) {
+  int size;
+  if (!node->GetInteger("size", &size))
+    return false;
+  info->size = static_cast<uint32>(size);
+
+  info->unpacked = false;
+  if (node->GetBoolean("unpacked", &info->unpacked) && info->unpacked)
+    return true;
+
   std::string offset;
   if (!node->GetString("offset", &offset))
     return false;
   if (!base::StringToUint64(offset, &info->offset))
     return false;
-
-  int size;
-  if (!node->GetInteger("size", &size))
-    return false;
-
   info->offset += header_size;
-  info->size = static_cast<uint32>(size);
+
   return true;
 }
 
@@ -239,6 +243,11 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
   FileInfo info;
   if (!GetFileInfo(path, &info))
     return false;
+
+  if (info.unpacked) {
+    *out = path_.AddExtension(FILE_PATH_LITERAL("unpacked")).Append(path);
+    return true;
+  }
 
   scoped_ptr<ScopedTemporaryFile> temp_file(new ScopedTemporaryFile);
   if (!temp_file->InitFromFile(path_, info.offset, info.size))

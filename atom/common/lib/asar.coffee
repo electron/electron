@@ -90,7 +90,7 @@ overrideAPI = (module, name, arg = 0) ->
     return callback new Error("Invalid package #{asarPath}") unless archive
 
     newPath = archive.copyFileOut filePath
-    return callback  createNotFoundError(asarPath, filePath) unless newPath
+    return callback createNotFoundError(asarPath, filePath) unless newPath
 
     arguments[arg] = newPath
     old.apply this, arguments
@@ -218,6 +218,10 @@ exports.wrapFsWithAsar = (fs) ->
     info = archive.getFileInfo filePath
     return callback createNotFoundError(asarPath, filePath) unless info
 
+    if info.unpacked
+      realPath = archive.copyFileOut filePath
+      return fs.readFile realPath, options, callback
+
     if not options
       options = encoding: null, flag: 'r'
     else if util.isString options
@@ -246,6 +250,10 @@ exports.wrapFsWithAsar = (fs) ->
 
     info = archive.getFileInfo filePath
     throw createNotFoundError(asarPath, filePath) unless info
+
+    if info.unpacked
+      realPath = archive.copyFileOut filePath
+      return fs.readFileSync realPath, options
 
     if not options
       options = encoding: null, flag: 'r'
@@ -298,4 +306,3 @@ exports.wrapFsWithAsar = (fs) ->
   overrideAPISync process, 'dlopen', 1
   overrideAPISync require('module')._extensions, '.node', 1
   overrideAPISync fs, 'openSync'
-  overrideAPISync child_process, 'fork'

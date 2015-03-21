@@ -25,6 +25,7 @@ class Archive {
  public:
   struct FileInfo {
     FileInfo() : size(0), offset(0) {}
+    bool unpacked;
     uint32 size;
     uint64 offset;
   };
@@ -55,6 +56,7 @@ class Archive {
   bool Realpath(const base::FilePath& path, base::FilePath* realpath);
 
   // Copy the file into a temporary file, and return the new path.
+  // For unpacked file, this method will return its real path.
   bool CopyFileOut(const base::FilePath& path, base::FilePath* out);
 
   base::FilePath path() const { return path_; }
