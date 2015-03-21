@@ -15,6 +15,12 @@ describe 'asar package', ->
         file3 = path.join fixtures, 'asar', 'a.asar', 'file3'
         assert.equal fs.readFileSync(file3).toString(), 'file3\n'
 
+      it 'reads from a empty file', ->
+        file = path.join fixtures, 'asar', 'empty.asar', 'file1'
+        buffer = fs.readFileSync(file)
+        assert.equal buffer.length, 0
+        assert.equal buffer.toString(), ''
+
       it 'reads a linked file', ->
         p = path.join fixtures, 'asar', 'a.asar', 'link1'
         assert.equal fs.readFileSync(p).toString(), 'file1\n'
@@ -36,6 +42,13 @@ describe 'asar package', ->
         fs.readFile p, (err, content) ->
           assert.equal err, null
           assert.equal String(content), 'file1\n'
+          done()
+
+      it 'reads from a empty file', (done) ->
+        p = path.join fixtures, 'asar', 'empty.asar', 'file1'
+        fs.readFile p, (err, content) ->
+          assert.equal err, null
+          assert.equal String(content), ''
           done()
 
       it 'reads a linked file', (done) ->
