@@ -3,8 +3,6 @@ child_process = require 'child_process'
 path = require 'path'
 util = require 'util'
 
-kEmptyBufferLength = 0
-
 # Cache asar archive objects.
 cachedArchives = {}
 getOrCreateArchive = (p) ->
@@ -219,6 +217,7 @@ exports.wrapFsWithAsar = (fs) ->
 
     info = archive.getFileInfo filePath
     return callback createNotFoundError(asarPath, filePath) unless info
+    return callback null, new Buffer(0) if info.size is 0
 
     if info.unpacked
       realPath = archive.copyFileOut filePath
@@ -234,17 +233,12 @@ exports.wrapFsWithAsar = (fs) ->
     flag = options.flag || 'r'
     encoding = options.encoding
 
-    bufferLength = info.size || kEmptyBufferLength
-    buffer = new Buffer(bufferLength)
-
-    if info.size
-      open archive.path, flag, (error, fd) ->
-        return callback error if error
-        fs.read fd, buffer, 0, info.size, info.offset, (error, bytesRead, buf) ->
-          fs.close fd, ->
-            callback error, if encoding then buf.toString encoding, 0 ,bytesRead else buf
-    else
-      callback null, buffer
+    buffer = new Buffer(info.size)
+    open archive.path, flag, (error, fd) ->
+      return callback error if error
+      fs.read fd, buffer, 0, info.size, info.offset, (error) ->
+        fs.close fd, ->
+          callback error, if encoding then buffer.toString encoding else buffer
 
   openSync = fs.openSync
   readFileSync = fs.readFileSync
@@ -257,6 +251,7 @@ exports.wrapFsWithAsar = (fs) ->
 
     info = archive.getFileInfo filePath
     throw createNotFoundError(asarPath, filePath) unless info
+    return new Buffer(0) if info.size is 0
 
     if info.unpacked
       realPath = archive.copyFileOut filePath
@@ -272,20 +267,15 @@ exports.wrapFsWithAsar = (fs) ->
     flag = options.flag || 'r'
     encoding = options.encoding
 
-    bufferLength = info.size || kEmptyBufferLength
-    buffer = new Buffer(bufferLength)
-
-    if info.size
-      fd = openSync archive.path, flag
-      try
-        bytesRead = fs.readSync fd, buffer, 0, info.size, info.offset
-      catch e
-        throw e
-      finally
-        fs.closeSync fd
-      if encoding then buffer.toString encoding, 0, bytesRead else buffer
-    else
-      buffer
+    buffer = new Buffer(info.size)
+    fd = openSync archive.path, flag
+    try
+      fs.readSync fd, buffer, 0, info.size, info.offset
+    catch e
+      throw e
+    finally
+      fs.closeSync fd
+    if encoding then buffer.toString encoding else buffer
 
   readdir = fs.readdir
   fs.readdir = (p, callback) ->
