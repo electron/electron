@@ -29,8 +29,6 @@ def main():
   update_submodules()
   update_node_modules('.')
   bootstrap_brightray(args.url)
-  if sys.platform in ['win32', 'cygwin']:
-    install_runas()
 
   create_chrome_version_h()
   touch_config_gypi()
@@ -95,14 +93,6 @@ def update_win32_python():
   with scoped_cwd(VENDOR_DIR):
     if not os.path.exists('python_26'):
       execute_stdout(['git', 'clone', PYTHON_26_URL])
-
-
-def install_runas():
-  # TODO This is needed by the tools/win/register_msdia80_dll.js, should move
-  # this to a better place.
-  with scoped_cwd(os.path.join(SOURCE_ROOT, 'tools', 'win')):
-    execute_stdout([NPM, 'install', 'runas'])
-
 
 def create_chrome_version_h():
   version_file = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
