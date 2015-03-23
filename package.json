@@ -1,24 +1,21 @@
 {
   "name": "atom-shell",
   "version": "0.22.1",
-
   "licenses": [
     {
       "type": "MIT",
       "url": "http://github.com/atom/atom-shell/raw/master/LICENSE.md"
     }
   ],
-
   "devDependencies": {
-    "atom-package-manager": "0.144.0",
     "asar": "0.2.2",
+    "atom-package-manager": "0.144.0",
     "coffee-script": "~1.7.1",
     "coffeelint": "~1.3.0",
-    "request": "*"
+    "request": "*",
+    "runas": "^2.0.0"
   },
-
   "private": true,
-
   "scripts": {
     "preinstall": "node -e 'process.exit(0)'"
   }
