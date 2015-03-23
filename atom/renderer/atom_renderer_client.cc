@@ -168,6 +168,8 @@ void AtomRendererClient::EnableWebRuntimeFeatures() {
     blink::WebRuntimeFeatures::enableExperimentalFeatures(b);
   if (IsSwitchEnabled(command_line, switches::kExperimentalCanvasFeatures, &b))
     blink::WebRuntimeFeatures::enableExperimentalCanvasFeatures(b);
+  if (IsSwitchEnabled(command_line, switches::kSubpixelFontScaling, &b))
+    blink::WebRuntimeFeatures::enableSubpixelFontScaling(b);
   if (IsSwitchEnabled(command_line, switches::kOverlayScrollbars, &b))
     blink::WebRuntimeFeatures::enableOverlayScrollbars(b);
   if (IsSwitchEnabled(command_line, switches::kOverlayFullscreenVideo, &b))

@@ -88,6 +88,7 @@ You can also create a window without chrome by using
       under current working directory.
     * `experimental-features` Boolean
     * `experimental-canvas-features` Boolean
+    * `subpixel-font-scaling` Boolean
     * `overlay-scrollbars` Boolean
     * `overlay-fullscreen-video` Boolean
     * `shared-worker` Boolean
