@@ -74,7 +74,7 @@ class Wrappable {
  private:
   static MATE_WEAK_CALLBACK(WeakCallback, v8::Object, Wrappable);
 
-  v8::Persistent<v8::Object> wrapper_;  // Weak
+  v8::UniquePersistent<v8::Object> wrapper_;  // Weak
 
   DISALLOW_COPY_AND_ASSIGN(Wrappable);
 };

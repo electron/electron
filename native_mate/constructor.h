@@ -176,7 +176,7 @@ class Constructor {
   }
 
   base::StringPiece name_;
-  v8::Persistent<v8::FunctionTemplate> constructor_;
+  v8::UniquePersistent<v8::FunctionTemplate> constructor_;
 
   DISALLOW_COPY_AND_ASSIGN(Constructor);
 };
