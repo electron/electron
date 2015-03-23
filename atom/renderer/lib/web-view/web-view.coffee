@@ -28,8 +28,6 @@ class WebViewImpl
 
     @viewInstanceId = getNextId()
 
-    guestViewInternal.registerEvents this, @viewInstanceId
-
     shadowRoot.appendChild @browserPluginNode
 
   createBrowserPluginNode: ->
@@ -222,6 +220,7 @@ registerWebViewElement = ->
   proto.detachedCallback = ->
     internal = v8Util.getHiddenValue this, 'internal'
     return unless internal
+    guestViewInternal.deregisterEvents internal.viewInstanceId
     internal.elementAttached = false
     internal.reset()
 
@@ -229,6 +228,7 @@ registerWebViewElement = ->
     internal = v8Util.getHiddenValue this, 'internal'
     return unless internal
     unless internal.elementAttached
+      guestViewInternal.registerEvents internal, internal.viewInstanceId
       internal.elementAttached = true
       internal.attributes[webViewConstants.ATTRIBUTE_SRC].parse()
 

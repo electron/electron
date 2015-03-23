@@ -40,6 +40,11 @@ module.exports =
         domEvent[f] = args[i]
       webView.onSizeChanged domEvent
 
+  deregisterEvents: (viewInstanceId) ->
+    ipc.removeAllListeners "ATOM_SHELL_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-#{viewInstanceId}"
+    ipc.removeAllListeners "ATOM_SHELL_GUEST_VIEW_INTERNAL_IPC_MESSAGE-#{viewInstanceId}"
+    ipc.removeAllListeners "ATOM_SHELL_GUEST_VIEW_INTERNAL_SIZE_CHANGED-#{viewInstanceId}"
+
   createGuest: (type, params, callback) ->
     requestId++
     ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_CREATE_GUEST', type, params, requestId
