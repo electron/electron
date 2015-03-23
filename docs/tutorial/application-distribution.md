@@ -95,7 +95,7 @@ variable and have a clean rebuild:
 __Windows__
 
 ```cmd
-> set GYP_DEFINES=project_name=myapp product_name=MyApp
+> set "GYP_DEFINES=project_name=myapp product_name=MyApp"
 > python script\bootstrap.py
 > python script\build.py -c Release -t myapp
 ```
