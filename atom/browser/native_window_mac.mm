@@ -243,6 +243,10 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   shellWindow_->HandleMouseEvent(event);
 }
 
+- (BOOL)acceptsFirstMouse:(NSEvent*)event {
+  return YES;
+}
+
 @end
 
 @interface AtomProgressBar : NSProgressIndicator
