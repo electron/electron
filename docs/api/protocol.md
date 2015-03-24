@@ -1,7 +1,7 @@
 # protocol
 
 The `protocol` module can register a new protocol or intercept an existing
-protocol, so you can custom the response to the requests for various protocols.
+protocol, so you can customize the response to the requests for various protocols.
 
 An example of implementing a protocol that has the same effect with the
 `file://` protocol:
