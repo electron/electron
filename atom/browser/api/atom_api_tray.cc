@@ -7,6 +7,7 @@
 #include <string>
 
 #include "atom/browser/api/atom_api_menu.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/ui/tray_icon.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -31,6 +32,10 @@ Tray::~Tray() {
 
 // static
 mate::Wrappable* Tray::New(const gfx::Image& image) {
+  if (!Browser::Get()->is_ready()) {
+    node::ThrowError("Cannot create Tray before app is ready");
+    return nullptr;
+  }
   return new Tray(image);
 }
 
