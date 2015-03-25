@@ -75,6 +75,11 @@ const char kTransparent[] = "transparent";
 // Window type hint.
 const char kType[] = "type";
 
+// Gives the default maximal active V-logging level; 0 is the default.
+// V-logging levels values are from -1 to 4.
+// ["verbose", "info", "warning", "error", "fatal", "num_severities"]
+const char kV[] = "v";
+
 // Web runtime features.
 const char kExperimentalFeatures[]       = "experimental-features";
 const char kExperimentalCanvasFeatures[] = "experimental-canvas-features";
