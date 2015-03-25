@@ -9,6 +9,7 @@
 #include "atom/app/atom_content_client.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/common/google_api_key.h"
+#include "atom/common/options_switches.h"
 #include "atom/renderer/atom_renderer_client.h"
 #include "base/command_line.h"
 #include "base/debug/stack_trace.h"
@@ -48,6 +49,14 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   base::debug::EnableInProcessStackDumping();
 #endif
 
+  // Set Log Level for app if provided
+  auto command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(atom::switches::kV)) {
+    auto logLevel = std::stoi(command_line->GetSwitchValueASCII(
+                        atom::switches::kV));
+    logging::SetMinLogLevel(logLevel);
+  }
+
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
 
@@ -61,7 +70,7 @@ void AtomMainDelegate::PreSandboxStartup() {
 
   auto command_line = base::CommandLine::ForCurrentProcess();
   std::string process_type = command_line->GetSwitchValueASCII(
-      switches::kProcessType);
+      ::switches::kProcessType);
 
   // Only append arguments for browser process.
   if (!process_type.empty())
@@ -74,11 +83,11 @@ void AtomMainDelegate::PreSandboxStartup() {
   // Disable the LegacyRenderWidgetHostHWND, it made frameless windows unable
   // to move and resize. We may consider enabling it again after upgraded to
   // Chrome 38, which should have fixed the problem.
-  command_line->AppendSwitch(switches::kDisableLegacyIntermediateWindow);
+  command_line->AppendSwitch(::switches::kDisableLegacyIntermediateWindow);
 #endif
 
   // Disable renderer sandbox for most of node's functions.
-  command_line->AppendSwitch(switches::kNoSandbox);
+  command_line->AppendSwitch(::switches::kNoSandbox);
 
 #if defined(OS_MACOSX)
   // Enable AVFoundation.
