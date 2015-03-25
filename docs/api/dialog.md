@@ -67,7 +67,7 @@ The `filters` specifies an array of file types that can be displayed, see
 If a `callback` is passed, the API call would be asynchronous and the result
 would be passed via `callback(filename)`
 
-## dialog.showMessageBox([browserWindow], [options], [callback])
+## dialog.showMessageBox([browserWindow], options, [callback])
 
 * `browserWindow` BrowserWindow
 * `options` Object
