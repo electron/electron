@@ -140,7 +140,6 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 
 - (void)windowWillClose:(NSNotification*)notification {
   shell_->NotifyWindowClosed();
-  [self autorelease];
 }
 
 - (BOOL)windowShouldClose:(id)window {
@@ -323,21 +322,18 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
       width,
       height);
 
-  AtomNSWindow* atomWindow = [[AtomNSWindow alloc]
+  window_.reset([[AtomNSWindow alloc]
       initWithContentRect:cocoa_bounds
                 styleMask:NSTitledWindowMask | NSClosableWindowMask |
                           NSMiniaturizableWindowMask | NSResizableWindowMask |
                           NSTexturedBackgroundWindowMask
                   backing:NSBackingStoreBuffered
-                    defer:YES];
+                    defer:YES]);
+  [window_ setShell:this];
+  [window_ setEnableLargerThanScreen:enable_larger_than_screen_];
 
-  [atomWindow setShell:this];
-  [atomWindow setEnableLargerThanScreen:enable_larger_than_screen_];
-  window_.reset(atomWindow);
-
-  AtomNSWindowDelegate* delegate =
-      [[AtomNSWindowDelegate alloc] initWithShell:this];
-  [window_ setDelegate:delegate];
+  window_delegate_.reset([[AtomNSWindowDelegate alloc] initWithShell:this]);
+  [window_ setDelegate:window_delegate_];
 
   if (transparent_) {
     // Make window has transparent background.
@@ -358,7 +354,7 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;
   options.Get(switches::kAcceptFirstMouse, &acceptsFirstMouse);
-  [delegate setAcceptsFirstMouse:acceptsFirstMouse];
+  [window_delegate_ setAcceptsFirstMouse:acceptsFirstMouse];
 
   // Disable fullscreen button when 'fullscreen' is specified to false.
   bool fullscreen;
@@ -743,7 +739,7 @@ void NativeWindowMac::HandleKeyboardEvent(
       event.type == content::NativeWebKeyboardEvent::Char)
     return;
 
-  if (event.os_event.window == window_) {
+  if (event.os_event.window == window_.get()) {
     EventProcessingWindow* event_window =
         static_cast<EventProcessingWindow*>(window_);
     DCHECK([event_window isKindOfClass:[EventProcessingWindow class]]);
