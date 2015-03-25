@@ -36,14 +36,20 @@ void RelaunchToInstallUpdate() {
 // static
 void AutoUpdater::SetFeedURL(const std::string& feed) {
   if (g_updater == nil) {
-    // Initialize the SQRLUpdater.
-    NSURL* url = [NSURL URLWithString:base::SysUTF8ToNSString(feed)];
-    NSURLRequest* urlRequest = [NSURLRequest requestWithURL:url];
-    g_updater = [[SQRLUpdater alloc] initWithUpdateRequest:urlRequest];
-
     AutoUpdaterDelegate* delegate = GetDelegate();
     if (!delegate)
       return;
+
+    // Initialize the SQRLUpdater.
+    NSURL* url = [NSURL URLWithString:base::SysUTF8ToNSString(feed)];
+    NSURLRequest* urlRequest = [NSURLRequest requestWithURL:url];
+
+    @try {
+      g_updater = [[SQRLUpdater alloc] initWithUpdateRequest:urlRequest];
+    } @catch (NSException* error) {
+      delegate->OnError(base::SysNSStringToUTF8(error.reason));
+      return;
+    }
 
     [[g_updater rac_valuesForKeyPath:@"state" observer:g_updater]
       subscribeNext:^(NSNumber *stateNumber) {
