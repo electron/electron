@@ -11,26 +11,18 @@ It doesn't mean atom-shell is a JavaScript binding to GUI libraries. Instead,
 atom-shell uses web pages as its GUI, so you could also see it as a minimal
 Chromium browser, controlled by JavaScript.
 
-### The browser side
+### The main process
 
-If you have experience with Node.js web applications, you will know that there
-are two types of JavaScript scripts: the server side scripts and the client side
-scripts. Server-side JavaScript is that which runs on the Node.js
-runtime, while client-side JavaScript runs inside the user's browser.
+The main atom-shell process displays a GUI by showing web pages. We have
+**scripts that run in the atom-shell runtime**, that create **scripts
+that run in the web page**. We call them **main process scripts**,
+and **renderer process scripts**.
 
-In atom-shell we have similar concepts: Since atom-shell displays a GUI by
-showing web pages, we have **scripts that run in the web page**, and also
-**scripts run by the atom-shell runtime**, which creates those web pages.
-Like Node.js, we call them **client scripts**, and **browser scripts**
-(meaning the browser replaces the concept of the server here).
+In atom-shell, we have provided the [ipc](../api/ipc-renderer.md) module for
+communication from the main process to the renderer process, and the
+[remote](../api/remote.md) module for easy RPC support.
 
-In traditional Node.js applications, communication between server and
-client is usually facilitated via web sockets. In atom-shell, we have provided
-the [ipc](../api/ipc-renderer.md) module for browser to client
-communication, and the [remote](../api/remote.md) module for easy RPC
-support.
-
-### Web page and Node.js
+### The renderer process
 
 Normal web pages are designed to not reach outside of the browser, which makes
 them unsuitable for interacting with native systems. Atom-shell provides Node.js
@@ -38,7 +30,7 @@ APIs in web pages so you can access native resources from web pages, just like
 [nw.js](https://github.com/nwjs/nw.js).
 
 But unlike nw.js, you cannot do native GUI related operations in web
-pages. Instead you need to do them on the browser side by sending messages to
+pages. Instead you need to do them on the main process by sending messages to
 it, or using the easy [remote](../api/remote.md) module.
 
 
@@ -56,7 +48,7 @@ your-app/
 
 The format of `package.json` is exactly the same as that of Node's modules, and
 the script specified by the `main` field is the startup script of your app,
-which will run on the browser side. An example of your `package.json` might look
+which will run on the main process. An example of your `package.json` might look
 like this:
 
 ```json

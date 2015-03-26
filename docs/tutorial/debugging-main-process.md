@@ -1,9 +1,9 @@
-# Debugging browser process
+# Debugging the main process
 
-The devtools of browser window can only debug the scripts of the web pages
-(e.g. the renderer process), in order to provide a way to debug the scripts of
-the browser side (e.g. the browser process), atom-shell has provided the
-`--debug` and `--debug-brk` switches.
+The devtools of browser window can only debug the renderer process scripts.
+(I.e. the web pages.) In order to provide a way to debug the scripts of
+the main process, atom-shell has provided the `--debug` and `--debug-brk`
+switches.
 
 ## Command line switches
 
@@ -19,7 +19,7 @@ Like `--debug` but pauses the script on the first line.
 ## Use node-inspector for debugging
 
 __Note:__ Atom Shell uses node v0.11.13, which currently doesn't work very well
-with node-inspector, and the browser process would crash if you inspect the
+with node-inspector, and the main process would crash if you inspect the
 `process` object under node-inspector's console.
 
 ### 1. Start the [node-inspector][node-inspector] server

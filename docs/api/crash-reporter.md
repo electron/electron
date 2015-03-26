@@ -36,10 +36,10 @@ sent or the crash reporter is not started, `null` will be returned.
 
 The crash reporter will send the following data to the `submitUrl` as `POST`:
 
-* `rept` String - eg. atom-shell-crash-service
+* `rept` String - e.g. 'atom-shell-crash-service'
 * `ver` String - The version of atom-shell
-* `platform` String - eg. win32
-* `process_type` String - eg. browser
+* `platform` String - e.g. 'win32'
+* `process_type` String - e.g. 'renderer'
 * `ptime` Number
 * `_version` String - The version in `package.json`
 * `_productName` String - The product name in the crashReporter `options` object
