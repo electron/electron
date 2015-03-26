@@ -117,16 +117,14 @@ mate::ObjectTemplateBuilder Screen::GetObjectTemplateBuilder(
 // static
 v8::Handle<v8::Value> Screen::Create(v8::Isolate* isolate) {
   if (!Browser::Get()->is_ready()) {
-    isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
-        isolate, "Can not initialize \"screen\" module before app is ready")));
-    return v8::Undefined(isolate);
+    node::ThrowError("Cannot initialize \"screen\" module before app is ready");
+    return v8::Null(isolate);
   }
 
   gfx::Screen* screen = gfx::Screen::GetNativeScreen();
   if (!screen) {
-    isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
-        isolate, "Failed to get screen information")));
-    return v8::Undefined(isolate);
+    node::ThrowError("Failed to get screen information");
+    return v8::Null(isolate);
   }
 
   return mate::CreateHandle(isolate, new Screen(screen)).ToV8();

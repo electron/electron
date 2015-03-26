@@ -142,13 +142,11 @@ void Window::OnRendererResponsive() {
 // static
 mate::Wrappable* Window::New(v8::Isolate* isolate,
                              const mate::Dictionary& options) {
-  if (Browser::Get()->is_ready()) {
-    return new Window(options);
-  } else {
-    isolate->ThrowException(v8::Exception::TypeError(mate::StringToV8(
-        isolate, "Can not create BrowserWindow before app is ready")));
+  if (!Browser::Get()->is_ready()) {
+    node::ThrowError("Cannot create BrowserWindow before app is ready");
     return nullptr;
   }
+  return new Window(options);
 }
 
 void Window::Destroy() {
