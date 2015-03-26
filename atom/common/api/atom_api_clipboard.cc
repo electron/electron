@@ -69,6 +69,11 @@ gfx::Image ReadImage(ui::ClipboardType type) {
   return gfx::Image::CreateFrom1xBitmap(bitmap);
 }
 
+void WriteImage(const gfx::Image& image, ui::ClipboardType type) {
+  ui::ScopedClipboardWriter writer(type);
+  writer.WriteImage(image.AsBitmap());
+}
+
 void Clear(ui::ClipboardType type) {
   ui::Clipboard::GetForCurrentThread()->Clear(type);
 }
@@ -81,6 +86,7 @@ void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
   dict.SetMethod("_readText", &ReadText);
   dict.SetMethod("_writeText", &WriteText);
   dict.SetMethod("_readImage", &ReadImage);
+  dict.SetMethod("_writeImage", &WriteImage);
   dict.SetMethod("_clear", &Clear);
 }
 
