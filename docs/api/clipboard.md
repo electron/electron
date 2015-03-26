@@ -30,6 +30,19 @@ Returns the content in clipboard as plain text.
 
 Writes the `text` into clipboard as plain text.
 
+## clipboard.readImage([type])
+
+* `type` String
+
+Returns the content in clipboard as [NativeImage](native-image.md).
+
+## clipboard.writeImage(image[, type])
+
+* `image` [NativeImage](native-image.md)
+* `type` String
+
+Writes the `image` into clipboard.
+
 ## clipboard.clear([type])
 
 * `type` String
