@@ -64,27 +64,25 @@ Ignore certificate related errors.
 
 ## --v=`log_level`
 
-Gives the default maximal active V-logging level; 0 is the default.
-Normally positive values are used for V-logging levels.
+Gives the default maximal active V-logging level; 0 is the default. Normally
+positive values are used for V-logging levels.
 
--1 to disable logs
+Passing `--v=-1` will disable logging.
 
 ## --vmodule=`pattern`
 
-Gives the per-module maximal V-logging levels to override the value
-given by --v.  E.g. "my_module=2,foo*=3" would change the logging
-level for all code in source files "my_module.*" and "foo*.*"
-("-inl" suffixes are also disregarded for this matching).
+Gives the per-module maximal V-logging levels to override the value given by
+`--v`. E.g. `my_module=2,foo*=3` would change the logging level for all code in
+source files `my_module.*` and `foo*.*`.
 
-Any pattern containing a forward or backward slash will be tested
-against the whole pathname and not just the module.  E.g.,
-"*/foo/bar/*=2" would change the logging level for all code in
-source files under a "foo/bar" directory.
+Any pattern containing a forward or backward slash will be tested against the
+whole pathname and not just the module. E.g. `*/foo/bar/*=2` would change the
+logging level for all code in source files under a `foo/bar` directory.
 
-For example to disable all chromium related logs and only enable
-your application logs
+To disable all chromium related logs and only enable your application logs you
+can do:
 
-```
+```javascript
 app.commandLine.appendSwitch('v', -1);
 app.commandLine.appendSwitch('vmodule', 'console=0');
 ```

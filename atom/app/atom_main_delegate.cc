@@ -36,17 +36,15 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   settings.delete_old = logging::DELETE_OLD_LOG_FILE;
 #else
   settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
-#endif
+#endif  // defined(DEBUG)
 #endif  // defined(OS_WIN)
-
-  // allows setting loglevel --v or --vmodule
   logging::InitLogging(settings);
 
   // Logging with pid and timestamp.
   logging::SetLogItems(true, false, true, false);
 
-  // Enable convient stack printing.
 #if defined(DEBUG) && defined(OS_LINUX)
+  // Enable convient stack printing.
   base::debug::EnableInProcessStackDumping();
 #endif
 
