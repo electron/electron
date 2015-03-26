@@ -150,6 +150,9 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
+#if defined(OS_LINUX)
+      is_visible_on_all_workspaces_(false),
+#endif
 #if defined(OS_WIN)
       is_minimized_(false),
 #endif
@@ -672,6 +675,15 @@ void NativeWindowViews::SetMenuBarVisibility(bool visible) {
 
 bool NativeWindowViews::IsMenuBarVisible() {
   return menu_bar_visible_;
+}
+
+void NativeWindowViews::SetVisibleOnAllWorkspaces(bool visible) {
+  is_visible_on_all_workspaces_ = visible;
+  window_->SetVisibleOnAllWorkspaces(visible);
+}
+
+bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
+  return is_visible_on_all_workspaces_;
 }
 
 gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() {

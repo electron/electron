@@ -172,6 +172,10 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void SetMenuBarVisibility(bool visible);
   virtual bool IsMenuBarVisible();
 
+  // Visible on all workspaces.
+  virtual void SetVisibleOnAllWorkspaces(bool visible);
+  virtual bool IsVisibleOnAllWorkspaces();
+
   // The same with closing a tab in a real browser.
   //
   // Should be called by platform code when user want to close the window.
