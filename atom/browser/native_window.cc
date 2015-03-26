@@ -284,7 +284,9 @@ bool NativeWindow::HasModalDialog() {
   return has_dialog_attached_;
 }
 
-void NativeWindow::OpenDevTools() {
+void NativeWindow::OpenDevTools(bool dock) {
+  if (!dock)
+    inspectable_web_contents()->SetCanDock(false);
   inspectable_web_contents()->ShowDevTools();
 }
 
@@ -297,7 +299,7 @@ bool NativeWindow::IsDevToolsOpened() {
 }
 
 void NativeWindow::InspectElement(int x, int y) {
-  OpenDevTools();
+  OpenDevTools(true);
   scoped_refptr<content::DevToolsAgentHost> agent(
       content::DevToolsAgentHost::GetOrCreateFor(GetWebContents()));
   agent->InspectElement(x, y);
