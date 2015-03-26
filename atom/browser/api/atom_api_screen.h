@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "atom/browser/api/event_emitter.h"
+#include "content/public/browser/web_contents.h"
 #include "native_mate/handle.h"
 #include "ui/gfx/display_observer.h"
 
@@ -32,7 +33,9 @@ class Screen : public mate::EventEmitter,
 
   gfx::Point GetCursorScreenPoint();
   gfx::Display GetPrimaryDisplay();
+  gfx::Display GetActiveDisplay(content::WebContents* web_contents);
   std::vector<gfx::Display> GetAllDisplays();
+  int GetNumDisplays();
   gfx::Display GetDisplayNearestPoint(const gfx::Point& point);
   gfx::Display GetDisplayMatching(const gfx::Rect& match_rect);
 

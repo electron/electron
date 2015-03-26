@@ -8,13 +8,31 @@
 #include <string>
 
 #include "atom/browser/browser.h"
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "base/bind.h"
+#include "content/public/browser/web_contents.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "ui/gfx/screen.h"
 
 #include "atom/common/node_includes.h"
+
+namespace mate {
+
+template<>
+struct Converter<content::WebContents*> {
+  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+                     content::WebContents** out) {
+    atom::api::WebContents* contents;
+    if (!Converter<atom::api::WebContents*>::FromV8(isolate, val, &contents))
+      return false;
+    *out = contents->web_contents();
+    return true;
+  }
+};
+
+}  // namespace mate
 
 namespace atom {
 
@@ -63,6 +81,16 @@ gfx::Display Screen::GetPrimaryDisplay() {
   return screen_->GetPrimaryDisplay();
 }
 
+gfx::Display Screen::GetActiveDisplay(
+    content::WebContents* web_contents) {
+  auto view = web_contents->GetNativeView();
+  return screen_->GetDisplayNearestWindow(view);
+}
+
+int Screen::GetNumDisplays() {
+  return screen_->GetNumDisplays();
+}
+
 std::vector<gfx::Display> Screen::GetAllDisplays() {
   // The Screen::GetAllDisplays doesn't update when there is display added or
   // removed, so we have to manually maintain the displays_ to make it up to
@@ -109,6 +137,8 @@ mate::ObjectTemplateBuilder Screen::GetObjectTemplateBuilder(
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("getCursorScreenPoint", &Screen::GetCursorScreenPoint)
       .SetMethod("getPrimaryDisplay", &Screen::GetPrimaryDisplay)
+      .SetMethod("getActiveDisplay", &Screen::GetActiveDisplay)
+      .SetMethod("getNumDisplays", &Screen::GetNumDisplays)
       .SetMethod("getAllDisplays", &Screen::GetAllDisplays)
       .SetMethod("getDisplayNearestPoint", &Screen::GetDisplayNearestPoint)
       .SetMethod("getDisplayMatching", &Screen::GetDisplayMatching);

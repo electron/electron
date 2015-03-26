@@ -86,6 +86,14 @@ Returns the primary display.
 
 Returns an array of displays that are currently available.
 
+## screen.getActiveDisplay(webContents)
+
+Returns the current active display.
+
+## screen.getNumDisplays()
+
+Returns the number of displays available.
+
 ## screen.getDisplayNearestPoint(point)
 
 * `point` Object
