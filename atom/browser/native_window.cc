@@ -458,9 +458,14 @@ void NativeWindow::OverrideWebkitPrefs(const GURL& url,
     prefs->experimental_webgl_enabled = b;
   if (web_preferences_.Get("webaudio", &b))
     prefs->webaudio_enabled = b;
-  if (web_preferences_.Get("extra-plugin-dirs", &list)) {
+
+  auto isSupported = content::PluginService::GetInstance()
+                                  ->NPAPIPluginsSupported();
+  if (web_preferences_.Get("extra-plugin-dirs", &list) && isSupported) {
     for (size_t i = 0; i < list.size(); ++i)
       content::PluginService::GetInstance()->AddExtraPluginDir(list[i]);
+  } else {
+    LOG(WARNING) << "NPAPI plugins not supported on this platform";
   }
 }
 
