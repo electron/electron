@@ -204,8 +204,8 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
       options.Get(switches::kMinWidth, &min_width)) {
     SetMinimumSize(gfx::Size(min_width, min_height));
   }
-  int max_height = -1, max_width = -1;
-  if (options.Get(switches::kMaxHeight, &max_height) &&
+  int max_height = INT_MAX, max_width = INT_MAX;
+  if (options.Get(switches::kMaxHeight, &max_height) |
       options.Get(switches::kMaxWidth, &max_width)) {
     SetMaximumSize(gfx::Size(max_width, max_height));
   }
