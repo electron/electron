@@ -27,8 +27,8 @@ AtomMainDelegate::~AtomMainDelegate() {
 
 bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   // Disable logging out to debug.log on Windows
-#if defined(OS_WIN)
   logging::LoggingSettings settings;
+#if defined(OS_WIN)
 #if defined(DEBUG)
   settings.logging_dest = logging::LOG_TO_ALL;
   settings.log_file = L"debug.log";
@@ -37,8 +37,10 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 #else
   settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
 #endif
-  logging::InitLogging(settings);
 #endif  // defined(OS_WIN)
+
+  // allows setting loglevel --v or --vmodule
+  logging::InitLogging(settings);
 
   // Logging with pid and timestamp.
   logging::SetLogItems(true, false, true, false);
