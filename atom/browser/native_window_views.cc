@@ -307,7 +307,7 @@ bool NativeWindowViews::IsFocused() {
 }
 
 void NativeWindowViews::Show() {
-  window_->Show();
+  window_->native_widget_private()->ShowWithWindowState(GetRestoredState());
 }
 
 void NativeWindowViews::ShowInactive() {
@@ -925,6 +925,15 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
   if (menu_bar_ && menu_bar_visible_)
     window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
   return window_bounds;
+}
+
+ui::WindowShowState NativeWindowViews::GetRestoredState() {
+  if (IsMaximized())
+    return ui::SHOW_STATE_MAXIMIZED;
+  if (IsFullscreen())
+    return ui::SHOW_STATE_FULLSCREEN;
+
+  return ui::SHOW_STATE_NORMAL;
 }
 
 // static

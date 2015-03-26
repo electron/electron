@@ -141,6 +141,9 @@ class NativeWindowViews : public NativeWindow,
   // in client area we need to substract/add menu bar's height in convertions.
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& content_bounds);
 
+  // Returns the restore state for the window.
+  ui::WindowShowState GetRestoredState();
+
   scoped_ptr<views::Widget> window_;
   views::View* web_view_;  // Managed by inspectable_web_contents_.
 
