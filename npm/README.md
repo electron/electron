@@ -10,7 +10,15 @@ Atom Shell is a javascript runtime that bundles Node.js and Chromium. You use it
 
 ## Installation
 
-Download and install the latest build of atom-shell for your OS and symlink it into your PATH:
+Download and install the latest build of atom-shell for your OS and add it to your projects `package.json` as a `devDependency`:
+
+```
+npm install atom-shell --save-dev
+```
+
+This is the preferred way to use atom-shell, as it doesn't require users to install atom-shell globally.
+
+You can also use the `-g` flag (global) to symlink it into your PATH:
 
 ```
 npm install -g atom-shell
