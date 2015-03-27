@@ -46,4 +46,4 @@ Assign to this to return an value to synchronous messages.
 
 ### Event.sender
 
-The `WebContents` of the renderer that has sent the message.
+The `WebContents` that sent the message.

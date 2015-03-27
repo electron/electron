@@ -241,7 +241,7 @@ Get the unique ID of this window.
 ### BrowserWindow.destroy()
 
 Force closing the window, the `unload` and `beforeunload` event won't be emitted
-for the renderer process (web page), and `close` event would also not be emitted
+for the web page, and `close` event would also not be emitted
 for this window, but it would guarantee the `closed` event to be emitted.
 
 You should only use this method when the renderer process (web page) has crashed.
@@ -249,8 +249,8 @@ You should only use this method when the renderer process (web page) has crashed
 ### BrowserWindow.close()
 
 Try to close the window, this has the same effect with user manually clicking
-the close button of the window. The renderer process (web page) may cancel the
-close though, see the [close event](window#event-close).
+the close button of the window. The web page may cancel the close though, see
+the [close event](window#event-close).
 
 ### BrowserWindow.focus()
 
@@ -327,11 +327,11 @@ Returns an array that contains window's width and height.
 * `width` Integer
 * `height` Integer
 
-Resizes the renderer's area (i.e. the web page) to `width` and `height`.
+Resizes the window's client area (e.g. the web page) to `width` and `height`.
 
 ### BrowserWindow.getContentSize()
 
-Returns an array that contains the renderer's width and height.
+Returns an array that contains window's client area's width and height.
 
 ### BrowserWindow.setMinimumSize(width, height)
 

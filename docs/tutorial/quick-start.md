@@ -13,10 +13,9 @@ Chromium browser, controlled by JavaScript.
 
 ### The main process
 
-The main atom-shell process displays a GUI by showing web pages. We have
+The main atom-shell process displays a GUI by creating web pages. We have
 **scripts that run in the atom-shell runtime**, that create **scripts
-that run in the web page**. We call them **main process scripts**,
-and **renderer process scripts**.
+that run in the web page**.
 
 In atom-shell, we have provided the [ipc](../api/ipc-renderer.md) module for
 communication from the main process to the renderer process, and the
