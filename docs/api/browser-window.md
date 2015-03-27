@@ -457,7 +457,10 @@ Whether the window's document has been edited.
 
 __Note__: This API is available only on OS X.
 
-### BrowserWindow.openDevTools()
+### BrowserWindow.openDevTools([options])
+
+* `options` Object
+  * `detach` Boolean - opens devtools in a new window
 
 Opens the developer tools.
 

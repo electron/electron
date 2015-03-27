@@ -190,7 +190,7 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 }
 
 - (IBAction)showDevTools:(id)sender {
-  shell_->OpenDevTools();
+  shell_->OpenDevTools(true);
 }
 
 // Returns an empty array for AXChildren attribute, this will force the

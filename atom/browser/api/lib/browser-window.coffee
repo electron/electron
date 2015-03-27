@@ -40,8 +40,9 @@ BrowserWindow::_init = ->
   @once 'closed', =>
     BrowserWindow.windows.remove @id if BrowserWindow.windows.has @id
 
-BrowserWindow::openDevTools = ->
-  @_openDevTools()
+BrowserWindow::openDevTools = (options={}) ->
+  options.detach ?= false
+  @_openDevTools(options.detach)
 
   # Force devToolsWebContents to be created.
   @devToolsWebContents = @getDevToolsWebContents()
