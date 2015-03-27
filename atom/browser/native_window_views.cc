@@ -150,9 +150,6 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
-#if defined(OS_LINUX)
-      is_visible_on_all_workspaces_(false),
-#endif
 #if defined(OS_WIN)
       is_minimized_(false),
 #endif
@@ -678,12 +675,20 @@ bool NativeWindowViews::IsMenuBarVisible() {
 }
 
 void NativeWindowViews::SetVisibleOnAllWorkspaces(bool visible) {
-  is_visible_on_all_workspaces_ = visible;
   window_->SetVisibleOnAllWorkspaces(visible);
 }
 
 bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
-  return is_visible_on_all_workspaces_;
+#if defined(USE_X11)
+  // Use the presence/absence of _NET_WM_STATE_STICKY in _NET_WM_STATE to
+  // determine whether the current window is visible on all workspaces.
+  XAtom sticky_atom = gfx::GetAtom("_NET_WM_STATE_STICKY");
+  std::vector<XAtom> atom_properties;
+  gfx::GetAtomArrayProperty(GetNativeWindow(), "_NET_WM_STATE", &atom_properties);
+  return std::find(atom_properties.begin(),
+                   atom_properties.end(), sticky_atom) != atom_properties.end();
+#endif
+  return false;
 }
 
 gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() {

@@ -592,13 +592,13 @@ Returns whether the menu bar is visible.
 
 Sets whether the window should be visible on all workspaces.
 
-**Note:** This API is only available on Mac/Linux.
+**Note:** This API does nothing on Windows.
 
 ### BrowserWindow.isVisibleOnAllWorkspaces()
 
 Returns whether the window is visible on all workspaces.
 
-**Note:** This API is only available on Mac/Linux.
+**Note:** This API always return false on Windows.
 
 ## Class: WebContents
 

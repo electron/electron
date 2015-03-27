@@ -115,8 +115,6 @@ class NativeWindowMac : public NativeWindow {
 
   bool is_kiosk_;
 
-  bool is_visible_on_all_workspaces_;
-
   NSInteger attention_request_id_;  // identifier from requestUserAttention
 
   // The presentation options before entering kiosk mode.

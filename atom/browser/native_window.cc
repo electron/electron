@@ -280,13 +280,6 @@ bool NativeWindow::IsMenuBarVisible() {
   return true;
 }
 
-void NativeWindow::SetVisibleOnAllWorkspaces(bool visible) {
-}
-
-bool NativeWindow::IsVisibleOnAllWorkspaces() {
-  return false;
-}
-
 bool NativeWindow::HasModalDialog() {
   return has_dialog_attached_;
 }

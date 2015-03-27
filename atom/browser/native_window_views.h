@@ -80,11 +80,8 @@ class NativeWindowViews : public NativeWindow,
   bool IsMenuBarAutoHide() override;
   void SetMenuBarVisibility(bool visible) override;
   bool IsMenuBarVisible() override;
-
-#if defined(OS_LINUX)
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
-#endif
 
   gfx::AcceleratedWidget GetAcceleratedWidget();
 
@@ -153,10 +150,6 @@ class NativeWindowViews : public NativeWindow,
   bool menu_bar_autohide_;
   bool menu_bar_visible_;
   bool menu_bar_alt_pressed_;
-
-#if defined(OS_LINUX)
-  bool is_visible_on_all_workspaces_;
-#endif
 
 #if defined(USE_X11)
   scoped_ptr<GlobalMenuBarX11> global_menu_bar_;

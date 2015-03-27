@@ -310,7 +310,6 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
                                  const mate::Dictionary& options)
     : NativeWindow(web_contents, options),
       is_kiosk_(false),
-      is_visible_on_all_workspaces_(false),
       attention_request_id_(0) {
   int width = 800, height = 600;
   options.Get(switches::kWidth, &width);
@@ -695,7 +694,6 @@ void NativeWindowMac::ShowDefinitionForSelection() {
 
 void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible) {
   NSUInteger collectionBehavior = [window_ collectionBehavior];
-  is_visible_on_all_workspaces_ = visible;
   if (visible) {
     collectionBehavior |= NSWindowCollectionBehaviorCanJoinAllSpaces;
   } else {
@@ -705,7 +703,8 @@ void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible) {
 }
 
 bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
-  return is_visible_on_all_workspaces_;
+  NSUInteger collectionBehavior = [window_ collectionBehavior];
+  return collectionBehavior & NSWindowCollectionBehaviorCanJoinAllSpaces;
 }
 
 bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {

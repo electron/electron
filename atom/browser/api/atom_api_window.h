@@ -130,10 +130,8 @@ class Window : public mate::EventEmitter,
   void ShowDefinitionForSelection();
 #endif
 
-#if defined(OS_MACOSX) || defined(OS_LINUX)
   void SetVisibleOnAllWorkspaces(bool visible);
   bool IsVisibleOnAllWorkspaces();
-#endif
 
   // APIs for WebContents.
   mate::Handle<WebContents> GetWebContents(v8::Isolate* isolate) const;
