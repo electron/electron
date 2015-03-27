@@ -146,7 +146,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
                               const std::string& description) = 0;
 
   virtual bool IsClosed() const { return is_closed_; }
-  virtual void OpenDevTools(bool dock);
+  virtual void OpenDevTools(bool can_dock);
   virtual void CloseDevTools();
   virtual bool IsDevToolsOpened();
   virtual void InspectElement(int x, int y);

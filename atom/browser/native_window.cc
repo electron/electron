@@ -284,9 +284,8 @@ bool NativeWindow::HasModalDialog() {
   return has_dialog_attached_;
 }
 
-void NativeWindow::OpenDevTools(bool dock) {
-  if (!dock)
-    inspectable_web_contents()->SetCanDock(false);
+void NativeWindow::OpenDevTools(bool can_dock) {
+  inspectable_web_contents()->SetCanDock(can_dock);
   inspectable_web_contents()->ShowDevTools();
 }
 

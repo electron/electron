@@ -322,8 +322,8 @@ bool Window::IsKiosk() {
   return window_->IsKiosk();
 }
 
-void Window::OpenDevTools(bool dock) {
-  window_->OpenDevTools(!dock);
+void Window::OpenDevTools(bool can_dock) {
+  window_->OpenDevTools(can_dock);
 }
 
 void Window::CloseDevTools() {

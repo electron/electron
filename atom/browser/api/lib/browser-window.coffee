@@ -42,7 +42,7 @@ BrowserWindow::_init = ->
 
 BrowserWindow::openDevTools = (options={}) ->
   options.detach ?= false
-  @_openDevTools(options.detach)
+  @_openDevTools !options.detach
 
   # Force devToolsWebContents to be created.
   @devToolsWebContents = @getDevToolsWebContents()

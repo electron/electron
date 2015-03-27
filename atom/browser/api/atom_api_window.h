@@ -105,7 +105,7 @@ class Window : public mate::EventEmitter,
   void SetSkipTaskbar(bool skip);
   void SetKiosk(bool kiosk);
   bool IsKiosk();
-  void OpenDevTools(bool dock);
+  void OpenDevTools(bool can_dock);
   void CloseDevTools();
   bool IsDevToolsOpened();
   void InspectElement(int x, int y);
