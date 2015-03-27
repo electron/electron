@@ -13,7 +13,7 @@
 
 namespace {
 
-void XDGUtil(const std::string& util, const std::string& arg) {
+bool XDGUtil(const std::string& util, const std::string& arg) {
   std::vector<std::string> argv;
   argv.push_back(util);
   argv.push_back(arg);
@@ -27,8 +27,15 @@ void XDGUtil(const std::string& util, const std::string& arg) {
   options.environ["MM_NOTTTY"] = "1";
 
   base::ProcessHandle handle;
-  if (base::LaunchProcess(argv, options, &handle))
-    base::EnsureProcessGetsReaped(handle);
+  if (base::LaunchProcess(argv, options, &handle)) {
+      int exit_code;
+      base::Process process(handle);
+      base::EnsureProcessGetsReaped(handle);
+      process.WaitForExit(&exit_code);
+      return (exit_code == 0);
+  }
+
+  return false;
 }
 
 void XDGOpen(const std::string& path) {
@@ -65,8 +72,8 @@ void OpenExternal(const GURL& url) {
     XDGOpen(url.spec());
 }
 
-void MoveItemToTrash(const base::FilePath& full_path) {
-  XDGUtil("gvfs-trash", full_path.value());
+bool MoveItemToTrash(const base::FilePath& full_path) {
+  return XDGUtil("gvfs-trash", full_path.value());
 }
 
 void Beep() {
