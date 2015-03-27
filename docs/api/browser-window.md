@@ -490,12 +490,9 @@ Starts inspecting element at position (`x`, `y`).
 * `callback` Function
 
 Captures the snapshot of page within `rect`, upon completion `callback` would be
-called with `callback(image)`, the `image` is a `Buffer` that stores the PNG
-encoded data of the snapshot. Omitting the `rect` would capture the whole
-visible page.
-
-You can write received `image` directly to a `.png` file, or you can base64
-encode it and use data URL to embed the image in HTML.
+called with `callback(image)`, the `image` is an instance of
+[NativeImage](native-image.md) that stores data of the snapshot. Omitting the
+`rect` would capture the whole visible page.
 
 **Note:** Be sure to read documents on remote buffer in
 [remote](remote.md) if you are going to use this API in renderer
