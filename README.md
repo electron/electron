@@ -23,7 +23,7 @@ npm install atom-shell --save-dev
 
 ### Mirrors
 
-- [China Mirror](https://npm.taobao.org/mirrors/atom-shell): Improve download speeds for Chinese user.
+- [China](https://npm.taobao.org/mirrors/atom-shell)
 
 ## Documentation
 
