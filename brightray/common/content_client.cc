@@ -46,4 +46,9 @@ gfx::Image& ContentClient::GetNativeImageNamed(int resource_id) const {
       resource_id);
 }
 
+base::RefCountedStaticMemory* ContentClient::GetDataResourceBytes(
+      int resource_id) const {
+  return ResourceBundle::GetSharedInstance().LoadDataResourceBytes(resource_id);
+}
+
 }  // namespace brightray
