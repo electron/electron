@@ -682,11 +682,11 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
 #if defined(USE_X11)
   // Use the presence/absence of _NET_WM_STATE_STICKY in _NET_WM_STATE to
   // determine whether the current window is visible on all workspaces.
-  XAtom sticky_atom = gfx::GetAtom("_NET_WM_STATE_STICKY");
-  std::vector<XAtom> properties;
-  gfx::GetAtomArrayProperty(GetNativeWindow(), "_NET_WM_STATE", &properties);
-  return std::find(properties.begin(),
-                   properties.end(), sticky_atom) != properties.end();
+  XAtom sticky_atom = GetAtom("_NET_WM_STATE_STICKY");
+  std::vector<XAtom> wm_states;
+  ui::GetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", &wm_states);
+  return std::find(wm_states.begin(),
+                   wm_states.end(), sticky_atom) != wm_states.end();
 #endif
   return false;
 }
