@@ -125,6 +125,9 @@ class NativeWindowMac : public NativeWindow {
   // used in custom drag to compute the window movement.
   NSPoint last_mouse_offset_;
 
+  // Enable hiding cursor during keyboard event until mouse moves.
+  bool auto_hide_cursor_;
+
   DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);
 };
 
