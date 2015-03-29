@@ -13,27 +13,27 @@ to understand the source code better.
 
 * **atom** - Source code of atom-shell.
   * **app** - System entry code.
-  * **browser** - The frontend including the main window, UI, and all browser
-    side things. This talks to the renderer to manage web pages.
-    * **lib** - Javascript part of browser side initialization code.
+  * **browser** - The frontend including the main window, UI, and all of the
+    main process things. This talks to the renderer to manage web pages.
+    * **lib** - Javascript part of the main process initialization code.
     * **ui** - Implementation of UI stuff for different platforms.
       * **cocoa** - Cocoa specific source code.
       * **gtk** - GTK+ specific source code.
       * **win** - Windows GUI specific source code.
     * **default_app** - The default page to show when atom-shell is started
       without providing an app.
-    * **api** - The implementation of browser side APIs.
+    * **api** - The implementation of the main process APIs.
        * **lib** - Javascript part of the API implementation.
     * **net** - Network related code.
     * **mac** - Mac specific Objective-C source code.
     * **resources** - Icons, platform-dependent files, etc.
   * **renderer** - Code that runs in renderer process.
     * **lib** - Javascript part of renderer initialization code.
-    * **api** - The implementation of renderer side APIs.
+    * **api** - The implementation of renderer process APIs.
        * **lib** - Javascript part of the API implementation.
-  * **common** - Code that used by both browser and renderer, including some
-    utility functions and code to integrate node's message loop into Chromium's
-    message loop.
+  * **common** - Code that used by both the main and renderer processes,
+    including some utility functions and code to integrate node's message
+    loop into Chromium's message loop.
     * **lib** - Common Javascript initialization code.
     * **api** - The implementation of common APIs, and foundations of
       atom-shell's built-in modules.

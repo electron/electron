@@ -224,14 +224,14 @@ Remove the devtools extension whose name is `name`.
 The `WebContents` object this window owns, all web page related events and
 operations would be done via it.
 
-**Note:** Users should never store this object because it may becomes `null`
-when the web page has crashed.
+**Note:** Users should never store this object because it may become `null`
+when the renderer process (web page) has crashed.
 
 ### BrowserWindow.devToolsWebContents
 
 Get the `WebContents` of devtools of this window.
 
-**Note:** Users should never store this object because it may becomes `null`
+**Note:** Users should never store this object because it may become `null`
 when the devtools has been closed.
 
 ### BrowserWindow.id
@@ -241,10 +241,10 @@ Get the unique ID of this window.
 ### BrowserWindow.destroy()
 
 Force closing the window, the `unload` and `beforeunload` event won't be emitted
-for the web page, and `close` event would also not be emitted for this window,
-but it would guarantee the `closed` event to be emitted.
+for the web page, and `close` event would also not be emitted
+for this window, but it would guarantee the `closed` event to be emitted.
 
-You should only use this method when the web page has crashed.
+You should only use this method when the renderer process (web page) has crashed.
 
 ### BrowserWindow.close()
 
@@ -810,10 +810,10 @@ Executes editing command `replaceMisspelling` in page.
 Send `args..` to the web page via `channel` in asynchronous message, the web
 page can handle it by listening to the `channel` event of `ipc` module.
 
-An example of sending messages from browser side to web pages:
+An example of sending messages from the main process to the renderer process:
 
 ```javascript
-// On browser side.
+// On the main process.
 var window = null;
 app.on('ready', function() {
   window = new BrowserWindow({width: 800, height: 600});
@@ -840,6 +840,6 @@ app.on('ready', function() {
 **Note:**
 
 1. The IPC message handler in web pages do not have a `event` parameter, which
-   is different from the handlers on browser side.
-2. There is no way to send synchronous messages from browser side to web pages,
-   because it would be very easy to cause dead locks.
+   is different from the handlers on the main process.
+2. There is no way to send synchronous messages from the main process to a
+   renderer process, because it would be very easy to cause dead locks.

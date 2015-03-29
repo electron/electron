@@ -63,7 +63,7 @@ combination of `tracing.DEFAULT_OPTIONS`, `tracing.ENABLE_SYSTRACE`,
 Stop recording on all processes.
 
 Child processes typically are caching trace data and only rarely flush and send
-trace data back to the browser process. That is because it may be an expensive
+trace data back to the main process. That is because it may be an expensive
 operation to send the trace data over IPC, and we would like to avoid much
 runtime overhead of tracing. So, to end tracing, we must asynchronously ask all
 child processes to flush any pending trace data.
@@ -106,7 +106,7 @@ is called back.
 Get the current monitoring traced data.
 
 Child processes typically are caching trace data and only rarely flush and send
-trace data back to the browser process. That is because it may be an expensive
+trace data back to the main process. That is because it may be an expensive
 operation to send the trace data over IPC, and we would like to avoid much
 runtime overhead of tracing. So, to end tracing, we must asynchronously ask all
 child processes to flush any pending trace data.

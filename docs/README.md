@@ -3,7 +3,7 @@
 * [Application distribution](tutorial/application-distribution.md)
 * [Application packaging](tutorial/application-packaging.md)
 * [Using native node modules](tutorial/using-native-node-modules.md)
-* [Debugging browser process](tutorial/debugging-browser-process.md)
+* [Debugging main process](tutorial/debugging-main-process.md)
 * [Using Selenium and WebDriver](tutorial/using-selenium-and-webdriver.md)
 * [DevTools extension](tutorial/devtools-extension.md)
 
@@ -25,7 +25,7 @@ Custom DOM elements:
 * [`<webview>` tag](api/web-view-tag.md)
 * [`window.open` function](api/window-open.md)
 
-Modules for browser side:
+Modules for the main process:
 
 * [app](api/app.md)
 * [auto-updater](api/auto-updater.md)
@@ -33,20 +33,20 @@ Modules for browser side:
 * [content-tracing](api/content-tracing.md)
 * [dialog](api/dialog.md)
 * [global-shortcut](api/global-shortcut.md)
-* [ipc (browser)](api/ipc-browser.md)
+* [ipc (main process)](api/ipc-main-process.md)
 * [menu](api/menu.md)
 * [menu-item](api/menu-item.md)
 * [power-monitor](api/power-monitor.md)
 * [protocol](api/protocol.md)
 * [tray](api/tray.md)
 
-Modules for web page:
+Modules for the renderer process (web page):
 
 * [ipc (renderer)](api/ipc-renderer.md)
 * [remote](api/remote.md)
 * [web-frame](api/web-frame.md)
 
-Modules for both sides:
+Modules for both processes:
 
 * [clipboard](api/clipboard.md)
 * [crash-reporter](api/crash-reporter.md)

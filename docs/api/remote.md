@@ -1,13 +1,13 @@
 # remote
 
 The `remote` module provides a simple way to do inter-process communication
-between the renderer process and the browser process.
+between the renderer process and the main process.
 
 In atom-shell, only GUI-related modules are available in the renderer process.
-Without the `remote` module, users who wanted to call a browser-side API in
+Without the `remote` module, users who wanted to call a main process API in
 the renderer process would have to explicitly send inter-process messages
-to the browser process. With the `remote` module, users can invoke methods of
-browser-side object without explicitly sending inter-process messages,
+to the main process. With the `remote` module, users can invoke methods of
+main process object without explicitly sending inter-process messages,
 similar to Java's
 [RMI](http://en.wikipedia.org/wiki/Java_remote_method_invocation).
 
@@ -23,43 +23,43 @@ win.loadUrl('https://github.com');
 ## Remote objects
 
 Each object (including functions) returned by the `remote` module represents an
-object in the browser process (we call it a remote object or remote function).
+object in the main process (we call it a remote object or remote function).
 When you invoke methods of a remote object, call a remote function, or create
 a new object with the remote constructor (function), you are actually sending
 synchronous inter-process messages.
 
 In the example above, both `BrowserWindow` and `win` were remote objects and
 `new BrowserWindow` didn't create a `BrowserWindow` object in the renderer process.
-Instead, it created a `BrowserWindow` object in the browser process and returned the
+Instead, it created a `BrowserWindow` object in the main process and returned the
 corresponding remote object in the renderer process, namely the `win` object.
 
 ## Lifetime of remote objects
 
 Atom-shell makes sure that as long as the remote object in the renderer process
 lives (in other words, has not been garbage collected), the corresponding object
-in the browser process would never be released. When the remote object has been
-garbage collected, the corresponding object in the browser process would be
+in the main process would never be released. When the remote object has been
+garbage collected, the corresponding object in the main process would be
 dereferenced.
 
 If the remote object is leaked in renderer process (e.g. stored in a map but never
-freed), the corresponding object in the browser process would also be leaked,
+freed), the corresponding object in the main process would also be leaked,
 so you should be very careful not to leak remote objects.
 
 Primary value types like strings and numbers, however, are sent by copy.
 
-## Passing callbacks to browser
+## Passing callbacks to the main process
 
-Some APIs in the browser process accept callbacks, and it would be attempting to
+Some APIs in the main process accept callbacks, and it would be attempting to
 pass callbacks when calling a remote function. The `remote` module does support
 doing this, but you should also be extremely careful with this.
 
-First, in order to avoid deadlocks, the callbacks passed to the browser process
-are called asynchronously, so you should not expect the browser process to
+First, in order to avoid deadlocks, the callbacks passed to the main process
+are called asynchronously, so you should not expect the main process to
 get the return value of the passed callbacks.
 
-Second, the callbacks passed to the browser process will not get released
+Second, the callbacks passed to the main process will not get released
 automatically after they are called. Instead, they will persistent until the
-browser process garbage-collects them.
+main process garbage-collects them.
 
 For example, the following code seems innocent at first glance. It installs a
 callback for the `close` event on a remote object:
@@ -71,19 +71,19 @@ remote.getCurrentWindow().on('close', function() {
 });
 ```
 
-The problem is that the callback would be stored in the browser process until you
+The problem is that the callback would be stored in the main process until you
 explicitly uninstall it! So each time you reload your window, the callback would
 be installed again and previous callbacks would just leak. To make things
 worse, since the context of previously installed callbacks have been released,
-when the `close` event was emitted, exceptions would be raised in the browser process.
+when the `close` event was emitted, exceptions would be raised in the main process.
 
 Generally, unless you are clear what you are doing, you should always avoid
-passing callbacks to the browser process.
+passing callbacks to the main process.
 
 ## Remote buffer
 
 An instance of node's `Buffer` is an object, so when you get a `Buffer` from
-the browser process, what you get is indeed a remote object (let's call it remote
+the main process, what you get is indeed a remote object (let's call it remote
 buffer), and everything would just follow the rules of remote objects.
 
 However you should remember that although a remote buffer behaves like the real
@@ -110,7 +110,7 @@ in fact it was a remote buffer, and it was converted to string before it was
 written to the file. Since `buf` contained binary data and could not be represented
 by a UTF-8 encoded string, the written file was corrupted.
 
-The work-around is to write the `buf` in the browser process, where it is a real
+The work-around is to write the `buf` in the main process, where it is a real
 `Buffer`:
 
 ```javascript
@@ -131,7 +131,7 @@ too, and data corruption could happen when it contains binary data.
 
 * `module` String
 
-Returns the object returned by `require(module)` in the browser process.
+Returns the object returned by `require(module)` in the main process.
 
 ## remote.getCurrentWindow()
 
@@ -142,10 +142,10 @@ belongs to.
 
 * `name` String
 
-Returns the global variable of `name` (e.g. `global[name]`) in the browser
+Returns the global variable of `name` (e.g. `global[name]`) in the main
 process.
 
 ## remote.process
 
-Returns the `process` object in the browser process. This is the same as
+Returns the `process` object in the main process. This is the same as
 `remote.getGlobal('process')`, but gets cached.
