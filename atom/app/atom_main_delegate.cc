@@ -67,9 +67,6 @@ void AtomMainDelegate::PreSandboxStartup() {
   if (!process_type.empty())
     return;
 
-  // Add a flag to mark the start of switches added by atom-shell.
-  command_line->AppendSwitch("atom-shell-switches-start");
-
 #if defined(OS_WIN)
   // Disable the LegacyRenderWidgetHostHWND, it made frameless windows unable
   // to move and resize. We may consider enabling it again after upgraded to
@@ -84,9 +81,6 @@ void AtomMainDelegate::PreSandboxStartup() {
   // Enable AVFoundation.
   command_line->AppendSwitch("enable-avfoundation");
 #endif
-
-  // Add a flag to mark the end of switches added by atom-shell.
-  command_line->AppendSwitch("atom-shell-switches-end");
 }
 
 content::ContentBrowserClient* AtomMainDelegate::CreateContentBrowserClient() {

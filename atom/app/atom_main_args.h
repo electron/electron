@@ -8,10 +8,11 @@
 #include <string>
 #include <vector>
 
-#include "base/logging.h"
+#include "base/macros.h"
 
 namespace atom {
 
+// Singleton to remember the original "argc" and "argv".
 class AtomCommandLine {
  public:
   static void Init(int argc, const char* const* argv);
@@ -20,7 +21,7 @@ class AtomCommandLine {
  private:
   static std::vector<std::string> argv_;
 
-  DISALLOW_COPY_AND_ASSIGN(AtomCommandLine);
+  DISALLOW_IMPLICIT_CONSTRUCTORS(AtomCommandLine);
 };
 
 }  // namespace atom

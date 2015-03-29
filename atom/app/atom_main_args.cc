@@ -6,13 +6,14 @@
 
 namespace atom {
 
-  void AtomCommandLine::Init(int argc,
-          const char* const* argv) {
-    for (int i = 0; i < argc; ++i) {
-      argv_.push_back(argv[i]);
-    }
-  }
+// static
+std::vector<std::string> AtomCommandLine::argv_;
 
-  std::vector<std::string> AtomCommandLine::argv_;
+// static
+void AtomCommandLine::Init(int argc, const char* const* argv) {
+  for (int i = 0; i < argc; ++i) {
+    argv_.push_back(argv[i]);
+  }
+}
 
 }  // namespace atom

@@ -18,10 +18,6 @@
 #include "native_mate/locker.h"
 #include "native_mate/dictionary.h"
 
-#if defined(OS_WIN)
-#include "base/strings/utf_string_conversions.h"
-#endif
-
 #include "atom/common/node_includes.h"
 
 using content::BrowserThread;
@@ -104,10 +100,11 @@ scoped_ptr<const char*[]> StringVectorToArgArray(
   return array.Pass();
 }
 
-base::FilePath GetResourcesPath(base::CommandLine* command_line,
-                                bool is_browser) {
-  base::FilePath exec_path(command_line->argv()[0]);
+base::FilePath GetResourcesPath(bool is_browser) {
+  auto command_line = base::CommandLine::ForCurrentProcess();
+  base::FilePath exec_path(command_line->GetProgram());
   PathService::Get(base::FILE_EXE, &exec_path);
+
   base::FilePath resources_path =
 #if defined(OS_MACOSX)
       is_browser ? exec_path.DirName().DirName().Append("Resources") :
@@ -159,12 +156,11 @@ void NodeBindings::Initialize() {
 node::Environment* NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context) {
   auto args = AtomCommandLine::argv();
-  auto command_line = base::CommandLine::ForCurrentProcess();
 
   // Feed node the path to initialization script.
   base::FilePath::StringType process_type = is_browser_ ?
       FILE_PATH_LITERAL("browser") : FILE_PATH_LITERAL("renderer");
-  base::FilePath resources_path = GetResourcesPath(command_line, is_browser_);
+  base::FilePath resources_path = GetResourcesPath(is_browser_);
   base::FilePath script_path =
       resources_path.Append(FILE_PATH_LITERAL("atom.asar"))
                     .Append(process_type)
@@ -174,7 +170,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   args.insert(args.begin() + 1, script_path_str.c_str());
 
   scoped_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
-  node::Environment* env =  node::CreateEnvironment(
+  node::Environment* env = node::CreateEnvironment(
       context->GetIsolate(), uv_default_loop(), context,
       args.size(), c_argv.get(), 0, nullptr);
 
