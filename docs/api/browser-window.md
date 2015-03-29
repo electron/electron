@@ -598,7 +598,7 @@ Sets whether the window should be visible on all workspaces.
 
 Returns whether the window is visible on all workspaces.
 
-**Note:** This API always return false on Windows.
+**Note:** This API always returns false on Windows.
 
 ## Class: WebContents
 
