@@ -22,6 +22,8 @@ class ContentClient : public content::ContentClient {
   base::StringPiece GetDataResource(int resource_id,
                                     ui::ScaleFactor) const override;
   gfx::Image& GetNativeImageNamed(int resource_id) const override;
+  base::RefCountedStaticMemory* GetDataResourceBytes(
+      int resource_id) const override;
 
   DISALLOW_COPY_AND_ASSIGN(ContentClient);
 };
