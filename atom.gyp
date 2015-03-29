@@ -504,7 +504,7 @@
                 '<(libchromiumcontent_resources_dir)/ui_resources_200_percent.pak',
                 '<(libchromiumcontent_resources_dir)/natives_blob.bin',
                 '<(libchromiumcontent_resources_dir)/snapshot_blob.bin',
-                'external_binaries/d3dcompiler_46.dll',
+                'external_binaries/d3dcompiler_47.dll',
                 'external_binaries/msvcp120.dll',
                 'external_binaries/msvcr120.dll',
                 'external_binaries/vccorlib120.dll',
