@@ -32,7 +32,7 @@ TARGET_BINARIES = {
     'atom.exe',
     'chromiumcontent.dll',
     'content_shell.pak',
-    'd3dcompiler_46.dll',
+    'd3dcompiler_47.dll',
     'ffmpegsumo.dll',
     'icudtl.dat',
     'libEGL.dll',
