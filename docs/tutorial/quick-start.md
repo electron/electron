@@ -4,7 +4,7 @@
 
 Generally, atom-shell enables you to create desktop applications with pure
 JavaScript by providing a runtime with rich native APIs. You could see it as
-a variant of the Node.js runtime which is focused on desktop applications
+a variant of the io.js runtime which is focused on desktop applications
 instead of web servers.
 
 It doesn't mean atom-shell is a JavaScript binding to GUI libraries. Instead,
@@ -13,25 +13,40 @@ Chromium browser, controlled by JavaScript.
 
 ### The main process
 
-The main atom-shell process displays a GUI by creating web pages. We have
-**scripts that run in the atom-shell runtime**, that create **scripts
-that run in the web page**.
-
-In atom-shell, we have provided the [ipc](../api/ipc-renderer.md) module for
-communication from the main process to the renderer process, and the
-[remote](../api/remote.md) module for easy RPC support.
+In atom-shell the process that runs `package.json`'s `main` script is called
+__the main process__. The script runs in the main process can display GUI by
+creating web pages.
 
 ### The renderer process
 
-Normal web pages are designed to not reach outside of the browser, which makes
-them unsuitable for interacting with native systems. Atom-shell provides Node.js
-APIs in web pages so you can access native resources from web pages, just like
-[nw.js](https://github.com/nwjs/nw.js).
+Since atom-shell uses Chromium for displaying web pages, Chromium's
+multi-processes architecture is also used. Each web page in atom-shell runs in
+its own process, which is called __the renderer process__.
 
-But unlike nw.js, you cannot do native GUI related operations in web
-pages. Instead you need to do them on the main process by sending messages to
-it, or using the easy [remote](../api/remote.md) module.
+In normal browsers web pages are usually running in sandboxed environment and
+not allowed to access native resources. In atom-shell users are given the power
+to use io.js APIs in web pages, so it would be possible to interactive with
+low level operating system in web pages with JavaScript.
 
+### Differences between main process and renderer process
+
+The main process creates web pages by creating `BrowserWindow` instances, and
+each `BrowserWindow` instance runs the web page in its own renderer process,
+when a `BrowserWindow` instance is destroyed, the corresponding renderer process
+would also be terminated.
+
+So the main process manages all web pages and their corresponding renderer
+processes, and each renderer process is separated from each other and only care
+about the web page running in it.
+
+In web pages it is not allowed call native GUI related APIs because managing
+native GUI resources in web pages is very dangerous and easy to leak resources.
+If you want to do GUI operations in web pages, you have to communicate with
+the main process to do it there.
+
+In atom-shell, we have provided the [ipc](../api/ipc-renderer.md) module for
+communication between main process and renderer process. And there is also a
+[remote](../api/remote.md) module for RPC style communication.
 
 ## Write your first atom-shell app
 
