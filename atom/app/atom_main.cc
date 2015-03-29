@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "atom/app/atom_main.h"
+#include "atom/app/atom_main_args.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -95,43 +96,44 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     freopen_s(&dontcare, "CON", "r", stdin);
   }
 
-  std::string node_indicator, crash_service_indicator;
-  if (env->GetVar("ATOM_SHELL_INTERNAL_RUN_AS_NODE", &node_indicator) &&
-      node_indicator == "1") {
-    // Convert argv to to UTF8
-    char** argv = new char*[argc];
-    for (int i = 0; i < argc; i++) {
-      // Compute the size of the required buffer
-      DWORD size = WideCharToMultiByte(CP_UTF8,
+  // Convert argv to to UTF8
+  char** argv = new char*[argc];
+  for (int i = 0; i < argc; i++) {
+    // Compute the size of the required buffer
+    DWORD size = WideCharToMultiByte(CP_UTF8,
+                                     0,
+                                     wargv[i],
+                                     -1,
+                                     NULL,
+                                     0,
+                                     NULL,
+                                     NULL);
+    if (size == 0) {
+      // This should never happen.
+      fprintf(stderr, "Could not convert arguments to utf8.");
+      exit(1);
+    }
+    // Do the actual conversion
+    argv[i] = new char[size];
+    DWORD result = WideCharToMultiByte(CP_UTF8,
                                        0,
                                        wargv[i],
                                        -1,
-                                       NULL,
-                                       0,
+                                       argv[i],
+                                       size,
                                        NULL,
                                        NULL);
-      if (size == 0) {
-        // This should never happen.
-        fprintf(stderr, "Could not convert arguments to utf8.");
-        exit(1);
-      }
-      // Do the actual conversion
-      argv[i] = new char[size];
-      DWORD result = WideCharToMultiByte(CP_UTF8,
-                                         0,
-                                         wargv[i],
-                                         -1,
-                                         argv[i],
-                                         size,
-                                         NULL,
-                                         NULL);
-      if (result == 0) {
-        // This should never happen.
-        fprintf(stderr, "Could not convert arguments to utf8.");
-        exit(1);
-      }
+    if (result == 0) {
+      // This should never happen.
+      fprintf(stderr, "Could not convert arguments to utf8.");
+      exit(1);
     }
-    // Now that conversion is done, we can finally start.
+  }
+
+  std::string node_indicator, crash_service_indicator;
+  if (env->GetVar("ATOM_SHELL_INTERNAL_RUN_AS_NODE", &node_indicator) &&
+      node_indicator == "1") {
+    // Now that argv conversion is done, we can finally start.
     base::i18n::InitializeICU();
     return atom::NodeMain(argc, argv);
   } else if (env->GetVar("ATOM_SHELL_INTERNAL_CRASH_SERVICE",
@@ -153,6 +155,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   content::ContentMainParams params(&delegate);
   params.instance = instance;
   params.sandbox_info = &sandbox_info;
+  atom::AtomCommandLine::Init(argc, argv);
   return content::ContentMain(params);
 }
 
@@ -169,6 +172,7 @@ int main(int argc, const char* argv[]) {
   content::ContentMainParams params(&delegate);
   params.argc = argc;
   params.argv = argv;
+  atom::AtomCommandLine::Init(argc, argv);
   return content::ContentMain(params);
 }
 

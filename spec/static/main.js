@@ -33,7 +33,7 @@ ipc.on('echo', function(event, msg) {
   event.returnValue = msg;
 });
 
-if (process.argv[1] == '--ci') {
+if (process.argv[2] == '--ci') {
   process.removeAllListeners('uncaughtException');
   process.on('uncaughtException', function(error) {
     console.error(error, error.stack);

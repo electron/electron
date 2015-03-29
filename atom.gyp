@@ -62,6 +62,8 @@
     'lib_sources': [
       'atom/app/atom_content_client.cc',
       'atom/app/atom_content_client.h',
+      'atom/app/atom_main_args.cc',
+      'atom/app/atom_main_args.h',
       'atom/app/atom_main_delegate.cc',
       'atom/app/atom_main_delegate.h',
       'atom/app/atom_main_delegate_mac.mm',

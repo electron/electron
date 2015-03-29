@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/app/atom_main_args.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "base/command_line.h"
 #include "base/base_paths.h"
@@ -97,21 +98,11 @@ void UvNoOp(uv_async_t* handle) {
 scoped_ptr<const char*[]> StringVectorToArgArray(
     const std::vector<std::string>& vector) {
   scoped_ptr<const char*[]> array(new const char*[vector.size()]);
-  for (size_t i = 0; i < vector.size(); ++i)
+  for (size_t i = 0; i < vector.size(); ++i) {
     array[i] = vector[i].c_str();
+  }
   return array.Pass();
 }
-
-#if defined(OS_WIN)
-std::vector<std::string> String16VectorToStringVector(
-    const std::vector<base::string16>& vector) {
-  std::vector<std::string> utf8_vector;
-  utf8_vector.reserve(vector.size());
-  for (size_t i = 0; i < vector.size(); ++i)
-    utf8_vector.push_back(base::UTF16ToUTF8(vector[i]));
-  return utf8_vector;
-}
-#endif
 
 base::FilePath GetResourcesPath(base::CommandLine* command_line,
                                 bool is_browser) {
@@ -167,13 +158,8 @@ void NodeBindings::Initialize() {
 
 node::Environment* NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context) {
+  auto args = AtomCommandLine::argv();
   auto command_line = base::CommandLine::ForCurrentProcess();
-  std::vector<std::string> args =
-#if defined(OS_WIN)
-      String16VectorToStringVector(command_line->argv());
-#else
-      command_line->argv();
-#endif
 
   // Feed node the path to initialization script.
   base::FilePath::StringType process_type = is_browser_ ?

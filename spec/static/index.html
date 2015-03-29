@@ -15,7 +15,7 @@
 
   // Check if we are running in CI.
   var argv = require('remote').process.argv;
-  var isCi = argv[1] == '--ci';
+  var isCi = argv[2] == '--ci';
 
   if (!isCi) {
     var win = require('remote').getCurrentWindow();
