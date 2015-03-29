@@ -77,6 +77,9 @@ class NativeWindowMac : public NativeWindow {
                       const std::string& description) override;
   void ShowDefinitionForSelection() override;
 
+  void SetVisibleOnAllWorkspaces(bool visible) override;
+  bool IsVisibleOnAllWorkspaces() override;
+
   // Returns true if |point| in local Cocoa coordinate system falls within
   // the draggable region.
   bool IsWithinDraggableRegion(NSPoint point) const;

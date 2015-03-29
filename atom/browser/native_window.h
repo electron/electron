@@ -144,6 +144,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void SetProgressBar(double progress) = 0;
   virtual void SetOverlayIcon(const gfx::Image& overlay,
                               const std::string& description) = 0;
+  virtual void SetVisibleOnAllWorkspaces(bool visible) = 0;
+  virtual bool IsVisibleOnAllWorkspaces() = 0;
 
   virtual bool IsClosed() const { return is_closed_; }
   virtual void OpenDevTools(bool can_dock);

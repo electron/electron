@@ -422,6 +422,14 @@ void Window::ShowDefinitionForSelection() {
 }
 #endif
 
+void Window::SetVisibleOnAllWorkspaces(bool visible) {
+  return window_->SetVisibleOnAllWorkspaces(visible);
+}
+
+bool Window::IsVisibleOnAllWorkspaces() {
+  return window_->IsVisibleOnAllWorkspaces();
+}
+
 mate::Handle<WebContents> Window::GetWebContents(v8::Isolate* isolate) const {
   return WebContents::CreateFrom(isolate, window_->GetWebContents());
 }
@@ -492,6 +500,10 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isMenuBarAutoHide", &Window::IsMenuBarAutoHide)
       .SetMethod("setMenuBarVisibility", &Window::SetMenuBarVisibility)
       .SetMethod("isMenuBarVisible", &Window::IsMenuBarVisible)
+      .SetMethod("setVisibleOnAllWorkspaces",
+                 &Window::SetVisibleOnAllWorkspaces)
+      .SetMethod("isVisibleOnAllWorkspaces",
+                 &Window::IsVisibleOnAllWorkspaces)
 #if defined(OS_MACOSX)
       .SetMethod("showDefinitionForSelection",
                  &Window::ShowDefinitionForSelection)

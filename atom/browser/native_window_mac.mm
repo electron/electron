@@ -692,6 +692,21 @@ void NativeWindowMac::ShowDefinitionForSelection() {
   rwhv->ShowDefinitionForSelection();
 }
 
+void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible) {
+  NSUInteger collectionBehavior = [window_ collectionBehavior];
+  if (visible) {
+    collectionBehavior |= NSWindowCollectionBehaviorCanJoinAllSpaces;
+  } else {
+    collectionBehavior &= ~NSWindowCollectionBehaviorCanJoinAllSpaces;
+  }
+  [window_ setCollectionBehavior:collectionBehavior];
+}
+
+bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
+  NSUInteger collectionBehavior = [window_ collectionBehavior];
+  return collectionBehavior & NSWindowCollectionBehaviorCanJoinAllSpaces;
+}
+
 bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {
   if (!draggable_region_)
     return false;

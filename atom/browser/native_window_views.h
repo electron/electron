@@ -80,6 +80,8 @@ class NativeWindowViews : public NativeWindow,
   bool IsMenuBarAutoHide() override;
   void SetMenuBarVisibility(bool visible) override;
   bool IsMenuBarVisible() override;
+  void SetVisibleOnAllWorkspaces(bool visible) override;
+  bool IsVisibleOnAllWorkspaces() override;
 
   gfx::AcceleratedWidget GetAcceleratedWidget();
 

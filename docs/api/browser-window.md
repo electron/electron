@@ -586,6 +586,20 @@ can still bring up the menu bar by pressing the single `Alt` key.
 
 Returns whether the menu bar is visible.
 
+### BrowserWindow.setVisibleOnAllWorkspaces(visible)
+
+* `visible` Boolean
+
+Sets whether the window should be visible on all workspaces.
+
+**Note:** This API does nothing on Windows.
+
+### BrowserWindow.isVisibleOnAllWorkspaces()
+
+Returns whether the window is visible on all workspaces.
+
+**Note:** This API always return false on Windows.
+
 ## Class: WebContents
 
 A `WebContents` is responsible for rendering and controlling a web page.
