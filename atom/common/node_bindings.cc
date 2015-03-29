@@ -18,6 +18,10 @@
 #include "native_mate/locker.h"
 #include "native_mate/dictionary.h"
 
+#if defined(OS_WIN)
+#include "base/strings/utf_string_conversions.h"
+#endif
+
 #include "atom/common/node_includes.h"
 
 using content::BrowserThread;
@@ -86,6 +90,18 @@ namespace {
 
 // Empty callback for async handle.
 void UvNoOp(uv_async_t* handle) {
+}
+
+// Convert the given vector to an array of C-strings. The strings in the
+// returned vector are only guaranteed valid so long as the vector of strings
+// is not modified.
+scoped_ptr<const char*[]> StringVectorToArgArray(
+    const std::vector<std::string>& vector) {
+  scoped_ptr<const char*[]> array(new const char*[vector.size()]);
+  for (size_t i = 0; i < vector.size(); ++i) {
+    array[i] = vector[i].c_str();
+  }
+  return array.Pass();
 }
 
 base::FilePath GetResourcesPath(base::CommandLine* command_line,
@@ -157,9 +173,10 @@ node::Environment* NodeBindings::CreateEnvironment(
   std::string script_path_str = script_path.AsUTF8Unsafe();
   args.insert(args.begin() + 1, script_path_str.c_str());
 
+  scoped_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
   node::Environment* env =  node::CreateEnvironment(
       context->GetIsolate(), uv_default_loop(), context,
-      args.size(), &args[0], 0, nullptr);
+      args.size(), c_argv.get(), 0, nullptr);
 
   mate::Dictionary process(context->GetIsolate(), env->process_object());
   process.Set("type", process_type);
