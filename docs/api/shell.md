@@ -32,7 +32,7 @@ example, mailto: URLs in the default mail user agent.)
 
 * `fullPath` String
 
-Move the given file to trash.
+Move the given file to trash and returns boolean status for the operation.
 
 ## shell.beep()
 

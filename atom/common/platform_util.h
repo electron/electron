@@ -26,7 +26,7 @@ void OpenItem(const base::FilePath& full_path);
 void OpenExternal(const GURL& url);
 
 // Move a file to trash.
-void MoveItemToTrash(const base::FilePath& full_path);
+bool MoveItemToTrash(const base::FilePath& full_path);
 
 void Beep();
 
