@@ -26,16 +26,15 @@ bool XDGUtil(const std::string& util, const std::string& arg) {
   // bring up a new terminal if necessary.  See "man mailcap".
   options.environ["MM_NOTTTY"] = "1";
 
-  base::ProcessHandle handle;
-  if (base::LaunchProcess(argv, options, &handle)) {
-      int exit_code;
-      base::Process process(handle);
-      base::EnsureProcessGetsReaped(handle);
-      process.WaitForExit(&exit_code);
-      return (exit_code == 0);
-  }
+  base::Process process = base::LaunchProcess(argv, options);
+  if (!process.IsValid())
+    return false;
 
-  return false;
+  int exit_code = -1;
+  if (!process.WaitForExit(&exit_code))
+    return false;
+
+  return (exit_code == 0);
 }
 
 void XDGOpen(const std::string& path) {
