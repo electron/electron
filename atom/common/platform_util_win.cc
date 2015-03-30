@@ -189,7 +189,8 @@ bool MoveItemToTrash(const base::FilePath& path) {
   // an empty directory and some return 0x402 when they should be returning
   // ERROR_FILE_NOT_FOUND. MSDN says Vista and up won't return 0x402.  Windows 7
   // can return DE_INVALIDFILES (0x7C) for nonexistent directories.
-  return (err == 0 || err == ERROR_FILE_NOT_FOUND || err == DE_INVALIDFILES);
+  return (err == 0 || err == ERROR_FILE_NOT_FOUND || err == 0x402 ||
+          err == 0x7C);
 }
 
 void Beep() {
