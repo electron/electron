@@ -218,7 +218,7 @@ Append an argument to Chromium's command line. The argument will quoted properly
 ## app.dock.bounce([type])
 
 * `type` String - Can be `critical` or `informational`, the default is
-* `informational`
+ `informational`
 
 When `critical` is passed, the dock icon will bounce until either the
 application becomes active or the request is canceled.
