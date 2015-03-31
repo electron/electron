@@ -184,6 +184,10 @@ Emitted when devtools is opened.
 
 Emitted when devtools is closed.
 
+### Event: 'devtools-focused'
+
+Emitted when devtools is focused / opened.
+
 ### Class Method: BrowserWindow.getAllWindows()
 
 Returns an array of all opened browser windows.

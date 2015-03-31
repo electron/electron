@@ -139,6 +139,10 @@ void Window::OnRendererResponsive() {
   Emit("responsive");
 }
 
+void Window::OnDevToolsFocus() {
+  Emit("devtools-focused");
+}
+
 // static
 mate::Wrappable* Window::New(v8::Isolate* isolate,
                              const mate::Dictionary& options) {
