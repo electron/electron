@@ -191,7 +191,7 @@ def create_dist_zip():
   with scoped_cwd(DIST_DIR):
     files = TARGET_BINARIES[TARGET_PLATFORM] +  ['LICENSE', 'version']
     if TARGET_PLATFORM == 'linux':
-      files += SYSTEM_LIBRARIES
+      files += [lib for lib in SYSTEM_LIBRARIES if os.path.exists(lib)]
     dirs = TARGET_DIRECTORIES[TARGET_PLATFORM]
     make_zip(zip_file, files, dirs)
 
