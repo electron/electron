@@ -504,6 +504,7 @@
                 '<(libchromiumcontent_resources_dir)/ui_resources_200_percent.pak',
                 '<(libchromiumcontent_resources_dir)/natives_blob.bin',
                 '<(libchromiumcontent_resources_dir)/snapshot_blob.bin',
+                '<(PRODUCT_DIR)/node.dll',
                 'external_binaries/d3dcompiler_47.dll',
                 'external_binaries/msvcp120.dll',
                 'external_binaries/msvcr120.dll',
@@ -530,6 +531,7 @@
                 '<(libchromiumcontent_resources_dir)/content_shell.pak',
                 '<(libchromiumcontent_resources_dir)/natives_blob.bin',
                 '<(libchromiumcontent_resources_dir)/snapshot_blob.bin',
+                '<(PRODUCT_DIR)/libnode.so',
               ],
             },
             {
@@ -548,7 +550,7 @@
       'dependencies': [
         'atom_coffee2c',
         'vendor/brightray/brightray.gyp:brightray',
-        'vendor/node/node.gyp:node_lib',
+        'vendor/node/node.gyp:node',
       ],
       'defines': [
         'PRODUCT_NAME="<(product_name)"',
@@ -866,9 +868,6 @@
           ],
           'xcode_settings': {
             'INFOPLIST_FILE': 'atom/common/resources/mac/Info.plist',
-            'LIBRARY_SEARCH_PATHS': [
-              '<(libchromiumcontent_library_dir)',
-            ],
             'LD_DYLIB_INSTALL_NAME': '@rpath/<(product_name) Framework.framework/<(product_name) Framework',
             'LD_RUNPATH_SEARCH_PATHS': [
               '@loader_path/Libraries',
@@ -883,6 +882,7 @@
               'files': [
                 '<(libchromiumcontent_library_dir)/ffmpegsumo.so',
                 '<(libchromiumcontent_library_dir)/libchromiumcontent.dylib',
+                '<(PRODUCT_DIR)/libnode.dylib',
               ],
             },
             {
@@ -894,6 +894,16 @@
             },
           ],
           'postbuilds': [
+            {
+              'postbuild_name': 'Fix path of libnode',
+              'action': [
+                'install_name_tool',
+                '-change',
+                '/usr/local/lib/libnode.dylib',
+                '@rpath/libnode.dylib',
+                '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
+              ],
+            },
             {
               'postbuild_name': 'Add symlinks for framework subdirectories',
               'action': [
