@@ -95,6 +95,8 @@
               '-Wno-unused-value',
               '-Wno-deprecated-declarations',
               '-Wno-return-type',
+              # Fix relocation error when compiling as shared library.
+              '-fPIC',
             ],
           }],
         ],
