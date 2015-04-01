@@ -250,7 +250,7 @@ You should only use this method when the renderer process (web page) has crashed
 
 Try to close the window, this has the same effect with user manually clicking
 the close button of the window. The web page may cancel the close though, see
-the [close event](window#event-close).
+the [close event](#event-close).
 
 ### BrowserWindow.focus()
 
