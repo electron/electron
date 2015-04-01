@@ -22,11 +22,6 @@
 
 using content::BrowserThread;
 
-// Forward declaration of internal node functions.
-namespace node {
-void Init(int*, const char**, int*, const char***);
-}
-
 // Force all builtin modules to be referenced so they can actually run their
 // DSO constructors, see http://git.io/DRIqCg.
 #define REFERENCE_MODULE(name) \
