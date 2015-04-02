@@ -1,10 +1,13 @@
 {
+  'includes': [
+    'vendor/download/libchromiumcontent/filenames.gypi',
+  ],
   'variables': {
-    'libchromiumcontent_dir': 'vendor/download/libchromiumcontent',
     'libchromiumcontent_library_dir': '<(libchromiumcontent_dir)/Release',
     'libchromiumcontent_include_dir': '<(libchromiumcontent_dir)/src',
     'libchromiumcontent_resources_dir': '<(libchromiumcontent_library_dir)',
     'libchromiumcontent_src_dir': '<(libchromiumcontent_dir)/src',
+
     'mac_deployment_target%': '10.8',
     'mac_sdkroot%': 'macosx',
 
@@ -72,7 +75,7 @@
           'SK_IGNORE_GPU_DITHER',
         ],
         'msvs_configuration_attributes': {
-          'OutputDirectory': '<(DEPTH)\\build\\$(ConfigurationName)', 
+          'OutputDirectory': '<(DEPTH)\\build\\$(ConfigurationName)',
           'IntermediateDirectory': '$(OutDir)\\obj\\$(ProjectName)',
           'CharacterSet': '1',
         },
