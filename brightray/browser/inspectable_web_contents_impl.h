@@ -127,6 +127,7 @@ class InspectableWebContentsImpl :
   void HandleKeyboardEvent(
       content::WebContents*, const content::NativeWebKeyboardEvent&) override;
   void CloseContents(content::WebContents* source) override;
+  void WebContentsFocused(content::WebContents* contents) override;
 
   scoped_ptr<content::WebContents> web_contents_;
   scoped_ptr<content::WebContents> devtools_web_contents_;

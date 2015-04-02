@@ -241,6 +241,12 @@ void InspectableWebContentsImpl::AppendToFile(
     delegate_->DevToolsAppendToFile(url, content);
 }
 
+void InspectableWebContentsImpl::WebContentsFocused(
+    content::WebContents* contents) {
+  if (delegate_)
+    delegate_->DevToolsFocused();
+}
+
 void InspectableWebContentsImpl::RequestFileSystems() {
     devtools_web_contents()->GetMainFrame()->ExecuteJavaScript(
         base::ASCIIToUTF16("DevToolsAPI.fileSystemsLoaded([])"));

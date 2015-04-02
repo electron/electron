@@ -19,6 +19,7 @@ class InspectableWebContentsDelegate {
       const std::string& url, const std::string& content, bool save_as) {}
   virtual void DevToolsAppendToFile(
       const std::string& url, const std::string& content) {}
+  virtual void DevToolsFocused() {}
 
 #if defined(USE_X11)
   // Called when creating devtools window.
