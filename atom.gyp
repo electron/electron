@@ -392,12 +392,16 @@
        # Rules for excluding e.g. foo_win.cc from the build on non-Windows.
       'filename_rules.gypi',
     ],
-    'configurations': {
-      'Debug': {
-        'defines': [ 'DEBUG' ],
-        'cflags': [ '-g', '-O0' ],
-      },
-    },
+    'conditions': [
+      ['libchromiumcontent_component', {
+        'configurations': {
+          'Debug': {
+            'defines': [ 'DEBUG' ],
+            'cflags': [ '-g', '-O0' ],
+          },
+        },
+      }],
+    ],
   },
   'targets': [
     {
@@ -494,16 +498,16 @@
             {
               'destination': '<(PRODUCT_DIR)',
               'files': [
-                '<(libchromiumcontent_library_dir)/chromiumcontent.dll',
-                '<(libchromiumcontent_library_dir)/ffmpegsumo.dll',
-                '<(libchromiumcontent_library_dir)/libEGL.dll',
-                '<(libchromiumcontent_library_dir)/libGLESv2.dll',
-                '<(libchromiumcontent_resources_dir)/icudtl.dat',
-                '<(libchromiumcontent_resources_dir)/content_resources_200_percent.pak',
-                '<(libchromiumcontent_resources_dir)/content_shell.pak',
-                '<(libchromiumcontent_resources_dir)/ui_resources_200_percent.pak',
-                '<(libchromiumcontent_resources_dir)/natives_blob.bin',
-                '<(libchromiumcontent_resources_dir)/snapshot_blob.bin',
+                '<(libchromiumcontent_dir)/chromiumcontent.dll',
+                '<(libchromiumcontent_dir)/ffmpegsumo.dll',
+                '<(libchromiumcontent_dir)/libEGL.dll',
+                '<(libchromiumcontent_dir)/libGLESv2.dll',
+                '<(libchromiumcontent_dir)/icudtl.dat',
+                '<(libchromiumcontent_dir)/content_resources_200_percent.pak',
+                '<(libchromiumcontent_dir)/content_shell.pak',
+                '<(libchromiumcontent_dir)/ui_resources_200_percent.pak',
+                '<(libchromiumcontent_dir)/natives_blob.bin',
+                '<(libchromiumcontent_dir)/snapshot_blob.bin',
                 'external_binaries/d3dcompiler_47.dll',
                 'external_binaries/msvcp120.dll',
                 'external_binaries/msvcr120.dll',
@@ -524,12 +528,12 @@
             {
               'destination': '<(PRODUCT_DIR)',
               'files': [
-                '<(libchromiumcontent_library_dir)/libchromiumcontent.so',
-                '<(libchromiumcontent_library_dir)/libffmpegsumo.so',
-                '<(libchromiumcontent_resources_dir)/icudtl.dat',
-                '<(libchromiumcontent_resources_dir)/content_shell.pak',
-                '<(libchromiumcontent_resources_dir)/natives_blob.bin',
-                '<(libchromiumcontent_resources_dir)/snapshot_blob.bin',
+                '<(libchromiumcontent_dir)/libchromiumcontent.so',
+                '<(libchromiumcontent_dir)/libffmpegsumo.so',
+                '<(libchromiumcontent_dir)/icudtl.dat',
+                '<(libchromiumcontent_dir)/content_shell.pak',
+                '<(libchromiumcontent_dir)/natives_blob.bin',
+                '<(libchromiumcontent_dir)/snapshot_blob.bin',
               ],
             },
             {
@@ -716,7 +720,7 @@
                 '--build-dir=<(PRODUCT_DIR)',
                 '--binary=<(PRODUCT_DIR)/<(product_name).app/Contents/MacOS/<(product_name)',
                 '--symbols-dir=<(PRODUCT_DIR)/Atom-Shell.breakpad.syms',
-                '--libchromiumcontent-dir=<(libchromiumcontent_library_dir)',
+                '--libchromiumcontent-dir=<(libchromiumcontent_dir)',
                 '--clear',
                 '--jobs=16',
               ],
@@ -739,7 +743,7 @@
                 '--symbols-dir=<(PRODUCT_DIR)/Atom-Shell.breakpad.syms',
                 '--jobs=16',
                 '<(PRODUCT_DIR)',
-                '<(libchromiumcontent_library_dir)',
+                '<(libchromiumcontent_dir)',
               ],
             },
           ],
@@ -763,7 +767,7 @@
                 '--build-dir=<(PRODUCT_DIR)',
                 '--binary=<(PRODUCT_DIR)/<(project_name)',
                 '--symbols-dir=<(PRODUCT_DIR)/Atom-Shell.breakpad.syms',
-                '--libchromiumcontent-dir=<(libchromiumcontent_library_dir)',
+                '--libchromiumcontent-dir=<(libchromiumcontent_dir)',
                 '--clear',
                 '--jobs=16',
               ],
@@ -808,7 +812,7 @@
             ],
           },
           'inputs': [
-            '<(libchromiumcontent_library_dir)/<(chromedriver_binary)',
+            '<(libchromiumcontent_dir)/<(chromedriver_binary)',
           ],
           'outputs': [
             '<(PRODUCT_DIR)/<(chromedriver_binary)',
@@ -839,7 +843,7 @@
           'include_dirs': [
             '.',
             'vendor',
-            '<(libchromiumcontent_include_dir)',
+            '<(libchromiumcontent_src_dir)',
           ],
           'defines': [
             'PRODUCT_NAME="<(product_name)"',
@@ -859,10 +863,10 @@
           'mac_bundle': 1,
           'mac_bundle_resources': [
             'atom/common/resources/mac/MainMenu.xib',
-            '<(libchromiumcontent_resources_dir)/content_shell.pak',
-            '<(libchromiumcontent_resources_dir)/icudtl.dat',
-            '<(libchromiumcontent_resources_dir)/natives_blob.bin',
-            '<(libchromiumcontent_resources_dir)/snapshot_blob.bin',
+            '<(libchromiumcontent_dir)/content_shell.pak',
+            '<(libchromiumcontent_dir)/icudtl.dat',
+            '<(libchromiumcontent_dir)/natives_blob.bin',
+            '<(libchromiumcontent_dir)/snapshot_blob.bin',
           ],
           'xcode_settings': {
             'INFOPLIST_FILE': 'atom/common/resources/mac/Info.plist',
@@ -879,7 +883,7 @@
               'destination': '<(PRODUCT_DIR)/<(product_name) Framework.framework/Versions/A/Libraries',
               'files': [
                 '<@(libchromiumcontent_shared_libraries)',
-                '<(libchromiumcontent_library_dir)/ffmpegsumo.so',
+                '<(libchromiumcontent_dir)/ffmpegsumo.so',
                 '<(PRODUCT_DIR)/libnode.dylib',
               ],
             },
@@ -974,7 +978,7 @@
               'action_name': 'Create node.lib',
               'inputs': [
                 '<(PRODUCT_DIR)/node.dll.lib',
-                '<(libchromiumcontent_library_dir)/chromiumcontent.dll.lib',
+                '<(libchromiumcontent_dir)/chromiumcontent.dll.lib',
               ],
               'outputs': [
                 '<(PRODUCT_DIR)/node.lib',

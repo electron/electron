@@ -107,23 +107,42 @@
         ],
       }],
       ['_target_name=="node"', {
-        'conditions': [
-          ['OS=="linux"', {
-            'libraries': [
-              '<(libchromiumcontent_library_dir)/libv8.so',
-            ],
-          }],
-          ['OS=="win"', {
-            'libraries': [
-              '<(libchromiumcontent_library_dir)/v8.dll.lib',
-            ],
-          }],
-          ['OS=="mac"', {
-            'libraries': [
-              '<(libchromiumcontent_library_dir)/libv8.dylib',
-            ],
-          }],
-        ],
+        'variables': {
+          'conditions': [
+            ['OS=="linux" and libchromiumcontent_component==1', {
+              'v8_libs': ['<(libchromiumcontent_dir)/libv8.so']
+            }],
+            ['OS=="mac" and libchromiumcontent_component==1', {
+              'v8_libs': ['<(libchromiumcontent_dir)/libv8.dylib']
+            }],
+            ['OS=="win" and libchromiumcontent_component==1', {
+              'v8_libs': ['<(libchromiumcontent_dir)/v8.dll.lib']
+            }],
+            ['OS in ["linux", "mac"] and libchromiumcontent_component==0', {
+              'v8_libs': [
+                '<(libchromiumcontent_dir)/libv8_base.a',
+                '<(libchromiumcontent_dir)/libv8_external_snapshot.a',
+                '<(libchromiumcontent_dir)/libv8_libbase.a',
+                '<(libchromiumcontent_dir)/libv8_libplatform.a',
+                '<(libchromiumcontent_dir)/libicudata.a',
+                '<(libchromiumcontent_dir)/libicui18n.a',
+                '<(libchromiumcontent_dir)/libicuuc.a',
+              ],
+            }],
+            ['OS=="win" and libchromiumcontent_component==0', {
+              'v8_libs': [
+                '<(libchromiumcontent_dir)/v8_base.lib',
+                '<(libchromiumcontent_dir)/v8_external_snapshot.lib',
+                '<(libchromiumcontent_dir)/v8_libbase.lib',
+                '<(libchromiumcontent_dir)/v8_libplatform.lib',
+                '<(libchromiumcontent_dir)/icudata.lib',
+                '<(libchromiumcontent_dir)/icui18n.lib',
+                '<(libchromiumcontent_dir)/icuuc.lib',
+              ],
+            }],
+          ],
+        },
+        'libraries': ['<@(v8_libs)']
       }],
       ['_target_name=="libuv"', {
         'conditions': [

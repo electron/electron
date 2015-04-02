@@ -19,7 +19,7 @@ def main():
 
   args = parse_args()
   for config in args.configuration:
-    build_path = os.path.join('out', config)
+    build_path = os.path.join('out', 'Real' + config)
     ret = subprocess.call([ninja, '-C', build_path, args.target])
     if ret != 0:
       sys.exit(ret)
