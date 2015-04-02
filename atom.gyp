@@ -878,8 +878,8 @@
             {
               'destination': '<(PRODUCT_DIR)/<(product_name) Framework.framework/Versions/A/Libraries',
               'files': [
+                '<@(libchromiumcontent_shared_libraries)',
                 '<(libchromiumcontent_library_dir)/ffmpegsumo.so',
-                '<(libchromiumcontent_library_dir)/libchromiumcontent.dylib',
                 '<(PRODUCT_DIR)/libnode.dylib',
               ],
             },

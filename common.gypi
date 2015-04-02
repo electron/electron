@@ -110,17 +110,17 @@
         'conditions': [
           ['OS=="linux"', {
             'libraries': [
-              '<(libchromiumcontent_library_dir)/libchromiumcontent.so',
+              '<(libchromiumcontent_library_dir)/libv8.so',
             ],
           }],
           ['OS=="win"', {
             'libraries': [
-              '<(libchromiumcontent_library_dir)/chromiumcontent.dll.lib',
+              '<(libchromiumcontent_library_dir)/v8.dll.lib',
             ],
           }],
           ['OS=="mac"', {
             'libraries': [
-              '<(libchromiumcontent_library_dir)/libchromiumcontent.dylib',
+              '<(libchromiumcontent_library_dir)/libv8.dylib',
             ],
           }],
         ],
