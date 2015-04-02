@@ -1,4 +1,7 @@
 {
+  'includes': [
+    'vendor/brightray/brightray.gypi',
+  ],
   'variables': {
     'clang': 0,
     'openssl_no_asm': 1,
@@ -37,7 +40,7 @@
   # Settings to compile node under Windows.
   'target_defaults': {
     'target_conditions': [
-      ['_target_name in ["libuv", "http_parser", "cares", "openssl", "openssl-cli", "node_lib", "zlib"]', {
+      ['_target_name in ["libuv", "http_parser", "cares", "openssl", "openssl-cli", "node", "zlib"]', {
         'msvs_disabled_warnings': [
           4703,  # potentially uninitialized local pointer variable 'req' used
           4013,  # 'free' undefined; assuming extern returning int
@@ -92,13 +95,34 @@
               '-Wno-unused-value',
               '-Wno-deprecated-declarations',
               '-Wno-return-type',
+              # Fix relocation error when compiling as shared library.
+              '-fPIC',
             ],
           }],
         ],
       }],
-      ['_target_name in ["node_lib", "atom_lib"]', {
+      ['_target_name in ["node", "atom_lib"]', {
         'include_dirs': [
           'vendor/brightray/vendor/download/libchromiumcontent/src/v8/include',
+        ],
+      }],
+      ['_target_name=="node"', {
+        'conditions': [
+          ['OS=="linux"', {
+            'libraries': [
+              '<(libchromiumcontent_library_dir)/libchromiumcontent.so',
+            ],
+          }],
+          ['OS=="win"', {
+            'libraries': [
+              '<(libchromiumcontent_library_dir)/chromiumcontent.dll.lib',
+            ],
+          }],
+          ['OS=="mac"', {
+            'libraries': [
+              '<(libchromiumcontent_library_dir)/libchromiumcontent.dylib',
+            ],
+          }],
         ],
       }],
       ['_target_name=="libuv"', {

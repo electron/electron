@@ -548,7 +548,7 @@
       'dependencies': [
         'atom_coffee2c',
         'vendor/brightray/brightray.gyp:brightray',
-        'vendor/node/node.gyp:node_lib',
+        'vendor/node/node.gyp:node',
       ],
       'defines': [
         'PRODUCT_NAME="<(product_name)"',
@@ -866,9 +866,6 @@
           ],
           'xcode_settings': {
             'INFOPLIST_FILE': 'atom/common/resources/mac/Info.plist',
-            'LIBRARY_SEARCH_PATHS': [
-              '<(libchromiumcontent_library_dir)',
-            ],
             'LD_DYLIB_INSTALL_NAME': '@rpath/<(product_name) Framework.framework/<(product_name) Framework',
             'LD_RUNPATH_SEARCH_PATHS': [
               '@loader_path/Libraries',
@@ -883,6 +880,7 @@
               'files': [
                 '<(libchromiumcontent_library_dir)/ffmpegsumo.so',
                 '<(libchromiumcontent_library_dir)/libchromiumcontent.dylib',
+                '<(PRODUCT_DIR)/libnode.dylib',
               ],
             },
             {
@@ -894,6 +892,16 @@
             },
           ],
           'postbuilds': [
+            {
+              'postbuild_name': 'Fix path of libnode',
+              'action': [
+                'install_name_tool',
+                '-change',
+                '/usr/local/lib/libnode.dylib',
+                '@rpath/libnode.dylib',
+                '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
+              ],
+            },
             {
               'postbuild_name': 'Add symlinks for framework subdirectories',
               'action': [
@@ -965,7 +973,7 @@
             {
               'action_name': 'Create node.lib',
               'inputs': [
-                '<(PRODUCT_DIR)/<(project_name).lib',
+                '<(PRODUCT_DIR)/node.dll.lib',
                 '<(libchromiumcontent_library_dir)/chromiumcontent.dll.lib',
               ],
               'outputs': [

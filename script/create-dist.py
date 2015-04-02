@@ -33,6 +33,7 @@ TARGET_BINARIES = {
     'chromiumcontent.dll',
     'content_shell.pak',
     'd3dcompiler_47.dll',
+    'node.dll',
     'ffmpegsumo.dll',
     'icudtl.dat',
     'libEGL.dll',
@@ -49,6 +50,7 @@ TARGET_BINARIES = {
   'linux': [
     'atom',
     'content_shell.pak',
+    'libnode.so',
     'icudtl.dat',
     'libchromiumcontent.so',
     'libffmpegsumo.so',
