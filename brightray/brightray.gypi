@@ -3,16 +3,23 @@
     'vendor/download/libchromiumcontent/filenames.gypi',
   ],
   'variables': {
-    'libchromiumcontent_library_dir': '<(libchromiumcontent_dir)/Release',
-    'libchromiumcontent_include_dir': '<(libchromiumcontent_dir)/src',
-    'libchromiumcontent_resources_dir': '<(libchromiumcontent_library_dir)',
-    'libchromiumcontent_src_dir': '<(libchromiumcontent_dir)/src',
+    'libchromiumcontent_src_dir%': '<(libchromiumcontent_root_dir)/src',
+    'libchromiumcontent_component%': 1,
+    'conditions': [
+      # The "libchromiumcontent_component" is defined when calling "gyp".
+      ['libchromiumcontent_component', {
+        'libchromiumcontent_dir%': '<(libchromiumcontent_root_dir)/shared_library',
+        'libchromiumcontent_libraries%': '<(libchromiumcontent_shared_libraries)',
+        'libchromiumcontent_shared_libraries': [],
+      }, {
+        'libchromiumcontent_dir%': '<(libchromiumcontent_root_dir)/static_library',
+        'libchromiumcontent_libraries%': '<(libchromiumcontent_static_libraries)',
+        'libchromiumcontent_static_libraries': [],
+      }],
+    ],
 
     'mac_deployment_target%': '10.8',
     'mac_sdkroot%': 'macosx',
-
-    # Component build.
-    'libchromiumcontent_component_build%': 1,
 
     # Build with clang under Linux.
     'linux_clang%': 1,
@@ -59,6 +66,10 @@
       ],
     },
     'configurations': {
+      # The "Debug" and "Release" configurations are not actually used.
+      'Debug': {},
+      'Release': {},
+
       'Common_Base': {
         'abstract': 1,
         'defines': [
@@ -109,91 +120,90 @@
           }],
         ],
       },
-      'Debug': {
-        'inherit_from': [
-          'Common_Base',
-        ],
-        'variables': {
-          'libchromiumcontent_component_build': 1,
-        },
-        'msvs_settings': {
-          'VCCLCompilerTool': {
-            'Optimization': '<(win_debug_Optimization)',
-            'BasicRuntimeChecks': '<(win_debug_RuntimeChecks)',
-            # We use Release to match the version of chromiumcontent.dll we
-            # link against.
-            'RuntimeLibrary': '<(win_release_RuntimeLibrary)',
-            'conditions': [
-              # According to MSVS, InlineFunctionExpansion=0 means
-              # "default inlining", not "/Ob0".
-              # Thus, we have to handle InlineFunctionExpansion==0 separately.
-              ['win_debug_InlineFunctionExpansion==0', {
-                'AdditionalOptions': ['/Ob0'],
-              }],
-              ['win_debug_InlineFunctionExpansion!=""', {
-                'InlineFunctionExpansion':
-                  '<(win_debug_InlineFunctionExpansion)',
-              }],
-              # if win_debug_OmitFramePointers is blank, leave as default
-              ['win_debug_OmitFramePointers==1', {
-                'OmitFramePointers': 'true',
-              }],
-              ['win_debug_OmitFramePointers==0', {
-                'OmitFramePointers': 'false',
-                # The above is not sufficient (http://crbug.com/106711): it
-                # simply eliminates an explicit "/Oy", but both /O2 and /Ox
-                # perform FPO regardless, so we must explicitly disable.
-                # We still want the false setting above to avoid having
-                # "/Oy /Oy-" and warnings about overriding.
-                'AdditionalOptions': ['/Oy-'],
-              }],
+      'conditions': [
+        ['libchromiumcontent_component', {
+          'RealDebug': {
+            'inherit_from': [
+              'Common_Base',
             ],
+            'msvs_settings': {
+              'VCCLCompilerTool': {
+                'Optimization': '<(win_debug_Optimization)',
+                'BasicRuntimeChecks': '<(win_debug_RuntimeChecks)',
+                # We use Release to match the version of chromiumcontent.dll we
+                # link against.
+                'RuntimeLibrary': '<(win_release_RuntimeLibrary)',
+                'conditions': [
+                  # According to MSVS, InlineFunctionExpansion=0 means
+                  # "default inlining", not "/Ob0".
+                  # Thus, we have to handle InlineFunctionExpansion==0 separately.
+                  ['win_debug_InlineFunctionExpansion==0', {
+                    'AdditionalOptions': ['/Ob0'],
+                  }],
+                  ['win_debug_InlineFunctionExpansion!=""', {
+                    'InlineFunctionExpansion':
+                      '<(win_debug_InlineFunctionExpansion)',
+                  }],
+                  # if win_debug_OmitFramePointers is blank, leave as default
+                  ['win_debug_OmitFramePointers==1', {
+                    'OmitFramePointers': 'true',
+                  }],
+                  ['win_debug_OmitFramePointers==0', {
+                    'OmitFramePointers': 'false',
+                    # The above is not sufficient (http://crbug.com/106711): it
+                    # simply eliminates an explicit "/Oy", but both /O2 and /Ox
+                    # perform FPO regardless, so we must explicitly disable.
+                    # We still want the false setting above to avoid having
+                    # "/Oy /Oy-" and warnings about overriding.
+                    'AdditionalOptions': ['/Oy-'],
+                  }],
+                ],
+              },
+            },
+            'xcode_settings': {
+              'COPY_PHASE_STRIP': 'NO',
+              'GCC_OPTIMIZATION_LEVEL': '0',
+            },
           },
-        },
-        'xcode_settings': {
-          'COPY_PHASE_STRIP': 'NO',
-          'GCC_OPTIMIZATION_LEVEL': '0',
-        },
-      },
-      'Release': {
-        'inherit_from': [
-          'Common_Base',
-        ],
-        'variables': {
-          'libchromiumcontent_component_build': 0,
-        },
-        'msvs_settings': {
-          'VCCLCompilerTool': {
-            'Optimization': '<(win_release_Optimization)',
-            'RuntimeLibrary': '<(win_release_RuntimeLibrary)',
-            'conditions': [
-              # According to MSVS, InlineFunctionExpansion=0 means
-              # "default inlining", not "/Ob0".
-              # Thus, we have to handle InlineFunctionExpansion==0 separately.
-              ['win_release_InlineFunctionExpansion==0', {
-                'AdditionalOptions': ['/Ob0'],
-              }],
-              ['win_release_InlineFunctionExpansion!=""', {
-                'InlineFunctionExpansion':
-                  '<(win_release_InlineFunctionExpansion)',
-              }],
-              # if win_release_OmitFramePointers is blank, leave as default
-              ['win_release_OmitFramePointers==1', {
-                'OmitFramePointers': 'true',
-              }],
-              ['win_release_OmitFramePointers==0', {
-                'OmitFramePointers': 'false',
-                # The above is not sufficient (http://crbug.com/106711): it
-                # simply eliminates an explicit "/Oy", but both /O2 and /Ox
-                # perform FPO regardless, so we must explicitly disable.
-                # We still want the false setting above to avoid having
-                # "/Oy /Oy-" and warnings about overriding.
-                'AdditionalOptions': ['/Oy-'],
-              }],
+        }, {
+          'RealRelease': {
+            'inherit_from': [
+              'Common_Base',
             ],
+            'msvs_settings': {
+              'VCCLCompilerTool': {
+                'Optimization': '<(win_release_Optimization)',
+                'RuntimeLibrary': '<(win_release_RuntimeLibrary)',
+                'conditions': [
+                  # According to MSVS, InlineFunctionExpansion=0 means
+                  # "default inlining", not "/Ob0".
+                  # Thus, we have to handle InlineFunctionExpansion==0 separately.
+                  ['win_release_InlineFunctionExpansion==0', {
+                    'AdditionalOptions': ['/Ob0'],
+                  }],
+                  ['win_release_InlineFunctionExpansion!=""', {
+                    'InlineFunctionExpansion':
+                      '<(win_release_InlineFunctionExpansion)',
+                  }],
+                  # if win_release_OmitFramePointers is blank, leave as default
+                  ['win_release_OmitFramePointers==1', {
+                    'OmitFramePointers': 'true',
+                  }],
+                  ['win_release_OmitFramePointers==0', {
+                    'OmitFramePointers': 'false',
+                    # The above is not sufficient (http://crbug.com/106711): it
+                    # simply eliminates an explicit "/Oy", but both /O2 and /Ox
+                    # perform FPO regardless, so we must explicitly disable.
+                    # We still want the false setting above to avoid having
+                    # "/Oy /Oy-" and warnings about overriding.
+                    'AdditionalOptions': ['/Oy-'],
+                  }],
+                ],
+              },
+            },
           },
-        },
-      },
+        }],
+      ],
     },
     'conditions': [
       ['OS!="mac"', {
@@ -242,7 +252,7 @@
     ['OS=="win"', {
       'target_defaults': {
         'include_dirs': [
-          '<(libchromiumcontent_include_dir)/third_party/wtl/include',
+          '<(libchromiumcontent_src_dir)/third_party/wtl/include',
         ],
         'defines': [
           '_WIN32_WINNT=0x0602',

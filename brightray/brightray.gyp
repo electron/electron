@@ -8,22 +8,22 @@
       'type': 'static_library',
       'include_dirs': [
         '.',
-        '<(libchromiumcontent_include_dir)',
-        '<(libchromiumcontent_include_dir)/skia/config',
-        '<(libchromiumcontent_include_dir)/third_party/skia/include/core',
-        '<(libchromiumcontent_include_dir)/third_party/WebKit',
-        '<(libchromiumcontent_library_dir)/gen',
+        '<(libchromiumcontent_src_dir)',
+        '<(libchromiumcontent_src_dir)/skia/config',
+        '<(libchromiumcontent_src_dir)/third_party/skia/include/core',
+        '<(libchromiumcontent_src_dir)/third_party/WebKit',
+        '<(libchromiumcontent_dir)/gen',
       ],
       'direct_dependent_settings': {
         'include_dirs': [
           '.',
           '..',
-          '<(libchromiumcontent_include_dir)',
-          '<(libchromiumcontent_include_dir)/skia/config',
-          '<(libchromiumcontent_include_dir)/third_party/skia/include/core',
-          '<(libchromiumcontent_include_dir)/third_party/icu/source/common',
-          '<(libchromiumcontent_include_dir)/third_party/WebKit',
-          '<(libchromiumcontent_library_dir)/gen',
+          '<(libchromiumcontent_src_dir)',
+          '<(libchromiumcontent_src_dir)/skia/config',
+          '<(libchromiumcontent_src_dir)/third_party/skia/include/core',
+          '<(libchromiumcontent_src_dir)/third_party/icu/source/common',
+          '<(libchromiumcontent_src_dir)/third_party/WebKit',
+          '<(libchromiumcontent_dir)/gen',
         ],
       },
       'sources': [
@@ -92,12 +92,10 @@
         'common/main_delegate.h',
         'common/main_delegate_mac.mm',
       ],
+      'link_settings': {
+        'libraries': [ '<@(libchromiumcontent_libraries)' ]
+      },
       'conditions': [
-        ['libchromiumcontent_component_build', {
-          'link_settings': {
-            'libraries': [ '<@(libchromiumcontent_shared_libraries)' ]
-          },
-        }],
         ['OS=="linux"', {
           'cflags_cc': [
             '-Wno-deprecated-register',
@@ -108,7 +106,7 @@
               '<!@(pkg-config --libs-only-L --libs-only-other gtk+-2.0 libnotify dbus-1 x11 xrandr xext gconf-2.0)',
             ],
             'libraries': [
-              '<(libchromiumcontent_library_dir)/libchromiumviews.a',
+              '<(libchromiumcontent_dir)/libchromiumviews.a',
               '-lpthread',
               '<!@(pkg-config --libs-only-l gtk+-2.0 libnotify dbus-1 x11 xrandr xext gconf-2.0)',
             ],
@@ -124,10 +122,10 @@
         ['OS=="win"', {
           'link_settings': {
             'libraries': [
-              '<(libchromiumcontent_library_dir)/base_static.lib',
-              '<(libchromiumcontent_library_dir)/chromiumcontent.dll.lib',
-              '<(libchromiumcontent_library_dir)/chromiumviews.lib',
-              '<(libchromiumcontent_library_dir)/sandbox_static.lib',
+              '<(libchromiumcontent_dir)/base_static.lib',
+              '<(libchromiumcontent_dir)/chromiumcontent.dll.lib',
+              '<(libchromiumcontent_dir)/chromiumviews.lib',
+              '<(libchromiumcontent_dir)/sandbox_static.lib',
             ],
           },
         }],
