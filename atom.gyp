@@ -973,7 +973,7 @@
             {
               'action_name': 'Create node.lib',
               'inputs': [
-                '<(PRODUCT_DIR)/<(project_name).lib',
+                '<(PRODUCT_DIR)/node.dll.lib',
                 '<(libchromiumcontent_library_dir)/chromiumcontent.dll.lib',
               ],
               'outputs': [
