@@ -93,6 +93,11 @@
         'common/main_delegate_mac.mm',
       ],
       'conditions': [
+        ['libchromiumcontent_component_build', {
+          'link_settings': {
+            'libraries': [ '<@(libchromiumcontent_shared_libraries)' ]
+          },
+        }],
         ['OS=="linux"', {
           'cflags_cc': [
             '-Wno-deprecated-register',
@@ -103,7 +108,6 @@
               '<!@(pkg-config --libs-only-L --libs-only-other gtk+-2.0 libnotify dbus-1 x11 xrandr xext gconf-2.0)',
             ],
             'libraries': [
-              '<@(libchromiumcontent_shared_libraries)',
               '<(libchromiumcontent_library_dir)/libchromiumviews.a',
               '-lpthread',
               '<!@(pkg-config --libs-only-l gtk+-2.0 libnotify dbus-1 x11 xrandr xext gconf-2.0)',
@@ -113,7 +117,6 @@
         ['OS=="mac"', {
           'link_settings': {
             'libraries': [
-              '<@(libchromiumcontent_shared_libraries)',
               '$(SDKROOT)/System/Library/Frameworks/AppKit.framework',
             ],
           },
@@ -121,7 +124,6 @@
         ['OS=="win"', {
           'link_settings': {
             'libraries': [
-              '<@(libchromiumcontent_shared_libraries)',
               '<(libchromiumcontent_library_dir)/base_static.lib',
               '<(libchromiumcontent_library_dir)/chromiumcontent.dll.lib',
               '<(libchromiumcontent_library_dir)/chromiumviews.lib',

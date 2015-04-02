@@ -11,6 +11,9 @@
     'mac_deployment_target%': '10.8',
     'mac_sdkroot%': 'macosx',
 
+    # Component build.
+    'libchromiumcontent_component_build%': 1,
+
     # Build with clang under Linux.
     'linux_clang%': 1,
 
@@ -110,6 +113,9 @@
         'inherit_from': [
           'Common_Base',
         ],
+        'variables': {
+          'libchromiumcontent_component_build': 1,
+        },
         'msvs_settings': {
           'VCCLCompilerTool': {
             'Optimization': '<(win_debug_Optimization)',
@@ -153,6 +159,9 @@
         'inherit_from': [
           'Common_Base',
         ],
+        'variables': {
+          'libchromiumcontent_component_build': 0,
+        },
         'msvs_settings': {
           'VCCLCompilerTool': {
             'Optimization': '<(win_release_Optimization)',
