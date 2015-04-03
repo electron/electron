@@ -119,6 +119,38 @@
             ],
           },
         }],
+        ['OS=="mac" and libchromiumcontent_component==0', {
+          'link_settings': {
+            'libraries': [
+              # ui_base.gypi:
+              '$(SDKROOT)/System/Library/Frameworks/Accelerate.framework',
+              # net.gypi:
+              '$(SDKROOT)/System/Library/Frameworks/Foundation.framework',
+              '$(SDKROOT)/System/Library/Frameworks/Security.framework',
+              '$(SDKROOT)/System/Library/Frameworks/SystemConfiguration.framework',
+              '$(SDKROOT)/usr/lib/libresolv.dylib',
+              # media.gyp:
+              '$(SDKROOT)/System/Library/Frameworks/AudioToolbox.framework',
+              '$(SDKROOT)/System/Library/Frameworks/AudioUnit.framework',
+              '$(SDKROOT)/System/Library/Frameworks/CoreAudio.framework',
+              '$(SDKROOT)/System/Library/Frameworks/CoreMIDI.framework',
+              '$(SDKROOT)/System/Library/Frameworks/CoreVideo.framework',
+              '$(SDKROOT)/System/Library/Frameworks/OpenGL.framework',
+              '$(SDKROOT)/System/Library/Frameworks/QTKit.framework',
+              # surface.gyp:
+              '$(SDKROOT)/System/Library/Frameworks/IOSurface.framework',
+              # content_common.gypi:
+              '$(SDKROOT)/System/Library/Frameworks/QuartzCore.framework',
+              # base.gyp:
+              '$(SDKROOT)/System/Library/Frameworks/ApplicationServices.framework',
+              '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
+              '$(SDKROOT)/System/Library/Frameworks/CoreFoundation.framework',
+              '$(SDKROOT)/System/Library/Frameworks/IOKit.framework',
+              # content_browser.gypi:
+              '$(SDKROOT)/usr/lib/libbsm.dylib',
+            ],
+          },
+        }],
         ['OS=="win"', {
           'link_settings': {
             'libraries': [
