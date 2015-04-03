@@ -85,7 +85,6 @@ def main():
   args = parse_args()
 
   force_build()
-  download_libchromiumcontent_symbols(args.url)
   create_symbols()
   copy_binaries()
   copy_chromedriver()
@@ -157,19 +156,6 @@ def create_version():
   version_path = os.path.join(SOURCE_ROOT, 'dist', 'version')
   with open(version_path, 'w') as version_file:
     version_file.write(ATOM_SHELL_VERSION)
-
-
-def download_libchromiumcontent_symbols(url):
-  brightray_dir = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor')
-  target_dir = os.path.join(brightray_dir, 'download', 'libchromiumcontent')
-  symbols_path = os.path.join(target_dir, 'R', SYMBOL_NAME)
-  if os.path.exists(symbols_path):
-    return
-
-  download = os.path.join(brightray_dir, 'libchromiumcontent', 'script',
-                          'download')
-  subprocess.check_call([sys.executable, download, '-f', '-s', '-c',
-                         LIBCHROMIUMCONTENT_COMMIT, url, target_dir])
 
 
 def create_symbols():
