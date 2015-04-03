@@ -528,7 +528,6 @@
             {
               'destination': '<(PRODUCT_DIR)',
               'files': [
-                '<(libchromiumcontent_dir)/libchromiumcontent.so',
                 '<(libchromiumcontent_dir)/libffmpegsumo.so',
                 '<(libchromiumcontent_dir)/icudtl.dat',
                 '<(libchromiumcontent_dir)/content_shell.pak',
@@ -880,9 +879,18 @@
           },
           'copies': [
             {
+              'variables': {
+                'conditions': [
+                  ['libchromiumcontent_component', {
+                    'copied_libraries': '<(libchromiumcontent_shared_libraries)',
+                  }, {
+                    'copied_libraries': ['<(libchromiumcontent_dir)/libboringssl.dylib'],
+                  }],
+                ],
+              },
               'destination': '<(PRODUCT_DIR)/<(product_name) Framework.framework/Versions/A/Libraries',
               'files': [
-                '<@(libchromiumcontent_shared_libraries)',
+                '<@(copied_libraries)',
                 '<(libchromiumcontent_dir)/ffmpegsumo.so',
                 '<(PRODUCT_DIR)/libnode.dylib',
               ],
@@ -903,6 +911,16 @@
                 '-change',
                 '/usr/local/lib/libnode.dylib',
                 '@rpath/libnode.dylib',
+                '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
+              ],
+            },
+            {
+              'postbuild_name': 'Fix path of libboringssl',
+              'action': [
+                'install_name_tool',
+                '-change',
+                '/usr/local/lib/libboringssl.dylib',
+                '@rpath/libboringssl.dylib',
                 '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
               ],
             },
