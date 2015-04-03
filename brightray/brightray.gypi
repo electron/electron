@@ -116,7 +116,7 @@
       },
       'conditions': [
         ['libchromiumcontent_component', {
-          'RealDebug': {
+          'D': {
             'inherit_from': [
               'Common_Base',
             ],
@@ -160,7 +160,7 @@
             },
           },
         }, {
-          'RealRelease': {
+          'R': {
             'inherit_from': [
               'Common_Base',
             ],
