@@ -12,12 +12,12 @@ def main():
   os.chdir(SOURCE_ROOT)
 
   if sys.platform == 'darwin':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Debug', 'Atom.app',
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'D', 'Atom.app',
                               'Contents', 'MacOS', 'Atom')
   elif sys.platform == 'win32':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Debug', 'atom.exe')
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'D', 'atom.exe')
   else:
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Debug', 'atom')
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'D', 'atom')
 
   subprocess.check_call([atom_shell, 'spec'] + sys.argv[1:])
 

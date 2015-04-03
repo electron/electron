@@ -14,7 +14,7 @@ from lib.util import execute, safe_mkdir, scoped_cwd, s3_config, s3put
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR    = os.path.join(SOURCE_ROOT, 'dist')
 NODE_DIR    = os.path.join(SOURCE_ROOT, 'vendor', 'node')
-OUT_DIR     = os.path.join(SOURCE_ROOT, 'out', 'Release')
+OUT_DIR     = os.path.join(SOURCE_ROOT, 'out', 'R')
 
 HEADERS_SUFFIX = [
   '.h',

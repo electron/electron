@@ -17,7 +17,7 @@ ATOM_SHELL_VERSION = get_atom_shell_version()
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
-OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'Release')
+OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
 
 SYMBOL_NAME = {
   'darwin': 'libchromiumcontent.dylib.dSYM',
@@ -162,7 +162,7 @@ def create_version():
 def download_libchromiumcontent_symbols(url):
   brightray_dir = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor')
   target_dir = os.path.join(brightray_dir, 'download', 'libchromiumcontent')
-  symbols_path = os.path.join(target_dir, 'Release', SYMBOL_NAME)
+  symbols_path = os.path.join(target_dir, 'R', SYMBOL_NAME)
   if os.path.exists(symbols_path):
     return
 
