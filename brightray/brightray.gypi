@@ -10,11 +10,9 @@
       ['libchromiumcontent_component', {
         'libchromiumcontent_dir%': '<(libchromiumcontent_root_dir)/shared_library',
         'libchromiumcontent_libraries%': '<(libchromiumcontent_shared_libraries)',
-        'libchromiumcontent_shared_libraries': [],
       }, {
         'libchromiumcontent_dir%': '<(libchromiumcontent_root_dir)/static_library',
         'libchromiumcontent_libraries%': '<(libchromiumcontent_static_libraries)',
-        'libchromiumcontent_static_libraries': [],
       }],
     ],
 

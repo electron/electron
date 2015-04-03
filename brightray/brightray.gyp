@@ -122,6 +122,9 @@
         ['OS=="mac" and libchromiumcontent_component==0', {
           'link_settings': {
             'libraries': [
+              # This library is built as shared library to avoid symbols
+              # conflict with Node.
+              '<(libchromiumcontent_dir)/libboringssl.dylib',
               # ui_base.gypi:
               '$(SDKROOT)/System/Library/Frameworks/Accelerate.framework',
               # net.gypi:
