@@ -33,8 +33,6 @@ def main():
   create_chrome_version_h()
   touch_config_gypi()
   update_atom_shell()
-  update_atom_modules('spec')
-
 
 def parse_args():
   parser = argparse.ArgumentParser(description='Bootstrap this project')
@@ -78,16 +76,6 @@ def update_node_modules(dirname):
       execute_stdout([NPM, 'install', '--verbose'])
     else:
       execute_stdout([NPM, 'install'])
-
-
-def update_atom_modules(dirname):
-  with scoped_cwd(dirname):
-    apm = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'apm')
-    if sys.platform in ['win32', 'cygwin']:
-      apm = os.path.join(SOURCE_ROOT, 'node_modules', 'atom-package-manager',
-                         'bin', 'apm.cmd')
-    execute_stdout([apm, 'install'])
-
 
 def update_win32_python():
   with scoped_cwd(VENDOR_DIR):
