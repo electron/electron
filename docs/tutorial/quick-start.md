@@ -39,7 +39,7 @@ So the main process manages all web pages and their corresponding renderer
 processes, and each renderer process is separated from each other and only care
 about the web page running in it.
 
-In web pages it is not allowed call native GUI related APIs because managing
+In web pages, it is not allowed to call native GUI related APIs because managing
 native GUI resources in web pages is very dangerous and easy to leak resources.
 If you want to do GUI operations in web pages, you have to communicate with
 the main process to do it there.
