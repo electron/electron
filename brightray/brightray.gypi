@@ -3,7 +3,7 @@
     'vendor/download/libchromiumcontent/filenames.gypi',
   ],
   'variables': {
-    'libchromiumcontent_src_dir%': '<(libchromiumcontent_root_dir)/src',
+    'libchromiumcontent_src_dir': '<(libchromiumcontent_root_dir)/src',
     'libchromiumcontent_component%': 1,
     'conditions': [
       # The "libchromiumcontent_component" is defined when calling "gyp".
