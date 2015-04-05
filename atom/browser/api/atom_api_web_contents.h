@@ -172,6 +172,7 @@ class WebContents : public mate::EventEmitter,
   void WebContentsDestroyed() override;
   void NavigationEntryCommitted(
       const content::LoadCommittedDetails& load_details) override;
+  void TitleWasSet(content::NavigationEntry* entry, bool explicit_set) override;
 
   // content::BrowserPluginGuestDelegate:
   void DidAttach(int guest_proxy_routing_id) final;

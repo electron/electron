@@ -142,3 +142,12 @@ describe '<webview> tag', ->
       webview.src = "file://#{fixtures}/pages/ipc-message.html"
       webview.setAttribute 'nodeintegration', 'on'
       document.body.appendChild webview
+
+  describe 'page-title-set event', ->
+    it 'emits when title is set', (done) ->
+      webview.addEventListener 'page-title-set', (e) ->
+        assert.equal e.title, 'test'
+        assert e.explicitSet
+        done()
+      webview.src = "file://#{fixtures}/pages/a.html"
+      document.body.appendChild webview

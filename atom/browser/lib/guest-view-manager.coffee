@@ -14,6 +14,7 @@ supportedWebViewEvents = [
   'close'
   'crashed'
   'destroyed'
+  'page-title-set'
 ]
 
 nextInstanceId = 0

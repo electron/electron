@@ -310,6 +310,14 @@ Corresponds to the points in time when the spinner of the tab stops spinning.
 
 Fired when a redirect was received while requesting a resource.
 
+### page-title-set
+
+* `title` String
+* `explicitSet` Boolean
+
+Fired when page ttile is set during navigation. `explicitSet` is false when title is synthesised from file
+url.
+
 ### console-message
 
 * `level` Integer
