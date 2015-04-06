@@ -164,6 +164,7 @@
         }, {
           'link_settings': {
             'libraries': [
+              '<(libchromiumcontent_dir)/boringssl.dll',
               '<(libchromiumcontent_dir)/ffmpegsumo.lib',
               '<(libchromiumcontent_dir)/libyuv.lib',
             ],
