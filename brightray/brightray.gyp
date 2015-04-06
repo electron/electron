@@ -165,6 +165,7 @@
           'link_settings': {
             'libraries': [
               '<(libchromiumcontent_dir)/ffmpegsumo.lib',
+              '<(libchromiumcontent_dir)/libyuv.lib',
             ],
             'msvs_settings': {
               'VCLinkerTool': {

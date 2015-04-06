@@ -91,10 +91,12 @@
           'VCLinkerTool': {
             'AdditionalDependencies': [
               'advapi32.lib',
+              'dbghelp.lib',
               'dwmapi.lib',
               'gdi32.lib',
               'oleacc.lib',
               'user32.lib',
+              'winspool.lib',
             ],
           },
         },
