@@ -185,6 +185,15 @@
         },
       },  # Release_Base
       'conditions': [
+        ['libchromiumcontent_component', {
+          'D': {
+            'inherit_from': ['Common_Base', 'Debug_Base'],
+          },  # D (Debug)
+        }, {
+          'R': {
+            'inherit_from': ['Common_Base', 'Release_Base'],
+          },  # R (Release)
+        }],  # libchromiumcontent_component
         ['OS=="win"', {
           'x64_Base': {
             'abstract': 1,
@@ -202,23 +211,18 @@
                 'TargetMachine': '17', # x64
               },
             },
-          },
+          },  # x64_Base
         }],  # OS=="win"
-        ['libchromiumcontent_component', {
-          'D': {
-            'inherit_from': ['Common_Base', 'Debug_Base'],
-          },
+        ['OS=="win" and libchromiumcontent_component==1', {
           'D_x64': {
             'inherit_from': ['Common_Base', 'x64_Base', 'Debug_Base'],
-          },
-        }, {  # libchromiumcontent_component==1
-          'R': {
-            'inherit_from': ['Common_Base', 'Release_Base'],
-          },
+          },  # D_x64
+        }],  # OS=="win" and libchromiumcontent_component==1
+        ['OS=="win" and libchromiumcontent_component==0', {
           'R_x64': {
             'inherit_from': ['Common_Base', 'x64_Base', 'Release_Base'],
-          },
-        }],  # libchromiumcontent_component==0
+          },  # R_x64
+        }],  # OS=="win" and libchromiumcontent_component==0
       ],
     },
     'conditions': [
