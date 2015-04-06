@@ -122,8 +122,18 @@
         ['OS=="win"', {
           'copies': [
             {
+              'variables': {
+                'conditions': [
+                  ['libchromiumcontent_component', {
+                    'copied_libraries': '<(libchromiumcontent_shared_libraries)',
+                  }, {
+                    'copied_libraries': [],
+                  }],
+                ],
+              },
               'destination': '<(PRODUCT_DIR)',
               'files': [
+                '<@(copied_libraries)',
                 '<(libchromiumcontent_dir)/ffmpegsumo.dll',
                 '<(libchromiumcontent_dir)/libEGL.dll',
                 '<(libchromiumcontent_dir)/libGLESv2.dll',
