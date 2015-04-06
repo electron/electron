@@ -115,9 +115,7 @@
             },
           }],
           ['OS=="win"', {
-            'libraries': [
-              '<(libchromiumcontent_root_dir)/shared_library/v8.dll.lib',
-            ],
+            'type': 'static_library',
           }],
           ['OS=="linux"', {
             'cflags': [ '-fPIC' ],

@@ -27,6 +27,32 @@ using content::BrowserThread;
 #define REFERENCE_MODULE(name) \
   extern "C" void _register_ ## name(void); \
   void (*fp_register_ ## name)(void) = _register_ ## name
+#if defined(OS_WIN)
+// On Windows Node is built as static_library so we need to reference Node's
+// builtin modules.
+REFERENCE_MODULE(cares_wrap);
+REFERENCE_MODULE(fs_event_wrap);
+REFERENCE_MODULE(buffer);
+REFERENCE_MODULE(contextify);
+REFERENCE_MODULE(crypto);
+REFERENCE_MODULE(fs);
+REFERENCE_MODULE(http_parser);
+REFERENCE_MODULE(os);
+REFERENCE_MODULE(v8);
+REFERENCE_MODULE(zlib);
+REFERENCE_MODULE(pipe_wrap);
+REFERENCE_MODULE(process_wrap);
+REFERENCE_MODULE(signal_wrap);
+REFERENCE_MODULE(smalloc);
+REFERENCE_MODULE(spawn_sync);
+REFERENCE_MODULE(tcp_wrap);
+REFERENCE_MODULE(timer_wrap);
+REFERENCE_MODULE(tls_wrap);
+REFERENCE_MODULE(tty_wrap);
+REFERENCE_MODULE(udp_wrap);
+REFERENCE_MODULE(uv);
+REFERENCE_MODULE(js_stream);
+#endif  // defined(OS_WIN)
 // Atom Shell's builtin modules.
 REFERENCE_MODULE(atom_browser_app);
 REFERENCE_MODULE(atom_browser_auto_updater);

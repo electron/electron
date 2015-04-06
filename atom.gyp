@@ -124,7 +124,6 @@
             {
               'destination': '<(PRODUCT_DIR)',
               'files': [
-                '<(libchromiumcontent_dir)/chromiumcontent.dll',
                 '<(libchromiumcontent_dir)/ffmpegsumo.dll',
                 '<(libchromiumcontent_dir)/libEGL.dll',
                 '<(libchromiumcontent_dir)/libGLESv2.dll',
@@ -232,6 +231,14 @@
             ],
           },
           'dependencies': [
+            # Node is built as static_library on Windows, so we also need to
+            # include its dependencies here.
+            'vendor/node/deps/cares/cares.gyp:cares',
+            'vendor/node/deps/http_parser/http_parser.gyp:http_parser',
+            'vendor/node/deps/openssl/openssl.gyp:openssl',
+            'vendor/node/deps/uv/uv.gyp:libuv',
+            'vendor/node/deps/zlib/zlib.gyp:zlib',
+            # Build with breakpad support.
             'vendor/breakpad/breakpad.gyp:breakpad_handler',
             'vendor/breakpad/breakpad.gyp:breakpad_sender',
           ],
@@ -621,8 +628,7 @@
             {
               'action_name': 'Create node.lib',
               'inputs': [
-                '<(PRODUCT_DIR)/node.dll.lib',
-                '<(libchromiumcontent_dir)/chromiumcontent.dll.lib',
+                '<(PRODUCT_DIR)/<(project_name).lib',
               ],
               'outputs': [
                 '<(PRODUCT_DIR)/node.lib',

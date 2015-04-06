@@ -7,8 +7,6 @@
 
 // Include common headers for using node APIs.
 
-#define BUILDING_NODE_EXTENSION
-
 #undef ASSERT
 #undef CHECK
 #undef CHECK_EQ
