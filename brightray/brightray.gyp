@@ -116,15 +116,15 @@
           'link_settings': {
             'libraries': [
               '$(SDKROOT)/System/Library/Frameworks/AppKit.framework',
+              # This library is built as shared library to avoid symbols
+              # conflict with Node.
+              '<(libchromiumcontent_dir)/libboringssl.dylib',
             ],
           },
         }],
         ['OS=="mac" and libchromiumcontent_component==0', {
           'link_settings': {
             'libraries': [
-              # This library is built as shared library to avoid symbols
-              # conflict with Node.
-              '<(libchromiumcontent_dir)/libboringssl.dylib',
               # ui_base.gypi:
               '$(SDKROOT)/System/Library/Frameworks/Accelerate.framework',
               # net.gypi:
@@ -154,13 +154,11 @@
             ],
           },
         }],
-        ['OS=="win"', {
+        ['OS=="win" and libchromiumcontent_component', {
           'link_settings': {
             'libraries': [
               '<(libchromiumcontent_dir)/base_static.lib',
-              '<(libchromiumcontent_dir)/chromiumcontent.dll.lib',
-              '<(libchromiumcontent_dir)/chromiumviews.lib',
-              '<(libchromiumcontent_dir)/sandbox_static.lib',
+              '<(libchromiumcontent_dir)/sandbox.lib',
             ],
           },
         }],
