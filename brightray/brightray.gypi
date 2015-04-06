@@ -22,9 +22,6 @@
     # Build with clang under Linux.
     'linux_clang%': 1,
 
-    'win_release_RuntimeLibrary%': '2', # /MD (nondebug DLL)
-    'win_debug_RuntimeLibrary%': '3', # /MTd (debug DLL)
-
     # See http://msdn.microsoft.com/en-us/library/aa652360(VS.71).aspx
     'win_release_Optimization%': '2', # 2 = /Os
     'win_debug_Optimization%': '0',   # 0 = /Od
@@ -94,8 +91,12 @@
               'dbghelp.lib',
               'dwmapi.lib',
               'gdi32.lib',
+              'netapi32.lib',
               'oleacc.lib',
+              'powrprof.lib',
               'user32.lib',
+              'usp10.lib',
+              'version.lib',
               'winspool.lib',
             ],
           },
@@ -119,9 +120,6 @@
           'VCCLCompilerTool': {
             'Optimization': '<(win_debug_Optimization)',
             'BasicRuntimeChecks': '<(win_debug_RuntimeChecks)',
-            # We use Release to match the version of chromiumcontent.dll we
-            # link against.
-            'RuntimeLibrary': '<(win_release_RuntimeLibrary)',
             'conditions': [
               # According to MSVS, InlineFunctionExpansion=0 means
               # "default inlining", not "/Ob0".
@@ -158,7 +156,6 @@
         'msvs_settings': {
           'VCCLCompilerTool': {
             'Optimization': '<(win_release_Optimization)',
-            'RuntimeLibrary': '<(win_release_RuntimeLibrary)',
             'conditions': [
               # According to MSVS, InlineFunctionExpansion=0 means
               # "default inlining", not "/Ob0".
