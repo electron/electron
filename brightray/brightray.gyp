@@ -167,11 +167,24 @@
               '<(libchromiumcontent_dir)/boringssl.dll',
               '<(libchromiumcontent_dir)/ffmpegsumo.lib',
               '<(libchromiumcontent_dir)/libyuv.lib',
+              # content_common.gypi:
+              '-ld3d11.lib',
+              '-ldxva2.lib',
+              '-lstrmiids.lib',
+              '-lmf.lib',
+              '-lmfplat.lib',
+              '-lmfuuid.lib',
             ],
             'msvs_settings': {
               'VCLinkerTool': {
                 'DelayLoadDLLs': [
                   'ffmpegsumo.dll',
+                  # content_common.gypi:
+                  'd3d9.dll',
+                  'd3d11.dll',
+                  'dxva2.dll',
+                  'mf.dll',
+                  'mfplat.dll',
                 ],
               },
             },
