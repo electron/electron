@@ -161,6 +161,19 @@
               '<(libchromiumcontent_dir)/sandbox.lib',
             ],
           },
+        }, {
+          'link_settings': {
+            'libraries': [
+              '<(libchromiumcontent_dir)/ffmpegsumo.lib',
+            ],
+            'msvs_settings': {
+              'VCLinkerTool': {
+                'DelayLoadDLLs': [
+                  'ffmpegsumo.dll',
+                ],
+              },
+            },
+          },
         }],
       ],
     },
