@@ -103,8 +103,6 @@
             'defines': [
               'TOOLKIT_VIEWS',
               'USE_AURA',
-              'VIEWS_IMPLEMENTATION',
-              'WEBVIEW_IMPLEMENTATION',
             ],
           }],
           ['OS not in ["mac", "win"]', {
@@ -259,13 +257,15 @@
   },
   'conditions': [
     ['libchromiumcontent_component', {
-      'defines': [
-        'COMPONENT_BUILD',
-        'GURL_DLL',
-        'SKIA_DLL',
-        'USING_V8_SHARED',
-        'WEBKIT_DLL',
-      ],
+      'target_defaults': {
+        'defines': [
+          'COMPONENT_BUILD',
+          'GURL_DLL',
+          'SKIA_DLL',
+          'USING_V8_SHARED',
+          'WEBKIT_DLL',
+        ],
+      },
     }],
     ['OS=="linux" and linux_clang==1', {
       'make_global_settings': [
