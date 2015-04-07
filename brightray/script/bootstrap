@@ -31,7 +31,6 @@ def parse_args():
 
 
 def update_submodules():
-  return
   return (subprocess.call(['git', 'submodule', 'sync', '--quiet']) or
           subprocess.call(['git', 'submodule', 'update', '--init',
                            '--recursive']))
@@ -42,9 +41,10 @@ def download_libchromiumcontent(is_dev, commit, url):
   download = os.path.join(VENDOR_DIR, 'libchromiumcontent', 'script',
                           'download')
   target = os.path.join(DOWNLOAD_DIR, 'libchromiumcontent')
-  subprocess.check_call([sys.executable, download, '-f', '-c', commit, url,
-                         target])
-  if not is_dev:
+  if is_dev:
+    subprocess.check_call([sys.executable, download, '-f', '-c', commit, url,
+                           target])
+  else:
     subprocess.check_call([sys.executable, download, '-s', '-f', '-c', commit,
                             url, target])
 
