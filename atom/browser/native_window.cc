@@ -762,6 +762,10 @@ void NativeWindow::DevToolsAppendToFile(const std::string& url,
   CallDevToolsFunction("DevToolsAPI.appendedToURL", &url_value);
 }
 
+void NativeWindow::DevToolsFocused() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsFocus());
+}
+
 void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
   if (!window_unresposive_closure_.IsCancelled())
     return;

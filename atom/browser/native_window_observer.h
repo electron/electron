@@ -50,6 +50,9 @@ class NativeWindowObserver {
   virtual void OnWindowEnterFullScreen() {}
   virtual void OnWindowLeaveFullScreen() {}
 
+  // Called when devtools window gets focused.
+  virtual void OnDevToolsFocus() {}
+
   // Called when renderer is hung.
   virtual void OnRendererUnresponsive() {}
 

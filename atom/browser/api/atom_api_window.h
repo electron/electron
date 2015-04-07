@@ -64,6 +64,7 @@ class Window : public mate::EventEmitter,
   void OnWindowLeaveFullScreen() override;
   void OnRendererUnresponsive() override;
   void OnRendererResponsive() override;
+  void OnDevToolsFocus() override;
 
  private:
   // APIs for NativeWindow.

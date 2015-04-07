@@ -290,6 +290,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
                           bool save_as) override;
   void DevToolsAppendToFile(const std::string& url,
                             const std::string& content) override;
+  void DevToolsFocused() override;
 
   // Whether window has standard frame.
   bool has_frame_;
