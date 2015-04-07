@@ -53,6 +53,7 @@
           4152,  # function/data pointer conversion in expression
           4206,  # translation unit is empty
           4204,  # non-constant aggregate initializer
+          4210,  # nonstandard extension used : function given file scope
           4214,  # bit field types other than int
           4232,  # address of dllimport 'free' is not static, identity not guaranteed
           4291,  # no matching operator delete found
