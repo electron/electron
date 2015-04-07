@@ -91,6 +91,16 @@ void AtomRenderViewObserver::DraggableRegionsChanged(blink::WebFrame* frame) {
   Send(new AtomViewHostMsg_UpdateDraggableRegions(routing_id(), regions));
 }
 
+bool AtomRenderViewObserver::enterFullscreen() {
+  Send(new AtomViewHostMsg_ToggleFullscreen(routing_id(), true));
+  return true;
+}
+
+bool AtomRenderViewObserver::exitFullscreen() {
+  Send(new AtomViewHostMsg_ToggleFullscreen(routing_id(), false));
+  return true;
+}
+
 bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(AtomRenderViewObserver, message)

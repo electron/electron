@@ -96,6 +96,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   void InitFromOptions(const mate::Dictionary& options);
 
+  // renderer triggered fullscreen mode
+  void ToggleFullscreen(bool enter_fullscreen);
+
   virtual void Close() = 0;
   virtual void CloseImmediately() = 0;
   virtual void Move(const gfx::Rect& pos) = 0;
