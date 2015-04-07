@@ -127,7 +127,7 @@
                   ['libchromiumcontent_component', {
                     'copied_libraries': '<(libchromiumcontent_shared_libraries)',
                   }, {
-                    'copied_libraries': [],
+                    'copied_libraries': ['<(libchromiumcontent_dir)/boringssl.dll'],
                   }],
                 ],
               },
@@ -161,8 +161,18 @@
         ['OS=="linux"', {
           'copies': [
             {
+              'variables': {
+                'conditions': [
+                  ['libchromiumcontent_component', {
+                    'copied_libraries': '<(libchromiumcontent_shared_libraries)',
+                  }, {
+                    'copied_libraries': ['<(libchromiumcontent_dir)/libboringssl.so'],
+                  }],
+                ],
+              },
               'destination': '<(PRODUCT_DIR)',
               'files': [
+                '<@(copied_libraries)',
                 '<(libchromiumcontent_dir)/libffmpegsumo.so',
                 '<(libchromiumcontent_dir)/icudtl.dat',
                 '<(libchromiumcontent_dir)/content_shell.pak',
@@ -187,6 +197,7 @@
         'atom_coffee2c',
         'vendor/brightray/brightray.gyp:brightray',
         'vendor/node/node.gyp:node',
+        'vendor/node/deps/openssl/openssl.gyp:openssl',
       ],
       'defines': [
         'PRODUCT_NAME="<(product_name)"',
@@ -528,7 +539,7 @@
                   ['libchromiumcontent_component', {
                     'copied_libraries': '<(libchromiumcontent_shared_libraries)',
                   }, {
-                    'copied_libraries': [],
+                    'copied_libraries': ['<(libchromiumcontent_dir)/libboringssl.dylib'],
                   }],
                 ],
               },
@@ -547,6 +558,16 @@
             },
           ],
           'postbuilds': [
+            {
+              'postbuild_name': 'Fix path of libboringssl',
+              'action': [
+                'install_name_tool',
+                '-change',
+                '/usr/local/lib/libboringssl.dylib',
+                '@rpath/libboringssl.dylib',
+                '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
+              ],
+            },
             {
               'postbuild_name': 'Add symlinks for framework subdirectories',
               'action': [

@@ -14,6 +14,7 @@
     # Reflects node's config.gypi.
     'component%': 'static_library',
     'python': 'python',
+    'openssl_no_asm': 1,
     'node_install_npm': 'false',
     'node_prefix': '',
     'node_shared_cares': 'false',
@@ -39,7 +40,7 @@
   # Settings to compile node under Windows.
   'target_defaults': {
     'target_conditions': [
-      ['_target_name in ["libuv", "http_parser", "cares", "node", "zlib"]', {
+      ['_target_name in ["libuv", "http_parser", "openssl", "cares", "node", "zlib"]', {
         'msvs_disabled_warnings': [
           4703,  # potentially uninitialized local pointer variable 'req' used
           4013,  # 'free' undefined; assuming extern returning int
@@ -77,6 +78,7 @@
             '-Wno-unused-function',
             '-Wno-sometimes-uninitialized',
             '-Wno-pointer-sign',
+            '-Wno-sign-compare',
             '-Wno-string-plus-int',
             '-Wno-unused-variable',
             '-Wno-deprecated-declarations',
@@ -105,7 +107,7 @@
       ['_target_name in ["node", "atom_lib"]', {
         'include_dirs': [
           '<(libchromiumcontent_src_dir)/v8/include',
-          '<(libchromiumcontent_src_dir)/third_party/boringssl/src/include',
+          'vendor/node/deps/openssl/openssl/include',
         ],
       }],
       ['_target_name=="node"', {
