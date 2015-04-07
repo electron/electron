@@ -72,6 +72,10 @@ python script\test.py
 If you encountered an error like `Command xxxx not found`, you may try to use
 the `VS2012 Command Prompt` console to execute the build scripts.
 
+### Fatal internal compiler error: C1001
+
+Make sure you have the latest Visual Studio update installed.
+
 ### Assertion failed: ((handle))->activecnt >= 0
 
 If building under Cygwin, you may see `bootstrap.py` failed with following
