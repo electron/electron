@@ -15,6 +15,7 @@ WEB_VIEW_EVENTS =
   'close': []
   'crashed': []
   'destroyed': []
+  'page-title-set': ['title', 'explicitSet']
 
 dispatchEvent = (webView, event, args...) ->
   throw new Error("Unkown event #{event}") unless WEB_VIEW_EVENTS[event]?

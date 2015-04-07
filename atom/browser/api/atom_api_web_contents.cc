@@ -240,6 +240,11 @@ void WebContents::DidNavigateMainFrame(
     Emit("did-navigate-to-different-page");
 }
 
+void WebContents::TitleWasSet(content::NavigationEntry* entry,
+                              bool explicit_set) {
+  Emit("page-title-set", entry->GetTitle(), explicit_set);
+}
+
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(WebContents, message)
