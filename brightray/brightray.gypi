@@ -118,6 +118,7 @@
       'Debug_Base': {
         'msvs_settings': {
           'VCCLCompilerTool': {
+            'RuntimeLibrary': '2',  # /MD (nondebug DLL)
             'Optimization': '<(win_debug_Optimization)',
             'BasicRuntimeChecks': '<(win_debug_RuntimeChecks)',
             'conditions': [
