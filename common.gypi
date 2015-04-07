@@ -43,6 +43,7 @@
         'msvs_disabled_warnings': [
           4703,  # potentially uninitialized local pointer variable 'req' used
           4013,  # 'free' undefined; assuming extern returning int
+          4018,  # signed/unsigned mismatch
           4054,  #
           4057,  # 'function' : 'volatile LONG *' differs in indirection to slightly different base types from 'unsigned long *'
           4189,  #
@@ -146,6 +147,12 @@
               '-Wno-empty-body',
             ],
           }],  # OS=="linux"
+          ['OS=="win"', {
+            'msvs_disabled_warnings': [
+              # unreferenced local function has been removed.
+              4505,
+            ],
+          }],  # OS=="win"
         ],
       }],
       ['_type in ["executable", "shared_library"]', {

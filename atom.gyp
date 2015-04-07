@@ -247,7 +247,6 @@
             # include its dependencies here.
             'vendor/node/deps/cares/cares.gyp:cares',
             'vendor/node/deps/http_parser/http_parser.gyp:http_parser',
-            'vendor/node/deps/openssl/openssl.gyp:openssl',
             'vendor/node/deps/uv/uv.gyp:libuv',
             'vendor/node/deps/zlib/zlib.gyp:zlib',
             # Build with breakpad support.
