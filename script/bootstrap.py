@@ -26,7 +26,7 @@ def main():
     enable_verbose_mode()
   if sys.platform == 'cygwin':
     update_win32_python()
-  update_submodules()
+  # update_submodules()
   update_node_modules('.')
   bootstrap_brightray(args.url)
 

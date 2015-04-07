@@ -4,7 +4,6 @@
   ],
   'variables': {
     'clang': 0,
-    'openssl_no_asm': 1,
     'conditions': [
       ['OS=="mac" or OS=="linux"', {
         'clang': 1,
@@ -20,7 +19,7 @@
     'node_shared_cares': 'false',
     'node_shared_http_parser': 'false',
     'node_shared_libuv': 'false',
-    'node_shared_openssl': 'false',
+    'node_shared_openssl': 'true',
     'node_shared_v8': 'true',
     'node_shared_zlib': 'false',
     'node_tag': '',
@@ -40,7 +39,7 @@
   # Settings to compile node under Windows.
   'target_defaults': {
     'target_conditions': [
-      ['_target_name in ["libuv", "http_parser", "cares", "openssl", "openssl-cli", "node", "zlib"]', {
+      ['_target_name in ["libuv", "http_parser", "cares", "node", "zlib"]', {
         'msvs_disabled_warnings': [
           4703,  # potentially uninitialized local pointer variable 'req' used
           4013,  # 'free' undefined; assuming extern returning int
@@ -104,6 +103,7 @@
       ['_target_name in ["node", "atom_lib"]', {
         'include_dirs': [
           '<(libchromiumcontent_src_dir)/v8/include',
+          '<(libchromiumcontent_src_dir)/third_party/boringssl/src/include',
         ],
       }],
       ['_target_name=="node"', {
@@ -113,9 +113,6 @@
             'xcode_settings': {
               'DYLIB_INSTALL_NAME_BASE': '@rpath'
             },
-          }],
-          ['OS=="win"', {
-            'type': 'static_library',
           }],
           ['OS=="linux"', {
             'cflags': [ '-fPIC' ],

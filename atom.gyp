@@ -197,6 +197,8 @@
         # Defined in Chromium but not exposed in its gyp file.
         'V8_USE_EXTERNAL_STARTUP_DATA',
         'ENABLE_PLUGINS',
+        # Needed by Node.
+        'NODE_WANT_INTERNALS=1',
       ],
       'sources': [
         '<@(lib_sources)',
@@ -527,7 +529,7 @@
                   ['libchromiumcontent_component', {
                     'copied_libraries': '<(libchromiumcontent_shared_libraries)',
                   }, {
-                    'copied_libraries': ['<(libchromiumcontent_dir)/libboringssl.dylib'],
+                    'copied_libraries': [],
                   }],
                 ],
               },
@@ -535,7 +537,6 @@
               'files': [
                 '<@(copied_libraries)',
                 '<(libchromiumcontent_dir)/ffmpegsumo.so',
-                '<(PRODUCT_DIR)/libnode.dylib',
               ],
             },
             {
@@ -547,26 +548,6 @@
             },
           ],
           'postbuilds': [
-            {
-              'postbuild_name': 'Fix path of libnode',
-              'action': [
-                'install_name_tool',
-                '-change',
-                '/usr/local/lib/libnode.dylib',
-                '@rpath/libnode.dylib',
-                '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
-              ],
-            },
-            {
-              'postbuild_name': 'Fix path of libboringssl',
-              'action': [
-                'install_name_tool',
-                '-change',
-                '/usr/local/lib/libboringssl.dylib',
-                '@rpath/libboringssl.dylib',
-                '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
-              ],
-            },
             {
               'postbuild_name': 'Add symlinks for framework subdirectories',
               'action': [
