@@ -28,7 +28,7 @@ def main():
     update_win32_python()
   update_submodules()
   update_node_modules('.')
-  bootstrap_brightray(args.url)
+  bootstrap_brightray(args.dev, args.url)
 
   create_chrome_version_h()
   touch_config_gypi()
@@ -47,6 +47,8 @@ def parse_args():
   parser.add_argument('-v', '--verbose',
                       action='store_true',
                       help='Prints the output of the subprocesses')
+  parser.add_argument('-d', '--dev', action='store_true',
+                      help='Do not download static_library build')
   parser.add_argument('-y', '--yes', '--assume-yes',
                       action='store_true',
                       help='Run non-interactively by assuming "yes" to all ' \
@@ -66,10 +68,12 @@ def update_submodules():
   execute_stdout(['git', 'submodule', 'update', '--init', '--recursive'])
 
 
-def bootstrap_brightray(url):
+def bootstrap_brightray(is_dev, url):
   bootstrap = os.path.join(VENDOR_DIR, 'brightray', 'script', 'bootstrap')
-  execute_stdout([sys.executable, bootstrap, '--commit',
-                  LIBCHROMIUMCONTENT_COMMIT, url])
+  args = ['--commit', LIBCHROMIUMCONTENT_COMMIT, url]
+  if is_dev:
+    args = ['--dev'] + args
+  execute_stdout([sys.executable, bootstrap] + args)
 
 
 def update_node_modules(dirname):
