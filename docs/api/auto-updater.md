@@ -98,6 +98,13 @@ appropriate format.
 
 `pub_date` if present must be formatted according to ISO 8601.
 
+## Event: error
+
+* `event` Event
+* `message` String
+
+Emitted when there is an error updating.
+
 ## Event: checking-for-update
 
 Emitted when checking for update has started.
