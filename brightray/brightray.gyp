@@ -116,9 +116,6 @@
           'link_settings': {
             'libraries': [
               '$(SDKROOT)/System/Library/Frameworks/AppKit.framework',
-              # This library is built as shared library to avoid symbols
-              # conflict with Node.
-              '<(libchromiumcontent_dir)/libboringssl.dylib',
             ],
           },
         }],
@@ -154,17 +151,17 @@
             ],
           },
         }],
-        ['OS=="win" and libchromiumcontent_component', {
+        ['OS=="win" and libchromiumcontent_component==1', {
           'link_settings': {
             'libraries': [
               '<(libchromiumcontent_dir)/base_static.lib',
               '<(libchromiumcontent_dir)/sandbox.lib',
             ],
           },
-        }, {
+        }],
+        ['OS=="win" and libchromiumcontent_component==0', {
           'link_settings': {
             'libraries': [
-              '<(libchromiumcontent_dir)/boringssl.dll',
               '<(libchromiumcontent_dir)/ffmpegsumo.lib',
               '<(libchromiumcontent_dir)/libyuv.lib',
               # content_browser.gypi:
