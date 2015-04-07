@@ -165,7 +165,7 @@
         ['OS=="win" and libchromiumcontent_component==0', {
           'link_settings': {
             'libraries': [
-              '<(libchromiumcontent_dir)/boringssl.lib',
+              '<(libchromiumcontent_dir)/boringssl.dll',
               '<(libchromiumcontent_dir)/ffmpegsumo.lib',
               '<(libchromiumcontent_dir)/libyuv.lib',
               # content_browser.gypi:
