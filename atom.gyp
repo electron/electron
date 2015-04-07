@@ -627,36 +627,5 @@
         },
       ],
     }],  # OS!="mac"
-    ['OS=="win"', {
-      'targets': [
-        {
-          'target_name': 'generate_node_lib',
-          'type': 'none',
-          'dependencies': [
-            '<(project_name)',
-          ],
-          'actions': [
-            {
-              'action_name': 'Create node.lib',
-              'inputs': [
-                '<(PRODUCT_DIR)/<(project_name).lib',
-              ],
-              'outputs': [
-                '<(PRODUCT_DIR)/node.lib',
-              ],
-              'action': [
-                'lib.exe',
-                '/nologo',
-                # We can't use <(_outputs) here because that escapes the
-                # backslash in the path, which confuses lib.exe.
-                '/OUT:<(PRODUCT_DIR)\\node.lib',
-                '<@(_inputs)',
-              ],
-              'msvs_cygwin_shell': 0,
-            },
-          ],
-        },  # target generate_node_lib
-      ],
-    }],  # OS==win
   ],
 }

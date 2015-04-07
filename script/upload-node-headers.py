@@ -110,12 +110,12 @@ def upload_node(bucket, access_key, secret_key, version):
           'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
 
   if TARGET_PLATFORM == 'win32':
-    # Generate the node.lib.
-    build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
-    execute([sys.executable, build, '-c', 'Release', '-t', 'generate_node_lib'])
+    # Copy atom.lib to node.lib
+    node_lib = os.path.join(OUT_DIR, 'node.lib')
+    atom_lib = os.path.join(OUT_DIR, 'atom.lib')
+    shutil.copy2(atom_lib, node_lib)
 
     # Upload the 32bit node.lib.
-    node_lib = os.path.join(OUT_DIR, 'node.lib')
     s3put(bucket, access_key, secret_key, OUT_DIR,
           'atom-shell/dist/{0}'.format(version), [node_lib])
 
