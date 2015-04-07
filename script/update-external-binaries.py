@@ -29,7 +29,6 @@ def main():
     download_and_unzip('Squirrel')
   elif sys.platform in ['cygwin', 'win32']:
     download_and_unzip('directxsdk')
-    download_and_unzip('vs2012_crt')
 
   with open(version_file, 'w') as f:
     f.write(VERSION)
