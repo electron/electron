@@ -47,14 +47,14 @@ def run_gyp(target_arch, component):
     # Force using win32 python on cygwin.
     python = os.path.join('vendor', 'python_26', 'python.exe')
   gyp = os.path.join('vendor', 'brightray', 'vendor', 'gyp', 'gyp_main.py')
-  return subprocess.call([python, gyp,
-                          '-f', 'ninja', '--depth', '.', 'atom.gyp',
-                          '-Icommon.gypi',
-                          '-Dlibchromiumcontent_component={0}'.format(component),
-                          '-Dlinux_clang=0',  # FIXME remove me.
-                          '-Dtarget_arch={0}'.format(target_arch),
-                          '-Dlibrary=static_library'])
-
+  defines = [
+    '-Dlibchromiumcontent_component={0}'.format(component),
+    '-Dlinux_clang=0',  # FIXME remove me.
+    '-Dtarget_arch={0}'.format(target_arch),
+    '-Dlibrary=static_library',
+  ]
+  return subprocess.call([python, gyp, '-f', 'ninja', '--depth', '.',
+                          'atom.gyp', '-Icommon.gypi'] + defines)
 
 if __name__ == '__main__':
   sys.exit(main())

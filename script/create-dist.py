@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import argparse
 import os
 import re
 import shutil
@@ -79,8 +78,6 @@ def main():
   rm_rf(DIST_DIR)
   os.makedirs(DIST_DIR)
 
-  args = parse_args()
-
   force_build()
   create_symbols()
   copy_binaries()
@@ -94,17 +91,6 @@ def main():
   create_dist_zip()
   create_chromedriver_zip()
   create_symbols_zip()
-
-
-def parse_args():
-  parser = argparse.ArgumentParser(description='Create distributions')
-  parser.add_argument('-u', '--url',
-                      help='The base URL from which to download '
-                      'libchromiumcontent (i.e., the URL you passed to '
-                      'libchromiumcontent\'s script/upload script',
-                      default=BASE_URL,
-                      required=False)
-  return parser.parse_args()
 
 
 def force_build():
