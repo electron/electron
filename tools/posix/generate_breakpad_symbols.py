@@ -61,7 +61,7 @@ def FindBundlePart(full_path):
 
 def GetDSYMBundle(options, binary_path):
   """Finds the .dSYM bundle to the binary."""
-  if binary_path[0] == '/' or binary_path == '':
+  if not binary_path.endswith(' Framework'):
     return binary_path
 
   filename = FindBundlePart(binary_path)

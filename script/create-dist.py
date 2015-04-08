@@ -21,12 +21,6 @@ OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
 CHROMIUM_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
                             'download', 'libchromiumcontent', 'static_library')
 
-SYMBOL_NAME = {
-  'darwin': 'libchromiumcontent.dylib.dSYM',
-  'linux': 'libchromiumcontent.so.dbg',
-  'win32': 'chromiumcontent.dll.pdb',
-}[TARGET_PLATFORM]
-
 TARGET_BINARIES = {
   'darwin': [
   ],
@@ -157,16 +151,9 @@ def create_version():
 
 
 def create_symbols():
-  directory = 'Atom-Shell.breakpad.syms'
-  rm_rf(os.path.join(OUT_DIR, directory))
-
-  build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
-  subprocess.check_output([sys.executable, build, '-c', 'Release',
-                           '-t', 'atom_dump_symbols'])
-
-  shutil.copytree(os.path.join(OUT_DIR, directory),
-                  os.path.join(DIST_DIR, directory),
-                  symlinks=True)
+  destination = os.path.join(DIST_DIR, 'Atom-Shell.breakpad.syms')
+  dump_symbols = os.path.join(SOURCE_ROOT, 'script', 'dump-symbols.py')
+  execute([sys.executable, dump_symbols, destination])
 
 
 def create_dist_zip():
