@@ -8,6 +8,7 @@ supportedWebViewEvents = [
   'did-frame-finish-load'
   'did-start-loading'
   'did-stop-loading'
+  'did-get-response-details'
   'did-get-redirect-request'
   'console-message'
   'new-window'

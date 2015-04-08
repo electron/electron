@@ -224,6 +224,17 @@ void WebContents::DidStopLoading(content::RenderViewHost* render_view_host) {
   Emit("did-stop-loading");
 }
 
+void WebContents::DidGetResourceResponseStart(
+    const content::ResourceRequestDetails& details) {
+  Emit("did-get-response-details",
+       details.socket_address.IsEmpty(),
+       details.url,
+       details.original_url,
+       details.http_response_code,
+       details.method,
+       details.referrer);
+}
+
 void WebContents::DidGetRedirectForResourceRequest(
     content::RenderFrameHost* render_frame_host,
     const content::ResourceRedirectDetails& details) {

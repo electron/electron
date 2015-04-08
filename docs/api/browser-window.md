@@ -640,6 +640,19 @@ Corresponds to the points in time when the spinner of the tab starts spinning.
 
 Corresponds to the points in time when the spinner of the tab stops spinning.
 
+### Event: 'did-get-response-details'
+
+* `event` Event
+* `status` Boolean
+* `newUrl` String
+* `originalUrl` String
+* `httpResponseCode` Integer
+* `requestMethod` String
+* `referrer` String
+
+Emitted when details regarding a requested resource is available.
+`status` indicates the socket connection to download the resource.
+
 ### Event: 'did-get-redirect-request'
 
 * `event` Event
