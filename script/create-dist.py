@@ -5,6 +5,7 @@ import re
 import shutil
 import subprocess
 import sys
+import stat
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, TARGET_PLATFORM, \
                        DIST_ARCH
@@ -17,6 +18,8 @@ ATOM_SHELL_VERSION = get_atom_shell_version()
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
 OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
+CHROMIUM_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
+                            'download', 'libchromiumcontent', 'static_library')
 
 SYMBOL_NAME = {
   'darwin': 'libchromiumcontent.dylib.dSYM',
@@ -107,12 +110,20 @@ def copy_binaries():
 
 
 def copy_chromedriver():
-  build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
-  execute([sys.executable, build, '-c', 'Release', '-t', 'copy_chromedriver'])
-  binary = 'chromedriver'
   if TARGET_PLATFORM == 'win32':
-    binary += '.exe'
-  shutil.copy2(os.path.join(OUT_DIR, binary), DIST_DIR)
+    chromedriver = 'chromedriver.exe'
+  else:
+    chromedriver = 'chromedriver'
+  src = os.path.join(CHROMIUM_DIR, chromedriver)
+  dest = os.path.join(DIST_DIR, chromedriver)
+
+  # Copy file and keep the executable bit.
+  shutil.copyfile(src, dest)
+  os.chmod(dest, os.stat(dest).st_mode | stat.S_IEXEC)
+
+  # Fix the linking with boringssl.
+  if TARGET_PLATFORM == 'linux':
+    execute(['chrpath', '-r', '$ORIGIN', dest])
 
 
 def copy_license():
@@ -173,9 +184,11 @@ def create_chromedriver_zip():
   with scoped_cwd(DIST_DIR):
     files = ['LICENSE']
     if TARGET_PLATFORM == 'win32':
-      files += ['chromedriver.exe']
-    else:
-      files += ['chromedriver']
+      files += ['chromedriver.exe', 'boringssl.dll']
+    elif TARGET_PLATFORM == 'darwin':
+      files += ['chromedriver', 'libboringssl.dylib']
+    elif TARGET_PLATFORM == 'linux':
+      files += ['chromedriver', 'libboringssl.so']
     make_zip(zip_file, files, [])
 
 

@@ -162,7 +162,7 @@ def get_chromedriver_version():
   SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
   chromedriver = os.path.join(SOURCE_ROOT, 'out', 'R', 'chromedriver')
   output = subprocess.check_output([chromedriver, '-v']).strip()
-  return 'v' + output[13:]
+  return 'v' + output[13:output.rfind(' ')]
 
 
 def parse_version(version):
