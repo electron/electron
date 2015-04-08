@@ -429,7 +429,6 @@
             {
               'action_name': 'Strip Binary',
               'inputs': [
-                '<(PRODUCT_DIR)/libchromiumcontent.so',
                 '<(PRODUCT_DIR)/libffmpegsumo.so',
                 '<(PRODUCT_DIR)/<(project_name)',
                 # Add the syms folder as input would force this action to run

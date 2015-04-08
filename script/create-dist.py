@@ -29,10 +29,9 @@ TARGET_BINARIES = {
   ],
   'win32': [
     'atom.exe',
-    'chromiumcontent.dll',
+    'boringssl.dll',
     'content_shell.pak',
     'd3dcompiler_47.dll',
-    'node.dll',
     'ffmpegsumo.dll',
     'icudtl.dat',
     'libEGL.dll',
@@ -46,9 +45,8 @@ TARGET_BINARIES = {
   'linux': [
     'atom',
     'content_shell.pak',
-    'libnode.so',
     'icudtl.dat',
-    'libchromiumcontent.so',
+    'libboringssl.so',
     'libffmpegsumo.so',
     'natives_blob.bin',
     'snapshot_blob.bin',
