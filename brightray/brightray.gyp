@@ -110,9 +110,21 @@
               '<!@(pkg-config --libs-only-l gtk+-2.0 libnotify dbus-1 x11 xrandr xext gconf-2.0)',
             ],
           },
-        }],
-        ['OS=="linux" and libchromiumcontent_component==0', {
-          '<(libchromiumcontent_dir)/libboringssl.so',
+          'conditions': [
+            ['libchromiumcontent_component', {
+              'link_settings': {
+                'libraries': [
+                  '<(libchromiumcontent_dir)/libgtk2ui.a',
+                ],
+              },
+            }, {
+              'link_settings': {
+                'libraries': [
+                  '<(libchromiumcontent_dir)/libboringssl.so',
+                ],
+              },
+            }],
+          ],
         }],
         ['OS=="mac"', {
           'link_settings': {
