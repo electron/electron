@@ -387,6 +387,9 @@ void WebContents::Reload(const mate::Dictionary& options) {
 }
 
 void WebContents::ReloadIgnoringCache(const mate::Dictionary& options) {
+  // Hack to remove pending entries that ignores cache and treated as a fresh
+  // load.
+  web_contents()->GetController().ReloadIgnoringCache(false);
   Reload(options);
 }
 
