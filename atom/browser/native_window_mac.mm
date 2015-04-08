@@ -820,7 +820,10 @@ void NativeWindowMac::UninstallView() {
 }
 
 void NativeWindowMac::ClipWebView() {
-  NSView* webView = GetWebContents()->GetNativeView();
+  content::WebContents* web_contents = GetWebContents();
+  if (!web_contents)
+    return;
+  NSView* webView = web_contents->GetNativeView();
   webView.layer.masksToBounds = YES;
   webView.layer.cornerRadius = kAtomWindowCornerRadius;
 }
