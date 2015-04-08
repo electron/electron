@@ -124,6 +124,12 @@ def copy_chromedriver():
   # Fix the linking with boringssl.
   if TARGET_PLATFORM == 'linux':
     execute(['chrpath', '-r', '$ORIGIN', dest])
+  elif TARGET_PLATFORM == 'darwin':
+    shutil.copy2(os.path.join(CHROMIUM_DIR, 'libboringssl.dylib'), DIST_DIR)
+    execute(['install_name_tool', '-change',
+             '/usr/local/lib/libboringssl.dylib',
+             '@loader_path/libboringssl.dylib',
+             dest])
 
 
 def copy_license():
