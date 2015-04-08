@@ -131,7 +131,7 @@ bool MoveItemToTrash(const base::FilePath& full_path) {
   NSString* path_string = base::SysUTF8ToNSString(full_path.value());
   NSArray* file_array =
       [NSArray arrayWithObject:[path_string lastPathComponent]];
-  int status = [[NSWorkspace sharedWorkspace]
+  BOOL status = [[NSWorkspace sharedWorkspace]
                 performFileOperation:NSWorkspaceRecycleOperation
                 source:[path_string stringByDeletingLastPathComponent]
                 destination:@""
@@ -140,7 +140,7 @@ bool MoveItemToTrash(const base::FilePath& full_path) {
   if (!path_string || !file_array || !status)
     LOG(WARNING) << "NSWorkspace failed to move file " << full_path.value()
                  << " to trash";
-  return (status == 0);
+  return status;
 }
 
 void Beep() {
