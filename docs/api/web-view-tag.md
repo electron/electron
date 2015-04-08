@@ -315,7 +315,7 @@ Fired when a redirect was received while requesting a resource.
 * `title` String
 * `explicitSet` Boolean
 
-Fired when page ttile is set during navigation. `explicitSet` is false when title is synthesised from file
+Fired when page title is set during navigation. `explicitSet` is false when title is synthesised from file
 url.
 
 ### console-message
