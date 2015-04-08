@@ -19,9 +19,6 @@
     'mac_deployment_target%': '10.8',
     'mac_sdkroot%': 'macosx',
 
-    # Build with clang under Linux.
-    'linux_clang%': 1,
-
     # See http://msdn.microsoft.com/en-us/library/aa652360(VS.71).aspx
     'win_release_Optimization%': '2', # 2 = /Os
     'win_debug_Optimization%': '0',   # 0 = /Od
@@ -270,16 +267,6 @@
           'WEBKIT_DLL',
         ],
       },
-    }],
-    ['OS=="linux" and linux_clang==1', {
-      'make_global_settings': [
-        ['CC', '/usr/bin/clang'],
-        ['CXX', '/usr/bin/clang++'],
-        ['LINK', '$(CXX)'],
-        ['CC.host', '$(CC)'],
-        ['CXX.host', '$(CXX)'],
-        ['LINK.host', '$(LINK)'],
-      ],
     }],
     ['OS=="win"', {
       'target_defaults': {
