@@ -25,10 +25,10 @@ app.on('ready', function() {
   if (process.platform == 'darwin') {
     var template = [
       {
-        label: 'Atom Shell',
+        label: 'Electron',
         submenu: [
           {
-            label: 'About Atom Shell',
+            label: 'About Electron',
             selector: 'orderFrontStandardAboutPanel:'
           },
           {
@@ -42,7 +42,7 @@ app.on('ready', function() {
             type: 'separator'
           },
           {
-            label: 'Hide Atom Shell',
+            label: 'Hide Electron',
             accelerator: 'Command+H',
             selector: 'hide:'
           },

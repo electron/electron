@@ -18,7 +18,7 @@ Like `--debug` but pauses the script on the first line.
 
 ## Use node-inspector for debugging
 
-__Note:__ Atom Shell uses node v0.11.13, which currently doesn't work very well
+__Note:__ Electron uses node v0.11.13, which currently doesn't work very well
 with node-inspector, and the main process would crash if you inspect the
 `process` object under node-inspector's console.
 

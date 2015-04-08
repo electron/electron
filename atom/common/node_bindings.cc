@@ -27,7 +27,7 @@ using content::BrowserThread;
 #define REFERENCE_MODULE(name) \
   extern "C" void _register_ ## name(void); \
   void (*fp_register_ ## name)(void) = _register_ ## name
-// Atom Shell's builtin modules.
+// Electron's builtin modules.
 REFERENCE_MODULE(atom_browser_app);
 REFERENCE_MODULE(atom_browser_auto_updater);
 REFERENCE_MODULE(atom_browser_content_tracing);

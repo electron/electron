@@ -1,6 +1,6 @@
 {
   "name": "atom-shell-specs",
-  "productName": "Atom Shell Test App",
+  "productName": "Electron Test App",
   "main": "static/main.js",
   "version": "0.1.0",
   "devDependencies": {
