@@ -92,10 +92,23 @@
         'common/main_delegate.h',
         'common/main_delegate_mac.mm',
       ],
-      'link_settings': {
-        'libraries': [ '<@(libchromiumcontent_libraries)' ]
-      },
       'conditions': [
+        ['OS=="linux" and libchromiumcontent_component==0', {
+          # On Linux we have to use "--whole-archive" to force executable
+          # to include all symbols, otherwise we will have plenty of
+          # unresolved symbols errors.
+          'direct_dependent_settings': {
+            'ldflags': [
+              '-Wl,--whole-archive',
+              '<@(libchromiumcontent_libraries)',
+              '-Wl,--no-whole-archive',
+            ],
+          }
+        }, {
+          'link_settings': {
+            'libraries': [ '<@(libchromiumcontent_libraries)' ]
+          },
+        }],
         ['OS=="linux"', {
           'cflags_cc': [
             '-Wno-deprecated-register',
@@ -121,6 +134,16 @@
               'link_settings': {
                 'libraries': [
                   '<(libchromiumcontent_dir)/libboringssl.so',
+                  '-lasound',
+                  '-lcap',
+                  '-lcups',
+                  '-lrt',
+                  '-ldl',
+                  '-lresolv',
+                  '-lfontconfig',
+                  '-lfreetype',
+                  '-lX11 -lXi -lXcursor -lXext -lXfixes -lXrender -lXcomposite -lXdamage -lXtst -lXrandr',
+                  '-lexpat',
                 ],
               },
             }],
