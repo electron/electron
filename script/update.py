@@ -49,7 +49,6 @@ def run_gyp(target_arch, component):
   gyp = os.path.join('vendor', 'brightray', 'vendor', 'gyp', 'gyp_main.py')
   defines = [
     '-Dlibchromiumcontent_component={0}'.format(component),
-    '-Dlinux_clang=0',  # FIXME remove me.
     '-Dtarget_arch={0}'.format(target_arch),
     '-Dlibrary=static_library',
   ]
