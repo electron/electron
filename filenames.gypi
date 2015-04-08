@@ -340,8 +340,6 @@
       'chromium_src/chrome/renderer/spellchecker/spellcheck_worditerator.h',
       'chromium_src/chrome/renderer/tts_dispatcher.cc',
       'chromium_src/chrome/renderer/tts_dispatcher.h',
-      'chromium_src/library_loaders/libgio_loader.cc',
-      'chromium_src/library_loaders/libgio.h',
       'chromium_src/library_loaders/libspeechd_loader.cc',
       'chromium_src/library_loaders/libspeechd.h',
       '<@(native_mate_files)',
