@@ -62,6 +62,7 @@ class NativeImage : public mate::Wrappable {
 #if defined(OS_MACOSX)
   // Mark the image as template image if possible.
   static void MakeTemplateImage(gfx::Image* image);
+  void SetTemplateImage(bool setAsTemplate);
 #endif
 
   v8::Handle<v8::Value> ToPNG(v8::Isolate* isolate);

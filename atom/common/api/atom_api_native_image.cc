@@ -138,6 +138,9 @@ mate::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
         .SetMethod("toDataUrl", &NativeImage::ToDataURL)
         .SetMethod("isEmpty", &NativeImage::IsEmpty)
         .SetMethod("getSize", &NativeImage::GetSize)
+        #if defined(OS_MACOSX)
+        .SetMethod("setTemplateImage", &NativeImage::SetTemplateImage)
+        #endif
         .Build());
 
   return mate::ObjectTemplateBuilder(
