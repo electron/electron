@@ -449,36 +449,6 @@
         }],  # OS=="linux"
       ],
     },  # target <(project_name>_dump_symbols
-    {
-      'target_name': 'copy_chromedriver',
-      'type': 'none',
-      'actions': [
-        {
-          'action_name': 'Copy ChromeDriver Binary',
-          'variables': {
-            'conditions': [
-              ['OS=="win"', {
-                'chromedriver_binary': 'chromedriver.exe',
-              },{
-                'chromedriver_binary': 'chromedriver',
-              }],
-            ],
-          },
-          'inputs': [
-            '<(libchromiumcontent_dir)/<(chromedriver_binary)',
-          ],
-          'outputs': [
-            '<(PRODUCT_DIR)/<(chromedriver_binary)',
-          ],
-          'action': [
-            'python',
-            'tools/copy_binary.py',
-            '<@(_inputs)',
-            '<@(_outputs)',
-          ],
-        }
-      ],
-    },  # copy_chromedriver
   ],
   'conditions': [
     ['OS=="mac"', {
