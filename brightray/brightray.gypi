@@ -71,7 +71,6 @@
         'GenerateDebugInformation': 'true',
         'MapFileName': '$(OutDir)\\$(TargetName).map',
         'ImportLibrary': '$(OutDir)\\lib\\$(TargetName).lib',
-        'LinkTimeCodeGeneration': 'true',  # /LTCG
         'AdditionalOptions': [
           # ATL 8.0 included in WDK 7.1 makes the linker to generate
           # following
@@ -192,7 +191,6 @@
           'VCCLCompilerTool': {
             'Optimization': '2', # 2 = /Os
             'FavorSizeOrSpeed': '1',  # 1 = /Ot
-            'WholeProgramOptimization': 'true',
             # See http://msdn.microsoft.com/en-us/library/47238hez(VS.71).aspx
             'InlineFunctionExpansion': '2',  # 2 = max
             # See http://msdn.microsoft.com/en-us/library/2kxx5t2c(v=vs.80).aspx
