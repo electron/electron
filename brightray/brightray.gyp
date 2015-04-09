@@ -93,6 +93,7 @@
         'common/main_delegate_mac.mm',
       ],
       'conditions': [
+        # Link with libraries of libchromiumcontent.
         ['OS=="linux" and libchromiumcontent_component==0', {
           # On Linux we have to use "--whole-archive" to force executable
           # to include all symbols, otherwise we will have plenty of
@@ -110,30 +111,43 @@
           },
         }],
         ['OS=="linux"', {
-          'cflags_cc': [
-            '-Wno-deprecated-register',
-            '-fno-rtti',
-          ],
+          'variables': {
+            'system_libraries': 'gtk+-2.0 libnotify dbus-1 x11 xrandr xext gconf-2.0',
+          },
           'link_settings': {
             'ldflags': [
-              '<!@(pkg-config --libs-only-L --libs-only-other gtk+-2.0 libnotify dbus-1 x11 xrandr xext gconf-2.0)',
+              '<!@(pkg-config --libs-only-L --libs-only-other <(system_libraries))',
             ],
             'libraries': [
               '-lpthread',
-              '<!@(pkg-config --libs-only-l gtk+-2.0 libnotify dbus-1 x11 xrandr xext gconf-2.0)',
+              '<!@(pkg-config --libs-only-l <(system_libraries))',
+            ],
+          },
+          'cflags': [
+            '<!@(pkg-config --cflags <(system_libraries))',
+            # Needed by using libgtk2ui:
+            '-Wno-deprecated-register',
+          ],
+          'direct_dependent_settings': {
+            'cflags': [
+              '<!@(pkg-config --cflags <(system_libraries))',
+              '-Wno-deprecated-register',
             ],
           },
           'conditions': [
             ['libchromiumcontent_component', {
               'link_settings': {
                 'libraries': [
+                  # libgtk2ui is always linked statically.
                   '<(libchromiumcontent_dir)/libgtk2ui.a',
                 ],
               },
             }, {
               'link_settings': {
                 'libraries': [
+                  # libboringssl is always linked dynamically.
                   '<(libchromiumcontent_dir)/libboringssl.so',
+                  # Following libraries are required by libchromiumcontent:
                   '-lasound',
                   '-lcap',
                   '-lcups',

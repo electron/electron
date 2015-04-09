@@ -110,9 +110,27 @@
               'USE_X11',
             ],
           }],
+          ['OS=="linux"', {
+            'cflags_cc': [
+              '-D__STRICT_ANSI__',
+              '-std=gnu++11',
+              '-fno-rtti',
+            ],
+          }],  # OS=="linux"
         ],
       },  # Common_Base
       'Debug_Base': {
+        'defines': [
+          # Use this instead of "NDEBUG" to determine whether we are in
+          # Debug build, because "NDEBUG" is already used by Chromium.
+          'DEBUG',
+          # Require when using libchromiumcontent.
+          'COMPONENT_BUILD',
+          'GURL_DLL',
+          'SKIA_DLL',
+          'USING_V8_SHARED',
+          'WEBKIT_DLL',
+        ],
         'msvs_settings': {
           'VCCLCompilerTool': {
             'RuntimeLibrary': '2',  # /MD (nondebug DLL)
@@ -181,6 +199,27 @@
             ],
           },
         },
+        'conditions': [
+          ['OS=="linux"', {
+            'cflags': [
+              '-O2',
+              # Don't emit the GCC version ident directives, they just end up
+              # in the .comment section taking up binary size.
+              '-fno-ident',
+              # Put data and code in their own sections, so that unused symbols
+              # can be removed at link time with --gc-sections.
+              '-fdata-sections',
+              '-ffunction-sections',
+            ],
+            'ldflags': [
+              # Specifically tell the linker to perform optimizations.
+              # See http://lwn.net/Articles/192624/ .
+              '-Wl,-O1',
+              '-Wl,--as-needed',
+              '-Wl,--gc-sections',
+            ],
+          }],  # OS=="linux"
+        ],
       },  # Release_Base
       'conditions': [
         ['libchromiumcontent_component', {
@@ -241,14 +280,7 @@
           ['exclude', '_win\.(cc|h)$'],
         ],
       }],
-      ['OS=="linux"', {
-        'cflags_cc': [
-          '-D__STRICT_ANSI__',
-          '-std=gnu++11',
-          '-fno-rtti',
-          '<!@(pkg-config --cflags gtk+-2.0)',
-        ],
-      }, {
+      ['OS!="linux"', {
         'sources/': [
           ['exclude', '/linux/'],
           ['exclude', '_linux\.(cc|h)$'],
@@ -257,17 +289,6 @@
     ],
   },
   'conditions': [
-    ['libchromiumcontent_component', {
-      'target_defaults': {
-        'defines': [
-          'COMPONENT_BUILD',
-          'GURL_DLL',
-          'SKIA_DLL',
-          'USING_V8_SHARED',
-          'WEBKIT_DLL',
-        ],
-      },
-    }],
     ['OS=="win"', {
       'target_defaults': {
         'include_dirs': [
