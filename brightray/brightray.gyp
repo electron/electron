@@ -1,4 +1,8 @@
 {
+  'variables': {
+    # The libraries brightray will be compiled to.
+    'linux_system_libraries': 'gtk+-2.0 libnotify dbus-1 x11 xrandr xext gconf-2.0'
+  },
   'includes': [
     'filenames.gypi',
   ],
@@ -46,26 +50,23 @@
           },
         }],
         ['OS=="linux"', {
-          'variables': {
-            'system_libraries': 'gtk+-2.0 libnotify dbus-1 x11 xrandr xext gconf-2.0',
-          },
           'link_settings': {
             'ldflags': [
-              '<!@(pkg-config --libs-only-L --libs-only-other <(system_libraries))',
+              '<!@(pkg-config --libs-only-L --libs-only-other <(linux_system_libraries))',
             ],
             'libraries': [
               '-lpthread',
-              '<!@(pkg-config --libs-only-l <(system_libraries))',
+              '<!@(pkg-config --libs-only-l <(linux_system_libraries))',
             ],
           },
           'cflags': [
-            '<!@(pkg-config --cflags <(system_libraries))',
+            '<!@(pkg-config --cflags <(linux_system_libraries))',
             # Needed by using libgtk2ui:
             '-Wno-deprecated-register',
           ],
           'direct_dependent_settings': {
             'cflags': [
-              '<!@(pkg-config --cflags <(system_libraries))',
+              '<!@(pkg-config --cflags <(linux_system_libraries))',
               '-Wno-deprecated-register',
             ],
           },
