@@ -152,19 +152,6 @@
           }],  # OS=="win"
         ],
       }],
-      ['_type in ["executable", "shared_library"]', {
-        'xcode_settings': {
-          # On some machines setting CLANG_CXX_LIBRARY doesn't work for linker.
-          'OTHER_LDFLAGS': [
-            '-stdlib=libc++'
-          ],
-          # Generates symbols and strip the binary.
-          'DEBUG_INFORMATION_FORMAT': 'dwarf-with-dsym',
-          'DEPLOYMENT_POSTPROCESSING': 'YES',
-          'STRIP_INSTALLED_PRODUCT': 'YES',
-          'STRIPFLAGS': '-x',
-        },
-      }],
     ],
     'msvs_cygwin_shell': 0, # Strangely setting it to 1 would make building under cygwin fail.
     'msvs_disabled_warnings': [
