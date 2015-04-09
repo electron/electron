@@ -120,9 +120,16 @@
               'variables': {
                 'conditions': [
                   ['libchromiumcontent_component', {
-                    'copied_libraries': '<(libchromiumcontent_shared_libraries)',
+                    'copied_libraries': [
+                      '<(PRODUCT_DIR)/node.dll'
+                      '<@(libchromiumcontent_shared_libraries)',
+                      '<@(libchromiumcontent_shared_v8_libraries)',
+                    ],
                   }, {
-                    'copied_libraries': ['<(libchromiumcontent_dir)/boringssl.dll'],
+                    'copied_libraries': [
+                      '<(PRODUCT_DIR)/node.dll'
+                      '<(libchromiumcontent_dir)/boringssl.dll'
+                    ],
                   }],
                 ],
               },
@@ -159,9 +166,16 @@
               'variables': {
                 'conditions': [
                   ['libchromiumcontent_component', {
-                    'copied_libraries': '<(libchromiumcontent_shared_libraries)',
+                    'copied_libraries': [
+                      '<(PRODUCT_DIR)/libnode.so'
+                      '<@(libchromiumcontent_shared_libraries)',
+                      '<@(libchromiumcontent_shared_v8_libraries)',
+                    ],
                   }, {
-                    'copied_libraries': ['<(libchromiumcontent_dir)/libboringssl.so'],
+                    'copied_libraries': [
+                      '<(PRODUCT_DIR)/libnode.so'
+                      '<(libchromiumcontent_dir)/libboringssl.so'
+                    ],
                   }],
                 ],
               },
@@ -192,7 +206,6 @@
         'atom_coffee2c',
         'vendor/brightray/brightray.gyp:brightray',
         'vendor/node/node.gyp:node',
-        'vendor/node/deps/openssl/openssl.gyp:openssl',
       ],
       'defines': [
         'PRODUCT_NAME="<(product_name)"',
@@ -221,11 +234,11 @@
         'vendor/node/deps/http_parser',
         'vendor/node/deps/uv/include',
         # The `node.h` is using `#include"v8.h"`.
-        'vendor/brightray/vendor/download/libchromiumcontent/src/v8/include',
+        '<(libchromiumcontent_src_dir)/v8/include',
         # The `node.h` is using `#include"ares.h"`.
         'vendor/node/deps/cares/include',
         # The `third_party/WebKit/Source/platform/weborigin/SchemeRegistry.h` is using `platform/PlatformExport.h`.
-        'vendor/brightray/vendor/download/libchromiumcontent/src/third_party/WebKit/Source',
+        '<(libchromiumcontent_src_dir)/third_party/WebKit/Source',
       ],
       'direct_dependent_settings': {
         'include_dirs': [
@@ -236,6 +249,11 @@
         'vendor/brightray/brightray.gyp:brightray',
       ],
       'conditions': [
+        ['libchromiumcontent_component', {
+          'link_settings': {
+            'libraries': [ '<@(libchromiumcontent_v8_libraries)' ],
+          },
+        }],
         ['OS=="win"', {
           'sources': [
             '<@(lib_sources_win)',
@@ -398,9 +416,16 @@
               'variables': {
                 'conditions': [
                   ['libchromiumcontent_component', {
-                    'copied_libraries': '<(libchromiumcontent_shared_libraries)',
+                    'copied_libraries': [
+                      '<(PRODUCT_DIR)/libnode.dylib',
+                      '<@(libchromiumcontent_shared_libraries)',
+                      '<@(libchromiumcontent_shared_v8_libraries)',
+                    ],
                   }, {
-                    'copied_libraries': ['<(libchromiumcontent_dir)/libboringssl.dylib'],
+                    'copied_libraries': [
+                      '<(PRODUCT_DIR)/libnode.dylib',
+                      '<(libchromiumcontent_dir)/libboringssl.dylib'
+                    ],
                   }],
                 ],
               },
@@ -426,6 +451,16 @@
                 '-change',
                 '/usr/local/lib/libboringssl.dylib',
                 '@rpath/libboringssl.dylib',
+                '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
+              ],
+            },
+            {
+              'postbuild_name': 'Fix path of libnode',
+              'action': [
+                'install_name_tool',
+                '-change',
+                '/usr/local/lib/libnode.dylib',
+                '@rpath/libnode.dylib',
                 '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
               ],
             },

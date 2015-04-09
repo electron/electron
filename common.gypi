@@ -14,7 +14,7 @@
     'node_shared_cares': 'false',
     'node_shared_http_parser': 'false',
     'node_shared_libuv': 'false',
-    'node_shared_openssl': 'true',
+    'node_shared_openssl': 'false',
     'node_shared_v8': 'true',
     'node_shared_zlib': 'false',
     'node_tag': '',
@@ -92,30 +92,13 @@
               '-Wno-unused-value',
               '-Wno-deprecated-declarations',
               '-Wno-return-type',
-              # Fix relocation error when compiling as shared library.
-              '-fPIC',
             ],
           }],
         ],
       }],
-      ['_target_name in ["node", "atom_lib"]', {
-        'include_dirs': [
-          '<(libchromiumcontent_src_dir)/v8/include',
-          'vendor/node/deps/openssl/openssl/include',
-        ],
-      }],
       ['_target_name=="node"', {
-        'conditions': [
-          ['OS=="mac"', {
-            'libraries': [ '-undefined dynamic_lookup' ],
-            'xcode_settings': {
-              'DYLIB_INSTALL_NAME_BASE': '@rpath'
-            },
-          }],
-          ['OS=="linux"', {
-            'cflags': [ '-fPIC' ],
-          }],
-        ]
+        'include_dirs': [ '<(libchromiumcontent_src_dir)/v8/include' ],
+        'libraries': [ '<@(libchromiumcontent_v8_libraries)' ],
       }],
       ['_target_name=="libuv"', {
         'conditions': [

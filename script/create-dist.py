@@ -33,6 +33,7 @@ TARGET_BINARIES = {
     'icudtl.dat',
     'libEGL.dll',
     'libGLESv2.dll',
+    'node.dll',
     'content_resources_200_percent.pak',
     'ui_resources_200_percent.pak',
     'xinput1_3.dll',
@@ -46,6 +47,7 @@ TARGET_BINARIES = {
     'libboringssl.so',
     'libffmpegsumo.so',
     'natives_blob.bin',
+    'libnode.so',
     'snapshot_blob.bin',
   ],
 }
