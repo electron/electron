@@ -45,8 +45,6 @@
     'xcode_settings': {
       'ALWAYS_SEARCH_USER_PATHS': 'NO',
       'ARCHS': ['x86_64'],
-      'CLANG_CXX_LANGUAGE_STANDARD': 'c++11',
-      'CLANG_CXX_LIBRARY': 'libc++',
       'COMBINE_HIDPI_IMAGES': 'YES',
       'GCC_ENABLE_CPP_EXCEPTIONS': 'NO',
       'GCC_ENABLE_CPP_RTTI': 'NO',
@@ -168,10 +166,6 @@
             ],
           },
         },
-        'xcode_settings': {
-          'COPY_PHASE_STRIP': 'NO',
-          'GCC_OPTIMIZATION_LEVEL': '0',
-        },
       },  # Debug_Base
       'Release_Base': {
         'msvs_settings': {
@@ -201,16 +195,6 @@
                 # "/Oy /Oy-" and warnings about overriding.
                 'AdditionalOptions': ['/Oy-'],
               }],
-            ],
-          },
-          'xcode_settings': {
-            'DEAD_CODE_STRIPPING': 'YES',  # -Wl,-dead_strip
-            'GCC_OPTIMIZATION_LEVEL': '2',
-            'OTHER_CFLAGS': [
-              '-fno-inline',
-              '-fno-omit-frame-pointer',
-              '-fno-builtin',
-              '-fno-optimize-sibling-calls',
             ],
           },
         },
@@ -276,7 +260,35 @@
           },  # R_x64
         }],  # OS=="win" and libchromiumcontent_component==0
       ],
-    },
+    },  # configurations
+    'target_conditions': [
+      # Putting this under "configurations" doesn't work.
+      ['libchromiumcontent_component', {
+        'xcode_settings': {
+          'GCC_OPTIMIZATION_LEVEL': '0',
+        },
+      }, {  # "Debug_Base"
+        'xcode_settings': {
+          'DEAD_CODE_STRIPPING': 'YES',  # -Wl,-dead_strip
+          'GCC_OPTIMIZATION_LEVEL': '2',
+          'OTHER_CFLAGS': [
+            '-fno-inline',
+            '-fno-omit-frame-pointer',
+            '-fno-builtin',
+            '-fno-optimize-sibling-calls',
+          ],
+        },
+      }],  # "Release_Base"
+      ['OS=="mac" and libchromiumcontent_component==0 and _type in ["executable", "shared_library"]', {
+        'xcode_settings': {
+          # Generates symbols and strip the binary.
+          'DEBUG_INFORMATION_FORMAT': 'dwarf-with-dsym',
+          'DEPLOYMENT_POSTPROCESSING': 'YES',
+          'STRIP_INSTALLED_PRODUCT': 'YES',
+          'STRIPFLAGS': '-x',
+        },
+      }],  # OS=="mac" and libchromiumcontent_component==0 and _type in ["executable", "shared_library"]
+    ],  # target_conditions
   },  # target_defaults
   'conditions': [
     ['clang', {
@@ -303,6 +315,15 @@
           'CLANG_CXX_LIBRARY': 'libc++',  # -stdlib=libc++
           'CLANG_CXX_LANGUAGE_STANDARD': 'c++11',  # -std=c++11
         },
+        'target_conditions': [
+          ['_type in ["executable", "shared_library"]', {
+            'xcode_settings': {
+              # On some machines setting CLANG_CXX_LIBRARY doesn't work for
+              # linker.
+              'OTHER_LDFLAGS': [ '-stdlib=libc++' ],
+            },
+          }],
+        ],
       },
     }],  # clang
     ['OS=="win"', {
