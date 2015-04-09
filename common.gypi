@@ -3,12 +3,6 @@
     'vendor/brightray/brightray.gypi',
   ],
   'variables': {
-    'clang': 0,
-    'conditions': [
-      ['OS=="mac" or OS=="linux"', {
-        'clang': 1,
-      }],
-    ],
     # Required by breakpad.
     'os_bsd': 0,
     # Reflects node's config.gypi.
@@ -213,33 +207,6 @@
     },
   },
   'conditions': [
-    # Settings to compile with clang under OS X.
-    ['clang==1', {
-      'make_global_settings': [
-        ['CC', '/usr/bin/clang'],
-        ['CXX', '/usr/bin/clang++'],
-        ['LINK', '$(CXX)'],
-        ['CC.host', '$(CC)'],
-        ['CXX.host', '$(CXX)'],
-        ['LINK.host', '$(LINK)'],
-      ],
-      'target_defaults': {
-        'cflags_cc': [
-          '-std=c++11',
-        ],
-        'xcode_settings': {
-          'CC': '/usr/bin/clang',
-          'LDPLUSPLUS': '/usr/bin/clang++',
-          'OTHER_CFLAGS': [
-            '-fcolor-diagnostics',
-          ],
-
-          'GCC_C_LANGUAGE_STANDARD': 'c99',  # -std=c99
-          'CLANG_CXX_LIBRARY': 'libc++',  # -stdlib=libc++
-          'CLANG_CXX_LANGUAGE_STANDARD': 'c++11',  # -std=c++11
-        },
-      },
-    }],  # clang==1
     # The breakdpad on Windows assumes Debug_x64 and Release_x64 configurations.
     ['OS=="win"', {
       'target_defaults': {
