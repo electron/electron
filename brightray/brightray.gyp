@@ -170,6 +170,19 @@
             ],
             'msvs_settings': {
               'VCLinkerTool': {
+                'AdditionalDependencies': [
+                  'advapi32.lib',
+                  'dbghelp.lib',
+                  'dwmapi.lib',
+                  'gdi32.lib',
+                  'netapi32.lib',
+                  'oleacc.lib',
+                  'powrprof.lib',
+                  'user32.lib',
+                  'usp10.lib',
+                  'version.lib',
+                  'winspool.lib',
+                ],
                 'DelayLoadDLLs': [
                   'ffmpegsumo.dll',
                   # content_common.gypi:
