@@ -37,6 +37,10 @@
     'win_release_InlineFunctionExpansion%': '2', # 1 = only __inline, 2 = max
   },
   'target_defaults': {
+    'includes': [
+       # Rules for excluding e.g. foo_win.cc from the build on non-Windows.
+      'filename_rules.gypi',
+    ],
     'xcode_settings': {
       'ALWAYS_SEARCH_USER_PATHS': 'NO',
       'ARCHS': ['x86_64'],
@@ -262,31 +266,6 @@
         }],  # OS=="win" and libchromiumcontent_component==0
       ],
     },
-    'conditions': [
-      ['OS!="mac"', {
-        'sources/': [
-          ['exclude', '/mac/'],
-          ['exclude', '_mac\.(mm|h)$'],
-        ],
-      }, {
-        'sources/': [
-          ['exclude', '/views/'],
-          ['exclude', '_views\.(cc|h)$'],
-        ],
-      }],
-      ['OS!="win"', {
-        'sources/': [
-          ['exclude', '/win/'],
-          ['exclude', '_win\.(cc|h)$'],
-        ],
-      }],
-      ['OS!="linux"', {
-        'sources/': [
-          ['exclude', '/linux/'],
-          ['exclude', '_linux\.(cc|h)$'],
-        ],
-      }],
-    ],
   },
   'conditions': [
     ['OS=="win"', {
