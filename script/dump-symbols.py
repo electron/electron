@@ -15,6 +15,8 @@ CHROMIUM_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
 
 
 def main(destination):
+  register_required_dll()
+
   rm_rf(destination)
   (project_name, product_name) = get_names_from_gyp()
 
@@ -44,11 +46,16 @@ def main(destination):
     args = [
       '--symbols-dir={0}'.format(destination),
       '--jobs=16',
-      OUT_DIR,
-      CHROMIUM_DIR,
+      os.path.relpath(OUT_DIR),
     ]
 
   execute([sys.executable, generate_breakpad_symbols] + args)
+
+
+def register_required_dll():
+  register = os.path.join(SOURCE_ROOT, 'tools', 'win',
+                          'register_msdia80_dll.js')
+  execute(['node.exe', os.path.relpath(register)]);
 
 
 def get_names_from_gyp():

@@ -47,11 +47,6 @@ def mkdir_p(path):
     else: raise
 
 
-def RegisterRequiredDll():
-  register = os.path.join(os.path.dirname(__file__), 'register_msdia80_dll.js')
-  subprocess.check_call(['node.exe', register]);
-
-
 def GenerateSymbols(options, binaries):
   """Dumps the symbols of binary and places them in the given directory."""
 
@@ -124,7 +119,6 @@ def main():
     pdbs += glob.glob(os.path.join(directory, '*.exe.pdb'))
     pdbs += glob.glob(os.path.join(directory, '*.dll.pdb'))
 
-  RegisterRequiredDll();
   GenerateSymbols(options, pdbs)
 
   return 0
