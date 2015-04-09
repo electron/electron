@@ -18,23 +18,6 @@
         'libchromiumcontent_libraries%': '<(libchromiumcontent_static_libraries)',
       }],
     ],
-
-    # See http://msdn.microsoft.com/en-us/library/aa652360(VS.71).aspx
-    'win_release_Optimization%': '2', # 2 = /Os
-    'win_debug_Optimization%': '0',   # 0 = /Od
-
-    # See http://msdn.microsoft.com/en-us/library/2kxx5t2c(v=vs.80).aspx
-    # Tri-state: blank is default, 1 on, 0 off
-    'win_release_OmitFramePointers%': '0',
-    # Tri-state: blank is default, 1 on, 0 off
-    'win_debug_OmitFramePointers%': '',
-
-    # See http://msdn.microsoft.com/en-us/library/8wtf2dfz(VS.71).aspx
-    'win_debug_RuntimeChecks%': '3',    # 3 = all checks enabled, 0 = off
-
-    # See http://msdn.microsoft.com/en-us/library/47238hez(VS.71).aspx
-    'win_debug_InlineFunctionExpansion%': '',    # empty = default, 0 = off,
-    'win_release_InlineFunctionExpansion%': '2', # 1 = only __inline, 2 = max
   },
   'target_defaults': {
     'includes': [
@@ -137,65 +120,27 @@
         'msvs_settings': {
           'VCCLCompilerTool': {
             'RuntimeLibrary': '2',  # /MD (nondebug DLL)
-            'Optimization': '<(win_debug_Optimization)',
-            'BasicRuntimeChecks': '<(win_debug_RuntimeChecks)',
-            'conditions': [
-              # According to MSVS, InlineFunctionExpansion=0 means
-              # "default inlining", not "/Ob0".
-              # Thus, we have to handle InlineFunctionExpansion==0 separately.
-              ['win_debug_InlineFunctionExpansion==0', {
-                'AdditionalOptions': ['/Ob0'],
-              }],
-              ['win_debug_InlineFunctionExpansion!=""', {
-                'InlineFunctionExpansion':
-                  '<(win_debug_InlineFunctionExpansion)',
-              }],
-              # if win_debug_OmitFramePointers is blank, leave as default
-              ['win_debug_OmitFramePointers==1', {
-                'OmitFramePointers': 'true',
-              }],
-              ['win_debug_OmitFramePointers==0', {
-                'OmitFramePointers': 'false',
-                # The above is not sufficient (http://crbug.com/106711): it
-                # simply eliminates an explicit "/Oy", but both /O2 and /Ox
-                # perform FPO regardless, so we must explicitly disable.
-                # We still want the false setting above to avoid having
-                # "/Oy /Oy-" and warnings about overriding.
-                'AdditionalOptions': ['/Oy-'],
-              }],
-            ],
+            'Optimization': '0',  # 0 = /Od
+            # See http://msdn.microsoft.com/en-us/library/8wtf2dfz(VS.71).aspx
+            'BasicRuntimeChecks': '3',  # 3 = all checks enabled, 0 = off
           },
         },
       },  # Debug_Base
       'Release_Base': {
         'msvs_settings': {
           'VCCLCompilerTool': {
-            'Optimization': '<(win_release_Optimization)',
-            'conditions': [
-              # According to MSVS, InlineFunctionExpansion=0 means
-              # "default inlining", not "/Ob0".
-              # Thus, we have to handle InlineFunctionExpansion==0 separately.
-              ['win_release_InlineFunctionExpansion==0', {
-                'AdditionalOptions': ['/Ob0'],
-              }],
-              ['win_release_InlineFunctionExpansion!=""', {
-                'InlineFunctionExpansion':
-                  '<(win_release_InlineFunctionExpansion)',
-              }],
-              # if win_release_OmitFramePointers is blank, leave as default
-              ['win_release_OmitFramePointers==1', {
-                'OmitFramePointers': 'true',
-              }],
-              ['win_release_OmitFramePointers==0', {
-                'OmitFramePointers': 'false',
-                # The above is not sufficient (http://crbug.com/106711): it
-                # simply eliminates an explicit "/Oy", but both /O2 and /Ox
-                # perform FPO regardless, so we must explicitly disable.
-                # We still want the false setting above to avoid having
-                # "/Oy /Oy-" and warnings about overriding.
-                'AdditionalOptions': ['/Oy-'],
-              }],
-            ],
+            # See http://msdn.microsoft.com/en-us/library/aa652360(VS.71).aspx
+            'Optimization': '2', # 2 = /Os
+            # See http://msdn.microsoft.com/en-us/library/47238hez(VS.71).aspx
+            'InlineFunctionExpansion': '2',  # 2 = max
+            # See http://msdn.microsoft.com/en-us/library/2kxx5t2c(v=vs.80).aspx
+            'OmitFramePointers': 'false',
+            # The above is not sufficient (http://crbug.com/106711): it
+            # simply eliminates an explicit "/Oy", but both /O2 and /Ox
+            # perform FPO regardless, so we must explicitly disable.
+            # We still want the false setting above to avoid having
+            # "/Oy /Oy-" and warnings about overriding.
+            'AdditionalOptions': ['/Oy-'],
           },
         },
         'conditions': [
