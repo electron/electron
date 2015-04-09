@@ -202,6 +202,8 @@
           ['OS=="linux"', {
             'cflags': [
               '-O2',
+              # Generate symbols, will be stripped later.
+              '-g',
               # Don't emit the GCC version ident directives, they just end up
               # in the .comment section taking up binary size.
               '-fno-ident',
@@ -288,6 +290,12 @@
           'STRIPFLAGS': '-x',
         },
       }],  # OS=="mac" and libchromiumcontent_component==0 and _type in ["executable", "shared_library"]
+      ['OS=="linux" and target_arch=="ia32" and _toolset=="target"', {
+        'ldflags': [
+          # Workaround for linker OOM.
+          '-Wl,--no-keep-memory',
+        ],
+      }],
     ],  # target_conditions
   },  # target_defaults
   'conditions': [
