@@ -16,9 +16,6 @@
       }],
     ],
 
-    'mac_deployment_target%': '10.8',
-    'mac_sdkroot%': 'macosx',
-
     # See http://msdn.microsoft.com/en-us/library/aa652360(VS.71).aspx
     'win_release_Optimization%': '2', # 2 = /Os
     'win_debug_Optimization%': '0',   # 0 = /Od
@@ -41,6 +38,7 @@
        # Rules for excluding e.g. foo_win.cc from the build on non-Windows.
       'filename_rules.gypi',
     ],
+    # Putting this in "configurations" will make overrides not working.
     'xcode_settings': {
       'ALWAYS_SEARCH_USER_PATHS': 'NO',
       'ARCHS': ['x86_64'],
@@ -50,9 +48,9 @@
       'GCC_ENABLE_CPP_EXCEPTIONS': 'NO',
       'GCC_ENABLE_CPP_RTTI': 'NO',
       'GCC_TREAT_WARNINGS_AS_ERRORS': 'YES',
-      'MACOSX_DEPLOYMENT_TARGET': '<(mac_deployment_target)',
+      'MACOSX_DEPLOYMENT_TARGET': '10.8',
       'RUN_CLANG_STATIC_ANALYZER': 'YES',
-      'SDKROOT': '<(mac_sdkroot)',
+      'SDKROOT': 'macosx',
       'USE_HEADER_MAP': 'NO',
       'WARNING_CFLAGS': [
         '-Wall',
@@ -200,6 +198,16 @@
                 # "/Oy /Oy-" and warnings about overriding.
                 'AdditionalOptions': ['/Oy-'],
               }],
+            ],
+          },
+          'xcode_settings': {
+            'DEAD_CODE_STRIPPING': 'YES',  # -Wl,-dead_strip
+            'GCC_OPTIMIZATION_LEVEL': '2',
+            'OTHER_CFLAGS': [
+              '-fno-inline',
+              '-fno-omit-frame-pointer',
+              '-fno-builtin',
+              '-fno-optimize-sibling-calls',
             ],
           },
         },
