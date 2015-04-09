@@ -3,6 +3,9 @@
     'vendor/download/libchromiumcontent/filenames.gypi',
   ],
   'variables': {
+    # Build with clang on Linux and Mac.
+    'clang%': 1,
+
     'libchromiumcontent_src_dir': '<(libchromiumcontent_root_dir)/src',
     'libchromiumcontent_component%': 1,
     'conditions': [
@@ -274,8 +277,34 @@
         }],  # OS=="win" and libchromiumcontent_component==0
       ],
     },
-  },
+  },  # target_defaults
   'conditions': [
+    ['clang', {
+      'make_global_settings': [
+        ['CC', '/usr/bin/clang'],
+        ['CXX', '/usr/bin/clang++'],
+        ['LINK', '$(CXX)'],
+        ['CC.host', '$(CC)'],
+        ['CXX.host', '$(CXX)'],
+        ['LINK.host', '$(LINK)'],
+      ],
+      'target_defaults': {
+        'cflags_cc': [
+          '-std=c++11',
+        ],
+        'xcode_settings': {
+          'CC': '/usr/bin/clang',
+          'LDPLUSPLUS': '/usr/bin/clang++',
+          'OTHER_CFLAGS': [
+            '-fcolor-diagnostics',
+          ],
+
+          'GCC_C_LANGUAGE_STANDARD': 'c99',  # -std=c99
+          'CLANG_CXX_LIBRARY': 'libc++',  # -stdlib=libc++
+          'CLANG_CXX_LANGUAGE_STANDARD': 'c++11',  # -std=c++11
+        },
+      },
+    }],  # clang
     ['OS=="win"', {
       'target_defaults': {
         'include_dirs': [
