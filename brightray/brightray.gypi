@@ -43,6 +43,71 @@
         '-Wno-missing-field-initializers',
       ],
     },
+    'msvs_configuration_attributes': {
+      'OutputDirectory': '<(DEPTH)\\build\\$(ConfigurationName)',
+      'IntermediateDirectory': '$(OutDir)\\obj\\$(ProjectName)',
+      'CharacterSet': '1',
+    },
+    'msvs_system_include_dirs': [
+      '$(VSInstallDir)/VC/atlmfc/include',
+    ],
+    'msvs_settings': {
+      'VCCLCompilerTool': {
+        'AdditionalOptions': ['/MP'],
+        'MinimalRebuild': 'false',
+        'BufferSecurityCheck': 'true',
+        'EnableFunctionLevelLinking': 'true',
+        'RuntimeTypeInfo': 'false',
+        'WarningLevel': '4',
+        'WarnAsError': 'true',
+        'DebugInformationFormat': '3',
+        # Programs that use the Standard C++ library must be compiled with
+        # C++
+        # exception handling enabled.
+        # http://support.microsoft.com/kb/154419
+        'ExceptionHandling': 1,
+      },
+      'VCLinkerTool': {
+        'GenerateDebugInformation': 'true',
+        'MapFileName': '$(OutDir)\\$(TargetName).map',
+        'ImportLibrary': '$(OutDir)\\lib\\$(TargetName).lib',
+        'LinkTimeCodeGeneration': 'true',  # /LTCG
+        'AdditionalOptions': [
+          # ATL 8.0 included in WDK 7.1 makes the linker to generate
+          # following
+          # warnings:
+          #   - warning LNK4254: section 'ATL' (50000040) merged into
+          #     '.rdata' (40000040) with different attributes
+          #   - warning LNK4078: multiple 'ATL' sections found with
+          #     different attributes
+          '/ignore:4254',
+          '/ignore:4078',
+          # views_chromiumcontent.lib generates this warning because it's
+          # symobls are defined as dllexport but used as static library:
+          #   - warning LNK4217: locally defined symbol imported in function
+          #   - warning LNK4049: locally defined symbol imported
+          '/ignore:4217',
+          '/ignore:4049',
+        ],
+      },
+    },
+    'msvs_disabled_warnings': [
+      4100, # unreferenced formal parameter
+      4127, # conditional expression is constant
+      4189, # local variable is initialized but not referenced
+      4244, # 'initializing' : conversion from 'double' to 'size_t', possible loss of data
+      4245, # 'initializing' : conversion from 'int' to 'const net::QuicVersionTag', signed/unsigned mismatch
+      4251, # class 'std::xx' needs to have dll-interface.
+      4310, # cast truncates constant value
+      4355, # 'this' : used in base member initializer list
+      4480, # nonstandard extension used: specifying underlying type for enum
+      4481, # nonstandard extension used: override specifier 'override'
+      4510, # default constructor could not be generated
+      4512, # assignment operator could not be generated
+      4610, # user defined constructor required
+      4702, # unreachable code
+      4819, # The file contains a character that cannot be represented in the current code page
+    ],
     'configurations': {
       # The "Debug" and "Release" configurations are not actually used.
       'Debug': {},
@@ -62,11 +127,6 @@
           'SK_IGNORE_ETC1_SUPPORT',
           'SK_IGNORE_GPU_DITHER',
         ],
-        'msvs_configuration_attributes': {
-          'OutputDirectory': '<(DEPTH)\\build\\$(ConfigurationName)',
-          'IntermediateDirectory': '$(OutDir)\\obj\\$(ProjectName)',
-          'CharacterSet': '1',
-        },
         'conditions': [
           ['OS!="mac"', {
             'defines': [
@@ -86,6 +146,24 @@
               '-fno-rtti',
             ],
           }],  # OS=="linux"
+          ['OS=="win"', {
+            'include_dirs': [
+              '<(libchromiumcontent_src_dir)/third_party/wtl/include',
+            ],
+            'defines': [
+              '_WIN32_WINNT=0x0602',
+              'WINVER=0x0602',
+              'WIN32',
+              '_WINDOWS',
+              'NOMINMAX',
+              'PSAPI_VERSION=1',
+              '_CRT_RAND_S',
+              'CERT_CHAIN_PARA_HAS_EXTRA_FIELDS',
+              'WIN32_LEAN_AND_MEAN',
+              '_ATL_NO_OPENGL',
+              '_SECURE_ATL',
+            ],
+          }],  # OS=="win"
         ],
       },  # Common_Base
       'Debug_Base': {
@@ -112,8 +190,9 @@
       'Release_Base': {
         'msvs_settings': {
           'VCCLCompilerTool': {
-            # See http://msdn.microsoft.com/en-us/library/aa652360(VS.71).aspx
             'Optimization': '2', # 2 = /Os
+            'FavorSizeOrSpeed': '1',  # 1 = /Ot
+            'WholeProgramOptimization': 'true',
             # See http://msdn.microsoft.com/en-us/library/47238hez(VS.71).aspx
             'InlineFunctionExpansion': '2',  # 2 = max
             # See http://msdn.microsoft.com/en-us/library/2kxx5t2c(v=vs.80).aspx
@@ -178,17 +257,18 @@
               },
             },
           },  # x64_Base
+          'conditions': [
+            ['libchromiumcontent_component', {
+              'D_x64': {
+                'inherit_from': ['Common_Base', 'x64_Base', 'Debug_Base'],
+              },  # D_x64
+            }, {
+              'R_x64': {
+                'inherit_from': ['Common_Base', 'x64_Base', 'Release_Base'],
+              },  # R_x64
+            }],  # libchromiumcontent_component
+          ],
         }],  # OS=="win"
-        ['OS=="win" and libchromiumcontent_component==1', {
-          'D_x64': {
-            'inherit_from': ['Common_Base', 'x64_Base', 'Debug_Base'],
-          },  # D_x64
-        }],  # OS=="win" and libchromiumcontent_component==1
-        ['OS=="win" and libchromiumcontent_component==0', {
-          'R_x64': {
-            'inherit_from': ['Common_Base', 'x64_Base', 'Release_Base'],
-          },  # R_x64
-        }],  # OS=="win" and libchromiumcontent_component==0
       ],
     },  # configurations
     'target_conditions': [
@@ -262,62 +342,5 @@
         ],
       },
     }],  # clang
-    ['OS=="win"', {
-      'target_defaults': {
-        'include_dirs': [
-          '<(libchromiumcontent_src_dir)/third_party/wtl/include',
-        ],
-        'defines': [
-          '_WIN32_WINNT=0x0602',
-          'WINVER=0x0602',
-          'WIN32',
-          '_WINDOWS',
-          'NOMINMAX',
-          'PSAPI_VERSION=1',
-          '_CRT_RAND_S',
-          'CERT_CHAIN_PARA_HAS_EXTRA_FIELDS',
-          'WIN32_LEAN_AND_MEAN',
-          '_ATL_NO_OPENGL',
-          '_SECURE_ATL',
-        ],
-        'msvs_system_include_dirs': [
-          '$(VSInstallDir)/VC/atlmfc/include',
-        ],
-        'msvs_settings': {
-          'VCCLCompilerTool': {
-            'AdditionalOptions': ['/MP'],
-            'MinimalRebuild': 'false',
-            'BufferSecurityCheck': 'true',
-            'EnableFunctionLevelLinking': 'true',
-            'RuntimeTypeInfo': 'false',
-            'WarningLevel': '4',
-            'WarnAsError': 'true',
-            'DebugInformationFormat': '3',
-          },
-          'VCLinkerTool': {
-            'GenerateDebugInformation': 'true',
-            'MapFileName': '$(OutDir)\\$(TargetName).map',
-            'ImportLibrary': '$(OutDir)\\lib\\$(TargetName).lib',
-          },
-        },
-        'msvs_disabled_warnings': [
-          4100, # unreferenced formal parameter
-          4127, # conditional expression is constant
-          4189, # local variable is initialized but not referenced
-          4244, # 'initializing' : conversion from 'double' to 'size_t', possible loss of data
-          4245, # 'initializing' : conversion from 'int' to 'const net::QuicVersionTag', signed/unsigned mismatch
-          4251, # class 'std::xx' needs to have dll-interface.
-          4310, # cast truncates constant value
-          4355, # 'this' : used in base member initializer list
-          4480, # nonstandard extension used: specifying underlying type for enum
-          4481, # nonstandard extension used: override specifier 'override'
-          4510, # default constructor could not be generated
-          4512, # assignment operator could not be generated
-          4610, # user defined constructor required
-          4702, # unreachable code
-          4819, # The file contains a character that cannot be represented in the current code page
-        ],
-      },
-    }],
   ],
 }
