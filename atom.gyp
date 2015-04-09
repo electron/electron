@@ -13,10 +13,6 @@
     'mac_framework_dirs': [
       '<(atom_source_root)/external_binaries',
     ],
-    'includes': [
-       # Rules for excluding e.g. foo_win.cc from the build on non-Windows.
-      'filename_rules.gypi',
-    ],
   },
   'targets': [
     {
