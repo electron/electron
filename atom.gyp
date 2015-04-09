@@ -17,16 +17,6 @@
        # Rules for excluding e.g. foo_win.cc from the build on non-Windows.
       'filename_rules.gypi',
     ],
-    'conditions': [
-      ['libchromiumcontent_component', {
-        'configurations': {
-          'Debug': {
-            'defines': [ 'DEBUG' ],
-            'cflags': [ '-g', '-O0' ],
-          },
-        },
-      }],
-    ],
   },
   'targets': [
     {
@@ -282,14 +272,12 @@
             ],
           },
           # Required settings of using breakpad.
-          'include_dirs': [
-            'vendor/breakpad/src',
-          ],
-          'cflags': [
-            '<!@(pkg-config --cflags dbus-1)',
-            '-Wno-deprecated-register',
+          'cflags_cc': [
             '-Wno-empty-body',
             '-Wno-reserved-user-defined-literal',
+          ],
+          'include_dirs': [
+            'vendor/breakpad/src',
           ],
           'dependencies': [
             'vendor/breakpad/breakpad.gyp:breakpad_client',
