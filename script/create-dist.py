@@ -80,6 +80,7 @@ def main():
   copy_license()
 
   if TARGET_PLATFORM == 'linux':
+    strip_binaries()
     copy_system_libraries()
 
   create_version()
@@ -128,6 +129,12 @@ def copy_chromedriver():
 
 def copy_license():
   shutil.copy2(os.path.join(SOURCE_ROOT, 'LICENSE'), DIST_DIR)
+
+
+def strip_binaries():
+  for binary in TARGET_BINARIES[TARGET_PLATFORM]:
+    if binary.endswith('.so') or '.' not in binary:
+      execute(['strip', os.path.join(DIST_DIR, binary)])
 
 
 def copy_system_libraries():
