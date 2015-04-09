@@ -214,24 +214,5 @@
         },
       },
     }],  # OS=="mac"
-    # The breakpad on Linux needs the binary to be built with -g to generate
-    # unmangled symbols.
-    ['OS=="linux"', {
-      'target_defaults': {
-        'cflags': [ '-g' ],
-        'conditions': [
-          ['target_arch=="ia32"', {
-            'target_conditions': [
-              ['_toolset=="target"', {
-                'ldflags': [
-                  # Workaround for linker OOM.
-                  '-Wl,--no-keep-memory',
-                ],
-              }],
-            ],
-          }],
-        ],
-      },
-    }],
   ],
 }
