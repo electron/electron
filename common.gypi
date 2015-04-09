@@ -163,35 +163,6 @@
       4819,  # The file contains a character that cannot be represented in the current code page
       4996,  # (atlapp.h) 'GetVersionExW': was declared deprecated
     ],
-    'msvs_settings': {
-      'VCCLCompilerTool': {
-        # Programs that use the Standard C++ library must be compiled with C++
-        # exception handling enabled.
-        # http://support.microsoft.com/kb/154419
-        'ExceptionHandling': 1,
-      },
-      'VCLinkerTool': {
-        'AdditionalOptions': [
-          # Force linking even though we have duplicate symbols between
-          # BoringSSL and OpenSSL.
-          '/FORCE:MULTIPLE',
-          # ATL 8.0 included in WDK 7.1 makes the linker to generate following
-          # warnings:
-          #   - warning LNK4254: section 'ATL' (50000040) merged into
-          #     '.rdata' (40000040) with different attributes
-          #   - warning LNK4078: multiple 'ATL' sections found with
-          #     different attributes
-          '/ignore:4254',
-          '/ignore:4078',
-          # views_chromiumcontent.lib generates this warning because it's
-          # symobls are defined as dllexport but used as static library:
-          #   - warning LNK4217: locally defined symbol imported in function
-          #   - warning LNK4049: locally defined symbol imported
-          '/ignore:4217',
-          '/ignore:4049',
-        ],
-      },
-    },
   },
   'conditions': [
     # The breakdpad on Windows assumes Debug_x64 and Release_x64 configurations.

@@ -106,6 +106,15 @@
           ],
         }],  # OS!="mac"
         ['OS=="win"', {
+          'msvs_settings': {
+            'VCLinkerTool': {
+              'AdditionalOptions': [
+                # Force linking even though we have duplicate symbols between
+                # BoringSSL and OpenSSL.
+                '/FORCE:MULTIPLE',
+              ],
+            },
+          },
           'copies': [
             {
               'variables': {
