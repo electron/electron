@@ -121,14 +121,12 @@
                 'conditions': [
                   ['libchromiumcontent_component', {
                     'copied_libraries': [
-                      '<(PRODUCT_DIR)/node.dll'
                       '<@(libchromiumcontent_shared_libraries)',
                       '<@(libchromiumcontent_shared_v8_libraries)',
                     ],
                   }, {
                     'copied_libraries': [
-                      '<(PRODUCT_DIR)/node.dll'
-                      '<(libchromiumcontent_dir)/boringssl.dll'
+                      '<(libchromiumcontent_dir)/boringssl.dll',
                     ],
                   }],
                 ],
@@ -167,14 +165,14 @@
                 'conditions': [
                   ['libchromiumcontent_component', {
                     'copied_libraries': [
-                      '<(PRODUCT_DIR)/libnode.so'
+                      '<(PRODUCT_DIR)/lib/libnode.so',
                       '<@(libchromiumcontent_shared_libraries)',
                       '<@(libchromiumcontent_shared_v8_libraries)',
                     ],
                   }, {
                     'copied_libraries': [
-                      '<(PRODUCT_DIR)/libnode.so'
-                      '<(libchromiumcontent_dir)/libboringssl.so'
+                      '<(PRODUCT_DIR)/lib/libnode.so',
+                      '<(libchromiumcontent_dir)/libboringssl.so',
                     ],
                   }],
                 ],

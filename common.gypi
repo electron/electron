@@ -92,13 +92,26 @@
               '-Wno-unused-value',
               '-Wno-deprecated-declarations',
               '-Wno-return-type',
+              # Required when building as shared library.
+              '-fPIC',
             ],
           }],
         ],
       }],
       ['_target_name=="node"', {
         'include_dirs': [ '<(libchromiumcontent_src_dir)/v8/include' ],
-        'libraries': [ '<@(libchromiumcontent_v8_libraries)' ],
+        'conditions': [
+          ['OS=="linux" and libchromiumcontent_component==0', {
+            # Prevent the linker to strip symbols.
+            'ldflags': [
+              '-Wl,--whole-archive',
+              '<@(libchromiumcontent_v8_libraries)',
+              '-Wl,--no-whole-archive',
+            ],
+          }, {
+            'libraries': [ '<@(libchromiumcontent_v8_libraries)' ],
+          }],
+        ],
       }],
       ['_target_name=="libuv"', {
         'conditions': [
