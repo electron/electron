@@ -102,8 +102,31 @@
         'include_dirs': [ '<(libchromiumcontent_src_dir)/v8/include' ],
         'conditions': [
           ['OS=="mac" and libchromiumcontent_component==0', {
+            # -all_load is the "whole-archive" on OS X.
             'xcode_settings': {
               'OTHER_LDFLAGS': [ '-Wl,-all_load' ],
+            },
+          }],
+          ['OS=="win" and libchromiumcontent_component==0', {
+            'libraries': [ '-lwinmm.lib' ],
+            'msvs_settings': {
+              'VCLinkerTool': {
+                # There is nothing like "whole-archive" on Windows, so we
+                # have to manually force some objets files to be included
+                # by referencing them.
+                'ForceSymbolReferences': [
+                  '_u_errorName_52',
+                  '_ubidi_setPara_52',
+                  '_ucsdet_getName_52',
+                  '_ulocdata_close_52',
+                  '_uregex_matches_52',
+                  '_uscript_getCode_52',
+                  '_usearch_setPattern_52',
+                  '?createInstance@Transliterator@icu_52@@SAPAV12@ABVUnicodeString@2@W4UTransDirection@@AAW4UErrorCode@@@Z',
+                  '?nameToUnicodeUTF8@IDNA@icu_52@@UBEXABVStringPiece@2@AAVByteSink@2@AAVIDNAInfo@2@AAW4UErrorCode@@@Z',
+                  '?kLineOffsetNotFound@Function@v8@@2HB',
+                ],  # '/INCLUDE'
+              },
             },
           }],
           ['OS=="linux" and libchromiumcontent_component==0', {
