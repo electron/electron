@@ -46,8 +46,8 @@ TARGET_BINARIES = {
     'icudtl.dat',
     'libboringssl.so',
     'libffmpegsumo.so',
-    'natives_blob.bin',
     'libnode.so',
+    'natives_blob.bin',
     'snapshot_blob.bin',
   ],
 }

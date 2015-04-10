@@ -101,8 +101,13 @@
       ['_target_name=="node"', {
         'include_dirs': [ '<(libchromiumcontent_src_dir)/v8/include' ],
         'conditions': [
+          ['OS=="mac" and libchromiumcontent_component==0', {
+            'xcode_settings': {
+              'OTHER_LDFLAGS': [ '-Wl,-all_load' ],
+            },
+          }],
           ['OS=="linux" and libchromiumcontent_component==0', {
-            # Prevent the linker to strip symbols.
+            # Prevent the linker from stripping symbols.
             'ldflags': [
               '-Wl,--whole-archive',
               '<@(libchromiumcontent_v8_libraries)',
