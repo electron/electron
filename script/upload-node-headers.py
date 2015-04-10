@@ -112,7 +112,7 @@ def upload_node(bucket, access_key, secret_key, version):
   if TARGET_PLATFORM == 'win32':
     # Copy atom.lib to node.lib
     node_lib = os.path.join(OUT_DIR, 'node.lib')
-    atom_lib = os.path.join(OUT_DIR, 'atom.lib')
+    atom_lib = os.path.join(OUT_DIR, 'node.dll.lib')
     shutil.copy2(atom_lib, node_lib)
 
     # Upload the 32bit node.lib.
