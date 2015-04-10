@@ -26,7 +26,6 @@ TARGET_BINARIES = {
   ],
   'win32': [
     'atom.exe',
-    'boringssl.dll',
     'content_shell.pak',
     'd3dcompiler_47.dll',
     'ffmpegsumo.dll',
@@ -44,7 +43,6 @@ TARGET_BINARIES = {
     'atom',
     'content_shell.pak',
     'icudtl.dat',
-    'libboringssl.so',
     'libffmpegsumo.so',
     'libnode.so',
     'natives_blob.bin',
@@ -118,16 +116,6 @@ def copy_chromedriver():
   shutil.copyfile(src, dest)
   os.chmod(dest, os.stat(dest).st_mode | stat.S_IEXEC)
 
-  # Fix the linking with boringssl.
-  if TARGET_PLATFORM == 'linux':
-    execute(['chrpath', '-r', '$ORIGIN', dest])
-  elif TARGET_PLATFORM == 'darwin':
-    shutil.copy2(os.path.join(CHROMIUM_DIR, 'libboringssl.dylib'), DIST_DIR)
-    execute(['install_name_tool', '-change',
-             '/usr/local/lib/libboringssl.dylib',
-             '@loader_path/libboringssl.dylib',
-             dest])
-
 
 def copy_license():
   shutil.copy2(os.path.join(SOURCE_ROOT, 'LICENSE'), DIST_DIR)
@@ -186,11 +174,9 @@ def create_chromedriver_zip():
   with scoped_cwd(DIST_DIR):
     files = ['LICENSE']
     if TARGET_PLATFORM == 'win32':
-      files += ['chromedriver.exe', 'boringssl.dll']
-    elif TARGET_PLATFORM == 'darwin':
-      files += ['chromedriver', 'libboringssl.dylib']
-    elif TARGET_PLATFORM == 'linux':
-      files += ['chromedriver', 'libboringssl.so']
+      files += ['chromedriver.exe']
+    else:
+      files += ['chromedriver']
     make_zip(zip_file, files, [])
 
 

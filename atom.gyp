@@ -125,9 +125,7 @@
                       '<@(libchromiumcontent_shared_v8_libraries)',
                     ],
                   }, {
-                    'copied_libraries': [
-                      '<(libchromiumcontent_dir)/boringssl.dll',
-                    ],
+                    'copied_libraries': [],
                   }],
                 ],
               },
@@ -172,7 +170,6 @@
                   }, {
                     'copied_libraries': [
                       '<(PRODUCT_DIR)/lib/libnode.so',
-                      '<(libchromiumcontent_dir)/libboringssl.so',
                     ],
                   }],
                 ],
@@ -422,7 +419,6 @@
                   }, {
                     'copied_libraries': [
                       '<(PRODUCT_DIR)/libnode.dylib',
-                      '<(libchromiumcontent_dir)/libboringssl.dylib'
                     ],
                   }],
                 ],
@@ -442,16 +438,6 @@
             },
           ],
           'postbuilds': [
-            {
-              'postbuild_name': 'Fix path of libboringssl',
-              'action': [
-                'install_name_tool',
-                '-change',
-                '/usr/local/lib/libboringssl.dylib',
-                '@rpath/libboringssl.dylib',
-                '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
-              ],
-            },
             {
               'postbuild_name': 'Fix path of libnode',
               'action': [
