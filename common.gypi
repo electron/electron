@@ -141,6 +141,22 @@
           }],
         ],
       }],
+      ['_target_name=="openssl"', {
+        'xcode_settings': {
+          'DEAD_CODE_STRIPPING': 'YES',  # -Wl,-dead_strip
+          'GCC_INLINES_ARE_PRIVATE_EXTERN': 'YES',
+          'GCC_SYMBOLS_PRIVATE_EXTERN': 'YES',
+        },
+        'cflags': [
+          '-fvisibility=hidden',
+          '-fdata-sections',
+          '-ffunction-sections',
+        ],
+        'ldflags': [
+          '-Wl,--as-needed',
+          '-Wl,--gc-sections',
+        ],
+      }],
       ['_target_name=="libuv"', {
         'conditions': [
           ['OS=="win"', {
