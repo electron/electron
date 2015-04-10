@@ -55,10 +55,10 @@ $ ./script/build.py
 You can also only build the `Debug` target:
 
 ```bash
-$ ./script/build.py -c Debug
+$ ./script/build.py -c D
 ```
 
-After building is done, you can find `atom` under `out/Debug`.
+After building is done, you can find `atom` under `out/D`.
 
 ## Troubleshooting
 

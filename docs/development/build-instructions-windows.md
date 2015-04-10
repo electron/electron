@@ -49,10 +49,10 @@ python script\build.py
 You can also only build the Debug target:
 
 ```powershell
-python script\build.py -c Debug
+python script\build.py -c D
 ```
 
-After building is done, you can find `atom.exe` under `out\Debug`.
+After building is done, you can find `atom.exe` under `out\D`.
 
 ## 64bit support
 
