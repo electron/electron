@@ -11,6 +11,7 @@ SYMBOLS_DIR = 'dist\\symbols'
 DOWNLOAD_DIR = 'vendor\\brightray\\vendor\\download\\libchromiumcontent'
 PDB_LIST = [
   'out\\R\\atom.exe.pdb',
+  'out\\R\\node.dll.pdb',
 ]
 
 
