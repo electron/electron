@@ -209,8 +209,10 @@
         'abstract': 1,
         'msvs_settings': {
           'VCCLCompilerTool': {
-            'Optimization': '2', # 2 = /Os
-            'FavorSizeOrSpeed': '1',  # 1 = /Ot
+            # 1, optimizeMinSpace, Minimize Size (/O1)
+            'Optimization': '1',
+            # 2, favorSize - Favor small code (/Os)
+            'FavorSizeOrSpeed': '2',
             # See http://msdn.microsoft.com/en-us/library/47238hez(VS.71).aspx
             'InlineFunctionExpansion': '2',  # 2 = max
             # See http://msdn.microsoft.com/en-us/library/2kxx5t2c(v=vs.80).aspx
