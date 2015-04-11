@@ -5,7 +5,7 @@ import os
 import sys
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
-                       enable_verbose_mode, is_verbose_mode
+                       enable_verbose_mode, is_verbose_mode, get_target_arch
 from lib.util import execute_stdout, scoped_cwd
 
 
@@ -52,7 +52,7 @@ def parse_args():
                       action='store_true',
                       help='Run non-interactively by assuming "yes" to all ' \
                            'prompts.')
-  parser.add_argument('--target_arch', default='default',
+  parser.add_argument('--target_arch', default=get_target_arch(),
                       help='Manually specify the arch to build for')
   return parser.parse_args()
 

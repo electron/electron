@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import errno
 import os
 import platform
 import sys
@@ -30,12 +31,17 @@ def get_target_arch():
       return 'x64'
   # On Windows it depends on user.
   elif PLATFORM == 'win32':
-    target_arch_path = os.path.join(__file__, '..', '..', '..', 'vendor',
-                                    'brightray', 'vendor', 'download',
-                                    'libchromiumcontent', '.target_arch')
-    with open(os.path.normpath(target_arch_path)) as f:
-      target_arch = f.read().strip()
-    return target_arch
+    try:
+      target_arch_path = os.path.join(__file__, '..', '..', '..', 'vendor',
+                                      'brightray', 'vendor', 'download',
+                                      'libchromiumcontent', '.target_arch')
+      with open(os.path.normpath(target_arch_path)) as f:
+        return f.read().strip()
+    except IOError as e:
+      if e.errno != errno.ENOENT:
+        raise
+    # Build 32bit by default.
+    return 'ia32'
   # Maybe we will support other platforms in future.
   else:
     return 'x64'
