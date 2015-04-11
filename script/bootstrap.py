@@ -4,7 +4,7 @@ import argparse
 import os
 import sys
 
-from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, TARGET_PLATFORM, \
+from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
                        enable_verbose_mode, is_verbose_mode
 from lib.util import execute_stdout, scoped_cwd
 
@@ -19,7 +19,7 @@ def main():
   os.chdir(SOURCE_ROOT)
 
   args = parse_args()
-  if not args.yes and TARGET_PLATFORM != 'win32':
+  if not args.yes and PLATFORM != 'win32':
     check_root()
   if args.verbose:
     enable_verbose_mode()

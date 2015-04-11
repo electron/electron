@@ -17,7 +17,7 @@ DIST_ARCH = {
     '64bit': 'x64',
 }[ARCH]
 
-TARGET_PLATFORM = {
+PLATFORM = {
   'cygwin': 'win32',
   'darwin': 'darwin',
   'linux2': 'linux',

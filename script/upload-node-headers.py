@@ -7,7 +7,7 @@ import shutil
 import sys
 import tarfile
 
-from lib.config import TARGET_PLATFORM
+from lib.config import PLATFORM
 from lib.util import execute, safe_mkdir, scoped_cwd, s3_config, s3put
 
 
@@ -109,7 +109,7 @@ def upload_node(bucket, access_key, secret_key, version):
     s3put(bucket, access_key, secret_key, DIST_DIR,
           'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
 
-  if TARGET_PLATFORM == 'win32':
+  if PLATFORM == 'win32':
     # Copy atom.lib to node.lib
     node_lib = os.path.join(OUT_DIR, 'node.lib')
     atom_lib = os.path.join(OUT_DIR, 'node.dll.lib')

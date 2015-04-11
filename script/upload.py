@@ -7,7 +7,7 @@ import subprocess
 import sys
 import tempfile
 
-from lib.config import DIST_ARCH, TARGET_PLATFORM
+from lib.config import DIST_ARCH, PLATFORM
 from lib.util import execute, get_atom_shell_version, parse_version, \
                      get_chromedriver_version, scoped_cwd
 from lib.github import GitHub
@@ -21,13 +21,13 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
 DIST_NAME = 'atom-shell-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
-                                                TARGET_PLATFORM,
+                                                PLATFORM,
                                                 DIST_ARCH)
 SYMBOLS_NAME = 'atom-shell-{0}-{1}-{2}-symbols.zip'.format(ATOM_SHELL_VERSION,
-                                                           TARGET_PLATFORM,
+                                                           PLATFORM,
                                                            DIST_ARCH)
 CHROMEDRIVER_NAME = 'chromedriver-{0}-{1}-{2}.zip'.format(CHROMEDRIVER_VERSION,
-                                                          TARGET_PLATFORM,
+                                                          PLATFORM,
                                                           DIST_ARCH)
 
 
@@ -58,7 +58,7 @@ def main():
                       os.path.join(DIST_DIR, CHROMEDRIVER_NAME))
 
   if args.publish_release:
-    if TARGET_PLATFORM == 'win32':
+    if PLATFORM == 'win32':
       # Upload PDBs to Windows symbol server.
       execute([sys.executable,
                os.path.join(SOURCE_ROOT, 'script', 'upload-windows-pdb.py')])
@@ -83,10 +83,10 @@ def parse_args():
 
 
 def get_atom_shell_build_version():
-  if TARGET_PLATFORM == 'darwin':
+  if PLATFORM == 'darwin':
     atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R', 'Atom.app',
                               'Contents', 'MacOS', 'Atom')
-  elif TARGET_PLATFORM == 'win32':
+  elif PLATFORM == 'win32':
     atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R', 'atom.exe')
   else:
     atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R', 'atom')
