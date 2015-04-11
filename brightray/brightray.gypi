@@ -164,6 +164,22 @@
               '_ATL_NO_OPENGL',
               '_SECURE_ATL',
             ],
+            'conditions': [
+              ['target_arch=="x64"', {
+                'msvs_configuration_platform': 'x64',
+                'msvs_settings': {
+                  'VCLinkerTool': {
+                    'MinimumRequiredVersion': '5.02',  # Server 2003.
+                    'TargetMachine': '17', # x86 - 64
+                    # Doesn't exist x64 SDK. Should use oleaut32 in any case.
+                    'IgnoreDefaultLibraryNames': [ 'olepro32.lib' ],
+                  },
+                  'VCLibrarianTool': {
+                    'TargetMachine': '17', # x64
+                  },
+                },
+              }],
+            ],
           }],  # OS=="win"
         ],
       },  # Common_Base
@@ -242,31 +258,15 @@
           },  # R (Release)
         }],  # libchromiumcontent_component
         ['OS=="win"', {
-          'x64_Base': {
-            'abstract': 1,
-            'msvs_configuration_platform': 'x64',
-            'msvs_settings': {
-              'VCLinkerTool': {
-                # Make sure to understand http://crbug.com/361720 if you want to
-                # increase this.
-                'MinimumRequiredVersion': '5.02',  # Server 2003.
-                'TargetMachine': '17', # x86 - 64
-                # Doesn't exist x64 SDK. Should use oleaut32 in any case.
-                'IgnoreDefaultLibraryNames': [ 'olepro32.lib' ],
-              },
-              'VCLibrarianTool': {
-                'TargetMachine': '17', # x64
-              },
-            },
-          },  # x64_Base
           'conditions': [
+            # gyp always assumes "_x64" targets on Windows.
             ['libchromiumcontent_component', {
               'D_x64': {
-                'inherit_from': ['Common_Base', 'x64_Base', 'Debug_Base'],
+                'inherit_from': ['Common_Base', 'Debug_Base'],
               },  # D_x64
             }, {
               'R_x64': {
-                'inherit_from': ['Common_Base', 'x64_Base', 'Release_Base'],
+                'inherit_from': ['Common_Base', 'Release_Base'],
               },  # R_x64
             }],  # libchromiumcontent_component
           ],

@@ -14,16 +14,19 @@ DOWNLOAD_DIR = os.path.join(VENDOR_DIR, 'download')
 
 def main():
   args = parse_args()
-  return (update_submodules() or
-          download_libchromiumcontent(args.dev, args.commit, args.url))
+
+  update_submodules()
+  download_libchromiumcontent(args.dev, args.commit, args.target_arch, args.url)
 
 
 def parse_args():
   parser = argparse.ArgumentParser(description='Bootstrap this project')
-  parser.add_argument('-c', '--commit', nargs='?', default='HEAD',
+  parser.add_argument('-c', '--commit', required=True,
                       help='The commit of libchromiumcontent to download.')
   parser.add_argument('-d', '--dev', action='store_true',
                       help='Do not download static_library build')
+  parser.add_argument('--target_arch', required=True,
+                      help='The arch of libchromiumcontent to download.')
   parser.add_argument('url', help='The base URL from which to download '
                       'libchromiumcontent (i.e., the URL you passed to '
                       'libchromiumcontent\'s script/upload script')
@@ -36,17 +39,16 @@ def update_submodules():
                            '--recursive']))
 
 
-def download_libchromiumcontent(is_dev, commit, url):
+def download_libchromiumcontent(is_dev, commit, target_arch, url):
   mkdir_p(DOWNLOAD_DIR)
   download = os.path.join(VENDOR_DIR, 'libchromiumcontent', 'script',
                           'download')
-  target = os.path.join(DOWNLOAD_DIR, 'libchromiumcontent')
+  target_dir = os.path.join(DOWNLOAD_DIR, 'libchromiumcontent')
+  args = ['-f', '-c', commit, '--target_arch', target_arch, url, target_dir]
   if is_dev:
-    subprocess.check_call([sys.executable, download, '-f', '-c', commit, url,
-                           target])
+    subprocess.check_call([sys.executable, download] + args)
   else:
-    subprocess.check_call([sys.executable, download, '-s', '-f', '-c', commit,
-                            url, target])
+    subprocess.check_call([sys.executable, download, '-s'] + args)
 
 
 def mkdir_p(path):
