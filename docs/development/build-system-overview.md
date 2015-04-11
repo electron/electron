@@ -17,30 +17,30 @@ Following `gyp` files contain the main rules of building Atom Shell:
 
 ## Component build
 
-Since Chromium is a quite large project, the final linking stage would take
+Since Chromium is quite a large project, the final linking stage would take
 quite a few minutes, making it hard for development. In order to solve this,
-Chromium introduces the "component build", which builds each component as a
-separate shared library, so linking can be very quick, in sacrifice of file size
+Chromium introduced the "component build", which builds each component as a
+separate shared library, making linking very quick but sacrificing file size
 and performance.
 
-In Atom Shell we took a very similar approach: for `Debug` build, the binary
+In Atom Shell we took a very similar approach: for `Debug` builds, the binary
 will be linked to shared library version of Chromium's components to achieve
-fast linking time; for `Release` build, the binary will be linked to the static
-library versions, so we can have best binary size and performance.
+fast linking time; for `Release` builds, the binary will be linked to the static
+library versions, so we can have the best possible binary size and performance.
 
 ## Minimal bootstrapping
 
-All the Chromium's prebuilt binaries are downloaded when running the bootstrap
-script, by default both static libraries and shared libraries will be
-downloaded, and the final size is between 800MB to 2GB according to the
+All of Chromium's prebuilt binaries are downloaded when running the bootstrap
+script. By default both static libraries and shared libraries will be
+downloaded and the final size should be between 800MB and 2GB according to the
 platform.
 
 If you only want to build Atom Shell quickly for testing or development, you
 can only download the shared library versions by passing the `--dev` parameter:
 
 ```bash
-$ ./script/boostrap.by --dev
-$ ./script/build.by -c D
+$ ./script/bootstrap.py --dev
+$ ./script/build.py -c D
 ```
 
 ## Two-phrase project generation
