@@ -8,7 +8,7 @@ import sys
 import stat
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
-                       DIST_ARCH
+                       get_target_arch
 from lib.util import scoped_cwd, rm_rf, get_atom_shell_version, make_zip, \
                      execute, get_chromedriver_version
 
@@ -155,7 +155,7 @@ def create_symbols():
 
 def create_dist_zip():
   dist_name = 'atom-shell-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
-                                                  PLATFORM, DIST_ARCH)
+                                                  PLATFORM, get_target_arch())
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
@@ -168,7 +168,7 @@ def create_dist_zip():
 
 def create_chromedriver_zip():
   dist_name = 'chromedriver-{0}-{1}-{2}.zip'.format(get_chromedriver_version(),
-                                                    PLATFORM, DIST_ARCH)
+                                                    PLATFORM, get_target_arch())
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
@@ -183,7 +183,7 @@ def create_chromedriver_zip():
 def create_symbols_zip():
   dist_name = 'atom-shell-{0}-{1}-{2}-symbols.zip'.format(ATOM_SHELL_VERSION,
                                                           PLATFORM,
-                                                          DIST_ARCH)
+                                                          get_target_arch())
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):

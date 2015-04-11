@@ -7,7 +7,7 @@ import subprocess
 import sys
 import tempfile
 
-from lib.config import DIST_ARCH, PLATFORM
+from lib.config import PLATFORM, get_target_arch
 from lib.util import execute, get_atom_shell_version, parse_version, \
                      get_chromedriver_version, scoped_cwd
 from lib.github import GitHub
@@ -22,13 +22,13 @@ OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
 DIST_NAME = 'atom-shell-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
                                                 PLATFORM,
-                                                DIST_ARCH)
+                                                get_target_arch())
 SYMBOLS_NAME = 'atom-shell-{0}-{1}-{2}-symbols.zip'.format(ATOM_SHELL_VERSION,
                                                            PLATFORM,
-                                                           DIST_ARCH)
+                                                           get_target_arch())
 CHROMEDRIVER_NAME = 'chromedriver-{0}-{1}-{2}.zip'.format(CHROMEDRIVER_VERSION,
                                                           PLATFORM,
-                                                          DIST_ARCH)
+                                                          get_target_arch())
 
 
 def main():
