@@ -19,8 +19,9 @@ def run_gyp():
     gyp_pylib = os.path.join(os.path.dirname(GYP), 'pylib')
     env['PYTHONPATH'] = os.path.pathsep.join([gyp_pylib,
                                               env.get('PYTHONPATH', '')])
+    env['GYP_DEFINES'] = 'libchromiumcontent_component=static_library'
     return subprocess.call([sys.executable, GYP, '--depth', '.',
-                            'brightray.gyp'], env=env)
+                            '-Ibrightray.gypi', 'brightray.gyp'], env=env)
 
 
 def build():
