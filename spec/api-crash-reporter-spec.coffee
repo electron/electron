@@ -17,6 +17,9 @@ describe 'crash-reporter module', ->
   beforeEach -> w = new BrowserWindow(show: false)
   afterEach -> w.destroy()
 
+  # It is not working on 64bit Windows.
+  return if process.platform is 'win32' and process.arch is 'x64
+
   it 'should send minidump when renderer crashes', (done) ->
     @timeout 60000
     server = http.createServer (req, res) ->
