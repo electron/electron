@@ -46,9 +46,22 @@ def main():
     sys.stderr.flush()
     return 1
 
-  # Upload atom-shell with GitHub Releases API.
   github = GitHub(auth_token())
   release_id = create_or_get_release_draft(github, args.version)
+
+  if args.publish_release:
+    # Upload the SHASUMS.txt.
+    execute([sys.executable,
+             os.path.join(SOURCE_ROOT, 'script', 'upload-checksums.py'),
+             '-v', ATOM_SHELL_VERSION])
+
+    # Press the publish button.
+    publish_release(github, release_id)
+
+    # Do not upload other files when passed "-p".
+    return
+
+  # Upload atom-shell with GitHub Releases API.
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, DIST_NAME))
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, SYMBOLS_NAME))
 
@@ -66,10 +79,6 @@ def main():
     execute([sys.executable,
              os.path.join(SOURCE_ROOT, 'script', 'upload-node-headers.py'),
              '-v', ATOM_SHELL_VERSION])
-
-  if args.publish_release:
-    # Press the publish button.
-    publish_release(github, release_id)
 
 
 def parse_args():

@@ -47,11 +47,6 @@ def main():
   bucket, access_key, secret_key = s3_config()
   upload_node(bucket, access_key, secret_key, args.version)
 
-  # Upload the SHASUMS.txt.
-  execute([sys.executable,
-           os.path.join(SOURCE_ROOT, 'script', 'upload-checksums.py'),
-           '-v', args.version])
-
 
 def parse_args():
   parser = argparse.ArgumentParser(description='upload sumsha file')
@@ -110,8 +105,7 @@ def upload_node(bucket, access_key, secret_key, version):
           'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
 
   if PLATFORM == 'win32':
-    target_arch = get_target_arch()
-    if target_arch == 'ia32':
+    if get_target_arch() == 'ia32':
       node_lib = os.path.join(DIST_DIR, 'node.lib')
     else:
       node_lib = os.path.join(DIST_DIR, 'x64', 'node.lib')
@@ -125,7 +119,7 @@ def upload_node(bucket, access_key, secret_key, version):
     s3put(bucket, access_key, secret_key, DIST_DIR,
           'atom-shell/dist/{0}'.format(version), [node_lib])
 
-    # Upload the index.json
+    # Upload the index.json.
     with scoped_cwd(SOURCE_ROOT):
       atom_shell = os.path.join(OUT_DIR, 'atom.exe')
       index_json = os.path.relpath(os.path.join(OUT_DIR, 'index.json'))
