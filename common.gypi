@@ -149,12 +149,6 @@
         },
         'cflags': [
           '-fvisibility=hidden',
-          '-fdata-sections',
-          '-ffunction-sections',
-        ],
-        'ldflags': [
-          '-Wl,--as-needed',
-          '-Wl,--gc-sections',
         ],
       }],
       ['_target_name=="libuv"', {
