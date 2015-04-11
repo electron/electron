@@ -1,0 +1,64 @@
+# Build system overview
+
+Atom Shell uses `gyp` for project generation, and `ninja` for building, project
+configurations can be found in `.gyp` and `.gypi` files.
+
+## Gyp files
+
+Following `gyp` files contain the main rules of building Atom Shell:
+
+* `atom.gyp` defines how Atom Shell itself is built.
+* `common.gypi` adjusts the build configurations of Node to make it build
+  together with Chromium.
+* `vendor/brightray/brightray.gyp` defines how `brightray` is built, and
+  includes the default configurations of linking with Chromium.
+* `vendor/brightray/brightray.gypi` includes general build configurations about
+  building.
+
+## Component build
+
+Since Chromium is a quite large project, the final linking stage would take
+quite a few minutes, making it hard for development. In order to solve this,
+Chromium introduces the "component build", which builds each component as a
+separate shared library, so linking can be very quick, in sacrifice of file size
+and performance.
+
+In Atom Shell we took a very similar approach: for `Debug` build, the binary
+will be linked to shared library version of Chromium's components to achieve
+fast linking time; for `Release` build, the binary will be linked to the static
+library versions, so we can have best binary size and performance.
+
+## Minimal bootstrapping
+
+All the Chromium's prebuilt binaries are downloaded when running the bootstrap
+script, by default both static libraries and shared libraries will be
+downloaded, and the final size is between 800MB to 2GB according to the
+platform.
+
+If you only want to build Atom Shell quickly for testing or development, you
+can only download the shared library versions by passing the `--dev` parameter:
+
+```bash
+$ ./script/boostrap.by --dev
+$ ./script/build.by -c D
+```
+
+## Two-phrase project generation
+
+Atom Shell links with different sets of libraries in `Release` and `Debug`
+builds, however `gyp` doesn't support configuring different link settings for
+different configurations.
+
+To work around this Atom Shell uses a `gyp` variable
+`libchromiumcontent_component` to control which link settings to use, and only
+generates one target when running `gyp`.
+
+## Target names
+
+Unlike most projects that use `Release` and `Debug` as target names, Atom Shell
+uses `R` and `D` instead. This is because `gyp` randomly crashes if there is
+only one `Release` or `Debug` build configuration is defined, and Atom Shell has
+to only generate one target for one time as stated above.
+
+This only affects developers, if you are only building Atom Shell for rebranding
+you are not affected.
