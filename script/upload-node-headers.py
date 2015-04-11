@@ -14,7 +14,7 @@ from lib.util import execute, safe_mkdir, scoped_cwd, s3_config, s3put
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR    = os.path.join(SOURCE_ROOT, 'dist')
 NODE_DIR    = os.path.join(SOURCE_ROOT, 'vendor', 'node')
-OUT_DIR     = os.path.join(SOURCE_ROOT, 'out', 'Release')
+OUT_DIR     = os.path.join(SOURCE_ROOT, 'out', 'R')
 
 HEADERS_SUFFIX = [
   '.h',
@@ -110,12 +110,12 @@ def upload_node(bucket, access_key, secret_key, version):
           'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
 
   if TARGET_PLATFORM == 'win32':
-    # Generate the node.lib.
-    build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
-    execute([sys.executable, build, '-c', 'Release', '-t', 'generate_node_lib'])
+    # Copy atom.lib to node.lib
+    node_lib = os.path.join(OUT_DIR, 'node.lib')
+    atom_lib = os.path.join(OUT_DIR, 'node.dll.lib')
+    shutil.copy2(atom_lib, node_lib)
 
     # Upload the 32bit node.lib.
-    node_lib = os.path.join(OUT_DIR, 'node.lib')
     s3put(bucket, access_key, secret_key, OUT_DIR,
           'atom-shell/dist/{0}'.format(version), [node_lib])
 

@@ -9,7 +9,10 @@
 On Ubuntu you could install the libraries via:
 
 ```bash
-$ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev libnotify-dev libgnome-keyring-dev libgconf2-dev gcc-multilib g++-multilib
+$ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
+                       libnotify-dev libgnome-keyring-dev libgconf2-dev \
+                       libasound2-dev libcap-dev libcups2-dev libxtst-dev \
+                       gcc-multilib g++-multilib
 ```
 
 Latest Node.js could be installed via ppa:
@@ -52,10 +55,10 @@ $ ./script/build.py
 You can also only build the `Debug` target:
 
 ```bash
-$ ./script/build.py -c Debug
+$ ./script/build.py -c D
 ```
 
-After building is done, you can find `atom` under `out/Debug`.
+After building is done, you can find `atom` under `out/D`.
 
 ## Troubleshooting
 

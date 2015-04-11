@@ -54,8 +54,9 @@
 #include "ui/gfx/geometry/size_conversions.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
-#include "ui/gfx/screen.h"
 #include "ui/gfx/geometry/size.h"
+#include "ui/gfx/screen.h"
+#include "ui/gl/gpu_switching_manager.h"
 
 #if defined(OS_WIN)
 #include "ui/gfx/switches.h"
@@ -64,10 +65,6 @@
 using content::NavigationEntry;
 using content::RenderWidgetHostView;
 using content::RenderWidgetHost;
-
-namespace content {
-CONTENT_EXPORT extern bool g_use_transparent_window;
-}
 
 namespace atom {
 
@@ -115,7 +112,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
 
   // Tell the content module to initialize renderer widget with transparent
   // mode.
-  content::g_use_transparent_window = transparent_;
+  ui::GpuSwitchingManager::SetTransparent(transparent_);
 
   // Read icon before window is created.
   options.Get(switches::kIcon, &icon_);

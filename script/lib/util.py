@@ -160,9 +160,9 @@ def get_atom_shell_version():
 
 def get_chromedriver_version():
   SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
-  chromedriver = os.path.join(SOURCE_ROOT, 'out', 'Release', 'chromedriver')
+  chromedriver = os.path.join(SOURCE_ROOT, 'dist', 'chromedriver')
   output = subprocess.check_output([chromedriver, '-v']).strip()
-  return 'v' + output[13:]
+  return 'v' + output[13:output.rfind(' ')]
 
 
 def parse_version(version):

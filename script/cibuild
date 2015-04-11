@@ -43,10 +43,10 @@ def main():
   if is_travis and sys.platform == 'linux2':
     with scoped_env('CXX', 'g++'):
       with scoped_env('CC', 'gcc'):
-        run_script('bootstrap.py')
+        run_script('bootstrap.py', ['--dev'])
     run_script('update.py')
   else:
-    run_script('bootstrap.py')
+    run_script('bootstrap.py', ['--dev'])
 
   run_script('cpplint.py')
   if sys.platform != 'win32':

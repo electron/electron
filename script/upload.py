@@ -18,7 +18,7 @@ ATOM_SHELL_VERSION = get_atom_shell_version()
 CHROMEDRIVER_VERSION = get_chromedriver_version()
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'Release')
+OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
 DIST_NAME = 'atom-shell-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
                                                 TARGET_PLATFORM,
@@ -84,12 +84,12 @@ def parse_args():
 
 def get_atom_shell_build_version():
   if TARGET_PLATFORM == 'darwin':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Release', 'Atom.app',
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R', 'Atom.app',
                               'Contents', 'MacOS', 'Atom')
   elif TARGET_PLATFORM == 'win32':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Release', 'atom.exe')
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R', 'atom.exe')
   else:
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Release', 'atom')
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R', 'atom')
 
   return subprocess.check_output([atom_shell, '--version']).strip()
 

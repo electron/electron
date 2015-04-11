@@ -61,8 +61,10 @@ def FindBundlePart(full_path):
 
 def GetDSYMBundle(options, binary_path):
   """Finds the .dSYM bundle to the binary."""
-  if binary_path[0] == '/' or binary_path == '':
-    return binary_path
+  if os.path.isabs(binary_path):
+    dsym_path = binary_path + '.dSYM'
+    if os.path.exists(dsym_path):
+      return dsym_path
 
   filename = FindBundlePart(binary_path)
   search_dirs = [options.build_dir, options.libchromiumcontent_dir]
