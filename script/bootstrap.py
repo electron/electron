@@ -4,7 +4,7 @@ import argparse
 import os
 import sys
 
-from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, \
+from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, TARGET_PLATFORM, \
                        enable_verbose_mode, is_verbose_mode
 from lib.util import execute_stdout, scoped_cwd
 
@@ -19,8 +19,7 @@ def main():
   os.chdir(SOURCE_ROOT)
 
   args = parse_args()
-  if (args.yes is False and
-      sys.platform not in ('win32', 'cygwin')):
+  if not args.yes and TARGET_PLATFORM != 'win32':
     check_root()
   if args.verbose:
     enable_verbose_mode()
@@ -28,7 +27,7 @@ def main():
     update_win32_python()
   update_submodules()
   update_node_modules('.')
-  bootstrap_brightray(args.dev, args.url)
+  bootstrap_brightray(args.dev, args.url, args.target_arch)
 
   create_chrome_version_h()
   touch_config_gypi()
@@ -53,7 +52,10 @@ def parse_args():
                       action='store_true',
                       help='Run non-interactively by assuming "yes" to all ' \
                            'prompts.')
+  parser.add_argument('--target_arch', default='default',
+                      help='Manually specify the arch to build for')
   return parser.parse_args()
+
 
 def check_root():
   if os.geteuid() == 0:
@@ -68,9 +70,13 @@ def update_submodules():
   execute_stdout(['git', 'submodule', 'update', '--init', '--recursive'])
 
 
-def bootstrap_brightray(is_dev, url):
+def bootstrap_brightray(is_dev, url, target_arch):
   bootstrap = os.path.join(VENDOR_DIR, 'brightray', 'script', 'bootstrap')
-  args = ['--commit', LIBCHROMIUMCONTENT_COMMIT, url]
+  args = [
+    '--commit', LIBCHROMIUMCONTENT_COMMIT,
+    '--target_arch', target_arch,
+    url,
+  ]
   if is_dev:
     args = ['--dev'] + args
   execute_stdout([sys.executable, bootstrap] + args)

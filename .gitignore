@@ -10,4 +10,5 @@ node_modules/
 *.xcodeproj
 *.swp
 *.pyc
+debug.log
 npm-debug.log
