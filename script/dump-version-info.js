@@ -43,6 +43,8 @@ function getInfoForCurrentVersion() {
     'linux-x64-symbols',
     'win32-ia32',
     'win32-ia32-symbols',
+    'win32-x64',
+    'win32-x64-symbols',
   ];
 
   return json;
