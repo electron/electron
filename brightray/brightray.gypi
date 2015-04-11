@@ -168,6 +168,7 @@
         ],
       },  # Common_Base
       'Debug_Base': {
+        'abstract': 1,
         'defines': [
           # Use this instead of "NDEBUG" to determine whether we are in
           # Debug build, because "NDEBUG" is already used by Chromium.
@@ -189,6 +190,7 @@
         },
       },  # Debug_Base
       'Release_Base': {
+        'abstract': 1,
         'msvs_settings': {
           'VCCLCompilerTool': {
             'Optimization': '2', # 2 = /Os
