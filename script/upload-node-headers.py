@@ -7,7 +7,7 @@ import shutil
 import sys
 import tarfile
 
-from lib.config import PLATFORM
+from lib.config import PLATFORM, get_target_arch
 from lib.util import execute, safe_mkdir, scoped_cwd, s3_config, s3put
 
 
@@ -110,19 +110,19 @@ def upload_node(bucket, access_key, secret_key, version):
           'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
 
   if PLATFORM == 'win32':
+    target_arch = get_target_arch()
+    if target_arch == 'ia32':
+      node_lib = os.path.join(DIST_DIR, 'node.lib')
+    else:
+      node_lib = os.path.join(DIST_DIR, 'x64', 'node.lib')
+      safe_mkdir(os.path.dirname(node_lib))
+
     # Copy atom.lib to node.lib
-    node_lib = os.path.join(OUT_DIR, 'node.lib')
     atom_lib = os.path.join(OUT_DIR, 'node.dll.lib')
     shutil.copy2(atom_lib, node_lib)
 
-    # Upload the 32bit node.lib.
-    s3put(bucket, access_key, secret_key, OUT_DIR,
-          'atom-shell/dist/{0}'.format(version), [node_lib])
-
-    # Upload the fake 64bit node.lib.
-    touch_x64_node_lib()
-    node_lib = os.path.join(OUT_DIR, 'x64', 'node.lib')
-    s3put(bucket, access_key, secret_key, OUT_DIR,
+    # Upload the node.lib.
+    s3put(bucket, access_key, secret_key, DIST_DIR,
           'atom-shell/dist/{0}'.format(version), [node_lib])
 
     # Upload the index.json
@@ -134,13 +134,6 @@ def upload_node(bucket, access_key, secret_key, version):
                index_json])
       s3put(bucket, access_key, secret_key, OUT_DIR, 'atom-shell/dist',
             [index_json])
-
-
-def touch_x64_node_lib():
-  x64_dir = os.path.join(OUT_DIR, 'x64')
-  safe_mkdir(x64_dir)
-  with open(os.path.join(x64_dir, 'node.lib'), 'w+') as node_lib:
-    node_lib.write('Invalid library')
 
 
 if __name__ == '__main__':

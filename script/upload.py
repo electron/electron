@@ -57,17 +57,17 @@ def main():
     upload_atom_shell(github, release_id,
                       os.path.join(DIST_DIR, CHROMEDRIVER_NAME))
 
+  if PLATFORM == 'win32':
+    # Upload PDBs to Windows symbol server.
+    execute([sys.executable,
+             os.path.join(SOURCE_ROOT, 'script', 'upload-windows-pdb.py')])
+
+    # Upload node headers.
+    execute([sys.executable,
+             os.path.join(SOURCE_ROOT, 'script', 'upload-node-headers.py'),
+             '-v', ATOM_SHELL_VERSION])
+
   if args.publish_release:
-    if PLATFORM == 'win32':
-      # Upload PDBs to Windows symbol server.
-      execute([sys.executable,
-               os.path.join(SOURCE_ROOT, 'script', 'upload-windows-pdb.py')])
-
-      # Upload node headers.
-      execute([sys.executable,
-               os.path.join(SOURCE_ROOT, 'script', 'upload-node-headers.py'),
-               '-v', ATOM_SHELL_VERSION])
-
     # Press the publish button.
     publish_release(github, release_id)
 
