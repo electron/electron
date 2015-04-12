@@ -141,6 +141,10 @@
             ],
           }],
           ['OS=="linux"', {
+            'defines': [
+              '_LARGEFILE_SOURCE',
+              '_LARGEFILE64_SOURCE',
+            ],
             'cflags_cc': [
               '-D__STRICT_ANSI__',
               '-std=gnu++11',
