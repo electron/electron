@@ -1,15 +1,7 @@
 {
   "name": "atom-shell",
-  "version": "0.22.3",
-  "licenses": [
-    {
-      "type": "MIT",
-      "url": "http://github.com/atom/atom-shell/raw/master/LICENSE.md"
-    }
-  ],
   "devDependencies": {
     "asar": "0.2.2",
-    "atom-package-manager": "0.144.0",
     "coffee-script": "~1.7.1",
     "coffeelint": "~1.3.0",
     "request": "*",

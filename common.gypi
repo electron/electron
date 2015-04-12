@@ -3,18 +3,12 @@
     'vendor/brightray/brightray.gypi',
   ],
   'variables': {
-    'clang': 0,
-    'openssl_no_asm': 1,
-    'conditions': [
-      ['OS=="mac" or OS=="linux"', {
-        'clang': 1,
-      }],
-    ],
     # Required by breakpad.
     'os_bsd': 0,
     # Reflects node's config.gypi.
     'component%': 'static_library',
     'python': 'python',
+    'openssl_no_asm': 1,
     'node_install_npm': 'false',
     'node_prefix': '',
     'node_shared_cares': 'false',
@@ -40,10 +34,11 @@
   # Settings to compile node under Windows.
   'target_defaults': {
     'target_conditions': [
-      ['_target_name in ["libuv", "http_parser", "cares", "openssl", "openssl-cli", "node", "zlib"]', {
+      ['_target_name in ["libuv", "http_parser", "openssl", "cares", "node", "zlib"]', {
         'msvs_disabled_warnings': [
           4703,  # potentially uninitialized local pointer variable 'req' used
           4013,  # 'free' undefined; assuming extern returning int
+          4018,  # signed/unsigned mismatch
           4054,  #
           4057,  # 'function' : 'volatile LONG *' differs in indirection to slightly different base types from 'unsigned long *'
           4189,  #
@@ -53,6 +48,7 @@
           4152,  # function/data pointer conversion in expression
           4206,  # translation unit is empty
           4204,  # non-constant aggregate initializer
+          4210,  # nonstandard extension used : function given file scope
           4214,  # bit field types other than int
           4232,  # address of dllimport 'free' is not static, identity not guaranteed
           4291,  # no matching operator delete found
@@ -76,6 +72,7 @@
             '-Wno-unused-function',
             '-Wno-sometimes-uninitialized',
             '-Wno-pointer-sign',
+            '-Wno-sign-compare',
             '-Wno-string-plus-int',
             '-Wno-unused-variable',
             '-Wno-deprecated-declarations',
@@ -95,34 +92,86 @@
               '-Wno-unused-value',
               '-Wno-deprecated-declarations',
               '-Wno-return-type',
-              # Fix relocation error when compiling as shared library.
+              # Required when building as shared library.
               '-fPIC',
             ],
           }],
         ],
       }],
-      ['_target_name in ["node", "atom_lib"]', {
-        'include_dirs': [
-          'vendor/brightray/vendor/download/libchromiumcontent/src/v8/include',
-        ],
-      }],
       ['_target_name=="node"', {
+        'include_dirs': [ '<(libchromiumcontent_src_dir)/v8/include' ],
         'conditions': [
-          ['OS=="linux"', {
-            'libraries': [
-              '<(libchromiumcontent_library_dir)/libchromiumcontent.so',
-            ],
+          ['OS=="mac" and libchromiumcontent_component==0', {
+            # -all_load is the "whole-archive" on OS X.
+            'xcode_settings': {
+              'OTHER_LDFLAGS': [ '-Wl,-all_load' ],
+            },
           }],
           ['OS=="win"', {
-            'libraries': [
-              '<(libchromiumcontent_library_dir)/chromiumcontent.dll.lib',
+            'libraries': [ '-lwinmm.lib' ],
+            'conditions': [
+              ['libchromiumcontent_component==0', {
+                'variables': {
+                  'conditions': [
+                    ['target_arch=="ia32"', {
+                      'reference_symbols': [
+                        '_u_errorName_52',
+                        '_ubidi_setPara_52',
+                        '_ucsdet_getName_52',
+                        '_ulocdata_close_52',
+                        '_uregex_matches_52',
+                        '_uscript_getCode_52',
+                        '_usearch_setPattern_52',
+                        '?createInstance@Transliterator@icu_52@@SAPAV12@ABVUnicodeString@2@W4UTransDirection@@AAW4UErrorCode@@@Z',
+                        '?nameToUnicodeUTF8@IDNA@icu_52@@UBEXABVStringPiece@2@AAVByteSink@2@AAVIDNAInfo@2@AAW4UErrorCode@@@Z',
+                        '?kLineOffsetNotFound@Function@v8@@2HB',
+                      ],
+                    }, {
+                      'reference_symbols': [
+                        'u_errorName_52',
+                        'ubidi_setPara_52',
+                        'ucsdet_getName_52',
+                        'uidna_openUTS46_52',
+                        'ulocdata_close_52',
+                        'uregex_matches_52',
+                        'uscript_getCode_52',
+                        'usearch_setPattern_52',
+                        '?createInstance@Transliterator@icu_52@@SAPEAV12@AEBVUnicodeString@2@W4UTransDirection@@AEAW4UErrorCode@@@Z'
+                      ],
+                    }],
+                  ],
+                },
+                'msvs_settings': {
+                  'VCLinkerTool': {
+                    # There is nothing like "whole-archive" on Windows, so we
+                    # have to manually force some objets files to be included
+                    # by referencing them.
+                    'ForceSymbolReferences': [ '<@(reference_symbols)' ],  # '/INCLUDE'
+                  },
+                },
+              }],
             ],
           }],
-          ['OS=="mac"', {
-            'libraries': [
-              '<(libchromiumcontent_library_dir)/libchromiumcontent.dylib',
+          ['OS=="linux" and libchromiumcontent_component==0', {
+            # Prevent the linker from stripping symbols.
+            'ldflags': [
+              '-Wl,--whole-archive',
+              '<@(libchromiumcontent_v8_libraries)',
+              '-Wl,--no-whole-archive',
             ],
+          }, {
+            'libraries': [ '<@(libchromiumcontent_v8_libraries)' ],
           }],
+        ],
+      }],
+      ['_target_name=="openssl"', {
+        'xcode_settings': {
+          'DEAD_CODE_STRIPPING': 'YES',  # -Wl,-dead_strip
+          'GCC_INLINES_ARE_PRIVATE_EXTERN': 'YES',
+          'GCC_SYMBOLS_PRIVATE_EXTERN': 'YES',
+        },
+        'cflags': [
+          '-fvisibility=hidden',
         ],
       }],
       ['_target_name=="libuv"', {
@@ -152,15 +201,13 @@
               '-Wno-empty-body',
             ],
           }],  # OS=="linux"
+          ['OS=="win"', {
+            'msvs_disabled_warnings': [
+              # unreferenced local function has been removed.
+              4505,
+            ],
+          }],  # OS=="win"
         ],
-      }],
-      ['_type in ["executable", "shared_library"]', {
-        # On some machines setting CLANG_CXX_LIBRARY doesn't work for linker.
-        'xcode_settings': {
-          'OTHER_LDFLAGS': [
-            '-stdlib=libc++'
-          ],
-        },
       }],
     ],
     'msvs_cygwin_shell': 0, # Strangely setting it to 1 would make building under cygwin fail.
@@ -168,69 +215,14 @@
       4005,  # (node.h) macro redefinition
       4189,  # local variable is initialized but not referenced
       4201,  # (uv.h) nameless struct/union
+      4267,  # conversion from 'size_t' to 'int', possible loss of data
       4503,  # decorated name length exceeded, name was truncated
       4800,  # (v8.h) forcing value to bool 'true' or 'false'
       4819,  # The file contains a character that cannot be represented in the current code page
       4996,  # (atlapp.h) 'GetVersionExW': was declared deprecated
     ],
-    'msvs_settings': {
-      'VCCLCompilerTool': {
-        # Programs that use the Standard C++ library must be compiled with C++
-        # exception handling enabled.
-        # http://support.microsoft.com/kb/154419
-        'ExceptionHandling': 1,
-      },
-      'VCLinkerTool': {
-        'AdditionalOptions': [
-          # ATL 8.0 included in WDK 7.1 makes the linker to generate following
-          # warnings:
-          #   - warning LNK4254: section 'ATL' (50000040) merged into
-          #     '.rdata' (40000040) with different attributes
-          #   - warning LNK4078: multiple 'ATL' sections found with
-          #     different attributes
-          '/ignore:4254',
-          '/ignore:4078',
-          # views_chromiumcontent.lib generates this warning because it's
-          # symobls are defined as dllexport but used as static library:
-          #   - warning LNK4217: locally defined symbol imported in function
-          #   - warning LNK4049: locally defined symbol imported
-          '/ignore:4217',
-          '/ignore:4049',
-        ],
-      },
-    },
-    'xcode_settings': {
-      'DEBUG_INFORMATION_FORMAT': 'dwarf-with-dsym',
-    },
   },
   'conditions': [
-    # Settings to compile with clang under OS X.
-    ['clang==1', {
-      'make_global_settings': [
-        ['CC', '/usr/bin/clang'],
-        ['CXX', '/usr/bin/clang++'],
-        ['LINK', '$(CXX)'],
-        ['CC.host', '$(CC)'],
-        ['CXX.host', '$(CXX)'],
-        ['LINK.host', '$(LINK)'],
-      ],
-      'target_defaults': {
-        'cflags_cc': [
-          '-std=c++11',
-        ],
-        'xcode_settings': {
-          'CC': '/usr/bin/clang',
-          'LDPLUSPLUS': '/usr/bin/clang++',
-          'OTHER_CFLAGS': [
-            '-fcolor-diagnostics',
-          ],
-
-          'GCC_C_LANGUAGE_STANDARD': 'c99',  # -std=c99
-          'CLANG_CXX_LIBRARY': 'libc++',  # -stdlib=libc++
-          'CLANG_CXX_LANGUAGE_STANDARD': 'c++11',  # -std=c++11
-        },
-      },
-    }],  # clang==1
     # The breakdpad on Windows assumes Debug_x64 and Release_x64 configurations.
     ['OS=="win"', {
       'target_defaults': {
@@ -251,24 +243,5 @@
         },
       },
     }],  # OS=="mac"
-    # The breakpad on Linux needs the binary to be built with -g to generate
-    # unmangled symbols.
-    ['OS=="linux"', {
-      'target_defaults': {
-        'cflags': [ '-g' ],
-        'conditions': [
-          ['target_arch=="ia32"', {
-            'target_conditions': [
-              ['_toolset=="target"', {
-                'ldflags': [
-                  # Workaround for linker OOM.
-                  '-Wl,--no-keep-memory',
-                ],
-              }],
-            ],
-          }],
-        ],
-      },
-    }],
   ],
 }

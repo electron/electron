@@ -129,11 +129,11 @@ def safe_mkdir(path):
       raise
 
 
-def execute(argv):
+def execute(argv, env=os.environ):
   if is_verbose_mode():
     print ' '.join(argv)
   try:
-    output = subprocess.check_output(argv, stderr=subprocess.STDOUT)
+    output = subprocess.check_output(argv, stderr=subprocess.STDOUT, env=env)
     if is_verbose_mode():
       print output
     return output
@@ -142,27 +142,35 @@ def execute(argv):
     raise e
 
 
-def execute_stdout(argv):
+def execute_stdout(argv, env=os.environ):
   if is_verbose_mode():
     print ' '.join(argv)
     try:
-      subprocess.check_call(argv)
+      subprocess.check_call(argv, env=env)
     except subprocess.CalledProcessError as e:
       print e.output
       raise e
   else:
-    execute(argv)
+    execute(argv, env)
+
+
+def atom_gyp():
+  SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
+  gyp = os.path.join(SOURCE_ROOT, 'atom.gyp')
+  with open(gyp) as f:
+    obj = eval(f.read());
+    return obj['variables']
 
 
 def get_atom_shell_version():
-  return subprocess.check_output(['git', 'describe', '--tags']).strip()
+  return 'v' + atom_gyp()['version%']
 
 
 def get_chromedriver_version():
   SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
-  chromedriver = os.path.join(SOURCE_ROOT, 'out', 'Release', 'chromedriver')
+  chromedriver = os.path.join(SOURCE_ROOT, 'dist', 'chromedriver')
   output = subprocess.check_output([chromedriver, '-v']).strip()
-  return 'v' + output[13:]
+  return 'v' + output[13:output.rfind(' ')]
 
 
 def parse_version(version):
@@ -174,17 +182,6 @@ def parse_version(version):
     return vs[0:4]
   else:
     return vs + ['0'] * (4 - len(vs))
-
-
-def s3_config():
-  config = (os.environ.get('ATOM_SHELL_S3_BUCKET', ''),
-            os.environ.get('ATOM_SHELL_S3_ACCESS_KEY', ''),
-            os.environ.get('ATOM_SHELL_S3_SECRET_KEY', ''))
-  message = ('Error: Please set the $ATOM_SHELL_S3_BUCKET, '
-             '$ATOM_SHELL_S3_ACCESS_KEY, and '
-             '$ATOM_SHELL_S3_SECRET_KEY environment variables')
-  assert all(len(c) for c in config), message
-  return config
 
 
 def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):

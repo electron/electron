@@ -3,15 +3,16 @@
 import os
 import glob
 
-from lib.util import execute, rm_rf, safe_mkdir, s3put, s3_config
+from lib.config import s3_config
+from lib.util import execute, rm_rf, safe_mkdir, s3put
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 SYMBOLS_DIR = 'dist\\symbols'
 DOWNLOAD_DIR = 'vendor\\brightray\\vendor\\download\\libchromiumcontent'
 PDB_LIST = [
-  'out\\Release\\atom.exe.pdb',
-  DOWNLOAD_DIR + '\\Release\\chromiumcontent.dll.pdb',
+  'out\\R\\atom.exe.pdb',
+  'out\\R\\node.dll.pdb',
 ]
 
 

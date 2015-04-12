@@ -7,7 +7,7 @@ import subprocess
 import sys
 import tempfile
 
-from lib.config import DIST_ARCH, TARGET_PLATFORM
+from lib.config import PLATFORM, get_target_arch
 from lib.util import execute, get_atom_shell_version, parse_version, \
                      get_chromedriver_version, scoped_cwd
 from lib.github import GitHub
@@ -18,17 +18,17 @@ ATOM_SHELL_VERSION = get_atom_shell_version()
 CHROMEDRIVER_VERSION = get_chromedriver_version()
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'Release')
+OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
 DIST_NAME = 'atom-shell-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
-                                                TARGET_PLATFORM,
-                                                DIST_ARCH)
+                                                PLATFORM,
+                                                get_target_arch())
 SYMBOLS_NAME = 'atom-shell-{0}-{1}-{2}-symbols.zip'.format(ATOM_SHELL_VERSION,
-                                                           TARGET_PLATFORM,
-                                                           DIST_ARCH)
+                                                           PLATFORM,
+                                                           get_target_arch())
 CHROMEDRIVER_NAME = 'chromedriver-{0}-{1}-{2}.zip'.format(CHROMEDRIVER_VERSION,
-                                                          TARGET_PLATFORM,
-                                                          DIST_ARCH)
+                                                          PLATFORM,
+                                                          get_target_arch())
 
 
 def main():
@@ -46,9 +46,26 @@ def main():
     sys.stderr.flush()
     return 1
 
-  # Upload atom-shell with GitHub Releases API.
   github = GitHub(auth_token())
   release_id = create_or_get_release_draft(github, args.version)
+
+  if args.publish_release:
+    # Upload the SHASUMS.txt.
+    execute([sys.executable,
+             os.path.join(SOURCE_ROOT, 'script', 'upload-checksums.py'),
+             '-v', ATOM_SHELL_VERSION])
+
+    # Upload the index.json.
+    execute([sys.executable,
+             os.path.join(SOURCE_ROOT, 'script', 'upload-index-json.py')])
+
+    # Press the publish button.
+    publish_release(github, release_id)
+
+    # Do not upload other files when passed "-p".
+    return
+
+  # Upload atom-shell with GitHub Releases API.
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, DIST_NAME))
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, SYMBOLS_NAME))
 
@@ -57,19 +74,15 @@ def main():
     upload_atom_shell(github, release_id,
                       os.path.join(DIST_DIR, CHROMEDRIVER_NAME))
 
-  if args.publish_release:
-    if TARGET_PLATFORM == 'win32':
-      # Upload PDBs to Windows symbol server.
-      execute([sys.executable,
-               os.path.join(SOURCE_ROOT, 'script', 'upload-windows-pdb.py')])
+  if PLATFORM == 'win32':
+    # Upload PDBs to Windows symbol server.
+    execute([sys.executable,
+             os.path.join(SOURCE_ROOT, 'script', 'upload-windows-pdb.py')])
 
-      # Upload node headers.
-      execute([sys.executable,
-               os.path.join(SOURCE_ROOT, 'script', 'upload-node-headers.py'),
-               '-v', ATOM_SHELL_VERSION])
-
-    # Press the publish button.
-    publish_release(github, release_id)
+    # Upload node headers.
+    execute([sys.executable,
+             os.path.join(SOURCE_ROOT, 'script', 'upload-node-headers.py'),
+             '-v', ATOM_SHELL_VERSION])
 
 
 def parse_args():
@@ -83,13 +96,13 @@ def parse_args():
 
 
 def get_atom_shell_build_version():
-  if TARGET_PLATFORM == 'darwin':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Release', 'Atom.app',
+  if PLATFORM == 'darwin':
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R', 'Atom.app',
                               'Contents', 'MacOS', 'Atom')
-  elif TARGET_PLATFORM == 'win32':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Release', 'atom.exe')
+  elif PLATFORM == 'win32':
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R', 'atom.exe')
   else:
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'Release', 'atom')
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R', 'atom')
 
   return subprocess.check_output([atom_shell, '--version']).strip()
 

@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 
-import argparse
 import os
 import re
 import shutil
 import subprocess
 import sys
+import stat
 
-from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, TARGET_PLATFORM, \
-                       DIST_ARCH
+from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
+                       get_target_arch
 from lib.util import scoped_cwd, rm_rf, get_atom_shell_version, make_zip, \
                      execute, get_chromedriver_version
 
@@ -17,32 +17,24 @@ ATOM_SHELL_VERSION = get_atom_shell_version()
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
-OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'Release')
-
-SYMBOL_NAME = {
-  'darwin': 'libchromiumcontent.dylib.dSYM',
-  'linux': 'libchromiumcontent.so.dbg',
-  'win32': 'chromiumcontent.dll.pdb',
-}[TARGET_PLATFORM]
+OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
+CHROMIUM_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
+                            'download', 'libchromiumcontent', 'static_library')
 
 TARGET_BINARIES = {
   'darwin': [
   ],
   'win32': [
     'atom.exe',
-    'chromiumcontent.dll',
     'content_shell.pak',
     'd3dcompiler_47.dll',
-    'node.dll',
     'ffmpegsumo.dll',
     'icudtl.dat',
     'libEGL.dll',
     'libGLESv2.dll',
-    'msvcp120.dll',
-    'msvcr120.dll',
+    'node.dll',
     'content_resources_200_percent.pak',
     'ui_resources_200_percent.pak',
-    'vccorlib120.dll',
     'xinput1_3.dll',
     'natives_blob.bin',
     'snapshot_blob.bin',
@@ -50,10 +42,9 @@ TARGET_BINARIES = {
   'linux': [
     'atom',
     'content_shell.pak',
-    'libnode.so',
     'icudtl.dat',
-    'libchromiumcontent.so',
     'libffmpegsumo.so',
+    'libnode.so',
     'natives_blob.bin',
     'snapshot_blob.bin',
   ],
@@ -82,16 +73,14 @@ def main():
   rm_rf(DIST_DIR)
   os.makedirs(DIST_DIR)
 
-  args = parse_args()
-
   force_build()
-  download_libchromiumcontent_symbols(args.url)
   create_symbols()
   copy_binaries()
   copy_chromedriver()
   copy_license()
 
-  if TARGET_PLATFORM == 'linux':
+  if PLATFORM == 'linux':
+    strip_binaries()
     copy_system_libraries()
 
   create_version()
@@ -100,43 +89,42 @@ def main():
   create_symbols_zip()
 
 
-def parse_args():
-  parser = argparse.ArgumentParser(description='Create distributions')
-  parser.add_argument('-u', '--url',
-                      help='The base URL from which to download '
-                      'libchromiumcontent (i.e., the URL you passed to '
-                      'libchromiumcontent\'s script/upload script',
-                      default=BASE_URL,
-                      required=False)
-  return parser.parse_args()
-
-
 def force_build():
   build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
   execute([sys.executable, build, '-c', 'Release'])
 
 
 def copy_binaries():
-  for binary in TARGET_BINARIES[TARGET_PLATFORM]:
+  for binary in TARGET_BINARIES[PLATFORM]:
     shutil.copy2(os.path.join(OUT_DIR, binary), DIST_DIR)
 
-  for directory in TARGET_DIRECTORIES[TARGET_PLATFORM]:
+  for directory in TARGET_DIRECTORIES[PLATFORM]:
     shutil.copytree(os.path.join(OUT_DIR, directory),
                     os.path.join(DIST_DIR, directory),
                     symlinks=True)
 
 
 def copy_chromedriver():
-  build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
-  execute([sys.executable, build, '-c', 'Release', '-t', 'copy_chromedriver'])
-  binary = 'chromedriver'
-  if TARGET_PLATFORM == 'win32':
-    binary += '.exe'
-  shutil.copy2(os.path.join(OUT_DIR, binary), DIST_DIR)
+  if PLATFORM == 'win32':
+    chromedriver = 'chromedriver.exe'
+  else:
+    chromedriver = 'chromedriver'
+  src = os.path.join(CHROMIUM_DIR, chromedriver)
+  dest = os.path.join(DIST_DIR, chromedriver)
+
+  # Copy file and keep the executable bit.
+  shutil.copyfile(src, dest)
+  os.chmod(dest, os.stat(dest).st_mode | stat.S_IEXEC)
 
 
 def copy_license():
   shutil.copy2(os.path.join(SOURCE_ROOT, 'LICENSE'), DIST_DIR)
+
+
+def strip_binaries():
+  for binary in TARGET_BINARIES[PLATFORM]:
+    if binary.endswith('.so') or '.' not in binary:
+      execute(['strip', os.path.join(DIST_DIR, binary)])
 
 
 def copy_system_libraries():
@@ -159,53 +147,33 @@ def create_version():
     version_file.write(ATOM_SHELL_VERSION)
 
 
-def download_libchromiumcontent_symbols(url):
-  brightray_dir = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor')
-  target_dir = os.path.join(brightray_dir, 'download', 'libchromiumcontent')
-  symbols_path = os.path.join(target_dir, 'Release', SYMBOL_NAME)
-  if os.path.exists(symbols_path):
-    return
-
-  download = os.path.join(brightray_dir, 'libchromiumcontent', 'script',
-                          'download')
-  subprocess.check_call([sys.executable, download, '-f', '-s', '-c',
-                         LIBCHROMIUMCONTENT_COMMIT, url, target_dir])
-
-
 def create_symbols():
-  directory = 'Atom-Shell.breakpad.syms'
-  rm_rf(os.path.join(OUT_DIR, directory))
-
-  build = os.path.join(SOURCE_ROOT, 'script', 'build.py')
-  subprocess.check_output([sys.executable, build, '-c', 'Release',
-                           '-t', 'atom_dump_symbols'])
-
-  shutil.copytree(os.path.join(OUT_DIR, directory),
-                  os.path.join(DIST_DIR, directory),
-                  symlinks=True)
+  destination = os.path.join(DIST_DIR, 'Atom-Shell.breakpad.syms')
+  dump_symbols = os.path.join(SOURCE_ROOT, 'script', 'dump-symbols.py')
+  execute([sys.executable, dump_symbols, destination])
 
 
 def create_dist_zip():
   dist_name = 'atom-shell-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
-                                                  TARGET_PLATFORM, DIST_ARCH)
+                                                  PLATFORM, get_target_arch())
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
-    files = TARGET_BINARIES[TARGET_PLATFORM] +  ['LICENSE', 'version']
-    if TARGET_PLATFORM == 'linux':
+    files = TARGET_BINARIES[PLATFORM] +  ['LICENSE', 'version']
+    if PLATFORM == 'linux':
       files += [lib for lib in SYSTEM_LIBRARIES if os.path.exists(lib)]
-    dirs = TARGET_DIRECTORIES[TARGET_PLATFORM]
+    dirs = TARGET_DIRECTORIES[PLATFORM]
     make_zip(zip_file, files, dirs)
 
 
 def create_chromedriver_zip():
   dist_name = 'chromedriver-{0}-{1}-{2}.zip'.format(get_chromedriver_version(),
-                                                    TARGET_PLATFORM, DIST_ARCH)
+                                                    PLATFORM, get_target_arch())
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
     files = ['LICENSE']
-    if TARGET_PLATFORM == 'win32':
+    if PLATFORM == 'win32':
       files += ['chromedriver.exe']
     else:
       files += ['chromedriver']
@@ -214,8 +182,8 @@ def create_chromedriver_zip():
 
 def create_symbols_zip():
   dist_name = 'atom-shell-{0}-{1}-{2}-symbols.zip'.format(ATOM_SHELL_VERSION,
-                                                          TARGET_PLATFORM,
-                                                          DIST_ARCH)
+                                                          PLATFORM,
+                                                          get_target_arch())
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
