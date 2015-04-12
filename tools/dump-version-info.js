@@ -17,16 +17,10 @@ function getDate() {
   return year + '-' + month + '-' + day;
 }
 
-function getApmVersion() {
-  var package = require(path.resolve(__dirname, '..', 'package.json'));
-  return package.devDependencies['atom-package-manager'];
-}
-
 function getInfoForCurrentVersion() {
   var json = {};
   json.version = process.versions['atom-shell'];
   json.date = getDate();
-  json.apm = getApmVersion();
 
   var names = ['node', 'v8', 'uv', 'zlib', 'openssl', 'modules', 'chrome']
   for (var i in names) {
