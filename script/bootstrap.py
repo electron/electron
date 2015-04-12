@@ -82,7 +82,9 @@ def bootstrap_brightray(is_dev, url, target_arch):
   execute_stdout([sys.executable, bootstrap] + args)
 
 
-def update_node_modules(dirname, env=os.environ):
+def update_node_modules(dirname, env=None):
+  if env is None:
+    env = os.environ
   with scoped_cwd(dirname):
     if is_verbose_mode():
       execute_stdout([NPM, 'install', '--verbose'], env)
