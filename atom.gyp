@@ -2,7 +2,7 @@
   'variables': {
     'project_name%': 'atom',
     'product_name%': 'Atom',
-    'version%': '0.22.3',
+    'version%': '0.23.0',
 
     'atom_source_root': '<!(["python", "tools/atom_source_root.py"])',
   },
