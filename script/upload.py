@@ -55,6 +55,10 @@ def main():
              os.path.join(SOURCE_ROOT, 'script', 'upload-checksums.py'),
              '-v', ATOM_SHELL_VERSION])
 
+    # Upload the index.json.
+    execute([sys.executable,
+             os.path.join(SOURCE_ROOT, 'script', 'upload-index-json.py')])
+
     # Press the publish button.
     publish_release(github, release_id)
 
