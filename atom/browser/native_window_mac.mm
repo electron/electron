@@ -15,6 +15,7 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
+#include "content/public/browser/browser_accessibility_state.h"
 #include "native_mate/dictionary.h"
 #include "vendor/brightray/browser/inspectable_web_contents.h"
 #include "vendor/brightray/browser/inspectable_web_contents_view.h"
@@ -193,17 +194,24 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   shell_->OpenDevTools(true);
 }
 
-// Returns an empty array for AXChildren attribute, this will force the
-// SpeechSynthesisServer to use its classical way of speaking the selected text:
-// by invoking the "Command+C" for current application and then speak out
-// what's in the clipboard. Otherwise the "Text to Speech" would always speak
-// out window's title.
-// This behavior is taken by both FireFox and Chrome, see also FireFox's bug on
-// more of how SpeechSynthesisServer chose which text to read:
-// https://bugzilla.mozilla.org/show_bug.cgi?id=674612
 - (id)accessibilityAttributeValue:(NSString*)attribute {
-  if ([attribute isEqualToString:@"AXChildren"])
-    return [NSArray array];
+  if ([attribute isEqualToString:@"AXChildren"]) {
+    NSArray *children = [super accessibilityAttributeValue:attribute];
+
+    // Filter out objects that aren't the title bar buttons.
+    // This has the effect of removing the window title, which VoiceOver already sees.
+    //  * when VoiceOver is disabled, this causes Cmd+C to be used for TTS but still
+    //    leaves the buttons available in the accessibility tree.
+    //  * when VoiceOver is enabled, the full accessibility tree is used.
+    // Without removing the title and with VO disabled, the TTS would always read the
+    // window title instead of using Cmd+C to get the selected text.
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:
+                                @"(self isKindOfClass: %@) OR (self.className == %@)",
+                                [NSButtonCell class], @"RenderWidgetHostViewCocoa"];
+    
+    return [children filteredArrayUsingPredicate:predicate];
+  }
+  
   return [super accessibilityAttributeValue:attribute];
 }
 
