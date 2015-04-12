@@ -32,7 +32,6 @@ def main():
     update_version_h(versions)
     update_info_plist(version)
     tag_version(version)
-    git_push()
 
 
 def increase_version(versions, index):
@@ -116,11 +115,6 @@ def update_info_plist(version):
 def tag_version(version):
   execute(['git', 'commit', '-a', '-m', 'Bump v{0}'.format(version)])
   execute(['git', 'tag', 'v{0}'.format(version)])
-
-
-def git_push():
-  execute(['git', 'push'])
-  execute(['git', 'push', '--tags'])
 
 
 if __name__ == '__main__':
