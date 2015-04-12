@@ -54,7 +54,7 @@ def download_and_unzip(framework):
 def download_framework(framework):
   filename = framework + '.zip'
   url = FRAMEWORKS_URL + '/' + filename
-  download_dir = tempdir(prefix='atom-shell-')
+  download_dir = tempdir(prefix='electron-')
   path = os.path.join(download_dir, filename)
 
   download('Download ' + framework, url, path)
