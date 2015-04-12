@@ -163,7 +163,7 @@ def atom_gyp():
 
 
 def get_atom_shell_version():
-  return atom_gyp()['version%']
+  return 'v' + atom_gyp()['version%']
 
 
 def get_chromedriver_version():
