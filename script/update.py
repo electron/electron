@@ -4,7 +4,7 @@ import os
 import subprocess
 import sys
 
-from lib.config import DIST_ARCH
+from lib.config import get_target_arch
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -23,14 +23,6 @@ def update_external_binaries():
 
 
 def update_gyp():
-  target_arch = DIST_ARCH
-  if sys.platform == 'darwin':
-    # Only have 64bit build on OS X.
-    target_arch = 'x64'
-  elif sys.platform in ['cygwin', 'win32']:
-    # Only have 32bit build on Windows.
-    target_arch = 'ia32'
-
   # Since gyp doesn't support specify link_settings for each configuration,
   # we are not able to link to different libraries in  "Debug" and "Release"
   # configurations.
@@ -38,6 +30,7 @@ def update_gyp():
   # for twice, one is to generate "Debug" config, the other one to generate
   # the "Release" config. And the settings are controlled by the variable
   # "libchromiumcontent_component" which is defined before running gyp.
+  target_arch = get_target_arch()
   return (run_gyp(target_arch, 0) or run_gyp(target_arch, 1))
 
 

@@ -2,6 +2,7 @@
   'variables': {
     'project_name%': 'atom',
     'product_name%': 'Atom',
+    'version%': '0.23.0',
 
     'atom_source_root': '<!(["python", "tools/atom_source_root.py"])',
   },
@@ -142,8 +143,6 @@
                 '<(libchromiumcontent_dir)/natives_blob.bin',
                 '<(libchromiumcontent_dir)/snapshot_blob.bin',
                 'external_binaries/d3dcompiler_47.dll',
-                'external_binaries/msvcp120.dll',
-                'external_binaries/msvcr120.dll',
                 'external_binaries/vccorlib120.dll',
                 'external_binaries/xinput1_3.dll',
               ],

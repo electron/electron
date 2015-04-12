@@ -107,27 +107,50 @@
               'OTHER_LDFLAGS': [ '-Wl,-all_load' ],
             },
           }],
-          ['OS=="win" and libchromiumcontent_component==0', {
+          ['OS=="win"', {
             'libraries': [ '-lwinmm.lib' ],
-            'msvs_settings': {
-              'VCLinkerTool': {
-                # There is nothing like "whole-archive" on Windows, so we
-                # have to manually force some objets files to be included
-                # by referencing them.
-                'ForceSymbolReferences': [
-                  '_u_errorName_52',
-                  '_ubidi_setPara_52',
-                  '_ucsdet_getName_52',
-                  '_ulocdata_close_52',
-                  '_uregex_matches_52',
-                  '_uscript_getCode_52',
-                  '_usearch_setPattern_52',
-                  '?createInstance@Transliterator@icu_52@@SAPAV12@ABVUnicodeString@2@W4UTransDirection@@AAW4UErrorCode@@@Z',
-                  '?nameToUnicodeUTF8@IDNA@icu_52@@UBEXABVStringPiece@2@AAVByteSink@2@AAVIDNAInfo@2@AAW4UErrorCode@@@Z',
-                  '?kLineOffsetNotFound@Function@v8@@2HB',
-                ],  # '/INCLUDE'
-              },
-            },
+            'conditions': [
+              ['libchromiumcontent_component==0', {
+                'variables': {
+                  'conditions': [
+                    ['target_arch=="ia32"', {
+                      'reference_symbols': [
+                        '_u_errorName_52',
+                        '_ubidi_setPara_52',
+                        '_ucsdet_getName_52',
+                        '_ulocdata_close_52',
+                        '_uregex_matches_52',
+                        '_uscript_getCode_52',
+                        '_usearch_setPattern_52',
+                        '?createInstance@Transliterator@icu_52@@SAPAV12@ABVUnicodeString@2@W4UTransDirection@@AAW4UErrorCode@@@Z',
+                        '?nameToUnicodeUTF8@IDNA@icu_52@@UBEXABVStringPiece@2@AAVByteSink@2@AAVIDNAInfo@2@AAW4UErrorCode@@@Z',
+                        '?kLineOffsetNotFound@Function@v8@@2HB',
+                      ],
+                    }, {
+                      'reference_symbols': [
+                        'u_errorName_52',
+                        'ubidi_setPara_52',
+                        'ucsdet_getName_52',
+                        'uidna_openUTS46_52',
+                        'ulocdata_close_52',
+                        'uregex_matches_52',
+                        'uscript_getCode_52',
+                        'usearch_setPattern_52',
+                        '?createInstance@Transliterator@icu_52@@SAPEAV12@AEBVUnicodeString@2@W4UTransDirection@@AEAW4UErrorCode@@@Z'
+                      ],
+                    }],
+                  ],
+                },
+                'msvs_settings': {
+                  'VCLinkerTool': {
+                    # There is nothing like "whole-archive" on Windows, so we
+                    # have to manually force some objets files to be included
+                    # by referencing them.
+                    'ForceSymbolReferences': [ '<@(reference_symbols)' ],  # '/INCLUDE'
+                  },
+                },
+              }],
+            ],
           }],
           ['OS=="linux" and libchromiumcontent_component==0', {
             # Prevent the linker from stripping symbols.
@@ -192,6 +215,7 @@
       4005,  # (node.h) macro redefinition
       4189,  # local variable is initialized but not referenced
       4201,  # (uv.h) nameless struct/union
+      4267,  # conversion from 'size_t' to 'int', possible loss of data
       4503,  # decorated name length exceeded, name was truncated
       4800,  # (v8.h) forcing value to bool 'true' or 'false'
       4819,  # The file contains a character that cannot be represented in the current code page

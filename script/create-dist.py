@@ -7,8 +7,8 @@ import subprocess
 import sys
 import stat
 
-from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, TARGET_PLATFORM, \
-                       DIST_ARCH
+from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
+                       get_target_arch
 from lib.util import scoped_cwd, rm_rf, get_atom_shell_version, make_zip, \
                      execute, get_chromedriver_version
 
@@ -79,7 +79,7 @@ def main():
   copy_chromedriver()
   copy_license()
 
-  if TARGET_PLATFORM == 'linux':
+  if PLATFORM == 'linux':
     strip_binaries()
     copy_system_libraries()
 
@@ -95,17 +95,17 @@ def force_build():
 
 
 def copy_binaries():
-  for binary in TARGET_BINARIES[TARGET_PLATFORM]:
+  for binary in TARGET_BINARIES[PLATFORM]:
     shutil.copy2(os.path.join(OUT_DIR, binary), DIST_DIR)
 
-  for directory in TARGET_DIRECTORIES[TARGET_PLATFORM]:
+  for directory in TARGET_DIRECTORIES[PLATFORM]:
     shutil.copytree(os.path.join(OUT_DIR, directory),
                     os.path.join(DIST_DIR, directory),
                     symlinks=True)
 
 
 def copy_chromedriver():
-  if TARGET_PLATFORM == 'win32':
+  if PLATFORM == 'win32':
     chromedriver = 'chromedriver.exe'
   else:
     chromedriver = 'chromedriver'
@@ -122,7 +122,7 @@ def copy_license():
 
 
 def strip_binaries():
-  for binary in TARGET_BINARIES[TARGET_PLATFORM]:
+  for binary in TARGET_BINARIES[PLATFORM]:
     if binary.endswith('.so') or '.' not in binary:
       execute(['strip', os.path.join(DIST_DIR, binary)])
 
@@ -155,25 +155,25 @@ def create_symbols():
 
 def create_dist_zip():
   dist_name = 'atom-shell-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
-                                                  TARGET_PLATFORM, DIST_ARCH)
+                                                  PLATFORM, get_target_arch())
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
-    files = TARGET_BINARIES[TARGET_PLATFORM] +  ['LICENSE', 'version']
-    if TARGET_PLATFORM == 'linux':
+    files = TARGET_BINARIES[PLATFORM] +  ['LICENSE', 'version']
+    if PLATFORM == 'linux':
       files += [lib for lib in SYSTEM_LIBRARIES if os.path.exists(lib)]
-    dirs = TARGET_DIRECTORIES[TARGET_PLATFORM]
+    dirs = TARGET_DIRECTORIES[PLATFORM]
     make_zip(zip_file, files, dirs)
 
 
 def create_chromedriver_zip():
   dist_name = 'chromedriver-{0}-{1}-{2}.zip'.format(get_chromedriver_version(),
-                                                    TARGET_PLATFORM, DIST_ARCH)
+                                                    PLATFORM, get_target_arch())
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
     files = ['LICENSE']
-    if TARGET_PLATFORM == 'win32':
+    if PLATFORM == 'win32':
       files += ['chromedriver.exe']
     else:
       files += ['chromedriver']
@@ -182,8 +182,8 @@ def create_chromedriver_zip():
 
 def create_symbols_zip():
   dist_name = 'atom-shell-{0}-{1}-{2}-symbols.zip'.format(ATOM_SHELL_VERSION,
-                                                          TARGET_PLATFORM,
-                                                          DIST_ARCH)
+                                                          PLATFORM,
+                                                          get_target_arch())
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
