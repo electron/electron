@@ -144,6 +144,7 @@
             'defines': [
               '_LARGEFILE_SOURCE',
               '_LARGEFILE64_SOURCE',
+              '_FILE_OFFSET_BITS=64',
             ],
             'cflags_cc': [
               '-D__STRICT_ANSI__',

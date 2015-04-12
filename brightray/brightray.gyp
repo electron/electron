@@ -64,11 +64,13 @@
             '<!@(pkg-config --cflags <(linux_system_libraries))',
             # Needed by using libgtk2ui:
             '-Wno-deprecated-register',
+            '-Wno-sentinel',
           ],
           'direct_dependent_settings': {
             'cflags': [
               '<!@(pkg-config --cflags <(linux_system_libraries))',
               '-Wno-deprecated-register',
+              '-Wno-sentinel',
             ],
           },
           'conditions': [
