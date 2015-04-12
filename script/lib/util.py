@@ -129,11 +129,11 @@ def safe_mkdir(path):
       raise
 
 
-def execute(argv):
+def execute(argv, env=os.environ):
   if is_verbose_mode():
     print ' '.join(argv)
   try:
-    output = subprocess.check_output(argv, stderr=subprocess.STDOUT)
+    output = subprocess.check_output(argv, stderr=subprocess.STDOUT, env=env)
     if is_verbose_mode():
       print output
     return output
@@ -142,20 +142,28 @@ def execute(argv):
     raise e
 
 
-def execute_stdout(argv):
+def execute_stdout(argv, env=os.environ):
   if is_verbose_mode():
     print ' '.join(argv)
     try:
-      subprocess.check_call(argv)
+      subprocess.check_call(argv, env=env)
     except subprocess.CalledProcessError as e:
       print e.output
       raise e
   else:
-    execute(argv)
+    execute(argv, env)
+
+
+def atom_gyp():
+  SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
+  gyp = os.path.join(SOURCE_ROOT, 'atom.gyp')
+  with open(gyp) as f:
+    obj = eval(f.read());
+    return obj['variables']
 
 
 def get_atom_shell_version():
-  return subprocess.check_output(['git', 'describe', '--tags']).strip()
+  return atom_gyp()['version%']
 
 
 def get_chromedriver_version():

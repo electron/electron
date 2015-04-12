@@ -6,7 +6,7 @@ import sys
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
                        enable_verbose_mode, is_verbose_mode, get_target_arch
-from lib.util import execute_stdout, scoped_cwd
+from lib.util import execute_stdout, get_atom_shell_version, scoped_cwd
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -32,7 +32,7 @@ def main():
   create_chrome_version_h()
   touch_config_gypi()
   update_atom_shell()
-  update_atom_modules('spec')
+  update_atom_modules('spec', args.target_arch)
 
 
 def parse_args():
@@ -82,21 +82,20 @@ def bootstrap_brightray(is_dev, url, target_arch):
   execute_stdout([sys.executable, bootstrap] + args)
 
 
-def update_node_modules(dirname):
+def update_node_modules(dirname, env=os.environ):
   with scoped_cwd(dirname):
     if is_verbose_mode():
-      execute_stdout([NPM, 'install', '--verbose'])
+      execute_stdout([NPM, 'install', '--verbose'], env)
     else:
-      execute_stdout([NPM, 'install'])
+      execute_stdout([NPM, 'install'], env)
 
 
-def update_atom_modules(dirname):
-  with scoped_cwd(dirname):
-    apm = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'apm')
-    if sys.platform in ['win32', 'cygwin']:
-      apm = os.path.join(SOURCE_ROOT, 'node_modules', 'atom-package-manager',
-                         'bin', 'apm.cmd')
-    execute_stdout([apm, 'install'])
+def update_atom_modules(dirname, target_arch):
+  env = os.environ.copy()
+  env['npm_config_arch']    = target_arch
+  env['npm_config_target']  = get_atom_shell_version()
+  env['npm_config_disturl'] = 'https://atom.io/download/atom-shell'
+  update_node_modules(dirname, env)
 
 
 def update_win32_python():

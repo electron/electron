@@ -27,7 +27,7 @@ def main():
   version = '.'.join(versions[:3])
 
   with scoped_cwd(SOURCE_ROOT):
-    update_package_json(version)
+    update_atom_gyp(version)
     update_win_rc(version, versions)
     update_version_h(versions)
     update_info_plist(version)
@@ -42,15 +42,15 @@ def increase_version(versions, index):
   return versions
 
 
-def update_package_json(version):
-  pattern = re.compile(' *"version" *: *"[0-9.]+"')
-  with open('package.json', 'r') as f:
+def update_atom_gyp(version):
+  pattern = re.compile(" *'version%' *: *'[0-9.]+'")
+  with open('atom.gyp', 'r') as f:
     lines = f.readlines()
 
   for i in range(0, len(lines)):
     if pattern.match(lines[i]):
-      lines[i] = '  "version": "{0}",\n'.format(version)
-      with open('package.json', 'w') as f:
+      lines[i] = "    'version%': '{0}',\n".format(version)
+      with open('atom.gyp', 'w') as f:
         f.write(''.join(lines))
       return
 
