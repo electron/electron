@@ -360,6 +360,8 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
 
 GURL WebContents::GetURL() const {
   auto entry = web_contents()->GetController().GetLastCommittedEntry();
+  if (!entry)
+    return GURL::EmptyGURL();
   return entry->GetVirtualURL();
 }
 
