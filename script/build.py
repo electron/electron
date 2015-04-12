@@ -5,6 +5,8 @@ import os
 import subprocess
 import sys
 
+from lib.util import atom_gyp
+
 
 CONFIGURATIONS = ['Release', 'Debug']
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -26,7 +28,7 @@ def main():
 
 
 def parse_args():
-  parser = argparse.ArgumentParser(description='Build atom-shell')
+  parser = argparse.ArgumentParser(description='Build project')
   parser.add_argument('-c', '--configuration',
                       help='Build with Release or Debug configuration',
                       nargs='+',
@@ -34,7 +36,7 @@ def parse_args():
                       required=False)
   parser.add_argument('-t', '--target',
                       help='Build specified target',
-                      default='atom',
+                      default=atom_gyp()['project_name%'],
                       required=False)
   return parser.parse_args()
 
