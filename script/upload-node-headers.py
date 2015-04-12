@@ -7,8 +7,8 @@ import shutil
 import sys
 import tarfile
 
-from lib.config import PLATFORM, get_target_arch
-from lib.util import execute, safe_mkdir, scoped_cwd, s3_config, s3put
+from lib.config import PLATFORM, get_target_arch, s3_config
+from lib.util import execute, safe_mkdir, scoped_cwd, s3put
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))

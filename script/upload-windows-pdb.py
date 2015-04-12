@@ -3,7 +3,8 @@
 import os
 import glob
 
-from lib.util import execute, rm_rf, safe_mkdir, s3put, s3_config
+from lib.config import s3_config
+from lib.util import execute, rm_rf, safe_mkdir, s3put
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))

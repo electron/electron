@@ -47,6 +47,17 @@ def get_target_arch():
     return 'x64'
 
 
+def s3_config():
+  config = (os.environ.get('ATOM_SHELL_S3_BUCKET', ''),
+            os.environ.get('ATOM_SHELL_S3_ACCESS_KEY', ''),
+            os.environ.get('ATOM_SHELL_S3_SECRET_KEY', ''))
+  message = ('Error: Please set the $ATOM_SHELL_S3_BUCKET, '
+             '$ATOM_SHELL_S3_ACCESS_KEY, and '
+             '$ATOM_SHELL_S3_SECRET_KEY environment variables')
+  assert all(len(c) for c in config), message
+  return config
+
+
 def enable_verbose_mode():
   print 'Running in verbose mode'
   global verbose_mode

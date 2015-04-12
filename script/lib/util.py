@@ -176,17 +176,6 @@ def parse_version(version):
     return vs + ['0'] * (4 - len(vs))
 
 
-def s3_config():
-  config = (os.environ.get('ATOM_SHELL_S3_BUCKET', ''),
-            os.environ.get('ATOM_SHELL_S3_ACCESS_KEY', ''),
-            os.environ.get('ATOM_SHELL_S3_SECRET_KEY', ''))
-  message = ('Error: Please set the $ATOM_SHELL_S3_BUCKET, '
-             '$ATOM_SHELL_S3_ACCESS_KEY, and '
-             '$ATOM_SHELL_S3_SECRET_KEY environment variables')
-  assert all(len(c) for c in config), message
-  return config
-
-
 def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
   args = [
     's3put',

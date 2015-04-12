@@ -3,8 +3,8 @@
 import os
 import sys
 
-from lib.config import PLATFORM
-from lib.util import execute, s3_config, s3put, scoped_cwd
+from lib.config import PLATFORM, s3_config
+from lib.util import execute, s3put, scoped_cwd
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
