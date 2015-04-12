@@ -45,7 +45,7 @@ def get_files_list(version):
 
 
 def download_files(url, files):
-  directory = tempfile.mkdtemp(prefix='atom-shell-tmp')
+  directory = tempfile.mkdtemp(prefix='electron-tmp')
   return directory, [
     download(f, url + f, os.path.join(directory, f))
     for f in files
