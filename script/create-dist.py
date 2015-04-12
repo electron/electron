@@ -10,7 +10,7 @@ import stat
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
                        get_target_arch
 from lib.util import scoped_cwd, rm_rf, get_atom_shell_version, make_zip, \
-                     execute, get_chromedriver_version
+                     execute, get_chromedriver_version, atom_gyp
 
 
 ATOM_SHELL_VERSION = get_atom_shell_version()
@@ -21,11 +21,14 @@ OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
 CHROMIUM_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
                             'download', 'libchromiumcontent', 'static_library')
 
+PROJECT_NAME = atom_gyp()['project_name%']
+PRODUCT_NAME = atom_gyp()['product_name%']
+
 TARGET_BINARIES = {
   'darwin': [
   ],
   'win32': [
-    'atom.exe',
+    '{0}.exe'.format(PROJECT_NAME),  # 'electron.exe'
     'content_shell.pak',
     'd3dcompiler_47.dll',
     'ffmpegsumo.dll',
@@ -40,7 +43,7 @@ TARGET_BINARIES = {
     'snapshot_blob.bin',
   ],
   'linux': [
-    'atom',
+    PROJECT_NAME,  # 'electron'
     'content_shell.pak',
     'icudtl.dat',
     'libffmpegsumo.so',
@@ -51,7 +54,7 @@ TARGET_BINARIES = {
 }
 TARGET_DIRECTORIES = {
   'darwin': [
-    'Atom.app',
+    '{0}.app'.format(PRODUCT_NAME),
   ],
   'win32': [
     'resources',
@@ -128,7 +131,8 @@ def strip_binaries():
 
 
 def copy_system_libraries():
-  ldd = execute(['ldd', os.path.join(OUT_DIR, 'atom')])
+  executable_path = os.path.join(OUT_DIR, PROJECT_NAME)  # our/R/electron
+  ldd = execute(['ldd', executable_path])
   lib_re = re.compile('\t(.*) => (.+) \(.*\)$')
   for line in ldd.splitlines():
     m = lib_re.match(line)
@@ -148,14 +152,14 @@ def create_version():
 
 
 def create_symbols():
-  destination = os.path.join(DIST_DIR, 'Atom-Shell.breakpad.syms')
+  destination = os.path.join(DIST_DIR, '{0}.breakpad.syms'.format(PROJECT_NAME))
   dump_symbols = os.path.join(SOURCE_ROOT, 'script', 'dump-symbols.py')
   execute([sys.executable, dump_symbols, destination])
 
 
 def create_dist_zip():
-  dist_name = 'atom-shell-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
-                                                  PLATFORM, get_target_arch())
+  dist_name = '{0}-{1}-{2}-{3}.zip'.format(PROJECT_NAME, ATOM_SHELL_VERSION,
+                                           PLATFORM, get_target_arch())
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
@@ -181,14 +185,15 @@ def create_chromedriver_zip():
 
 
 def create_symbols_zip():
-  dist_name = 'atom-shell-{0}-{1}-{2}-symbols.zip'.format(ATOM_SHELL_VERSION,
-                                                          PLATFORM,
-                                                          get_target_arch())
+  dist_name = '{0}-{1}-{2}-{3}-symbols.zip'.format(PROJECT_NAME,
+                                                   ATOM_SHELL_VERSION,
+                                                   PLATFORM,
+                                                   get_target_arch())
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
     files = ['LICENSE', 'version']
-    dirs = ['Atom-Shell.breakpad.syms']
+    dirs = ['{0}.breakpad.syms'.format(PROJECT_NAME)]
     make_zip(zip_file, files, dirs)
 
 
