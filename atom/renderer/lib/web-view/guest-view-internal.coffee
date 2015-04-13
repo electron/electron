@@ -9,6 +9,8 @@ WEB_VIEW_EVENTS =
   'did-frame-finish-load': ['isMainFrame']
   'did-start-loading': []
   'did-stop-loading': []
+  'did-get-response-details': ['status', 'newUrl', 'originalUrl',
+                               'httpResponseCode', 'requestMethod', 'referrer']
   'did-get-redirect-request': ['oldUrl', 'newUrl', 'isMainFrame']
   'console-message': ['level', 'message', 'line', 'sourceId']
   'new-window': ['url', 'frameName', 'disposition']
