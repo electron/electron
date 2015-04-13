@@ -136,4 +136,4 @@ Returns the size of the image.
 
 * `option` Boolean
 
-To toggle a `NativeImage` as Template image on OSX 
+Marks the image as template image.

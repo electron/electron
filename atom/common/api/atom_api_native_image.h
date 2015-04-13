@@ -59,17 +59,14 @@ class NativeImage : public mate::Wrappable {
       v8::Isolate* isolate) override;
 
  private:
-#if defined(OS_MACOSX)
-  // Mark the image as template image if possible.
-  static void MakeTemplateImage(gfx::Image* image);
-  void SetTemplateImage(bool setAsTemplate);
-#endif
-
   v8::Handle<v8::Value> ToPNG(v8::Isolate* isolate);
   v8::Handle<v8::Value> ToJPEG(v8::Isolate* isolate, int quality);
   std::string ToDataURL();
   bool IsEmpty();
   gfx::Size GetSize();
+
+  // Mark the image as template image.
+  void SetTemplateImage(bool setAsTemplate);
 
   gfx::Image image_;
 

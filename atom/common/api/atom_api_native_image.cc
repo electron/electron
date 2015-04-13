@@ -138,9 +138,7 @@ mate::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
         .SetMethod("toDataUrl", &NativeImage::ToDataURL)
         .SetMethod("isEmpty", &NativeImage::IsEmpty)
         .SetMethod("getSize", &NativeImage::GetSize)
-        #if defined(OS_MACOSX)
         .SetMethod("setTemplateImage", &NativeImage::SetTemplateImage)
-        #endif
         .Build());
 
   return mate::ObjectTemplateBuilder(
@@ -179,6 +177,11 @@ gfx::Size NativeImage::GetSize() {
   return image_.Size();
 }
 
+#if !defined(OS_MACOSX)
+void NativeImage::SetTemplateImage(bool setAsTemplate) {
+}
+#endif
+
 // static
 mate::Handle<NativeImage> NativeImage::CreateEmpty(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new NativeImage);
@@ -212,11 +215,12 @@ mate::Handle<NativeImage> NativeImage::CreateFromPath(
   gfx::ImageSkia image_skia;
   PopulateImageSkiaRepsFromPath(&image_skia, path);
   gfx::Image image(image_skia);
+  mate::Handle<NativeImage> handle = Create(isolate, image);
 #if defined(OS_MACOSX)
   if (IsTemplateImage(path))
-    MakeTemplateImage(&image);
+    handle->SetTemplateImage(true);
 #endif
-  return Create(isolate, image);
+  return handle;
 }
 
 // static
