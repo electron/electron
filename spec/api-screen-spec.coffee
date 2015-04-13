@@ -14,3 +14,8 @@ describe 'screen module', ->
       assert.equal typeof(display.scaleFactor), 'number'
       assert display.size.width > 0
       assert display.size.height > 0
+
+  describe 'screen.getNumDisplays()', ->
+    it 'returns the number of display objects', ->
+      count = screen.getNumDisplays()
+      assert.equal count, 1
