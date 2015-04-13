@@ -23,6 +23,37 @@ generateGroupId = (items, pos) ->
       break if item.type is 'separator'
   ++nextGroupId
 
+# Returns the index of item according to |id|.
+indexOfItemById = (items, id) ->
+  return i for item, i in items when item.id is id
+  -1
+
+# Returns the index of where to insert the item according to |position|.
+indexToInsertByPosition = (items, position) ->
+  return items.length unless position
+
+  [query, id] = position.split '='
+  insertIndex = indexOfItemById items, id
+  if insertIndex is -1 and query isnt 'endof'
+    console.warn "Item with id '#{id}' is not found"
+    return items.length
+
+  switch query
+    when 'after'
+      insertIndex++
+    when 'endof'
+      # If the |id| doesn't exist, then create a new group with the |id|.
+      if insertIndex is -1
+        items.push id: id, type: 'separator'
+        insertIndex = items.length - 1
+
+      # Find the end of the group.
+      insertIndex++
+      while insertIndex < items.length and items[insertIndex].type isnt 'separator'
+        insertIndex++
+
+  insertIndex
+
 Menu = bindings.Menu
 Menu::__proto__ = EventEmitter.prototype
 
@@ -113,43 +144,6 @@ Menu.getApplicationMenu = -> applicationMenu
 
 Menu.sendActionToFirstResponder = bindings.sendActionToFirstResponder
 
-Menu._indexOfItemWithId = (insertedItems, id) ->
-  for each, index in insertedItems
-    if id is each.id
-      return index
-  -1
-
-Menu._itemIndexForPosition = (insertedItems, position) ->
-  insertIndex = insertedItems.length
-
-  if position
-    [query, id] = position.split '='
-    switch query
-      when 'before'
-        insertIndex = Menu._indexOfItemWithId insertedItems, id
-      when 'after'
-        insertIndex = Menu._indexOfItemWithId insertedItems, id
-        unless insertIndex is -1
-          insertIndex++
-      when 'endof'
-        insertIndex = Menu._indexOfItemWithId insertedItems, id
-        if insertIndex is -1
-          separatorItem = id: id, type: 'separator'
-          insertIndex = insertedItems.length
-          insertedItems.push separatorItem
-
-        insertIndex++
-        item = insertedItems[insertIndex]
-        while (insertIndex < insertedItems.length) and item.type != 'separator'
-          insertIndex++
-          item = insertedItems[insertIndex]
-
-    if insertIndex is -1
-      console.warn "Could not position item at position #{position}"
-      insertIndex = insertedItems.length
-
-  insertIndex
-
 Menu.buildFromTemplate = (template) ->
   throw new TypeError('Invalid template for Menu') unless Array.isArray template
 
@@ -157,11 +151,12 @@ Menu.buildFromTemplate = (template) ->
   insertIndex = 0
 
   for item in template
-    position = item.position
-    if position
-      insertIndex = Menu._itemIndexForPosition positionedTemplate, position
+    if item.position
+      insertIndex = indexToInsertByPosition positionedTemplate, item.position
+    else
+      # If no |position| is specified, insert after last item.
+      insertIndex++
     positionedTemplate.splice insertIndex, 0, item
-    insertIndex++
 
   menu = new Menu
 
