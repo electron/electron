@@ -11,11 +11,11 @@
 #include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
+#include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
-#include "content/public/browser/browser_accessibility_state.h"
 #include "native_mate/dictionary.h"
 #include "vendor/brightray/browser/inspectable_web_contents.h"
 #include "vendor/brightray/browser/inspectable_web_contents_view.h"
@@ -195,24 +195,23 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 }
 
 - (id)accessibilityAttributeValue:(NSString*)attribute {
-  if ([attribute isEqualToString:@"AXChildren"]) {
-    NSArray *children = [super accessibilityAttributeValue:attribute];
+  if (![attribute isEqualToString:@"AXChildren"])
+    return [super accessibilityAttributeValue:attribute];
 
-    // Filter out objects that aren't the title bar buttons.
-    // This has the effect of removing the window title, which VoiceOver already sees.
-    //  * when VoiceOver is disabled, this causes Cmd+C to be used for TTS but still
-    //    leaves the buttons available in the accessibility tree.
-    //  * when VoiceOver is enabled, the full accessibility tree is used.
-    // Without removing the title and with VO disabled, the TTS would always read the
-    // window title instead of using Cmd+C to get the selected text.
-    NSPredicate *predicate = [NSPredicate predicateWithFormat:
-                                @"(self isKindOfClass: %@) OR (self.className == %@)",
-                                [NSButtonCell class], @"RenderWidgetHostViewCocoa"];
-    
-    return [children filteredArrayUsingPredicate:predicate];
-  }
-  
-  return [super accessibilityAttributeValue:attribute];
+  // Filter out objects that aren't the title bar buttons. This has the effect
+  // of removing the window title, which VoiceOver already sees.
+  // * when VoiceOver is disabled, this causes Cmd+C to be used for TTS but
+  //   still leaves the buttons available in the accessibility tree.
+  // * when VoiceOver is enabled, the full accessibility tree is used.
+  // Without removing the title and with VO disabled, the TTS would always read
+  // the window title instead of using Cmd+C to get the selected text.
+  NSPredicate *predicate = [NSPredicate predicateWithFormat:
+      @"(self isKindOfClass: %@) OR (self.className == %@)",
+      [NSButtonCell class],
+      @"RenderWidgetHostViewCocoa"];
+
+  NSArray *children = [super accessibilityAttributeValue:attribute];
+  return [children filteredArrayUsingPredicate:predicate];
 }
 
 @end

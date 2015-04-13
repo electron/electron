@@ -4,10 +4,9 @@
 
 #import "atom/browser/mac/atom_application.h"
 
+#include "atom/browser/browser.h"
 #include "base/auto_reset.h"
 #include "base/strings/sys_string_conversions.h"
-#include "atom/browser/browser.h"
-
 #include "content/public/browser/browser_accessibility_state.h"
 
 @implementation AtomApplication
@@ -49,7 +48,7 @@
 }
 
 - (void)accessibilitySetValue:(id)value forAttribute:(NSString *)attribute {
-  // undocumented attribute that VoiceOver happens to set while running.
+  // Undocumented attribute that VoiceOver happens to set while running.
   // Chromium uses this too, even though it's not exactly right.
   if ([attribute isEqualToString:@"AXEnhancedUserInterface"]) {
     [self updateAccessibilityEnabled:[value boolValue]];
@@ -58,7 +57,7 @@
 }
 
 - (void)updateAccessibilityEnabled:(BOOL)enabled {
-  content::BrowserAccessibilityState *ax_state = content::BrowserAccessibilityState::GetInstance();
+  auto ax_state = content::BrowserAccessibilityState::GetInstance();
 
   if (enabled) {
     ax_state->OnScreenReaderDetected();
