@@ -131,3 +131,9 @@ Returns whether the image is empty.
 Returns the size of the image.
 
 [buffer]: https://iojs.org/api/buffer.html#buffer_class_buffer
+
+### NativeImage.setTemplateImage(option)
+
+* `option` Boolean
+
+To toggle a `NativeImage` as Template image on OSX 
