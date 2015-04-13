@@ -113,17 +113,64 @@ Menu.getApplicationMenu = -> applicationMenu
 
 Menu.sendActionToFirstResponder = bindings.sendActionToFirstResponder
 
+Menu._indexOfItemWithId = (insertedItems, id) ->
+  for each, index in insertedItems
+    if id is each.id
+      return index
+  -1
+
+Menu._itemIndexForPosition = (insertedItems, position) ->
+  insertIndex = insertedItems.length
+
+  if position
+    [query, id] = position.split '='
+    switch query
+      when 'before'
+        insertIndex = Menu._indexOfItemWithId insertedItems, id
+      when 'after'
+        insertIndex = Menu._indexOfItemWithId insertedItems, id
+        unless insertIndex is -1
+          insertIndex++
+      when 'endof'
+        insertIndex = Menu._indexOfItemWithId insertedItems, id
+        if insertIndex is -1
+          separatorItem = id: id, type: 'separator'
+          insertIndex = insertedItems.length
+          insertedItems.push separatorItem
+
+        insertIndex++
+        item = insertedItems[insertIndex]
+        while (insertIndex < insertedItems.length) and item.type != 'separator'
+          insertIndex++
+          item = insertedItems[insertIndex]
+
+    if insertIndex is -1
+      console.warn "Could not position item at position #{position}"
+      insertIndex = insertedItems.length
+
+  insertIndex
+
 Menu.buildFromTemplate = (template) ->
   throw new TypeError('Invalid template for Menu') unless Array.isArray template
 
-  menu = new Menu
+  positionedTemplate = []
+  insertIndex = 0
+
   for item in template
+    position = item.position
+    if position
+      insertIndex = Menu._itemIndexForPosition positionedTemplate, position
+    positionedTemplate.splice insertIndex, 0, item
+    insertIndex++
+
+  menu = new Menu
+
+  for item in positionedTemplate
     throw new TypeError('Invalid template for MenuItem') unless typeof item is 'object'
 
     item.submenu = Menu.buildFromTemplate item.submenu if item.submenu?
     menuItem = new MenuItem(item)
     menuItem[key] = value for key, value of item when not menuItem[key]?
-
     menu.append menuItem
 
   menu
