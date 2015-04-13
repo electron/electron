@@ -221,11 +221,3 @@ describe 'browser-window module', ->
         assert.equal url, 'https://www.github.com/'
         done()
       w.loadUrl "file://#{fixtures}/pages/will-navigate.html"
-
-  describe 'did-get-response-details', ->
-    it 'emits when user requests a resource', (done) ->
-      w.webContents.on 'did-get-response-details', (event, status, url) ->
-        assert.notEqual status
-        assert.equal url, "https://d4hwcs1zqtwzs.cloudfront.net/mac/GitHub%20for%20Mac%20204.zip"
-        done()
-      w.loadUrl "https://central.github.com/mac/latest"
