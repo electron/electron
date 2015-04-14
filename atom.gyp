@@ -2,7 +2,9 @@
   'variables': {
     'project_name%': 'atom',
     'product_name%': 'Atom',
-    'version%': '0.23.0',
+    'company_name%': 'GitHub, Inc',
+    'company_abbr%': 'github',
+    'version%' : '0.23.0',
 
     'atom_source_root': '<!(["python", "tools/atom_source_root.py"])',
   },
@@ -45,6 +47,7 @@
             '<(project_name)_helper',
           ],
           'xcode_settings': {
+            'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name)',
             'INFOPLIST_FILE': 'atom/browser/resources/mac/Info.plist',
             'LD_RUNPATH_SEARCH_PATHS': [
               '@executable_path/../Frameworks',
@@ -395,6 +398,7 @@
             '<(libchromiumcontent_dir)/snapshot_blob.bin',
           ],
           'xcode_settings': {
+            'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name).framework',
             'INFOPLIST_FILE': 'atom/common/resources/mac/Info.plist',
             'LD_DYLIB_INSTALL_NAME': '@rpath/<(product_name) Framework.framework/<(product_name) Framework',
             'LD_RUNPATH_SEARCH_PATHS': [
@@ -472,6 +476,7 @@
           ],
           'mac_bundle': 1,
           'xcode_settings': {
+            'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name).helper',
             'INFOPLIST_FILE': 'atom/renderer/resources/mac/Info.plist',
             'LD_RUNPATH_SEARCH_PATHS': [
               '@executable_path/../../..',

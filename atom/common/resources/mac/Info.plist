@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleExecutable</key>
-	<string>Atom Framework</string>
+	<string>${PRODUCT_NAME} Framework</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.github.AtomFramework</string>
+	<string>${ATOM_BUNDLE_ID}</string>
 	<key>CFBundleName</key>
-	<string>Atom Framework</string>
+	<string>${PRODUCT_NAME} Framework</string>
 	<key>CFBundlePackageType</key>
 	<string>FMWK</string>
 	<key>NSSupportsAutomaticGraphicsSwitching</key>
