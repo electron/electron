@@ -25,7 +25,7 @@ namespace atom {
 
 namespace {
 
-const char kViewClassName[] = "AtomMenuBar";
+const char kViewClassName[] = "ElectronMenuBar";
 
 // Default color of the menu bar.
 const SkColor kDefaultColor = SkColorSetARGB(255, 233, 233, 233);

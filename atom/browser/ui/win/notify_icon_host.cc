@@ -24,7 +24,7 @@ const UINT kNotifyIconMessage = WM_APP + 1;
 // |kBaseIconId| is 2 to avoid conflicts with plugins that hard-code id 1.
 const UINT kBaseIconId = 2;
 
-const wchar_t kNotifyIconHostWindowClass[] = L"AtomShell_NotifyIconHostWindow";
+const wchar_t kNotifyIconHostWindowClass[] = L"Electron_NotifyIconHostWindow";
 
 }  // namespace
 
