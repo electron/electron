@@ -72,7 +72,7 @@ window.confirm = (message, title='') ->
 
 # But we do not support prompt().
 window.prompt = ->
-  throw new Error('prompt() is and will not be supported in atom-shell.')
+  throw new Error('prompt() is and will not be supported.')
 
 window.opener =
   postMessage: (message, targetOrigin='*') ->

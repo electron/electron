@@ -126,7 +126,7 @@ void NodeDebugger::SendConnectMessage() {
       "Protocol-Version: 1\r\n"
       "Embedding-Host: %s\r\n"
       "%s: 0\r\n",
-      v8::V8::GetVersion(), "Atom-Shell", kContentLength), true);
+      v8::V8::GetVersion(), ATOM_PRODUCT_NAME, kContentLength), true);
 }
 
 // static

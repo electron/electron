@@ -73,7 +73,7 @@ int Main(const wchar_t* cmd) {
                                                  NULL);
   cmd_line.AppendSwitch("no-window");
   cmd_line.AppendSwitchASCII("max-reports", "128");
-  cmd_line.AppendSwitchASCII("reporter", "atom-shell-crash-service");
+  cmd_line.AppendSwitchASCII("reporter", ATOM_PROJECT_NAME "-crash-service");
   cmd_line.AppendSwitchNative("pipe-name", pipe_name);
 
   breakpad::CrashService crash_service;

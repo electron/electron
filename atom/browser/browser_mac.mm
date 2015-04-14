@@ -4,13 +4,13 @@
 
 #include "atom/browser/browser.h"
 
-#import "atom/browser/mac/atom_application.h"
-#import "atom/browser/mac/atom_application_delegate.h"
+#include "atom/browser/mac/atom_application.h"
+#include "atom/browser/mac/atom_application_delegate.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
-#import "base/mac/bundle_locations.h"
-#import "base/mac/foundation_util.h"
+#include "base/mac/foundation_util.h"
 #include "base/strings/sys_string_conversions.h"
+#include "brightray/common/application_info.h"
 
 namespace atom {
 
@@ -27,15 +27,11 @@ void Browser::ClearRecentDocuments() {
 }
 
 std::string Browser::GetExecutableFileVersion() const {
-  NSDictionary* infoDictionary = base::mac::OuterBundle().infoDictionary;
-  NSString *version = [infoDictionary objectForKey:@"CFBundleVersion"];
-  return base::SysNSStringToUTF8(version);
+  return brightray::GetApplicationVersion();
 }
 
 std::string Browser::GetExecutableFileProductName() const {
-  NSDictionary* infoDictionary = base::mac::OuterBundle().infoDictionary;
-  NSString *version = [infoDictionary objectForKey:@"CFBundleName"];
-  return base::SysNSStringToUTF8(version);
+  return brightray::GetApplicationName();
 }
 
 int Browser::DockBounce(BounceType type) {

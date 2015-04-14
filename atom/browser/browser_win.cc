@@ -118,7 +118,7 @@ void Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
 }
 
 void Browser::SetAppUserModelID(const std::string& name) {
-  app_user_model_id_ = base::string16(L"atom-shell.app.");
+  app_user_model_id_ = base::string16(L"electron.app.");
   app_user_model_id_ += base::UTF8ToUTF16(name);
   SetCurrentProcessExplicitAppUserModelID(app_user_model_id_.c_str());
 }
@@ -142,7 +142,7 @@ std::string Browser::GetExecutableFileProductName() const {
     return base::UTF16ToUTF8(version_info->product_name());
   }
 
-  return "Atom-Shell";
+  return ATOM_PRODUCT_NAME;
 }
 
 }  // namespace atom

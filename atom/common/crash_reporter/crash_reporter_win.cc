@@ -103,7 +103,7 @@ google_breakpad::CustomClientInfo* CrashReporterWin::GetCustomInfo(
   custom_info_entries_.reserve(2 + upload_parameters_.size());
 
   custom_info_entries_.push_back(google_breakpad::CustomInfoEntry(
-      L"prod", L"Atom-Shell"));
+      L"prod", L"Electron"));
   custom_info_entries_.push_back(google_breakpad::CustomInfoEntry(
       L"ver", base::UTF8ToWide(version).c_str()));
 

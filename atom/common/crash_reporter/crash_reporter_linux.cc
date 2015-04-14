@@ -64,7 +64,7 @@ void CrashReporterLinux::InitBreakpad(const std::string& product_name,
                                       bool skip_system_crash_handler) {
   EnableCrashDumping(product_name);
 
-  crash_keys_.SetKeyValue("prod", "Atom-Shell");
+  crash_keys_.SetKeyValue("prod", ATOM_PRODUCT_NAME);
   crash_keys_.SetKeyValue("ver", version.c_str());
   upload_url_ = submit_url;
 
