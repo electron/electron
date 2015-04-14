@@ -1,7 +1,7 @@
 {
   'variables': {
-    'project_name%': 'atom',
-    'product_name%': 'Atom',
+    'project_name%': 'electron',
+    'product_name%': 'Electron',
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
     'version%' : '0.23.0',
