@@ -23,7 +23,7 @@ class CrashReporter
 
     extra._productName ?= @productName
     extra._companyName ?= companyName
-    extra._version ?=
+    extra._version ?= app.getVersion()
 
     start = => binding.start @productName, companyName, submitUrl, autoSubmit, ignoreSystemCrashHandler, extra
 
