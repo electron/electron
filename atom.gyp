@@ -11,6 +11,10 @@
     'vendor/native_mate/native_mate_files.gypi',
   ],
   'target_defaults': {
+    'defines': [
+      'ATOM_PRODUCT_NAME="<(product_name)"',
+      'ATOM_PROJECT_NAME="<(project_name)"',
+    ],
     'mac_framework_dirs': [
       '<(atom_source_root)/external_binaries',
     ],
@@ -201,7 +205,6 @@
         'vendor/node/node.gyp:node',
       ],
       'defines': [
-        'PRODUCT_NAME="<(product_name)"',
         # This is defined in skia/skia_common.gypi.
         'SK_SUPPORT_LEGACY_GETTOPDEVICE',
         # Disable warnings for g_settings_list_schemas.
@@ -370,9 +373,6 @@
             '.',
             'vendor',
             '<(libchromiumcontent_src_dir)',
-          ],
-          'defines': [
-            'PRODUCT_NAME="<(product_name)"',
           ],
           'export_dependent_settings': [
             '<(project_name)_lib',

@@ -29,7 +29,7 @@ int AtomInitializeICUandStartNode(int argc, char *argv[]) {
       brightray::MainApplicationBundlePath()
           .Append("Contents")
           .Append("Frameworks")
-          .Append(PRODUCT_NAME " Framework.framework"));
+          .Append(ATOM_PRODUCT_NAME " Framework.framework"));
   base::i18n::InitializeICU();
   return atom::NodeMain(argc, argv);
 }

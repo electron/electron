@@ -33,12 +33,13 @@ base::FilePath GetHeleprAppPath(const base::FilePath& frameworks_path,
 
 void AtomMainDelegate::OverrideFrameworkBundlePath() {
   base::mac::SetOverrideFrameworkBundlePath(
-      GetFrameworksPath().Append(PRODUCT_NAME " Framework.framework"));
+      GetFrameworksPath().Append(ATOM_PRODUCT_NAME " Framework.framework"));
 }
 
 void AtomMainDelegate::OverrideChildProcessPath() {
   base::FilePath frameworks_path = GetFrameworksPath();
-  base::FilePath helper_path = GetHeleprAppPath(frameworks_path, PRODUCT_NAME);
+  base::FilePath helper_path = GetHeleprAppPath(frameworks_path,
+                                                ATOM_PRODUCT_NAME);
   if (!base::PathExists(helper_path))
     helper_path = GetHeleprAppPath(frameworks_path,
                                    brightray::GetApplicationName());

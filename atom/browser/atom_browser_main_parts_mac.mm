@@ -26,7 +26,7 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
   base::FilePath frameworkPath = brightray::MainApplicationBundlePath()
       .Append("Contents")
       .Append("Frameworks")
-      .Append(PRODUCT_NAME " Framework.framework");
+      .Append(ATOM_PRODUCT_NAME " Framework.framework");
   NSBundle* frameworkBundle = [NSBundle
        bundleWithPath:base::mac::FilePathToNSString(frameworkPath)];
   NSNib* mainNib = [[NSNib alloc] initWithNibNamed:@"MainMenu"
