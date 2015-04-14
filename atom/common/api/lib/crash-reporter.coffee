@@ -8,7 +8,13 @@ class CrashReporter
   start: (options={}) ->
     {@productName, companyName, submitUrl, autoSubmit, ignoreSystemCrashHandler, extra} = options
 
-    @productName ?= 'Atom-Shell'
+    app =
+      if process.type is 'browser'
+        require 'app'
+      else
+        require('remote').require 'app'
+
+    @productName ?= app.getName()
     companyName ?= 'GitHub, Inc'
     submitUrl ?= 'http://54.249.141.255:1127/post'
     autoSubmit ?= true
@@ -18,10 +24,6 @@ class CrashReporter
     extra._productName ?= @productName
     extra._companyName ?= companyName
     extra._version ?=
-      if process.type is 'browser'
-        require('app').getVersion()
-      else
-        require('remote').require('app').getVersion()
 
     start = => binding.start @productName, companyName, submitUrl, autoSubmit, ignoreSystemCrashHandler, extra
 
