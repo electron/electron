@@ -28,6 +28,10 @@ int NodeMain(int argc, char *argv[]) {
     node::Environment* env = node::CreateEnvironment(
         gin_env.isolate(), gin_env.context(), argc, argv, exec_argc, exec_argv);
 
+    // Start debugger.
+    if (node::use_debug_agent)
+      node::StartDebug(env, node::debug_wait_connect);
+
     bool more;
     do {
       more = uv_run(env->event_loop(), UV_RUN_ONCE);
