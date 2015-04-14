@@ -137,7 +137,7 @@ app.on('ready', function() {
   require('protocol').registerProtocol('test-if-crashes', function() {});
 
   window = new BrowserWindow({
-    title: 'atom-shell tests',
+    title: 'Electron Tests',
     show: false,
     width: 800,
     height: 600,
