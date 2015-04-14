@@ -15,6 +15,7 @@
 #include "base/message_loop/message_loop.h"
 #include "base/path_service.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/common/content_paths.h"
 #include "native_mate/locker.h"
 #include "native_mate/dictionary.h"
 
@@ -157,6 +158,10 @@ node::Environment* NodeBindings::CreateEnvironment(
   mate::Dictionary process(context->GetIsolate(), env->process_object());
   process.Set("type", process_type);
   process.Set("resourcesPath", resources_path);
+  // The path to helper app.
+  base::FilePath helper_exec_path;
+  PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
+  process.Set("helperExecPath", helper_exec_path);
   return env;
 }
 
