@@ -23,7 +23,7 @@ Since atom-shell uses Chromium for displaying web pages, Chromium's
 multi-processes architecture is also used. Each web page in atom-shell runs in
 its own process, which is called __the renderer process__.
 
-In normal browsers web pages usually run in a sandboxed environtment and are not
+In normal browsers web pages usually run in a sandboxed environment and are not
 allowed access to native resources. In atom-shell users are given the power to
 use io.js APIs in web pages and it is therefore possible to interact with low
 level operating system features.
