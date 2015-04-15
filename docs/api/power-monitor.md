@@ -8,10 +8,9 @@ An example is:
 
 ```javascript
 var app = require('app');
-var powerMonitor = require('power-monitor');
 
 app.on('ready', function() {
-  powerMonitor.on('suspend', function() {
+  require('power-monitor').on('suspend', function() {
     console.log('The system is going to sleep');
   });
 });
