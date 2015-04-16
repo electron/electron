@@ -6,7 +6,7 @@
 * Visual Studio 2013 - [download VS 2013 Community Edition for
   free](http://www.visualstudio.com/products/visual-studio-community-vs)
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
-* 32bit [node.js](http://nodejs.org/download/)
+* [Node.js](http://nodejs.org/download/)
 * [git](http://git-scm.com)
 
 If you don't have a Windows installation at the moment,
@@ -54,10 +54,16 @@ python script\build.py -c D
 
 After building is done, you can find `atom.exe` under `out\D`.
 
-## 64bit support
+## 64bit build
 
-Currently Electron can only be built for 32bit target on Windows, support for
-64bit will come in future.
+To build for the 64bit target, you need to pass `--target_arch=x64` when running
+the bootstrap script:
+
+```powershell
+python script\bootstrap.py -v --target_arch=x64
+```
+
+The other building steps are exactly the same.
 
 ## Tests
 
