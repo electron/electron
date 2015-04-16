@@ -1,7 +1,7 @@
 # `File` object
 
 The DOM's File interface provides abstraction around native files, in order to
-let users work on native files directly with HTML5 file API, atom-shell has
+let users work on native files directly with HTML5 file API, Electron has
 added a `path` attribute to `File` interface which exposes the file's real path
 on filesystem.
 

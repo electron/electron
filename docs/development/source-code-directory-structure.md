@@ -2,7 +2,7 @@
 
 ## Overview
 
-The source code of atom-shell is separated into a few parts, and we are mostly
+The source code of Electron is separated into a few parts, and we are mostly
 following Chromium on the separation conventions.
 
 You may need to become familiar with [Chromium's multi-process
@@ -11,7 +11,7 @@ to understand the source code better.
 
 ## Structure of source code
 
-* **atom** - Source code of atom-shell.
+* **atom** - Source code of Electron.
   * **app** - System entry code.
   * **browser** - The frontend including the main window, UI, and all of the
     main process things. This talks to the renderer to manage web pages.
@@ -20,7 +20,7 @@ to understand the source code better.
       * **cocoa** - Cocoa specific source code.
       * **gtk** - GTK+ specific source code.
       * **win** - Windows GUI specific source code.
-    * **default_app** - The default page to show when atom-shell is started
+    * **default_app** - The default page to show when Electron is started
       without providing an app.
     * **api** - The implementation of the main process APIs.
        * **lib** - Javascript part of the API implementation.
@@ -36,12 +36,12 @@ to understand the source code better.
     loop into Chromium's message loop.
     * **lib** - Common Javascript initialization code.
     * **api** - The implementation of common APIs, and foundations of
-      atom-shell's built-in modules.
+    Electron's built-in modules.
        * **lib** - Javascript part of the API implementation.
 * **chromium_src** - Source code that copied from Chromium.
 * **docs** - Documentations.
 * **spec** - Automatic tests.
-* **atom.gyp** - Building rules of atom-shell.
+* **atom.gyp** - Building rules of Electron.
 * **common.gypi** - Compiler specific settings and building rules for other
   components like `node` and `breakpad`.
 

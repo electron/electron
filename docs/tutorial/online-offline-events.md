@@ -39,7 +39,7 @@ _online-status.html_
 There may be instances where one wants to respond to these events in the
 main process as well.  The main process however does not have a
 `navigator` object and thus cannot detect these events directly.  Using
-Atom-shell's inter-process communication utilities, the events can be forwarded
+Electron's inter-process communication utilities, the events can be forwarded
 to the main process and handled as needed, as shown in the following example.
 
 _main.js_

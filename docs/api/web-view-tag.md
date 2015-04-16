@@ -1,7 +1,7 @@
 # `<webview>` tag
 
 Use the `webview` tag to embed 'guest' content (such as web pages) in your
-atom-shell app. The guest content is contained within the `webview` container;
+Electron app. The guest content is contained within the `webview` container;
 an embedder page within your app controls how the guest content is laid out and
 rendered.
 

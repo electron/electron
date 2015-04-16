@@ -1,6 +1,6 @@
 # DevTools extension
 
-To make debugging more easy, atom-shell has added basic support for
+To make debugging more easy, Electron has added basic support for
 [Chrome DevTools Extension][devtools-extension].
 
 For most devtools extensions, you can simply download their source codes and use
@@ -16,7 +16,7 @@ $ cd /some-directory
 $ git clone --recursive https://github.com/facebook/react-devtools.git
 ```
 
-Then you can load it in atom-shell by opening the devtools in arbitray window,
+Then you can load it in Electron by opening the devtools in arbitray window,
 and run this code in the console of devtools:
 
 ```javascript
@@ -33,20 +33,20 @@ require('remote').require('browser-window').removeDevToolsExtension('React Devel
 ## Format of devtools extension
 
 Ideally all devtools extension written for Chrome browser can be loaded by
-atom-shell, but they have to be in a plain directory, for those packaged `crx`
-extensions, there is no way in atom-shell to load them unless you find a way to
+Electron, but they have to be in a plain directory, for those packaged `crx`
+extensions, there is no way in Electron to load them unless you find a way to
 extract them into a directory.
 
 ## Background pages
 
-Currently atom-shell doesn't support the background pages of chrome extensions,
+Currently Electron doesn't support the background pages of chrome extensions,
 so for some devtools extensions that rely on this feature, they may not work
-well in atom-shell
+well in Electron
 
 ## `chrome.*` APIs
 
 Some chrome extensions use `chrome.*` APIs for some features, there is some
-effort to implement those APIs in atom-shell to make them work, but we have
+effort to implement those APIs in Electron to make them work, but we have
 only implemented few for now.
 
 So if the devtools extension is using APIs other than `chrome.devtools.*`, it is

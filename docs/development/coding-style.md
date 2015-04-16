@@ -25,4 +25,4 @@ Guide](https://github.com/styleguide/javascript), and also following rules:
 When creating a new API, we should prefer getters and setters instead of
 jQuery's one-function style, for example, `.getText()` and `.setText(text)`
 are preferred to `.text([text])`. There is a
-[discussion](https://github.com/atom/atom-shell/issues/46) of this.
+[discussion](https://github.com/atom/electron/issues/46) of this.

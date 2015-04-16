@@ -1,7 +1,7 @@
 # Supported Chrome command line switches
 
 Following command lines switches in Chrome browser are also Supported in
-atom-shell, you can use [app.commandLine.appendSwitch][append-switch] to append
+Electron, you can use [app.commandLine.appendSwitch][append-switch] to append
 them in your app's main script before the [ready][ready] event of [app][app]
 module is emitted:
 
