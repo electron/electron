@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <set>
 
 #include "base/strings/string_piece.h"
 #include "native_mate/compat.h"
@@ -183,6 +184,40 @@ struct Converter<std::vector<T> > {
       return false;
 
     std::vector<T> result;
+    v8::Handle<v8::Array> array(v8::Handle<v8::Array>::Cast(val));
+    uint32_t length = array->Length();
+    for (uint32_t i = 0; i < length; ++i) {
+      T item;
+      if (!Converter<T>::FromV8(isolate, array->Get(i), &item))
+        return false;
+      result.push_back(item);
+    }
+
+    out->swap(result);
+    return true;
+  }
+};
+
+template<typename T>
+struct Converter<std::set<T> > {
+  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+                                    const std::set<T>& val) {
+    v8::Handle<v8::Array> result(
+        MATE_ARRAY_NEW(isolate, static_cast<int>(val.size())));
+    typename std::set<T>::const_iterator it;
+    int i;
+    for (i = 0, it = val.begin(); it != val.end(); ++it, ++i)
+         result->Set(i, Converter<T>::ToV8(isolate, *it));
+    return result;
+  }
+
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
+                     std::set<T>* out) {
+    if (!val->IsArray())
+      return false;
+
+    std::set<T> result;
     v8::Handle<v8::Array> array(v8::Handle<v8::Array>::Cast(val));
     uint32_t length = array->Length();
     for (uint32_t i = 0; i < length; ++i) {
