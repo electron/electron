@@ -1,17 +1,17 @@
 {
-  "name": "atom-shell",
+  "name": "electron-prebuilt",
   "version": "0.23.0",
-  "description": "Install atom-shell prebuilts using npm",
+  "description": "Install electron (formerly called atom-shell) prebuilts using npm",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mafintosh/atom-shell"
+    "url": "https://github.com/mafintosh/electron"
   },
   "scripts": {
     "install": "node install.js",
     "test": "tape test/*.js"
   },
   "bin": {
-    "atom-shell": "run.bat"
+    "electron": "run.bat"
   },
   "main": "index.js",
   "dependencies": {
@@ -24,7 +24,7 @@
   "author": "Mathias Buus",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mafintosh/atom-shell/issues"
+    "url": "https://github.com/mafintosh/electron-prebuilt/issues"
   },
-  "homepage": "https://github.com/mafintosh/atom-shell"
+  "homepage": "https://github.com/mafintosh/electron-prebuilt"
 }
