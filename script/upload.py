@@ -8,24 +8,29 @@ import sys
 import tempfile
 
 from lib.config import PLATFORM, get_target_arch
-from lib.util import execute, get_atom_shell_version, parse_version, \
+from lib.util import atom_gyp, execute, get_atom_shell_version, parse_version, \
                      get_chromedriver_version, scoped_cwd
 from lib.github import GitHub
 
 
-ATOM_SHELL_REPO = 'atom/atom-shell'
+ATOM_SHELL_REPO = 'atom/electron'
 ATOM_SHELL_VERSION = get_atom_shell_version()
 CHROMEDRIVER_VERSION = get_chromedriver_version()
+
+PROJECT_NAME = atom_gyp()['project_name%']
+PRODUCT_NAME = atom_gyp()['product_name%']
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
-DIST_NAME = 'atom-shell-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
-                                                PLATFORM,
-                                                get_target_arch())
-SYMBOLS_NAME = 'atom-shell-{0}-{1}-{2}-symbols.zip'.format(ATOM_SHELL_VERSION,
-                                                           PLATFORM,
-                                                           get_target_arch())
+DIST_NAME = '{0}-{1}-{2}-{3}.zip'.format(PROJECT_NAME,
+                                         ATOM_SHELL_VERSION,
+                                         PLATFORM,
+                                         get_target_arch())
+SYMBOLS_NAME = '{0}-{1}-{2}-{3}-symbols.zip'.format(PROJECT_NAME,
+                                                    ATOM_SHELL_VERSION,
+                                                    PLATFORM,
+                                                    get_target_arch())
 CHROMEDRIVER_NAME = 'chromedriver-{0}-{1}-{2}.zip'.format(CHROMEDRIVER_VERSION,
                                                           PLATFORM,
                                                           get_target_arch())
