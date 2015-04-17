@@ -1,8 +1,10 @@
 {
   'variables': {
-    'project_name%': 'atom',
-    'product_name%': 'Atom',
-    'version%': '0.23.0',
+    'project_name%': 'electron',
+    'product_name%': 'Electron',
+    'company_name%': 'GitHub, Inc',
+    'company_abbr%': 'github',
+    'version%' : '0.23.0',
 
     'atom_source_root': '<!(["python", "tools/atom_source_root.py"])',
   },
@@ -11,6 +13,10 @@
     'vendor/native_mate/native_mate_files.gypi',
   ],
   'target_defaults': {
+    'defines': [
+      'ATOM_PRODUCT_NAME="<(product_name)"',
+      'ATOM_PROJECT_NAME="<(project_name)"',
+    ],
     'mac_framework_dirs': [
       '<(atom_source_root)/external_binaries',
     ],
@@ -41,6 +47,7 @@
             '<(project_name)_helper',
           ],
           'xcode_settings': {
+            'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name)',
             'INFOPLIST_FILE': 'atom/browser/resources/mac/Info.plist',
             'LD_RUNPATH_SEARCH_PATHS': [
               '@executable_path/../Frameworks',
@@ -201,7 +208,6 @@
         'vendor/node/node.gyp:node',
       ],
       'defines': [
-        'PRODUCT_NAME="<(product_name)"',
         # This is defined in skia/skia_common.gypi.
         'SK_SUPPORT_LEGACY_GETTOPDEVICE',
         # Disable warnings for g_settings_list_schemas.
@@ -371,9 +377,6 @@
             'vendor',
             '<(libchromiumcontent_src_dir)',
           ],
-          'defines': [
-            'PRODUCT_NAME="<(product_name)"',
-          ],
           'export_dependent_settings': [
             '<(project_name)_lib',
           ],
@@ -395,6 +398,7 @@
             '<(libchromiumcontent_dir)/snapshot_blob.bin',
           ],
           'xcode_settings': {
+            'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name).framework',
             'INFOPLIST_FILE': 'atom/common/resources/mac/Info.plist',
             'LD_DYLIB_INSTALL_NAME': '@rpath/<(product_name) Framework.framework/<(product_name) Framework',
             'LD_RUNPATH_SEARCH_PATHS': [
@@ -472,6 +476,7 @@
           ],
           'mac_bundle': 1,
           'xcode_settings': {
+            'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name).helper',
             'INFOPLIST_FILE': 'atom/renderer/resources/mac/Info.plist',
             'LD_RUNPATH_SEARCH_PATHS': [
               '@executable_path/../../..',

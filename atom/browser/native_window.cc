@@ -144,7 +144,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
   // Override the user agent to contain application and atom-shell's version.
   Browser* browser = Browser::Get();
   std::string product_name = base::StringPrintf(
-      "%s/%s Chrome/%s AtomShell/" ATOM_VERSION_STRING,
+      "%s/%s Chrome/%s " ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING,
       RemoveWhitespace(browser->GetName()).c_str(),
       browser->GetVersion().c_str(),
       CHROME_VERSION_STRING);
@@ -226,7 +226,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   if (options.Get(switches::kKiosk, &kiosk) && kiosk) {
     SetKiosk(kiosk);
   }
-  std::string title("Atom Shell");
+  std::string title("Electron");
   options.Get(switches::kTitle, &title);
   SetTitle(title);
 

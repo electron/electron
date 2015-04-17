@@ -15,11 +15,11 @@ describe 'app module', ->
 
   describe 'app.getName()', ->
     it 'returns the name field of package.json', ->
-      assert.equal app.getName(), 'Atom Shell Test App'
+      assert.equal app.getName(), 'Electron Test'
 
   describe 'app.setName(name)', ->
     it 'overrides the name', ->
-      assert.equal app.getName(), 'Atom Shell Test App'
+      assert.equal app.getName(), 'Electron Test'
       app.setName 'test-name'
       assert.equal app.getName(), 'test-name'
-      app.setName 'Atom Shell Test App'
+      app.setName 'Electron Test App'

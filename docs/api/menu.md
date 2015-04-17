@@ -33,10 +33,10 @@ Another example of creating the application menu with the simple template API:
 // main.js
 var template = [
   {
-    label: 'Atom Shell',
+    label: 'Electron',
     submenu: [
       {
-        label: 'About Atom Shell',
+        label: 'About Electron',
         selector: 'orderFrontStandardAboutPanel:'
       },
       {
@@ -50,7 +50,7 @@ var template = [
         type: 'separator'
       },
       {
-        label: 'Hide Atom Shell',
+        label: 'Hide Electron',
         accelerator: 'Command+H',
         selector: 'hide:'
       },
@@ -228,7 +228,7 @@ Linux, and here are some notes on making your app's menu more native-like.
 
 On OS X there are many system defined standard menus, like the `Services` and
 `Windows` menus. To make your menu a standard menu, you can just set your menu's
-label to one of followings, and atom-shell will recognize them and make them
+label to one of followings, and Electron will recognize them and make them
 become standard menus:
 
 * `Window`

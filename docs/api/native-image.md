@@ -1,6 +1,6 @@
 # NativeImage
 
-In atom-shell for the APIs that take images, you can pass either file paths or
+In Electron for the APIs that take images, you can pass either file paths or
 `NativeImage` instances. When passing `null`, an empty image will be used.
 
 For example when creating tray or setting window's icon, you can pass image's

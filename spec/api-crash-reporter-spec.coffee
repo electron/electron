@@ -27,8 +27,8 @@ describe 'crash-reporter module', ->
       process.throwDeprecation = false
       form.parse req, (error, fields, files) ->
         process.throwDeprecation = true
-        assert.equal fields['prod'], 'Atom-Shell'
-        assert.equal fields['ver'], process.versions['atom-shell']
+        assert.equal fields['prod'], 'Electron'
+        assert.equal fields['ver'], process.versions['electron']
         assert.equal fields['process_type'], 'renderer'
         assert.equal fields['platform'], process.platform
         assert.equal fields['extra1'], 'extra1'

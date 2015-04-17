@@ -9,7 +9,7 @@
 namespace brightray {
 
 std::string GetApplicationName() {
-  return "Atom-Shell";
+  return ATOM_PRODUCT_NAME;
 }
 
 std::string GetApplicationVersion() {

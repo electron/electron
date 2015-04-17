@@ -1,10 +1,10 @@
 # Synopsis
 
 All [node.js's built-in modules](http://nodejs.org/api/) are available in
-atom-shell, and third-party node modules are fully supported too (including the
+Electron, and third-party node modules are fully supported too (including the
 [native modules](../tutorial/using-native-node-modules.md)).
 
-Atom-shell also provides some extra built-in modules for developing native
+Electron also provides some extra built-in modules for developing native
 desktop applications. Some modules are only available on the main process, some
 are only available on the renderer process, and some can be used on both processes.
 The basic rule is: if a module is GUI or low-level system related, then it should

@@ -3,7 +3,7 @@
 The `remote` module provides a simple way to do inter-process communication
 between the renderer process and the main process.
 
-In atom-shell, only GUI-related modules are available in the renderer process.
+In Electron, only GUI-related modules are available in the renderer process.
 Without the `remote` module, users who wanted to call a main process API in
 the renderer process would have to explicitly send inter-process messages
 to the main process. With the `remote` module, users can invoke methods of
@@ -35,7 +35,7 @@ corresponding remote object in the renderer process, namely the `win` object.
 
 ## Lifetime of remote objects
 
-Atom-shell makes sure that as long as the remote object in the renderer process
+Electron makes sure that as long as the remote object in the renderer process
 lives (in other words, has not been garbage collected), the corresponding object
 in the main process would never be released. When the remote object has been
 garbage collected, the corresponding object in the main process would be

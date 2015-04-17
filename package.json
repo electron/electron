@@ -1,5 +1,5 @@
 {
-  "name": "atom-shell",
+  "name": "electron",
   "devDependencies": {
     "asar": "0.2.2",
     "coffee-script": "~1.7.1",

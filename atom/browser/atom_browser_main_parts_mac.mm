@@ -4,12 +4,11 @@
 
 #include "atom/browser/atom_browser_main_parts.h"
 
-#import "atom/browser/mac/atom_application.h"
-#import "atom/browser/mac/atom_application_delegate.h"
-#include "base/files/file_path.h"
-#import "base/mac/foundation_util.h"
+#include "atom/browser/mac/atom_application.h"
+#include "atom/browser/mac/atom_application_delegate.h"
+#include "base/mac/bundle_locations.h"
+#include "base/mac/foundation_util.h"
 #include "ui/base/l10n/l10n_util_mac.h"
-#import "vendor/brightray/common/mac/main_application_bundle.h"
 
 namespace atom {
 
@@ -23,12 +22,7 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
   AtomApplicationDelegate* delegate = [[AtomApplicationDelegate alloc] init];
   [NSApp setDelegate:(id<NSFileManagerDelegate>)delegate];
 
-  base::FilePath frameworkPath = brightray::MainApplicationBundlePath()
-      .Append("Contents")
-      .Append("Frameworks")
-      .Append(PRODUCT_NAME " Framework.framework");
-  NSBundle* frameworkBundle = [NSBundle
-       bundleWithPath:base::mac::FilePathToNSString(frameworkPath)];
+  NSBundle* frameworkBundle = base::mac::FrameworkBundle();
   NSNib* mainNib = [[NSNib alloc] initWithNibNamed:@"MainMenu"
                                             bundle:frameworkBundle];
   [mainNib instantiateWithOwner:application topLevelObjects:nil];

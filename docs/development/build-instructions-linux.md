@@ -30,17 +30,17 @@ $ sudo npm install npm -g
 ## Getting the code
 
 ```bash
-$ git clone https://github.com/atom/atom-shell.git
+$ git clone https://github.com/atom/electron.git
 ```
 
 ## Bootstrapping
 
 The bootstrap script will download all necessary build dependencies and create
-build project files. Notice that we're using `ninja` to build `atom-shell` so
+build project files. Notice that we're using `ninja` to build Electron so
 there is no `Makefile` generated.
 
 ```bash
-$ cd atom-shell
+$ cd electron
 $ ./script/bootstrap.py -v
 ```
 
@@ -98,7 +98,7 @@ versions of clang. Try using clang 3.0, default version in Ubuntu 12.04.
 If you get an error like:
 
 ````
-/usr/bin/ld: warning: libudev.so.0, needed by /home/suyash/projects/atom-shell/vendor/brightray/vendor/download/libchromiumcontent/Release/libchromiumcontent.so, not found (try using -rpath or -rpath-link)
+/usr/bin/ld: warning: libudev.so.0, needed by .../vendor/brightray/vendor/download/libchromiumcontent/Release/libchromiumcontent.so, not found (try using -rpath or -rpath-link)
 ````
 
 and you are on Ubuntu 13.04+, 64 bit system, try doing

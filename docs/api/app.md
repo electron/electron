@@ -23,14 +23,14 @@ Under most cases you should just do everything in `ready` event.
 
 ## Event: ready
 
-Emitted when atom-shell has done everything initialization.
+Emitted when Electron has done everything initialization.
 
 ## Event: window-all-closed
 
 Emitted when all windows have been closed.
 
 This event is only emitted when the application is not going to quit. If a
-user pressed `Cmd + Q`, or the developer called `app.quit()`, atom-shell would
+user pressed `Cmd + Q`, or the developer called `app.quit()`, Electron would
 first try to close all windows and then emit the `will-quit` event, and in
 this case the `window-all-closed` would not be emitted.
 
@@ -155,7 +155,7 @@ used.
 Usually the `name` field of `package.json` is a short lowercased name, according
 to the spec of npm modules. So usually you should also specify a `productName`
 field, which is your application's full capitalized name, and it will be
-preferred over `name` by atom-shell.
+preferred over `name` by Electron.
 
 ## app.resolveProxy(url, callback)
 

@@ -8,14 +8,14 @@ From [ChromeDriver - WebDriver for Chrome][chrome-driver]:
 > implements WebDriver's wire protocol for Chromium. It is being developed by
 > members of the Chromium and WebDriver teams.
 
-In atom-shell's [releases](https://github.com/atom/atom-shell/releases) page you
-can find archives of `chromedriver`, there is no difference between atom-shell's
+In Electron's [releases](https://github.com/atom/electron/releases) page you
+can find archives of `chromedriver`, there is no difference between Electron's
 distribution of `chromedriver` and upstream ones, so in order to use
-`chromedriver` together with atom-shell, you will need some special setup.
+`chromedriver` together with Electron, you will need some special setup.
 
 Also notice that only minor version update releases (e.g. `vX.X.0` releases)
 include `chromedriver` archives, because `chromedriver` doesn't change as
-frequent as atom-shell itself.
+frequent as Electron itself.
 
 ## Setting up with WebDriverJs
 
@@ -42,9 +42,9 @@ $ npm install selenium-webdriver
 
 ### 3. Connect to chrome driver
 
-The usage of `selenium-webdriver` with atom-shell is basically the same with
+The usage of `selenium-webdriver` with Electron is basically the same with
 upstream, except that you have to manually specify how to connect chrome driver
-and where to find atom-shell's binary:
+and where to find Electron's binary:
 
 ```javascript
 var webdriver = require('selenium-webdriver');
@@ -53,9 +53,9 @@ var driver = new webdriver.Builder().
    // The "9515" is the port opened by chrome driver.
    usingServer('http://localhost:9515').
    withCapabilities({chromeOptions: {
-     // Here is the path to your atom-shell binary.
+     // Here is the path to your Electron binary.
      binary: '/Path-to-Your-App.app/Contents/MacOS/Atom'}}).
-   forBrowser('atom-shell').
+   forBrowser('electron').
    build();
 
 driver.get('http://www.google.com');

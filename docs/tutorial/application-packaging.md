@@ -7,7 +7,7 @@ source code.
 ## Generating `asar` archive
 
 An [asar][asar] archive is a simple tar-like format that concatenates files
-into a single file, atom-shell can read arbitrary files from it without unpacking
+into a single file, Electron can read arbitrary files from it without unpacking
 the whole file.
 
 Following is the steps to package your app into an `asar` archive:
@@ -26,12 +26,12 @@ $ asar pack your-app app.asar
 
 ## Using `asar` archives
 
-In atom-shell there are two sets of APIs: Node APIs provided by Node.js, and Web
+In Electron there are two sets of APIs: Node APIs provided by Node.js, and Web
 APIs provided by Chromium. Both APIs support reading files from `asar` archives.
 
 ### Node API
 
-With special patches in atom-shell, Node APIs like `fs.readFile` and `require`
+With special patches in Electron, Node APIs like `fs.readFile` and `require`
 treat `asar` archives as virtual directories, and the files in it as normal
 files in the filesystem.
 
@@ -124,7 +124,7 @@ also cause errors.
 
 Most `fs` APIs can read file or get file's information from `asar` archives
 without unpacking, but for some APIs that rely on passing the real file path to
-underlying system calls, atom-shell will extract the needed file into a
+underlying system calls, Electron will extract the needed file into a
 temporary file and pass the path of the temporary file to the APIs to make them
 work. This adds a little overhead for those APIs.
 

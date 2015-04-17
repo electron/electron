@@ -14,17 +14,17 @@ following python modules:
 ## Getting the code
 
 ```bash
-$ git clone https://github.com/atom/atom-shell.git
+$ git clone https://github.com/atom/electron.git
 ```
 
 ## Bootstrapping
 
 The bootstrap script will download all necessary build dependencies and create
-build project files. Notice that we're using `ninja` to build `atom-shell` so
+build project files. Notice that we're using `ninja` to build Electron so
 there is no Xcode project generated.
 
 ```bash
-$ cd atom-shell
+$ cd electron
 $ ./script/bootstrap.py -v
 ```
 
@@ -42,12 +42,12 @@ You can also only build the `Debug` target:
 $ ./script/build.py -c D
 ```
 
-After building is done, you can find `Atom.app` under `out/D`.
+After building is done, you can find `Electron.app` under `out/D`.
 
 ## 32bit support
 
-Currently atom-shell can only be built for 64bit target on OS X, and there is no
-plan to support 32bit on OS X in future.
+Electron can only be built for 64bit target on OS X, and there is no plan to
+support 32bit OS X in future.
 
 ## Tests
 

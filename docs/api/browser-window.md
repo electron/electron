@@ -84,7 +84,7 @@ You can also create a window without chrome by using
     * `extra-plugin-dirs` Array - Array of paths that would be searched for
       plugins. Note that if you want to add a directory under your app, you
       should use `__dirname` or `process.resourcesPath` to join the paths to
-      make them absolute, using relative paths would make atom-shell search
+      make them absolute, using relative paths would make Electron search
       under current working directory.
     * `experimental-features` Boolean
     * `experimental-canvas-features` Boolean
@@ -116,7 +116,7 @@ would cancel the close.
 
 Usually you would want to use the `beforeunload` handler to decide whether the
 window should be closed, which will also be called when the window is
-reloaded. In atom-shell, returning an empty string or `false` would cancel the
+reloaded. In Electron, returning an empty string or `false` would cancel the
 close. An example is:
 
 ```javascript
@@ -124,7 +124,7 @@ window.onbeforeunload = function(e) {
   console.log('I do not want to be closed');
 
   // Unlike usual browsers, in which a string should be returned and the user is
-  // prompted to confirm the page unload. atom-shell gives the power completely
+  // prompted to confirm the page unload. Electron gives the power completely
   // to the developers, return empty string or false would prevent the unloading
   // now. You can also use the dialog API to let user confirm it.
   return false;
@@ -512,7 +512,7 @@ process.
   * `printBackground` Boolean - Also prints the background color and image of
     the web page, defaults to `false`.
 
-Prints window's web page. When `silent` is set to `false`, atom-shell will pick
+Prints window's web page. When `silent` is set to `false`, Electron will pick
 up system's default printer and default settings for printing.
 
 Calling `window.print()` in web page is equivalent to call

@@ -63,7 +63,8 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
 
   mate::Dictionary versions;
   if (dict.Get("versions", &versions)) {
-    versions.Set("atom-shell", ATOM_VERSION_STRING);
+    versions.Set(ATOM_PROJECT_NAME, ATOM_VERSION_STRING);
+    versions.Set("atom-shell", ATOM_VERSION_STRING);  // For compatibility.
     versions.Set("chrome", CHROME_VERSION_STRING);
   }
 }

@@ -120,7 +120,7 @@ struct RunState {
 };
 
 bool CreateDialogThread(RunState* run_state) {
-  base::Thread* thread = new base::Thread("AtomShell_FileDialogThread");
+  base::Thread* thread = new base::Thread(ATOM_PRODUCT_NAME "FileDialogThread");
   thread->init_com_with_mta(false);
   if (!thread->Start())
     return false;

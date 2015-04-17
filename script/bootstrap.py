@@ -31,8 +31,8 @@ def main():
 
   create_chrome_version_h()
   touch_config_gypi()
-  update_atom_shell()
-  update_atom_modules('spec', args.target_arch)
+  run_update()
+  update_electron_modules('spec', args.target_arch)
 
 
 def parse_args():
@@ -92,7 +92,7 @@ def update_node_modules(dirname, env=None):
       execute_stdout([NPM, 'install'], env)
 
 
-def update_atom_modules(dirname, target_arch):
+def update_electron_modules(dirname, target_arch):
   env = os.environ.copy()
   env['npm_config_arch']    = target_arch
   env['npm_config_target']  = get_atom_shell_version()
@@ -133,7 +133,7 @@ def touch_config_gypi():
       f.write(content)
 
 
-def update_atom_shell():
+def run_update():
   update = os.path.join(SOURCE_ROOT, 'script', 'update.py')
   execute_stdout([sys.executable, update])
 

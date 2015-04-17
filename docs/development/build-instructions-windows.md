@@ -6,15 +6,15 @@
 * Visual Studio 2013 - [download VS 2013 Community Edition for
   free](http://www.visualstudio.com/products/visual-studio-community-vs)
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
-* 32bit [node.js](http://nodejs.org/download/)
+* [Node.js](http://nodejs.org/download/)
 * [git](http://git-scm.com)
 
 If you don't have a Windows installation at the moment,
 [modern.ie](https://www.modern.ie/en-us/virtualization-tools#downloads) has
-timebombed versions of Windows that you can use to build Atom Shell.
+timebombed versions of Windows that you can use to build Electron.
 
-The building of atom-shell is done entirely with command-line scripts, so you
-can use any editor you like to develop atom-shell, but it also means you can
+The building of Electron is done entirely with command-line scripts, so you
+can use any editor you like to develop Electron, but it also means you can
 not use Visual Studio for the development. Support of building with Visual
 Studio will come in the future.
 
@@ -24,17 +24,17 @@ Studio will come in the future.
 ## Getting the code
 
 ```powershell
-git clone https://github.com/atom/atom-shell.git
+git clone https://github.com/atom/electron.git
 ```
 
 ## Bootstrapping
 
 The bootstrap script will download all necessary build dependencies and create
-build project files. Notice that we're using `ninja` to build atom-shell so
+build project files. Notice that we're using `ninja` to build Electron so
 there is no Visual Studio project generated.
 
 ```powershell
-cd atom-shell
+cd electron
 python script\bootstrap.py -v
 ```
 
@@ -54,10 +54,16 @@ python script\build.py -c D
 
 After building is done, you can find `atom.exe` under `out\D`.
 
-## 64bit support
+## 64bit build
 
-Currently atom-shell can only be built for 32bit target on Windows, support for
-64bit will come in future.
+To build for the 64bit target, you need to pass `--target_arch=x64` when running
+the bootstrap script:
+
+```powershell
+python script\bootstrap.py -v --target_arch=x64
+```
+
+The other building steps are exactly the same.
 
 ## Tests
 

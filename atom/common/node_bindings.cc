@@ -15,6 +15,7 @@
 #include "base/message_loop/message_loop.h"
 #include "base/path_service.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/common/content_paths.h"
 #include "native_mate/locker.h"
 #include "native_mate/dictionary.h"
 
@@ -27,7 +28,7 @@ using content::BrowserThread;
 #define REFERENCE_MODULE(name) \
   extern "C" void _register_ ## name(void); \
   void (*fp_register_ ## name)(void) = _register_ ## name
-// Atom Shell's builtin modules.
+// Electron's builtin modules.
 REFERENCE_MODULE(atom_browser_app);
 REFERENCE_MODULE(atom_browser_auto_updater);
 REFERENCE_MODULE(atom_browser_content_tracing);
@@ -157,6 +158,10 @@ node::Environment* NodeBindings::CreateEnvironment(
   mate::Dictionary process(context->GetIsolate(), env->process_object());
   process.Set("type", process_type);
   process.Set("resourcesPath", resources_path);
+  // The path to helper app.
+  base::FilePath helper_exec_path;
+  PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
+  process.Set("helperExecPath", helper_exec_path);
   return env;
 }
 

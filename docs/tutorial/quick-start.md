@@ -123,7 +123,7 @@ Finally the `index.html` is the web page you want to show:
   <body>
     <h1>Hello World!</h1>
     We are using node.js <script>document.write(process.version)</script>
-    and atom-shell <script>document.write(process.versions['atom-shell'])</script>.
+    and atom-shell <script>document.write(process.versions['electron'])</script>.
   </body>
 </html>
 ```
@@ -150,8 +150,8 @@ $ ./atom-shell/atom your-app/
 On OS X:
 
 ```bash
-$ ./Atom.app/Contents/MacOS/Atom your-app/
+$ ./Electron.app/Contents/MacOS/Atom your-app/
 ```
 
-`Atom.app` here is part of the atom-shell's release package, you can download
-it from [here](https://github.com/atom/atom-shell/releases).
+`Electron.app` here is part of the atom-shell's release package, you can download
+it from [here](https://github.com/atom/electron/releases).

@@ -4,19 +4,26 @@ import os
 import sys
 
 from lib.config import PLATFORM, s3_config
-from lib.util import execute, s3put, scoped_cwd
+from lib.util import atom_gyp, execute, s3put, scoped_cwd
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 OUT_DIR     = os.path.join(SOURCE_ROOT, 'out', 'R')
 
+PROJECT_NAME = atom_gyp()['project_name%']
+PRODUCT_NAME = atom_gyp()['product_name%']
+
 
 def main():
   # Upload the index.json.
   with scoped_cwd(SOURCE_ROOT):
-    atom_shell = os.path.join(OUT_DIR, 'atom')
-    if PLATFORM == 'win32':
-      atom_shell += '.exe'
+    if sys.platform == 'darwin':
+      atom_shell = os.path.join(OUT_DIR, '{0}.app'.format(PRODUCT_NAME),
+                                'Contents', 'MacOS', PRODUCT_NAME)
+    elif sys.platform == 'win32':
+      atom_shell = os.path.join(OUT_DIR, '{0}.exe'.format(PROJECT_NAME))
+    else:
+      atom_shell = os.path.join(OUT_DIR, PROJECT_NAME)
     index_json = os.path.relpath(os.path.join(OUT_DIR, 'index.json'))
     execute([atom_shell,
              os.path.join('tools', 'dump-version-info.js'),

@@ -1,6 +1,5 @@
 {
-  "name": "atom-shell-default-app",
-  "productName": "Atom Shell Default App",
-  "version": "0.1.0",
+  "name": "electron",
+  "productName": "Electron",
   "main": "main.js"
 }

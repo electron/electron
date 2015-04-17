@@ -6,7 +6,7 @@ applications can put shortcuts in the JumpList of task bar, and on Mac
 applications can put a custom menu in the dock menu.
 
 This guide introduces how to integrate your application into those desktop
-environments with atom-shell APIs.
+environments with Electron APIs.
 
 ## Recent documents (Windows & OS X)
 
@@ -26,7 +26,7 @@ To add a file to recent documents, you can use
 
 ```javascript
 var app = require('app');
-app.addRecentDocument('/Users/aryastark/github/atom-shell/README.md');
+app.addRecentDocument('/Users/USERNAME/Desktop/work.type');
 ```
 
 And you can use [app.clearRecentDocuments](clearrecentdocuments) API to empty
