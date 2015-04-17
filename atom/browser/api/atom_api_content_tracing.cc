@@ -17,20 +17,6 @@ using content::TracingController;
 
 namespace mate {
 
-template<typename T>
-struct Converter<std::set<T> > {
-  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const std::set<T>& val) {
-    v8::Handle<v8::Array> result = v8::Array::New(
-        isolate, static_cast<int>(val.size()));
-    typename std::set<T>::const_iterator it;
-    int i;
-    for (i = 0, it = val.begin(); it != val.end(); ++it, ++i)
-      result->Set(i, Converter<T>::ToV8(isolate, *it));
-    return result;
-  }
-};
-
 template<>
 struct Converter<base::debug::CategoryFilter> {
   static bool FromV8(v8::Isolate* isolate,
