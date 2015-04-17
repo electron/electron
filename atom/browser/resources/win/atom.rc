@@ -67,12 +67,12 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "CompanyName", "GitHub, Inc."
-            VALUE "FileDescription", "Atom-Shell"
+            VALUE "FileDescription", "Electron"
             VALUE "FileVersion", "0.23.0"
-            VALUE "InternalName", "atom.exe"
-            VALUE "LegalCopyright", "Copyright (C) 2013 GitHub, Inc. All rights reserved."
-            VALUE "OriginalFilename", "atom.exe"
-            VALUE "ProductName", "Atom-Shell"
+            VALUE "InternalName", "electron.exe"
+            VALUE "LegalCopyright", "Copyright (C) 2015 GitHub, Inc. All rights reserved."
+            VALUE "OriginalFilename", "electron.exe"
+            VALUE "ProductName", "Electron"
             VALUE "ProductVersion", "0.23.0"
             VALUE "SquirrelAwareVersion", "1"
         END
