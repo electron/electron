@@ -21,7 +21,7 @@ base::FilePath GetFrameworksPath() {
                                                .Append("Frameworks");
 }
 
-base::FilePath GetHeleprAppPath(const base::FilePath& frameworks_path,
+base::FilePath GetHelperAppPath(const base::FilePath& frameworks_path,
                                 const std::string& name) {
   return frameworks_path.Append(name + " Helper.app")
                         .Append("Contents")
@@ -38,10 +38,10 @@ void AtomMainDelegate::OverrideFrameworkBundlePath() {
 
 void AtomMainDelegate::OverrideChildProcessPath() {
   base::FilePath frameworks_path = GetFrameworksPath();
-  base::FilePath helper_path = GetHeleprAppPath(frameworks_path,
+  base::FilePath helper_path = GetHelperAppPath(frameworks_path,
                                                 ATOM_PRODUCT_NAME);
   if (!base::PathExists(helper_path))
-    helper_path = GetHeleprAppPath(frameworks_path,
+    helper_path = GetHelperAppPath(frameworks_path,
                                    brightray::GetApplicationName());
   if (!base::PathExists(helper_path))
     LOG(FATAL) << "Unable to find helper app";
