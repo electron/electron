@@ -4,7 +4,7 @@
   "description": "Install electron (formerly called atom-shell) prebuilts using npm",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mafintosh/electron"
+    "url": "https://github.com/mafintosh/electron-prebuilt"
   },
   "scripts": {
     "install": "node install.js",
