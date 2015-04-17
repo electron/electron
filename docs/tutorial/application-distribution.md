@@ -2,8 +2,8 @@
 
 To distribute your app with Electron, you should name the folder of your app
 as `app`, and put it under Electron's resources directory (on OS X it is
-`Electron.app/Contents/Resources/`, and on Linux and Windows it is `resources/`),
-like this:
+`Electron.app/Contents/Resources/`, and on Linux and Windows it is
+`resources/`), like this:
 
 On OS X:
 
@@ -23,8 +23,8 @@ electron/resources/app
 └── index.html
 ```
 
-Then execute `Electron.app` (or `atom` on Linux, and `atom.exe` on Windows), and
-Electron will start as your app. The `electron` directory would then be
+Then execute `Electron.app` (or `electron` on Linux, `electron.exe` on Windows),
+and Electron will start as your app. The `electron` directory would then be
 your distribution that should be delivered to final users.
 
 ## Packaging your app into a file
@@ -58,52 +58,71 @@ More details can be found in [Application packaging](application-packaging.md).
 After bundling your app into Electron, you will want to rebrand Electron
 before distributing it to users.
 
-If you don't care about the executable name on Windows or the helper process
-name on OS X, you can simply rename the downloaded binaries, and there is also a
-grunt task that can download prebuilt Electron binaries for your current
-platform automatically:
-[grunt-download-atom-shell](https://github.com/atom/grunt-download-atom-shell).
-
 ### Windows
 
-You can not rename the `atom.exe` otherwise native modules will not load. But
-you can edit the executable's icon and other information with tools like
-[rcedit](https://github.com/atom/rcedit) or [ResEdit](http://www.resedit.net).
-
-If you don't use any native Node module, it is fine to rename `atom.exe` to any
-name you want.
+You can rename `electron.exe` to any name you like, and edit its icon and other
+information with tools like [rcedit](https://github.com/atom/rcedit) or
+[ResEdit](http://www.resedit.net).
 
 ### OS X
 
-You can rename `Electron.app` to whatever you want, and you also have to rename the
-`CFBundleDisplayName`, `CFBundleIdentifier` and `CFBundleName` fields in
-following manifest files if they have these keys:
+You can rename `Electron.app` to any name you want, and you also have to rename
+the `CFBundleDisplayName`, `CFBundleIdentifier` and `CFBundleName` fields in
+following files:
 
 * `Electron.app/Contents/Info.plist`
-* `Electron.app/Contents/Frameworks/Atom Helper.app/Contents/Info.plist`
+* `Electron.app/Contents/Frameworks/Electron Helper.app/Contents/Info.plist`
+
+You can also rename the helper app to avoid showing `Electron Helper` in the
+Activity Monitor, but make sure you have renamed the helper app's executable
+file's name.
+
+The structure of a renamed app would be like:
+
+```
+MyApp.app/Contents
+├── Info.plist
+├── MacOS/
+│   └── MyApp
+└── Frameworks/
+    ├── MyApp Helper EH.app
+    |   ├── Info.plist
+    |   └── MacOS/
+    |       └── MyApp Helper EH
+    ├── MyApp Helper NP.app
+    |   ├── Info.plist
+    |   └── MacOS/
+    |       └── MyApp Helper NP
+    └── MyApp Helper.app
+        ├── Info.plist
+        └── MacOS/
+            └── MyApp Helper
+```
 
 ### Linux
 
-You can rename the `atom` executable to whatever you want.
+You can rename the `electron` executable to any name you like.
 
 ## Rebranding by rebuilding Electron from source
 
-The best way to rename Electron is to change the product name and then build
-from source. To do this you need to override the `GYP_DEFINES` environment
-variable and have a clean rebuild:
+It is also possible to rebrand Electron by changing the product name and
+building it from source. To do this you need to override the `GYP_DEFINES`
+environment variable and have a clean rebuild:
 
 __Windows__
 
 ```cmd
 > set "GYP_DEFINES=project_name=myapp product_name=MyApp"
+> python script\clean.py
 > python script\bootstrap.py
-> python script\build.py -c Release -t myapp
+> python script\build.py -c R -t myapp
 ```
 
 __Bash__
 
 ```bash
 $ export GYP_DEFINES="project_name=myapp product_name=MyApp"
+$ script/clean.py
 $ script/bootstrap.py
 $ script/build.py -c Release -t myapp
 ```
