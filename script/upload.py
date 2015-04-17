@@ -145,7 +145,7 @@ def get_text_with_editor(name):
   return text
 
 def create_or_get_release_draft(github, tag):
-  name = 'atom-shell %s' % tag
+  name = '{0} {1}'.format(PROJECT_NAME, tag)
   releases = github.repos(ATOM_SHELL_REPO).releases.get()
   for release in releases:
     # The untagged commit doesn't have a matching tag_name, so also check name.
@@ -156,7 +156,7 @@ def create_or_get_release_draft(github, tag):
 
 
 def create_release_draft(github, tag):
-  name = 'atom-shell %s' % tag
+  name = '{0} {1}'.format(PROJECT_NAME, tag)
   body = get_text_with_editor(name)
   if body == '':
     sys.stderr.write('Quit due to empty release note.\n')
