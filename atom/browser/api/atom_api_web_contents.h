@@ -6,10 +6,13 @@
 #define ATOM_BROWSER_API_ATOM_API_WEB_CONTENTS_H_
 
 #include <string>
+#include <vector>
+#include <set>
 
 #include "atom/browser/api/event_emitter.h"
 #include "brightray/browser/default_web_contents_delegate.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
+#include "content/public/common/favicon_url.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "native_mate/handle.h"
@@ -175,6 +178,8 @@ class WebContents : public mate::EventEmitter,
   void NavigationEntryCommitted(
       const content::LoadCommittedDetails& load_details) override;
   void TitleWasSet(content::NavigationEntry* entry, bool explicit_set) override;
+  void DidUpdateFaviconURL(
+      const std::vector<content::FaviconURL>& urls) override;
 
   // content::BrowserPluginGuestDelegate:
   void DidAttach(int guest_proxy_routing_id) final;

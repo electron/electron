@@ -275,6 +275,13 @@ examples.
 
 ## DOM events
 
+### will-navigate
+
+* `url` String
+
+Fired when view is about to navigate , calling `event.preventDefault()` will
+cancel the navigation.
+
 ### did-finish-load
 
 Fired when the navigation is done, i.e. the spinner of the tab will stop
@@ -329,6 +336,12 @@ Fired when a redirect was received while requesting a resource.
 
 Fired when page title is set during navigation. `explicitSet` is false when title is synthesised from file
 url.
+
+### page-favicon-set
+
+* `favicons` [String]
+
+Fired when page receives favicon urls.
 
 ### console-message
 

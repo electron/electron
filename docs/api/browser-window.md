@@ -662,6 +662,13 @@ Emitted when details regarding a requested resource is available.
 
 Emitted when a redirect was received while requesting a resource.
 
+### Event: 'page-favicon-set'
+
+* `event` Event
+* `favicons` [String]
+
+Emitted when page receives favicon urls.
+
 ### Event: 'new-window'
 
 * `event` Event

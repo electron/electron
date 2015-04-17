@@ -256,6 +256,19 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry,
   Emit("page-title-set", entry->GetTitle(), explicit_set);
 }
 
+void WebContents::DidUpdateFaviconURL(
+    const std::vector<content::FaviconURL>& urls) {
+  std::set<GURL> unique_urls;
+  for (auto iter = urls.begin(); iter != urls.end(); ++iter) {
+    if (iter->icon_type != content::FaviconURL::FAVICON)
+      continue;
+    const GURL& url = iter->icon_url;
+    if (url.is_valid())
+      unique_urls.insert(url);
+  }
+  Emit("page-favicon-set", unique_urls);
+}
+
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(WebContents, message)

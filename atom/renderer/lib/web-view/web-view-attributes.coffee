@@ -154,6 +154,14 @@ class SrcAttribute extends WebViewAttribute
        not @.getValue()
       return
 
+    domEvent = new Event('will-navigate')
+    domEvent['url'] = @getValue()
+    domEvent.cancelable = true
+    self = @
+    domEvent.preventDefault = () ->
+      self.setValueIgnoreMutation ''
+    @webViewImpl.webviewNode.dispatchEvent domEvent
+
     unless @webViewImpl.guestInstanceId?
       if @webViewImpl.beforeFirstNavigation
         @webViewImpl.beforeFirstNavigation = false
@@ -161,9 +169,10 @@ class SrcAttribute extends WebViewAttribute
       return
 
     # Navigate to |this.src|.
-    httpreferrer = @webViewImpl.attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].getValue()
-    urlOptions = if httpreferrer then {httpreferrer} else {}
-    remote.getGuestWebContents(@webViewImpl.guestInstanceId).loadUrl @getValue(), urlOptions
+    if @getValue()
+      httpreferrer = @webViewImpl.attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].getValue()
+      urlOptions = if httpreferrer then {httpreferrer} else {}
+      remote.getGuestWebContents(@webViewImpl.guestInstanceId).loadUrl @getValue(), urlOptions
 
 # Attribute specifies HTTP referrer.
 class HttpReferrerAttribute extends WebViewAttribute
