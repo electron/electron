@@ -102,12 +102,14 @@ def parse_args():
 
 def get_atom_shell_build_version():
   if PLATFORM == 'darwin':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R', 'Atom.app',
-                              'Contents', 'MacOS', 'Atom')
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R',
+                              '{0}.app'.format(PRODUCT_NAME), 'Contents',
+                              'MacOS', PRODUCT_NAME)
   elif PLATFORM == 'win32':
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R', 'atom.exe')
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R',
+                              '{0}.exe'.format(PROJECT_NAME))
   else:
-    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R', 'atom')
+    atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R', PROJECT_NAME)
 
   return subprocess.check_output([atom_shell, '--version']).strip()
 
