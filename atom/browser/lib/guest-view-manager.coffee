@@ -6,6 +6,7 @@ supportedWebViewEvents = [
   'did-finish-load'
   'did-fail-load'
   'did-frame-finish-load'
+  'did-navigate'
   'did-start-loading'
   'did-stop-loading'
   'did-get-response-details'
@@ -16,7 +17,7 @@ supportedWebViewEvents = [
   'crashed'
   'destroyed'
   'page-title-set'
-  'page-favicon-set'
+  'page-favicon-updated'
 ]
 
 nextInstanceId = 0

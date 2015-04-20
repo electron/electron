@@ -16,6 +16,7 @@
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "native_mate/handle.h"
+#include "ui/gfx/image/image.h"
 
 namespace brightray {
 class InspectableWebContents;
@@ -49,6 +50,7 @@ class WebContents : public mate::EventEmitter,
   void LoadURL(const GURL& url, const mate::Dictionary& options);
   GURL GetURL() const;
   base::string16 GetTitle() const;
+  gfx::Image GetFavicon() const;
   bool IsLoading() const;
   bool IsWaitingForResponse() const;
   void Stop();

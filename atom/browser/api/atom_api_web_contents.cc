@@ -11,10 +11,12 @@
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
+#include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
+#include "content/public/browser/favicon_status.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/render_frame_host.h"
@@ -266,7 +268,7 @@ void WebContents::DidUpdateFaviconURL(
     if (url.is_valid())
       unique_urls.insert(url);
   }
-  Emit("page-favicon-set", unique_urls);
+  Emit("page-favicon-updated", unique_urls);
 }
 
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
@@ -308,6 +310,8 @@ void WebContents::WebContentsDestroyed() {
 
 void WebContents::NavigationEntryCommitted(
     const content::LoadCommittedDetails& load_details) {
+  if (load_details.is_navigation_to_different_page())
+    Emit("did-navigate");
   auto entry = web_contents()->GetController().GetLastCommittedEntry();
   entry->SetVirtualURL(load_details.entry->GetOriginalRequestURL());
 }
@@ -390,6 +394,14 @@ GURL WebContents::GetURL() const {
 
 base::string16 WebContents::GetTitle() const {
   return web_contents()->GetTitle();
+}
+
+gfx::Image WebContents::GetFavicon() const {
+  auto entry = web_contents()->GetController().GetLastCommittedEntry();
+  if (!entry)
+    return gfx::Image();
+  auto favicon_status = entry->GetFavicon();
+  return favicon_status.image;
 }
 
 bool WebContents::IsLoading() const {
@@ -583,6 +595,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("_loadUrl", &WebContents::LoadURL)
         .SetMethod("getUrl", &WebContents::GetURL)
         .SetMethod("getTitle", &WebContents::GetTitle)
+        .SetMethod("getFavicon", &WebContents::GetFavicon)
         .SetMethod("isLoading", &WebContents::IsLoading)
         .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
         .SetMethod("stop", &WebContents::Stop)

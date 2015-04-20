@@ -632,6 +632,12 @@ cancelled, e.g. `window.stop()` is invoked.
 
 Emitted when a frame has done navigation.
 
+### Event: 'did-navigate'
+
+* `event` Event
+
+Emitted when a frame navigation has been committed to history.
+
 ### Event: 'did-start-loading'
 
 Corresponds to the points in time when the spinner of the tab starts spinning.
@@ -662,7 +668,7 @@ Emitted when details regarding a requested resource is available.
 
 Emitted when a redirect was received while requesting a resource.
 
-### Event: 'page-favicon-set'
+### Event: 'page-favicon-updated'
 
 * `event` Event
 * `favicons` [String]
@@ -719,6 +725,10 @@ Returns URL of current web page.
 ### WebContents.getTitle()
 
 Returns the title of web page.
+
+### WebContents.getFavicon()
+
+Returns the favicon of web page as `nativeImage`.
 
 ### WebContents.isLoading()
 

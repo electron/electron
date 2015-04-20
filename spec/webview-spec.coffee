@@ -154,16 +154,20 @@ describe '<webview> tag', ->
 
   describe 'will-navigate event', ->
     it 'is emitted before navigation', (done) ->
-      webview.addEventListener 'will-navigate', (e) ->
+      view = new WebView
+      view.addEventListener 'will-navigate', (e) ->
         e.preventDefault()
         assert.equal webview.src, ''
+      view.addEventListener 'did-navigate', (e) ->
+        document.body.removeChild view
         done()
-      webview.src = "file://#{fixtures}/pages/a.html"
+      view.src = "file://#{fixtures}/pages/a.html"
+      document.body.appendChild view
       document.body.appendChild webview
 
-  describe 'page-favicon-set event', ->
-    it 'emits when favicon is set', (done) ->
-      webview.addEventListener 'page-favicon-set', (e) ->
+  describe 'page-favicon-updated event', ->
+    it 'emits when favicon urls are received', (done) ->
+      webview.addEventListener 'page-favicon-updated', (e) ->
         assert.equal e.favicons.length, 2
         assert.equal e.favicons[0], 'file:///favicon.png'
         done()

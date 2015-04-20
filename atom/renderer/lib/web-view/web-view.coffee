@@ -236,6 +236,7 @@ registerWebViewElement = ->
   methods = [
     "getUrl"
     "getTitle"
+    "getFavicon"
     "isLoading"
     "isWaitingForResponse"
     "stop"

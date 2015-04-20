@@ -154,6 +154,7 @@ class SrcAttribute extends WebViewAttribute
        not @.getValue()
       return
 
+    # Allow users to cancel webview navigation.
     domEvent = new Event('will-navigate')
     domEvent['url'] = @getValue()
     domEvent.cancelable = true

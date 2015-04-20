@@ -130,6 +130,10 @@ Returns URL of guest page.
 
 Returns the title of guest page.
 
+### `<webview>`.getFavicon()
+
+Returns the favicon of guest page as `nativeImage`.
+
 ### `<webview>`.isLoading()
 
 Returns whether guest page is still loading resources.
@@ -301,6 +305,10 @@ cancelled, e.g. `window.stop()` is invoked.
 
 Fired when a frame has done navigation.
 
+### did-navigate
+
+Fired when a frame navigation has been committed to history.
+
 ### did-start-loading
 
 Corresponds to the points in time when the spinner of the tab starts spinning.
@@ -337,7 +345,7 @@ Fired when a redirect was received while requesting a resource.
 Fired when page title is set during navigation. `explicitSet` is false when title is synthesised from file
 url.
 
-### page-favicon-set
+### page-favicon-updated
 
 * `favicons` [String]
 

@@ -7,6 +7,7 @@ WEB_VIEW_EVENTS =
   'did-finish-load': []
   'did-fail-load': ['errorCode', 'errorDescription']
   'did-frame-finish-load': ['isMainFrame']
+  'did-navigate': []
   'did-start-loading': []
   'did-stop-loading': []
   'did-get-response-details': ['status', 'newUrl', 'originalUrl',
@@ -18,7 +19,7 @@ WEB_VIEW_EVENTS =
   'crashed': []
   'destroyed': []
   'page-title-set': ['title', 'explicitSet']
-  'page-favicon-set': ['favicons']
+  'page-favicon-updated': ['favicons']
 
 dispatchEvent = (webView, event, args...) ->
   throw new Error("Unkown event #{event}") unless WEB_VIEW_EVENTS[event]?
