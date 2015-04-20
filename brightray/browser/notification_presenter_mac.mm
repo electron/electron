@@ -41,6 +41,7 @@ NotificationPresenterMac::~NotificationPresenterMac() {
 
 void NotificationPresenterMac::ShowNotification(
     const content::PlatformNotificationData& data,
+    const SkBitmap& icon,
     scoped_ptr<content::DesktopNotificationDelegate> delegate,
     base::Closure* cancel_callback) {
   auto notification = [[NSUserNotification alloc] init];

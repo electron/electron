@@ -23,6 +23,7 @@ class NotificationPresenterMac : public NotificationPresenter {
   // NotificationPresenter:
   void ShowNotification(
       const content::PlatformNotificationData&,
+      const SkBitmap& icon,
       scoped_ptr<content::DesktopNotificationDelegate> delegate,
       base::Closure* cancel_callback) override;
 
