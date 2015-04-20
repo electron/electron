@@ -8,9 +8,12 @@
 #include "base/bind.h"
 #include "base/logging.h"
 #include "base/strings/utf_string_conversions.h"
+#include "chrome/browser/ui/libgtk2ui/skia_utils_gtk2.h"
 #include "content/public/browser/desktop_notification_delegate.h"
 #include "content/public/common/platform_notification_data.h"
 #include "common/application_info.h"
+
+#include <sys/stat.h>
 
 namespace brightray {
 
@@ -63,8 +66,20 @@ void NotificationPresenterLinux::ShowNotification(
 
   g_object_set_data_full(G_OBJECT(notification), "delegate", delegate, operator delete);
   g_signal_connect(notification, "closed", G_CALLBACK(OnNotificationClosedThunk), this);
-  notify_notification_add_action(notification, "default", "View", OnNotificationViewThunk, this,
-                                 nullptr);
+
+  // NB: On Unity, adding a notification action will cause the notification
+  // to display as a modal dialog box. Testing for distros that have "Unity
+  // Zen Nature" is difficult, we will test for the presence of libindicate,
+  // an Unity-only library.
+  struct stat dontcare;
+  if (stat("/usr/lib/libindicate.so", &dontcare)) {
+    notify_notification_add_action(notification, "default", "View", OnNotificationViewThunk, this, nullptr);
+  }
+
+  GdkPixbuf* pixbuf = libgtk2ui::GdkPixbufFromSkBitmap(icon);
+
+  notify_notification_set_image_from_pixbuf(notification, pixbuf);
+  notify_notification_set_timeout(notification, NOTIFY_EXPIRES_DEFAULT);
 
   GError* error = nullptr;
   notify_notification_show(notification, &error);
