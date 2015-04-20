@@ -12,12 +12,43 @@
 #include "content/public/browser/desktop_notification_delegate.h"
 #include "content/public/common/platform_notification_data.h"
 #include "common/application_info.h"
-
-#include <sys/stat.h>
+#include "dbus/dbus.h"
 
 namespace brightray {
 
 namespace {
+
+static bool unity_has_result = false;
+static bool unity_result = false;
+
+static bool UnityIsRunning() {
+  if (unity_has_result) {
+    return unity_result;
+  }
+
+  struct DBusError err;
+  struct DBusConnection* bus;
+
+  dbus_error_init(&err);
+  
+  bus = dbus_bus_get(DBUS_BUS_SESSION, &err);
+  if (dbus_error_is_set(&err)) {
+    g_debug("Failed to get Session Bus reference");
+    unity_result = false;
+
+    goto out;
+  }
+  
+  unity_result = dbus_bus_name_has_owner(bus, "com.canonical.indicator.session", &err);
+
+  if (dbus_error_is_set(&err)) {
+    unity_result = false;
+  }
+
+out:
+  unity_has_result = true;
+  return unity_result;
+}
 
 void log_and_clear_error(GError* error, const char* context) {
   LOG(ERROR) << context
@@ -69,10 +100,9 @@ void NotificationPresenterLinux::ShowNotification(
 
   // NB: On Unity, adding a notification action will cause the notification
   // to display as a modal dialog box. Testing for distros that have "Unity
-  // Zen Nature" is difficult, we will test for the presence of libindicate,
-  // an Unity-only library.
-  struct stat dontcare;
-  if (stat("/usr/lib/libindicate.so", &dontcare)) {
+  // Zen Nature" is difficult, we will test for the presence of the indicate
+  // dbus service
+  if (!UnityIsRunning()) {
     notify_notification_add_action(notification, "default", "View", OnNotificationViewThunk, this, nullptr);
   }
 
