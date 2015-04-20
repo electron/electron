@@ -30,6 +30,7 @@ int NodeMain(int argc, char *argv[]) {
         exec_argc, exec_argv);
 
     // Start debugger.
+    node::node_isolate = gin_env.isolate();
     if (node::use_debug_agent)
       node::StartDebug(env, node::debug_wait_connect);
 
