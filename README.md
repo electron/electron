@@ -1,5 +1,7 @@
 # Electron [![Build Status](https://travis-ci.org/atom/electron.svg?branch=master)](https://travis-ci.org/atom/electron)
 
+:zap: *formerly known as Atom Shell* :zap:
+
 The Electron framework lets you write cross-platform desktop applications
 using JavaScript, HTML and CSS. It is based on [io.js](http://iojs.org) and
 [Chromium](http://www.chromium.org) and is used in the [Atom
