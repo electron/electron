@@ -26,7 +26,19 @@ int NodeMain(int argc, char *argv[]) {
 
     JavascriptEnvironment gin_env;
     node::Environment* env = node::CreateEnvironment(
-        gin_env.isolate(), gin_env.context(), argc, argv, exec_argc, exec_argv);
+        gin_env.isolate(), uv_default_loop(), gin_env.context(), argc, argv,
+        exec_argc, exec_argv);
+
+    // Start debugger.
+    node::node_isolate = gin_env.isolate();
+    if (node::use_debug_agent)
+      node::StartDebug(env, node::debug_wait_connect);
+
+    node::LoadEnvironment(env);
+
+    // Enable debugger.
+    if (node::use_debug_agent)
+      node::EnableDebug(env);
 
     bool more;
     do {
