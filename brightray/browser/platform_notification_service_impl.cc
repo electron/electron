@@ -44,7 +44,7 @@ void PlatformNotificationServiceImpl::DisplayNotification(
     base::Closure* cancel_callback) {
   auto presenter = notification_presenter();
   if (presenter)
-    presenter->ShowNotification(notification_data, delegate.Pass(), cancel_callback);
+    presenter->ShowNotification(notification_data, icon, delegate.Pass(), cancel_callback);
 }
 
 void PlatformNotificationServiceImpl::DisplayPersistentNotification(
