@@ -23,10 +23,10 @@ Since atom-shell uses Chromium for displaying web pages, Chromium's
 multi-processes architecture is also used. Each web page in atom-shell runs in
 its own process, which is called __the renderer process__.
 
-In normal browsers web pages are usually running in sandboxed environment and
-not allowed to access native resources. In atom-shell users are given the power
-to use io.js APIs in web pages, so it would be possible to interactive with
-low level operating system in web pages with JavaScript.
+In normal browsers web pages usually run in a sandboxed environment and are not
+allowed access to native resources. In atom-shell users have the power to use
+io.js APIs in web pages and it is therefore possible to interact with low level
+operating system features.
 
 ### Differences between main process and renderer process
 
