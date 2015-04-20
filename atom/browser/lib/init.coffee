@@ -9,6 +9,25 @@ process.argv.splice 1, 1
 
 # Add browser/api/lib to require's search paths,
 # which contains javascript part of Atom's built-in libraries.
+homeDir =
+  if process.platform is 'win32'
+    process.env.USERPROFILE
+  else
+    process.env.HOME
+
+syspath = []
+
+if homeDir
+  syspath.push(path.resolve(homeDir, '.node_modules'))
+  syspath.push(path.resolve(homeDir, '.node_libraries'))
+
+# Remove system paths from module lookups as it may contain modules not
+# shipped with the app or compiled with wrong v8 headers.
+syspath.map (path) ->
+  index = module.globalPaths.indexOf path
+  if index > -1
+    module.globalPaths.splice(index,1)
+
 globalPaths = module.globalPaths
 globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
 
