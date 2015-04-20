@@ -4,6 +4,7 @@
 
 #include "atom/browser/api/atom_api_power_monitor.h"
 
+#include "atom/browser/browser.h"
 #include "base/power_monitor/power_monitor.h"
 #include "base/power_monitor/power_monitor_device_source.h"
 #include "native_mate/dictionary.h"
@@ -38,8 +39,14 @@ void PowerMonitor::OnResume() {
 }
 
 // static
-mate::Handle<PowerMonitor> PowerMonitor::Create(v8::Isolate* isolate) {
-  return CreateHandle(isolate, new PowerMonitor);
+v8::Handle<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
+  if (!Browser::Get()->is_ready()) {
+    node::ThrowError("Cannot initialize \"power-monitor\" module"
+                     "before app is ready");
+    return v8::Null(isolate);
+  }
+
+  return CreateHandle(isolate, new PowerMonitor).ToV8();
 }
 
 }  // namespace api
@@ -57,9 +64,8 @@ void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
 
   using atom::api::PowerMonitor;
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Handle<PowerMonitor> power_monitor = PowerMonitor::Create(isolate);
   mate::Dictionary dict(isolate, exports);
-  dict.Set("powerMonitor", power_monitor);
+  dict.Set("powerMonitor", PowerMonitor::Create(isolate));
 }
 
 }  // namespace
