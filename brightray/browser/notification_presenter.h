@@ -4,6 +4,8 @@
 #include "base/callback_forward.h"
 #include "base/memory/scoped_ptr.h"
 
+class SkBitmap;
+
 namespace content {
 class DesktopNotificationDelegate;
 struct PlatformNotificationData;
@@ -19,6 +21,7 @@ class NotificationPresenter {
 
   virtual void ShowNotification(
       const content::PlatformNotificationData&,
+      const SkBitmap& icon,
       scoped_ptr<content::DesktopNotificationDelegate> delegate,
       base::Closure* cancel_callback) = 0;
 };

@@ -52,6 +52,7 @@ NotificationPresenterLinux::~NotificationPresenterLinux() {
 
 void NotificationPresenterLinux::ShowNotification(
     const content::PlatformNotificationData& data,
+    const SkBitmap& icon,
     scoped_ptr<content::DesktopNotificationDelegate> delegate_ptr,
     base::Closure* cancel_callback) {
   std::string title = base::UTF16ToUTF8(data.title);
