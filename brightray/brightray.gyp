@@ -191,8 +191,10 @@
                       # content_common.gypi:
                       'd3d9.dll',
                       'dxva2.dll',
+                      # media.gyp:
                       'mf.dll',
                       'mfplat.dll',
+                      'mfreadwrite.dll',
                     ],
                   },
                 },
