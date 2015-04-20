@@ -33,5 +33,5 @@ contains documents describing how to build and contribute to Electron.
 
 ## Community
 
-There is an [`atom-shell` category on the Atom forums](http://discuss.atom.io/category/atom-shell)
+There is an [`electron` category on the Atom forums](http://discuss.atom.io/category/electron)
 as well as an `#atom-shell` channel on Freenode.
