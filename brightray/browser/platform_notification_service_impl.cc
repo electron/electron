@@ -27,7 +27,14 @@ NotificationPresenter* PlatformNotificationServiceImpl::notification_presenter()
   return notification_presenter_.get();
 }
 
-blink::WebNotificationPermission PlatformNotificationServiceImpl::CheckPermission(
+blink::WebNotificationPermission PlatformNotificationServiceImpl::CheckPermissionOnUIThread(
+    content::BrowserContext* browser_context,
+    const GURL& origin,
+    int render_process_id) {
+  return blink::WebNotificationPermissionAllowed;
+}
+
+blink::WebNotificationPermission PlatformNotificationServiceImpl::CheckPermissionOnIOThread(
     content::ResourceContext* resource_context,
     const GURL& origin,
     int render_process_id) {
@@ -40,7 +47,6 @@ void PlatformNotificationServiceImpl::DisplayNotification(
     const SkBitmap& icon,
     const content::PlatformNotificationData& notification_data,
     scoped_ptr<content::DesktopNotificationDelegate> delegate,
-    int render_process_id,
     base::Closure* cancel_callback) {
   auto presenter = notification_presenter();
   if (presenter)
@@ -49,11 +55,10 @@ void PlatformNotificationServiceImpl::DisplayNotification(
 
 void PlatformNotificationServiceImpl::DisplayPersistentNotification(
     content::BrowserContext* browser_context,
-    int64 service_worker_registration_id,
+    int64_t service_worker_registration_id,
     const GURL& origin,
     const SkBitmap& icon,
-    const content::PlatformNotificationData& notification_data,
-    int render_process_id) {
+    const content::PlatformNotificationData& notification_data) {
 }
 
 void PlatformNotificationServiceImpl::ClosePersistentNotification(

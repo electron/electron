@@ -28,26 +28,28 @@ class PlatformNotificationServiceImpl
   ~PlatformNotificationServiceImpl() override;
 
   // content::PlatformNotificationService:
-  virtual blink::WebNotificationPermission CheckPermission(
+  blink::WebNotificationPermission CheckPermissionOnUIThread(
+      content::BrowserContext* browser_context,
+      const GURL& origin,
+      int render_process_id) override;
+  blink::WebNotificationPermission CheckPermissionOnIOThread(
       content::ResourceContext* resource_context,
       const GURL& origin,
       int render_process_id) override;
-  virtual void DisplayNotification(
+  void DisplayNotification(
       content::BrowserContext* browser_context,
       const GURL& origin,
       const SkBitmap& icon,
       const content::PlatformNotificationData& notification_data,
       scoped_ptr<content::DesktopNotificationDelegate> delegate,
-      int render_process_id,
       base::Closure* cancel_callback) override;
-  virtual void DisplayPersistentNotification(
+  void DisplayPersistentNotification(
       content::BrowserContext* browser_context,
-      int64 service_worker_registration_id,
+      int64_t service_worker_registration_id,
       const GURL& origin,
       const SkBitmap& icon,
-      const content::PlatformNotificationData& notification_data,
-      int render_process_id) override;
-  virtual void ClosePersistentNotification(
+      const content::PlatformNotificationData& notification_data) override;
+  void ClosePersistentNotification(
       content::BrowserContext* browser_context,
       const std::string& persistent_notification_id) override;
 

@@ -50,16 +50,23 @@ const char kTargetTypeOther[] = "other";
 class TCPServerSocketFactory
     : public content::DevToolsHttpHandler::ServerSocketFactory {
  public:
-  TCPServerSocketFactory(const std::string& address, int port, int backlog)
-      : content::DevToolsHttpHandler::ServerSocketFactory(
-            address, port, backlog) {}
+  TCPServerSocketFactory(const std::string& address, int port)
+      : address_(address), port_(port) {
+  }
 
  private:
   // content::DevToolsHttpHandler::ServerSocketFactory.
-  scoped_ptr<net::ServerSocket> Create() const override {
-    return scoped_ptr<net::ServerSocket>(
-        new net::TCPServerSocket(NULL, net::NetLog::Source()));
+  scoped_ptr<net::ServerSocket> CreateForHttpServer() override {
+    scoped_ptr<net::ServerSocket> socket(
+        new net::TCPServerSocket(nullptr, net::NetLog::Source()));
+    if (socket->ListenWithAddressAndPort(address_, port_, 10) != net::OK)
+      return scoped_ptr<net::ServerSocket>();
+
+    return socket;
   }
+
+  std::string address_;
+  uint16 port_;
 
   DISALLOW_COPY_AND_ASSIGN(TCPServerSocketFactory);
 };
@@ -82,7 +89,7 @@ CreateSocketFactory() {
     }
   }
   return scoped_ptr<content::DevToolsHttpHandler::ServerSocketFactory>(
-      new TCPServerSocketFactory("127.0.0.1", port, 1));
+      new TCPServerSocketFactory("127.0.0.1", port));
 }
 
 class Target : public content::DevToolsTarget {
@@ -152,8 +159,6 @@ class DevToolsDelegate : public content::DevToolsHttpHandlerDelegate {
   std::string GetDiscoveryPageHTML() override;
   bool BundlesFrontendResources() override;
   base::FilePath GetDebugFrontendDir() override;
-  scoped_ptr<net::ServerSocket> CreateSocketForTethering(
-      std::string* name) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(DevToolsDelegate);
@@ -176,11 +181,6 @@ bool DevToolsDelegate::BundlesFrontendResources() {
 
 base::FilePath DevToolsDelegate::GetDebugFrontendDir() {
   return base::FilePath();
-}
-
-scoped_ptr<net::ServerSocket> DevToolsDelegate::CreateSocketForTethering(
-    std::string* name) {
-  return scoped_ptr<net::ServerSocket>();
 }
 
 }  // namespace
