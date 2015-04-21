@@ -7,6 +7,7 @@
 
 #include "base/strings/string16.h"
 #include "content/public/renderer/render_view_observer.h"
+#include "third_party/WebKit/public/web/WebFrameClient.h"
 
 namespace base {
 class ListValue;
@@ -16,7 +17,8 @@ namespace atom {
 
 class AtomRendererClient;
 
-class AtomRenderViewObserver : public content::RenderViewObserver {
+class AtomRenderViewObserver : public content::RenderViewObserver,
+                               public blink::WebFrameClient {
  public:
   explicit AtomRenderViewObserver(content::RenderView* render_view,
                                   AtomRendererClient* renderer_client);
@@ -32,6 +34,9 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
 
   void OnBrowserMessage(const base::string16& channel,
                         const base::ListValue& args);
+  // blink::WebFrameClient implementation.
+  bool enterFullscreen() override;
+  bool exitFullscreen() override;
 
   // Weak reference to renderer client.
   AtomRendererClient* renderer_client_;

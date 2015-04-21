@@ -37,3 +37,7 @@ IPC_MESSAGE_ROUTED2(AtomViewMsg_Message,
 // Sent by the renderer when the draggable regions are updated.
 IPC_MESSAGE_ROUTED1(AtomViewHostMsg_UpdateDraggableRegions,
                     std::vector<atom::DraggableRegion> /* regions */)
+
+// Sent by the renderer when toggling fullscreen mode
+IPC_MESSAGE_ROUTED1(AtomViewHostMsg_ToggleFullscreen,
+                    bool /* enter_fullscreen */)

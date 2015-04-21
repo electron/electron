@@ -696,10 +696,22 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   IPC_BEGIN_MESSAGE_MAP(NativeWindow, message)
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_UpdateDraggableRegions,
                         UpdateDraggableRegions)
+    IPC_MESSAGE_HANDLER(AtomViewHostMsg_ToggleFullscreen,
+                        ToggleFullscreen)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
   return handled;
+}
+
+void NativeWindow::ToggleFullscreen(bool enter_fullscreen) {
+  content::WebContents* contents = GetWebContents();
+  RenderWidgetHostView* const view = contents->GetRenderWidgetHostView();
+  RenderWidgetHost* const host = view ? view->GetRenderWidgetHost() : nullptr;
+  if (!host)
+    return;
+  SetFullScreen(enter_fullscreen);
+  host->WasResized();
 }
 
 void NativeWindow::Observe(int type,
