@@ -315,12 +315,11 @@ content::WebContents* WebContents::GetOwnerWebContents() const {
   return embedder_web_contents_;
 }
 
-void WebContents::GuestSizeChanged(const gfx::Size& old_size,
-                                   const gfx::Size& new_size) {
+void WebContents::GuestSizeChanged(const gfx::Size& new_size) {
   if (!auto_size_enabled_)
     return;
+  GuestSizeChangedDueToAutoSize(guest_size_, new_size);
   guest_size_ = new_size;
-  GuestSizeChangedDueToAutoSize(old_size, new_size);
 }
 
 void WebContents::RegisterDestructionCallback(

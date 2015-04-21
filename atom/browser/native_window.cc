@@ -435,8 +435,7 @@ void NativeWindow::AppendExtraCommandLineSwitches(
   }
 }
 
-void NativeWindow::OverrideWebkitPrefs(const GURL& url,
-                                       content::WebPreferences* prefs) {
+void NativeWindow::OverrideWebkitPrefs(content::WebPreferences* prefs) {
   if (web_preferences_.IsEmpty())
     return;
 

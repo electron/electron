@@ -79,7 +79,6 @@ void AtomBrowserClient::ResourceDispatcherHostCreated() {
 
 void AtomBrowserClient::OverrideWebkitPrefs(
     content::RenderViewHost* render_view_host,
-    const GURL& url,
     content::WebPreferences* prefs) {
   prefs->javascript_enabled = true;
   prefs->web_security_enabled = true;
@@ -99,7 +98,9 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->allow_running_insecure_content = false;
 
   // Turn off web security for devtools.
-  if (url.SchemeIs("chrome-devtools")) {
+  auto web_contents = content::WebContents::FromRenderViewHost(
+      render_view_host);
+  if (web_contents && web_contents->GetURL().SchemeIs("chrome-devtools")) {
     prefs->web_security_enabled = false;
     return;
   }
@@ -115,7 +116,7 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   NativeWindow* window = NativeWindow::FromRenderView(
       process->GetID(), render_view_host->GetRoutingID());
   if (window)
-    window->OverrideWebkitPrefs(url, prefs);
+    window->OverrideWebkitPrefs(prefs);
 }
 
 bool AtomBrowserClient::ShouldSwapBrowsingInstancesForNavigation(
