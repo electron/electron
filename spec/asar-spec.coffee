@@ -36,6 +36,14 @@ describe 'asar package', ->
         throws = -> fs.readFileSync p
         assert.throws throws, /ENOENT/
 
+      it 'passes ENOENT error to callback when can not find file', ->
+        p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
+        async = false
+        fs.readFile p, (e) ->
+          assert async
+          assert /ENOENT/.test e
+        async = true
+
     describe 'fs.readFile', ->
       it 'reads a normal file', (done) ->
         p = path.join fixtures, 'asar', 'a.asar', 'file1'
