@@ -46,7 +46,19 @@ class BrowserClient : public content::ContentBrowserClient {
   base::FilePath GetDefaultDownloadDirectory() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
 
+#if defined(OS_POSIX) && !defined(OS_MACOSX)
+  void GetAdditionalMappedFilesForChildProcess(
+      const base::CommandLine& command_line,
+      int child_process_id,
+      content::FileDescriptorInfo* mappings) override;
+#endif
+
   BrowserMainParts* browser_main_parts_;
+
+#if defined(OS_POSIX) && !defined(OS_MACOSX)
+  base::ScopedFD v8_natives_fd_;
+  base::ScopedFD v8_snapshot_fd_;
+#endif  // OS_POSIX && !OS_MACOSX
 
   DISALLOW_COPY_AND_ASSIGN(BrowserClient);
 };
