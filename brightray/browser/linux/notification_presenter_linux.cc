@@ -27,7 +27,7 @@ static bool UnityIsRunning() {
   }
 
   struct DBusError err;
-  struct DBusConnection* bus;
+  struct DBusConnection* bus = NULL;
 
   dbus_error_init(&err);
   
@@ -35,6 +35,7 @@ static bool UnityIsRunning() {
   if (dbus_error_is_set(&err)) {
     g_debug("Failed to get Session Bus reference");
     unity_result = false;
+    dbus_error_free(&err);
 
     goto out;
   }
@@ -43,9 +44,12 @@ static bool UnityIsRunning() {
 
   if (dbus_error_is_set(&err)) {
     unity_result = false;
+    dbus_error_free(&err);
   }
 
 out:
+  if (bus) dbus_connection_unref(bus);
+
   unity_has_result = true;
   return unity_result;
 }
@@ -110,6 +114,7 @@ void NotificationPresenterLinux::ShowNotification(
 
   notify_notification_set_image_from_pixbuf(notification, pixbuf);
   notify_notification_set_timeout(notification, NOTIFY_EXPIRES_DEFAULT);
+  g_object_unref(pixbuf);
 
   GError* error = nullptr;
   notify_notification_show(notification, &error);
