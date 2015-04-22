@@ -149,7 +149,7 @@ $ ./electron/electron your-app/
 On OS X:
 
 ```bash
-$ ./Electron.app/Contents/MacOS/Atom your-app/
+$ ./Electron.app/Contents/MacOS/Electron your-app/
 ```
 
 `Electron.app` here is part of the Electron's release package, you can download
