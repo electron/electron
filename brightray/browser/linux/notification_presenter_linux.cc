@@ -8,13 +8,51 @@
 #include "base/bind.h"
 #include "base/logging.h"
 #include "base/strings/utf_string_conversions.h"
+#include "chrome/browser/ui/libgtk2ui/skia_utils_gtk2.h"
 #include "content/public/browser/desktop_notification_delegate.h"
 #include "content/public/common/platform_notification_data.h"
 #include "common/application_info.h"
+#include "dbus/dbus.h"
 
 namespace brightray {
 
 namespace {
+
+static bool unity_has_result = false;
+static bool unity_result = false;
+
+static bool UnityIsRunning() {
+  if (unity_has_result) {
+    return unity_result;
+  }
+
+  struct DBusError err;
+  struct DBusConnection* bus = NULL;
+
+  dbus_error_init(&err);
+  
+  bus = dbus_bus_get(DBUS_BUS_SESSION, &err);
+  if (dbus_error_is_set(&err)) {
+    g_debug("Failed to get Session Bus reference");
+    unity_result = false;
+    dbus_error_free(&err);
+
+    goto out;
+  }
+  
+  unity_result = dbus_bus_name_has_owner(bus, "com.canonical.indicator.session", &err);
+
+  if (dbus_error_is_set(&err)) {
+    unity_result = false;
+    dbus_error_free(&err);
+  }
+
+out:
+  if (bus) dbus_connection_unref(bus);
+
+  unity_has_result = true;
+  return unity_result;
+}
 
 void log_and_clear_error(GError* error, const char* context) {
   LOG(ERROR) << context
@@ -52,6 +90,7 @@ NotificationPresenterLinux::~NotificationPresenterLinux() {
 
 void NotificationPresenterLinux::ShowNotification(
     const content::PlatformNotificationData& data,
+    const SkBitmap& icon,
     scoped_ptr<content::DesktopNotificationDelegate> delegate_ptr,
     base::Closure* cancel_callback) {
   std::string title = base::UTF16ToUTF8(data.title);
@@ -62,8 +101,20 @@ void NotificationPresenterLinux::ShowNotification(
 
   g_object_set_data_full(G_OBJECT(notification), "delegate", delegate, operator delete);
   g_signal_connect(notification, "closed", G_CALLBACK(OnNotificationClosedThunk), this);
-  notify_notification_add_action(notification, "default", "View", OnNotificationViewThunk, this,
-                                 nullptr);
+
+  // NB: On Unity, adding a notification action will cause the notification
+  // to display as a modal dialog box. Testing for distros that have "Unity
+  // Zen Nature" is difficult, we will test for the presence of the indicate
+  // dbus service
+  if (!UnityIsRunning()) {
+    notify_notification_add_action(notification, "default", "View", OnNotificationViewThunk, this, nullptr);
+  }
+
+  GdkPixbuf* pixbuf = libgtk2ui::GdkPixbufFromSkBitmap(icon);
+
+  notify_notification_set_image_from_pixbuf(notification, pixbuf);
+  notify_notification_set_timeout(notification, NOTIFY_EXPIRES_DEFAULT);
+  g_object_unref(pixbuf);
 
   GError* error = nullptr;
   notify_notification_show(notification, &error);
