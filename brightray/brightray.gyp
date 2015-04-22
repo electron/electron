@@ -68,6 +68,9 @@
             '-Wno-deprecated-register',
             '-Wno-sentinel',
           ],
+          'cflags_cc': [
+            '-Wno-reserved-user-defined-literal',
+          ],
           'direct_dependent_settings': {
             'cflags': [
               '<!@(pkg-config --cflags <(linux_system_libraries))',
