@@ -324,6 +324,7 @@ void InspectableWebContentsImpl::AgentHostClosed(
 }
 
 void InspectableWebContentsImpl::AboutToNavigateRenderFrame(
+    content::RenderFrameHost* old_host,
     content::RenderFrameHost* new_host) {
   if (new_host->GetParent())
     return;

@@ -15,6 +15,7 @@
         '<(libchromiumcontent_src_dir)',
         '<(libchromiumcontent_src_dir)/skia/config',
         '<(libchromiumcontent_src_dir)/third_party/skia/include/core',
+        '<(libchromiumcontent_src_dir)/third_party/mojo/src',
         '<(libchromiumcontent_src_dir)/third_party/WebKit',
         '<(libchromiumcontent_dir)/gen',
       ],
@@ -26,6 +27,7 @@
           '<(libchromiumcontent_src_dir)/skia/config',
           '<(libchromiumcontent_src_dir)/third_party/skia/include/core',
           '<(libchromiumcontent_src_dir)/third_party/icu/source/common',
+          '<(libchromiumcontent_src_dir)/third_party/mojo/src',
           '<(libchromiumcontent_src_dir)/third_party/WebKit',
           '<(libchromiumcontent_dir)/gen',
         ],
@@ -137,6 +139,8 @@
                   '$(SDKROOT)/System/Library/Frameworks/IOKit.framework',
                   # content_browser.gypi:
                   '$(SDKROOT)/usr/lib/libbsm.dylib',
+                  # bluetooth.gyp:
+                  '$(SDKROOT)/System/Library/Frameworks/IOBluetooth.framework',
                 ],
               },
             }],

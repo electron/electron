@@ -104,7 +104,8 @@ class InspectableWebContentsImpl :
                        bool replaced) override;
 
   // content::WebContentsObserver:
-  void AboutToNavigateRenderFrame(content::RenderFrameHost* new_host) override;
+  void AboutToNavigateRenderFrame(content::RenderFrameHost* old_host,
+                                  content::RenderFrameHost* new_host) override;
   void DidFinishLoad(content::RenderFrameHost* render_frame_host,
                      const GURL& validated_url) override;
   void WebContentsDestroyed() override;

@@ -154,9 +154,9 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
         NULL, NULL);
     storage_->set_cookie_store(content::CreateCookieStore(cookie_config));
-    storage_->set_channel_id_service(new net::ChannelIDService(
-        new net::DefaultChannelIDStore(NULL),
-        base::WorkerPool::GetTaskRunner(true)));
+    storage_->set_channel_id_service(make_scoped_ptr(
+        new net::ChannelIDService(new net::DefaultChannelIDStore(NULL),
+                                  base::WorkerPool::GetTaskRunner(true))));
     storage_->set_http_user_agent_settings(new net::StaticHttpUserAgentSettings(
         "en-us,en", base::EmptyString()));
 

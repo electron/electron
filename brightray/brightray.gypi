@@ -119,6 +119,8 @@
         'defines': [
           # We are using Release version libchromiumcontent:
           'NDEBUG',
+          # Needed by gin:
+          'V8_USE_EXTERNAL_STARTUP_DATA',
           # From skia_for_chromium_defines.gypi:
           'SK_SUPPORT_LEGACY_GETTOPDEVICE',
           'SK_SUPPORT_LEGACY_BITMAP_CONFIG',
