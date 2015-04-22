@@ -42,7 +42,8 @@ void WebViewManager::AddGuest(int guest_instance_id,
   webview_info_map_[guest_process_id] = info;
 
   // Map the element in embedder to guest.
-  ElementInstanceKey key(embedder, element_instance_id);
+  int owner_process_id = embedder->GetRenderProcessHost()->GetID();
+  ElementInstanceKey key(owner_process_id, element_instance_id);
   element_instance_id_to_guest_map_[key] = guest_instance_id;
 }
 
@@ -76,9 +77,9 @@ bool WebViewManager::GetInfo(int guest_process_id, WebViewInfo* webview_info) {
 }
 
 content::WebContents* WebViewManager::GetGuestByInstanceID(
-    content::WebContents* embedder,
+    int owner_process_id,
     int element_instance_id) {
-  ElementInstanceKey key(embedder, element_instance_id);
+  ElementInstanceKey key(owner_process_id, element_instance_id);
   if (!ContainsKey(element_instance_id_to_guest_map_, key))
     return nullptr;
 

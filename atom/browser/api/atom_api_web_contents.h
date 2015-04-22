@@ -180,8 +180,7 @@ class WebContents : public mate::EventEmitter,
   void DidAttach(int guest_proxy_routing_id) final;
   void ElementSizeChanged(const gfx::Size& size) final;
   content::WebContents* GetOwnerWebContents() const final;
-  void GuestSizeChanged(const gfx::Size& old_size,
-                        const gfx::Size& new_size) final;
+  void GuestSizeChanged(const gfx::Size& new_size) final;
   void RegisterDestructionCallback(const DestructionCallback& callback) final;
   void SetGuestSizer(content::GuestSizer* guest_sizer) final;
   void WillAttach(content::WebContents* embedder_web_contents,

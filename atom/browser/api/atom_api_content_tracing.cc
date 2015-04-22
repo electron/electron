@@ -32,23 +32,23 @@ struct Converter<std::set<T> > {
 };
 
 template<>
-struct Converter<base::debug::CategoryFilter> {
+struct Converter<base::trace_event::CategoryFilter> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
-                     base::debug::CategoryFilter* out) {
+                     base::trace_event::CategoryFilter* out) {
     std::string filter;
     if (!ConvertFromV8(isolate, val, &filter))
       return false;
-    *out = base::debug::CategoryFilter(filter);
+    *out = base::trace_event::CategoryFilter(filter);
     return true;
   }
 };
 
 template<>
-struct Converter<base::debug::TraceOptions> {
+struct Converter<base::trace_event::TraceOptions> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
-                     base::debug::TraceOptions* out) {
+                     base::trace_event::TraceOptions* out) {
     std::string options;
     if (!ConvertFromV8(isolate, val, &options))
       return false;

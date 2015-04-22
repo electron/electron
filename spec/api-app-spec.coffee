@@ -22,4 +22,4 @@ describe 'app module', ->
       assert.equal app.getName(), 'Electron Test'
       app.setName 'test-name'
       assert.equal app.getName(), 'test-name'
-      app.setName 'Electron Test App'
+      app.setName 'Electron Test'

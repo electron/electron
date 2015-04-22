@@ -192,7 +192,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Called when renderer process is going to be started.
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
                                       int child_process_id);
-  void OverrideWebkitPrefs(const GURL& url, content::WebPreferences* prefs);
+  void OverrideWebkitPrefs(content::WebPreferences* prefs);
 
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
