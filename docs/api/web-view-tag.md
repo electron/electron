@@ -219,6 +219,13 @@ Closes the devtools window of guest page.
 
 Returns whether guest page has a devtools window attached.
 
+### `<webview>`.inspectElement(x, y)
+
+* `x` Integer
+* `y` Integer
+
+Starts inspecting element at position (`x`, `y`) of guest page.
+
 ### `<webview>`.undo()
 
 Executes editing command `undo` in page.

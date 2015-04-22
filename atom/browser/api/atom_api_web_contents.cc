@@ -470,6 +470,13 @@ bool WebContents::IsDevToolsOpened() {
   return storage_->IsDevToolsViewShowing();
 }
 
+void WebContents::InspectElement(int x, int y) {
+  OpenDevTools();
+  scoped_refptr<content::DevToolsAgentHost> agent(
+    content::DevToolsAgentHost::GetOrCreateFor(storage_->GetWebContents()));
+  agent->InspectElement(x, y);
+}
+
 void WebContents::Undo() {
   web_contents()->Undo();
 }
@@ -591,6 +598,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("openDevTools", &WebContents::OpenDevTools)
         .SetMethod("closeDevTools", &WebContents::CloseDevTools)
         .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
+        .SetMethod("inspectElement", &WebContents::InspectElement)
         .SetMethod("undo", &WebContents::Undo)
         .SetMethod("redo", &WebContents::Redo)
         .SetMethod("cut", &WebContents::Cut)
