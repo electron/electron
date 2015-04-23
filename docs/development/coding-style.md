@@ -18,7 +18,7 @@ Guide](https://github.com/styleguide/javascript), and also following rules:
 * File names should be concatenated with `-` instead of `_`, e.g.
   `file-name.coffee` rather than `file_name.coffee`, because in
   [github/atom](https://github.com/github/atom) module names are usually in
-  the `module-name` form, this rule only apply to `.coffee` files.
+  the `module-name` form, this rule only applies to `.coffee` files.
 
 ## API Names
 
