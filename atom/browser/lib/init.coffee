@@ -7,28 +7,21 @@ util   = require 'util'
 # we need to restore it here.
 process.argv.splice 1, 1
 
-# Add browser/api/lib to require's search paths,
-# which contains javascript part of Atom's built-in libraries.
+# Global module search paths.
+globalPaths = module.globalPaths
+
+# Don't lookup modules in user-defined search paths, see http://git.io/vf8sF.
 homeDir =
   if process.platform is 'win32'
     process.env.USERPROFILE
   else
     process.env.HOME
+if homeDir  # Node only add user-defined search paths when $HOME is defined.
+  userModulePath = path.resolve homeDir, '.node_modules'
+  globalPaths.splice globalPaths.indexOf(userModulePath), 2
 
-syspath = []
-
-if homeDir
-  syspath.push(path.resolve(homeDir, '.node_modules'))
-  syspath.push(path.resolve(homeDir, '.node_libraries'))
-
-# Remove system paths from module lookups as it may contain modules not
-# shipped with the app or compiled with wrong v8 headers.
-syspath.map (path) ->
-  index = module.globalPaths.indexOf path
-  if index > -1
-    module.globalPaths.splice(index,1)
-
-globalPaths = module.globalPaths
+# Add browser/api/lib to module search paths, which contains javascript part of
+# Electron's built-in libraries.
 globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
 
 # Import common settings.
