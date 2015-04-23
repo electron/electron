@@ -8,7 +8,7 @@ var fs = require('fs')
 
 var platform = os.platform()
 var arch = os.arch()
-var version = '0.24.0'
+var version = '0.25.1'
 var filename = 'electron-v' + version + '-' + platform + '-' + arch + '.zip'
 var url = 'https://github.com/atom/electron/releases/download/v' + version + '/electron-v' + version + '-' + platform + '-' + arch + '.zip'
 
