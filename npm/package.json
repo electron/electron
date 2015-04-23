@@ -11,7 +11,7 @@
     "test": "tape test/*.js"
   },
   "bin": {
-    "electron": "run.bat"
+    "electron": "cli.js"
   },
   "main": "index.js",
   "dependencies": {
