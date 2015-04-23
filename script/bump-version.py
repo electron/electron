@@ -114,7 +114,6 @@ def update_info_plist(version):
 
 def tag_version(version):
   execute(['git', 'commit', '-a', '-m', 'Bump v{0}'.format(version)])
-  execute(['git', 'tag', 'v{0}'.format(version)])
 
 
 if __name__ == '__main__':
