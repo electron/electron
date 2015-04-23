@@ -1,5 +1,7 @@
 # Electron [![Build Status](https://travis-ci.org/atom/electron.svg?branch=master)](https://travis-ci.org/atom/electron)
 
+[![Electron Logo](http://electron.atom.io/images/electron-logo-word-lg.png)](http://electron.atom.io/)
+
 :zap: *formerly known as Atom Shell* :zap:
 
 The Electron framework lets you write cross-platform desktop applications
