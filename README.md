@@ -10,6 +10,9 @@ using JavaScript, HTML and CSS. It is based on [io.js](http://iojs.org) and
 [Chromium](http://www.chromium.org) and is used in the [Atom
 editor](https://github.com/atom/atom).
 
+Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
+announcements.
+
 ## Downloads
 
 Prebuilt binaries and debug symbols of Electron for Linux, Windows and Mac can
