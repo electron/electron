@@ -112,11 +112,12 @@ app.on('ready', function() {
             click: function() { mainWindow.restart(); }
           },
           {
-            label: 'Enter Fullscreen',
-            click: function() { mainWindow.setFullScreen(true); }
+            label: 'Toggle Full Screen',
+            accelerator: 'Ctrl+Command+F',
+            click: function() { mainWindow.setFullScreen(!mainWindow.isFullScreen()); }
           },
           {
-            label: 'Toggle DevTools',
+            label: 'Toggle Developer Tools',
             accelerator: 'Alt+Command+I',
             click: function() { mainWindow.toggleDevTools(); }
           },
@@ -173,11 +174,12 @@ app.on('ready', function() {
             click: function() { mainWindow.restart(); }
           },
           {
-            label: '&Enter Fullscreen',
-            click: function() { mainWindow.setFullScreen(true); }
+            label: 'Toggle &Full Screen',
+            accelerator: 'F11',
+            click: function() { mainWindow.setFullScreen(!mainWindow.isFullScreen()); }
           },
           {
-            label: '&Toggle DevTools',
+            label: 'Toggle &Developer Tools',
             accelerator: 'Alt+Ctrl+I',
             click: function() { mainWindow.toggleDevTools(); }
           },
