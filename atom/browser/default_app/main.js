@@ -11,10 +11,13 @@ app.on('window-all-closed', function() {
 
 // Parse command line options.
 var argv = process.argv.slice(1);
-var option = { file: null, version: null, webdriver: null };
+var option = { file: null, help: null, version: null, webdriver: null };
 for (var i in argv) {
   if (argv[i] == '--version' || argv[i] == '-v') {
     option.version = true;
+    break;
+  } else if (argv[i] == '--help' || argv[i] == '-h') {
+    option.help = true;
     break;
   } else if (argv[i] == '--test-type=webdriver') {
     option.webdriver = true;
@@ -58,7 +61,16 @@ if (option.file && !option.webdriver) {
     }
   }
 } else if (option.version) {
-  console.log('v' + process.versions['electron']);
+  console.log('v' + process.versions.electron);
+  process.exit(0);
+} else if (option.help) {
+  var helpMessage = "Electron v" + process.versions.electron + " - Cross Platform Desktop Application Shell\n\n";
+  helpMessage    += "Usage: electron [options] [path]\n\n";
+  helpMessage    += "Specify a path to the Electron app to open\n\n";
+  helpMessage    += "Options:\n";
+  helpMessage    += "  -h, --help            Print this usage message.\n";
+  helpMessage    += "  -v, --version         Print the version.";
+  console.log(helpMessage);
   process.exit(0);
 } else {
   require('./default_app.js');
