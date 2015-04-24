@@ -145,6 +145,23 @@ app.on('ready', function() {
           },
         ]
       },
+      {
+        label: 'Help',
+        submenu: [
+          {
+            label: 'Documentation',
+            click: function() { require('shell').openExternal('https://github.com/atom/electron/tree/master/docs#readme') }
+          },
+          {
+            label: 'Community Discussions',
+            click: function() { require('shell').openExternal('https://discuss.atom.io/c/electron') }
+          },
+          {
+            label: 'Search Issues',
+            click: function() { require('shell').openExternal('https://github.com/atom/electron/issues') }
+          }
+        ]
+      }
     ];
 
     menu = Menu.buildFromTemplate(template);
@@ -185,6 +202,23 @@ app.on('ready', function() {
           },
         ]
       },
+      {
+        label: 'Help',
+        submenu: [
+          {
+            label: 'Documentation',
+            click: function() { require('shell').openExternal('https://github.com/atom/electron/tree/master/docs#readme') }
+          },
+          {
+            label: 'Community Discussions',
+            click: function() { require('shell').openExternal('https://discuss.atom.io/c/electron') }
+          },
+          {
+            label: 'Search Issues',
+            click: function() { require('shell').openExternal('https://github.com/atom/electron/issues') }
+          }
+        ]
+      }
     ];
 
     menu = Menu.buildFromTemplate(template);
