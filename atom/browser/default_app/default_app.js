@@ -149,6 +149,10 @@ app.on('ready', function() {
         label: 'Help',
         submenu: [
           {
+            label: 'Learn More',
+            click: function() { require('shell').openExternal('http://electron.atom.io') }
+          },
+          {
             label: 'Documentation',
             click: function() { require('shell').openExternal('https://github.com/atom/electron/tree/master/docs#readme') }
           },
@@ -205,6 +209,10 @@ app.on('ready', function() {
       {
         label: 'Help',
         submenu: [
+          {
+            label: 'Learn More',
+            click: function() { require('shell').openExternal('http://electron.atom.io') }
+          },
           {
             label: 'Documentation',
             click: function() { require('shell').openExternal('https://github.com/atom/electron/tree/master/docs#readme') }
