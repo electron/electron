@@ -53,11 +53,20 @@ asarStatsToFsStats = (stats) ->
   }
 
 # Create a ENOENT error.
-createNotFoundError = (asarPath, filePath) ->
+notFoundError = (asarPath, filePath, callback) ->
   error = new Error("ENOENT, #{filePath} not found in #{asarPath}")
   error.code = "ENOENT"
   error.errno = -2
-  error
+  unless typeof callback is 'function'
+    throw error
+  process.nextTick -> callback error
+
+# Create invalid archive error.
+invalidArchiveError = (asarPath, callback) ->
+  error = new Error("Invalid package #{asarPath}")
+  unless typeof callback is 'function'
+    throw error
+  process.nextTick -> callback error
 
 # Override APIs that rely on passing file path instead of content to C++.
 overrideAPISync = (module, name, arg = 0) ->
@@ -68,10 +77,10 @@ overrideAPISync = (module, name, arg = 0) ->
     return old.apply this, arguments unless isAsar
 
     archive = getOrCreateArchive asarPath
-    throw new Error("Invalid package #{asarPath}") unless archive
+    invalidArchiveError asarPath unless archive
 
     newPath = archive.copyFileOut filePath
-    throw createNotFoundError(asarPath, filePath) unless newPath
+    notFoundError asarPath, filePath unless newPath
 
     arguments[arg] = newPath
     old.apply this, arguments
@@ -87,10 +96,10 @@ overrideAPI = (module, name, arg = 0) ->
     return overrideAPISync module, name, arg unless typeof callback is 'function'
 
     archive = getOrCreateArchive asarPath
-    return callback new Error("Invalid package #{asarPath}") unless archive
+    return invalidArchiveError asarPath, callback unless archive
 
     newPath = archive.copyFileOut filePath
-    return callback createNotFoundError(asarPath, filePath) unless newPath
+    return notFoundError asarPath, filePath, callback unless newPath
 
     arguments[arg] = newPath
     old.apply this, arguments
@@ -103,10 +112,10 @@ exports.wrapFsWithAsar = (fs) ->
     return lstatSync p unless isAsar
 
     archive = getOrCreateArchive asarPath
-    throw new Error("Invalid package #{asarPath}") unless archive
+    invalidArchiveError asarPath unless archive
 
     stats = archive.stat filePath
-    throw createNotFoundError(asarPath, filePath) unless stats
+    notFoundError asarPath, filePath unless stats
 
     asarStatsToFsStats stats
 
@@ -116,10 +125,10 @@ exports.wrapFsWithAsar = (fs) ->
     return lstat p, callback unless isAsar
 
     archive = getOrCreateArchive asarPath
-    return callback new Error("Invalid package #{asarPath}") unless archive
+    return invalidArchiveError asarPath, callback unless archive
 
     stats = getOrCreateArchive(asarPath).stat filePath
-    return callback createNotFoundError(asarPath, filePath) unless stats
+    return notFoundError asarPath, filePath, callback unless stats
 
     process.nextTick -> callback null, asarStatsToFsStats stats
 
@@ -156,10 +165,10 @@ exports.wrapFsWithAsar = (fs) ->
     return realpathSync.apply this, arguments unless isAsar
 
     archive = getOrCreateArchive asarPath
-    throw new Error("Invalid package #{asarPath}") unless archive
+    invalidArchiveError asarPath unless archive
 
     real = archive.realpath filePath
-    throw createNotFoundError(asarPath, filePath) if real is false
+    notFoundError asarPath, filePath if real is false
 
     path.join realpathSync(asarPath), real
 
@@ -173,10 +182,11 @@ exports.wrapFsWithAsar = (fs) ->
       cache = undefined
 
     archive = getOrCreateArchive asarPath
-    return callback new Error("Invalid package #{asarPath}") unless archive
+    return invalidArchiveError asarPath, callback unless archive
 
     real = archive.realpath filePath
-    return callback createNotFoundError(asarPath, filePath) if real is false
+    if real is false
+      return notFoundError asarPath, filePath, callback
 
     realpath asarPath, (err, p) ->
       return callback err if err
@@ -188,7 +198,7 @@ exports.wrapFsWithAsar = (fs) ->
     return exists p, callback unless isAsar
 
     archive = getOrCreateArchive asarPath
-    return callback new Error("Invalid package #{asarPath}") unless archive
+    return invalidArchiveError asarPath, callback unless archive
 
     process.nextTick -> callback archive.stat(filePath) isnt false
 
@@ -213,11 +223,13 @@ exports.wrapFsWithAsar = (fs) ->
       options = undefined
 
     archive = getOrCreateArchive asarPath
-    return callback new Error("Invalid package #{asarPath}") unless archive
+    return invalidArchiveError asarPath, callback unless archive
 
     info = archive.getFileInfo filePath
-    return callback createNotFoundError(asarPath, filePath) unless info
-    return callback null, new Buffer(0) if info.size is 0
+    return notFoundError asarPath, filePath, callback unless info
+
+    if info.size is 0
+      return process.nextTick -> callback null, new Buffer(0)
 
     if info.unpacked
       realPath = archive.copyFileOut filePath
@@ -247,10 +259,10 @@ exports.wrapFsWithAsar = (fs) ->
     return readFileSync.apply this, arguments unless isAsar
 
     archive = getOrCreateArchive asarPath
-    throw new Error("Invalid package #{asarPath}") unless archive
+    invalidArchiveError asarPath unless archive
 
     info = archive.getFileInfo filePath
-    throw createNotFoundError(asarPath, filePath) unless info
+    notFoundError asarPath, filePath unless info
     return new Buffer(0) if info.size is 0
 
     if info.unpacked
@@ -283,10 +295,10 @@ exports.wrapFsWithAsar = (fs) ->
     return readdir.apply this, arguments unless isAsar
 
     archive = getOrCreateArchive asarPath
-    return callback new Error("Invalid package #{asarPath}") unless archive
+    return invalidArchiveError asarPath, callback unless archive
 
     files = archive.readdir filePath
-    return callback createNotFoundError(asarPath, filePath) unless files
+    return notFoundError asarPath, filePath, callback unless files
 
     process.nextTick -> callback null, files
 
@@ -296,10 +308,10 @@ exports.wrapFsWithAsar = (fs) ->
     return readdirSync.apply this, arguments unless isAsar
 
     archive = getOrCreateArchive asarPath
-    throw new Error("Invalid package #{asarPath}") unless archive
+    invalidArchiveError asarPath unless archive
 
     files = archive.readdir filePath
-    throw createNotFoundError(asarPath, filePath) unless files
+    notFoundError asarPath, filePath unless files
 
     files
 
