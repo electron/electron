@@ -348,6 +348,11 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
     [window_ setHasShadow:NO];
     [window_ setBackgroundColor:[NSColor clearColor]];
   }
+  
+  // Fix some non-transparent corners and lacking redraw while resizing non-frame window
+  if (!has_frame_) {
+    [window_ setOpaque:NO];
+  }
 
   // We will manage window's lifetime ourselves.
   [window_ setReleasedWhenClosed:NO];
