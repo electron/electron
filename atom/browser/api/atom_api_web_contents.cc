@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 
+#include <set>
+
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_dialog_helper.h"

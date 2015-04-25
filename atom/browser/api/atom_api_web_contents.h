@@ -7,7 +7,6 @@
 
 #include <string>
 #include <vector>
-#include <set>
 
 #include "atom/browser/api/event_emitter.h"
 #include "brightray/browser/default_web_contents_delegate.h"
