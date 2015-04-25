@@ -18,6 +18,4 @@
 // CrAppControlProtocol:
 - (void)setHandlingSendEvent:(BOOL)handlingSendEvent;
 
-- (IBAction)closeAllWindows:(id)sender;
-
 @end

@@ -36,10 +36,6 @@
            andEventID:kAEGetURL];
 }
 
-- (IBAction)closeAllWindows:(id)sender {
-  atom::Browser::Get()->Quit();
-}
-
 - (void)handleURLEvent:(NSAppleEventDescriptor*)event
         withReplyEvent:(NSAppleEventDescriptor*)replyEvent {
   NSString* url = [
