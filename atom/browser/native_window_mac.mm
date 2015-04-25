@@ -480,7 +480,7 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
   [window_ toggleFullScreen:nil];
 }
 
-bool NativeWindowMac::IsFullscreen() {
+bool NativeWindowMac::IsFullscreen() const {
   return [window_ styleMask] & NSFullScreenWindowMask;
 }
 

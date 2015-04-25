@@ -369,7 +369,7 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
 #endif
 }
 
-bool NativeWindowViews::IsFullscreen() {
+bool NativeWindowViews::IsFullscreen() const {
   return window_->IsFullscreen();
 }
 

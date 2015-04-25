@@ -685,6 +685,20 @@ void NativeWindow::RendererResponsive(content::WebContents* source) {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
 }
 
+void NativeWindow::EnterFullscreenModeForTab(content::WebContents* source,
+                                             const GURL& origin) {
+  SetFullScreen(true);
+}
+
+void NativeWindow::ExitFullscreenModeForTab(content::WebContents* source) {
+  SetFullScreen(false);
+}
+
+bool NativeWindow::IsFullscreenForTabOrPending(
+    const content::WebContents* source) const {
+  return IsFullscreen();
+}
+
 void NativeWindow::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
   // Do nothing, we override this method just to avoid compilation error since
   // there are two virtual functions named BeforeUnloadFired.

@@ -112,7 +112,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void Restore() = 0;
   virtual bool IsMinimized() = 0;
   virtual void SetFullScreen(bool fullscreen) = 0;
-  virtual bool IsFullscreen() = 0;
+  virtual bool IsFullscreen() const = 0;
   virtual void SetSize(const gfx::Size& size) = 0;
   virtual gfx::Size GetSize() = 0;
   virtual void SetContentSize(const gfx::Size& size) = 0;
@@ -273,6 +273,11 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
       const content::WebContents* source) const override;
   void RendererUnresponsive(content::WebContents* source) override;
   void RendererResponsive(content::WebContents* source) override;
+  void EnterFullscreenModeForTab(content::WebContents* source,
+                                 const GURL& origin) override;
+  void ExitFullscreenModeForTab(content::WebContents* source) override;
+  bool IsFullscreenForTabOrPending(
+      const content::WebContents* source) const override;
 
   // Implementations of content::WebContentsObserver.
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
