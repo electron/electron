@@ -132,7 +132,7 @@ Returns the title of guest page.
 
 ### `<webview>`.getFavicon()
 
-Returns the favicon of guest page as `nativeImage`.
+Returns the favicon of guest page as dataUrl.
 
 ### `<webview>`.isLoading()
 
@@ -347,7 +347,7 @@ url.
 
 ### page-favicon-updated
 
-* `favicons` [String]
+* `favicons` Array - Array of Urls
 
 Fired when page receives favicon urls.
 

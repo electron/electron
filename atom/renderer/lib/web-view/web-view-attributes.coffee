@@ -158,9 +158,8 @@ class SrcAttribute extends WebViewAttribute
     domEvent = new Event('will-navigate')
     domEvent['url'] = @getValue()
     domEvent.cancelable = true
-    self = @
-    domEvent.preventDefault = () ->
-      self.setValueIgnoreMutation ''
+    domEvent.preventDefault = () =>
+      @setValueIgnoreMutation ''
     @webViewImpl.webviewNode.dispatchEvent domEvent
 
     unless @webViewImpl.guestInstanceId?

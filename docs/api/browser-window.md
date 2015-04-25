@@ -671,7 +671,7 @@ Emitted when a redirect was received while requesting a resource.
 ### Event: 'page-favicon-updated'
 
 * `event` Event
-* `favicons` [String]
+* `favicons` Array - Array of Urls
 
 Emitted when page receives favicon urls.
 
@@ -728,7 +728,7 @@ Returns the title of web page.
 
 ### WebContents.getFavicon()
 
-Returns the favicon of web page as `nativeImage`.
+Returns the favicon of web page as [NativeImage](native-image.md).
 
 ### WebContents.isLoading()
 
