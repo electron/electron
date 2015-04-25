@@ -216,6 +216,7 @@ describe 'browser-window module', ->
 
   describe 'will-navigate event', ->
     it 'emits when user starts a navigation', (done) ->
+      @timeout 10000
       w.webContents.on 'will-navigate', (event, url) ->
         event.preventDefault()
         assert.equal url, 'https://www.github.com/'
