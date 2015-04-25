@@ -151,3 +151,12 @@ describe '<webview> tag', ->
         done()
       webview.src = "file://#{fixtures}/pages/a.html"
       document.body.appendChild webview
+
+  describe 'page-favicon-updated event', ->
+    it 'emits when favicon urls are received', (done) ->
+      webview.addEventListener 'page-favicon-updated', (e) ->
+        assert.equal e.favicons.length, 2
+        assert.equal e.favicons[0], 'file:///favicon.png'
+        done()
+      webview.src = "file://#{fixtures}/pages/a.html"
+      document.body.appendChild webview

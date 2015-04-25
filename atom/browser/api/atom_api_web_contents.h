@@ -6,13 +6,16 @@
 #define ATOM_BROWSER_API_ATOM_API_WEB_CONTENTS_H_
 
 #include <string>
+#include <vector>
 
 #include "atom/browser/api/event_emitter.h"
 #include "brightray/browser/default_web_contents_delegate.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
+#include "content/public/common/favicon_url.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "native_mate/handle.h"
+#include "ui/gfx/image/image.h"
 
 namespace brightray {
 class InspectableWebContents;
@@ -46,6 +49,7 @@ class WebContents : public mate::EventEmitter,
   void LoadURL(const GURL& url, const mate::Dictionary& options);
   GURL GetURL() const;
   base::string16 GetTitle() const;
+  gfx::Image GetFavicon() const;
   bool IsLoading() const;
   bool IsWaitingForResponse() const;
   void Stop();
@@ -175,6 +179,8 @@ class WebContents : public mate::EventEmitter,
   void NavigationEntryCommitted(
       const content::LoadCommittedDetails& load_details) override;
   void TitleWasSet(content::NavigationEntry* entry, bool explicit_set) override;
+  void DidUpdateFaviconURL(
+      const std::vector<content::FaviconURL>& urls) override;
 
   // content::BrowserPluginGuestDelegate:
   void DidAttach(int guest_proxy_routing_id) final;

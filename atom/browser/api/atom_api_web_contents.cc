@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 
+#include <set>
+
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_dialog_helper.h"
@@ -11,10 +13,12 @@
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
+#include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
+#include "content/public/browser/favicon_status.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/render_frame_host.h"
@@ -256,6 +260,19 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry,
   Emit("page-title-set", entry->GetTitle(), explicit_set);
 }
 
+void WebContents::DidUpdateFaviconURL(
+    const std::vector<content::FaviconURL>& urls) {
+  std::set<GURL> unique_urls;
+  for (auto iter = urls.begin(); iter != urls.end(); ++iter) {
+    if (iter->icon_type != content::FaviconURL::FAVICON)
+      continue;
+    const GURL& url = iter->icon_url;
+    if (url.is_valid())
+      unique_urls.insert(url);
+  }
+  Emit("page-favicon-updated", unique_urls);
+}
+
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(WebContents, message)
@@ -377,6 +394,13 @@ GURL WebContents::GetURL() const {
 
 base::string16 WebContents::GetTitle() const {
   return web_contents()->GetTitle();
+}
+
+gfx::Image WebContents::GetFavicon() const {
+  auto entry = web_contents()->GetController().GetLastCommittedEntry();
+  if (!entry)
+    return gfx::Image();
+  return entry->GetFavicon().image;
 }
 
 bool WebContents::IsLoading() const {
@@ -570,6 +594,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("_loadUrl", &WebContents::LoadURL)
         .SetMethod("getUrl", &WebContents::GetURL)
         .SetMethod("getTitle", &WebContents::GetTitle)
+        .SetMethod("getFavicon", &WebContents::GetFavicon)
         .SetMethod("isLoading", &WebContents::IsLoading)
         .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
         .SetMethod("stop", &WebContents::Stop)

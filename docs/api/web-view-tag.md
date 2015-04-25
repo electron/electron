@@ -130,6 +130,10 @@ Returns URL of guest page.
 
 Returns the title of guest page.
 
+### `<webview>`.getFavicon()
+
+Returns the favicon of guest page as dataUrl.
+
 ### `<webview>`.isLoading()
 
 Returns whether guest page is still loading resources.
@@ -329,6 +333,12 @@ Fired when a redirect was received while requesting a resource.
 
 Fired when page title is set during navigation. `explicitSet` is false when title is synthesised from file
 url.
+
+### page-favicon-updated
+
+* `favicons` Array - Array of Urls
+
+Fired when page receives favicon urls.
 
 ### console-message
 

@@ -16,6 +16,7 @@ supportedWebViewEvents = [
   'crashed'
   'destroyed'
   'page-title-set'
+  'page-favicon-updated'
 ]
 
 nextInstanceId = 0
