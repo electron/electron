@@ -279,13 +279,6 @@ examples.
 
 ## DOM events
 
-### will-navigate
-
-* `url` String
-
-Fired when view is about to navigate , calling `event.preventDefault()` will
-cancel the navigation.
-
 ### did-finish-load
 
 Fired when the navigation is done, i.e. the spinner of the tab will stop
@@ -304,10 +297,6 @@ cancelled, e.g. `window.stop()` is invoked.
 * `isMainFrame` Boolean
 
 Fired when a frame has done navigation.
-
-### did-navigate
-
-Fired when a frame navigation has been committed to history.
 
 ### did-start-loading
 

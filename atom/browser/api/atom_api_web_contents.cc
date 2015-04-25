@@ -310,8 +310,6 @@ void WebContents::WebContentsDestroyed() {
 
 void WebContents::NavigationEntryCommitted(
     const content::LoadCommittedDetails& load_details) {
-  if (load_details.is_navigation_to_different_page())
-    Emit("did-navigate");
   auto entry = web_contents()->GetController().GetLastCommittedEntry();
   entry->SetVirtualURL(load_details.entry->GetOriginalRequestURL());
 }
@@ -400,8 +398,7 @@ gfx::Image WebContents::GetFavicon() const {
   auto entry = web_contents()->GetController().GetLastCommittedEntry();
   if (!entry)
     return gfx::Image();
-  auto favicon_status = entry->GetFavicon();
-  return favicon_status.image;
+  return entry->GetFavicon().image;
 }
 
 bool WebContents::IsLoading() const {

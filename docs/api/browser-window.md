@@ -632,12 +632,6 @@ cancelled, e.g. `window.stop()` is invoked.
 
 Emitted when a frame has done navigation.
 
-### Event: 'did-navigate'
-
-* `event` Event
-
-Emitted when a frame navigation has been committed to history.
-
 ### Event: 'did-start-loading'
 
 Corresponds to the points in time when the spinner of the tab starts spinning.
