@@ -255,6 +255,7 @@ registerWebViewElement = ->
     "openDevTools"
     "closeDevTools"
     "isDevToolsOpened"
+    "inspectElement"
     "undo"
     "redo"
     "cut"

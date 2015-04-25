@@ -71,6 +71,7 @@ class WebContents : public mate::EventEmitter,
   void OpenDevTools();
   void CloseDevTools();
   bool IsDevToolsOpened();
+  void InspectElement(int x, int y);
 
   // Editing commands.
   void Undo();
