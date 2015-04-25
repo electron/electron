@@ -184,16 +184,6 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
     return [super constrainFrameRect:frameRect toScreen:screen];
 }
 
-- (IBAction)reload:(id)sender {
-  content::WebContents* web_contents = shell_->GetWebContents();
-  content::NavigationController::LoadURLParams params(web_contents->GetURL());
-  web_contents->GetController().LoadURLWithParams(params);
-}
-
-- (IBAction)showDevTools:(id)sender {
-  shell_->OpenDevTools(true);
-}
-
 - (id)accessibilityAttributeValue:(NSString*)attribute {
   if (![attribute isEqualToString:@"AXChildren"])
     return [super accessibilityAttributeValue:attribute];
