@@ -119,20 +119,20 @@ void AtomBrowserClient::OverrideWebkitPrefs(
     window->OverrideWebkitPrefs(prefs);
 }
 
-bool AtomBrowserClient::ShouldSwapBrowsingInstancesForNavigation(
-    content::SiteInstance* site_instance,
-    const GURL& current_url,
-    const GURL& new_url) {
-  if (site_instance->HasProcess())
-    dying_render_process_ = site_instance->GetProcess();
-
-  // Restart renderer process for all navigations, this relies on a patch to
-  // Chromium: http://git.io/_PaNyg.
-  return true;
-}
-
 std::string AtomBrowserClient::GetApplicationLocale() {
   return l10n_util::GetApplicationLocale("");
+}
+
+void AtomBrowserClient::OverrideSiteInstanceForNavigation(
+    content::BrowserContext* browser_context,
+    content::SiteInstance* current_instance,
+    const GURL& url,
+    content::SiteInstance** new_instance) {
+  if (current_instance->HasProcess())
+    dying_render_process_ = current_instance->GetProcess();
+
+  // Restart renderer process for all navigations.
+  *new_instance = content::SiteInstance::CreateForURL(browser_context, url);
 }
 
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
