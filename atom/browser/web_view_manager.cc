@@ -41,6 +41,8 @@ void WebViewManager::UpdateGuestProcessID(
     base::AutoLock auto_lock(manager->lock_);
     int old_id = old_process->GetID();
     int new_id = new_process->GetID();
+    if (!ContainsKey(manager->webview_info_map_, old_id))
+      return;
     manager->webview_info_map_[new_id] = manager->webview_info_map_[old_id];
     manager->webview_info_map_.erase(old_id);
   }

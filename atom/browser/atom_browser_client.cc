@@ -159,8 +159,8 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
       child_process_id = dying_process_id;
     } else {
       // It appears that the dying process doesn't belong to a BrowserWindow,
-      // then it must be a guest process, we should update its process ID in the
-      // WebViewManager here.
+      // then it might be a guest process, if it is we should update its
+      // process ID in the WebViewManager.
       auto child_process = content::RenderProcessHost::FromID(child_process_id);
       // Update the process ID in webview guests.
       WebViewManager::UpdateGuestProcessID(dying_render_process_,
