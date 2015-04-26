@@ -10,15 +10,15 @@ class NavigationController
     @pendingIndex = -1
 
     @webContents.on 'navigation-entry-commited', (event, url) =>
-      if @pendingIndex >= 0  # Go to index.
-        @currentIndex = @pendingIndex
-        @pendingIndex = -1
-        @history[@currentIndex] = url
-      else  # Normal navigation.
+      if @pendingIndex is -1  # Normal navigation.
         @history = @history.slice 0, @currentIndex + 1  # Clear history.
         if @history[@currentIndex] isnt url
           @currentIndex++
           @history.push url
+      else  # Go to index.
+        @currentIndex = @pendingIndex
+        @pendingIndex = -1
+        @history[@currentIndex] = url
 
   loadUrl: (url, options={}) ->
     @pendingIndex = -1
@@ -43,10 +43,10 @@ class NavigationController
     @reload()
 
   canGoBack: ->
-    @currentIndex > 0
+    @getActiveIndex() > 0
 
   canGoForward: ->
-    @currentIndex < @history.length
+    @getActiveIndex() < @history.length - 1
 
   canGoToIndex: (index) ->
     index >=0 and index < @history.length
@@ -56,12 +56,12 @@ class NavigationController
 
   goBack: ->
     return unless @canGoBack()
-    @pendingIndex = @currentIndex - 1
+    @pendingIndex = @getActiveIndex() - 1
     @webContents._loadUrl @history[@pendingIndex], {}
 
   goForward: ->
     return unless @canGoForward()
-    @pendingIndex = @currentIndex + 1
+    @pendingIndex = @getActiveIndex() + 1
     @webContents._loadUrl @history[@pendingIndex], {}
 
   goToIndex: (index) ->
@@ -72,5 +72,8 @@ class NavigationController
   goToOffset: (offset) ->
     return unless @canGoToOffset offset
     @goToIndex @currentIndex + offset
+
+  getActiveIndex: ->
+    if @pendingIndex is -1 then @currentIndex else @pendingIndex
 
 module.exports = NavigationController
