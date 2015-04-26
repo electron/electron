@@ -138,6 +138,10 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
     base::CommandLine* command_line,
     int child_process_id) {
+  std::string process_type = command_line->GetSwitchValueASCII("type");
+  if (process_type != "renderer")
+    return;
+
   WindowList* list = WindowList::GetInstance();
   NativeWindow* window = nullptr;
 
