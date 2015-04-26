@@ -47,6 +47,19 @@ describe '<webview> tag', ->
       webview.src = "file://#{fixtures}/pages/d.html"
       document.body.appendChild webview
 
+    it 'loads native modules when navigation happens', (done) ->
+      listener = (e) ->
+        webview.removeEventListener 'did-finish-load', listener
+        listener2 = (e) ->
+          assert.equal e.message, 'function'
+          done()
+        webview.addEventListener 'console-message', listener2
+        webview.src = "file://#{fixtures}/pages/native-module.html"
+      webview.addEventListener 'did-finish-load', listener
+      webview.setAttribute 'nodeintegration', 'on'
+      webview.src = "file://#{fixtures}/pages/native-module.html"
+      document.body.appendChild webview
+
   describe 'preload attribute', ->
     it 'loads the script before other scripts in window', (done) ->
       listener = (e) ->
