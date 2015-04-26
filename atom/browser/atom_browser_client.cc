@@ -49,7 +49,7 @@ struct FindByProcessId {
 }  // namespace
 
 AtomBrowserClient::AtomBrowserClient()
-    : dying_render_process_(NULL) {
+    : dying_render_process_(nullptr) {
 }
 
 AtomBrowserClient::~AtomBrowserClient() {
@@ -139,7 +139,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     base::CommandLine* command_line,
     int child_process_id) {
   WindowList* list = WindowList::GetInstance();
-  NativeWindow* window = NULL;
+  NativeWindow* window = nullptr;
 
   // Find the owner of this child process.
   WindowList::const_iterator iter = std::find_if(
@@ -150,7 +150,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   // If the render process is a newly started one, which means the window still
   // uses the old going-to-be-swapped render process, then we try to find the
   // window from the swapped render process.
-  if (window == NULL && dying_render_process_ != NULL) {
+  if (!window && dying_render_process_) {
     child_process_id = dying_render_process_->GetID();
     WindowList::const_iterator iter = std::find_if(
         list->begin(), list->end(), FindByProcessId(child_process_id));
@@ -158,7 +158,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
       window = *iter;
   }
 
-  if (window != NULL) {
+  if (window) {
     window->AppendExtraCommandLineSwitches(command_line, child_process_id);
   } else {
     // Append commnad line arguments for guest web view.
@@ -180,7 +180,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     }
   }
 
-  dying_render_process_ = NULL;
+  dying_render_process_ = nullptr;
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
