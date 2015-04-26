@@ -18,6 +18,7 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
+#include "brightray/browser/media/media_stream_devices_controller.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
@@ -30,7 +31,6 @@
 #include "content/public/browser/web_contents.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
-#include "vendor/brightray/browser/media/media_stream_devices_controller.h"
 
 #include "atom/common/node_includes.h"
 
@@ -312,8 +312,7 @@ void WebContents::WebContentsDestroyed() {
 
 void WebContents::NavigationEntryCommitted(
     const content::LoadCommittedDetails& load_details) {
-  auto entry = web_contents()->GetController().GetLastCommittedEntry();
-  entry->SetVirtualURL(load_details.entry->GetOriginalRequestURL());
+  Emit("navigation-entry-commited", load_details.entry->GetURL());
 }
 
 void WebContents::DidAttach(int guest_proxy_routing_id) {
@@ -385,13 +384,6 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   web_contents()->GetController().LoadURLWithParams(params);
 }
 
-GURL WebContents::GetURL() const {
-  auto entry = web_contents()->GetController().GetLastCommittedEntry();
-  if (!entry)
-    return GURL::EmptyGURL();
-  return entry->GetVirtualURL();
-}
-
 base::string16 WebContents::GetTitle() const {
   return web_contents()->GetTitle();
 }
@@ -415,46 +407,8 @@ void WebContents::Stop() {
   web_contents()->Stop();
 }
 
-void WebContents::Reload(const mate::Dictionary& options) {
-  // Navigating to a URL would always restart the renderer process, we want this
-  // because normal reloading will break our node integration.
-  // This is done by AtomBrowserClient::ShouldSwapProcessesForNavigation.
-  LoadURL(GetURL(), options);
-}
-
-void WebContents::ReloadIgnoringCache(const mate::Dictionary& options) {
-  // Hack to remove pending entries that ignores cache and treated as a fresh
-  // load.
+void WebContents::ReloadIgnoringCache() {
   web_contents()->GetController().ReloadIgnoringCache(false);
-  Reload(options);
-}
-
-bool WebContents::CanGoBack() const {
-  return web_contents()->GetController().CanGoBack();
-}
-
-bool WebContents::CanGoForward() const {
-  return web_contents()->GetController().CanGoForward();
-}
-
-bool WebContents::CanGoToOffset(int offset) const {
-  return web_contents()->GetController().CanGoToOffset(offset);
-}
-
-void WebContents::GoBack() {
-  web_contents()->GetController().GoBack();
-}
-
-void WebContents::GoForward() {
-  web_contents()->GetController().GoForward();
-}
-
-void WebContents::GoToIndex(int index) {
-  web_contents()->GetController().GoToIndex(index);
-}
-
-void WebContents::GoToOffset(int offset) {
-  web_contents()->GetController().GoToOffset(offset);
 }
 
 int WebContents::GetRoutingID() const {
@@ -599,21 +553,12 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("destroy", &WebContents::Destroy)
         .SetMethod("isAlive", &WebContents::IsAlive)
         .SetMethod("_loadUrl", &WebContents::LoadURL)
-        .SetMethod("getUrl", &WebContents::GetURL)
         .SetMethod("getTitle", &WebContents::GetTitle)
         .SetMethod("getFavicon", &WebContents::GetFavicon)
         .SetMethod("isLoading", &WebContents::IsLoading)
         .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
-        .SetMethod("stop", &WebContents::Stop)
-        .SetMethod("_reload", &WebContents::Reload)
+        .SetMethod("_stop", &WebContents::Stop)
         .SetMethod("_reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
-        .SetMethod("canGoBack", &WebContents::CanGoBack)
-        .SetMethod("canGoForward", &WebContents::CanGoForward)
-        .SetMethod("canGoToOffset", &WebContents::CanGoToOffset)
-        .SetMethod("goBack", &WebContents::GoBack)
-        .SetMethod("goForward", &WebContents::GoForward)
-        .SetMethod("goToIndex", &WebContents::GoToIndex)
-        .SetMethod("goToOffset", &WebContents::GoToOffset)
         .SetMethod("getRoutingId", &WebContents::GetRoutingID)
         .SetMethod("getProcessId", &WebContents::GetProcessID)
         .SetMethod("isCrashed", &WebContents::IsCrashed)
