@@ -565,6 +565,7 @@ content::WebContents* NativeWindow::OpenURLFromTab(
   load_url_params.is_renderer_initiated = params.is_renderer_initiated;
   load_url_params.transferred_global_request_id =
       params.transferred_global_request_id;
+  load_url_params.should_clear_history_list = true;
 
   source->GetController().LoadURLWithParams(load_url_params);
   return source;

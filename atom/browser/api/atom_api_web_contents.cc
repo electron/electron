@@ -140,6 +140,7 @@ content::WebContents* WebContents::OpenURLFromTab(
   load_url_params.is_renderer_initiated = params.is_renderer_initiated;
   load_url_params.transferred_global_request_id =
       params.transferred_global_request_id;
+  load_url_params.should_clear_history_list = true;
 
   web_contents()->GetController().LoadURLWithParams(load_url_params);
   return web_contents();
@@ -380,6 +381,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
                                         blink::WebReferrerPolicyDefault);
 
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
+  params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
   web_contents()->GetController().LoadURLWithParams(params);
 }
