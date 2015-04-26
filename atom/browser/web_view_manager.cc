@@ -10,18 +10,40 @@
 
 namespace atom {
 
+namespace {
+
+WebViewManager* GetManagerFromProcess(content::RenderProcessHost* process) {
+  if (!process)
+    return nullptr;
+  auto context = process->GetBrowserContext();
+  if (!context)
+    return nullptr;
+  return static_cast<WebViewManager*>(context->GetGuestManager());
+}
+
+}  // namespace
+
 // static
 bool WebViewManager::GetInfoForProcess(content::RenderProcessHost* process,
                                        WebViewInfo* info) {
-  if (!process)
-    return false;
-  auto context = process->GetBrowserContext();
-  if (!context)
-    return false;
-  auto manager = context->GetGuestManager();
+  auto manager = GetManagerFromProcess(process);
   if (!manager)
     return false;
-  return static_cast<WebViewManager*>(manager)->GetInfo(process->GetID(), info);
+  return manager->GetInfo(process->GetID(), info);
+}
+
+// static
+void WebViewManager::UpdateGuestProcessID(
+    content::RenderProcessHost* old_process,
+    content::RenderProcessHost* new_process) {
+  auto manager = GetManagerFromProcess(old_process);
+  if (manager) {
+    base::AutoLock auto_lock(manager->lock_);
+    int old_id = old_process->GetID();
+    int new_id = new_process->GetID();
+    manager->webview_info_map_[new_id] = manager->webview_info_map_[old_id];
+    manager->webview_info_map_.erase(old_id);
+  }
 }
 
 WebViewManager::WebViewManager(content::BrowserContext* context) {

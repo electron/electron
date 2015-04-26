@@ -34,6 +34,10 @@ class WebViewManager : public content::BrowserPluginGuestManager {
   static bool GetInfoForProcess(content::RenderProcessHost* process,
                                 WebViewInfo* info);
 
+  // Updates the guest process ID.
+  static void UpdateGuestProcessID(content::RenderProcessHost* old_process,
+                                   content::RenderProcessHost* new_process);
+
   explicit WebViewManager(content::BrowserContext* context);
   virtual ~WebViewManager();
 

@@ -151,11 +151,21 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   // uses the old going-to-be-swapped render process, then we try to find the
   // window from the swapped render process.
   if (!window && dying_render_process_) {
-    child_process_id = dying_render_process_->GetID();
+    int dying_process_id = dying_render_process_->GetID();
     WindowList::const_iterator iter = std::find_if(
-        list->begin(), list->end(), FindByProcessId(child_process_id));
-    if (iter != list->end())
+        list->begin(), list->end(), FindByProcessId(dying_process_id));
+    if (iter != list->end()) {
       window = *iter;
+      child_process_id = dying_process_id;
+    } else {
+      // It appears that the dying process doesn't belong to a BrowserWindow,
+      // then it must be a guest process, we should update its process ID in the
+      // WebViewManager here.
+      auto child_process = content::RenderProcessHost::FromID(child_process_id);
+      // Update the process ID in webview guests.
+      WebViewManager::UpdateGuestProcessID(dying_render_process_,
+                                           child_process);
+    }
   }
 
   if (window) {
