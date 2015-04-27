@@ -152,6 +152,7 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   bool enable_larger_than_screen_;
 }
 @property BOOL acceptsFirstMouse;
+@property BOOL disableAutoHideCursor;
 - (void)setShell:(atom::NativeWindowMac*)shell;
 - (void)setEnableLargerThanScreen:(bool)enable;
 @end
@@ -346,6 +347,11 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
   bool acceptsFirstMouse = false;
   options.Get(switches::kAcceptFirstMouse, &acceptsFirstMouse);
   [window_ setAcceptsFirstMouse:acceptsFirstMouse];
+
+  // Disable auto-hiding cursor.
+  bool disableAutoHideCursor = false;
+  options.Get(switches::kDisableAutoHideCursor, &disableAutoHideCursor);
+  [window_ setDisableAutoHideCursor:disableAutoHideCursor];
 
   // Disable fullscreen button when 'fullscreen' is specified to false.
   bool fullscreen;
