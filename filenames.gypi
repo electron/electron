@@ -18,6 +18,7 @@
       'atom/browser/api/lib/ipc.coffee',
       'atom/browser/api/lib/menu.coffee',
       'atom/browser/api/lib/menu-item.coffee',
+      'atom/browser/api/lib/navigation-controller.coffee',
       'atom/browser/api/lib/power-monitor.coffee',
       'atom/browser/api/lib/protocol.coffee',
       'atom/browser/api/lib/screen.coffee',

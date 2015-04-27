@@ -49,7 +49,7 @@ struct FindByProcessId {
 }  // namespace
 
 AtomBrowserClient::AtomBrowserClient()
-    : dying_render_process_(NULL) {
+    : dying_render_process_(nullptr) {
 }
 
 AtomBrowserClient::~AtomBrowserClient() {
@@ -119,27 +119,31 @@ void AtomBrowserClient::OverrideWebkitPrefs(
     window->OverrideWebkitPrefs(prefs);
 }
 
-bool AtomBrowserClient::ShouldSwapBrowsingInstancesForNavigation(
-    content::SiteInstance* site_instance,
-    const GURL& current_url,
-    const GURL& new_url) {
-  if (site_instance->HasProcess())
-    dying_render_process_ = site_instance->GetProcess();
-
-  // Restart renderer process for all navigations, this relies on a patch to
-  // Chromium: http://git.io/_PaNyg.
-  return true;
-}
-
 std::string AtomBrowserClient::GetApplicationLocale() {
   return l10n_util::GetApplicationLocale("");
+}
+
+void AtomBrowserClient::OverrideSiteInstanceForNavigation(
+    content::BrowserContext* browser_context,
+    content::SiteInstance* current_instance,
+    const GURL& url,
+    content::SiteInstance** new_instance) {
+  if (current_instance->HasProcess())
+    dying_render_process_ = current_instance->GetProcess();
+
+  // Restart renderer process for all navigations.
+  *new_instance = content::SiteInstance::CreateForURL(browser_context, url);
 }
 
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
     base::CommandLine* command_line,
     int child_process_id) {
+  std::string process_type = command_line->GetSwitchValueASCII("type");
+  if (process_type != "renderer")
+    return;
+
   WindowList* list = WindowList::GetInstance();
-  NativeWindow* window = NULL;
+  NativeWindow* window = nullptr;
 
   // Find the owner of this child process.
   WindowList::const_iterator iter = std::find_if(
@@ -150,15 +154,25 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   // If the render process is a newly started one, which means the window still
   // uses the old going-to-be-swapped render process, then we try to find the
   // window from the swapped render process.
-  if (window == NULL && dying_render_process_ != NULL) {
-    child_process_id = dying_render_process_->GetID();
+  if (!window && dying_render_process_) {
+    int dying_process_id = dying_render_process_->GetID();
     WindowList::const_iterator iter = std::find_if(
-        list->begin(), list->end(), FindByProcessId(child_process_id));
-    if (iter != list->end())
+        list->begin(), list->end(), FindByProcessId(dying_process_id));
+    if (iter != list->end()) {
       window = *iter;
+      child_process_id = dying_process_id;
+    } else {
+      // It appears that the dying process doesn't belong to a BrowserWindow,
+      // then it might be a guest process, if it is we should update its
+      // process ID in the WebViewManager.
+      auto child_process = content::RenderProcessHost::FromID(child_process_id);
+      // Update the process ID in webview guests.
+      WebViewManager::UpdateGuestProcessID(dying_render_process_,
+                                           child_process);
+    }
   }
 
-  if (window != NULL) {
+  if (window) {
     window->AppendExtraCommandLineSwitches(command_line, child_process_id);
   } else {
     // Append commnad line arguments for guest web view.
@@ -180,7 +194,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     }
   }
 
-  dying_render_process_ = NULL;
+  dying_render_process_ = nullptr;
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(

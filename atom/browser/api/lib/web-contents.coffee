@@ -1,4 +1,5 @@
 EventEmitter = require('events').EventEmitter
+NavigationController = require './navigation-controller'
 binding = process.atomBinding 'web_contents'
 ipc = require 'ipc'
 
@@ -26,10 +27,12 @@ module.exports.wrap = (webContents) ->
   webContents.getId = -> "#{@getProcessId()}-#{@getRoutingId()}"
   webContents.equal = (other) -> @getId() is other.getId()
 
-  # Provide a default parameter for |urlOptions|.
-  webContents.loadUrl = (url, urlOptions={}) -> @_loadUrl url, urlOptions
-  webContents.reload = (urlOptions={}) -> @_reload urlOptions
-  webContents.reloadIgnoringCache = (urlOptions={}) -> @_reloadIgnoringCache urlOptions
+  # The navigation controller.
+  controller = new NavigationController(webContents)
+  webContents.controller = controller
+  for name, method of NavigationController.prototype when method instanceof Function
+    do (name, method) ->
+      webContents[name] = -> method.apply controller, arguments
 
   # Translate |disposition| to string for 'new-window' event.
   webContents.on '-new-window', (args..., disposition) ->
