@@ -43,6 +43,8 @@ You can also create a window without chrome by using
      other windows
   * `fullscreen` Boolean - Whether the window should show in fullscreen, when
     set to `false` the fullscreen button would also be hidden on OS X
+  * `auto-hide-cursor` Boolean - Whether the cursor should be hidden during
+    keyboard events on **OSX**
   * `skip-taskbar` Boolean - Do not show window in Taskbar
   * `zoom-factor` Number - The default zoom factor of the page, zoom factor is
     zoom percent / 100, so `3.0` represents `300%`

@@ -39,6 +39,9 @@ const char kNodeIntegration[] = "node-integration";
 // Enable the NSView to accept first mouse event.
 const char kAcceptFirstMouse[] = "accept-first-mouse";
 
+// Enable NSCursor to hide until mouse moves.
+const char kAutoHideCursor[] = "auto-hide-cursor";
+
 // Whether window size should include window frame.
 const char kUseContentSize[] = "use-content-size";
 

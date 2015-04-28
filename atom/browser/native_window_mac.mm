@@ -366,6 +366,9 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
     [window_ setCollectionBehavior:collectionBehavior];
   }
 
+  // AutoHideCursor when is specified to true
+  options.Get(switches::kAutoHideCursor, &auto_hide_cursor_);
+
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
   [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
@@ -754,6 +757,8 @@ void NativeWindowMac::HandleKeyboardEvent(
   if (event.skip_in_browser ||
       event.type == content::NativeWebKeyboardEvent::Char)
     return;
+
+  [NSCursor setHiddenUntilMouseMoves:auto_hide_cursor_];
 
   if (event.os_event.window == window_.get()) {
     EventProcessingWindow* event_window =
