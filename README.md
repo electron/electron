@@ -1,4 +1,4 @@
-[![Electron Logo](http://electron.atom.io/images/electron-logo-word-lg.png)](http://electron.atom.io/)
+[![Electron Logo](http://electron.atom.io/images/electron-logo.svg)](http://electron.atom.io/)
 
 [![Build Status](https://travis-ci.org/atom/electron.svg?branch=master)](https://travis-ci.org/atom/electron)
 [![devDependency Status](https://david-dm.org/atom/electron/dev-status.svg)](https://david-dm.org/atom/electron#info=devDependencies)
