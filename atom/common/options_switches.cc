@@ -63,6 +63,9 @@ const char kDirectWrite[] = "direct-write";
 // Enable plugins.
 const char kEnablePlugins[] = "enable-plugins";
 
+// Ppapi Flash path.
+const char kPpapiFlashPath[] = "ppapi-flash-path";
+
 // Instancd ID of guest WebContents.
 const char kGuestInstanceID[] = "guest-instance-id";
 

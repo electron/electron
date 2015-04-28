@@ -23,6 +23,8 @@ class AtomContentClient : public brightray::ContentClient {
   void AddAdditionalSchemes(
       std::vector<std::string>* standard_schemes,
       std::vector<std::string>* savable_schemes) override;
+  void AddPepperPlugins(
+      std::vector<content::PepperPluginInfo>* plugins) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(AtomContentClient);
