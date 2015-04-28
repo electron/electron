@@ -229,7 +229,7 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("resolveProxy", &App::ResolveProxy)
-      .SetMethod("setDesktopName", &App::SetDesktopName);
+      .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("setAppUserModelId", &App::SetAppUserModelId);
 }
 
