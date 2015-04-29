@@ -138,10 +138,7 @@ class SrcAttribute extends WebViewAttribute
   setupMutationObserver: ->
     @observer = new MutationObserver (mutations) =>
       for mutation in mutations
-        oldValue = mutation.oldValue
-        newValue = @getValue()
-        return if oldValue isnt newValue
-        @handleMutation oldValue, newValue
+        @handleMutation mutation.oldValue, @getValue()
     params =
       attributes: true,
       attributeOldValue: true,
