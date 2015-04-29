@@ -12,6 +12,7 @@ WEB_VIEW_EVENTS =
   'did-get-response-details': ['status', 'newUrl', 'originalUrl',
                                'httpResponseCode', 'requestMethod', 'referrer']
   'did-get-redirect-request': ['oldUrl', 'newUrl', 'isMainFrame']
+  'dom-ready': []
   'console-message': ['level', 'message', 'line', 'sourceId']
   'new-window': ['url', 'frameName', 'disposition']
   'close': []

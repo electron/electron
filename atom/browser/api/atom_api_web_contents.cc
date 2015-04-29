@@ -196,6 +196,12 @@ void WebContents::RenderProcessGone(base::TerminationStatus status) {
   Emit("crashed");
 }
 
+void WebContents::DocumentLoadedInFrame(
+    content::RenderFrameHost* render_frame_host) {
+  if (!render_frame_host->GetParent())
+    Emit("dom-ready");
+}
+
 void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
                                 const GURL& validated_url) {
   bool is_main_frame = !render_frame_host->GetParent();

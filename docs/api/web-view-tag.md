@@ -333,6 +333,10 @@ Fired when details regarding a requested resource is available.
 
 Fired when a redirect was received while requesting a resource.
 
+### dom-ready
+
+Fired when document in the given frame is loaded.
+
 ### page-title-set
 
 * `title` String

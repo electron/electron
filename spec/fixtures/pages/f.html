@@ -1,0 +1,11 @@
+<html>
+<body>
+<img src='http://127.0.0.1:62542/logo.png' />
+<script type="text/javascript" charset="utf-8">
+  var remote = require('remote')
+  remote.getCurrentWindow().webContents.on('dom-ready', function() {
+    require('ipc').send('dom-ready', document.readyState);
+  })
+</script>
+</body>
+</html>
