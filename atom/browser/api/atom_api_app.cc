@@ -200,6 +200,13 @@ void App::SetDesktopName(const std::string& desktop_name) {
 #endif
 }
 
+void App::SetAppUserModelId(const std::string& app_id) {
+#if defined(OS_WIN)
+  base::string16 app_id_utf16 = base::UTF8ToUTF16(app_id);
+  SetCurrentProcessExplicitAppUserModelID(app_id_utf16.c_str());
+#endif
+}
+
 mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   auto browser = base::Unretained(Browser::Get());
@@ -222,7 +229,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("resolveProxy", &App::ResolveProxy)
-      .SetMethod("setDesktopName", &App::SetDesktopName);
+      .SetMethod("setDesktopName", &App::SetDesktopName)
+      .SetMethod("setAppUserModelId", &App::SetAppUserModelId);
 }
 
 // static
