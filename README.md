@@ -21,7 +21,7 @@ be found on the [releases](https://github.com/atom/electron/releases) page.
 You can also use [`npm`](https://docs.npmjs.com/) to install prebuilt electron
 binaries:
 
-```
+```sh
 # Install the `electron` command globally in your $PATH
 npm install electron-prebuilt -g
 
