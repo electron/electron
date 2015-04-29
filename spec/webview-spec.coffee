@@ -169,7 +169,12 @@ describe '<webview> tag', ->
     it 'emits when favicon urls are received', (done) ->
       webview.addEventListener 'page-favicon-updated', (e) ->
         assert.equal e.favicons.length, 2
-        assert.equal e.favicons[0], 'file:///favicon.png'
+        url =
+          if process.platform is 'win32'
+            'file:///C:/favicon.png'
+          else
+            'file:///favicon.png'
+        assert.equal e.favicons[0], url
         done()
       webview.src = "file://#{fixtures}/pages/a.html"
       document.body.appendChild webview
