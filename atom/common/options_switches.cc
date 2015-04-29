@@ -75,6 +75,9 @@ const char kTransparent[] = "transparent";
 // Window type hint.
 const char kType[] = "type";
 
+// Disable auto-hiding cursor.
+const char kDisableAutoHideCursor[] = "disable-auto-hide-cursor";
+
 // Web runtime features.
 const char kExperimentalFeatures[]       = "experimental-features";
 const char kExperimentalCanvasFeatures[] = "experimental-canvas-features";

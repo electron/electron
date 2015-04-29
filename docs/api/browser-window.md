@@ -54,9 +54,10 @@ You can also create a window without chrome by using
   * `frame` Boolean - Specify `false` to create a
     [Frameless Window](frameless-window.md)
   * `node-integration` Boolean - Whether node integration is enabled, default
-     is `true`
+    is `true`
   * `accept-first-mouse` Boolean - Whether the web view accepts a single
-     mouse-down event that simultaneously activates the window
+    mouse-down event that simultaneously activates the window
+  * `disable-auto-hide-cursor` Boolean - Do not hide cursor when typing
   * `auto-hide-menu-bar` Boolean - Auto hide the menu bar unless the `Alt`
     key is pressed.
   * `enable-larger-than-screen` Boolean - Enable the window to be resized larger

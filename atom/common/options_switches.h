@@ -41,6 +41,7 @@ extern const char kGuestInstanceID[];
 extern const char kPreloadScript[];
 extern const char kTransparent[];
 extern const char kType[];
+extern const char kDisableAutoHideCursor[];
 
 extern const char kExperimentalFeatures[];
 extern const char kExperimentalCanvasFeatures[];

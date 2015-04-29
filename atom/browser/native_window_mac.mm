@@ -54,10 +54,8 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 @interface AtomNSWindowDelegate : NSObject<NSWindowDelegate> {
  @private
   atom::NativeWindowMac* shell_;
-  BOOL acceptsFirstMouse_;
 }
 - (id)initWithShell:(atom::NativeWindowMac*)shell;
-- (void)setAcceptsFirstMouse:(BOOL)accept;
 @end
 
 @implementation AtomNSWindowDelegate
@@ -65,13 +63,8 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 - (id)initWithShell:(atom::NativeWindowMac*)shell {
   if ((self = [super init])) {
     shell_ = shell;
-    acceptsFirstMouse_ = NO;
   }
   return self;
-}
-
-- (void)setAcceptsFirstMouse:(BOOL)accept {
-  acceptsFirstMouse_ = accept;
 }
 
 - (void)windowDidBecomeMain:(NSNotification*)notification {
@@ -151,10 +144,6 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   return NO;
 }
 
-- (BOOL)acceptsFirstMouse:(NSEvent*)event {
-  return acceptsFirstMouse_;
-}
-
 @end
 
 @interface AtomNSWindow : EventProcessingWindow {
@@ -162,6 +151,8 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   atom::NativeWindowMac* shell_;
   bool enable_larger_than_screen_;
 }
+@property BOOL acceptsFirstMouse;
+@property BOOL disableAutoHideCursor;
 - (void)setShell:(atom::NativeWindowMac*)shell;
 - (void)setEnableLargerThanScreen:(bool)enable;
 @end
@@ -355,7 +346,12 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;
   options.Get(switches::kAcceptFirstMouse, &acceptsFirstMouse);
-  [window_delegate_ setAcceptsFirstMouse:acceptsFirstMouse];
+  [window_ setAcceptsFirstMouse:acceptsFirstMouse];
+
+  // Disable auto-hiding cursor.
+  bool disableAutoHideCursor = false;
+  options.Get(switches::kDisableAutoHideCursor, &disableAutoHideCursor);
+  [window_ setDisableAutoHideCursor:disableAutoHideCursor];
 
   // Disable fullscreen button when 'fullscreen' is specified to false.
   bool fullscreen;
