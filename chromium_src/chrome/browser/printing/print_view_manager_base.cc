@@ -156,6 +156,8 @@ void PrintViewManagerBase::OnDidPrintPage(
         params.data_size);
 
     document->DebugDumpData(bytes.get(), FILE_PATH_LITERAL(".pdf"));
+    print_job_->StartPdfToEmfConversion(
+        bytes, params.page_size, params.content_area);
   }
 #endif  // !OS_WIN
 }

@@ -17,6 +17,13 @@
 #include "ui/gfx/native_widget_types.h"
 #include "ui/gfx/geometry/rect.h"
 
+#if defined(OS_WIN)
+#include "ipc/ipc_platform_file.h"
+#include "printing/backend/print_backend.h"
+#include "printing/page_range.h"
+#include "printing/pdf_render_settings.h"
+#endif
+
 #ifndef CHROME_COMMON_PRINT_MESSAGES_H_
 #define CHROME_COMMON_PRINT_MESSAGES_H_
 
@@ -239,3 +246,31 @@ IPC_MESSAGE_ROUTED0(PrintHostMsg_ShowInvalidPrinterSettingsError)
 // Tell the browser printing failed.
 IPC_MESSAGE_ROUTED1(PrintHostMsg_PrintingFailed,
                     int /* document cookie */)
+
+
+#if defined(OS_WIN)
+// Tell the utility process to start rendering the given PDF into a metafile.
+// Utility process would be alive until
+// ChromeUtilityMsg_RenderPDFPagesToMetafiles_Stop message.
+IPC_MESSAGE_CONTROL2(ChromeUtilityMsg_RenderPDFPagesToMetafiles,
+                     IPC::PlatformFileForTransit, /* input_file */
+                     printing::PdfRenderSettings /* settings */)
+
+// Requests conversion of the next page.
+IPC_MESSAGE_CONTROL2(ChromeUtilityMsg_RenderPDFPagesToMetafiles_GetPage,
+                     int /* page_number */,
+                     IPC::PlatformFileForTransit /* output_file */)
+
+// Requests utility process to stop conversion and exit.
+IPC_MESSAGE_CONTROL0(ChromeUtilityMsg_RenderPDFPagesToMetafiles_Stop)
+
+// Reply when the utility process loaded PDF. |page_count| is 0, if loading
+// failed.
+IPC_MESSAGE_CONTROL1(ChromeUtilityHostMsg_RenderPDFPagesToMetafiles_PageCount,
+                     int /* page_count */)
+
+// Reply when the utility process rendered the PDF page.
+IPC_MESSAGE_CONTROL2(ChromeUtilityHostMsg_RenderPDFPagesToMetafiles_PageDone,
+                     bool /* success */,
+                     float /* scale_factor */)
+#endif

@@ -14,6 +14,7 @@
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"
 #include "base/logging.h"
+#include "chrome/utility/chrome_content_utility_client.h"
 #include "content/public/common/content_switches.h"
 #include "ui/base/resource/resource_bundle.h"
 
@@ -92,6 +93,13 @@ content::ContentRendererClient*
     AtomMainDelegate::CreateContentRendererClient() {
   renderer_client_.reset(new AtomRendererClient);
   return renderer_client_.get();
+}
+
+content::ContentUtilityClient* AtomMainDelegate::CreateContentUtilityClient() {
+#if defined(OS_WIN)
+  utility_client_.reset(new AtomContentUtilityClient);
+  return utility_client_.get();
+#endif
 }
 
 scoped_ptr<brightray::ContentClient> AtomMainDelegate::CreateContentClient() {
