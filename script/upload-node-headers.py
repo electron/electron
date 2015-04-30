@@ -106,6 +106,8 @@ def upload_node(bucket, access_key, secret_key, version):
   with scoped_cwd(DIST_DIR):
     s3put(bucket, access_key, secret_key, DIST_DIR,
           'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
+    s3put(bucket, access_key, secret_key, DIST_DIR,
+          'atom-shell/dist/{0}'.format(version), glob.glob('iojs-*.tar.gz'))
 
   if PLATFORM == 'win32':
     if get_target_arch() == 'ia32':
