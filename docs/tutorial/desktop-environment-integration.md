@@ -118,8 +118,8 @@ app.setUserTasks([
     arguments: '--new-window',
     iconPath: process.execPath,
     iconIndex: 0,
-    title: 'New Window'
-    description: 'Create a new winodw',
+    title: 'New Window',
+    description: 'Create a new window',
   }
 ]);
 ```
