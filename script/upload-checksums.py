@@ -39,8 +39,11 @@ def parse_args():
 def get_files_list(version):
   return [
     'node-{0}.tar.gz'.format(version),
+    'iojs-{0}.tar.gz'.format(version),
     'node.lib',
     'x64/node.lib',
+    'win-x86/iojs.lib',
+    'win-x64/iojs.lib',
   ]
 
 

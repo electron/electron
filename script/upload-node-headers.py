@@ -38,10 +38,13 @@ def main():
   safe_mkdir(DIST_DIR)
 
   args = parse_args()
-  dist_headers_dir = os.path.join(DIST_DIR, 'node-{0}'.format(args.version))
+  node_headers_dir = os.path.join(DIST_DIR, 'node-{0}'.format(args.version))
+  iojs_headers_dir = os.path.join(DIST_DIR, 'iojs-{0}'.format(args.version))
 
-  copy_headers(dist_headers_dir)
-  create_header_tarball(dist_headers_dir)
+  copy_headers(node_headers_dir)
+  create_header_tarball(node_headers_dir)
+  copy_headers(iojs_headers_dir)
+  create_header_tarball(iojs_headers_dir)
 
   # Upload node's headers to S3.
   bucket, access_key, secret_key = s3_config()
@@ -103,21 +106,31 @@ def upload_node(bucket, access_key, secret_key, version):
   with scoped_cwd(DIST_DIR):
     s3put(bucket, access_key, secret_key, DIST_DIR,
           'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
+    s3put(bucket, access_key, secret_key, DIST_DIR,
+          'atom-shell/dist/{0}'.format(version), glob.glob('iojs-*.tar.gz'))
 
   if PLATFORM == 'win32':
     if get_target_arch() == 'ia32':
       node_lib = os.path.join(DIST_DIR, 'node.lib')
+      iojs_lib = os.path.join(DIST_DIR, 'win-x86', 'iojs.lib')
     else:
       node_lib = os.path.join(DIST_DIR, 'x64', 'node.lib')
-      safe_mkdir(os.path.dirname(node_lib))
+      iojs_lib = os.path.join(DIST_DIR, 'win-x64', 'iojs.lib')
+    safe_mkdir(os.path.dirname(node_lib))
+    safe_mkdir(os.path.dirname(iojs_lib))
 
-    # Copy atom.lib to node.lib
+    # Copy atom.lib to node.lib and iojs.lib.
     atom_lib = os.path.join(OUT_DIR, 'node.dll.lib')
     shutil.copy2(atom_lib, node_lib)
+    shutil.copy2(atom_lib, iojs_lib)
 
     # Upload the node.lib.
     s3put(bucket, access_key, secret_key, DIST_DIR,
           'atom-shell/dist/{0}'.format(version), [node_lib])
+
+    # Upload the iojs.lib.
+    s3put(bucket, access_key, secret_key, DIST_DIR,
+          'atom-shell/dist/{0}'.format(version), [iojs_lib])
 
 
 if __name__ == '__main__':
