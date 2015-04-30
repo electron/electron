@@ -27,8 +27,11 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/resource_request_details.h"
+#include "content/public/browser/service_worker_context.h"
+#include "content/public/browser/storage_partition.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
+#include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 
@@ -51,6 +54,22 @@ NativeWindow* GetWindowFromGuest(const content::WebContents* guest) {
         info.embedder->GetRoutingID());
   else
     return nullptr;
+}
+
+content::ServiceWorkerContext* GetServiceWorkerContext(
+    const content::WebContents* web_contents) {
+  auto context = web_contents->GetBrowserContext();
+  auto site_instance = web_contents->GetSiteInstance();
+  if (!context || !site_instance)
+    return nullptr;
+
+  content::StoragePartition* storage_partition =
+      content::BrowserContext::GetStoragePartition(
+          context, site_instance);
+
+  DCHECK(storage_partition);
+
+  return storage_partition->GetServiceWorkerContext();
 }
 
 }  // namespace
@@ -548,6 +567,27 @@ void WebContents::SetAllowTransparency(bool allow) {
   }
 }
 
+void WebContents::HasServiceWorker(
+    const base::Callback<void(bool)>& callback) {
+  auto context = GetServiceWorkerContext(web_contents());
+  if (!context)
+    return;
+
+  context->CheckHasServiceWorker(web_contents()->GetLastCommittedURL(),
+                                 GURL::EmptyGURL(),
+                                 callback);
+}
+
+void WebContents::UnregisterServiceWorker(
+    const base::Callback<void(bool)>& callback) {
+  auto context = GetServiceWorkerContext(web_contents());
+  if (!context)
+    return;
+
+  context->UnregisterServiceWorker(web_contents()->GetLastCommittedURL(),
+                                   callback);
+}
+
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   if (template_.IsEmpty())
@@ -585,6 +625,9 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("setAutoSize", &WebContents::SetAutoSize)
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
         .SetMethod("isGuest", &WebContents::is_guest)
+        .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
+        .SetMethod("unregisterServiceWorker",
+                   &WebContents::UnregisterServiceWorker)
         .Build());
 
   return mate::ObjectTemplateBuilder(
