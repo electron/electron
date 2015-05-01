@@ -145,6 +145,8 @@ class WebContents : public mate::EventEmitter,
   // content::WebContentsObserver:
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;
+  void DocumentLoadedInFrame(
+      content::RenderFrameHost* render_frame_host) override;
   void DidFinishLoad(content::RenderFrameHost* render_frame_host,
                      const GURL& validated_url) override;
   void DidFailLoad(content::RenderFrameHost* render_frame_host,

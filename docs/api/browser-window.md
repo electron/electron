@@ -663,6 +663,12 @@ Emitted when details regarding a requested resource is available.
 
 Emitted when a redirect was received while requesting a resource.
 
+### Event: 'dom-ready'
+
+* `event` Event
+
+Emitted when document in the given frame is loaded.
+
 ### Event: 'page-favicon-updated'
 
 * `event` Event
