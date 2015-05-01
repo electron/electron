@@ -470,6 +470,15 @@ bool NativeWindowMac::IsFullscreen() const {
   return [window_ styleMask] & NSFullScreenWindowMask;
 }
 
+void NativeWindowMac::SetBounds(const gfx::Rect& bounds) {
+  Move(bounds);
+}
+
+gfx::Rect NativeWindowMac::GetBounds() {
+  return gfx::Rect(GetPosition(),
+                   GetSize());
+}
+
 void NativeWindowMac::SetSize(const gfx::Size& size) {
   NSRect frame = [window_ frame];
   frame.origin.y -= size.height() - frame.size.height;

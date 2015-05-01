@@ -45,6 +45,8 @@ class NativeWindowMac : public NativeWindow {
   bool IsMinimized() override;
   void SetFullScreen(bool fullscreen) override;
   bool IsFullscreen() const override;
+  void SetBounds(const gfx::Rect& bounds) override;
+  gfx::Rect GetBounds() override;  
   void SetSize(const gfx::Size& size) override;
   gfx::Size GetSize() override;
   void SetContentSize(const gfx::Size& size) override;

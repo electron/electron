@@ -373,6 +373,14 @@ bool NativeWindowViews::IsFullscreen() const {
   return window_->IsFullscreen();
 }
 
+void NativeWindowViews::SetBounds(const gfx::Rect& bounds) {
+  window_->SetBoundsConstrained(bounds);
+}
+
+gfx::Rect NativeWindowViews::GetBounds() {
+  return window_->GetRestoredBounds();
+}
+
 void NativeWindowViews::SetSize(const gfx::Size& size) {
 #if defined(USE_X11)
   // On Linux the minimum and maximum size should be updated with window size
