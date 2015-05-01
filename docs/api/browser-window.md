@@ -852,6 +852,21 @@ Executes editing command `replace` in page.
 
 Executes editing command `replaceMisspelling` in page.
 
+### WebContents.hasServiceWorker(callback)
+
+* `callback` Function
+
+Checks if any serviceworker is registered and returns boolean as
+response to `callback`.
+
+### WebContents.unregisterServiceWorker(callback)
+
+* `callback` Function
+
+Unregisters any serviceworker if present and returns boolean as
+response to `callback` when the JS promise is fullfilled or false
+when the JS promise is rejected.  
+
 ### WebContents.send(channel[, args...])
 
 * `channel` String

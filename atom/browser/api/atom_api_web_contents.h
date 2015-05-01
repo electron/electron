@@ -64,6 +64,8 @@ class WebContents : public mate::EventEmitter,
   void CloseDevTools();
   bool IsDevToolsOpened();
   void InspectElement(int x, int y);
+  void HasServiceWorker(const base::Callback<void(bool)>&);
+  void UnregisterServiceWorker(const base::Callback<void(bool)>&);
 
   // Editing commands.
   void Undo();
