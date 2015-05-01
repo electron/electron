@@ -35,7 +35,6 @@ class NativeWindowViews : public NativeWindow,
   // NativeWindow:
   void Close() override;
   void CloseImmediately() override;
-  void Move(const gfx::Rect& pos) override;
   void Focus(bool focus) override;
   bool IsFocused() override;
   void Show() override;

@@ -382,18 +382,6 @@ void NativeWindowMac::CloseImmediately() {
   [window_ close];
 }
 
-void NativeWindowMac::Move(const gfx::Rect& pos) {
-  NSRect cocoa_bounds = NSMakeRect(pos.x(), 0,
-                                   pos.width(),
-                                   pos.height());
-  // Flip coordinates based on the primary screen.
-  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
-  cocoa_bounds.origin.y =
-      NSHeight([screen frame]) - pos.height() - pos.y();
-
-  [window_ setFrame:cocoa_bounds display:YES];
-}
-
 void NativeWindowMac::Focus(bool focus) {
   if (!IsVisible())
     return;
@@ -471,12 +459,26 @@ bool NativeWindowMac::IsFullscreen() const {
 }
 
 void NativeWindowMac::SetBounds(const gfx::Rect& bounds) {
-  Move(bounds);
+  NSRect cocoa_bounds = NSMakeRect(bounds.x(), 0,
+                                   bounds.width(),
+                                   bounds.height());
+  // Flip coordinates based on the primary screen.
+  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
+  cocoa_bounds.origin.y =
+      NSHeight([screen frame]) - bounds.height() - bounds.y();
+
+  [window_ setFrame:cocoa_bounds display:YES];
 }
 
 gfx::Rect NativeWindowMac::GetBounds() {
-  return gfx::Rect(GetPosition(),
-                   GetSize());
+  NSRect frame = [window_ frame];
+  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
+
+  gfx::Point pos(frame.origin.x,
+      NSHeight([screen frame]) - frame.origin.y - frame.size.height);
+  gfx::Size size(frame.size.width, frame.size.height);
+
+  return gfx::Rect(pos, size);
 }
 
 void NativeWindowMac::SetSize(const gfx::Size& size) {
@@ -489,8 +491,7 @@ void NativeWindowMac::SetSize(const gfx::Size& size) {
 }
 
 gfx::Size NativeWindowMac::GetSize() {
-  NSRect frame = [window_ frame];
-  return gfx::Size(frame.size.width, frame.size.height);
+  return GetBounds().size();
 }
 
 void NativeWindowMac::SetContentSize(const gfx::Size& size) {
@@ -564,15 +565,11 @@ void NativeWindowMac::Center() {
 }
 
 void NativeWindowMac::SetPosition(const gfx::Point& position) {
-  Move(gfx::Rect(position, GetSize()));
+  SetBounds(gfx::Rect(position, GetSize()));
 }
 
 gfx::Point NativeWindowMac::GetPosition() {
-  NSRect frame = [window_ frame];
-  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
-
-  return gfx::Point(frame.origin.x,
-      NSHeight([screen frame]) - frame.origin.y - frame.size.height);
+  return GetBounds().origin();
 }
 
 void NativeWindowMac::SetTitle(const std::string& title) {

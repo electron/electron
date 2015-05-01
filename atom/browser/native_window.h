@@ -98,7 +98,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   virtual void Close() = 0;
   virtual void CloseImmediately() = 0;
-  virtual void Move(const gfx::Rect& pos) = 0;
   virtual void Focus(bool focus) = 0;
   virtual bool IsFocused() = 0;
   virtual void Show() = 0;
