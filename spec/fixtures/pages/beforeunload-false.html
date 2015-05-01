@@ -1,0 +1,13 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  window.onbeforeunload = function() {
+    setTimeout(function() {
+      var ipc = require('ipc');
+      ipc.sendToHost('onbeforeunload');
+    }, 0);
+    return false;
+  }
+</script>
+</body>
+</html>
