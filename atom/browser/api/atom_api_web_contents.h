@@ -27,6 +27,7 @@ class Dictionary;
 
 namespace atom {
 
+class AtomJavaScriptDialogManager;
 class WebDialogHelper;
 
 namespace api {
@@ -126,6 +127,8 @@ class WebContents : public mate::EventEmitter,
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
+  content::JavaScriptDialogManager* GetJavaScriptDialogManager(
+      content::WebContents* source) override;
   void RunFileChooser(content::WebContents* web_contents,
                       const content::FileChooserParams& params) override;
   void EnumerateDirectory(content::WebContents* web_contents,
@@ -201,6 +204,7 @@ class WebContents : public mate::EventEmitter,
                                      const gfx::Size& new_size);
 
   scoped_ptr<WebDialogHelper> web_dialog_helper_;
+  scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
 
   // Unique ID for a guest WebContents.
   int guest_instance_id_;
