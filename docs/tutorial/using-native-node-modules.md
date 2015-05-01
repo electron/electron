@@ -25,13 +25,13 @@ where to download headers and which version to use:
 
 ```bash
 $ cd /path-to-module/
-$ HOME=~/.electron-gyp node-gyp rebuild --target=0.16.0 --arch=ia32 --dist-url=https://atom.io/download/atom-shell
+$ HOME=~/.electron-gyp node-gyp rebuild --target=0.25.0 --arch=ia64 --dist-url=https://atom.io/download/electron
 ```
 
 The `HOME=~/.electron-gyp` changes where to find development headers. The
-`--target=0.16.0` is version of Electron. The `--dist-url=...` specifies
-where to download the headers. The `--arch=ia32` says the module is built for
-32bit system.
+`--target=0.25.0` is version of Electron. The `--dist-url=...` specifies
+where to download the headers. The `--arch=ia64` says the module is built for
+64bit system.
 
 ### The npm way
 
@@ -39,8 +39,8 @@ You can also use `npm` to install modules, the steps are exactly the same with
 Node modules, except that you need to setup some environment variables:
 
 ```bash
-export npm_config_disturl=https://atom.io/download/atom-shell
-export npm_config_target=0.23.0
+export npm_config_disturl=https://atom.io/download/electron
+export npm_config_target=0.25.0
 export npm_config_arch=x64
 HOME=~/.electron-gyp npm install module-name
 ```
