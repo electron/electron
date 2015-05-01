@@ -5,11 +5,15 @@
 #ifndef ATOM_BROWSER_UI_TRAY_ICON_OBSERVER_H_
 #define ATOM_BROWSER_UI_TRAY_ICON_OBSERVER_H_
 
+namespace gfx {
+class Point;
+}
+
 namespace atom {
 
 class TrayIconObserver {
  public:
-  virtual void OnClicked() {}
+  virtual void OnClicked(const gfx::Point&) {}
   virtual void OnDoubleClicked() {}
   virtual void OnBalloonShow() {}
   virtual void OnBalloonClicked() {}

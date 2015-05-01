@@ -49,7 +49,7 @@ void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
                                   bool left_mouse_click) {
   // Pass to the observer if appropriate.
   if (left_mouse_click) {
-    NotifyClicked();
+    NotifyClicked(cursor_pos);
     return;
   }
 
