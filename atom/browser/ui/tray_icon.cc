@@ -26,8 +26,8 @@ void TrayIcon::DisplayBalloon(const gfx::Image& icon,
                               const base::string16& contents) {
 }
 
-void TrayIcon::NotifyClicked() {
-  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnClicked());
+void TrayIcon::NotifyClicked(const gfx::Point& pos) {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnClicked(pos));
 }
 
 void TrayIcon::NotifyDoubleClicked() {

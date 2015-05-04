@@ -7,6 +7,7 @@
 #include "atom/browser/ui/cocoa/atom_menu_controller.h"
 #include "base/strings/sys_string_conversions.h"
 #include "ui/gfx/image/image.h"
+#include "ui/gfx/screen.h"
 
 @interface StatusItemController : NSObject {
   atom::TrayIconCocoa* trayIcon_; // weak
@@ -25,7 +26,13 @@
 }
 
 - (void)handleClick:(id)sender {
-  trayIcon_->NotifyClicked();
+  // Get the position of the frame of the NSStatusItem.
+  NSPoint pos = [NSApp currentEvent].window.frame.origin;
+  // Flip coordinates to gfx (0,0 in top-left corner) using current screen.
+  NSScreen* screen = [NSScreen mainScreen];
+  pos.y = NSMaxY([screen frame]) - pos.y;
+
+  trayIcon_->NotifyClicked(gfx::Point(pos.x, pos.y));
 }
 
 - (void)handleDoubleClick:(id)sender {

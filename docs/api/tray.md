@@ -46,6 +46,11 @@ Creates a new tray icon associated with the `image`.
 
 ### Event: 'clicked'
 
+* `event`
+* `point` Object
+  * `x` Integer
+  * `y` Integer
+
 Emitted when the tray icon is clicked.
 
 ### Event: 'double-clicked'
