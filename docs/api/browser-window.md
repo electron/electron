@@ -316,6 +316,20 @@ Sets whether the window should be in fullscreen mode.
 
 Returns whether the window is in fullscreen mode.
 
+### BrowserWindow.setBounds(options)
+
+* `options` Object
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
+
+Resizes and moves the window to `width`, `height`, `x`, `y`.
+
+### BrowserWindow.getBounds()
+
+Returns an object that contains window's width, height, x and y values.
+
 ### BrowserWindow.setSize(width, height)
 
 * `width` Integer

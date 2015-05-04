@@ -192,7 +192,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     int width = -1, height = -1;
     options.Get(switches::kWidth, &width);
     options.Get(switches::kHeight, &height);
-    Move(gfx::Rect(x, y, width, height));
+    SetBounds(gfx::Rect(x, y, width, height));
   } else if (options.Get(switches::kCenter, &center) && center) {
     Center();
   }
@@ -646,8 +646,7 @@ void NativeWindow::DeactivateContents(content::WebContents* contents) {
 
 void NativeWindow::MoveContents(content::WebContents* source,
                                 const gfx::Rect& pos) {
-  SetPosition(pos.origin());
-  SetSize(pos.size());
+  SetBounds(pos);
 }
 
 void NativeWindow::CloseContents(content::WebContents* source) {

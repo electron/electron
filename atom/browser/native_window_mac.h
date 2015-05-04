@@ -30,7 +30,6 @@ class NativeWindowMac : public NativeWindow {
   // NativeWindow implementation.
   void Close() override;
   void CloseImmediately() override;
-  void Move(const gfx::Rect& pos) override;
   void Focus(bool focus) override;
   bool IsFocused() override;
   void Show() override;
@@ -45,6 +44,8 @@ class NativeWindowMac : public NativeWindow {
   bool IsMinimized() override;
   void SetFullScreen(bool fullscreen) override;
   bool IsFullscreen() const override;
+  void SetBounds(const gfx::Rect& bounds) override;
+  gfx::Rect GetBounds() override;
   void SetSize(const gfx::Size& size) override;
   gfx::Size GetSize() override;
   void SetContentSize(const gfx::Size& size) override;

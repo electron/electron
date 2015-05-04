@@ -291,10 +291,6 @@ void NativeWindowViews::CloseImmediately() {
   window_->CloseNow();
 }
 
-void NativeWindowViews::Move(const gfx::Rect& bounds) {
-  window_->SetBounds(bounds);
-}
-
 void NativeWindowViews::Focus(bool focus) {
   if (focus)
     window_->Activate();
@@ -373,6 +369,28 @@ bool NativeWindowViews::IsFullscreen() const {
   return window_->IsFullscreen();
 }
 
+void NativeWindowViews::SetBounds(const gfx::Rect& bounds) {
+#if defined(USE_X11)
+  // On Linux the minimum and maximum size should be updated with window size
+  // when window is not resizable.
+  if (!resizable_) {
+    SetMaximumSize(bounds.size());
+    SetMinimumSize(bounds.size());
+  }
+#endif
+
+  window_->SetBounds(bounds);
+}
+
+gfx::Rect NativeWindowViews::GetBounds() {
+#if defined(OS_WIN)
+  if (IsMinimized())
+    return window_->GetRestoredBounds();
+#endif
+
+  return window_->GetWindowBoundsInScreen();
+}
+
 void NativeWindowViews::SetSize(const gfx::Size& size) {
 #if defined(USE_X11)
   // On Linux the minimum and maximum size should be updated with window size
@@ -387,12 +405,7 @@ void NativeWindowViews::SetSize(const gfx::Size& size) {
 }
 
 gfx::Size NativeWindowViews::GetSize() {
-#if defined(OS_WIN)
-  if (IsMinimized())
-    return window_->GetRestoredBounds().size();
-#endif
-
-  return window_->GetWindowBoundsInScreen().size();
+  return GetBounds().size();
 }
 
 void NativeWindowViews::SetContentSize(const gfx::Size& size) {
