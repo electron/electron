@@ -4,6 +4,7 @@ path   = require 'path'
 remote = require 'remote'
 http   = require 'http'
 url    = require 'url'
+auth   = require 'basic-auth'
 
 BrowserWindow = remote.require 'browser-window'
 
@@ -245,3 +246,26 @@ describe 'browser-window module', ->
       w.webContents.on 'did-finish-load', ->
         w.close()
       w.loadUrl "file://#{fixtures}/pages/f.html"
+
+  describe 'basic auth', ->
+    it 'should authenticate with correct credentials', (done) ->
+      ipc = remote.require 'ipc'
+      server = http.createServer (req, res) ->
+        action = url.parse(req.url, true).pathname
+        if action == '/'
+          credentials = auth(req)
+          if credentials.name == 'test' and credentials.pass == 'test'
+            res.end('Authenticated')
+            server.close()
+        else if action == '/jquery.js'
+          js = fs.readFileSync(path.join(__dirname, 'static', 'jquery-2.0.3.min.js'))
+          res.writeHead(200, {'Content-Type': 'text/javascript'})
+          res.end(js, 'utf-8')
+      server.listen 62342, '127.0.0.1'
+      ipc.on 'console-message', (e, message) ->
+        ipc.removeAllListeners 'console-message'
+        assert.equal message, 'Authenticated'
+        done()
+      w.webContents.on 'did-finish-load', ->
+        w.close()
+      w.loadUrl "file://#{fixtures}/pages/basic-auth.html"
