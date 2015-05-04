@@ -21,6 +21,7 @@
 #include "net/dns/mapped_host_resolver.h"
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_server_properties_impl.h"
+#include "net/http/url_security_manager.h"
 #include "net/proxy/dhcp_proxy_script_fetcher_factory.h"
 #include "net/proxy/proxy_config_service.h"
 #include "net/proxy/proxy_script_fetcher_impl.h"
@@ -188,11 +189,27 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
               NULL,
               url_request_context_->network_delegate()));
 
+    auto url_sec_mgr = net::URLSecurityManager::Create(NULL, NULL);
+
+    std::vector<std::string> schemes;
+    schemes.push_back(std::string("basic"));
+    schemes.push_back(std::string("digest"));
+    schemes.push_back(std::string("ntlm"));
+    schemes.push_back(std::string("negotiate"));
+
+    auto auth_handler_factory =
+      net::HttpAuthHandlerRegistryFactory::Create(
+        schemes,
+        url_sec_mgr,
+        host_resolver.get(),
+        std::string(),  // gssapi_library_name
+        false,          // negotiate_disable_cname_lookup
+        true);          // negotiate_enable_port
+
     storage_->set_cert_verifier(net::CertVerifier::CreateDefault());
     storage_->set_transport_security_state(new net::TransportSecurityState);
     storage_->set_ssl_config_service(new net::SSLConfigServiceDefaults);
-    storage_->set_http_auth_handler_factory(
-        net::HttpAuthHandlerFactory::CreateDefault(host_resolver.get()));
+    storage_->set_http_auth_handler_factory(auth_handler_factory);
     scoped_ptr<net::HttpServerProperties> server_properties(
         new net::HttpServerPropertiesImpl);
     storage_->set_http_server_properties(server_properties.Pass());
