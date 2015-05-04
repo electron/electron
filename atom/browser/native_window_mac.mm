@@ -11,14 +11,14 @@
 #include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
+#include "brightray/browser/inspectable_web_contents.h"
+#include "brightray/browser/inspectable_web_contents_view.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "native_mate/dictionary.h"
-#include "vendor/brightray/browser/inspectable_web_contents.h"
-#include "vendor/brightray/browser/inspectable_web_contents_view.h"
 
 static const CGFloat kAtomWindowCornerRadius = 4.0;
 
@@ -303,7 +303,7 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
   options.Get(switches::kWidth, &width);
   options.Get(switches::kHeight, &height);
 
-  NSRect main_screen_rect = [[[NSScreen screens] objectAtIndex:0] frame];
+  NSRect main_screen_rect = [[NSScreen mainScreen] frame];
   NSRect cocoa_bounds = NSMakeRect(
       round((NSWidth(main_screen_rect) - width) / 2) ,
       round((NSHeight(main_screen_rect) - height) / 2),
@@ -463,7 +463,7 @@ void NativeWindowMac::SetBounds(const gfx::Rect& bounds) {
                                    bounds.width(),
                                    bounds.height());
   // Flip coordinates based on the primary screen.
-  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
+  NSScreen* screen = [NSScreen mainScreen];
   cocoa_bounds.origin.y =
       NSHeight([screen frame]) - bounds.height() - bounds.y();
 
@@ -472,13 +472,10 @@ void NativeWindowMac::SetBounds(const gfx::Rect& bounds) {
 
 gfx::Rect NativeWindowMac::GetBounds() {
   NSRect frame = [window_ frame];
-  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
-
-  gfx::Point pos(frame.origin.x,
-      NSHeight([screen frame]) - frame.origin.y - frame.size.height);
-  gfx::Size size(frame.size.width, frame.size.height);
-
-  return gfx::Rect(pos, size);
+  gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
+  NSScreen* screen = [NSScreen mainScreen];
+  bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
+  return bounds;
 }
 
 void NativeWindowMac::SetSize(const gfx::Size& size) {
