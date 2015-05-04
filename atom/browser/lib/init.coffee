@@ -81,6 +81,9 @@ if packageJson.desktopName?
 else
   app.setDesktopName "#{app.getName()}.desktop"
 
+# Chrome 42 disables NPAPI plugins by default, reenable them here
+app.commandLine.appendSwitch 'enable-npapi'
+
 # Set the user path according to application's name.
 app.setPath 'userData', path.join(app.getPath('appData'), app.getName())
 app.setPath 'userCache', path.join(app.getPath('cache'), app.getName())
