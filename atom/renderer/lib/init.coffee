@@ -103,5 +103,8 @@ if preloadScript
   try
     require preloadScript
   catch error
-    throw error unless error.code is 'MODULE_NOT_FOUND'
-    console.error "Unable to load preload script #{preloadScript}"
+    if error.code is 'MODULE_NOT_FOUND'
+      console.error "Unable to load preload script #{preloadScript}"
+    else
+      console.error(error)
+      console.error(error.stack)
