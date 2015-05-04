@@ -391,31 +391,15 @@ gfx::Rect NativeWindowViews::GetBounds() {
   return window_->GetWindowBoundsInScreen();
 }
 
-void NativeWindowViews::SetSize(const gfx::Size& size) {
-#if defined(USE_X11)
-  // On Linux the minimum and maximum size should be updated with window size
-  // when window is not resizable.
-  if (!resizable_) {
-    SetMaximumSize(size);
-    SetMinimumSize(size);
-  }
-#endif
-
-  window_->SetSize(size);
-}
-
-gfx::Size NativeWindowViews::GetSize() {
-  return GetBounds().size();
-}
-
 void NativeWindowViews::SetContentSize(const gfx::Size& size) {
   if (!has_frame_) {
-    SetSize(size);
+    NativeWindow::SetSize(size);
     return;
   }
 
   gfx::Rect bounds = window_->GetWindowBoundsInScreen();
-  SetSize(ContentBoundsToWindowBounds(gfx::Rect(bounds.origin(), size)).size());
+  bounds.set_size(size);
+  SetBounds(ContentBoundsToWindowBounds(bounds));
 }
 
 gfx::Size NativeWindowViews::GetContentSize() {
@@ -503,19 +487,6 @@ bool NativeWindowViews::IsAlwaysOnTop() {
 
 void NativeWindowViews::Center() {
   window_->CenterWindow(GetSize());
-}
-
-void NativeWindowViews::SetPosition(const gfx::Point& position) {
-  window_->SetBounds(gfx::Rect(position, GetSize()));
-}
-
-gfx::Point NativeWindowViews::GetPosition() {
-#if defined(OS_WIN)
-  if (IsMinimized())
-    return window_->GetRestoredBounds().origin();
-#endif
-
-  return window_->GetWindowBoundsInScreen().origin();
 }
 
 void NativeWindowViews::SetTitle(const std::string& title) {

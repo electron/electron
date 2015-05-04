@@ -237,6 +237,22 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     Show();
 }
 
+void NativeWindow::SetSize(const gfx::Size& size) {
+  SetBounds(gfx::Rect(GetPosition(), size));
+}
+
+gfx::Size NativeWindow::GetSize() {
+  return GetBounds().size();
+}
+
+void NativeWindow::SetPosition(const gfx::Point& position) {
+  SetBounds(gfx::Rect(position, GetSize()));
+}
+
+gfx::Point NativeWindow::GetPosition() {
+  return GetBounds().origin();
+}
+
 void NativeWindow::SetRepresentedFilename(const std::string& filename) {
 }
 

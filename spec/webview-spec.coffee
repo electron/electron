@@ -181,15 +181,15 @@ describe '<webview> tag', ->
 
   describe '<webview>.reload()', ->
     it 'should emit beforeunload handler', (done) ->
-      webview.addEventListener 'did-finish-load', (e) ->
-        webview.reload()
       listener = (e) ->
         assert.equal e.channel, 'onbeforeunload'
         webview.removeEventListener 'ipc-message', listener
         done()
-      webview.addEventListener 'console-message', (e) ->
-        console.log(e)
+      listener2 = (e) ->
+        webview.reload()
+        webview.removeEventListener 'did-finish-load', listener2
       webview.addEventListener 'ipc-message', listener
+      webview.addEventListener 'did-finish-load', listener2
       webview.setAttribute 'nodeintegration', 'on'
       webview.src = "file://#{fixtures}/pages/beforeunload-false.html"
       document.body.appendChild webview

@@ -114,8 +114,10 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual bool IsFullscreen() const = 0;
   virtual void SetBounds(const gfx::Rect& bounds) = 0;
   virtual gfx::Rect GetBounds() = 0;
-  virtual void SetSize(const gfx::Size& size) = 0;
-  virtual gfx::Size GetSize() = 0;
+  virtual void SetSize(const gfx::Size& size);
+  virtual gfx::Size GetSize();
+  virtual void SetPosition(const gfx::Point& position);
+  virtual gfx::Point GetPosition();
   virtual void SetContentSize(const gfx::Size& size) = 0;
   virtual gfx::Size GetContentSize() = 0;
   virtual void SetMinimumSize(const gfx::Size& size) = 0;
@@ -127,8 +129,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void SetAlwaysOnTop(bool top) = 0;
   virtual bool IsAlwaysOnTop() = 0;
   virtual void Center() = 0;
-  virtual void SetPosition(const gfx::Point& position) = 0;
-  virtual gfx::Point GetPosition() = 0;
   virtual void SetTitle(const std::string& title) = 0;
   virtual std::string GetTitle() = 0;
   virtual void FlashFrame(bool flash) = 0;
