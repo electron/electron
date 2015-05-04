@@ -40,8 +40,8 @@ mate::Wrappable* Tray::New(const gfx::Image& image) {
   return new Tray(image);
 }
 
-void Tray::OnClicked(const gfx::Point& pos) {
-  Emit("clicked", pos);
+void Tray::OnClicked(const gfx::Rect& bounds) {
+  Emit("clicked", bounds);
 }
 
 void Tray::OnDoubleClicked() {

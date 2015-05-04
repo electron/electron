@@ -26,13 +26,14 @@
 }
 
 - (void)handleClick:(id)sender {
-  // Get the position of the frame of the NSStatusItem.
-  NSPoint pos = [NSApp currentEvent].window.frame.origin;
+  // Get the frame of the NSStatusItem.
+  NSRect frame = [NSApp currentEvent].window.frame;
+  gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
   // Flip coordinates to gfx (0,0 in top-left corner) using current screen.
   NSScreen* screen = [NSScreen mainScreen];
-  pos.y = NSMaxY([screen frame]) - pos.y;
+  bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
 
-  trayIcon_->NotifyClicked(gfx::Point(pos.x, pos.y));
+  trayIcon_->NotifyClicked(bounds);
 }
 
 - (void)handleDoubleClick:(id)sender {
