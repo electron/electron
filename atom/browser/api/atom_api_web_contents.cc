@@ -426,13 +426,6 @@ base::string16 WebContents::GetTitle() const {
   return web_contents()->GetTitle();
 }
 
-gfx::Image WebContents::GetFavicon() const {
-  auto entry = web_contents()->GetController().GetLastCommittedEntry();
-  if (!entry)
-    return gfx::Image();
-  return entry->GetFavicon().image;
-}
-
 bool WebContents::IsLoading() const {
   return web_contents()->IsLoading();
 }
@@ -613,7 +606,6 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("isAlive", &WebContents::IsAlive)
         .SetMethod("_loadUrl", &WebContents::LoadURL)
         .SetMethod("getTitle", &WebContents::GetTitle)
-        .SetMethod("getFavicon", &WebContents::GetFavicon)
         .SetMethod("isLoading", &WebContents::IsLoading)
         .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
         .SetMethod("_stop", &WebContents::Stop)

@@ -741,10 +741,6 @@ Returns URL of current web page.
 
 Returns the title of web page.
 
-### WebContents.getFavicon()
-
-Returns the favicon of web page as [NativeImage](native-image.md).
-
 ### WebContents.isLoading()
 
 Returns whether web page is still loading resources.

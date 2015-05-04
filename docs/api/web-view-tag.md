@@ -130,10 +130,6 @@ Returns URL of guest page.
 
 Returns the title of guest page.
 
-### `<webview>`.getFavicon()
-
-Returns the favicon of guest page as dataUrl.
-
 ### `<webview>`.isLoading()
 
 Returns whether guest page is still loading resources.
