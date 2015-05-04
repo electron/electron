@@ -227,6 +227,7 @@ describe 'browser-window module', ->
 
   describe 'dom-ready event', ->
     it 'emits when document is loaded', (done) ->
+      ipc = remote.require 'ipc'
       server = http.createServer (req, res) ->
         action = url.parse(req.url, true).pathname
         if action == '/logo.png'
@@ -237,7 +238,8 @@ describe 'browser-window module', ->
           , 2000
           server.close()
       server.listen 62542, '127.0.0.1'
-      remote.require('ipc').on 'dom-ready', (e, state) ->
+      ipc.on 'dom-ready', (e, state) ->
+        ipc.removeAllListeners 'dom-ready'
         assert.equal state, 'interactive'
         done()
       w.webContents.on 'did-finish-load', ->
