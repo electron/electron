@@ -27,10 +27,6 @@ bool Send(IPC::Message* message) {
   return content::UtilityThread::Get()->Send(message);
 }
 
-void ReleaseProcessIfNeeded() {
-  content::UtilityThread::Get()->ReleaseProcessIfNeeded();
-}
-
 }  // namespace
 
 namespace atom {
@@ -40,7 +36,9 @@ int64_t AtomContentUtilityClient::max_ipc_message_size_ =
 
 AtomContentUtilityClient::AtomContentUtilityClient()
     : filter_messages_(false) {
+#if defined(OS_WIN)
   handlers_.push_back(new PrintingHandler());
+#endif
 }
 
 AtomContentUtilityClient::~AtomContentUtilityClient() {
