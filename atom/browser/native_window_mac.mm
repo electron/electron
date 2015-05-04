@@ -478,19 +478,6 @@ gfx::Rect NativeWindowMac::GetBounds() {
   return bounds;
 }
 
-void NativeWindowMac::SetSize(const gfx::Size& size) {
-  NSRect frame = [window_ frame];
-  frame.origin.y -= size.height() - frame.size.height;
-  frame.size.width = size.width();
-  frame.size.height = size.height();
-
-  [window_ setFrame:frame display:YES];
-}
-
-gfx::Size NativeWindowMac::GetSize() {
-  return GetBounds().size();
-}
-
 void NativeWindowMac::SetContentSize(const gfx::Size& size) {
   NSRect frame_nsrect = [window_ frame];
   NSSize frame = frame_nsrect.size;
@@ -559,14 +546,6 @@ bool NativeWindowMac::IsAlwaysOnTop() {
 
 void NativeWindowMac::Center() {
   [window_ center];
-}
-
-void NativeWindowMac::SetPosition(const gfx::Point& position) {
-  SetBounds(gfx::Rect(position, GetSize()));
-}
-
-gfx::Point NativeWindowMac::GetPosition() {
-  return GetBounds().origin();
 }
 
 void NativeWindowMac::SetTitle(const std::string& title) {
