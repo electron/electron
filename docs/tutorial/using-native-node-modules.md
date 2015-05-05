@@ -18,6 +18,19 @@ For old modules that only support Node v0.10.x, you should use the
 
 ## How to install native modules
 
+### The Easy Way
+
+The most straightforward way to rebuild native modules is via the 
+[`electron-rebuild`](https://github.com/paulcbetts/electron-rebuild) package, 
+which handles the manual steps of downloading headers and building native modules:
+
+```sh
+npm install --save-dev electron-rebuild
+
+# Every time you run npm install, run this too
+./node_modules/.bin/electron-rebuild
+```
+
 ### The node-gyp way
 
 To build Node modules with headers of Electron, you need to tell `node-gyp`
