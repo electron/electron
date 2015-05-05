@@ -65,11 +65,6 @@ scoped_ptr<ResourceHost> ChromeBrowserPepperHostFactory::CreateResourceHost(
         return scoped_ptr<ResourceHost>(new MessageFilterHost(
             host_->GetPpapiHost(), instance, resource, clipboard_filter));
       }
-#if 0
-    case PpapiHostMsg_FlashDRM_Create::ID:
-        return scoped_ptr<ResourceHost>(
-            new PepperFlashDRMHost(host_, instance, resource));
-#endif
     }
   }
 
