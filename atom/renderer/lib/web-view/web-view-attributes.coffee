@@ -167,6 +167,11 @@ class HttpReferrerAttribute extends WebViewAttribute
   constructor: (webViewImpl) ->
     super webViewConstants.ATTRIBUTE_HTTPREFERRER, webViewImpl
 
+# Attribute specifies HTTP referrer.
+class UserAgentAttribute extends WebViewAttribute
+  constructor: (webViewImpl) ->
+    super webViewConstants.ATTRIBUTE_HTTPREFERRER, webViewImpl
+
 # Attribute that set preload script.
 class PreloadAttribute extends WebViewAttribute
   constructor: (webViewImpl) ->
