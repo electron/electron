@@ -35,13 +35,6 @@ typedef std::vector<Tuple<base::string16, base::string16>>
 
 #define IPC_MESSAGE_START ChromeUtilityMsgStart
 
-//#if defined(FULL_SAFE_BROWSING)
-//IPC_STRUCT_TRAITS_BEGIN(safe_browsing::zip_analyzer::Results)
-  //IPC_STRUCT_TRAITS_MEMBER(success)
-  //IPC_STRUCT_TRAITS_MEMBER(has_executable)
-  //IPC_STRUCT_TRAITS_MEMBER(has_archive)
-//IPC_STRUCT_TRAITS_END()
-//#endif
 
 #if defined(OS_WIN)
 IPC_STRUCT_BEGIN(ChromeUtilityMsg_GetSaveFileName_Params)
@@ -89,25 +82,12 @@ IPC_MESSAGE_CONTROL3(ChromeUtilityMsg_PatchFileCourgette,
                      base::FilePath /* patch_file */,
                      base::FilePath /* output_file */)
 
-#if defined(OS_CHROMEOS)
-// Tell the utility process to create a zip file on the given list of files.
-IPC_MESSAGE_CONTROL3(ChromeUtilityMsg_CreateZipFile,
-                     base::FilePath /* src_dir */,
-                     std::vector<base::FilePath> /* src_relative_paths */,
-                     base::FileDescriptor /* dest_fd */)
-#endif  // defined(OS_CHROMEOS)
 
 // Requests the utility process to respond with a
 // ChromeUtilityHostMsg_ProcessStarted message once it has started.  This may
 // be used if the host process needs a handle to the running utility process.
 IPC_MESSAGE_CONTROL0(ChromeUtilityMsg_StartupPing)
 
-#if defined(FULL_SAFE_BROWSING)
-// Tells the utility process to analyze a zip file for malicious download
-// protection.
-IPC_MESSAGE_CONTROL1(ChromeUtilityMsg_AnalyzeZipFileForDownloadProtection,
-                     IPC::PlatformFileForTransit /* zip_file */)
-#endif
 
 #if defined(OS_WIN)
 // Invokes ui::base::win::OpenFileViaShell from the utility process.
@@ -136,12 +116,6 @@ IPC_MESSAGE_CONTROL1(ChromeUtilityMsg_GetSaveFileName,
                      ChromeUtilityMsg_GetSaveFileName_Params /* params */)
 #endif  // defined(OS_WIN)
 
-//#if defined(OS_ANDROID)
-//// Instructs the utility process to detect support for seccomp-bpf,
-//// and the result is reported through
-//// ChromeUtilityHostMsg_DetectSeccompSupport_Result.
-//IPC_MESSAGE_CONTROL0(ChromeUtilityMsg_DetectSeccompSupport)
-//#endif
 
 //------------------------------------------------------------------------------
 // Utility process host messages:
@@ -176,23 +150,10 @@ IPC_MESSAGE_CONTROL0(ChromeUtilityHostMsg_DecodeImage_Failed)
 // Reply when a file has been patched.
 IPC_MESSAGE_CONTROL1(ChromeUtilityHostMsg_PatchFile_Finished, int /* result */)
 
-//#if defined(OS_CHROMEOS)
-//// Reply when the utility process has succeeded in creating the zip file.
-//IPC_MESSAGE_CONTROL0(ChromeUtilityHostMsg_CreateZipFile_Succeeded)
-
-//// Reply when an error occured in creating the zip file.
-//IPC_MESSAGE_CONTROL0(ChromeUtilityHostMsg_CreateZipFile_Failed)
-//#endif  // defined(OS_CHROMEOS)
 
 // Reply when the utility process has started.
 IPC_MESSAGE_CONTROL0(ChromeUtilityHostMsg_ProcessStarted)
 
-//#if defined(FULL_SAFE_BROWSING)
-//// Reply when a zip file has been analyzed for malicious download protection.
-//IPC_MESSAGE_CONTROL1(
-    //ChromeUtilityHostMsg_AnalyzeZipFileForDownloadProtection_Finished,
-    //safe_browsing::zip_analyzer::Results)
-//#endif
 
 #if defined(OS_WIN)
 IPC_MESSAGE_CONTROL0(ChromeUtilityHostMsg_GetOpenFileName_Failed)
@@ -206,12 +167,3 @@ IPC_MESSAGE_CONTROL2(ChromeUtilityHostMsg_GetSaveFileName_Result,
 IPC_MESSAGE_CONTROL1(ChromeUtilityHostMsg_BuildDirectWriteFontCache,
                      base::FilePath /* cache file path */)
 #endif  // defined(OS_WIN)
-
-//#if defined(OS_ANDROID)
-//// Reply to ChromeUtilityMsg_DetectSeccompSupport to report the level
-//// of kernel support for seccomp-bpf.
-//IPC_MESSAGE_CONTROL1(ChromeUtilityHostMsg_DetectSeccompSupport_ResultPrctl,
-                     //bool [> seccomp prctl supported <])
-//IPC_MESSAGE_CONTROL1(ChromeUtilityHostMsg_DetectSeccompSupport_ResultSyscall,
-                     //bool [> seccomp syscall supported <])
-//#endif
