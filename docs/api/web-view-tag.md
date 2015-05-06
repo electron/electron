@@ -112,6 +112,14 @@ after this script has done execution.
 
 Sets the referrer URL for the guest page.
 
+### useragent
+
+```html
+<webview src="https://www.github.com/" useragent="Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko"></webview>
+```
+
+Sets the user agent for the guest page before the page is navigated to. Once the page is loaded, use the `setUserAgent` method to change the user agent.
+
 ### disablewebsecurity
 
 ```html
