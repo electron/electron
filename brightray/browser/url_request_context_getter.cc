@@ -21,7 +21,6 @@
 #include "net/dns/mapped_host_resolver.h"
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_server_properties_impl.h"
-#include "net/http/url_security_manager.h"
 #include "net/proxy/dhcp_proxy_script_fetcher_factory.h"
 #include "net/proxy/proxy_config_service.h"
 #include "net/proxy/proxy_script_fetcher_impl.h"
@@ -120,6 +119,7 @@ URLRequestContextGetter::URLRequestContextGetter(
       base_path_(base_path),
       io_loop_(io_loop),
       file_loop_(file_loop),
+      url_sec_mgr_(net::URLSecurityManager::Create(NULL, NULL)),
       protocol_interceptors_(protocol_interceptors.Pass()) {
   // Must first be created on the UI thread.
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
@@ -189,7 +189,6 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
               NULL,
               url_request_context_->network_delegate()));
 
-    auto url_sec_mgr = net::URLSecurityManager::Create(NULL, NULL);
 
     std::vector<std::string> schemes;
     schemes.push_back(std::string("basic"));
@@ -200,7 +199,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     auto auth_handler_factory =
         net::HttpAuthHandlerRegistryFactory::Create(
             schemes,
-            url_sec_mgr,
+            url_sec_mgr_.get(),
             host_resolver.get(),
             std::string(),  // gssapi_library_name
             false,          // negotiate_disable_cname_lookup
