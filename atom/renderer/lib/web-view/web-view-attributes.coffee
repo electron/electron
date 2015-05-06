@@ -158,13 +158,14 @@ class SrcAttribute extends WebViewAttribute
       return
 
     # Navigate to |this.src|.
+    opts = {}
     httpreferrer = @webViewImpl.attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].getValue()
-    urlOptions = if httpreferrer then {httpreferrer} else {}
+    if httpreferrer then opts.httpreferrer = httpreferrer
 
-    useragent = @webViewImpl.attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].getValue()
+    useragent = @webViewImpl.attributes[webViewConstants.ATTRIBUTE_USERAGENT].getValue()
+    if useragent then opts.useragent = useragent
 
     guestContents = remote.getGuestWebContents(@webViewImpl.guestInstanceId)
-    guestContents.setUserAgent(guestContents) if guestContents
     guestContents.loadUrl @getValue(), urlOptions
 
 # Attribute specifies HTTP referrer.
@@ -175,7 +176,7 @@ class HttpReferrerAttribute extends WebViewAttribute
 # Attribute specifies HTTP referrer.
 class UserAgentAttribute extends WebViewAttribute
   constructor: (webViewImpl) ->
-    super webViewConstants.ATTRIBUTE_HTTPREFERRER, webViewImpl
+    super webViewConstants.ATTRIBUTE_USERAGENT, webViewImpl
 
 # Attribute that set preload script.
 class PreloadAttribute extends WebViewAttribute
