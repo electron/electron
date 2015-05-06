@@ -420,7 +420,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
 
   std::string user_agent;
   if (options.Get("useragent", &user_agent))
-    this->SetUserAgent(user_agent);
+    SetUserAgent(user_agent);
 
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;
