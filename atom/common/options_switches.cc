@@ -66,6 +66,9 @@ const char kEnablePlugins[] = "enable-plugins";
 // Ppapi Flash path.
 const char kPpapiFlashPath[] = "ppapi-flash-path";
 
+// Ppapi Flash version.
+const char kPpapiFlashVersion[] = "ppapi-flash-version";
+
 // Instancd ID of guest WebContents.
 const char kGuestInstanceID[] = "guest-instance-id";
 
