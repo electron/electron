@@ -190,3 +190,10 @@ describe 'protocol module', ->
             assert false, 'Got error: ' + errorType + ' ' + error
             free()
       protocol.interceptProtocol 'file', handler
+
+    it 'can override http protocol handler', (done) ->
+      handler = remote.createFunctionWithReturnValue 'valar morghulis'
+      protocol.once 'intercepted', ->
+        protocol.uninterceptProtocol 'http'
+        done()
+      protocol.interceptProtocol 'http', handler
