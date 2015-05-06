@@ -313,8 +313,7 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
   window_.reset([[AtomNSWindow alloc]
       initWithContentRect:cocoa_bounds
                 styleMask:NSTitledWindowMask | NSClosableWindowMask |
-                          NSMiniaturizableWindowMask | NSResizableWindowMask |
-                          NSTexturedBackgroundWindowMask
+                          NSMiniaturizableWindowMask | NSResizableWindowMask
                   backing:NSBackingStoreBuffered
                     defer:YES]);
   [window_ setShell:this];
