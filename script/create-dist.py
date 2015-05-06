@@ -79,7 +79,8 @@ def main():
   force_build()
   create_symbols()
   copy_binaries()
-  copy_chromedriver()
+  copy_chrome_binary('chromedriver')
+  copy_chrome_binary('mksnapshot')
   copy_license()
 
   if PLATFORM == 'linux':
@@ -88,7 +89,8 @@ def main():
 
   create_version()
   create_dist_zip()
-  create_chromedriver_zip()
+  create_chrome_binary_zip('chromedriver', get_chromedriver_version())
+  create_chrome_binary_zip('mksnapshot', ATOM_SHELL_VERSION)
   create_symbols_zip()
 
 
@@ -107,13 +109,11 @@ def copy_binaries():
                     symlinks=True)
 
 
-def copy_chromedriver():
+def copy_chrome_binary(binary):
   if PLATFORM == 'win32':
-    chromedriver = 'chromedriver.exe'
-  else:
-    chromedriver = 'chromedriver'
-  src = os.path.join(CHROMIUM_DIR, chromedriver)
-  dest = os.path.join(DIST_DIR, chromedriver)
+    binary += '.exe'
+  src = os.path.join(CHROMIUM_DIR, binary)
+  dest = os.path.join(DIST_DIR, binary)
 
   # Copy file and keep the executable bit.
   shutil.copyfile(src, dest)
@@ -170,17 +170,17 @@ def create_dist_zip():
     make_zip(zip_file, files, dirs)
 
 
-def create_chromedriver_zip():
-  dist_name = 'chromedriver-{0}-{1}-{2}.zip'.format(get_chromedriver_version(),
-                                                    PLATFORM, get_target_arch())
+def create_chrome_binary_zip(binary, version):
+  dist_name = '{0}-{1}-{2}-{3}.zip'.format(binary, version, PLATFORM,
+                                           get_target_arch())
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
   with scoped_cwd(DIST_DIR):
     files = ['LICENSE']
     if PLATFORM == 'win32':
-      files += ['chromedriver.exe']
+      files += [binary + '.exe']
     else:
-      files += ['chromedriver']
+      files += [binary]
     make_zip(zip_file, files, [])
 
 
