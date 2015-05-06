@@ -166,7 +166,7 @@ class SrcAttribute extends WebViewAttribute
     if useragent then opts.useragent = useragent
 
     guestContents = remote.getGuestWebContents(@webViewImpl.guestInstanceId)
-    guestContents.loadUrl @getValue(), urlOptions
+    guestContents.loadUrl @getValue(), opts
 
 # Attribute specifies HTTP referrer.
 class HttpReferrerAttribute extends WebViewAttribute
