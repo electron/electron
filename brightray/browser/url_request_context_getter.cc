@@ -198,13 +198,13 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     schemes.push_back(std::string("negotiate"));
 
     auto auth_handler_factory =
-      net::HttpAuthHandlerRegistryFactory::Create(
-        schemes,
-        url_sec_mgr,
-        host_resolver.get(),
-        std::string(),  // gssapi_library_name
-        false,          // negotiate_disable_cname_lookup
-        true);          // negotiate_enable_port
+        net::HttpAuthHandlerRegistryFactory::Create(
+            schemes,
+            url_sec_mgr,
+            host_resolver.get(),
+            std::string(),  // gssapi_library_name
+            false,          // negotiate_disable_cname_lookup
+            true);          // negotiate_enable_port
 
     storage_->set_cert_verifier(net::CertVerifier::CreateDefault());
     storage_->set_transport_security_state(new net::TransportSecurityState);
