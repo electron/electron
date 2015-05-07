@@ -24,28 +24,24 @@ var paths = {
   win32: path.join(__dirname, './dist/electron.exe')
 }
 
-var cache = {
-  darwin: path.join(getHomePath, './.electron'),
-  linux: path.join(getHomePath, './.electron'),
-  win32: path.join(getHomePath, './.electron')
-}
+var cache = path.join(getHomePath, './.electron')
 
 if (!paths[platform]) throw new Error('Unknown platform: ' + platform)
 
 // use cache if possible
-if (pathExists.sync(path.join(cache[platform], filename))) {
+if (pathExists.sync(path.join(cache, filename))) {
   extractFile()
 } else {
-  mkdir(cache[platform], function(err) {
+  mkdir(cache, function(err) {
     if (err) return onerror(err)
-    nugget(url, {target: filename, dir: cache[platform], resume: true, verbose: true}, extractFile)
+    nugget(url, {target: filename, dir: cache, resume: true, verbose: true}, extractFile)
   })
 }
 
 function extractFile (err) {
   if (err) return onerror(err)
   fs.writeFileSync(path.join(__dirname, 'path.txt'), paths[platform])
-  extract(path.join(cache[platform], filename), {dir: path.join(__dirname, 'dist')}, function (err) {
+  extract(path.join(cache, filename), {dir: path.join(__dirname, 'dist')}, function (err) {
     if (err) return onerror(err)
   })
 }
