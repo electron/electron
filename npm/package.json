@@ -19,6 +19,7 @@
     "nugget": "^1.2.0"
   },
   "devDependencies": {
+    "path-exists": "^1.0.0",
     "tape": "^3.0.1"
   },
   "author": "Mathias Buus",
