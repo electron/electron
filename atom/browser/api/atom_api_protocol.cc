@@ -105,6 +105,14 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
             base::Bind(&AdapterRequestJob::CreateFileJobAndStart,
                        GetWeakPtr(), path));
         return;
+      } else if (name == "RequestErrorJob") {
+        int error;
+        dict.Get("error", &error);
+
+        BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
+            base::Bind(&AdapterRequestJob::CreateErrorJobAndStart,
+                       GetWeakPtr(), error));
+        return;
       }
     }
 

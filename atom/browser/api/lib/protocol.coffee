@@ -30,4 +30,8 @@ protocol.RequestFileJob =
 class RequestFileJob
   constructor: (@path) ->
 
+protocol.RequestErrorJob =
+class RequestErrorJob
+  constructor: (@error) ->
+
 module.exports = protocol

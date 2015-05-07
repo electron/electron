@@ -5,10 +5,10 @@
 #include "atom/browser/net/adapter_request_job.h"
 
 #include "base/threading/sequenced_worker_pool.h"
+#include "atom/browser/net/url_request_buffer_job.h"
 #include "atom/browser/net/url_request_string_job.h"
 #include "atom/browser/net/asar/url_request_asar_job.h"
 #include "atom/common/asar/asar_util.h"
-#include "atom/browser/net/url_request_buffer_job.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/net_errors.h"
 #include "net/url_request/url_request_error_job.h"
