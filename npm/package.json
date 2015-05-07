@@ -8,7 +8,8 @@
   },
   "scripts": {
     "install": "node install.js",
-    "test": "tape test/*.js"
+    "test": "tape test/*.js",
+    "cache-clean": "rimraf ~/.electron"
   },
   "bin": {
     "electron": "cli.js"
@@ -16,10 +17,13 @@
   "main": "index.js",
   "dependencies": {
     "extract-zip": "^1.0.3",
-    "nugget": "^1.2.0"
+    "home-path": "^0.1.1",
+    "mkdirp": "^0.5.0",
+    "nugget": "^1.2.0",
+    "path-exists": "^1.0.0"
   },
   "devDependencies": {
-    "path-exists": "^1.0.0",
+    "rimraf": "^2.3.3",
     "tape": "^3.0.1"
   },
   "author": "Mathias Buus",
