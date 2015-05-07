@@ -175,7 +175,7 @@ bool StringToAccelerator(const std::string& description,
     } else if (tokens[i].size() > 1 && tokens[i][0] == 'f') {
       // F1 - F24.
       int n;
-      if (base::StringToInt(tokens[i].c_str() + 1, &n)) {
+      if (base::StringToInt(tokens[i].c_str() + 1, &n) && n > 0 && n < 25) {
         key = static_cast<ui::KeyboardCode>(ui::VKEY_F1 + n - 1);
       } else {
         LOG(WARNING) << tokens[i] << "is not available on keyboard";
