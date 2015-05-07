@@ -9,6 +9,7 @@
 #include "base/memory/scoped_ptr.h"
 #include "content/public/browser/content_browser_client.h"
 #include "net/http/http_cache.h"
+#include "net/http/url_security_manager.h"
 #include "net/url_request/url_request_context_getter.h"
 
 namespace base {
@@ -68,6 +69,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   scoped_ptr<net::URLRequestContextStorage> storage_;
   scoped_ptr<net::URLRequestContext> url_request_context_;
   scoped_ptr<net::HostMappingRules> host_mapping_rules_;
+  scoped_ptr<net::URLSecurityManager> url_sec_mgr_;
   content::ProtocolHandlerMap protocol_handlers_;
   content::URLRequestInterceptorScopedVector protocol_interceptors_;
 

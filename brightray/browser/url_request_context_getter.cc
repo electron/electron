@@ -119,6 +119,7 @@ URLRequestContextGetter::URLRequestContextGetter(
       base_path_(base_path),
       io_loop_(io_loop),
       file_loop_(file_loop),
+      url_sec_mgr_(net::URLSecurityManager::Create(NULL, NULL)),
       protocol_interceptors_(protocol_interceptors.Pass()) {
   // Must first be created on the UI thread.
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
@@ -188,11 +189,26 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
               NULL,
               url_request_context_->network_delegate()));
 
+
+    std::vector<std::string> schemes;
+    schemes.push_back(std::string("basic"));
+    schemes.push_back(std::string("digest"));
+    schemes.push_back(std::string("ntlm"));
+    schemes.push_back(std::string("negotiate"));
+
+    auto auth_handler_factory =
+        net::HttpAuthHandlerRegistryFactory::Create(
+            schemes,
+            url_sec_mgr_.get(),
+            host_resolver.get(),
+            std::string(),  // gssapi_library_name
+            false,          // negotiate_disable_cname_lookup
+            true);          // negotiate_enable_port
+
     storage_->set_cert_verifier(net::CertVerifier::CreateDefault());
     storage_->set_transport_security_state(new net::TransportSecurityState);
     storage_->set_ssl_config_service(new net::SSLConfigServiceDefaults);
-    storage_->set_http_auth_handler_factory(
-        net::HttpAuthHandlerFactory::CreateDefault(host_resolver.get()));
+    storage_->set_http_auth_handler_factory(auth_handler_factory);
     scoped_ptr<net::HttpServerProperties> server_properties(
         new net::HttpServerPropertiesImpl);
     storage_->set_http_server_properties(server_properties.Pass());
