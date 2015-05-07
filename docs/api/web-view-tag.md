@@ -325,9 +325,11 @@ Corresponds to the points in time when the spinner of the tab stops spinning.
 * `httpResponseCode` Integer
 * `requestMethod` String
 * `referrer` String
+* `headers` String
 
 Fired when details regarding a requested resource is available.
 `status` indicates socket connection to download the resource.
+`headers` is key-value string separated by new-line character.
 
 ### did-get-redirect-request
 
