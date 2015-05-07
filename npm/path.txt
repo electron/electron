@@ -1,1 +1,0 @@
-/Users/rnbwd/Projects/forks/electron-prebuilt/dist/Electron.app/Contents/MacOS/Electron
