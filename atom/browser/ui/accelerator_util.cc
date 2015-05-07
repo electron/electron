@@ -109,8 +109,12 @@ bool StringToAccelerator(const std::string& description,
         modifiers |= ui::EF_SHIFT_DOWN;
     } else if (tokens[i] == "ctrl" || tokens[i] == "control") {
       modifiers |= ui::EF_CONTROL_DOWN;
+    } else if (tokens[i] == "super") {
+      modifiers |= ui::EF_COMMAND_DOWN;
+#if defined(OS_MACOSX)
     } else if (tokens[i] == "cmd" || tokens[i] == "command") {
       modifiers |= ui::EF_COMMAND_DOWN;
+#endif
     } else if (tokens[i] == "commandorcontrol" || tokens[i] == "cmdorctrl") {
 #if defined(OS_MACOSX)
       modifiers |= ui::EF_COMMAND_DOWN;

@@ -58,6 +58,8 @@ void GlobalShortcutListenerWin::OnWndProc(HWND hwnd,
   modifiers |= (LOWORD(lparam) & MOD_SHIFT) ? ui::EF_SHIFT_DOWN : 0;
   modifiers |= (LOWORD(lparam) & MOD_ALT) ? ui::EF_ALT_DOWN : 0;
   modifiers |= (LOWORD(lparam) & MOD_CONTROL) ? ui::EF_CONTROL_DOWN : 0;
+  modifiers |= (LOWORD(lparam) & MOD_WIN) ? ui::EF_COMMAND_DOWN : 0;
+
   ui::Accelerator accelerator(
       ui::KeyboardCodeForWindowsKeyCode(key_code), modifiers);
 
@@ -72,6 +74,8 @@ bool GlobalShortcutListenerWin::RegisterAcceleratorImpl(
   modifiers |= accelerator.IsShiftDown() ? MOD_SHIFT : 0;
   modifiers |= accelerator.IsCtrlDown() ? MOD_CONTROL : 0;
   modifiers |= accelerator.IsAltDown() ? MOD_ALT : 0;
+  modifiers |= accelerator.IsCmdDown() ? MOD_WIN : 0;
+
   static int hotkey_id = 0;
   bool success = !!RegisterHotKey(
       gfx::SingletonHwnd::GetInstance()->hwnd(),
