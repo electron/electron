@@ -25,6 +25,7 @@ class GlobalShortcutListener {
    public:
     // Called when your global shortcut (|accelerator|) is struck.
     virtual void OnKeyPressed(const ui::Accelerator& accelerator) = 0;
+    virtual void OnKeyReleased(const ui::Accelerator& accelerator) = 0;
   };
 
   virtual ~GlobalShortcutListener();
@@ -65,6 +66,7 @@ class GlobalShortcutListener {
   // Called by platform specific implementations of this class whenever a key
   // is struck. Only called for keys that have an observer registered.
   void NotifyKeyPressed(const ui::Accelerator& accelerator);
+  void NotifyKeyReleased(const ui::Accelerator& accelerator);
 
  private:
   // The following methods are implemented by platform-specific implementations

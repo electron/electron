@@ -34,11 +34,19 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
     NOTREACHED();
     return;
   }
-  accelerator_callback_map_[accelerator].Run();
+  accelerator_callback_map_[accelerator].Run(true);
+}
+
+void GlobalShortcut::OnKeyReleased(const ui::Accelerator& accelerator) {
+  if (accelerator_released_callback_map_.find(accelerator) ==
+      accelerator_released_callback_map_.end()) {
+    return;
+  }
+  accelerator_released_callback_map_[accelerator].Run(false);
 }
 
 bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
-                              const base::Closure& callback) {
+                              const KeyEventHandler& callback) {
   if (!GlobalShortcutListener::GetInstance()->RegisterAccelerator(
       accelerator, this)) {
     return false;
@@ -48,11 +56,23 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
   return true;
 }
 
+bool GlobalShortcut::RegisterWithRelease(const ui::Accelerator& accelerator,
+                              const KeyEventHandler& callback) {
+
+  Register(accelerator, callback);
+  accelerator_released_callback_map_[accelerator] = callback;
+  return true;
+}
+
 void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
   if (!ContainsKey(accelerator_callback_map_, accelerator))
     return;
 
   accelerator_callback_map_.erase(accelerator);
+
+  if (ContainsKey(accelerator_released_callback_map_, accelerator))
+    accelerator_released_callback_map_.erase(accelerator);
+
   GlobalShortcutListener::GetInstance()->UnregisterAccelerator(
       accelerator, this);
 }
@@ -63,6 +83,7 @@ bool GlobalShortcut::IsRegistered(const ui::Accelerator& accelerator) {
 
 void GlobalShortcut::UnregisterAll() {
   accelerator_callback_map_.clear();
+  accelerator_released_callback_map_.clear();
   GlobalShortcutListener::GetInstance()->UnregisterAccelerators(this);
 }
 
@@ -70,6 +91,7 @@ mate::ObjectTemplateBuilder GlobalShortcut::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("register", &GlobalShortcut::Register)
+      .SetMethod("registerWithRelease", &GlobalShortcut::RegisterWithRelease)
       .SetMethod("isRegistered", &GlobalShortcut::IsRegistered)
       .SetMethod("unregister", &GlobalShortcut::Unregister)
       .SetMethod("unregisterAll", &GlobalShortcut::UnregisterAll);

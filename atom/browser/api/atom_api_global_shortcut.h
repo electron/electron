@@ -23,6 +23,8 @@ class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
  public:
   static mate::Handle<GlobalShortcut> Create(v8::Isolate* isolate);
 
+  typedef base::Callback<v8::Handle<v8::Value>(const bool)> KeyEventHandler;
+
  protected:
   GlobalShortcut();
   virtual ~GlobalShortcut();
@@ -32,18 +34,22 @@ class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
       v8::Isolate* isolate) override;
 
  private:
-  typedef std::map<ui::Accelerator, base::Closure> AcceleratorCallbackMap;
+  typedef std::map<ui::Accelerator, KeyEventHandler> AcceleratorCallbackMap;
 
   bool Register(const ui::Accelerator& accelerator,
-                const base::Closure& callback);
+                const KeyEventHandler& callback);
+  bool RegisterWithRelease(const ui::Accelerator& accelerator,
+                           const KeyEventHandler& callback);
   bool IsRegistered(const ui::Accelerator& accelerator);
   void Unregister(const ui::Accelerator& accelerator);
   void UnregisterAll();
 
   // GlobalShortcutListener::Observer implementation.
   void OnKeyPressed(const ui::Accelerator& accelerator) override;
+  void OnKeyReleased(const ui::Accelerator& accelerator) override;
 
   AcceleratorCallbackMap accelerator_callback_map_;
+  AcceleratorCallbackMap accelerator_released_callback_map_;
 
   DISALLOW_COPY_AND_ASSIGN(GlobalShortcut);
 };
