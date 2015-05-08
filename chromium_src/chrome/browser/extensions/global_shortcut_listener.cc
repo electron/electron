@@ -119,4 +119,17 @@ void GlobalShortcutListener::NotifyKeyPressed(
   iter->second->OnKeyPressed(accelerator);
 }
 
+void GlobalShortcutListener::NotifyKeyReleased(
+    const ui::Accelerator& accelerator) {
+  AcceleratorMap::iterator iter = accelerator_map_.find(accelerator);
+  if (iter == accelerator_map_.end()) {
+    // This should never occur, because if it does, we have failed to unregister
+    // or failed to clean up the map after unregistering the shortcut.
+    NOTREACHED();
+    return;  // No-one is listening to this key.
+  }
+
+  iter->second->OnKeyReleased(accelerator);
+}
+
 }  // namespace extensions

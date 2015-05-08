@@ -37,8 +37,8 @@ class GlobalShortcutListenerMac : public GlobalShortcutListener {
   typedef std::map<KeyId, EventHotKeyRef> IdHotKeyRefMap;
 
   // Keyboard event callbacks.
-  void OnHotKeyEvent(EventHotKeyID hot_key_id);
-  bool OnMediaOrVolumeKeyEvent(int key_code);
+  void OnHotKeyEvent(EventHotKeyID hot_key_id, bool is_pressed);
+  bool OnMediaOrVolumeKeyEvent(int key_code, bool is_pressed);
 
   // GlobalShortcutListener implementation.
   virtual void StartListening() override;
@@ -71,7 +71,9 @@ class GlobalShortcutListenerMac : public GlobalShortcutListener {
       CGEventTapProxy proxy, CGEventType type, CGEventRef event, void* refcon);
 
   // The callback for when a hot key event happens.
-  static OSStatus HotKeyHandler(
+  static OSStatus HotKeyPressedHandler(
+      EventHandlerCallRef next_handler, EventRef event, void* user_data);
+  static OSStatus HotKeyReleasedHandler(
       EventHandlerCallRef next_handler, EventRef event, void* user_data);
 
   // Whether this object is listening for global shortcuts.

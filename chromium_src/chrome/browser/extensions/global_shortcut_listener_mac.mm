@@ -113,18 +113,22 @@ void GlobalShortcutListenerMac::StopListening() {
   is_listening_ = false;
 }
 
-void GlobalShortcutListenerMac::OnHotKeyEvent(EventHotKeyID hot_key_id) {
+void GlobalShortcutListenerMac::OnHotKeyEvent(EventHotKeyID hot_key_id, bool is_pressed) {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 
   // This hot key should be registered.
   DCHECK(id_accelerators_.find(hot_key_id.id) != id_accelerators_.end());
   // Look up the accelerator based on this hot key ID.
   const ui::Accelerator& accelerator = id_accelerators_[hot_key_id.id];
-  NotifyKeyPressed(accelerator);
+  if (is_pressed) {
+    NotifyKeyPressed(accelerator);
+  } else {
+    NotifyKeyReleased(accelerator);
+  }
 }
 
 bool GlobalShortcutListenerMac::OnMediaOrVolumeKeyEvent(
-    int media_or_volume_key_code) {
+    int media_or_volume_key_code, bool is_pressed) {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
   ui::KeyboardCode key_code = MediaOrVolumeKeyCodeToKeyboardCode(
       media_or_volume_key_code);
@@ -133,7 +137,11 @@ bool GlobalShortcutListenerMac::OnMediaOrVolumeKeyEvent(
   // Look for a match with a bound hot_key.
   if (accelerator_ids_.find(accelerator) != accelerator_ids_.end()) {
     // If matched, callback to the event handling system.
-    NotifyKeyPressed(accelerator);
+    if (is_pressed) {
+      NotifyKeyPressed(accelerator);
+    } else {
+      NotifyKeyReleased(accelerator);
+    }
     return true;
   }
   return false;
@@ -284,12 +292,17 @@ void GlobalShortcutListenerMac::StopWatchingMediaOrVolumeKeys() {
 
 void GlobalShortcutListenerMac::StartWatchingHotKeys() {
   DCHECK(!event_handler_);
-  EventHandlerUPP hot_key_function = NewEventHandlerUPP(HotKeyHandler);
-  EventTypeSpec event_type;
-  event_type.eventClass = kEventClassKeyboard;
-  event_type.eventKind = kEventHotKeyPressed;
-  InstallApplicationEventHandler(
-      hot_key_function, 1, &event_type, this, &event_handler_);
+  EventHandlerUPP hot_key_pressed_function = NewEventHandlerUPP(HotKeyPressedHandler);
+  EventTypeSpec pressed_event_type[] = {
+    { kEventClassKeyboard, kEventHotKeyPressed }
+  };
+  InstallApplicationEventHandler(hot_key_pressed_function, 1, pressed_event_type, this, &event_handler_);
+
+  EventHandlerUPP hot_key_released_function = NewEventHandlerUPP(HotKeyReleasedHandler);
+  EventTypeSpec released_event_type[] = {
+    { kEventClassKeyboard, kEventHotKeyReleased }
+  };
+  InstallApplicationEventHandler(hot_key_released_function, 1, released_event_type, this, &event_handler_);
 }
 
 void GlobalShortcutListenerMac::StopWatchingHotKeys() {
@@ -364,12 +377,8 @@ CGEventRef GlobalShortcutListenerMac::EventTapCallback(
   int key_flags = data1 & 0x0000FFFF;
   bool is_key_pressed = ((key_flags & 0xFF00) >> 8) == 0xA;
 
-  // If the key wasn't pressed (eg. was released), ignore this event.
-  if (!is_key_pressed)
-    return event;
-
   // Now we have a media/volume key that we care about. Send it to the caller.
-  bool was_handled = shortcut_listener->OnMediaOrVolumeKeyEvent(key_code);
+  bool was_handled = shortcut_listener->OnMediaOrVolumeKeyEvent(key_code, is_key_pressed);
 
   // Prevent event from proagating to other apps if handled by Chrome.
   if (was_handled)
@@ -380,7 +389,7 @@ CGEventRef GlobalShortcutListenerMac::EventTapCallback(
 }
 
 // static
-OSStatus GlobalShortcutListenerMac::HotKeyHandler(
+OSStatus GlobalShortcutListenerMac::HotKeyPressedHandler(
     EventHandlerCallRef next_handler, EventRef event, void* user_data) {
   // Extract the hotkey from the event.
   EventHotKeyID hot_key_id;
@@ -391,7 +400,22 @@ OSStatus GlobalShortcutListenerMac::HotKeyHandler(
 
   GlobalShortcutListenerMac* shortcut_listener =
       static_cast<GlobalShortcutListenerMac*>(user_data);
-  shortcut_listener->OnHotKeyEvent(hot_key_id);
+  shortcut_listener->OnHotKeyEvent(hot_key_id, true);
+  return noErr;
+}
+
+OSStatus GlobalShortcutListenerMac::HotKeyReleasedHandler(
+    EventHandlerCallRef next_handler, EventRef event, void* user_data) {
+  // Extract the hotkey from the event.
+  EventHotKeyID hot_key_id;
+  OSStatus result = GetEventParameter(event, kEventParamDirectObject,
+      typeEventHotKeyID, NULL, sizeof(hot_key_id), NULL, &hot_key_id);
+  if (result != noErr)
+    return result;
+
+  GlobalShortcutListenerMac* shortcut_listener =
+      static_cast<GlobalShortcutListenerMac*>(user_data);
+  shortcut_listener->OnHotKeyEvent(hot_key_id, false);
   return noErr;
 }
 
