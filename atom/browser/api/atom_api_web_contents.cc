@@ -215,6 +215,26 @@ void WebContents::HandleKeyboardEvent(
       web_contents(), event);
 }
 
+void WebContents::EnterFullscreenModeForTab(content::WebContents* web_contents,
+                                            const GURL& origin) {
+  GetWindowFromGuest(web_contents)->SetFullScreen(true);
+  web_contents->GetRenderViewHost()->WasResized();
+}
+
+void WebContents::ExitFullscreenModeForTab(content::WebContents* web_contents) {
+  GetWindowFromGuest(web_contents)->SetFullScreen(false);
+  web_contents->GetRenderViewHost()->WasResized();
+}
+
+bool WebContents::IsFullscreenForTabOrPending(
+    const content::WebContents* web_contents) const {
+  auto window = GetWindowFromGuest(web_contents);
+  if (window)
+    return window->IsFullscreen();
+  else
+    return false;
+}
+
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
   Emit("render-view-deleted",
        render_view_host->GetProcess()->GetID(),
