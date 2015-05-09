@@ -173,19 +173,9 @@ Emitted when window is restored from minimized state.
 
 ### Event: 'resize'
 
-* `event` Event
-* `value` Object
-  * `width` Integer
-  * `height` Integer
-
 Emitted when window is resized.
 
 ### Event: 'move'
-
-* `event` Event
-* `value` Object
-  * `x` Integer
-  * `y` Integer
 
 Emitted when window is moved.
 

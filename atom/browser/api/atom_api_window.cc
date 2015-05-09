@@ -125,11 +125,11 @@ void Window::OnWindowRestore() {
 }
 
 void Window::OnWindowResize() {
-  Emit("resize", GetBounds().size());
+  Emit("resize");
 }
 
 void Window::OnWindowMove() {
-  Emit("move", window_->GetPosition());
+  Emit("move");
 }
 
 void Window::OnWindowEnterFullScreen() {
