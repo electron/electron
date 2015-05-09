@@ -124,6 +124,14 @@ void Window::OnWindowRestore() {
   Emit("restore");
 }
 
+void Window::OnWindowResize() {
+  Emit("resize", GetBounds().size());
+}
+
+void Window::OnWindowMove() {
+  Emit("move", window_->GetPosition());
+}
+
 void Window::OnWindowEnterFullScreen() {
   Emit("enter-full-screen");
 }

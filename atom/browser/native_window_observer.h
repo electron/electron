@@ -47,6 +47,8 @@ class NativeWindowObserver {
   virtual void OnWindowUnmaximize() {}
   virtual void OnWindowMinimize() {}
   virtual void OnWindowRestore() {}
+  virtual void OnWindowResize() {}
+  virtual void OnWindowMove() {}
   virtual void OnWindowEnterFullScreen() {}
   virtual void OnWindowLeaveFullScreen() {}
   virtual void OnWindowEnterHtmlFullScreen() {}

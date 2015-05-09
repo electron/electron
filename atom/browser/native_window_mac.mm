@@ -98,6 +98,12 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 - (void)windowDidResize:(NSNotification*)notification {
   if (!shell_->has_frame())
     shell_->ClipWebView();
+
+  shell_->NotifyWindowResize();
+}
+
+- (void)windowDidMove:(NSNotification*)notification {
+  shell_->NotifyWindowMove();
 }
 
 - (void)windowDidMiniaturize:(NSNotification*)notification {

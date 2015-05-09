@@ -720,6 +720,22 @@ void NativeWindowViews::OnWidgetActivationChanged(
     SetMenuBarVisibility(false);
 }
 
+void NativeWindowViews::OnWidgetBoundsChanged(
+    views::Widget* widget, const gfx::Rect& bounds) {
+  if (widget != window_.get())
+    return;
+
+  if (widget_size_ != bounds.size()) {
+    NotifyWindowResize();
+    widget_size_ = bounds.size();
+  }
+
+  if (widget_pos_ != bounds.origin()) {
+    NotifyWindowMove();
+    widget_pos_ = bounds.origin();
+  }
+}
+
 void NativeWindowViews::DeleteDelegate() {
   NotifyWindowClosed();
 }
