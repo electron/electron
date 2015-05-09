@@ -151,11 +151,11 @@ class WebContents : public mate::EventEmitter,
   void HandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
-  void EnterFullscreenModeForTab(content::WebContents* web_contents,
+  void EnterFullscreenModeForTab(content::WebContents* source,
                                  const GURL& origin) override;
-  void ExitFullscreenModeForTab(content::WebContents* web_contents) override;
+  void ExitFullscreenModeForTab(content::WebContents* source) override;
   bool IsFullscreenForTabOrPending(
-      const content::WebContents* web_contents) const override;
+      const content::WebContents* source) const override;
 
   // content::WebContentsObserver:
   void RenderViewDeleted(content::RenderViewHost*) override;

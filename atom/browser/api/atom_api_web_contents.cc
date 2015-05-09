@@ -215,20 +215,26 @@ void WebContents::HandleKeyboardEvent(
       web_contents(), event);
 }
 
-void WebContents::EnterFullscreenModeForTab(content::WebContents* web_contents,
+void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
                                             const GURL& origin) {
-  GetWindowFromGuest(web_contents)->SetFullScreen(true);
-  web_contents->GetRenderViewHost()->WasResized();
+  auto window = GetWindowFromGuest(source);
+  if (window) {
+    window->SetFullScreen(true);
+    source->GetRenderViewHost()->WasResized();
+  }
 }
 
-void WebContents::ExitFullscreenModeForTab(content::WebContents* web_contents) {
-  GetWindowFromGuest(web_contents)->SetFullScreen(false);
-  web_contents->GetRenderViewHost()->WasResized();
+void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
+  auto window = GetWindowFromGuest(source);
+  if (window) {
+    window->SetFullScreen(false);
+    source->GetRenderViewHost()->WasResized();
+  }
 }
 
 bool WebContents::IsFullscreenForTabOrPending(
-    const content::WebContents* web_contents) const {
-  auto window = GetWindowFromGuest(web_contents);
+    const content::WebContents* source) const {
+  auto window = GetWindowFromGuest(source);
   if (window)
     return window->IsFullscreen();
   else
