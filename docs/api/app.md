@@ -94,11 +94,6 @@ This method guarantees all `beforeunload` and `unload` handlers are correctly
 executed. It is possible that a window cancels the quitting by returning
 `false` in `beforeunload` handler.
 
-## app.terminate()
-
-Quit the application directly, it will not try to close all windows so cleanup
-code will not run.
-
 ## app.getPath(name)
 
 * `name` String
