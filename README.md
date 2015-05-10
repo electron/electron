@@ -31,7 +31,7 @@ npm install electron-prebuilt --save-dev
 
 ### Mirrors
 
-- [China](https://npm.taobao.org/mirrors/atom-shell)
+- [China](https://npm.taobao.org/mirrors/electron)
 
 ## Documentation
 
