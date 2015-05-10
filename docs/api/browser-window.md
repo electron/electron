@@ -72,8 +72,8 @@ You can also create a window without chrome by using
   * `type` String - Specifies the type of the window, possible types are
     `desktop`, `dock`, `toolbar`, `splash`, `notification`. This only works on
     Linux.
-  * `standard-window` Boolean - Use the OS X's standard window instead of the
-    textured window. Defaults to `false`.
+  * `standard-window` Boolean - Uses the OS X's standard window instead of the
+    textured window. Defaults to `true`.
   * `web-preferences` Object - Settings of web page's features
     * `javascript` Boolean
     * `web-security` Boolean

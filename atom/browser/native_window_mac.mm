@@ -310,7 +310,7 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
       width,
       height);
 
-  bool useStandardWindow = false;
+  bool useStandardWindow = true;
   options.Get(switches::kStandardWindow, &useStandardWindow);
 
   NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask |
