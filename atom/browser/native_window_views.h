@@ -115,6 +115,7 @@ class NativeWindowViews : public NativeWindow,
   views::ClientView* CreateClientView(views::Widget* widget) override;
   views::NonClientFrameView* CreateNonClientFrameView(
       views::Widget* widget) override;
+  void OnWidgetMove() override;
 #if defined(OS_WIN)
   bool ExecuteWindowsCommand(int command_id) override;
 #endif
@@ -176,7 +177,6 @@ class NativeWindowViews : public NativeWindow,
   gfx::Size minimum_size_;
   gfx::Size maximum_size_;
   gfx::Size widget_size_;
-  gfx::Point widget_pos_;
 
   scoped_ptr<SkRegion> draggable_region_;
 

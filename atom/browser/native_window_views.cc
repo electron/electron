@@ -729,11 +729,6 @@ void NativeWindowViews::OnWidgetBoundsChanged(
     NotifyWindowResize();
     widget_size_ = bounds.size();
   }
-
-  if (widget_pos_ != bounds.origin()) {
-    NotifyWindowMove();
-    widget_pos_ = bounds.origin();
-  }
 }
 
 void NativeWindowViews::DeleteDelegate() {
@@ -821,6 +816,10 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
     return frame_view;
   }
 #endif
+}
+
+void NativeWindowViews::OnWidgetMove() {
+  NotifyWindowMove();
 }
 
 #if defined(OS_WIN)

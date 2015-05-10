@@ -173,11 +173,12 @@ Emitted when window is restored from minimized state.
 
 ### Event: 'resize'
 
-Emitted when window is resized.
+Emitted when window is getting resized on all platforms.
 
 ### Event: 'move'
 
-Emitted when window is moved.
+Emitted once when the window is moved to a new position on `OSX` and emitted during the process 
+of moving on `Linux` and `Windows`.
 
 ### Event: 'enter-full-screen'
 
