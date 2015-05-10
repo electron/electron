@@ -1,6 +1,6 @@
 {
   "name": "electron-prebuilt",
-  "version": "0.25.3-1",
+  "version": "0.25.3-2",
   "description": "Install electron (formerly called atom-shell) prebuilts using npm",
   "repository": {
     "type": "git",
@@ -20,6 +20,8 @@
     "electron-download": "^1.0.0"
   },
   "devDependencies": {
+    "home-path": "^0.1.1",
+    "path-exists": "^1.0.0",
     "tape": "^3.0.1"
   },
   "author": "Mathias Buus",
