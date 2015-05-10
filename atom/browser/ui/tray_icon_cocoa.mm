@@ -30,7 +30,7 @@
   NSRect frame = [NSApp currentEvent].window.frame;
   gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
   // Flip coordinates to gfx (0,0 in top-left corner) using current screen.
-  NSScreen* screen = [NSScreen mainScreen];
+  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
   bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
 
   trayIcon_->NotifyClicked(bounds);
