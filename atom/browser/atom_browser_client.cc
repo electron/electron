@@ -202,9 +202,11 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 
 void AtomBrowserClient::DidCreatePpapiPlugin(
     content::BrowserPpapiHost* browser_host) {
-  browser_host->GetPpapiHost()->AddHostFactoryFilter(
-    scoped_ptr<ppapi::host::HostFactory>(
-      new chrome::ChromeBrowserPepperHostFactory(browser_host)));
+  auto command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kEnablePlugins))
+    browser_host->GetPpapiHost()->AddHostFactoryFilter(
+        scoped_ptr<ppapi::host::HostFactory>(
+            new chrome::ChromeBrowserPepperHostFactory(browser_host)));
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
