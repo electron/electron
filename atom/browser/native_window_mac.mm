@@ -310,11 +310,18 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
       width,
       height);
 
+  bool useStandardWindow = false;
+  options.Get(switches::kStandardWindow, &useStandardWindow);
+
+  NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask |
+                         NSMiniaturizableWindowMask | NSResizableWindowMask;
+  if (!useStandardWindow) {
+    styleMask |= NSTexturedBackgroundWindowMask;
+  }
+
   window_.reset([[AtomNSWindow alloc]
       initWithContentRect:cocoa_bounds
-                styleMask:NSTitledWindowMask | NSClosableWindowMask |
-                          NSMiniaturizableWindowMask | NSResizableWindowMask |
-                          NSTexturedBackgroundWindowMask
+                styleMask:styleMask
                   backing:NSBackingStoreBuffered
                     defer:YES]);
   [window_ setShell:this];
