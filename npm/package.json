@@ -17,13 +17,9 @@
   "main": "index.js",
   "dependencies": {
     "extract-zip": "^1.0.3",
-    "home-path": "^0.1.1",
-    "mkdirp": "^0.5.0",
-    "nugget": "^1.2.0",
-    "path-exists": "^1.0.0"
+    "electron-download": "^1.0.0"
   },
   "devDependencies": {
-    "rimraf": "^2.3.3",
     "tape": "^3.0.1"
   },
   "author": "Mathias Buus",
