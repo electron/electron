@@ -16,13 +16,16 @@
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
 #include "chrome/browser/printing/printing_message_filter.h"
+#include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
 #include "chrome/browser/speech/tts_message_filter.h"
+#include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/resource_dispatcher_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/web_preferences.h"
+#include "ppapi/host/ppapi_host.h"
 #include "ui/base/l10n/l10n_util.h"
 
 namespace atom {
@@ -195,6 +198,15 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   }
 
   dying_render_process_ = nullptr;
+}
+
+void AtomBrowserClient::DidCreatePpapiPlugin(
+    content::BrowserPpapiHost* browser_host) {
+  auto command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kEnablePlugins))
+    browser_host->GetPpapiHost()->AddHostFactoryFilter(
+        scoped_ptr<ppapi::host::HostFactory>(
+            new chrome::ChromeBrowserPepperHostFactory(browser_host)));
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(

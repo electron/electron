@@ -62,6 +62,14 @@ Like `--host-rules` but these `rules` only apply to the host resolver.
 
 Ignore certificate related errors.
 
+## --ppapi-flash-path
+
+Set path to pepper flash plugin for use.
+
+## --ppapi-flash-version
+
+Set the pepper flash version.
+
 ## --v=`log_level`
 
 Gives the default maximal active V-logging level; 0 is the default. Normally
