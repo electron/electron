@@ -14,22 +14,28 @@ class NavigationController
     @history = []
     @currentIndex = -1
     @pendingIndex = -1
+    @inPageIndex = -1
 
     @webContents.on 'navigation-entry-commited', (event, url, inPage, replaceEntry) =>
-      console.log 'navigation-entry-commited', url, inPage, replaceEntry
+      if @inPageIndex > -1 and not inPage
+        # Navigated to a new page, clear in-page mark.
+        @inPageIndex = -1
+      else if @inPageIndex is -1 and inPage
+        # Started in-page navigations.
+        @inPageIndex = @currentIndex
 
       if @pendingIndex >= 0 # Go to index.
         @currentIndex = @pendingIndex
         @pendingIndex = -1
-        @history[@currentIndex] = {url, inPage}
+        @history[@currentIndex] = url
       else if replaceEntry # Non-user initialized navigation.
-        @history[@currentIndex] = {url, inPage}
+        @history[@currentIndex] = url
       else  # Normal navigation.
         @history = @history.slice 0, @currentIndex + 1  # Clear history.
         currentEntry = @history[@currentIndex]
-        if currentEntry?.url isnt url or currentEntry?.inPage isnt inPage
+        if currentEntry?.url isnt url
           @currentIndex++
-          @history.push {url, inPage}
+          @history.push url
 
   loadUrl: (url, options={}) ->
     @pendingIndex = -1
@@ -39,7 +45,7 @@ class NavigationController
     if @currentIndex is -1
       ''
     else
-      @history[@currentIndex].url
+      @history[@currentIndex]
 
   stop: ->
     @pendingIndex = -1
@@ -68,20 +74,18 @@ class NavigationController
   goBack: ->
     return unless @canGoBack()
     @pendingIndex = @getActiveIndex() - 1
-    pendingEntry = @history[@pendingIndex]
-    if pendingEntry.inPage
+    if @inPageIndex > -1 and @pendingIndex >= @inPageIndex
       @webContents._goBack()
     else
-      @webContents._loadUrl pendingEntry.url, {}
+      @webContents._loadUrl @history[@pendingIndex], {}
 
   goForward: ->
     return unless @canGoForward()
     @pendingIndex = @getActiveIndex() + 1
-    pendingEntry = @history[@pendingIndex]
-    if pendingEntry.inPage
+    if @inPageIndex > -1 and @pendingIndex >= @inPageIndex
       @webContents._goForward()
     else
-      @webContents._loadUrl pendingEntry.url, {}
+      @webContents._loadUrl @history[@pendingIndex], {}
 
   goToIndex: (index) ->
     return unless @canGoToIndex index
