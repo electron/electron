@@ -1,3 +1,9 @@
+ipc = require 'ipc'
+
+# The history operation in renderer is redirected to browser.
+ipc.on 'ATOM_SHELL_NAVIGATION_CONTROLLER', (event, method, args...) ->
+  event.sender[method] args...
+
 # JavaScript implementation of Chromium's NavigationController.
 # Instead of relying on Chromium for history control, we compeletely do history
 # control on user land, and only rely on WebContents.loadUrl for navigation.

@@ -74,15 +74,16 @@ window.confirm = (message, title='') ->
 window.prompt = ->
   throw new Error('prompt() is and will not be supported.')
 
-# Forward history operations to browser.
-window.history.back = ->
-  remote.getCurrentWebContents().goBack()
-window.history.forward = ->
-  remote.getCurrentWebContents().goForward()
-
+# Simple implementation of postMessage.
 window.opener =
   postMessage: (message, targetOrigin='*') ->
     ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', message, targetOrigin
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', (message, targetOrigin) ->
   window.postMessage message, targetOrigin
+
+# Forward history operations to browser.
+sendHistoryOperation = (args...) ->
+  ipc.send 'ATOM_SHELL_NAVIGATION_CONTROLLER', args...
+window.history.back = -> sendHistoryOperation 'goBack'
+window.history.forward = -> sendHistoryOperation 'goForward'

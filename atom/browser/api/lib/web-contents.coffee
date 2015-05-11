@@ -29,7 +29,6 @@ module.exports.wrap = (webContents) ->
 
   # The navigation controller.
   controller = new NavigationController(webContents)
-  webContents.controller = controller
   for name, method of NavigationController.prototype when method instanceof Function
     do (name, method) ->
       webContents[name] = -> method.apply controller, arguments
