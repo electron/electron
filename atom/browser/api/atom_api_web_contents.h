@@ -55,7 +55,7 @@ class WebContents : public mate::EventEmitter,
   void ReloadIgnoringCache();
   void GoBack();
   void GoForward();
-  void GoToIndex();
+  void GoToOffset(int offset);
   int GetRoutingID() const;
   int GetProcessID() const;
   bool IsCrashed() const;

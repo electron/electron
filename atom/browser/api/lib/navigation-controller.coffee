@@ -94,7 +94,12 @@ class NavigationController
 
   goToOffset: (offset) ->
     return unless @canGoToOffset offset
-    @goToIndex @currentIndex + offset
+    pendingIndex = @currentIndex + offset
+    if @inPageIndex > -1 and pendingIndex >= @inPageIndex
+      @pendingIndex = pendingIndex
+      @webContents._goToOffset offset
+    else
+      @goToIndex pendingIndex
 
   getActiveIndex: ->
     if @pendingIndex is -1 then @currentIndex else @pendingIndex

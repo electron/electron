@@ -87,3 +87,4 @@ sendHistoryOperation = (args...) ->
   ipc.send 'ATOM_SHELL_NAVIGATION_CONTROLLER', args...
 window.history.back = -> sendHistoryOperation 'goBack'
 window.history.forward = -> sendHistoryOperation 'goForward'
+window.history.go = (offset) -> sendHistoryOperation 'goToOffset', offset

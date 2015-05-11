@@ -454,6 +454,11 @@ void WebContents::GoForward() {
   web_contents()->GetController().GoForward();
 }
 
+void WebContents::GoToOffset(int offset) {
+  atom::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
+  web_contents()->GetController().GoToOffset(offset);
+}
+
 int WebContents::GetRoutingID() const {
   return web_contents()->GetRoutingID();
 }
@@ -624,6 +629,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("_reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
         .SetMethod("_goBack", &WebContents::GoBack)
         .SetMethod("_goForward", &WebContents::GoForward)
+        .SetMethod("_goToOffset", &WebContents::GoToOffset)
         .SetMethod("getRoutingId", &WebContents::GetRoutingID)
         .SetMethod("getProcessId", &WebContents::GetProcessID)
         .SetMethod("isCrashed", &WebContents::IsCrashed)
