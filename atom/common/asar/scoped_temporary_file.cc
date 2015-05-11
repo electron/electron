@@ -36,13 +36,12 @@ bool ScopedTemporaryFile::Init() {
   return base::CreateTemporaryFile(&path_);
 }
 
-bool ScopedTemporaryFile::InitFromFile(const base::FilePath& path,
+bool ScopedTemporaryFile::InitFromFile(base::File& src,
                                        uint64 offset, uint64 size) {
-  if (!Init())
+  if (!src.IsValid())
     return false;
 
-  base::File src(path, base::File::FLAG_OPEN | base::File::FLAG_READ);
-  if (!src.IsValid())
+  if (!Init())
     return false;
 
   std::vector<char> buf(size);

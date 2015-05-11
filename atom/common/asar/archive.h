@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "base/containers/scoped_ptr_hash_map.h"
+#include "base/files/file.h"
 #include "base/files/file_path.h"
 #include "base/memory/scoped_ptr.h"
 
@@ -64,6 +65,7 @@ class Archive {
 
  private:
   base::FilePath path_;
+  base::File file_;
   uint32 header_size_;
   scoped_ptr<base::DictionaryValue> header_;
 
