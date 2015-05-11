@@ -6,6 +6,7 @@
 
 #include <set>
 
+#include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/native_window.h"
@@ -444,10 +445,12 @@ void WebContents::ReloadIgnoringCache() {
 }
 
 void WebContents::GoBack() {
+  atom::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoBack();
 }
 
 void WebContents::GoForward() {
+  atom::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoForward();
 }
 

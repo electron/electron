@@ -32,6 +32,9 @@ namespace atom {
 
 namespace {
 
+// Next navigation should not restart renderer process.
+bool g_suppress_renderer_process_restart = false;
+
 struct FindByProcessId {
   explicit FindByProcessId(int child_process_id)
       : child_process_id_(child_process_id) {
@@ -50,6 +53,11 @@ struct FindByProcessId {
 };
 
 }  // namespace
+
+// static
+void AtomBrowserClient::SuppressRendererProcessRestartForOnce() {
+  g_suppress_renderer_process_restart = true;
+}
 
 AtomBrowserClient::AtomBrowserClient()
     : dying_render_process_(nullptr) {
@@ -131,6 +139,11 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
     content::SiteInstance* current_instance,
     const GURL& url,
     content::SiteInstance** new_instance) {
+  if (g_suppress_renderer_process_restart) {
+    g_suppress_renderer_process_restart = false;
+    return;
+  }
+
   if (current_instance->HasProcess())
     dying_render_process_ = current_instance->GetProcess();
 

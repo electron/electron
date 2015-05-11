@@ -18,6 +18,9 @@ class AtomBrowserClient : public brightray::BrowserClient {
   AtomBrowserClient();
   virtual ~AtomBrowserClient();
 
+  // Don't force renderer process to restart for once.
+  static void SuppressRendererProcessRestartForOnce();
+
  protected:
   // content::ContentBrowserClient:
   void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
