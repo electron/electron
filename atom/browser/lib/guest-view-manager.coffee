@@ -57,14 +57,13 @@ createGuest = (embedder, params) ->
     min = width: params.minwidth, height: params.minheight
     max = width: params.maxwidth, height: params.maxheight
     @setAutoSize params.autosize, min, max
+
     if params.src
       opts = {}
       opts.httpreferrer = params.httpreferrer if params.httpreferrer
       opts.useragent = params.useragent if params.useragent
-      if params.httpreferrer or params.useragent
-        @loadUrl params.src, opts
-      else
-        @loadUrl params.src
+      @loadUrl params.src, opts
+
     if params.allowtransparency?
       @setAllowTransparency params.allowtransparency
 
