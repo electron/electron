@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "chrome/utility/printing_handler.h"
+#include "chrome/utility/printing_handler_win.h"
 
 #include "base/files/file_util.h"
 #include "base/lazy_instance.h"
@@ -10,14 +10,10 @@
 #include "base/scoped_native_library.h"
 #include "chrome/common/print_messages.h"
 #include "content/public/utility/utility_thread.h"
+#include "printing/emf_win.h"
 #include "printing/page_range.h"
 #include "printing/pdf_render_settings.h"
-
-#if defined(OS_WIN)
-#include "printing/emf_win.h"
 #include "ui/gfx/gdi_util.h"
-#endif
-
 
 namespace {
 
@@ -125,33 +121,30 @@ base::LazyInstance<PdfFunctions> g_pdf_lib = LAZY_INSTANCE_INITIALIZER;
 
 }  // namespace
 
-PrintingHandler::PrintingHandler() {}
+PrintingHandlerWin::PrintingHandlerWin() {}
 
-PrintingHandler::~PrintingHandler() {}
+PrintingHandlerWin::~PrintingHandlerWin() {}
 
 // static
-void PrintingHandler::PreSandboxStartup() {
+void PrintingHandlerWin::PreSandboxStartup() {
   g_pdf_lib.Get().Init();
 }
 
-bool PrintingHandler::OnMessageReceived(const IPC::Message& message) {
+bool PrintingHandlerWin::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
-  IPC_BEGIN_MESSAGE_MAP(PrintingHandler, message)
-#if defined(OS_WIN)
+  IPC_BEGIN_MESSAGE_MAP(PrintingHandlerWin, message)
     IPC_MESSAGE_HANDLER(ChromeUtilityMsg_RenderPDFPagesToMetafiles,
                         OnRenderPDFPagesToMetafile)
     IPC_MESSAGE_HANDLER(ChromeUtilityMsg_RenderPDFPagesToMetafiles_GetPage,
                         OnRenderPDFPagesToMetafileGetPage)
     IPC_MESSAGE_HANDLER(ChromeUtilityMsg_RenderPDFPagesToMetafiles_Stop,
                         OnRenderPDFPagesToMetafileStop)
-#endif  // OS_WIN
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
   return handled;
 }
 
-#if defined(OS_WIN)
-void PrintingHandler::OnRenderPDFPagesToMetafile(
+void PrintingHandlerWin::OnRenderPDFPagesToMetafile(
     IPC::PlatformFileForTransit pdf_transit,
     const printing::PdfRenderSettings& settings) {
   pdf_rendering_settings_ = settings;
@@ -162,7 +155,7 @@ void PrintingHandler::OnRenderPDFPagesToMetafile(
       new ChromeUtilityHostMsg_RenderPDFPagesToMetafiles_PageCount(page_count));
 }
 
-void PrintingHandler::OnRenderPDFPagesToMetafileGetPage(
+void PrintingHandlerWin::OnRenderPDFPagesToMetafileGetPage(
     int page_number,
     IPC::PlatformFileForTransit output_file) {
   base::File emf_file = IPC::PlatformFileForTransitToFile(output_file);
@@ -173,11 +166,11 @@ void PrintingHandler::OnRenderPDFPagesToMetafileGetPage(
       success, scale_factor));
 }
 
-void PrintingHandler::OnRenderPDFPagesToMetafileStop() {
+void PrintingHandlerWin::OnRenderPDFPagesToMetafileStop() {
   ReleaseProcessIfNeeded();
 }
 
-int PrintingHandler::LoadPDF(base::File pdf_file) {
+int PrintingHandlerWin::LoadPDF(base::File pdf_file) {
   if (!g_pdf_lib.Get().IsValid())
     return 0;
 
@@ -198,9 +191,9 @@ int PrintingHandler::LoadPDF(base::File pdf_file) {
   return total_page_count;
 }
 
-bool PrintingHandler::RenderPdfPageToMetafile(int page_number,
-                                              base::File output_file,
-                                              float* scale_factor) {
+bool PrintingHandlerWin::RenderPdfPageToMetafile(int page_number,
+                                                 base::File output_file,
+                                                 float* scale_factor) {
   printing::Emf metafile;
   metafile.Init();
 
@@ -241,5 +234,3 @@ bool PrintingHandler::RenderPdfPageToMetafile(int page_number,
   metafile.FinishDocument();
   return metafile.SaveTo(&output_file);
 }
-
-#endif  // OS_WIN

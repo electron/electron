@@ -17,7 +17,7 @@
 
 
 #if defined(OS_WIN)
-#include "chrome/utility/printing_handler.h"
+#include "chrome/utility/printing_handler_win.h"
 #endif
 
 
@@ -37,7 +37,7 @@ int64_t AtomContentUtilityClient::max_ipc_message_size_ =
 AtomContentUtilityClient::AtomContentUtilityClient()
     : filter_messages_(false) {
 #if defined(OS_WIN)
-  handlers_.push_back(new PrintingHandler());
+  handlers_.push_back(new PrintingHandlerWin());
 #endif
 }
 
@@ -73,7 +73,9 @@ void AtomContentUtilityClient::OnStartupPing() {
 
 // static
 void AtomContentUtilityClient::PreSandboxStartup() {
-  PrintingHandler::PreSandboxStartup();
+#if defined(OS_WIN)
+  PrintingHandlerWin::PreSandboxStartup();
+#endif
 }
 
 }  // namespace atom

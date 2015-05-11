@@ -381,8 +381,8 @@
       'chromium_src/chrome/browser/ui/views/color_chooser_win.cc',
       'chromium_src/chrome/browser/printing/pdf_to_emf_converter.cc',
       'chromium_src/chrome/browser/printing/pdf_to_emf_converter.h',
-      'chromium_src/chrome/utility/printing_handler.cc',
-      'chromium_src/chrome/utility/printing_handler.h',
+      'chromium_src/chrome/utility/printing_handler_win.cc',
+      'chromium_src/chrome/utility/printing_handler_win.h',
     ],
     'framework_sources': [
       'atom/app/atom_library_main.h',
