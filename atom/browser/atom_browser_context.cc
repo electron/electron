@@ -61,7 +61,13 @@ net::URLRequestJobFactory* AtomBrowserContext::CreateURLRequestJobFactory(
           BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
               base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
   job_factory->SetProtocolHandler(
-      url::kHttpScheme, new HttpProtocolHandler());
+      url::kHttpScheme, new HttpProtocolHandler(url::kHttpScheme));
+  job_factory->SetProtocolHandler(
+      url::kHttpsScheme, new HttpProtocolHandler(url::kHttpsScheme));
+  job_factory->SetProtocolHandler(
+      url::kWsScheme, new HttpProtocolHandler(url::kWsScheme));
+  job_factory->SetProtocolHandler(
+      url::kWssScheme, new HttpProtocolHandler(url::kWssScheme));
 
   // Set up interceptors in the reverse order.
   scoped_ptr<net::URLRequestJobFactory> top_job_factory = job_factory.Pass();

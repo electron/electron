@@ -8,7 +8,8 @@
 
 namespace atom {
 
-HttpProtocolHandler::HttpProtocolHandler() {
+HttpProtocolHandler::HttpProtocolHandler(const std::string& scheme)
+    : scheme_(scheme) {
 }
 
 HttpProtocolHandler::~HttpProtocolHandler() {
@@ -19,7 +20,7 @@ net::URLRequestJob* HttpProtocolHandler::MaybeCreateJob(
     net::NetworkDelegate* network_delegate) const {
   return net::URLRequestHttpJob::Factory(request,
                                          network_delegate,
-                                         "http");
+                                         scheme_);
 }
 
 }  // namespace atom

@@ -197,3 +197,24 @@ describe 'protocol module', ->
         protocol.uninterceptProtocol 'http'
         done()
       protocol.interceptProtocol 'http', handler
+
+    it 'can override https protocol handler', (done) ->
+      handler = remote.createFunctionWithReturnValue 'valar morghulis'
+      protocol.once 'intercepted', ->
+        protocol.uninterceptProtocol 'https'
+        done()
+      protocol.interceptProtocol 'https', handler
+
+    it 'can override ws protocol handler', (done) ->
+      handler = remote.createFunctionWithReturnValue 'valar morghulis'
+      protocol.once 'intercepted', ->
+        protocol.uninterceptProtocol 'ws'
+        done()
+      protocol.interceptProtocol 'ws', handler
+
+    it 'can override wss protocol handler', (done) ->
+      handler = remote.createFunctionWithReturnValue 'valar morghulis'
+      protocol.once 'intercepted', ->
+        protocol.uninterceptProtocol 'wss'
+        done()
+      protocol.interceptProtocol 'wss', handler
