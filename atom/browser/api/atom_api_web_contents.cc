@@ -348,8 +348,9 @@ void WebContents::WebContentsDestroyed() {
 }
 
 void WebContents::NavigationEntryCommitted(
-    const content::LoadCommittedDetails& load_details) {
-  Emit("navigation-entry-commited", load_details.entry->GetURL());
+    const content::LoadCommittedDetails& details) {
+  Emit("navigation-entry-commited", details.entry->GetURL(),
+       details.is_in_page, details.did_replace_entry);
 }
 
 void WebContents::DidAttach(int guest_proxy_routing_id) {

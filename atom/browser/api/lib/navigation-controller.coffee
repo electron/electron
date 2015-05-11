@@ -9,16 +9,21 @@ class NavigationController
     @currentIndex = -1
     @pendingIndex = -1
 
-    @webContents.on 'navigation-entry-commited', (event, url) =>
+    @webContents.on 'navigation-entry-commited', (event, url, inPage, replaceEntry) =>
+      if replaceEntry
+        @history[@currentIndex] = {url, inPage}
+        return
+
       if @pendingIndex is -1  # Normal navigation.
         @history = @history.slice 0, @currentIndex + 1  # Clear history.
-        if @history[@currentIndex] isnt url
+        currentEntry = @history[@currentIndex]
+        if currentEntry?.url isnt url or currentEntry?.inPage isnt inPage
           @currentIndex++
-          @history.push url
+          @history.push {url, inPage}
       else  # Go to index.
         @currentIndex = @pendingIndex
         @pendingIndex = -1
-        @history[@currentIndex] = url
+        @history[@currentIndex] = {url, inPage}
 
   loadUrl: (url, options={}) ->
     @pendingIndex = -1
@@ -28,7 +33,7 @@ class NavigationController
     if @currentIndex is -1
       ''
     else
-      @history[@currentIndex]
+      @history[@currentIndex].url
 
   stop: ->
     @pendingIndex = -1
@@ -57,17 +62,17 @@ class NavigationController
   goBack: ->
     return unless @canGoBack()
     @pendingIndex = @getActiveIndex() - 1
-    @webContents._loadUrl @history[@pendingIndex], {}
+    @webContents._loadUrl @history[@pendingIndex].url, {}
 
   goForward: ->
     return unless @canGoForward()
     @pendingIndex = @getActiveIndex() + 1
-    @webContents._loadUrl @history[@pendingIndex], {}
+    @webContents._loadUrl @history[@pendingIndex].url, {}
 
   goToIndex: (index) ->
     return unless @canGoToIndex index
     @pendingIndex = index
-    @webContents._loadUrl @history[@pendingIndex], {}
+    @webContents._loadUrl @history[@pendingIndex].url, {}
 
   goToOffset: (offset) ->
     return unless @canGoToOffset offset
