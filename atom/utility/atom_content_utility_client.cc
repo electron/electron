@@ -71,4 +71,9 @@ void AtomContentUtilityClient::OnStartupPing() {
   // Don't release the process, we assume further messages are on the way.
 }
 
+// static
+void AtomContentUtilityClient::PreSandboxStartup() {
+  PrintingHandler::PreSandboxStartup();
+}
+
 }  // namespace atom
