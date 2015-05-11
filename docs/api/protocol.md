@@ -89,7 +89,8 @@ Create a request job which sends a buffer as response.
 * `code` Integer
 
 Create a request job which sets appropriate network error message to console.
-Code should be in the following range.
+Default message is `net::ERR_NOT_IMPLEMENTED`. Code should be in the following 
+range.
 
 * Ranges:
   * 0- 99 System related errors
