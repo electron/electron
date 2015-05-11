@@ -53,6 +53,9 @@ class WebContents : public mate::EventEmitter,
   bool IsWaitingForResponse() const;
   void Stop();
   void ReloadIgnoringCache();
+  void GoBack();
+  void GoForward();
+  void GoToOffset(int offset);
   int GetRoutingID() const;
   int GetProcessID() const;
   bool IsCrashed() const;

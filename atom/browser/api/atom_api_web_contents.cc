@@ -6,6 +6,7 @@
 
 #include <set>
 
+#include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/native_window.h"
@@ -348,8 +349,9 @@ void WebContents::WebContentsDestroyed() {
 }
 
 void WebContents::NavigationEntryCommitted(
-    const content::LoadCommittedDetails& load_details) {
-  Emit("navigation-entry-commited", load_details.entry->GetURL());
+    const content::LoadCommittedDetails& details) {
+  Emit("navigation-entry-commited", details.entry->GetURL(),
+       details.is_in_page, details.did_replace_entry);
 }
 
 void WebContents::DidAttach(int guest_proxy_routing_id) {
@@ -440,6 +442,21 @@ void WebContents::Stop() {
 
 void WebContents::ReloadIgnoringCache() {
   web_contents()->GetController().ReloadIgnoringCache(false);
+}
+
+void WebContents::GoBack() {
+  atom::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
+  web_contents()->GetController().GoBack();
+}
+
+void WebContents::GoForward() {
+  atom::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
+  web_contents()->GetController().GoForward();
+}
+
+void WebContents::GoToOffset(int offset) {
+  atom::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
+  web_contents()->GetController().GoToOffset(offset);
 }
 
 int WebContents::GetRoutingID() const {
@@ -610,6 +627,9 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
         .SetMethod("_stop", &WebContents::Stop)
         .SetMethod("_reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
+        .SetMethod("_goBack", &WebContents::GoBack)
+        .SetMethod("_goForward", &WebContents::GoForward)
+        .SetMethod("_goToOffset", &WebContents::GoToOffset)
         .SetMethod("getRoutingId", &WebContents::GetRoutingID)
         .SetMethod("getProcessId", &WebContents::GetProcessID)
         .SetMethod("isCrashed", &WebContents::IsCrashed)
