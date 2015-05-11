@@ -236,21 +236,20 @@ exports.wrapFsWithAsar = (fs) ->
       return fs.readFile realPath, options, callback
 
     if not options
-      options = encoding: null, flag: 'r'
+      options = encoding: null
     else if util.isString options
-      options = encoding: options, flag: 'r'
+      options = encoding: options
     else if not util.isObject options
       throw new TypeError('Bad arguments')
 
-    flag = options.flag || 'r'
     encoding = options.encoding
 
     buffer = new Buffer(info.size)
-    open archive.path, flag, (error, fd) ->
-      return callback error if error
-      fs.read fd, buffer, 0, info.size, info.offset, (error) ->
-        fs.close fd, ->
-          callback error, if encoding then buffer.toString encoding else buffer
+    fd = archive.getFd()
+    return notFoundError asarPath, filePath, callback unless fd >= 0
+
+    fs.read fd, buffer, 0, info.size, info.offset, (error) ->
+      callback error, if encoding then buffer.toString encoding else buffer
 
   openSync = fs.openSync
   readFileSync = fs.readFileSync
@@ -270,23 +269,19 @@ exports.wrapFsWithAsar = (fs) ->
       return fs.readFileSync realPath, options
 
     if not options
-      options = encoding: null, flag: 'r'
+      options = encoding: null
     else if util.isString options
-      options = encoding: options, flag: 'r'
+      options = encoding: options
     else if not util.isObject options
       throw new TypeError('Bad arguments')
 
-    flag = options.flag || 'r'
     encoding = options.encoding
 
     buffer = new Buffer(info.size)
-    fd = openSync archive.path, flag
-    try
-      fs.readSync fd, buffer, 0, info.size, info.offset
-    catch e
-      throw e
-    finally
-      fs.closeSync fd
+    fd = archive.getFd()
+    notFoundError asarPath, filePath unless fd >= 0
+
+    fs.readSync fd, buffer, 0, info.size, info.offset
     if encoding then buffer.toString encoding else buffer
 
   readdir = fs.readdir
