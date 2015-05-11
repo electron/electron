@@ -110,12 +110,19 @@ exports.require = (module) ->
   meta = ipc.sendSync 'ATOM_BROWSER_REQUIRE', module
   moduleCache[module] = metaToValue meta
 
-# Get current window object.
+# Get current BrowserWindow object.
 windowCache = null
 exports.getCurrentWindow = ->
   return windowCache if windowCache?
   meta = ipc.sendSync 'ATOM_BROWSER_CURRENT_WINDOW', process.guestInstanceId
   windowCache = metaToValue meta
+
+# Get current WebContents object.
+webContentsCache = null
+exports.getCurrentWebContents = ->
+  return webContentsCache if webContentsCache?
+  meta = ipc.sendSync 'ATOM_BROWSER_CURRENT_WEB_CONTENTS'
+  webContentsCache = metaToValue meta
 
 # Get a global object in browser.
 exports.getGlobal = (name) ->
