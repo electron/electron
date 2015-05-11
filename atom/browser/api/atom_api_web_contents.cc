@@ -443,6 +443,14 @@ void WebContents::ReloadIgnoringCache() {
   web_contents()->GetController().ReloadIgnoringCache(false);
 }
 
+void WebContents::GoBack() {
+  web_contents()->GetController().GoBack();
+}
+
+void WebContents::GoForward() {
+  web_contents()->GetController().GoForward();
+}
+
 int WebContents::GetRoutingID() const {
   return web_contents()->GetRoutingID();
 }
@@ -611,6 +619,8 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
         .SetMethod("_stop", &WebContents::Stop)
         .SetMethod("_reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
+        .SetMethod("_goBack", &WebContents::GoBack)
+        .SetMethod("_goForward", &WebContents::GoForward)
         .SetMethod("getRoutingId", &WebContents::GetRoutingID)
         .SetMethod("getProcessId", &WebContents::GetProcessID)
         .SetMethod("isCrashed", &WebContents::IsCrashed)

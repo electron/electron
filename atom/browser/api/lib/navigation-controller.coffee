@@ -10,20 +10,20 @@ class NavigationController
     @pendingIndex = -1
 
     @webContents.on 'navigation-entry-commited', (event, url, inPage, replaceEntry) =>
-      if replaceEntry
-        @history[@currentIndex] = {url, inPage}
-        return
+      console.log 'navigation-entry-commited', url, inPage, replaceEntry
 
-      if @pendingIndex is -1  # Normal navigation.
+      if @pendingIndex >= 0 # Go to index.
+        @currentIndex = @pendingIndex
+        @pendingIndex = -1
+        @history[@currentIndex] = {url, inPage}
+      else if replaceEntry # Non-user initialized navigation.
+        @history[@currentIndex] = {url, inPage}
+      else  # Normal navigation.
         @history = @history.slice 0, @currentIndex + 1  # Clear history.
         currentEntry = @history[@currentIndex]
         if currentEntry?.url isnt url or currentEntry?.inPage isnt inPage
           @currentIndex++
           @history.push {url, inPage}
-      else  # Go to index.
-        @currentIndex = @pendingIndex
-        @pendingIndex = -1
-        @history[@currentIndex] = {url, inPage}
 
   loadUrl: (url, options={}) ->
     @pendingIndex = -1
@@ -62,12 +62,20 @@ class NavigationController
   goBack: ->
     return unless @canGoBack()
     @pendingIndex = @getActiveIndex() - 1
-    @webContents._loadUrl @history[@pendingIndex].url, {}
+    pendingEntry = @history[@pendingIndex]
+    if pendingEntry.inPage
+      @webContents._goBack()
+    else
+      @webContents._loadUrl pendingEntry.url, {}
 
   goForward: ->
     return unless @canGoForward()
     @pendingIndex = @getActiveIndex() + 1
-    @webContents._loadUrl @history[@pendingIndex].url, {}
+    pendingEntry = @history[@pendingIndex]
+    if pendingEntry.inPage
+      @webContents._goForward()
+    else
+      @webContents._loadUrl pendingEntry.url, {}
 
   goToIndex: (index) ->
     return unless @canGoToIndex index
