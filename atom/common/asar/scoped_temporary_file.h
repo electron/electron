@@ -26,7 +26,7 @@ class ScopedTemporaryFile {
   bool Init();
 
   // Init an temporary file and fill it with content of |path|.
-  bool InitFromFile(base::File& src, uint64 offset, uint64 size);
+  bool InitFromFile(base::File* src, uint64 offset, uint64 size);
 
   base::FilePath path() const { return path_; }
 

@@ -4,6 +4,10 @@
 
 #include "atom/common/asar/archive.h"
 
+#if defined(OS_WIN)
+#include <io.h>
+#endif
+
 #include <string>
 #include <vector>
 
@@ -250,12 +254,26 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
   }
 
   scoped_ptr<ScopedTemporaryFile> temp_file(new ScopedTemporaryFile);
-  if (!temp_file->InitFromFile(file_, info.offset, info.size))
+  if (!temp_file->InitFromFile(&file_, info.offset, info.size))
     return false;
 
   *out = temp_file->path();
   external_files_.set(path, temp_file.Pass());
   return true;
+}
+
+int Archive::GetFD() const {
+  if (!file_.IsValid())
+    return -1;
+
+#if defined(OS_WIN)
+  return
+    _open_osfhandle(reinterpret_cast<intptr_t>(file_.GetPlatformFile()), 0);
+#elif defined(OS_POSIX)
+  return file_.GetPlatformFile();
+#else
+  return -1;
+#endif
 }
 
 }  // namespace asar

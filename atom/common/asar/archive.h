@@ -60,6 +60,9 @@ class Archive {
   // For unpacked file, this method will return its real path.
   bool CopyFileOut(const base::FilePath& path, base::FilePath* out);
 
+  // Returns the file's fd.
+  int GetFD() const;
+
   base::FilePath path() const { return path_; }
   base::DictionaryValue* header() const { return header_.get(); }
 
