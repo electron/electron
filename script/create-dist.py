@@ -35,12 +35,15 @@ TARGET_BINARIES = {
     'icudtl.dat',
     'libEGL.dll',
     'libGLESv2.dll',
+    'msvcp120.dll',
+    'msvcr120.dll',
     'node.dll',
     'content_resources_200_percent.pak',
     'ui_resources_200_percent.pak',
     'xinput1_3.dll',
     'natives_blob.bin',
     'snapshot_blob.bin',
+    'vccorlib120.dll',
   ],
   'linux': [
     PROJECT_NAME,  # 'electron'

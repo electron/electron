@@ -8,7 +8,7 @@ from lib.config import get_target_arch
 from lib.util import safe_mkdir, rm_rf, extract_zip, tempdir, download
 
 
-VERSION = 'v0.6.0'
+VERSION = 'v0.7.0'
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 FRAMEWORKS_URL = 'http://github.com/atom/atom-shell-frameworks/releases' \
                  '/download/' + VERSION
@@ -30,6 +30,7 @@ def main():
     download_and_unzip('Squirrel')
   elif sys.platform in ['cygwin', 'win32']:
     download_and_unzip('directxsdk-' + get_target_arch())
+    download_and_unzip('vs2012-crt-' + get_target_arch())
 
   with open(version_file, 'w') as f:
     f.write(VERSION)
