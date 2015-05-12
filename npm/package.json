@@ -7,9 +7,10 @@
     "url": "https://github.com/mafintosh/electron-prebuilt"
   },
   "scripts": {
-    "install": "node install.js",
-    "test": "tape test/*.js",
-    "cache-clean": "rimraf ~/.electron"
+    "cache-clean": "rm -rf ~/.electron && rm -rf dist",
+    "postinstall": "node install.js",
+    "pretest": "npm run cache-clean && node install.js",
+    "test": "tape test/*.js"
   },
   "bin": {
     "electron": "cli.js"
