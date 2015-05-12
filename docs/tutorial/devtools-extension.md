@@ -3,6 +3,15 @@
 To make debugging more easy, Electron has added basic support for
 [Chrome DevTools Extension][devtools-extension].
 
+To get basic F12 debugging in your Electron application. You can add the
+following code
+
+```javascript
+mainWindow.openDevTools({
+    detach: <true or false>
+  })
+```
+
 For most devtools extensions, you can simply download their source codes and use
 the `BrowserWindow.addDevToolsExtension` API to load them, the loaded extensions
 will be remembered so you don't need to call the API every time when creating
