@@ -14,6 +14,7 @@
 #include "content/public/common/favicon_url.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "content/public/browser/gpu_data_manager_observer.h"
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
 
@@ -35,7 +36,8 @@ namespace api {
 class WebContents : public mate::EventEmitter,
                     public content::BrowserPluginGuestDelegate,
                     public content::WebContentsDelegate,
-                    public content::WebContentsObserver {
+                    public content::WebContentsObserver,
+                    public content::GpuDataManagerObserver {
  public:
   // Create from an existing WebContents.
   static mate::Handle<WebContents> CreateFrom(
@@ -182,6 +184,8 @@ class WebContents : public mate::EventEmitter,
   void TitleWasSet(content::NavigationEntry* entry, bool explicit_set) override;
   void DidUpdateFaviconURL(
       const std::vector<content::FaviconURL>& urls) override;
+  void PluginCrashed(const base::FilePath& plugin_path,
+                     base::ProcessId plugin_pid) override;
 
   // content::BrowserPluginGuestDelegate:
   void DidAttach(int guest_proxy_routing_id) final;
@@ -193,6 +197,9 @@ class WebContents : public mate::EventEmitter,
   void WillAttach(content::WebContents* embedder_web_contents,
                   int element_instance_id,
                   bool is_full_page_plugin) final;
+
+  // content::GpuDataManagerObserver:
+  void OnGpuProcessCrashed(base::TerminationStatus exit_code) override;
 
  private:
   // Called when received a message from renderer.

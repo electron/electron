@@ -24,6 +24,7 @@
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
+#include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -221,6 +222,19 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
   Emit("crashed");
+}
+
+void WebContents::PluginCrashed(const base::FilePath& plugin_path,
+                                base::ProcessId plugin_pid) {
+  content::WebPluginInfo info;
+  auto plugin_service = content::PluginService::GetInstance();
+  plugin_service->GetPluginInfoByPath(plugin_path, &info);
+  Emit("plugin-crashed", info.name, info.version);
+}
+
+void WebContents::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
+  if (exit_code == base::TERMINATION_STATUS_PROCESS_CRASHED)
+    Emit("gpu-crashed");
 }
 
 void WebContents::DocumentLoadedInFrame(
