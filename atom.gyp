@@ -124,7 +124,9 @@
                       '<@(libchromiumcontent_shared_v8_libraries)',
                     ],
                   }, {
-                    'copied_libraries': [],
+                    'copied_libraries': [
+                      '<(libchromiumcontent_dir)/pdf.dll',
+                    ],
                   }],
                 ],
               },
@@ -134,7 +136,6 @@
                 '<(libchromiumcontent_dir)/ffmpegsumo.dll',
                 '<(libchromiumcontent_dir)/libEGL.dll',
                 '<(libchromiumcontent_dir)/libGLESv2.dll',
-                '<(libchromiumcontent_dir)/pdf.dll',
                 '<(libchromiumcontent_dir)/icudtl.dat',
                 '<(libchromiumcontent_dir)/content_resources_200_percent.pak',
                 '<(libchromiumcontent_dir)/content_shell.pak',
