@@ -315,7 +315,7 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
 
   NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask |
                          NSMiniaturizableWindowMask | NSResizableWindowMask;
-  if (!useStandardWindow) {
+  if (!useStandardWindow || transparent_) {
     styleMask |= NSTexturedBackgroundWindowMask;
   }
 
