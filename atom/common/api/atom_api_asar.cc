@@ -88,6 +88,13 @@ class Archive : public mate::Wrappable {
     return mate::ConvertToV8(isolate, new_path);
   }
 
+  // Return the file descriptor.
+  int GetFD() const {
+    if (!archive_)
+      return -1;
+    return archive_->GetFD();
+  }
+
   // Free the resources used by archive.
   void Destroy() {
     archive_.reset();
@@ -102,6 +109,7 @@ class Archive : public mate::Wrappable {
         .SetMethod("readdir", &Archive::Readdir)
         .SetMethod("realpath", &Archive::Realpath)
         .SetMethod("copyFileOut", &Archive::CopyFileOut)
+        .SetMethod("getFd", &Archive::GetFD)
         .SetMethod("destroy", &Archive::Destroy);
   }
 

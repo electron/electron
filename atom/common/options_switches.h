@@ -37,11 +37,14 @@ extern const char kEnableLargerThanScreen[];
 extern const char kDarkTheme[];
 extern const char kDirectWrite[];
 extern const char kEnablePlugins[];
+extern const char kPpapiFlashPath[];
+extern const char kPpapiFlashVersion[];
 extern const char kGuestInstanceID[];
 extern const char kPreloadScript[];
 extern const char kTransparent[];
 extern const char kType[];
 extern const char kDisableAutoHideCursor[];
+extern const char kStandardWindow[];
 
 extern const char kExperimentalFeatures[];
 extern const char kExperimentalCanvasFeatures[];

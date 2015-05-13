@@ -18,6 +18,9 @@ class AtomBrowserClient : public brightray::BrowserClient {
   AtomBrowserClient();
   virtual ~AtomBrowserClient();
 
+  // Don't force renderer process to restart for once.
+  static void SuppressRendererProcessRestartForOnce();
+
  protected:
   // content::ContentBrowserClient:
   void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
@@ -35,6 +38,7 @@ class AtomBrowserClient : public brightray::BrowserClient {
       content::SiteInstance** new_instance);
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
                                       int child_process_id) override;
+  void DidCreatePpapiPlugin(content::BrowserPpapiHost* browser_host) override;
 
  private:
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(

@@ -277,13 +277,6 @@ registerWebViewElement = ->
       remote.getGuestWebContents(internal.guestInstanceId)[m]  args...
   proto[m] = createHandler m for m in methods
 
-  # Return dataUrl instead of nativeImage.
-  proto.getFavicon = (args...) ->
-    internal = v8Util.getHiddenValue this, 'internal'
-    return unless internal
-    favicon = remote.getGuestWebContents(internal.guestInstanceId)['getFavicon'] args...
-    favicon.toDataUrl()
-
   window.WebView = webFrame.registerEmbedderCustomElement 'webview',
     prototype: proto
 

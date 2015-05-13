@@ -303,18 +303,25 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
   options.Get(switches::kWidth, &width);
   options.Get(switches::kHeight, &height);
 
-  NSRect main_screen_rect = [[NSScreen mainScreen] frame];
+  NSRect main_screen_rect = [[[NSScreen screens] objectAtIndex:0] frame];
   NSRect cocoa_bounds = NSMakeRect(
       round((NSWidth(main_screen_rect) - width) / 2) ,
       round((NSHeight(main_screen_rect) - height) / 2),
       width,
       height);
 
+  bool useStandardWindow = true;
+  options.Get(switches::kStandardWindow, &useStandardWindow);
+
+  NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask |
+                         NSMiniaturizableWindowMask | NSResizableWindowMask;
+  if (!useStandardWindow) {
+    styleMask |= NSTexturedBackgroundWindowMask;
+  }
+
   window_.reset([[AtomNSWindow alloc]
       initWithContentRect:cocoa_bounds
-                styleMask:NSTitledWindowMask | NSClosableWindowMask |
-                          NSMiniaturizableWindowMask | NSResizableWindowMask |
-                          NSTexturedBackgroundWindowMask
+                styleMask:styleMask
                   backing:NSBackingStoreBuffered
                     defer:YES]);
   [window_ setShell:this];
@@ -463,7 +470,7 @@ void NativeWindowMac::SetBounds(const gfx::Rect& bounds) {
                                    bounds.width(),
                                    bounds.height());
   // Flip coordinates based on the primary screen.
-  NSScreen* screen = [NSScreen mainScreen];
+  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
   cocoa_bounds.origin.y =
       NSHeight([screen frame]) - bounds.height() - bounds.y();
 
@@ -473,7 +480,7 @@ void NativeWindowMac::SetBounds(const gfx::Rect& bounds) {
 gfx::Rect NativeWindowMac::GetBounds() {
   NSRect frame = [window_ frame];
   gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
-  NSScreen* screen = [NSScreen mainScreen];
+  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
   bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
   return bounds;
 }

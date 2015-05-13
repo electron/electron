@@ -82,4 +82,25 @@ Create a request job which sends a string as response.
   * `encoding` String - Default is `UTF-8`
   * `data` Buffer
 
-Create a request job which accepts a buffer and sends a string as response.
+Create a request job which sends a buffer as response.
+
+## Class: protocol.RequestErrorJob(code)
+
+* `code` Integer
+
+Create a request job which sets appropriate network error message to console.
+Default message is `net::ERR_NOT_IMPLEMENTED`. Code should be in the following 
+range.
+
+* Ranges:
+  * 0- 99 System related errors
+  * 100-199 Connection related errors
+  * 200-299 Certificate errors
+  * 300-399 HTTP errors
+  * 400-499 Cache errors
+  * 500-599 ?
+  * 600-699 FTP errors
+  * 700-799 Certificate manager errors
+  * 800-899 DNS resolver errors
+
+Check the [network error list](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h) for code and message relations.

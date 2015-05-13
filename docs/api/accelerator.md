@@ -14,6 +14,9 @@ On Linux and Windows, the `Command` key would not have any effect, you can
 use `CommandOrControl` which represents `Command` on OS X and `Control` on
 Linux and Windows to define some accelerators.
 
+The `Super` key is mapped to the `Windows` key on Windows and Linux and
+`Cmd` on OS X.
+
 ## Available modifiers
 
 * `Command` (or `Cmd` for short)
@@ -21,6 +24,7 @@ Linux and Windows to define some accelerators.
 * `CommandOrControl` (or `CmdOrCtrl` for short)
 * `Alt`
 * `Shift`
+* `Super`
 
 ## Available key codes
 

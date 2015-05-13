@@ -4,7 +4,7 @@
     'product_name%': 'Electron',
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
-    'version%': '0.25.2',
+    'version%': '0.26.0',
 
     'atom_source_root': '<!(["python", "tools/atom_source_root.py"])',
   },
@@ -142,6 +142,9 @@
                 '<(libchromiumcontent_dir)/snapshot_blob.bin',
                 'external_binaries/d3dcompiler_47.dll',
                 'external_binaries/xinput1_3.dll',
+                'external_binaries/msvcp120.dll',
+                'external_binaries/msvcr120.dll',
+                'external_binaries/vccorlib120.dll',
               ],
             },
             {

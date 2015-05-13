@@ -63,6 +63,12 @@ const char kDirectWrite[] = "direct-write";
 // Enable plugins.
 const char kEnablePlugins[] = "enable-plugins";
 
+// Ppapi Flash path.
+const char kPpapiFlashPath[] = "ppapi-flash-path";
+
+// Ppapi Flash version.
+const char kPpapiFlashVersion[] = "ppapi-flash-version";
+
 // Instancd ID of guest WebContents.
 const char kGuestInstanceID[] = "guest-instance-id";
 
@@ -77,6 +83,9 @@ const char kType[] = "type";
 
 // Disable auto-hiding cursor.
 const char kDisableAutoHideCursor[] = "disable-auto-hide-cursor";
+
+// Use the OS X's standard window instead of the textured window.
+const char kStandardWindow[] = "standard-window";
 
 // Web runtime features.
 const char kExperimentalFeatures[]       = "experimental-features";

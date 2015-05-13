@@ -34,6 +34,9 @@ SYMBOLS_NAME = '{0}-{1}-{2}-{3}-symbols.zip'.format(PROJECT_NAME,
 CHROMEDRIVER_NAME = 'chromedriver-{0}-{1}-{2}.zip'.format(CHROMEDRIVER_VERSION,
                                                           PLATFORM,
                                                           get_target_arch())
+MKSNAPSHOT_NAME = 'mksnapshot-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
+                                                      PLATFORM,
+                                                      get_target_arch())
 
 
 def main():
@@ -74,10 +77,12 @@ def main():
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, DIST_NAME))
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, SYMBOLS_NAME))
 
-  # Upload chromedriver for minor version update.
+  # Upload chromedriver and mksnapshot for minor version update.
   if parse_version(args.version)[2] == '0':
     upload_atom_shell(github, release_id,
                       os.path.join(DIST_DIR, CHROMEDRIVER_NAME))
+    upload_atom_shell(github, release_id,
+                      os.path.join(DIST_DIR, MKSNAPSHOT_NAME))
 
   if PLATFORM == 'win32':
     # Upload PDBs to Windows symbol server.
