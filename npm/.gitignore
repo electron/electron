@@ -1,5 +1,4 @@
 node_modules
-*.zip
 dist
 path.txt
 .DS_Store
