@@ -16,18 +16,25 @@
 #include "base/strings/string_number_conversions.h"
 #include "content/public/renderer/render_view.h"
 #include "ipc/ipc_message_macros.h"
+#include "net/base/net_module.h"
 #include "third_party/WebKit/public/web/WebDraggableRegion.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebView.h"
+#include "ui/base/resource/resource_bundle.h"
 
 #include "atom/common/node_includes.h"
 
 namespace atom {
 
 namespace {
+
+// A hack here:
+// Copy from net/grit/net_resources.h of chromium repository
+// since libchromiumcontent doesn't expose it.
+const int kIDR_DIR_HEADER_HTML = 4000;
 
 bool GetIPCObject(v8::Isolate* isolate,
                   v8::Handle<v8::Context> context,
@@ -49,6 +56,16 @@ std::vector<v8::Handle<v8::Value>> ListValueToVector(
   return result;
 }
 
+base::StringPiece NetResourceProvider(int key) {
+  if (key == kIDR_DIR_HEADER_HTML) {
+    base::StringPiece html_data =
+        ui::ResourceBundle::GetSharedInstance().GetRawDataResource(
+            kIDR_DIR_HEADER_HTML);
+    return html_data;
+  }
+  return base::StringPiece();
+}
+
 }  // namespace
 
 AtomRenderViewObserver::AtomRenderViewObserver(
@@ -57,6 +74,8 @@ AtomRenderViewObserver::AtomRenderViewObserver(
     : content::RenderViewObserver(render_view),
       renderer_client_(renderer_client),
       document_created_(false) {
+  // Initialise resource for directory listing.
+  net::NetModule::SetResourceProvider(NetResourceProvider);
 }
 
 AtomRenderViewObserver::~AtomRenderViewObserver() {

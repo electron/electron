@@ -16,8 +16,11 @@
 #include "chrome/browser/browser_process.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/url_constants.h"
+#include "net/ftp/ftp_network_layer.h"
 #include "net/url_request/data_protocol_handler.h"
+#include "net/url_request/ftp_protocol_handler.h"
 #include "net/url_request/url_request_intercepting_job_factory.h"
+#include "net/url_request/url_request_context.h"
 #include "url/url_constants.h"
 
 using content::BrowserThread;
