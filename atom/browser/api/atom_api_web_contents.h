@@ -75,6 +75,7 @@ class WebContents : public mate::EventEmitter,
   void Cut();
   void Copy();
   void Paste();
+  void PasteAndMatchStyle();
   void Delete();
   void SelectAll();
   void Unselect();
