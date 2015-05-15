@@ -2,41 +2,35 @@
 
 ## Introduction
 
-Generally, atom-shell enables you to create desktop applications with pure
-JavaScript by providing a runtime with rich native APIs. You could see it as
-a variant of the io.js runtime which is focused on desktop applications
-instead of web servers.
+Electron enables you to create desktop applications with pure JavaScript by providing a runtime with rich native APIs. You could see it as a variant of the io.js runtime which is focused on desktop applications instead of web servers.
 
-It doesn't mean atom-shell is a JavaScript binding to GUI libraries. Instead,
-atom-shell uses web pages as its GUI, so you could also see it as a minimal
+It doesn't mean Electron is a JavaScript binding to GUI libraries. Instead,
+Electron uses web pages as its GUI, so you could also see it as a minimal
 Chromium browser, controlled by JavaScript.
 
-### The main process
+### Main process
 
-In atom-shell the process that runs `package.json`'s `main` script is called
-__the main process__. The script runs in the main process can display GUI by
+In Electron, the process that runs `package.json`'s `main` script is called
+__the main process__. The script that runs in the main process, can display GUI by
 creating web pages.
 
-### The renderer process
+### Renderer process
 
-Since atom-shell uses Chromium for displaying web pages, Chromium's
-multi-processes architecture is also used. Each web page in atom-shell runs in
+Since Electron uses Chromium for displaying web pages, Chromium's
+multi-processes architecture is also used. Each web page in Electron runs in
 its own process, which is called __the renderer process__.
 
-In normal browsers web pages are usually running in sandboxed environment and
-not allowed to access native resources. In atom-shell users are given the power
-to use io.js APIs in web pages, so it would be possible to interactive with
-low level operating system in web pages with JavaScript.
+In normal browsers web pages usually run in a sandboxed environment and are not
+allowed access to native resources. Electron users however, have the power to use
+io.js APIs in web pages allowing lower level operating system interactions.
 
 ### Differences between main process and renderer process
 
-The main process creates web pages by creating `BrowserWindow` instances, and
-each `BrowserWindow` instance runs the web page in its own renderer process,
-when a `BrowserWindow` instance is destroyed, the corresponding renderer process
+The main process creates web pages by creating `BrowserWindow` instances. Each `BrowserWindow` instance runs the web page in its own renderer process. When a `BrowserWindow` instance is destroyed, the corresponding renderer process
 would also be terminated.
 
-So the main process manages all web pages and their corresponding renderer
-processes, and each renderer process is separated from each other and only care
+The main process manages all web pages and their corresponding renderer
+processes, each renderer process is isolated and only cares
 about the web page running in it.
 
 In web pages, it is not allowed to call native GUI related APIs because managing
@@ -44,14 +38,13 @@ native GUI resources in web pages is very dangerous and easy to leak resources.
 If you want to do GUI operations in web pages, you have to communicate with
 the main process to do it there.
 
-In atom-shell, we have provided the [ipc](../api/ipc-renderer.md) module for
+In Electron, we have provided the [ipc](../api/ipc-renderer.md) module for
 communication between main process and renderer process. And there is also a
 [remote](../api/remote.md) module for RPC style communication.
 
-## Write your first atom-shell app
+## Write your first Electron app
 
-Generally, an atom-shell app would be structured like this (see the
-[hello-atom](https://github.com/dougnukem/hello-atom) repo for reference):
+Generally, an Electron app would be structured like this:
 
 ```text
 your-app/
@@ -93,7 +86,7 @@ app.on('window-all-closed', function() {
     app.quit();
 });
 
-// This method will be called when atom-shell has done everything
+// This method will be called when Electron has done everything
 // initialization and ready for creating browser windows.
 app.on('ready', function() {
   // Create the browser window.
@@ -122,8 +115,8 @@ Finally the `index.html` is the web page you want to show:
   </head>
   <body>
     <h1>Hello World!</h1>
-    We are using node.js <script>document.write(process.version)</script>
-    and atom-shell <script>document.write(process.versions['electron'])</script>.
+    We are using io.js <script>document.write(process.version)</script>
+    and Electron <script>document.write(process.versions['electron'])</script>.
   </body>
 </html>
 ```
@@ -133,25 +126,25 @@ Finally the `index.html` is the web page you want to show:
 After you're done writing your app, you can create a distribution by
 following the [Application distribution](./application-distribution.md) guide
 and then execute the packaged app. You can also just use the downloaded
-atom-shell binary to execute your app directly.
+Electron binary to execute your app directly.
 
 On Windows:
 
 ```cmd
-$ .\atom-shell\atom.exe your-app\
+$ .\electron\electron.exe your-app\
 ```
 
 On Linux:
 
 ```bash
-$ ./atom-shell/atom your-app/
+$ ./electron/electron your-app/
 ```
 
 On OS X:
 
 ```bash
-$ ./Electron.app/Contents/MacOS/Atom your-app/
+$ ./Electron.app/Contents/MacOS/Electron your-app/
 ```
 
-`Electron.app` here is part of the atom-shell's release package, you can download
+`Electron.app` here is part of the Electron's release package, you can download
 it from [here](https://github.com/atom/electron/releases).

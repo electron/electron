@@ -10,12 +10,14 @@ supportedWebViewEvents = [
   'did-stop-loading'
   'did-get-response-details'
   'did-get-redirect-request'
+  'dom-ready'
   'console-message'
   'new-window'
   'close'
   'crashed'
   'destroyed'
   'page-title-set'
+  'page-favicon-updated'
 ]
 
 nextInstanceId = 0

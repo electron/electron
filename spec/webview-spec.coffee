@@ -47,6 +47,19 @@ describe '<webview> tag', ->
       webview.src = "file://#{fixtures}/pages/d.html"
       document.body.appendChild webview
 
+    it 'loads native modules when navigation happens', (done) ->
+      listener = (e) ->
+        webview.removeEventListener 'did-finish-load', listener
+        listener2 = (e) ->
+          assert.equal e.message, 'function'
+          done()
+        webview.addEventListener 'console-message', listener2
+        webview.src = "file://#{fixtures}/pages/native-module.html"
+      webview.addEventListener 'did-finish-load', listener
+      webview.setAttribute 'nodeintegration', 'on'
+      webview.src = "file://#{fixtures}/pages/native-module.html"
+      document.body.appendChild webview
+
   describe 'preload attribute', ->
     it 'loads the script before other scripts in window', (done) ->
       listener = (e) ->
@@ -150,4 +163,33 @@ describe '<webview> tag', ->
         assert e.explicitSet
         done()
       webview.src = "file://#{fixtures}/pages/a.html"
+      document.body.appendChild webview
+
+  describe 'page-favicon-updated event', ->
+    it 'emits when favicon urls are received', (done) ->
+      webview.addEventListener 'page-favicon-updated', (e) ->
+        assert.equal e.favicons.length, 2
+        url =
+          if process.platform is 'win32'
+            'file:///C:/favicon.png'
+          else
+            'file:///favicon.png'
+        assert.equal e.favicons[0], url
+        done()
+      webview.src = "file://#{fixtures}/pages/a.html"
+      document.body.appendChild webview
+
+  describe '<webview>.reload()', ->
+    it 'should emit beforeunload handler', (done) ->
+      listener = (e) ->
+        assert.equal e.channel, 'onbeforeunload'
+        webview.removeEventListener 'ipc-message', listener
+        done()
+      listener2 = (e) ->
+        webview.reload()
+        webview.removeEventListener 'did-finish-load', listener2
+      webview.addEventListener 'ipc-message', listener
+      webview.addEventListener 'did-finish-load', listener2
+      webview.setAttribute 'nodeintegration', 'on'
+      webview.src = "file://#{fixtures}/pages/beforeunload-false.html"
       document.body.appendChild webview

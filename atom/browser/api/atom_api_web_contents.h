@@ -6,13 +6,16 @@
 #define ATOM_BROWSER_API_ATOM_API_WEB_CONTENTS_H_
 
 #include <string>
+#include <vector>
 
 #include "atom/browser/api/event_emitter.h"
 #include "brightray/browser/default_web_contents_delegate.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
+#include "content/public/common/favicon_url.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "native_mate/handle.h"
+#include "ui/gfx/image/image.h"
 
 namespace brightray {
 class InspectableWebContents;
@@ -24,6 +27,7 @@ class Dictionary;
 
 namespace atom {
 
+class AtomJavaScriptDialogManager;
 class WebDialogHelper;
 
 namespace api {
@@ -44,19 +48,13 @@ class WebContents : public mate::EventEmitter,
   void Destroy();
   bool IsAlive() const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
-  GURL GetURL() const;
   base::string16 GetTitle() const;
   bool IsLoading() const;
   bool IsWaitingForResponse() const;
   void Stop();
-  void Reload(const mate::Dictionary& options);
-  void ReloadIgnoringCache(const mate::Dictionary& options);
-  bool CanGoBack() const;
-  bool CanGoForward() const;
-  bool CanGoToOffset(int offset) const;
+  void ReloadIgnoringCache();
   void GoBack();
   void GoForward();
-  void GoToIndex(int index);
   void GoToOffset(int offset);
   int GetRoutingID() const;
   int GetProcessID() const;
@@ -67,6 +65,9 @@ class WebContents : public mate::EventEmitter,
   void OpenDevTools();
   void CloseDevTools();
   bool IsDevToolsOpened();
+  void InspectElement(int x, int y);
+  void HasServiceWorker(const base::Callback<void(bool)>&);
+  void UnregisterServiceWorker(const base::Callback<void(bool)>&);
 
   // Editing commands.
   void Undo();
@@ -130,6 +131,8 @@ class WebContents : public mate::EventEmitter,
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
+  content::JavaScriptDialogManager* GetJavaScriptDialogManager(
+      content::WebContents* source) override;
   void RunFileChooser(content::WebContents* web_contents,
                       const content::FileChooserParams& params) override;
   void EnumerateDirectory(content::WebContents* web_contents,
@@ -149,6 +152,8 @@ class WebContents : public mate::EventEmitter,
   // content::WebContentsObserver:
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;
+  void DocumentLoadedInFrame(
+      content::RenderFrameHost* render_frame_host) override;
   void DidFinishLoad(content::RenderFrameHost* render_frame_host,
                      const GURL& validated_url) override;
   void DidFailLoad(content::RenderFrameHost* render_frame_host,
@@ -175,13 +180,14 @@ class WebContents : public mate::EventEmitter,
   void NavigationEntryCommitted(
       const content::LoadCommittedDetails& load_details) override;
   void TitleWasSet(content::NavigationEntry* entry, bool explicit_set) override;
+  void DidUpdateFaviconURL(
+      const std::vector<content::FaviconURL>& urls) override;
 
   // content::BrowserPluginGuestDelegate:
   void DidAttach(int guest_proxy_routing_id) final;
   void ElementSizeChanged(const gfx::Size& size) final;
   content::WebContents* GetOwnerWebContents() const final;
-  void GuestSizeChanged(const gfx::Size& old_size,
-                        const gfx::Size& new_size) final;
+  void GuestSizeChanged(const gfx::Size& new_size) final;
   void RegisterDestructionCallback(const DestructionCallback& callback) final;
   void SetGuestSizer(content::GuestSizer* guest_sizer) final;
   void WillAttach(content::WebContents* embedder_web_contents,
@@ -202,6 +208,7 @@ class WebContents : public mate::EventEmitter,
                                      const gfx::Size& new_size);
 
   scoped_ptr<WebDialogHelper> web_dialog_helper_;
+  scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
 
   // Unique ID for a guest WebContents.
   int guest_instance_id_;

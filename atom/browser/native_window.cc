@@ -192,7 +192,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     int width = -1, height = -1;
     options.Get(switches::kWidth, &width);
     options.Get(switches::kHeight, &height);
-    Move(gfx::Rect(x, y, width, height));
+    SetBounds(gfx::Rect(x, y, width, height));
   } else if (options.Get(switches::kCenter, &center) && center) {
     Center();
   }
@@ -235,6 +235,22 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   options.Get(switches::kShow, &show);
   if (show)
     Show();
+}
+
+void NativeWindow::SetSize(const gfx::Size& size) {
+  SetBounds(gfx::Rect(GetPosition(), size));
+}
+
+gfx::Size NativeWindow::GetSize() {
+  return GetBounds().size();
+}
+
+void NativeWindow::SetPosition(const gfx::Point& position) {
+  SetBounds(gfx::Rect(position, GetSize()));
+}
+
+gfx::Point NativeWindow::GetPosition() {
+  return GetBounds().origin();
 }
 
 void NativeWindow::SetRepresentedFilename(const std::string& filename) {
@@ -435,8 +451,7 @@ void NativeWindow::AppendExtraCommandLineSwitches(
   }
 }
 
-void NativeWindow::OverrideWebkitPrefs(const GURL& url,
-                                       content::WebPreferences* prefs) {
+void NativeWindow::OverrideWebkitPrefs(content::WebPreferences* prefs) {
   if (web_preferences_.IsEmpty())
     return;
 
@@ -566,6 +581,7 @@ content::WebContents* NativeWindow::OpenURLFromTab(
   load_url_params.is_renderer_initiated = params.is_renderer_initiated;
   load_url_params.transferred_global_request_id =
       params.transferred_global_request_id;
+  load_url_params.should_clear_history_list = true;
 
   source->GetController().LoadURLWithParams(load_url_params);
   return source;
@@ -646,8 +662,7 @@ void NativeWindow::DeactivateContents(content::WebContents* contents) {
 
 void NativeWindow::MoveContents(content::WebContents* source,
                                 const gfx::Rect& pos) {
-  SetPosition(pos.origin());
-  SetSize(pos.size());
+  SetBounds(pos);
 }
 
 void NativeWindow::CloseContents(content::WebContents* source) {
@@ -684,6 +699,20 @@ void NativeWindow::RendererUnresponsive(content::WebContents* source) {
 void NativeWindow::RendererResponsive(content::WebContents* source) {
   window_unresposive_closure_.Cancel();
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
+}
+
+void NativeWindow::EnterFullscreenModeForTab(content::WebContents* source,
+                                             const GURL& origin) {
+  SetFullScreen(true);
+}
+
+void NativeWindow::ExitFullscreenModeForTab(content::WebContents* source) {
+  SetFullScreen(false);
+}
+
+bool NativeWindow::IsFullscreenForTabOrPending(
+    const content::WebContents* source) const {
+  return IsFullscreen();
 }
 
 void NativeWindow::BeforeUnloadFired(const base::TimeTicks& proceed_time) {

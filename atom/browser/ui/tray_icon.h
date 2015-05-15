@@ -10,6 +10,7 @@
 #include "atom/browser/ui/tray_icon_observer.h"
 #include "base/observer_list.h"
 #include "ui/base/models/simple_menu_model.h"
+#include "ui/gfx/geometry/rect.h"
 
 namespace atom {
 
@@ -50,7 +51,7 @@ class TrayIcon {
 
   void AddObserver(TrayIconObserver* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(TrayIconObserver* obs) { observers_.RemoveObserver(obs); }
-  void NotifyClicked();
+  void NotifyClicked(const gfx::Rect& = gfx::Rect());
   void NotifyDoubleClicked();
   void NotifyBalloonShow();
   void NotifyBalloonClicked();

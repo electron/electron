@@ -291,10 +291,6 @@ void NativeWindowViews::CloseImmediately() {
   window_->CloseNow();
 }
 
-void NativeWindowViews::Move(const gfx::Rect& bounds) {
-  window_->SetBounds(bounds);
-}
-
 void NativeWindowViews::Focus(bool focus) {
   if (focus)
     window_->Activate();
@@ -369,40 +365,41 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
 #endif
 }
 
-bool NativeWindowViews::IsFullscreen() {
+bool NativeWindowViews::IsFullscreen() const {
   return window_->IsFullscreen();
 }
 
-void NativeWindowViews::SetSize(const gfx::Size& size) {
+void NativeWindowViews::SetBounds(const gfx::Rect& bounds) {
 #if defined(USE_X11)
   // On Linux the minimum and maximum size should be updated with window size
   // when window is not resizable.
   if (!resizable_) {
-    SetMaximumSize(size);
-    SetMinimumSize(size);
+    SetMaximumSize(bounds.size());
+    SetMinimumSize(bounds.size());
   }
 #endif
 
-  window_->SetSize(size);
+  window_->SetBounds(bounds);
 }
 
-gfx::Size NativeWindowViews::GetSize() {
+gfx::Rect NativeWindowViews::GetBounds() {
 #if defined(OS_WIN)
   if (IsMinimized())
-    return window_->GetRestoredBounds().size();
+    return window_->GetRestoredBounds();
 #endif
 
-  return window_->GetWindowBoundsInScreen().size();
+  return window_->GetWindowBoundsInScreen();
 }
 
 void NativeWindowViews::SetContentSize(const gfx::Size& size) {
   if (!has_frame_) {
-    SetSize(size);
+    NativeWindow::SetSize(size);
     return;
   }
 
   gfx::Rect bounds = window_->GetWindowBoundsInScreen();
-  SetSize(ContentBoundsToWindowBounds(gfx::Rect(bounds.origin(), size)).size());
+  bounds.set_size(size);
+  SetBounds(ContentBoundsToWindowBounds(bounds));
 }
 
 gfx::Size NativeWindowViews::GetContentSize() {
@@ -490,19 +487,6 @@ bool NativeWindowViews::IsAlwaysOnTop() {
 
 void NativeWindowViews::Center() {
   window_->CenterWindow(GetSize());
-}
-
-void NativeWindowViews::SetPosition(const gfx::Point& position) {
-  window_->SetBounds(gfx::Rect(position, GetSize()));
-}
-
-gfx::Point NativeWindowViews::GetPosition() {
-#if defined(OS_WIN)
-  if (IsMinimized())
-    return window_->GetRestoredBounds().origin();
-#endif
-
-  return window_->GetWindowBoundsInScreen().origin();
 }
 
 void NativeWindowViews::SetTitle(const std::string& title) {

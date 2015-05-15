@@ -1,0 +1,17 @@
+<html>
+<body>
+<script src='http://127.0.0.1:62342/jquery.js'></script>
+<script type="text/javascript" charset="utf-8">
+  $.ajax({
+    type: "GET",
+    url: "http://127.0.0.1:62342",
+    headers: {
+      "Authorization": "Basic " + btoa("test:test")
+    },
+    success: function (result){
+      require('ipc').send('console-message', result);
+    }
+  });
+</script>
+</body>
+</html>

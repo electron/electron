@@ -16,6 +16,10 @@
 
 class GURL;
 
+namespace gfx {
+class Rect;
+}
+
 namespace mate {
 class Arguments;
 class Dictionary;
@@ -85,6 +89,8 @@ class Window : public mate::EventEmitter,
   bool IsMinimized();
   void SetFullScreen(bool fullscreen);
   bool IsFullscreen();
+  void SetBounds(const gfx::Rect& bounds);
+  gfx::Rect GetBounds();
   void SetSize(int width, int height);
   std::vector<int> GetSize();
   void SetContentSize(int width, int height);

@@ -14,7 +14,6 @@
 #include "printing/pdf_metafile_skia.h"
 #include "printing/units.h"
 #include "skia/ext/platform_device.h"
-#include "skia/ext/vector_canvas.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 
 

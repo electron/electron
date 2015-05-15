@@ -41,7 +41,7 @@ class Tray : public mate::EventEmitter,
   virtual ~Tray();
 
   // TrayIconObserver:
-  void OnClicked() override;
+  void OnClicked(const gfx::Rect&) override;
   void OnDoubleClicked() override;
   void OnBalloonShow() override;
   void OnBalloonClicked() override;

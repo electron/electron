@@ -10,6 +10,7 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/common/google_api_key.h"
 #include "atom/renderer/atom_renderer_client.h"
+#include "atom/utility/atom_content_utility_client.h"
 #include "base/command_line.h"
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"
@@ -92,6 +93,11 @@ content::ContentRendererClient*
     AtomMainDelegate::CreateContentRendererClient() {
   renderer_client_.reset(new AtomRendererClient);
   return renderer_client_.get();
+}
+
+content::ContentUtilityClient* AtomMainDelegate::CreateContentUtilityClient() {
+  utility_client_.reset(new AtomContentUtilityClient);
+  return utility_client_.get();
 }
 
 scoped_ptr<brightray::ContentClient> AtomMainDelegate::CreateContentClient() {

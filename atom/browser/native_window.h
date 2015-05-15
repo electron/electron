@@ -98,7 +98,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   virtual void Close() = 0;
   virtual void CloseImmediately() = 0;
-  virtual void Move(const gfx::Rect& pos) = 0;
   virtual void Focus(bool focus) = 0;
   virtual bool IsFocused() = 0;
   virtual void Show() = 0;
@@ -112,9 +111,13 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void Restore() = 0;
   virtual bool IsMinimized() = 0;
   virtual void SetFullScreen(bool fullscreen) = 0;
-  virtual bool IsFullscreen() = 0;
-  virtual void SetSize(const gfx::Size& size) = 0;
-  virtual gfx::Size GetSize() = 0;
+  virtual bool IsFullscreen() const = 0;
+  virtual void SetBounds(const gfx::Rect& bounds) = 0;
+  virtual gfx::Rect GetBounds() = 0;
+  virtual void SetSize(const gfx::Size& size);
+  virtual gfx::Size GetSize();
+  virtual void SetPosition(const gfx::Point& position);
+  virtual gfx::Point GetPosition();
   virtual void SetContentSize(const gfx::Size& size) = 0;
   virtual gfx::Size GetContentSize() = 0;
   virtual void SetMinimumSize(const gfx::Size& size) = 0;
@@ -126,8 +129,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void SetAlwaysOnTop(bool top) = 0;
   virtual bool IsAlwaysOnTop() = 0;
   virtual void Center() = 0;
-  virtual void SetPosition(const gfx::Point& position) = 0;
-  virtual gfx::Point GetPosition() = 0;
   virtual void SetTitle(const std::string& title) = 0;
   virtual std::string GetTitle() = 0;
   virtual void FlashFrame(bool flash) = 0;
@@ -192,7 +193,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Called when renderer process is going to be started.
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
                                       int child_process_id);
-  void OverrideWebkitPrefs(const GURL& url, content::WebPreferences* prefs);
+  void OverrideWebkitPrefs(content::WebPreferences* prefs);
 
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
@@ -273,6 +274,11 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
       const content::WebContents* source) const override;
   void RendererUnresponsive(content::WebContents* source) override;
   void RendererResponsive(content::WebContents* source) override;
+  void EnterFullscreenModeForTab(content::WebContents* source,
+                                 const GURL& origin) override;
+  void ExitFullscreenModeForTab(content::WebContents* source) override;
+  bool IsFullscreenForTabOrPending(
+      const content::WebContents* source) const override;
 
   // Implementations of content::WebContentsObserver.
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;

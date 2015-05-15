@@ -49,7 +49,7 @@ Primary value types like strings and numbers, however, are sent by copy.
 
 ## Passing callbacks to the main process
 
-Some APIs in the main process accept callbacks, and it would be attempting to
+Some APIs in the main process accept callbacks, and it would be tempting to
 pass callbacks when calling a remote function. The `remote` module does support
 doing this, but you should also be extremely careful with this.
 
@@ -137,6 +137,10 @@ Returns the object returned by `require(module)` in the main process.
 
 Returns the [BrowserWindow](browser-window.md) object which this web page
 belongs to.
+
+## remote.getCurrentWebContent()
+
+Returns the WebContents object of this web page.
 
 ## remote.getGlobal(name)
 

@@ -1,15 +1,15 @@
 fs     = require 'fs'
 path   = require 'path'
-module = require 'module'
 util   = require 'util'
+Module = require 'module'
 
 # We modified the original process.argv to let node.js load the atom.js,
 # we need to restore it here.
 process.argv.splice 1, 1
 
-# Add browser/api/lib to require's search paths,
-# which contains javascript part of Atom's built-in libraries.
-globalPaths = module.globalPaths
+# Add browser/api/lib to module search paths, which contains javascript part of
+# Electron's built-in libraries.
+globalPaths = Module.globalPaths
 globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
 
 # Import common settings.
@@ -81,6 +81,9 @@ if packageJson.desktopName?
 else
   app.setDesktopName "#{app.getName()}.desktop"
 
+# Chrome 42 disables NPAPI plugins by default, reenable them here
+app.commandLine.appendSwitch 'enable-npapi'
+
 # Set the user path according to application's name.
 app.setPath 'userData', path.join(app.getPath('appData'), app.getName())
 app.setPath 'userCache', path.join(app.getPath('cache'), app.getName())
@@ -89,4 +92,4 @@ app.setPath 'userCache', path.join(app.getPath('cache'), app.getName())
 require './chrome-extension'
 
 # Finally load app's main.js and transfer control to C++.
-module._load path.join(packagePath, packageJson.main), module, true
+Module._load path.join(packagePath, packageJson.main), Module, true

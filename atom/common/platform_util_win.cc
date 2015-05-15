@@ -13,6 +13,7 @@
 #include "base/bind.h"
 #include "base/bind_helpers.h"
 #include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -128,7 +129,10 @@ void ShowItemInFolder(const base::FilePath& full_path) {
 }
 
 void OpenItem(const base::FilePath& full_path) {
-  ui::win::OpenItemViaShell(full_path);
+  if (base::DirectoryExists(full_path))
+    ui::win::OpenFolderViaShell(full_path);
+  else
+    ui::win::OpenFileViaShell(full_path);
 }
 
 void OpenExternal(const GURL& url) {

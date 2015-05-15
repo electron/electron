@@ -35,7 +35,6 @@ class NativeWindowViews : public NativeWindow,
   // NativeWindow:
   void Close() override;
   void CloseImmediately() override;
-  void Move(const gfx::Rect& pos) override;
   void Focus(bool focus) override;
   bool IsFocused() override;
   void Show() override;
@@ -49,9 +48,9 @@ class NativeWindowViews : public NativeWindow,
   void Restore() override;
   bool IsMinimized() override;
   void SetFullScreen(bool fullscreen) override;
-  bool IsFullscreen() override;
-  void SetSize(const gfx::Size& size) override;
-  gfx::Size GetSize() override;
+  bool IsFullscreen() const override;
+  void SetBounds(const gfx::Rect& bounds) override;
+  gfx::Rect GetBounds() override;
   void SetContentSize(const gfx::Size& size) override;
   gfx::Size GetContentSize() override;
   void SetMinimumSize(const gfx::Size& size) override;
@@ -63,8 +62,6 @@ class NativeWindowViews : public NativeWindow,
   void SetAlwaysOnTop(bool top) override;
   bool IsAlwaysOnTop() override;
   void Center() override;
-  void SetPosition(const gfx::Point& position) override;
-  gfx::Point GetPosition() override;
   void SetTitle(const std::string& title) override;
   std::string GetTitle() override;
   void FlashFrame(bool flash) override;

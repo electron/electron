@@ -12,12 +12,14 @@ WEB_VIEW_EVENTS =
   'did-get-response-details': ['status', 'newUrl', 'originalUrl',
                                'httpResponseCode', 'requestMethod', 'referrer']
   'did-get-redirect-request': ['oldUrl', 'newUrl', 'isMainFrame']
+  'dom-ready': []
   'console-message': ['level', 'message', 'line', 'sourceId']
   'new-window': ['url', 'frameName', 'disposition']
   'close': []
   'crashed': []
   'destroyed': []
   'page-title-set': ['title', 'explicitSet']
+  'page-favicon-updated': ['favicons']
 
 dispatchEvent = (webView, event, args...) ->
   throw new Error("Unkown event #{event}") unless WEB_VIEW_EVENTS[event]?

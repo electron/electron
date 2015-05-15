@@ -219,6 +219,13 @@ Closes the devtools window of guest page.
 
 Returns whether guest page has a devtools window attached.
 
+### `<webview>`.inspectElement(x, y)
+
+* `x` Integer
+* `y` Integer
+
+Starts inspecting element at position (`x`, `y`) of guest page.
+
 ### `<webview>`.undo()
 
 Executes editing command `undo` in page.
@@ -322,6 +329,10 @@ Fired when details regarding a requested resource is available.
 
 Fired when a redirect was received while requesting a resource.
 
+### dom-ready
+
+Fired when document in the given frame is loaded.
+
 ### page-title-set
 
 * `title` String
@@ -329,6 +340,12 @@ Fired when a redirect was received while requesting a resource.
 
 Fired when page title is set during navigation. `explicitSet` is false when title is synthesised from file
 url.
+
+### page-favicon-updated
+
+* `favicons` Array - Array of Urls
+
+Fired when page receives favicon urls.
 
 ### console-message
 

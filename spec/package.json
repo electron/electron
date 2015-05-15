@@ -4,6 +4,7 @@
   "main": "static/main.js",
   "version": "0.1.0",
   "devDependencies": {
+    "basic-auth": "^1.0.0",
     "formidable": "1.0.16",
     "graceful-fs": "3.0.5",
     "mocha": "2.1.0",

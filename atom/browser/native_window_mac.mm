@@ -11,14 +11,14 @@
 #include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
+#include "brightray/browser/inspectable_web_contents.h"
+#include "brightray/browser/inspectable_web_contents_view.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "native_mate/dictionary.h"
-#include "vendor/brightray/browser/inspectable_web_contents.h"
-#include "vendor/brightray/browser/inspectable_web_contents_view.h"
 
 static const CGFloat kAtomWindowCornerRadius = 4.0;
 
@@ -54,10 +54,8 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 @interface AtomNSWindowDelegate : NSObject<NSWindowDelegate> {
  @private
   atom::NativeWindowMac* shell_;
-  BOOL acceptsFirstMouse_;
 }
 - (id)initWithShell:(atom::NativeWindowMac*)shell;
-- (void)setAcceptsFirstMouse:(BOOL)accept;
 @end
 
 @implementation AtomNSWindowDelegate
@@ -65,13 +63,8 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 - (id)initWithShell:(atom::NativeWindowMac*)shell {
   if ((self = [super init])) {
     shell_ = shell;
-    acceptsFirstMouse_ = NO;
   }
   return self;
-}
-
-- (void)setAcceptsFirstMouse:(BOOL)accept {
-  acceptsFirstMouse_ = accept;
 }
 
 - (void)windowDidBecomeMain:(NSNotification*)notification {
@@ -151,10 +144,6 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   return NO;
 }
 
-- (BOOL)acceptsFirstMouse:(NSEvent*)event {
-  return acceptsFirstMouse_;
-}
-
 @end
 
 @interface AtomNSWindow : EventProcessingWindow {
@@ -162,6 +151,8 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   atom::NativeWindowMac* shell_;
   bool enable_larger_than_screen_;
 }
+@property BOOL acceptsFirstMouse;
+@property BOOL disableAutoHideCursor;
 - (void)setShell:(atom::NativeWindowMac*)shell;
 - (void)setEnableLargerThanScreen:(bool)enable;
 @end
@@ -182,16 +173,6 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
     return frameRect;
   else
     return [super constrainFrameRect:frameRect toScreen:screen];
-}
-
-- (IBAction)reload:(id)sender {
-  content::WebContents* web_contents = shell_->GetWebContents();
-  content::NavigationController::LoadURLParams params(web_contents->GetURL());
-  web_contents->GetController().LoadURLWithParams(params);
-}
-
-- (IBAction)showDevTools:(id)sender {
-  shell_->OpenDevTools(true);
 }
 
 - (id)accessibilityAttributeValue:(NSString*)attribute {
@@ -329,11 +310,18 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
       width,
       height);
 
+  bool useStandardWindow = true;
+  options.Get(switches::kStandardWindow, &useStandardWindow);
+
+  NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask |
+                         NSMiniaturizableWindowMask | NSResizableWindowMask;
+  if (!useStandardWindow) {
+    styleMask |= NSTexturedBackgroundWindowMask;
+  }
+
   window_.reset([[AtomNSWindow alloc]
       initWithContentRect:cocoa_bounds
-                styleMask:NSTitledWindowMask | NSClosableWindowMask |
-                          NSMiniaturizableWindowMask | NSResizableWindowMask |
-                          NSTexturedBackgroundWindowMask
+                styleMask:styleMask
                   backing:NSBackingStoreBuffered
                     defer:YES]);
   [window_ setShell:this];
@@ -349,6 +337,10 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
     [window_ setBackgroundColor:[NSColor clearColor]];
   }
 
+  // Remove non-transparent corners, see http://git.io/vfonD.
+  if (!has_frame_)
+    [window_ setOpaque:NO];
+
   // We will manage window's lifetime ourselves.
   [window_ setReleasedWhenClosed:NO];
 
@@ -361,7 +353,12 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;
   options.Get(switches::kAcceptFirstMouse, &acceptsFirstMouse);
-  [window_delegate_ setAcceptsFirstMouse:acceptsFirstMouse];
+  [window_ setAcceptsFirstMouse:acceptsFirstMouse];
+
+  // Disable auto-hiding cursor.
+  bool disableAutoHideCursor = false;
+  options.Get(switches::kDisableAutoHideCursor, &disableAutoHideCursor);
+  [window_ setDisableAutoHideCursor:disableAutoHideCursor];
 
   // Disable fullscreen button when 'fullscreen' is specified to false.
   bool fullscreen;
@@ -390,18 +387,6 @@ void NativeWindowMac::Close() {
 
 void NativeWindowMac::CloseImmediately() {
   [window_ close];
-}
-
-void NativeWindowMac::Move(const gfx::Rect& pos) {
-  NSRect cocoa_bounds = NSMakeRect(pos.x(), 0,
-                                   pos.width(),
-                                   pos.height());
-  // Flip coordinates based on the primary screen.
-  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
-  cocoa_bounds.origin.y =
-      NSHeight([screen frame]) - pos.height() - pos.y();
-
-  [window_ setFrame:cocoa_bounds display:YES];
 }
 
 void NativeWindowMac::Focus(bool focus) {
@@ -476,22 +461,28 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
   [window_ toggleFullScreen:nil];
 }
 
-bool NativeWindowMac::IsFullscreen() {
+bool NativeWindowMac::IsFullscreen() const {
   return [window_ styleMask] & NSFullScreenWindowMask;
 }
 
-void NativeWindowMac::SetSize(const gfx::Size& size) {
-  NSRect frame = [window_ frame];
-  frame.origin.y -= size.height() - frame.size.height;
-  frame.size.width = size.width();
-  frame.size.height = size.height();
+void NativeWindowMac::SetBounds(const gfx::Rect& bounds) {
+  NSRect cocoa_bounds = NSMakeRect(bounds.x(), 0,
+                                   bounds.width(),
+                                   bounds.height());
+  // Flip coordinates based on the primary screen.
+  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
+  cocoa_bounds.origin.y =
+      NSHeight([screen frame]) - bounds.height() - bounds.y();
 
-  [window_ setFrame:frame display:YES];
+  [window_ setFrame:cocoa_bounds display:YES];
 }
 
-gfx::Size NativeWindowMac::GetSize() {
+gfx::Rect NativeWindowMac::GetBounds() {
   NSRect frame = [window_ frame];
-  return gfx::Size(frame.size.width, frame.size.height);
+  gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
+  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
+  bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
+  return bounds;
 }
 
 void NativeWindowMac::SetContentSize(const gfx::Size& size) {
@@ -562,18 +553,6 @@ bool NativeWindowMac::IsAlwaysOnTop() {
 
 void NativeWindowMac::Center() {
   [window_ center];
-}
-
-void NativeWindowMac::SetPosition(const gfx::Point& position) {
-  Move(gfx::Rect(position, GetSize()));
-}
-
-gfx::Point NativeWindowMac::GetPosition() {
-  NSRect frame = [window_ frame];
-  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
-
-  return gfx::Point(frame.origin.x,
-      NSHeight([screen frame]) - frame.origin.y - frame.size.height);
 }
 
 void NativeWindowMac::SetTitle(const std::string& title) {

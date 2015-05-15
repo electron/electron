@@ -107,6 +107,9 @@ ipc.on 'ATOM_BROWSER_CURRENT_WINDOW', (event, guestInstanceId) ->
   catch e
     event.returnValue = errorToMeta e
 
+ipc.on 'ATOM_BROWSER_CURRENT_WEB_CONTENTS', (event) ->
+  event.returnValue = valueToMeta event.sender, event.sender
+
 ipc.on 'ATOM_BROWSER_CONSTRUCTOR', (event, id, args) ->
   try
     args = unwrapArgs event.sender, args

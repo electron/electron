@@ -18,6 +18,9 @@ class AtomBrowserClient : public brightray::BrowserClient {
   AtomBrowserClient();
   virtual ~AtomBrowserClient();
 
+  // Don't force renderer process to restart for once.
+  static void SuppressRendererProcessRestartForOnce();
+
  protected:
   // content::ContentBrowserClient:
   void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
@@ -26,15 +29,16 @@ class AtomBrowserClient : public brightray::BrowserClient {
   content::AccessTokenStore* CreateAccessTokenStore() override;
   void ResourceDispatcherHostCreated() override;
   void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
-                           const GURL& url,
                            content::WebPreferences* prefs) override;
-  bool ShouldSwapBrowsingInstancesForNavigation(
-      content::SiteInstance* site_instance,
-      const GURL& current_url,
-      const GURL& new_url) override;
   std::string GetApplicationLocale() override;
+  void OverrideSiteInstanceForNavigation(
+      content::BrowserContext* browser_context,
+      content::SiteInstance* current_instance,
+      const GURL& dest_url,
+      content::SiteInstance** new_instance);
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
                                       int child_process_id) override;
+  void DidCreatePpapiPlugin(content::BrowserPpapiHost* browser_host) override;
 
  private:
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(

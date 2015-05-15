@@ -15,6 +15,7 @@
 #include "native_mate/callback.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
+#include "ui/gfx/geometry/rect.h"
 
 #include "atom/common/node_includes.h"
 
@@ -220,6 +221,14 @@ void Window::SetFullScreen(bool fullscreen) {
 
 bool Window::IsFullscreen() {
   return window_->IsFullscreen();
+}
+
+void Window::SetBounds(const gfx::Rect& bounds) {
+  window_->SetBounds(bounds);
+}
+
+gfx::Rect Window::GetBounds() {
+  return window_->GetBounds();
 }
 
 void Window::SetSize(int width, int height) {
@@ -464,6 +473,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isMinimized", &Window::IsMinimized)
       .SetMethod("setFullScreen", &Window::SetFullScreen)
       .SetMethod("isFullScreen", &Window::IsFullscreen)
+      .SetMethod("getBounds", &Window::GetBounds)
+      .SetMethod("setBounds", &Window::SetBounds)
       .SetMethod("getSize", &Window::GetSize)
       .SetMethod("setSize", &Window::SetSize)
       .SetMethod("getContentSize", &Window::GetContentSize)

@@ -4,7 +4,7 @@
     'product_name%': 'Electron',
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
-    'version%': '0.24.0',
+    'version%': '0.26.0',
 
     'atom_source_root': '<!(["python", "tools/atom_source_root.py"])',
   },
@@ -114,15 +114,6 @@
           ],
         }],  # OS!="mac"
         ['OS=="win"', {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalOptions': [
-                # Force linking even though we have duplicate symbols between
-                # BoringSSL and OpenSSL.
-                '/FORCE:MULTIPLE',
-              ],
-            },
-          },
           'copies': [
             {
               'variables': {
@@ -151,6 +142,9 @@
                 '<(libchromiumcontent_dir)/snapshot_blob.bin',
                 'external_binaries/d3dcompiler_47.dll',
                 'external_binaries/xinput1_3.dll',
+                'external_binaries/msvcp120.dll',
+                'external_binaries/msvcr120.dll',
+                'external_binaries/vccorlib120.dll',
               ],
             },
             {

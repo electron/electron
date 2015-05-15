@@ -4,17 +4,24 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 
+#include <set>
+
+#include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_dialog_helper.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
+#include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
+#include "brightray/browser/media/media_stream_devices_controller.h"
+#include "content/public/browser/favicon_status.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/render_frame_host.h"
@@ -22,11 +29,13 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/resource_request_details.h"
+#include "content/public/browser/service_worker_context.h"
+#include "content/public/browser/storage_partition.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
+#include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
-#include "vendor/brightray/browser/media/media_stream_devices_controller.h"
 
 #include "atom/common/node_includes.h"
 
@@ -47,6 +56,22 @@ NativeWindow* GetWindowFromGuest(const content::WebContents* guest) {
         info.embedder->GetRoutingID());
   else
     return nullptr;
+}
+
+content::ServiceWorkerContext* GetServiceWorkerContext(
+    const content::WebContents* web_contents) {
+  auto context = web_contents->GetBrowserContext();
+  auto site_instance = web_contents->GetSiteInstance();
+  if (!context || !site_instance)
+    return nullptr;
+
+  content::StoragePartition* storage_partition =
+      content::BrowserContext::GetStoragePartition(
+          context, site_instance);
+
+  DCHECK(storage_partition);
+
+  return storage_partition->GetServiceWorkerContext();
 }
 
 }  // namespace
@@ -136,9 +161,18 @@ content::WebContents* WebContents::OpenURLFromTab(
   load_url_params.is_renderer_initiated = params.is_renderer_initiated;
   load_url_params.transferred_global_request_id =
       params.transferred_global_request_id;
+  load_url_params.should_clear_history_list = true;
 
   web_contents()->GetController().LoadURLWithParams(load_url_params);
   return web_contents();
+}
+
+content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
+    content::WebContents* source) {
+  if (!dialog_manager_)
+    dialog_manager_.reset(new AtomJavaScriptDialogManager);
+
+  return dialog_manager_.get();
 }
 
 void WebContents::RunFileChooser(content::WebContents* guest,
@@ -189,6 +223,12 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
   Emit("crashed");
+}
+
+void WebContents::DocumentLoadedInFrame(
+    content::RenderFrameHost* render_frame_host) {
+  if (!render_frame_host->GetParent())
+    Emit("dom-ready");
 }
 
 void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
@@ -253,7 +293,22 @@ void WebContents::DidNavigateMainFrame(
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry,
                               bool explicit_set) {
-  Emit("page-title-set", entry->GetTitle(), explicit_set);
+  // Back/Forward navigation may have pruned entries.
+  if (entry)
+    Emit("page-title-set", entry->GetTitle(), explicit_set);
+}
+
+void WebContents::DidUpdateFaviconURL(
+    const std::vector<content::FaviconURL>& urls) {
+  std::set<GURL> unique_urls;
+  for (auto iter = urls.begin(); iter != urls.end(); ++iter) {
+    if (iter->icon_type != content::FaviconURL::FAVICON)
+      continue;
+    const GURL& url = iter->icon_url;
+    if (url.is_valid())
+      unique_urls.insert(url);
+  }
+  Emit("page-favicon-updated", unique_urls);
 }
 
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
@@ -294,9 +349,9 @@ void WebContents::WebContentsDestroyed() {
 }
 
 void WebContents::NavigationEntryCommitted(
-    const content::LoadCommittedDetails& load_details) {
-  auto entry = web_contents()->GetController().GetLastCommittedEntry();
-  entry->SetVirtualURL(load_details.entry->GetOriginalRequestURL());
+    const content::LoadCommittedDetails& details) {
+  Emit("navigation-entry-commited", details.entry->GetURL(),
+       details.is_in_page, details.did_replace_entry);
 }
 
 void WebContents::DidAttach(int guest_proxy_routing_id) {
@@ -315,12 +370,11 @@ content::WebContents* WebContents::GetOwnerWebContents() const {
   return embedder_web_contents_;
 }
 
-void WebContents::GuestSizeChanged(const gfx::Size& old_size,
-                                   const gfx::Size& new_size) {
+void WebContents::GuestSizeChanged(const gfx::Size& new_size) {
   if (!auto_size_enabled_)
     return;
+  GuestSizeChangedDueToAutoSize(guest_size_, new_size);
   guest_size_ = new_size;
-  GuestSizeChangedDueToAutoSize(old_size, new_size);
 }
 
 void WebContents::RegisterDestructionCallback(
@@ -365,15 +419,9 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
                                         blink::WebReferrerPolicyDefault);
 
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
+  params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
   web_contents()->GetController().LoadURLWithParams(params);
-}
-
-GURL WebContents::GetURL() const {
-  auto entry = web_contents()->GetController().GetLastCommittedEntry();
-  if (!entry)
-    return GURL::EmptyGURL();
-  return entry->GetVirtualURL();
 }
 
 base::string16 WebContents::GetTitle() const {
@@ -392,45 +440,22 @@ void WebContents::Stop() {
   web_contents()->Stop();
 }
 
-void WebContents::Reload(const mate::Dictionary& options) {
-  // Navigating to a URL would always restart the renderer process, we want this
-  // because normal reloading will break our node integration.
-  // This is done by AtomBrowserClient::ShouldSwapProcessesForNavigation.
-  LoadURL(GetURL(), options);
-}
-
-void WebContents::ReloadIgnoringCache(const mate::Dictionary& options) {
-  // Hack to remove pending entries that ignores cache and treated as a fresh
-  // load.
+void WebContents::ReloadIgnoringCache() {
   web_contents()->GetController().ReloadIgnoringCache(false);
-  Reload(options);
-}
-
-bool WebContents::CanGoBack() const {
-  return web_contents()->GetController().CanGoBack();
-}
-
-bool WebContents::CanGoForward() const {
-  return web_contents()->GetController().CanGoForward();
-}
-
-bool WebContents::CanGoToOffset(int offset) const {
-  return web_contents()->GetController().CanGoToOffset(offset);
 }
 
 void WebContents::GoBack() {
+  atom::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoBack();
 }
 
 void WebContents::GoForward() {
+  atom::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoForward();
 }
 
-void WebContents::GoToIndex(int index) {
-  web_contents()->GetController().GoToIndex(index);
-}
-
 void WebContents::GoToOffset(int offset) {
+  atom::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoToOffset(offset);
 }
 
@@ -469,6 +494,13 @@ void WebContents::CloseDevTools() {
 
 bool WebContents::IsDevToolsOpened() {
   return storage_->IsDevToolsViewShowing();
+}
+
+void WebContents::InspectElement(int x, int y) {
+  OpenDevTools();
+  scoped_refptr<content::DevToolsAgentHost> agent(
+    content::DevToolsAgentHost::GetOrCreateFor(storage_->GetWebContents()));
+  agent->InspectElement(x, y);
 }
 
 void WebContents::Undo() {
@@ -562,6 +594,27 @@ void WebContents::SetAllowTransparency(bool allow) {
   }
 }
 
+void WebContents::HasServiceWorker(
+    const base::Callback<void(bool)>& callback) {
+  auto context = GetServiceWorkerContext(web_contents());
+  if (!context)
+    return;
+
+  context->CheckHasServiceWorker(web_contents()->GetLastCommittedURL(),
+                                 GURL::EmptyGURL(),
+                                 callback);
+}
+
+void WebContents::UnregisterServiceWorker(
+    const base::Callback<void(bool)>& callback) {
+  auto context = GetServiceWorkerContext(web_contents());
+  if (!context)
+    return;
+
+  context->UnregisterServiceWorker(web_contents()->GetLastCommittedURL(),
+                                   callback);
+}
+
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   if (template_.IsEmpty())
@@ -569,20 +622,14 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("destroy", &WebContents::Destroy)
         .SetMethod("isAlive", &WebContents::IsAlive)
         .SetMethod("_loadUrl", &WebContents::LoadURL)
-        .SetMethod("getUrl", &WebContents::GetURL)
         .SetMethod("getTitle", &WebContents::GetTitle)
         .SetMethod("isLoading", &WebContents::IsLoading)
         .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
-        .SetMethod("stop", &WebContents::Stop)
-        .SetMethod("_reload", &WebContents::Reload)
+        .SetMethod("_stop", &WebContents::Stop)
         .SetMethod("_reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
-        .SetMethod("canGoBack", &WebContents::CanGoBack)
-        .SetMethod("canGoForward", &WebContents::CanGoForward)
-        .SetMethod("canGoToOffset", &WebContents::CanGoToOffset)
-        .SetMethod("goBack", &WebContents::GoBack)
-        .SetMethod("goForward", &WebContents::GoForward)
-        .SetMethod("goToIndex", &WebContents::GoToIndex)
-        .SetMethod("goToOffset", &WebContents::GoToOffset)
+        .SetMethod("_goBack", &WebContents::GoBack)
+        .SetMethod("_goForward", &WebContents::GoForward)
+        .SetMethod("_goToOffset", &WebContents::GoToOffset)
         .SetMethod("getRoutingId", &WebContents::GetRoutingID)
         .SetMethod("getProcessId", &WebContents::GetProcessID)
         .SetMethod("isCrashed", &WebContents::IsCrashed)
@@ -592,6 +639,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("openDevTools", &WebContents::OpenDevTools)
         .SetMethod("closeDevTools", &WebContents::CloseDevTools)
         .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
+        .SetMethod("inspectElement", &WebContents::InspectElement)
         .SetMethod("undo", &WebContents::Undo)
         .SetMethod("redo", &WebContents::Redo)
         .SetMethod("cut", &WebContents::Cut)
@@ -606,6 +654,9 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("setAutoSize", &WebContents::SetAutoSize)
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
         .SetMethod("isGuest", &WebContents::is_guest)
+        .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
+        .SetMethod("unregisterServiceWorker",
+                   &WebContents::UnregisterServiceWorker)
         .Build());
 
   return mate::ObjectTemplateBuilder(

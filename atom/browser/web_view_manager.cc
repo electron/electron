@@ -10,18 +10,42 @@
 
 namespace atom {
 
+namespace {
+
+WebViewManager* GetManagerFromProcess(content::RenderProcessHost* process) {
+  if (!process)
+    return nullptr;
+  auto context = process->GetBrowserContext();
+  if (!context)
+    return nullptr;
+  return static_cast<WebViewManager*>(context->GetGuestManager());
+}
+
+}  // namespace
+
 // static
 bool WebViewManager::GetInfoForProcess(content::RenderProcessHost* process,
                                        WebViewInfo* info) {
-  if (!process)
-    return false;
-  auto context = process->GetBrowserContext();
-  if (!context)
-    return false;
-  auto manager = context->GetGuestManager();
+  auto manager = GetManagerFromProcess(process);
   if (!manager)
     return false;
-  return static_cast<WebViewManager*>(manager)->GetInfo(process->GetID(), info);
+  return manager->GetInfo(process->GetID(), info);
+}
+
+// static
+void WebViewManager::UpdateGuestProcessID(
+    content::RenderProcessHost* old_process,
+    content::RenderProcessHost* new_process) {
+  auto manager = GetManagerFromProcess(old_process);
+  if (manager) {
+    base::AutoLock auto_lock(manager->lock_);
+    int old_id = old_process->GetID();
+    int new_id = new_process->GetID();
+    if (!ContainsKey(manager->webview_info_map_, old_id))
+      return;
+    manager->webview_info_map_[new_id] = manager->webview_info_map_[old_id];
+    manager->webview_info_map_.erase(old_id);
+  }
 }
 
 WebViewManager::WebViewManager(content::BrowserContext* context) {
@@ -42,7 +66,8 @@ void WebViewManager::AddGuest(int guest_instance_id,
   webview_info_map_[guest_process_id] = info;
 
   // Map the element in embedder to guest.
-  ElementInstanceKey key(embedder, element_instance_id);
+  int owner_process_id = embedder->GetRenderProcessHost()->GetID();
+  ElementInstanceKey key(owner_process_id, element_instance_id);
   element_instance_id_to_guest_map_[key] = guest_instance_id;
 }
 
@@ -76,9 +101,9 @@ bool WebViewManager::GetInfo(int guest_process_id, WebViewInfo* webview_info) {
 }
 
 content::WebContents* WebViewManager::GetGuestByInstanceID(
-    content::WebContents* embedder,
+    int owner_process_id,
     int element_instance_id) {
-  ElementInstanceKey key(embedder, element_instance_id);
+  ElementInstanceKey key(owner_process_id, element_instance_id);
   if (!ContainsKey(element_instance_id_to_guest_map_, key))
     return nullptr;
 

@@ -61,6 +61,7 @@ class App : public mate::EventEmitter,
 
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
   void SetDesktopName(const std::string& desktop_name);
+  void SetAppUserModelId(const std::string& app_id);
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };

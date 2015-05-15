@@ -46,7 +46,16 @@ Creates a new tray icon associated with the `image`.
 
 ### Event: 'clicked'
 
+* `event`
+* `bounds` Object - the bounds of tray icon
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
+
 Emitted when the tray icon is clicked.
+
+__NOte:__ The `bounds` payload is only implemented on OS X.
 
 ### Event: 'double-clicked'
 
@@ -101,7 +110,7 @@ Sets the hover text for this tray icon.
 
 Sets the title displayed aside of the tray icon in the status bar.
 
-This is only implemented on OS X.
+__Note:__ This is only implemented on OS X.
 
 ### Tray.setHighlightMode(highlight)
 
@@ -109,7 +118,7 @@ This is only implemented on OS X.
 
 Sets whether the tray icon is highlighted when it is clicked.
 
-This is only implmented on OS X.
+__Note:__ This is only implemented on OS X.
 
 ### Tray.displayBalloon(options)
 
@@ -118,10 +127,14 @@ This is only implmented on OS X.
   * `title` String
   * `content` String
 
+Displays a tray balloon.
+
+__Note:__ This is only implemented on Windows.
+
 ### Tray.setContextMenu(menu)
 
 * `menu` Menu
 
-Set the context menu for this icon.
+Sets the context menu for this icon.
 
 [event-emitter]: http://nodejs.org/api/events.html#events_class_events_eventemitter

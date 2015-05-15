@@ -4,6 +4,10 @@
 
 #include "atom/common/asar/archive.h"
 
+#if defined(OS_WIN)
+#include <io.h>
+#endif
+
 #include <string>
 #include <vector>
 
@@ -104,6 +108,7 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
 
 Archive::Archive(const base::FilePath& path)
     : path_(path),
+      file_(path_, base::File::FLAG_OPEN | base::File::FLAG_READ),
       header_size_(0) {
 }
 
@@ -111,15 +116,14 @@ Archive::~Archive() {
 }
 
 bool Archive::Init() {
-  base::File file(path_, base::File::FLAG_OPEN | base::File::FLAG_READ);
-  if (!file.IsValid())
+  if (!file_.IsValid())
     return false;
 
   std::vector<char> buf;
   int len;
 
   buf.resize(8);
-  len = file.ReadAtCurrentPos(buf.data(), buf.size());
+  len = file_.ReadAtCurrentPos(buf.data(), buf.size());
   if (len != static_cast<int>(buf.size())) {
     PLOG(ERROR) << "Failed to read header size from " << path_.value();
     return false;
@@ -132,7 +136,7 @@ bool Archive::Init() {
   }
 
   buf.resize(size);
-  len = file.ReadAtCurrentPos(buf.data(), buf.size());
+  len = file_.ReadAtCurrentPos(buf.data(), buf.size());
   if (len != static_cast<int>(buf.size())) {
     PLOG(ERROR) << "Failed to read header from " << path_.value();
     return false;
@@ -250,12 +254,26 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
   }
 
   scoped_ptr<ScopedTemporaryFile> temp_file(new ScopedTemporaryFile);
-  if (!temp_file->InitFromFile(path_, info.offset, info.size))
+  if (!temp_file->InitFromFile(&file_, info.offset, info.size))
     return false;
 
   *out = temp_file->path();
   external_files_.set(path, temp_file.Pass());
   return true;
+}
+
+int Archive::GetFD() const {
+  if (!file_.IsValid())
+    return -1;
+
+#if defined(OS_WIN)
+  return
+    _open_osfhandle(reinterpret_cast<intptr_t>(file_.GetPlatformFile()), 0);
+#elif defined(OS_POSIX)
+  return file_.GetPlatformFile();
+#else
+  return -1;
+#endif
 }
 
 }  // namespace asar

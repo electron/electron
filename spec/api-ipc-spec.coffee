@@ -66,6 +66,7 @@ describe 'ipc module', ->
       assert.equal msg, 'test'
 
     it 'does not crash when reply is not sent and browser is destroyed', (done) ->
+      @timeout 10000
       w = new BrowserWindow(show: false)
       remote.require('ipc').once 'send-sync-message', (event) ->
         event.returnValue = null

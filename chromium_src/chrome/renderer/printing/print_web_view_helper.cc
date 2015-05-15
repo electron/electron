@@ -425,8 +425,10 @@ class PrepareFrameAndViewForPrint : public blink::WebViewClient,
   virtual void didStopLoading();
 
   // blink::WebFrameClient override:
-  virtual blink::WebFrame* createChildFrame(blink::WebLocalFrame* parent,
-                                            const blink::WebString& name);
+  virtual blink::WebFrame* createChildFrame(
+      blink::WebLocalFrame* parent,
+      const blink::WebString& name,
+      blink::WebSandboxFlags sandboxFlags);
   virtual void frameDetached(blink::WebFrame* frame);
 
  private:
@@ -571,7 +573,8 @@ void PrepareFrameAndViewForPrint::didStopLoading() {
 
 blink::WebFrame* PrepareFrameAndViewForPrint::createChildFrame(
     blink::WebLocalFrame* parent,
-    const blink::WebString& name) {
+    const blink::WebString& name,
+    blink::WebSandboxFlags sandboxFlags) {
   blink::WebFrame* frame = blink::WebLocalFrame::create(this);
   parent->appendChild(frame);
   return frame;

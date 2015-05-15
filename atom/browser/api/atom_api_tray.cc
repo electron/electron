@@ -9,6 +9,7 @@
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/ui/tray_icon.h"
+#include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/constructor.h"
@@ -39,8 +40,8 @@ mate::Wrappable* Tray::New(const gfx::Image& image) {
   return new Tray(image);
 }
 
-void Tray::OnClicked() {
-  Emit("clicked");
+void Tray::OnClicked(const gfx::Rect& bounds) {
+  Emit("clicked", bounds);
 }
 
 void Tray::OnDoubleClicked() {

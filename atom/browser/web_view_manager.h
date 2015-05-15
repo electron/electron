@@ -34,6 +34,10 @@ class WebViewManager : public content::BrowserPluginGuestManager {
   static bool GetInfoForProcess(content::RenderProcessHost* process,
                                 WebViewInfo* info);
 
+  // Updates the guest process ID.
+  static void UpdateGuestProcessID(content::RenderProcessHost* old_process,
+                                   content::RenderProcessHost* new_process);
+
   explicit WebViewManager(content::BrowserContext* context);
   virtual ~WebViewManager();
 
@@ -50,9 +54,8 @@ class WebViewManager : public content::BrowserPluginGuestManager {
 
  protected:
   // content::BrowserPluginGuestManager:
-  content::WebContents* GetGuestByInstanceID(
-      content::WebContents* embedder_web_contents,
-      int element_instance_id) override;
+  content::WebContents* GetGuestByInstanceID(int owner_process_id,
+                                             int element_instance_id) override;
   bool ForEachGuest(content::WebContents* embedder,
                     const GuestCallback& callback) override;
 
@@ -65,26 +68,25 @@ class WebViewManager : public content::BrowserPluginGuestManager {
   std::map<int, WebContentsWithEmbedder> web_contents_embdder_map_;
 
   struct ElementInstanceKey {
-    content::WebContents* owner_web_contents;
+    int embedder_process_id;
     int element_instance_id;
 
-    ElementInstanceKey(content::WebContents* owner_web_contents,
-                       int element_instance_id)
-        : owner_web_contents(owner_web_contents),
+    ElementInstanceKey(int embedder_process_id, int element_instance_id)
+        : embedder_process_id(embedder_process_id),
           element_instance_id(element_instance_id) {}
 
     bool operator<(const ElementInstanceKey& other) const {
-      if (owner_web_contents != other.owner_web_contents)
-        return owner_web_contents < other.owner_web_contents;
+      if (embedder_process_id != other.embedder_process_id)
+        return embedder_process_id < other.embedder_process_id;
       return element_instance_id < other.element_instance_id;
     }
 
     bool operator==(const ElementInstanceKey& other) const {
-      return (owner_web_contents == other.owner_web_contents) &&
+      return (embedder_process_id == other.embedder_process_id) &&
           (element_instance_id == other.element_instance_id);
     }
   };
-  // (web_contents, element_instance_id) => guest_instance_id
+  // (embedder_process_id, element_instance_id) => guest_instance_id
   std::map<ElementInstanceKey, int> element_instance_id_to_guest_map_;
 
   typedef std::map<int, WebViewInfo> WebViewInfoMap;

@@ -118,8 +118,8 @@ app.setUserTasks([
     arguments: '--new-window',
     iconPath: process.execPath,
     iconIndex: 0,
-    title: 'New Window'
-    description: 'Create a new winodw',
+    title: 'New Window',
+    description: 'Create a new window',
   }
 ]);
 ```
@@ -165,7 +165,7 @@ To set the progress bar for a Window, you can use the
 
 ```javascript
 var window = new BrowserWindow({...});
-window.setProgresssBar(0.5);
+window.setProgressBar(0.5);
 ```
 
 ## Represented file of window (OS X)
