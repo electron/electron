@@ -78,14 +78,14 @@ const char kPreloadScript[] = "preload";
 // Whether the window should be transparent.
 const char kTransparent[] = "transparent";
 
+// Use OS X's textured window background.
+const char kTextured[] = "textured";
+
 // Window type hint.
 const char kType[] = "type";
 
 // Disable auto-hiding cursor.
 const char kDisableAutoHideCursor[] = "disable-auto-hide-cursor";
-
-// Use the OS X's standard window instead of the textured window.
-const char kStandardWindow[] = "standard-window";
 
 // Web runtime features.
 const char kExperimentalFeatures[]       = "experimental-features";

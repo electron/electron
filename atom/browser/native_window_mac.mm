@@ -310,12 +310,12 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
       width,
       height);
 
-  bool useStandardWindow = true;
-  options.Get(switches::kStandardWindow, &useStandardWindow);
+  bool useTexturedWindow = false;
+  options.Get(switches::kTextured, &useTexturedWindow);
 
   NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask |
                          NSMiniaturizableWindowMask | NSResizableWindowMask;
-  if (!useStandardWindow || transparent_ || !has_frame_) {
+  if (useTexturedWindow || transparent_ || !has_frame_) {
     styleMask |= NSTexturedBackgroundWindowMask;
   }
 
