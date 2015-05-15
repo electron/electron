@@ -840,6 +840,10 @@ Executes editing command `copy` in page.
 
 Executes editing command `paste` in page.
 
+### WebContents.pasteAndMatchStyle()
+
+Executes editing command `pasteAndMatchStyle` in page.
+
 ### WebContents.delete()
 
 Executes editing command `delete` in page.
