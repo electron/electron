@@ -700,10 +700,14 @@ void NativeWindow::RendererResponsive(content::WebContents* source) {
 void NativeWindow::EnterFullscreenModeForTab(content::WebContents* source,
                                              const GURL& origin) {
   SetHtmlApiFullscreen(true);
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnWindowEnterHtmlFullScreen());
 }
 
 void NativeWindow::ExitFullscreenModeForTab(content::WebContents* source) {
   SetHtmlApiFullscreen(false);
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnWindowLeaveHtmlFullScreen());
 }
 
 bool NativeWindow::IsFullscreenForTabOrPending(

@@ -132,6 +132,14 @@ void Window::OnWindowLeaveFullScreen() {
   Emit("leave-full-screen");
 }
 
+void Window::OnWindowEnterHtmlFullScreen() {
+  Emit("enter-html-full-screen");
+}
+
+void Window::OnWindowLeaveHtmlFullScreen() {
+  Emit("leave-html-full-screen");
+}
+
 void Window::OnRendererUnresponsive() {
   Emit("unresponsive");
 }

@@ -179,6 +179,14 @@ Emitted when window enters full screen state.
 
 Emitted when window leaves full screen state.
 
+### Event: 'enter-html-full-screen'
+
+Emitted when window enters full screen state triggered by html api.
+
+### Event: 'leave-html-full-screen'
+
+Emitted when window leaves full screen state triggered by html api.
+
 ### Event: 'devtools-opened'
 
 Emitted when devtools is opened.
