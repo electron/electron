@@ -195,6 +195,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
                                       int child_process_id);
   void OverrideWebkitPrefs(content::WebPreferences* prefs);
 
+  // Set fullscreen mode triggered by html api.
+  void SetHtmlApiFullscreen(bool enter_fullscreen);
+
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
   void NotifyWindowClosed();
@@ -216,6 +219,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   }
 
   bool has_frame() const { return has_frame_; }
+
+  bool IsHtmlApiFullscreen() const { return fullscreen_; }
 
   void set_has_dialog_attached(bool has_dialog_attached) {
     has_dialog_attached_ = has_dialog_attached;
@@ -342,6 +347,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   // There is a dialog that has been attached to window.
   bool has_dialog_attached_;
+
+  // Whether window is fullscreened by HTML5 api.
+  bool fullscreen_;
 
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.

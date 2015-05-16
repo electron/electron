@@ -99,6 +99,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       is_closed_(false),
       node_integration_(true),
       has_dialog_attached_(false),
+      fullscreen_(false),
       zoom_factor_(1.0),
       weak_factory_(this),
       inspectable_web_contents_(
@@ -698,16 +699,16 @@ void NativeWindow::RendererResponsive(content::WebContents* source) {
 
 void NativeWindow::EnterFullscreenModeForTab(content::WebContents* source,
                                              const GURL& origin) {
-  SetFullScreen(true);
+  SetHtmlApiFullscreen(true);
 }
 
 void NativeWindow::ExitFullscreenModeForTab(content::WebContents* source) {
-  SetFullScreen(false);
+  SetHtmlApiFullscreen(false);
 }
 
 bool NativeWindow::IsFullscreenForTabOrPending(
     const content::WebContents* source) const {
-  return IsFullscreen();
+  return IsHtmlApiFullscreen();
 }
 
 void NativeWindow::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
@@ -798,6 +799,11 @@ void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
       FROM_HERE,
       window_unresposive_closure_.callback(),
       base::TimeDelta::FromMilliseconds(ms));
+}
+
+void NativeWindow::SetHtmlApiFullscreen(bool enter_fullscreen) {
+  SetFullScreen(enter_fullscreen);
+  fullscreen_ = enter_fullscreen;
 }
 
 void NativeWindow::NotifyWindowUnresponsive() {
