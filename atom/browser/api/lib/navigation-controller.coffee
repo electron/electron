@@ -90,7 +90,7 @@ class NavigationController
   goToIndex: (index) ->
     return unless @canGoToIndex index
     @pendingIndex = index
-    @webContents._loadUrl @history[@pendingIndex].url, {}
+    @webContents._loadUrl @history[@pendingIndex], {}
 
   goToOffset: (offset) ->
     return unless @canGoToOffset offset
