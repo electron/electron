@@ -48,6 +48,7 @@ std::vector<std::string> MetricsToArray(uint32_t metrics) {
 }  // namespace
 
 Screen::Screen(gfx::Screen* screen) : screen_(screen) {
+  displays_ = screen_->GetAllDisplays();
   screen_->AddObserver(this);
 }
 
@@ -64,11 +65,6 @@ gfx::Display Screen::GetPrimaryDisplay() {
 }
 
 std::vector<gfx::Display> Screen::GetAllDisplays() {
-  // The Screen::GetAllDisplays doesn't update when there is display added or
-  // removed, so we have to manually maintain the displays_ to make it up to
-  // date.
-  if (displays_.size() == 0)
-    displays_ = screen_->GetAllDisplays();
   return displays_;
 }
 
