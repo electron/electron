@@ -351,6 +351,10 @@ void Window::InspectElement(int x, int y) {
   window_->InspectElement(x, y);
 }
 
+void Window::InspectServiceWorker() {
+  window_->InspectServiceWorker();
+}
+
 void Window::FocusOnWebView() {
   window_->FocusOnWebView();
 }
@@ -524,7 +528,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
                  &Window::ShowDefinitionForSelection)
 #endif
       .SetMethod("_getWebContents", &Window::GetWebContents)
-      .SetMethod("_getDevToolsWebContents", &Window::GetDevToolsWebContents);
+      .SetMethod("_getDevToolsWebContents", &Window::GetDevToolsWebContents)
+      .SetMethod("inspectServiceWorker", &Window::InspectServiceWorker);
 }
 
 }  // namespace api

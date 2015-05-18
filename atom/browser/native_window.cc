@@ -317,6 +317,17 @@ void NativeWindow::InspectElement(int x, int y) {
   agent->InspectElement(x, y);
 }
 
+void NativeWindow::InspectServiceWorker() {
+  for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
+    if (agent_host->GetType() ==
+        content::DevToolsAgentHost::TYPE_SERVICE_WORKER) {
+      OpenDevTools(true);
+      inspectable_web_contents()->AttachTo(agent_host);
+      break;
+    }
+  }
+}
+
 void NativeWindow::FocusOnWebView() {
   GetWebContents()->GetRenderViewHost()->Focus();
 }

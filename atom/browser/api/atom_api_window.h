@@ -116,6 +116,7 @@ class Window : public mate::EventEmitter,
   void CloseDevTools();
   bool IsDevToolsOpened();
   void InspectElement(int x, int y);
+  void InspectServiceWorker();
   void FocusOnWebView();
   void BlurWebView();
   bool IsWebViewFocused();
