@@ -3,6 +3,10 @@
 
 #include "content/public/browser/web_contents.h"
 
+namespace content {
+class DevToolsAgentHost;
+}
+
 namespace brightray {
 
 class InspectableWebContentsDelegate;
@@ -27,6 +31,7 @@ class InspectableWebContents {
   // Close the DevTools completely instead of just hide it.
   virtual void CloseDevTools() = 0;
   virtual bool IsDevToolsViewShowing() = 0;
+  virtual void AttachTo(const scoped_refptr<content::DevToolsAgentHost>&) = 0;
 
   // The delegate manages its own life.
   virtual void SetDelegate(InspectableWebContentsDelegate* delegate) = 0;
