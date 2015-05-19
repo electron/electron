@@ -361,6 +361,14 @@ url.
 
 Fired when page receives favicon urls.
 
+### enter-html-full-screen
+
+Fired when page enters fullscreen triggered by html api.
+
+### leave-html-full-screen
+
+Fired when page leaves fullscreen triggered by html api.
+
 ### console-message
 
 * `level` Integer

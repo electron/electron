@@ -221,6 +221,7 @@ void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
   if (window) {
     window->SetHtmlApiFullscreen(true);
     source->GetRenderViewHost()->WasResized();
+    Emit("enter-html-full-screen");
   }
 }
 
@@ -229,6 +230,7 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
   if (window) {
     window->SetHtmlApiFullscreen(false);
     source->GetRenderViewHost()->WasResized();
+    Emit("leave-html-full-screen");
   }
 }
 

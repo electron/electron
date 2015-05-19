@@ -220,7 +220,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   bool has_frame() const { return has_frame_; }
 
-  bool IsHtmlApiFullscreen() const { return fullscreen_; }
+  bool IsHtmlApiFullscreen() const { return html_fullscreen_; }
 
   void set_has_dialog_attached(bool has_dialog_attached) {
     has_dialog_attached_ = has_dialog_attached;
@@ -349,7 +349,10 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   bool has_dialog_attached_;
 
   // Whether window is fullscreened by HTML5 api.
-  bool fullscreen_;
+  bool html_fullscreen_;
+
+  // Whether window is fullscreened by window api.
+  bool forced_fullscreen_;
 
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.

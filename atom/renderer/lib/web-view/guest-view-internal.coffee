@@ -22,6 +22,8 @@ WEB_VIEW_EVENTS =
   'destroyed': []
   'page-title-set': ['title', 'explicitSet']
   'page-favicon-updated': ['favicons']
+  'enter-html-full-screen': []
+  'leave-html-full-screen': []
 
 dispatchEvent = (webView, event, args...) ->
   throw new Error("Unkown event #{event}") unless WEB_VIEW_EVENTS[event]?
