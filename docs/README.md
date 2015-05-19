@@ -6,6 +6,7 @@
 * [Debugging main process](tutorial/debugging-main-process.md)
 * [Using Selenium and WebDriver](tutorial/using-selenium-and-webdriver.md)
 * [DevTools extension](tutorial/devtools-extension.md)
+* [Using pepper flash plugin](tutorial/using-pepper-flash-plugin.md)
 
 ## Tutorials
 
