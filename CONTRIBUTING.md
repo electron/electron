@@ -18,7 +18,7 @@ possible with your report. If you can, please include:
 * Other things that will help resolve your issue:
   * Screenshots and animated GIFs
   * Error output that appears in your terminal, dev tools or as an alert
-  * Perform a [cursory search](https://github.com/issues?q=+is%3Aissue+user%3Aatom)
+  * Perform a [cursory search](https://github.com/atom/electron/issues?utf8=✓&q=is%3Aissue+)
   to see if a similar issue has already been submitted
 
 ## Submitting Pull Requests
