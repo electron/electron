@@ -244,6 +244,7 @@ registerWebViewElement = ->
     "canGoBack"
     "canGoForward"
     "canGoToOffset"
+    "clearHistory"
     "goBack"
     "goForward"
     "goToIndex"

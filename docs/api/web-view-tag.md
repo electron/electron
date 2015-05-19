@@ -165,6 +165,10 @@ Returns whether guest page can go forward.
 
 Returns whether guest page can go to `offset`.
 
+### `<webview>`.clearHistory()
+
+Clears the navigation history.
+
 ### `<webview>`.goBack()
 
 Makes guest page go back.

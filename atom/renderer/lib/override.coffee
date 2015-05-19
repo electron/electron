@@ -85,6 +85,13 @@ ipc.on 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', (message, targetOrigin) ->
 # Forward history operations to browser.
 sendHistoryOperation = (args...) ->
   ipc.send 'ATOM_SHELL_NAVIGATION_CONTROLLER', args...
+
+getHistoryOperation = (args...) ->
+  ipc.sendSync 'ATOM_SHELL_SYNC_NAVIGATION_CONTROLLER', args...
+
 window.history.back = -> sendHistoryOperation 'goBack'
 window.history.forward = -> sendHistoryOperation 'goForward'
 window.history.go = (offset) -> sendHistoryOperation 'goToOffset', offset
+Object.defineProperty window.history, 'length',
+  get: ->
+    getHistoryOperation 'length'

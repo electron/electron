@@ -4,6 +4,9 @@ ipc = require 'ipc'
 ipc.on 'ATOM_SHELL_NAVIGATION_CONTROLLER', (event, method, args...) ->
   event.sender[method] args...
 
+ipc.on 'ATOM_SHELL_SYNC_NAVIGATION_CONTROLLER', (event, method, args...) ->
+  event.returnValue = event.sender[method] args...
+
 # JavaScript implementation of Chromium's NavigationController.
 # Instead of relying on Chromium for history control, we compeletely do history
 # control on user land, and only rely on WebContents.loadUrl for navigation.
@@ -11,10 +14,7 @@ ipc.on 'ATOM_SHELL_NAVIGATION_CONTROLLER', (event, method, args...) ->
 # process is restarted everytime.
 class NavigationController
   constructor: (@webContents) ->
-    @history = []
-    @currentIndex = -1
-    @pendingIndex = -1
-    @inPageIndex = -1
+    @clearHistory()
 
     @webContents.on 'navigation-entry-commited', (event, url, inPage, replaceEntry) =>
       if @inPageIndex > -1 and not inPage
@@ -71,6 +71,12 @@ class NavigationController
   canGoToOffset: (offset) ->
     @canGoToIndex @currentIndex + offset
 
+  clearHistory: ->
+    @history = []
+    @currentIndex = -1
+    @pendingIndex = -1
+    @inPageIndex = -1
+
   goBack: ->
     return unless @canGoBack()
     @pendingIndex = @getActiveIndex() - 1
@@ -103,5 +109,8 @@ class NavigationController
 
   getActiveIndex: ->
     if @pendingIndex is -1 then @currentIndex else @pendingIndex
+
+  length: ->
+    @history.length
 
 module.exports = NavigationController
