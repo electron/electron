@@ -6,16 +6,15 @@ import sys
 
 
 SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))
-WINDOWS_NODE_PATHs = [
+WINDOWS_NODE_PATHs = os.environ['PATH'].split(os.pathsep) + [
   'C:/Program Files (x86)/nodejs',
   'C:/Program Files/nodejs',
-] + os.environ['PATH'].split(os.pathsep)
-NIX_NODE_PATHs = [
+]
+NIX_NODE_PATHs = os.environ['PATH'].split(os.pathsep) + [
   '/usr/local/bin',
   '/usr/bin',
   '/bin',
-] + os.environ['PATH'].split(os.pathsep)
-
+]
 
 def main():
   input_file = sys.argv[1]
