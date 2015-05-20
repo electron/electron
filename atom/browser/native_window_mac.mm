@@ -103,7 +103,10 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 }
 
 - (void)windowDidMove:(NSNotification*)notification {
+  // TODO(zcbenz): Remove the alias after figuring out a proper
+  // way to disptach move. 
   shell_->NotifyWindowMove();
+  shell_->NotifyWindowMoved();
 }
 
 - (void)windowDidMiniaturize:(NSNotification*)notification {

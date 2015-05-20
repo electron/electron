@@ -132,6 +132,10 @@ void Window::OnWindowMove() {
   Emit("move");
 }
 
+void Window::OnWindowMoved() {
+  Emit("moved");
+}
+
 void Window::OnWindowEnterFullScreen() {
   Emit("enter-full-screen");
 }

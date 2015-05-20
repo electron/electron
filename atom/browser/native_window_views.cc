@@ -176,6 +176,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   options.Get(switches::kWidth, &width);
   options.Get(switches::kHeight, &height);
   gfx::Rect bounds(0, 0, width, height);
+  widget_size_ = bounds.size();
 
   window_->AddObserver(this);
 
