@@ -10,6 +10,8 @@
 #include "atom/common/chrome_version.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
+#include "base/strings/string_split.h"
+#include "base/strings/string_util.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/pepper_plugin_info.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
@@ -26,8 +28,24 @@ content::PepperPluginInfo CreatePepperFlashInfo(const base::FilePath& path,
   plugin.name = content::kFlashPluginName;
   plugin.path = path;
   plugin.permissions = ppapi::PERMISSION_ALL_BITS;
-  plugin.version = version;
 
+  std::vector<std::string> flash_version_numbers;
+  base::SplitString(version, '.', &flash_version_numbers);
+  if (flash_version_numbers.size() < 1)
+    flash_version_numbers.push_back("11");
+  // |SplitString()| puts in an empty string given an empty string. :(
+  else if (flash_version_numbers[0].empty())
+    flash_version_numbers[0] = "11";
+  if (flash_version_numbers.size() < 2)
+    flash_version_numbers.push_back("2");
+  if (flash_version_numbers.size() < 3)
+    flash_version_numbers.push_back("999");
+  if (flash_version_numbers.size() < 4)
+    flash_version_numbers.push_back("999");
+  // E.g., "Shockwave Flash 10.2 r154":
+  plugin.description = plugin.name + " " + flash_version_numbers[0] + "." +
+      flash_version_numbers[1] + " r" + flash_version_numbers[2];
+  plugin.version = JoinString(flash_version_numbers, '.');
   content::WebPluginMimeType swf_mime_type(
       content::kFlashPluginSwfMimeType,
       content::kFlashPluginSwfExtension,
