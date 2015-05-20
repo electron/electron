@@ -35,7 +35,6 @@
       'atom/common/api/lib/crash-reporter.coffee',
       'atom/common/api/lib/id-weak-map.coffee',
       'atom/common/api/lib/native-image.coffee',
-      'atom/common/api/lib/original-fs.coffee',
       'atom/common/api/lib/shell.coffee',
       'atom/common/lib/init.coffee',
       'atom/renderer/lib/chrome-api.coffee',
