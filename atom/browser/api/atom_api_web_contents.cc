@@ -51,9 +51,7 @@ v8::Persistent<v8::ObjectTemplate> template_;
 NativeWindow* GetWindowFromGuest(const content::WebContents* guest) {
   WebViewManager::WebViewInfo info;
   if (WebViewManager::GetInfoForProcess(guest->GetRenderProcessHost(), &info))
-    return NativeWindow::FromRenderView(
-        info.embedder->GetRenderProcessHost()->GetID(),
-        info.embedder->GetRoutingID());
+    return NativeWindow::FromWebContents(info.embedder);
   else
     return nullptr;
 }
