@@ -158,14 +158,25 @@ class SrcAttribute extends WebViewAttribute
       return
 
     # Navigate to |this.src|.
+    opts = {}
     httpreferrer = @webViewImpl.attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].getValue()
-    urlOptions = if httpreferrer then {httpreferrer} else {}
-    remote.getGuestWebContents(@webViewImpl.guestInstanceId).loadUrl @getValue(), urlOptions
+    if httpreferrer then opts.httpreferrer = httpreferrer
+
+    useragent = @webViewImpl.attributes[webViewConstants.ATTRIBUTE_USERAGENT].getValue()
+    if useragent then opts.useragent = useragent
+
+    guestContents = remote.getGuestWebContents(@webViewImpl.guestInstanceId)
+    guestContents.loadUrl @getValue(), opts
 
 # Attribute specifies HTTP referrer.
 class HttpReferrerAttribute extends WebViewAttribute
   constructor: (webViewImpl) ->
     super webViewConstants.ATTRIBUTE_HTTPREFERRER, webViewImpl
+
+# Attribute specifies user agent
+class UserAgentAttribute extends WebViewAttribute
+  constructor: (webViewImpl) ->
+    super webViewConstants.ATTRIBUTE_USERAGENT, webViewImpl
 
 # Attribute that set preload script.
 class PreloadAttribute extends WebViewAttribute
@@ -190,6 +201,7 @@ WebViewImpl::setupWebViewAttributes = ->
   @attributes[webViewConstants.ATTRIBUTE_PARTITION] = new PartitionAttribute(this)
   @attributes[webViewConstants.ATTRIBUTE_SRC] = new SrcAttribute(this)
   @attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER] = new HttpReferrerAttribute(this)
+  @attributes[webViewConstants.ATTRIBUTE_USERAGENT] = new UserAgentAttribute(this)
   @attributes[webViewConstants.ATTRIBUTE_NODEINTEGRATION] = new BooleanAttribute(webViewConstants.ATTRIBUTE_NODEINTEGRATION, this)
   @attributes[webViewConstants.ATTRIBUTE_PLUGINS] = new BooleanAttribute(webViewConstants.ATTRIBUTE_PLUGINS, this)
   @attributes[webViewConstants.ATTRIBUTE_DISABLEWEBSECURITY] = new BooleanAttribute(webViewConstants.ATTRIBUTE_DISABLEWEBSECURITY, this)

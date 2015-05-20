@@ -99,6 +99,18 @@ describe '<webview> tag', ->
       webview.src = "file://#{fixtures}/pages/referrer.html"
       document.body.appendChild webview
 
+  describe 'useragent attribute', ->
+    it 'sets the user agent', (done) ->
+      referrer = 'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko'
+      listener = (e) ->
+        assert.equal e.message, referrer
+        webview.removeEventListener 'console-message', listener
+        done()
+      webview.addEventListener 'console-message', listener
+      webview.setAttribute 'useragent', referrer
+      webview.src = "file://#{fixtures}/pages/useragent.html"
+      document.body.appendChild webview
+
   describe 'disablewebsecurity attribute', ->
     it 'does not disable web security when not set', (done) ->
       src = "
