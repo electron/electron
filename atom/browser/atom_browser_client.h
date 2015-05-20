@@ -9,6 +9,10 @@
 
 #include "brightray/browser/browser_client.h"
 
+namespace content {
+class QuotaPermissionContext;
+}
+
 namespace atom {
 
 class AtomResourceDispatcherHostDelegate;
@@ -39,6 +43,7 @@ class AtomBrowserClient : public brightray::BrowserClient {
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
                                       int child_process_id) override;
   void DidCreatePpapiPlugin(content::BrowserPpapiHost* browser_host) override;
+  content::QuotaPermissionContext* CreateQuotaPermissionContext() override;
 
  private:
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(

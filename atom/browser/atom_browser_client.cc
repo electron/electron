@@ -7,6 +7,7 @@
 #include "atom/browser/atom_access_token_store.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_quota_permission_context.h"
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/native_window.h"
@@ -219,6 +220,11 @@ void AtomBrowserClient::DidCreatePpapiPlugin(
     browser_host->GetPpapiHost()->AddHostFactoryFilter(
         scoped_ptr<ppapi::host::HostFactory>(
             new chrome::ChromeBrowserPepperHostFactory(browser_host)));
+}
+
+content::QuotaPermissionContext*
+    AtomBrowserClient::CreateQuotaPermissionContext() {
+  return new AtomQuotaPermissionContext;
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
