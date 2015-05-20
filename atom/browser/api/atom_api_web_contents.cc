@@ -438,6 +438,20 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
+
+  // Enable or disable the http cache backend.
+  bool ignore_cache;
+  auto context = AtomBrowserContext::Get();
+  net::HttpCache* http_cache = context->url_request_context_getter()
+                                  ->GetURLRequestContext()
+                                  ->http_transaction_factory()
+                                  ->GetCache();
+  if (options.Get("ignoreCache", &ignore_cache) && ignore_cache) {
+    http_cache->set_mode(net::HttpCache::Mode::DISABLE);
+  } else {
+    http_cache->set_mode(net::HttpCache::Mode::NORMAL);
+  }
+
   web_contents()->GetController().LoadURLWithParams(params);
 }
 

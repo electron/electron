@@ -535,7 +535,11 @@ up system's default printer and default settings for printing.
 Calling `window.print()` in web page is equivalent to call
 `BrowserWindow.print({silent: false, printBackground: false})`.
 
-### BrowserWindow.loadUrl(url)
+### BrowserWindow.loadUrl(url, [options])
+
+* `options` Object
+  * `ignoreCache` Boolean - Enable or disable loading the resources from cache.
+    Defaults to `false`.
 
 Same with `webContents.loadUrl(url)`.
 
