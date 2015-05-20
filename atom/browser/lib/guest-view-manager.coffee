@@ -15,6 +15,8 @@ supportedWebViewEvents = [
   'new-window'
   'close'
   'crashed'
+  'gpu-crashed'
+  'plugin-crashed'
   'destroyed'
   'page-title-set'
   'page-favicon-updated'

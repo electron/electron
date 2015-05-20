@@ -724,6 +724,18 @@ Calling `event.preventDefault()` can prevent the navigation.
 
 Emitted when the renderer process is crashed.
 
+### Event: 'gpu-crashed'
+
+Emitted when the gpu process is crashed.
+
+### Event: 'plugin-crashed'
+
+* `event` Event
+* `name` String
+* `version` String
+
+Emitted when a plugin process is crashed.
+
 ### Event: 'destroyed'
 
 Emitted when the WebContents is destroyed.

@@ -434,6 +434,17 @@ ipc.on('ping', function() {
 
 Fired when the renderer process is crashed.
 
+### gpu-crashed
+
+Fired when the gpu process is crashed.
+
+### plugin-crashed
+
+* `name` String
+* `version` String
+
+Fired when a plugin process is crashed.
+
 ### destroyed
 
 Fired when the WebContents is destroyed.
