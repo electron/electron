@@ -91,8 +91,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // managing the window's live.
   static NativeWindow* Create(const mate::Dictionary& options);
 
-  // Find a window from its process id and routing id.
-  static NativeWindow* FromRenderView(int process_id, int routing_id);
+  // Find a window from its WebContents
+  static NativeWindow* FromWebContents(content::WebContents* web_contents);
 
   void InitFromOptions(const mate::Dictionary& options);
 

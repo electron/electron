@@ -124,8 +124,7 @@ void AtomBrowserClient::OverrideWebkitPrefs(
     return;
   }
 
-  NativeWindow* window = NativeWindow::FromRenderView(
-      process->GetID(), render_view_host->GetRoutingID());
+  NativeWindow* window = NativeWindow::FromWebContents(web_contents);
   if (window)
     window->OverrideWebkitPrefs(prefs);
 }
