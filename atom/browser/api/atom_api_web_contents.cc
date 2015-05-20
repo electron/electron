@@ -37,6 +37,7 @@
 #include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "net/url_request/url_request_context.h"
 
 #include "atom/common/node_includes.h"
 
@@ -278,7 +279,8 @@ void WebContents::DidStopLoading(content::RenderViewHost* render_view_host) {
 
 void WebContents::DidGetResourceResponseStart(
     const content::ResourceRequestDetails& details) {
-  auto context = AtomBrowserContext::Get();
+  auto context = static_cast<brightray::BrowserContext*>(
+                    web_contents()->GetBrowserContext());
   std::string headers;
   if (context)
     headers = context->GetNetworkDelegate()->GetResponseHeaders(details.url);
