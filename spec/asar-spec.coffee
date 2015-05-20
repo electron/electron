@@ -1,6 +1,7 @@
-assert = require 'assert'
-fs     = require 'fs'
-path   = require 'path'
+assert        = require 'assert'
+child_process = require 'child_process'
+fs            = require 'fs'
+path          = require 'path'
 
 describe 'asar package', ->
   fixtures = path.join __dirname, 'fixtures'
@@ -442,6 +443,13 @@ describe 'asar package', ->
       file = path.join fixtures, 'asar', 'a.asar'
       stats = originalFs.statSync file
       assert stats.isFile()
+
+    it 'is available in forked scripts', (done) ->
+      child = child_process.fork path.join(fixtures, 'module', 'original-fs.js')
+      child.on 'message', (msg) ->
+        assert.equal msg, 'object'
+        done()
+      child.send 'message'
 
   describe 'graceful-fs module', ->
     gfs = require 'graceful-fs'
