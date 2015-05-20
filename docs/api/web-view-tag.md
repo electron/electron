@@ -254,6 +254,10 @@ Executes editing command `copy` in page.
 
 Executes editing command `paste` in page.
 
+### `<webview>`.pasteAndMatchStyle()
+
+Executes editing command `pasteAndMatchStyle` in page.
+
 ### `<webview>`.delete()
 
 Executes editing command `delete` in page.

@@ -261,6 +261,7 @@ registerWebViewElement = ->
     "cut"
     "copy"
     "paste"
+    "pasteAndMatchStyle"
     "delete"
     "selectAll"
     "unselect"

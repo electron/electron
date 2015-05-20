@@ -540,6 +540,10 @@ void WebContents::Paste() {
   web_contents()->Paste();
 }
 
+void WebContents::PasteAndMatchStyle() {
+  web_contents()->PasteAndMatchStyle();
+}
+
 void WebContents::Delete() {
   web_contents()->Delete();
 }
@@ -662,6 +666,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("cut", &WebContents::Cut)
         .SetMethod("copy", &WebContents::Copy)
         .SetMethod("paste", &WebContents::Paste)
+        .SetMethod("pasteAndMatchStyle", &WebContents::PasteAndMatchStyle)
         .SetMethod("delete", &WebContents::Delete)
         .SetMethod("selectAll", &WebContents::SelectAll)
         .SetMethod("unselect", &WebContents::Unselect)
