@@ -231,6 +231,10 @@
             # "/Oy /Oy-" and warnings about overriding.
             'AdditionalOptions': ['/Oy-'],
           },
+          'VCLinkerTool': {
+            # Turn off incremental linking to save binary size.
+            'LinkIncremental': '1',  # /INCREMENTAL:NO
+          },
         },
         'conditions': [
           ['OS=="linux"', {
