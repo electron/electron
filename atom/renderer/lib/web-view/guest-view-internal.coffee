@@ -10,8 +10,7 @@ WEB_VIEW_EVENTS =
   'did-start-loading': []
   'did-stop-loading': []
   'did-get-response-details': ['status', 'newUrl', 'originalUrl',
-                               'httpResponseCode', 'requestMethod', 'referrer',
-                               'headers']
+                               'httpResponseCode', 'requestMethod', 'referrer']
   'did-get-redirect-request': ['oldUrl', 'newUrl', 'isMainFrame']
   'dom-ready': []
   'console-message': ['level', 'message', 'line', 'sourceId']

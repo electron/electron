@@ -279,20 +279,13 @@ void WebContents::DidStopLoading(content::RenderViewHost* render_view_host) {
 
 void WebContents::DidGetResourceResponseStart(
     const content::ResourceRequestDetails& details) {
-  auto context = static_cast<brightray::BrowserContext*>(
-                    web_contents()->GetBrowserContext());
-  std::string headers;
-  if (context)
-    headers = context->GetNetworkDelegate()->GetResponseHeaders(details.url);
-
   Emit("did-get-response-details",
        details.socket_address.IsEmpty(),
        details.url,
        details.original_url,
        details.http_response_code,
        details.method,
-       details.referrer,
-       headers);
+       details.referrer);
 }
 
 void WebContents::DidGetRedirectForResourceRequest(
