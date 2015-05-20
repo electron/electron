@@ -40,8 +40,9 @@ app.on('ready', function() {
   mainWindow = new BrowserWindow({
     'width': 800,
     'height': 600,
-    'web-preferences':
+    'web-preferences': {
       'plugins': true
+    }
   });
   mainWindow.loadUrl('file://' + __dirname + '/index.html');
   // Something else
