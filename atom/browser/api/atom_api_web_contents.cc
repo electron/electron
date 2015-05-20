@@ -316,7 +316,8 @@ void WebContents::DidGetResourceResponseStart(
        details.original_url,
        details.http_response_code,
        details.method,
-       details.referrer);
+       details.referrer,
+       details.header);
 }
 
 void WebContents::DidGetRedirectForResourceRequest(
