@@ -169,18 +169,13 @@ NativeWindow* NativeWindow::Create(const mate::Dictionary& options) {
 }
 
 // static
-NativeWindow* NativeWindow::FromRenderView(int process_id, int routing_id) {
-  // Stupid iterating.
+NativeWindow* NativeWindow::FromWebContents(
+    content::WebContents* web_contents) {
   WindowList& window_list = *WindowList::GetInstance();
-  for (auto w = window_list.begin(); w != window_list.end(); ++w) {
-    auto& window = *w;
-    content::WebContents* web_contents = window->GetWebContents();
-    int window_process_id = web_contents->GetRenderProcessHost()->GetID();
-    int window_routing_id = web_contents->GetRoutingID();
-    if (window_routing_id == routing_id && window_process_id == process_id)
+  for (NativeWindow* window : window_list) {
+    if (window->GetWebContents() == web_contents)
       return window;
   }
-
   return nullptr;
 }
 

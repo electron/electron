@@ -68,9 +68,9 @@ Emitted when `oldDisplay` has been removed.
 
 * `event` Event
 * `display` Object
-* `changedMetricts` Array
+* `changedMetrics` Array
 
-Emitted when a `display` has one or more metrics changed, `changedMetricts` is
+Emitted when a `display` has one or more metrics changed, `changedMetrics` is
 an array of strings that describe the changes. Possible changes are `bounds`,
 `workArea`, `scaleFactor` and `rotation`.
 

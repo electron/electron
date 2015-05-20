@@ -15,6 +15,8 @@ supportedWebViewEvents = [
   'new-window'
   'close'
   'crashed'
+  'gpu-crashed'
+  'plugin-crashed'
   'destroyed'
   'page-title-set'
   'page-favicon-updated'
@@ -57,11 +59,13 @@ createGuest = (embedder, params) ->
     min = width: params.minwidth, height: params.minheight
     max = width: params.maxwidth, height: params.maxheight
     @setAutoSize params.autosize, min, max
+
     if params.src
-      if params.httpreferrer
-        @loadUrl params.src, {httpreferrer: params.httpreferrer}
-      else
-        @loadUrl params.src
+      opts = {}
+      opts.httpreferrer = params.httpreferrer if params.httpreferrer
+      opts.useragent = params.useragent if params.useragent
+      @loadUrl params.src, opts
+
     if params.allowtransparency?
       @setAllowTransparency params.allowtransparency
 

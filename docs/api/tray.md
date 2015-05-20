@@ -55,7 +55,7 @@ Creates a new tray icon associated with the `image`.
 
 Emitted when the tray icon is clicked.
 
-__NOte:__ The `bounds` payload is only implemented on OS X.
+__Note:__ The `bounds` payload is only implemented on OS X.
 
 ### Event: 'double-clicked'
 

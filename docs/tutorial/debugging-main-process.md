@@ -44,6 +44,6 @@ $ electron --debug-brk=5858 your/app
 
 ### 3. Load the debugger UI
 
-Open http://127.0.0.1:8080/debug?port=5858 in the Chrome browser.
+Open http://127.0.0.1:8080/debug?ws=127.0.0.1:8080&port=5858 in the Chrome browser.
 
 [node-inspector]: https://github.com/node-inspector/node-inspector

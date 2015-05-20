@@ -24,6 +24,7 @@
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
+#include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -36,6 +37,7 @@
 #include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "net/url_request/url_request_context.h"
 
 #include "atom/common/node_includes.h"
 
@@ -51,9 +53,7 @@ v8::Persistent<v8::ObjectTemplate> template_;
 NativeWindow* GetWindowFromGuest(const content::WebContents* guest) {
   WebViewManager::WebViewInfo info;
   if (WebViewManager::GetInfoForProcess(guest->GetRenderProcessHost(), &info))
-    return NativeWindow::FromRenderView(
-        info.embedder->GetRenderProcessHost()->GetID(),
-        info.embedder->GetRoutingID());
+    return NativeWindow::FromWebContents(info.embedder);
   else
     return nullptr;
 }
@@ -223,6 +223,19 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
   Emit("crashed");
+}
+
+void WebContents::PluginCrashed(const base::FilePath& plugin_path,
+                                base::ProcessId plugin_pid) {
+  content::WebPluginInfo info;
+  auto plugin_service = content::PluginService::GetInstance();
+  plugin_service->GetPluginInfoByPath(plugin_path, &info);
+  Emit("plugin-crashed", info.name, info.version);
+}
+
+void WebContents::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
+  if (exit_code == base::TERMINATION_STATUS_PROCESS_CRASHED)
+    Emit("gpu-crashed");
 }
 
 void WebContents::DocumentLoadedInFrame(
@@ -418,6 +431,10 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
     params.referrer = content::Referrer(http_referrer.GetAsReferrer(),
                                         blink::WebReferrerPolicyDefault);
 
+  std::string user_agent;
+  if (options.Get("useragent", &user_agent))
+    SetUserAgent(user_agent);
+
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
@@ -521,6 +538,10 @@ void WebContents::Copy() {
 
 void WebContents::Paste() {
   web_contents()->Paste();
+}
+
+void WebContents::PasteAndMatchStyle() {
+  web_contents()->PasteAndMatchStyle();
 }
 
 void WebContents::Delete() {
@@ -645,6 +666,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("cut", &WebContents::Cut)
         .SetMethod("copy", &WebContents::Copy)
         .SetMethod("paste", &WebContents::Paste)
+        .SetMethod("pasteAndMatchStyle", &WebContents::PasteAndMatchStyle)
         .SetMethod("delete", &WebContents::Delete)
         .SetMethod("selectAll", &WebContents::SelectAll)
         .SetMethod("unselect", &WebContents::Unselect)

@@ -82,3 +82,9 @@ describe 'chromium feature', ->
       iframe.onload = ->
         assert.equal iframe.contentWindow.test, 'undefined undefined undefined'
         done()
+
+  describe 'storage', ->
+    it 'requesting persitent quota works', (done) ->
+      navigator.webkitPersistentStorage.requestQuota 1024 * 1024, (grantedBytes) ->
+        assert.equal grantedBytes, 1048576
+        done()
