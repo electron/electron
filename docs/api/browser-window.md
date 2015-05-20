@@ -666,9 +666,11 @@ Corresponds to the points in time when the spinner of the tab stops spinning.
 * `httpResponseCode` Integer
 * `requestMethod` String
 * `referrer` String
+* `headers` String
 
 Emitted when details regarding a requested resource is available.
 `status` indicates the socket connection to download the resource.
+`headers` is key-value string separated by new-line character.
 
 ### Event: 'did-get-redirect-request'
 
@@ -723,6 +725,18 @@ Calling `event.preventDefault()` can prevent the navigation.
 ### Event: 'crashed'
 
 Emitted when the renderer process is crashed.
+
+### Event: 'gpu-crashed'
+
+Emitted when the gpu process is crashed.
+
+### Event: 'plugin-crashed'
+
+* `event` Event
+* `name` String
+* `version` String
+
+Emitted when a plugin process is crashed.
 
 ### Event: 'destroyed'
 
@@ -839,6 +853,10 @@ Executes editing command `copy` in page.
 ### WebContents.paste()
 
 Executes editing command `paste` in page.
+
+### WebContents.pasteAndMatchStyle()
+
+Executes editing command `pasteAndMatchStyle` in page.
 
 ### WebContents.delete()
 

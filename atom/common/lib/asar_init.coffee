@@ -9,10 +9,10 @@ return (process, require, asarSource) ->
 
   # Make graceful-fs work with asar.
   source = process.binding 'natives'
-  source.originalFs = source.fs
-  source.fs = """
+  source['original-fs'] = source.fs
+  source['fs'] = """
     var src = '(function (exports, require, module, __filename, __dirname) { ' +
-              process.binding('natives').originalFs +
+              process.binding('natives')['original-fs'] +
               ' });';
     var vm = require('vm');
     var fn = vm.runInThisContext(src, { filename: 'fs.js' });

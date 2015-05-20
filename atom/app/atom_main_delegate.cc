@@ -78,6 +78,9 @@ void AtomMainDelegate::PreSandboxStartup() {
   // Disable renderer sandbox for most of node's functions.
   command_line->AppendSwitch(switches::kNoSandbox);
 
+  // Allow file:// URIs to read other file:// URIs by default.
+  command_line->AppendSwitch(switches::kAllowFileAccessFromFiles);
+
 #if defined(OS_MACOSX)
   // Enable AVFoundation.
   command_line->AppendSwitch("enable-avfoundation");

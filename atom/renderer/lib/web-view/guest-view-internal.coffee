@@ -17,6 +17,8 @@ WEB_VIEW_EVENTS =
   'new-window': ['url', 'frameName', 'disposition']
   'close': []
   'crashed': []
+  'gpu-crashed': []
+  'plugin-crashed': ['name', 'version']
   'destroyed': []
   'page-title-set': ['title', 'explicitSet']
   'page-favicon-updated': ['favicons']
