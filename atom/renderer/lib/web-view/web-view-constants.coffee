@@ -13,6 +13,7 @@ module.exports =
   ATTRIBUTE_NODEINTEGRATION: 'nodeintegration'
   ATTRIBUTE_PLUGINS: 'plugins'
   ATTRIBUTE_DISABLEWEBSECURITY: 'disablewebsecurity'
+  ATTRIBUTE_IGNORE_CACHE: 'ignorecache'
   ATTRIBUTE_PRELOAD: 'preload'
   ATTRIBUTE_USERAGENT: 'useragent'
 

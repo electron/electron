@@ -441,8 +441,8 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
 
   // Enable or disable the http cache backend.
   bool ignore_cache;
-  auto context = AtomBrowserContext::Get();
-  net::HttpCache* http_cache = context->url_request_context_getter()
+  auto context = web_contents()->GetBrowserContext();
+  net::HttpCache* http_cache = context->GetRequestContext()
                                   ->GetURLRequestContext()
                                   ->http_transaction_factory()
                                   ->GetCache();

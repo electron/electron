@@ -128,6 +128,14 @@ Sets the user agent for the guest page before the page is navigated to. Once the
 
 If "on", the guest page will have web security disabled.
 
+### ignorecache
+
+```html
+<webview src="https://www.github.com/" ignorecache></webview>
+```
+
+If "on", the guest page in `webview` will ignore the http cache while loading the resources.
+
 ## Methods
 
 ### `<webview>`.getUrl()
