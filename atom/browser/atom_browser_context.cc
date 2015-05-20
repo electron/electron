@@ -7,6 +7,7 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/asar/asar_protocol_handler.h"
+#include "atom/browser/net/http_protocol_handler.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -59,6 +60,14 @@ net::URLRequestJobFactory* AtomBrowserContext::CreateURLRequestJobFactory(
       url::kFileScheme, new asar::AsarProtocolHandler(
           BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
               base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
+  job_factory->SetProtocolHandler(
+      url::kHttpScheme, new HttpProtocolHandler(url::kHttpScheme));
+  job_factory->SetProtocolHandler(
+      url::kHttpsScheme, new HttpProtocolHandler(url::kHttpsScheme));
+  job_factory->SetProtocolHandler(
+      url::kWsScheme, new HttpProtocolHandler(url::kWsScheme));
+  job_factory->SetProtocolHandler(
+      url::kWssScheme, new HttpProtocolHandler(url::kWssScheme));
 
   // Set up interceptors in the reverse order.
   scoped_ptr<net::URLRequestJobFactory> top_job_factory = job_factory.Pass();

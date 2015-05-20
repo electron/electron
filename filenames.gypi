@@ -145,6 +145,8 @@
       'atom/browser/net/asar/url_request_asar_job.h',
       'atom/browser/net/atom_url_request_job_factory.cc',
       'atom/browser/net/atom_url_request_job_factory.h',
+      'atom/browser/net/http_protocol_handler.cc',
+      'atom/browser/net/http_protocol_handler.h',            
       'atom/browser/net/url_request_string_job.cc',
       'atom/browser/net/url_request_string_job.h',
       'atom/browser/net/url_request_buffer_job.cc',
