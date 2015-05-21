@@ -72,6 +72,13 @@ net::URLRequestJobFactory* AtomBrowserContext::CreateURLRequestJobFactory(
   job_factory->SetProtocolHandler(
       url::kWssScheme, new HttpProtocolHandler(url::kWssScheme));
 
+  auto host_resolver = url_request_context_getter()
+                          ->GetURLRequestContext()
+                          ->host_resolver();
+  job_factory->SetProtocolHandler(
+      url::kFtpScheme, new net::FtpProtocolHandler(
+          new net::FtpNetworkLayer(host_resolver)));
+
   // Set up interceptors in the reverse order.
   scoped_ptr<net::URLRequestJobFactory> top_job_factory = job_factory.Pass();
   content::URLRequestInterceptorScopedVector::reverse_iterator it;
