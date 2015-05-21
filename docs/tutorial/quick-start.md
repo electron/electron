@@ -1,49 +1,27 @@
 # Quick start
-
 ## Introduction
-
 Electron enables you to create desktop applications with pure JavaScript by providing a runtime with rich native APIs. You could see it as a variant of the io.js runtime which is focused on desktop applications instead of web servers.
 
-It doesn't mean Electron is a JavaScript binding to GUI libraries. Instead,
-Electron uses web pages as its GUI, so you could also see it as a minimal
-Chromium browser, controlled by JavaScript.
+It doesn't mean Electron is a JavaScript binding to GUI libraries. Instead,<br>Electron uses web pages as its GUI, so you could also see it as a minimal<br>Chromium browser, controlled by JavaScript.
 
 ### Main process
-
-In Electron, the process that runs `package.json`'s `main` script is called
-__the main process__. The script that runs in the main process, can display GUI by
-creating web pages.
+In Electron, the process that runs `package.json`'s `main` script is called<br>**the main process**. The script that runs in the main process, can display GUI by<br>creating web pages.
 
 ### Renderer process
+Since Electron uses Chromium for displaying web pages, Chromium's<br>multi-processes architecture is also used. Each web page in Electron runs in<br>its own process, which is called **the renderer process**.
 
-Since Electron uses Chromium for displaying web pages, Chromium's
-multi-processes architecture is also used. Each web page in Electron runs in
-its own process, which is called __the renderer process__.
-
-In normal browsers web pages usually run in a sandboxed environment and are not
-allowed access to native resources. Electron users however, have the power to use
-io.js APIs in web pages allowing lower level operating system interactions.
+In normal browsers web pages usually run in a sandboxed environment and are not<br>allowed access to native resources. Electron users however, have the power to use<br>io.js APIs in web pages allowing lower level operating system interactions.
 
 ### Differences between main process and renderer process
+The main process creates web pages by creating `BrowserWindow` instances. Each `BrowserWindow` instance runs the web page in its own renderer process. When a `BrowserWindow` instance is destroyed, the corresponding renderer process<br>would also be terminated.
 
-The main process creates web pages by creating `BrowserWindow` instances. Each `BrowserWindow` instance runs the web page in its own renderer process. When a `BrowserWindow` instance is destroyed, the corresponding renderer process
-would also be terminated.
+The main process manages all web pages and their corresponding renderer<br>processes, each renderer process is isolated and only cares<br>about the web page running in it.
 
-The main process manages all web pages and their corresponding renderer
-processes, each renderer process is isolated and only cares
-about the web page running in it.
+In web pages, it is not allowed to call native GUI related APIs because managing<br>native GUI resources in web pages is very dangerous and easy to leak resources.<br>If you want to do GUI operations in web pages, you have to communicate with<br>the main process to do it there.
 
-In web pages, it is not allowed to call native GUI related APIs because managing
-native GUI resources in web pages is very dangerous and easy to leak resources.
-If you want to do GUI operations in web pages, you have to communicate with
-the main process to do it there.
-
-In Electron, we have provided the [ipc](../api/ipc-renderer.md) module for
-communication between main process and renderer process. And there is also a
-[remote](../api/remote.md) module for RPC style communication.
+In Electron, we have provided the [ipc](../api/ipc-renderer.md) module for<br>communication between main process and renderer process. And there is also a<br>[remote](../api/remote.md) module for RPC style communication.
 
 ## Write your first Electron app
-
 Generally, an Electron app would be structured like this:
 
 ```text
@@ -53,10 +31,7 @@ your-app/
 └── index.html
 ```
 
-The format of `package.json` is exactly the same as that of Node's modules, and
-the script specified by the `main` field is the startup script of your app,
-which will run on the main process. An example of your `package.json` might look
-like this:
+The format of `package.json` is exactly the same as that of Node's modules, and<br>the script specified by the `main` field is the startup script of your app,<br>which will run on the main process. An example of your `package.json` might look<br>like this:
 
 ```json
 {
@@ -66,8 +41,7 @@ like this:
 }
 ```
 
-The `main.js` should create windows and handle system events, a typical
-example being:
+The `main.js` should create windows and handle system events, a typical<br>example being:
 
 ```javascript
 var app = require('app');  // Module to control application life.
@@ -91,6 +65,11 @@ app.on('window-all-closed', function() {
 app.on('ready', function() {
   // Create the browser window.
   mainWindow = new BrowserWindow({width: 800, height: 600});
+
+  //Add basic chrome debugging.
+  mainWindow.openDevTools({
+    detach: <true or false>
+  });
 
   // and load the index.html of the app.
   mainWindow.loadUrl('file://' + __dirname + '/index.html');
@@ -125,11 +104,7 @@ Finally the `index.html` is the web page you want to show:
 ```
 
 ## Run your app
-
-After you're done writing your app, you can create a distribution by
-following the [Application distribution](./application-distribution.md) guide
-and then execute the packaged app. You can also just use the downloaded
-Electron binary to execute your app directly.
+After you're done writing your app, you can create a distribution by<br>following the [Application distribution](./application-distribution.md) guide<br>and then execute the packaged app. You can also just use the downloaded<br>Electron binary to execute your app directly.
 
 On Windows:
 
@@ -149,5 +124,4 @@ On OS X:
 $ ./Electron.app/Contents/MacOS/Electron your-app/
 ```
 
-`Electron.app` here is part of the Electron's release package, you can download
-it from [here](https://github.com/atom/electron/releases).
+`Electron.app` here is part of the Electron's release package, you can download<br>it from [here](https://github.com/atom/electron/releases).
