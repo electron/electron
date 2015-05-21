@@ -1,3 +1,4 @@
+inspectorFrame = null
 window.onload = ->
   inspectorFrame = document.getElementById('inspector-app-iframe').contentWindow
 
@@ -9,6 +10,13 @@ window.onload = ->
 
 convertToMenuTemplate = (items) ->
   template = []
+  copyMenu =
+    type: 'normal'
+    label: 'copy'
+    click: ->
+      window.selectionText = inspectorFrame.getSelection().toString()
+      inspectorFrame.eval 'InspectorFrontendHost.copyText(parent.selectionText)'
+
   for item in items
     do (item) ->
       transformed =
@@ -31,6 +39,8 @@ convertToMenuTemplate = (items) ->
       if item.id?
         transformed.click = -> DevToolsAPI.contextMenuItemSelected item.id
       template.push transformed
+      if item.label is 'Save as...'
+        template.push copyMenu
   template
 
 createMenu = (x, y, items, document) ->
