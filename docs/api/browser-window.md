@@ -792,6 +792,10 @@ Returns whether the web page can go forward.
 
 Returns whether the web page can go to `offset`.
 
+### WebContents.clearHistory()
+
+Clears the navigation history.
+
 ### WebContents.goBack()
 
 Makes the web page go back.
