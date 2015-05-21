@@ -49,6 +49,8 @@ class NativeWindowObserver {
   virtual void OnWindowRestore() {}
   virtual void OnWindowEnterFullScreen() {}
   virtual void OnWindowLeaveFullScreen() {}
+  virtual void OnWindowEnterHtmlFullScreen() {}
+  virtual void OnWindowLeaveHtmlFullScreen() {}
 
   // Called when devtools window gets focused.
   virtual void OnDevToolsFocus() {}

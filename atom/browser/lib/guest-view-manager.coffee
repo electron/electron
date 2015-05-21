@@ -20,6 +20,8 @@ supportedWebViewEvents = [
   'destroyed'
   'page-title-set'
   'page-favicon-updated'
+  'enter-html-full-screen'
+  'leave-html-full-screen'
 ]
 
 nextInstanceId = 0
