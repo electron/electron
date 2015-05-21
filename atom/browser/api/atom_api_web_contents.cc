@@ -471,10 +471,6 @@ void WebContents::Stop() {
   web_contents()->Stop();
 }
 
-void WebContents::ReloadIgnoringCache() {
-  web_contents()->GetController().ReloadIgnoringCache(false);
-}
-
 void WebContents::GoBack() {
   atom::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoBack();
@@ -661,7 +657,6 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("isLoading", &WebContents::IsLoading)
         .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
         .SetMethod("_stop", &WebContents::Stop)
-        .SetMethod("_reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
         .SetMethod("_goBack", &WebContents::GoBack)
         .SetMethod("_goForward", &WebContents::GoForward)
         .SetMethod("_goToOffset", &WebContents::GoToOffset)

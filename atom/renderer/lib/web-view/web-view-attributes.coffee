@@ -165,9 +165,6 @@ class SrcAttribute extends WebViewAttribute
     useragent = @webViewImpl.attributes[webViewConstants.ATTRIBUTE_USERAGENT].getValue()
     if useragent then opts.useragent = useragent
 
-    ignorecache = @webViewImpl.attributes[webViewConstants.ATTRIBUTE_IGNORE_CACHE].getValue()
-    if ignoreCache? then opts.ignoreCache = ignorecache
-
     guestContents = remote.getGuestWebContents(@webViewImpl.guestInstanceId)
     guestContents.loadUrl @getValue(), opts
 
@@ -208,7 +205,6 @@ WebViewImpl::setupWebViewAttributes = ->
   @attributes[webViewConstants.ATTRIBUTE_NODEINTEGRATION] = new BooleanAttribute(webViewConstants.ATTRIBUTE_NODEINTEGRATION, this)
   @attributes[webViewConstants.ATTRIBUTE_PLUGINS] = new BooleanAttribute(webViewConstants.ATTRIBUTE_PLUGINS, this)
   @attributes[webViewConstants.ATTRIBUTE_DISABLEWEBSECURITY] = new BooleanAttribute(webViewConstants.ATTRIBUTE_DISABLEWEBSECURITY, this)
-  @attributes[webViewConstants.ATTRIBUTE_IGNORE_CACHE] = new BooleanAttribute(webViewConstants.ATTRIBUTE_IGNORE_CACHE, this)
   @attributes[webViewConstants.ATTRIBUTE_PRELOAD] = new PreloadAttribute(this)
 
   autosizeAttributes = [
