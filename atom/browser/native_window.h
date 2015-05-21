@@ -209,6 +209,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   void NotifyWindowRestore();
   void NotifyWindowEnterFullScreen();
   void NotifyWindowLeaveFullScreen();
+  void NotifyWindowEnterHtmlFullScreen();
+  void NotifyWindowLeaveHtmlFullScreen();
 
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);
@@ -220,7 +222,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
 
   bool has_frame() const { return has_frame_; }
 
-  bool IsHtmlApiFullscreen() const { return html_fullscreen_; }
+  bool is_html_api_fullscreen() const { return html_fullscreen_; }
 
   void set_has_dialog_attached(bool has_dialog_attached) {
     has_dialog_attached_ = has_dialog_attached;
@@ -352,7 +354,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   bool html_fullscreen_;
 
   // Whether window is fullscreened by window api.
-  bool forced_fullscreen_;
+  bool native_fullscreen_;
 
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.

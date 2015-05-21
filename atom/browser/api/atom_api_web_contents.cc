@@ -220,6 +220,7 @@ void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
   auto window = GetWindowFromGuest(source);
   if (window) {
     window->SetHtmlApiFullscreen(true);
+    window->NotifyWindowEnterHtmlFullScreen();
     source->GetRenderViewHost()->WasResized();
     Emit("enter-html-full-screen");
   }
@@ -229,6 +230,7 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
   auto window = GetWindowFromGuest(source);
   if (window) {
     window->SetHtmlApiFullscreen(false);
+    window->NotifyWindowLeaveHtmlFullScreen();
     source->GetRenderViewHost()->WasResized();
     Emit("leave-html-full-screen");
   }
@@ -238,7 +240,7 @@ bool WebContents::IsFullscreenForTabOrPending(
     const content::WebContents* source) const {
   auto window = GetWindowFromGuest(source);
   if (window)
-    return window->IsHtmlApiFullscreen();
+    return window->is_html_api_fullscreen();
   else
     return false;
 }
