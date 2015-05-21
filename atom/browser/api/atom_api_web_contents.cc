@@ -18,6 +18,7 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/media/media_stream_devices_controller.h"
@@ -38,6 +39,7 @@
 #include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "net/http/http_response_headers.h"
 #include "net/url_request/url_request_context.h"
 
 #include "atom/common/node_includes.h"
@@ -310,6 +312,15 @@ void WebContents::DidStopLoading() {
 
 void WebContents::DidGetResourceResponseStart(
     const content::ResourceRequestDetails& details) {
+  net::HttpResponseHeaders* headers = details.headers.get();
+  base::DictionaryValue response_headers;
+  void* iter = nullptr;
+  std::string key;
+  std::string value;
+  while (headers && headers->EnumerateHeaderLines(&iter, &key, &value)) {
+    response_headers.SetString(base::StringToLowerASCII(key),
+                               base::StringToLowerASCII(value));
+  }
   Emit("did-get-response-details",
        details.socket_address.IsEmpty(),
        details.url,
@@ -317,7 +328,7 @@ void WebContents::DidGetResourceResponseStart(
        details.http_response_code,
        details.method,
        details.referrer,
-       details.header);
+       response_headers);
 }
 
 void WebContents::DidGetRedirectForResourceRequest(
