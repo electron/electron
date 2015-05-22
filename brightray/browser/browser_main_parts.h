@@ -50,9 +50,6 @@ class BrowserMainParts : public content::BrowserMainParts {
   // implementation. The caller takes ownership of the returned object.
   virtual BrowserContext* CreateBrowserContext();
 
-  // Override this to change how ProxyResolverV8 is initialized.
-  virtual void InitProxyResolverV8();
-
  private:
 #if defined(OS_MACOSX)
   void IncreaseFileDescriptorLimit();

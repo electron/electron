@@ -90,8 +90,6 @@ void BrowserMainParts::PreEarlyInitialization() {
 #if defined(OS_LINUX)
   OverrideLinuxAppDataPath();
 #endif
-
-  InitProxyResolverV8();
 }
 
 void BrowserMainParts::ToolkitInitialized() {
@@ -146,10 +144,6 @@ int BrowserMainParts::PreCreateThreads() {
 
 BrowserContext* BrowserMainParts::CreateBrowserContext() {
   return new BrowserContext;
-}
-
-void BrowserMainParts::InitProxyResolverV8() {
-  net::ProxyResolverV8::EnsureIsolateCreated();
 }
 
 }  // namespace brightray
