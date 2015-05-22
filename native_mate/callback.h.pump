@@ -35,19 +35,19 @@ struct V8FunctionInvoker<R($for ARG , [[P$(ARG)]])> {
     R ret;
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
-    v8::Handle<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Function> holder = function->NewHandle();
 
 $if ARITY == 0 [[
-    v8::Handle<v8::Value> val(holder->Call(holder, 0, NULL));
+    v8::Local<v8::Value> val(holder->Call(holder, 0, NULL));
 ]] $else [[
-    v8::Handle<v8::Value> args[] = {
+    v8::Local<v8::Value> args[] = {
 $for ARG [[
 
         ConvertToV8(isolate, a$(ARG)),
 ]]
 
     };
-    v8::Handle<v8::Value> val(holder->Call(holder, arraysize(args), args));
+    v8::Local<v8::Value> val(holder->Call(holder, arraysize(args), args));
 ]]
 
     Converter<R>::FromV8(isolate, val, &ret);
@@ -60,12 +60,12 @@ struct V8FunctionInvoker<void($for ARG , [[P$(ARG)]])> {
   static void Go(v8::Isolate* isolate, SafeV8Function function$for ARG [[, P$(ARG) a$(ARG)]]) {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
-    v8::Handle<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Function> holder = function->NewHandle();
 
 $if ARITY == 0 [[
     holder->Call(holder, 0, NULL);
 ]] $else [[
-    v8::Handle<v8::Value> args[] = {
+    v8::Local<v8::Value> args[] = {
 $for ARG [[
 
         ConvertToV8(isolate, a$(ARG)),
@@ -84,12 +84,12 @@ $for ARG [[
 
 template<typename Sig>
 struct Converter<base::Callback<Sig> > {
-  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                     const base::Callback<Sig>& val) {
     return CreateFunctionTemplate(isolate, val)->GetFunction();
   }
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      base::Callback<Sig>* out) {
     if (!val->IsFunction())
       return false;

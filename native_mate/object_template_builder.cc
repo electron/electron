@@ -17,14 +17,14 @@ ObjectTemplateBuilder::~ObjectTemplateBuilder() {
 }
 
 ObjectTemplateBuilder& ObjectTemplateBuilder::SetImpl(
-    const base::StringPiece& name, v8::Handle<v8::Data> val) {
+    const base::StringPiece& name, v8::Local<v8::Data> val) {
   template_->Set(StringToSymbol(isolate_, name), val);
   return *this;
 }
 
 ObjectTemplateBuilder& ObjectTemplateBuilder::SetPropertyImpl(
-    const base::StringPiece& name, v8::Handle<v8::FunctionTemplate> getter,
-    v8::Handle<v8::FunctionTemplate> setter) {
+    const base::StringPiece& name, v8::Local<v8::FunctionTemplate> getter,
+    v8::Local<v8::FunctionTemplate> setter) {
 #if NODE_VERSION_AT_LEAST(0, 11, 0)
   template_->SetAccessorProperty(StringToSymbol(isolate_, name), getter,
                                  setter);

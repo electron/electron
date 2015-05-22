@@ -18,16 +18,16 @@ class ScopedPersistent {
  public:
   ScopedPersistent() : isolate_(v8::Isolate::GetCurrent()) {}
 
-  ScopedPersistent(v8::Isolate* isolate, v8::Handle<v8::Value> handle)
+  ScopedPersistent(v8::Isolate* isolate, v8::Local<v8::Value> handle)
       : isolate_(isolate) {
-    reset(isolate, v8::Handle<T>::Cast(handle));
+    reset(isolate, v8::Local<T>::Cast(handle));
   }
 
   ~ScopedPersistent() {
     reset();
   }
 
-  void reset(v8::Isolate* isolate, v8::Handle<T> handle) {
+  void reset(v8::Isolate* isolate, v8::Local<T> handle) {
     if (!handle.IsEmpty()) {
       isolate_ = isolate;
       MATE_PERSISTENT_ASSIGN(T, isolate, handle_, handle);
@@ -44,11 +44,11 @@ class ScopedPersistent {
     return handle_.IsEmpty();
   }
 
-  v8::Handle<T> NewHandle() const {
+  v8::Local<T> NewHandle() const {
     return NewHandle(isolate_);
   }
 
-  v8::Handle<T> NewHandle(v8::Isolate* isolate) const {
+  v8::Local<T> NewHandle(v8::Isolate* isolate) const {
     if (handle_.IsEmpty())
       return v8::Local<T>();
     return MATE_PERSISTENT_TO_LOCAL(T, isolate, handle_);
@@ -74,7 +74,7 @@ class RefCountedPersistent : public ScopedPersistent<T>,
  public:
   RefCountedPersistent() {}
 
-  RefCountedPersistent(v8::Isolate* isolate, v8::Handle<v8::Value> handle)
+  RefCountedPersistent(v8::Isolate* isolate, v8::Local<v8::Value> handle)
     : ScopedPersistent<T>(isolate, handle) {
   }
 
@@ -89,16 +89,16 @@ class RefCountedPersistent : public ScopedPersistent<T>,
 
 template<typename T>
 struct Converter<ScopedPersistent<T> > {
-  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                     const ScopedPersistent<T>& val) {
     return val.NewHandle(isolate);
   }
 
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      ScopedPersistent<T>* out) {
-    v8::Handle<T> converted;
-    if (!Converter<v8::Handle<T> >::FromV8(isolate, val, &converted))
+    v8::Local<T> converted;
+    if (!Converter<v8::Local<T> >::FromV8(isolate, val, &converted))
       return false;
 
     out->reset(isolate, converted);

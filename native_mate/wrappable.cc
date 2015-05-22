@@ -17,7 +17,7 @@ Wrappable::~Wrappable() {
   MATE_PERSISTENT_RESET(wrapper_);
 }
 
-void Wrappable::Wrap(v8::Isolate* isolate, v8::Handle<v8::Object> wrapper) {
+void Wrappable::Wrap(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) {
   if (!wrapper_.IsEmpty())
     return;
 
@@ -26,7 +26,7 @@ void Wrappable::Wrap(v8::Isolate* isolate, v8::Handle<v8::Object> wrapper) {
   MATE_PERSISTENT_SET_WEAK(wrapper_, this, WeakCallback);
 
   // Call object._init if we have one.
-  v8::Handle<v8::Function> init;
+  v8::Local<v8::Function> init;
   if (Dictionary(isolate, wrapper).Get("_init", &init))
     init->Call(wrapper, 0, NULL);
 
@@ -35,7 +35,7 @@ void Wrappable::Wrap(v8::Isolate* isolate, v8::Handle<v8::Object> wrapper) {
 
 // static
 void Wrappable::BuildPrototype(v8::Isolate* isolate,
-                               v8::Handle<v8::ObjectTemplate> prototype) {
+                               v8::Local<v8::ObjectTemplate> prototype) {
 }
 
 ObjectTemplateBuilder Wrappable::GetObjectTemplateBuilder(
@@ -49,7 +49,7 @@ MATE_WEAK_CALLBACK(Wrappable::WeakCallback, v8::Object, Wrappable) {
   delete self;
 }
 
-v8::Handle<v8::Object> Wrappable::GetWrapper(v8::Isolate* isolate) {
+v8::Local<v8::Object> Wrappable::GetWrapper(v8::Isolate* isolate) {
   if (!wrapper_.IsEmpty())
     return MATE_PERSISTENT_TO_LOCAL(v8::Object, isolate, wrapper_);
 
@@ -57,17 +57,17 @@ v8::Handle<v8::Object> Wrappable::GetWrapper(v8::Isolate* isolate) {
       GetObjectTemplateBuilder(isolate).Build();
   CHECK(!templ.IsEmpty());
   CHECK_EQ(1, templ->InternalFieldCount());
-  v8::Handle<v8::Object> wrapper = templ->NewInstance();
+  v8::Local<v8::Object> wrapper = templ->NewInstance();
   Wrap(isolate, wrapper);
   return wrapper;
 }
 
 namespace internal {
 
-void* FromV8Impl(v8::Isolate* isolate, v8::Handle<v8::Value> val) {
+void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val) {
   if (!val->IsObject())
     return NULL;
-  v8::Handle<v8::Object> obj = v8::Handle<v8::Object>::Cast(val);
+  v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(val);
   if (obj->InternalFieldCount() != 1)
     return NULL;
   return MATE_GET_INTERNAL_FIELD_POINTER(obj, 0);

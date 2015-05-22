@@ -48,7 +48,7 @@ struct CallbackParamTraits<const T*> {
 // among every CallbackHolder instance.
 class CallbackHolderBase {
  public:
-  v8::Handle<v8::External> GetHandle(v8::Isolate* isolate);
+  v8::Local<v8::External> GetHandle(v8::Isolate* isolate);
 
  protected:
   explicit CallbackHolderBase(v8::Isolate* isolate);
@@ -333,7 +333,7 @@ template<typename R>
 struct Dispatcher<R()> {
   static MATE_METHOD(DispatchToCallback) {
     Arguments args(info);
-    v8::Handle<v8::External> v8_holder;
+    v8::Local<v8::External> v8_holder;
     CHECK(args.GetData(&v8_holder));
     CallbackHolderBase* holder_base = reinterpret_cast<CallbackHolderBase*>(
         v8_holder->Value());
@@ -349,7 +349,7 @@ template<typename R, typename P1>
 struct Dispatcher<R(P1)> {
   static MATE_METHOD(DispatchToCallback) {
     Arguments args(info);
-    v8::Handle<v8::External> v8_holder;
+    v8::Local<v8::External> v8_holder;
     CHECK(args.GetData(&v8_holder));
     CallbackHolderBase* holder_base = reinterpret_cast<CallbackHolderBase*>(
         v8_holder->Value());
@@ -371,7 +371,7 @@ template<typename R, typename P1, typename P2>
 struct Dispatcher<R(P1, P2)> {
   static MATE_METHOD(DispatchToCallback) {
     Arguments args(info);
-    v8::Handle<v8::External> v8_holder;
+    v8::Local<v8::External> v8_holder;
     CHECK(args.GetData(&v8_holder));
     CallbackHolderBase* holder_base = reinterpret_cast<CallbackHolderBase*>(
         v8_holder->Value());
@@ -395,7 +395,7 @@ template<typename R, typename P1, typename P2, typename P3>
 struct Dispatcher<R(P1, P2, P3)> {
   static MATE_METHOD(DispatchToCallback) {
     Arguments args(info);
-    v8::Handle<v8::External> v8_holder;
+    v8::Local<v8::External> v8_holder;
     CHECK(args.GetData(&v8_holder));
     CallbackHolderBase* holder_base = reinterpret_cast<CallbackHolderBase*>(
         v8_holder->Value());
@@ -421,7 +421,7 @@ template<typename R, typename P1, typename P2, typename P3, typename P4>
 struct Dispatcher<R(P1, P2, P3, P4)> {
   static MATE_METHOD(DispatchToCallback) {
     Arguments args(info);
-    v8::Handle<v8::External> v8_holder;
+    v8::Local<v8::External> v8_holder;
     CHECK(args.GetData(&v8_holder));
     CallbackHolderBase* holder_base = reinterpret_cast<CallbackHolderBase*>(
         v8_holder->Value());
@@ -451,7 +451,7 @@ template<typename R, typename P1, typename P2, typename P3, typename P4,
 struct Dispatcher<R(P1, P2, P3, P4, P5)> {
   static MATE_METHOD(DispatchToCallback) {
     Arguments args(info);
-    v8::Handle<v8::External> v8_holder;
+    v8::Local<v8::External> v8_holder;
     CHECK(args.GetData(&v8_holder));
     CallbackHolderBase* holder_base = reinterpret_cast<CallbackHolderBase*>(
         v8_holder->Value());
@@ -483,7 +483,7 @@ template<typename R, typename P1, typename P2, typename P3, typename P4,
 struct Dispatcher<R(P1, P2, P3, P4, P5, P6)> {
   static MATE_METHOD(DispatchToCallback) {
     Arguments args(info);
-    v8::Handle<v8::External> v8_holder;
+    v8::Local<v8::External> v8_holder;
     CHECK(args.GetData(&v8_holder));
     CallbackHolderBase* holder_base = reinterpret_cast<CallbackHolderBase*>(
         v8_holder->Value());
@@ -517,7 +517,7 @@ template<typename R, typename P1, typename P2, typename P3, typename P4,
 struct Dispatcher<R(P1, P2, P3, P4, P5, P6, P7)> {
   static MATE_METHOD(DispatchToCallback) {
     Arguments args(info);
-    v8::Handle<v8::External> v8_holder;
+    v8::Local<v8::External> v8_holder;
     CHECK(args.GetData(&v8_holder));
     CallbackHolderBase* holder_base = reinterpret_cast<CallbackHolderBase*>(
         v8_holder->Value());
@@ -567,7 +567,7 @@ v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(
       isolate,
 #endif
       &internal::Dispatcher<Sig>::DispatchToCallback,
-      ConvertToV8<v8::Handle<v8::External> >(isolate,
+      ConvertToV8<v8::Local<v8::External> >(isolate,
                                              holder->GetHandle(isolate)));
 }
 

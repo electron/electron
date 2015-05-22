@@ -69,7 +69,7 @@
 #define MATE_HANDLE_SCOPE(isolate) v8::HandleScope handle_scope
 
 #define MATE_METHOD_ARGS_TYPE   v8::Arguments
-#define MATE_METHOD_RETURN_TYPE v8::Handle<v8::Value>
+#define MATE_METHOD_RETURN_TYPE v8::Local<v8::Value>
 
 #define MATE_METHOD_RETURN_VALUE(value) return value
 #define MATE_METHOD_RETURN_UNDEFINED()  return v8::Undefined()

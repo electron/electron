@@ -17,7 +17,7 @@ CallbackHolderBase::~CallbackHolderBase() {
   DCHECK(v8_ref_.IsEmpty());
 }
 
-v8::Handle<v8::External> CallbackHolderBase::GetHandle(v8::Isolate* isolate) {
+v8::Local<v8::External> CallbackHolderBase::GetHandle(v8::Isolate* isolate) {
   return MATE_PERSISTENT_TO_LOCAL(v8::External, isolate, v8_ref_);
 }
 

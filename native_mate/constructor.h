@@ -133,7 +133,7 @@ class Constructor {
     MATE_PERSISTENT_RESET(constructor_);
   }
 
-  v8::Handle<v8::FunctionTemplate> GetFunctionTemplate(
+  v8::Local<v8::FunctionTemplate> GetFunctionTemplate(
       v8::Isolate* isolate, const WrappableFactoryFunction& factory) {
     if (constructor_.IsEmpty()) {
       v8::Local<v8::FunctionTemplate> constructor = CreateFunctionTemplate(

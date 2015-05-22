@@ -10,7 +10,7 @@ PersistentDictionary::PersistentDictionary() {
 }
 
 PersistentDictionary::PersistentDictionary(v8::Isolate* isolate,
-                                           v8::Handle<v8::Object> object)
+                                           v8::Local<v8::Object> object)
     : handle_(new RefCountedPersistent<v8::Object>(isolate, object)) {
   isolate_ = isolate;
 }
@@ -18,16 +18,16 @@ PersistentDictionary::PersistentDictionary(v8::Isolate* isolate,
 PersistentDictionary::~PersistentDictionary() {
 }
 
-v8::Handle<v8::Object> PersistentDictionary::GetHandle() const {
+v8::Local<v8::Object> PersistentDictionary::GetHandle() const {
   return handle_->NewHandle();
 }
 
 bool Converter<PersistentDictionary>::FromV8(v8::Isolate* isolate,
-                                             v8::Handle<v8::Value> val,
+                                             v8::Local<v8::Value> val,
                                              PersistentDictionary* out) {
   if (!val->IsObject())
     return false;
-  *out = PersistentDictionary(isolate, v8::Handle<v8::Object>::Cast(val));
+  *out = PersistentDictionary(isolate, v8::Local<v8::Object>::Cast(val));
   return true;
 }
 

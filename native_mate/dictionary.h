@@ -25,12 +25,12 @@ namespace mate {
 class Dictionary {
  public:
   Dictionary();
-  Dictionary(v8::Isolate* isolate, v8::Handle<v8::Object> object);
+  Dictionary(v8::Isolate* isolate, v8::Local<v8::Object> object);
   ~Dictionary();
 
   template<typename T>
   bool Get(const base::StringPiece& key, T* out) const {
-    v8::Handle<v8::Value> val = GetHandle()->Get(StringToV8(isolate_, key));
+    v8::Local<v8::Value> val = GetHandle()->Get(StringToV8(isolate_, key));
     return ConvertFromV8(isolate_, val, out);
   }
 
@@ -49,7 +49,7 @@ class Dictionary {
 
   bool IsEmpty() const { return isolate() == NULL; }
 
-  virtual v8::Handle<v8::Object> GetHandle() const;
+  virtual v8::Local<v8::Object> GetHandle() const;
 
   v8::Isolate* isolate() const { return isolate_; }
 
@@ -57,15 +57,15 @@ class Dictionary {
   v8::Isolate* isolate_;
 
  private:
-  v8::Handle<v8::Object> object_;
+  v8::Local<v8::Object> object_;
 };
 
 template<>
 struct Converter<Dictionary> {
-  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                     Dictionary val);
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      Dictionary* out);
 };
 

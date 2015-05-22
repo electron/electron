@@ -26,13 +26,13 @@ Arguments::Arguments(const MATE_METHOD_ARGS_TYPE& info)
 Arguments::~Arguments() {
 }
 
-v8::Handle<v8::Value> Arguments::PeekNext() const {
+v8::Local<v8::Value> Arguments::PeekNext() const {
   if (next_ >= info_->Length())
-    return v8::Handle<v8::Value>();
+    return v8::Local<v8::Value>();
   return (*info_)[next_];
 }
 
-v8::Handle<v8::Value> Arguments::ThrowError() const {
+v8::Local<v8::Value> Arguments::ThrowError() const {
   if (insufficient_arguments_)
     return ThrowTypeError("Insufficient number of arguments.");
 
@@ -40,13 +40,13 @@ v8::Handle<v8::Value> Arguments::ThrowError() const {
       "Error processing argument %d.", next_ - 1));
 }
 
-v8::Handle<v8::Value> Arguments::ThrowError(const std::string& message) const {
+v8::Local<v8::Value> Arguments::ThrowError(const std::string& message) const {
   MATE_THROW_EXCEPTION(isolate_, v8::Exception::Error(
       StringToV8(isolate_, message)));
   return MATE_UNDEFINED(isolate_);
 }
 
-v8::Handle<v8::Value> Arguments::ThrowTypeError(
+v8::Local<v8::Value> Arguments::ThrowTypeError(
     const std::string& message) const {
   MATE_THROW_EXCEPTION(isolate_, v8::Exception::TypeError(
       StringToV8(isolate_, message)));

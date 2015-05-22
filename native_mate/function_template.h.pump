@@ -51,7 +51,7 @@ struct CallbackParamTraits<const T*> {
 // among every CallbackHolder instance.
 class CallbackHolderBase {
  public:
-  v8::Handle<v8::External> GetHandle(v8::Isolate* isolate);
+  v8::Local<v8::External> GetHandle(v8::Isolate* isolate);
 
  protected:
   explicit CallbackHolderBase(v8::Isolate* isolate);
@@ -169,7 +169,7 @@ template<typename R$for ARG [[, typename P$(ARG)]]>
 struct Dispatcher<R($for ARG , [[P$(ARG)]])> {
   static MATE_METHOD(DispatchToCallback) {
     Arguments args(info);
-    v8::Handle<v8::External> v8_holder;
+    v8::Local<v8::External> v8_holder;
     CHECK(args.GetData(&v8_holder));
     CallbackHolderBase* holder_base = reinterpret_cast<CallbackHolderBase*>(
         v8_holder->Value());
@@ -216,7 +216,7 @@ v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(
       isolate,
 #endif
       &internal::Dispatcher<Sig>::DispatchToCallback,
-      ConvertToV8<v8::Handle<v8::External> >(isolate,
+      ConvertToV8<v8::Local<v8::External> >(isolate,
                                              holder->GetHandle(isolate)));
 }
 

@@ -13,7 +13,7 @@ namespace mate {
 
 namespace internal {
 
-void* FromV8Impl(v8::Isolate* isolate, v8::Handle<v8::Value> val);
+void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val);
 
 }  // namespace internal
 
@@ -52,15 +52,15 @@ class Wrappable {
   // If the type is created via the Constructor, then the GetWrapper would
   // return the constructed object, otherwise it would try to create a new
   // object constructed by GetObjectTemplateBuilder.
-  v8::Handle<v8::Object> GetWrapper(v8::Isolate* isolate);
+  v8::Local<v8::Object> GetWrapper(v8::Isolate* isolate);
 
   // Bind the C++ class to the JS wrapper.
-  void Wrap(v8::Isolate* isolate, v8::Handle<v8::Object> wrapper);
+  void Wrap(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
   // The user should define T::BuildPrototype if they want to use Constructor
   // to build a constructor function for this type.
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Handle<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::ObjectTemplate> prototype);
 
  protected:
   Wrappable();
@@ -84,11 +84,11 @@ class Wrappable {
 template<typename T>
 struct Converter<T*, typename enable_if<
                        is_convertible<T*, Wrappable*>::value>::type> {
-  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate, T* val) {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, T* val) {
     return val->GetWrapper(isolate);
   }
 
-  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val, T** out) {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val, T** out) {
     *out = static_cast<T*>(static_cast<Wrappable*>(
         internal::FromV8Impl(isolate, val)));
     return *out != NULL;

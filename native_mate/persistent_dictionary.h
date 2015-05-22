@@ -15,10 +15,10 @@ namespace mate {
 class PersistentDictionary : public Dictionary {
  public:
   PersistentDictionary();
-  PersistentDictionary(v8::Isolate* isolate, v8::Handle<v8::Object> object);
+  PersistentDictionary(v8::Isolate* isolate, v8::Local<v8::Object> object);
   virtual ~PersistentDictionary();
 
-  v8::Handle<v8::Object> GetHandle() const override;
+  v8::Local<v8::Object> GetHandle() const override;
 
  private:
   scoped_refptr<RefCountedPersistent<v8::Object> > handle_;
@@ -27,7 +27,7 @@ class PersistentDictionary : public Dictionary {
 template<>
 struct Converter<PersistentDictionary> {
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      PersistentDictionary* out);
 };
 

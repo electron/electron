@@ -28,8 +28,8 @@ struct V8FunctionInvoker<R()> {
     R ret;
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
-    v8::Handle<v8::Function> holder = function->NewHandle();
-    v8::Handle<v8::Value> val(holder->Call(holder, 0, NULL));
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> val(holder->Call(holder, 0, NULL));
     Converter<R>::FromV8(isolate, val, &ret);
     return ret;
   }
@@ -40,7 +40,7 @@ struct V8FunctionInvoker<void()> {
   static void Go(v8::Isolate* isolate, SafeV8Function function) {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
-    v8::Handle<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Function> holder = function->NewHandle();
     holder->Call(holder, 0, NULL);
   }
 };
@@ -51,11 +51,11 @@ struct V8FunctionInvoker<R(P1)> {
     R ret;
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
-    v8::Handle<v8::Function> holder = function->NewHandle();
-    v8::Handle<v8::Value> args[] = {
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
     };
-    v8::Handle<v8::Value> val(holder->Call(holder, arraysize(args), args));
+    v8::Local<v8::Value> val(holder->Call(holder, arraysize(args), args));
     Converter<R>::FromV8(isolate, val, &ret);
     return ret;
   }
@@ -66,8 +66,8 @@ struct V8FunctionInvoker<void(P1)> {
   static void Go(v8::Isolate* isolate, SafeV8Function function, P1 a1) {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
-    v8::Handle<v8::Function> holder = function->NewHandle();
-    v8::Handle<v8::Value> args[] = {
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
     };
     holder->Call(holder, arraysize(args), args);
@@ -80,12 +80,12 @@ struct V8FunctionInvoker<R(P1, P2)> {
     R ret;
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
-    v8::Handle<v8::Function> holder = function->NewHandle();
-    v8::Handle<v8::Value> args[] = {
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
     };
-    v8::Handle<v8::Value> val(holder->Call(holder, arraysize(args), args));
+    v8::Local<v8::Value> val(holder->Call(holder, arraysize(args), args));
     Converter<R>::FromV8(isolate, val, &ret);
     return ret;
   }
@@ -96,8 +96,8 @@ struct V8FunctionInvoker<void(P1, P2)> {
   static void Go(v8::Isolate* isolate, SafeV8Function function, P1 a1, P2 a2) {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
-    v8::Handle<v8::Function> holder = function->NewHandle();
-    v8::Handle<v8::Value> args[] = {
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
     };
@@ -112,13 +112,13 @@ struct V8FunctionInvoker<R(P1, P2, P3)> {
     R ret;
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
-    v8::Handle<v8::Function> holder = function->NewHandle();
-    v8::Handle<v8::Value> args[] = {
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
         ConvertToV8(isolate, a3),
     };
-    v8::Handle<v8::Value> val(holder->Call(holder, arraysize(args), args));
+    v8::Local<v8::Value> val(holder->Call(holder, arraysize(args), args));
     Converter<R>::FromV8(isolate, val, &ret);
     return ret;
   }
@@ -130,8 +130,8 @@ struct V8FunctionInvoker<void(P1, P2, P3)> {
       P3 a3) {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
-    v8::Handle<v8::Function> holder = function->NewHandle();
-    v8::Handle<v8::Value> args[] = {
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
         ConvertToV8(isolate, a3),
@@ -147,14 +147,14 @@ struct V8FunctionInvoker<R(P1, P2, P3, P4)> {
     R ret;
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
-    v8::Handle<v8::Function> holder = function->NewHandle();
-    v8::Handle<v8::Value> args[] = {
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
         ConvertToV8(isolate, a3),
         ConvertToV8(isolate, a4),
     };
-    v8::Handle<v8::Value> val(holder->Call(holder, arraysize(args), args));
+    v8::Local<v8::Value> val(holder->Call(holder, arraysize(args), args));
     Converter<R>::FromV8(isolate, val, &ret);
     return ret;
   }
@@ -166,8 +166,8 @@ struct V8FunctionInvoker<void(P1, P2, P3, P4)> {
       P3 a3, P4 a4) {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
-    v8::Handle<v8::Function> holder = function->NewHandle();
-    v8::Handle<v8::Value> args[] = {
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
         ConvertToV8(isolate, a3),
@@ -185,15 +185,15 @@ struct V8FunctionInvoker<R(P1, P2, P3, P4, P5)> {
     R ret;
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
-    v8::Handle<v8::Function> holder = function->NewHandle();
-    v8::Handle<v8::Value> args[] = {
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
         ConvertToV8(isolate, a3),
         ConvertToV8(isolate, a4),
         ConvertToV8(isolate, a5),
     };
-    v8::Handle<v8::Value> val(holder->Call(holder, arraysize(args), args));
+    v8::Local<v8::Value> val(holder->Call(holder, arraysize(args), args));
     Converter<R>::FromV8(isolate, val, &ret);
     return ret;
   }
@@ -205,8 +205,8 @@ struct V8FunctionInvoker<void(P1, P2, P3, P4, P5)> {
       P3 a3, P4 a4, P5 a5) {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
-    v8::Handle<v8::Function> holder = function->NewHandle();
-    v8::Handle<v8::Value> args[] = {
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
         ConvertToV8(isolate, a3),
@@ -225,8 +225,8 @@ struct V8FunctionInvoker<R(P1, P2, P3, P4, P5, P6)> {
     R ret;
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
-    v8::Handle<v8::Function> holder = function->NewHandle();
-    v8::Handle<v8::Value> args[] = {
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
         ConvertToV8(isolate, a3),
@@ -234,7 +234,7 @@ struct V8FunctionInvoker<R(P1, P2, P3, P4, P5, P6)> {
         ConvertToV8(isolate, a5),
         ConvertToV8(isolate, a6),
     };
-    v8::Handle<v8::Value> val(holder->Call(holder, arraysize(args), args));
+    v8::Local<v8::Value> val(holder->Call(holder, arraysize(args), args));
     Converter<R>::FromV8(isolate, val, &ret);
     return ret;
   }
@@ -247,8 +247,8 @@ struct V8FunctionInvoker<void(P1, P2, P3, P4, P5, P6)> {
       P3 a3, P4 a4, P5 a5, P6 a6) {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
-    v8::Handle<v8::Function> holder = function->NewHandle();
-    v8::Handle<v8::Value> args[] = {
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
         ConvertToV8(isolate, a3),
@@ -264,12 +264,12 @@ struct V8FunctionInvoker<void(P1, P2, P3, P4, P5, P6)> {
 
 template<typename Sig>
 struct Converter<base::Callback<Sig> > {
-  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                     const base::Callback<Sig>& val) {
     return CreateFunctionTemplate(isolate, val)->GetFunction();
   }
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      base::Callback<Sig>* out) {
     if (!val->IsFunction())
       return false;

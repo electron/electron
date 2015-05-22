@@ -36,7 +36,7 @@ class Arguments {
       insufficient_arguments_ = true;
       return false;
     }
-    v8::Handle<v8::Value> val = (*info_)[next_++];
+    v8::Local<v8::Value> val = (*info_)[next_++];
     return ConvertFromV8(isolate_, val, out);
   }
 
@@ -49,14 +49,14 @@ class Arguments {
     int remaining = info_->Length() - next_;
     out->resize(remaining);
     for (int i = 0; i < remaining; ++i) {
-      v8::Handle<v8::Value> val = (*info_)[next_++];
+      v8::Local<v8::Value> val = (*info_)[next_++];
       if (!ConvertFromV8(isolate_, val, &out->at(i)))
         return false;
     }
     return true;
   }
 
-  v8::Handle<v8::Object> GetThis() {
+  v8::Local<v8::Object> GetThis() {
     return info_->This();
   }
 
@@ -75,11 +75,11 @@ class Arguments {
   }
 #endif
 
-  v8::Handle<v8::Value> PeekNext() const;
+  v8::Local<v8::Value> PeekNext() const;
 
-  v8::Handle<v8::Value> ThrowError() const;
-  v8::Handle<v8::Value> ThrowError(const std::string& message) const;
-  v8::Handle<v8::Value> ThrowTypeError(const std::string& message) const;
+  v8::Local<v8::Value> ThrowError() const;
+  v8::Local<v8::Value> ThrowError(const std::string& message) const;
+  v8::Local<v8::Value> ThrowTypeError(const std::string& message) const;
 
   v8::Isolate* isolate() const { return isolate_; }
 
