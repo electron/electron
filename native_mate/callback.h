@@ -22,6 +22,17 @@ typedef scoped_refptr<RefCountedPersistent<v8::Function> > SafeV8Function;
 template<typename Sig>
 struct V8FunctionInvoker;
 
+template<typename V>
+struct V8FunctionInvoker<v8::Local<V>()> {
+  static v8::Local<V> Go(v8::Isolate* isolate, SafeV8Function function) {
+    Locker locker(isolate);
+    v8::EscapableHandleScope handle_scope(isolate);
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> val(holder->Call(holder, 0, NULL));
+        return handle_scope.Escape(val);
+  }
+};
+
 template<typename R>
 struct V8FunctionInvoker<R()> {
   static R Go(v8::Isolate* isolate, SafeV8Function function) {
@@ -42,6 +53,20 @@ struct V8FunctionInvoker<void()> {
     MATE_HANDLE_SCOPE(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
     holder->Call(holder, 0, NULL);
+  }
+};
+
+template<typename V, typename P1>
+struct V8FunctionInvoker<v8::Local<V>(P1)> {
+  static v8::Local<V> Go(v8::Isolate* isolate, SafeV8Function function, P1 a1) {
+    Locker locker(isolate);
+    v8::EscapableHandleScope handle_scope(isolate);
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> args[] = {
+        ConvertToV8(isolate, a1),
+    };
+    v8::Local<v8::Value> val(holder->Call(holder, arraysize(args), args));
+        return handle_scope.Escape(val);
   }
 };
 
@@ -74,6 +99,22 @@ struct V8FunctionInvoker<void(P1)> {
   }
 };
 
+template<typename V, typename P1, typename P2>
+struct V8FunctionInvoker<v8::Local<V>(P1, P2)> {
+  static v8::Local<V> Go(v8::Isolate* isolate, SafeV8Function function, P1 a1,
+      P2 a2) {
+    Locker locker(isolate);
+    v8::EscapableHandleScope handle_scope(isolate);
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> args[] = {
+        ConvertToV8(isolate, a1),
+        ConvertToV8(isolate, a2),
+    };
+    v8::Local<v8::Value> val(holder->Call(holder, arraysize(args), args));
+        return handle_scope.Escape(val);
+  }
+};
+
 template<typename R, typename P1, typename P2>
 struct V8FunctionInvoker<R(P1, P2)> {
   static R Go(v8::Isolate* isolate, SafeV8Function function, P1 a1, P2 a2) {
@@ -102,6 +143,23 @@ struct V8FunctionInvoker<void(P1, P2)> {
         ConvertToV8(isolate, a2),
     };
     holder->Call(holder, arraysize(args), args);
+  }
+};
+
+template<typename V, typename P1, typename P2, typename P3>
+struct V8FunctionInvoker<v8::Local<V>(P1, P2, P3)> {
+  static v8::Local<V> Go(v8::Isolate* isolate, SafeV8Function function, P1 a1,
+      P2 a2, P3 a3) {
+    Locker locker(isolate);
+    v8::EscapableHandleScope handle_scope(isolate);
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> args[] = {
+        ConvertToV8(isolate, a1),
+        ConvertToV8(isolate, a2),
+        ConvertToV8(isolate, a3),
+    };
+    v8::Local<v8::Value> val(holder->Call(holder, arraysize(args), args));
+        return handle_scope.Escape(val);
   }
 };
 
@@ -137,6 +195,24 @@ struct V8FunctionInvoker<void(P1, P2, P3)> {
         ConvertToV8(isolate, a3),
     };
     holder->Call(holder, arraysize(args), args);
+  }
+};
+
+template<typename V, typename P1, typename P2, typename P3, typename P4>
+struct V8FunctionInvoker<v8::Local<V>(P1, P2, P3, P4)> {
+  static v8::Local<V> Go(v8::Isolate* isolate, SafeV8Function function, P1 a1,
+      P2 a2, P3 a3, P4 a4) {
+    Locker locker(isolate);
+    v8::EscapableHandleScope handle_scope(isolate);
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> args[] = {
+        ConvertToV8(isolate, a1),
+        ConvertToV8(isolate, a2),
+        ConvertToV8(isolate, a3),
+        ConvertToV8(isolate, a4),
+    };
+    v8::Local<v8::Value> val(holder->Call(holder, arraysize(args), args));
+        return handle_scope.Escape(val);
   }
 };
 
@@ -177,6 +253,26 @@ struct V8FunctionInvoker<void(P1, P2, P3, P4)> {
   }
 };
 
+template<typename V, typename P1, typename P2, typename P3, typename P4,
+    typename P5>
+struct V8FunctionInvoker<v8::Local<V>(P1, P2, P3, P4, P5)> {
+  static v8::Local<V> Go(v8::Isolate* isolate, SafeV8Function function, P1 a1,
+      P2 a2, P3 a3, P4 a4, P5 a5) {
+    Locker locker(isolate);
+    v8::EscapableHandleScope handle_scope(isolate);
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> args[] = {
+        ConvertToV8(isolate, a1),
+        ConvertToV8(isolate, a2),
+        ConvertToV8(isolate, a3),
+        ConvertToV8(isolate, a4),
+        ConvertToV8(isolate, a5),
+    };
+    v8::Local<v8::Value> val(holder->Call(holder, arraysize(args), args));
+        return handle_scope.Escape(val);
+  }
+};
+
 template<typename R, typename P1, typename P2, typename P3, typename P4,
     typename P5>
 struct V8FunctionInvoker<R(P1, P2, P3, P4, P5)> {
@@ -214,6 +310,27 @@ struct V8FunctionInvoker<void(P1, P2, P3, P4, P5)> {
         ConvertToV8(isolate, a5),
     };
     holder->Call(holder, arraysize(args), args);
+  }
+};
+
+template<typename V, typename P1, typename P2, typename P3, typename P4,
+    typename P5, typename P6>
+struct V8FunctionInvoker<v8::Local<V>(P1, P2, P3, P4, P5, P6)> {
+  static v8::Local<V> Go(v8::Isolate* isolate, SafeV8Function function, P1 a1,
+      P2 a2, P3 a3, P4 a4, P5 a5, P6 a6) {
+    Locker locker(isolate);
+    v8::EscapableHandleScope handle_scope(isolate);
+    v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Value> args[] = {
+        ConvertToV8(isolate, a1),
+        ConvertToV8(isolate, a2),
+        ConvertToV8(isolate, a3),
+        ConvertToV8(isolate, a4),
+        ConvertToV8(isolate, a5),
+        ConvertToV8(isolate, a6),
+    };
+    v8::Local<v8::Value> val(holder->Call(holder, arraysize(args), args));
+        return handle_scope.Escape(val);
   }
 };
 

@@ -29,6 +29,29 @@ $range ARITY 0..MAX_ARITY
 $for ARITY [[
 $range ARG 1..ARITY
 
+template<typename V$for ARG [[, typename P$(ARG)]]>
+struct V8FunctionInvoker<v8::Local<V>($for ARG , [[P$(ARG)]])> {
+  static v8::Local<V> Go(v8::Isolate* isolate, SafeV8Function function$for ARG [[, P$(ARG) a$(ARG)]]) {
+    Locker locker(isolate);
+    v8::EscapableHandleScope handle_scope(isolate);
+    v8::Local<v8::Function> holder = function->NewHandle();
+
+$if ARITY == 0 [[
+    v8::Local<v8::Value> val(holder->Call(holder, 0, NULL));
+]] $else [[
+    v8::Local<v8::Value> args[] = {
+$for ARG [[
+
+        ConvertToV8(isolate, a$(ARG)),
+]]
+
+    };
+    v8::Local<v8::Value> val(holder->Call(holder, arraysize(args), args));
+]]
+    return handle_scope.Escape(val);
+  }
+};
+
 template<typename R$for ARG [[, typename P$(ARG)]]>
 struct V8FunctionInvoker<R($for ARG , [[P$(ARG)]])> {
   static R Go(v8::Isolate* isolate, SafeV8Function function$for ARG [[, P$(ARG) a$(ARG)]]) {
