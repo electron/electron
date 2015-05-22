@@ -3,7 +3,7 @@
 The `remote` module provides a simple way to do inter-process communication
 between the renderer process and the main process.
 
-In Electron, only GUI-related modules are available in the renderer process.
+In Electron, only GUI-unrelated modules are available in the renderer process.
 Without the `remote` module, users who wanted to call a main process API in
 the renderer process would have to explicitly send inter-process messages
 to the main process. With the `remote` module, users can invoke methods of
