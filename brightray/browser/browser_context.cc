@@ -7,6 +7,7 @@
 #include "browser/brightray_paths.h"
 #include "browser/inspectable_web_contents_impl.h"
 #include "browser/network_delegate.h"
+#include "browser/permission_manager.h"
 #include "common/application_info.h"
 
 #include "base/files/file_path.h"
@@ -156,6 +157,12 @@ content::PushMessagingService* BrowserContext::GetPushMessagingService() {
 
 content::SSLHostStateDelegate* BrowserContext::GetSSLHostStateDelegate() {
   return nullptr;
+}
+
+content::PermissionManager* BrowserContext::GetPermissionManager() {
+  if (!permission_manager_.get())
+    permission_manager_.reset(new PermissionManager);
+  return permission_manager_.get();
 }
 
 }  // namespace brightray

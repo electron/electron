@@ -5,6 +5,7 @@
 #ifndef BRIGHTRAY_BROWSER_BROWSER_CONTEXT_H_
 #define BRIGHTRAY_BROWSER_BROWSER_CONTEXT_H_
 
+#include "browser/permission_manager.h"
 #include "browser/url_request_context_getter.h"
 
 #include "content/public/browser/browser_context.h"
@@ -13,6 +14,8 @@ class PrefRegistrySimple;
 class PrefService;
 
 namespace brightray {
+
+class PermissionManager;
 
 class BrowserContext : public content::BrowserContext,
                        public brightray::URLRequestContextGetter::Delegate {
@@ -63,11 +66,13 @@ class BrowserContext : public content::BrowserContext,
   storage::SpecialStoragePolicy* GetSpecialStoragePolicy() override;
   content::PushMessagingService* GetPushMessagingService() override;
   content::SSLHostStateDelegate* GetSSLHostStateDelegate() override;
+  content::PermissionManager* GetPermissionManager() override;
 
   base::FilePath path_;
   scoped_ptr<ResourceContext> resource_context_;
   scoped_refptr<URLRequestContextGetter> url_request_getter_;
   scoped_ptr<PrefService> prefs_;
+  scoped_ptr<PermissionManager> permission_manager_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserContext);
 };
