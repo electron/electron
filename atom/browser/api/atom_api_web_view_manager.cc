@@ -15,7 +15,7 @@ namespace mate {
 
 template<>
 struct Converter<content::WebContents*> {
-  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      content::WebContents** out) {
     atom::api::WebContents* contents;
     if (!Converter<atom::api::WebContents*>::FromV8(isolate, val, &contents))
@@ -27,7 +27,7 @@ struct Converter<content::WebContents*> {
 
 template<>
 struct Converter<atom::WebViewManager::WebViewInfo> {
-  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      atom::WebViewManager::WebViewInfo* out) {
     Dictionary options;
     if (!ConvertFromV8(isolate, val, &options))
@@ -81,8 +81,8 @@ void RemoveGuest(content::WebContents* embedder, int guest_instance_id) {
     manager->RemoveGuest(guest_instance_id);
 }
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("addGuest", &AddGuest);
   dict.SetMethod("removeGuest", &RemoveGuest);

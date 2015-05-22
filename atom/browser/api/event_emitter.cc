@@ -43,13 +43,13 @@ bool EventEmitter::CallEmit(v8::Isolate* isolate,
                             content::WebContents* sender,
                             IPC::Message* message,
                             ValueArray args) {
-  v8::Handle<v8::Object> event;
+  v8::Local<v8::Object> event;
   bool use_native_event = sender && message;
 
   if (use_native_event) {
     mate::Handle<mate::Event> native_event = mate::Event::Create(isolate);
     native_event->SetSenderAndMessage(sender, message);
-    event = v8::Handle<v8::Object>::Cast(native_event.ToV8());
+    event = v8::Local<v8::Object>::Cast(native_event.ToV8());
   } else {
     event = CreateEventObject(isolate);
   }

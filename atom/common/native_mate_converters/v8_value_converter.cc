@@ -46,7 +46,7 @@ class V8ValueConverter::FromV8ValueState {
   // other handle B in the map points to the same object as A. Note that A can
   // be unique even if there already is another handle with the same identity
   // hash (key) in the map, because two objects can have the same hash.
-  bool UpdateAndCheckUniqueness(v8::Handle<v8::Object> handle) {
+  bool UpdateAndCheckUniqueness(v8::Local<v8::Object> handle) {
     typedef HashToHandleMap::const_iterator Iterator;
     int hash = handle->GetIdentityHash();
     // We only compare using == with handles to objects with the same identity
@@ -67,7 +67,7 @@ class V8ValueConverter::FromV8ValueState {
   }
 
  private:
-  typedef std::multimap<int, v8::Handle<v8::Object> > HashToHandleMap;
+  typedef std::multimap<int, v8::Local<v8::Object> > HashToHandleMap;
   HashToHandleMap unique_map_;
 
   int max_recursion_depth_;
@@ -202,7 +202,7 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Object(
 
 base::Value* V8ValueConverter::FromV8ValueImpl(
     FromV8ValueState* state,
-    v8::Handle<v8::Value> val,
+    v8::Local<v8::Value> val,
     v8::Isolate* isolate) const {
   CHECK(!val.IsEmpty());
 
@@ -267,7 +267,7 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
 }
 
 base::Value* V8ValueConverter::FromV8Array(
-    v8::Handle<v8::Array> val,
+    v8::Local<v8::Array> val,
     FromV8ValueState* state,
     v8::Isolate* isolate) const {
   if (!state->UpdateAndCheckUniqueness(val))

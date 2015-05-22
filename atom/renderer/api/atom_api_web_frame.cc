@@ -27,7 +27,7 @@ namespace mate {
 template<>
 struct Converter<WTF::String> {
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      WTF::String* out) {
     if (!val->IsString())
       return false;
@@ -72,8 +72,8 @@ double WebFrame::GetZoomFactor() const {
   return blink::WebView::zoomLevelToZoomFactor(GetZoomLevel());
 }
 
-v8::Handle<v8::Value> WebFrame::RegisterEmbedderCustomElement(
-    const base::string16& name, v8::Handle<v8::Object> options) {
+v8::Local<v8::Value> WebFrame::RegisterEmbedderCustomElement(
+    const base::string16& name, v8::Local<v8::Object> options) {
   blink::WebExceptionCode c = 0;
   return web_frame_->document().registerEmbedderCustomElement(name, options, c);
 }
@@ -85,7 +85,7 @@ void WebFrame::AttachGuest(int id) {
 void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
                                      const std::string& language,
                                      bool auto_spell_correct_turned_on,
-                                     v8::Handle<v8::Object> provider) {
+                                     v8::Local<v8::Object> provider) {
   if (!provider->Has(mate::StringToV8(args->isolate(), "spellCheck"))) {
     args->ThrowError("\"spellCheck\" has to be defined");
     return;
@@ -123,8 +123,8 @@ mate::Handle<WebFrame> WebFrame::Create(v8::Isolate* isolate) {
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("webFrame", atom::api::WebFrame::Create(isolate));

@@ -16,15 +16,15 @@ namespace mate {
 template<>
 struct Converter<std::map<std::string, std::string> > {
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      std::map<std::string, std::string>* out) {
     if (!val->IsObject())
       return false;
 
-    v8::Handle<v8::Object> dict = val->ToObject();
-    v8::Handle<v8::Array> keys = dict->GetOwnPropertyNames();
+    v8::Local<v8::Object> dict = val->ToObject();
+    v8::Local<v8::Array> keys = dict->GetOwnPropertyNames();
     for (uint32_t i = 0; i < keys->Length(); ++i) {
-      v8::Handle<v8::Value> key = keys->Get(i);
+      v8::Local<v8::Value> key = keys->Get(i);
       (*out)[V8ToString(key)] = V8ToString(dict->Get(key));
     }
     return true;
@@ -35,8 +35,8 @@ struct Converter<std::map<std::string, std::string> > {
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   using crash_reporter::CrashReporter;
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("start",

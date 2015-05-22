@@ -34,7 +34,7 @@ class Tray : public mate::EventEmitter,
   static mate::Wrappable* New(const gfx::Image& image);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Handle<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::ObjectTemplate> prototype);
 
  protected:
   explicit Tray(const gfx::Image& image);

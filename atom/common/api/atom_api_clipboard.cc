@@ -19,7 +19,7 @@ namespace mate {
 
 template<>
 struct Converter<ui::ClipboardType> {
-  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      ui::ClipboardType* out) {
     std::string type;
     if (!Converter<std::string>::FromV8(isolate, val, &type))
@@ -78,8 +78,8 @@ void Clear(ui::ClipboardType type) {
   ui::Clipboard::GetForCurrentThread()->Clear(type);
 }
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("_has", &Has);
   dict.SetMethod("_read", &Read);

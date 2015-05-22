@@ -58,7 +58,7 @@ bool Menu::GetAcceleratorForCommandId(int command_id,
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
-  v8::Handle<v8::Value> val = get_accelerator_.Run(command_id);
+  v8::Local<v8::Value> val = get_accelerator_.Run(command_id);
   return mate::ConvertFromV8(isolate, val, accelerator);
 }
 
@@ -150,7 +150,7 @@ bool Menu::IsVisibleAt(int index) const {
 
 // static
 void Menu::BuildPrototype(v8::Isolate* isolate,
-                          v8::Handle<v8::ObjectTemplate> prototype) {
+                          v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("insertItem", &Menu::InsertItemAt)
       .SetMethod("insertCheckItem", &Menu::InsertCheckItemAt)
@@ -180,14 +180,14 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   using atom::api::Menu;
   v8::Isolate* isolate = context->GetIsolate();
   v8::Local<v8::Function> constructor = mate::CreateConstructor<Menu>(
       isolate, "Menu", base::Bind(&Menu::Create));
   mate::Dictionary dict(isolate, exports);
-  dict.Set("Menu", static_cast<v8::Handle<v8::Value>>(constructor));
+  dict.Set("Menu", static_cast<v8::Local<v8::Value>>(constructor));
 #if defined(OS_MACOSX)
   dict.SetMethod("setApplicationMenu", &Menu::SetApplicationMenu);
   dict.SetMethod("sendActionToFirstResponder",

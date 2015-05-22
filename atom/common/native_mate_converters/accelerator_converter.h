@@ -15,7 +15,7 @@ namespace mate {
 
 template<>
 struct Converter<ui::Accelerator> {
-  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      ui::Accelerator* out);
 };
 

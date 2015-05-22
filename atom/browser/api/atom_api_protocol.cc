@@ -21,7 +21,7 @@ namespace mate {
 
 template<>
 struct Converter<const net::URLRequest*> {
-  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                     const net::URLRequest* val) {
     return mate::ObjectTemplateBuilder(isolate)
         .SetValue("method", val->method())
@@ -63,7 +63,7 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
     // Call the JS handler.
     Protocol::JsProtocolHandler callback =
         registry_->GetProtocolHandler(request()->url().scheme());
-    v8::Handle<v8::Value> result = callback.Run(request());
+    v8::Local<v8::Value> result = callback.Run(request());
 
     // Determine the type of the job we are going to create.
     if (result->IsString()) {
@@ -73,7 +73,7 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
                      GetWeakPtr(), "text/plain", "UTF-8", data));
       return;
     } else if (result->IsObject()) {
-      v8::Handle<v8::Object> obj = result->ToObject();
+      v8::Local<v8::Object> obj = result->ToObject();
       mate::Dictionary dict(isolate, obj);
       std::string name = mate::V8ToString(obj->GetConstructorName());
       if (name == "RequestStringJob") {
@@ -88,7 +88,7 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
         return;
       } else if (name == "RequestBufferJob") {
         std::string mime_type, encoding;
-        v8::Handle<v8::Value> buffer;
+        v8::Local<v8::Value> buffer;
         dict.Get("mimeType", &mime_type);
         dict.Get("encoding", &encoding);
         dict.Get("data", &buffer);
@@ -339,8 +339,8 @@ mate::Handle<Protocol> Protocol::Create(v8::Isolate* isolate) {
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("protocol", atom::api::Protocol::Create(isolate));

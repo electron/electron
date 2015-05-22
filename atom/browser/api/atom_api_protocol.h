@@ -24,7 +24,7 @@ namespace api {
 
 class Protocol : public mate::EventEmitter {
  public:
-  typedef base::Callback<v8::Handle<v8::Value>(const net::URLRequest*)>
+  typedef base::Callback<v8::Local<v8::Value>(const net::URLRequest*)>
           JsProtocolHandler;
 
   static mate::Handle<Protocol> Create(v8::Isolate* isolate);

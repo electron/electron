@@ -145,14 +145,14 @@ mate::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
       isolate, v8::Local<v8::ObjectTemplate>::New(isolate, template_));
 }
 
-v8::Handle<v8::Value> NativeImage::ToPNG(v8::Isolate* isolate) {
+v8::Local<v8::Value> NativeImage::ToPNG(v8::Isolate* isolate) {
   scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
   return node::Buffer::New(isolate,
                            reinterpret_cast<const char*>(png->front()),
                            png->size());
 }
 
-v8::Handle<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
+v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
   std::vector<unsigned char> output;
   gfx::JPEG1xEncodedDataFromImage(image_, quality, &output);
   return node::Buffer::New(isolate,
@@ -225,7 +225,7 @@ mate::Handle<NativeImage> NativeImage::CreateFromPath(
 
 // static
 mate::Handle<NativeImage> NativeImage::CreateFromBuffer(
-    mate::Arguments* args, v8::Handle<v8::Value> buffer) {
+    mate::Arguments* args, v8::Local<v8::Value> buffer) {
   double scale_factor = 1.;
   args->GetNext(&scale_factor);
 
@@ -258,8 +258,8 @@ mate::Handle<NativeImage> NativeImage::CreateFromDataURL(
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createEmpty", &atom::api::NativeImage::CreateEmpty);
   dict.SetMethod("createFromPath", &atom::api::NativeImage::CreateFromPath);

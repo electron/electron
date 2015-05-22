@@ -22,7 +22,7 @@ namespace mate {
 template<>
 struct Converter<file_dialog::Filter> {
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      file_dialog::Filter* out) {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
@@ -52,7 +52,7 @@ void ShowMessageBox(int type,
   const std::string& message = texts[1];
   const std::string& detail = texts[2];
 
-  v8::Handle<v8::Value> peek = args->PeekNext();
+  v8::Local<v8::Value> peek = args->PeekNext();
   atom::MessageBoxCallback callback;
   if (mate::Converter<atom::MessageBoxCallback>::FromV8(args->isolate(),
                                                         peek,
@@ -72,7 +72,7 @@ void ShowOpenDialog(const std::string& title,
                     int properties,
                     atom::NativeWindow* window,
                     mate::Arguments* args) {
-  v8::Handle<v8::Value> peek = args->PeekNext();
+  v8::Local<v8::Value> peek = args->PeekNext();
   file_dialog::OpenDialogCallback callback;
   if (mate::Converter<file_dialog::OpenDialogCallback>::FromV8(args->isolate(),
                                                                peek,
@@ -92,7 +92,7 @@ void ShowSaveDialog(const std::string& title,
                     const file_dialog::Filters& filters,
                     atom::NativeWindow* window,
                     mate::Arguments* args) {
-  v8::Handle<v8::Value> peek = args->PeekNext();
+  v8::Local<v8::Value> peek = args->PeekNext();
   file_dialog::SaveDialogCallback callback;
   if (mate::Converter<file_dialog::SaveDialogCallback>::FromV8(args->isolate(),
                                                                peek,
@@ -106,8 +106,8 @@ void ShowSaveDialog(const std::string& title,
   }
 }
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("showMessageBox", &ShowMessageBox);
   dict.SetMethod("showErrorBox", &atom::ShowErrorBox);

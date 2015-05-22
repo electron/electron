@@ -42,7 +42,7 @@ namespace mate {
 #if defined(OS_WIN)
 template<>
 struct Converter<Browser::UserTask> {
-  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      Browser::UserTask* out) {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
@@ -277,8 +277,8 @@ void DockSetMenu(atom::api::Menu* menu) {
 }
 #endif
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   auto command_line = base::CommandLine::ForCurrentProcess();
 

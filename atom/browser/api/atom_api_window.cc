@@ -32,7 +32,7 @@ namespace mate {
 
 template<>
 struct Converter<PrintSettings> {
-  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      PrintSettings* out) {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
@@ -462,7 +462,7 @@ mate::Handle<WebContents> Window::GetDevToolsWebContents(
 
 // static
 void Window::BuildPrototype(v8::Isolate* isolate,
-                            v8::Handle<v8::ObjectTemplate> prototype) {
+                            v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("destroy", &Window::Destroy)
       .SetMethod("close", &Window::Close)
@@ -542,14 +542,14 @@ void Window::BuildPrototype(v8::Isolate* isolate,
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   using atom::api::Window;
   v8::Isolate* isolate = context->GetIsolate();
   v8::Local<v8::Function> constructor = mate::CreateConstructor<Window>(
       isolate, "BrowserWindow", base::Bind(&Window::New));
   mate::Dictionary dict(isolate, exports);
-  dict.Set("BrowserWindow", static_cast<v8::Handle<v8::Value>>(constructor));
+  dict.Set("BrowserWindow", static_cast<v8::Local<v8::Value>>(constructor));
 }
 
 }  // namespace
