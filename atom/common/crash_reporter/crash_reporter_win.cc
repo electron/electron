@@ -54,6 +54,11 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
   if (waiting_event != INVALID_HANDLE_VALUE)
     WaitForSingleObject(waiting_event, 1000);
 
+  // ExceptionHandler() attaches our handler and ~ExceptionHandler() detaches
+  // it, so we must explicitly reset *before* we instantiate our new handler
+  // to allow any previous handler to detach in the correct order.
+  breakpad_.reset();
+
   int handler_types = google_breakpad::ExceptionHandler::HANDLER_EXCEPTION |
       google_breakpad::ExceptionHandler::HANDLER_PURECALL;
   breakpad_.reset(new google_breakpad::ExceptionHandler(
