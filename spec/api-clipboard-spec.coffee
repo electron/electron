@@ -18,3 +18,15 @@ describe 'clipboard module', ->
       text = '千江有水千江月，万里无云万里天'
       clipboard.writeText text
       assert.equal clipboard.readText(), text
+
+  describe 'clipboard.readHtml()', ->
+    it 'returns markup correctly', ->
+      text = '<string>Hi</string>'
+      markup =
+        if process.platform is 'darwin'
+          '<meta charset=\'utf-8\'><string>Hi</string>'
+        else
+          '<meta http-equiv="content-type" ' +
+          'content="text/html; charset=utf-8"><string>Hi</string>'
+      clipboard.writeHtml text
+      assert.equal clipboard.readHtml(), markup

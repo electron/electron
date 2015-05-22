@@ -30,6 +30,19 @@ Returns the content in clipboard as plain text.
 
 Writes the `text` into clipboard as plain text.
 
+## clipboard.readHtml([type])
+
+* `type` String
+
+Returns the content in clipboard as markup.
+
+## clipboard.writeHtml(markup[, type])
+
+* `markup` String
+* `type` String
+
+Writes the `markup` into clipboard.
+
 ## clipboard.readImage([type])
 
 * `type` String
@@ -49,14 +62,9 @@ Writes the `image` into clipboard.
 
 Clears everything in clipboard.
 
-## clipboard.has(format[, type])
+## clipboard.availableFormats([type])
 
-* `format` String
-* `type` String
-
-Returns whether clipboard has data in specified `format`.
-
-**Note:** This API is experimental and could be removed in future.
+Returns an array of supported `format` for the clipboard `type`.
 
 ## clipboard.read(format[, type])
 
