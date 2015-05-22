@@ -140,7 +140,7 @@ void NotificationPresenterLinux::CancelNotification(NotifyNotification* notifica
   if (error)
     log_and_clear_error(error, "notify_notification_close");
 
-  GetDelegateFromNotification(notification)->NotificationClosed(false);
+  GetDelegateFromNotification(notification)->NotificationClosed();
   DeleteNotification(notification);
 }
 
@@ -150,7 +150,7 @@ void NotificationPresenterLinux::DeleteNotification(NotifyNotification* notifica
 }
 
 void NotificationPresenterLinux::OnNotificationClosed(NotifyNotification* notification) {
-  GetDelegateFromNotification(notification)->NotificationClosed(false);
+  GetDelegateFromNotification(notification)->NotificationClosed();
   DeleteNotification(notification);
 }
 

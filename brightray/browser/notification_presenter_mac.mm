@@ -85,7 +85,7 @@ void NotificationPresenterMac::CancelNotification(content::DesktopNotificationDe
   for (NSUserNotification* deliveredNotification in center.deliveredNotifications)
     if ([notification isEqual:deliveredNotification]) {
       [center removeDeliveredNotification:deliveredNotification];
-      delegate->NotificationClosed(false);
+      delegate->NotificationClosed();
       break;
     }
 
