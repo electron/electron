@@ -16,10 +16,11 @@
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/common/content_constants.h"
+#include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_thread.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
-#include "third_party/WebKit/public/web/WebFrame.h"
+#include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebPluginParams.h"
 #include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebRuntimeFeatures.h"
@@ -56,10 +57,11 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
         renderer_client_(renderer_client) {}
 
   // content::RenderFrameObserver:
-  void DidCreateScriptContext(blink::WebFrame* frame,
-                              v8::Handle<v8::Context> context,
+  void DidCreateScriptContext(v8::Handle<v8::Context> context,
+                              int extension_group,
                               int world_id) {
-    renderer_client_->DidCreateScriptContext(frame, context, world_id);
+    renderer_client_->DidCreateScriptContext(
+        render_frame()->GetWebFrame(), context);
   }
 
  private:
@@ -131,10 +133,9 @@ bool AtomRendererClient::OverrideCreatePlugin(
   return true;
 }
 
-void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,
-                                                v8::Handle<v8::Context> context,
-                                                int extension_group,
-                                                int world_id) {
+void AtomRendererClient::DidCreateScriptContext(
+    blink::WebFrame* frame,
+    v8::Handle<v8::Context> context) {
   // Only attach node bindings in main frame or guest frame.
   if (!IsGuestFrame(frame)) {
     if (main_frame_)

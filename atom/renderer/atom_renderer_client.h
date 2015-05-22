@@ -22,8 +22,7 @@ class AtomRendererClient : public content::ContentRendererClient,
   virtual ~AtomRendererClient();
 
   void DidCreateScriptContext(blink::WebFrame* frame,
-                              v8::Handle<v8::Context> context,
-                              int world_id);
+                              v8::Handle<v8::Context> context);
 
  private:
   enum NodeIntegration {

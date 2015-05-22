@@ -39,8 +39,7 @@ void SetDestructor(v8::Isolate* isolate,
 }
 
 void TakeHeapSnapshot(v8::Isolate* isolate) {
-  isolate->GetHeapProfiler()->TakeHeapSnapshot(
-      mate::StringToV8(isolate, "test"));
+  isolate->GetHeapProfiler()->TakeHeapSnapshot();
 }
 
 void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
