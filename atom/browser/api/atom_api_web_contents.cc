@@ -312,15 +312,19 @@ void WebContents::DidStopLoading() {
 
 void WebContents::DidGetResourceResponseStart(
     const content::ResourceRequestDetails& details) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  mate::Dictionary response_headers(isolate, v8::Object::New(isolate));
+
   net::HttpResponseHeaders* headers = details.headers.get();
-  base::DictionaryValue response_headers;
   void* iter = nullptr;
   std::string key;
   std::string value;
-  while (headers && headers->EnumerateHeaderLines(&iter, &key, &value)) {
-    response_headers.SetString(base::StringToLowerASCII(key),
-                               base::StringToLowerASCII(value));
-  }
+  while (headers && headers->EnumerateHeaderLines(&iter, &key, &value))
+    response_headers.Set(base::StringToLowerASCII(key),
+                         base::StringToLowerASCII(value));
+
   Emit("did-get-response-details",
        details.socket_address.IsEmpty(),
        details.url,
