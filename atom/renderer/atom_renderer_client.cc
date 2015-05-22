@@ -11,12 +11,13 @@
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/guest_view_container.h"
+#include "base/command_line.h"
 #include "chrome/renderer/pepper/pepper_helper.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/common/content_constants.h"
+#include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_thread.h"
-#include "base/command_line.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebPluginParams.h"
@@ -45,6 +46,27 @@ bool IsSwitchEnabled(base::CommandLine* command_line,
 bool IsGuestFrame(blink::WebFrame* frame) {
   return frame->uniqueName().utf8() == "ATOM_SHELL_GUEST_WEB_VIEW";
 }
+
+// Helper class to forward the messages to the client.
+class AtomRenderFrameObserver : public content::RenderFrameObserver {
+ public:
+  AtomRenderFrameObserver(content::RenderFrame* frame,
+                          AtomRendererClient* renderer_client)
+      : content::RenderFrameObserver(frame),
+        renderer_client_(renderer_client) {}
+
+  // content::RenderFrameObserver:
+  void DidCreateScriptContext(blink::WebFrame* frame,
+                              v8::Handle<v8::Context> context,
+                              int world_id) {
+    renderer_client_->DidCreateScriptContext(frame, context, world_id);
+  }
+
+ private:
+  AtomRendererClient* renderer_client_;
+
+  DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
+};
 
 }  // namespace
 

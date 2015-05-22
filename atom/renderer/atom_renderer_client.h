@@ -21,6 +21,10 @@ class AtomRendererClient : public content::ContentRendererClient,
   AtomRendererClient();
   virtual ~AtomRendererClient();
 
+  void DidCreateScriptContext(blink::WebFrame* frame,
+                              v8::Handle<v8::Context> context,
+                              int world_id);
+
  private:
   enum NodeIntegration {
     ALL,
@@ -42,10 +46,6 @@ class AtomRendererClient : public content::ContentRendererClient,
                             blink::WebLocalFrame* frame,
                             const blink::WebPluginParams& params,
                             blink::WebPlugin** plugin) override;
-  void DidCreateScriptContext(blink::WebFrame* frame,
-                              v8::Handle<v8::Context> context,
-                              int extension_group,
-                              int world_id) override;
   bool ShouldFork(blink::WebFrame* frame,
                   const GURL& url,
                   const std::string& http_method,
