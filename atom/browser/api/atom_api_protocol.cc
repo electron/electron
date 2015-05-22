@@ -42,6 +42,14 @@ namespace {
 
 typedef net::URLRequestJobFactory::ProtocolHandler ProtocolHandler;
 
+scoped_refptr<base::RefCountedBytes> BufferToRefCountedBytes(
+    v8::Local<v8::Value> buf) {
+  scoped_refptr<base::RefCountedBytes> data(new base::RefCountedBytes);
+  auto start = reinterpret_cast<const unsigned char*>(node::Buffer::Data(buf));
+  data->data().assign(start, start + node::Buffer::Length(buf));
+  return data;
+}
+
 class CustomProtocolRequestJob : public AdapterRequestJob {
  public:
   CustomProtocolRequestJob(Protocol* registry,
@@ -95,7 +103,8 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
 
         BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
             base::Bind(&AdapterRequestJob::CreateBufferJobAndStart,
-                       GetWeakPtr(), mime_type, encoding, buffer->ToObject()));
+                       GetWeakPtr(), mime_type, encoding,
+                       BufferToRefCountedBytes(buffer)));
         return;
       } else if (name == "RequestFileJob") {
         base::FilePath path;
