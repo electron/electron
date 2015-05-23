@@ -543,6 +543,10 @@ up system's default printer and default settings for printing.
 Calling `window.print()` in web page is equivalent to call
 `BrowserWindow.print({silent: false, printBackground: false})`.
 
+**Note:** On Windows, the print API relies on `pdf.dll`. If your application
+doesn't need print feature, you can safely remove `pdf.dll` in saving binary
+size.
+
 ### BrowserWindow.loadUrl(url)
 
 Same with `webContents.loadUrl(url)`.
