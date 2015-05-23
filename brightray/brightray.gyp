@@ -190,6 +190,7 @@
                   '-lportabledeviceguids.lib',
                   # content_common.gypi:
                   '-ld3d9.lib',
+                  '-ld3d11.lib',
                   '-ldxva2.lib',
                   '-lstrmiids.lib',
                   '-lmf.lib',
