@@ -62,6 +62,7 @@ class NetworkDelegate : public net::NetworkDelegate {
   bool OnCanEnablePrivacyMode(
       const GURL& url,
       const GURL& first_party_for_cookies) const override;
+  bool OnFirstPartyOnlyCookieExperimentEnabled() const override;
   bool OnCancelURLRequestWithPolicyViolatingReferrerHeader(
       const net::URLRequest& request,
       const GURL& target_url,

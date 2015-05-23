@@ -95,6 +95,7 @@
     },
     'msvs_disabled_warnings': [
       4100, # unreferenced formal parameter
+      4121, # alignment of a member was sensitive to packing
       4127, # conditional expression is constant
       4189, # local variable is initialized but not referenced
       4244, # 'initializing' : conversion from 'double' to 'size_t', possible loss of data
