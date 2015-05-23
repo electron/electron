@@ -12,7 +12,7 @@ namespace mate {
 
 // static
 bool Converter<ui::Accelerator>::FromV8(
-    v8::Isolate* isolate, v8::Handle<v8::Value> val, ui::Accelerator* out) {
+    v8::Isolate* isolate, v8::Local<v8::Value> val, ui::Accelerator* out) {
   std::string keycode;
   if (!ConvertFromV8(isolate, val, &keycode))
     return false;

@@ -19,7 +19,7 @@ class URLRequestBufferJob : public net::URLRequestSimpleJob {
                       net::NetworkDelegate* network_delegate,
                       const std::string& mime_type,
                       const std::string& charset,
-                      v8::Local<v8::Object> buffer);
+                      scoped_refptr<base::RefCountedBytes> data);
 
   // URLRequestSimpleJob:
   int GetRefCountedData(std::string* mime_type,

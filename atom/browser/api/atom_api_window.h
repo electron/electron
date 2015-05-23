@@ -40,7 +40,7 @@ class Window : public mate::EventEmitter,
                               const mate::Dictionary& options);
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Handle<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::ObjectTemplate> prototype);
 
   NativeWindow* window() const { return window_.get(); }
 
@@ -160,7 +160,7 @@ namespace mate {
 
 template<>
 struct Converter<atom::NativeWindow*> {
-  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      atom::NativeWindow** out) {
     // null would be tranfered to NULL.
     if (val->IsNull()) {

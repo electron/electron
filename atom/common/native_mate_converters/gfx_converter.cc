@@ -12,7 +12,7 @@
 
 namespace mate {
 
-v8::Handle<v8::Value> Converter<gfx::Point>::ToV8(v8::Isolate* isolate,
+v8::Local<v8::Value> Converter<gfx::Point>::ToV8(v8::Isolate* isolate,
                                                   const gfx::Point& val) {
   mate::Dictionary dict(isolate, v8::Object::New(isolate));
   dict.Set("x", val.x());
@@ -21,7 +21,7 @@ v8::Handle<v8::Value> Converter<gfx::Point>::ToV8(v8::Isolate* isolate,
 }
 
 bool Converter<gfx::Point>::FromV8(v8::Isolate* isolate,
-                                   v8::Handle<v8::Value> val,
+                                   v8::Local<v8::Value> val,
                                    gfx::Point* out) {
   mate::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
@@ -33,7 +33,7 @@ bool Converter<gfx::Point>::FromV8(v8::Isolate* isolate,
   return true;
 }
 
-v8::Handle<v8::Value> Converter<gfx::Size>::ToV8(v8::Isolate* isolate,
+v8::Local<v8::Value> Converter<gfx::Size>::ToV8(v8::Isolate* isolate,
                                                   const gfx::Size& val) {
   mate::Dictionary dict(isolate, v8::Object::New(isolate));
   dict.Set("width", val.width());
@@ -42,7 +42,7 @@ v8::Handle<v8::Value> Converter<gfx::Size>::ToV8(v8::Isolate* isolate,
 }
 
 bool Converter<gfx::Size>::FromV8(v8::Isolate* isolate,
-                                  v8::Handle<v8::Value> val,
+                                  v8::Local<v8::Value> val,
                                   gfx::Size* out) {
   mate::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
@@ -54,7 +54,7 @@ bool Converter<gfx::Size>::FromV8(v8::Isolate* isolate,
   return true;
 }
 
-v8::Handle<v8::Value> Converter<gfx::Rect>::ToV8(v8::Isolate* isolate,
+v8::Local<v8::Value> Converter<gfx::Rect>::ToV8(v8::Isolate* isolate,
                                                  const gfx::Rect& val) {
   mate::Dictionary dict(isolate, v8::Object::New(isolate));
   dict.Set("x", val.x());
@@ -65,7 +65,7 @@ v8::Handle<v8::Value> Converter<gfx::Rect>::ToV8(v8::Isolate* isolate,
 }
 
 bool Converter<gfx::Rect>::FromV8(v8::Isolate* isolate,
-                                  v8::Handle<v8::Value> val,
+                                  v8::Local<v8::Value> val,
                                   gfx::Rect* out) {
   mate::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
@@ -80,7 +80,7 @@ bool Converter<gfx::Rect>::FromV8(v8::Isolate* isolate,
 
 template<>
 struct Converter<gfx::Display::TouchSupport> {
-  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                     const gfx::Display::TouchSupport& val) {
     switch (val) {
       case gfx::Display::TOUCH_SUPPORT_AVAILABLE:
@@ -93,7 +93,7 @@ struct Converter<gfx::Display::TouchSupport> {
   }
 };
 
-v8::Handle<v8::Value> Converter<gfx::Display>::ToV8(v8::Isolate* isolate,
+v8::Local<v8::Value> Converter<gfx::Display>::ToV8(v8::Isolate* isolate,
                                                     const gfx::Display& val) {
   mate::Dictionary dict(isolate, v8::Object::New(isolate));
   dict.Set("id", val.id());

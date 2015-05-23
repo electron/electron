@@ -128,7 +128,7 @@ bool Tray::CheckTrayLife(mate::Arguments* args) {
 
 // static
 void Tray::BuildPrototype(v8::Isolate* isolate,
-                          v8::Handle<v8::ObjectTemplate> prototype) {
+                          v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("destroy", &Tray::Destroy)
       .SetMethod("setImage", &Tray::SetImage)
@@ -147,14 +147,14 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   using atom::api::Tray;
   v8::Isolate* isolate = context->GetIsolate();
-  v8::Handle<v8::Function> constructor = mate::CreateConstructor<Tray>(
+  v8::Local<v8::Function> constructor = mate::CreateConstructor<Tray>(
       isolate, "Tray", base::Bind(&Tray::New));
   mate::Dictionary dict(isolate, exports);
-  dict.Set("Tray", static_cast<v8::Handle<v8::Value>>(constructor));
+  dict.Set("Tray", static_cast<v8::Local<v8::Value>>(constructor));
 }
 
 }  // namespace

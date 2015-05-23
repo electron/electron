@@ -23,7 +23,7 @@ IDWeakMap::IDWeakMap()
 IDWeakMap::~IDWeakMap() {
 }
 
-int32_t IDWeakMap::Add(v8::Isolate* isolate, v8::Handle<v8::Object> object) {
+int32_t IDWeakMap::Add(v8::Isolate* isolate, v8::Local<v8::Object> object) {
   int32_t key = GetNextID();
   object->SetHiddenValue(mate::StringToV8(isolate, "IDWeakMapKey"),
                          mate::Converter<int32_t>::ToV8(isolate, key));
@@ -33,7 +33,7 @@ int32_t IDWeakMap::Add(v8::Isolate* isolate, v8::Handle<v8::Object> object) {
   return key;
 }
 
-v8::Handle<v8::Value> IDWeakMap::Get(v8::Isolate* isolate, int32_t key) {
+v8::Local<v8::Value> IDWeakMap::Get(v8::Isolate* isolate, int32_t key) {
   if (!Has(key)) {
     node::ThrowError("Invalid key");
     return v8::Undefined(isolate);
@@ -67,7 +67,7 @@ int IDWeakMap::GetNextID() {
 
 // static
 void IDWeakMap::BuildPrototype(v8::Isolate* isolate,
-                               v8::Handle<v8::ObjectTemplate> prototype) {
+                               v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
       .SetMethod("add", &IDWeakMap::Add)
       .SetMethod("get", &IDWeakMap::Get)
@@ -91,8 +91,8 @@ void IDWeakMap::WeakCallback(
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   using atom::api::IDWeakMap;
   v8::Isolate* isolate = context->GetIsolate();
   v8::Local<v8::Function> constructor = mate::CreateConstructor<IDWeakMap>(

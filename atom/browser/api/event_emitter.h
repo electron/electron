@@ -22,7 +22,7 @@ namespace mate {
 // Provide helperers to emit event in JavaScript.
 class EventEmitter : public Wrappable {
  public:
-  typedef std::vector<v8::Handle<v8::Value>> ValueArray;
+  typedef std::vector<v8::Local<v8::Value>> ValueArray;
 
  protected:
   EventEmitter();

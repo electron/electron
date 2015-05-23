@@ -4,15 +4,25 @@
 
 #include "atom/browser/javascript_environment.h"
 
+#include "gin/array_buffer.h"
+
 namespace atom {
 
 JavascriptEnvironment::JavascriptEnvironment()
-    : isolate_(isolate_holder_.isolate()),
+    : initialized_(Initialize()),
+      isolate_(isolate_holder_.isolate()),
       isolate_scope_(isolate_),
       locker_(isolate_),
       handle_scope_(isolate_),
       context_(isolate_, v8::Context::New(isolate_)),
       context_scope_(v8::Local<v8::Context>::New(isolate_, context_)) {
+}
+
+bool JavascriptEnvironment::Initialize() {
+  gin::IsolateHolder::LoadV8Snapshot();
+  gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
+                                 gin::ArrayBufferAllocator::SharedInstance());
+  return true;
 }
 
 }  // namespace atom

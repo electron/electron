@@ -22,6 +22,7 @@
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/media/media_stream_devices_controller.h"
 #include "content/public/browser/favicon_status.h"
+#include "content/public/browser/guest_host.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/plugin_service.h"
@@ -81,7 +82,7 @@ WebContents::WebContents(content::WebContents* web_contents)
       guest_instance_id_(-1),
       element_instance_id_(-1),
       guest_opaque_(true),
-      guest_sizer_(nullptr),
+      guest_host_(nullptr),
       auto_size_enabled_(false) {
 }
 
@@ -89,7 +90,7 @@ WebContents::WebContents(const mate::Dictionary& options)
     : guest_instance_id_(-1),
       element_instance_id_(-1),
       guest_opaque_(true),
-      guest_sizer_(nullptr),
+      guest_host_(nullptr),
       auto_size_enabled_(false) {
   options.Get("guestInstanceId", &guest_instance_id_);
 
@@ -299,11 +300,11 @@ void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
   Emit("did-fail-load", error_code, error_description);
 }
 
-void WebContents::DidStartLoading(content::RenderViewHost* render_view_host) {
+void WebContents::DidStartLoading() {
   Emit("did-start-loading");
 }
 
-void WebContents::DidStopLoading(content::RenderViewHost* render_view_host) {
+void WebContents::DidStopLoading() {
   Emit("did-stop-loading");
 }
 
@@ -406,7 +407,7 @@ void WebContents::ElementSizeChanged(const gfx::Size& size) {
 
   // Only resize if needed.
   if (!size.IsEmpty())
-    guest_sizer_->SizeContents(size);
+    guest_host_->SizeContents(size);
 }
 
 content::WebContents* WebContents::GetOwnerWebContents() const {
@@ -420,13 +421,8 @@ void WebContents::GuestSizeChanged(const gfx::Size& new_size) {
   guest_size_ = new_size;
 }
 
-void WebContents::RegisterDestructionCallback(
-    const DestructionCallback& callback) {
-  destruction_callback_ = callback;
-}
-
-void WebContents::SetGuestSizer(content::GuestSizer* guest_sizer) {
-  guest_sizer_ = guest_sizer;
+void WebContents::SetGuestHost(content::GuestHost* guest_host) {
+  guest_host_ = guest_host;
 }
 
 void WebContents::WillAttach(content::WebContents* embedder_web_contents,
@@ -438,11 +434,12 @@ void WebContents::WillAttach(content::WebContents* embedder_web_contents,
 
 void WebContents::Destroy() {
   if (storage_) {
-    if (!destruction_callback_.is_null())
-      destruction_callback_.Run();
-
     // When force destroying the "destroyed" event is not emitted.
     WebContentsDestroyed();
+
+    // Give the content module an opportunity to perform some cleanup.
+    guest_host_->WillDestroy();
+    guest_host_ = nullptr;
 
     Observe(nullptr);
     storage_.reset();
@@ -754,8 +751,8 @@ mate::Handle<WebContents> WebContents::Create(
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.SetMethod("create", &atom::api::WebContents::Create);

@@ -111,7 +111,7 @@ mate::ObjectTemplateBuilder Screen::GetObjectTemplateBuilder(
 }
 
 // static
-v8::Handle<v8::Value> Screen::Create(v8::Isolate* isolate) {
+v8::Local<v8::Value> Screen::Create(v8::Isolate* isolate) {
   if (!Browser::Get()->is_ready()) {
     node::ThrowError("Cannot initialize \"screen\" module before app is ready");
     return v8::Null(isolate);
@@ -132,8 +132,8 @@ v8::Handle<v8::Value> Screen::Create(v8::Isolate* isolate) {
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.Set("screen", atom::api::Screen::Create(context->GetIsolate()));
 }

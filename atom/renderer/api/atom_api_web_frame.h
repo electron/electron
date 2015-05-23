@@ -40,15 +40,15 @@ class WebFrame : public mate::Wrappable {
   double SetZoomFactor(double factor);
   double GetZoomFactor() const;
 
-  v8::Handle<v8::Value> RegisterEmbedderCustomElement(
-      const base::string16& name, v8::Handle<v8::Object> options);
+  v8::Local<v8::Value> RegisterEmbedderCustomElement(
+      const base::string16& name, v8::Local<v8::Object> options);
   void AttachGuest(int element_instance_id);
 
   // Set the provider that will be used by SpellCheckClient for spell check.
   void SetSpellCheckProvider(mate::Arguments* args,
                              const std::string& language,
                              bool auto_spell_correct_turned_on,
-                             v8::Handle<v8::Object> provider);
+                             v8::Local<v8::Object> provider);
 
   // mate::Wrappable:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(

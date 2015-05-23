@@ -15,8 +15,9 @@
 #include "base/files/file.h"
 #include "base/logging.h"
 #include "base/pickle.h"
-#include "base/json/json_string_value_serializer.h"
+#include "base/json/json_reader.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/values.h"
 
 namespace asar {
 
@@ -149,15 +150,15 @@ bool Archive::Init() {
   }
 
   std::string error;
-  JSONStringValueSerializer serializer(&header);
-  base::Value* value = serializer.Deserialize(NULL, &error);
+  base::JSONReader reader;
+  scoped_ptr<base::Value> value(reader.ReadToValue(header));
   if (!value || !value->IsType(base::Value::TYPE_DICTIONARY)) {
     LOG(ERROR) << "Failed to parse header: " << error;
     return false;
   }
 
   header_size_ = 8 + size;
-  header_.reset(static_cast<base::DictionaryValue*>(value));
+  header_.reset(static_cast<base::DictionaryValue*>(value.release()));
   return true;
 }
 

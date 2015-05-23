@@ -125,7 +125,7 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
   // content::WebContentsDelegate:
-  void HandleMouseDown() override;
+  void ActivateContents(content::WebContents* contents) override;
   void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) override;

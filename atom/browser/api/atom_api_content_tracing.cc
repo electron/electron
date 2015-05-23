@@ -20,7 +20,7 @@ namespace mate {
 template<>
 struct Converter<base::trace_event::CategoryFilter> {
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      base::trace_event::CategoryFilter* out) {
     std::string filter;
     if (!ConvertFromV8(isolate, val, &filter))
@@ -33,7 +33,7 @@ struct Converter<base::trace_event::CategoryFilter> {
 template<>
 struct Converter<base::trace_event::TraceOptions> {
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      base::trace_event::TraceOptions* out) {
     std::string options;
     if (!ConvertFromV8(isolate, val, &options))
@@ -46,8 +46,8 @@ struct Converter<base::trace_event::TraceOptions> {
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   auto controller = base::Unretained(TracingController::GetInstance());
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("getCategories", base::Bind(

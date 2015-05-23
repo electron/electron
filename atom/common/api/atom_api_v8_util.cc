@@ -10,41 +10,40 @@
 
 namespace {
 
-v8::Handle<v8::Object> CreateObjectWithName(v8::Isolate* isolate,
-                                            v8::Handle<v8::String> name) {
+v8::Local<v8::Object> CreateObjectWithName(v8::Isolate* isolate,
+                                            v8::Local<v8::String> name) {
   v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(isolate);
   t->SetClassName(name);
   return t->GetFunction()->NewInstance();
 }
 
-v8::Handle<v8::Value> GetHiddenValue(v8::Handle<v8::Object> object,
-                                     v8::Handle<v8::String> key) {
+v8::Local<v8::Value> GetHiddenValue(v8::Local<v8::Object> object,
+                                     v8::Local<v8::String> key) {
   return object->GetHiddenValue(key);
 }
 
-void SetHiddenValue(v8::Handle<v8::Object> object,
-                    v8::Handle<v8::String> key,
-                    v8::Handle<v8::Value> value) {
+void SetHiddenValue(v8::Local<v8::Object> object,
+                    v8::Local<v8::String> key,
+                    v8::Local<v8::Value> value) {
   object->SetHiddenValue(key, value);
 }
 
-int32_t GetObjectHash(v8::Handle<v8::Object> object) {
+int32_t GetObjectHash(v8::Local<v8::Object> object) {
   return object->GetIdentityHash();
 }
 
 void SetDestructor(v8::Isolate* isolate,
-                   v8::Handle<v8::Object> object,
-                   v8::Handle<v8::Function> callback) {
+                   v8::Local<v8::Object> object,
+                   v8::Local<v8::Function> callback) {
   atom::ObjectLifeMonitor::BindTo(isolate, object, callback);
 }
 
 void TakeHeapSnapshot(v8::Isolate* isolate) {
-  isolate->GetHeapProfiler()->TakeHeapSnapshot(
-      mate::StringToV8(isolate, "test"));
+  isolate->GetHeapProfiler()->TakeHeapSnapshot();
 }
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createObjectWithName", &CreateObjectWithName);
   dict.SetMethod("getHiddenValue", &GetHiddenValue);

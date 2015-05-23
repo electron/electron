@@ -13,8 +13,8 @@ namespace atom {
 class ObjectLifeMonitor {
  public:
   static void BindTo(v8::Isolate* isolate,
-                     v8::Handle<v8::Object> target,
-                     v8::Handle<v8::Value> destructor);
+                     v8::Local<v8::Object> target,
+                     v8::Local<v8::Value> destructor);
 
  private:
   ObjectLifeMonitor();

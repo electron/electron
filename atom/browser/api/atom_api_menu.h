@@ -23,7 +23,7 @@ class Menu : public mate::Wrappable,
   static mate::Wrappable* Create();
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Handle<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::ObjectTemplate> prototype);
 
 #if defined(OS_MACOSX)
   // Set the global menubar.
@@ -88,7 +88,7 @@ class Menu : public mate::Wrappable,
   base::Callback<bool(int)> is_checked_;
   base::Callback<bool(int)> is_enabled_;
   base::Callback<bool(int)> is_visible_;
-  base::Callback<v8::Handle<v8::Value>(int)> get_accelerator_;
+  base::Callback<v8::Local<v8::Value>(int)> get_accelerator_;
   base::Callback<void(int)> execute_command_;
   base::Callback<void()> menu_will_show_;
 

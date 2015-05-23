@@ -14,12 +14,12 @@ namespace mate {
 
 template<>
 struct Converter<GURL> {
-  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                     const GURL& val) {
     return ConvertToV8(isolate, val.spec());
   }
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      GURL* out) {
     std::string url;
     if (Converter<std::string>::FromV8(isolate, val, &url)) {

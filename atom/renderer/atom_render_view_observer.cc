@@ -30,21 +30,21 @@ namespace atom {
 namespace {
 
 bool GetIPCObject(v8::Isolate* isolate,
-                  v8::Handle<v8::Context> context,
-                  v8::Handle<v8::Object>* ipc) {
-  v8::Handle<v8::String> key = mate::StringToV8(isolate, "ipc");
-  v8::Handle<v8::Value> value = context->Global()->GetHiddenValue(key);
+                  v8::Local<v8::Context> context,
+                  v8::Local<v8::Object>* ipc) {
+  v8::Local<v8::String> key = mate::StringToV8(isolate, "ipc");
+  v8::Local<v8::Value> value = context->Global()->GetHiddenValue(key);
   if (value.IsEmpty() || !value->IsObject())
     return false;
   *ipc = value->ToObject();
   return true;
 }
 
-std::vector<v8::Handle<v8::Value>> ListValueToVector(
+std::vector<v8::Local<v8::Value>> ListValueToVector(
     v8::Isolate* isolate,
     const base::ListValue& list) {
-  v8::Handle<v8::Value> array = mate::ConvertToV8(isolate, list);
-  std::vector<v8::Handle<v8::Value>> result;
+  v8::Local<v8::Value> array = mate::ConvertToV8(isolate, list);
+  std::vector<v8::Local<v8::Value>> result;
   mate::ConvertFromV8(isolate, array, &result);
   return result;
 }
@@ -119,11 +119,11 @@ void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
   v8::Local<v8::Context> context = frame->mainWorldScriptContext();
   v8::Context::Scope context_scope(context);
 
-  std::vector<v8::Handle<v8::Value>> arguments = ListValueToVector(
+  std::vector<v8::Local<v8::Value>> arguments = ListValueToVector(
       isolate, args);
   arguments.insert(arguments.begin(), mate::ConvertToV8(isolate, channel));
 
-  v8::Handle<v8::Object> ipc;
+  v8::Local<v8::Object> ipc;
   if (GetIPCObject(isolate, context, &ipc))
     node::MakeCallback(isolate, ipc, "emit", arguments.size(), &arguments[0]);
 }

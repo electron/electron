@@ -172,8 +172,8 @@ class WebContents : public mate::EventEmitter,
                               const GURL& validated_url,
                               int error_code,
                               const base::string16& error_description) override;
-  void DidStartLoading(content::RenderViewHost* render_view_host) override;
-  void DidStopLoading(content::RenderViewHost* render_view_host) override;
+  void DidStartLoading() override;
+  void DidStopLoading() override;
   void DidGetResourceResponseStart(
       const content::ResourceRequestDetails& details) override;
   void DidGetRedirectForResourceRequest(
@@ -198,8 +198,7 @@ class WebContents : public mate::EventEmitter,
   void ElementSizeChanged(const gfx::Size& size) final;
   content::WebContents* GetOwnerWebContents() const final;
   void GuestSizeChanged(const gfx::Size& new_size) final;
-  void RegisterDestructionCallback(const DestructionCallback& callback) final;
-  void SetGuestSizer(content::GuestSizer* guest_sizer) final;
+  void SetGuestHost(content::GuestHost* guest_host) final;
   void WillAttach(content::WebContents* embedder_web_contents,
                   int element_instance_id,
                   bool is_full_page_plugin) final;
@@ -230,8 +229,6 @@ class WebContents : public mate::EventEmitter,
   // element.
   int element_instance_id_;
 
-  DestructionCallback destruction_callback_;
-
   // Stores whether the contents of the guest can be transparent.
   bool guest_opaque_;
 
@@ -248,8 +245,8 @@ class WebContents : public mate::EventEmitter,
   // element may not match the size of the guest.
   gfx::Size guest_size_;
 
-  // A pointer to the guest_sizer.
-  content::GuestSizer* guest_sizer_;
+  // A pointer to the guest_host.
+  content::GuestHost* guest_host_;
 
   // Indicates whether autosize mode is enabled or not.
   bool auto_size_enabled_;

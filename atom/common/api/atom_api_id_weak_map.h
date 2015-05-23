@@ -23,13 +23,13 @@ class IDWeakMap : public mate::Wrappable {
   IDWeakMap();
 
   static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Handle<v8::ObjectTemplate> prototype);
+                             v8::Local<v8::ObjectTemplate> prototype);
 
  private:
   virtual ~IDWeakMap();
 
-  int32_t Add(v8::Isolate* isolate, v8::Handle<v8::Object> object);
-  v8::Handle<v8::Value> Get(v8::Isolate* isolate, int32_t key);
+  int32_t Add(v8::Isolate* isolate, v8::Local<v8::Object> object);
+  v8::Local<v8::Value> Get(v8::Isolate* isolate, int32_t key);
   bool Has(int32_t key) const;
   std::vector<int32_t> Keys() const;
   void Remove(int32_t key);
