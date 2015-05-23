@@ -465,6 +465,20 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
   params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
+
+  // Enable or disable the http cache backend.
+  bool ignore_cache;
+  auto context = web_contents()->GetBrowserContext();
+  net::HttpCache* http_cache = context->GetRequestContext()
+                                  ->GetURLRequestContext()
+                                  ->http_transaction_factory()
+                                  ->GetCache();
+  if (options.Get("ignoreCache", &ignore_cache) && ignore_cache) {
+    http_cache->set_mode(net::HttpCache::Mode::DISABLE);
+  } else {
+    http_cache->set_mode(net::HttpCache::Mode::NORMAL);
+  }
+
   web_contents()->GetController().LoadURLWithParams(params);
 }
 
@@ -482,10 +496,6 @@ bool WebContents::IsWaitingForResponse() const {
 
 void WebContents::Stop() {
   web_contents()->Stop();
-}
-
-void WebContents::ReloadIgnoringCache() {
-  web_contents()->GetController().ReloadIgnoringCache(false);
 }
 
 void WebContents::GoBack() {
@@ -674,7 +684,6 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("isLoading", &WebContents::IsLoading)
         .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
         .SetMethod("_stop", &WebContents::Stop)
-        .SetMethod("_reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
         .SetMethod("_goBack", &WebContents::GoBack)
         .SetMethod("_goForward", &WebContents::GoForward)
         .SetMethod("_goToOffset", &WebContents::GoToOffset)
