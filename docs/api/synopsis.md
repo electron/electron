@@ -1,6 +1,6 @@
 # Synopsis
 
-All [node.js's built-in modules](http://nodejs.org/api/) are available in
+All of [node.js's built-in modules](http://nodejs.org/api/) are available in
 Electron, and third-party node modules are fully supported too (including the
 [native modules](../tutorial/using-native-node-modules.md)).
 
