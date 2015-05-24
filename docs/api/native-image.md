@@ -3,15 +3,15 @@
 In Electron for the APIs that take images, you can pass either file paths or
 `NativeImage` instances. When passing `null`, an empty image will be used.
 
-For example when creating tray or setting window's icon, you can pass image's
-file path as `String` to represent an image:
+For example, when creating a tray or setting a window's icon, you can pass an image
+file path as a `String`:
 
 ```javascript
 var appIcon = new Tray('/Users/somebody/images/icon.png');
 var window = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
 ```
 
-Or read the image from clipboard:
+Or read the image from the clipboard:
 
 ```javascript
 var clipboard = require('clipboard');
@@ -21,8 +21,8 @@ var appIcon = new Tray(image);
 
 ## Supported formats
 
-Currently `PNG` and `JPEG` are supported, and it is recommended to use `PNG`
-because it supports alpha channel and image is usually not compressed.
+Currently `PNG` and `JPEG` are supported. It is recommended to use `PNG`
+because of its support for transparency and lossless compression.
 
 ## High resolution image
 
@@ -31,9 +31,9 @@ file name's base name to mark it as a high resolution image.
 
 For example if `icon.png` is a normal image that has standard resolution, the
 `icon@2x.png` would be treated as a high resolution image that has double DPI
-dense.
+density.
 
-If you want to support displays with different DPI denses at the same time, you
+If you want to support displays with different DPI density at the same time, you
 can put images with different sizes in the same folder, and use the filename
 without DPI suffixes, like this:
 
@@ -88,7 +88,7 @@ Creates an empty `NativeImage` instance.
 
 * `path` String
 
-Creates a new `NativeImage` instance from file located at `path`.
+Creates a new `NativeImage` instance from a file located at `path`.
 
 ## nativeImage.createFromBuffer(buffer[, scaleFactor])
 
