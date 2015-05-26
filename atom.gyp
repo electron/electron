@@ -124,7 +124,9 @@
                       '<@(libchromiumcontent_shared_v8_libraries)',
                     ],
                   }, {
-                    'copied_libraries': [],
+                    'copied_libraries': [
+                      '<(libchromiumcontent_dir)/pdf.dll',
+                    ],
                   }],
                 ],
               },

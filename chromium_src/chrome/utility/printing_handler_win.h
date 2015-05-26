@@ -2,18 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CHROME_UTILITY_PRINTING_HANDLER_H_
-#define CHROME_UTILITY_PRINTING_HANDLER_H_
+#ifndef CHROME_UTILITY_PRINTING_HANDLER_WIN_H_
+#define CHROME_UTILITY_PRINTING_HANDLER_WIN_H_
 
 #include "base/compiler_specific.h"
 #include "base/macros.h"
 #include "chrome/utility/utility_message_handler.h"
 #include "ipc/ipc_platform_file.h"
 #include "printing/pdf_render_settings.h"
-
-#if !defined(ENABLE_PRINT_PREVIEW) && !defined(OS_WIN)
-#error "Windows or full printing must be enabled"
-#endif
 
 namespace printing {
 class PdfRenderSettings;
@@ -22,38 +18,34 @@ struct PageRange;
 }
 
 // Dispatches IPCs for printing.
-class PrintingHandler : public UtilityMessageHandler {
+class PrintingHandlerWin : public UtilityMessageHandler {
  public:
-  PrintingHandler();
-  ~PrintingHandler() override;
+  PrintingHandlerWin();
+  ~PrintingHandlerWin() override;
 
   // IPC::Listener:
   bool OnMessageReceived(const IPC::Message& message) override;
 
+  static void PrintingHandlerWin::PreSandboxStartup();
+
  private:
   // IPC message handlers.
-#if defined(OS_WIN)
   void OnRenderPDFPagesToMetafile(IPC::PlatformFileForTransit pdf_transit,
                                   const printing::PdfRenderSettings& settings);
   void OnRenderPDFPagesToMetafileGetPage(
       int page_number,
       IPC::PlatformFileForTransit output_file);
   void OnRenderPDFPagesToMetafileStop();
-#endif  // OS_WIN
 
-#if defined(OS_WIN)
   int LoadPDF(base::File pdf_file);
   bool RenderPdfPageToMetafile(int page_number,
                                base::File output_file,
                                float* scale_factor);
-#endif  // OS_WIN
 
-#if defined(OS_WIN)
   std::vector<char> pdf_data_;
   printing::PdfRenderSettings pdf_rendering_settings_;
-#endif
 
-  DISALLOW_COPY_AND_ASSIGN(PrintingHandler);
+  DISALLOW_COPY_AND_ASSIGN(PrintingHandlerWin);
 };
 
-#endif  // CHROME_UTILITY_PRINTING_HANDLER_H_
+#endif  // CHROME_UTILITY_PRINTING_HANDLER_WIN_H_
