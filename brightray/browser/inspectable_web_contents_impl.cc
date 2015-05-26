@@ -188,6 +188,18 @@ bool InspectableWebContentsImpl::IsDevToolsViewShowing() {
   return devtools_web_contents_ && view_->IsDevToolsViewShowing();
 }
 
+void InspectableWebContentsImpl::AttachTo(const scoped_refptr<content::DevToolsAgentHost>& host) {
+  if (agent_host_.get())
+    Detach();
+  agent_host_ = host;
+  agent_host_->AttachClient(this);
+}
+
+void InspectableWebContentsImpl::Detach() {
+  agent_host_->DetachClient();
+  agent_host_ = nullptr;
+}
+
 gfx::Rect InspectableWebContentsImpl::GetDevToolsBounds() const {
   return devtools_bounds_;
 }
