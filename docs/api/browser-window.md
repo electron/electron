@@ -524,6 +524,10 @@ Toggle the developer tools.
 
 Starts inspecting element at position (`x`, `y`).
 
+### BrowserWindow.inspectServiceWorker()
+
+Opens the developer tools for the service worker context present in the web contents.
+
 ### BrowserWindow.focusOnWebView()
 
 ### BrowserWindow.blurWebView()

@@ -238,6 +238,10 @@ Returns whether guest page has a devtools window attached.
 
 Starts inspecting element at position (`x`, `y`) of guest page.
 
+### `<webview>`.inspectServiceWorker()
+
+Opens the devtools for the service worker context present in the guest page.
+
 ### `<webview>`.undo()
 
 Executes editing command `undo` in page.

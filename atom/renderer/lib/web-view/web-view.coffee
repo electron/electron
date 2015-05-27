@@ -270,6 +270,7 @@ registerWebViewElement = ->
     "replaceMisspelling"
     "send"
     "getId"
+    "inspectServiceWorker"
   ]
 
   # Forward proto.foo* method calls to WebViewImpl.foo*.

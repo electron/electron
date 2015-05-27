@@ -153,6 +153,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   virtual void CloseDevTools();
   virtual bool IsDevToolsOpened();
   virtual void InspectElement(int x, int y);
+  virtual void InspectServiceWorker();
 
   virtual void FocusOnWebView();
   virtual void BlurWebView();

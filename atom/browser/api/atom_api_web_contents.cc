@@ -679,6 +679,17 @@ void WebContents::UnregisterServiceWorker(
                                    callback);
 }
 
+void WebContents::InspectServiceWorker() {
+  for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
+    if (agent_host->GetType() ==
+        content::DevToolsAgentHost::TYPE_SERVICE_WORKER) {
+      OpenDevTools();
+      storage_->AttachTo(agent_host);
+      break;
+    }
+  }
+}
+
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   if (template_.IsEmpty())
@@ -722,6 +733,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
         .SetMethod("unregisterServiceWorker",
                    &WebContents::UnregisterServiceWorker)
+        .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
         .Build());
 
   return mate::ObjectTemplateBuilder(
