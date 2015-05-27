@@ -126,3 +126,10 @@ describe 'node feature', ->
       b = new Buffer(p.innerText)
       assert.equal b.toString(), '闲云潭影日悠悠，物换星移几度秋'
       assert.equal Buffer.byteLength(p.innerText), 45
+
+    it 'correctly parses external one-byte UTF8 string', ->
+      p = document.createElement 'p'
+      p.innerText = 'Jøhänñéß'
+      b = new Buffer(p.innerText)
+      assert.equal b.toString(), 'Jøhänñéß'
+      assert.equal Buffer.byteLength(p.innerText), 13
