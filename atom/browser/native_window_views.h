@@ -93,6 +93,8 @@ class NativeWindowViews : public NativeWindow,
   // views::WidgetObserver:
   void OnWidgetActivationChanged(
       views::Widget* widget, bool active) override;
+  void OnWidgetBoundsChanged(
+      views::Widget* widget, const gfx::Rect& bounds) override;
 
   // views::WidgetDelegate:
   void DeleteDelegate() override;
@@ -113,6 +115,7 @@ class NativeWindowViews : public NativeWindow,
   views::ClientView* CreateClientView(views::Widget* widget) override;
   views::NonClientFrameView* CreateNonClientFrameView(
       views::Widget* widget) override;
+  void OnWidgetMove() override;
 #if defined(OS_WIN)
   bool ExecuteWindowsCommand(int command_id) override;
 #endif
@@ -173,6 +176,7 @@ class NativeWindowViews : public NativeWindow,
   std::string title_;
   gfx::Size minimum_size_;
   gfx::Size maximum_size_;
+  gfx::Size widget_size_;
 
   scoped_ptr<SkRegion> draggable_region_;
 

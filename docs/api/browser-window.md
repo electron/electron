@@ -171,6 +171,18 @@ Emitted when window is minimized.
 
 Emitted when window is restored from minimized state.
 
+### Event: 'resize'
+
+Emitted when window is getting resized.
+
+### Event: 'move'
+
+Emitted when the window is getting moved to a new position.
+
+### Event: 'moved'
+
+Emitted once when the window is moved to a new position.
+
 ### Event: 'enter-full-screen'
 
 Emitted when window enters full screen state.

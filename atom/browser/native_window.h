@@ -207,6 +207,9 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   void NotifyWindowUnmaximize();
   void NotifyWindowMinimize();
   void NotifyWindowRestore();
+  void NotifyWindowMove();
+  void NotifyWindowResize();
+  void NotifyWindowMoved();
   void NotifyWindowEnterFullScreen();
   void NotifyWindowLeaveFullScreen();
   void NotifyWindowEnterHtmlFullScreen();

@@ -98,6 +98,15 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 - (void)windowDidResize:(NSNotification*)notification {
   if (!shell_->has_frame())
     shell_->ClipWebView();
+
+  shell_->NotifyWindowResize();
+}
+
+- (void)windowDidMove:(NSNotification*)notification {
+  // TODO(zcbenz): Remove the alias after figuring out a proper
+  // way to disptach move. 
+  shell_->NotifyWindowMove();
+  shell_->NotifyWindowMoved();
 }
 
 - (void)windowDidMiniaturize:(NSNotification*)notification {

@@ -64,6 +64,9 @@ class Window : public mate::EventEmitter,
   void OnWindowUnmaximize() override;
   void OnWindowMinimize() override;
   void OnWindowRestore() override;
+  void OnWindowResize() override;
+  void OnWindowMove() override;
+  void OnWindowMoved() override;
   void OnWindowEnterFullScreen() override;
   void OnWindowLeaveFullScreen() override;
   void OnWindowEnterHtmlFullScreen() override;

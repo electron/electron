@@ -535,6 +535,18 @@ void NativeWindow::NotifyWindowRestore() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowRestore());
 }
 
+void NativeWindow::NotifyWindowResize() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowResize());
+}
+
+void NativeWindow::NotifyWindowMove() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowMove());
+}
+
+void NativeWindow::NotifyWindowMoved() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowMoved());
+}
+
 void NativeWindow::NotifyWindowEnterFullScreen() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
                     OnWindowEnterFullScreen());

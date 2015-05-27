@@ -176,6 +176,7 @@ NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
   options.Get(switches::kWidth, &width);
   options.Get(switches::kHeight, &height);
   gfx::Rect bounds(0, 0, width, height);
+  widget_size_ = bounds.size();
 
   window_->AddObserver(this);
 
@@ -720,6 +721,17 @@ void NativeWindowViews::OnWidgetActivationChanged(
     SetMenuBarVisibility(false);
 }
 
+void NativeWindowViews::OnWidgetBoundsChanged(
+    views::Widget* widget, const gfx::Rect& bounds) {
+  if (widget != window_.get())
+    return;
+
+  if (widget_size_ != bounds.size()) {
+    NotifyWindowResize();
+    widget_size_ = bounds.size();
+  }
+}
+
 void NativeWindowViews::DeleteDelegate() {
   NotifyWindowClosed();
 }
@@ -805,6 +817,10 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
     return frame_view;
   }
 #endif
+}
+
+void NativeWindowViews::OnWidgetMove() {
+  NotifyWindowMove();
 }
 
 #if defined(OS_WIN)
