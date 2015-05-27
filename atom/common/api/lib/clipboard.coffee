@@ -1,6 +1,7 @@
 binding = process.atomBinding 'clipboard'
 module.exports =
   availableFormats: (type='standard') -> binding._availableFormats type
+  has: (format, type='standard') -> binding._has format, type
   read: (format, type='standard') -> binding._read format, type
   readText: (type='standard') -> binding._readText type
   writeText: (text, type='standard') -> binding._writeText text, type

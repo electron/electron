@@ -45,6 +45,12 @@ std::vector<base::string16> AvailableFormats(ui::ClipboardType type) {
   return format_types;
 }
 
+bool Has(const std::string& format_string, ui::ClipboardType type) {
+  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
+  ui::Clipboard::FormatType format(ui::Clipboard::GetFormatType(format_string));
+  return clipboard->IsFormatAvailable(format, type);
+}
+
 std::string Read(const std::string& format_string,
                  ui::ClipboardType type) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
@@ -102,6 +108,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("_availableFormats", &AvailableFormats);
+  dict.SetMethod("_has", &Has);
   dict.SetMethod("_read", &Read);
   dict.SetMethod("_readText", &ReadText);
   dict.SetMethod("_writeText", &WriteText);

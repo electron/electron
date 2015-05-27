@@ -66,11 +66,25 @@ Clears everything in clipboard.
 
 Returns an array of supported `format` for the clipboard `type`.
 
-## clipboard.read(format[, type])
+## clipboard.has(data[, type])
 
-* `format` String
+* `data` String
 * `type` String
 
-Reads the data in clipboard of the `format`.
+Returns whether clipboard supports the format of specified `data`.
+
+```javascript
+var clipboard = require('clipboard');
+console.log(clipboard.has('<p>selection</p>'));
+```
+
+**Note:** This API is experimental and could be removed in future.
+
+## clipboard.read(data[, type])
+
+* `data` String
+* `type` String
+
+Reads the `data` in clipboard.
 
 **Note:** This API is experimental and could be removed in future.
