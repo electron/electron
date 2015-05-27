@@ -111,7 +111,7 @@ environment variable and have a clean rebuild:
 
 __Windows__
 
-```cmd
+```bash
 > set "GYP_DEFINES=project_name=myapp product_name=MyApp"
 > python script\clean.py
 > python script\bootstrap.py
