@@ -50,7 +50,7 @@ class InspectableWebContentsImpl :
   bool IsDevToolsViewShowing() override;
   void AttachTo(const scoped_refptr<content::DevToolsAgentHost>&) override;
 
-  void Detach();  
+  void Detach();
 
   // Return the last position and size of devtools window.
   gfx::Rect GetDevToolsBounds() const;
