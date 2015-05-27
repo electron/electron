@@ -16,8 +16,11 @@
 #include "chrome/browser/browser_process.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/url_constants.h"
+#include "net/ftp/ftp_network_layer.h"
 #include "net/url_request/data_protocol_handler.h"
+#include "net/url_request/ftp_protocol_handler.h"
 #include "net/url_request/url_request_intercepting_job_factory.h"
+#include "net/url_request/url_request_context.h"
 #include "url/url_constants.h"
 
 using content::BrowserThread;
@@ -68,6 +71,13 @@ net::URLRequestJobFactory* AtomBrowserContext::CreateURLRequestJobFactory(
       url::kWsScheme, new HttpProtocolHandler(url::kWsScheme));
   job_factory->SetProtocolHandler(
       url::kWssScheme, new HttpProtocolHandler(url::kWssScheme));
+
+  auto host_resolver = url_request_context_getter()
+                          ->GetURLRequestContext()
+                          ->host_resolver();
+  job_factory->SetProtocolHandler(
+      url::kFtpScheme, new net::FtpProtocolHandler(
+          new net::FtpNetworkLayer(host_resolver)));
 
   // Set up interceptors in the reverse order.
   scoped_ptr<net::URLRequestJobFactory> top_job_factory = job_factory.Pass();
