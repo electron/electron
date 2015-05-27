@@ -179,9 +179,13 @@ Emitted when window is getting resized.
 
 Emitted when the window is getting moved to a new position.
 
+__Note__: On OS X this event is just an alias of `moved`.
+
 ### Event: 'moved'
 
 Emitted once when the window is moved to a new position.
+
+__Note__: This event is available only on OS X.
 
 ### Event: 'enter-full-screen'
 
