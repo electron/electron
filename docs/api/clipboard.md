@@ -30,6 +30,19 @@ Returns the content in clipboard as plain text.
 
 Writes the `text` into clipboard as plain text.
 
+## clipboard.readHtml([type])
+
+* `type` String
+
+Returns the content in clipboard as markup.
+
+## clipboard.writeHtml(markup[, type])
+
+* `markup` String
+* `type` String
+
+Writes the `markup` into clipboard.
+
 ## clipboard.readImage([type])
 
 * `type` String
@@ -49,20 +62,29 @@ Writes the `image` into clipboard.
 
 Clears everything in clipboard.
 
-## clipboard.has(format[, type])
+## clipboard.availableFormats([type])
 
-* `format` String
+Returns an array of supported `format` for the clipboard `type`.
+
+## clipboard.has(data[, type])
+
+* `data` String
 * `type` String
 
-Returns whether clipboard has data in specified `format`.
+Returns whether clipboard supports the format of specified `data`.
+
+```javascript
+var clipboard = require('clipboard');
+console.log(clipboard.has('<p>selection</p>'));
+```
 
 **Note:** This API is experimental and could be removed in future.
 
-## clipboard.read(format[, type])
+## clipboard.read(data[, type])
 
-* `format` String
+* `data` String
 * `type` String
 
-Reads the data in clipboard of the `format`.
+Reads the `data` in clipboard.
 
 **Note:** This API is experimental and could be removed in future.
