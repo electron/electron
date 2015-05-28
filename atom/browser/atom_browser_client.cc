@@ -147,8 +147,11 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
   if (current_instance->HasProcess())
     dying_render_process_ = current_instance->GetProcess();
 
-  // Restart renderer process for all navigations.
-  *new_instance = content::SiteInstance::CreateForURL(browser_context, url);
+
+  if (!url.SchemeIs(url::kJavaScriptScheme)) {
+    // Restart renderer process for all navigations except javacript: scheme.
+    *new_instance = content::SiteInstance::CreateForURL(browser_context, url);
+  }
 }
 
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
