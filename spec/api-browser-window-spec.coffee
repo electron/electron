@@ -91,8 +91,8 @@ describe 'browser-window module', ->
 
   describe 'BrowserWindow.setSize(width, height)', ->
     it 'sets the window size', (done) ->
-      size = [20, 400]
-      w.on 'resize', ->
+      size = [300, 400]
+      w.once 'resize', ->
         newSize = w.getSize()
         assert.equal newSize[0], size[0]
         assert.equal newSize[1], size[1]
@@ -102,7 +102,7 @@ describe 'browser-window module', ->
   describe 'BrowserWindow.setPosition(x, y)', ->
     it 'sets the window position', (done) ->
       pos = [10, 10]
-      w.on 'move', ->
+      w.once 'move', ->
         newPos = w.getPosition()
         assert.equal newPos[0], pos[0]
         assert.equal newPos[1], pos[1]
