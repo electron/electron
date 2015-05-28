@@ -317,7 +317,7 @@ void WebContents::DidGetResourceResponseStart(
   v8::HandleScope handle_scope(isolate);
   mate::Dictionary response_headers(isolate, v8::Object::New(isolate));
 
-  net::HttpResponseHeaders* headers = details.response_info.headers.get();
+  net::HttpResponseHeaders* headers = details.headers.get();
   void* iter = nullptr;
   std::string key;
   std::string value;
