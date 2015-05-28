@@ -26,6 +26,14 @@ class RequestBufferJob
     @encoding = encoding ? 'utf8'
     @data = new Buffer(data)
 
+protocol.RequestAsyncBufferJob =
+class RequestAsyncBufferJob
+  constructor: (callback) ->
+    if typeof callback isnt 'function'
+      throw new TypeError('Argument should be function')
+
+    @callback = callback
+
 protocol.RequestFileJob =
 class RequestFileJob
   constructor: (@path) ->

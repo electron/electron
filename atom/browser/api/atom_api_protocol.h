@@ -12,6 +12,10 @@
 #include "base/callback.h"
 #include "native_mate/handle.h"
 
+namespace mate {
+class Arguments;
+}
+
 namespace net {
 class URLRequest;
 }
@@ -26,6 +30,8 @@ class Protocol : public mate::EventEmitter {
  public:
   typedef base::Callback<v8::Local<v8::Value>(const net::URLRequest*)>
           JsProtocolHandler;
+  typedef base::Callback<void(v8::Local<v8::Value>)>
+          JsAsyncJobHandler;
 
   static mate::Handle<Protocol> Create(v8::Isolate* isolate);
 

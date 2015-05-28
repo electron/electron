@@ -11,6 +11,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
+#include "native_mate/function_template.h"
 #include "net/url_request/url_request_context.h"
 
 #include "atom/common/node_includes.h"
@@ -45,8 +46,13 @@ typedef net::URLRequestJobFactory::ProtocolHandler ProtocolHandler;
 scoped_refptr<base::RefCountedBytes> BufferToRefCountedBytes(
     v8::Local<v8::Value> buf) {
   scoped_refptr<base::RefCountedBytes> data(new base::RefCountedBytes);
-  auto start = reinterpret_cast<const unsigned char*>(node::Buffer::Data(buf));
-  data->data().assign(start, start + node::Buffer::Length(buf));
+
+  if (node::Buffer::HasInstance(buf)) {
+    auto start = reinterpret_cast<const unsigned char*>(
+        node::Buffer::Data(buf));
+    data->data().assign(start, start + node::Buffer::Length(buf));
+  }
+
   return data;
 }
 
@@ -61,6 +67,36 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
   }
 
   // AdapterRequestJob:
+  void RunAsyncJob(mate::Arguments* args) override {
+    DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+
+    v8::Isolate* isolate = args->isolate();
+    v8::Locker locker(isolate);
+    v8::HandleScope handle_scope(isolate);
+
+    v8::Local<v8::Value> buffer;
+    int error_code = 0;
+
+    if (!(args->Length() == 1 && args->GetNext(&buffer)) &&
+        !(args->Length() == 2 && args->GetNext(&error_code)
+                              && args->GetNext(&buffer))) {
+      args->ThrowError();
+      return;
+    }
+
+    if (error_code) {
+      BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
+          base::Bind(&AdapterRequestJob::CreateErrorJobAndStart,
+                     base::Unretained(this), error_code));
+      return;
+    }
+
+    BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
+        base::Bind(&AdapterRequestJob::CreateBufferJobAndStart,
+                   base::Unretained(this), "application/octet-stream",
+                   "utf8", BufferToRefCountedBytes(buffer)));
+  }
+
   void GetJobTypeInUI() override {
     DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 
@@ -122,6 +158,15 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
         BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
             base::Bind(&AdapterRequestJob::CreateErrorJobAndStart,
                        GetWeakPtr(), error));
+        return;
+      } else if (name == "RequestAsyncBufferJob") {
+        Protocol::JsAsyncJobHandler handler;
+        dict.Get("callback", &handler);
+
+        base::Callback<void(mate::Arguments*)> callback =
+            base::Bind(&AdapterRequestJob::RunAsyncJob, GetWeakPtr());
+        handler.Run(
+            mate::CreateFunctionTemplate(isolate, callback)->GetFunction());
         return;
       }
     }
