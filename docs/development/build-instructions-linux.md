@@ -15,18 +15,6 @@ $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
                        gcc-multilib g++-multilib
 ```
 
-Latest Node.js could be installed via ppa:
-
-```bash
-$ sudo apt-get install python-software-properties software-properties-common
-$ sudo add-apt-repository ppa:chris-lea/node.js
-$ sudo apt-get update
-$ sudo apt-get install nodejs
-
-# Update to latest npm
-$ sudo npm install npm -g
-```
-
 ## Getting the code
 
 ```bash
@@ -80,18 +68,6 @@ this:
 ```bash
 $ sudo apt-get install gcc-multilib g++-multilib
 ```
-
-### error adding symbols: DSO missing from command line
-
-If you got an error like this:
-
-````
-/usr/bin/ld: vendor/download/libchromiumcontent/Release/libchromiumcontent.so: undefined reference to symbol 'gconf_client_get'
-//usr/lib/x86_64-linux-gnu/libgconf-2.so.4: error adding symbols: DSO missing from command line
-````
-
-libchromiumcontent.so is build with clang 3.0 which is incompatible with newer
-versions of clang. Try using clang 3.0, default version in Ubuntu 12.04.
 
 ### libudev.so.0 missing
 
