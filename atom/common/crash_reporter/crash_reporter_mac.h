@@ -9,7 +9,6 @@
 
 #include "atom/common/crash_reporter/crash_reporter.h"
 #include "base/compiler_specific.h"
-#import "vendor/breakpad/src/client/mac/Framework/Breakpad.h"
 
 template <typename T> struct DefaultSingletonTraits;
 
@@ -32,8 +31,6 @@ class CrashReporterMac : public CrashReporter {
 
   CrashReporterMac();
   virtual ~CrashReporterMac();
-
-  BreakpadRef breakpad_;
 
   DISALLOW_COPY_AND_ASSIGN(CrashReporterMac);
 };

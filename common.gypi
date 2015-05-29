@@ -30,6 +30,7 @@
     'v8_enable_i18n_support': 'false',
     # Required by Linux (empty for now, should support it in future).
     'sysroot': '',
+    'crashpad_standalone': 1,
   },
   # Settings to compile node under Windows.
   'target_defaults': {
