@@ -13,7 +13,6 @@ class WebViewImpl
   constructor: (@webviewNode) ->
     v8Util.setHiddenValue @webviewNode, 'internal', this
     @attached = false
-    @pendingGuestCreation = false
     @elementAttached = false
 
     @beforeFirstNavigation = true
@@ -122,16 +121,10 @@ class WebViewImpl
       @dispatchEvent webViewEvent
 
   createGuest: ->
-    return if @pendingGuestCreation
     params =
       storagePartitionId: @attributes[webViewConstants.ATTRIBUTE_PARTITION].getValue()
     guestViewInternal.createGuest 'webview', params, (guestInstanceId) =>
-      @pendingGuestCreation = false
-      unless @elementAttached
-        guestViewInternal.destroyGuest guestInstanceId
-        return
       @attachWindow guestInstanceId
-    @pendingGuestCreation = true
 
   dispatchEvent: (webViewEvent) ->
     @webviewNode.dispatchEvent webViewEvent
