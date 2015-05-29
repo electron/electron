@@ -86,6 +86,9 @@ class WebViewImpl
       @browserPluginNode.removeAttribute webViewConstants.ATTRIBUTE_INTERNALINSTANCEID
       @internalInstanceId = parseInt newValue
 
+      # Track when the element resizes using the element resize callback.
+      webFrame.registerElementResizeCallback @internalInstanceId, @onElementResize.bind(this)
+
       return unless @guestInstanceId
 
       guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, @buildParams()
@@ -119,6 +122,18 @@ class WebViewImpl
       # Only fire the DOM event if the size of the <webview> has actually
       # changed.
       @dispatchEvent webViewEvent
+
+  onElementResize: (oldSize, newSize) ->
+    # Dispatch the 'resize' event.
+    resizeEvent = new Event('resize', bubbles: true)
+    resizeEvent.oldWidth = oldSize.width
+    resizeEvent.oldHeight = oldSize.height
+    resizeEvent.newWidth = newSize.width
+    resizeEvent.newHeight = newSize.height
+    @dispatchEvent resizeEvent
+
+    if @guestInstanceId
+      guestViewInternal.setSize @guestInstanceId, normal: newSize
 
   createGuest: ->
     guestViewInternal.createGuest @buildParams(), (guestInstanceId) =>
@@ -167,9 +182,10 @@ class WebViewImpl
     #  the on display:block.
     css = window.getComputedStyle @webviewNode, null
     elementRect = @webviewNode.getBoundingClientRect()
-    params.elementSize =
-      width: parseInt(elementRect.width) || parseInt(css.getPropertyValue('width'))
-      height: parseInt(elementRect.height) || parseInt(css.getPropertyValue('height'))
+    params.elementWidth = parseInt(elementRect.width) ||
+                          parseInt(css.getPropertyValue('width'))
+    params.elementHeight = parseInt(elementRect.height) ||
+                           parseInt(css.getPropertyValue('height'))
     params
 
   attachWindow: (guestInstanceId) ->

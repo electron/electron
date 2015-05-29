@@ -62,7 +62,7 @@ struct Converter<atom::api::SetSizeParams> {
       out->min_size.reset(new gfx::Size(size));
     if (params.Get("max", &size))
       out->max_size.reset(new gfx::Size(size));
-    if (params.Get("elementSize", &size))
+    if (params.Get("normal", &size))
       out->normal_size.reset(new gfx::Size(size));
     return true;
   }

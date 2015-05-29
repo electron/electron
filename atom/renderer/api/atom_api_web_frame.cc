@@ -10,9 +10,11 @@
 #define USE(WTF_FEATURE) (defined WTF_USE_##WTF_FEATURE  && WTF_USE_##WTF_FEATURE)  // NOLINT
 #define ENABLE(WTF_FEATURE) (defined ENABLE_##WTF_FEATURE  && ENABLE_##WTF_FEATURE)  // NOLINT
 
+#include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/renderer/api/atom_api_spell_check_client.h"
 #include "content/public/renderer/render_frame.h"
+#include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
@@ -78,6 +80,14 @@ v8::Local<v8::Value> WebFrame::RegisterEmbedderCustomElement(
   return web_frame_->document().registerEmbedderCustomElement(name, options, c);
 }
 
+void WebFrame::RegisterElementResizeCallback(
+    int element_instance_id,
+    const GuestViewContainer::ResizeCallback& callback) {
+  auto guest_view_container = GuestViewContainer::FromID(element_instance_id);
+  if (guest_view_container)
+    guest_view_container->RegisterElementResizeCallback(callback);
+}
+
 void WebFrame::AttachGuest(int id) {
   content::RenderFrame::FromWebFrame(web_frame_)->AttachGuest(id);
 }
@@ -106,6 +116,8 @@ mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
       .SetMethod("getZoomFactor", &WebFrame::GetZoomFactor)
       .SetMethod("registerEmbedderCustomElement",
                  &WebFrame::RegisterEmbedderCustomElement)
+      .SetMethod("registerElementResizeCallback",
+                 &WebFrame::RegisterElementResizeCallback)
       .SetMethod("attachGuest", &WebFrame::AttachGuest)
       .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider)
       .SetMethod("registerUrlSchemeAsSecure",

@@ -58,6 +58,8 @@ createGuest = (embedder, params) ->
 
     @viewInstanceId = params.instanceId
     @setSize
+      normal:
+        width: params.elementWidth, height: params.elementHeight
       enableAutoSize: params.autosize
       min:
         width: params.minwidth, height: params.minheight
