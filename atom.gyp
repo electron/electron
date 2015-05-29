@@ -452,7 +452,6 @@
                 'tools/mac/create-framework-subdir-symlinks.sh',
                 '<(product_name) Framework',
                 'Libraries',
-                'Frameworks',
               ],
             },
           ],
