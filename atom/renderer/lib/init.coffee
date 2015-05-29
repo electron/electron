@@ -88,12 +88,8 @@ if nodeIntegration in ['true', 'all', 'except-iframe', 'manual-enable-iframe']
   window.addEventListener 'unload', ->
     process.emit 'exit'
 else
-  # The Module.runMain will run process._tickCallck() immediately, so we are
-  # able to delete the symbols in this tick even though we used process.nextTick
-  # to schedule it.
-  # It is important that we put this in process.nextTick, if we delete them now
-  # some code in node.js will complain about "process not defined".
-  process.nextTick ->
+  # Delete Node's symbols after the Environment has been loaded.
+  process.once 'loaded', ->
     delete global.process
     delete global.setImmediate
     delete global.clearImmediate

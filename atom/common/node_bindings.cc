@@ -178,6 +178,9 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
 
   if (node::use_debug_agent)
     node::EnableDebug(env);
+
+  v8::Local<v8::Value> msg = mate::StringToV8(env->isolate(), "loaded");
+  node::MakeCallback(env->isolate(), env->process_object(), "emit", 1, &msg);
 }
 
 void NodeBindings::PrepareMessageLoop() {
