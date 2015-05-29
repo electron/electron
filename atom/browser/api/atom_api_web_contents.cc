@@ -44,11 +44,39 @@
 
 #include "atom/common/node_includes.h"
 
+namespace mate {
+
+template<>
+struct Converter<atom::api::SetSizeParams> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     atom::api::SetSizeParams* out) {
+    mate::Dictionary params;
+    if (!ConvertFromV8(isolate, val, &params))
+      return false;
+    bool autosize;
+    if (params.Get("enableAutoSize", &autosize))
+      out->enable_auto_size.reset(new bool(true));
+    gfx::Size size;
+    if (params.Get("min", &size))
+      out->min_size.reset(new gfx::Size(size));
+    if (params.Get("max", &size))
+      out->max_size.reset(new gfx::Size(size));
+    return true;
+  }
+};
+
+}  // namespace mate
+
+
 namespace atom {
 
 namespace api {
 
 namespace {
+
+const int kDefaultWidth = 300;
+const int kDefaultHeight = 300;
 
 v8::Persistent<v8::ObjectTemplate> template_;
 
@@ -85,7 +113,8 @@ WebContents::WebContents(content::WebContents* web_contents)
       element_instance_id_(-1),
       guest_opaque_(true),
       guest_host_(nullptr),
-      auto_size_enabled_(false) {
+      auto_size_enabled_(false),
+      is_full_page_plugin_(false) {
 }
 
 WebContents::WebContents(const mate::Dictionary& options)
@@ -93,7 +122,8 @@ WebContents::WebContents(const mate::Dictionary& options)
       element_instance_id_(-1),
       guest_opaque_(true),
       guest_host_(nullptr),
-      auto_size_enabled_(false) {
+      auto_size_enabled_(false),
+      is_full_page_plugin_(false) {
   options.Get("guestInstanceId", &guest_instance_id_);
 
   auto browser_context = AtomBrowserContext::Get();
@@ -612,31 +642,57 @@ bool WebContents::SendIPCMessage(const base::string16& channel,
   return Send(new AtomViewMsg_Message(routing_id(), channel, args));
 }
 
-void WebContents::SetAutoSize(bool enabled,
-                              const gfx::Size& min_size,
-                              const gfx::Size& max_size) {
+void WebContents::SetSize(const SetSizeParams& params) {
+  bool enable_auto_size =
+      params.enable_auto_size ? *params.enable_auto_size : auto_size_enabled_;
+  gfx::Size min_size = params.min_size ? *params.min_size : min_auto_size_;
+  gfx::Size max_size = params.max_size ? *params.max_size : max_auto_size_;
+
+  if (params.normal_size)
+    normal_size_ = *params.normal_size;
+
   min_auto_size_ = min_size;
   min_auto_size_.SetToMin(max_size);
   max_auto_size_ = max_size;
   max_auto_size_.SetToMax(min_size);
 
-  enabled &= !min_auto_size_.IsEmpty() && !max_auto_size_.IsEmpty();
-  if (!enabled && !auto_size_enabled_)
-    return;
-
-  auto_size_enabled_ = enabled;
-
-  if (!attached())
-    return;
+  enable_auto_size &= !min_auto_size_.IsEmpty() && !max_auto_size_.IsEmpty();
 
   content::RenderViewHost* rvh = web_contents()->GetRenderViewHost();
-  if (auto_size_enabled_) {
+  if (enable_auto_size) {
+    // Autosize is being enabled.
     rvh->EnableAutoResize(min_auto_size_, max_auto_size_);
+    normal_size_.SetSize(0, 0);
   } else {
-    rvh->DisableAutoResize(element_size_);
-    guest_size_ = element_size_;
-    GuestSizeChangedDueToAutoSize(guest_size_, element_size_);
+    // Autosize is being disabled.
+    // Use default width/height if missing from partially defined normal size.
+    if (normal_size_.width() && !normal_size_.height())
+      normal_size_.set_height(GetDefaultSize().height());
+    if (!normal_size_.width() && normal_size_.height())
+      normal_size_.set_width(GetDefaultSize().width());
+
+    gfx::Size new_size;
+    if (!normal_size_.IsEmpty()) {
+      new_size = normal_size_;
+    } else if (!guest_size_.IsEmpty()) {
+      new_size = guest_size_;
+    } else {
+      new_size = GetDefaultSize();
+    }
+
+    if (auto_size_enabled_) {
+      // Autosize was previously enabled.
+      rvh->DisableAutoResize(new_size);
+      GuestSizeChangedDueToAutoSize(guest_size_, new_size);
+    } else {
+      // Autosize was already disabled.
+      guest_host_->SizeContents(new_size);
+    }
+
+    guest_size_ = new_size;
   }
+
+  auto_size_enabled_ = enable_auto_size;
 }
 
 void WebContents::SetAllowTransparency(bool allow) {
@@ -727,7 +783,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("replace", &WebContents::Replace)
         .SetMethod("replaceMisspelling", &WebContents::ReplaceMisspelling)
         .SetMethod("_send", &WebContents::SendIPCMessage)
-        .SetMethod("setAutoSize", &WebContents::SetAutoSize)
+        .SetMethod("setSize", &WebContents::SetSize)
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
         .SetMethod("isGuest", &WebContents::is_guest)
         .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
@@ -758,6 +814,16 @@ void WebContents::GuestSizeChangedDueToAutoSize(const gfx::Size& old_size,
   Emit("size-changed",
        old_size.width(), old_size.height(),
        new_size.width(), new_size.height());
+}
+
+gfx::Size WebContents::GetDefaultSize() const {
+  if (is_full_page_plugin_) {
+    // Full page plugins default to the size of the owner's viewport.
+    return embedder_web_contents_->GetRenderWidgetHostView()
+                                 ->GetVisibleViewportSize();
+  } else {
+    return gfx::Size(kDefaultWidth, kDefaultHeight);
+  }
 }
 
 // static

@@ -67,8 +67,8 @@ module.exports =
   destroyGuest: (guestInstanceId) ->
     ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_DESTROY_GUEST', guestInstanceId
 
-  setAutoSize: (guestInstanceId, params) ->
-    ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_AUTO_SIZE', guestInstanceId, params
+  setSize: (guestInstanceId, params) ->
+    ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_SIZE', guestInstanceId, params
 
   setAllowTransparency: (guestInstanceId, allowtransparency) ->
     ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_ALLOW_TRANSPARENCY', guestInstanceId, allowtransparency

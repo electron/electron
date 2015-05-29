@@ -107,6 +107,9 @@ class WebViewImpl
     minWidth = @attributes[webViewConstants.ATTRIBUTE_MINWIDTH].getValue() | width
     minHeight = @attributes[webViewConstants.ATTRIBUTE_MINHEIGHT].getValue() | width
 
+    minWidth = Math.min minWidth, maxWidth
+    minHeight = Math.min minHeight, maxHeight
+
     if not @attributes[webViewConstants.ATTRIBUTE_AUTOSIZE].getValue() or
        (newWidth >= minWidth and
         newWidth <= maxWidth and

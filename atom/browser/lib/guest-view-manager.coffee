@@ -60,7 +60,7 @@ createGuest = (embedder, params) ->
     @viewInstanceId = params.instanceId
     min = width: params.minwidth, height: params.minheight
     max = width: params.maxwidth, height: params.maxheight
-    @setAutoSize params.autosize, min, max
+    @setSize params.autosize, min, max
 
     if params.src
       opts = {}
@@ -132,8 +132,8 @@ ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_ATTACH_GUEST', (event, elementInstanceId, 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_DESTROY_GUEST', (event, id) ->
   destroyGuest event.sender, id
 
-ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_AUTO_SIZE', (event, id, params) ->
-  guestInstances[id]?.guest.setAutoSize params.enableAutoSize, params.min, params.max
+ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_SIZE', (event, id, params) ->
+  guestInstances[id]?.guest.setSize params
 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_ALLOW_TRANSPARENCY', (event, id, allowtransparency) ->
   guestInstances[id]?.guest.setAllowTransparency allowtransparency
