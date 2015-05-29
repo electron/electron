@@ -88,7 +88,7 @@ class WebViewImpl
 
       return unless @guestInstanceId
 
-      guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, @buildAttachParams()
+      guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, @buildParams()
 
   onSizeChanged: (webViewEvent) ->
     newWidth = webViewEvent.newWidth
@@ -121,9 +121,7 @@ class WebViewImpl
       @dispatchEvent webViewEvent
 
   createGuest: ->
-    params =
-      storagePartitionId: @attributes[webViewConstants.ATTRIBUTE_PARTITION].getValue()
-    guestViewInternal.createGuest 'webview', params, (guestInstanceId) =>
+    guestViewInternal.createGuest @buildParams(), (guestInstanceId) =>
       @attachWindow guestInstanceId
 
   dispatchEvent: (webViewEvent) ->
@@ -156,21 +154,29 @@ class WebViewImpl
   onAttach: (storagePartitionId) ->
     @attributes[webViewConstants.ATTRIBUTE_PARTITION].setValue storagePartitionId
 
-  buildAttachParams: ->
+  buildParams: ->
     params =
       instanceId: @viewInstanceId
       userAgentOverride: @userAgentOverride
     for attributeName, attribute of @attributes
       params[attributeName] = attribute.getValue()
+    #  When the WebView is not participating in layout (display:none)
+    #  then getBoundingClientRect() would report a width and height of 0.
+    #  However, in the case where the WebView has a fixed size we can
+    #  use that value to initially size the guest so as to avoid a relayout of
+    #  the on display:block.
+    css = window.getComputedStyle @webviewNode, null
+    elementRect = @webviewNode.getBoundingClientRect()
+    params.elementSize =
+      width: parseInt(elementRect.width) || parseInt(css.getPropertyValue('width'))
+      height: parseInt(elementRect.height) || parseInt(css.getPropertyValue('height'))
     params
 
   attachWindow: (guestInstanceId) ->
     @guestInstanceId = guestInstanceId
-    params = @buildAttachParams()
-
     return true unless @internalInstanceId
 
-    guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, params
+    guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, @buildParams()
 
 # Registers browser plugin <object> custom element.
 registerBrowserPluginElement = ->

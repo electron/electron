@@ -55,9 +55,9 @@ module.exports =
     ipc.removeAllListeners "ATOM_SHELL_GUEST_VIEW_INTERNAL_IPC_MESSAGE-#{viewInstanceId}"
     ipc.removeAllListeners "ATOM_SHELL_GUEST_VIEW_INTERNAL_SIZE_CHANGED-#{viewInstanceId}"
 
-  createGuest: (type, params, callback) ->
+  createGuest: (params, callback) ->
     requestId++
-    ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_CREATE_GUEST', type, params, requestId
+    ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_CREATE_GUEST', params, requestId
     ipc.once "ATOM_SHELL_RESPONSE_#{requestId}", callback
 
   attachGuest: (elementInstanceId, guestInstanceId, params) ->

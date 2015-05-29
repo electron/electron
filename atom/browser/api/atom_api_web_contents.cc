@@ -62,6 +62,8 @@ struct Converter<atom::api::SetSizeParams> {
       out->min_size.reset(new gfx::Size(size));
     if (params.Get("max", &size))
       out->max_size.reset(new gfx::Size(size));
+    if (params.Get("elementSize", &size))
+      out->normal_size.reset(new gfx::Size(size));
     return true;
   }
 };
@@ -476,6 +478,7 @@ void WebContents::WillAttach(content::WebContents* embedder_web_contents,
                              bool is_full_page_plugin) {
   embedder_web_contents_ = embedder_web_contents;
   element_instance_id_ = element_instance_id;
+  is_full_page_plugin_ = is_full_page_plugin;
 }
 
 void WebContents::Destroy() {
