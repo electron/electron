@@ -35,6 +35,8 @@ struct V8FunctionInvoker<v8::Local<V>($for ARG , [[P$(ARG)]])> {
     Locker locker(isolate);
     v8::EscapableHandleScope handle_scope(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
 
 $if ARITY == 0 [[
     v8::Local<v8::Value> val(holder->Call(holder, 0, NULL));
@@ -59,6 +61,8 @@ struct V8FunctionInvoker<R($for ARG , [[P$(ARG)]])> {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
 
 $if ARITY == 0 [[
     v8::Local<v8::Value> val(holder->Call(holder, 0, NULL));
@@ -84,6 +88,8 @@ struct V8FunctionInvoker<void($for ARG , [[P$(ARG)]])> {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
 
 $if ARITY == 0 [[
     holder->Call(holder, 0, NULL);

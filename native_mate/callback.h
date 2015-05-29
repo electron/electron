@@ -28,6 +28,8 @@ struct V8FunctionInvoker<v8::Local<V>()> {
     Locker locker(isolate);
     v8::EscapableHandleScope handle_scope(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> val(holder->Call(holder, 0, NULL));
         return handle_scope.Escape(val);
   }
@@ -40,6 +42,8 @@ struct V8FunctionInvoker<R()> {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> val(holder->Call(holder, 0, NULL));
     Converter<R>::FromV8(isolate, val, &ret);
     return ret;
@@ -52,6 +56,8 @@ struct V8FunctionInvoker<void()> {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     holder->Call(holder, 0, NULL);
   }
 };
@@ -62,6 +68,8 @@ struct V8FunctionInvoker<v8::Local<V>(P1)> {
     Locker locker(isolate);
     v8::EscapableHandleScope handle_scope(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
     };
@@ -77,6 +85,8 @@ struct V8FunctionInvoker<R(P1)> {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
     };
@@ -92,6 +102,8 @@ struct V8FunctionInvoker<void(P1)> {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
     };
@@ -106,6 +118,8 @@ struct V8FunctionInvoker<v8::Local<V>(P1, P2)> {
     Locker locker(isolate);
     v8::EscapableHandleScope handle_scope(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
@@ -122,6 +136,8 @@ struct V8FunctionInvoker<R(P1, P2)> {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
@@ -138,6 +154,8 @@ struct V8FunctionInvoker<void(P1, P2)> {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
@@ -153,6 +171,8 @@ struct V8FunctionInvoker<v8::Local<V>(P1, P2, P3)> {
     Locker locker(isolate);
     v8::EscapableHandleScope handle_scope(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
@@ -171,6 +191,8 @@ struct V8FunctionInvoker<R(P1, P2, P3)> {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
@@ -189,6 +211,8 @@ struct V8FunctionInvoker<void(P1, P2, P3)> {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
@@ -205,6 +229,8 @@ struct V8FunctionInvoker<v8::Local<V>(P1, P2, P3, P4)> {
     Locker locker(isolate);
     v8::EscapableHandleScope handle_scope(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
@@ -224,6 +250,8 @@ struct V8FunctionInvoker<R(P1, P2, P3, P4)> {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
@@ -243,6 +271,8 @@ struct V8FunctionInvoker<void(P1, P2, P3, P4)> {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
@@ -261,6 +291,8 @@ struct V8FunctionInvoker<v8::Local<V>(P1, P2, P3, P4, P5)> {
     Locker locker(isolate);
     v8::EscapableHandleScope handle_scope(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
@@ -282,6 +314,8 @@ struct V8FunctionInvoker<R(P1, P2, P3, P4, P5)> {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
@@ -302,6 +336,8 @@ struct V8FunctionInvoker<void(P1, P2, P3, P4, P5)> {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
@@ -321,6 +357,8 @@ struct V8FunctionInvoker<v8::Local<V>(P1, P2, P3, P4, P5, P6)> {
     Locker locker(isolate);
     v8::EscapableHandleScope handle_scope(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
@@ -343,6 +381,8 @@ struct V8FunctionInvoker<R(P1, P2, P3, P4, P5, P6)> {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
@@ -365,6 +405,8 @@ struct V8FunctionInvoker<void(P1, P2, P3, P4, P5, P6)> {
     Locker locker(isolate);
     MATE_HANDLE_SCOPE(isolate);
     v8::Local<v8::Function> holder = function->NewHandle();
+    v8::Local<v8::Context> context = holder->CreationContext();
+    v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> args[] = {
         ConvertToV8(isolate, a1),
         ConvertToV8(isolate, a2),
