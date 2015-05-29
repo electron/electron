@@ -41,7 +41,6 @@ createGuest = (embedder, params) ->
   guest = webContents.create
     isGuest: true
     guestInstanceId: id
-    storagePartitionId: params.storagePartitionId
   guestInstances[id] = {guest, embedder}
 
   # Destroy guest when the embedder is gone or navigated.
@@ -58,9 +57,14 @@ createGuest = (embedder, params) ->
     delete @attachParams
 
     @viewInstanceId = params.instanceId
-    min = width: params.minwidth, height: params.minheight
-    max = width: params.maxwidth, height: params.maxheight
-    @setAutoSize params.autosize, min, max
+    @setSize
+      normal:
+        width: params.elementWidth, height: params.elementHeight
+      enableAutoSize: params.autosize
+      min:
+        width: params.minwidth, height: params.minheight
+      max:
+        width: params.maxwidth, height: params.maxheight
 
     if params.src
       opts = {}
@@ -123,7 +127,7 @@ destroyGuest = (embedder, id) ->
     delete reverseEmbedderElementsMap[id]
     delete embedderElementsMap[key]
 
-ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_CREATE_GUEST', (event, type, params, requestId) ->
+ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_CREATE_GUEST', (event, params, requestId) ->
   event.sender.send "ATOM_SHELL_RESPONSE_#{requestId}", createGuest(event.sender, params)
 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_ATTACH_GUEST', (event, elementInstanceId, guestInstanceId, params) ->
@@ -132,8 +136,8 @@ ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_ATTACH_GUEST', (event, elementInstanceId, 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_DESTROY_GUEST', (event, id) ->
   destroyGuest event.sender, id
 
-ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_AUTO_SIZE', (event, id, params) ->
-  guestInstances[id]?.guest.setAutoSize params.enableAutoSize, params.min, params.max
+ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_SIZE', (event, id, params) ->
+  guestInstances[id]?.guest.setSize params
 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_ALLOW_TRANSPARENCY', (event, id, allowtransparency) ->
   guestInstances[id]?.guest.setAllowTransparency allowtransparency

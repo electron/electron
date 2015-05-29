@@ -13,7 +13,6 @@ class WebViewImpl
   constructor: (@webviewNode) ->
     v8Util.setHiddenValue @webviewNode, 'internal', this
     @attached = false
-    @pendingGuestCreation = false
     @elementAttached = false
 
     @beforeFirstNavigation = true
@@ -87,9 +86,12 @@ class WebViewImpl
       @browserPluginNode.removeAttribute webViewConstants.ATTRIBUTE_INTERNALINSTANCEID
       @internalInstanceId = parseInt newValue
 
+      # Track when the element resizes using the element resize callback.
+      webFrame.registerElementResizeCallback @internalInstanceId, @onElementResize.bind(this)
+
       return unless @guestInstanceId
 
-      guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, @buildAttachParams()
+      guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, @buildParams()
 
   onSizeChanged: (webViewEvent) ->
     newWidth = webViewEvent.newWidth
@@ -107,6 +109,9 @@ class WebViewImpl
     minWidth = @attributes[webViewConstants.ATTRIBUTE_MINWIDTH].getValue() | width
     minHeight = @attributes[webViewConstants.ATTRIBUTE_MINHEIGHT].getValue() | width
 
+    minWidth = Math.min minWidth, maxWidth
+    minHeight = Math.min minHeight, maxHeight
+
     if not @attributes[webViewConstants.ATTRIBUTE_AUTOSIZE].getValue() or
        (newWidth >= minWidth and
         newWidth <= maxWidth and
@@ -118,17 +123,21 @@ class WebViewImpl
       # changed.
       @dispatchEvent webViewEvent
 
+  onElementResize: (oldSize, newSize) ->
+    # Dispatch the 'resize' event.
+    resizeEvent = new Event('resize', bubbles: true)
+    resizeEvent.oldWidth = oldSize.width
+    resizeEvent.oldHeight = oldSize.height
+    resizeEvent.newWidth = newSize.width
+    resizeEvent.newHeight = newSize.height
+    @dispatchEvent resizeEvent
+
+    if @guestInstanceId
+      guestViewInternal.setSize @guestInstanceId, normal: newSize
+
   createGuest: ->
-    return if @pendingGuestCreation
-    params =
-      storagePartitionId: @attributes[webViewConstants.ATTRIBUTE_PARTITION].getValue()
-    guestViewInternal.createGuest 'webview', params, (guestInstanceId) =>
-      @pendingGuestCreation = false
-      unless @elementAttached
-        guestViewInternal.destroyGuest guestInstanceId
-        return
+    guestViewInternal.createGuest @buildParams(), (guestInstanceId) =>
       @attachWindow guestInstanceId
-    @pendingGuestCreation = true
 
   dispatchEvent: (webViewEvent) ->
     @webviewNode.dispatchEvent webViewEvent
@@ -160,21 +169,30 @@ class WebViewImpl
   onAttach: (storagePartitionId) ->
     @attributes[webViewConstants.ATTRIBUTE_PARTITION].setValue storagePartitionId
 
-  buildAttachParams: ->
+  buildParams: ->
     params =
       instanceId: @viewInstanceId
       userAgentOverride: @userAgentOverride
     for attributeName, attribute of @attributes
       params[attributeName] = attribute.getValue()
+    #  When the WebView is not participating in layout (display:none)
+    #  then getBoundingClientRect() would report a width and height of 0.
+    #  However, in the case where the WebView has a fixed size we can
+    #  use that value to initially size the guest so as to avoid a relayout of
+    #  the on display:block.
+    css = window.getComputedStyle @webviewNode, null
+    elementRect = @webviewNode.getBoundingClientRect()
+    params.elementWidth = parseInt(elementRect.width) ||
+                          parseInt(css.getPropertyValue('width'))
+    params.elementHeight = parseInt(elementRect.height) ||
+                           parseInt(css.getPropertyValue('height'))
     params
 
   attachWindow: (guestInstanceId) ->
     @guestInstanceId = guestInstanceId
-    params = @buildAttachParams()
-
     return true unless @internalInstanceId
 
-    guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, params
+    guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, @buildParams()
 
 # Registers browser plugin <object> custom element.
 registerBrowserPluginElement = ->

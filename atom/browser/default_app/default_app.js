@@ -15,7 +15,6 @@ app.on('ready', function() {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
-    resizable: false,
     'auto-hide-menu-bar': true,
     'use-content-size': true,
   });

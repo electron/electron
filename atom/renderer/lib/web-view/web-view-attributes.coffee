@@ -72,7 +72,7 @@ class AutosizeDimensionAttribute extends WebViewAttribute
 
   handleMutation: (oldValue, newValue) ->
     return unless @webViewImpl.guestInstanceId
-    guestViewInternal.setAutoSize @webViewImpl.guestInstanceId,
+    guestViewInternal.setSize @webViewImpl.guestInstanceId,
       enableAutoSize: @webViewImpl.attributes[webViewConstants.ATTRIBUTE_AUTOSIZE].getValue()
       min:
         width: parseInt @webViewImpl.attributes[webViewConstants.ATTRIBUTE_MINWIDTH].getValue() || 0

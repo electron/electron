@@ -33,6 +33,22 @@ class WebDialogHelper;
 
 namespace api {
 
+// A struct of parameters for SetSize(). The parameters are all declared as
+// scoped pointers since they are all optional. Null pointers indicate that the
+// parameter has not been provided, and the last used value should be used. Note
+// that when |enable_auto_size| is true, providing |normal_size| is not
+// meaningful. This is because the normal size of the guestview is overridden
+// whenever autosizing occurs.
+struct SetSizeParams {
+  SetSizeParams() {}
+  ~SetSizeParams() {}
+
+  scoped_ptr<bool> enable_auto_size;
+  scoped_ptr<gfx::Size> min_size;
+  scoped_ptr<gfx::Size> max_size;
+  scoped_ptr<gfx::Size> normal_size;
+};
+
 class WebContents : public mate::EventEmitter,
                     public content::BrowserPluginGuestDelegate,
                     public content::WebContentsDelegate,
@@ -89,10 +105,9 @@ class WebContents : public mate::EventEmitter,
   bool SendIPCMessage(const base::string16& channel,
                       const base::ListValue& args);
 
-  // Toggles autosize mode for corresponding <webview>.
-  void SetAutoSize(bool enabled,
-                   const gfx::Size& min_size,
-                   const gfx::Size& max_size);
+  // Used to toggle autosize mode for this GuestView, and set both the automatic
+  // and normal sizes.
+  void SetSize(const SetSizeParams& params);
 
   // Sets the transparency of the guest.
   void SetAllowTransparency(bool allow);
@@ -196,7 +211,6 @@ class WebContents : public mate::EventEmitter,
 
   // content::BrowserPluginGuestDelegate:
   void DidAttach(int guest_proxy_routing_id) final;
-  void ElementSizeChanged(const gfx::Size& size) final;
   content::WebContents* GetOwnerWebContents() const final;
   void GuestSizeChanged(const gfx::Size& new_size) final;
   void SetGuestHost(content::GuestHost* guest_host) final;
@@ -217,18 +231,22 @@ class WebContents : public mate::EventEmitter,
                              const base::ListValue& args,
                              IPC::Message* message);
 
+  // This method is invoked when the contents auto-resized to give the container
+  // an opportunity to match it if it wishes.
+  //
+  // This gives the derived class an opportunity to inform its container element
+  // or perform other actions.
   void GuestSizeChangedDueToAutoSize(const gfx::Size& old_size,
                                      const gfx::Size& new_size);
+
+  // Returns the default size of the guestview.
+  gfx::Size GetDefaultSize() const;
 
   scoped_ptr<WebDialogHelper> web_dialog_helper_;
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
 
   // Unique ID for a guest WebContents.
   int guest_instance_id_;
-
-  // |element_instance_id_| is an identifer that's unique to a particular
-  // element.
-  int element_instance_id_;
 
   // Stores whether the contents of the guest can be transparent.
   bool guest_opaque_;
@@ -257,6 +275,12 @@ class WebContents : public mate::EventEmitter,
 
   // The minimum size constraints of the container element in autosize mode.
   gfx::Size min_auto_size_;
+
+  // The size that will be used when autosize mode is disabled.
+  gfx::Size normal_size_;
+
+  // Whether the guest view is inside a plugin document.
+  bool is_full_page_plugin_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
