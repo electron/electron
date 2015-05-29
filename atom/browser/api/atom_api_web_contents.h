@@ -211,7 +211,6 @@ class WebContents : public mate::EventEmitter,
 
   // content::BrowserPluginGuestDelegate:
   void DidAttach(int guest_proxy_routing_id) final;
-  void ElementSizeChanged(const gfx::Size& size) final;
   content::WebContents* GetOwnerWebContents() const final;
   void GuestSizeChanged(const gfx::Size& new_size) final;
   void SetGuestHost(content::GuestHost* guest_host) final;
@@ -248,10 +247,6 @@ class WebContents : public mate::EventEmitter,
 
   // Unique ID for a guest WebContents.
   int guest_instance_id_;
-
-  // |element_instance_id_| is an identifer that's unique to a particular
-  // element.
-  int element_instance_id_;
 
   // Stores whether the contents of the guest can be transparent.
   bool guest_opaque_;

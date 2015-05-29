@@ -112,7 +112,6 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 WebContents::WebContents(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
       guest_instance_id_(-1),
-      element_instance_id_(-1),
       guest_opaque_(true),
       guest_host_(nullptr),
       auto_size_enabled_(false),
@@ -121,7 +120,6 @@ WebContents::WebContents(content::WebContents* web_contents)
 
 WebContents::WebContents(const mate::Dictionary& options)
     : guest_instance_id_(-1),
-      element_instance_id_(-1),
       guest_opaque_(true),
       guest_host_(nullptr),
       auto_size_enabled_(false),
@@ -450,14 +448,6 @@ void WebContents::DidAttach(int guest_proxy_routing_id) {
   Emit("did-attach");
 }
 
-void WebContents::ElementSizeChanged(const gfx::Size& size) {
-  element_size_ = size;
-
-  // Only resize if needed.
-  if (!size.IsEmpty())
-    guest_host_->SizeContents(size);
-}
-
 content::WebContents* WebContents::GetOwnerWebContents() const {
   return embedder_web_contents_;
 }
@@ -477,7 +467,6 @@ void WebContents::WillAttach(content::WebContents* embedder_web_contents,
                              int element_instance_id,
                              bool is_full_page_plugin) {
   embedder_web_contents_ = embedder_web_contents;
-  element_instance_id_ = element_instance_id;
   is_full_page_plugin_ = is_full_page_plugin;
 }
 
