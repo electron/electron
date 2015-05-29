@@ -51,12 +51,12 @@ if (option.file && !option.webdriver) {
     // Run the app.
     require('module')._load(packagePath, module, true);
   } catch(e) {
+    console.error('App threw an error when running', e);
     if (e.code == 'MODULE_NOT_FOUND') {
       app.focus();
-      dialog.showErrorBox('Error opening app', 'The app provided is not a valid electron app, please read the docs on how to write one:\nhttps://github.com/atom/electron/tree/master/docs');
+      dialog.showErrorBox('Error opening app', 'The app provided is not a valid electron app, please read the docs on how to write one:\nhttps://github.com/atom/electron/tree/master/docs\n\n' + e.toString());
       process.exit(1);
     } else {
-      console.error('App threw an error when running', e);
       throw e;
     }
   }
