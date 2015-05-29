@@ -52,6 +52,17 @@ else
     require './web-view/web-view'
     require './web-view/web-view-attributes'
 
+# Load the script specfied by the "preload" attribute.
+if preloadScript
+  try
+    require preloadScript
+  catch error
+    if error.code is 'MODULE_NOT_FOUND'
+      console.error "Unable to load preload script #{preloadScript}"
+    else
+      console.error(error)
+      console.error(error.stack)
+
 if nodeIntegration in ['true', 'all', 'except-iframe', 'manual-enable-iframe']
   # Export node bindings to global.
   global.require = require
@@ -88,7 +99,7 @@ if nodeIntegration in ['true', 'all', 'except-iframe', 'manual-enable-iframe']
   window.addEventListener 'unload', ->
     process.emit 'exit'
 else
-  # The Module.runMain will run process._tickCallck() immediately, so we are
+  # The Module.runMain will run process._tickCallback() immediately, so we are
   # able to delete the symbols in this tick even though we used process.nextTick
   # to schedule it.
   # It is important that we put this in process.nextTick, if we delete them now
@@ -97,14 +108,3 @@ else
     delete global.process
     delete global.setImmediate
     delete global.clearImmediate
-
-# Load the script specfied by the "preload" attribute.
-if preloadScript
-  try
-    require preloadScript
-  catch error
-    if error.code is 'MODULE_NOT_FOUND'
-      console.error "Unable to load preload script #{preloadScript}"
-    else
-      console.error(error)
-      console.error(error.stack)
