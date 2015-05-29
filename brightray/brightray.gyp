@@ -82,7 +82,6 @@
             ['libchromiumcontent_component', {
               'link_settings': {
                 'libraries': [
-                  '<(libchromiumcontent_dir)/libui_zoom.a',
                   # libgtk2ui is always linked statically.
                   '<(libchromiumcontent_dir)/libgtk2ui.a',
                 ],
@@ -114,13 +113,7 @@
           },
           'conditions':  [
             # Link with system frameworks.
-            ['libchromiumcontent_component', {
-              'link_settings': {
-                'libraries': [
-                  '<(libchromiumcontent_dir)/libui_zoom.a',
-                ],
-              },
-            }, {
+            ['libchromiumcontent_component==0', {
               'link_settings': {
                 'libraries': [
                   # ui_base.gypi:
@@ -159,10 +152,9 @@
         ['OS=="win"', {
           'conditions': [
             ['libchromiumcontent_component', {
+              # sandbox and base_static are always linked statically.
               'link_settings': {
                 'libraries': [
-                  '<(libchromiumcontent_dir)/ui_zoom.lib',
-                  # sandbox and base_static are always linked statically.
                   '<(libchromiumcontent_dir)/base_static.lib',
                   '<(libchromiumcontent_dir)/sandbox.lib',
                 ],
