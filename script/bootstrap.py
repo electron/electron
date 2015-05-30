@@ -12,6 +12,7 @@ from lib.util import execute_stdout, get_atom_shell_version, scoped_cwd
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
 PYTHON_26_URL = 'https://chromium.googlesource.com/chromium/deps/python_26'
+CRACKPAD_URL = 'https://github.com/hokein/crashpad.git'
 NPM = 'npm.cmd' if sys.platform in ['win32', 'cygwin'] else 'npm'
 
 
@@ -27,6 +28,8 @@ def main():
     update_win32_python()
   update_submodules()
   update_node_modules('.')
+  if sys.platform == 'darwin':
+    update_crashpad()
   bootstrap_brightray(args.dev, args.url, args.target_arch)
 
   create_chrome_version_h()
@@ -90,6 +93,18 @@ def update_node_modules(dirname, env=None):
       execute_stdout([NPM, 'install', '--verbose'], env)
     else:
       execute_stdout([NPM, 'install'], env)
+
+
+def update_crashpad():
+  gclient = os.path.join(VENDOR_DIR, 'depot_tools', 'gclient.py')
+  args = [
+    'config',
+    '--unmanaged',
+    CRACKPAD_URL,
+  ]
+  with scoped_cwd(VENDOR_DIR):
+    execute_stdout([sys.executable, gclient] + args)
+    execute_stdout([sys.executable, gclient] +  ['sync'])
 
 
 def update_electron_modules(dirname, target_arch):
