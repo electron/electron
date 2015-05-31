@@ -262,6 +262,9 @@ void NativeWindow::Print(bool silent, bool print_background) {
       PrintNow(silent, print_background);
 }
 
+void NativeWindow::PrintToPDF() {
+}
+
 void NativeWindow::ShowDefinitionForSelection() {
   NOTIMPLEMENTED();
 }

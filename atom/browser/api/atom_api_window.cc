@@ -430,6 +430,10 @@ void Window::Print(mate::Arguments* args) {
   window_->Print(settings.silent, settings.print_background);
 }
 
+void Window::PrintToPDF() {
+  window_->PrintToPDF();
+}
+
 void Window::SetProgressBar(double progress) {
   window_->SetProgressBar(progress);
 }
@@ -542,6 +546,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)
       .SetMethod("capturePage", &Window::CapturePage)
       .SetMethod("print", &Window::Print)
+      .SetMethod("printToPDF", &Window::PrintToPDF)
       .SetMethod("setProgressBar", &Window::SetProgressBar)
       .SetMethod("setOverlayIcon", &Window::SetOverlayIcon)
       .SetMethod("_setMenu", &Window::SetMenu)

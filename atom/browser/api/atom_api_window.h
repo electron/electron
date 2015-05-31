@@ -132,6 +132,7 @@ class Window : public mate::EventEmitter,
   bool IsDocumentEdited();
   void CapturePage(mate::Arguments* args);
   void Print(mate::Arguments* args);
+  void PrintToPDF();
   void SetProgressBar(double progress);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
