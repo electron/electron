@@ -28,6 +28,8 @@
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
+#include "chrome/browser/printing/print_preview_message_handler.h"
+#include "chrome/browser/ui/browser_dialogs.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/notification_details.h"
@@ -97,6 +99,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       zoom_factor_(1.0),
       weak_factory_(this) {
   printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
+  printing::PrintPreviewMessageHandler::CreateForWebContents(web_contents);
 
   InitWithWebContents(web_contents, this);
 
@@ -263,6 +266,8 @@ void NativeWindow::Print(bool silent, bool print_background) {
 }
 
 void NativeWindow::PrintToPDF() {
+  printing::PrintPreviewMessageHandler::FromWebContents(GetWebContents())->
+      HandleGetPreview(NULL);
 }
 
 void NativeWindow::ShowDefinitionForSelection() {

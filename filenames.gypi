@@ -314,6 +314,8 @@
       'chromium_src/chrome/browser/printing/printer_query.h',
       'chromium_src/chrome/browser/printing/printing_message_filter.cc',
       'chromium_src/chrome/browser/printing/printing_message_filter.h',
+      'chromium_src/chrome/browser/printing/print_preview_message_handler.cc',
+      'chromium_src/chrome/browser/printing/print_preview_message_handler.h',
       'chromium_src/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.cc',
       'chromium_src/chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h',
       'chromium_src/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc',

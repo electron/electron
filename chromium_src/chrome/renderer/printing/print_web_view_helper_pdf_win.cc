@@ -21,7 +21,6 @@ namespace printing {
 
 using blink::WebFrame;
 
-#if 0
 bool PrintWebViewHelper::RenderPreviewPage(
     int page_number,
     const PrintMsg_Print_Params& print_params) {
@@ -53,7 +52,6 @@ bool PrintWebViewHelper::RenderPreviewPage(
   }
   return PreviewPageRendered(page_number, draft_metafile.get());
 }
-#endif
 
 bool PrintWebViewHelper::PrintPagesNative(blink::WebFrame* frame,
                                           int page_count) {
