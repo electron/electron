@@ -16,6 +16,7 @@
 #include "native_mate/callback.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
+#include "printing/print_job_constants.h"
 #include "ui/gfx/geometry/rect.h"
 
 #include "atom/common/node_includes.h"
@@ -430,8 +431,13 @@ void Window::Print(mate::Arguments* args) {
   window_->Print(settings.silent, settings.print_background);
 }
 
-void Window::PrintToPDF() {
-  window_->PrintToPDF();
+void Window::PrintToPDF(mate::Arguments* args) {
+  mate::Dictionary options;
+  if (args->Length() == 1 && !args->GetNext(&options)) {
+    args->ThrowError();
+    return;
+  }
+  window_->PrintToPDF(options);
 }
 
 void Window::SetProgressBar(double progress) {

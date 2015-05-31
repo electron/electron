@@ -158,7 +158,7 @@ class NativeWindow : public CommonWebContentsDelegate,
   virtual void Print(bool silent, bool print_background);
 
   // Print current page as PDF.
-  virtual void PrintToPDF();
+  virtual void PrintToPDF(const mate::Dictionary& options);
 
   // Show popup dictionary.
   virtual void ShowDefinitionForSelection();

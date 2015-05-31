@@ -17,6 +17,10 @@ namespace content {
 class WebContents;
 }
 
+namespace mate {
+class Dictionary;
+}
+
 namespace gfx {
 class Rect;
 }
@@ -37,8 +41,7 @@ class PrintPreviewMessageHandler
 
   // Asks the initiator renderer to generate a preview.  First element of |args|
   // is a job settings JSON string.
-  void HandleGetPreview(const base::ListValue* args);
-  
+  void HandleGetPreview(const mate::Dictionary& options);
  private:
   explicit PrintPreviewMessageHandler(content::WebContents* web_contents);
   friend class content::WebContentsUserData<PrintPreviewMessageHandler>;

@@ -199,7 +199,8 @@ bool PrintPreviewMessageHandler::OnMessageReceived(
   return handled;
 }
 
-void PrintPreviewMessageHandler::HandleGetPreview(const base::ListValue* args) {
+void PrintPreviewMessageHandler::HandleGetPreview(
+    const mate::Dictionary& options) {
   static int request_id = 0;
   request_id++;
   // A simulated Chromium print preivew setting. 
@@ -212,7 +213,7 @@ void PrintPreviewMessageHandler::HandleGetPreview(const base::ListValue* args) {
        \"width_microns\":210000, \
        \"custom_display_name\":\"A4\" \
      }, \
-    \"landscape\":true, \
+    \"landscape\":false, \
     \"color\":2, \
     \"headerFooterEnabled\":false, \
     \"marginsType\":0, \
@@ -229,7 +230,7 @@ void PrintPreviewMessageHandler::HandleGetPreview(const base::ListValue* args) {
     \"duplex\":0, \
     \"copies\":1, \
     \"collate\":true, \
-    \"shouldPrintBackgrounds\":true, \
+    \"shouldPrintBackgrounds\":false, \
     \"shouldPrintSelectionOnly\":false \
   }";
 
@@ -237,7 +238,26 @@ void PrintPreviewMessageHandler::HandleGetPreview(const base::ListValue* args) {
       static_cast<base::DictionaryValue*>(
           base::JSONReader::Read(setting_json_str)));
   settings->SetInteger(printing::kPreviewRequestID, request_id);
+  // Default Print PDF settings:
+  int margins_type = 0; // DEFAULT_MARGINS
+  bool print_background = false;
+  bool print_selection_only = false;
+  bool is_landscape = false; // layout: true for portrait, false for landscape
 
+  if (!options.IsEmpty()) {
+    options.Get(printing::kSettingMarginsType, &margins_type);
+    options.Get(printing::kSettingShouldPrintBackgrounds, &print_background);
+    options.Get(printing::kSettingShouldPrintSelectionOnly,
+        &print_selection_only);
+    std::string layout;
+    options.Get("layout", &is_landscape);
+  }
+  settings->SetInteger(printing::kSettingMarginsType, margins_type);
+  settings->SetBoolean(printing::kSettingShouldPrintBackgrounds,
+                       print_background);
+  settings->SetBoolean(printing::kSettingShouldPrintSelectionOnly,
+                       print_selection_only);
+  settings->SetBoolean(printing::kSettingLandscape, is_landscape);
   LOG(ERROR) << "Print preview request start";
   content::RenderViewHost* rvh = web_contents()->GetRenderViewHost();
   rvh->Send(new PrintMsg_PrintPreview(rvh->GetRoutingID(), *settings));
