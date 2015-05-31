@@ -60,6 +60,15 @@ base::RefCountedBytes* GetDataFromHandle(base::SharedMemoryHandle handle,
   return base::RefCountedBytes::TakeVector(&data);
 }
 
+void PrintToPdfCallback(const scoped_refptr<base::RefCountedBytes>& data,
+                        const base::FilePath& save_path) {
+  printing::PdfMetafileSkia metafile;
+  metafile.InitFromData(static_cast<const void*>(data->front()), data->size());
+  base::File file(save_path,
+                  base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
+  metafile.SaveTo(&file);
+}
+
 }  // namespace
 
 namespace printing {
@@ -116,11 +125,11 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
   file_dialog::ShowSaveDialog(window, "Save As",
       base::FilePath(FILE_PATH_LITERAL("print.pdf")),
       file_dialog::Filters(), &save_path);
-  printing::PdfMetafileSkia metafile;
-  metafile.InitFromData(static_cast<const void*>(data->front()), data->size());
-  base::File file(save_path,
-                  base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
-  metafile.SaveTo(&file);
+  BrowserThread::PostTask(BrowserThread::FILE,
+                          FROM_HERE,
+                          base::Bind(&PrintToPdfCallback,
+                                     data,
+                                     save_path));
 }
 
 //void PrintPreviewMessageHandler::OnPrintPreviewFailed(int document_cookie) {
