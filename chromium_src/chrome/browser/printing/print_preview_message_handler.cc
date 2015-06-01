@@ -252,15 +252,14 @@ void PrintPreviewMessageHandler::HandleGetPreview(
   int margins_type = 0; // DEFAULT_MARGINS
   bool print_background = false;
   bool print_selection_only = false;
-  bool is_landscape = false; // layout: true for portrait, false for landscape
+  bool is_landscape = false;
 
   if (!options.IsEmpty()) {
     options.Get(printing::kSettingMarginsType, &margins_type);
     options.Get(printing::kSettingShouldPrintBackgrounds, &print_background);
     options.Get(printing::kSettingShouldPrintSelectionOnly,
         &print_selection_only);
-    std::string layout;
-    options.Get("layout", &is_landscape);
+    options.Get(printing::kSettingLandscape, &is_landscape);
   }
   settings->SetInteger(printing::kSettingMarginsType, margins_type);
   settings->SetBoolean(printing::kSettingShouldPrintBackgrounds,
