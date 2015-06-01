@@ -332,6 +332,9 @@ IPC_MESSAGE_ROUTED1(PrintHostMsg_MetafileReadyForPrinting,
 IPC_MESSAGE_ROUTED1(PrintHostMsg_DidGetPreviewPageCount,
                     PrintHostMsg_DidGetPreviewPageCount_Params /* params */)
 
+IPC_MESSAGE_ROUTED2(PrintHostMsg_PrintPreviewFailed,
+                    int /* document cookie */,
+                    int /* request_id */);
 
 #if defined(OS_WIN)
 // Tell the utility process to start rendering the given PDF into a metafile.

@@ -724,7 +724,6 @@ void PrintWebViewHelper::OnPrintPreview(const base::DictionaryValue& settings) {
     }
 
     LOG(ERROR) << "OnPrintPreview2";
-    //SetPrintPagesParams(settings)
     if (!UpdatePrintSettings(print_preview_context_.source_frame(),
                            print_preview_context_.source_node(), settings)) {
       DidFinishPrinting(FAIL_PREVIEW);
@@ -936,6 +935,15 @@ void PrintWebViewHelper::DidFinishPrinting(PrintingResult result) {
       if (notify_browser_of_print_failure_ && print_pages_params_) {
         int cookie = print_pages_params_->params.document_cookie;
         Send(new PrintHostMsg_PrintingFailed(routing_id(), cookie));
+      }
+      break;
+
+    case FAIL_PREVIEW:
+      LOG(ERROR) << "PREVIEW FAILED.";
+      if (print_pages_params_) {
+        Send(new PrintHostMsg_PrintPreviewFailed(routing_id(),
+                 print_pages_params_->params.document_cookie,
+                 print_pages_params_->params.preview_request_id));
       }
       break;
   }

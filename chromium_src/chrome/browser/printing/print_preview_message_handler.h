@@ -73,7 +73,7 @@ class PrintPreviewMessageHandler
   void OnDidPreviewPage(const PrintHostMsg_DidPreviewPage_Params& params);
   void OnMetafileReadyForPrinting(
       const PrintHostMsg_DidPreviewDocument_Params& params);
-  //void OnPrintPreviewFailed(int document_cookie);
+  void OnPrintPreviewFailed(int document_cookie, int request_id);
   //void OnPrintPreviewCancelled(int document_cookie);
   //void OnInvalidPrinterSettings(int document_cookie);
   //void OnSetOptionsFromDocument(

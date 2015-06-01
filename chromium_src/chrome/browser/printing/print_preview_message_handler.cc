@@ -141,14 +141,11 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
                  params.preview_request_id));
 }
 
-//void PrintPreviewMessageHandler::OnPrintPreviewFailed(int document_cookie) {
-  //StopWorker(document_cookie);
-
-  ////PrintPreviewUI* print_preview_ui = GetPrintPreviewUI();
-  ////if (!print_preview_ui)
-    ////return;
-  ////print_preview_ui->OnPrintPreviewFailed();
-//}
+void PrintPreviewMessageHandler::OnPrintPreviewFailed(int document_cookie,
+                                                      int request_id) {
+  StopWorker(document_cookie);
+  RunPrintToPDFCallback(request_id, FAIL_PREVIEW);
+}
 
 //void PrintPreviewMessageHandler::OnDidGetDefaultPageLayout(
     //const PageSizeMargins& page_layout_in_points,
@@ -193,8 +190,8 @@ bool PrintPreviewMessageHandler::OnMessageReceived(
                         OnDidPreviewPage)
     IPC_MESSAGE_HANDLER(PrintHostMsg_MetafileReadyForPrinting,
                         OnMetafileReadyForPrinting)
-    //IPC_MESSAGE_HANDLER(PrintHostMsg_PrintPreviewFailed,
-                        //OnPrintPreviewFailed)
+    IPC_MESSAGE_HANDLER(PrintHostMsg_PrintPreviewFailed,
+                        OnPrintPreviewFailed)
     //IPC_MESSAGE_HANDLER(PrintHostMsg_DidGetDefaultPageLayout,
                         //OnDidGetDefaultPageLayout)
     //IPC_MESSAGE_HANDLER(PrintHostMsg_PrintPreviewCancelled,
