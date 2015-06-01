@@ -97,6 +97,8 @@ You can also create a window without chrome by using
     * `shared-worker` Boolean
     * `direct-write` Boolean - Whether the DirectWrite font rendering system on
        Windows is enabled
+    * `page-visibility` Boolean - Sets the page visibility state
+       to visible, prevents throttling of DOM timers.
 
 Creates a new `BrowserWindow` with native properties set by the `options`.
 Usually you only need to set the `width` and `height`, other properties will
