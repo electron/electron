@@ -571,6 +571,32 @@ Calling `window.print()` in web page is equivalent to call
 doesn't need print feature, you can safely remove `pdf.dll` in saving binary
 size.
 
+### BrowserWindow.printToPDF([options], callback)
+
+* `options` Object
+  * `marginsType` Integer - Specify the type of margins to use
+    * 0 - default
+    * 1 - none
+    * 2 - minimum
+  * `shouldPrintBackgrounds` Boolean - Whether to print CSS backgrounds.
+  * `shouldPrintSelectionOnly` Boolean - Whether to print selection only.
+  * `landscape` Boolean - `true` for landscape, `false` for portrait.
+
+* `callback` Function - `function(statusCode) {}`
+  * `statusCode` Integer
+    * 0 - Success.
+    * 1 - Fail to generate PDF file on renderer part.
+    * 2 - Fail to save PDF file on local disk.
+    * 3 - Users cancel the prompted save file dialog.
+
+Prints windows' web page as PDF with Chromium's preview printing custom
+settings. The API will prompt a SaveDialog to allow user custom the file path
+for saving the generated PDF file on disk.
+
+By default, the options will be
+`{marginsType:0, shouldPrintBackgrounds:false, shouldPrintSelectionOnly:false,
+  landscape:false}`.
+
 ### BrowserWindow.loadUrl(url, [options])
 
 Same with `webContents.loadUrl(url, [options])`.
