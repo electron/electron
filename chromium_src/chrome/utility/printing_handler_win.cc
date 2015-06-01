@@ -31,8 +31,11 @@ class PdfFunctions {
                    render_pdf_to_dc_func_(NULL) {}
 
   bool Init() {
-    base::FilePath pdf_module_path(FILE_PATH_LITERAL("pdf.dll"));
-    pdf_lib_.Reset(base::LoadNativeLibrary(pdf_module_path, NULL));
+    base::FilePath module_path;
+    if (!PathService::Get(base::DIR_MODULE, &module_path))
+      return false;
+    base::FilePath::StringType name(FILE_PATH_LITERAL("pdf.dll"));
+    pdf_lib_.Reset(base::LoadNativeLibrary(module_path.Append(name), NULL));
     if (!pdf_lib_.is_valid()) {
       LOG(WARNING) << "Couldn't load PDF plugin";
       return false;
