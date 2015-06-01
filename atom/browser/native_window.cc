@@ -265,9 +265,10 @@ void NativeWindow::Print(bool silent, bool print_background) {
       PrintNow(silent, print_background);
 }
 
-void NativeWindow::PrintToPDF(const mate::Dictionary& options) {
+void NativeWindow::PrintToPDF(const mate::Dictionary& options,
+                              const PrintToPDFCallback& callback) {
   printing::PrintPreviewMessageHandler::FromWebContents(GetWebContents())->
-      HandleGetPreview(options);
+      HandleGetPreview(options, callback);
 }
 
 void NativeWindow::ShowDefinitionForSelection() {

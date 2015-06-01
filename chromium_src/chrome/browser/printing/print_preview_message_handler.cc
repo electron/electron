@@ -60,18 +60,22 @@ base::RefCountedBytes* GetDataFromHandle(base::SharedMemoryHandle handle,
   return base::RefCountedBytes::TakeVector(&data);
 }
 
-void PrintToPdfCallback(const scoped_refptr<base::RefCountedBytes>& data,
-                        const base::FilePath& save_path) {
+printing::PrintPreviewMessageHandler::PrintPDFResult
+SavePDF(const scoped_refptr<base::RefCountedBytes>& data,
+        const base::FilePath& save_path) {
   printing::PdfMetafileSkia metafile;
   metafile.InitFromData(static_cast<const void*>(data->front()), data->size());
   base::File file(save_path,
                   base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
-  metafile.SaveTo(&file);
+  return metafile.SaveTo(&file)?
+    printing::PrintPreviewMessageHandler::SUCCESS :
+    printing::PrintPreviewMessageHandler::FAIL_SAVEFILE;
 }
 
 }  // namespace
 
 namespace printing {
+
 
 PrintPreviewMessageHandler::PrintPreviewMessageHandler(
     WebContents* web_contents)
@@ -122,14 +126,19 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
   atom::NativeWindow* window = atom::NativeWindow::FromWebContents(
       web_contents());
   base::FilePath save_path;
-  file_dialog::ShowSaveDialog(window, "Save As",
-      base::FilePath(FILE_PATH_LITERAL("print.pdf")),
-      file_dialog::Filters(), &save_path);
-  BrowserThread::PostTask(BrowserThread::FILE,
-                          FROM_HERE,
-                          base::Bind(&PrintToPdfCallback,
-                                     data,
-                                     save_path));
+  if (!file_dialog::ShowSaveDialog(window, "Save As",
+          base::FilePath(FILE_PATH_LITERAL("print.pdf")),
+          file_dialog::Filters(), &save_path)) { // Users cancel dialog.
+    RunPrintToPDFCallback(params.preview_request_id, FAIL_CANCEL);
+    return;
+  }
+  BrowserThread::PostTaskAndReplyWithResult(
+      BrowserThread::FILE,
+      FROM_HERE,
+      base::Bind(&SavePDF, data, save_path),
+      base::Bind(&PrintPreviewMessageHandler::RunPrintToPDFCallback,
+                 base::Unretained(this),
+                 params.preview_request_id));
 }
 
 //void PrintPreviewMessageHandler::OnPrintPreviewFailed(int document_cookie) {
@@ -200,7 +209,8 @@ bool PrintPreviewMessageHandler::OnMessageReceived(
 }
 
 void PrintPreviewMessageHandler::HandleGetPreview(
-    const mate::Dictionary& options) {
+    const mate::Dictionary& options,
+    const atom::NativeWindow::PrintToPDFCallback& callback) {
   static int request_id = 0;
   request_id++;
   // A simulated Chromium print preivew setting. 
@@ -238,6 +248,9 @@ void PrintPreviewMessageHandler::HandleGetPreview(
       static_cast<base::DictionaryValue*>(
           base::JSONReader::Read(setting_json_str)));
   settings->SetInteger(printing::kPreviewRequestID, request_id);
+  print_to_pdf_callback_map_[request_id] = callback;
+
+
   // Default Print PDF settings:
   int margins_type = 0; // DEFAULT_MARGINS
   bool print_background = false;
@@ -261,6 +274,12 @@ void PrintPreviewMessageHandler::HandleGetPreview(
   LOG(ERROR) << "Print preview request start";
   content::RenderViewHost* rvh = web_contents()->GetRenderViewHost();
   rvh->Send(new PrintMsg_PrintPreview(rvh->GetRoutingID(), *settings));
+}
+
+void PrintPreviewMessageHandler::RunPrintToPDFCallback(
+     int request_id, PrintPDFResult result) {
+  print_to_pdf_callback_map_[request_id].Run(static_cast<int>(result));
+  print_to_pdf_callback_map_.erase(request_id);
 }
 
 }  // namespace printing

@@ -5,6 +5,9 @@
 #ifndef CHROME_BROWSER_PRINTING_PRINT_PREVIEW_MESSAGE_HANDLER_H_
 #define CHROME_BROWSER_PRINTING_PRINT_PREVIEW_MESSAGE_HANDLER_H_
 
+#include <map>
+
+#include "atom/browser/native_window.h"
 #include "base/compiler_specific.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
@@ -34,6 +37,13 @@ class PrintPreviewMessageHandler
     : public content::WebContentsObserver,
       public content::WebContentsUserData<PrintPreviewMessageHandler> {
  public:
+  enum PrintPDFResult {
+    SUCCESS,
+    FAIL_PREVIEW,
+    FAIL_SAVEFILE,
+    FAIL_CANCEL,
+  };
+
   ~PrintPreviewMessageHandler() override;
 
   // content::WebContentsObserver implementation.
@@ -41,8 +51,12 @@ class PrintPreviewMessageHandler
 
   // Asks the initiator renderer to generate a preview.  First element of |args|
   // is a job settings JSON string.
-  void HandleGetPreview(const mate::Dictionary& options);
+  void HandleGetPreview(const mate::Dictionary& options,
+                        const atom::NativeWindow::PrintToPDFCallback& callback);
+
  private:
+  typedef std::map<int, atom::NativeWindow::PrintToPDFCallback> PrintToPDFCallbackMap;
+
   explicit PrintPreviewMessageHandler(content::WebContents* web_contents);
   friend class content::WebContentsUserData<PrintPreviewMessageHandler>;
 
@@ -64,6 +78,10 @@ class PrintPreviewMessageHandler
   //void OnInvalidPrinterSettings(int document_cookie);
   //void OnSetOptionsFromDocument(
       //const PrintHostMsg_SetOptionsFromDocument_Params& params);
+
+  void RunPrintToPDFCallback(int request_id, PrintPDFResult result);
+
+  PrintToPDFCallbackMap print_to_pdf_callback_map_;
 
   DISALLOW_COPY_AND_ASSIGN(PrintPreviewMessageHandler);
 };

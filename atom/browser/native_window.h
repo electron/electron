@@ -55,6 +55,7 @@ class NativeWindow : public CommonWebContentsDelegate,
                      public content::NotificationObserver {
  public:
   typedef base::Callback<void(const SkBitmap& bitmap)> CapturePageCallback;
+  typedef base::Callback<void(int)> PrintToPDFCallback;
 
   class DialogScope {
    public:
@@ -158,7 +159,8 @@ class NativeWindow : public CommonWebContentsDelegate,
   virtual void Print(bool silent, bool print_background);
 
   // Print current page as PDF.
-  virtual void PrintToPDF(const mate::Dictionary& options);
+  virtual void PrintToPDF(const mate::Dictionary& options,
+                          const PrintToPDFCallback& callback);
 
   // Show popup dictionary.
   virtual void ShowDefinitionForSelection();

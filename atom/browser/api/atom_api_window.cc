@@ -16,7 +16,6 @@
 #include "native_mate/callback.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
-#include "printing/print_job_constants.h"
 #include "ui/gfx/geometry/rect.h"
 
 #include "atom/common/node_includes.h"
@@ -433,11 +432,14 @@ void Window::Print(mate::Arguments* args) {
 
 void Window::PrintToPDF(mate::Arguments* args) {
   mate::Dictionary options;
-  if (args->Length() == 1 && !args->GetNext(&options)) {
+  base::Callback<void(int)> callback;
+  if (!(args->Length() == 1 && !args->GetNext(&callback)) &&
+      !(args->Length() == 2 && args->GetNext(&options)
+                            && args->GetNext(&callback))) {
     args->ThrowError();
     return;
   }
-  window_->PrintToPDF(options);
+  window_->PrintToPDF(options, callback);
 }
 
 void Window::SetProgressBar(double progress) {
