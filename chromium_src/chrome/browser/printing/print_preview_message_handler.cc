@@ -79,7 +79,8 @@ namespace printing {
 
 PrintPreviewMessageHandler::PrintPreviewMessageHandler(
     WebContents* web_contents)
-    : content::WebContentsObserver(web_contents) {
+    : request_id_(0),
+      content::WebContentsObserver(web_contents) {
   DCHECK(web_contents);
 }
 
@@ -92,8 +93,6 @@ void PrintPreviewMessageHandler::OnDidGetPreviewPageCount(
     NOTREACHED();
     return;
   }
-
-  LOG(ERROR) << "OnDidGetPreviewPageCount:  " << params.page_count;
 }
 
 void PrintPreviewMessageHandler::OnDidPreviewPage(
@@ -101,7 +100,6 @@ void PrintPreviewMessageHandler::OnDidPreviewPage(
   int page_number = params.page_number;
   if (page_number < FIRST_PAGE_INDEX || !params.data_size)
     return;
-  LOG(ERROR) << "OnDidPreviewPage:  " << params.data_size;
 }
 
 void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
@@ -122,7 +120,6 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
   if (!data || !data->size())
     return;
 
-  LOG(ERROR) << params.preview_request_id;
   atom::NativeWindow* window = atom::NativeWindow::FromWebContents(
       web_contents());
   base::FilePath save_path;
@@ -147,39 +144,6 @@ void PrintPreviewMessageHandler::OnPrintPreviewFailed(int document_cookie,
   RunPrintToPDFCallback(request_id, FAIL_PREVIEW);
 }
 
-//void PrintPreviewMessageHandler::OnDidGetDefaultPageLayout(
-    //const PageSizeMargins& page_layout_in_points,
-    //const gfx::Rect& printable_area_in_points,
-    //bool has_custom_page_size_style) {
-  ////PrintPreviewUI* print_preview_ui = GetPrintPreviewUI();
-  ////if (!print_preview_ui)
-    ////return;
-  ////print_preview_ui->OnDidGetDefaultPageLayout(page_layout_in_points,
-                                              ////printable_area_in_points,
-                                              ////has_custom_page_size_style);
-//}
-
-//void PrintPreviewMessageHandler::OnPrintPreviewCancelled(int document_cookie) {
-  //// Always need to stop the worker.
-  //StopWorker(document_cookie);
-//}
-
-//void PrintPreviewMessageHandler::OnInvalidPrinterSettings(int document_cookie) {
-  //StopWorker(document_cookie);
-  ////PrintPreviewUI* print_preview_ui = GetPrintPreviewUI();
-  ////if (!print_preview_ui)
-    ////return;
-  ////print_preview_ui->OnInvalidPrinterSettings();
-//}
-
-//void PrintPreviewMessageHandler::OnSetOptionsFromDocument(
-    //const PrintHostMsg_SetOptionsFromDocument_Params& params) {
-  ////PrintPreviewUI* print_preview_ui = GetPrintPreviewUI();
-  ////if (!print_preview_ui)
-    ////return;
-  ////print_preview_ui->OnSetOptionsFromDocument(params);
-//}
-
 bool PrintPreviewMessageHandler::OnMessageReceived(
     const IPC::Message& message) {
   bool handled = true;
@@ -192,24 +156,14 @@ bool PrintPreviewMessageHandler::OnMessageReceived(
                         OnMetafileReadyForPrinting)
     IPC_MESSAGE_HANDLER(PrintHostMsg_PrintPreviewFailed,
                         OnPrintPreviewFailed)
-    //IPC_MESSAGE_HANDLER(PrintHostMsg_DidGetDefaultPageLayout,
-                        //OnDidGetDefaultPageLayout)
-    //IPC_MESSAGE_HANDLER(PrintHostMsg_PrintPreviewCancelled,
-                        //OnPrintPreviewCancelled)
-    //IPC_MESSAGE_HANDLER(PrintHostMsg_PrintPreviewInvalidPrinterSettings,
-                        //OnInvalidPrinterSettings)
-    //IPC_MESSAGE_HANDLER(PrintHostMsg_SetOptionsFromDocument,
-                        //OnSetOptionsFromDocument)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
   return handled;
 }
 
-void PrintPreviewMessageHandler::HandleGetPreview(
+void PrintPreviewMessageHandler::PrintToPDF(
     const mate::Dictionary& options,
     const atom::NativeWindow::PrintToPDFCallback& callback) {
-  static int request_id = 0;
-  request_id++;
   // A simulated Chromium print preivew setting. 
   const std::string setting_json_str =  "{ \
     \"pageRage\":[], \
@@ -244,8 +198,9 @@ void PrintPreviewMessageHandler::HandleGetPreview(
   scoped_ptr<base::DictionaryValue> settings(
       static_cast<base::DictionaryValue*>(
           base::JSONReader::Read(setting_json_str)));
-  settings->SetInteger(printing::kPreviewRequestID, request_id);
-  print_to_pdf_callback_map_[request_id] = callback;
+  settings->SetInteger(printing::kPreviewRequestID, request_id_);
+  print_to_pdf_callback_map_[request_id_] = callback;
+  ++request_id_;
 
 
   // Default Print PDF settings:
@@ -267,7 +222,6 @@ void PrintPreviewMessageHandler::HandleGetPreview(
   settings->SetBoolean(printing::kSettingShouldPrintSelectionOnly,
                        print_selection_only);
   settings->SetBoolean(printing::kSettingLandscape, is_landscape);
-  LOG(ERROR) << "Print preview request start";
   content::RenderViewHost* rvh = web_contents()->GetRenderViewHost();
   rvh->Send(new PrintMsg_PrintPreview(rvh->GetRoutingID(), *settings));
 }

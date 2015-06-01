@@ -717,19 +717,16 @@ void PrintWebViewHelper::OnPrintPreview(const base::DictionaryValue& settings) {
   blink::WebLocalFrame* frame;
   if (GetPrintFrame(&frame)) {
     print_preview_context_.InitWithFrame(frame);
-    LOG(ERROR) << "OnPrintPreview1";
     if (!print_preview_context_.source_frame()) {
       DidFinishPrinting(FAIL_PREVIEW);
       return;
     }
 
-    LOG(ERROR) << "OnPrintPreview2";
     if (!UpdatePrintSettings(print_preview_context_.source_frame(),
                            print_preview_context_.source_node(), settings)) {
       DidFinishPrinting(FAIL_PREVIEW);
       return;
     }
-    LOG(ERROR) << "OnPrintPreview3";
     is_print_ready_metafile_sent_ = false;
     PrepareFrameForPreviewDocument();
   }

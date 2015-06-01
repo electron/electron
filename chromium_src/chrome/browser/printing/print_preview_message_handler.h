@@ -49,10 +49,8 @@ class PrintPreviewMessageHandler
   // content::WebContentsObserver implementation.
   bool OnMessageReceived(const IPC::Message& message) override;
 
-  // Asks the initiator renderer to generate a preview.  First element of |args|
-  // is a job settings JSON string.
-  void HandleGetPreview(const mate::Dictionary& options,
-                        const atom::NativeWindow::PrintToPDFCallback& callback);
+  void PrintToPDF(const mate::Dictionary& options,
+                  const atom::NativeWindow::PrintToPDFCallback& callback);
 
  private:
   typedef std::map<int, atom::NativeWindow::PrintToPDFCallback> PrintToPDFCallbackMap;
@@ -60,26 +58,18 @@ class PrintPreviewMessageHandler
   explicit PrintPreviewMessageHandler(content::WebContents* web_contents);
   friend class content::WebContentsUserData<PrintPreviewMessageHandler>;
 
-
   // Message handlers.
-  //void OnRequestPrintPreview(
-      //const PrintHostMsg_RequestPrintPreview_Params& params);
-  //void OnDidGetDefaultPageLayout(
-      //const printing::PageSizeMargins& page_layout_in_points,
-      //const gfx::Rect& printable_area_in_points,
-      //bool has_custom_page_size_style);
   void OnDidGetPreviewPageCount(
       const PrintHostMsg_DidGetPreviewPageCount_Params& params);
   void OnDidPreviewPage(const PrintHostMsg_DidPreviewPage_Params& params);
   void OnMetafileReadyForPrinting(
       const PrintHostMsg_DidPreviewDocument_Params& params);
   void OnPrintPreviewFailed(int document_cookie, int request_id);
-  //void OnPrintPreviewCancelled(int document_cookie);
-  //void OnInvalidPrinterSettings(int document_cookie);
-  //void OnSetOptionsFromDocument(
-      //const PrintHostMsg_SetOptionsFromDocument_Params& params);
 
   void RunPrintToPDFCallback(int request_id, PrintPDFResult result);
+
+  // PrintToPDF request id counter.
+  int request_id_;
 
   PrintToPDFCallbackMap print_to_pdf_callback_map_;
 

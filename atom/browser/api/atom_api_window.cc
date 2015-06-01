@@ -421,7 +421,7 @@ void Window::CapturePage(mate::Arguments* args) {
 }
 
 void Window::Print(mate::Arguments* args) {
-  PrintSettings settings = { false, false };;
+  PrintSettings settings = { false, false };
   if (args->Length() == 1 && !args->GetNext(&settings)) {
     args->ThrowError();
     return;
