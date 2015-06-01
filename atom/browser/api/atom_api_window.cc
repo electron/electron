@@ -433,7 +433,7 @@ void Window::Print(mate::Arguments* args) {
 void Window::PrintToPDF(mate::Arguments* args) {
   mate::Dictionary options;
   base::Callback<void(int)> callback;
-  if (!(args->Length() == 1 && !args->GetNext(&callback)) &&
+  if (!(args->Length() == 1 && args->GetNext(&callback)) &&
       !(args->Length() == 2 && args->GetNext(&options)
                             && args->GetNext(&callback))) {
     args->ThrowError();
