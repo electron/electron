@@ -527,7 +527,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_openDevTools", &Window::OpenDevTools)
       .SetMethod("closeDevTools", &Window::CloseDevTools)
       .SetMethod("isDevToolsOpened", &Window::IsDevToolsOpened)
-      .SetMethod("inspectElement", &Window::InspectElement)
+      .SetMethod("_inspectElement", &Window::InspectElement)
       .SetMethod("focusOnWebView", &Window::FocusOnWebView)
       .SetMethod("blurWebView", &Window::BlurWebView)
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)
@@ -549,7 +549,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
 #endif
       .SetMethod("_getWebContents", &Window::GetWebContents)
       .SetMethod("_getDevToolsWebContents", &Window::GetDevToolsWebContents)
-      .SetMethod("inspectServiceWorker", &Window::InspectServiceWorker);
+      .SetMethod("_inspectServiceWorker", &Window::InspectServiceWorker);
 }
 
 }  // namespace api

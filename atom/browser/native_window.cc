@@ -308,7 +308,6 @@ bool NativeWindow::IsDevToolsOpened() {
 }
 
 void NativeWindow::InspectElement(int x, int y) {
-  OpenDevTools(true);
   scoped_refptr<content::DevToolsAgentHost> agent(
       content::DevToolsAgentHost::GetOrCreateFor(GetWebContents()));
   agent->InspectElement(x, y);
@@ -318,7 +317,6 @@ void NativeWindow::InspectServiceWorker() {
   for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
     if (agent_host->GetType() ==
         content::DevToolsAgentHost::TYPE_SERVICE_WORKER) {
-      OpenDevTools(true);
       inspectable_web_contents()->AttachTo(agent_host);
       break;
     }
