@@ -9,8 +9,15 @@
 
 #include "atom/common/crash_reporter/crash_reporter.h"
 #include "base/compiler_specific.h"
+#include "base/memory/scoped_ptr.h"
+#include "base/strings/string_piece.h"
+#include "vendor/crashpad/client/simple_string_dictionary.h"
 
 template <typename T> struct DefaultSingletonTraits;
+
+namespace crashpad {
+class CrashReportDatabase;
+}
 
 namespace crash_reporter {
 
@@ -31,6 +38,13 @@ class CrashReporterMac : public CrashReporter {
 
   CrashReporterMac();
   virtual ~CrashReporterMac();
+
+  void SetUploadsEnabled(bool enable_uploads);
+  void SetCrashKeyValue(const base::StringPiece& key,
+                        const base::StringPiece& value);
+
+  scoped_ptr<crashpad::SimpleStringDictionary> simple_string_dictionary_;
+  scoped_ptr<crashpad::CrashReportDatabase> crash_report_database_;
 
   DISALLOW_COPY_AND_ASSIGN(CrashReporterMac);
 };

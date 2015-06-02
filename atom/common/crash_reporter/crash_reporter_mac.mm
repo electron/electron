@@ -19,25 +19,6 @@
 
 namespace crash_reporter {
 
-namespace {
-
-crashpad::SimpleStringDictionary* g_simple_string_dictionary;
-crashpad::CrashReportDatabase* g_database;
-
-void SetUploadsEnabled(bool enable_uploads) {
-  if (g_database) {
-    crashpad::Settings* settings = g_database->GetSettings();
-    settings->SetUploadsEnabled(enable_uploads);
-  }
-}
-
-void SetCrashKeyValue(const base::StringPiece& key,
-                      const base::StringPiece& value) {
-  g_simple_string_dictionary->SetKeyValue(key.data(), value.data());
-}
-
-}  // namespace
-
 CrashReporterMac::CrashReporterMac() {
 }
 
@@ -64,12 +45,10 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
           framework_bundle_path.Append("Resources").Append("crashpad_handler");
 
       crashpad::CrashpadClient crashpad_client;
-      // Send all crash reports.
-      std::vector<std::string> arguments = { "--upload-internal=0" };
       if (crashpad_client.StartHandler(handler_path, database_path,
                                        submit_url,
                                        StringMap(),
-                                       arguments)) {
+                                       std::vector<std::string>())) {
         crashpad_client.UseHandler();
       }
     }  // @autoreleasepool
@@ -82,8 +61,8 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
         crashpad::TriState::kDisabled);
   }
 
-  g_simple_string_dictionary = new crashpad::SimpleStringDictionary();
-  crashpad_info->set_simple_annotations(g_simple_string_dictionary);
+  simple_string_dictionary_.reset(new crashpad::SimpleStringDictionary());
+  crashpad_info->set_simple_annotations(simple_string_dictionary_.get());
 
   SetCrashKeyValue("prod", ATOM_PRODUCT_NAME);
   SetCrashKeyValue("process_type", is_browser_ ? base::StringPiece("browser")
@@ -95,14 +74,26 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
     SetCrashKeyValue(iter->first, iter->second);
   }
   if (is_browser_) {
-    g_database =
-        crashpad::CrashReportDatabase::Initialize(database_path).release();
+    crash_report_database_ = crashpad::CrashReportDatabase::Initialize(
+        database_path);
     SetUploadsEnabled(auto_submit);
   }
 }
 
 void CrashReporterMac::SetUploadParameters() {
   upload_parameters_["platform"] = "darwin";
+}
+
+void CrashReporterMac::SetUploadsEnabled(bool enable_uploads) {
+  if (crash_report_database_) {
+    crashpad::Settings* settings = crash_report_database_->GetSettings();
+    settings->SetUploadsEnabled(enable_uploads);
+  }
+}
+
+void CrashReporterMac::SetCrashKeyValue(const base::StringPiece& key,
+                                        const base::StringPiece& value) {
+  simple_string_dictionary_->SetKeyValue(key.data(), value.data());
 }
 
 // static
