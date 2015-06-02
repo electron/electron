@@ -42,11 +42,12 @@ std::string GetMimeTypeForPath(const std::string& path) {
     return "image/png";
   } else if (EndsWith(filename, ".gif", false)) {
     return "image/gif";
+  } else if (EndsWith(filename, ".svg", false)) {
+    return "image/svg+xml";
   } else if (EndsWith(filename, ".manifest", false)) {
     return "text/cache-manifest";
   }
-  NOTREACHED();
-  return "text/plain";
+  return "text/html";
 }
 
 class BundledDataSource : public content::URLDataSource {
@@ -84,6 +85,14 @@ class BundledDataSource : public content::URLDataSource {
 
   virtual bool ShouldAddContentSecurityPolicy() const override {
     return false;
+  }
+
+  virtual bool ShouldDenyXFrameOptions() const override {
+    return false;
+  }
+
+  virtual bool ShouldServeMimeTypeAsContentTypeHeader() const override {
+    return true;
   }
 
  private:
