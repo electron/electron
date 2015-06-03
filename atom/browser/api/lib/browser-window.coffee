@@ -55,6 +55,14 @@ BrowserWindow::openDevTools = (options={}) ->
 BrowserWindow::toggleDevTools = ->
   if @isDevToolsOpened() then @closeDevTools() else @openDevTools()
 
+BrowserWindow::inspectElement = (x, y) ->
+  @openDevTools true
+  @_inspectElement x, y
+
+BrowserWindow::inspectServiceWorker = ->
+  @openDevTools true
+  @_inspectServiceWorker()
+
 BrowserWindow::getWebContents = ->
   wrapWebContents @_getWebContents()
 
