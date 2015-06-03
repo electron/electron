@@ -43,6 +43,8 @@ class CrashReporterMac : public CrashReporter {
   void SetCrashKeyValue(const base::StringPiece& key,
                         const base::StringPiece& value);
 
+  std::vector<UploadReportResult> GetUploadedReports() override;
+
   scoped_ptr<crashpad::SimpleStringDictionary> simple_string_dictionary_;
   scoped_ptr<crashpad::CrashReportDatabase> crash_report_database_;
 

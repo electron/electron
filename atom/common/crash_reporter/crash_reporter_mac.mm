@@ -96,6 +96,39 @@ void CrashReporterMac::SetCrashKeyValue(const base::StringPiece& key,
   simple_string_dictionary_->SetKeyValue(key.data(), value.data());
 }
 
+std::vector<CrashReporter::UploadReportResult>
+CrashReporterMac::GetUploadedReports() {
+  std::vector<CrashReporter::UploadReportResult> uploaded_reports;
+
+  if (!crash_report_database_) {
+    return uploaded_reports;
+  }
+
+  std::vector<crashpad::CrashReportDatabase::Report> completed_reports;
+  crashpad::CrashReportDatabase::OperationStatus status =
+      crash_report_database_->GetCompletedReports(&completed_reports);
+  if (status != crashpad::CrashReportDatabase::kNoError) {
+    return uploaded_reports;
+  }
+
+  for (const crashpad::CrashReportDatabase::Report& completed_report :
+       completed_reports) {
+    if (completed_report.uploaded) {
+      uploaded_reports.push_back(
+          UploadReportResult(static_cast<int>(completed_report.creation_time),
+                             completed_report.id));
+    }
+  }
+
+  struct {
+    bool operator()(const UploadReportResult& a, const UploadReportResult& b) {
+      return a.first >= b.first;
+    }
+  } sort_by_time;
+  std::sort(uploaded_reports.begin(), uploaded_reports.end(), sort_by_time);
+  return uploaded_reports;
+}
+
 // static
 CrashReporterMac* CrashReporterMac::GetInstance() {
   return Singleton<CrashReporterMac>::get();

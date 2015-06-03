@@ -31,9 +31,33 @@ struct Converter<std::map<std::string, std::string> > {
   }
 };
 
+template<>
+struct Converter<std::vector<crash_reporter::CrashReporter::UploadReportResult> > {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+      const std::vector<
+          crash_reporter::CrashReporter::UploadReportResult>& reports) {
+    v8::Local<v8::Array> result(v8::Array::New(isolate, reports.size()));
+    for (size_t i = 0; i < reports.size(); ++i) {
+      mate::Dictionary dict(isolate, v8::Object::New(isolate));
+      dict.Set("date", reports[i].first);
+      dict.Set("id", reports[i].second);
+      v8::TryCatch try_catch;
+      result->Set(static_cast<uint32>(i), dict.GetHandle());
+      if (try_catch.HasCaught())
+        LOG(ERROR) << "Setter for index " << i << " threw an exception.";
+    }
+    return result;
+  }
+};
+
 }  // namespace mate
 
 namespace {
+
+std::vector<crash_reporter::CrashReporter::UploadReportResult>
+GetUploadedReports() {
+  return (crash_reporter::CrashReporter::GetInstance())->GetUploadedReports();
+}
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
@@ -42,6 +66,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("start",
                  base::Bind(&CrashReporter::Start,
                             base::Unretained(CrashReporter::GetInstance())));
+  dict.SetMethod("_getUploadedReports", &GetUploadedReports);
 }
 
 }  // namespace

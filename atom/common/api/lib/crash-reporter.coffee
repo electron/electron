@@ -41,6 +41,10 @@ class CrashReporter
       start()
 
   getLastCrashReport: ->
+    if process.platform is 'darwin'
+      reports = binding._getUploadedReports()
+      return if reports.length > 0 then reports[0] else null
+
     tmpdir =
       if process.platform is 'win32'
         os.tmpdir()
