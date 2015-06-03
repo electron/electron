@@ -38,21 +38,20 @@ int kDefaultRoutingID = 2;
 // Next navigation should not restart renderer process.
 bool g_suppress_renderer_process_restart = false;
 
-// Returns the WebContents from process.
-inline content::WebContents* GetWebContentsFromProcess(int process_id) {
-  return content::WebContents::FromRenderViewHost(
-      content::RenderViewHost::FromID(process_id, kDefaultRoutingID));
-}
-
 // Find out the owner of the child process according to child_process_id.
-enum WebContentsOwner {
+enum ProcessOwner {
   OWNER_NATIVE_WINDOW,
   OWNER_GUEST_WEB_CONTENTS,
   OWNER_NONE,  // it might be devtools though.
 };
-WebContentsOwner GetWebContentsOwner(content::WebContents* web_contents,
-                                     NativeWindow** window,
-                                     WebViewManager::WebViewInfo* info) {
+ProcessOwner GetProcessOwner(int process_id,
+                                 NativeWindow** window,
+                                 WebViewManager::WebViewInfo* info) {
+  auto web_contents = content::WebContents::FromRenderViewHost(
+      content::RenderViewHost::FromID(process_id, kDefaultRoutingID));
+  if (!web_contents)
+    return OWNER_NONE;
+
   // First search for NativeWindow.
   for (auto native_window : *WindowList::GetInstance())
     if (web_contents == native_window->GetWebContents()) {
@@ -115,14 +114,8 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->allow_displaying_insecure_content = false;
   prefs->allow_running_insecure_content = false;
 
-  // Turn off web security for devtools.
-  auto web_contents = content::WebContents::FromRenderViewHost(host);
-  if (web_contents && web_contents->GetURL().SchemeIs("chrome-devtools")) {
-    prefs->web_security_enabled = false;
-    return;
-  }
-
   // Custom preferences of guest page.
+  auto web_contents = content::WebContents::FromRenderViewHost(host);
   WebViewManager::WebViewInfo info;
   if (WebViewManager::GetInfoForWebContents(web_contents, &info)) {
     prefs->web_security_enabled = !info.disable_web_security;
@@ -162,13 +155,9 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   if (process_type != "renderer")
     return;
 
-  auto web_contents = GetWebContentsFromProcess(process_id);
-  if (!web_contents)
-    return;
-
   NativeWindow* window;
   WebViewManager::WebViewInfo info;
-  WebContentsOwner owner = GetWebContentsOwner(web_contents, &window, &info);
+  ProcessOwner owner = GetProcessOwner(process_id, &window, &info);
 
   if (owner == OWNER_NATIVE_WINDOW) {
     window->AppendExtraCommandLineSwitches(command_line);
