@@ -29,13 +29,9 @@ class WebViewManager : public content::BrowserPluginGuestManager {
     base::FilePath preload_script;
   };
 
-  // Finds the WebViewManager attached with |process| and returns the
+  // Finds the WebViewManager attached with |web_contents| and returns the
   // WebViewInfo of it.
-  static bool GetInfoForProcess(content::RenderProcessHost* process,
-                                WebViewInfo* info);
-
-  // Same with GetInfoForProcess but search for |web_contents| instead.
-  static bool GetInfoForWebContents(content::WebContents* web_contents,
+  static bool GetInfoForWebContents(const content::WebContents* web_contents,
                                     WebViewInfo* info);
 
   explicit WebViewManager(content::BrowserContext* context);
@@ -85,7 +81,7 @@ class WebViewManager : public content::BrowserPluginGuestManager {
   // (embedder_process_id, element_instance_id) => guest_instance_id
   std::map<ElementInstanceKey, int> element_instance_id_to_guest_map_;
 
-  typedef std::map<content::WebContents*, WebViewInfo> WebViewInfoMap;
+  typedef std::map<const content::WebContents*, WebViewInfo> WebViewInfoMap;
   // web_contents => (guest_instance_id, embedder, ...)
   WebViewInfoMap webview_info_map_;
 

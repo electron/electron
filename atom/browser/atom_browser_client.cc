@@ -31,33 +31,38 @@ namespace atom {
 
 namespace {
 
+// The default routing id of WebContents, since in Electron a WebContents
+// always owns its own RenderProcessHost, this ID is same for every WebContents.
+int kDefaultRoutingID = 2;
+
 // Next navigation should not restart renderer process.
 bool g_suppress_renderer_process_restart = false;
 
+// Returns the WebContents from process.
+inline content::WebContents* GetWebContentsFromProcess(int process_id) {
+  return content::WebContents::FromRenderViewHost(
+      content::RenderViewHost::FromID(process_id, kDefaultRoutingID));
+}
+
 // Find out the owner of the child process according to child_process_id.
-enum ChildProcessOwner {
+enum WebContentsOwner {
   OWNER_NATIVE_WINDOW,
   OWNER_GUEST_WEB_CONTENTS,
   OWNER_NONE,  // it might be devtools though.
 };
-ChildProcessOwner GetChildProcessOwner(int process_id,
-                                       NativeWindow** window,
-                                       WebViewManager::WebViewInfo* info) {
+WebContentsOwner GetWebContentsOwner(content::WebContents* web_contents,
+                                     NativeWindow** window,
+                                     WebViewManager::WebViewInfo* info) {
   // First search for NativeWindow.
-  for (auto native_window : *WindowList::GetInstance()) {
-    content::WebContents* web_contents = native_window->GetWebContents();
-    if (web_contents &&
-        process_id == web_contents->GetRenderProcessHost()->GetID()) {
+  for (auto native_window : *WindowList::GetInstance())
+    if (web_contents == native_window->GetWebContents()) {
       *window = native_window;
       return OWNER_NATIVE_WINDOW;
     }
-  }
 
   // Then search for guest WebContents.
-  auto process = content::RenderProcessHost::FromID(process_id);
-  if (WebViewManager::GetInfoForProcess(process, info)) {
+  if (WebViewManager::GetInfoForWebContents(web_contents, info))
     return OWNER_GUEST_WEB_CONTENTS;
-  }
 
   return OWNER_NONE;
 }
@@ -69,8 +74,7 @@ void AtomBrowserClient::SuppressRendererProcessRestartForOnce() {
   g_suppress_renderer_process_restart = true;
 }
 
-AtomBrowserClient::AtomBrowserClient()
-    : dying_render_process_(nullptr) {
+AtomBrowserClient::AtomBrowserClient() {
 }
 
 AtomBrowserClient::~AtomBrowserClient() {
@@ -148,9 +152,6 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
   if (url.SchemeIs(url::kJavaScriptScheme))
     return;
 
-  if (current_instance->HasProcess())
-    dying_render_process_ = current_instance->GetProcess();
-
   *new_instance = content::SiteInstance::CreateForURL(browser_context, url);
 }
 
@@ -161,20 +162,16 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   if (process_type != "renderer")
     return;
 
+  auto web_contents = GetWebContentsFromProcess(process_id);
+  if (!web_contents)
+    return;
+
   NativeWindow* window;
   WebViewManager::WebViewInfo info;
-  ChildProcessOwner owner = GetChildProcessOwner(process_id, &window, &info);
-
-  // If the render process is a newly started one, which means the owner still
-  // uses the old going-to-be-swapped render process, then we try to find the
-  // owner from the swapped render process.
-  if (owner == OWNER_NONE) {
-    process_id = dying_render_process_->GetID();
-    owner = GetChildProcessOwner(process_id, &window, &info);
-  }
+  WebContentsOwner owner = GetWebContentsOwner(web_contents, &window, &info);
 
   if (owner == OWNER_NATIVE_WINDOW) {
-    window->AppendExtraCommandLineSwitches(command_line, process_id);
+    window->AppendExtraCommandLineSwitches(command_line);
   } else if (owner == OWNER_GUEST_WEB_CONTENTS) {
     command_line->AppendSwitchASCII(
         switches::kGuestInstanceID, base::IntToString(info.guest_instance_id));
@@ -186,8 +183,6 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
       command_line->AppendSwitchPath(
           switches::kPreloadScript, info.preload_script);
   }
-
-  dying_render_process_ = nullptr;
 }
 
 void AtomBrowserClient::DidCreatePpapiPlugin(

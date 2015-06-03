@@ -422,7 +422,7 @@ content::WebContents* NativeWindow::GetDevToolsWebContents() const {
 }
 
 void NativeWindow::AppendExtraCommandLineSwitches(
-    base::CommandLine* command_line, int child_process_id) {
+    base::CommandLine* command_line) {
   // Append --node-integration to renderer process.
   command_line->AppendSwitchASCII(switches::kNodeIntegration,
                                   node_integration_ ? "true" : "false");

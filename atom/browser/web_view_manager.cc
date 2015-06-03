@@ -12,10 +12,9 @@ namespace atom {
 
 namespace {
 
-WebViewManager* GetManagerFromProcess(content::RenderProcessHost* process) {
-  if (!process)
-    return nullptr;
-  auto context = process->GetBrowserContext();
+WebViewManager* GetManagerFromWebContents(
+    const content::WebContents* web_contents) {
+  auto context = web_contents->GetBrowserContext();
   if (!context)
     return nullptr;
   return static_cast<WebViewManager*>(context->GetGuestManager());
@@ -24,24 +23,9 @@ WebViewManager* GetManagerFromProcess(content::RenderProcessHost* process) {
 }  // namespace
 
 // static
-bool WebViewManager::GetInfoForProcess(content::RenderProcessHost* process,
-                                       WebViewInfo* info) {
-  auto manager = GetManagerFromProcess(process);
-  if (!manager)
-    return false;
-  base::AutoLock auto_lock(manager->lock_);
-  for (auto iter : manager->webview_info_map_)
-    if (iter.first->GetRenderProcessHost() == process) {
-      *info = iter.second;
-      return true;
-    }
-  return false;
-}
-
-// static
-bool WebViewManager::GetInfoForWebContents(content::WebContents* web_contents,
-                                           WebViewInfo* info) {
-  auto manager = GetManagerFromProcess(web_contents->GetRenderProcessHost());
+bool WebViewManager::GetInfoForWebContents(
+    const content::WebContents* web_contents, WebViewInfo* info) {
+  auto manager = GetManagerFromWebContents(web_contents);
   if (!manager)
     return false;
   base::AutoLock auto_lock(manager->lock_);

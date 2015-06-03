@@ -192,8 +192,7 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   content::WebContents* GetDevToolsWebContents() const;
 
   // Called when renderer process is going to be started.
-  void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
-                                      int child_process_id);
+  void AppendExtraCommandLineSwitches(base::CommandLine* command_line);
   void OverrideWebkitPrefs(content::WebPreferences* prefs);
 
   // Set fullscreen mode triggered by html api.

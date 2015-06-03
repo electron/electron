@@ -85,7 +85,7 @@ v8::Persistent<v8::ObjectTemplate> template_;
 // Get the window that has the |guest| embedded.
 NativeWindow* GetWindowFromGuest(const content::WebContents* guest) {
   WebViewManager::WebViewInfo info;
-  if (WebViewManager::GetInfoForProcess(guest->GetRenderProcessHost(), &info))
+  if (WebViewManager::GetInfoForWebContents(guest, &info))
     return NativeWindow::FromWebContents(info.embedder);
   else
     return nullptr;
