@@ -8,7 +8,6 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_quota_permission_context.h"
-#include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_view_manager.h"
@@ -22,7 +21,6 @@
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
-#include "content/public/browser/resource_dispatcher_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/web_preferences.h"
@@ -81,12 +79,6 @@ content::SpeechRecognitionManagerDelegate*
 
 content::AccessTokenStore* AtomBrowserClient::CreateAccessTokenStore() {
   return new AtomAccessTokenStore;
-}
-
-void AtomBrowserClient::ResourceDispatcherHostCreated() {
-  resource_dispatcher_delegate_.reset(new AtomResourceDispatcherHostDelegate);
-  content::ResourceDispatcherHost::Get()->SetDelegate(
-      resource_dispatcher_delegate_.get());
 }
 
 void AtomBrowserClient::OverrideWebkitPrefs(
