@@ -62,6 +62,7 @@ window.open = (url, frameName='', features='') ->
 window.alert = (message, title='') ->
   dialog = remote.require 'dialog'
   buttons = ['OK']
+  message = message.toString()
   dialog.showMessageBox remote.getCurrentWindow(), {message, title, buttons}
 
 # And the confirm().
