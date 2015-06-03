@@ -19,11 +19,14 @@
 #include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
 #include "chrome/browser/speech/tts_message_filter.h"
 #include "content/public/browser/browser_ppapi_host.h"
+#include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/web_preferences.h"
+#include "net/cert/x509_certificate.h"
+#include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
 #include "ui/base/l10n/l10n_util.h"
 
@@ -65,6 +68,23 @@ ProcessOwner GetProcessOwner(int process_id,
     return OWNER_GUEST_WEB_CONTENTS;
 
   return OWNER_NONE;
+}
+
+scoped_refptr<net::X509Certificate> ImportCertFromFile(
+    const base::FilePath& path) {
+  std::string cert_data;
+  if (!base::ReadFileToString(path, &cert_data))
+    return nullptr;
+
+  net::CertificateList certs =
+      net::X509Certificate::CreateCertificateListFromBytes(
+          cert_data.data(), cert_data.size(),
+          net::X509Certificate::FORMAT_AUTO);
+
+  if (certs.empty())
+    return nullptr;
+
+  return certs[0];
 }
 
 }  // namespace
@@ -187,6 +207,22 @@ void AtomBrowserClient::DidCreatePpapiPlugin(
 content::QuotaPermissionContext*
     AtomBrowserClient::CreateQuotaPermissionContext() {
   return new AtomQuotaPermissionContext;
+}
+
+void AtomBrowserClient::SelectClientCertificate(
+    content::WebContents* web_contents,
+    net::SSLCertRequestInfo* cert_request_info,
+    scoped_ptr<content::ClientCertificateDelegate> delegate) {
+  auto command_line = base::CommandLine::ForCurrentProcess();
+  auto cert_path = command_line->GetSwitchValueNative(
+      switches::kClientCertificate);
+
+  if (cert_path.empty())
+    return;
+
+  scoped_refptr<net::X509Certificate> certificate =
+      ImportCertFromFile(base::FilePath(cert_path));
+  delegate->ContinueWithCertificate(certificate.get());
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
