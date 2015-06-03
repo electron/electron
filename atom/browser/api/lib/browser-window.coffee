@@ -88,11 +88,11 @@ BrowserWindow.getFocusedWindow = ->
 
 BrowserWindow.fromWebContents = (webContents) ->
   windows = BrowserWindow.getAllWindows()
-  return window for window in windows when webContents.equal window.webContents
+  return window for window in windows when window.webContents?.equal webContents
 
 BrowserWindow.fromDevToolsWebContents = (webContents) ->
   windows = BrowserWindow.getAllWindows()
-  return window for window in windows when webContents.equal window.devToolsWebContents
+  return window for window in windows when window.devToolsWebContents?.equal webContents
 
 BrowserWindow.fromId = (id) ->
   BrowserWindow.windows.get id
