@@ -31,22 +31,23 @@ namespace atom {
 
 namespace {
 
-// The default routing id of WebContents, since in Electron a WebContents
-// always owns its own RenderProcessHost, this ID is same for every WebContents.
+// The default routing id of WebContents.
+// In Electron each RenderProcessHost only has one WebContents, so this ID is
+// same for every WebContents.
 int kDefaultRoutingID = 2;
 
 // Next navigation should not restart renderer process.
 bool g_suppress_renderer_process_restart = false;
 
-// Find out the owner of the child process according to child_process_id.
+// Find out the owner of the child process according to |process_id|.
 enum ProcessOwner {
   OWNER_NATIVE_WINDOW,
   OWNER_GUEST_WEB_CONTENTS,
   OWNER_NONE,  // it might be devtools though.
 };
 ProcessOwner GetProcessOwner(int process_id,
-                                 NativeWindow** window,
-                                 WebViewManager::WebViewInfo* info) {
+                             NativeWindow** window,
+                             WebViewManager::WebViewInfo* info) {
   auto web_contents = content::WebContents::FromRenderViewHost(
       content::RenderViewHost::FromID(process_id, kDefaultRoutingID));
   if (!web_contents)
