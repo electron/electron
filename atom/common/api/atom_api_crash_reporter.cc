@@ -11,6 +11,8 @@
 
 #include "atom/common/node_includes.h"
 
+using crash_reporter::CrashReporter;
+
 namespace mate {
 
 template<>
@@ -32,10 +34,9 @@ struct Converter<std::map<std::string, std::string> > {
 };
 
 template<>
-struct Converter<std::vector<crash_reporter::CrashReporter::UploadReportResult> > {
+struct Converter<std::vector<CrashReporter::UploadReportResult> > {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-      const std::vector<
-          crash_reporter::CrashReporter::UploadReportResult>& reports) {
+      const std::vector<CrashReporter::UploadReportResult>& reports) {
     v8::Local<v8::Array> result(v8::Array::New(isolate, reports.size()));
     for (size_t i = 0; i < reports.size(); ++i) {
       mate::Dictionary dict(isolate, v8::Object::New(isolate));
@@ -54,14 +55,12 @@ struct Converter<std::vector<crash_reporter::CrashReporter::UploadReportResult> 
 
 namespace {
 
-std::vector<crash_reporter::CrashReporter::UploadReportResult>
-GetUploadedReports() {
-  return (crash_reporter::CrashReporter::GetInstance())->GetUploadedReports();
+std::vector<CrashReporter::UploadReportResult> GetUploadedReports() {
+  return (CrashReporter::GetInstance())->GetUploadedReports();
 }
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
-  using crash_reporter::CrashReporter;
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("start",
                  base::Bind(&CrashReporter::Start,
