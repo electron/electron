@@ -28,7 +28,7 @@ class WebViewAttribute
   # Changes the attribute's value without triggering its mutation handler.
   setValueIgnoreMutation: (value) ->
     @ignoreMutation = true
-    @webViewImpl.webviewNode.setAttribute(@name, value || '')
+    @setValue value
     @ignoreMutation = false
 
   # Defines this attribute as a property on the webview node.
@@ -119,6 +119,14 @@ class SrcAttribute extends WebViewAttribute
     else
       ''
 
+  setValueIgnoreMutation: (value) ->
+    WebViewAttribute::setValueIgnoreMutation value
+    # takeRecords() is needed to clear queued up src mutations. Without it, it
+    # is possible for this change to get picked up asyncronously by src's
+    # mutation observer |observer|, and then get handled even though we do not
+    # want to handle this mutation.
+    @observer.takeRecords()
+
   handleMutation: (oldValue, newValue) ->
     # Once we have navigated, we don't allow clearing the src attribute.
     # Once <webview> enters a navigated state, it cannot return to a
@@ -138,7 +146,10 @@ class SrcAttribute extends WebViewAttribute
   setupMutationObserver: ->
     @observer = new MutationObserver (mutations) =>
       for mutation in mutations
-        @handleMutation mutation.oldValue, @getValue()
+        oldValue = mutation.oldValue
+        newValue = @getValue()
+        return if oldValue isnt newValue
+        @handleMutation oldValue, newValue
     params =
       attributes: true,
       attributeOldValue: true,
