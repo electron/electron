@@ -2,6 +2,7 @@
 
 ## Prerequisites
 
+* Python 2.7
 * [Node.js](http://nodejs.org)
 * Clang 3.4 or later
 * Development headers of GTK+ and libnotify
