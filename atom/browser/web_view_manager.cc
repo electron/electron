@@ -12,10 +12,9 @@ namespace atom {
 
 namespace {
 
-WebViewManager* GetManagerFromProcess(content::RenderProcessHost* process) {
-  if (!process)
-    return nullptr;
-  auto context = process->GetBrowserContext();
+WebViewManager* GetManagerFromWebContents(
+    const content::WebContents* web_contents) {
+  auto context = web_contents->GetBrowserContext();
   if (!context)
     return nullptr;
   return static_cast<WebViewManager*>(context->GetGuestManager());
@@ -24,28 +23,17 @@ WebViewManager* GetManagerFromProcess(content::RenderProcessHost* process) {
 }  // namespace
 
 // static
-bool WebViewManager::GetInfoForProcess(content::RenderProcessHost* process,
-                                       WebViewInfo* info) {
-  auto manager = GetManagerFromProcess(process);
+bool WebViewManager::GetInfoForWebContents(
+    const content::WebContents* web_contents, WebViewInfo* info) {
+  auto manager = GetManagerFromWebContents(web_contents);
   if (!manager)
     return false;
-  return manager->GetInfo(process->GetID(), info);
-}
-
-// static
-void WebViewManager::UpdateGuestProcessID(
-    content::RenderProcessHost* old_process,
-    content::RenderProcessHost* new_process) {
-  auto manager = GetManagerFromProcess(old_process);
-  if (manager) {
-    base::AutoLock auto_lock(manager->lock_);
-    int old_id = old_process->GetID();
-    int new_id = new_process->GetID();
-    if (!ContainsKey(manager->webview_info_map_, old_id))
-      return;
-    manager->webview_info_map_[new_id] = manager->webview_info_map_[old_id];
-    manager->webview_info_map_.erase(old_id);
-  }
+  base::AutoLock auto_lock(manager->lock_);
+  auto iter = manager->webview_info_map_.find(web_contents);
+  if (iter == manager->webview_info_map_.end())
+    return false;
+  *info = iter->second;
+  return true;
 }
 
 WebViewManager::WebViewManager(content::BrowserContext* context) {
@@ -61,9 +49,7 @@ void WebViewManager::AddGuest(int guest_instance_id,
                               const WebViewInfo& info) {
   base::AutoLock auto_lock(lock_);
   web_contents_embdder_map_[guest_instance_id] = { web_contents, embedder };
-
-  int guest_process_id = web_contents->GetRenderProcessHost()->GetID();
-  webview_info_map_[guest_process_id] = info;
+  webview_info_map_[web_contents] = info;
 
   // Map the element in embedder to guest.
   int owner_process_id = embedder->GetRenderProcessHost()->GetID();
@@ -78,9 +64,7 @@ void WebViewManager::RemoveGuest(int guest_instance_id) {
 
   auto web_contents = web_contents_embdder_map_[guest_instance_id].web_contents;
   web_contents_embdder_map_.erase(guest_instance_id);
-
-  int guest_process_id = web_contents->GetRenderProcessHost()->GetID();
-  webview_info_map_.erase(guest_process_id);
+  webview_info_map_.erase(web_contents);
 
   // Remove the record of element in embedder too.
   for (const auto& element : element_instance_id_to_guest_map_)
@@ -88,16 +72,6 @@ void WebViewManager::RemoveGuest(int guest_instance_id) {
       element_instance_id_to_guest_map_.erase(element.first);
       break;
     }
-}
-
-bool WebViewManager::GetInfo(int guest_process_id, WebViewInfo* webview_info) {
-  base::AutoLock auto_lock(lock_);
-  WebViewInfoMap::iterator iter = webview_info_map_.find(guest_process_id);
-  if (iter != webview_info_map_.end()) {
-    *webview_info = iter->second;
-    return true;
-  }
-  return false;
 }
 
 content::WebContents* WebViewManager::GetGuestByInstanceID(

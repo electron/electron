@@ -31,25 +31,41 @@ namespace atom {
 
 namespace {
 
+// The default routing id of WebContents.
+// In Electron each RenderProcessHost only has one WebContents, so this ID is
+// same for every WebContents.
+int kDefaultRoutingID = 2;
+
 // Next navigation should not restart renderer process.
 bool g_suppress_renderer_process_restart = false;
 
-struct FindByProcessId {
-  explicit FindByProcessId(int child_process_id)
-      : child_process_id_(child_process_id) {
-  }
-
-  bool operator() (NativeWindow* const window) {
-    content::WebContents* web_contents = window->GetWebContents();
-    if (!web_contents)
-      return false;
-
-    int id = window->GetWebContents()->GetRenderProcessHost()->GetID();
-    return id == child_process_id_;
-  }
-
-  int child_process_id_;
+// Find out the owner of the child process according to |process_id|.
+enum ProcessOwner {
+  OWNER_NATIVE_WINDOW,
+  OWNER_GUEST_WEB_CONTENTS,
+  OWNER_NONE,  // it might be devtools though.
 };
+ProcessOwner GetProcessOwner(int process_id,
+                             NativeWindow** window,
+                             WebViewManager::WebViewInfo* info) {
+  auto web_contents = content::WebContents::FromRenderViewHost(
+      content::RenderViewHost::FromID(process_id, kDefaultRoutingID));
+  if (!web_contents)
+    return OWNER_NONE;
+
+  // First search for NativeWindow.
+  for (auto native_window : *WindowList::GetInstance())
+    if (web_contents == native_window->GetWebContents()) {
+      *window = native_window;
+      return OWNER_NATIVE_WINDOW;
+    }
+
+  // Then search for guest WebContents.
+  if (WebViewManager::GetInfoForWebContents(web_contents, info))
+    return OWNER_GUEST_WEB_CONTENTS;
+
+  return OWNER_NONE;
+}
 
 }  // namespace
 
@@ -58,8 +74,7 @@ void AtomBrowserClient::SuppressRendererProcessRestartForOnce() {
   g_suppress_renderer_process_restart = true;
 }
 
-AtomBrowserClient::AtomBrowserClient()
-    : dying_render_process_(nullptr) {
+AtomBrowserClient::AtomBrowserClient() {
 }
 
 AtomBrowserClient::~AtomBrowserClient() {
@@ -82,8 +97,7 @@ content::AccessTokenStore* AtomBrowserClient::CreateAccessTokenStore() {
 }
 
 void AtomBrowserClient::OverrideWebkitPrefs(
-    content::RenderViewHost* render_view_host,
-    content::WebPreferences* prefs) {
+    content::RenderViewHost* host, content::WebPreferences* prefs) {
   prefs->javascript_enabled = true;
   prefs->web_security_enabled = true;
   prefs->javascript_can_open_windows_automatically = true;
@@ -101,18 +115,10 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->allow_displaying_insecure_content = false;
   prefs->allow_running_insecure_content = false;
 
-  // Turn off web security for devtools.
-  auto web_contents = content::WebContents::FromRenderViewHost(
-      render_view_host);
-  if (web_contents && web_contents->GetURL().SchemeIs("chrome-devtools")) {
-    prefs->web_security_enabled = false;
-    return;
-  }
-
   // Custom preferences of guest page.
-  auto process = render_view_host->GetProcess();
+  auto web_contents = content::WebContents::FromRenderViewHost(host);
   WebViewManager::WebViewInfo info;
-  if (WebViewManager::GetInfoForProcess(process, &info)) {
+  if (WebViewManager::GetInfoForWebContents(web_contents, &info)) {
     prefs->web_security_enabled = !info.disable_web_security;
     return;
   }
@@ -136,76 +142,37 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
     return;
   }
 
-  if (current_instance->HasProcess())
-    dying_render_process_ = current_instance->GetProcess();
+  // Restart renderer process for all navigations except "javacript:" scheme.
+  if (url.SchemeIs(url::kJavaScriptScheme))
+    return;
 
-
-  if (!url.SchemeIs(url::kJavaScriptScheme)) {
-    // Restart renderer process for all navigations except javacript: scheme.
-    *new_instance = content::SiteInstance::CreateForURL(browser_context, url);
-  }
+  *new_instance = content::SiteInstance::CreateForURL(browser_context, url);
 }
 
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
     base::CommandLine* command_line,
-    int child_process_id) {
+    int process_id) {
   std::string process_type = command_line->GetSwitchValueASCII("type");
   if (process_type != "renderer")
     return;
 
-  WindowList* list = WindowList::GetInstance();
-  NativeWindow* window = nullptr;
+  NativeWindow* window;
+  WebViewManager::WebViewInfo info;
+  ProcessOwner owner = GetProcessOwner(process_id, &window, &info);
 
-  // Find the owner of this child process.
-  WindowList::const_iterator iter = std::find_if(
-      list->begin(), list->end(), FindByProcessId(child_process_id));
-  if (iter != list->end())
-    window = *iter;
-
-  // If the render process is a newly started one, which means the window still
-  // uses the old going-to-be-swapped render process, then we try to find the
-  // window from the swapped render process.
-  if (!window && dying_render_process_) {
-    int dying_process_id = dying_render_process_->GetID();
-    WindowList::const_iterator iter = std::find_if(
-        list->begin(), list->end(), FindByProcessId(dying_process_id));
-    if (iter != list->end()) {
-      window = *iter;
-      child_process_id = dying_process_id;
-    } else {
-      // It appears that the dying process doesn't belong to a BrowserWindow,
-      // then it might be a guest process, if it is we should update its
-      // process ID in the WebViewManager.
-      auto child_process = content::RenderProcessHost::FromID(child_process_id);
-      // Update the process ID in webview guests.
-      WebViewManager::UpdateGuestProcessID(dying_render_process_,
-                                           child_process);
-    }
+  if (owner == OWNER_NATIVE_WINDOW) {
+    window->AppendExtraCommandLineSwitches(command_line);
+  } else if (owner == OWNER_GUEST_WEB_CONTENTS) {
+    command_line->AppendSwitchASCII(
+        switches::kGuestInstanceID, base::IntToString(info.guest_instance_id));
+    command_line->AppendSwitchASCII(
+        switches::kNodeIntegration, info.node_integration ? "true" : "false");
+    if (info.plugins)
+      command_line->AppendSwitch(switches::kEnablePlugins);
+    if (!info.preload_script.empty())
+      command_line->AppendSwitchPath(
+          switches::kPreloadScript, info.preload_script);
   }
-
-  if (window) {
-    window->AppendExtraCommandLineSwitches(command_line, child_process_id);
-  } else {
-    // Append commnad line arguments for guest web view.
-    auto child_process = content::RenderProcessHost::FromID(child_process_id);
-    WebViewManager::WebViewInfo info;
-    if (WebViewManager::GetInfoForProcess(child_process, &info)) {
-      command_line->AppendSwitchASCII(
-          switches::kGuestInstanceID,
-          base::IntToString(info.guest_instance_id));
-      command_line->AppendSwitchASCII(
-          switches::kNodeIntegration,
-          info.node_integration ? "true" : "false");
-      if (info.plugins)
-        command_line->AppendSwitch(switches::kEnablePlugins);
-      if (!info.preload_script.empty())
-        command_line->AppendSwitchPath(
-            switches::kPreloadScript,
-            info.preload_script);
-    }
-  }
-
-  dying_render_process_ = nullptr;
 }
 
 void AtomBrowserClient::DidCreatePpapiPlugin(

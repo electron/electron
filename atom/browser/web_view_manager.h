@@ -29,14 +29,10 @@ class WebViewManager : public content::BrowserPluginGuestManager {
     base::FilePath preload_script;
   };
 
-  // Finds the WebViewManager attached with |process| and returns the
+  // Finds the WebViewManager attached with |web_contents| and returns the
   // WebViewInfo of it.
-  static bool GetInfoForProcess(content::RenderProcessHost* process,
-                                WebViewInfo* info);
-
-  // Updates the guest process ID.
-  static void UpdateGuestProcessID(content::RenderProcessHost* old_process,
-                                   content::RenderProcessHost* new_process);
+  static bool GetInfoForWebContents(const content::WebContents* web_contents,
+                                    WebViewInfo* info);
 
   explicit WebViewManager(content::BrowserContext* context);
   virtual ~WebViewManager();
@@ -47,10 +43,6 @@ class WebViewManager : public content::BrowserPluginGuestManager {
                 content::WebContents* web_contents,
                 const WebViewInfo& info);
   void RemoveGuest(int guest_instance_id);
-
-  // Looks up the information for the embedder <webview> for a given render
-  // view, if one exists. Called on the IO thread.
-  bool GetInfo(int guest_process_id, WebViewInfo* webview_info);
 
  protected:
   // content::BrowserPluginGuestManager:
@@ -89,8 +81,8 @@ class WebViewManager : public content::BrowserPluginGuestManager {
   // (embedder_process_id, element_instance_id) => guest_instance_id
   std::map<ElementInstanceKey, int> element_instance_id_to_guest_map_;
 
-  typedef std::map<int, WebViewInfo> WebViewInfoMap;
-  // guest_process_id => (guest_instance_id, embedder, ...)
+  typedef std::map<const content::WebContents*, WebViewInfo> WebViewInfoMap;
+  // web_contents => (guest_instance_id, embedder, ...)
   WebViewInfoMap webview_info_map_;
 
   base::Lock lock_;

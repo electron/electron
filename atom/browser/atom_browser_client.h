@@ -46,9 +46,6 @@ class AtomBrowserClient : public brightray::BrowserClient {
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
       const content::MainFunctionParams&) override;
 
-  // The render process which would be swapped out soon.
-  content::RenderProcessHost* dying_render_process_;
-
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
 };
 
