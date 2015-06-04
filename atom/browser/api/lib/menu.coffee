@@ -130,11 +130,12 @@ Menu::_callMenuWillShow = ->
 
 applicationMenu = null
 Menu.setApplicationMenu = (menu) ->
-  throw new TypeError('Invalid menu') unless menu?.constructor is Menu
+  throw new TypeError('Invalid menu') unless menu is null or menu.constructor is Menu
   applicationMenu = menu  # Keep a reference.
 
   if process.platform is 'darwin'
     menu._callMenuWillShow()
+    throw new Error('You can not remove application menu') if menu is null
     bindings.setApplicationMenu menu
   else
     windows = BrowserWindow.getAllWindows()
