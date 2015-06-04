@@ -1,7 +1,7 @@
 {
   'variables': {
     # The libraries brightray will be compiled to.
-    'linux_system_libraries': 'gtk+-2.0 libnotify dbus-1 x11 xrandr xext gconf-2.0'
+    'linux_system_libraries': 'gtk+-2.0 libnotify dbus-1 x11 xrandr xext gconf-2.0 gmodule-2.0'
   },
   'includes': [
     'filenames.gypi',
