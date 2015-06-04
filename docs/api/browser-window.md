@@ -579,7 +579,8 @@ Same with `webContents.reload`.
 
 * `menu` Menu
 
-Sets the `menu` as the window top menu.
+Sets the `menu` as the window's menu bar, setting it to `null` will remove the
+menu bar.
 
 __Note:__ This API is not available on OS X.
 
