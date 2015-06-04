@@ -275,7 +275,8 @@
         }],  # OS=="win"
         ['OS=="mac"', {
           'dependencies': [
-            'vendor/breakpad/breakpad.gyp:breakpad',
+            'vendor/crashpad/client/client.gyp:crashpad_client',
+            'vendor/crashpad/handler/handler.gyp:crashpad_handler',
           ],
         }],  # OS=="mac"
         ['OS=="linux"', {
@@ -430,8 +431,7 @@
             {
               'destination': '<(PRODUCT_DIR)/<(product_name) Framework.framework/Versions/A/Resources',
               'files': [
-                '<(PRODUCT_DIR)/Inspector',
-                '<(PRODUCT_DIR)/crash_report_sender.app',
+                '<(PRODUCT_DIR)/crashpad_handler',
               ],
             },
           ],

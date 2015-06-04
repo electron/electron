@@ -27,6 +27,11 @@ crashReporter.start({
     * Only string properties are send correctly.
     * Nested objects are not supported.
 
+**Note:** On OS X, electron uses a new `crashpad` client, which is different
+with the `breakpad` on Windows and Linux. To enable crash collection feature,
+you are required to call `crashReporter.start` API to initiliaze `crashpad` in
+main process, even you only collect crash report in renderer process.
+
 ## crashReporter.getLastCrashReport()
 
 Returns the date and ID of last crash report, when there was no crash report

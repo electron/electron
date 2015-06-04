@@ -39,4 +39,9 @@ void CrashReporter::SetUploadParameters(const StringMap& parameters) {
   SetUploadParameters();
 }
 
+std::vector<CrashReporter::UploadReportResult>
+CrashReporter::GetUploadedReports() {
+  return std::vector<CrashReporter::UploadReportResult>();
+}
+
 }  // namespace crash_reporter
