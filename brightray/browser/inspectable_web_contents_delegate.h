@@ -20,6 +20,9 @@ class InspectableWebContentsDelegate {
   virtual void DevToolsAppendToFile(
       const std::string& url, const std::string& content) {}
   virtual void DevToolsFocused() {}
+  virtual void DevToolsAddFileSystem() {}
+  virtual void DevToolsRemoveFileSystem(
+      const std::string& file_system_path) {}
 
 #if defined(USE_X11)
   // Called when creating devtools window.
