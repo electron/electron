@@ -95,6 +95,9 @@ const char kOverlayScrollbars[]          = "overlay-scrollbars";
 const char kOverlayFullscreenVideo[]     = "overlay-fullscreen-video";
 const char kSharedWorker[]               = "shared-worker";
 
+// Set page visiblity to always visible.
+const char kPageVisibility[] = "page-visibility";
+
 // Disable HTTP cache.
 const char kDisableHttpCache[] = "disable-http-cache";
 

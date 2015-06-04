@@ -191,6 +191,21 @@ content::BrowserPluginDelegate* AtomRendererClient::CreateBrowserPluginDelegate(
   }
 }
 
+bool AtomRendererClient::ShouldOverridePageVisibilityState(
+    const content::RenderFrame* render_frame,
+    blink::WebPageVisibilityState* override_state) {
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  bool b;
+
+  if (IsSwitchEnabled(command_line, switches::kPageVisibility, &b)
+      && b) {
+    *override_state = blink::WebPageVisibilityStateVisible;
+    return true;
+  }
+
+  return false;
+}
+
 void AtomRendererClient::EnableWebRuntimeFeatures() {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   bool b;

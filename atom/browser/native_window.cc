@@ -78,6 +78,7 @@ const char* kWebRuntimeFeatures[] = {
   switches::kOverlayScrollbars,
   switches::kOverlayFullscreenVideo,
   switches::kSharedWorker,
+  switches::kPageVisibility,
 };
 
 std::string RemoveWhitespace(const std::string& str) {
