@@ -51,7 +51,6 @@ class Menu : public mate::Wrappable,
   void ExecuteCommand(int command_id, int event_flags) override;
   void MenuWillShow(ui::SimpleMenuModel* source) override;
 
-  virtual void AttachToWindow(Window* window);
   virtual void Popup(Window* window) = 0;
   virtual void PopupAt(Window* window, int x, int y) = 0;
 
@@ -98,5 +97,28 @@ class Menu : public mate::Wrappable,
 }  // namespace api
 
 }  // namespace atom
+
+
+namespace mate {
+
+template<>
+struct Converter<ui::SimpleMenuModel*> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     ui::SimpleMenuModel** out) {
+    // null would be tranfered to NULL.
+    if (val->IsNull()) {
+      *out = nullptr;
+      return true;
+    }
+
+    atom::api::Menu* menu;
+    if (!Converter<atom::api::Menu*>::FromV8(isolate, val, &menu))
+      return false;
+    *out = menu->model();
+    return true;
+  }
+};
+
+}  // namespace mate
 
 #endif  // ATOM_BROWSER_API_ATOM_API_MENU_H_

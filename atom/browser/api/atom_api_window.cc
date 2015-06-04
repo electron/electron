@@ -4,6 +4,7 @@
 
 #include "atom/browser/api/atom_api_window.h"
 
+#include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
@@ -437,6 +438,10 @@ void Window::SetOverlayIcon(const gfx::Image& overlay,
   window_->SetOverlayIcon(overlay, description);
 }
 
+void Window::SetMenu(ui::SimpleMenuModel* menu) {
+  window_->SetMenu(menu);
+}
+
 void Window::SetAutoHideMenuBar(bool auto_hide) {
   window_->SetAutoHideMenuBar(auto_hide);
 }
@@ -535,6 +540,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("print", &Window::Print)
       .SetMethod("setProgressBar", &Window::SetProgressBar)
       .SetMethod("setOverlayIcon", &Window::SetOverlayIcon)
+      .SetMethod("_setMenu", &Window::SetMenu)
       .SetMethod("setAutoHideMenuBar", &Window::SetAutoHideMenuBar)
       .SetMethod("isMenuBarAutoHide", &Window::IsMenuBarAutoHide)
       .SetMethod("setMenuBarVisibility", &Window::SetMenuBarVisibility)
