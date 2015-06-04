@@ -61,6 +61,22 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
  public:
   typedef base::Callback<void(const SkBitmap& bitmap)> CapturePageCallback;
 
+  struct FileSystem {
+    FileSystem() {
+    }
+    FileSystem(const std::string& file_system_name,
+               const std::string& root_url,
+               const std::string& file_system_path)
+      : file_system_name(file_system_name),
+        root_url(root_url),
+        file_system_path(file_system_path) {
+    }
+
+    std::string file_system_name;
+    std::string root_url;
+    std::string file_system_path;
+  };
+
   class DialogScope {
    public:
     explicit DialogScope(NativeWindow* window)
@@ -307,6 +323,8 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   void DevToolsAppendToFile(const std::string& url,
                             const std::string& content) override;
   void DevToolsFocused() override;
+  void DevToolsAddFileSystem() override;
+  void DevToolsRemoveFileSystem(const std::string& file_system_path) override;
 
   // Whether window has standard frame.
   bool has_frame_;
@@ -385,6 +403,11 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Maps url to file path, used by the file requests sent from devtools.
   typedef std::map<std::string, base::FilePath> PathsMap;
   PathsMap saved_files_;
+
+  // Maps file system id to file path, used by the file system requests
+  // sent from devtools.
+  typedef std::map<std::string, base::FilePath> WorkspaceMap;
+  WorkspaceMap saved_paths_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindow);
 };
