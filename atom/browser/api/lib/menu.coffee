@@ -130,10 +130,11 @@ Menu::_callMenuWillShow = ->
 
 applicationMenu = null
 Menu.setApplicationMenu = (menu) ->
-  throw new TypeError('Invalid menu') unless menu?.constructor is Menu
+  throw new TypeError('Invalid menu') unless menu is null or menu.constructor is Menu
   applicationMenu = menu  # Keep a reference.
 
   if process.platform is 'darwin'
+    return if menu is null
     menu._callMenuWillShow()
     bindings.setApplicationMenu menu
   else

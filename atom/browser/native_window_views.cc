@@ -541,6 +541,19 @@ bool NativeWindowViews::IsKiosk() {
 }
 
 void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
+  if (menu_model == nullptr) {
+    // Remove accelerators
+    accelerator_table_.clear();
+    GetFocusManager()->UnregisterAccelerators(this);
+    // and menu bar.
+#if defined(USE_X11)
+    global_menu_bar_.reset();
+#endif
+    SetMenuBarVisibility(false);
+    menu_bar_.reset();
+    return;
+  }
+
   RegisterAccelerators(menu_model);
 
 #if defined(USE_X11)

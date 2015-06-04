@@ -70,13 +70,10 @@ BrowserWindow::getDevToolsWebContents = ->
   wrapWebContents @_getDevToolsWebContents()
 
 BrowserWindow::setMenu = (menu) ->
-  if process.platform is 'darwin'
-    throw new Error('BrowserWindow.setMenu is not available on OS X')
-
-  throw new TypeError('Invalid menu') unless menu?.constructor?.name is 'Menu'
+  throw new TypeError('Invalid menu') unless menu is null or menu?.constructor?.name is 'Menu'
 
   @menu = menu  # Keep a reference of menu in case of GC.
-  @menu.attachToWindow this
+  @_setMenu menu
 
 BrowserWindow.getAllWindows = ->
   windows = BrowserWindow.windows

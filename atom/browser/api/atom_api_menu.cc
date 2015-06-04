@@ -70,10 +70,6 @@ void Menu::MenuWillShow(ui::SimpleMenuModel* source) {
   menu_will_show_.Run();
 }
 
-void Menu::AttachToWindow(Window* window) {
-  window->window()->SetMenu(model_.get());
-}
-
 void Menu::InsertItemAt(
     int index, int command_id, const base::string16& label) {
   model_->InsertItemAt(index, command_id, label);
@@ -168,7 +164,6 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
-      .SetMethod("attachToWindow", &Menu::AttachToWindow)
       .SetMethod("_popup", &Menu::Popup)
       .SetMethod("_popupAt", &Menu::PopupAt);
 }

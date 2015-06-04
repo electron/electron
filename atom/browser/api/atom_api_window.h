@@ -25,6 +25,10 @@ class Arguments;
 class Dictionary;
 }
 
+namespace ui {
+class SimpleMenuModel;
+}
+
 namespace atom {
 
 class NativeWindow;
@@ -134,6 +138,7 @@ class Window : public mate::EventEmitter,
   void SetProgressBar(double progress);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
+  void SetMenu(ui::SimpleMenuModel* menu);
   void SetAutoHideMenuBar(bool auto_hide);
   bool IsMenuBarAutoHide();
   void SetMenuBarVisibility(bool visible);
