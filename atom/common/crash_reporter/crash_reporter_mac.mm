@@ -15,7 +15,6 @@
 #include "vendor/crashpad/client/crashpad_client.h"
 #include "vendor/crashpad/client/crashpad_info.h"
 #include "vendor/crashpad/client/settings.h"
-#include "vendor/crashpad/client/simple_string_dictionary.h"
 
 namespace crash_reporter {
 
@@ -31,10 +30,10 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
                                     const std::string& submit_url,
                                     bool auto_submit,
                                     bool skip_system_crash_handler) {
-  static bool initialized = false;
-  if (initialized)
+  // check whether crashpad has been initilized.
+  // Only need to initilize once.
+  if (simple_string_dictionary_)
     return;
-  initialized = true;
 
   std::string dump_dir = "/tmp/" + product_name + " Crashes";
   base::FilePath database_path(dump_dir);
@@ -65,13 +64,11 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
   crashpad_info->set_simple_annotations(simple_string_dictionary_.get());
 
   SetCrashKeyValue("prod", ATOM_PRODUCT_NAME);
-  SetCrashKeyValue("process_type", is_browser_ ? base::StringPiece("browser")
-                                               : base::StringPiece("renderer"));
+  SetCrashKeyValue("process_type", is_browser_ ? "browser" : "renderer");
   SetCrashKeyValue("ver", version);
 
-  for (auto iter = upload_parameters_.begin();
-       iter != upload_parameters_.end(); ++iter) {
-    SetCrashKeyValue(iter->first, iter->second);
+  for (const auto& upload_parameter: upload_parameters_) {
+    SetCrashKeyValue(upload_parameter.first, upload_parameter.second);
   }
   if (is_browser_) {
     crash_report_database_ = crashpad::CrashReportDatabase::Initialize(
@@ -120,11 +117,8 @@ CrashReporterMac::GetUploadedReports() {
     }
   }
 
-  struct {
-    bool operator()(const UploadReportResult& a, const UploadReportResult& b) {
-      return a.first >= b.first;
-    }
-  } sort_by_time;
+  auto sort_by_time = [](const UploadReportResult& a,
+      const UploadReportResult& b) {return a.first >= b.first;};
   std::sort(uploaded_reports.begin(), uploaded_reports.end(), sort_by_time);
   return uploaded_reports;
 }

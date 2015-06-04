@@ -34,20 +34,13 @@ struct Converter<std::map<std::string, std::string> > {
 };
 
 template<>
-struct Converter<std::vector<CrashReporter::UploadReportResult> > {
+struct Converter<CrashReporter::UploadReportResult> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-      const std::vector<CrashReporter::UploadReportResult>& reports) {
-    v8::Local<v8::Array> result(v8::Array::New(isolate, reports.size()));
-    for (size_t i = 0; i < reports.size(); ++i) {
-      mate::Dictionary dict(isolate, v8::Object::New(isolate));
-      dict.Set("date", reports[i].first);
-      dict.Set("id", reports[i].second);
-      v8::TryCatch try_catch;
-      result->Set(static_cast<uint32>(i), dict.GetHandle());
-      if (try_catch.HasCaught())
-        LOG(ERROR) << "Setter for index " << i << " threw an exception.";
-    }
-    return result;
+      const CrashReporter::UploadReportResult& reports) {
+    mate::Dictionary dict(isolate, v8::Object::New(isolate));
+    dict.Set("date", v8::Date::New(isolate, reports.first*1000.0));
+    dict.Set("id", reports.second);
+    return dict.GetHandle();
   }
 };
 
@@ -55,17 +48,15 @@ struct Converter<std::vector<CrashReporter::UploadReportResult> > {
 
 namespace {
 
-std::vector<CrashReporter::UploadReportResult> GetUploadedReports() {
-  return (CrashReporter::GetInstance())->GetUploadedReports();
-}
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
+  auto report = base::Unretained(CrashReporter::GetInstance());
   dict.SetMethod("start",
-                 base::Bind(&CrashReporter::Start,
-                            base::Unretained(CrashReporter::GetInstance())));
-  dict.SetMethod("_getUploadedReports", &GetUploadedReports);
+                 base::Bind(&CrashReporter::Start, report));
+  dict.SetMethod("_getUploadedReports",
+                 base::Bind(&CrashReporter::GetUploadedReports, report));
 }
 
 }  // namespace

@@ -29,7 +29,8 @@ crashReporter.start({
 
 **Note:** On OS X, electron uses a new `crashpad` client, which is different
 with the `breakpad` on Windows and Linux. To enable crash collection feature,
-you are required to call `crashReporter.start` API to initiliaze `crashpad` in Browser Process, even you only collect crash report in Renderer Process.
+you are required to call `crashReporter.start` API to initiliaze `crashpad` in
+main process, even you only collect crash report in renderer process.
 
 ## crashReporter.getLastCrashReport()
 
