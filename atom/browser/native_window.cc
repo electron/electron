@@ -869,7 +869,8 @@ void NativeWindow::DevToolsSaveToFile(const std::string& url,
     base::FilePath default_path(base::FilePath::FromUTF8Unsafe(url));
     if (!file_dialog::ShowSaveDialog(this, url, default_path, filters, &path)) {
       base::StringValue url_value(url);
-      CallDevToolsFunction("DevToolsAPI.canceledSaveURL", &url_value);
+      inspectable_web_contents()->CallClientFunction(
+          "DevToolsAPI.canceledSaveURL", &url_value, nullptr, nullptr);
       return;
     }
   }
@@ -879,7 +880,8 @@ void NativeWindow::DevToolsSaveToFile(const std::string& url,
 
   // Notify devtools.
   base::StringValue url_value(url);
-  CallDevToolsFunction("DevToolsAPI.savedURL", &url_value);
+  inspectable_web_contents()->CallClientFunction(
+      "DevToolsAPI.savedURL", &url_value, nullptr, nullptr);
 }
 
 void NativeWindow::DevToolsAppendToFile(const std::string& url,
@@ -891,7 +893,8 @@ void NativeWindow::DevToolsAppendToFile(const std::string& url,
 
   // Notify devtools.
   base::StringValue url_value(url);
-  CallDevToolsFunction("DevToolsAPI.appendedToURL", &url_value);
+  inspectable_web_contents()->CallClientFunction(
+      "DevToolsAPI.appendedToURL", &url_value, nullptr, nullptr);
 }
 
 void NativeWindow::DevToolsFocused() {
@@ -929,8 +932,11 @@ void NativeWindow::DevToolsAddFileSystem() {
   scoped_ptr<base::DictionaryValue> file_system_value;
   if (!file_system.file_system_path.empty())
     file_system_value.reset(CreateFileSystemValue(file_system));
-  CallDevToolsFunction("DevToolsAPI.fileSystemAdded", error_string_value.get(),
-                       file_system_value.get(), nullptr);
+  inspectable_web_contents()->CallClientFunction(
+      "DevToolsAPI.fileSystemAdded",
+      error_string_value.get(),
+      file_system_value.get(),
+      nullptr);
 }
 
 void NativeWindow::DevToolsRemoveFileSystem(
@@ -945,8 +951,11 @@ void NativeWindow::DevToolsRemoveFileSystem(
     }
 
   base::StringValue file_system_path_value(file_system_path);
-  CallDevToolsFunction("DevToolsAPI.fileSystemRemoved",
-                       &file_system_path_value, nullptr, nullptr);
+  inspectable_web_contents()->CallClientFunction(
+      "DevToolsAPI.fileSystemRemoved",
+       &file_system_path_value,
+       nullptr,
+       nullptr);
 }
 
 void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
@@ -975,29 +984,6 @@ void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
                                      const SkBitmap& bitmap,
                                      content::ReadbackResponse response) {
   callback.Run(bitmap);
-}
-
-void NativeWindow::CallDevToolsFunction(const std::string& function_name,
-                                        const base::Value* arg1,
-                                        const base::Value* arg2,
-                                        const base::Value* arg3) {
-  std::string params;
-  if (arg1) {
-    std::string json;
-    base::JSONWriter::Write(arg1, &json);
-    params.append(json);
-    if (arg2) {
-      base::JSONWriter::Write(arg2, &json);
-      params.append(", " + json);
-      if (arg3) {
-        base::JSONWriter::Write(arg3, &json);
-        params.append(", " + json);
-      }
-    }
-  }
-  base::string16 javascript =
-      base::UTF8ToUTF16(function_name + "(" + params + ");");
-  GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(javascript);
 }
 
 }  // namespace atom

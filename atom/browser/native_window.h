@@ -345,12 +345,6 @@ class NativeWindow : public brightray::DefaultWebContentsDelegate,
   // Dispatch unresponsive event to observers.
   void NotifyWindowUnresponsive();
 
-  // Call a function in devtools.
-  void CallDevToolsFunction(const std::string& function_name,
-                            const base::Value* arg1 = NULL,
-                            const base::Value* arg2 = NULL,
-                            const base::Value* arg3 = NULL);
-
   // Called when CapturePage has done.
   void OnCapturePageDone(const CapturePageCallback& callback,
                          const SkBitmap& bitmap,
