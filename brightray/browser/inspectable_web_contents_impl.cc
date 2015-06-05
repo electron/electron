@@ -12,6 +12,8 @@
 #include "browser/inspectable_web_contents_view.h"
 
 #include "base/json/json_reader.h"
+#include "base/json/json_writer.h"
+#include "base/metrics/histogram.h"
 #include "base/prefs/pref_registry_simple.h"
 #include "base/prefs/pref_service.h"
 #include "base/strings/stringprintf.h"
@@ -41,6 +43,11 @@ const char kFrontendHostId[] = "id";
 const char kFrontendHostMethod[] = "method";
 const char kFrontendHostParams[] = "params";
 
+const char kDevToolsActionTakenHistogram[] = "DevTools.ActionTaken";
+const int kDevToolsActionTakenBoundary = 100;
+const char kDevToolsPanelShownHistogram[] = "DevTools.PanelShown";
+const int kDevToolsPanelShownBoundary = 20;
+
 void RectToDictionary(const gfx::Rect& bounds, base::DictionaryValue* dict) {
   dict->SetInteger("x", bounds.x());
   dict->SetInteger("y", bounds.y());
@@ -55,34 +62,6 @@ void DictionaryToRect(const base::DictionaryValue& dict, gfx::Rect* bounds) {
   dict.GetInteger("width", &width);
   dict.GetInteger("height", &height);
   *bounds = gfx::Rect(x, y, width, height);
-}
-
-bool ParseMessage(const std::string& message,
-                  std::string* method,
-                  base::ListValue* params,
-                  int* id) {
-  scoped_ptr<base::Value> parsed_message(base::JSONReader::Read(message));
-  if (!parsed_message)
-    return false;
-
-  base::DictionaryValue* dict = NULL;
-  if (!parsed_message->GetAsDictionary(&dict))
-    return false;
-  if (!dict->GetString(kFrontendHostMethod, method))
-    return false;
-
-  // "params" is optional.
-  if (dict->HasKey(kFrontendHostParams)) {
-    base::ListValue* internal_params;
-    if (dict->GetList(kFrontendHostParams, &internal_params))
-      params->Swap(internal_params);
-    else
-      return false;
-  }
-
-  *id = 0;
-  dict->GetInteger(kFrontendHostId, id);
-  return true;
 }
 
 double GetZoomLevelForWebContents(content::WebContents* web_contents) {
@@ -123,7 +102,8 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
     content::WebContents* web_contents)
     : web_contents_(web_contents),
       can_dock_(true),
-      delegate_(nullptr) {
+      delegate_(nullptr),
+      weak_factory_(this) {
   auto context = static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
   auto bounds_dict = context->prefs()->GetDictionary(kDevToolsBoundsPref);
   if (bounds_dict)
@@ -152,7 +132,7 @@ void InspectableWebContentsImpl::ShowDevTools() {
   // SetIsDocked is called *BEFORE* ShowDevTools.
   if (!devtools_web_contents_) {
     embedder_message_dispatcher_.reset(
-        new DevToolsEmbedderMessageDispatcher(this));
+        DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(this));
 
     content::WebContents::CreateParams create_params(web_contents_->GetBrowserContext());
     devtools_web_contents_.reset(content::WebContents::Create(create_params));
@@ -200,6 +180,29 @@ void InspectableWebContentsImpl::Detach() {
   agent_host_ = nullptr;
 }
 
+void InspectableWebContentsImpl::CallClientFunction(const std::string& function_name,
+                                                    const base::Value* arg1,
+                                                    const base::Value* arg2,
+                                                    const base::Value* arg3) {
+  std::string javascript = function_name + "(";
+  if (arg1) {
+    std::string json;
+    base::JSONWriter::Write(arg1, &json);
+    javascript.append(json);
+    if (arg2) {
+      base::JSONWriter::Write(arg2, &json);
+      javascript.append(", ").append(json);
+      if (arg3) {
+        base::JSONWriter::Write(arg3, &json);
+        javascript.append(", ").append(json);
+      }
+    }
+  }
+  javascript.append(");");
+  devtools_web_contents_->GetMainFrame()->ExecuteJavaScript(
+      base::UTF8ToUTF16(javascript));
+}
+
 gfx::Rect InspectableWebContentsImpl::GetDevToolsBounds() const {
   return devtools_bounds_;
 }
@@ -219,6 +222,9 @@ void InspectableWebContentsImpl::CloseWindow() {
   devtools_web_contents()->DispatchBeforeUnload(false);
 }
 
+void InspectableWebContentsImpl::LoadCompleted() {
+}
+
 void InspectableWebContentsImpl::SetInspectedPageBounds(const gfx::Rect& rect) {
   DevToolsContentsResizingStrategy strategy(rect);
   if (contents_resizing_strategy_.Equals(strategy))
@@ -231,11 +237,21 @@ void InspectableWebContentsImpl::SetInspectedPageBounds(const gfx::Rect& rect) {
 void InspectableWebContentsImpl::InspectElementCompleted() {
 }
 
-void InspectableWebContentsImpl::MoveWindow(int x, int y) {
+void InspectableWebContentsImpl::InspectedURLChanged(const std::string& url) {
 }
 
-void InspectableWebContentsImpl::SetIsDocked(bool docked) {
+void InspectableWebContentsImpl::LoadNetworkResource(
+    const DispatchCallback& callback,
+    const std::string& url,
+    const std::string& headers,
+    int stream_id) {
+}
+
+void InspectableWebContentsImpl::SetIsDocked(const DispatchCallback& callback,
+                                             bool docked) {
   view_->SetIsDocked(docked);
+  if (!callback.is_null())
+    callback.Run(nullptr);
 }
 
 void InspectableWebContentsImpl::OpenInNewTab(const std::string& url) {
@@ -251,12 +267,6 @@ void InspectableWebContentsImpl::AppendToFile(
     const std::string& url, const std::string& content) {
   if (delegate_)
     delegate_->DevToolsAppendToFile(url, content);
-}
-
-void InspectableWebContentsImpl::WebContentsFocused(
-    content::WebContents* contents) {
-  if (delegate_)
-    delegate_->DevToolsFocused();
 }
 
 void InspectableWebContentsImpl::RequestFileSystems() {
@@ -292,6 +302,9 @@ void InspectableWebContentsImpl::SearchInPath(
     const std::string& query) {
 }
 
+void InspectableWebContentsImpl::SetWhitelistedShortcuts(const std::string& message) {
+}
+
 void InspectableWebContentsImpl::ZoomIn() {
   double level = GetZoomLevelForWebContents(devtools_web_contents());
   SetZoomLevelForWebContents(devtools_web_contents(), GetNextZoomLevel(level, false));
@@ -306,26 +319,56 @@ void InspectableWebContentsImpl::ResetZoom() {
   SetZoomLevelForWebContents(devtools_web_contents(), 0.);
 }
 
+void InspectableWebContentsImpl::SetDevicesUpdatesEnabled(bool enabled) {
+}
+
+void InspectableWebContentsImpl::SendMessageToBrowser(const std::string& message) {
+  if (agent_host_.get())
+    agent_host_->DispatchProtocolMessage(message);
+}
+
+void InspectableWebContentsImpl::RecordActionUMA(const std::string& name, int action) {
+  if (name == kDevToolsActionTakenHistogram)
+    UMA_HISTOGRAM_ENUMERATION(name, action, kDevToolsActionTakenBoundary);
+  else if (name == kDevToolsPanelShownHistogram)
+    UMA_HISTOGRAM_ENUMERATION(name, action, kDevToolsPanelShownBoundary);
+}
+
+void InspectableWebContentsImpl::SendJsonRequest(const DispatchCallback& callback,
+                                         const std::string& browser_id,
+                                         const std::string& url) {
+  callback.Run(nullptr);
+}
+
 void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(const std::string& message) {
   std::string method;
-  base::ListValue params;
-  int id;
-  if (!ParseMessage(message, &method, &params, &id)) {
+  base::ListValue empty_params;
+  base::ListValue* params = &empty_params;
+
+  base::DictionaryValue* dict = NULL;
+  scoped_ptr<base::Value> parsed_message(base::JSONReader::Read(message));
+  if (!parsed_message ||
+      !parsed_message->GetAsDictionary(&dict) ||
+      !dict->GetString(kFrontendHostMethod, &method) ||
+      (dict->HasKey(kFrontendHostParams) &&
+          !dict->GetList(kFrontendHostParams, &params))) {
     LOG(ERROR) << "Invalid message was sent to embedder: " << message;
     return;
   }
-
-  std::string error = embedder_message_dispatcher_->Dispatch(method, &params);
-  if (id) {
-    std::string ack = base::StringPrintf(
-        "DevToolsAPI.embedderMessageAck(%d, \"%s\");", id, error.c_str());
-    devtools_web_contents()->GetMainFrame()->ExecuteJavaScript(base::UTF8ToUTF16(ack));
-  }
+  int id = 0;
+  dict->GetInteger(kFrontendHostId, &id);
+  embedder_message_dispatcher_->Dispatch(
+      base::Bind(&InspectableWebContentsImpl::SendMessageAck,
+                 weak_factory_.GetWeakPtr(),
+                 id),
+      method,
+      params);
 }
 
 void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontendToBackend(
     const std::string& message) {
-  agent_host_->DispatchProtocolMessage(message);
+  if (agent_host_.get())
+    agent_host_->DispatchProtocolMessage(message);
 }
 
 void InspectableWebContentsImpl::DispatchProtocolMessage(
@@ -356,7 +399,7 @@ void InspectableWebContentsImpl::DidFinishLoad(content::RenderFrameHost* render_
 
   // If the devtools can dock, "SetIsDocked" will be called by devtools itself.
   if (!can_dock_)
-    SetIsDocked(false);
+    SetIsDocked(DispatchCallback(), false);
 }
 
 void InspectableWebContentsImpl::WebContentsDestroyed() {
@@ -398,6 +441,19 @@ void InspectableWebContentsImpl::HandleKeyboardEvent(
 
 void InspectableWebContentsImpl::CloseContents(content::WebContents* source) {
   CloseDevTools();
+}
+
+void InspectableWebContentsImpl::WebContentsFocused(
+    content::WebContents* contents) {
+  if (delegate_)
+    delegate_->DevToolsFocused();
+}
+
+void InspectableWebContentsImpl::SendMessageAck(int request_id,
+                                                const base::Value* arg) {
+  base::FundamentalValue id_value(request_id);
+  CallClientFunction("DevToolsAPI.embedderMessageAck",
+                     &id_value, arg, nullptr);
 }
 
 }  // namespace brightray

@@ -11,6 +11,7 @@
 #include "browser/devtools_contents_resizing_strategy.h"
 #include "browser/devtools_embedder_message_dispatcher.h"
 
+#include "base/memory/weak_ptr.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -51,6 +52,10 @@ class InspectableWebContentsImpl :
   void AttachTo(const scoped_refptr<content::DevToolsAgentHost>&) override;
 
   void Detach();
+  void CallClientFunction(const std::string& function_name,
+                          const base::Value* arg1,
+                          const base::Value* arg2,
+                          const base::Value* arg3);
 
   // Return the last position and size of devtools window.
   gfx::Rect GetDevToolsBounds() const;
@@ -71,10 +76,15 @@ class InspectableWebContentsImpl :
   // DevToolsEmbedderMessageDispacher::Delegate
   void ActivateWindow() override;
   void CloseWindow() override;
+  void LoadCompleted() override;
   void SetInspectedPageBounds(const gfx::Rect& rect) override;
   void InspectElementCompleted() override;
-  void MoveWindow(int x, int y) override;
-  void SetIsDocked(bool docked) override;
+  void InspectedURLChanged(const std::string& url) override;
+  void LoadNetworkResource(const DispatchCallback& callback,
+                           const std::string& url,
+                           const std::string& headers,
+                           int stream_id) override;
+  void SetIsDocked(const DispatchCallback& callback, bool is_docked) override;
   void OpenInNewTab(const std::string& url) override;
   void SaveToFile(const std::string& url,
                   const std::string& content,
@@ -86,15 +96,22 @@ class InspectableWebContentsImpl :
   void RemoveFileSystem(const std::string& file_system_path) override;
   void UpgradeDraggedFileSystemPermissions(
       const std::string& file_system_url) override;
-  void IndexPath(int request_id,
+  void IndexPath(int index_request_id,
                  const std::string& file_system_path) override;
-  void StopIndexing(int request_id) override;
-  void SearchInPath(int request_id,
+  void StopIndexing(int index_request_id) override;
+  void SearchInPath(int search_request_id,
                     const std::string& file_system_path,
                     const std::string& query) override;
+  void SetWhitelistedShortcuts(const std::string& message) override;
   void ZoomIn() override;
   void ZoomOut() override;
   void ResetZoom() override;
+  void SetDevicesUpdatesEnabled(bool enabled) override;
+  void SendMessageToBrowser(const std::string& message) override;
+  void RecordActionUMA(const std::string& name, int action) override;
+  void SendJsonRequest(const DispatchCallback& callback,
+                       const std::string& browser_id,
+                       const std::string& url) override;
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(const std::string& message) override;
@@ -133,6 +150,9 @@ class InspectableWebContentsImpl :
   void CloseContents(content::WebContents* source) override;
   void WebContentsFocused(content::WebContents* contents) override;
 
+  void SendMessageAck(int request_id,
+                      const base::Value* arg1);
+
   scoped_ptr<content::WebContents> web_contents_;
   scoped_ptr<content::WebContents> devtools_web_contents_;
   scoped_ptr<InspectableWebContentsView> view_;
@@ -146,6 +166,8 @@ class InspectableWebContentsImpl :
   scoped_ptr<DevToolsEmbedderMessageDispatcher> embedder_message_dispatcher_;
 
   InspectableWebContentsDelegate* delegate_;
+
+  base::WeakPtrFactory<InspectableWebContentsImpl> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsImpl);
 };
