@@ -9,7 +9,6 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/native_window.h"
-#include "atom/browser/web_dialog_helper.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
@@ -199,21 +198,6 @@ content::WebContents* WebContents::OpenURLFromTab(
 
   web_contents()->GetController().LoadURLWithParams(load_url_params);
   return web_contents();
-}
-
-void WebContents::RunFileChooser(content::WebContents* guest,
-                                 const content::FileChooserParams& params) {
-  if (!web_dialog_helper_)
-    web_dialog_helper_.reset(new WebDialogHelper(GetWindowFromGuest(guest)));
-  web_dialog_helper_->RunFileChooser(guest, params);
-}
-
-void WebContents::EnumerateDirectory(content::WebContents* guest,
-                                     int request_id,
-                                     const base::FilePath& path) {
-  if (!web_dialog_helper_)
-    web_dialog_helper_.reset(new WebDialogHelper(GetWindowFromGuest(guest)));
-  web_dialog_helper_->EnumerateDirectory(guest, request_id, path);
 }
 
 void WebContents::HandleKeyboardEvent(

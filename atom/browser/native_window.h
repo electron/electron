@@ -49,7 +49,6 @@ class MenuModel;
 namespace atom {
 
 struct DraggableRegion;
-class WebDialogHelper;
 
 class NativeWindow : public CommonWebContentsDelegate,
                      public content::WebContentsObserver,
@@ -245,26 +244,11 @@ class NativeWindow : public CommonWebContentsDelegate,
   void BeforeUnloadFired(content::WebContents* tab,
                          bool proceed,
                          bool* proceed_to_fire_unload) override;
-  content::ColorChooser* OpenColorChooser(
-      content::WebContents* web_contents,
-      SkColor color,
-      const std::vector<content::ColorSuggestion>& suggestions) override;
-  void RunFileChooser(content::WebContents* web_contents,
-                      const content::FileChooserParams& params) override;
-  void EnumerateDirectory(content::WebContents* web_contents,
-                          int request_id,
-                          const base::FilePath& path) override;
-  void RequestToLockMouse(content::WebContents* web_contents,
-                          bool user_gesture,
-                          bool last_unlocked_by_target) override;
-  bool CanOverscrollContent() const override;
   void ActivateContents(content::WebContents* contents) override;
   void DeactivateContents(content::WebContents* contents) override;
   void MoveContents(content::WebContents* source,
                     const gfx::Rect& pos) override;
   void CloseContents(content::WebContents* source) override;
-  bool IsPopupOrPanel(
-      const content::WebContents* source) const override;
   void RendererUnresponsive(content::WebContents* source) override;
   void RendererResponsive(content::WebContents* source) override;
   void EnterFullscreenModeForTab(content::WebContents* source,
@@ -345,8 +329,6 @@ class NativeWindow : public CommonWebContentsDelegate,
   double zoom_factor_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_;
-
-  scoped_ptr<WebDialogHelper> web_dialog_helper_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindow);
 };

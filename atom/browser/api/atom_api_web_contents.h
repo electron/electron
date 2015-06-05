@@ -27,8 +27,6 @@ class Dictionary;
 
 namespace atom {
 
-class WebDialogHelper;
-
 namespace api {
 
 // A struct of parameters for SetSize(). The parameters are all declared as
@@ -148,11 +146,6 @@ class WebContents : public mate::EventEmitter,
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
-  void RunFileChooser(content::WebContents* web_contents,
-                      const content::FileChooserParams& params) override;
-  void EnumerateDirectory(content::WebContents* web_contents,
-                          int request_id,
-                          const base::FilePath& path) override;
   void HandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
@@ -230,8 +223,6 @@ class WebContents : public mate::EventEmitter,
 
   // Returns the default size of the guestview.
   gfx::Size GetDefaultSize() const;
-
-  scoped_ptr<WebDialogHelper> web_dialog_helper_;
 
   // Unique ID for a guest WebContents.
   int guest_instance_id_;

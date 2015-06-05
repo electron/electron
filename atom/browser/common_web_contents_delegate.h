@@ -15,6 +15,7 @@ namespace atom {
 
 class AtomJavaScriptDialogManager;
 class NativeWindow;
+class WebDialogHelper;
 
 class CommonWebContentsDelegate
     : public brightray::DefaultWebContentsDelegate,
@@ -45,8 +46,22 @@ class CommonWebContentsDelegate
 
  protected:
   // content::WebContentsDelegate:
+  void RequestToLockMouse(content::WebContents* web_contents,
+                          bool user_gesture,
+                          bool last_unlocked_by_target) override;
+  bool CanOverscrollContent() const override;
+  bool IsPopupOrPanel(const content::WebContents* source) const override;
   content::JavaScriptDialogManager* GetJavaScriptDialogManager(
       content::WebContents* source) override;
+  content::ColorChooser* OpenColorChooser(
+      content::WebContents* web_contents,
+      SkColor color,
+      const std::vector<content::ColorSuggestion>& suggestions) override;
+  void RunFileChooser(content::WebContents* web_contents,
+                      const content::FileChooserParams& params) override;
+  void EnumerateDirectory(content::WebContents* web_contents,
+                          int request_id,
+                          const base::FilePath& path) override;
 
   // brightray::InspectableWebContentsDelegate:
   void DevToolsSaveToFile(const std::string& url,
@@ -64,6 +79,7 @@ class CommonWebContentsDelegate
   // The window that this WebContents belongs to.
   NativeWindow* owner_window_;
 
+  scoped_ptr<WebDialogHelper> web_dialog_helper_;
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
 
   // The stored InspectableWebContents object.

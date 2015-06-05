@@ -7,6 +7,8 @@
 #include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
+#include "atom/browser/web_dialog_helper.h"
+#include "chrome/browser/ui/browser_dialogs.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -103,6 +105,22 @@ void CommonWebContentsDelegate::DestroyWebContents() {
   web_contents_.reset();
 }
 
+void CommonWebContentsDelegate::RequestToLockMouse(
+    content::WebContents* web_contents,
+    bool user_gesture,
+    bool last_unlocked_by_target) {
+  GetWebContents()->GotResponseToLockMouseRequest(true);
+}
+
+bool CommonWebContentsDelegate::CanOverscrollContent() const {
+  return false;
+}
+
+bool CommonWebContentsDelegate::IsPopupOrPanel(
+    const content::WebContents* source) const {
+  return !is_guest_;
+}
+
 content::JavaScriptDialogManager*
 CommonWebContentsDelegate::GetJavaScriptDialogManager(
     content::WebContents* source) {
@@ -110,6 +128,29 @@ CommonWebContentsDelegate::GetJavaScriptDialogManager(
     dialog_manager_.reset(new AtomJavaScriptDialogManager);
 
   return dialog_manager_.get();
+}
+
+content::ColorChooser* CommonWebContentsDelegate::OpenColorChooser(
+    content::WebContents* web_contents,
+    SkColor color,
+    const std::vector<content::ColorSuggestion>& suggestions) {
+  return chrome::ShowColorChooser(web_contents, color);
+}
+
+void CommonWebContentsDelegate::RunFileChooser(
+    content::WebContents* guest,
+    const content::FileChooserParams& params) {
+  if (!web_dialog_helper_)
+    web_dialog_helper_.reset(new WebDialogHelper(owner_window_));
+  web_dialog_helper_->RunFileChooser(guest, params);
+}
+
+void CommonWebContentsDelegate::EnumerateDirectory(content::WebContents* guest,
+                                                   int request_id,
+                                                   const base::FilePath& path) {
+  if (!web_dialog_helper_)
+    web_dialog_helper_.reset(new WebDialogHelper(owner_window_));
+  web_dialog_helper_->EnumerateDirectory(guest, request_id, path);
 }
 
 content::WebContents* CommonWebContentsDelegate::GetWebContents() const {
