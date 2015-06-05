@@ -345,15 +345,27 @@ void WebContents::DidGetResourceResponseStart(
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
-  mate::Dictionary response_headers(isolate, v8::Object::New(isolate));
+  base::DictionaryValue response_headers;
 
   net::HttpResponseHeaders* headers = details.headers.get();
+  if (!headers)
+    return;
   void* iter = nullptr;
   std::string key;
   std::string value;
-  while (headers && headers->EnumerateHeaderLines(&iter, &key, &value))
-    response_headers.Set(base::StringToLowerASCII(key),
-                         base::StringToLowerASCII(value));
+  while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
+    key = base::StringToLowerASCII(key);
+    value = base::StringToLowerASCII(value);
+    if (response_headers.HasKey(key)) {
+      base::ListValue* values = nullptr;
+      if (response_headers.GetList(key, &values))
+        values->AppendString(value);
+    } else {
+      scoped_ptr<base::ListValue> values(new base::ListValue());
+      values->AppendString(value);
+      response_headers.Set(key, values.Pass());
+    }
+  }
 
   Emit("did-get-response-details",
        details.socket_address.IsEmpty(),
