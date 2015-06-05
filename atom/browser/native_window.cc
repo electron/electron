@@ -29,14 +29,11 @@
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
-#include "content/public/browser/devtools_agent_host.h"
-#include "content/public/browser/invalidate_type.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/notification_details.h"
 #include "content/public/browser/notification_source.h"
 #include "content/public/browser/notification_types.h"
 #include "content/public/browser/plugin_service.h"
-#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
@@ -287,35 +284,6 @@ bool NativeWindow::IsMenuBarVisible() {
 
 bool NativeWindow::HasModalDialog() {
   return has_dialog_attached_;
-}
-
-void NativeWindow::OpenDevTools(bool can_dock) {
-  inspectable_web_contents()->SetCanDock(can_dock);
-  inspectable_web_contents()->ShowDevTools();
-}
-
-void NativeWindow::CloseDevTools() {
-  inspectable_web_contents()->CloseDevTools();
-}
-
-bool NativeWindow::IsDevToolsOpened() {
-  return inspectable_web_contents()->IsDevToolsViewShowing();
-}
-
-void NativeWindow::InspectElement(int x, int y) {
-  scoped_refptr<content::DevToolsAgentHost> agent(
-      content::DevToolsAgentHost::GetOrCreateFor(GetWebContents()));
-  agent->InspectElement(x, y);
-}
-
-void NativeWindow::InspectServiceWorker() {
-  for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
-    if (agent_host->GetType() ==
-        content::DevToolsAgentHost::TYPE_SERVICE_WORKER) {
-      inspectable_web_contents()->AttachTo(agent_host);
-      break;
-    }
-  }
 }
 
 void NativeWindow::FocusOnWebView() {
@@ -731,6 +699,14 @@ void NativeWindow::Observe(int type,
 
 void NativeWindow::DevToolsFocused() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsFocus());
+}
+
+void NativeWindow::DevToolsOpened() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsOpened());
+}
+
+void NativeWindow::DevToolsClosed() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsClosed());
 }
 
 void NativeWindow::ScheduleUnresponsiveEvent(int ms) {

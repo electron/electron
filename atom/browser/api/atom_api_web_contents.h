@@ -22,6 +22,7 @@ class InspectableWebContents;
 }
 
 namespace mate {
+class Arguments;
 class Dictionary;
 }
 
@@ -78,9 +79,10 @@ class WebContents : public mate::EventEmitter,
   void SetUserAgent(const std::string& user_agent);
   void InsertCSS(const std::string& css);
   void ExecuteJavaScript(const base::string16& code);
-  void OpenDevTools();
+  void OpenDevTools(mate::Arguments* args);
   void CloseDevTools();
   bool IsDevToolsOpened();
+  void ToggleDevTools();
   void InspectElement(int x, int y);
   void InspectServiceWorker();
   void HasServiceWorker(const base::Callback<void(bool)>&);

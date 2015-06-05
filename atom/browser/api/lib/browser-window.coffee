@@ -2,7 +2,6 @@ EventEmitter = require('events').EventEmitter
 IDWeakMap = require 'id-weak-map'
 app = require 'app'
 ipc = require 'ipc'
-wrapWebContents = require('web-contents').wrap
 
 BrowserWindow = process.atomBinding('window').BrowserWindow
 BrowserWindow::__proto__ = EventEmitter.prototype
@@ -15,10 +14,6 @@ BrowserWindow::_init = ->
   if process.platform isnt 'darwin'
     menu = app.getApplicationMenu()
     @setMenu menu if menu?
-
-  @webContents = @getWebContents()
-  @devToolsWebContents = null
-  @webContents.once 'destroyed', => @webContents = null
 
   # Remember the window ID.
   Object.defineProperty this, 'id',
@@ -39,35 +34,6 @@ BrowserWindow::_init = ->
   # could be iterating windows before GC happened.
   @once 'closed', =>
     BrowserWindow.windows.remove @id if BrowserWindow.windows.has @id
-
-BrowserWindow::openDevTools = (options={}) ->
-  options.detach ?= false
-  @_openDevTools !options.detach
-
-  # Force devToolsWebContents to be created.
-  @devToolsWebContents = @getDevToolsWebContents()
-  @devToolsWebContents.once 'destroyed', => @devToolsWebContents = null
-
-  # Emit devtools events.
-  @devToolsWebContents.once 'did-finish-load', => @emit 'devtools-opened'
-  @devToolsWebContents.once 'destroyed', => @emit 'devtools-closed'
-
-BrowserWindow::toggleDevTools = ->
-  if @isDevToolsOpened() then @closeDevTools() else @openDevTools()
-
-BrowserWindow::inspectElement = (x, y) ->
-  @openDevTools true
-  @_inspectElement x, y
-
-BrowserWindow::inspectServiceWorker = ->
-  @openDevTools true
-  @_inspectServiceWorker()
-
-BrowserWindow::getWebContents = ->
-  wrapWebContents @_getWebContents()
-
-BrowserWindow::getDevToolsWebContents = ->
-  wrapWebContents @_getDevToolsWebContents()
 
 BrowserWindow::setMenu = (menu) ->
   throw new TypeError('Invalid menu') unless menu is null or menu?.constructor?.name is 'Menu'
@@ -110,7 +76,12 @@ BrowserWindow::stop = -> @webContents.stop()
 BrowserWindow::getRoutingId = -> @webContents.getRoutingId()
 BrowserWindow::getProcessId = -> @webContents.getProcessId()
 BrowserWindow::isCrashed = -> @webContents.isCrashed()
-BrowserWindow::executeJavaScriptInDevTools = (code) ->
-  @devToolsWebContents.executeJavaScript code
+BrowserWindow::executeJavaScriptInDevTools = (code) -> @devToolsWebContents?.executeJavaScript code
+BrowserWindow::openDevTools = -> @webContents.openDevTools.apply @webContents, arguments
+BrowserWindow::closeDevTools = -> @webContents.closeDevTools()
+BrowserWindow::isDevToolsOpened = -> @webContents.isDevToolsOpened()
+BrowserWindow::toggleDevTools = -> @webContents.toggleDevTools()
+BrowserWindow::inspectElement = -> @webContents.inspectElement.apply @webContents, arguments
+BrowserWindow::inspectServiceWorker = -> @webContents.inspectServiceWorker()
 
 module.exports = BrowserWindow

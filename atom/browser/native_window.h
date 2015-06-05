@@ -144,11 +144,6 @@ class NativeWindow : public CommonWebContentsDelegate,
   virtual bool IsVisibleOnAllWorkspaces() = 0;
 
   virtual bool IsClosed() const { return is_closed_; }
-  virtual void OpenDevTools(bool can_dock);
-  virtual void CloseDevTools();
-  virtual bool IsDevToolsOpened();
-  virtual void InspectElement(int x, int y);
-  virtual void InspectServiceWorker();
 
   virtual void FocusOnWebView();
   virtual void BlurWebView();
@@ -273,6 +268,8 @@ class NativeWindow : public CommonWebContentsDelegate,
 
   // Implementations of brightray::InspectableWebContentsDelegate.
   void DevToolsFocused() override;
+  void DevToolsOpened() override;
+  void DevToolsClosed() override;
 
   // Whether window has standard frame.
   bool has_frame_;

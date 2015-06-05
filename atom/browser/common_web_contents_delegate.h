@@ -6,6 +6,8 @@
 #define ATOM_BROWSER_COMMON_WEB_CONTENTS_DELEGATE_H_
 
 #include <map>
+#include <string>
+#include <vector>
 
 #include "brightray/browser/default_web_contents_delegate.h"
 #include "brightray/browser/inspectable_web_contents_impl.h"
@@ -42,7 +44,7 @@ class CommonWebContentsDelegate
     return web_contents_.get();
   }
 
-  bool is_guest() const { return is_guest_; };
+  bool is_guest() const { return is_guest_; }
 
  protected:
   // content::WebContentsDelegate:

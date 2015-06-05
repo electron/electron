@@ -4,6 +4,9 @@
 
 #include "atom/browser/common_web_contents_delegate.h"
 
+#include <string>
+#include <vector>
+
 #include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"

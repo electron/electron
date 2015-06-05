@@ -79,6 +79,10 @@ const int kDefaultHeight = 300;
 
 v8::Persistent<v8::ObjectTemplate> template_;
 
+// The wrapWebContents funtion which is implemented in JavaScript
+using WrapWebContentsCallback = base::Callback<void(v8::Local<v8::Value>)>;
+WrapWebContentsCallback g_wrap_web_contents;
+
 // Get the window that has the |guest| embedded.
 NativeWindow* GetWindowFromGuest(const content::WebContents* guest) {
   WebViewManager::WebViewInfo info;
@@ -530,10 +534,17 @@ void WebContents::ExecuteJavaScript(const base::string16& code) {
   web_contents()->GetMainFrame()->ExecuteJavaScript(code);
 }
 
-void WebContents::OpenDevTools() {
+void WebContents::OpenDevTools(mate::Arguments* args) {
   if (!inspectable_web_contents())
     return;
-  inspectable_web_contents()->SetCanDock(false);
+  bool detach = false;
+  if (is_guest()) {
+    detach = true;
+  } else if (args && args->Length() == 1) {
+    mate::Dictionary options;
+    args->GetNext(&options) && options.Get("detach", &detach);
+  }
+  inspectable_web_contents()->SetCanDock(!detach);
   inspectable_web_contents()->ShowDevTools();
 }
 
@@ -549,10 +560,17 @@ bool WebContents::IsDevToolsOpened() {
   return inspectable_web_contents()->IsDevToolsViewShowing();
 }
 
+void WebContents::ToggleDevTools() {
+  if (IsDevToolsOpened())
+    CloseDevTools();
+  else
+    OpenDevTools(nullptr);
+}
+
 void WebContents::InspectElement(int x, int y) {
   if (!inspectable_web_contents())
     return;
-  OpenDevTools();
+  OpenDevTools(nullptr);
   scoped_refptr<content::DevToolsAgentHost> agent(
     content::DevToolsAgentHost::GetOrCreateFor(web_contents()));
   agent->InspectElement(x, y);
@@ -564,7 +582,7 @@ void WebContents::InspectServiceWorker() {
   for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
     if (agent_host->GetType() ==
         content::DevToolsAgentHost::TYPE_SERVICE_WORKER) {
-      OpenDevTools();
+      OpenDevTools(nullptr);
       inspectable_web_contents()->AttachTo(agent_host);
       break;
     }
@@ -741,6 +759,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("openDevTools", &WebContents::OpenDevTools)
         .SetMethod("closeDevTools", &WebContents::CloseDevTools)
         .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
+        .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)
         .SetMethod("inspectElement", &WebContents::InspectElement)
         .SetMethod("undo", &WebContents::Undo)
         .SetMethod("redo", &WebContents::Redo)
@@ -800,19 +819,33 @@ gfx::Size WebContents::GetDefaultSize() const {
 // static
 mate::Handle<WebContents> WebContents::CreateFrom(
     v8::Isolate* isolate, brightray::InspectableWebContents* web_contents) {
-  return mate::CreateHandle(isolate, new WebContents(web_contents));
+  auto handle = mate::CreateHandle(isolate, new WebContents(web_contents));
+  g_wrap_web_contents.Run(handle.ToV8());
+  return handle;
 }
 
 // static
 mate::Handle<WebContents> WebContents::CreateFrom(
     v8::Isolate* isolate, content::WebContents* web_contents) {
-  return mate::CreateHandle(isolate, new WebContents(web_contents));
+  auto handle = mate::CreateHandle(isolate, new WebContents(web_contents));
+  g_wrap_web_contents.Run(handle.ToV8());
+  return handle;
 }
 
 // static
 mate::Handle<WebContents> WebContents::Create(
     v8::Isolate* isolate, const mate::Dictionary& options) {
-  return mate::CreateHandle(isolate, new WebContents(options));
+  auto handle =  mate::CreateHandle(isolate, new WebContents(options));
+  g_wrap_web_contents.Run(handle.ToV8());
+  return handle;
+}
+
+void SetWrapWebContents(const WrapWebContentsCallback& callback) {
+  g_wrap_web_contents = callback;
+}
+
+void ClearWrapWebContents() {
+  g_wrap_web_contents.Reset();
 }
 
 }  // namespace api
@@ -827,6 +860,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.SetMethod("create", &atom::api::WebContents::Create);
+  dict.SetMethod("_setWrapWebContents", &atom::api::SetWrapWebContents);
+  dict.SetMethod("_clearWrapWebContents", &atom::api::ClearWrapWebContents);
 }
 
 }  // namespace
