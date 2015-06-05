@@ -409,7 +409,7 @@ void WebContents::WillAttach(content::WebContents* embedder_web_contents,
 }
 
 void WebContents::Destroy() {
-  if (is_guest()) {
+  if (is_guest() && managed_web_contents()) {
     // When force destroying the "destroyed" event is not emitted.
     WebContentsDestroyed();
 
