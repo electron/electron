@@ -499,8 +499,6 @@ void InspectableWebContentsImpl::WebContentsDestroyed() {
   frontend_loaded_ = false;
   Observe(nullptr);
   Detach();
-  agent_host_ = nullptr;
-  embedder_message_dispatcher_ = nullptr;
 
   for (const auto& pair : pending_requests_)
     delete pair.first;
