@@ -108,8 +108,7 @@ class WebContents : public mate::EventEmitter,
   // Sets the transparency of the guest.
   void SetAllowTransparency(bool allow);
 
-  // Returns whether this is a guest view.
-  bool is_guest() const { return guest_instance_id_ != -1; }
+  bool IsGuest() const;
 
   // Returns whether this guest has an associated embedder.
   bool attached() const { return !!embedder_web_contents_; }

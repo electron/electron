@@ -384,15 +384,11 @@ void WebContents::RenderViewReady() {
   // WebContents::GetRenderWidgetHostView will return the RWHV of an
   // interstitial page if one is showing at this time. We only want opacity
   // to apply to web pages.
-  if (guest_opaque_) {
-    web_contents()
-        ->GetRenderViewHost()
-        ->GetView()
-        ->SetBackgroundColorToDefault();
-  } else {
-    web_contents()->GetRenderViewHost()->GetView()->SetBackgroundColor(
-        SK_ColorTRANSPARENT);
-  }
+  auto render_view_host_view = web_contents()->GetRenderViewHost()->GetView();
+  if (guest_opaque_)
+    render_view_host_view->SetBackgroundColorToDefault();
+  else
+    render_view_host_view->SetBackgroundColor(SK_ColorTRANSPARENT);
 }
 
 void WebContents::WebContentsDestroyed() {
@@ -669,6 +665,10 @@ void WebContents::SetAllowTransparency(bool allow) {
   }
 }
 
+bool WebContents::IsGuest() const {
+  return is_guest();
+}
+
 void WebContents::HasServiceWorker(
     const base::Callback<void(bool)>& callback) {
   auto context = GetServiceWorkerContext(web_contents());
@@ -740,7 +740,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("_send", &WebContents::SendIPCMessage)
         .SetMethod("setSize", &WebContents::SetSize)
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
-        .SetMethod("isGuest", &WebContents::is_guest)
+        .SetMethod("isGuest", &WebContents::IsGuest)
         .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
         .SetMethod("unregisterServiceWorker",
                    &WebContents::UnregisterServiceWorker)
