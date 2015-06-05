@@ -23,6 +23,8 @@ class InspectableWebContentsDelegate {
   virtual void DevToolsAddFileSystem() {}
   virtual void DevToolsRemoveFileSystem(
       const std::string& file_system_path) {}
+  virtual void DevToolsOpened() {}
+  virtual void DevToolsClosed() {}
 
 #if defined(USE_X11)
   // Called when creating devtools window.
