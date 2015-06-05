@@ -51,7 +51,7 @@ struct SetSizeParams {
 
 class WebContents : public mate::EventEmitter,
                     public content::BrowserPluginGuestDelegate,
-                    public content::WebContentsDelegate,
+                    public brightray::DefaultWebContentsDelegate,
                     public content::WebContentsObserver,
                     public content::GpuDataManagerObserver {
  public:
@@ -157,13 +157,6 @@ class WebContents : public mate::EventEmitter,
   void EnumerateDirectory(content::WebContents* web_contents,
                           int request_id,
                           const base::FilePath& path) override;
-  bool CheckMediaAccessPermission(content::WebContents* web_contents,
-                                  const GURL& security_origin,
-                                  content::MediaStreamType type) override;
-  void RequestMediaAccessPermission(
-      content::WebContents*,
-      const content::MediaStreamRequest&,
-      const content::MediaResponseCallback&) override;
   void HandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;

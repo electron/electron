@@ -21,7 +21,6 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
-#include "brightray/browser/media/media_stream_devices_controller.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/guest_host.h"
 #include "content/public/browser/navigation_details.h"
@@ -221,20 +220,6 @@ void WebContents::EnumerateDirectory(content::WebContents* guest,
   if (!web_dialog_helper_)
     web_dialog_helper_.reset(new WebDialogHelper(GetWindowFromGuest(guest)));
   web_dialog_helper_->EnumerateDirectory(guest, request_id, path);
-}
-
-bool WebContents::CheckMediaAccessPermission(content::WebContents* web_contents,
-                                             const GURL& security_origin,
-                                             content::MediaStreamType type) {
-  return true;
-}
-
-void WebContents::RequestMediaAccessPermission(
-    content::WebContents*,
-    const content::MediaStreamRequest& request,
-    const content::MediaResponseCallback& callback) {
-  brightray::MediaStreamDevicesController controller(request, callback);
-  controller.TakeAction();
 }
 
 void WebContents::HandleKeyboardEvent(
