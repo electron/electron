@@ -284,6 +284,11 @@ void InspectableWebContentsImpl::CloseWindow() {
 
 void InspectableWebContentsImpl::LoadCompleted() {
   frontend_loaded_ = true;
+  view_->ShowDevTools();
+
+  // If the devtools can dock, "SetIsDocked" will be called by devtools itself.
+  if (!can_dock_)
+    SetIsDocked(DispatchCallback(), false);
 }
 
 void InspectableWebContentsImpl::SetInspectedPageBounds(const gfx::Rect& rect) {
@@ -480,18 +485,6 @@ void InspectableWebContentsImpl::AboutToNavigateRenderFrame(
   if (new_host->GetParent())
     return;
   frontend_host_.reset(content::DevToolsFrontendHost::Create(new_host, this));
-}
-
-void InspectableWebContentsImpl::DidFinishLoad(content::RenderFrameHost* render_frame_host,
-                                               const GURL& validated_url) {
-  if (render_frame_host->GetParent())
-    return;
-
-  view_->ShowDevTools();
-
-  // If the devtools can dock, "SetIsDocked" will be called by devtools itself.
-  if (!can_dock_)
-    SetIsDocked(DispatchCallback(), false);
 }
 
 void InspectableWebContentsImpl::WebContentsDestroyed() {
