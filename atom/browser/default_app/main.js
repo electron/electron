@@ -124,7 +124,7 @@ app.once('ready', function() {
             click: function() {
               var focusedWindow = BrowserWindow.getFocusedWindow();
               if (focusedWindow)
-                mainWindow.restart();
+                focusedWindow.reload();
             }
           },
           {
