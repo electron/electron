@@ -158,8 +158,6 @@ class WebContents : public mate::EventEmitter,
   void EnterFullscreenModeForTab(content::WebContents* source,
                                  const GURL& origin) override;
   void ExitFullscreenModeForTab(content::WebContents* source) override;
-  bool IsFullscreenForTabOrPending(
-      const content::WebContents* source) const override;
 
   // content::WebContentsObserver:
   void RenderViewDeleted(content::RenderViewHost*) override;

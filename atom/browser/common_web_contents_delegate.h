@@ -64,6 +64,11 @@ class CommonWebContentsDelegate
   void EnumerateDirectory(content::WebContents* web_contents,
                           int request_id,
                           const base::FilePath& path) override;
+  void EnterFullscreenModeForTab(content::WebContents* source,
+                                 const GURL& origin) override;
+  void ExitFullscreenModeForTab(content::WebContents* source) override;
+  bool IsFullscreenForTabOrPending(
+      const content::WebContents* source) const override;
 
   // brightray::InspectableWebContentsDelegate:
   void DevToolsSaveToFile(const std::string& url,
@@ -75,11 +80,20 @@ class CommonWebContentsDelegate
   void DevToolsRemoveFileSystem(const std::string& file_system_path) override;
 
  private:
+  // Set fullscreen mode triggered by html api.
+  void SetHtmlApiFullscreen(bool enter_fullscreen);
+
   // Whether this is guest WebContents or NativeWindow.
   const bool is_guest_;
 
   // The window that this WebContents belongs to.
   NativeWindow* owner_window_;
+
+  // Whether window is fullscreened by HTML5 api.
+  bool html_fullscreen_;
+
+  // Whether window is fullscreened by window api.
+  bool native_fullscreen_;
 
   scoped_ptr<WebDialogHelper> web_dialog_helper_;
   scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;

@@ -179,9 +179,6 @@ class NativeWindow : public CommonWebContentsDelegate,
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line);
   void OverrideWebkitPrefs(content::WebPreferences* prefs);
 
-  // Set fullscreen mode triggered by html api.
-  void SetHtmlApiFullscreen(bool enter_fullscreen);
-
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
   void NotifyWindowClosed();
@@ -212,8 +209,6 @@ class NativeWindow : public CommonWebContentsDelegate,
   }
 
   bool has_frame() const { return has_frame_; }
-
-  bool is_html_api_fullscreen() const { return html_fullscreen_; }
 
   void set_has_dialog_attached(bool has_dialog_attached) {
     has_dialog_attached_ = has_dialog_attached;
@@ -250,11 +245,6 @@ class NativeWindow : public CommonWebContentsDelegate,
   void CloseContents(content::WebContents* source) override;
   void RendererUnresponsive(content::WebContents* source) override;
   void RendererResponsive(content::WebContents* source) override;
-  void EnterFullscreenModeForTab(content::WebContents* source,
-                                 const GURL& origin) override;
-  void ExitFullscreenModeForTab(content::WebContents* source) override;
-  bool IsFullscreenForTabOrPending(
-      const content::WebContents* source) const override;
 
   // Implementations of content::WebContentsObserver.
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
@@ -309,12 +299,6 @@ class NativeWindow : public CommonWebContentsDelegate,
 
   // There is a dialog that has been attached to window.
   bool has_dialog_attached_;
-
-  // Whether window is fullscreened by HTML5 api.
-  bool html_fullscreen_;
-
-  // Whether window is fullscreened by window api.
-  bool native_fullscreen_;
 
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.

@@ -87,7 +87,9 @@ base::DictionaryValue* CreateFileSystemValue(const FileSystem& file_system) {
 
 CommonWebContentsDelegate::CommonWebContentsDelegate(bool is_guest)
     : is_guest_(is_guest),
-      owner_window_(nullptr) {
+      owner_window_(nullptr),
+      html_fullscreen_(false),
+      native_fullscreen_(false) {
 }
 
 CommonWebContentsDelegate::~CommonWebContentsDelegate() {
@@ -106,6 +108,19 @@ void CommonWebContentsDelegate::InitWithWebContents(
 
 void CommonWebContentsDelegate::DestroyWebContents() {
   web_contents_.reset();
+}
+
+content::WebContents* CommonWebContentsDelegate::GetWebContents() const {
+  if (!web_contents_)
+    return nullptr;
+  return web_contents_->GetWebContents();
+}
+
+content::WebContents*
+CommonWebContentsDelegate::GetDevToolsWebContents() const {
+  if (!web_contents_)
+    return nullptr;
+  return web_contents_->GetDevToolsWebContents();
 }
 
 void CommonWebContentsDelegate::RequestToLockMouse(
@@ -156,17 +171,27 @@ void CommonWebContentsDelegate::EnumerateDirectory(content::WebContents* guest,
   web_dialog_helper_->EnumerateDirectory(guest, request_id, path);
 }
 
-content::WebContents* CommonWebContentsDelegate::GetWebContents() const {
-  if (!web_contents_)
-    return nullptr;
-  return web_contents_->GetWebContents();
+void CommonWebContentsDelegate::EnterFullscreenModeForTab(
+    content::WebContents* source, const GURL& origin) {
+  if (!owner_window_)
+    return;
+  SetHtmlApiFullscreen(true);
+  owner_window_->NotifyWindowEnterHtmlFullScreen();
+  source->GetRenderViewHost()->WasResized();
 }
 
-content::WebContents*
-CommonWebContentsDelegate::GetDevToolsWebContents() const {
-  if (!web_contents_)
-    return nullptr;
-  return web_contents_->GetDevToolsWebContents();
+void CommonWebContentsDelegate::ExitFullscreenModeForTab(
+    content::WebContents* source) {
+  if (!owner_window_)
+    return;
+  SetHtmlApiFullscreen(false);
+  owner_window_->NotifyWindowLeaveHtmlFullScreen();
+  source->GetRenderViewHost()->WasResized();
+}
+
+bool CommonWebContentsDelegate::IsFullscreenForTabOrPending(
+    const content::WebContents* source) const {
+  return html_fullscreen_;
 }
 
 void CommonWebContentsDelegate::DevToolsSaveToFile(
@@ -267,6 +292,25 @@ void CommonWebContentsDelegate::DevToolsRemoveFileSystem(
        &file_system_path_value,
        nullptr,
        nullptr);
+}
+
+void CommonWebContentsDelegate::SetHtmlApiFullscreen(bool enter_fullscreen) {
+  // Window is already in fullscreen mode, save the state.
+  if (enter_fullscreen && owner_window_->IsFullscreen()) {
+    native_fullscreen_ = true;
+    html_fullscreen_ = true;
+    return;
+  }
+
+  // Exit html fullscreen state but not window's fullscreen mode.
+  if (!enter_fullscreen && native_fullscreen_) {
+    html_fullscreen_ = false;
+    return;
+  }
+
+  owner_window_->SetFullScreen(enter_fullscreen);
+  html_fullscreen_ = enter_fullscreen;
+  native_fullscreen_ = false;
 }
 
 }  // namespace atom
