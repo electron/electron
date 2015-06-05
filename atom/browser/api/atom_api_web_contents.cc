@@ -8,7 +8,6 @@
 
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_dialog_helper.h"
 #include "atom/browser/web_view_manager.h"
@@ -199,14 +198,6 @@ content::WebContents* WebContents::OpenURLFromTab(
 
   web_contents()->GetController().LoadURLWithParams(load_url_params);
   return web_contents();
-}
-
-content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
-    content::WebContents* source) {
-  if (!dialog_manager_)
-    dialog_manager_.reset(new AtomJavaScriptDialogManager);
-
-  return dialog_manager_.get();
 }
 
 void WebContents::RunFileChooser(content::WebContents* guest,

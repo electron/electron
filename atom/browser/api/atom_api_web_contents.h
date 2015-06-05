@@ -12,7 +12,6 @@
 #include "atom/browser/common_web_contents_delegate.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "content/public/common/favicon_url.h"
-#include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "native_mate/handle.h"
@@ -28,7 +27,6 @@ class Dictionary;
 
 namespace atom {
 
-class AtomJavaScriptDialogManager;
 class WebDialogHelper;
 
 namespace api {
@@ -150,8 +148,6 @@ class WebContents : public mate::EventEmitter,
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
-  content::JavaScriptDialogManager* GetJavaScriptDialogManager(
-      content::WebContents* source) override;
   void RunFileChooser(content::WebContents* web_contents,
                       const content::FileChooserParams& params) override;
   void EnumerateDirectory(content::WebContents* web_contents,
@@ -236,7 +232,6 @@ class WebContents : public mate::EventEmitter,
   gfx::Size GetDefaultSize() const;
 
   scoped_ptr<WebDialogHelper> web_dialog_helper_;
-  scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
 
   // Unique ID for a guest WebContents.
   int guest_instance_id_;

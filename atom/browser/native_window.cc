@@ -9,9 +9,7 @@
 #include <vector>
 
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/browser.h"
-#include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/web_dialog_helper.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
@@ -33,7 +31,6 @@
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/ui/browser_dialogs.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
-#include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/invalidate_type.h"
 #include "content/public/browser/navigation_entry.h"
@@ -51,7 +48,6 @@
 #include "content/public/common/web_preferences.h"
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
-#include "storage/browser/fileapi/isolated_context.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/geometry/size_conversions.h"
 #include "ui/gfx/geometry/point.h"
@@ -91,62 +87,6 @@ std::string RemoveWhitespace(const std::string& str) {
     return str;
 }
 
-storage::IsolatedContext* isolated_context() {
-  storage::IsolatedContext* context =
-      storage::IsolatedContext::GetInstance();
-  DCHECK(context);
-  return context;
-}
-
-std::string RegisterFileSystem(content::WebContents* web_contents,
-                               const base::FilePath& path,
-                               std::string* registered_name) {
-  std::string file_system_id = isolated_context()->RegisterFileSystemForPath(
-      storage::kFileSystemTypeNativeLocal,
-      std::string(),
-      path,
-      registered_name);
-
-  content::ChildProcessSecurityPolicy* policy =
-      content::ChildProcessSecurityPolicy::GetInstance();
-  content::RenderViewHost* render_view_host = web_contents->GetRenderViewHost();
-  int renderer_id = render_view_host->GetProcess()->GetID();
-  policy->GrantReadFileSystem(renderer_id, file_system_id);
-  policy->GrantWriteFileSystem(renderer_id, file_system_id);
-  policy->GrantCreateFileForFileSystem(renderer_id, file_system_id);
-  policy->GrantDeleteFromFileSystem(renderer_id, file_system_id);
-
-  if (!policy->CanReadFile(renderer_id, path))
-    policy->GrantReadFile(renderer_id, path);
-
-  return file_system_id;
-}
-
-NativeWindow::FileSystem CreateFileSystemStruct(
-    content::WebContents* web_contents,
-    const std::string& file_system_id,
-    const std::string& registered_name,
-    const std::string& file_system_path) {
-  const GURL origin = web_contents->GetURL().GetOrigin();
-  std::string file_system_name =
-      storage::GetIsolatedFileSystemName(origin, file_system_id);
-  std::string root_url = storage::GetIsolatedFileSystemRootURIString(
-      origin, file_system_id, registered_name);
-
-  return NativeWindow::FileSystem(file_system_name,
-                                  root_url,
-                                  file_system_path);
-}
-
-base::DictionaryValue* CreateFileSystemValue(
-    NativeWindow::FileSystem file_system) {
-  base::DictionaryValue* file_system_value = new base::DictionaryValue();
-  file_system_value->SetString("fileSystemName", file_system.file_system_name);
-  file_system_value->SetString("rootURL", file_system.root_url);
-  file_system_value->SetString("fileSystemPath", file_system.file_system_path);
-  return file_system_value;
-}
-
 }  // namespace
 
 NativeWindow::NativeWindow(content::WebContents* web_contents,
@@ -162,10 +102,10 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       html_fullscreen_(false),
       native_fullscreen_(false),
       zoom_factor_(1.0),
-      weak_factory_(this),
-      inspectable_web_contents_(
-          brightray::InspectableWebContents::Create(web_contents)) {
+      weak_factory_(this) {
   printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
+
+  InitWithWebContents(web_contents, this);
 
   options.Get(switches::kFrame, &has_frame_);
   options.Get(switches::kTransparent, &transparent_);
@@ -197,9 +137,6 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
 
   // Read the zoom factor before any navigation.
   options.Get(switches::kZoomFactor, &zoom_factor_);
-
-  web_contents->SetDelegate(this);
-  inspectable_web_contents()->SetDelegate(this);
 
   WindowList::AddWindow(this);
 
@@ -431,13 +368,6 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
       kBGRA_8888_SkColorType);
 }
 
-void NativeWindow::DestroyWebContents() {
-  if (!inspectable_web_contents_)
-    return;
-
-  inspectable_web_contents_.reset();
-}
-
 void NativeWindow::CloseWebContents() {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(NativeWindowObserver,
@@ -465,18 +395,6 @@ void NativeWindow::CloseWebContents() {
     web_contents->DispatchBeforeUnload(false);
   else
     web_contents->Close();
-}
-
-content::WebContents* NativeWindow::GetWebContents() const {
-  if (!inspectable_web_contents_)
-    return nullptr;
-  return inspectable_web_contents()->GetWebContents();
-}
-
-content::WebContents* NativeWindow::GetDevToolsWebContents() const {
-  if (!inspectable_web_contents_)
-    return nullptr;
-  return inspectable_web_contents()->devtools_web_contents();
 }
 
 void NativeWindow::AppendExtraCommandLineSwitches(
@@ -694,14 +612,6 @@ content::WebContents* NativeWindow::OpenURLFromTab(
   return source;
 }
 
-content::JavaScriptDialogManager* NativeWindow::GetJavaScriptDialogManager(
-    content::WebContents* source) {
-  if (!dialog_manager_)
-    dialog_manager_.reset(new AtomJavaScriptDialogManager);
-
-  return dialog_manager_.get();
-}
-
 void NativeWindow::RenderViewCreated(
     content::RenderViewHost* render_view_host) {
   if (!transparent_)
@@ -858,105 +768,8 @@ void NativeWindow::Observe(int type,
   }
 }
 
-void NativeWindow::DevToolsSaveToFile(const std::string& url,
-                                      const std::string& content,
-                                      bool save_as) {
-  base::FilePath path;
-  PathsMap::iterator it = saved_files_.find(url);
-  if (it != saved_files_.end() && !save_as) {
-    path = it->second;
-  } else {
-    file_dialog::Filters filters;
-    base::FilePath default_path(base::FilePath::FromUTF8Unsafe(url));
-    if (!file_dialog::ShowSaveDialog(this, url, default_path, filters, &path)) {
-      base::StringValue url_value(url);
-      inspectable_web_contents()->CallClientFunction(
-          "DevToolsAPI.canceledSaveURL", &url_value, nullptr, nullptr);
-      return;
-    }
-  }
-
-  saved_files_[url] = path;
-  base::WriteFile(path, content.data(), content.size());
-
-  // Notify devtools.
-  base::StringValue url_value(url);
-  inspectable_web_contents()->CallClientFunction(
-      "DevToolsAPI.savedURL", &url_value, nullptr, nullptr);
-}
-
-void NativeWindow::DevToolsAppendToFile(const std::string& url,
-                                        const std::string& content) {
-  PathsMap::iterator it = saved_files_.find(url);
-  if (it == saved_files_.end())
-    return;
-  base::AppendToFile(it->second, content.data(), content.size());
-
-  // Notify devtools.
-  base::StringValue url_value(url);
-  inspectable_web_contents()->CallClientFunction(
-      "DevToolsAPI.appendedToURL", &url_value, nullptr, nullptr);
-}
-
 void NativeWindow::DevToolsFocused() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsFocus());
-}
-
-void NativeWindow::DevToolsAddFileSystem() {
-  file_dialog::Filters filters;
-  base::FilePath default_path;
-  std::vector<base::FilePath> paths;
-  int flag = file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
-  if (!file_dialog::ShowOpenDialog(this, "", default_path,
-                                   filters, flag, &paths))
-    return;
-
-  base::FilePath path = paths[0];
-  std::string registered_name;
-  std::string file_system_id = RegisterFileSystem(GetDevToolsWebContents(),
-                                                  path,
-                                                  &registered_name);
-
-  WorkspaceMap::iterator it = saved_paths_.find(file_system_id);
-  if (it != saved_paths_.end())
-    return;
-
-  saved_paths_[file_system_id] = path;
-
-  FileSystem file_system = CreateFileSystemStruct(GetDevToolsWebContents(),
-                                                  file_system_id,
-                                                  registered_name,
-                                                  path.AsUTF8Unsafe());
-
-  scoped_ptr<base::StringValue> error_string_value(
-      new base::StringValue(std::string()));
-  scoped_ptr<base::DictionaryValue> file_system_value;
-  if (!file_system.file_system_path.empty())
-    file_system_value.reset(CreateFileSystemValue(file_system));
-  inspectable_web_contents()->CallClientFunction(
-      "DevToolsAPI.fileSystemAdded",
-      error_string_value.get(),
-      file_system_value.get(),
-      nullptr);
-}
-
-void NativeWindow::DevToolsRemoveFileSystem(
-    const std::string& file_system_path) {
-  base::FilePath path = base::FilePath::FromUTF8Unsafe(file_system_path);
-  isolated_context()->RevokeFileSystemByPath(path);
-
-  for (auto it = saved_paths_.begin(); it != saved_paths_.end(); ++it)
-    if (it->second == path) {
-      saved_paths_.erase(it);
-      break;
-    }
-
-  base::StringValue file_system_path_value(file_system_path);
-  inspectable_web_contents()->CallClientFunction(
-      "DevToolsAPI.fileSystemRemoved",
-       &file_system_path_value,
-       nullptr,
-       nullptr);
 }
 
 void NativeWindow::ScheduleUnresponsiveEvent(int ms) {

@@ -16,8 +16,6 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
-#include "brightray/browser/inspectable_web_contents_delegate.h"
-#include "brightray/browser/inspectable_web_contents_impl.h"
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/notification_observer.h"
 #include "content/public/browser/readback_types.h"
@@ -50,32 +48,14 @@ class MenuModel;
 
 namespace atom {
 
-class AtomJavaScriptDialogManager;
 struct DraggableRegion;
 class WebDialogHelper;
 
 class NativeWindow : public CommonWebContentsDelegate,
-                     public brightray::InspectableWebContentsDelegate,
                      public content::WebContentsObserver,
                      public content::NotificationObserver {
  public:
   typedef base::Callback<void(const SkBitmap& bitmap)> CapturePageCallback;
-
-  struct FileSystem {
-    FileSystem() {
-    }
-    FileSystem(const std::string& file_system_name,
-               const std::string& root_url,
-               const std::string& file_system_path)
-      : file_system_name(file_system_name),
-        root_url(root_url),
-        file_system_path(file_system_path) {
-    }
-
-    std::string file_system_name;
-    std::string root_url;
-    std::string file_system_path;
-  };
 
   class DialogScope {
    public:
@@ -197,15 +177,9 @@ class NativeWindow : public CommonWebContentsDelegate,
   // Should be called by platform code when user want to close the window.
   virtual void CloseWebContents();
 
-  // Destroy the WebContents immediately.
-  virtual void DestroyWebContents();
-
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
-
-  content::WebContents* GetWebContents() const;
-  content::WebContents* GetDevToolsWebContents() const;
 
   // Called when renderer process is going to be started.
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line);
@@ -251,11 +225,6 @@ class NativeWindow : public CommonWebContentsDelegate,
   explicit NativeWindow(content::WebContents* web_contents,
                         const mate::Dictionary& options);
 
-  brightray::InspectableWebContentsImpl* inspectable_web_contents() const {
-    return static_cast<brightray::InspectableWebContentsImpl*>(
-        inspectable_web_contents_.get());
-  }
-
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) = 0;
@@ -273,8 +242,6 @@ class NativeWindow : public CommonWebContentsDelegate,
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
-  content::JavaScriptDialogManager* GetJavaScriptDialogManager(
-      content::WebContents* source) override;
   void BeforeUnloadFired(content::WebContents* tab,
                          bool proceed,
                          bool* proceed_to_fire_unload) override;
@@ -317,14 +284,7 @@ class NativeWindow : public CommonWebContentsDelegate,
                const content::NotificationDetails& details) override;
 
   // Implementations of brightray::InspectableWebContentsDelegate.
-  void DevToolsSaveToFile(const std::string& url,
-                          const std::string& content,
-                          bool save_as) override;
-  void DevToolsAppendToFile(const std::string& url,
-                            const std::string& content) override;
   void DevToolsFocused() override;
-  void DevToolsAddFileSystem() override;
-  void DevToolsRemoveFileSystem(const std::string& file_system_path) override;
 
   // Whether window has standard frame.
   bool has_frame_;
@@ -387,21 +347,6 @@ class NativeWindow : public CommonWebContentsDelegate,
   base::WeakPtrFactory<NativeWindow> weak_factory_;
 
   scoped_ptr<WebDialogHelper> web_dialog_helper_;
-  scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
-
-  // Notice that inspectable_web_contents_ must be placed after dialog_manager_,
-  // so we can make sure inspectable_web_contents_ is destroyed before
-  // dialog_manager_, otherwise a crash would happen.
-  scoped_ptr<brightray::InspectableWebContents> inspectable_web_contents_;
-
-  // Maps url to file path, used by the file requests sent from devtools.
-  typedef std::map<std::string, base::FilePath> PathsMap;
-  PathsMap saved_files_;
-
-  // Maps file system id to file path, used by the file system requests
-  // sent from devtools.
-  typedef std::map<std::string, base::FilePath> WorkspaceMap;
-  WorkspaceMap saved_paths_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindow);
 };
