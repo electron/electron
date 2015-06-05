@@ -239,9 +239,6 @@ class WebContents : public mate::EventEmitter,
   // Stores whether the contents of the guest can be transparent.
   bool guest_opaque_;
 
-  // Stores the WebContents that managed by this class.
-  scoped_ptr<brightray::InspectableWebContents> storage_;
-
   // The WebContents that attaches this guest view.
   content::WebContents* embedder_web_contents_;
 

@@ -135,9 +135,10 @@ WebContents::WebContents(const mate::Dictionary& options)
   if (options.Get("isGuest", &is_guest) && is_guest)
     params.guest_delegate = this;
 
-  storage_.reset(brightray::InspectableWebContents::Create(params));
-  Observe(storage_->GetWebContents());
-  web_contents()->SetDelegate(this);
+  auto web_contents = content::WebContents::Create(params);
+  InitWithWebContents(web_contents, GetWindowFromGuest(web_contents));
+
+  Observe(GetWebContents());
 }
 
 WebContents::~WebContents() {
@@ -449,7 +450,7 @@ void WebContents::WillAttach(content::WebContents* embedder_web_contents,
 }
 
 void WebContents::Destroy() {
-  if (storage_) {
+  if (is_guest()) {
     // When force destroying the "destroyed" event is not emitted.
     WebContentsDestroyed();
 
@@ -458,7 +459,7 @@ void WebContents::Destroy() {
     guest_host_ = nullptr;
 
     Observe(nullptr);
-    storage_.reset();
+    DestroyWebContents();
   }
 }
 
@@ -544,22 +545,22 @@ void WebContents::ExecuteJavaScript(const base::string16& code) {
 }
 
 void WebContents::OpenDevTools() {
-  storage_->SetCanDock(false);
-  storage_->ShowDevTools();
+  inspectable_web_contents()->SetCanDock(false);
+  inspectable_web_contents()->ShowDevTools();
 }
 
 void WebContents::CloseDevTools() {
-  storage_->CloseDevTools();
+  inspectable_web_contents()->CloseDevTools();
 }
 
 bool WebContents::IsDevToolsOpened() {
-  return storage_->IsDevToolsViewShowing();
+  return inspectable_web_contents()->IsDevToolsViewShowing();
 }
 
 void WebContents::InspectElement(int x, int y) {
   OpenDevTools();
   scoped_refptr<content::DevToolsAgentHost> agent(
-    content::DevToolsAgentHost::GetOrCreateFor(storage_->GetWebContents()));
+    content::DevToolsAgentHost::GetOrCreateFor(web_contents()));
   agent->InspectElement(x, y);
 }
 
@@ -710,7 +711,7 @@ void WebContents::InspectServiceWorker() {
     if (agent_host->GetType() ==
         content::DevToolsAgentHost::TYPE_SERVICE_WORKER) {
       OpenDevTools();
-      storage_->AttachTo(agent_host);
+      inspectable_web_contents()->AttachTo(agent_host);
       break;
     }
   }
