@@ -28,7 +28,8 @@ class CrashReporter {
              bool skip_system_crash_handler,
              const StringMap& extra_parameters);
 
-  virtual std::vector<CrashReporter::UploadReportResult> GetUploadedReports();
+  virtual std::vector<CrashReporter::UploadReportResult> GetUploadedReports(
+      const std::string& path);
 
  protected:
   CrashReporter();

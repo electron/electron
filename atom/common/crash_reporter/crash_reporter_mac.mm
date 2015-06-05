@@ -5,6 +5,7 @@
 #include "atom/common/crash_reporter/crash_reporter_mac.h"
 
 #include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/mac_util.h"
 #include "base/memory/singleton.h"
@@ -71,21 +72,16 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
     SetCrashKeyValue(upload_parameter.first, upload_parameter.second);
   }
   if (is_browser_) {
-    crash_report_database_ = crashpad::CrashReportDatabase::Initialize(
-        database_path);
-    SetUploadsEnabled(auto_submit);
+    scoped_ptr<crashpad::CrashReportDatabase> database =
+        crashpad::CrashReportDatabase::Initialize(database_path);
+    if (database) {
+      database->GetSettings()->SetUploadsEnabled(auto_submit);
+    }
   }
 }
 
 void CrashReporterMac::SetUploadParameters() {
   upload_parameters_["platform"] = "darwin";
-}
-
-void CrashReporterMac::SetUploadsEnabled(bool enable_uploads) {
-  if (crash_report_database_) {
-    crashpad::Settings* settings = crash_report_database_->GetSettings();
-    settings->SetUploadsEnabled(enable_uploads);
-  }
 }
 
 void CrashReporterMac::SetCrashKeyValue(const base::StringPiece& key,
@@ -94,16 +90,21 @@ void CrashReporterMac::SetCrashKeyValue(const base::StringPiece& key,
 }
 
 std::vector<CrashReporter::UploadReportResult>
-CrashReporterMac::GetUploadedReports() {
+CrashReporterMac::GetUploadedReports(const std::string& path) {
   std::vector<CrashReporter::UploadReportResult> uploaded_reports;
 
-  if (!crash_report_database_) {
+  base::FilePath file_path(path);
+  if (!base::PathExists(file_path)) {
     return uploaded_reports;
   }
+  // Load crashpad database.
+  scoped_ptr<crashpad::CrashReportDatabase> database =
+    crashpad::CrashReportDatabase::Initialize(file_path);
+  DCHECK(database);
 
   std::vector<crashpad::CrashReportDatabase::Report> completed_reports;
   crashpad::CrashReportDatabase::OperationStatus status =
-      crash_report_database_->GetCompletedReports(&completed_reports);
+      database->GetCompletedReports(&completed_reports);
   if (status != crashpad::CrashReportDatabase::kNoError) {
     return uploaded_reports;
   }

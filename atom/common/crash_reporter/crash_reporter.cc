@@ -7,6 +7,9 @@
 #include "atom/browser/browser.h"
 #include "atom/common/atom_version.h"
 #include "base/command_line.h"
+#include "base/files/file_util.h"
+#include "base/strings/string_split.h"
+#include "base/strings/string_number_conversions.h"
 #include "content/public/common/content_switches.h"
 
 namespace crash_reporter {
@@ -40,8 +43,24 @@ void CrashReporter::SetUploadParameters(const StringMap& parameters) {
 }
 
 std::vector<CrashReporter::UploadReportResult>
-CrashReporter::GetUploadedReports() {
-  return std::vector<CrashReporter::UploadReportResult>();
+CrashReporter::GetUploadedReports(const std::string& path) {
+  std::string file_content;
+  std::vector<CrashReporter::UploadReportResult> result;
+  if (base::ReadFileToString(base::FilePath(path), &file_content)) {
+    std::vector<std::string> reports;
+    base::SplitString(file_content, '\n', &reports);
+    for (const std::string& report : reports) {
+      std::vector<std::string> report_item;
+      base::SplitString(report, ',', &report_item);
+      int report_time = 0;
+      if (report_item.size() >= 2 && base::StringToInt(report_item[0],
+            &report_time)) {
+        result.push_back(CrashReporter::UploadReportResult(report_time,
+            report_item[1]));
+      }
+    }
+  }
+  return result;
 }
 
 }  // namespace crash_reporter
