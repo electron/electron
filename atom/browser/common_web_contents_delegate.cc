@@ -15,6 +15,7 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/common/renderer_preferences.h"
 #include "storage/browser/fileapi/isolated_context.h"
 
 namespace atom {
@@ -101,6 +102,12 @@ void CommonWebContentsDelegate::InitWithWebContents(
   owner_window_ = owner_window;
   web_contents->SetDelegate(this);
 
+  // Tell renderer to handle all navigations in browser.
+  auto preferences = web_contents->GetMutableRendererPrefs();
+  preferences->browser_handles_non_local_top_level_requests = true;
+  preferences->browser_handles_all_top_level_requests = true;
+  web_contents->GetRenderViewHost()->SyncRendererPrefs();
+
   // Create InspectableWebContents.
   web_contents_.reset(brightray::InspectableWebContents::Create(web_contents));
   web_contents_->SetDelegate(this);
@@ -121,6 +128,24 @@ CommonWebContentsDelegate::GetDevToolsWebContents() const {
   if (!web_contents_)
     return nullptr;
   return web_contents_->GetDevToolsWebContents();
+}
+
+content::WebContents* CommonWebContentsDelegate::OpenURLFromTab(
+    content::WebContents* source,
+    const content::OpenURLParams& params) {
+  content::NavigationController::LoadURLParams load_url_params(params.url);
+  load_url_params.referrer = params.referrer;
+  load_url_params.transition_type = params.transition;
+  load_url_params.extra_headers = params.extra_headers;
+  load_url_params.should_replace_current_entry =
+      params.should_replace_current_entry;
+  load_url_params.is_renderer_initiated = params.is_renderer_initiated;
+  load_url_params.transferred_global_request_id =
+      params.transferred_global_request_id;
+  load_url_params.should_clear_history_list = true;
+
+  source->GetController().LoadURLWithParams(load_url_params);
+  return source;
 }
 
 void CommonWebContentsDelegate::RequestToLockMouse(
