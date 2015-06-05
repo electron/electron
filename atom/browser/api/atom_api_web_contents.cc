@@ -95,16 +95,20 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
   if (!context || !site_instance)
     return nullptr;
 
-  content::StoragePartition* storage_partition =
-      content::BrowserContext::GetStoragePartition(
-          context, site_instance);
-
-  DCHECK(storage_partition);
+  auto storage_partition =
+      content::BrowserContext::GetStoragePartition(context, site_instance);
+  if (!storage_partition)
+    return nullptr;
 
   return storage_partition->GetServiceWorkerContext();
 }
 
 }  // namespace
+
+WebContents::WebContents(brightray::InspectableWebContents* web_contents)
+    : WebContents(web_contents->GetWebContents()) {
+  inspectable_web_contents_ = web_contents;
+}
 
 WebContents::WebContents(content::WebContents* web_contents)
     : CommonWebContentsDelegate(false),
@@ -113,7 +117,8 @@ WebContents::WebContents(content::WebContents* web_contents)
       guest_opaque_(true),
       guest_host_(nullptr),
       auto_size_enabled_(false),
-      is_full_page_plugin_(false) {
+      is_full_page_plugin_(false),
+      inspectable_web_contents_(nullptr) {
 }
 
 WebContents::WebContents(const mate::Dictionary& options)
@@ -136,6 +141,7 @@ WebContents::WebContents(const mate::Dictionary& options)
 
   auto web_contents = content::WebContents::Create(params);
   InitWithWebContents(web_contents, GetWindowFromGuest(web_contents));
+  inspectable_web_contents_ = managed_web_contents();
 
   Observe(GetWebContents());
 }
@@ -525,23 +531,65 @@ void WebContents::ExecuteJavaScript(const base::string16& code) {
 }
 
 void WebContents::OpenDevTools() {
+  if (!inspectable_web_contents())
+    return;
   inspectable_web_contents()->SetCanDock(false);
   inspectable_web_contents()->ShowDevTools();
 }
 
 void WebContents::CloseDevTools() {
+  if (!inspectable_web_contents())
+    return;
   inspectable_web_contents()->CloseDevTools();
 }
 
 bool WebContents::IsDevToolsOpened() {
+  if (!inspectable_web_contents())
+    return false;
   return inspectable_web_contents()->IsDevToolsViewShowing();
 }
 
 void WebContents::InspectElement(int x, int y) {
+  if (!inspectable_web_contents())
+    return;
   OpenDevTools();
   scoped_refptr<content::DevToolsAgentHost> agent(
     content::DevToolsAgentHost::GetOrCreateFor(web_contents()));
   agent->InspectElement(x, y);
+}
+
+void WebContents::InspectServiceWorker() {
+  if (!inspectable_web_contents())
+    return;
+  for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
+    if (agent_host->GetType() ==
+        content::DevToolsAgentHost::TYPE_SERVICE_WORKER) {
+      OpenDevTools();
+      inspectable_web_contents()->AttachTo(agent_host);
+      break;
+    }
+  }
+}
+
+void WebContents::HasServiceWorker(
+    const base::Callback<void(bool)>& callback) {
+  auto context = GetServiceWorkerContext(web_contents());
+  if (!context)
+    return;
+
+  context->CheckHasServiceWorker(web_contents()->GetLastCommittedURL(),
+                                 GURL::EmptyGURL(),
+                                 callback);
+}
+
+void WebContents::UnregisterServiceWorker(
+    const base::Callback<void(bool)>& callback) {
+  auto context = GetServiceWorkerContext(web_contents());
+  if (!context)
+    return;
+
+  context->UnregisterServiceWorker(web_contents()->GetLastCommittedURL(),
+                                   callback);
 }
 
 void WebContents::Undo() {
@@ -669,38 +717,6 @@ bool WebContents::IsGuest() const {
   return is_guest();
 }
 
-void WebContents::HasServiceWorker(
-    const base::Callback<void(bool)>& callback) {
-  auto context = GetServiceWorkerContext(web_contents());
-  if (!context)
-    return;
-
-  context->CheckHasServiceWorker(web_contents()->GetLastCommittedURL(),
-                                 GURL::EmptyGURL(),
-                                 callback);
-}
-
-void WebContents::UnregisterServiceWorker(
-    const base::Callback<void(bool)>& callback) {
-  auto context = GetServiceWorkerContext(web_contents());
-  if (!context)
-    return;
-
-  context->UnregisterServiceWorker(web_contents()->GetLastCommittedURL(),
-                                   callback);
-}
-
-void WebContents::InspectServiceWorker() {
-  for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
-    if (agent_host->GetType() ==
-        content::DevToolsAgentHost::TYPE_SERVICE_WORKER) {
-      OpenDevTools();
-      inspectable_web_contents()->AttachTo(agent_host);
-      break;
-    }
-  }
-}
-
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   if (template_.IsEmpty())
@@ -779,6 +795,12 @@ gfx::Size WebContents::GetDefaultSize() const {
   } else {
     return gfx::Size(kDefaultWidth, kDefaultHeight);
   }
+}
+
+// static
+mate::Handle<WebContents> WebContents::CreateFrom(
+    v8::Isolate* isolate, brightray::InspectableWebContents* web_contents) {
+  return mate::CreateHandle(isolate, new WebContents(web_contents));
 }
 
 // static

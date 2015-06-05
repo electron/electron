@@ -53,6 +53,8 @@ class WebContents : public mate::EventEmitter,
  public:
   // Create from an existing WebContents.
   static mate::Handle<WebContents> CreateFrom(
+      v8::Isolate* isolate, brightray::InspectableWebContents* web_contents);
+  static mate::Handle<WebContents> CreateFrom(
       v8::Isolate* isolate, content::WebContents* web_contents);
 
   // Create a new WebContents.
@@ -80,9 +82,9 @@ class WebContents : public mate::EventEmitter,
   void CloseDevTools();
   bool IsDevToolsOpened();
   void InspectElement(int x, int y);
+  void InspectServiceWorker();
   void HasServiceWorker(const base::Callback<void(bool)>&);
   void UnregisterServiceWorker(const base::Callback<void(bool)>&);
-  void InspectServiceWorker();
 
   // Editing commands.
   void Undo();
@@ -113,11 +115,14 @@ class WebContents : public mate::EventEmitter,
   // Returns whether this guest has an associated embedder.
   bool attached() const { return !!embedder_web_contents_; }
 
-  content::WebContents* web_contents() const {
-    return content::WebContentsObserver::web_contents();
+  // Returns the current InspectableWebContents object, nullptr will be returned
+  // if current WebContents can not beinspected, e.g. it is the devtools.
+  brightray::InspectableWebContents* inspectable_web_contents() const {
+    return inspectable_web_contents_;
   }
 
  protected:
+  explicit WebContents(brightray::InspectableWebContents* web_contents);
   explicit WebContents(content::WebContents* web_contents);
   explicit WebContents(const mate::Dictionary& options);
   ~WebContents();
@@ -256,6 +261,10 @@ class WebContents : public mate::EventEmitter,
 
   // Whether the guest view is inside a plugin document.
   bool is_full_page_plugin_;
+
+  // Current InspectableWebContents object, can be nullptr for WebContents of
+  // devtools. It is a weak reference.
+  brightray::InspectableWebContents* inspectable_web_contents_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

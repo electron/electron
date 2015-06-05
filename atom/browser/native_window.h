@@ -212,6 +212,10 @@ class NativeWindow : public CommonWebContentsDelegate,
     observers_.RemoveObserver(obs);
   }
 
+  brightray::InspectableWebContents* inspectable_web_contents() const {
+    return managed_web_contents();
+  }
+
   bool has_frame() const { return has_frame_; }
 
   bool is_html_api_fullscreen() const { return html_fullscreen_; }

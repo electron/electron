@@ -473,7 +473,7 @@ bool Window::IsVisibleOnAllWorkspaces() {
 }
 
 mate::Handle<WebContents> Window::GetWebContents(v8::Isolate* isolate) const {
-  return WebContents::CreateFrom(isolate, window_->GetWebContents());
+  return WebContents::CreateFrom(isolate, window_->managed_web_contents());
 }
 
 mate::Handle<WebContents> Window::GetDevToolsWebContents(
