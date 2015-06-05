@@ -167,6 +167,7 @@ class InspectableWebContentsImpl :
   DevToolsContentsResizingStrategy contents_resizing_strategy_;
   gfx::Rect devtools_bounds_;
   bool can_dock_;
+  bool frontend_loaded_;
 
   scoped_ptr<DevToolsEmbedderMessageDispatcher> embedder_message_dispatcher_;
 

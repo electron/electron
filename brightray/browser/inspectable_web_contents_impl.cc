@@ -52,6 +52,8 @@ const int kDevToolsActionTakenBoundary = 100;
 const char kDevToolsPanelShownHistogram[] = "DevTools.PanelShown";
 const int kDevToolsPanelShownBoundary = 20;
 
+const size_t kMaxMessageChunkSize = IPC::Channel::kMaximumMessageSize / 4;
+
 void RectToDictionary(const gfx::Rect& bounds, base::DictionaryValue* dict) {
   dict->SetInteger("x", bounds.x());
   dict->SetInteger("y", bounds.y());
@@ -159,6 +161,7 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
     content::WebContents* web_contents)
     : web_contents_(web_contents),
       can_dock_(true),
+      frontend_loaded_(false),
       delegate_(nullptr),
       weak_factory_(this) {
   auto context = static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
@@ -280,6 +283,7 @@ void InspectableWebContentsImpl::CloseWindow() {
 }
 
 void InspectableWebContentsImpl::LoadCompleted() {
+  frontend_loaded_ = true;
 }
 
 void InspectableWebContentsImpl::SetInspectedPageBounds(const gfx::Rect& rect) {
@@ -345,8 +349,8 @@ void InspectableWebContentsImpl::AppendToFile(
 }
 
 void InspectableWebContentsImpl::RequestFileSystems() {
-    devtools_web_contents()->GetMainFrame()->ExecuteJavaScript(
-        base::ASCIIToUTF16("DevToolsAPI.fileSystemsLoaded([])"));
+  devtools_web_contents()->GetMainFrame()->ExecuteJavaScript(
+      base::ASCIIToUTF16("DevToolsAPI.fileSystemsLoaded([])"));
 }
 
 void InspectableWebContentsImpl::AddFileSystem() {
@@ -448,9 +452,22 @@ void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontendToBackend(
 
 void InspectableWebContentsImpl::DispatchProtocolMessage(
     content::DevToolsAgentHost* agent_host, const std::string& message) {
-  std::string code = "DevToolsAPI.dispatchMessage(" + message + ");";
-  base::string16 javascript = base::UTF8ToUTF16(code);
-  web_contents()->GetMainFrame()->ExecuteJavaScript(javascript);
+  if (!frontend_loaded_)
+    return;
+
+  if (message.length() < kMaxMessageChunkSize) {
+    base::string16 javascript = base::UTF8ToUTF16(
+        "DevToolsAPI.dispatchMessage(" + message + ");");
+    devtools_web_contents_->GetMainFrame()->ExecuteJavaScript(javascript);
+    return;
+  }
+
+  base::FundamentalValue total_size(static_cast<int>(message.length()));
+  for (size_t pos = 0; pos < message.length(); pos += kMaxMessageChunkSize) {
+    base::StringValue message_value(message.substr(pos, kMaxMessageChunkSize));
+    CallClientFunction("DevToolsAPI.dispatchMessageChunk",
+                       &message_value, pos ? NULL : &total_size, NULL);
+  }
 }
 
 void InspectableWebContentsImpl::AgentHostClosed(
@@ -478,9 +495,9 @@ void InspectableWebContentsImpl::DidFinishLoad(content::RenderFrameHost* render_
 }
 
 void InspectableWebContentsImpl::WebContentsDestroyed() {
-  agent_host_->DetachClient();
   Observe(nullptr);
-  agent_host_ = nullptr;
+  Detach();
+  frontend_loaded_ = false;
 
   for (const auto& pair : pending_requests_)
     delete pair.first;
