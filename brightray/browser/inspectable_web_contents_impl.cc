@@ -265,10 +265,14 @@ void InspectableWebContentsImpl::RequestFileSystems() {
 }
 
 void InspectableWebContentsImpl::AddFileSystem() {
+  if (delegate_)
+    delegate_->DevToolsAddFileSystem();
 }
 
 void InspectableWebContentsImpl::RemoveFileSystem(
     const std::string& file_system_path) {
+  if (delegate_)
+    delegate_->DevToolsRemoveFileSystem(file_system_path);
 }
 
 void InspectableWebContentsImpl::UpgradeDraggedFileSystemPermissions(
