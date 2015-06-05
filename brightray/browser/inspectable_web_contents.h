@@ -3,6 +3,10 @@
 
 #include "content/public/browser/web_contents.h"
 
+namespace base {
+class Value;
+}
+
 namespace content {
 class DevToolsAgentHost;
 }
@@ -14,8 +18,7 @@ class InspectableWebContentsView;
 
 class InspectableWebContents {
  public:
-  static InspectableWebContents* Create(
-      const content::WebContents::CreateParams&);
+  static InspectableWebContents* Create(const content::WebContents::CreateParams&);
 
   // The returned InspectableWebContents takes ownership of the passed-in
   // WebContents.
@@ -26,16 +29,20 @@ class InspectableWebContents {
   virtual InspectableWebContentsView* GetView() const = 0;
   virtual content::WebContents* GetWebContents() const = 0;
 
-  virtual void SetCanDock(bool can_dock) = 0;
-  virtual void ShowDevTools() = 0;
-  // Close the DevTools completely instead of just hide it.
-  virtual void CloseDevTools() = 0;
-  virtual bool IsDevToolsViewShowing() = 0;
-  virtual void AttachTo(const scoped_refptr<content::DevToolsAgentHost>&) = 0;
-
   // The delegate manages its own life.
   virtual void SetDelegate(InspectableWebContentsDelegate* delegate) = 0;
   virtual InspectableWebContentsDelegate* GetDelegate() const = 0;
+
+  virtual void SetCanDock(bool can_dock) = 0;
+  virtual void ShowDevTools() = 0;
+  virtual void CloseDevTools() = 0;
+  virtual bool IsDevToolsViewShowing() = 0;
+  virtual void AttachTo(const scoped_refptr<content::DevToolsAgentHost>&) = 0;
+  virtual void Detach() = 0;
+  virtual void CallClientFunction(const std::string& function_name,
+                                  const base::Value* arg1,
+                                  const base::Value* arg2,
+                                  const base::Value* arg3) = 0;
 };
 
 }  // namespace brightray

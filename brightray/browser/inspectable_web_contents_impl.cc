@@ -160,8 +160,8 @@ void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
 InspectableWebContentsImpl::InspectableWebContentsImpl(
     content::WebContents* web_contents)
     : web_contents_(web_contents),
-      can_dock_(true),
       frontend_loaded_(false),
+      can_dock_(true),
       delegate_(nullptr),
       weak_factory_(this) {
   auto context = static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
@@ -181,6 +181,14 @@ InspectableWebContentsView* InspectableWebContentsImpl::GetView() const {
 
 content::WebContents* InspectableWebContentsImpl::GetWebContents() const {
   return web_contents_.get();
+}
+
+void InspectableWebContentsImpl::SetDelegate(InspectableWebContentsDelegate* delegate) {
+  delegate_ = delegate;
+}
+
+InspectableWebContentsDelegate* InspectableWebContentsImpl::GetDelegate() const {
+  return delegate_;
 }
 
 void InspectableWebContentsImpl::SetCanDock(bool can_dock) {
@@ -429,7 +437,7 @@ void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(const std::st
   base::ListValue empty_params;
   base::ListValue* params = &empty_params;
 
-  base::DictionaryValue* dict = NULL;
+  base::DictionaryValue* dict = nullptr;
   scoped_ptr<base::Value> parsed_message(base::JSONReader::Read(message));
   if (!parsed_message ||
       !parsed_message->GetAsDictionary(&dict) ||
@@ -471,7 +479,7 @@ void InspectableWebContentsImpl::DispatchProtocolMessage(
   for (size_t pos = 0; pos < message.length(); pos += kMaxMessageChunkSize) {
     base::StringValue message_value(message.substr(pos, kMaxMessageChunkSize));
     CallClientFunction("DevToolsAPI.dispatchMessageChunk",
-                       &message_value, pos ? NULL : &total_size, NULL);
+                       &message_value, pos ? nullptr : &total_size, nullptr);
   }
 }
 
@@ -488,9 +496,11 @@ void InspectableWebContentsImpl::AboutToNavigateRenderFrame(
 }
 
 void InspectableWebContentsImpl::WebContentsDestroyed() {
+  frontend_loaded_ = false;
   Observe(nullptr);
   Detach();
-  frontend_loaded_ = false;
+  agent_host_ = nullptr;
+  embedder_message_dispatcher_ = nullptr;
 
   for (const auto& pair : pending_requests_)
     delete pair.first;
@@ -548,7 +558,7 @@ void InspectableWebContentsImpl::OnURLFetchComplete(const net::URLFetcher* sourc
   response.SetInteger("statusCode", rh ? rh->response_code() : 200);
   response.Set("headers", headers);
 
-  void* iterator = NULL;
+  void* iterator = nullptr;
   std::string name;
   std::string value;
   while (rh && rh->EnumerateHeaderLines(&iterator, &name, &value))

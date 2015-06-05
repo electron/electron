@@ -47,28 +47,22 @@ class InspectableWebContentsImpl :
   InspectableWebContentsView* GetView() const override;
   content::WebContents* GetWebContents() const override;
 
+  void SetDelegate(InspectableWebContentsDelegate* delegate) override;
+  InspectableWebContentsDelegate* GetDelegate() const override;
   void SetCanDock(bool can_dock) override;
   void ShowDevTools() override;
   void CloseDevTools() override;
   bool IsDevToolsViewShowing() override;
   void AttachTo(const scoped_refptr<content::DevToolsAgentHost>&) override;
-
-  void Detach();
+  void Detach() override;
   void CallClientFunction(const std::string& function_name,
                           const base::Value* arg1,
                           const base::Value* arg2,
-                          const base::Value* arg3);
+                          const base::Value* arg3) override;
 
   // Return the last position and size of devtools window.
   gfx::Rect GetDevToolsBounds() const;
   void SaveDevToolsBounds(const gfx::Rect& bounds);
-
-  virtual void SetDelegate(InspectableWebContentsDelegate* delegate) {
-    delegate_ = delegate;
-  }
-  virtual InspectableWebContentsDelegate* GetDelegate() const {
-    return delegate_;
-  }
 
   content::WebContents* devtools_web_contents() {
     return devtools_web_contents_.get();
@@ -159,17 +153,17 @@ class InspectableWebContentsImpl :
   scoped_ptr<content::WebContents> web_contents_;
   scoped_ptr<content::WebContents> devtools_web_contents_;
   scoped_ptr<InspectableWebContentsView> view_;
+
+  bool frontend_loaded_;
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
   scoped_ptr<content::DevToolsFrontendHost> frontend_host_;
+  scoped_ptr<DevToolsEmbedderMessageDispatcher> embedder_message_dispatcher_;
 
   DevToolsContentsResizingStrategy contents_resizing_strategy_;
   gfx::Rect devtools_bounds_;
   bool can_dock_;
-  bool frontend_loaded_;
 
-  scoped_ptr<DevToolsEmbedderMessageDispatcher> embedder_message_dispatcher_;
-
-  InspectableWebContentsDelegate* delegate_;
+  InspectableWebContentsDelegate* delegate_;  // weak references.
 
   using PendingRequestsMap = std::map<const net::URLFetcher*, DispatchCallback>;
   PendingRequestsMap pending_requests_;
