@@ -52,18 +52,17 @@ std::string GetMimeTypeForPath(const std::string& path) {
 
 class BundledDataSource : public content::URLDataSource {
  public:
-  explicit BundledDataSource() {
-  }
+  BundledDataSource() {}
 
   // content::URLDataSource implementation.
-  virtual std::string GetSource() const override {
+  std::string GetSource() const override {
     return kChromeUIDevToolsBundledHost;
   }
 
-  virtual void StartDataRequest(const std::string& path,
-                                int render_process_id,
-                                int render_view_id,
-                                const GotDataCallback& callback) override {
+  void StartDataRequest(const std::string& path,
+                        int render_process_id,
+                        int render_view_id,
+                        const GotDataCallback& callback) override {
     std::string filename = PathWithoutParams(path);
 
     int resource_id =
@@ -79,19 +78,19 @@ class BundledDataSource : public content::URLDataSource {
     callback.Run(bytes.get());
   }
 
-  virtual std::string GetMimeType(const std::string& path) const override {
+  std::string GetMimeType(const std::string& path) const override {
     return GetMimeTypeForPath(path);
   }
 
-  virtual bool ShouldAddContentSecurityPolicy() const override {
+  bool ShouldAddContentSecurityPolicy() const override {
     return false;
   }
 
-  virtual bool ShouldDenyXFrameOptions() const override {
+  bool ShouldDenyXFrameOptions() const override {
     return false;
   }
 
-  virtual bool ShouldServeMimeTypeAsContentTypeHeader() const override {
+  bool ShouldServeMimeTypeAsContentTypeHeader() const override {
     return true;
   }
 

@@ -11,10 +11,12 @@
 #include "browser/devtools_contents_resizing_strategy.h"
 #include "browser/devtools_embedder_message_dispatcher.h"
 
+#include "base/memory/weak_ptr.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "net/url_request/url_fetcher_delegate.h"
 #include "ui/gfx/geometry/rect.h"
 
 class PrefRegistrySimple;
@@ -34,7 +36,8 @@ class InspectableWebContentsImpl :
     public content::DevToolsAgentHostClient,
     public content::WebContentsObserver,
     public content::WebContentsDelegate,
-    public DevToolsEmbedderMessageDispatcher::Delegate {
+    public DevToolsEmbedderMessageDispatcher::Delegate,
+    public net::URLFetcherDelegate {
  public:
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
 
@@ -44,24 +47,22 @@ class InspectableWebContentsImpl :
   InspectableWebContentsView* GetView() const override;
   content::WebContents* GetWebContents() const override;
 
+  void SetDelegate(InspectableWebContentsDelegate* delegate) override;
+  InspectableWebContentsDelegate* GetDelegate() const override;
   void SetCanDock(bool can_dock) override;
   void ShowDevTools() override;
   void CloseDevTools() override;
   bool IsDevToolsViewShowing() override;
   void AttachTo(const scoped_refptr<content::DevToolsAgentHost>&) override;
-
-  void Detach();
+  void Detach() override;
+  void CallClientFunction(const std::string& function_name,
+                          const base::Value* arg1,
+                          const base::Value* arg2,
+                          const base::Value* arg3) override;
 
   // Return the last position and size of devtools window.
   gfx::Rect GetDevToolsBounds() const;
   void SaveDevToolsBounds(const gfx::Rect& bounds);
-
-  virtual void SetDelegate(InspectableWebContentsDelegate* delegate) {
-    delegate_ = delegate;
-  }
-  virtual InspectableWebContentsDelegate* GetDelegate() const {
-    return delegate_;
-  }
 
   content::WebContents* devtools_web_contents() {
     return devtools_web_contents_.get();
@@ -71,10 +72,15 @@ class InspectableWebContentsImpl :
   // DevToolsEmbedderMessageDispacher::Delegate
   void ActivateWindow() override;
   void CloseWindow() override;
+  void LoadCompleted() override;
   void SetInspectedPageBounds(const gfx::Rect& rect) override;
   void InspectElementCompleted() override;
-  void MoveWindow(int x, int y) override;
-  void SetIsDocked(bool docked) override;
+  void InspectedURLChanged(const std::string& url) override;
+  void LoadNetworkResource(const DispatchCallback& callback,
+                           const std::string& url,
+                           const std::string& headers,
+                           int stream_id) override;
+  void SetIsDocked(const DispatchCallback& callback, bool is_docked) override;
   void OpenInNewTab(const std::string& url) override;
   void SaveToFile(const std::string& url,
                   const std::string& content,
@@ -86,15 +92,22 @@ class InspectableWebContentsImpl :
   void RemoveFileSystem(const std::string& file_system_path) override;
   void UpgradeDraggedFileSystemPermissions(
       const std::string& file_system_url) override;
-  void IndexPath(int request_id,
+  void IndexPath(int index_request_id,
                  const std::string& file_system_path) override;
-  void StopIndexing(int request_id) override;
-  void SearchInPath(int request_id,
+  void StopIndexing(int index_request_id) override;
+  void SearchInPath(int search_request_id,
                     const std::string& file_system_path,
                     const std::string& query) override;
+  void SetWhitelistedShortcuts(const std::string& message) override;
   void ZoomIn() override;
   void ZoomOut() override;
   void ResetZoom() override;
+  void SetDevicesUpdatesEnabled(bool enabled) override;
+  void SendMessageToBrowser(const std::string& message) override;
+  void RecordActionUMA(const std::string& name, int action) override;
+  void SendJsonRequest(const DispatchCallback& callback,
+                       const std::string& browser_id,
+                       const std::string& url) override;
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(const std::string& message) override;
@@ -109,11 +122,9 @@ class InspectableWebContentsImpl :
   // content::WebContentsObserver:
   void AboutToNavigateRenderFrame(content::RenderFrameHost* old_host,
                                   content::RenderFrameHost* new_host) override;
-  void DidFinishLoad(content::RenderFrameHost* render_frame_host,
-                     const GURL& validated_url) override;
   void WebContentsDestroyed() override;
 
-  // content::WebContentsDelegate
+  // content::WebContentsDelegate:
   bool AddMessageToConsole(content::WebContents* source,
                            int32 level,
                            const base::string16& message,
@@ -133,19 +144,30 @@ class InspectableWebContentsImpl :
   void CloseContents(content::WebContents* source) override;
   void WebContentsFocused(content::WebContents* contents) override;
 
+  // net::URLFetcherDelegate:
+  void OnURLFetchComplete(const net::URLFetcher* source) override;
+
+  void SendMessageAck(int request_id,
+                      const base::Value* arg1);
+
   scoped_ptr<content::WebContents> web_contents_;
   scoped_ptr<content::WebContents> devtools_web_contents_;
   scoped_ptr<InspectableWebContentsView> view_;
+
+  bool frontend_loaded_;
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
   scoped_ptr<content::DevToolsFrontendHost> frontend_host_;
+  scoped_ptr<DevToolsEmbedderMessageDispatcher> embedder_message_dispatcher_;
 
   DevToolsContentsResizingStrategy contents_resizing_strategy_;
   gfx::Rect devtools_bounds_;
   bool can_dock_;
 
-  scoped_ptr<DevToolsEmbedderMessageDispatcher> embedder_message_dispatcher_;
+  InspectableWebContentsDelegate* delegate_;  // weak references.
 
-  InspectableWebContentsDelegate* delegate_;
+  using PendingRequestsMap = std::map<const net::URLFetcher*, DispatchCallback>;
+  PendingRequestsMap pending_requests_;
+  base::WeakPtrFactory<InspectableWebContentsImpl> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsImpl);
 };

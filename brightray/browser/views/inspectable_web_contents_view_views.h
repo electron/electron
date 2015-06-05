@@ -24,13 +24,13 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   ~InspectableWebContentsViewViews();
 
   // InspectableWebContentsView:
-  virtual views::View* GetView() override;
-  virtual views::View* GetWebView() override;
-  virtual void ShowDevTools() override;
-  virtual void CloseDevTools() override;
-  virtual bool IsDevToolsViewShowing() override;
-  virtual void SetIsDocked(bool docked) override;
-  virtual void SetContentsResizingStrategy(
+  views::View* GetView() override;
+  views::View* GetWebView() override;
+  void ShowDevTools() override;
+  void CloseDevTools() override;
+  bool IsDevToolsViewShowing() override;
+  void SetIsDocked(bool docked) override;
+  void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) override;
 
   InspectableWebContentsImpl* inspectable_web_contents() {
@@ -39,7 +39,7 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
 
  private:
   // views::View:
-  virtual void Layout() override;
+  void Layout() override;
 
   // Owns us.
   InspectableWebContentsImpl* inspectable_web_contents_;

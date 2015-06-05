@@ -17,12 +17,12 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
       InspectableWebContentsImpl* inspectable_web_contents_impl);
   virtual ~InspectableWebContentsViewMac();
 
-  virtual gfx::NativeView GetNativeView() const override;
-  virtual void ShowDevTools() override;
-  virtual void CloseDevTools() override;
-  virtual bool IsDevToolsViewShowing() override;
-  virtual void SetIsDocked(bool docked) override;
-  virtual void SetContentsResizingStrategy(
+  gfx::NativeView GetNativeView() const override;
+  void ShowDevTools() override;
+  void CloseDevTools() override;
+  bool IsDevToolsViewShowing() override;
+  void SetIsDocked(bool docked) override;
+  void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) override;
 
   InspectableWebContentsImpl* inspectable_web_contents() {

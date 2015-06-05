@@ -39,12 +39,12 @@ class BrowserMainParts : public content::BrowserMainParts {
 
  protected:
   // content::BrowserMainParts:
-  virtual void PreEarlyInitialization() override;
-  virtual void ToolkitInitialized() override;
-  virtual void PreMainMessageLoopStart() override;
-  virtual void PreMainMessageLoopRun() override;
-  virtual void PostMainMessageLoopRun() override;
-  virtual int PreCreateThreads() override;
+  void PreEarlyInitialization() override;
+  void ToolkitInitialized() override;
+  void PreMainMessageLoopStart() override;
+  void PreMainMessageLoopRun() override;
+  void PostMainMessageLoopRun() override;
+  int PreCreateThreads() override;
 
   // Subclasses should override this to provide their own BrowserContxt
   // implementation. The caller takes ownership of the returned object.
