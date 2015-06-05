@@ -34,7 +34,11 @@ NetLog::NetLog(net::URLRequestContext* context)
       LOG(ERROR) << "Could not open file: " << log_path.value()
                  << "for net logging";
 
-    fprintf(log_file_.get(), "{\"events\": [\n");
+    std::string json;
+    scoped_ptr<base::Value> constants = net::GetNetConstants();
+    base::JSONWriter::Write(constants.release(), &json);
+    fprintf(log_file_.get(), "{\"constants\": %s, \n", json.c_str());
+    fprintf(log_file_.get(), "\"events\": [\n");
 
     if (context_.get()) {
       DCHECK(context_->CalledOnValidThread());
