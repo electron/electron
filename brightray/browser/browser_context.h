@@ -40,9 +40,9 @@ class BrowserContext : public content::BrowserContext,
   virtual void RegisterPrefs(PrefRegistrySimple* pref_registry) {}
 
   // URLRequestContextGetter::Delegate:
-  virtual net::NetworkDelegate* CreateNetworkDelegate() override;
+  net::NetworkDelegate* CreateNetworkDelegate() override;
 
-  virtual base::FilePath GetPath() const override;
+  base::FilePath GetPath() const override;
 
  private:
   class ResourceContext;

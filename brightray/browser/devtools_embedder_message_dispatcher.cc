@@ -104,7 +104,7 @@ bool ParseAndHandleWithCallback(
   return true;
 }
 
-} // namespace
+}  // namespace
 
 /**
  * Dispatcher for messages sent from the frontend running in an

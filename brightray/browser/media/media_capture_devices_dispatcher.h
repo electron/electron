@@ -51,17 +51,17 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
   void DisableDeviceEnumerationForTesting();
 
   // Overridden from content::MediaObserver:
-  virtual void OnAudioCaptureDevicesChanged() override;
-  virtual void OnVideoCaptureDevicesChanged() override;
-  virtual void OnMediaRequestStateChanged(
+  void OnAudioCaptureDevicesChanged() override;
+  void OnVideoCaptureDevicesChanged() override;
+  void OnMediaRequestStateChanged(
       int render_process_id,
       int render_view_id,
       int page_request_id,
       const GURL& security_origin,
       content::MediaStreamType stream_type,
       content::MediaRequestState state) override;
-  virtual void OnCreatingAudioStream(int render_process_id,
-                                     int render_view_id) override;
+  void OnCreatingAudioStream(int render_process_id,
+                             int render_view_id) override;
 
  private:
   friend struct DefaultSingletonTraits<MediaCaptureDevicesDispatcher>;

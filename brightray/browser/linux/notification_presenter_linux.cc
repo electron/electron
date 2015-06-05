@@ -30,7 +30,7 @@ static bool UnityIsRunning() {
   struct DBusConnection* bus = NULL;
 
   dbus_error_init(&err);
-  
+
   bus = dbus_bus_get(DBUS_BUS_SESSION, &err);
   if (dbus_error_is_set(&err)) {
     g_debug("Failed to get Session Bus reference");
@@ -39,7 +39,7 @@ static bool UnityIsRunning() {
 
     goto out;
   }
-  
+
   unity_result = dbus_bus_name_has_owner(bus, "com.canonical.indicator.session", &err);
 
   if (dbus_error_is_set(&err)) {
@@ -107,7 +107,8 @@ void NotificationPresenterLinux::ShowNotification(
   // Zen Nature" is difficult, we will test for the presence of the indicate
   // dbus service
   if (!UnityIsRunning()) {
-    notify_notification_add_action(notification, "default", "View", OnNotificationViewThunk, this, nullptr);
+    notify_notification_add_action(
+        notification, "default", "View", OnNotificationViewThunk, this, nullptr);
   }
 
   GdkPixbuf* pixbuf = libgtk2ui::GdkPixbufFromSkBitmap(icon);

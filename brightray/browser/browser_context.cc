@@ -33,11 +33,11 @@ class BrowserContext::ResourceContext : public content::ResourceContext {
   }
 
  private:
-  virtual net::HostResolver* GetHostResolver() override {
+  net::HostResolver* GetHostResolver() override {
     return getter_->host_resolver();
   }
 
-  virtual net::URLRequestContext* GetRequestContext() override {
+  net::URLRequestContext* GetRequestContext() override {
     return getter_->GetURLRequestContext();
   }
 
