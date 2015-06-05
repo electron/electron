@@ -183,6 +183,10 @@ content::WebContents* InspectableWebContentsImpl::GetWebContents() const {
   return web_contents_.get();
 }
 
+content::WebContents* InspectableWebContentsImpl::GetDevToolsWebContents() const {
+  return devtools_web_contents_.get();
+}
+
 void InspectableWebContentsImpl::SetDelegate(InspectableWebContentsDelegate* delegate) {
   delegate_ = delegate;
 }
@@ -287,7 +291,7 @@ void InspectableWebContentsImpl::ActivateWindow() {
 }
 
 void InspectableWebContentsImpl::CloseWindow() {
-  devtools_web_contents()->DispatchBeforeUnload(false);
+  GetDevToolsWebContents()->DispatchBeforeUnload(false);
 }
 
 void InspectableWebContentsImpl::LoadCompleted() {
@@ -362,7 +366,7 @@ void InspectableWebContentsImpl::AppendToFile(
 }
 
 void InspectableWebContentsImpl::RequestFileSystems() {
-  devtools_web_contents()->GetMainFrame()->ExecuteJavaScript(
+  GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
       base::ASCIIToUTF16("DevToolsAPI.fileSystemsLoaded([])"));
 }
 
@@ -398,17 +402,17 @@ void InspectableWebContentsImpl::SetWhitelistedShortcuts(const std::string& mess
 }
 
 void InspectableWebContentsImpl::ZoomIn() {
-  double level = GetZoomLevelForWebContents(devtools_web_contents());
-  SetZoomLevelForWebContents(devtools_web_contents(), GetNextZoomLevel(level, false));
+  double level = GetZoomLevelForWebContents(GetDevToolsWebContents());
+  SetZoomLevelForWebContents(GetDevToolsWebContents(), GetNextZoomLevel(level, false));
 }
 
 void InspectableWebContentsImpl::ZoomOut() {
-  double level = GetZoomLevelForWebContents(devtools_web_contents());
-  SetZoomLevelForWebContents(devtools_web_contents(), GetNextZoomLevel(level, true));
+  double level = GetZoomLevelForWebContents(GetDevToolsWebContents());
+  SetZoomLevelForWebContents(GetDevToolsWebContents(), GetNextZoomLevel(level, true));
 }
 
 void InspectableWebContentsImpl::ResetZoom() {
-  SetZoomLevelForWebContents(devtools_web_contents(), 0.);
+  SetZoomLevelForWebContents(GetDevToolsWebContents(), 0.);
 }
 
 void InspectableWebContentsImpl::SetDevicesUpdatesEnabled(bool enabled) {

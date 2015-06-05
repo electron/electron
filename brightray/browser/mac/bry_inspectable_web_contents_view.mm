@@ -43,8 +43,9 @@ using namespace brightray;
   if (visible == devtools_visible_)
     return;
 
-  auto webContents = inspectableWebContentsView_->inspectable_web_contents()->GetWebContents();
-  auto devToolsWebContents = inspectableWebContentsView_->inspectable_web_contents()->devtools_web_contents();
+  auto inspectable_web_contents = inspectableWebContentsView_->inspectable_web_contents();
+  auto webContents = inspectable_web_contents->GetWebContents();
+  auto devToolsWebContents = inspectable_web_contents->GetDevToolsWebContents();
   auto devToolsView = devToolsWebContents->GetNativeView();
 
   if (visible && devtools_docked_) {
@@ -92,7 +93,8 @@ using namespace brightray;
   // Switch to new state.
   devtools_docked_ = docked;
   if (!docked) {
-    auto devToolsWebContents = inspectableWebContentsView_->inspectable_web_contents()->devtools_web_contents();
+    auto inspectable_web_contents = inspectableWebContentsView_->inspectable_web_contents();
+    auto devToolsWebContents = inspectable_web_contents->GetDevToolsWebContents();
     auto devToolsView = devToolsWebContents->GetNativeView();
 
     auto styleMask = NSTitledWindowMask | NSClosableWindowMask |
@@ -158,7 +160,7 @@ using namespace brightray;
 
 - (void)windowDidBecomeMain:(NSNotification*)notification {
   content::WebContents* web_contents =
-      inspectableWebContentsView_->inspectable_web_contents()->devtools_web_contents();
+      inspectableWebContentsView_->inspectable_web_contents()->GetDevToolsWebContents();
   if (!web_contents)
     return;
 
@@ -171,7 +173,7 @@ using namespace brightray;
 
 - (void)windowDidResignMain:(NSNotification*)notification {
   content::WebContents* web_contents =
-      inspectableWebContentsView_->inspectable_web_contents()->devtools_web_contents();
+      inspectableWebContentsView_->inspectable_web_contents()->GetDevToolsWebContents();
   if (!web_contents)
     return;
 

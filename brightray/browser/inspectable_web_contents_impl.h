@@ -46,6 +46,7 @@ class InspectableWebContentsImpl :
 
   InspectableWebContentsView* GetView() const override;
   content::WebContents* GetWebContents() const override;
+  content::WebContents* GetDevToolsWebContents() const override;
 
   void SetDelegate(InspectableWebContentsDelegate* delegate) override;
   InspectableWebContentsDelegate* GetDelegate() const override;
@@ -63,10 +64,6 @@ class InspectableWebContentsImpl :
   // Return the last position and size of devtools window.
   gfx::Rect GetDevToolsBounds() const;
   void SaveDevToolsBounds(const gfx::Rect& bounds);
-
-  content::WebContents* devtools_web_contents() {
-    return devtools_web_contents_.get();
-  }
 
  private:
   // DevToolsEmbedderMessageDispacher::Delegate

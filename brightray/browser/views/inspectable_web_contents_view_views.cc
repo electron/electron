@@ -104,12 +104,14 @@ void InspectableWebContentsViewViews::ShowDevTools() {
 
   devtools_visible_ = true;
   if (devtools_window_) {
-    devtools_window_web_view_->SetWebContents(inspectable_web_contents_->devtools_web_contents());
+    devtools_window_web_view_->SetWebContents(
+        inspectable_web_contents_->GetDevToolsWebContents());
     devtools_window_->SetBounds(inspectable_web_contents()->GetDevToolsBounds());
     devtools_window_->Show();
   } else {
     devtools_web_view_->SetVisible(true);
-    devtools_web_view_->SetWebContents(inspectable_web_contents_->devtools_web_contents());
+    devtools_web_view_->SetWebContents(
+        inspectable_web_contents_->GetDevToolsWebContents());
     devtools_web_view_->RequestFocus();
     Layout();
   }
