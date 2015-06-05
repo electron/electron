@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-* Python 2.7
-* [Node.js](http://nodejs.org)
+* Python 2.7.x
+* [Node.js] (http://nodejs.org)
 * Clang 3.4 or later
 * Development headers of GTK+ and libnotify
 
@@ -13,8 +13,22 @@ On Ubuntu you could install the libraries via:
 $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
                        libnotify-dev libgnome-keyring-dev libgconf2-dev \
                        libasound2-dev libcap-dev libcups2-dev libxtst-dev \
-                       gcc-multilib g++-multilib
+                       libxss1 gcc-multilib g++-multilib
 ```
+
+## If You Use Virtual Machines For Building
+
+If you plan to build electron on a virtual machine, you will need a fixed-size
+device container of at least 25 gigabytes in size. The default disk sizes
+suggested by VirtualBox are much too small. You will risk running out of space.
+If creating a Ubuntu virtual machine under VirtualBox, do not partition the
+disk using LVM, which is the Ubuntu installer default. Instead do all
+partitioning with ext4 which is offered as an alternative to LVM. This way
+if your vdi container does run out of space, you can use VirtualBox and gparted 
+utilities to increase the container size without needing to resize 
+LVM Volume Groups as an additional task. You may never have a need for LVM
+in a virtual machine.  
+
 
 ## Getting the code
 
@@ -25,8 +39,9 @@ $ git clone https://github.com/atom/electron.git
 ## Bootstrapping
 
 The bootstrap script will download all necessary build dependencies and create
-build project files. Notice that we're using `ninja` to build Electron so
-there is no `Makefile` generated.
+build project files. You must have Python 2.7.x for the script to succeed. 
+Downloading certain files could take a long time. Notice that we are using 
+`ninja` to build Electron so there is no `Makefile` generated.
 
 ```bash
 $ cd electron
@@ -35,19 +50,33 @@ $ ./script/bootstrap.py -v
 
 ## Building
 
-Build both `Release` and `Debug` targets:
+If you would like to build both `Release` and `Debug` targets:
 
 ```bash
 $ ./script/build.py
 ```
 
-You can also only build the `Debug` target:
+This script will cause a very large Electron executable to be placed in
+the directory `out/R`. The file size is in excess of 1.3 gigabytes. This 
+happens because the Release target binary contains debugging symbols. 
+To reduce the file size, run the `create-dist.py` script:
+
+```bash
+$ ./script/create-dist.py
+```
+
+This will put a working distribution with much smaller file sizes in 
+the `dist` directory. After running the create-dist.py script, you 
+may want to remove the 1.3+ gigabyte binary which is still in out/R.
+
+You can also build the `Debug` target only:
 
 ```bash
 $ ./script/build.py -c D
 ```
 
-After building is done, you can find `atom` under `out/D`.
+After building is done, you can find the `electron` debug binary 
+under `out/D`.
 
 ## Troubleshooting
 
