@@ -8,9 +8,7 @@
 
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/native_window.h"
-#include "atom/browser/web_dialog_helper.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
@@ -21,7 +19,6 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
-#include "brightray/browser/media/media_stream_devices_controller.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/guest_host.h"
 #include "content/public/browser/navigation_details.h"
@@ -82,6 +79,10 @@ const int kDefaultHeight = 300;
 
 v8::Persistent<v8::ObjectTemplate> template_;
 
+// The wrapWebContents funtion which is implemented in JavaScript
+using WrapWebContentsCallback = base::Callback<void(v8::Local<v8::Value>)>;
+WrapWebContentsCallback g_wrap_web_contents;
+
 // Get the window that has the |guest| embedded.
 NativeWindow* GetWindowFromGuest(const content::WebContents* guest) {
   WebViewManager::WebViewInfo info;
@@ -98,28 +99,35 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
   if (!context || !site_instance)
     return nullptr;
 
-  content::StoragePartition* storage_partition =
-      content::BrowserContext::GetStoragePartition(
-          context, site_instance);
-
-  DCHECK(storage_partition);
+  auto storage_partition =
+      content::BrowserContext::GetStoragePartition(context, site_instance);
+  if (!storage_partition)
+    return nullptr;
 
   return storage_partition->GetServiceWorkerContext();
 }
 
 }  // namespace
 
+WebContents::WebContents(brightray::InspectableWebContents* web_contents)
+    : WebContents(web_contents->GetWebContents()) {
+  inspectable_web_contents_ = web_contents;
+}
+
 WebContents::WebContents(content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents),
+    : CommonWebContentsDelegate(false),
+      content::WebContentsObserver(web_contents),
       guest_instance_id_(-1),
       guest_opaque_(true),
       guest_host_(nullptr),
       auto_size_enabled_(false),
-      is_full_page_plugin_(false) {
+      is_full_page_plugin_(false),
+      inspectable_web_contents_(nullptr) {
 }
 
 WebContents::WebContents(const mate::Dictionary& options)
-    : guest_instance_id_(-1),
+    : CommonWebContentsDelegate(true),
+      guest_instance_id_(-1),
       guest_opaque_(true),
       guest_host_(nullptr),
       auto_size_enabled_(false),
@@ -135,9 +143,11 @@ WebContents::WebContents(const mate::Dictionary& options)
   if (options.Get("isGuest", &is_guest) && is_guest)
     params.guest_delegate = this;
 
-  storage_.reset(brightray::InspectableWebContents::Create(params));
-  Observe(storage_->GetWebContents());
-  web_contents()->SetDelegate(this);
+  auto web_contents = content::WebContents::Create(params);
+  InitWithWebContents(web_contents, GetWindowFromGuest(web_contents));
+  inspectable_web_contents_ = managed_web_contents();
+
+  Observe(GetWebContents());
 }
 
 WebContents::~WebContents() {
@@ -185,56 +195,7 @@ content::WebContents* WebContents::OpenURLFromTab(
   if (Emit("will-navigate", params.url))
     return nullptr;
 
-  content::NavigationController::LoadURLParams load_url_params(params.url);
-  load_url_params.referrer = params.referrer;
-  load_url_params.transition_type = params.transition;
-  load_url_params.extra_headers = params.extra_headers;
-  load_url_params.should_replace_current_entry =
-      params.should_replace_current_entry;
-  load_url_params.is_renderer_initiated = params.is_renderer_initiated;
-  load_url_params.transferred_global_request_id =
-      params.transferred_global_request_id;
-  load_url_params.should_clear_history_list = true;
-
-  web_contents()->GetController().LoadURLWithParams(load_url_params);
-  return web_contents();
-}
-
-content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
-    content::WebContents* source) {
-  if (!dialog_manager_)
-    dialog_manager_.reset(new AtomJavaScriptDialogManager);
-
-  return dialog_manager_.get();
-}
-
-void WebContents::RunFileChooser(content::WebContents* guest,
-                                 const content::FileChooserParams& params) {
-  if (!web_dialog_helper_)
-    web_dialog_helper_.reset(new WebDialogHelper(GetWindowFromGuest(guest)));
-  web_dialog_helper_->RunFileChooser(guest, params);
-}
-
-void WebContents::EnumerateDirectory(content::WebContents* guest,
-                                     int request_id,
-                                     const base::FilePath& path) {
-  if (!web_dialog_helper_)
-    web_dialog_helper_.reset(new WebDialogHelper(GetWindowFromGuest(guest)));
-  web_dialog_helper_->EnumerateDirectory(guest, request_id, path);
-}
-
-bool WebContents::CheckMediaAccessPermission(content::WebContents* web_contents,
-                                             const GURL& security_origin,
-                                             content::MediaStreamType type) {
-  return true;
-}
-
-void WebContents::RequestMediaAccessPermission(
-    content::WebContents*,
-    const content::MediaStreamRequest& request,
-    const content::MediaResponseCallback& callback) {
-  brightray::MediaStreamDevicesController controller(request, callback);
-  controller.TakeAction();
+  return CommonWebContentsDelegate::OpenURLFromTab(source, params);
 }
 
 void WebContents::HandleKeyboardEvent(
@@ -250,32 +211,13 @@ void WebContents::HandleKeyboardEvent(
 
 void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
                                             const GURL& origin) {
-  auto window = GetWindowFromGuest(source);
-  if (window) {
-    window->SetHtmlApiFullscreen(true);
-    window->NotifyWindowEnterHtmlFullScreen();
-    source->GetRenderViewHost()->WasResized();
-    Emit("enter-html-full-screen");
-  }
+  CommonWebContentsDelegate::EnterFullscreenModeForTab(source, origin);
+  Emit("enter-html-full-screen");
 }
 
 void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
-  auto window = GetWindowFromGuest(source);
-  if (window) {
-    window->SetHtmlApiFullscreen(false);
-    window->NotifyWindowLeaveHtmlFullScreen();
-    source->GetRenderViewHost()->WasResized();
-    Emit("leave-html-full-screen");
-  }
-}
-
-bool WebContents::IsFullscreenForTabOrPending(
-    const content::WebContents* source) const {
-  auto window = GetWindowFromGuest(source);
-  if (window)
-    return window->is_html_api_fullscreen();
-  else
-    return false;
+  CommonWebContentsDelegate::ExitFullscreenModeForTab(source);
+  Emit("leave-html-full-screen");
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
@@ -421,15 +363,11 @@ void WebContents::RenderViewReady() {
   // WebContents::GetRenderWidgetHostView will return the RWHV of an
   // interstitial page if one is showing at this time. We only want opacity
   // to apply to web pages.
-  if (guest_opaque_) {
-    web_contents()
-        ->GetRenderViewHost()
-        ->GetView()
-        ->SetBackgroundColorToDefault();
-  } else {
-    web_contents()->GetRenderViewHost()->GetView()->SetBackgroundColor(
-        SK_ColorTRANSPARENT);
-  }
+  auto render_view_host_view = web_contents()->GetRenderViewHost()->GetView();
+  if (guest_opaque_)
+    render_view_host_view->SetBackgroundColorToDefault();
+  else
+    render_view_host_view->SetBackgroundColor(SK_ColorTRANSPARENT);
 }
 
 void WebContents::WebContentsDestroyed() {
@@ -471,7 +409,7 @@ void WebContents::WillAttach(content::WebContents* embedder_web_contents,
 }
 
 void WebContents::Destroy() {
-  if (storage_) {
+  if (is_guest() && managed_web_contents()) {
     // When force destroying the "destroyed" event is not emitted.
     WebContentsDestroyed();
 
@@ -480,7 +418,7 @@ void WebContents::Destroy() {
     guest_host_ = nullptr;
 
     Observe(nullptr);
-    storage_.reset();
+    DestroyWebContents();
   }
 }
 
@@ -565,24 +503,80 @@ void WebContents::ExecuteJavaScript(const base::string16& code) {
   web_contents()->GetMainFrame()->ExecuteJavaScript(code);
 }
 
-void WebContents::OpenDevTools() {
-  storage_->SetCanDock(false);
-  storage_->ShowDevTools();
+void WebContents::OpenDevTools(mate::Arguments* args) {
+  if (!inspectable_web_contents())
+    return;
+  bool detach = false;
+  if (is_guest()) {
+    detach = true;
+  } else if (args && args->Length() == 1) {
+    mate::Dictionary options;
+    args->GetNext(&options) && options.Get("detach", &detach);
+  }
+  inspectable_web_contents()->SetCanDock(!detach);
+  inspectable_web_contents()->ShowDevTools();
 }
 
 void WebContents::CloseDevTools() {
-  storage_->CloseDevTools();
+  if (!inspectable_web_contents())
+    return;
+  inspectable_web_contents()->CloseDevTools();
 }
 
 bool WebContents::IsDevToolsOpened() {
-  return storage_->IsDevToolsViewShowing();
+  if (!inspectable_web_contents())
+    return false;
+  return inspectable_web_contents()->IsDevToolsViewShowing();
+}
+
+void WebContents::ToggleDevTools() {
+  if (IsDevToolsOpened())
+    CloseDevTools();
+  else
+    OpenDevTools(nullptr);
 }
 
 void WebContents::InspectElement(int x, int y) {
-  OpenDevTools();
+  if (!inspectable_web_contents())
+    return;
+  OpenDevTools(nullptr);
   scoped_refptr<content::DevToolsAgentHost> agent(
-    content::DevToolsAgentHost::GetOrCreateFor(storage_->GetWebContents()));
+    content::DevToolsAgentHost::GetOrCreateFor(web_contents()));
   agent->InspectElement(x, y);
+}
+
+void WebContents::InspectServiceWorker() {
+  if (!inspectable_web_contents())
+    return;
+  for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
+    if (agent_host->GetType() ==
+        content::DevToolsAgentHost::TYPE_SERVICE_WORKER) {
+      OpenDevTools(nullptr);
+      inspectable_web_contents()->AttachTo(agent_host);
+      break;
+    }
+  }
+}
+
+void WebContents::HasServiceWorker(
+    const base::Callback<void(bool)>& callback) {
+  auto context = GetServiceWorkerContext(web_contents());
+  if (!context)
+    return;
+
+  context->CheckHasServiceWorker(web_contents()->GetLastCommittedURL(),
+                                 GURL::EmptyGURL(),
+                                 callback);
+}
+
+void WebContents::UnregisterServiceWorker(
+    const base::Callback<void(bool)>& callback) {
+  auto context = GetServiceWorkerContext(web_contents());
+  if (!context)
+    return;
+
+  context->UnregisterServiceWorker(web_contents()->GetLastCommittedURL(),
+                                   callback);
 }
 
 void WebContents::Undo() {
@@ -706,36 +700,8 @@ void WebContents::SetAllowTransparency(bool allow) {
   }
 }
 
-void WebContents::HasServiceWorker(
-    const base::Callback<void(bool)>& callback) {
-  auto context = GetServiceWorkerContext(web_contents());
-  if (!context)
-    return;
-
-  context->CheckHasServiceWorker(web_contents()->GetLastCommittedURL(),
-                                 GURL::EmptyGURL(),
-                                 callback);
-}
-
-void WebContents::UnregisterServiceWorker(
-    const base::Callback<void(bool)>& callback) {
-  auto context = GetServiceWorkerContext(web_contents());
-  if (!context)
-    return;
-
-  context->UnregisterServiceWorker(web_contents()->GetLastCommittedURL(),
-                                   callback);
-}
-
-void WebContents::InspectServiceWorker() {
-  for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
-    if (agent_host->GetType() ==
-        content::DevToolsAgentHost::TYPE_SERVICE_WORKER) {
-      OpenDevTools();
-      storage_->AttachTo(agent_host);
-      break;
-    }
-  }
+bool WebContents::IsGuest() const {
+  return is_guest();
 }
 
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
@@ -762,6 +728,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("openDevTools", &WebContents::OpenDevTools)
         .SetMethod("closeDevTools", &WebContents::CloseDevTools)
         .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
+        .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)
         .SetMethod("inspectElement", &WebContents::InspectElement)
         .SetMethod("undo", &WebContents::Undo)
         .SetMethod("redo", &WebContents::Redo)
@@ -777,7 +744,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("_send", &WebContents::SendIPCMessage)
         .SetMethod("setSize", &WebContents::SetSize)
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
-        .SetMethod("isGuest", &WebContents::is_guest)
+        .SetMethod("isGuest", &WebContents::IsGuest)
         .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
         .SetMethod("unregisterServiceWorker",
                    &WebContents::UnregisterServiceWorker)
@@ -820,14 +787,34 @@ gfx::Size WebContents::GetDefaultSize() const {
 
 // static
 mate::Handle<WebContents> WebContents::CreateFrom(
+    v8::Isolate* isolate, brightray::InspectableWebContents* web_contents) {
+  auto handle = mate::CreateHandle(isolate, new WebContents(web_contents));
+  g_wrap_web_contents.Run(handle.ToV8());
+  return handle;
+}
+
+// static
+mate::Handle<WebContents> WebContents::CreateFrom(
     v8::Isolate* isolate, content::WebContents* web_contents) {
-  return mate::CreateHandle(isolate, new WebContents(web_contents));
+  auto handle = mate::CreateHandle(isolate, new WebContents(web_contents));
+  g_wrap_web_contents.Run(handle.ToV8());
+  return handle;
 }
 
 // static
 mate::Handle<WebContents> WebContents::Create(
     v8::Isolate* isolate, const mate::Dictionary& options) {
-  return mate::CreateHandle(isolate, new WebContents(options));
+  auto handle =  mate::CreateHandle(isolate, new WebContents(options));
+  g_wrap_web_contents.Run(handle.ToV8());
+  return handle;
+}
+
+void SetWrapWebContents(const WrapWebContentsCallback& callback) {
+  g_wrap_web_contents = callback;
+}
+
+void ClearWrapWebContents() {
+  g_wrap_web_contents.Reset();
 }
 
 }  // namespace api
@@ -842,6 +829,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.SetMethod("create", &atom::api::WebContents::Create);
+  dict.SetMethod("_setWrapWebContents", &atom::api::SetWrapWebContents);
+  dict.SetMethod("_clearWrapWebContents", &atom::api::ClearWrapWebContents);
 }
 
 }  // namespace

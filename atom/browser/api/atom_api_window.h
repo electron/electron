@@ -78,6 +78,8 @@ class Window : public mate::EventEmitter,
   void OnRendererUnresponsive() override;
   void OnRendererResponsive() override;
   void OnDevToolsFocus() override;
+  void OnDevToolsOpened() override;
+  void OnDevToolsClosed() override;
 
  private:
   // APIs for NativeWindow.
@@ -121,11 +123,6 @@ class Window : public mate::EventEmitter,
   void SetSkipTaskbar(bool skip);
   void SetKiosk(bool kiosk);
   bool IsKiosk();
-  void OpenDevTools(bool can_dock);
-  void CloseDevTools();
-  bool IsDevToolsOpened();
-  void InspectElement(int x, int y);
-  void InspectServiceWorker();
   void FocusOnWebView();
   void BlurWebView();
   bool IsWebViewFocused();
@@ -151,9 +148,11 @@ class Window : public mate::EventEmitter,
   void SetVisibleOnAllWorkspaces(bool visible);
   bool IsVisibleOnAllWorkspaces();
 
-  // APIs for WebContents.
-  mate::Handle<WebContents> GetWebContents(v8::Isolate* isolate) const;
-  mate::Handle<WebContents> GetDevToolsWebContents(v8::Isolate* isolate) const;
+  v8::Local<v8::Value> WebContents(v8::Isolate* isolate);
+  v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
+
+  v8::Global<v8::Value> web_contents_;
+  v8::Global<v8::Value> devtools_web_contents_;
 
   scoped_ptr<NativeWindow> window_;
 

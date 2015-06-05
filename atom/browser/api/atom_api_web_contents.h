@@ -9,10 +9,9 @@
 #include <vector>
 
 #include "atom/browser/api/event_emitter.h"
-#include "brightray/browser/default_web_contents_delegate.h"
+#include "atom/browser/common_web_contents_delegate.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "content/public/common/favicon_url.h"
-#include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "native_mate/handle.h"
@@ -23,13 +22,11 @@ class InspectableWebContents;
 }
 
 namespace mate {
+class Arguments;
 class Dictionary;
 }
 
 namespace atom {
-
-class AtomJavaScriptDialogManager;
-class WebDialogHelper;
 
 namespace api {
 
@@ -51,11 +48,13 @@ struct SetSizeParams {
 
 class WebContents : public mate::EventEmitter,
                     public content::BrowserPluginGuestDelegate,
-                    public content::WebContentsDelegate,
+                    public CommonWebContentsDelegate,
                     public content::WebContentsObserver,
                     public content::GpuDataManagerObserver {
  public:
   // Create from an existing WebContents.
+  static mate::Handle<WebContents> CreateFrom(
+      v8::Isolate* isolate, brightray::InspectableWebContents* web_contents);
   static mate::Handle<WebContents> CreateFrom(
       v8::Isolate* isolate, content::WebContents* web_contents);
 
@@ -80,13 +79,14 @@ class WebContents : public mate::EventEmitter,
   void SetUserAgent(const std::string& user_agent);
   void InsertCSS(const std::string& css);
   void ExecuteJavaScript(const base::string16& code);
-  void OpenDevTools();
+  void OpenDevTools(mate::Arguments* args);
   void CloseDevTools();
   bool IsDevToolsOpened();
+  void ToggleDevTools();
   void InspectElement(int x, int y);
+  void InspectServiceWorker();
   void HasServiceWorker(const base::Callback<void(bool)>&);
   void UnregisterServiceWorker(const base::Callback<void(bool)>&);
-  void InspectServiceWorker();
 
   // Editing commands.
   void Undo();
@@ -112,17 +112,19 @@ class WebContents : public mate::EventEmitter,
   // Sets the transparency of the guest.
   void SetAllowTransparency(bool allow);
 
-  // Returns whether this is a guest view.
-  bool is_guest() const { return guest_instance_id_ != -1; }
+  bool IsGuest() const;
 
   // Returns whether this guest has an associated embedder.
   bool attached() const { return !!embedder_web_contents_; }
 
-  content::WebContents* web_contents() const {
-    return content::WebContentsObserver::web_contents();
+  // Returns the current InspectableWebContents object, nullptr will be returned
+  // if current WebContents can not beinspected, e.g. it is the devtools.
+  brightray::InspectableWebContents* inspectable_web_contents() const {
+    return inspectable_web_contents_;
   }
 
  protected:
+  explicit WebContents(brightray::InspectableWebContents* web_contents);
   explicit WebContents(content::WebContents* web_contents);
   explicit WebContents(const mate::Dictionary& options);
   ~WebContents();
@@ -150,28 +152,12 @@ class WebContents : public mate::EventEmitter,
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
-  content::JavaScriptDialogManager* GetJavaScriptDialogManager(
-      content::WebContents* source) override;
-  void RunFileChooser(content::WebContents* web_contents,
-                      const content::FileChooserParams& params) override;
-  void EnumerateDirectory(content::WebContents* web_contents,
-                          int request_id,
-                          const base::FilePath& path) override;
-  bool CheckMediaAccessPermission(content::WebContents* web_contents,
-                                  const GURL& security_origin,
-                                  content::MediaStreamType type) override;
-  void RequestMediaAccessPermission(
-      content::WebContents*,
-      const content::MediaStreamRequest&,
-      const content::MediaResponseCallback&) override;
   void HandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
   void EnterFullscreenModeForTab(content::WebContents* source,
                                  const GURL& origin) override;
   void ExitFullscreenModeForTab(content::WebContents* source) override;
-  bool IsFullscreenForTabOrPending(
-      const content::WebContents* source) const override;
 
   // content::WebContentsObserver:
   void RenderViewDeleted(content::RenderViewHost*) override;
@@ -242,17 +228,11 @@ class WebContents : public mate::EventEmitter,
   // Returns the default size of the guestview.
   gfx::Size GetDefaultSize() const;
 
-  scoped_ptr<WebDialogHelper> web_dialog_helper_;
-  scoped_ptr<AtomJavaScriptDialogManager> dialog_manager_;
-
   // Unique ID for a guest WebContents.
   int guest_instance_id_;
 
   // Stores whether the contents of the guest can be transparent.
   bool guest_opaque_;
-
-  // Stores the WebContents that managed by this class.
-  scoped_ptr<brightray::InspectableWebContents> storage_;
 
   // The WebContents that attaches this guest view.
   content::WebContents* embedder_web_contents_;
@@ -281,6 +261,10 @@ class WebContents : public mate::EventEmitter,
 
   // Whether the guest view is inside a plugin document.
   bool is_full_page_plugin_;
+
+  // Current InspectableWebContents object, can be nullptr for WebContents of
+  // devtools. It is a weak reference.
+  brightray::InspectableWebContents* inspectable_web_contents_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

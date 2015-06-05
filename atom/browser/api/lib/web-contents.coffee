@@ -3,9 +3,7 @@ NavigationController = require './navigation-controller'
 binding = process.atomBinding 'web_contents'
 ipc = require 'ipc'
 
-module.exports.wrap = (webContents) ->
-  return null unless webContents.isAlive()
-
+wrapWebContents = (webContents) ->
   # webContents is an EventEmitter.
   webContents.__proto__ = EventEmitter.prototype
 
@@ -62,5 +60,8 @@ module.exports.wrap = (webContents) ->
 
   webContents
 
+binding._setWrapWebContents wrapWebContents
+process.once 'exit', binding._clearWrapWebContents
+
 module.exports.create = (options={}) ->
-  @wrap binding.create(options)
+  binding.create(options)

@@ -165,6 +165,26 @@ void Window::OnDevToolsFocus() {
   Emit("devtools-focused");
 }
 
+void Window::OnDevToolsOpened() {
+  Emit("devtools-opened");
+
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  auto handle =
+      WebContents::CreateFrom(isolate, window_->GetDevToolsWebContents());
+  devtools_web_contents_.Reset(isolate, handle.ToV8());
+}
+
+void Window::OnDevToolsClosed() {
+  Emit("devtools-closed");
+
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  devtools_web_contents_.Reset();
+}
+
 // static
 mate::Wrappable* Window::New(v8::Isolate* isolate,
                              const mate::Dictionary& options) {
@@ -356,26 +376,6 @@ bool Window::IsKiosk() {
   return window_->IsKiosk();
 }
 
-void Window::OpenDevTools(bool can_dock) {
-  window_->OpenDevTools(can_dock);
-}
-
-void Window::CloseDevTools() {
-  window_->CloseDevTools();
-}
-
-bool Window::IsDevToolsOpened() {
-  return window_->IsDevToolsOpened();
-}
-
-void Window::InspectElement(int x, int y) {
-  window_->InspectElement(x, y);
-}
-
-void Window::InspectServiceWorker() {
-  window_->InspectServiceWorker();
-}
-
 void Window::FocusOnWebView() {
   window_->FocusOnWebView();
 }
@@ -472,13 +472,20 @@ bool Window::IsVisibleOnAllWorkspaces() {
   return window_->IsVisibleOnAllWorkspaces();
 }
 
-mate::Handle<WebContents> Window::GetWebContents(v8::Isolate* isolate) const {
-  return WebContents::CreateFrom(isolate, window_->GetWebContents());
+v8::Local<v8::Value> Window::WebContents(v8::Isolate* isolate) {
+  if (web_contents_.IsEmpty()) {
+    auto handle =
+        WebContents::CreateFrom(isolate, window_->managed_web_contents());
+    web_contents_.Reset(isolate, handle.ToV8());
+  }
+  return v8::Local<v8::Value>::New(isolate, web_contents_);
 }
 
-mate::Handle<WebContents> Window::GetDevToolsWebContents(
-    v8::Isolate* isolate) const {
-  return WebContents::CreateFrom(isolate, window_->GetDevToolsWebContents());
+v8::Local<v8::Value> Window::DevToolsWebContents(v8::Isolate* isolate) {
+  if (devtools_web_contents_.IsEmpty())
+    return v8::Null(isolate);
+  else
+    return v8::Local<v8::Value>::New(isolate, devtools_web_contents_);
 }
 
 // static
@@ -529,10 +536,6 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getRepresentedFilename", &Window::GetRepresentedFilename)
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)
       .SetMethod("isDocumentEdited", &Window::IsDocumentEdited)
-      .SetMethod("_openDevTools", &Window::OpenDevTools)
-      .SetMethod("closeDevTools", &Window::CloseDevTools)
-      .SetMethod("isDevToolsOpened", &Window::IsDevToolsOpened)
-      .SetMethod("_inspectElement", &Window::InspectElement)
       .SetMethod("focusOnWebView", &Window::FocusOnWebView)
       .SetMethod("blurWebView", &Window::BlurWebView)
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)
@@ -553,9 +556,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("showDefinitionForSelection",
                  &Window::ShowDefinitionForSelection)
 #endif
-      .SetMethod("_getWebContents", &Window::GetWebContents)
-      .SetMethod("_getDevToolsWebContents", &Window::GetDevToolsWebContents)
-      .SetMethod("_inspectServiceWorker", &Window::InspectServiceWorker);
+      .SetProperty("webContents", &Window::WebContents)
+      .SetProperty("devToolsWebContents", &Window::DevToolsWebContents);
 }
 
 }  // namespace api
