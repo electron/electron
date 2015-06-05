@@ -2,12 +2,16 @@
 
 ## Prerequisites
 
-* Python 2.7.x
-* [Node.js] (http://nodejs.org)
+* Python 2.7.x. Some distributions like CentOS still use Python 2.6.x
+so you may need to check your Python version with `python -V`.
+* Node.js v0.12.x. There are various ways to install Node. One can download 
+source code from [Node.js] (http://nodejs.org) and compile from source. 
+Doing so permits installing Node to your own home directory as a standard user.  
+Or try repositories such as [NodeSource] (https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories)
 * Clang 3.4 or later
 * Development headers of GTK+ and libnotify
 
-On Ubuntu you could install the libraries via:
+On Ubuntu, install the following libraries:
 
 ```bash
 $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
@@ -15,6 +19,10 @@ $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
                        libasound2-dev libcap-dev libcups2-dev libxtst-dev \
                        libxss1 gcc-multilib g++-multilib
 ```
+
+Other distributions may offer similar packages for installation via package 
+managers such as yum. Or one can compile from source code.
+
 
 ## If You Use Virtual Machines For Building
 
@@ -80,48 +88,7 @@ under `out/D`.
 
 ## Troubleshooting
 
-### fatal error: bits/predefs.h: No such file or directory
-
-If you got an error like this:
-
-````
-In file included from /usr/include/stdio.h:28:0,
-                 from ../../../svnsrc/libgcc/../gcc/tsystem.h:88,
-                 from ../../../svnsrc/libgcc/libgcc2.c:29:
-/usr/include/features.h:324:26: fatal error: bits/predefs.h: No such file or directory
- #include <bits/predefs.h>
-````
-
-Then you need to install `gcc-multilib` and `g++-multilib`, on Ubuntu you can do
-this:
-
-```bash
-$ sudo apt-get install gcc-multilib g++-multilib
-```
-
-### libudev.so.0 missing
-
-If you get an error like:
-
-````
-/usr/bin/ld: warning: libudev.so.0, needed by .../vendor/brightray/vendor/download/libchromiumcontent/Release/libchromiumcontent.so, not found (try using -rpath or -rpath-link)
-````
-
-and you are on Ubuntu 13.04+, 64 bit system, try doing
-
-```bash
-sudo ln -s /lib/x86_64-linux-gnu/libudev.so.1.3.5 /usr/lib/libudev.so.0
-```
-
-for ubuntu 13.04+ 32 bit systems, try doing
-
-```bash
-sudo ln -s /lib/i386-linux-gnu/libudev.so.1.3.5  /usr/lib/libudev.so.0
-```
-
-also see
-
-https://github.com/nwjs/nw.js/wiki/The-solution-of-lacking-libudev.so.0
+Make sure you have installed all the build dependencies. 
 
 ## Tests
 
