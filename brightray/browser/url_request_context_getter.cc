@@ -6,6 +6,7 @@
 
 #include <algorithm>
 
+#include "browser/net_log.h"
 #include "browser/network_delegate.h"
 
 #include "base/command_line.h"
@@ -146,6 +147,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   auto& command_line = *base::CommandLine::ForCurrentProcess();
   if (!url_request_context_.get()) {
     url_request_context_.reset(new net::URLRequestContext);
+    url_request_context_->set_net_log(new NetLog(url_request_context_.get()));
     network_delegate_.reset(delegate_->CreateNetworkDelegate());
     url_request_context_->set_network_delegate(network_delegate_.get());
 
@@ -161,7 +163,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     storage_->set_http_user_agent_settings(new net::StaticHttpUserAgentSettings(
         "en-us,en", base::EmptyString()));
 
-    scoped_ptr<net::HostResolver> host_resolver(net::HostResolver::CreateDefaultResolver(NULL));
+    scoped_ptr<net::HostResolver> host_resolver(net::HostResolver::CreateDefaultResolver(nullptr));
 
     // --host-resolver-rules
     if (command_line.HasSwitch(switches::kHostResolverRules)) {
@@ -226,6 +228,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         url_request_context_->channel_id_service();
     network_session_params.http_auth_handler_factory =
         url_request_context_->http_auth_handler_factory();
+    network_session_params.net_log = url_request_context_->net_log();
 
     // --ignore-certificate-errors
     if (command_line.HasSwitch(switches::kIgnoreCertificateErrors))
