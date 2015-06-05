@@ -109,7 +109,8 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 }  // namespace
 
 WebContents::WebContents(content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents),
+    : CommonWebContentsDelegate(false),
+      content::WebContentsObserver(web_contents),
       guest_instance_id_(-1),
       guest_opaque_(true),
       guest_host_(nullptr),
@@ -118,7 +119,8 @@ WebContents::WebContents(content::WebContents* web_contents)
 }
 
 WebContents::WebContents(const mate::Dictionary& options)
-    : guest_instance_id_(-1),
+    : CommonWebContentsDelegate(true),
+      guest_instance_id_(-1),
       guest_opaque_(true),
       guest_host_(nullptr),
       auto_size_enabled_(false),

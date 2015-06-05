@@ -9,13 +9,13 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/common_web_contents_delegate.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/browser/ui/accelerator_util.h"
 #include "base/cancelable_callback.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
-#include "brightray/browser/default_web_contents_delegate.h"
 #include "brightray/browser/inspectable_web_contents_delegate.h"
 #include "brightray/browser/inspectable_web_contents_impl.h"
 #include "content/public/browser/notification_registrar.h"
@@ -54,7 +54,7 @@ class AtomJavaScriptDialogManager;
 struct DraggableRegion;
 class WebDialogHelper;
 
-class NativeWindow : public brightray::DefaultWebContentsDelegate,
+class NativeWindow : public CommonWebContentsDelegate,
                      public brightray::InspectableWebContentsDelegate,
                      public content::WebContentsObserver,
                      public content::NotificationObserver {

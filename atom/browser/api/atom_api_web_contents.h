@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "atom/browser/api/event_emitter.h"
-#include "brightray/browser/default_web_contents_delegate.h"
+#include "atom/browser/common_web_contents_delegate.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "content/public/common/favicon_url.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -51,7 +51,7 @@ struct SetSizeParams {
 
 class WebContents : public mate::EventEmitter,
                     public content::BrowserPluginGuestDelegate,
-                    public brightray::DefaultWebContentsDelegate,
+                    public CommonWebContentsDelegate,
                     public content::WebContentsObserver,
                     public content::GpuDataManagerObserver {
  public:

@@ -151,7 +151,8 @@ base::DictionaryValue* CreateFileSystemValue(
 
 NativeWindow::NativeWindow(content::WebContents* web_contents,
                            const mate::Dictionary& options)
-    : content::WebContentsObserver(web_contents),
+    : CommonWebContentsDelegate(false),
+      content::WebContentsObserver(web_contents),
       has_frame_(true),
       transparent_(false),
       enable_larger_than_screen_(false),

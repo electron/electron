@@ -123,6 +123,8 @@
       'atom/browser/browser_mac.mm',
       'atom/browser/browser_win.cc',
       'atom/browser/browser_observer.h',
+      'atom/browser/common_web_contents_delegate.cc',
+      'atom/browser/common_web_contents_delegate.h',
       'atom/browser/javascript_environment.cc',
       'atom/browser/javascript_environment.h',
       'atom/browser/mac/atom_application.h',
