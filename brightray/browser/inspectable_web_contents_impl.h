@@ -16,6 +16,7 @@
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "net/url_request/url_fetcher_delegate.h"
 #include "ui/gfx/geometry/rect.h"
 
 class PrefRegistrySimple;
@@ -35,7 +36,8 @@ class InspectableWebContentsImpl :
     public content::DevToolsAgentHostClient,
     public content::WebContentsObserver,
     public content::WebContentsDelegate,
-    public DevToolsEmbedderMessageDispatcher::Delegate {
+    public DevToolsEmbedderMessageDispatcher::Delegate,
+    public net::URLFetcherDelegate {
  public:
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
 
@@ -130,7 +132,7 @@ class InspectableWebContentsImpl :
                      const GURL& validated_url) override;
   void WebContentsDestroyed() override;
 
-  // content::WebContentsDelegate
+  // content::WebContentsDelegate:
   bool AddMessageToConsole(content::WebContents* source,
                            int32 level,
                            const base::string16& message,
@@ -150,6 +152,9 @@ class InspectableWebContentsImpl :
   void CloseContents(content::WebContents* source) override;
   void WebContentsFocused(content::WebContents* contents) override;
 
+  // net::URLFetcherDelegate:
+  void OnURLFetchComplete(const net::URLFetcher* source) override;
+
   void SendMessageAck(int request_id,
                       const base::Value* arg1);
 
@@ -167,6 +172,8 @@ class InspectableWebContentsImpl :
 
   InspectableWebContentsDelegate* delegate_;
 
+  using PendingRequestsMap = std::map<const net::URLFetcher*, DispatchCallback>;
+  PendingRequestsMap pending_requests_;
   base::WeakPtrFactory<InspectableWebContentsImpl> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsImpl);

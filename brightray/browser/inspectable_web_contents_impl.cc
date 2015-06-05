@@ -19,10 +19,14 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_http_handler.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "net/http/http_response_headers.h"
+#include "net/url_request/url_fetcher.h"
+#include "net/url_request/url_fetcher_response_writer.h"
 
 namespace brightray {
 
@@ -84,6 +88,59 @@ double GetNextZoomLevel(double level, bool out) {
       return content::ZoomFactorToZoomLevel(kPresetZoomFactors[i + 1]);
   }
   return level;
+}
+
+// ResponseWriter -------------------------------------------------------------
+
+class ResponseWriter : public net::URLFetcherResponseWriter {
+ public:
+  ResponseWriter(base::WeakPtr<InspectableWebContentsImpl> bindings, int stream_id);
+  ~ResponseWriter() override;
+
+  // URLFetcherResponseWriter overrides:
+  int Initialize(const net::CompletionCallback& callback) override;
+  int Write(net::IOBuffer* buffer,
+            int num_bytes,
+            const net::CompletionCallback& callback) override;
+  int Finish(const net::CompletionCallback& callback) override;
+
+ private:
+  base::WeakPtr<InspectableWebContentsImpl> bindings_;
+  int stream_id_;
+
+  DISALLOW_COPY_AND_ASSIGN(ResponseWriter);
+};
+
+ResponseWriter::ResponseWriter(base::WeakPtr<InspectableWebContentsImpl> bindings,
+                               int stream_id)
+    : bindings_(bindings),
+      stream_id_(stream_id) {
+}
+
+ResponseWriter::~ResponseWriter() {
+}
+
+int ResponseWriter::Initialize(const net::CompletionCallback& callback) {
+  return net::OK;
+}
+
+int ResponseWriter::Write(net::IOBuffer* buffer,
+                          int num_bytes,
+                          const net::CompletionCallback& callback) {
+  base::FundamentalValue* id = new base::FundamentalValue(stream_id_);
+  base::StringValue* chunk =
+      new base::StringValue(std::string(buffer->data(), num_bytes));
+
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(&InspectableWebContentsImpl::CallClientFunction,
+                 bindings_, "DevToolsAPI.streamWrite",
+                 base::Owned(id), base::Owned(chunk), nullptr));
+  return num_bytes;
+}
+
+int ResponseWriter::Finish(const net::CompletionCallback& callback) {
+  return net::OK;
 }
 
 }  // namespace
@@ -245,6 +302,24 @@ void InspectableWebContentsImpl::LoadNetworkResource(
     const std::string& url,
     const std::string& headers,
     int stream_id) {
+  GURL gurl(url);
+  if (!gurl.is_valid()) {
+    base::DictionaryValue response;
+    response.SetInteger("statusCode", 404);
+    callback.Run(&response);
+    return;
+  }
+
+  auto browser_context = static_cast<BrowserContext*>(devtools_web_contents_->GetBrowserContext());
+
+  net::URLFetcher* fetcher =
+      net::URLFetcher::Create(gurl, net::URLFetcher::GET, this);
+  pending_requests_[fetcher] = callback;
+  fetcher->SetRequestContext(browser_context->url_request_context_getter());
+  fetcher->SetExtraRequestHeaders(headers);
+  fetcher->SaveResponseWithWriter(scoped_ptr<net::URLFetcherResponseWriter>(
+      new ResponseWriter(weak_factory_.GetWeakPtr(), stream_id)));
+  fetcher->Start();
 }
 
 void InspectableWebContentsImpl::SetIsDocked(const DispatchCallback& callback,
@@ -406,6 +481,9 @@ void InspectableWebContentsImpl::WebContentsDestroyed() {
   agent_host_->DetachClient();
   Observe(nullptr);
   agent_host_ = nullptr;
+
+  for (const auto& pair : pending_requests_)
+    delete pair.first;
 }
 
 bool InspectableWebContentsImpl::AddMessageToConsole(
@@ -447,6 +525,28 @@ void InspectableWebContentsImpl::WebContentsFocused(
     content::WebContents* contents) {
   if (delegate_)
     delegate_->DevToolsFocused();
+}
+
+void InspectableWebContentsImpl::OnURLFetchComplete(const net::URLFetcher* source) {
+  DCHECK(source);
+  PendingRequestsMap::iterator it = pending_requests_.find(source);
+  DCHECK(it != pending_requests_.end());
+
+  base::DictionaryValue response;
+  base::DictionaryValue* headers = new base::DictionaryValue();
+  net::HttpResponseHeaders* rh = source->GetResponseHeaders();
+  response.SetInteger("statusCode", rh ? rh->response_code() : 200);
+  response.Set("headers", headers);
+
+  void* iterator = NULL;
+  std::string name;
+  std::string value;
+  while (rh && rh->EnumerateHeaderLines(&iterator, &name, &value))
+    headers->SetString(name, value);
+
+  it->second.Run(&response);
+  pending_requests_.erase(it);
+  delete source;
 }
 
 void InspectableWebContentsImpl::SendMessageAck(int request_id,
