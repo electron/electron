@@ -55,8 +55,7 @@ class CrashReporter
         path.join tmpdir, "#{@productName} Crashes"
       else
         path.join tmpdir, "#{@productName} Crashes", 'uploads.log'
-    console.log log;
-    binding._getUploadedReports(log)
+    binding._getUploadedReports log
 
 
 crashRepoter = new CrashReporter
