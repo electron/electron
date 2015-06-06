@@ -86,6 +86,17 @@ $ ./script/build.py -c D
 After building is done, you can find the `electron` debug binary 
 under `out/D`.
 
+
+## Cleaning
+
+
+To clean the build files:
+
+```bash
+$ ./script/clean.py
+```
+
+
 ## Troubleshooting
 
 Make sure you have installed all the build dependencies. 
