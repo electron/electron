@@ -19,13 +19,14 @@ class NetLog : public net::NetLog,
                public net::NetLog::ThreadSafeObserver {
  public:
   explicit NetLog(net::URLRequestContext* context);
-  virtual ~NetLog();
+  ~NetLog() override;
 
   void OnAddEntry(const net::NetLog::Entry& entry) override;
 
  private:
   bool added_events_;
-  scoped_ptr<net::URLRequestContext> context_;
+  // We use raw pointer to prevent reference cycle.
+  net::URLRequestContext* const context_;
   base::ScopedFILE log_file_;
 
   DISALLOW_COPY_AND_ASSIGN(NetLog);

@@ -22,6 +22,7 @@
 #include "net/dns/mapped_host_resolver.h"
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_server_properties_impl.h"
+#include "net/log/net_log.h"
 #include "net/proxy/dhcp_proxy_script_fetcher_factory.h"
 #include "net/proxy/proxy_config_service.h"
 #include "net/proxy/proxy_script_fetcher_impl.h"
@@ -147,7 +148,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   auto& command_line = *base::CommandLine::ForCurrentProcess();
   if (!url_request_context_.get()) {
     url_request_context_.reset(new net::URLRequestContext);
-    url_request_context_->set_net_log(new NetLog(url_request_context_.get()));
+    net_log_.reset(new NetLog(url_request_context_.get()));
+    url_request_context_->set_net_log(net_log_.get());
     network_delegate_.reset(delegate_->CreateNetworkDelegate());
     url_request_context_->set_network_delegate(network_delegate_.get());
 

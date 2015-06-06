@@ -13,6 +13,25 @@
 #include "net/log/net_log_util.h"
 #include "net/url_request/url_request_context.h"
 
+namespace {
+
+base::Value* GetConstants() {
+  scoped_ptr<base::DictionaryValue> constants = net::GetNetConstants();
+
+  // Adding client information to constants dictionary.
+  base::DictionaryValue* client_info = new base::DictionaryValue();
+
+  client_info->SetString("name", "Electron");
+  client_info->SetString("command_line",
+      base::CommandLine::ForCurrentProcess()->GetCommandLineString());
+
+  constants->Set("clientInfo", client_info);
+
+  return constants.release();
+}
+
+}  // namespace
+
 namespace brightray {
 
 NetLog::NetLog(net::URLRequestContext* context)
@@ -35,16 +54,15 @@ NetLog::NetLog(net::URLRequestContext* context)
                  << "for net logging";
 
     std::string json;
-    scoped_ptr<base::Value> constants = net::GetNetConstants();
-    base::JSONWriter::Write(constants.release(), &json);
+    base::JSONWriter::Write(GetConstants(), &json);
     fprintf(log_file_.get(), "{\"constants\": %s, \n", json.c_str());
     fprintf(log_file_.get(), "\"events\": [\n");
 
-    if (context_.get()) {
+    if (context_) {
       DCHECK(context_->CalledOnValidThread());
 
       std::set<net::URLRequestContext*> contexts;
-      contexts.insert(context_.get());
+      contexts.insert(context_);
 
       net::CreateNetLogEntriesForActiveObjects(contexts, this);
     }
@@ -55,6 +73,8 @@ NetLog::NetLog(net::URLRequestContext* context)
 
 NetLog::~NetLog() {
   DeprecatedRemoveObserver(this);
+
+  // Ending events array.
   fprintf(log_file_.get(), "]}");
   log_file_.reset();
 }
