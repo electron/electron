@@ -98,7 +98,7 @@ returns a `Buffer` by calling the passed callback:
 var remote = require('remote');
 var fs = require('fs');
 remote.getCurrentWindow().capturePage(function(image) {
-  var buf = image.toPng()
+  var buf = image.toPng();
   fs.writeFile('/tmp/screenshot.png', buf, function(err) {
     console.log(err);
   });
@@ -117,7 +117,7 @@ The work-around is to write the `buf` in the main process, where it is a real
 ```javascript
 var remote = require('remote');
 remote.getCurrentWindow().capturePage(function(image) {
-  var buf = image.toPng()
+  var buf = image.toPng();
   remote.require('fs').writeFile('/tmp/screenshot.png', buf, function(err) {
     console.log(err);
   });
