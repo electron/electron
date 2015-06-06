@@ -571,9 +571,9 @@ Calling `window.print()` in web page is equivalent to call
 doesn't need print feature, you can safely remove `pdf.dll` in saving binary
 size.
 
-### BrowserWindow.loadUrl(url)
+### BrowserWindow.loadUrl(url, [options])
 
-Same with `webContents.loadUrl(url)`.
+Same with `webContents.loadUrl(url, [options])`.
 
 ### BrowserWindow.reload()
 
@@ -778,9 +778,11 @@ Emitted when a plugin process is crashed.
 
 Emitted when the WebContents is destroyed.
 
-### WebContents.loadUrl(url)
+### WebContents.loadUrl(url, [options])
 
 * `url` URL
+* `options` URL
+  * `httpreferrer` String - A HTTP Referer url
 
 Loads the `url` in the window, the `url` must contains the protocol prefix,
 e.g. the `http://` or `file://`.
