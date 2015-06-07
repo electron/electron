@@ -27,15 +27,7 @@ managers such as yum. Or one can compile from source code.
 ## If You Use Virtual Machines For Building
 
 If you plan to build electron on a virtual machine, you will need a fixed-size
-device container of at least 25 gigabytes in size. The default disk sizes
-suggested by VirtualBox are much too small. You will risk running out of space.
-If creating a Ubuntu virtual machine under VirtualBox, do not partition the
-disk using LVM, which is the Ubuntu installer default. Instead do all
-partitioning with ext4 which is offered as an alternative to LVM. This way
-if your vdi container does run out of space, you can use VirtualBox and gparted 
-utilities to increase the container size without needing to resize 
-LVM Volume Groups as an additional task. You may never have a need for LVM
-in a virtual machine.  
+device container of at least 25 gigabytes in size. 
 
 
 ## Getting the code
