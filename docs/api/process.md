@@ -1,6 +1,6 @@
 # Process object
 
-The `process` object in Electron has following differences between the one in
+The `process` object in Electron has the following differences from the one in
 upstream node:
 
 * `process.type` String - Process's type, can be `browser` (i.e. main process) or `renderer`.
