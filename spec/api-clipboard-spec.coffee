@@ -25,8 +25,10 @@ describe 'clipboard module', ->
       markup =
         if process.platform is 'darwin'
           '<meta charset=\'utf-8\'><string>Hi</string>'
-        else
+        else if process.platform is 'linux'
           '<meta http-equiv="content-type" ' +
           'content="text/html; charset=utf-8"><string>Hi</string>'
+        else
+          '<string>Hi</string>'
       clipboard.writeHtml text
       assert.equal clipboard.readHtml(), markup
