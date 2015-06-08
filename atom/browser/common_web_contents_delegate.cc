@@ -11,6 +11,7 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/web_dialog_helper.h"
+#include "base/files/file_util.h"
 #include "chrome/browser/ui/browser_dialogs.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
