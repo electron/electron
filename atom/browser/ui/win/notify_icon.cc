@@ -58,9 +58,7 @@ void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
     RECT rect;
     Shell_NotifyIconGetRect(&icon_id, &rect);
 
-    int width = rect.right - rect.left;
-    int height = rect.bottom - rect.top;
-    NotifyClicked(gfx::Rect(rect.left, rect.top, width, height));
+    NotifyClicked(gfx::Rect(rect));
     return;
   }
 
