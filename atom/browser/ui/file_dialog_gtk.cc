@@ -93,12 +93,15 @@ class FileChooserDialog {
     gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
 
     if (!default_path.empty()) {
-      if (base::DirectoryExists(default_path))
+      if (base::DirectoryExists(default_path)) {
         gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog_),
                                             default_path.value().c_str());
-      else
-        gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(dialog_),
-                                      default_path.value().c_str());
+      } else {
+        gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog_),
+            default_path.DirName().value().c_str());
+        gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(dialog_),
+            default_path.BaseName().value().c_str());
+      }
     }
 
     if (!filters.empty())
