@@ -45,6 +45,7 @@
           'dependencies': [
             '<(project_name)_framework',
             '<(project_name)_helper',
+            'vendor/breakpad/breakpad.gyp:dump_syms',
           ],
           'xcode_settings': {
             'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name)',
