@@ -37,6 +37,8 @@
       'browser/media/media_capture_devices_dispatcher.h',
       'browser/media/media_stream_devices_controller.cc',
       'browser/media/media_stream_devices_controller.h',
+      'browser/net_log.cc',
+      'browser/net_log.h',
       'browser/network_delegate.cc',
       'browser/network_delegate.h',
       'browser/notification_presenter.h',
