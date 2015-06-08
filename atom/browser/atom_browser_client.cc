@@ -217,12 +217,19 @@ void AtomBrowserClient::SelectClientCertificate(
   auto cert_path = command_line->GetSwitchValueNative(
       switches::kClientCertificate);
 
-  if (cert_path.empty())
-    return;
+  // TODO(zcbenz): allow users to select certificate from
+  // client_cert list. Right now defaults to first certificate
+  // in the list.
+  scoped_refptr<net::X509Certificate> certificate;
+  if (cert_path.empty()) {
+    if (!cert_request_info->client_certs.empty())
+      certificate = cert_request_info->client_certs[0];
+  } else {
+    certificate = ImportCertFromFile(base::FilePath(cert_path));
+  }
 
-  scoped_refptr<net::X509Certificate> certificate =
-      ImportCertFromFile(base::FilePath(cert_path));
-  delegate->ContinueWithCertificate(certificate.get());
+  if (certificate.get())
+    delegate->ContinueWithCertificate(certificate.get());
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
