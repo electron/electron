@@ -248,7 +248,8 @@ void InspectableWebContentsImpl::AttachTo(const scoped_refptr<content::DevToolsA
 }
 
 void InspectableWebContentsImpl::Detach() {
-  agent_host_->DetachClient();
+  if (agent_host_.get())
+    agent_host_->DetachClient();
   agent_host_ = nullptr;
 }
 
