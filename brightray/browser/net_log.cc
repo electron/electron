@@ -51,7 +51,8 @@ NetLog::NetLog(net::URLRequestContext* context)
                << "for net logging";
   } else {
     std::string json;
-    base::JSONWriter::Write(GetConstants(), &json);
+    scoped_ptr<base::Value> constants(GetConstants());
+    base::JSONWriter::Write(constants.get(), &json);
     fprintf(log_file_.get(), "{\"constants\": %s, \n", json.c_str());
     fprintf(log_file_.get(), "\"events\": [\n");
 
