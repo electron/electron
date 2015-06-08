@@ -14,7 +14,7 @@ getOrCreateArchive = (p) ->
 
 # Clean cache on quit.
 process.on 'exit', ->
-  archive.destroy() for p, archive of cachedArchives
+  archive.destroy() for own p, archive of cachedArchives
 
 # Separate asar package's path from full path.
 splitPath = (p) ->
