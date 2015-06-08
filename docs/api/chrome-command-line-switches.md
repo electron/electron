@@ -70,6 +70,10 @@ Set path to pepper flash plugin for use.
 
 Set the pepper flash version.
 
+## --log-net-log
+
+Set the path to net log file.
+
 ## --v=`log_level`
 
 Gives the default maximal active V-logging level; 0 is the default. Normally
