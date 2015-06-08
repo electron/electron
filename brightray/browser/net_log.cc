@@ -21,7 +21,6 @@ base::Value* GetConstants() {
   // Adding client information to constants dictionary.
   base::DictionaryValue* client_info = new base::DictionaryValue();
 
-  client_info->SetString("name", "Electron");
   client_info->SetString("command_line",
       base::CommandLine::ForCurrentProcess()->GetCommandLineString());
 
@@ -38,21 +37,19 @@ NetLog::NetLog(net::URLRequestContext* context)
     : added_events_(false),
       context_(context) {
   auto command_line = base::CommandLine::ForCurrentProcess();
+  base::FilePath log_path =
+      command_line->GetSwitchValuePath(switches::kLogNetLog);
 
-  if (command_line->HasSwitch(switches::kLogNetLog)) {
-    base::FilePath log_path =
-        command_line->GetSwitchValuePath(switches::kLogNetLog);
+  #if defined(OS_WIN)
+    log_file_.reset(_wfopen(log_path.value().c_str(), L"w"));
+  #elif defined(OS_POSIX)
+    log_file_.reset(fopen(log_path.value().c_str(), "w"));
+  #endif
 
-    #if defined(OS_WIN)
-      log_file_.reset(_wfopen(log_path.value().c_str(), L"w"));
-    #elif defined(OS_POSIX)
-      log_file_.reset(fopen(log_path.value().c_str(), "w"));
-    #endif
-
-    if (!log_file_)
-      LOG(ERROR) << "Could not open file: " << log_path.value()
-                 << "for net logging";
-
+  if (!log_file_) {
+    LOG(ERROR) << "Could not open file: " << log_path.value()
+               << "for net logging";
+  } else {
     std::string json;
     base::JSONWriter::Write(GetConstants(), &json);
     fprintf(log_file_.get(), "{\"constants\": %s, \n", json.c_str());

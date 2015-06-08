@@ -148,8 +148,13 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   auto& command_line = *base::CommandLine::ForCurrentProcess();
   if (!url_request_context_.get()) {
     url_request_context_.reset(new net::URLRequestContext);
-    net_log_.reset(new NetLog(url_request_context_.get()));
-    url_request_context_->set_net_log(net_log_.get());
+
+    // --log-net-log
+    if (command_line.HasSwitch(switches::kLogNetLog)) {
+      net_log_.reset(new NetLog(url_request_context_.get()));
+      url_request_context_->set_net_log(net_log_.get());
+    }
+
     network_delegate_.reset(delegate_->CreateNetworkDelegate());
     url_request_context_->set_network_delegate(network_delegate_.get());
 
