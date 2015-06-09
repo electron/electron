@@ -60,19 +60,19 @@ Like `--host-rules` but these `rules` only apply to the host resolver.
 
 ## --ignore-certificate-errors
 
-Ignore certificate related errors.
+Ignores certificate related errors.
 
-## --ppapi-flash-path
+## --ppapi-flash-path=`path`
 
-Set path to pepper flash plugin for use.
+Sets `path` of pepper flash plugin.
 
-## --ppapi-flash-version
+## --ppapi-flash-version=`version`
 
-Set the pepper flash version.
+Sets `version` of pepper flash plugin.
 
-## --log-net-log
+## --log-net-log=`path`
 
-Set the path to net log file.
+Enables saving net log events and writes them to `path`.
 
 ## --v=`log_level`
 
