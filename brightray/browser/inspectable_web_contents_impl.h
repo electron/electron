@@ -160,9 +160,9 @@ class InspectableWebContentsImpl :
   PendingRequestsMap pending_requests_;
   InspectableWebContentsDelegate* delegate_;  // weak references.
 
-  scoped_ptr<InspectableWebContentsView> view_;
   scoped_ptr<content::WebContents> web_contents_;
   scoped_ptr<content::WebContents> devtools_web_contents_;
+  scoped_ptr<InspectableWebContentsView> view_;
 
   base::WeakPtrFactory<InspectableWebContentsImpl> weak_factory_;
 
