@@ -16,10 +16,6 @@
 
 template <typename T> struct DefaultSingletonTraits;
 
-namespace crashpad {
-class CrashReportDatabase;
-}
-
 namespace crash_reporter {
 
 class CrashReporterMac : public CrashReporter {
@@ -44,10 +40,10 @@ class CrashReporterMac : public CrashReporter {
   void SetCrashKeyValue(const base::StringPiece& key,
                         const base::StringPiece& value);
 
-  std::vector<UploadReportResult> GetUploadedReports() override;
+  std::vector<UploadReportResult> GetUploadedReports(
+      const std::string& path) override;
 
   scoped_ptr<crashpad::SimpleStringDictionary> simple_string_dictionary_;
-  scoped_ptr<crashpad::CrashReportDatabase> crash_report_database_;
 
   DISALLOW_COPY_AND_ASSIGN(CrashReporterMac);
 };

@@ -41,23 +41,22 @@ class CrashReporter
       start()
 
   getLastCrashReport: ->
-    if process.platform is 'darwin'
-      reports = binding._getUploadedReports()
-      return if reports.length > 0 then reports[0] else null
+    reports = this.getUploadedReports()
+    if reports.length > 0 then reports[0] else null
 
+  getUploadedReports: ->
     tmpdir =
       if process.platform is 'win32'
         os.tmpdir()
       else
         '/tmp'
-    log = path.join tmpdir, "#{@productName} Crashes", 'uploads.log'
-    try
-      reports = String(fs.readFileSync(log)).split('\n')
-      return null unless reports.length > 1
-      [time, id] = reports[reports.length - 2].split ','
-      return {date: new Date(parseInt(time) * 1000), id}
-    catch e
-      return null
+    log =
+      if process.platform is 'darwin'
+        path.join tmpdir, "#{@productName} Crashes"
+      else
+        path.join tmpdir, "#{@productName} Crashes", 'uploads.log'
+    binding._getUploadedReports log
+
 
 crashRepoter = new CrashReporter
 module.exports = crashRepoter
