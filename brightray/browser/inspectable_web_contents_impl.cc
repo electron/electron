@@ -159,10 +159,10 @@ void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
 
 InspectableWebContentsImpl::InspectableWebContentsImpl(
     content::WebContents* web_contents)
-    : web_contents_(web_contents),
-      frontend_loaded_(false),
+    : frontend_loaded_(false),
       can_dock_(true),
       delegate_(nullptr),
+      web_contents_(web_contents),
       weak_factory_(this) {
   auto context = static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
   auto bounds_dict = context->prefs()->GetDictionary(kDevToolsBoundsPref);

@@ -147,10 +147,6 @@ class InspectableWebContentsImpl :
   void SendMessageAck(int request_id,
                       const base::Value* arg1);
 
-  scoped_ptr<content::WebContents> web_contents_;
-  scoped_ptr<content::WebContents> devtools_web_contents_;
-  scoped_ptr<InspectableWebContentsView> view_;
-
   bool frontend_loaded_;
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
   scoped_ptr<content::DevToolsFrontendHost> frontend_host_;
@@ -160,10 +156,14 @@ class InspectableWebContentsImpl :
   gfx::Rect devtools_bounds_;
   bool can_dock_;
 
-  InspectableWebContentsDelegate* delegate_;  // weak references.
-
   using PendingRequestsMap = std::map<const net::URLFetcher*, DispatchCallback>;
   PendingRequestsMap pending_requests_;
+  InspectableWebContentsDelegate* delegate_;  // weak references.
+
+  scoped_ptr<InspectableWebContentsView> view_;
+  scoped_ptr<content::WebContents> web_contents_;
+  scoped_ptr<content::WebContents> devtools_web_contents_;
+
   base::WeakPtrFactory<InspectableWebContentsImpl> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsImpl);
