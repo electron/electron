@@ -390,7 +390,7 @@ without regard for log level or other properties.
 
 ```javascript
 webview.addEventListener('console-message', function(e) {
-  console.log('Guest page logged a message: ', e.message);
+  console.log('Guest page logged a message:', e.message);
 });
 ```
 
