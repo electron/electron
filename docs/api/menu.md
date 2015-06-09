@@ -281,10 +281,10 @@ Template:
 
 ```javascript
 [
-  {label: '4', id: '4'}
-  {label: '5', id: '5'}
-  {label: '1', id: '1', position: 'before=4'}
-  {label: '2', id: '2'}
+  {label: '4', id: '4'},
+  {label: '5', id: '5'},
+  {label: '1', id: '1', position: 'before=4'},
+  {label: '2', id: '2'},
   {label: '3', id: '3'}
 ]
 ```
@@ -303,11 +303,11 @@ Template:
 
 ```javascript
 [
-  {label: 'a', position: 'endof=letters'}
-  {label: '1', position: 'endof=numbers'}
-  {label: 'b', position: 'endof=letters'}
-  {label: '2', position: 'endof=numbers'}
-  {label: 'c', position: 'endof=letters'}
+  {label: 'a', position: 'endof=letters'},
+  {label: '1', position: 'endof=numbers'},
+  {label: 'b', position: 'endof=letters'},
+  {label: '2', position: 'endof=numbers'},
+  {label: 'c', position: 'endof=letters'},
   {label: '3', position: 'endof=numbers'}
 ]
 ```
