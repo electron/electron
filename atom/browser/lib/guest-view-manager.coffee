@@ -68,8 +68,8 @@ createGuest = (embedder, params) ->
 
     if params.src
       opts = {}
-      opts.httpreferrer = params.httpreferrer if params.httpreferrer
-      opts.useragent = params.useragent if params.useragent
+      opts.httpReferrer = params.httpreferrer if params.httpreferrer
+      opts.userAgent = params.useragent if params.useragent
       @loadUrl params.src, opts
 
     if params.allowtransparency?
