@@ -15,18 +15,17 @@
 
 namespace {
 
-base::Value* GetConstants() {
+scoped_ptr<base::DictionaryValue> GetConstants() {
   scoped_ptr<base::DictionaryValue> constants = net::GetNetConstants();
 
   // Adding client information to constants dictionary.
   base::DictionaryValue* client_info = new base::DictionaryValue();
-
-  client_info->SetString("command_line",
+  client_info->SetString(
+      "command_line",
       base::CommandLine::ForCurrentProcess()->GetCommandLineString());
 
   constants->Set("clientInfo", client_info);
-
-  return constants.release();
+  return constants;
 }
 
 }  // namespace
@@ -51,7 +50,7 @@ NetLog::NetLog(net::URLRequestContext* context)
                << "for net logging";
   } else {
     std::string json;
-    scoped_ptr<base::Value> constants(GetConstants());
+    scoped_ptr<base::Value> constants(GetConstants().Pass());
     base::JSONWriter::Write(constants.get(), &json);
     fprintf(log_file_.get(), "{\"constants\": %s, \n", json.c_str());
     fprintf(log_file_.get(), "\"events\": [\n");
