@@ -171,10 +171,10 @@ class SrcAttribute extends WebViewAttribute
     # Navigate to |this.src|.
     opts = {}
     httpreferrer = @webViewImpl.attributes[webViewConstants.ATTRIBUTE_HTTPREFERRER].getValue()
-    if httpreferrer then opts.httpreferrer = httpreferrer
+    if httpreferrer then opts.httpReferrer = httpreferrer
 
     useragent = @webViewImpl.attributes[webViewConstants.ATTRIBUTE_USERAGENT].getValue()
-    if useragent then opts.useragent = useragent
+    if useragent then opts.userAgent = useragent
 
     guestContents = remote.getGuestWebContents(@webViewImpl.guestInstanceId)
     guestContents.loadUrl @getValue(), opts
