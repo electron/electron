@@ -131,9 +131,9 @@ window.onbeforeunload = function(e) {
   console.log('I do not want to be closed');
 
   // Unlike usual browsers, in which a string should be returned and the user is
-  // prompted to confirm the page unload. Electron gives the power completely
-  // to the developers, return empty string or false would prevent the unloading
-  // now. You can also use the dialog API to let user confirm it.
+  // prompted to confirm the page unload, Electron gives developers more options.
+  // Returning empty string or false would prevent the unloading now.
+  // You can also use the dialog API to let the user confirm closing the application.
   return false;
 };
 ```
