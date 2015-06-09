@@ -782,8 +782,8 @@ Emitted when the WebContents is destroyed.
 
 * `url` URL
 * `options` URL
-  * `httpreferrer` String - A HTTP Referer url
-  * `useragent` String - A user agent originating the request
+  * `httpReferrer` String - A HTTP Referer url
+  * `userAgent` String - A user agent originating the request
 
 Loads the `url` in the window, the `url` must contains the protocol prefix,
 e.g. the `http://` or `file://`.

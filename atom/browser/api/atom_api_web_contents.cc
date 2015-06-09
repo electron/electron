@@ -430,12 +430,12 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   content::NavigationController::LoadURLParams params(url);
 
   GURL http_referrer;
-  if (options.Get("httpreferrer", &http_referrer))
+  if (options.Get("httpReferrer", &http_referrer))
     params.referrer = content::Referrer(http_referrer.GetAsReferrer(),
                                         blink::WebReferrerPolicyDefault);
 
   std::string user_agent;
-  if (options.Get("useragent", &user_agent))
+  if (options.Get("userAgent", &user_agent))
     SetUserAgent(user_agent);
 
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
