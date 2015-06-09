@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // maintainer note - update this manually when doing new releases:
-var version = '0.27.2'
+var version = '0.27.3'
 
 var fs = require('fs')
 var os = require('os')
