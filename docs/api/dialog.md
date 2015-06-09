@@ -36,8 +36,8 @@ selected, an example is:
   filters: [
     { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
     { name: 'Movies', extensions: ['mkv', 'avi', 'mp4'] },
-    { name: 'Custom File Type', extensions: ['as'] },
-  ],
+    { name: 'Custom File Type', extensions: ['as'] }
+  ]
 }
 ```
 
