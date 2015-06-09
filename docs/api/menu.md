@@ -29,8 +29,9 @@ window.addEventListener('contextmenu', function (e) {
 
 Another example of creating the application menu with the simple template API:
 
-```javascript
+```html
 <!-- index.html -->
+<script>
 var remote = require('remote');
 var Menu = remote.require('menu');
 var template = [
@@ -159,6 +160,7 @@ var template = [
 menu = Menu.buildFromTemplate(template);
 
 Menu.setApplicationMenu(menu);
+</script>
 ```
 
 ## Class: Menu
