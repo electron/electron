@@ -70,4 +70,10 @@ driver.wait(function() {
 driver.quit();
 ```
 
+## Workflow
+
+To test your application without rebuilding Electron, simply [place](https://github.com/atom/electron/blob/master/docs/tutorial/application-distribution.md) your app source into Electron's resource directory. 
+
 [chrome-driver]: https://sites.google.com/a/chromium.org/chromedriver/
+
+
