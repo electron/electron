@@ -448,7 +448,7 @@ webview.send('ping');
 var ipc = require('ipc');
 ipc.on('ping', function() {
   ipc.sendToHost('pong');
-})
+});
 ```
 
 ### crashed
