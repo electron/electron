@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-// maintainer note - update this manually when doing new releases:
-var version = '0.27.3'
+// maintainer note - x.y.z-ab version in package.json -> x.y.z
+var version = require('./package').version.replace(/-.*/, '')
 
 var fs = require('fs')
 var os = require('os')
