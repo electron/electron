@@ -43,7 +43,7 @@ You can also create a window without chrome by using
      other windows
   * `fullscreen` Boolean - Whether the window should show in fullscreen, when
     set to `false` the fullscreen button would also be hidden on OS X
-  * `skip-taskbar` Boolean - Do not show window in Taskbar
+  * `skip-taskbar` Boolean - Do not show window in taskbar
   * `zoom-factor` Number - The default zoom factor of the page, zoom factor is
     zoom percent / 100, so `3.0` represents `300%`
   * `kiosk` Boolean - The kiosk mode
@@ -464,7 +464,7 @@ Starts or stops flashing the window to attract user's attention.
 
 * `skip` Boolean
 
-Makes the window do not show in Taskbar.
+Makes the window not show in the taskbar.
 
 ### BrowserWindow.setKiosk(flag)
 
@@ -604,12 +604,12 @@ it will assume `app.getName().desktop`.
 ### BrowserWindow.setOverlayIcon(overlay, description)
 
 * `overlay` [NativeImage](native-image.md) - the icon to display on the bottom
-right corner of the Taskbar icon. If this parameter is `null`, the overlay is
+right corner of the taskbar icon. If this parameter is `null`, the overlay is
 cleared
 * `description` String - a description that will be provided to Accessibility
 screen readers
 
-Sets a 16px overlay onto the current Taskbar icon, usually used to convey some sort of application status or to passively notify the user.
+Sets a 16px overlay onto the current taskbar icon, usually used to convey some sort of application status or to passively notify the user.
 
 __Note:__ This API is only available on Windows, Win7 or above
 
