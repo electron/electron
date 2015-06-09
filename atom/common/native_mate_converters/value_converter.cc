@@ -23,6 +23,13 @@ bool Converter<base::DictionaryValue>::FromV8(v8::Isolate* isolate,
   }
 }
 
+v8::Local<v8::Value> Converter<base::DictionaryValue>::ToV8(
+    v8::Isolate* isolate,
+    const base::DictionaryValue& val) {
+  scoped_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
+  return converter->ToV8Value(&val, isolate->GetCurrentContext());
+}
+
 bool Converter<base::ListValue>::FromV8(v8::Isolate* isolate,
                                         v8::Local<v8::Value> val,
                                         base::ListValue* out) {
