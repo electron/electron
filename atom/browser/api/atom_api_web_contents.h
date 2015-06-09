@@ -90,6 +90,9 @@ class WebContents : public mate::EventEmitter,
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
 
+  // Print current page as PDF.
+  void PrintToPDF(mate::Arguments* args);
+
   // Editing commands.
   void Undo();
   void Redo();

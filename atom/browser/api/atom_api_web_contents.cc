@@ -18,6 +18,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
+#include "chrome/browser/printing/print_preview_message_handler.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/guest_host.h"
 #include "content/public/browser/navigation_details.h"
@@ -137,6 +138,7 @@ WebContents::WebContents(const mate::Dictionary& options)
   inspectable_web_contents_ = managed_web_contents();
 
   Observe(GetWebContents());
+  printing::PrintPreviewMessageHandler::CreateForWebContents(web_contents);
 }
 
 WebContents::~WebContents() {
@@ -580,12 +582,27 @@ void WebContents::UnregisterServiceWorker(
                                    callback);
 }
 
+<<<<<<< HEAD
 void WebContents::SetAudioMuted(bool muted) {
   web_contents()->SetAudioMuted(muted);
 }
 
 bool WebContents::IsAudioMuted() {
   return web_contents()->IsAudioMuted();
+}
+
+void WebContents::PrintToPDF(mate::Arguments* args) {
+  mate::Dictionary options;
+  base::Callback<void(int)> callback;
+  if (!(args->Length() == 1 && args->GetNext(&callback)) &&
+      !(args->Length() == 2 && args->GetNext(&options)
+                            && args->GetNext(&callback))) {
+    args->ThrowError();
+    return;
+  }
+
+  printing::PrintPreviewMessageHandler::FromWebContents(web_contents())->
+      PrintToPDF(options, callback);
 }
 
 void WebContents::Undo() {
@@ -760,6 +777,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("unregisterServiceWorker",
                    &WebContents::UnregisterServiceWorker)
         .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
+        .SetMethod("printToPDF", &WebContents::PrintToPDF)
         .Build());
 
   return mate::ObjectTemplateBuilder(
