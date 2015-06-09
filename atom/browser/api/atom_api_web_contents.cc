@@ -9,7 +9,6 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/native_window.h"
-#include "atom/browser/web_view_manager.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -83,15 +82,6 @@ v8::Persistent<v8::ObjectTemplate> template_;
 using WrapWebContentsCallback = base::Callback<void(v8::Local<v8::Value>)>;
 WrapWebContentsCallback g_wrap_web_contents;
 
-// Get the window that has the |guest| embedded.
-NativeWindow* GetWindowFromGuest(const content::WebContents* guest) {
-  WebViewManager::WebViewInfo info;
-  if (WebViewManager::GetInfoForWebContents(guest, &info))
-    return NativeWindow::FromWebContents(info.embedder);
-  else
-    return nullptr;
-}
-
 content::ServiceWorkerContext* GetServiceWorkerContext(
     const content::WebContents* web_contents) {
   auto context = web_contents->GetBrowserContext();
@@ -117,7 +107,6 @@ WebContents::WebContents(brightray::InspectableWebContents* web_contents)
 WebContents::WebContents(content::WebContents* web_contents)
     : CommonWebContentsDelegate(false),
       content::WebContentsObserver(web_contents),
-      guest_instance_id_(-1),
       guest_opaque_(true),
       guest_host_(nullptr),
       auto_size_enabled_(false),
@@ -127,24 +116,24 @@ WebContents::WebContents(content::WebContents* web_contents)
 
 WebContents::WebContents(const mate::Dictionary& options)
     : CommonWebContentsDelegate(true),
-      guest_instance_id_(-1),
       guest_opaque_(true),
       guest_host_(nullptr),
       auto_size_enabled_(false),
       is_full_page_plugin_(false) {
-  options.Get("guestInstanceId", &guest_instance_id_);
-
   auto browser_context = AtomBrowserContext::Get();
   content::SiteInstance* site_instance = content::SiteInstance::CreateForURL(
       browser_context, GURL("chrome-guest://fake-host"));
 
   content::WebContents::CreateParams params(browser_context, site_instance);
-  bool is_guest;
-  if (options.Get("isGuest", &is_guest) && is_guest)
-    params.guest_delegate = this;
-
+  params.guest_delegate = this;
   auto web_contents = content::WebContents::Create(params);
-  InitWithWebContents(web_contents, GetWindowFromGuest(web_contents));
+
+  NativeWindow* owner_window = nullptr;
+  WebContents* embedder = nullptr;
+  if (options.Get("embedder", &embedder) && embedder)
+    owner_window = NativeWindow::FromWebContents(embedder->web_contents());
+
+  InitWithWebContents(web_contents, owner_window);
   inspectable_web_contents_ = managed_web_contents();
 
   Observe(GetWebContents());

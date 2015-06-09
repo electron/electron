@@ -38,9 +38,7 @@ createGuest = (embedder, params) ->
   webViewManager ?= process.atomBinding 'web_view_manager'
 
   id = getNextInstanceId embedder
-  guest = webContents.create
-    isGuest: true
-    guestInstanceId: id
+  guest = webContents.create {embedder}
   guestInstances[id] = {guest, embedder}
 
   # Destroy guest when the embedder is gone or navigated.
