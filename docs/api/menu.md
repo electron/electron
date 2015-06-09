@@ -70,7 +70,7 @@ var template = [
         label: 'Quit',
         accelerator: 'Command+Q',
         click: function() { app.quit(); }
-      },
+      }
     ]
   },
   {
@@ -108,7 +108,7 @@ var template = [
         label: 'Select All',
         accelerator: 'Command+A',
         selector: 'selectAll:'
-      },
+      }
     ]
   },
   {
@@ -123,7 +123,7 @@ var template = [
         label: 'Toggle DevTools',
         accelerator: 'Alt+Command+I',
         click: function() { BrowserWindow.getFocusedWindow().toggleDevTools(); }
-      },
+      }
     ]
   },
   {
@@ -145,13 +145,13 @@ var template = [
       {
         label: 'Bring All to Front',
         selector: 'arrangeInFront:'
-      },
+      }
     ]
   },
   {
     label: 'Help',
     submenu: []
-  },
+  }
 ];
 
 menu = Menu.buildFromTemplate(template);
