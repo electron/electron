@@ -149,8 +149,8 @@ On Windows, a taskbar button can be used to display a progress bar. This enables
 a window to provide progress information to the user without that user having to
 switch to the window itself.
 
-The Unity DE also has a simililar feature that allows you to specify progress
-bar in the lancher.
+The Unity DE also has a similar feature that allows you to specify the progress
+bar in the launcher.
 
 __Progress bar in taskbar button:__
 

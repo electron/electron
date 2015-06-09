@@ -753,7 +753,7 @@ Calling `event.preventDefault()` can prevent creating new windows.
 Emitted when user or the page wants to start an navigation, it can happen when
 `window.location` object is changed or user clicks a link in the page.
 
-This event will not emit when the navigation is started programmely with APIs
+This event will not emit when the navigation is started programmatically with APIs
 like `WebContents.loadUrl` and `WebContents.back`.
 
 Calling `event.preventDefault()` can prevent the navigation.
