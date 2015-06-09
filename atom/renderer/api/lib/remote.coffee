@@ -10,6 +10,8 @@ wrapArgs = (args) ->
   valueToMeta = (value) ->
     if Array.isArray value
       type: 'array', value: wrapArgs(value)
+    else if Buffer.isBuffer value
+      type: 'buffer', value: Array::slice.call(value, 0)
     else if value? and typeof value is 'object' and v8Util.getHiddenValue value, 'atomId'
       type: 'remote-object', id: v8Util.getHiddenValue value, 'atomId'
     else if value? and typeof value is 'object'
@@ -30,6 +32,7 @@ metaToValue = (meta) ->
   switch meta.type
     when 'value' then meta.value
     when 'array' then (metaToValue(el) for el in meta.members)
+    when 'buffer' then new Buffer(meta.value)
     when 'error'
       throw new Error("#{meta.message}\n#{meta.stack}")
     else
