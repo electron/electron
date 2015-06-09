@@ -70,9 +70,9 @@ var dockMenu = Menu.buildFromTemplate([
   { label: 'New Window', click: function() { console.log('New Window'); } },
   { label: 'New Window with Settings', submenu: [
     { label: 'Basic' },
-    { label: 'Pro'},
+    { label: 'Pro'}
   ]},
-  { label: 'New Command...'},
+  { label: 'New Command...'}
 ]);
 app.dock.setMenu(dockMenu);
 ```
@@ -119,7 +119,7 @@ app.setUserTasks([
     iconPath: process.execPath,
     iconIndex: 0,
     title: 'New Window',
-    description: 'Create a new window',
+    description: 'Create a new window'
   }
 ]);
 ```
