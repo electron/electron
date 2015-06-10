@@ -121,6 +121,8 @@
         'defines': [
           # We are using Release version libchromiumcontent:
           'NDEBUG',
+          # We are using OpenSSL on all platforms:
+          'USE_OPENSSL',
           # Needed by gin:
           'V8_USE_EXTERNAL_STARTUP_DATA',
           # From skia_for_chromium_defines.gypi:
@@ -149,7 +151,6 @@
               '_LARGEFILE_SOURCE',
               '_LARGEFILE64_SOURCE',
               '_FILE_OFFSET_BITS=64',
-              'USE_OPENSSL',
             ],
             'cflags_cc': [
               '-D__STRICT_ANSI__',
