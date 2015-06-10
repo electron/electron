@@ -53,8 +53,14 @@ class PrintPreviewMessageHandler
                   const atom::api::WebContents::PrintToPDFCallback& callback);
 
  private:
-  typedef std::map<int, atom::api::WebContents::PrintToPDFCallback>
-      PrintToPDFCallbackMap;
+  struct PrintToPDFRequestDetails {
+    std::string save_path;
+    bool silent;
+    atom::api::WebContents::PrintToPDFCallback callback;
+  };
+
+  typedef std::map<int, PrintToPDFRequestDetails>
+      PrintToPDFRequestDetailsMap;
 
   explicit PrintPreviewMessageHandler(content::WebContents* web_contents);
   friend class content::WebContentsUserData<PrintPreviewMessageHandler>;
@@ -69,7 +75,7 @@ class PrintPreviewMessageHandler
 
   void RunPrintToPDFCallback(int request_id, PrintPDFResult result);
 
-  PrintToPDFCallbackMap print_to_pdf_callback_map_;
+  PrintToPDFRequestDetailsMap print_to_pdf_request_details_map_;
 
   DISALLOW_COPY_AND_ASSIGN(PrintPreviewMessageHandler);
 };

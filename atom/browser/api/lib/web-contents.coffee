@@ -89,6 +89,7 @@ wrapWebContents = (webContents) ->
       collate:true,
       shouldPrintBackgrounds:false,
       shouldPrintSelectionOnly:false
+      silent:false
 
     if options.landscape
       printingSetting.landscape = options.landscape

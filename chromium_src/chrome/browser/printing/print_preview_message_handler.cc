@@ -119,14 +119,21 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
   if (!data || !data->size())
     return;
 
-  atom::NativeWindow* window = atom::NativeWindow::FromWebContents(
-      web_contents());
-  base::FilePath save_path;
-  if (!file_dialog::ShowSaveDialog(window, "Save As",
-          base::FilePath(FILE_PATH_LITERAL("print.pdf")),
-          file_dialog::Filters(), &save_path)) { // Users cancel dialog.
-    RunPrintToPDFCallback(params.preview_request_id, FAIL_CANCEL);
-    return;
+  int request_id = params.preview_request_id;
+  std::string file_path =
+    print_to_pdf_request_details_map_[request_id].save_path;
+  base::FilePath save_path =
+    file_path.empty() ? base::FilePath(FILE_PATH_LITERAL("print.pdf")):
+    base::FilePath::FromUTF8Unsafe(file_path);
+  if (!print_to_pdf_request_details_map_[request_id].silent) {
+    atom::NativeWindow* window = atom::NativeWindow::FromWebContents(
+        web_contents());
+    if (!file_dialog::ShowSaveDialog(window, "Save As",
+            base::FilePath(FILE_PATH_LITERAL("print.pdf")),
+            file_dialog::Filters(), &save_path)) { // Users cancel dialog.
+      RunPrintToPDFCallback(request_id, FAIL_CANCEL);
+      return;
+    }
   }
   BrowserThread::PostTaskAndReplyWithResult(
       BrowserThread::FILE,
@@ -134,7 +141,7 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
       base::Bind(&SavePDF, data, save_path),
       base::Bind(&PrintPreviewMessageHandler::RunPrintToPDFCallback,
                  base::Unretained(this),
-                 params.preview_request_id));
+                 request_id));
 }
 
 void PrintPreviewMessageHandler::OnPrintPreviewFailed(int document_cookie,
@@ -165,7 +172,11 @@ void PrintPreviewMessageHandler::PrintToPDF(
     const atom::api::WebContents::PrintToPDFCallback& callback) {
   int request_id;
   options.GetInteger(printing::kPreviewRequestID, &request_id);
-  print_to_pdf_callback_map_[request_id] = callback;
+  PrintToPDFRequestDetails details;
+  options.GetBoolean("silent", &details.silent);
+  options.GetString("savePath", &details.save_path);
+  details.callback = callback;
+  print_to_pdf_request_details_map_[request_id] = details;
 
   content::RenderViewHost* rvh = web_contents()->GetRenderViewHost();
   rvh->Send(new PrintMsg_PrintPreview(rvh->GetRoutingID(), options));
@@ -173,8 +184,9 @@ void PrintPreviewMessageHandler::PrintToPDF(
 
 void PrintPreviewMessageHandler::RunPrintToPDFCallback(
      int request_id, PrintPDFResult result) {
-  print_to_pdf_callback_map_[request_id].Run(static_cast<int>(result));
-  print_to_pdf_callback_map_.erase(request_id);
+  print_to_pdf_request_details_map_[request_id].callback.Run(
+      static_cast<int>(result));
+  print_to_pdf_request_details_map_.erase(request_id);
 }
 
 }  // namespace printing
