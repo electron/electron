@@ -37,13 +37,6 @@ class PrintPreviewMessageHandler
     : public content::WebContentsObserver,
       public content::WebContentsUserData<PrintPreviewMessageHandler> {
  public:
-  enum PrintPDFResult {
-    SUCCESS,
-    FAIL_PREVIEW,
-    FAIL_SAVEFILE,
-    FAIL_CANCEL,
-  };
-
   ~PrintPreviewMessageHandler() override;
 
   // content::WebContentsObserver implementation.
@@ -53,14 +46,8 @@ class PrintPreviewMessageHandler
                   const atom::api::WebContents::PrintToPDFCallback& callback);
 
  private:
-  struct PrintToPDFRequestDetails {
-    std::string save_path;
-    bool silent;
-    atom::api::WebContents::PrintToPDFCallback callback;
-  };
-
-  typedef std::map<int, PrintToPDFRequestDetails>
-      PrintToPDFRequestDetailsMap;
+  typedef std::map<int, atom::api::WebContents::PrintToPDFCallback>
+      PrintToPDFCallbackMap;
 
   explicit PrintPreviewMessageHandler(content::WebContents* web_contents);
   friend class content::WebContentsUserData<PrintPreviewMessageHandler>;
@@ -73,9 +60,10 @@ class PrintPreviewMessageHandler
       const PrintHostMsg_DidPreviewDocument_Params& params);
   void OnPrintPreviewFailed(int document_cookie, int request_id);
 
-  void RunPrintToPDFCallback(int request_id, PrintPDFResult result);
+  void RunPrintToPDFCallback(
+     int request_id, base::RefCountedBytes* data);
 
-  PrintToPDFRequestDetailsMap print_to_pdf_request_details_map_;
+  PrintToPDFCallbackMap print_to_pdf_callback_map_;
 
   DISALLOW_COPY_AND_ASSIGN(PrintPreviewMessageHandler);
 };

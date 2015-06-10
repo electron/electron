@@ -25,6 +25,8 @@
 #include "printing/print_job_constants.h"
 #include "printing/pdf_metafile_skia.h"
 
+#include "atom/common/node_includes.h"
+
 using content::BrowserThread;
 using content::WebContents;
 
@@ -58,18 +60,6 @@ base::RefCountedBytes* GetDataFromHandle(base::SharedMemoryHandle handle,
   unsigned char* data_begin = static_cast<unsigned char*>(shared_buf->memory());
   std::vector<unsigned char> data(data_begin, data_begin + data_size);
   return base::RefCountedBytes::TakeVector(&data);
-}
-
-printing::PrintPreviewMessageHandler::PrintPDFResult
-SavePDF(const scoped_refptr<base::RefCountedBytes>& data,
-        const base::FilePath& save_path) {
-  printing::PdfMetafileSkia metafile;
-  metafile.InitFromData(static_cast<const void*>(data->front()), data->size());
-  base::File file(save_path,
-                  base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
-  return metafile.SaveTo(&file)?
-    printing::PrintPreviewMessageHandler::SUCCESS :
-    printing::PrintPreviewMessageHandler::FAIL_SAVEFILE;
 }
 
 }  // namespace
@@ -111,43 +101,15 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
     return;
   }
 
-  // TODO(joth): This seems like a good match for using RefCountedStaticMemory
-  // to avoid the memory copy, but the SetPrintPreviewData call chain below
-  // needs updating to accept the RefCountedMemory* base class.
-  scoped_refptr<base::RefCountedBytes> data(
+  base::RefCountedBytes *data = (
       GetDataFromHandle(params.metafile_data_handle, params.data_size));
-  if (!data || !data->size())
-    return;
-
-  int request_id = params.preview_request_id;
-  std::string file_path =
-    print_to_pdf_request_details_map_[request_id].save_path;
-  base::FilePath save_path =
-    file_path.empty() ? base::FilePath(FILE_PATH_LITERAL("print.pdf")):
-    base::FilePath::FromUTF8Unsafe(file_path);
-  if (!print_to_pdf_request_details_map_[request_id].silent) {
-    atom::NativeWindow* window = atom::NativeWindow::FromWebContents(
-        web_contents());
-    if (!file_dialog::ShowSaveDialog(window, "Save As",
-            base::FilePath(FILE_PATH_LITERAL("print.pdf")),
-            file_dialog::Filters(), &save_path)) { // Users cancel dialog.
-      RunPrintToPDFCallback(request_id, FAIL_CANCEL);
-      return;
-    }
-  }
-  BrowserThread::PostTaskAndReplyWithResult(
-      BrowserThread::FILE,
-      FROM_HERE,
-      base::Bind(&SavePDF, data, save_path),
-      base::Bind(&PrintPreviewMessageHandler::RunPrintToPDFCallback,
-                 base::Unretained(this),
-                 request_id));
+  RunPrintToPDFCallback(params.preview_request_id, data);
 }
 
 void PrintPreviewMessageHandler::OnPrintPreviewFailed(int document_cookie,
                                                       int request_id) {
   StopWorker(document_cookie);
-  RunPrintToPDFCallback(request_id, FAIL_PREVIEW);
+  RunPrintToPDFCallback(request_id, nullptr);
 }
 
 bool PrintPreviewMessageHandler::OnMessageReceived(
@@ -172,21 +134,26 @@ void PrintPreviewMessageHandler::PrintToPDF(
     const atom::api::WebContents::PrintToPDFCallback& callback) {
   int request_id;
   options.GetInteger(printing::kPreviewRequestID, &request_id);
-  PrintToPDFRequestDetails details;
-  options.GetBoolean("silent", &details.silent);
-  options.GetString("savePath", &details.save_path);
-  details.callback = callback;
-  print_to_pdf_request_details_map_[request_id] = details;
+  print_to_pdf_callback_map_[request_id] = callback;
 
   content::RenderViewHost* rvh = web_contents()->GetRenderViewHost();
   rvh->Send(new PrintMsg_PrintPreview(rvh->GetRoutingID(), options));
 }
 
 void PrintPreviewMessageHandler::RunPrintToPDFCallback(
-     int request_id, PrintPDFResult result) {
-  print_to_pdf_request_details_map_[request_id].callback.Run(
-      static_cast<int>(result));
-  print_to_pdf_request_details_map_.erase(request_id);
+     int request_id, base::RefCountedBytes* data) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  if (data) {
+    v8::Local<v8::Value> buffer = node::Buffer::Use(
+        const_cast<char*>(reinterpret_cast<const char*>(data->front())),
+        data->size());
+    print_to_pdf_callback_map_[request_id].Run(buffer);
+  } else {
+    print_to_pdf_callback_map_[request_id].Run(v8::Null(isolate));
+  }
+  print_to_pdf_callback_map_.erase(request_id);
 }
 
 }  // namespace printing

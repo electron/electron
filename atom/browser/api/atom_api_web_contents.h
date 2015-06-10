@@ -52,7 +52,7 @@ class WebContents : public mate::EventEmitter,
                     public content::WebContentsObserver,
                     public content::GpuDataManagerObserver {
  public:
-  typedef base::Callback<void(int)> PrintToPDFCallback;
+  typedef base::Callback<void(v8::Local<v8::Value>)> PrintToPDFCallback;
 
   // Create from an existing WebContents.
   static mate::Handle<WebContents> CreateFrom(
