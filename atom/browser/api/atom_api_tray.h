@@ -31,7 +31,7 @@ class Menu;
 class Tray : public mate::EventEmitter,
              public TrayIconObserver {
  public:
-  static mate::Wrappable* New(const gfx::Image& image);
+  static mate::Wrappable* New(v8::Isolate* isolate, const gfx::Image& image);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);

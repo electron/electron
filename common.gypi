@@ -9,6 +9,7 @@
     'component%': 'static_library',
     'python': 'python',
     'openssl_no_asm': 1,
+    'node_target_type': 'shared_library',
     'node_install_npm': 'false',
     'node_prefix': '',
     'node_shared_cares': 'false',
@@ -26,6 +27,7 @@
     'uv_library': 'static_library',
     'uv_parent_path': 'vendor/node/deps/uv',
     'uv_use_dtrace': 'false',
+    'V8_BASE': '',
     'v8_postmortem_support': 'false',
     'v8_enable_i18n_support': 'false',
     # Required by Linux (empty for now, should support it in future).
@@ -99,7 +101,10 @@
         ],
       }],
       ['_target_name=="node"', {
-        'include_dirs': [ '<(libchromiumcontent_src_dir)/v8/include' ],
+        'include_dirs': [
+          '<(libchromiumcontent_src_dir)/v8',
+          '<(libchromiumcontent_src_dir)/v8/include',
+        ],
         'conditions': [
           ['OS=="mac" and libchromiumcontent_component==0', {
             # -all_load is the "whole-archive" on OS X.
