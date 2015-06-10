@@ -55,7 +55,7 @@ class BrowserContext::ResourceContext : public content::ResourceContext {
       return scoped_ptr<net::ClientCertStore>(new net::ClientCertStoreNSS(
           net::ClientCertStoreNSS::PasswordDelegateFactory()));
     #elif defined(OS_WIN)
-      return scoped_ptr<net::ClientCertStore>(new net:ClientCertStoreWin());
+      return scoped_ptr<net::ClientCertStore>(new net::ClientCertStoreWin());
     #elif defined(OS_MACOSX)
       return scoped_ptr<net::ClientCertStore>(new net::ClientCertStoreMac());
     #elif defined(USE_OPENSSL)
