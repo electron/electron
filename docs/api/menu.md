@@ -29,8 +29,11 @@ window.addEventListener('contextmenu', function (e) {
 
 Another example of creating the application menu with the simple template API:
 
-```javascript
-// main.js
+```html
+<!-- index.html -->
+<script>
+var remote = require('remote');
+var Menu = remote.require('menu');
 var template = [
   {
     label: 'Electron',
@@ -69,8 +72,8 @@ var template = [
       {
         label: 'Quit',
         accelerator: 'Command+Q',
-        click: function() { app.quit(); }
-      }
+        selector: 'terminate:'
+      },
     ]
   },
   {
@@ -117,13 +120,13 @@ var template = [
       {
         label: 'Reload',
         accelerator: 'Command+R',
-        click: function() { BrowserWindow.getFocusedWindow().reloadIgnoringCache(); }
+        click: function() { remote.getCurrentWindow().reload(); }
       },
       {
         label: 'Toggle DevTools',
         accelerator: 'Alt+Command+I',
-        click: function() { BrowserWindow.getFocusedWindow().toggleDevTools(); }
-      }
+        click: function() { remote.getCurrentWindow().toggleDevTools(); }
+      },
     ]
   },
   {
@@ -156,7 +159,8 @@ var template = [
 
 menu = Menu.buildFromTemplate(template);
 
-Menu.setApplicationMenu(menu); // Must be called within app.on('ready', function(){ ... });
+Menu.setApplicationMenu(menu);
+</script>
 ```
 
 ## Class: Menu
