@@ -583,6 +583,7 @@ void WebContents::UnregisterServiceWorker(
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 void WebContents::SetAudioMuted(bool muted) {
   web_contents()->SetAudioMuted(muted);
 }
@@ -591,18 +592,10 @@ bool WebContents::IsAudioMuted() {
   return web_contents()->IsAudioMuted();
 }
 
-void WebContents::PrintToPDF(mate::Arguments* args) {
-  mate::Dictionary options;
-  base::Callback<void(int)> callback;
-  if (!(args->Length() == 1 && args->GetNext(&callback)) &&
-      !(args->Length() == 2 && args->GetNext(&options)
-                            && args->GetNext(&callback))) {
-    args->ThrowError();
-    return;
-  }
-
+void WebContents::PrintToPDF(const base::DictionaryValue& setting,
+    const PrintToPDFCallback& callback) {
   printing::PrintPreviewMessageHandler::FromWebContents(web_contents())->
-      PrintToPDF(options, callback);
+      PrintToPDF(setting, callback);
 }
 
 void WebContents::Undo() {
@@ -777,7 +770,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("unregisterServiceWorker",
                    &WebContents::UnregisterServiceWorker)
         .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
-        .SetMethod("printToPDF", &WebContents::PrintToPDF)
+        .SetMethod("_printToPDF", &WebContents::PrintToPDF)
         .Build());
 
   return mate::ObjectTemplateBuilder(

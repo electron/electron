@@ -79,8 +79,7 @@ namespace printing {
 
 PrintPreviewMessageHandler::PrintPreviewMessageHandler(
     WebContents* web_contents)
-    : request_id_(0),
-      content::WebContentsObserver(web_contents) {
+    : content::WebContentsObserver(web_contents) {
   DCHECK(web_contents);
 }
 
@@ -162,68 +161,14 @@ bool PrintPreviewMessageHandler::OnMessageReceived(
 }
 
 void PrintPreviewMessageHandler::PrintToPDF(
-    const mate::Dictionary& options,
-    const atom::NativeWindow::PrintToPDFCallback& callback) {
-  // A simulated Chromium print preivew setting. 
-  const std::string setting_json_str =  "{ \
-    \"pageRage\":[], \
-    \"mediaSize\":{ \
-       \"height_microns\":297000, \
-       \"is_default\":true, \
-       \"name\":\"ISO_A4\", \
-       \"width_microns\":210000, \
-       \"custom_display_name\":\"A4\" \
-     }, \
-    \"landscape\":false, \
-    \"color\":2, \
-    \"headerFooterEnabled\":false, \
-    \"marginsType\":0, \
-    \"isFirstRequest\":false, \
-    \"requestID\":1, \
-    \"previewModifiable\":true, \
-    \"printToPDF\":true, \
-    \"printWithCloudPrint\":false, \
-    \"printWithPrivet\":false, \
-    \"printWithExtension\":false, \
-    \"deviceName\":\"Save as PDF\", \
-    \"generateDraftData\":true, \
-    \"fitToPageEnabled\":false, \
-    \"duplex\":0, \
-    \"copies\":1, \
-    \"collate\":true, \
-    \"shouldPrintBackgrounds\":false, \
-    \"shouldPrintSelectionOnly\":false \
-  }";
+    const base::DictionaryValue& options,
+    const atom::api::WebContents::PrintToPDFCallback& callback) {
+  int request_id;
+  options.GetInteger(printing::kPreviewRequestID, &request_id);
+  print_to_pdf_callback_map_[request_id] = callback;
 
-  scoped_ptr<base::DictionaryValue> settings(
-      static_cast<base::DictionaryValue*>(
-          base::JSONReader::Read(setting_json_str)));
-  settings->SetInteger(printing::kPreviewRequestID, request_id_);
-  print_to_pdf_callback_map_[request_id_] = callback;
-  ++request_id_;
-
-
-  // Default Print PDF settings:
-  int margins_type = 0; // DEFAULT_MARGINS
-  bool print_background = false;
-  bool print_selection_only = false;
-  bool is_landscape = false;
-
-  if (!options.IsEmpty()) {
-    options.Get(printing::kSettingMarginsType, &margins_type);
-    options.Get(printing::kSettingShouldPrintBackgrounds, &print_background);
-    options.Get(printing::kSettingShouldPrintSelectionOnly,
-        &print_selection_only);
-    options.Get(printing::kSettingLandscape, &is_landscape);
-  }
-  settings->SetInteger(printing::kSettingMarginsType, margins_type);
-  settings->SetBoolean(printing::kSettingShouldPrintBackgrounds,
-                       print_background);
-  settings->SetBoolean(printing::kSettingShouldPrintSelectionOnly,
-                       print_selection_only);
-  settings->SetBoolean(printing::kSettingLandscape, is_landscape);
   content::RenderViewHost* rvh = web_contents()->GetRenderViewHost();
-  rvh->Send(new PrintMsg_PrintPreview(rvh->GetRoutingID(), *settings));
+  rvh->Send(new PrintMsg_PrintPreview(rvh->GetRoutingID(), options));
 }
 
 void PrintPreviewMessageHandler::RunPrintToPDFCallback(

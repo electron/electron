@@ -52,6 +52,8 @@ class WebContents : public mate::EventEmitter,
                     public content::WebContentsObserver,
                     public content::GpuDataManagerObserver {
  public:
+  typedef base::Callback<void(int)> PrintToPDFCallback;
+
   // Create from an existing WebContents.
   static mate::Handle<WebContents> CreateFrom(
       v8::Isolate* isolate, brightray::InspectableWebContents* web_contents);
@@ -91,7 +93,8 @@ class WebContents : public mate::EventEmitter,
   bool IsAudioMuted();
 
   // Print current page as PDF.
-  void PrintToPDF(mate::Arguments* args);
+  void PrintToPDF(const base::DictionaryValue& setting,
+    const PrintToPDFCallback& callback);
 
   // Editing commands.
   void Undo();

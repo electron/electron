@@ -55,7 +55,6 @@ class NativeWindow : public CommonWebContentsDelegate,
                      public content::NotificationObserver {
  public:
   typedef base::Callback<void(const SkBitmap& bitmap)> CapturePageCallback;
-  typedef base::Callback<void(int)> PrintToPDFCallback;
 
   class DialogScope {
    public:

@@ -7,7 +7,7 @@
 
 #include <map>
 
-#include "atom/browser/native_window.h"
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "base/compiler_specific.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
@@ -49,11 +49,12 @@ class PrintPreviewMessageHandler
   // content::WebContentsObserver implementation.
   bool OnMessageReceived(const IPC::Message& message) override;
 
-  void PrintToPDF(const mate::Dictionary& options,
-                  const atom::NativeWindow::PrintToPDFCallback& callback);
+  void PrintToPDF(const base::DictionaryValue& options,
+                  const atom::api::WebContents::PrintToPDFCallback& callback);
 
  private:
-  typedef std::map<int, atom::NativeWindow::PrintToPDFCallback> PrintToPDFCallbackMap;
+  typedef std::map<int, atom::api::WebContents::PrintToPDFCallback>
+      PrintToPDFCallbackMap;
 
   explicit PrintPreviewMessageHandler(content::WebContents* web_contents);
   friend class content::WebContentsUserData<PrintPreviewMessageHandler>;
@@ -67,9 +68,6 @@ class PrintPreviewMessageHandler
   void OnPrintPreviewFailed(int document_cookie, int request_id);
 
   void RunPrintToPDFCallback(int request_id, PrintPDFResult result);
-
-  // PrintToPDF request id counter.
-  int request_id_;
 
   PrintToPDFCallbackMap print_to_pdf_callback_map_;
 
