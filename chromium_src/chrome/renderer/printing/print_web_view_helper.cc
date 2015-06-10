@@ -777,31 +777,6 @@ bool PrintWebViewHelper::CreatePreviewDocument() {
     return false;
   }
 
-  PageSizeMargins default_page_layout;
-  ComputePageLayoutInPointsForCss(print_preview_context_.prepared_frame(), 0,
-                                  print_params, ignore_css_margins_, NULL,
-                                  &default_page_layout);
-
-  //bool has_page_size_style =
-      //PrintingFrameHasPageSizeStyle(print_preview_context_.prepared_frame(),
-                                    //print_preview_context_.total_page_count());
-  int dpi = GetDPI(&print_params);
-
-  gfx::Rect printable_area_in_points(
-      ConvertUnit(print_params.printable_area.x(), dpi, kPointsPerInch),
-      ConvertUnit(print_params.printable_area.y(), dpi, kPointsPerInch),
-      ConvertUnit(print_params.printable_area.width(), dpi, kPointsPerInch),
-      ConvertUnit(print_params.printable_area.height(), dpi, kPointsPerInch));
-
-
-  PrintHostMsg_DidGetPreviewPageCount_Params params;
-  params.page_count = print_preview_context_.total_page_count();
-  params.is_modifiable = print_preview_context_.IsModifiable();
-  params.document_cookie = print_params.document_cookie;
-  params.preview_request_id = print_params.preview_request_id;
-  params.clear_preview_data = print_preview_context_.generate_draft_pages();
-  Send(new PrintHostMsg_DidGetPreviewPageCount(routing_id(), params));
-
   while (!print_preview_context_.IsFinalPageRendered()) {
     int page_number = print_preview_context_.GetNextPageNumber();
     DCHECK_GE(page_number, 0);
@@ -1226,22 +1201,6 @@ bool PrintWebViewHelper::PreviewPageRendered(int page_number,
     return false;
   }
 
-  PrintHostMsg_DidPreviewPage_Params preview_page_params;
-  // Get the size of the resulting metafile.
-  uint32 buf_size = metafile->GetDataSize();
-  DCHECK_GT(buf_size, 0u);
-  if (!CopyMetafileDataToSharedMem(
-          metafile, &(preview_page_params.metafile_data_handle))) {
-    LOG(ERROR) << "CopyMetafileDataToSharedMem failed";
-    print_preview_context_.set_error(PREVIEW_ERROR_METAFILE_COPY_FAILED);
-    return false;
-  }
-  preview_page_params.data_size = buf_size;
-  preview_page_params.page_number = page_number;
-  preview_page_params.preview_request_id =
-      print_pages_params_->params.preview_request_id;
-
-  Send(new PrintHostMsg_DidPreviewPage(routing_id(), preview_page_params));
   return true;
 }
 

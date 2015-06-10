@@ -76,21 +76,6 @@ PrintPreviewMessageHandler::PrintPreviewMessageHandler(
 PrintPreviewMessageHandler::~PrintPreviewMessageHandler() {
 }
 
-void PrintPreviewMessageHandler::OnDidGetPreviewPageCount(
-    const PrintHostMsg_DidGetPreviewPageCount_Params& params) {
-  if (params.page_count <= 0) {
-    NOTREACHED();
-    return;
-  }
-}
-
-void PrintPreviewMessageHandler::OnDidPreviewPage(
-    const PrintHostMsg_DidPreviewPage_Params& params) {
-  int page_number = params.page_number;
-  if (page_number < FIRST_PAGE_INDEX || !params.data_size)
-    return;
-}
-
 void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
     const PrintHostMsg_DidPreviewDocument_Params& params) {
   // Always try to stop the worker.
@@ -116,10 +101,6 @@ bool PrintPreviewMessageHandler::OnMessageReceived(
     const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(PrintPreviewMessageHandler, message)
-    IPC_MESSAGE_HANDLER(PrintHostMsg_DidGetPreviewPageCount,
-                        OnDidGetPreviewPageCount)
-    IPC_MESSAGE_HANDLER(PrintHostMsg_DidPreviewPage,
-                        OnDidPreviewPage)
     IPC_MESSAGE_HANDLER(PrintHostMsg_MetafileReadyForPrinting,
                         OnMetafileReadyForPrinting)
     IPC_MESSAGE_HANDLER(PrintHostMsg_PrintPreviewFailed,

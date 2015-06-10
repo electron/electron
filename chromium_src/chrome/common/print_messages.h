@@ -187,40 +187,6 @@ IPC_STRUCT_BEGIN(PrintHostMsg_ScriptedPrint_Params)
   IPC_STRUCT_MEMBER(printing::MarginType, margin_type)
 IPC_STRUCT_END()
 
-// Parameters to describe a rendered preview page.
-IPC_STRUCT_BEGIN(PrintHostMsg_DidPreviewPage_Params)
-  // A shared memory handle to metafile data for a draft document of the page.
-  IPC_STRUCT_MEMBER(base::SharedMemoryHandle, metafile_data_handle)
-
-  // Size of metafile data.
-  IPC_STRUCT_MEMBER(uint32, data_size)
-
-  // |page_number| is zero-based and can be |printing::INVALID_PAGE_INDEX| if it
-  // is just a check.
-  IPC_STRUCT_MEMBER(int, page_number)
-
-  // The id of the preview request.
-  IPC_STRUCT_MEMBER(int, preview_request_id)
-IPC_STRUCT_END()
-
-// Parameters sent along with the page count.
-IPC_STRUCT_BEGIN(PrintHostMsg_DidGetPreviewPageCount_Params)
-  // Cookie for the document to ensure correctness.
-  IPC_STRUCT_MEMBER(int, document_cookie)
-
-  // Total page count.
-  IPC_STRUCT_MEMBER(int, page_count)
-
-  // Indicates whether the previewed document is modifiable.
-  IPC_STRUCT_MEMBER(bool, is_modifiable)
-
-  // The id of the preview request.
-  IPC_STRUCT_MEMBER(int, preview_request_id)
-
-  // Indicates whether the existing preview data needs to be cleared or not.
-  IPC_STRUCT_MEMBER(bool, clear_preview_data)
-IPC_STRUCT_END()
-
 // Parameters to describe a rendered document.
 IPC_STRUCT_BEGIN(PrintHostMsg_DidPreviewDocument_Params)
   // A shared memory handle to metafile data.
@@ -318,19 +284,11 @@ IPC_MESSAGE_ROUTED0(PrintHostMsg_ShowInvalidPrinterSettingsError)
 IPC_MESSAGE_ROUTED1(PrintHostMsg_PrintingFailed,
                     int /* document cookie */)
 
-// Notify the browser a print preview page has been rendered.
-IPC_MESSAGE_ROUTED1(PrintHostMsg_DidPreviewPage,
-                    PrintHostMsg_DidPreviewPage_Params /* params */)
-
 // Sends back to the browser the complete rendered document (non-draft mode,
 // used for printing) that was requested by a PrintMsg_PrintPreview message.
 // The memory handle in this message is already valid in the browser process.
 IPC_MESSAGE_ROUTED1(PrintHostMsg_MetafileReadyForPrinting,
                     PrintHostMsg_DidPreviewDocument_Params /* params */)
-
-// Notify the browser the number of pages in the print preview document.
-IPC_MESSAGE_ROUTED1(PrintHostMsg_DidGetPreviewPageCount,
-                    PrintHostMsg_DidGetPreviewPageCount_Params /* params */)
 
 IPC_MESSAGE_ROUTED2(PrintHostMsg_PrintPreviewFailed,
                     int /* document cookie */,

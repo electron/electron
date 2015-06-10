@@ -12,20 +12,10 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
 
-struct PrintHostMsg_DidGetPreviewPageCount_Params;
 struct PrintHostMsg_DidPreviewDocument_Params;
-struct PrintHostMsg_DidPreviewPage_Params;
 
 namespace content {
 class WebContents;
-}
-
-namespace mate {
-class Dictionary;
-}
-
-namespace gfx {
-class Rect;
 }
 
 namespace printing {
@@ -53,9 +43,6 @@ class PrintPreviewMessageHandler
   friend class content::WebContentsUserData<PrintPreviewMessageHandler>;
 
   // Message handlers.
-  void OnDidGetPreviewPageCount(
-      const PrintHostMsg_DidGetPreviewPageCount_Params& params);
-  void OnDidPreviewPage(const PrintHostMsg_DidPreviewPage_Params& params);
   void OnMetafileReadyForPrinting(
       const PrintHostMsg_DidPreviewDocument_Params& params);
   void OnPrintPreviewFailed(int document_cookie, int request_id);
