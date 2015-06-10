@@ -188,6 +188,7 @@ describe 'browser-window module', ->
       w.loadUrl 'file://' + path.join(fixtures, 'api', 'close-beforeunload-empty-string.html')
 
   describe 'new-window event', ->
+    return if isCI and process.platform is 'darwin'
     it 'emits when window.open is called', (done) ->
       w.webContents.once 'new-window', (e, url, frameName) ->
         e.preventDefault()
@@ -230,6 +231,7 @@ describe 'browser-window module', ->
       w.minimize()
 
   describe 'will-navigate event', ->
+    return if isCI and process.platform is 'darwin'
     it 'emits when user starts a navigation', (done) ->
       @timeout 10000
       w.webContents.on 'will-navigate', (event, url) ->
@@ -239,6 +241,7 @@ describe 'browser-window module', ->
       w.loadUrl "file://#{fixtures}/pages/will-navigate.html"
 
   describe 'dom-ready event', ->
+    return if isCI and process.platform is 'darwin'
     it 'emits when document is loaded', (done) ->
       ipc = remote.require 'ipc'
       server = http.createServer (req, res) ->
