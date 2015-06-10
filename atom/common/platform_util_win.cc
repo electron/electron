@@ -135,7 +135,7 @@ void OpenItem(const base::FilePath& full_path) {
     ui::win::OpenFileViaShell(full_path);
 }
 
-void OpenExternal(const GURL& url) {
+bool OpenExternal(const GURL& url) {
   // Quote the input scheme to be sure that the command does not have
   // parameters unexpected by the external program. This url should already
   // have been escaped.
@@ -150,12 +150,12 @@ void OpenExternal(const GURL& url) {
   const size_t kMaxUrlLength = 2048;
   if (escaped_url.length() > kMaxUrlLength) {
     NOTREACHED();
-    return;
+    return false;
   }
 
   if (base::win::GetVersion() < base::win::VERSION_WIN7) {
     if (!ValidateShellCommandForScheme(url.scheme()))
-      return;
+      return false;
   }
 
   if (reinterpret_cast<ULONG_PTR>(ShellExecuteA(NULL, "open",
@@ -164,8 +164,9 @@ void OpenExternal(const GURL& url) {
     // We fail to execute the call. We could display a message to the user.
     // TODO(nsylvain): we should also add a dialog to warn on errors. See
     // bug 1136923.
-    return;
+    return false;
   }
+  return true;
 }
 
 bool MoveItemToTrash(const base::FilePath& path) {
