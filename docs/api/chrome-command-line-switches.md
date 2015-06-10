@@ -15,9 +15,9 @@ app.on('ready', function() {
 });
 ```
 
-## --client-certificate
+## --client-certificate=`path`
 
-Path to client certificate file.
+Sets `path` of client certificate file.
 
 ## --disable-http-cache
 
