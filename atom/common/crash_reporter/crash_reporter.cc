@@ -46,7 +46,8 @@ std::vector<CrashReporter::UploadReportResult>
 CrashReporter::GetUploadedReports(const std::string& path) {
   std::string file_content;
   std::vector<CrashReporter::UploadReportResult> result;
-  if (base::ReadFileToString(base::FilePath::FromUTF8Unsafe(path), &file_content)) {
+  if (base::ReadFileToString(base::FilePath::FromUTF8Unsafe(path),
+        &file_content)) {
     std::vector<std::string> reports;
     base::SplitString(file_content, '\n', &reports);
     for (const std::string& report : reports) {
