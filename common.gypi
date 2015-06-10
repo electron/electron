@@ -9,6 +9,7 @@
     'component%': 'static_library',
     'python': 'python',
     'openssl_no_asm': 1,
+    'node_target_type': 'shared_library',
     'node_install_npm': 'false',
     'node_prefix': '',
     'node_shared_cares': 'false',
@@ -99,7 +100,10 @@
         ],
       }],
       ['_target_name=="node"', {
-        'include_dirs': [ '<(libchromiumcontent_src_dir)/v8/include' ],
+        'include_dirs': [
+          '<(libchromiumcontent_src_dir)/v8',
+          '<(libchromiumcontent_src_dir)/v8/include',
+        ],
         'conditions': [
           ['OS=="mac" and libchromiumcontent_component==0', {
             # -all_load is the "whole-archive" on OS X.
