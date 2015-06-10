@@ -130,9 +130,12 @@ void PrintPreviewMessageHandler::RunPrintToPDFCallback(
     v8::Local<v8::Value> buffer = node::Buffer::Use(
         const_cast<char*>(reinterpret_cast<const char*>(data->front())),
         data->size());
-    print_to_pdf_callback_map_[request_id].Run(buffer);
+    print_to_pdf_callback_map_[request_id].Run(v8::Null(isolate), buffer);
   } else {
-    print_to_pdf_callback_map_[request_id].Run(v8::Null(isolate));
+    v8::Local<v8::String> error_message = v8::String::NewFromUtf8(isolate,
+        "Fail to generate PDF");
+    print_to_pdf_callback_map_[request_id].Run(
+        v8::Exception::Error(error_message), v8::Null(isolate));
   }
   print_to_pdf_callback_map_.erase(request_id);
 }
