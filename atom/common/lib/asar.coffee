@@ -310,6 +310,38 @@ exports.wrapFsWithAsar = (fs) ->
 
     files
 
+  internalModuleReadFile = process.binding('fs').internalModuleReadFile
+  process.binding('fs').internalModuleReadFile = (p) ->
+    [isAsar, asarPath, filePath] = splitPath p
+    return internalModuleReadFile p unless isAsar
+
+    archive = getOrCreateArchive asarPath
+    return undefined unless archive
+
+    info = archive.getFileInfo filePath
+    return undefined unless info
+    return '' if info.size is 0
+
+    buffer = new Buffer(info.size)
+    fd = archive.getFd()
+    retrun undefined unless fd >= 0
+
+    fs.readSync fd, buffer, 0, info.size, info.offset
+    buffer.toString 'utf8'
+
+  internalModuleStat = process.binding('fs').internalModuleStat
+  process.binding('fs').internalModuleStat = (p) ->
+    [isAsar, asarPath, filePath] = splitPath p
+    return internalModuleStat p unless isAsar
+
+    archive = getOrCreateArchive asarPath
+    return -34 unless archive  # -ENOENT
+
+    stats = archive.stat filePath
+    return -34 unless stats  # -ENOENT
+
+    if stats.isDirectory then return 1 else return 0
+
   overrideAPI fs, 'open'
   overrideAPI child_process, 'execFile'
   overrideAPISync process, 'dlopen', 1
