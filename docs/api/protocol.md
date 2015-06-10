@@ -7,8 +7,8 @@ An example of implementing a protocol that has the same effect with the
 `file://` protocol:
 
 ```javascript
-var app = require('app'),
-    path = require('path');
+var app = require('app');
+var path = require('path');
 
 app.on('ready', function() {
     var protocol = require('protocol');

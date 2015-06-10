@@ -43,7 +43,7 @@ You can also create a window without chrome by using
      other windows
   * `fullscreen` Boolean - Whether the window should show in fullscreen, when
     set to `false` the fullscreen button would also be hidden on OS X
-  * `skip-taskbar` Boolean - Do not show window in Taskbar
+  * `skip-taskbar` Boolean - Do not show window in taskbar
   * `zoom-factor` Number - The default zoom factor of the page, zoom factor is
     zoom percent / 100, so `3.0` represents `300%`
   * `kiosk` Boolean - The kiosk mode
@@ -131,9 +131,9 @@ window.onbeforeunload = function(e) {
   console.log('I do not want to be closed');
 
   // Unlike usual browsers, in which a string should be returned and the user is
-  // prompted to confirm the page unload. Electron gives the power completely
-  // to the developers, return empty string or false would prevent the unloading
-  // now. You can also use the dialog API to let user confirm it.
+  // prompted to confirm the page unload, Electron gives developers more options.
+  // Returning empty string or false would prevent the unloading now.
+  // You can also use the dialog API to let the user confirm closing the application.
   return false;
 };
 ```
@@ -464,7 +464,7 @@ Starts or stops flashing the window to attract user's attention.
 
 * `skip` Boolean
 
-Makes the window do not show in Taskbar.
+Makes the window not show in the taskbar.
 
 ### BrowserWindow.setKiosk(flag)
 
@@ -483,13 +483,13 @@ Returns whether the window is in kiosk mode.
 Sets the pathname of the file the window represents, and the icon of the file
 will show in window's title bar.
 
-__Note__: This API is available only on OS X.
+__Note__: This API is only available on OS X.
 
 ### BrowserWindow.getRepresentedFilename()
 
 Returns the pathname of the file the window represents.
 
-__Note__: This API is available only on OS X.
+__Note__: This API is only available on OS X.
 
 ### BrowserWindow.setDocumentEdited(edited)
 
@@ -498,13 +498,13 @@ __Note__: This API is available only on OS X.
 Specifies whether the window’s document has been edited, and the icon in title
 bar will become grey when set to `true`.
 
-__Note__: This API is available only on OS X.
+__Note__: This API is only available on OS X.
 
 ### BrowserWindow.IsDocumentEdited()
 
 Whether the window's document has been edited.
 
-__Note__: This API is available only on OS X.
+__Note__: This API is only available on OS X.
 
 ### BrowserWindow.openDevTools([options])
 
@@ -604,20 +604,20 @@ it will assume `app.getName().desktop`.
 ### BrowserWindow.setOverlayIcon(overlay, description)
 
 * `overlay` [NativeImage](native-image.md) - the icon to display on the bottom
-right corner of the Taskbar icon. If this parameter is `null`, the overlay is
+right corner of the taskbar icon. If this parameter is `null`, the overlay is
 cleared
 * `description` String - a description that will be provided to Accessibility
 screen readers
 
-Sets a 16px overlay onto the current Taskbar icon, usually used to convey some sort of application status or to passively notify the user.
+Sets a 16px overlay onto the current taskbar icon, usually used to convey some sort of application status or to passively notify the user.
 
-__Note:__ This API is only available on Windows, Win7 or above
+__Note:__ This API is only available on Windows (Windows 7 and above)
 
 ### BrowserWindow.showDefinitionForSelection()
 
 Shows pop-up dictionary that searches the selected word on the page.
 
-__Note__: This API is available only on OS X.
+__Note__: This API is only available on OS X.
 
 ### BrowserWindow.setAutoHideMenuBar(hide)
 
@@ -753,7 +753,7 @@ Calling `event.preventDefault()` can prevent creating new windows.
 Emitted when user or the page wants to start an navigation, it can happen when
 `window.location` object is changed or user clicks a link in the page.
 
-This event will not emit when the navigation is started programmely with APIs
+This event will not emit when the navigation is started programmatically with APIs
 like `WebContents.loadUrl` and `WebContents.back`.
 
 Calling `event.preventDefault()` can prevent the navigation.

@@ -70,7 +70,7 @@ var template = [
         label: 'Quit',
         accelerator: 'Command+Q',
         click: function() { app.quit(); }
-      },
+      }
     ]
   },
   {
@@ -108,7 +108,7 @@ var template = [
         label: 'Select All',
         accelerator: 'Command+A',
         selector: 'selectAll:'
-      },
+      }
     ]
   },
   {
@@ -123,7 +123,7 @@ var template = [
         label: 'Toggle DevTools',
         accelerator: 'Alt+Command+I',
         click: function() { BrowserWindow.getFocusedWindow().toggleDevTools(); }
-      },
+      }
     ]
   },
   {
@@ -145,13 +145,13 @@ var template = [
       {
         label: 'Bring All to Front',
         selector: 'arrangeInFront:'
-      },
+      }
     ]
   },
   {
     label: 'Help',
     submenu: []
-  },
+  }
 ];
 
 menu = Menu.buildFromTemplate(template);
@@ -281,10 +281,10 @@ Template:
 
 ```javascript
 [
-  {label: '4', id: '4'}
-  {label: '5', id: '5'}
-  {label: '1', id: '1', position: 'before=4'}
-  {label: '2', id: '2'}
+  {label: '4', id: '4'},
+  {label: '5', id: '5'},
+  {label: '1', id: '1', position: 'before=4'},
+  {label: '2', id: '2'},
   {label: '3', id: '3'}
 ]
 ```
@@ -303,11 +303,11 @@ Template:
 
 ```javascript
 [
-  {label: 'a', position: 'endof=letters'}
-  {label: '1', position: 'endof=numbers'}
-  {label: 'b', position: 'endof=letters'}
-  {label: '2', position: 'endof=numbers'}
-  {label: 'c', position: 'endof=letters'}
+  {label: 'a', position: 'endof=letters'},
+  {label: '1', position: 'endof=numbers'},
+  {label: 'b', position: 'endof=letters'},
+  {label: '2', position: 'endof=numbers'},
+  {label: 'c', position: 'endof=letters'},
   {label: '3', position: 'endof=numbers'}
 ]
 ```
