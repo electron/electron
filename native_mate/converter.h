@@ -157,6 +157,15 @@ struct Converter<v8::Local<v8::External> > {
 };
 
 template<>
+struct Converter<v8::Local<v8::Array> > {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                    v8::Local<v8::Array> val);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     v8::Local<v8::Array>* out);
+};
+
+template<>
 struct Converter<v8::Local<v8::Value> > {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                     v8::Local<v8::Value> val);

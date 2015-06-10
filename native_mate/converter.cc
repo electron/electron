@@ -7,6 +7,7 @@
 #include "native_mate/compat.h"
 #include "v8/include/v8.h"
 
+using v8::Array;
 using v8::Boolean;
 using v8::External;
 using v8::Function;
@@ -192,6 +193,20 @@ bool Converter<Local<External> >::FromV8(Isolate* isolate,
   if (!val->IsExternal())
     return false;
   *out = Local<External>::Cast(val);
+  return true;
+}
+
+Local<Value> Converter<Local<Array> >::ToV8(Isolate* isolate,
+                                            Local<Array> val) {
+  return val;
+}
+
+bool Converter<Local<Array> >::FromV8(Isolate* isolate,
+                                      v8::Local<Value> val,
+                                      Local<Array>* out) {
+  if (!val->IsArray())
+    return false;
+  *out = Local<Array>::Cast(val);
   return true;
 }
 
