@@ -15,6 +15,10 @@ app.on('ready', function() {
 });
 ```
 
+## --client-certificate
+
+Path to client certificate file.
+
 ## --disable-http-cache
 
 Disables the disk cache for HTTP requests.
