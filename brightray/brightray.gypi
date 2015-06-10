@@ -149,6 +149,7 @@
               '_LARGEFILE_SOURCE',
               '_LARGEFILE64_SOURCE',
               '_FILE_OFFSET_BITS=64',
+              'USE_OPENSSL',
             ],
             'cflags_cc': [
               '-D__STRICT_ANSI__',
