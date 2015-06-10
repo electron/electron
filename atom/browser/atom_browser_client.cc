@@ -14,6 +14,7 @@
 #include "atom/browser/window_list.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
+#include "base/files/file_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "chrome/browser/printing/printing_message_filter.h"
 #include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
