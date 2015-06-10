@@ -7,6 +7,7 @@ v8Util = process.atomBinding 'v8_util'
 valueToMeta = (sender, value) ->
   meta = type: typeof value
 
+  meta.type = 'buffer' if Buffer.isBuffer value
   meta.type = 'value' if value is null
   meta.type = 'array' if Array.isArray value
 
@@ -26,6 +27,8 @@ valueToMeta = (sender, value) ->
 
     meta.members = []
     meta.members.push {name: prop, type: typeof field} for prop, field of value
+  else if meta.type is 'buffer'
+    meta.value = Array::slice.call value, 0
   else
     meta.type = 'value'
     meta.value = value
@@ -43,6 +46,7 @@ unwrapArgs = (sender, args) ->
       when 'value' then meta.value
       when 'remote-object' then objectsRegistry.get meta.id
       when 'array' then unwrapArgs sender, meta.value
+      when 'buffer' then new Buffer(meta.value)
       when 'object'
         ret = v8Util.createObjectWithName meta.name
         for member in meta.members
