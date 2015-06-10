@@ -35,7 +35,7 @@ int32_t IDWeakMap::Add(v8::Isolate* isolate, v8::Local<v8::Object> object) {
 
 v8::Local<v8::Value> IDWeakMap::Get(v8::Isolate* isolate, int32_t key) {
   if (!Has(key)) {
-    node::ThrowError("Invalid key");
+    node::ThrowError(isolate, "Invalid key");
     return v8::Undefined(isolate);
   }
 
