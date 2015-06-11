@@ -43,9 +43,10 @@ class Protocol : public mate::EventEmitter {
 
   // Register/unregister an networking |scheme| which would be handled by
   // |callback|.
-  void RegisterProtocol(const std::string& scheme,
+  void RegisterProtocol(v8::Isolate* isolate,
+                        const std::string& scheme,
                         const JsProtocolHandler& callback);
-  void UnregisterProtocol(const std::string& scheme);
+  void UnregisterProtocol(v8::Isolate* isolate, const std::string& scheme);
 
   // Returns whether a scheme has been registered.
   // FIXME Should accept a callback and be asynchronous so we do not have to use
@@ -53,9 +54,10 @@ class Protocol : public mate::EventEmitter {
   bool IsHandledProtocol(const std::string& scheme);
 
   // Intercept/unintercept an existing protocol handler.
-  void InterceptProtocol(const std::string& scheme,
+  void InterceptProtocol(v8::Isolate* isolate,
+                         const std::string& scheme,
                          const JsProtocolHandler& callback);
-  void UninterceptProtocol(const std::string& scheme);
+  void UninterceptProtocol(v8::Isolate* isolate, const std::string& scheme);
 
   // The networking related operations have to be done in IO thread.
   void RegisterProtocolInIO(const std::string& scheme);

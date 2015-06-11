@@ -9,8 +9,10 @@ var globalShortcut = require('global-shortcut');
 
 // Register a 'ctrl+x' shortcut listener.
 var ret = globalShortcut.register('ctrl+x', function() { console.log('ctrl+x is pressed'); })
-if (!ret)
-  console.log('registerion fails');
+
+if (!ret) {
+  console.log('registration failed');
+}
 
 // Check whether a shortcut is registered.
 console.log(globalShortcut.isRegistered('ctrl+x'));

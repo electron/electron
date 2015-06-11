@@ -28,7 +28,7 @@ var win = new BrowserWindow({ transparent: true, frame: false });
   API to set window shape to solve this, but currently blocked at an
   [upstream bug](https://code.google.com/p/chromium/issues/detail?id=387234).
 * Transparent window is not resizable, setting `resizable` to `true` may make
-  transprent window stop working on some platforms.
+  transparent window stop working on some platforms.
 * The `blur` filter only applies to the web page, so there is no way to apply
   blur effect to the content below the window.
 * On Windows transparent window will not work when DWM is disabled.

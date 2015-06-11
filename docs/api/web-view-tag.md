@@ -18,7 +18,7 @@ form, the `webview` tag includes the `src` of the web page and css styles that
 control the appearance of the `webview` container:
 
 ```html
-<webview id="foo" src="https://www.github.com/" style="width:640px; height:480px"></webview>
+<webview id="foo" src="https://www.github.com/" style="display:inline-block; width:640px; height:480px"></webview>
 ```
 
 If you want to control the guest content in any way, you can write JavaScript
@@ -398,7 +398,7 @@ without regard for log level or other properties.
 
 ```javascript
 webview.addEventListener('console-message', function(e) {
-  console.log('Guest page logged a message: ', e.message);
+  console.log('Guest page logged a message:', e.message);
 });
 ```
 
@@ -456,7 +456,7 @@ webview.send('ping');
 var ipc = require('ipc');
 ipc.on('ping', function() {
   ipc.sendToHost('pong');
-})
+});
 ```
 
 ### crashed

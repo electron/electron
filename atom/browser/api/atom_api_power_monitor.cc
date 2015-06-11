@@ -41,8 +41,9 @@ void PowerMonitor::OnResume() {
 // static
 v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
   if (!Browser::Get()->is_ready()) {
-    node::ThrowError("Cannot initialize \"power-monitor\" module"
-                     "before app is ready");
+    node::ThrowError(
+        isolate,
+        "Cannot initialize \"power-monitor\" module before app is ready");
     return v8::Null(isolate);
   }
 

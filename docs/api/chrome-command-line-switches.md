@@ -1,6 +1,6 @@
 # Supported Chrome command line switches
 
-Following command lines switches in Chrome browser are also Supported in
+The following command lines switches in Chrome browser are also supported in
 Electron, you can use [app.commandLine.appendSwitch][append-switch] to append
 them in your app's main script before the [ready][ready] event of [app][app]
 module is emitted:
@@ -11,8 +11,13 @@ app.commandLine.appendSwitch('remote-debugging-port', '8315');
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
 
 app.on('ready', function() {
+  // Your code here
 });
 ```
+
+## --client-certificate=`path`
+
+Sets `path` of client certificate file.
 
 ## --disable-http-cache
 

@@ -29,8 +29,11 @@ window.addEventListener('contextmenu', function (e) {
 
 Another example of creating the application menu with the simple template API:
 
-```javascript
-// main.js
+```html
+<!-- index.html -->
+<script>
+var remote = require('remote');
+var Menu = remote.require('menu');
 var template = [
   {
     label: 'Electron',
@@ -69,7 +72,7 @@ var template = [
       {
         label: 'Quit',
         accelerator: 'Command+Q',
-        click: function() { app.quit(); }
+        selector: 'terminate:'
       },
     ]
   },
@@ -108,7 +111,7 @@ var template = [
         label: 'Select All',
         accelerator: 'Command+A',
         selector: 'selectAll:'
-      },
+      }
     ]
   },
   {
@@ -117,12 +120,12 @@ var template = [
       {
         label: 'Reload',
         accelerator: 'Command+R',
-        click: function() { BrowserWindow.getFocusedWindow().reloadIgnoringCache(); }
+        click: function() { remote.getCurrentWindow().reload(); }
       },
       {
         label: 'Toggle DevTools',
         accelerator: 'Alt+Command+I',
-        click: function() { BrowserWindow.getFocusedWindow().toggleDevTools(); }
+        click: function() { remote.getCurrentWindow().toggleDevTools(); }
       },
     ]
   },
@@ -145,18 +148,19 @@ var template = [
       {
         label: 'Bring All to Front',
         selector: 'arrangeInFront:'
-      },
+      }
     ]
   },
   {
     label: 'Help',
     submenu: []
-  },
+  }
 ];
 
 menu = Menu.buildFromTemplate(template);
 
-Menu.setApplicationMenu(menu); // Must be called within app.on('ready', function(){ ... });
+Menu.setApplicationMenu(menu);
+</script>
 ```
 
 ## Class: Menu
@@ -281,10 +285,10 @@ Template:
 
 ```javascript
 [
-  {label: '4', id: '4'}
-  {label: '5', id: '5'}
-  {label: '1', id: '1', position: 'before=4'}
-  {label: '2', id: '2'}
+  {label: '4', id: '4'},
+  {label: '5', id: '5'},
+  {label: '1', id: '1', position: 'before=4'},
+  {label: '2', id: '2'},
   {label: '3', id: '3'}
 ]
 ```
@@ -303,11 +307,11 @@ Template:
 
 ```javascript
 [
-  {label: 'a', position: 'endof=letters'}
-  {label: '1', position: 'endof=numbers'}
-  {label: 'b', position: 'endof=letters'}
-  {label: '2', position: 'endof=numbers'}
-  {label: 'c', position: 'endof=letters'}
+  {label: 'a', position: 'endof=letters'},
+  {label: '1', position: 'endof=numbers'},
+  {label: 'b', position: 'endof=letters'},
+  {label: '2', position: 'endof=numbers'},
+  {label: 'c', position: 'endof=letters'},
   {label: '3', position: 'endof=numbers'}
 ]
 ```

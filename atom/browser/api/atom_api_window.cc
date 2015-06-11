@@ -189,7 +189,8 @@ void Window::OnDevToolsClosed() {
 mate::Wrappable* Window::New(v8::Isolate* isolate,
                              const mate::Dictionary& options) {
   if (!Browser::Get()->is_ready()) {
-    node::ThrowError("Cannot create BrowserWindow before app is ready");
+    node::ThrowError(isolate,
+                     "Cannot create BrowserWindow before app is ready");
     return nullptr;
   }
   return new Window(options);

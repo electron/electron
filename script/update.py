@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import platform
 import subprocess
 import sys
 
@@ -43,10 +44,19 @@ def run_gyp(target_arch, component):
   defines = [
     '-Dlibchromiumcontent_component={0}'.format(component),
     '-Dtarget_arch={0}'.format(target_arch),
+    '-Dhost_arch={0}'.format(target_arch),
     '-Dlibrary=static_library',
   ]
   return subprocess.call([python, gyp, '-f', 'ninja', '--depth', '.',
                           'atom.gyp', '-Icommon.gypi'] + defines)
+
+
+def get_host_arch():
+  if platform.architecture()[0] == '32bit':
+    return 'ia32'
+  else:
+    return 'x64'
+
 
 if __name__ == '__main__':
   sys.exit(main())

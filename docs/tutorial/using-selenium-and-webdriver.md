@@ -49,14 +49,14 @@ and where to find Electron's binary:
 ```javascript
 var webdriver = require('selenium-webdriver');
 
-var driver = new webdriver.Builder().
-   // The "9515" is the port opened by chrome driver.
-   usingServer('http://localhost:9515').
-   withCapabilities({chromeOptions: {
-     // Here is the path to your Electron binary.
-     binary: '/Path-to-Your-App.app/Contents/MacOS/Atom'}}).
-   forBrowser('electron').
-   build();
+var driver = new webdriver.Builder()
+  // The "9515" is the port opened by chrome driver.
+  .usingServer('http://localhost:9515')
+  .withCapabilities({chromeOptions: {
+    // Here is the path to your Electron binary.
+    binary: '/Path-to-Your-App.app/Contents/MacOS/Atom'}})
+  .forBrowser('electron')
+  .build();
 
 driver.get('http://www.google.com');
 driver.findElement(webdriver.By.name('q')).sendKeys('webdriver');

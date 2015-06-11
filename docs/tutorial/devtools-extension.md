@@ -20,14 +20,14 @@ Then you can load the extension in Electron by opening devtools in any window,
 and then running the following code in the devtools console:
 
 ```javascript
-require('remote').require('browser-window').addDevToolsExtension('/some-directory/react-devtools')
+require('remote').require('browser-window').addDevToolsExtension('/some-directory/react-devtools');
 ```
 
 To unload the extension, you can call `BrowserWindow.removeDevToolsExtension`
 API with its name and it will not load the next time you open the devtools:
 
 ```javascript
-require('remote').require('browser-window').removeDevToolsExtension('React Developer Tools')
+require('remote').require('browser-window').removeDevToolsExtension('React Developer Tools');
 ```
 
 ## Format of devtools extension
