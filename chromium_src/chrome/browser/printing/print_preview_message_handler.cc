@@ -128,6 +128,7 @@ void PrintPreviewMessageHandler::RunPrintToPDFCallback(
   v8::HandleScope handle_scope(isolate);
   if (data) {
     v8::Local<v8::Value> buffer = node::Buffer::Use(
+        isolate,
         const_cast<char*>(reinterpret_cast<const char*>(data->front())),
         data->size());
     print_to_pdf_callback_map_[request_id].Run(v8::Null(isolate), buffer);
