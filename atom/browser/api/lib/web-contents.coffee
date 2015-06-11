@@ -97,7 +97,7 @@ wrapWebContents = (webContents) ->
     if options.printSelectionOnly
       printingSetting.shouldPrintSelectionOnly = options.printSelectionOnly
     if options.printBackgrounds
-      printingSetting.shouldPrintBackgrounds = options.printBackgrounds
+      printingSetting.shouldPrintBackgrounds = options.printBackground
 
     webContents._printToPDF printingSetting, callback
 
