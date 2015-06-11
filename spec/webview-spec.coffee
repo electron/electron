@@ -54,7 +54,7 @@ describe '<webview> tag', ->
           assert.equal e.message, 'function'
           done()
         webview.addEventListener 'console-message', listener2
-        webview.src = "file://#{fixtures}/pages/native-module.html"
+        webview.reload()
       webview.addEventListener 'did-finish-load', listener
       webview.setAttribute 'nodeintegration', 'on'
       webview.src = "file://#{fixtures}/pages/native-module.html"
