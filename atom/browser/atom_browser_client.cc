@@ -9,6 +9,7 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_quota_permission_context.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/browser/window_list.h"
@@ -231,15 +232,13 @@ void AtomBrowserClient::SelectClientCertificate(
   auto cert_path = command_line->GetSwitchValueNative(
       switches::kClientCertificate);
 
-  // TODO(zcbenz): allow users to select certificate from
-  // client_cert list. Right now defaults to first certificate
-  // in the list.
   scoped_refptr<net::X509Certificate> certificate;
-  if (cert_path.empty()) {
-    if (!cert_request_info->client_certs.empty())
-      certificate = cert_request_info->client_certs[0];
-  } else {
+  if (!cert_path.empty()) {
     certificate = ImportCertFromFile(base::FilePath(cert_path));
+  } else if (!cert_request_info->client_certs.empty()) {
+    Browser::Get()->ClientCertificateSelector(web_contents,
+                                              cert_request_info,
+                                              delegate.Pass());
   }
 
   if (certificate.get())

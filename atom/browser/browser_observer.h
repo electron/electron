@@ -7,6 +7,17 @@
 
 #include <string>
 
+#include "base/memory/scoped_ptr.h"
+
+namespace content {
+class ClientCertificateDelegate;
+class WebContents;
+}
+
+namespace net {
+class SSLCertRequestInfo;
+}
+
 namespace atom {
 
 class BrowserObserver {
@@ -39,6 +50,12 @@ class BrowserObserver {
   // The browser has finished loading.
   virtual void OnWillFinishLaunching() {}
   virtual void OnFinishLaunching() {}
+
+  // The browser requires client certificate.
+  virtual void OnSelectCertificate(
+      content::WebContents* web_contents,
+      net::SSLCertRequestInfo* cert_request_info,
+      scoped_ptr<content::ClientCertificateDelegate> delegate) {}
 
  protected:
   virtual ~BrowserObserver() {}
