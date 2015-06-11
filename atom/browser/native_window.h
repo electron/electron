@@ -154,9 +154,6 @@ class NativeWindow : public CommonWebContentsDelegate,
   virtual void CapturePage(const gfx::Rect& rect,
                            const CapturePageCallback& callback);
 
-  // Print current page.
-  virtual void Print(bool silent, bool print_background);
-
   // Show popup dictionary.
   virtual void ShowDefinitionForSelection();
 

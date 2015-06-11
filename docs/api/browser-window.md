@@ -556,20 +556,7 @@ process.
 
 ### BrowserWindow.print([options])
 
-* `options` Object
-  * `silent` Boolean - Don't ask user for print settings, defaults to `false`
-  * `printBackground` Boolean - Also prints the background color and image of
-    the web page, defaults to `false`.
-
-Prints window's web page. When `silent` is set to `false`, Electron will pick
-up system's default printer and default settings for printing.
-
-Calling `window.print()` in web page is equivalent to call
-`BrowserWindow.print({silent: false, printBackground: false})`.
-
-**Note:** On Windows, the print API relies on `pdf.dll`. If your application
-doesn't need print feature, you can safely remove `pdf.dll` in saving binary
-size.
+Same with `webContents.print([options])`
 
 ### BrowserWindow.loadUrl(url, [options])
 
@@ -939,6 +926,23 @@ response to `callback`.
 Unregisters any serviceworker if present and returns boolean as
 response to `callback` when the JS promise is fullfilled or false
 when the JS promise is rejected.  
+
+### WebContents.print([options])
+
+* `options` Object
+  * `silent` Boolean - Don't ask user for print settings, defaults to `false`
+  * `printBackground` Boolean - Also prints the background color and image of
+    the web page, defaults to `false`.
+
+Prints window's web page. When `silent` is set to `false`, Electron will pick
+up system's default printer and default settings for printing.
+
+Calling `window.print()` in web page is equivalent to call
+`WebContents.print({silent: false, printBackground: false})`.
+
+**Note:** On Windows, the print API relies on `pdf.dll`. If your application
+doesn't need print feature, you can safely remove `pdf.dll` in saving binary
+size.
 
 ### WebContents.send(channel[, args...])
 

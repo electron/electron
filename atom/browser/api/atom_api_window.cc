@@ -20,32 +20,6 @@
 
 #include "atom/common/node_includes.h"
 
-namespace {
-
-struct PrintSettings {
-  bool silent;
-  bool print_background;
-};
-
-}  // namespace
-
-namespace mate {
-
-template<>
-struct Converter<PrintSettings> {
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
-                     PrintSettings* out) {
-    mate::Dictionary dict;
-    if (!ConvertFromV8(isolate, val, &dict))
-      return false;
-    dict.Get("silent", &(out->silent));
-    dict.Get("printBackground", &(out->print_background));
-    return true;
-  }
-};
-
-}  // namespace mate
-
 namespace atom {
 
 namespace api {
@@ -420,16 +394,6 @@ void Window::CapturePage(mate::Arguments* args) {
       rect, base::Bind(&OnCapturePageDone, args->isolate(), callback));
 }
 
-void Window::Print(mate::Arguments* args) {
-  PrintSettings settings = { false, false };;
-  if (args->Length() == 1 && !args->GetNext(&settings)) {
-    args->ThrowError();
-    return;
-  }
-
-  window_->Print(settings.silent, settings.print_background);
-}
-
 void Window::SetProgressBar(double progress) {
   window_->SetProgressBar(progress);
 }
@@ -541,7 +505,6 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("blurWebView", &Window::BlurWebView)
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)
       .SetMethod("capturePage", &Window::CapturePage)
-      .SetMethod("print", &Window::Print)
       .SetMethod("setProgressBar", &Window::SetProgressBar)
       .SetMethod("setOverlayIcon", &Window::SetOverlayIcon)
       .SetMethod("_setMenu", &Window::SetMenu)
