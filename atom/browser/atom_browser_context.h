@@ -35,7 +35,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   AtomURLRequestJobFactory* job_factory() const { return job_factory_; }
 
  private:
-  virtual net::NetworkDelegate* CreateNetworkDelegate() override;
+  net::NetworkDelegate* CreateNetworkDelegate() override;
 
   // A fake BrowserProcess object that used to feed the source code from chrome.
   scoped_ptr<BrowserProcess> fake_browser_process_;

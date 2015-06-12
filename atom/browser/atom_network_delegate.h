@@ -1,3 +1,7 @@
+// Copyright (c) 2015 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
 #ifndef ATOM_BROWSER_ATOM_NETWORK_DELEGATE_H_
 #define ATOM_BROWSER_ATOM_NETWORK_DELEGATE_H_
 
@@ -10,12 +14,15 @@ class NetworkDelegate : public brightray::NetworkDelegate {
   NetworkDelegate();
   ~NetworkDelegate();
 
-  virtual int OnBeforeURLRequest(net::URLRequest*, const net::CompletionCallback&, GURL* new_url) override;
+  int
+  OnBeforeURLRequest(net::URLRequest*,
+    const net::CompletionCallback&, GURL* new_url)
+  override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(NetworkDelegate);
 };
 
-}
+}  // namespace atom
 
-#endif
+#endif  // ATOM_BROWSER_ATOM_NETWORK_DELEGATE_H_

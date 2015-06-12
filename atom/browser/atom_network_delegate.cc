@@ -1,3 +1,7 @@
+// Copyright (c) 2015 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
 #include "atom/browser/atom_network_delegate.h"
 
 #include "net/base/load_flags.h"
@@ -12,11 +16,13 @@ NetworkDelegate::NetworkDelegate() {
 NetworkDelegate::~NetworkDelegate() {
 }
 
-int NetworkDelegate::OnBeforeURLRequest(net::URLRequest* request, const net::CompletionCallback& callback, GURL* new_url) {
+int
+NetworkDelegate::OnBeforeURLRequest(net::URLRequest* request,
+  const net::CompletionCallback& callback, GURL* new_url) {
   // Allow unlimited concurrent connections.
   request->SetPriority(net::MAXIMUM_PRIORITY);
   request->SetLoadFlags(request->load_flags() | net::LOAD_IGNORE_LIMITS);
   return net::OK;
 }
 
-}
+}  // namespace atom
