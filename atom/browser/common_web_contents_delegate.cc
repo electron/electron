@@ -16,7 +16,6 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
-#include "content/public/common/renderer_preferences.h"
 #include "storage/browser/fileapi/isolated_context.h"
 
 namespace atom {
@@ -102,12 +101,6 @@ void CommonWebContentsDelegate::InitWithWebContents(
     NativeWindow* owner_window) {
   owner_window_ = owner_window;
   web_contents->SetDelegate(this);
-
-  // Tell renderer to handle all navigations in browser.
-  auto preferences = web_contents->GetMutableRendererPrefs();
-  preferences->browser_handles_non_local_top_level_requests = true;
-  preferences->browser_handles_all_top_level_requests = true;
-  web_contents->GetRenderViewHost()->SyncRendererPrefs();
 
   // Create InspectableWebContents.
   web_contents_.reset(brightray::InspectableWebContents::Create(web_contents));
