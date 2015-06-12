@@ -298,6 +298,10 @@ Executes editing command `replace` in page.
 
 Executes editing command `replaceMisspelling` in page.
 
+### `<webview>.print([options])`
+
+Prints webview's web page. Same with `webContents.print([options])`.
+
 ### `<webview>`.send(channel[, args...])
 
 * `channel` String

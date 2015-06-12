@@ -87,6 +87,7 @@ class WebContents : public mate::EventEmitter,
   void InspectServiceWorker();
   void HasServiceWorker(const base::Callback<void(bool)>&);
   void UnregisterServiceWorker(const base::Callback<void(bool)>&);
+  void Print(mate::Arguments* args);
 
   // Editing commands.
   void Undo();

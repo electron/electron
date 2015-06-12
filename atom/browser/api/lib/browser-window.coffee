@@ -83,5 +83,6 @@ BrowserWindow::isDevToolsOpened = -> @webContents.isDevToolsOpened()
 BrowserWindow::toggleDevTools = -> @webContents.toggleDevTools()
 BrowserWindow::inspectElement = -> @webContents.inspectElement.apply @webContents, arguments
 BrowserWindow::inspectServiceWorker = -> @webContents.inspectServiceWorker()
+BrowserWindow::print = -> @webContents.print arguments
 
 module.exports = BrowserWindow
