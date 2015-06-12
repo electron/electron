@@ -62,9 +62,7 @@ Emitted when application is quitting.
 * `event` Event
 * `path` String
 
-Emitted when user wants to open a file with the application, it usually
-happens when the application is already opened and then OS wants to reuse the
-application to open file.
+Emitted when user wants to open a file with the application, it usually happens when the application is already opened and then OS wants to reuse the application to open file. But it is also emitted when a file is dropped onto the dock and the application is not yet running. Make sure to liste to open-file very early in your application startup to handle this case (even before the ready event is emitted).
 
 You should call `event.preventDefault()` if you want to handle this event.
 
