@@ -104,6 +104,9 @@ const char kPageVisibility[] = "page-visibility";
 // Disable HTTP cache.
 const char kDisableHttpCache[] = "disable-http-cache";
 
+// Register schemes to standard.
+const char kRegisterStandardSchemes[] = "register-standard-schemes";
+
 }  // namespace switches
 
 }  // namespace atom

@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_ATOM_BROWSER_CLIENT_H_
 
 #include <string>
+#include <vector>
 
 #include "brightray/browser/browser_client.h"
 
@@ -27,6 +28,8 @@ class AtomBrowserClient : public brightray::BrowserClient {
 
   // Don't force renderer process to restart for once.
   static void SuppressRendererProcessRestartForOnce();
+  // Custom schemes to be registered to standard.
+  static void SetCustomSchemes(const std::vector<std::string>& schemes);
 
  protected:
   // content::ContentBrowserClient:

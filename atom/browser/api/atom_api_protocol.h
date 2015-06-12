@@ -7,6 +7,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 #include "atom/browser/api/event_emitter.h"
 #include "base/callback.h"
@@ -40,6 +41,9 @@ class Protocol : public mate::EventEmitter {
 
  private:
   typedef std::map<std::string, JsProtocolHandler> ProtocolHandlersMap;
+
+  // Register schemes to standard scheme list.
+  void RegisterStandardSchemes(const std::vector<std::string>& schemes);
 
   // Register/unregister an networking |scheme| which would be handled by
   // |callback|.

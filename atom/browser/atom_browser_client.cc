@@ -16,6 +16,7 @@
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/string_util.h"
 #include "chrome/browser/printing/printing_message_filter.h"
 #include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
 #include "chrome/browser/speech/tts_message_filter.h"
@@ -42,6 +43,9 @@ int kDefaultRoutingID = 2;
 
 // Next navigation should not restart renderer process.
 bool g_suppress_renderer_process_restart = false;
+
+// Custom schemes to be registered to standard.
+std::string g_custom_schemes = "";
 
 // Find out the owner of the child process according to |process_id|.
 enum ProcessOwner {
@@ -93,6 +97,11 @@ scoped_refptr<net::X509Certificate> ImportCertFromFile(
 // static
 void AtomBrowserClient::SuppressRendererProcessRestartForOnce() {
   g_suppress_renderer_process_restart = true;
+}
+
+void AtomBrowserClient::SetCustomSchemes(
+    const std::vector<std::string>& schemes) {
+  g_custom_schemes = JoinString(schemes, ',');
 }
 
 AtomBrowserClient::AtomBrowserClient() {
@@ -174,8 +183,12 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     base::CommandLine* command_line,
     int process_id) {
   std::string process_type = command_line->GetSwitchValueASCII("type");
+
   if (process_type != "renderer")
     return;
+
+  command_line->AppendSwitchASCII(switches::kRegisterStandardSchemes,
+                                  g_custom_schemes);
 
   NativeWindow* window;
   WebViewManager::WebViewInfo info;
