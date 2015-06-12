@@ -14,7 +14,7 @@ app.on('ready', function() {
     var protocol = require('protocol');
     protocol.registerProtocol('atom', function(request) {
       var url = request.url.substr(7)
-      return new protocol.RequestFileJob(path.normalize(__dirname + '/' + url));
+      return protocol.RequestFileJob(path.normalize(__dirname + '/' + url));
     });
 });
 ```
@@ -84,12 +84,19 @@ Create a request job which sends a string as response.
 
 Create a request job which sends a buffer as response.
 
+## Class: protocol.RequestAsyncBufferJob(callback)
+
+* `callback` Function
+
+Create a asynchromous request job which provides a handler to `callback` that
+can be called with `errorCode` and buffer `data` to be sent as response.
+
 ## Class: protocol.RequestErrorJob(code)
 
 * `code` Integer
 
 Create a request job which sets appropriate network error message to console.
-Default message is `net::ERR_NOT_IMPLEMENTED`. Code should be in the following 
+Default message is `net::ERR_NOT_IMPLEMENTED`. Code should be in the following
 range.
 
 * Ranges:

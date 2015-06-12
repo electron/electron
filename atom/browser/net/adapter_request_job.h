@@ -17,6 +17,10 @@ namespace base {
 class FilePath;
 }
 
+namespace mate {
+class Arguments;
+}
+
 namespace atom {
 
 // Ask JS which type of job it wants, and then delegate corresponding methods.
@@ -47,6 +51,7 @@ class AdapterRequestJob : public net::URLRequestJob {
 
   // Override this function to determine which job should be started.
   virtual void GetJobTypeInUI() = 0;
+  virtual void RunAsyncJob(mate::Arguments*) = 0;
 
   void CreateErrorJobAndStart(int error_code);
   void CreateStringJobAndStart(const std::string& mime_type,
