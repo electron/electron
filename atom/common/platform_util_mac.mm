@@ -118,12 +118,19 @@ void OpenItem(const base::FilePath& full_path) {
   }
 }
 
-void OpenExternal(const GURL& url) {
+bool OpenExternal(const GURL& url) {
   DCHECK([NSThread isMainThread]);
   NSString* url_string = base::SysUTF8ToNSString(url.spec());
   NSURL* ns_url = [NSURL URLWithString:url_string];
-  if (!ns_url || ![[NSWorkspace sharedWorkspace] openURL:ns_url])
-    LOG(WARNING) << "NSWorkspace failed to open URL " << url;
+  if (!ns_url){
+    return false;
+  }
+  NSArray *appUrls = (NSArray*)LSCopyApplicationURLsForURL((CFURLRef)ns_url, kLSRolesAll);
+  if([appUrls count] > 0){
+    if([[NSWorkspace sharedWorkspace] openURL:ns_url])
+      return true;
+  }
+  return false;
 }
 
 bool MoveItemToTrash(const base::FilePath& full_path) {

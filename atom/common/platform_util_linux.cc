@@ -37,12 +37,12 @@ bool XDGUtil(const std::string& util, const std::string& arg) {
   return (exit_code == 0);
 }
 
-void XDGOpen(const std::string& path) {
-  XDGUtil("xdg-open", path);
+bool XDGOpen(const std::string& path) {
+  return XDGUtil("xdg-open", path);
 }
 
-void XDGEmail(const std::string& email) {
-  XDGUtil("xdg-email", email);
+bool XDGEmail(const std::string& email) {
+  return XDGUtil("xdg-email", email);
 }
 
 }  // namespace
@@ -64,11 +64,11 @@ void OpenItem(const base::FilePath& full_path) {
   XDGOpen(full_path.value());
 }
 
-void OpenExternal(const GURL& url) {
+bool OpenExternal(const GURL& url) {
   if (url.SchemeIs("mailto"))
-    XDGEmail(url.spec());
+    return XDGEmail(url.spec());
   else
-    XDGOpen(url.spec());
+    return XDGOpen(url.spec());
 }
 
 bool MoveItemToTrash(const base::FilePath& full_path) {
