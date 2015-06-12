@@ -130,6 +130,14 @@ If "on", the guest page will have web security disabled.
 
 ## Methods
 
+The webview element must be loaded before using the methods.  
+**Example**
+```javascript
+webview.addEventListener("dom-ready", function(){
+  webview.openDevTools();
+});
+```
+
 ### `<webview>`.getUrl()
 
 Returns URL of guest page.
