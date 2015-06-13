@@ -558,6 +558,10 @@ process.
 
 Same with `webContents.print([options])`
 
+### BrowserWindow.printToPDF(options, callback)
+
+Same with `webContents.printToPDF(options, callback)`
+
 ### BrowserWindow.loadUrl(url, [options])
 
 Same with `webContents.loadUrl(url, [options])`.
