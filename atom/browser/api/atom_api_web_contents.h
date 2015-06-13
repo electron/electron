@@ -93,6 +93,7 @@ class WebContents : public mate::EventEmitter,
   void UnregisterServiceWorker(const base::Callback<void(bool)>&);
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
+  void Print(mate::Arguments* args);
 
   // Print current page as PDF.
   void PrintToPDF(const base::DictionaryValue& setting,

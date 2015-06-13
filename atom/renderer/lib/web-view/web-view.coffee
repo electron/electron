@@ -291,6 +291,7 @@ registerWebViewElement = ->
     "send"
     "getId"
     "inspectServiceWorker"
+    "print"
     "printToPDF"
   ]
 

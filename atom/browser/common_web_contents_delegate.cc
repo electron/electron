@@ -13,6 +13,7 @@
 #include "atom/browser/web_dialog_helper.h"
 #include "base/files/file_util.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
+#include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/ui/browser_dialogs.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
@@ -103,6 +104,7 @@ void CommonWebContentsDelegate::InitWithWebContents(
   owner_window_ = owner_window;
   web_contents->SetDelegate(this);
 
+  printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
   printing::PrintPreviewMessageHandler::CreateForWebContents(web_contents);
 
   // Create InspectableWebContents.
