@@ -96,7 +96,7 @@ class WebContents : public mate::EventEmitter,
 
   // Print current page as PDF.
   void PrintToPDF(const base::DictionaryValue& setting,
-    const PrintToPDFCallback& callback);
+                  const PrintToPDFCallback& callback);
 
   // Editing commands.
   void Undo();

@@ -138,7 +138,6 @@ WebContents::WebContents(const mate::Dictionary& options)
   inspectable_web_contents_ = managed_web_contents();
 
   Observe(GetWebContents());
-  printing::PrintPreviewMessageHandler::CreateForWebContents(web_contents);
 }
 
 WebContents::~WebContents() {
@@ -593,7 +592,7 @@ bool WebContents::IsAudioMuted() {
 }
 
 void WebContents::PrintToPDF(const base::DictionaryValue& setting,
-    const PrintToPDFCallback& callback) {
+                             const PrintToPDFCallback& callback) {
   printing::PrintPreviewMessageHandler::FromWebContents(web_contents())->
       PrintToPDF(setting, callback);
 }

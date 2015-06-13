@@ -4,14 +4,7 @@
 
 #include "chrome/browser/printing/print_preview_message_handler.h"
 
-#include <vector>
-
-#include "atom/browser/ui/file_dialog.h"
-#include "atom/browser/native_window.h"
 #include "base/bind.h"
-#include "base/json/json_reader.h"
-#include "base/memory/ref_counted.h"
-#include "base/memory/ref_counted_memory.h"
 #include "base/memory/shared_memory.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/printing/print_job_manager.h"
@@ -20,7 +13,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
-#include "content/public/browser/web_ui.h"
 #include "printing/page_size_margins.h"
 #include "printing/print_job_constants.h"
 #include "printing/pdf_metafile_skia.h"
