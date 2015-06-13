@@ -48,20 +48,6 @@ void StopWorker(int document_cookie) {
   }
 }
 
-base::RefCountedBytes* GetDataFromHandle(base::SharedMemoryHandle handle,
-                                         uint32 data_size) {
-  scoped_ptr<base::SharedMemory> shared_buf(
-      new base::SharedMemory(handle, true));
-  if (!shared_buf->Map(data_size)) {
-    NOTREACHED();
-    return NULL;
-  }
-
-  unsigned char* data_begin = static_cast<unsigned char*>(shared_buf->memory());
-  std::vector<unsigned char> data(data_begin, data_begin + data_size);
-  return base::RefCountedBytes::TakeVector(&data);
-}
-
 }  // namespace
 
 namespace printing {
@@ -86,15 +72,22 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
     return;
   }
 
-  base::RefCountedBytes *data = (
-      GetDataFromHandle(params.metafile_data_handle, params.data_size));
-  RunPrintToPDFCallback(params.preview_request_id, data);
+  scoped_ptr<base::SharedMemory> shared_buf(
+      new base::SharedMemory(params.metafile_data_handle, true));
+  if (!shared_buf->Map(params.data_size)) {
+    RunPrintToPDFCallback(params.preview_request_id, nullptr, 0);
+    return;
+  }
+
+  RunPrintToPDFCallback(params.preview_request_id,
+      static_cast<char*>(shared_buf->memory()),
+      params.data_size);
 }
 
 void PrintPreviewMessageHandler::OnPrintPreviewFailed(int document_cookie,
                                                       int request_id) {
   StopWorker(document_cookie);
-  RunPrintToPDFCallback(request_id, nullptr);
+  RunPrintToPDFCallback(request_id, nullptr, 0);
 }
 
 bool PrintPreviewMessageHandler::OnMessageReceived(
@@ -122,15 +115,13 @@ void PrintPreviewMessageHandler::PrintToPDF(
 }
 
 void PrintPreviewMessageHandler::RunPrintToPDFCallback(
-     int request_id, base::RefCountedBytes* data) {
+     int request_id, char* data, uint32 data_size) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   if (data) {
-    v8::Local<v8::Value> buffer = node::Buffer::Use(
-        isolate,
-        const_cast<char*>(reinterpret_cast<const char*>(data->front())),
-        data->size());
+    v8::Local<v8::Value> buffer = node::Buffer::New(isolate,
+        data, static_cast<size_t>(data_size));
     print_to_pdf_callback_map_[request_id].Run(v8::Null(isolate), buffer);
   } else {
     v8::Local<v8::String> error_message = v8::String::NewFromUtf8(isolate,

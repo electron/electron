@@ -48,7 +48,7 @@ class PrintPreviewMessageHandler
   void OnPrintPreviewFailed(int document_cookie, int request_id);
 
   void RunPrintToPDFCallback(
-     int request_id, base::RefCountedBytes* data);
+     int request_id, char* data, uint32 data_size);
 
   PrintToPDFCallbackMap print_to_pdf_callback_map_;
 
