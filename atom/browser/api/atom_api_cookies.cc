@@ -7,6 +7,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/bind.h"
+#include "base/time/time.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
@@ -44,6 +45,8 @@ bool GetCookieListFromStore(net::CookieStore* cookie_store,
 void RunGetCookiesCallbackOnUIThread(const base::DictionaryValue* filter,
     const std::string& error_message, const net::CookieList& cookie_list,
     const atom::api::Cookies::CookiesCallback& callback) {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+
   // Should release filter here.
   delete filter;
 
@@ -63,6 +66,8 @@ void RunGetCookiesCallbackOnUIThread(const base::DictionaryValue* filter,
 
 void RunRemoveCookiesCallbackOnUIThread(const std::string& error_message,
     const atom::api::Cookies::CookiesCallback& callback) {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
@@ -75,6 +80,27 @@ void RunRemoveCookiesCallbackOnUIThread(const std::string& error_message,
   }
 
   callback.Run(v8::Null(isolate), v8::Null(isolate));
+}
+
+void RunSetCookiesCallbackOnUIThread(const base::DictionaryValue* details,
+    const std::string& error_message, bool set_success,
+    const atom::api::Cookies::CookiesCallback& callback) {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+
+  delete details;
+
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+
+  if (!error_message.empty()) {
+    v8::Local<v8::String> error = v8::String::NewFromUtf8(isolate,
+        error_message.c_str());
+    callback.Run(error, v8::Null(isolate));
+    return;
+  }
+
+  callback.Run(v8::Null(isolate), v8::Boolean::New(isolate, set_success));
 }
 
 bool MatchesDomain(const base::DictionaryValue* filter,
@@ -230,11 +256,88 @@ void Cookies::OnRemoveCookies(const CookiesCallback& callback) {
       base::Bind(&RunRemoveCookiesCallbackOnUIThread, "", callback));
 }
 
+void Cookies::Set(const base::DictionaryValue& options,
+                  const CookiesCallback& callback) {
+  std::string url;
+  std::string error_message;
+  if (!options.GetString("url", &url)) {
+    error_message = "The url field is required.";
+  }
+
+  GURL gurl(url);
+  if (error_message.empty() && !gurl.is_valid()) {
+    error_message = "Url is not valid.";
+  }
+
+  if (!error_message.empty()) {
+     RunSetCookiesCallbackOnUIThread(nullptr, error_message, false, callback);
+     return;
+  }
+
+  // The filter will be deleted manually after callback function finishes.
+  base::DictionaryValue* details = options.DeepCopyWithoutEmptyChildren();
+
+  content::BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
+      base::Bind(&Cookies::SetCookiesOnIOThread, base::Unretained(this),
+        details, gurl, callback));
+}
+
+void Cookies::SetCookiesOnIOThread(const base::DictionaryValue* details,
+                                   const GURL& url,
+                                   const CookiesCallback& callback) {
+  DCHECK_CURRENTLY_ON(BrowserThread::IO);
+  net::CookieStore* cookie_store =
+      AtomBrowserContext::Get()->url_request_context_getter()
+      ->GetURLRequestContext()->cookie_store();
+
+  std::string name, value, domain, path;
+  bool secure = false;
+  bool http_only = false;
+  double expiration_date;
+
+  details->GetString("name", &name);
+  details->GetString("value", &value);
+  details->GetString("domain", &domain);
+  details->GetString("path", &path);
+  details->GetBoolean("secure", &secure);
+  details->GetBoolean("http_only", &http_only);
+
+  base::Time expiration_time;
+  if (details->GetDouble("expirationDate", &expiration_date)) {
+    expiration_time = (expiration_date == 0) ?
+        base::Time::UnixEpoch() :
+        base::Time::FromDoubleT(expiration_date);
+  }
+
+  cookie_store->GetCookieMonster()->SetCookieWithDetailsAsync(
+      url,
+      name,
+      value,
+      domain,
+      path,
+      expiration_time,
+      secure,
+      http_only,
+      false,
+      net::COOKIE_PRIORITY_DEFAULT,
+      base::Bind(&Cookies::OnSetCookies, base::Unretained(this), details,
+          callback));
+}
+
+void Cookies::OnSetCookies(const base::DictionaryValue* details,
+                           const CookiesCallback& callback,
+                           bool set_success) {
+  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
+      base::Bind(&RunSetCookiesCallbackOnUIThread, details, "", set_success,
+          callback));
+}
+
 mate::ObjectTemplateBuilder Cookies::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("get", &Cookies::Get)
-      .SetMethod("remove", &Cookies::Remove);
+      .SetMethod("remove", &Cookies::Remove)
+      .SetMethod("set", &Cookies::Set);
 }
 
 // static

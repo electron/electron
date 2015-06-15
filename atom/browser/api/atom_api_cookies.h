@@ -35,6 +35,8 @@ class Cookies : public mate::Wrappable {
            const CookiesCallback& callback);
   void Remove(const base::DictionaryValue& details,
               const CookiesCallback& callback);
+  void Set(const base::DictionaryValue& details,
+           const CookiesCallback& callback);
 
   void GetCookiesOnIOThread(const base::DictionaryValue* filter,
                             const CookiesCallback& callback);
@@ -46,6 +48,13 @@ class Cookies : public mate::Wrappable {
                                const std::string& name,
                                const CookiesCallback& callback);
   void OnRemoveCookies(const CookiesCallback& callback);
+
+  void SetCookiesOnIOThread(const base::DictionaryValue* details,
+                            const GURL& url,
+                            const CookiesCallback& callback);
+  void OnSetCookies(const base::DictionaryValue* details,
+                    const CookiesCallback& callback,
+                    bool set_success);
 
 
   // mate::Wrappable implementations:
