@@ -5,18 +5,29 @@ CallbacksRegistry = require 'callbacks-registry'
 
 callbacksRegistry = new CallbacksRegistry
 
+# Check for circular reference.
+isCircular = (field, visited) ->
+  if typeof field is 'object'
+    if field in visited
+      return true
+    visited.push field
+  return false
+
 # Convert the arguments object into an array of meta data.
-wrapArgs = (args) ->
+wrapArgs = (args, visited=[]) ->
   valueToMeta = (value) ->
     if Array.isArray value
-      type: 'array', value: wrapArgs(value)
+      type: 'array', value: wrapArgs(value, visited)
     else if Buffer.isBuffer value
       type: 'buffer', value: Array::slice.call(value, 0)
     else if value? and typeof value is 'object' and v8Util.getHiddenValue value, 'atomId'
       type: 'remote-object', id: v8Util.getHiddenValue value, 'atomId'
     else if value? and typeof value is 'object'
       ret = type: 'object', name: value.constructor.name, members: []
-      ret.members.push(name: prop, value: valueToMeta(field)) for prop, field of value
+      for prop, field of value
+        ret.members.push
+          name: prop
+          value: valueToMeta(if isCircular(field, visited) then null else field)
       ret
     else if typeof value is 'function' and v8Util.getHiddenValue value, 'returnValue'
       type: 'function-with-return-value', value: valueToMeta(value())
