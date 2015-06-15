@@ -1,4 +1,9 @@
-autoUpdater = process.atomBinding('auto_updater').autoUpdater
+switch process.platform
+  when 'darwin'
+    autoUpdater = process.atomBinding('auto_updater').autoUpdater
+  when 'win32'
+    autoUpdater = require('./auto-updater-win')
+
 EventEmitter = require('events').EventEmitter
 
 autoUpdater.__proto__ = EventEmitter.prototype
