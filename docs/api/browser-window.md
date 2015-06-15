@@ -877,6 +877,16 @@ Injects CSS into this page.
 
 Evaluates `code` in page.
 
+### WebContents.setAudioMuted(muted)
+
++ `muted` Boolean
+
+Set the page muted.
+
+### WebContents.isAudioMuted()
+
+Returns whether this page has been muted.
+
 ### WebContents.undo()
 
 Executes editing command `undo` in page.
