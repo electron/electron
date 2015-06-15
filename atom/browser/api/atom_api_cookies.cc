@@ -99,8 +99,13 @@ void RunSetCookiesCallbackOnUIThread(const base::DictionaryValue* details,
     callback.Run(error, v8::Null(isolate));
     return;
   }
+  if (!set_success) {
+    v8::Local<v8::String> error = v8::String::NewFromUtf8(isolate,
+       "Failed to set cookies");
+    callback.Run(error, v8::Null(isolate));
+  }
 
-  callback.Run(v8::Null(isolate), v8::Boolean::New(isolate, set_success));
+  callback.Run(v8::Null(isolate), v8::Null(isolate));
 }
 
 bool MatchesDomain(const base::DictionaryValue* filter,
