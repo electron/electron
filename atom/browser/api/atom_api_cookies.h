@@ -23,7 +23,7 @@ class Cookies : public mate::Wrappable {
  public:
   // node.js style callback function(error, result)
   typedef base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>
-      GetCookiesCallback;
+      CookiesCallback;
 
   static mate::Handle<Cookies> Create(v8::Isolate* isolate);
 
@@ -32,14 +32,21 @@ class Cookies : public mate::Wrappable {
   ~Cookies();
 
   void Get(const base::DictionaryValue& options,
-           const GetCookiesCallback& callback);
+           const CookiesCallback& callback);
+  void Remove(const base::DictionaryValue& details,
+              const CookiesCallback& callback);
 
   void GetCookiesOnIOThread(const base::DictionaryValue* filter,
-                            const GetCookiesCallback& callback);
-
+                            const CookiesCallback& callback);
   void OnGetCookies(const base::DictionaryValue* filter,
-                    const GetCookiesCallback& callback,
+                    const CookiesCallback& callback,
                     const net::CookieList& cookie_list);
+
+  void RemoveCookiesOnIOThread(const GURL& url,
+                               const std::string& name,
+                               const CookiesCallback& callback);
+  void OnRemoveCookies(const CookiesCallback& callback);
+
 
   // mate::Wrappable implementations:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(

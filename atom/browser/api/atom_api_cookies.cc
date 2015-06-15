@@ -43,7 +43,7 @@ bool GetCookieListFromStore(net::CookieStore* cookie_store,
 
 void RunGetCookiesCallbackOnUIThread(const base::DictionaryValue* filter,
     const std::string& error_message, const net::CookieList& cookie_list,
-    const atom::api::Cookies::GetCookiesCallback& callback) {
+    const atom::api::Cookies::CookiesCallback& callback) {
   // Should release filter here.
   delete filter;
 
@@ -59,6 +59,22 @@ void RunGetCookiesCallbackOnUIThread(const base::DictionaryValue* filter,
   }
   callback.Run(v8::Null(isolate),
       mate::Converter<net::CookieList>::ToV8(isolate, cookie_list));
+}
+
+void RunRemoveCookiesCallbackOnUIThread(const std::string& error_message,
+    const atom::api::Cookies::CookiesCallback& callback) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+
+  if (!error_message.empty()) {
+    v8::Local<v8::String> error = v8::String::NewFromUtf8(isolate,
+        error_message.c_str());
+    callback.Run(error, v8::Null(isolate));
+    return;
+  }
+
+  callback.Run(v8::Null(isolate), v8::Null(isolate));
 }
 
 bool MatchesDomain(const base::DictionaryValue* filter,
@@ -143,7 +159,7 @@ Cookies::~Cookies() {
 }
 
 void Cookies::Get(const base::DictionaryValue& options,
-    const GetCookiesCallback& callback) {
+                  const CookiesCallback& callback) {
   // The filter will be deleted manually after callback function finishes.
   base::DictionaryValue* filter = options.DeepCopyWithoutEmptyChildren();
 
@@ -153,7 +169,7 @@ void Cookies::Get(const base::DictionaryValue& options,
 }
 
 void Cookies::GetCookiesOnIOThread(const base::DictionaryValue* filter,
-    const GetCookiesCallback& callback) {
+                                   const CookiesCallback& callback) {
   net::CookieStore* cookie_store =
       AtomBrowserContext::Get()->url_request_context_getter()
       ->GetURLRequestContext()->cookie_store();
@@ -163,13 +179,13 @@ void Cookies::GetCookiesOnIOThread(const base::DictionaryValue* filter,
           base::Bind(&Cookies::OnGetCookies, base::Unretained(this), filter,
               callback))) {
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-      base::Bind(&RunGetCookiesCallbackOnUIThread, filter, "url is not valid",
+      base::Bind(&RunGetCookiesCallbackOnUIThread, filter, "Url is not valid",
         net::CookieList(), callback));
   }
 }
 
 void Cookies::OnGetCookies(const base::DictionaryValue* filter,
-                           const GetCookiesCallback& callback,
+                           const CookiesCallback& callback,
                            const net::CookieList& cookie_list) {
   net::CookieList result;
   for (const auto& cookie : cookie_list) {
@@ -180,10 +196,45 @@ void Cookies::OnGetCookies(const base::DictionaryValue* filter,
         &RunGetCookiesCallbackOnUIThread, filter, "", result, callback));
 }
 
+void Cookies::Remove(const base::DictionaryValue& details,
+                     const CookiesCallback& callback) {
+  std::string url, name;
+  std::string error_message;
+  if (!details.GetString("url", &url) || !details.GetString("name", &name)) {
+    error_message = "Details(url, name) of removing cookie are required.";
+  }
+  GURL gurl(url);
+  if (error_message.empty() && !gurl.is_valid()) {
+    error_message = "Url is not valid.";
+  }
+  if (!error_message.empty()) {
+     RunRemoveCookiesCallbackOnUIThread(error_message, callback);
+     return;
+  }
+  content::BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
+      base::Bind(&Cookies::RemoveCookiesOnIOThread, base::Unretained(this),
+        gurl, name, callback));
+}
+
+void Cookies::RemoveCookiesOnIOThread(const GURL& url, const std::string& name,
+    const CookiesCallback& callback) {
+  net::CookieStore* cookie_store =
+      AtomBrowserContext::Get()->url_request_context_getter()
+      ->GetURLRequestContext()->cookie_store();
+  cookie_store->DeleteCookieAsync(url, name,
+      base::Bind(&Cookies::OnRemoveCookies, base::Unretained(this), callback));
+}
+
+void Cookies::OnRemoveCookies(const CookiesCallback& callback) {
+  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
+      base::Bind(&RunRemoveCookiesCallbackOnUIThread, "", callback));
+}
+
 mate::ObjectTemplateBuilder Cookies::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
-      .SetMethod("get", &Cookies::Get);
+      .SetMethod("get", &Cookies::Get)
+      .SetMethod("remove", &Cookies::Remove);
 }
 
 // static
