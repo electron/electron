@@ -172,7 +172,7 @@ struct Converter<net::CanonicalCookie> {
   }
 };
 
-}
+}  // namespace mate
 
 namespace atom {
 

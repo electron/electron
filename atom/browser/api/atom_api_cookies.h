@@ -69,4 +69,4 @@ class Cookies : public mate::Wrappable {
 
 }  // namespace atom
 
-#endif // ATOM_BROWSER_API_ATOM_API_COOKIES_H_
+#endif  // ATOM_BROWSER_API_ATOM_API_COOKIES_H_
