@@ -40,6 +40,19 @@ void StopWorker(int document_cookie) {
   }
 }
 
+char* CopyPDFDataOnIOThread(
+    const PrintHostMsg_DidPreviewDocument_Params& params) {
+  DCHECK_CURRENTLY_ON(BrowserThread::IO);
+  scoped_ptr<base::SharedMemory> shared_buf(
+      new base::SharedMemory(params.metafile_data_handle, true));
+  if (!shared_buf->Map(params.data_size))
+    return nullptr;
+  char* memory_pdf_data = static_cast<char*>(shared_buf->memory());
+  char* pdf_data = new char[params.data_size];
+  memcpy(pdf_data, memory_pdf_data, params.data_size);
+  return pdf_data;
+}
+
 }  // namespace
 
 namespace printing {
@@ -64,22 +77,20 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
     return;
   }
 
-  scoped_ptr<base::SharedMemory> shared_buf(
-      new base::SharedMemory(params.metafile_data_handle, true));
-  if (!shared_buf->Map(params.data_size)) {
-    RunPrintToPDFCallback(params.preview_request_id, nullptr, 0);
-    return;
-  }
-
-  RunPrintToPDFCallback(params.preview_request_id,
-      static_cast<char*>(shared_buf->memory()),
-      params.data_size);
+  BrowserThread::PostTaskAndReplyWithResult(
+      BrowserThread::IO,
+      FROM_HERE,
+      base::Bind(&CopyPDFDataOnIOThread, params),
+      base::Bind(&PrintPreviewMessageHandler::RunPrintToPDFCallback,
+                 base::Unretained(this),
+                 params.preview_request_id,
+                 params.data_size));
 }
 
 void PrintPreviewMessageHandler::OnPrintPreviewFailed(int document_cookie,
                                                       int request_id) {
   StopWorker(document_cookie);
-  RunPrintToPDFCallback(request_id, nullptr, 0);
+  RunPrintToPDFCallback(request_id, 0, nullptr);
 }
 
 bool PrintPreviewMessageHandler::OnMessageReceived(
@@ -107,12 +118,14 @@ void PrintPreviewMessageHandler::PrintToPDF(
 }
 
 void PrintPreviewMessageHandler::RunPrintToPDFCallback(
-     int request_id, char* data, uint32 data_size) {
+     int request_id, uint32 data_size, char* data) {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   if (data) {
-    v8::Local<v8::Value> buffer = node::Buffer::New(isolate,
+    v8::Local<v8::Value> buffer = node::Buffer::Use(isolate,
         data, static_cast<size_t>(data_size));
     print_to_pdf_callback_map_[request_id].Run(v8::Null(isolate), buffer);
   } else {

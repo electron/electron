@@ -47,8 +47,7 @@ class PrintPreviewMessageHandler
       const PrintHostMsg_DidPreviewDocument_Params& params);
   void OnPrintPreviewFailed(int document_cookie, int request_id);
 
-  void RunPrintToPDFCallback(
-     int request_id, char* data, uint32 data_size);
+  void RunPrintToPDFCallback(int request_id, uint32 data_size, char* data);
 
   PrintToPDFCallbackMap print_to_pdf_callback_map_;
 
