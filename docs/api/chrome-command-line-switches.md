@@ -19,6 +19,10 @@ app.on('ready', function() {
 
 Sets `path` of client certificate file.
 
+## --ignore-connections-limit=`domains`
+
+Ignore the connections limit for `domains` list seperated by `,`.
+
 ## --disable-http-cache
 
 Disables the disk cache for HTTP requests.
