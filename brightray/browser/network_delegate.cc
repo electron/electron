@@ -4,11 +4,30 @@
 
 #include "browser/network_delegate.h"
 
+#include <string>
+#include <vector>
+
+#include "base/command_line.h"
+#include "base/strings/string_split.h"
+#include "net/base/load_flags.h"
 #include "net/base/net_errors.h"
+#include "net/url_request/url_request.h"
 
 namespace brightray {
 
+namespace {
+
+// Ignore the limit of 6 connections per host.
+const char kIgnoreConnectionsLimit[] = "ignore-connections-limit";
+
+}  // namespace
+
 NetworkDelegate::NetworkDelegate() {
+  auto command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(kIgnoreConnectionsLimit)) {
+    std::string value = command_line->GetSwitchValueASCII(kIgnoreConnectionsLimit);
+    base::SplitString(value, ',', &ignore_connections_limit_domains_);
+  }
 }
 
 NetworkDelegate::~NetworkDelegate() {
@@ -18,6 +37,15 @@ int NetworkDelegate::OnBeforeURLRequest(
     net::URLRequest* request,
     const net::CompletionCallback& callback,
     GURL* new_url) {
+  for (const auto& domain : ignore_connections_limit_domains_) {
+    if (request->url().DomainIs(domain.c_str(), domain.size())) {
+      // Allow unlimited concurrent connections.
+      request->SetPriority(net::MAXIMUM_PRIORITY);
+      request->SetLoadFlags(request->load_flags() | net::LOAD_IGNORE_LIMITS);
+      break;
+    }
+  }
+
   return net::OK;
 }
 

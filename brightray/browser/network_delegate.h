@@ -5,6 +5,9 @@
 #ifndef BRIGHTRAY_BROWSER_NETWORK_DELEGATE_H_
 #define BRIGHTRAY_BROWSER_NETWORK_DELEGATE_H_
 
+#include <string>
+#include <vector>
+
 #include "net/base/network_delegate.h"
 
 namespace brightray {
@@ -69,6 +72,8 @@ class NetworkDelegate : public net::NetworkDelegate {
       const GURL& referrer_url) const override;
 
  private:
+  std::vector<std::string> ignore_connections_limit_domains_;
+
   DISALLOW_COPY_AND_ASSIGN(NetworkDelegate);
 };
 
