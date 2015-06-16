@@ -7,7 +7,10 @@ class AutoUpdater
   quitAndInstall: ->
     # TODO
 
-  setFeedUrl: (@updateUrl) ->
+  setFeedUrl: (updateUrl) ->
+    # set feed URL only when it hasn't been set before
+    unless @updateUrl
+      @updateUrl = updateUrl
 
   checkForUpdates: ->
     throw new Error('Update URL is not set') unless @updateUrl

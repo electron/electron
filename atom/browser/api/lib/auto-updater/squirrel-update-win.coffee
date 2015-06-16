@@ -2,8 +2,8 @@ ChildProcess = require 'child_process'
 fs           = require 'fs'
 path         = require 'path'
 
-appFolder             = path.resolve(process.execPath, '..') # i.e. my-app/app-0.1.13/
-rootApplicationFolder = path.resolve(appFolder, '..') # i.e. my-app/
+appFolder             = path.dirname(process.execPath) # i.e. my-app/app-0.1.13/
+rootApplicationFolder = path.resolve(appFolder, '..')  # i.e. my-app/
 updateDotExe          = path.join(rootApplicationFolder, 'Update.exe')
 exeName               = path.basename(process.execPath)
 

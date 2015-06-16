@@ -1,8 +1,9 @@
 switch process.platform
-  when 'darwin'
-    autoUpdater = process.atomBinding('auto_updater').autoUpdater
   when 'win32'
-    autoUpdater = require('./auto-updater-win')
+    autoUpdater = require('./auto-updater/auto-updater-win')
+  default
+    # take the default binding for the current platform
+    autoUpdater = process.atomBinding('auto_updater').autoUpdater
 
 EventEmitter = require('events').EventEmitter
 
