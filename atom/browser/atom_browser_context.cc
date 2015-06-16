@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/atom_network_delegate.h"
 
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
@@ -110,6 +111,10 @@ content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
 AtomBrowserContext* AtomBrowserContext::Get() {
   return static_cast<AtomBrowserContext*>(
       AtomBrowserMainParts::Get()->browser_context());
+}
+
+net::NetworkDelegate* AtomBrowserContext::CreateNetworkDelegate() {
+  return new NetworkDelegate;
 }
 
 }  // namespace atom
