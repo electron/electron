@@ -151,6 +151,8 @@
               '_LARGEFILE_SOURCE',
               '_LARGEFILE64_SOURCE',
               '_FILE_OFFSET_BITS=64',
+              # Relying on openssl cert store until crbug.com/462040
+              'USE_OPENSSL_CERTS',
             ],
             'cflags_cc': [
               '-D__STRICT_ANSI__',
