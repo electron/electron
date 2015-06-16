@@ -250,6 +250,16 @@ Starts inspecting element at position (`x`, `y`) of guest page.
 
 Opens the devtools for the service worker context present in the guest page.
 
+### `<webview>`.setAudioMuted(muted)
+
++ `muted` Boolean
+
+Set guest page muted.
+
+### `<webview>`.isAudioMuted()
+
+Returns whether guest page has been muted.
+
 ### `<webview>`.undo()
 
 Executes editing command `undo` in page.

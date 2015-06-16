@@ -580,6 +580,14 @@ void WebContents::UnregisterServiceWorker(
                                    callback);
 }
 
+void WebContents::SetAudioMuted(bool muted) {
+  web_contents()->SetAudioMuted(muted);
+}
+
+bool WebContents::IsAudioMuted() {
+  return web_contents()->IsAudioMuted();
+}
+
 void WebContents::Undo() {
   web_contents()->Undo();
 }
@@ -731,6 +739,8 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
         .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)
         .SetMethod("inspectElement", &WebContents::InspectElement)
+        .SetMethod("setAudioMuted", &WebContents::SetAudioMuted)
+        .SetMethod("isAudioMuted", &WebContents::IsAudioMuted)
         .SetMethod("undo", &WebContents::Undo)
         .SetMethod("redo", &WebContents::Redo)
         .SetMethod("cut", &WebContents::Cut)
