@@ -312,6 +312,10 @@ Executes editing command `replaceMisspelling` in page.
 
 Prints webview's web page. Same with `webContents.print([options])`.
 
+### `<webview>.printToPDF(options, callback)`
+
+Prints webview's web page as PDF, Same with `webContents.printToPDF(options, callback)`
+
 ### `<webview>`.send(channel[, args...])
 
 * `channel` String
