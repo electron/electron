@@ -239,6 +239,10 @@ class WebContents : public mate::EventEmitter,
   // Returns the default size of the guestview.
   gfx::Size GetDefaultSize() const;
 
+  v8::Local<v8::Value> Session(v8::Isolate* isolate);
+
+  v8::Global<v8::Value> session_;
+
   // Stores whether the contents of the guest can be transparent.
   bool guest_opaque_;
 

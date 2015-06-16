@@ -32,7 +32,6 @@ Modules for the main process:
 * [auto-updater](api/auto-updater.md)
 * [browser-window](api/browser-window.md)
 * [content-tracing](api/content-tracing.md)
-* [cookies](api/cookies.md)
 * [dialog](api/dialog.md)
 * [global-shortcut](api/global-shortcut.md)
 * [ipc (main process)](api/ipc-main-process.md)

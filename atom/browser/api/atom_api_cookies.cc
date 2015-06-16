@@ -353,16 +353,3 @@ mate::Handle<Cookies> Cookies::Create(v8::Isolate* isolate) {
 }  // namespace api
 
 }  // namespace atom
-
-namespace {
-
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary dict(isolate, exports);
-  dict.Set("cookies", atom::api::Cookies::Create(isolate));
-}
-
-}  // namespace
-
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_cookies, Initialize);
