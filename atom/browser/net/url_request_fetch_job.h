@@ -45,6 +45,7 @@ class URLRequestFetchJob : public net::URLRequestJob,
 
  private:
   GURL url_;
+  scoped_ptr<net::URLFetcher> fetcher_;
   scoped_refptr<net::DrainableIOBuffer> buffer_;
 
   base::WeakPtrFactory<URLRequestFetchJob> weak_ptr_factory_;

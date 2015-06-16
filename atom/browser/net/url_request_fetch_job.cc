@@ -24,14 +24,12 @@ URLRequestFetchJob::URLRequestFetchJob(
 URLRequestFetchJob::~URLRequestFetchJob() {}
 
 void URLRequestFetchJob::Start() {
-  net::URLFetcher* fetcher = net::URLFetcher::Create(url_,
-                                                     net::URLFetcher::GET,
-                                                     this);
+  fetcher_.reset(net::URLFetcher::Create(url_, net::URLFetcher::GET, this));
   auto context = AtomBrowserContext::Get()->url_request_context_getter();
-  fetcher->SetRequestContext(context);
-  fetcher->SaveResponseWithWriter(scoped_ptr<net::URLFetcherResponseWriter>(
+  fetcher_->SetRequestContext(context);
+  fetcher_->SaveResponseWithWriter(scoped_ptr<net::URLFetcherResponseWriter>(
       this));
-  fetcher->Start();
+  fetcher_->Start();
 }
 
 void URLRequestFetchJob::Kill() {
