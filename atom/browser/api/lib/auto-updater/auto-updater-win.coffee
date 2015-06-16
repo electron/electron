@@ -1,8 +1,7 @@
 {EventEmitter} = require 'events'
 SquirrelUpdate = require './auto-updater/squirrel-update-win'
 
-class AutoUpdater
-  @__proto__ = EventEmitter.prototype
+class AutoUpdater extends EventEmitter
 
   quitAndInstall: ->
     # TODO
