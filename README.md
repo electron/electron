@@ -39,6 +39,8 @@ Guides and the API reference are located in the
 [docs](https://github.com/atom/electron/tree/master/docs) directory. It also
 contains documents describing how to build and contribute to Electron.
 
+(You can also uses [docs-ko](./docs/README-ko.md) documents for korean users)
+
 ## Community
 
 There is an [`electron` category on the Atom forums](http://discuss.atom.io/category/electron)
