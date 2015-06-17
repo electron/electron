@@ -46,7 +46,9 @@ struct PrintMsg_Print_Params {
   int document_cookie;
   bool selection_only;
   bool supports_alpha_blend;
+  int preview_request_id;
   blink::WebPrintScalingOption print_scaling_option;
+  bool print_to_pdf;
   base::string16 title;
   base::string16 url;
   bool should_print_backgrounds;
@@ -185,6 +187,27 @@ IPC_STRUCT_BEGIN(PrintHostMsg_ScriptedPrint_Params)
   IPC_STRUCT_MEMBER(printing::MarginType, margin_type)
 IPC_STRUCT_END()
 
+// Parameters to describe a rendered document.
+IPC_STRUCT_BEGIN(PrintHostMsg_DidPreviewDocument_Params)
+  // A shared memory handle to metafile data.
+  IPC_STRUCT_MEMBER(base::SharedMemoryHandle, metafile_data_handle)
+
+  // Size of metafile data.
+  IPC_STRUCT_MEMBER(uint32, data_size)
+
+  // Cookie for the document to ensure correctness.
+  IPC_STRUCT_MEMBER(int, document_cookie)
+
+  // Store the expected pages count.
+  IPC_STRUCT_MEMBER(int, expected_pages_count)
+
+  // Whether the preview can be modified.
+  IPC_STRUCT_MEMBER(bool, modifiable)
+
+  // The id of the preview request.
+  IPC_STRUCT_MEMBER(int, preview_request_id)
+IPC_STRUCT_END()
+
 
 // Messages sent from the browser to the renderer.
 
@@ -197,6 +220,12 @@ IPC_MESSAGE_ROUTED2(PrintMsg_PrintPages,
 // Tells the render view that printing is done so it can clean up.
 IPC_MESSAGE_ROUTED1(PrintMsg_PrintingDone,
                     bool /* success */)
+
+// Tells the render view to switch the CSS to print media type, renders every
+// requested pages for print preview using the given |settings|. This gets
+// called multiple times as the user updates settings.
+IPC_MESSAGE_ROUTED1(PrintMsg_PrintPreview,
+                    base::DictionaryValue /* settings */)
 
 // Messages sent from the renderer to the browser.
 
@@ -231,6 +260,14 @@ IPC_MESSAGE_ROUTED1(PrintHostMsg_DidPrintPage,
 IPC_SYNC_MESSAGE_ROUTED0_1(PrintHostMsg_GetDefaultPrintSettings,
                            PrintMsg_Print_Params /* default_settings */)
 
+// The renderer wants to update the current print settings with new
+// |job_settings|.
+IPC_SYNC_MESSAGE_ROUTED2_2(PrintHostMsg_UpdatePrintSettings,
+                           int /* document_cookie */,
+                           base::DictionaryValue /* job_settings */,
+                           PrintMsg_PrintPages_Params /* current_settings */,
+                           bool /* canceled */)
+
 // It's the renderer that controls the printing process when it is generated
 // by javascript. This step is about showing UI to the user to select the
 // final print settings. The output parameter is the same as
@@ -247,6 +284,15 @@ IPC_MESSAGE_ROUTED0(PrintHostMsg_ShowInvalidPrinterSettingsError)
 IPC_MESSAGE_ROUTED1(PrintHostMsg_PrintingFailed,
                     int /* document cookie */)
 
+// Sends back to the browser the complete rendered document (non-draft mode,
+// used for printing) that was requested by a PrintMsg_PrintPreview message.
+// The memory handle in this message is already valid in the browser process.
+IPC_MESSAGE_ROUTED1(PrintHostMsg_MetafileReadyForPrinting,
+                    PrintHostMsg_DidPreviewDocument_Params /* params */)
+
+IPC_MESSAGE_ROUTED2(PrintHostMsg_PrintPreviewFailed,
+                    int /* document cookie */,
+                    int /* request_id */);
 
 #if defined(OS_WIN)
 // Tell the utility process to start rendering the given PDF into a metafile.

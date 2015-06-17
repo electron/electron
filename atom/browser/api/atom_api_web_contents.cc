@@ -18,6 +18,8 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
+#include "chrome/browser/printing/print_view_manager_basic.h"
+#include "chrome/browser/printing/print_preview_message_handler.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/guest_host.h"
 #include "content/public/browser/navigation_details.h"
@@ -40,6 +42,15 @@
 
 #include "atom/common/node_includes.h"
 
+namespace {
+
+struct PrintSettings {
+  bool silent;
+  bool print_background;
+};
+
+}  // namespace
+
 namespace mate {
 
 template<>
@@ -60,6 +71,19 @@ struct Converter<atom::api::SetSizeParams> {
       out->max_size.reset(new gfx::Size(size));
     if (params.Get("normal", &size))
       out->normal_size.reset(new gfx::Size(size));
+    return true;
+  }
+};
+
+template<>
+struct Converter<PrintSettings> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     PrintSettings* out) {
+    mate::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+    dict.Get("silent", &(out->silent));
+    dict.Get("printBackground", &(out->print_background));
     return true;
   }
 };
@@ -588,6 +612,23 @@ bool WebContents::IsAudioMuted() {
   return web_contents()->IsAudioMuted();
 }
 
+void WebContents::Print(mate::Arguments* args) {
+  PrintSettings settings = { false, false };
+  if (args->Length() == 1 && !args->GetNext(&settings)) {
+    args->ThrowError();
+    return;
+  }
+
+  printing::PrintViewManagerBasic::FromWebContents(web_contents())->
+      PrintNow(settings.silent, settings.print_background);
+}
+
+void WebContents::PrintToPDF(const base::DictionaryValue& setting,
+                             const PrintToPDFCallback& callback) {
+  printing::PrintPreviewMessageHandler::FromWebContents(web_contents())->
+      PrintToPDF(setting, callback);
+}
+
 void WebContents::Undo() {
   web_contents()->Undo();
 }
@@ -760,6 +801,8 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("unregisterServiceWorker",
                    &WebContents::UnregisterServiceWorker)
         .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
+        .SetMethod("print", &WebContents::Print)
+        .SetMethod("_printToPDF", &WebContents::PrintToPDF)
         .Build());
 
   return mate::ObjectTemplateBuilder(

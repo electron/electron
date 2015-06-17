@@ -52,6 +52,10 @@ class WebContents : public mate::EventEmitter,
                     public content::WebContentsObserver,
                     public content::GpuDataManagerObserver {
  public:
+  // For node.js callback function type: function(error, buffer)
+  typedef base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>
+      PrintToPDFCallback;
+
   // Create from an existing WebContents.
   static mate::Handle<WebContents> CreateFrom(
       v8::Isolate* isolate, brightray::InspectableWebContents* web_contents);
@@ -89,6 +93,11 @@ class WebContents : public mate::EventEmitter,
   void UnregisterServiceWorker(const base::Callback<void(bool)>&);
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
+  void Print(mate::Arguments* args);
+
+  // Print current page as PDF.
+  void PrintToPDF(const base::DictionaryValue& setting,
+                  const PrintToPDFCallback& callback);
 
   // Editing commands.
   void Undo();

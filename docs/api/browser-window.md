@@ -556,20 +556,11 @@ process.
 
 ### BrowserWindow.print([options])
 
-* `options` Object
-  * `silent` Boolean - Don't ask user for print settings, defaults to `false`
-  * `printBackground` Boolean - Also prints the background color and image of
-    the web page, defaults to `false`.
+Same with `webContents.print([options])`
 
-Prints window's web page. When `silent` is set to `false`, Electron will pick
-up system's default printer and default settings for printing.
+### BrowserWindow.printToPDF(options, callback)
 
-Calling `window.print()` in web page is equivalent to call
-`BrowserWindow.print({silent: false, printBackground: false})`.
-
-**Note:** On Windows, the print API relies on `pdf.dll`. If your application
-doesn't need print feature, you can safely remove `pdf.dll` in saving binary
-size.
+Same with `webContents.printToPDF(options, callback)`
 
 ### BrowserWindow.loadUrl(url, [options])
 
@@ -949,6 +940,45 @@ response to `callback`.
 Unregisters any serviceworker if present and returns boolean as
 response to `callback` when the JS promise is fullfilled or false
 when the JS promise is rejected.  
+
+### WebContents.print([options])
+
+* `options` Object
+  * `silent` Boolean - Don't ask user for print settings, defaults to `false`
+  * `printBackground` Boolean - Also prints the background color and image of
+    the web page, defaults to `false`.
+
+Prints window's web page. When `silent` is set to `false`, Electron will pick
+up system's default printer and default settings for printing.
+
+Calling `window.print()` in web page is equivalent to call
+`WebContents.print({silent: false, printBackground: false})`.
+
+**Note:** On Windows, the print API relies on `pdf.dll`. If your application
+doesn't need print feature, you can safely remove `pdf.dll` in saving binary
+size.
+
+### WebContents.printToPDF(options, callback)
+
+* `options` Object
+  * `marginsType` Integer - Specify the type of margins to use
+    * 0 - default
+    * 1 - none
+    * 2 - minimum
+  * `printBackground` Boolean - Whether to print CSS backgrounds.
+  * `printSelectionOnly` Boolean - Whether to print selection only.
+  * `landscape` Boolean - `true` for landscape, `false` for portrait.
+
+* `callback` Function - `function(error, data) {}`
+  * `error` Error
+  * `data` Buffer - PDF file content
+
+Prints windows' web page as PDF with Chromium's preview printing custom
+settings.
+
+By default, the options will be
+`{marginsType:0, printBackgrounds:false, printSelectionOnly:false,
+  landscape:false}`.
 
 ### WebContents.send(channel[, args...])
 

@@ -24,6 +24,36 @@ namespace printing {
 
 using blink::WebFrame;
 
+bool PrintWebViewHelper::RenderPreviewPage(
+    int page_number,
+    const PrintMsg_Print_Params& print_params) {
+  PrintMsg_PrintPage_Params page_params;
+  page_params.params = print_params;
+  page_params.page_number = page_number;
+  scoped_ptr<PdfMetafileSkia> draft_metafile;
+  PdfMetafileSkia* initial_render_metafile = print_preview_context_.metafile();
+  if (print_preview_context_.IsModifiable() && is_print_ready_metafile_sent_) {
+    draft_metafile.reset(new PdfMetafileSkia);
+    initial_render_metafile = draft_metafile.get();
+  }
+
+  base::TimeTicks begin_time = base::TimeTicks::Now();
+  PrintPageInternal(page_params,
+                    print_preview_context_.prepared_frame(),
+                    initial_render_metafile);
+  print_preview_context_.RenderedPreviewPage(
+      base::TimeTicks::Now() - begin_time);
+  if (draft_metafile.get()) {
+    draft_metafile->FinishDocument();
+  } else if (print_preview_context_.IsModifiable() &&
+             print_preview_context_.generate_draft_pages()) {
+    DCHECK(!draft_metafile.get());
+    draft_metafile =
+        print_preview_context_.metafile()->GetMetafileForCurrentPage();
+  }
+  return PreviewPageRendered(page_number, draft_metafile.get());
+}
+
 bool PrintWebViewHelper::PrintPagesNative(blink::WebFrame* frame,
                                           int page_count) {
   PdfMetafileSkia metafile;

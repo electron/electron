@@ -76,6 +76,19 @@ class PrintWebViewHelper
     OK,
     FAIL_PRINT_INIT,
     FAIL_PRINT,
+    FAIL_PREVIEW,
+  };
+
+  enum PrintPreviewErrorBuckets {
+    PREVIEW_ERROR_NONE,  // Always first.
+    PREVIEW_ERROR_BAD_SETTING,
+    PREVIEW_ERROR_METAFILE_COPY_FAILED,
+    PREVIEW_ERROR_METAFILE_INIT_FAILED,
+    PREVIEW_ERROR_ZERO_PAGES,
+    PREVIEW_ERROR_MAC_DRAFT_METAFILE_INIT_FAILED,
+    PREVIEW_ERROR_PAGE_RENDERED_WITHOUT_METAFILE,
+    PREVIEW_ERROR_INVALID_PRINTER_SETTINGS,
+    PREVIEW_ERROR_LAST_ENUM  // Always last.
   };
 
   // RenderViewObserver implementation.
@@ -88,6 +101,8 @@ class PrintWebViewHelper
   void OnPrintPages(bool silent, bool print_background);
   void OnPrintingDone(bool success);
 #endif  // !DISABLE_BASIC_PRINTING
+  void OnPrintPreview(const base::DictionaryValue& settings);
+
 
   // Get |page_size| and |content_area| information from
   // |page_layout_in_points|.
@@ -98,6 +113,24 @@ class PrintWebViewHelper
 
   // Update |ignore_css_margins_| based on settings.
   void UpdateFrameMarginsCssInfo(const base::DictionaryValue& settings);
+
+  // Prepare frame for creating preview document.
+  void PrepareFrameForPreviewDocument();
+
+  // Continue creating preview document.
+  void OnFramePreparedForPreviewDocument();
+
+  // Finalize the print ready preview document.
+  bool FinalizePrintReadyDocument();
+
+  // Renders a print preview page. |page_number| is 0-based.
+  // Returns true if print preview should continue, false on failure.
+  bool RenderPreviewPage(int page_number,
+                         const PrintMsg_Print_Params& print_params);
+
+
+  // Initialize the print preview document.
+  bool CreatePreviewDocument();
 
   // Main printing code -------------------------------------------------------
 
@@ -119,6 +152,14 @@ class PrintWebViewHelper
   bool CalculateNumberOfPages(blink::WebLocalFrame* frame,
                               const blink::WebNode& node,
                               int* number_of_pages);
+
+  // Update the current print settings with new |passed_job_settings|.
+  // |passed_job_settings| dictionary contains print job details such as printer
+  // name, number of copies, page range, etc.
+  bool UpdatePrintSettings(blink::WebLocalFrame* frame,
+                           const blink::WebNode& node,
+                           const base::DictionaryValue& passed_job_settings);
+
 
   // Get final print settings from the user.
   // Return false if the user cancels or on error.
@@ -193,6 +234,13 @@ class PrintWebViewHelper
 
   // Script Initiated Printing ------------------------------------------------
 
+  // Notifies the browser a print preview page has been rendered.
+  // |page_number| is 0-based.
+  // For a valid |page_number| with modifiable content,
+  // |metafile| is the rendered page. Otherwise |metafile| is NULL.
+  // Returns true if print preview should continue, false on failure.
+  bool PreviewPageRendered(int page_number, PdfMetafileSkia* metafile);
+
   void SetPrintPagesParams(const PrintMsg_PrintPages_Params& settings);
 
   // WebView used only to print the selection.
@@ -213,9 +261,120 @@ class PrintWebViewHelper
   // True, when printing from print preview.
   bool print_for_preview_;
 
+  // Keeps track of the state of print preview between messages.
+  // TODO(vitalybuka): Create PrintPreviewContext when needed and delete after
+  // use. Now it's interaction with various messages is confusing.
+  class PrintPreviewContext {
+   public:
+    PrintPreviewContext();
+    ~PrintPreviewContext();
+
+    // Initializes the print preview context. Need to be called to set
+    // the |web_frame| / |web_node| to generate the print preview for.
+    void InitWithFrame(blink::WebLocalFrame* web_frame);
+    void InitWithNode(const blink::WebNode& web_node);
+
+    // Does bookkeeping at the beginning of print preview.
+    void OnPrintPreview();
+
+    // Create the print preview document. |pages| is empty to print all pages.
+    // Takes ownership of |prepared_frame|.
+    bool CreatePreviewDocument(PrepareFrameAndViewForPrint* prepared_frame,
+                               const std::vector<int>& pages);
+
+    // Called after a page gets rendered. |page_time| is how long the
+    // rendering took.
+    void RenderedPreviewPage(const base::TimeDelta& page_time);
+
+    // Updates the print preview context when the required pages are rendered.
+    void AllPagesRendered();
+
+    // Finalizes the print ready preview document.
+    void FinalizePrintReadyDocument();
+
+    // Cleanup after print preview finishes.
+    void Finished();
+
+    // Cleanup after print preview fails.
+    void Failed(bool report_error);
+
+    // Helper functions
+    int GetNextPageNumber();
+    bool IsRendering() const;
+    bool IsModifiable();
+    bool HasSelection();
+    bool IsLastPageOfPrintReadyMetafile() const;
+    bool IsFinalPageRendered() const;
+
+    // Setters
+    void set_generate_draft_pages(bool generate_draft_pages);
+    void set_error(enum PrintPreviewErrorBuckets error);
+
+    // Getters
+    // Original frame for which preview was requested.
+    blink::WebLocalFrame* source_frame();
+    // Original node for which preview was requested.
+    const blink::WebNode& source_node() const;
+
+    // Frame to be use to render preview. May be the same as source_frame(), or
+    // generated from it, e.g. copy of selected block.
+    blink::WebLocalFrame* prepared_frame();
+    // Node to be use to render preview. May be the same as source_node(), or
+    // generated from it, e.g. copy of selected block.
+    const blink::WebNode& prepared_node() const;
+
+    int total_page_count() const;
+    bool generate_draft_pages() const;
+    PdfMetafileSkia* metafile();
+    int last_error() const;
+
+   private:
+    enum State {
+      UNINITIALIZED,  // Not ready to render.
+      INITIALIZED,    // Ready to render.
+      RENDERING,      // Rendering.
+      DONE            // Finished rendering.
+    };
+
+    // Reset some of the internal rendering context.
+    void ClearContext();
+
+    // Specifies what to render for print preview.
+    FrameReference source_frame_;
+    blink::WebNode source_node_;
+
+    scoped_ptr<PrepareFrameAndViewForPrint> prep_frame_view_;
+    scoped_ptr<PdfMetafileSkia> metafile_;
+
+    // Total page count in the renderer.
+    int total_page_count_;
+
+    // The current page to render.
+    int current_page_index_;
+
+    // List of page indices that need to be rendered.
+    std::vector<int> pages_to_render_;
+
+    // True, when draft pages needs to be generated.
+    bool generate_draft_pages_;
+
+    // Specifies the total number of pages in the print ready metafile.
+    int print_ready_metafile_page_count_;
+
+    base::TimeDelta document_render_time_;
+    base::TimeTicks begin_time_;
+
+    enum PrintPreviewErrorBuckets error_;
+
+    State state_;
+  };
+
+
   bool print_node_in_progress_;
   bool is_loading_;
   bool is_scripted_preview_delayed_;
+
+  PrintPreviewContext print_preview_context_;
 
   // Used to fix a race condition where the source is a PDF and print preview
   // hangs because RequestPrintPreview is called before DidStopLoading() is
