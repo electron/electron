@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_NET_URL_REQUEST_FETCH_JOB_H_
 #define ATOM_BROWSER_NET_URL_REQUEST_FETCH_JOB_H_
 
+#include <string>
+
 #include "net/url_request/url_fetcher_delegate.h"
 #include "net/url_request/url_request_job.h"
 

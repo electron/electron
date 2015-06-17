@@ -5,6 +5,7 @@
 #include "atom/browser/net/url_request_fetch_job.h"
 
 #include <algorithm>
+#include <string>
 
 #include "atom/browser/atom_browser_context.h"
 #include "base/strings/string_util.h"
@@ -93,10 +94,11 @@ URLRequestFetchJob::URLRequestFetchJob(
   fetcher_->SaveResponseWithWriter(make_scoped_ptr(new ResponsePiper(this)));
 
   // Use |request|'s referrer if |referrer| is not specified.
-  if (referrer.empty())
+  if (referrer.empty()) {
     fetcher_->SetReferrer(request->referrer());
-  else
+  } else {
     fetcher_->SetReferrer(referrer);
+  }
 
   // Use |request|'s headers.
   net::HttpRequestHeaders headers;
@@ -117,7 +119,7 @@ int URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer, int num_bytes) {
   // Do nothing if pending_buffer_ is empty, i.e. there's no ReadRawData()
   // operation waiting for IO completion.
   if (!pending_buffer_.get())
-    return net::ERR_IO_PENDING;;
+    return net::ERR_IO_PENDING;
 
   // pending_buffer_ is set to the IOBuffer instance provided to ReadRawData()
   // by URLRequestJob.
