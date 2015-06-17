@@ -41,6 +41,8 @@ class AdapterRequestJob : public net::URLRequestJob {
   net::Filter* SetupFilter() const override;
   bool GetMimeType(std::string* mime_type) const override;
   bool GetCharset(std::string* charset) override;
+  void GetResponseInfo(net::HttpResponseInfo* info) override;
+  int GetResponseCode() const override;
 
   base::WeakPtr<AdapterRequestJob> GetWeakPtr();
 

@@ -116,8 +116,7 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
                        GetWeakPtr(), path));
         return;
       } else if (name == "RequestErrorJob") {
-        // Default value net::ERR_NOT_IMPLEMENTED
-        int error = -11;
+        int error = net::ERR_NOT_IMPLEMENTED;
         dict.Get("error", &error);
 
         BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,

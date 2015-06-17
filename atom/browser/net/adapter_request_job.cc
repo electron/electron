@@ -68,6 +68,14 @@ bool AdapterRequestJob::GetCharset(std::string* charset) {
   return real_job_->GetCharset(charset);
 }
 
+void AdapterRequestJob::GetResponseInfo(net::HttpResponseInfo* info) {
+  real_job_->GetResponseInfo(info);
+}
+
+int AdapterRequestJob::GetResponseCode() const {
+  return real_job_->GetResponseCode();
+}
+
 base::WeakPtr<AdapterRequestJob> AdapterRequestJob::GetWeakPtr() {
   return weak_factory_.GetWeakPtr();
 }
@@ -107,6 +115,11 @@ void AdapterRequestJob::CreateFileJobAndStart(const base::FilePath& path) {
 }
 
 void AdapterRequestJob::CreateHttpJobAndStart(const GURL& url) {
+  if (!url.is_valid()) {
+    CreateErrorJobAndStart(net::ERR_INVALID_URL);
+    return;
+  }
+
   real_job_ = new URLRequestFetchJob(request(), network_delegate(), url);
   real_job_->Start();
 }
