@@ -4,8 +4,10 @@
 
 #include "atom/browser/net/adapter_request_job.h"
 
+#include "atom/browser/atom_browser_context.h"
 #include "base/threading/sequenced_worker_pool.h"
 #include "atom/browser/net/url_request_buffer_job.h"
+#include "atom/browser/net/url_request_fetch_job.h"
 #include "atom/browser/net/url_request_string_job.h"
 #include "atom/browser/net/asar/url_request_asar_job.h"
 #include "atom/common/asar/asar_util.h"
@@ -101,6 +103,11 @@ void AdapterRequestJob::CreateFileJobAndStart(const base::FilePath& path) {
       content::BrowserThread::GetBlockingPool()->
           GetTaskRunnerWithShutdownBehavior(
               base::SequencedWorkerPool::SKIP_ON_SHUTDOWN));
+  real_job_->Start();
+}
+
+void AdapterRequestJob::CreateHttpJobAndStart(const GURL& url) {
+  real_job_ = new URLRequestFetchJob(request(), network_delegate(), url);
   real_job_->Start();
 }
 
