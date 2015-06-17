@@ -20,6 +20,7 @@ process.on 'exit', ->
 splitPath = (p) ->
   return [false] if typeof p isnt 'string'
   return [true, p, ''] if p.substr(-5) is '.asar'
+  p = path.normalize p
   index = p.lastIndexOf ".asar#{path.sep}"
   return [false] if index is -1
   [true, p.substr(0, index + 5), p.substr(index + 6)]
