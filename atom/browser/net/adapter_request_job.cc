@@ -115,14 +115,15 @@ void AdapterRequestJob::CreateFileJobAndStart(const base::FilePath& path) {
 }
 
 void AdapterRequestJob::CreateHttpJobAndStart(const GURL& url,
-                                              const std::string& method) {
+                                              const std::string& method,
+                                              const std::string& referrer) {
   if (!url.is_valid()) {
     CreateErrorJobAndStart(net::ERR_INVALID_URL);
     return;
   }
 
   real_job_ = new URLRequestFetchJob(request(), network_delegate(), url,
-                                     method);
+                                     method, referrer);
   real_job_->Start();
 }
 

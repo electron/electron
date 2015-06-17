@@ -36,6 +36,6 @@ class RequestErrorJob
 
 protocol.RequestHttpJob =
 class RequestHttpJob
-  constructor: ({@url, @method}) ->
+  constructor: ({@url, @method, @referrer}) ->
 
 module.exports = protocol

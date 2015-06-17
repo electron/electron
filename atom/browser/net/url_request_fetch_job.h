@@ -16,7 +16,8 @@ class URLRequestFetchJob : public net::URLRequestJob,
   URLRequestFetchJob(net::URLRequest* request,
                      net::NetworkDelegate* network_delegate,
                      const GURL& url,
-                     const std::string& method);
+                     const std::string& method,
+                     const std::string& referrer);
 
   void HeadersCompleted();
   int DataAvailable(net::IOBuffer* buffer, int num_bytes);

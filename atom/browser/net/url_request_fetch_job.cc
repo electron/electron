@@ -76,7 +76,8 @@ URLRequestFetchJob::URLRequestFetchJob(
     net::URLRequest* request,
     net::NetworkDelegate* network_delegate,
     const GURL& url,
-    const std::string& method)
+    const std::string& method,
+    const std::string& referrer)
     : net::URLRequestJob(request, network_delegate),
       pending_buffer_size_(0) {
   // Use |request|'s method if |method| is not specified.
@@ -90,6 +91,12 @@ URLRequestFetchJob::URLRequestFetchJob(
   auto context = AtomBrowserContext::Get()->url_request_context_getter();
   fetcher_->SetRequestContext(context);
   fetcher_->SaveResponseWithWriter(make_scoped_ptr(new ResponsePiper(this)));
+
+  // Use |request|'s referrer if |referrer| is not specified.
+  if (referrer.empty())
+    fetcher_->SetReferrer(request->referrer());
+  else
+    fetcher_->SetReferrer(referrer);
 }
 
 void URLRequestFetchJob::HeadersCompleted() {
