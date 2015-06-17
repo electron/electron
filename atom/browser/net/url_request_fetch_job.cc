@@ -97,6 +97,12 @@ URLRequestFetchJob::URLRequestFetchJob(
     fetcher_->SetReferrer(request->referrer());
   else
     fetcher_->SetReferrer(referrer);
+
+  // Use |request|'s headers.
+  net::HttpRequestHeaders headers;
+  if (request->GetFullRequestHeaders(&headers)) {
+    fetcher_->SetExtraRequestHeaders(headers.ToString());
+  }
 }
 
 void URLRequestFetchJob::HeadersCompleted() {
