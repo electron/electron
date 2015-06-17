@@ -96,7 +96,7 @@ Sets the `image` associated with this tray icon.
 
 * `image` [NativeImage](native-image.md)
 
-Sets the `image` associated with this tray icon when pressed.
+Sets the `image` associated with this tray icon when pressed on OS X.
 
 ### Tray.setToolTip(toolTip)
 
