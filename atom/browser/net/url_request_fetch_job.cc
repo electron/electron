@@ -104,6 +104,12 @@ int URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer, int num_bytes) {
 
   int bytes_read = std::min(num_bytes, pending_buffer_size_);
   memcpy(pending_buffer_->data(), buffer->data(), bytes_read);
+
+  // Clear the buffers before notifying the read is complete, so that it is
+  // safe for the observer to read.
+  pending_buffer_ = nullptr;
+  pending_buffer_size_ = 0;
+
   NotifyReadComplete(bytes_read);
   return bytes_read;
 }
@@ -146,6 +152,8 @@ int URLRequestFetchJob::GetResponseCode() const {
 }
 
 void URLRequestFetchJob::OnURLFetchComplete(const net::URLFetcher* source) {
+  pending_buffer_ = nullptr;
+  pending_buffer_size_ = 0;
   NotifyDone(fetcher_->GetStatus());
   if (fetcher_->GetStatus().is_success())
     NotifyReadComplete(0);
