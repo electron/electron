@@ -7,9 +7,11 @@
 
 #include "base/bind.h"
 #include "base/stl_util.h"
+#include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/common/platform_notification_data.h"
 #include "content/public/browser/desktop_notification_delegate.h"
+#include "skia/ext/skia_utils_mac.h"
 
 #import <Foundation/Foundation.h>
 
@@ -47,6 +49,7 @@ void NotificationPresenterMac::ShowNotification(
   auto notification = [[NSUserNotification alloc] init];
   notification.title = base::SysUTF16ToNSString(data.title);
   notification.informativeText = base::SysUTF16ToNSString(data.body);
+  notification.contentImage = gfx::SkBitmapToNSImageWithColorSpace(icon, base::mac::GetGenericRGBColorSpace());
 
   notifications_map_[delegate.get()].reset(notification);
   [NSUserNotificationCenter.defaultUserNotificationCenter deliverNotification:notification];
