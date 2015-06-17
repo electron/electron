@@ -78,8 +78,15 @@ URLRequestFetchJob::URLRequestFetchJob(
     const GURL& url,
     const std::string& method)
     : net::URLRequestJob(request, network_delegate),
-      fetcher_(net::URLFetcher::Create(url, GetRequestType(method), this)),
       pending_buffer_size_(0) {
+  // Use |request|'s method if |method| is not specified.
+  net::URLFetcher::RequestType request_type;
+  if (method.empty())
+    request_type = GetRequestType(request->method());
+  else
+    request_type = GetRequestType(method);
+
+  fetcher_.reset(net::URLFetcher::Create(url, request_type, this));
   auto context = AtomBrowserContext::Get()->url_request_context_getter();
   fetcher_->SetRequestContext(context);
   fetcher_->SaveResponseWithWriter(make_scoped_ptr(new ResponsePiper(this)));
