@@ -5,7 +5,6 @@
 #include "atom/browser/net/url_request_fetch_job.h"
 
 #include <algorithm>
-#include <vector>
 
 #include "atom/browser/atom_browser_context.h"
 #include "net/base/io_buffer.h"
@@ -32,14 +31,13 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
   int Write(net::IOBuffer* buffer,
             int num_bytes,
             const net::CompletionCallback& callback) override {
-    job_->DataAvailable(buffer, num_bytes);
     if (first_write_) {
       // The URLFetcherResponseWriter doesn't have an event when headers have
       // been read, so we have to emulate by hooking to first write event.
       job_->HeadersCompleted();
       first_write_ = false;
     }
-    return num_bytes;
+    return job_->DataAvailable(buffer, num_bytes);
   }
   int Finish(const net::CompletionCallback& callback) override {
     return net::OK;
@@ -60,8 +58,7 @@ URLRequestFetchJob::URLRequestFetchJob(
     const GURL& url)
     : net::URLRequestJob(request, network_delegate),
       url_(url),
-      finished_(false),
-      weak_factory_(this) {}
+      pending_buffer_size_(0) {}
 
 void URLRequestFetchJob::HeadersCompleted() {
   response_info_.reset(new net::HttpResponseInfo);
@@ -69,12 +66,21 @@ void URLRequestFetchJob::HeadersCompleted() {
   NotifyHeadersComplete();
 }
 
-void URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer, int num_bytes) {
-  buffer_.resize(buffer_.size() + num_bytes);
-  memcpy(buffer_.data() + buffer_.size() - num_bytes,
-         buffer->data(),
-         num_bytes);
+int URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer, int num_bytes) {
+  // Clear the IO_PENDING status.
   SetStatus(net::URLRequestStatus());
+  // Do nothing if pending_buffer_ is empty, i.e. there's no ReadRawData()
+  // operation waiting for IO completion.
+  if (!pending_buffer_.get())
+    return net::ERR_IO_PENDING;;
+
+  // pending_buffer_ is set to the IOBuffer instance provided to ReadRawData()
+  // by URLRequestJob.
+
+  int bytes_read = std::min(num_bytes, pending_buffer_size_);
+  memcpy(pending_buffer_->data(), buffer->data(), bytes_read);
+  NotifyReadComplete(bytes_read);
+  return bytes_read;
 }
 
 void URLRequestFetchJob::Start() {
@@ -93,29 +99,10 @@ void URLRequestFetchJob::Kill() {
 bool URLRequestFetchJob::ReadRawData(net::IOBuffer* dest,
                                      int dest_size,
                                      int* bytes_read) {
-  if (finished_) {
-    *bytes_read = 0;
-    return true;
-  }
-
-  if (buffer_.size() == 0) {
-    SetStatus(net::URLRequestStatus(net::URLRequestStatus::IO_PENDING, 0));
-    return false;
-  }
-
-  if (static_cast<size_t>(dest_size) >= buffer_.size()) {
-    // Copy all data at once (quick).
-    memcpy(dest->data(), buffer_.data(), buffer_.size());
-    *bytes_read = buffer_.size();
-    buffer_.clear();
-  } else {
-    // Can not fit all data, strip them (slow).
-    memcpy(dest->data(), buffer_.data(), dest_size);
-    *bytes_read = dest_size;
-    std::rotate(buffer_.begin(), buffer_.begin() + dest_size, buffer_.end());
-    buffer_.resize(buffer_.size() - dest_size);
-  }
-  return true;
+  pending_buffer_ = dest;
+  pending_buffer_size_ = dest_size;
+  SetStatus(net::URLRequestStatus(net::URLRequestStatus::IO_PENDING, 0));
+  return false;
 }
 
 bool URLRequestFetchJob::GetMimeType(std::string* mime_type) const {
@@ -138,7 +125,8 @@ int URLRequestFetchJob::GetResponseCode() const {
 }
 
 void URLRequestFetchJob::OnURLFetchComplete(const net::URLFetcher* source) {
-  finished_ = true;
+  NotifyDone(fetcher_->GetStatus());
+  NotifyReadComplete(0);
 }
 
 }  // namespace atom

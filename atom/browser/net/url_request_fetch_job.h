@@ -5,9 +5,6 @@
 #ifndef ATOM_BROWSER_NET_URL_REQUEST_FETCH_JOB_H_
 #define ATOM_BROWSER_NET_URL_REQUEST_FETCH_JOB_H_
 
-#include <vector>
-
-#include "base/memory/weak_ptr.h"
 #include "net/url_request/url_fetcher_delegate.h"
 #include "net/url_request/url_request_job.h"
 
@@ -20,12 +17,8 @@ class URLRequestFetchJob : public net::URLRequestJob,
                      net::NetworkDelegate* network_delegate,
                      const GURL& url);
 
-  base::WeakPtr<URLRequestFetchJob> GetWeakPtr() {
-    return weak_factory_.GetWeakPtr();
-  };
-
   void HeadersCompleted();
-  void DataAvailable(net::IOBuffer* buffer, int num_bytes);
+  int DataAvailable(net::IOBuffer* buffer, int num_bytes);
 
   // net::URLRequestJob:
   void Start() override;
@@ -43,11 +36,9 @@ class URLRequestFetchJob : public net::URLRequestJob,
  private:
   GURL url_;
   scoped_ptr<net::URLFetcher> fetcher_;
-  std::vector<char> buffer_;
+  scoped_refptr<net::IOBuffer> pending_buffer_;
+  int pending_buffer_size_;
   scoped_ptr<net::HttpResponseInfo> response_info_;
-  bool finished_;
-
-  base::WeakPtrFactory<URLRequestFetchJob> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestFetchJob);
 };

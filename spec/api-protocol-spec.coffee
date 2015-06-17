@@ -82,7 +82,7 @@ describe 'protocol module', ->
       server.listen 0, '127.0.0.1', ->
         {port} = server.address()
         url = "http://127.0.0.1:#{port}"
-        job = new protocol.RequestHttpJob(url)
+        job = new protocol.RequestHttpJob({url})
         handler = remote.createFunctionWithReturnValue job
         protocol.registerProtocol 'atom-http-job', handler
 
