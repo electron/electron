@@ -1,5 +1,6 @@
 assert   = require 'assert'
 ipc      = require 'ipc'
+http     = require 'http'
 path     = require 'path'
 remote   = require 'remote'
 protocol = remote.require 'protocol'
@@ -72,6 +73,28 @@ describe 'protocol module', ->
           assert errorType, 'error'
           protocol.unregisterProtocol 'atom-error-job'
           done()
+
+    it 'returns RequestHttpJob should send respone', (done) ->
+      server = http.createServer (req, res) ->
+        res.writeHead(200, {'Content-Type': 'text/plain'})
+        res.end('hello')
+        server.close()
+      server.listen 0, '127.0.0.1', ->
+        {port} = server.address()
+        url = "http://127.0.0.1:#{port}"
+        job = new protocol.RequestHttpJob({url})
+        handler = remote.createFunctionWithReturnValue job
+        protocol.registerProtocol 'atom-http-job', handler
+
+        $.ajax
+          url: 'atom-http-job://fake-host'
+          success: (data) ->
+            assert.equal data, 'hello'
+            protocol.unregisterProtocol 'atom-http-job'
+            done()
+          error: (xhr, errorType, error) ->
+            assert false, 'Got error: ' + errorType + ' ' + error
+            protocol.unregisterProtocol 'atom-http-job'
 
     it 'returns RequestBufferJob should send buffer', (done) ->
       data = new Buffer("hello")

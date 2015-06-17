@@ -4,8 +4,10 @@
 
 #include "atom/browser/net/adapter_request_job.h"
 
+#include "atom/browser/atom_browser_context.h"
 #include "base/threading/sequenced_worker_pool.h"
 #include "atom/browser/net/url_request_buffer_job.h"
+#include "atom/browser/net/url_request_fetch_job.h"
 #include "atom/browser/net/url_request_string_job.h"
 #include "atom/browser/net/asar/url_request_asar_job.h"
 #include "atom/common/asar/asar_util.h"
@@ -66,6 +68,14 @@ bool AdapterRequestJob::GetCharset(std::string* charset) {
   return real_job_->GetCharset(charset);
 }
 
+void AdapterRequestJob::GetResponseInfo(net::HttpResponseInfo* info) {
+  real_job_->GetResponseInfo(info);
+}
+
+int AdapterRequestJob::GetResponseCode() const {
+  return real_job_->GetResponseCode();
+}
+
 base::WeakPtr<AdapterRequestJob> AdapterRequestJob::GetWeakPtr() {
   return weak_factory_.GetWeakPtr();
 }
@@ -101,6 +111,19 @@ void AdapterRequestJob::CreateFileJobAndStart(const base::FilePath& path) {
       content::BrowserThread::GetBlockingPool()->
           GetTaskRunnerWithShutdownBehavior(
               base::SequencedWorkerPool::SKIP_ON_SHUTDOWN));
+  real_job_->Start();
+}
+
+void AdapterRequestJob::CreateHttpJobAndStart(const GURL& url,
+                                              const std::string& method,
+                                              const std::string& referrer) {
+  if (!url.is_valid()) {
+    CreateErrorJobAndStart(net::ERR_INVALID_URL);
+    return;
+  }
+
+  real_job_ = new URLRequestFetchJob(request(), network_delegate(), url,
+                                     method, referrer);
   real_job_->Start();
 }
 
