@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include "atom/browser/atom_browser_context.h"
+#include "base/strings/string_util.h"
 #include "net/base/io_buffer.h"
 #include "net/base/net_errors.h"
 #include "net/http/http_response_headers.h"
@@ -17,6 +18,25 @@
 namespace atom {
 
 namespace {
+
+// Convert string to RequestType.
+net::URLFetcher::RequestType GetRequestType(const std::string& raw) {
+  std::string method = StringToUpperASCII(raw);
+  if (method.empty() || method == "GET")
+    return net::URLFetcher::GET;
+  else if (method == "POST")
+    return net::URLFetcher::POST;
+  else if (method == "HEAD")
+    return net::URLFetcher::HEAD;
+  else if (method == "DELETE")
+    return net::URLFetcher::DELETE_REQUEST;
+  else if (method == "PUT")
+    return net::URLFetcher::PUT;
+  else if (method == "PATCH")
+    return net::URLFetcher::PATCH;
+  else  // Use "GET" as fallback.
+    return net::URLFetcher::GET;
+}
 
 // Pipe the response writer back to URLRequestFetchJob.
 class ResponsePiper : public net::URLFetcherResponseWriter {
@@ -55,10 +75,15 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
 URLRequestFetchJob::URLRequestFetchJob(
     net::URLRequest* request,
     net::NetworkDelegate* network_delegate,
-    const GURL& url)
+    const GURL& url,
+    const std::string& method)
     : net::URLRequestJob(request, network_delegate),
-      url_(url),
-      pending_buffer_size_(0) {}
+      fetcher_(net::URLFetcher::Create(url, GetRequestType(method), this)),
+      pending_buffer_size_(0) {
+  auto context = AtomBrowserContext::Get()->url_request_context_getter();
+  fetcher_->SetRequestContext(context);
+  fetcher_->SaveResponseWithWriter(make_scoped_ptr(new ResponsePiper(this)));
+}
 
 void URLRequestFetchJob::HeadersCompleted() {
   response_info_.reset(new net::HttpResponseInfo);
@@ -84,10 +109,6 @@ int URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer, int num_bytes) {
 }
 
 void URLRequestFetchJob::Start() {
-  fetcher_.reset(net::URLFetcher::Create(url_, net::URLFetcher::GET, this));
-  auto context = AtomBrowserContext::Get()->url_request_context_getter();
-  fetcher_->SetRequestContext(context);
-  fetcher_->SaveResponseWithWriter(make_scoped_ptr(new ResponsePiper(this)));
   fetcher_->Start();
 }
 
@@ -126,7 +147,8 @@ int URLRequestFetchJob::GetResponseCode() const {
 
 void URLRequestFetchJob::OnURLFetchComplete(const net::URLFetcher* source) {
   NotifyDone(fetcher_->GetStatus());
-  NotifyReadComplete(0);
+  if (fetcher_->GetStatus().is_success())
+    NotifyReadComplete(0);
 }
 
 }  // namespace atom

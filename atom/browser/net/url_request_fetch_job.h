@@ -15,7 +15,8 @@ class URLRequestFetchJob : public net::URLRequestJob,
  public:
   URLRequestFetchJob(net::URLRequest* request,
                      net::NetworkDelegate* network_delegate,
-                     const GURL& url);
+                     const GURL& url,
+                     const std::string& method);
 
   void HeadersCompleted();
   int DataAvailable(net::IOBuffer* buffer, int num_bytes);
@@ -34,7 +35,6 @@ class URLRequestFetchJob : public net::URLRequestJob,
   void OnURLFetchComplete(const net::URLFetcher* source) override;
 
  private:
-  GURL url_;
   scoped_ptr<net::URLFetcher> fetcher_;
   scoped_refptr<net::IOBuffer> pending_buffer_;
   int pending_buffer_size_;

@@ -125,11 +125,13 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
         return;
       } else if (name == "RequestHttpJob") {
         GURL url;
+        std::string method;
         dict.Get("url", &url);
+        dict.Get("method", &method);
 
         BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
             base::Bind(&AdapterRequestJob::CreateHttpJobAndStart,
-                       GetWeakPtr(), url));
+                       GetWeakPtr(), url, method));
         return;
       }
     }

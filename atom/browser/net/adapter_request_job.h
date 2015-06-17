@@ -59,7 +59,7 @@ class AdapterRequestJob : public net::URLRequestJob {
                                const std::string& charset,
                                scoped_refptr<base::RefCountedBytes> data);
   void CreateFileJobAndStart(const base::FilePath& path);
-  void CreateHttpJobAndStart(const GURL& url);
+  void CreateHttpJobAndStart(const GURL& url, const std::string& method);
   void CreateJobFromProtocolHandlerAndStart();
 
  private:
