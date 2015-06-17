@@ -16,7 +16,7 @@ Electron은 실행될 때 __메인 프로세스__ 로 불리는 `package.json`�
 
 ### 랜더러 프로세스
 
-Electron이 Chromium을 사용하여 웹페이지를 보여줄 때, Chromium의 multi-processes 구조도 같이 사용됩니다.
+Electron이 웹페이지를 보여줄 때, Chromium의 multi-processes 구조도 같이 사용됩니다.
 Electron 프로세스 내에서 작동하는 웹 페이지는 __랜더러 프로세스__ 라고 불립니다.
 
 보통, 일반 브라우저의 웹 페이지들은 샌드박스가 적용된 환경에서 작동하며 네이티브 리소스에는 접근할 수 없도록 되어 있습니다.
@@ -34,8 +34,8 @@ Electron 프로세스 내에서 작동하는 웹 페이지는 __랜더러 프로
 리소스를 누수시킬 수 있기 때문에 웹 페이지 내에서는 네이티브 GUI와 관련된 API를 호출할 수 없도록 되어 있습니다.
 만약 웹 페이지 내에서 GUI작업이 필요하다면, 메인 프로세스에서 그 작업을 할 수 있도록 통신을 해야합니다.
 
-Electron에는 메인 프로세스와 랜더러 프로세스간에 통신을 할 수 있도록 [ipc](../api/ipc-renderer.md) 모듈을 제공하고 있습니다.
-또한 [remote](../api/remote.md) 모듈을 사용하여 RPC 스타일로 통신할 수도 있습니다.
+Electron에는 메인 프로세스와 랜더러 프로세스간에 통신을 할 수 있도록 [ipc](../api/ipc-renderer-ko.md) 모듈을 제공하고 있습니다.
+또한 [remote](../api/remote-ko.md) 모듈을 사용하여 RPC 스타일로 통신할 수도 있습니다.
 
 ## 나의 첫번째 Electron 앱 만들기
 
@@ -66,7 +66,7 @@ your-app/
 var app = require('app');  // 어플리케이션 기반을 조작 하는 모듈.
 var BrowserWindow = require('browser-window');  // 네이티브 브라우저 창을 만드는 모듈.
 
-// Electron 개발자에게 Crash report를 보냄.
+// Electron 개발자에게 crash-report를 보냄.
 require('crash-reporter').start();
 
 // 윈도우 객체를 전역에 유지합니다, 만약 이렇게 하지 않으면,
@@ -113,14 +113,14 @@ app.on('ready', function() {
   <body>
     <h1>헬로 월드!</h1>
     우리는 io.js <script>document.write(process.version)</script> 버전과
-    electron <script>document.write(process.versions['electron'])</script> 버전을 사용합니다.
+    Electron <script>document.write(process.versions['electron'])</script> 버전을 사용합니다.
   </body>
 </html>
 ```
 
 ## 앱 실행하기
 
-앱을 작성한 후, [어플리케이션 배포](./application-distribution.md) 가이드를 따라 앱을 패키징 하고
+앱을 작성한 후, [어플리케이션 배포](./application-distribution-ko.md) 가이드를 따라 앱을 패키징 하고
 패키징한 앱을 실행해 볼 수 있습니다. 또한 Electron 실행파일을 다운로드 받아 바로 실행해 볼 수도 있습니다.
 
 Windows의 경우:
@@ -141,5 +141,5 @@ OS X의 경우:
 $ ./Electron.app/Contents/MacOS/Electron your-app/
 ```
 
-`Electron` 실행파일은 Electron의 release 패키지에 포함되어 있습니다.
+앱 실행파일은 `Electron`의 release 패키지에 포함되어 있습니다.
 [여기](https://github.com/atom/electron/releases)에서 다운로드 받을 수 있습니다.
