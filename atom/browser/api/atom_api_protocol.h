@@ -18,6 +18,7 @@ class URLRequest;
 
 namespace atom {
 
+class AtomBrowserContext;
 class AtomURLRequestJobFactory;
 
 namespace api {
@@ -27,12 +28,13 @@ class Protocol : public mate::EventEmitter {
   typedef base::Callback<v8::Local<v8::Value>(const net::URLRequest*)>
           JsProtocolHandler;
 
-  static mate::Handle<Protocol> Create(v8::Isolate* isolate);
+  static mate::Handle<Protocol> Create(
+      v8::Isolate* isolate, AtomBrowserContext* browser_context);
 
   JsProtocolHandler GetProtocolHandler(const std::string& scheme);
 
  protected:
-  Protocol();
+  explicit Protocol(AtomBrowserContext* browser_context);
 
   // mate::Wrappable implementations:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
@@ -68,6 +70,7 @@ class Protocol : public mate::EventEmitter {
   // Do protocol.emit(event, parameter) under UI thread.
   void EmitEventInUI(const std::string& event, const std::string& parameter);
 
+  AtomBrowserContext* browser_context_;
   AtomURLRequestJobFactory* job_factory_;
   ProtocolHandlersMap protocol_handlers_;
 
