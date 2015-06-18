@@ -87,6 +87,20 @@ Emitted when the application is activated while there is no opened windows. It
 usually happens when user has closed all of application's windows and then
 click on the application's dock icon.
 
+## Event: browser-window-blur
+
+* `event` Event
+* `window` BrowserWindow
+
+Emitted when a [browserWindow](browser-window.md) gets blurred.
+
+## Event: browser-window-focus
+
+* `event` Event
+* `window` BrowserWindow
+
+Emitted when a [browserWindow](browser-window.md) gets focused.
+
 ## app.quit()
 
 Try to close all windows. The `before-quit` event will first be emitted. If all
