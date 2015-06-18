@@ -945,6 +945,7 @@ void NativeWindowViews::RegisterAccelerators(ui::MenuModel* menu_model) {
 
 gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
     const gfx::Rect& bounds) {
+  gfx::Point origin = bounds.origin();
 #if defined(OS_WIN)
   gfx::Rect dpi_bounds = gfx::win::DIPToScreenRect(bounds);
   gfx::Rect window_bounds = gfx::win::ScreenToDIPRect(
@@ -953,6 +954,9 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
   gfx::Rect window_bounds =
       window_->non_client_view()->GetWindowBoundsForClientBounds(bounds);
 #endif
+  // The window's position would also be changed, but we only want to change
+  // the size.
+  window_bounds.set_origin(origin);
 
   if (menu_bar_ && menu_bar_visible_)
     window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
