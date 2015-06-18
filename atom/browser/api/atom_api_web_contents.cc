@@ -8,6 +8,7 @@
 
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
@@ -144,7 +145,7 @@ WebContents::WebContents(const mate::Dictionary& options)
       guest_host_(nullptr),
       auto_size_enabled_(false),
       is_full_page_plugin_(false) {
-  auto browser_context = AtomBrowserContext::Get();
+  auto browser_context = AtomBrowserMainParts::Get()->browser_context();
   content::SiteInstance* site_instance = content::SiteInstance::CreateForURL(
       browser_context, GURL("chrome-guest://fake-host"));
 

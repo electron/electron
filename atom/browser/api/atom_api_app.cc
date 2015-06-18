@@ -13,6 +13,7 @@
 
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -97,7 +98,8 @@ class ResolveProxyHelper {
  public:
   ResolveProxyHelper(const GURL& url, App::ResolveProxyCallback callback)
       : callback_(callback) {
-    net::ProxyService* proxy_service = AtomBrowserContext::Get()->
+    auto browser_context = AtomBrowserMainParts::Get()->browser_context();
+    net::ProxyService* proxy_service = browser_context->
         url_request_context_getter()->GetURLRequestContext()->proxy_service();
 
     // Start the request.
