@@ -1,5 +1,7 @@
 assert = require 'assert'
 app = require('remote').require 'app'
+remote = require 'remote'
+BrowserWindow = remote.require 'browser-window'
 
 describe 'app module', ->
   describe 'app.getVersion()', ->
@@ -23,3 +25,20 @@ describe 'app module', ->
       app.setName 'test-name'
       assert.equal app.getName(), 'test-name'
       app.setName 'Electron Test'
+
+  describe 'focus/blur event', ->
+    w = null
+    beforeEach ->
+      w.destroy() if w?
+      w = new BrowserWindow(show: false, width: 400, height: 400)
+    afterEach ->
+      w.destroy() if w?
+      w = null
+    it 'should emit focus event', (done) ->
+      app.once 'browser-window-blur', (e, window) ->
+        assert.equal w.id, window.id
+        done()
+      app.once 'browser-window-focus', (e, window) ->
+        assert.equal w.id, window.id
+        w.hide()
+      w.show()

@@ -30,6 +30,12 @@ BrowserWindow::_init = ->
   @on '-will-navigate', (event, url) =>
     @webContents.emit 'will-navigate', event, url
 
+  # Redirect focus/blur event to app instance too.
+  @on 'blur', (event) =>
+    app.emit 'browser-window-blur', event, this
+  @on 'focus', (event) =>
+    app.emit 'browser-window-focus', event, this
+
   # Remove the window from weak map immediately when it's destroyed, since we
   # could be iterating windows before GC happened.
   @once 'closed', =>
@@ -58,7 +64,7 @@ BrowserWindow.fromDevToolsWebContents = (webContents) ->
   return window for window in windows when window.devToolsWebContents?.equal webContents
 
 BrowserWindow.fromId = (id) ->
-  BrowserWindow.windows.get id
+  BrowserWindow.windows.get id if BrowserWindow.windows.has id
 
 # Helpers.
 BrowserWindow::loadUrl = -> @webContents.loadUrl.apply @webContents, arguments
