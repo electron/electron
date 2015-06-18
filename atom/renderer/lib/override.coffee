@@ -76,9 +76,10 @@ window.prompt = ->
   throw new Error('prompt() is and will not be supported.')
 
 # Simple implementation of postMessage.
-window.opener =
-  postMessage: (message, targetOrigin='*') ->
-    ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', message, targetOrigin
+unless process.guestInstanceId?
+  window.opener =
+    postMessage: (message, targetOrigin='*') ->
+      ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', message, targetOrigin
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', (message, targetOrigin) ->
   window.postMessage message, targetOrigin
