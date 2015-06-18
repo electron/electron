@@ -1,6 +1,6 @@
 assert = require 'assert'
-app = require('remote').require 'app'
 remote = require 'remote'
+app = remote.require 'app'
 BrowserWindow = remote.require 'browser-window'
 
 describe 'app module', ->
@@ -40,5 +40,5 @@ describe 'app module', ->
         done()
       app.once 'browser-window-focus', (e, window) ->
         assert.equal w.id, window.id
-        w.hide()
-      w.show()
+        w.emit 'blur'
+      w.emit 'focus'
