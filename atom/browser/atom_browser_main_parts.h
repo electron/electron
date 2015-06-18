@@ -8,6 +8,8 @@
 #include "base/timer/timer.h"
 #include "brightray/browser/browser_main_parts.h"
 
+class BrowserProcess;
+
 namespace atom {
 
 class AtomBindings;
@@ -40,6 +42,9 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 #if defined(USE_X11)
   void SetDPIFromGSettings();
 #endif
+
+  // A fake BrowserProcess object that used to feed the source code from chrome.
+  scoped_ptr<BrowserProcess> fake_browser_process_;
 
   scoped_ptr<Browser> browser_;
   scoped_ptr<JavascriptEnvironment> js_env_;

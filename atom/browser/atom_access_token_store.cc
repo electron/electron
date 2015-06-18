@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/common/google_api_key.h"
 
 namespace atom {
@@ -39,8 +40,8 @@ void AtomAccessTokenStore::LoadAccessTokens(
   token_pair.first = GURL(kGeolocationProviderUrl);
   access_token_set.insert(token_pair);
 
-  callback.Run(access_token_set,
-               AtomBrowserContext::Get()->url_request_context_getter());
+  auto browser_context = AtomBrowserMainParts::Get()->browser_context();
+  callback.Run(access_token_set, browser_context->url_request_context_getter());
 }
 
 void AtomAccessTokenStore::SaveAccessToken(const GURL& server_url,

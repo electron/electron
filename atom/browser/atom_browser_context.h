@@ -7,8 +7,6 @@
 
 #include "brightray/browser/browser_context.h"
 
-class BrowserProcess;
-
 namespace atom {
 
 class AtomURLRequestJobFactory;
@@ -18,9 +16,6 @@ class AtomBrowserContext : public brightray::BrowserContext {
  public:
   AtomBrowserContext();
   virtual ~AtomBrowserContext();
-
-  // Returns the browser context singleton.
-  static AtomBrowserContext* Get();
 
   // brightray::URLRequestContextGetter::Delegate:
   net::URLRequestJobFactory* CreateURLRequestJobFactory(
@@ -35,8 +30,6 @@ class AtomBrowserContext : public brightray::BrowserContext {
   AtomURLRequestJobFactory* job_factory() const { return job_factory_; }
 
  private:
-  // A fake BrowserProcess object that used to feed the source code from chrome.
-  scoped_ptr<BrowserProcess> fake_browser_process_;
   scoped_ptr<WebViewManager> guest_manager_;
 
   AtomURLRequestJobFactory* job_factory_;  // Weak reference.

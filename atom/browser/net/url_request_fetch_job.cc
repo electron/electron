@@ -74,6 +74,7 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
 }  // namespace
 
 URLRequestFetchJob::URLRequestFetchJob(
+    AtomBrowserContext* browser_context,
     net::URLRequest* request,
     net::NetworkDelegate* network_delegate,
     const GURL& url,
@@ -89,8 +90,7 @@ URLRequestFetchJob::URLRequestFetchJob(
     request_type = GetRequestType(method);
 
   fetcher_.reset(net::URLFetcher::Create(url, request_type, this));
-  auto context = AtomBrowserContext::Get()->url_request_context_getter();
-  fetcher_->SetRequestContext(context);
+  fetcher_->SetRequestContext(browser_context->url_request_context_getter());
   fetcher_->SaveResponseWithWriter(make_scoped_ptr(new ResponsePiper(this)));
 
   // Use |request|'s referrer if |referrer| is not specified.

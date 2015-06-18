@@ -5,6 +5,7 @@
 #include "atom/browser/api/atom_api_protocol.h"
 
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/net/adapter_request_job.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -131,8 +132,8 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
         dict.Get("referrer", &referrer);
 
         BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-            base::Bind(&AdapterRequestJob::CreateHttpJobAndStart,
-                       GetWeakPtr(), url, method, referrer));
+            base::Bind(&AdapterRequestJob::CreateHttpJobAndStart, GetWeakPtr(),
+                       registry_->browser_context(), url, method, referrer));
         return;
       }
     }
@@ -190,8 +191,9 @@ class CustomProtocolHandler : public ProtocolHandler {
 
 }  // namespace
 
-Protocol::Protocol()
-    : job_factory_(AtomBrowserContext::Get()->job_factory()) {
+Protocol::Protocol(AtomBrowserContext* browser_context)
+    : browser_context_(browser_context),
+      job_factory_(browser_context->job_factory()) {
   CHECK(job_factory_);
 }
 
@@ -343,8 +345,9 @@ void Protocol::EmitEventInUI(const std::string& event,
 }
 
 // static
-mate::Handle<Protocol> Protocol::Create(v8::Isolate* isolate) {
-  return CreateHandle(isolate, new Protocol);
+mate::Handle<Protocol> Protocol::Create(
+    v8::Isolate* isolate, AtomBrowserContext* browser_context) {
+  return CreateHandle(isolate, new Protocol(browser_context));
 }
 
 }  // namespace api
@@ -357,7 +360,9 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.Set("protocol", atom::api::Protocol::Create(isolate));
+  auto browser_context = static_cast<atom::AtomBrowserContext*>(
+      atom::AtomBrowserMainParts::Get()->browser_context());
+  dict.Set("protocol", atom::api::Protocol::Create(isolate, browser_context));
 }
 
 }  // namespace

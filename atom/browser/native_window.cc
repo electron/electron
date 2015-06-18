@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
@@ -153,7 +154,8 @@ NativeWindow::~NativeWindow() {
 
 // static
 NativeWindow* NativeWindow::Create(const mate::Dictionary& options) {
-  content::WebContents::CreateParams create_params(AtomBrowserContext::Get());
+  auto browser_context = AtomBrowserMainParts::Get()->browser_context();
+  content::WebContents::CreateParams create_params(browser_context);
   return Create(content::WebContents::Create(create_params), options);
 }
 
