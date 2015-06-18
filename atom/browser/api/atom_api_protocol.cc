@@ -132,8 +132,8 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
         dict.Get("referrer", &referrer);
 
         BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-            base::Bind(&AdapterRequestJob::CreateHttpJobAndStart,
-                       GetWeakPtr(), url, method, referrer));
+            base::Bind(&AdapterRequestJob::CreateHttpJobAndStart, GetWeakPtr(),
+                       registry_->browser_context(), url, method, referrer));
         return;
       }
     }

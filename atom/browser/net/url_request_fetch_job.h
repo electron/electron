@@ -12,10 +12,13 @@
 
 namespace atom {
 
+class AtomBrowserContext;
+
 class URLRequestFetchJob : public net::URLRequestJob,
                            public net::URLFetcherDelegate {
  public:
-  URLRequestFetchJob(net::URLRequest* request,
+  URLRequestFetchJob(AtomBrowserContext* browser_context,
+                     net::URLRequest* request,
                      net::NetworkDelegate* network_delegate,
                      const GURL& url,
                      const std::string& method,

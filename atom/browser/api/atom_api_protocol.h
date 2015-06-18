@@ -33,6 +33,8 @@ class Protocol : public mate::EventEmitter {
 
   JsProtocolHandler GetProtocolHandler(const std::string& scheme);
 
+  AtomBrowserContext* browser_context() const { return browser_context_; }
+
  protected:
   explicit Protocol(AtomBrowserContext* browser_context);
 

@@ -114,16 +114,18 @@ void AdapterRequestJob::CreateFileJobAndStart(const base::FilePath& path) {
   real_job_->Start();
 }
 
-void AdapterRequestJob::CreateHttpJobAndStart(const GURL& url,
-                                              const std::string& method,
-                                              const std::string& referrer) {
+void AdapterRequestJob::CreateHttpJobAndStart(
+    AtomBrowserContext* browser_context,
+    const GURL& url,
+    const std::string& method,
+    const std::string& referrer) {
   if (!url.is_valid()) {
     CreateErrorJobAndStart(net::ERR_INVALID_URL);
     return;
   }
 
-  real_job_ = new URLRequestFetchJob(request(), network_delegate(), url,
-                                     method, referrer);
+  real_job_ = new URLRequestFetchJob(browser_context, request(),
+                                     network_delegate(), url, method, referrer);
   real_job_->Start();
 }
 
