@@ -65,6 +65,9 @@ class NativeWindowObserver {
 
   // Called when renderer recovers.
   virtual void OnRendererResponsive() {}
+
+  // Called on Windows when App Commands arrive (WM_APPCOMMAND)
+  virtual void OnExecuteWindowsCommand(int command) {}
 };
 
 }  // namespace atom
