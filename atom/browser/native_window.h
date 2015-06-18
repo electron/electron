@@ -198,6 +198,7 @@ class NativeWindow : public content::WebContentsObserver,
   void NotifyWindowLeaveFullScreen();
   void NotifyWindowEnterHtmlFullScreen();
   void NotifyWindowLeaveHtmlFullScreen();
+  void NotifyExecuteWindowsCommand(int command_id);
 
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);

@@ -580,6 +580,11 @@ void NativeWindow::NotifyWindowUnresponsive() {
                       OnRendererUnresponsive());
 }
 
+void NativeWindow::NotifyExecuteWindowsCommand(int command_id) {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnExecuteWindowsCommand(command_id));
+}
+
+
 void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
                                      const SkBitmap& bitmap,
                                      content::ReadbackResponse response) {
