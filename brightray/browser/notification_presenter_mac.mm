@@ -8,7 +8,6 @@
 #include "base/bind.h"
 #include "base/stl_util.h"
 #include "base/mac/mac_util.h"
-#include "base/mac/sdk_forward_declarations.h"
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/common/platform_notification_data.h"
 #include "content/public/browser/desktop_notification_delegate.h"
@@ -51,7 +50,7 @@ void NotificationPresenterMac::ShowNotification(
   notification.title = base::SysUTF16ToNSString(data.title);
   notification.informativeText = base::SysUTF16ToNSString(data.body);
 
-  if (floor(NSAppKitVersionNumber) >= NSAppKitVersionNumber10_9)
+  if (base::mac::IsOSYosemiteOrLater() && !icon.drawsNothing())
     notification.contentImage = gfx::SkBitmapToNSImageWithColorSpace(icon, base::mac::GetGenericRGBColorSpace());
 
   notifications_map_[delegate.get()].reset(notification);
