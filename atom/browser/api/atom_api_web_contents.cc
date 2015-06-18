@@ -587,7 +587,7 @@ void WebContents::InspectServiceWorker() {
 
 v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
   if (session_.IsEmpty()) {
-    auto handle = Session::Create(isolate);
+    auto handle = Session::Create(isolate, web_contents());
     session_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, session_);

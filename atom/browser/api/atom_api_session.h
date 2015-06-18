@@ -8,16 +8,21 @@
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
 
+namespace content {
+class WebContents;
+}
+
 namespace atom {
 
 namespace api {
 
 class Session: public mate::Wrappable {
  public:
-  static mate::Handle<Session> Create(v8::Isolate* isolate);
+  static mate::Handle<Session> Create(v8::Isolate* isolate,
+                                      content::WebContents* web_contents);
 
  protected:
-  Session();
+  explicit Session(content::WebContents* web_contents);
   ~Session();
 
   // mate::Wrappable implementations:
@@ -28,6 +33,9 @@ class Session: public mate::Wrappable {
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
 
   v8::Global<v8::Value> cookies_;
+
+  // The webContents which owns the Sesssion.
+  content::WebContents* web_contents_;
 
   DISALLOW_COPY_AND_ASSIGN(Session);
 };

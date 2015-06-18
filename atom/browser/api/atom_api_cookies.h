@@ -15,6 +15,10 @@
 
 #include "net/cookies/canonical_cookie.h"
 
+namespace content {
+class WebContents;
+}
+
 namespace atom {
 
 namespace api {
@@ -25,22 +29,23 @@ class Cookies : public mate::Wrappable {
   typedef base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>
       CookiesCallback;
 
-  static mate::Handle<Cookies> Create(v8::Isolate* isolate);
+  static mate::Handle<Cookies> Create(v8::Isolate* isolate,
+                                      content::WebContents* web_contents);
 
  protected:
-  Cookies();
+  explicit Cookies(content::WebContents* web_contents);
   ~Cookies();
 
   void Get(const base::DictionaryValue& options,
            const CookiesCallback& callback);
-  void Remove(const base::DictionaryValue& details,
+  void Remove(const mate::Dictionary& details,
               const CookiesCallback& callback);
   void Set(const base::DictionaryValue& details,
            const CookiesCallback& callback);
 
-  void GetCookiesOnIOThread(const base::DictionaryValue* filter,
+  void GetCookiesOnIOThread(scoped_ptr<base::DictionaryValue> filter,
                             const CookiesCallback& callback);
-  void OnGetCookies(const base::DictionaryValue* filter,
+  void OnGetCookies(scoped_ptr<base::DictionaryValue> filter,
                     const CookiesCallback& callback,
                     const net::CookieList& cookie_list);
 
@@ -49,11 +54,10 @@ class Cookies : public mate::Wrappable {
                                const CookiesCallback& callback);
   void OnRemoveCookies(const CookiesCallback& callback);
 
-  void SetCookiesOnIOThread(const base::DictionaryValue* details,
+  void SetCookiesOnIOThread(scoped_ptr<base::DictionaryValue> details,
                             const GURL& url,
                             const CookiesCallback& callback);
-  void OnSetCookies(const base::DictionaryValue* details,
-                    const CookiesCallback& callback,
+  void OnSetCookies(const CookiesCallback& callback,
                     bool set_success);
 
 
@@ -62,6 +66,8 @@ class Cookies : public mate::Wrappable {
       v8::Isolate* isolate) override;
 
  private:
+  content::WebContents* web_contents_;
+
   DISALLOW_COPY_AND_ASSIGN(Cookies);
 };
 
