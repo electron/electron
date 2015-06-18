@@ -17,7 +17,7 @@
   <key>CFBundleIconFile</key>
   <string>atom.icns</string>
   <key>CFBundleVersion</key>
-  <string>0.28.1</string>
+  <string>0.28.2</string>
   <key>LSMinimumSystemVersion</key>
   <string>10.8.0</string>
   <key>NSMainNibFile</key>
