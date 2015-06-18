@@ -104,10 +104,4 @@ content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
   return guest_manager_.get();
 }
 
-// static
-AtomBrowserContext* AtomBrowserContext::Get() {
-  return static_cast<AtomBrowserContext*>(
-      AtomBrowserMainParts::Get()->browser_context());
-}
-
 }  // namespace atom

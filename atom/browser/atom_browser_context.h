@@ -17,9 +17,6 @@ class AtomBrowserContext : public brightray::BrowserContext {
   AtomBrowserContext();
   virtual ~AtomBrowserContext();
 
-  // Returns the browser context singleton.
-  static AtomBrowserContext* Get();
-
   // brightray::URLRequestContextGetter::Delegate:
   net::URLRequestJobFactory* CreateURLRequestJobFactory(
       content::ProtocolHandlerMap* handlers,
