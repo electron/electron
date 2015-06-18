@@ -855,7 +855,10 @@ bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
     is_minimized_ = false;
   } else if ((command_id & sc_mask) == SC_MAXIMIZE) {
     NotifyWindowMaximize();
+  } else {
+    NotifyExecuteWindowsCommand(command_id & sc_mask);
   }
+
   return false;
 }
 #endif
