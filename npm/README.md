@@ -36,6 +36,8 @@ Now you can just run `electron` to run electron:
 electron
 ```
 
+If you need to use an HTTP proxy you can [set these environment variables](https://github.com/request/request/tree/f0c4ec061141051988d1216c24936ad2e7d5c45d#controlling-proxy-behaviour-using-environment-variables)
+
 ## Usage
 
 First you have to [write an electron application](https://github.com/atom/electron/blob/master/docs/tutorial/quick-start.md)
