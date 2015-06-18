@@ -106,26 +106,8 @@ You can rename the `electron` executable to any name you like.
 ## Rebranding by rebuilding Electron from source
 
 It is also possible to rebrand Electron by changing the product name and
-building it from source. To do this you need to override the `GYP_DEFINES`
-environment variable and have a clean rebuild:
-
-__Windows__
-
-```bash
-> set "GYP_DEFINES=project_name=myapp product_name=MyApp"
-> python script\clean.py
-> python script\bootstrap.py
-> python script\build.py -c R -t myapp
-```
-
-__Bash__
-
-```bash
-$ export GYP_DEFINES="project_name=myapp product_name=MyApp"
-$ script/clean.py
-$ script/bootstrap.py
-$ script/build.py -c Release -t myapp
-```
+building it from source. To do this you need to modify the `atom.gyp` file and
+have a clean rebuild.
 
 ### grunt-build-atom-shell
 
