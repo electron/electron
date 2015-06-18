@@ -11,6 +11,7 @@
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/node_bindings.h"
 #include "base/command_line.h"
+#include "chrome/browser/browser_process.h"
 #include "v8/include/v8-debug.h"
 
 #if defined(USE_X11)
@@ -25,7 +26,8 @@ namespace atom {
 AtomBrowserMainParts* AtomBrowserMainParts::self_ = NULL;
 
 AtomBrowserMainParts::AtomBrowserMainParts()
-    : browser_(new Browser),
+    : fake_browser_process_(new BrowserProcess),
+      browser_(new Browser),
       node_bindings_(NodeBindings::Create(true)),
       atom_bindings_(new AtomBindings),
       gc_timer_(true, true) {
