@@ -7,3 +7,7 @@ upstream node:
 * `process.versions['electron']` String - Version of Electron.
 * `process.versions['chrome']` String - Version of Chromium.
 * `process.resourcesPath` String - Path to JavaScript source code.
+
+## process.hang
+
+Causes the main thread of the current process hang.
