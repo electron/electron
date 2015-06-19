@@ -2,11 +2,11 @@
 
 * [어플리케이션 배포](tutorial/application-distribution-ko.md)
 * [어플리케이션 패키징](tutorial/application-packaging-ko.md)
-* [네이티브 모듈 사용하기](tutorial/using-native-node-modules-ko.md)
+* [네이티브 node 모듈 사용하기](tutorial/using-native-node-modules-ko.md)
 * [메인 프로세스 디버깅하기](tutorial/debugging-main-process-ko.md)
 * [Selenium 과 WebDriver 사용하기](tutorial/using-selenium-and-webdriver-ko.md)
-* [개발자 콘솔 확장](tutorial/devtools-extension-ko.md)
-* [pepper-flash 플러그인 사용하기](tutorial/using-pepper-flash-plugin-ko.md)
+* [개발자 콘솔 확장기능](tutorial/devtools-extension-ko.md)
+* [Pepper 플래시 플러그인 사용하기](tutorial/using-pepper-flash-plugin-ko.md)
 
 ## 튜토리얼
 
@@ -41,7 +41,7 @@
 * [protocol](api/protocol-ko.md)
 * [tray](api/tray-ko.md)
 
-랜더러 프로세스를 위한 모듈들 (Web 페이지):
+랜더러 프로세스를 위한 모듈들 (웹 페이지):
 
 * [ipc (renderer)](api/ipc-renderer-ko.md)
 * [remote](api/remote-ko.md)
@@ -65,3 +65,5 @@
 * [빌드 설명서 (Windows)](development/build-instructions-windows-ko.md)
 * [빌드 설명서 (Linux)](development/build-instructions-linux-ko.md)
 * [디버거에서 디버그 심볼 서버 설정](development/setting-up-symbol-server-ko.md)
+
+이 문서는 (@preco21)[https://github.com/preco21]이 번역하였습니다.
