@@ -183,12 +183,12 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     base::CommandLine* command_line,
     int process_id) {
   std::string process_type = command_line->GetSwitchValueASCII("type");
-
   if (process_type != "renderer")
     return;
 
-  command_line->AppendSwitchASCII(switches::kRegisterStandardSchemes,
-                                  g_custom_schemes);
+  if (!g_custom_schemes.empty())
+    command_line->AppendSwitchASCII(switches::kRegisterStandardSchemes,
+                                    g_custom_schemes);
 
   NativeWindow* window;
   WebViewManager::WebViewInfo info;
