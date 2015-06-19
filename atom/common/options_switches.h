@@ -56,6 +56,7 @@ extern const char kSharedWorker[];
 extern const char kPageVisibility[];
 
 extern const char kDisableHttpCache[];
+extern const char kRegisterStandardSchemes[];
 
 }  // namespace switches
 

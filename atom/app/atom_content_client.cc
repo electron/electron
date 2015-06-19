@@ -75,6 +75,16 @@ std::string AtomContentClient::GetProduct() const {
 void AtomContentClient::AddAdditionalSchemes(
     std::vector<std::string>* standard_schemes,
     std::vector<std::string>* savable_schemes) {
+  auto command_line = base::CommandLine::ForCurrentProcess();
+  auto custom_schemes = command_line->GetSwitchValueASCII(
+      switches::kRegisterStandardSchemes);
+  if (!custom_schemes.empty()) {
+    std::vector<std::string> schemes;
+    base::SplitString(custom_schemes, ',', &schemes);
+    standard_schemes->insert(standard_schemes->end(),
+                             schemes.begin(),
+                             schemes.end());
+  }
   standard_schemes->push_back("chrome-extension");
 }
 

@@ -39,6 +39,12 @@ response you would like to send.
 
 Unregisters the custom protocol of `scheme`.
 
+## protocol.registerStandardSchemes(value)
+
+* `value` Array
+
+`value` is an array of custom schemes to be registered to the standard.
+
 ## protocol.isHandledProtocol(scheme)
 
 * `scheme` String

@@ -4,6 +4,7 @@
 
 #include "atom/browser/api/atom_api_protocol.h"
 
+#include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/net/adapter_request_job.h"
@@ -207,6 +208,7 @@ mate::ObjectTemplateBuilder Protocol::GetObjectTemplateBuilder(
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("registerProtocol", &Protocol::RegisterProtocol)
       .SetMethod("unregisterProtocol", &Protocol::UnregisterProtocol)
+      .SetMethod("registerStandardSchemes", &Protocol::RegisterStandardSchemes)
       .SetMethod("isHandledProtocol", &Protocol::IsHandledProtocol)
       .SetMethod("interceptProtocol", &Protocol::InterceptProtocol)
       .SetMethod("uninterceptProtocol", &Protocol::UninterceptProtocol);
@@ -237,6 +239,11 @@ void Protocol::UnregisterProtocol(v8::Isolate* isolate,
                           FROM_HERE,
                           base::Bind(&Protocol::UnregisterProtocolInIO,
                                      base::Unretained(this), scheme));
+}
+
+void Protocol::RegisterStandardSchemes(
+    const std::vector<std::string>& schemes) {
+  atom::AtomBrowserClient::SetCustomSchemes(schemes);
 }
 
 bool Protocol::IsHandledProtocol(const std::string& scheme) {
