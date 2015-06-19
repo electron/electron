@@ -161,8 +161,8 @@ struct Converter<net::CanonicalCookie> {
     mate::Dictionary dict(isolate, v8::Object::New(isolate));
     dict.Set("name", val.Name());
     dict.Set("value", val.Value());
-    dict.Set("source", val.Source());
     dict.Set("domain", val.Domain());
+    dict.Set("host_only", net::cookie_util::DomainIsHostOnly(val.Domain()));
     dict.Set("path", val.Path());
     dict.Set("secure", val.IsSecure());
     dict.Set("http_only", val.IsHttpOnly());

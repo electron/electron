@@ -1069,7 +1069,20 @@ win.webContents.on('did-finish-load', function() {
   * `session` Boolean - Filters out session or persistent cookies.
 * `callback` Function - function(error, cookies)
   * `error` Error
-  * `cookies` Array - array of cookie objects.
+  * `cookies` Array - array of `cookie` objects.
+    * `cookie` - Object
+      *  `name` String - The name of the cookie
+      *  `value` String - The value of the cookie
+      *  `domain` String - The domain of the cookie
+      *  `host_only` String - Whether the cookie is a host-only cookie
+      *  `path` String - The path of the cookie
+      *  `secure` Boolean - Whether the cookie is marked as Secure (typically HTTPS)
+      *  `http_only` Boolean - Whether the cookie is marked as HttpOnly
+      *  `session` Boolean - Whether the cookie is a session cookie or a persistent
+      *    cookie with an expiration date.
+      *  `expirationDate` Double - (Option) The expiration date of the cookie as
+           the number of seconds since the UNIX epoch. Not provided for session cookies.
+
 
 ### WebContents.session.cookies.set(details, callback)
 
