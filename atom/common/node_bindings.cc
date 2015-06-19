@@ -128,6 +128,12 @@ void NodeBindings::Initialize() {
   node::g_standalone_mode = is_browser_;
   node::g_upstream_node_mode = false;
 
+#if defined(OS_LINUX)
+  // Get real command line in renderer process forked by zygote.
+  if (!is_browser_)
+    AtomCommandLine::InitializeFromCommandLine();
+#endif
+
   // Parse the debug args.
   auto args = AtomCommandLine::argv();
   for (const std::string& arg : args)
