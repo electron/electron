@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_APP_ATOM_MAIN_ARGS_H_
-#define ATOM_APP_ATOM_MAIN_ARGS_H_
+#ifndef ATOM_COMMON_ATOM_COMMAND_LINE_H_
+#define ATOM_COMMON_ATOM_COMMAND_LINE_H_
 
 #include <string>
 #include <vector>
@@ -32,4 +32,4 @@ class AtomCommandLine {
 
 }  // namespace atom
 
-#endif  // ATOM_APP_ATOM_MAIN_ARGS_H_
+#endif  // ATOM_COMMON_ATOM_COMMAND_LINE_H_

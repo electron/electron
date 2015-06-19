@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "atom/app/atom_main_args.h"
+#include "atom/common/atom_command_line.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "base/command_line.h"
 #include "base/base_paths.h"
