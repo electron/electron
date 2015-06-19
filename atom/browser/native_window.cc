@@ -581,7 +581,9 @@ void NativeWindow::NotifyWindowUnresponsive() {
 }
 
 void NativeWindow::NotifyExecuteWindowsCommand(int command_id) {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnExecuteWindowsCommand(command_id));
+  FOR_EACH_OBSERVER(NativeWindowObserver,
+                    observers_,
+                    OnExecuteWindowsCommand(command_id));
 }
 
 
