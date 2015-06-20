@@ -10,7 +10,6 @@
 #include "base/time/time.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/web_contents.h"
 #include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -22,11 +21,13 @@
 
 #include "atom/common/node_includes.h"
 
+using atom::api::Cookies;
 using content::BrowserThread;
 
 namespace {
 
-bool GetCookieListFromStore(net::CookieStore* cookie_store,
+bool GetCookieListFromStore(
+    net::CookieStore* cookie_store,
     const std::string& url,
     const net::CookieMonster::GetCookieListCallback& callback) {
   DCHECK(cookie_store);
@@ -46,8 +47,8 @@ bool GetCookieListFromStore(net::CookieStore* cookie_store,
 }
 
 void RunGetCookiesCallbackOnUIThread(const std::string& error_message,
-    const net::CookieList& cookie_list,
-    const atom::api::Cookies::CookiesCallback& callback) {
+                                     const net::CookieList& cookie_list,
+                                     const Cookies::CookiesCallback& callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
@@ -63,8 +64,9 @@ void RunGetCookiesCallbackOnUIThread(const std::string& error_message,
   callback.Run(v8::Null(isolate), mate::ConvertToV8(isolate, cookie_list));
 }
 
-void RunRemoveCookiesCallbackOnUIThread(const std::string& error_message,
-    const atom::api::Cookies::CookiesCallback& callback) {
+void RunRemoveCookiesCallbackOnUIThread(
+    const std::string& error_message,
+    const Cookies::CookiesCallback& callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
@@ -82,7 +84,8 @@ void RunRemoveCookiesCallbackOnUIThread(const std::string& error_message,
 }
 
 void RunSetCookiesCallbackOnUIThread(const std::string& error_message,
-    bool set_success, const atom::api::Cookies::CookiesCallback& callback) {
+                                     bool set_success,
+                                     const Cookies::CookiesCallback& callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
@@ -132,7 +135,7 @@ bool MatchesDomain(const base::DictionaryValue* filter,
 }
 
 bool MatchesCookie(const base::DictionaryValue* filter,
-    const net::CanonicalCookie& cookie) {
+                   const net::CanonicalCookie& cookie) {
   std::string name, domain, path;
   bool is_secure, session;
   if (filter->GetString("name", &name) && name != cookie.Name())
@@ -157,7 +160,7 @@ namespace mate {
 template<>
 struct Converter<net::CanonicalCookie> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-      const net::CanonicalCookie& val) {
+                                   const net::CanonicalCookie& val) {
     mate::Dictionary dict(isolate, v8::Object::New(isolate));
     dict.Set("name", val.Name());
     dict.Set("value", val.Value());
@@ -179,8 +182,8 @@ namespace atom {
 
 namespace api {
 
-Cookies::Cookies(content::WebContents* web_contents):
-    web_contents_(web_contents) {
+Cookies::Cookies(content::BrowserContext* browser_context) :
+    browser_context_(browser_context) {
 }
 
 Cookies::~Cookies() {
@@ -198,8 +201,7 @@ void Cookies::Get(const base::DictionaryValue& options,
 
 void Cookies::GetCookiesOnIOThread(scoped_ptr<base::DictionaryValue> filter,
                                    const CookiesCallback& callback) {
-  net::CookieStore* cookie_store =
-      web_contents_->GetBrowserContext()->GetRequestContext()
+  net::CookieStore* cookie_store = browser_context_->GetRequestContext()
       ->GetURLRequestContext()->cookie_store();
   std::string url;
   filter->GetString("url", &url);
@@ -245,9 +247,8 @@ void Cookies::Remove(const mate::Dictionary& details,
 }
 
 void Cookies::RemoveCookiesOnIOThread(const GURL& url, const std::string& name,
-    const CookiesCallback& callback) {
-  net::CookieStore* cookie_store =
-      web_contents_->GetBrowserContext()->GetRequestContext()
+                                      const CookiesCallback& callback) {
+  net::CookieStore* cookie_store = browser_context_->GetRequestContext()
       ->GetURLRequestContext()->cookie_store();
   cookie_store->DeleteCookieAsync(url, name,
       base::Bind(&Cookies::OnRemoveCookies, base::Unretained(this), callback));
@@ -288,8 +289,7 @@ void Cookies::SetCookiesOnIOThread(scoped_ptr<base::DictionaryValue> details,
                                    const GURL& url,
                                    const CookiesCallback& callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
-  net::CookieStore* cookie_store =
-      web_contents_->GetBrowserContext()->GetRequestContext()
+  net::CookieStore* cookie_store = browser_context_->GetRequestContext()
       ->GetURLRequestContext()->cookie_store();
 
   std::string name, value, domain, path;
@@ -340,9 +340,10 @@ mate::ObjectTemplateBuilder Cookies::GetObjectTemplateBuilder(
 }
 
 // static
-mate::Handle<Cookies> Cookies::Create(v8::Isolate* isolate,
-                                      content::WebContents* web_contents) {
-  return CreateHandle(isolate, new Cookies(web_contents));
+mate::Handle<Cookies> Cookies::Create(
+    v8::Isolate* isolate,
+    content::BrowserContext* browser_context) {
+  return CreateHandle(isolate, new Cookies(browser_context));
 }
 
 }  // namespace api

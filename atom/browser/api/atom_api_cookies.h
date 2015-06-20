@@ -16,7 +16,7 @@
 #include "net/cookies/canonical_cookie.h"
 
 namespace content {
-class WebContents;
+class BrowserContext;
 }
 
 namespace atom {
@@ -30,10 +30,10 @@ class Cookies : public mate::Wrappable {
       CookiesCallback;
 
   static mate::Handle<Cookies> Create(v8::Isolate* isolate,
-                                      content::WebContents* web_contents);
+                                      content::BrowserContext* browser_context);
 
  protected:
-  explicit Cookies(content::WebContents* web_contents);
+  explicit Cookies(content::BrowserContext* browser_context);
   ~Cookies();
 
   void Get(const base::DictionaryValue& options,
@@ -66,7 +66,7 @@ class Cookies : public mate::Wrappable {
       v8::Isolate* isolate) override;
 
  private:
-  content::WebContents* web_contents_;
+  content::BrowserContext* browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(Cookies);
 };
