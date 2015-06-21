@@ -517,6 +517,10 @@ Opens the developer tools.
 
 Closes the developer tools.
 
+### BrowserWindow.isDevToolsOpened()
+
+Returns whether the developer tools are opened.
+
 ### BrowserWindow.toggleDevTools()
 
 Toggle the developer tools.
