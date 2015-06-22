@@ -9,11 +9,11 @@ exeName               = path.basename(process.execPath)
 
 # Spawn a command and invoke the callback when it completes with an error
 # and the output from standard out.
-spawn = (command, args, callback) ->
+spawnUpdate = (args, callback) ->
   stdout = ''
 
   try
-    spawnedProcess = ChildProcess.spawn(command, args)
+    spawnedProcess = ChildProcess.spawn(updateDotExe, args)
   catch error
     # Spawn can throw an error
     process.nextTick -> callback?(error, stdout)
@@ -29,14 +29,29 @@ spawn = (command, args, callback) ->
     error?.stdout ?= stdout
     callback?(error, stdout)
 
-# Spawn the Update.exe with the given arguments and invoke the callback when
-# the command completes.
-spawnUpdate = (args, callback) ->
-  spawn(updateDotExe, args, callback)
+processStart = (callback) ->
+  spawnUpdate(['--processStart', exeName], callback)
 
-# Exports
-exports.spawn = spawnUpdate
+download = (callback) ->
+  spawnUpdate ['--download', @updateUrl], (error, stdout) ->
+    return callback(error) if error?
 
-# Is the Update.exe installed with Atom?
-exports.existsSync = ->
+    try
+      # Last line of output is the JSON details about the releases
+      json   = stdout.trim().split('\n').pop()
+      update = JSON.parse(json)?.releasesToApply?.pop?()
+    catch error
+      error.stdout = stdout
+      return callback(error)
+
+    callback(null, update)
+
+update = (updateUrl, callback) ->
+  spawnUpdate ['--update', updateUrl], callback
+
+# Is the Update.exe installed with the current application?
+exports.supported = ->
   fs.accessSync(updateDotExe, fs.R_OK)
+exports.processStart = processStart
+exports.download     = download
+exports.update       = update

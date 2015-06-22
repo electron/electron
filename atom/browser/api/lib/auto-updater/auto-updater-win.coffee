@@ -1,10 +1,12 @@
 {EventEmitter} = require 'events'
 SquirrelUpdate = require './auto-updater/squirrel-update-win'
+app            = require('app')
 
 class AutoUpdater extends EventEmitter
 
   quitAndInstall: ->
-    # TODO
+    SquirrelUpdate.processStart ->
+      app.quit()
 
   setFeedUrl: (updateUrl) ->
     # set feed URL only when it hasn't been set before
@@ -36,27 +38,16 @@ class AutoUpdater extends EventEmitter
           @emit 'update-not-available'
           return
 
+        # info about the newly installed version and a function any of the event listeners can call to restart the application
         @emit 'update-downloaded', {}, update.releaseNotes, update.version, new Date(), @updateUrl, => @quitAndInstall()
 
   downloadUpdate: (callback) ->
-    SquirrelUpdate.spawn ['--download', @updateUrl], (error, stdout) ->
-      return callback(error) if error?
-
-      try
-        # Last line of output is the JSON details about the releases
-        json   = stdout.trim().split('\n').pop()
-        update = JSON.parse(json)?.releasesToApply?.pop?()
-      catch error
-        error.stdout = stdout
-        return callback(error)
-
-      callback(null, update)
+    SquirrelUpdate.download(callback)
 
   installUpdate: (callback) ->
-    SquirrelUpdate.spawn(['--update', @updateUrl], callback)
+    SquirrelUpdate.update(@updateUrl, callback)
 
   supportsUpdates: ->
-    SquirrelUpdate.existsSync()
-
+    SquirrelUpdate.supported()
 
 module.exports = new AutoUpdater()
