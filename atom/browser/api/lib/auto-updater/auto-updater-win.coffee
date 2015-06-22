@@ -18,11 +18,11 @@ class AutoUpdater extends EventEmitter
 
     @emit 'checking-for-update'
 
-    unless SquirrelUpdate.existsSync()
+    unless SquirrelUpdate.supported()
       @emit 'update-not-available'
       return
 
-    @downloadUpdate (error, update) =>
+    SquirrelUpdate.download (error, update) =>
       if error?
         @emit 'update-not-available'
         return
@@ -33,21 +33,12 @@ class AutoUpdater extends EventEmitter
 
       @emit 'update-available'
 
-      @installUpdate (error) =>
+      SquirrelUpdate.update @updateUrl, (error) =>
         if error?
           @emit 'update-not-available'
           return
 
         # info about the newly installed version and a function any of the event listeners can call to restart the application
         @emit 'update-downloaded', {}, update.releaseNotes, update.version, new Date(), @updateUrl, => @quitAndInstall()
-
-  downloadUpdate: (callback) ->
-    SquirrelUpdate.download(callback)
-
-  installUpdate: (callback) ->
-    SquirrelUpdate.update(@updateUrl, callback)
-
-  supportsUpdates: ->
-    SquirrelUpdate.supported()
 
 module.exports = new AutoUpdater()
