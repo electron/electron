@@ -1,6 +1,7 @@
 {EventEmitter} = require 'events'
 SquirrelUpdate = require './auto-updater/squirrel-update-win'
 app            = require('app')
+url            = require('url')
 
 class AutoUpdater extends EventEmitter
 
@@ -11,7 +12,14 @@ class AutoUpdater extends EventEmitter
   setFeedUrl: (updateUrl) ->
     # set feed URL only when it hasn't been set before
     unless @updateUrl
-      @updateUrl = updateUrl
+      # See https://github.com/Squirrel/Squirrel.Windows/issues/132
+      # This way the Mac and Windows Update URL can be the same, even when
+      # the Mac version is sending additional data in the query string.
+      parsedUrl = url.parse(updateUrl)
+      delete parsedUrl.search
+      delete parsedUrl.query
+
+      @updateUrl = url.format(parsedUrl)
 
   checkForUpdates: ->
     throw new Error('Update URL is not set') unless @updateUrl
