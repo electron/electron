@@ -323,6 +323,10 @@ exports.wrapFsWithAsar = (fs) ->
     return undefined unless info
     return '' if info.size is 0
 
+    if info.unpacked
+      realPath = archive.copyFileOut filePath
+      return fs.readFileSync realPath, encoding: 'utf8'
+
     buffer = new Buffer(info.size)
     fd = archive.getFd()
     retrun undefined unless fd >= 0
