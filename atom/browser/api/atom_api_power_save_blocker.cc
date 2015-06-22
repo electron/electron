@@ -10,6 +10,12 @@
 
 #include "atom/common/node_includes.h"
 
+namespace {
+
+const char kPowerSaveBlockerDescription[] = "Electron";
+
+}  // namespace
+
 namespace mate {
 
 template<>
@@ -47,28 +53,64 @@ PowerSaveBlocker::PowerSaveBlocker() {
 PowerSaveBlocker::~PowerSaveBlocker() {
 }
 
-void PowerSaveBlocker::Start(
+void PowerSaveBlocker::UpdatePowerSaveBlocker() {
+  if (power_save_blocker_types_.empty()) {
+    power_save_blocker_.reset();
+    return;
+  }
+
+  // |kPowerSaveBlockPreventAppSuspension| keeps system active, but allows
+  // screen to be turned off.
+  // |kPowerSaveBlockPreventDisplaySleep| keeps system and screen active, has a
+  // higher precedence level than |kPowerSaveBlockPreventAppSuspension|.
+  //
+  // Only the highest-precedence blocker type takes effect.
+  content::PowerSaveBlocker::PowerSaveBlockerType new_blocker_type =
+      content::PowerSaveBlocker::kPowerSaveBlockPreventAppSuspension;
+  for (const auto& element : power_save_blocker_types_) {
+    if (element.second ==
+        content::PowerSaveBlocker::kPowerSaveBlockPreventDisplaySleep) {
+      new_blocker_type =
+          content::PowerSaveBlocker::kPowerSaveBlockPreventDisplaySleep;
+      break;
+    }
+  }
+
+  if (!power_save_blocker_ || new_blocker_type != current_blocker_type_) {
+    scoped_ptr<content::PowerSaveBlocker> new_blocker =
+        content::PowerSaveBlocker::Create(
+            new_blocker_type,
+            content::PowerSaveBlocker::kReasonOther,
+            kPowerSaveBlockerDescription);
+    power_save_blocker_.swap(new_blocker);
+    current_blocker_type_ = new_blocker_type;
+  }
+}
+
+int PowerSaveBlocker::Start(
     content::PowerSaveBlocker::PowerSaveBlockerType type) {
-  power_save_blocker_ = content::PowerSaveBlocker::Create(
-      type,
-      content::PowerSaveBlocker::kReasonOther,
-      "Users required");
+  static int count = 0;
+  power_save_blocker_types_[count] = type;
+  UpdatePowerSaveBlocker();
+  return count++;
 }
 
-void PowerSaveBlocker::Stop() {
-  power_save_blocker_.reset();
+bool PowerSaveBlocker::Stop(int id) {
+  bool success = power_save_blocker_types_.erase(id) > 0;
+  UpdatePowerSaveBlocker();
+  return success;
 }
 
-bool PowerSaveBlocker::IsStarted() {
-  return power_save_blocker_.get() != NULL;
+bool PowerSaveBlocker::IsStarted(int id) {
+  return power_save_blocker_types_.find(id) != power_save_blocker_types_.end();
 }
 
 mate::ObjectTemplateBuilder PowerSaveBlocker::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("start", &PowerSaveBlocker::Start)
-      .SetMethod("stop", &PowerSaveBlocker::Stop);
-      .SetMethod("isStarted", &PowerSaveBlocker::IsStarted)
+      .SetMethod("stop", &PowerSaveBlocker::Stop)
+      .SetMethod("isStarted", &PowerSaveBlocker::IsStarted);
 }
 
 // static

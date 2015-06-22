@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_POWER_SAVE_BLOCKER_H_
 #define ATOM_BROWSER_API_ATOM_API_POWER_SAVE_BLOCKER_H_
 
+#include <map>
+
 #include "base/memory/scoped_ptr.h"
 #include "content/public/browser/power_save_blocker.h"
 #include "native_mate/handle.h"
@@ -31,11 +33,22 @@ class PowerSaveBlocker : public mate::Wrappable {
       v8::Isolate* isolate) override;
 
  private:
-  void Start(content::PowerSaveBlocker::PowerSaveBlockerType type);
-  void Stop();
-  bool IsStarted();
+  void UpdatePowerSaveBlocker();
+  int Start(content::PowerSaveBlocker::PowerSaveBlockerType type);
+  bool Stop(int id);
+  bool IsStarted(int id);
 
   scoped_ptr<content::PowerSaveBlocker> power_save_blocker_;
+
+  // Currnet blocker type used by |power_save_blocker_|
+  content::PowerSaveBlocker::PowerSaveBlockerType current_blocker_type_;
+
+  // Map from id to the corresponding blocker type for each request.
+  typedef std::map<int, content::PowerSaveBlocker::PowerSaveBlockerType>
+      PowerSaveBlockerTypeMap;
+  PowerSaveBlockerTypeMap power_save_blocker_types_;
+
+
   DISALLOW_COPY_AND_ASSIGN(PowerSaveBlocker);
 };
 
