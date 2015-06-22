@@ -83,6 +83,12 @@ class CommonWebContentsDelegate
   void DevToolsRemoveFileSystem(const std::string& file_system_path) override;
 
  private:
+  // Callback for when DevToolsSaveToFile has completed.
+  void OnDevToolsSaveToFile(const std::string& url);
+
+  // Callback for when DevToolsAppendToFile has completed.
+  void OnDevToolsAppendToFile(const std::string& url);
+
   // Set fullscreen mode triggered by html api.
   void SetHtmlApiFullscreen(bool enter_fullscreen);
 
