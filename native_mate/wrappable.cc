@@ -10,7 +10,7 @@
 
 namespace mate {
 
-Wrappable::Wrappable() {
+Wrappable::Wrappable() : isolate_(NULL) {
 }
 
 Wrappable::~Wrappable() {
@@ -20,6 +20,8 @@ Wrappable::~Wrappable() {
 void Wrappable::Wrap(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) {
   if (!wrapper_.IsEmpty())
     return;
+
+  isolate_ = isolate;
 
   MATE_SET_INTERNAL_FIELD_POINTER(wrapper, 0, this);
   MATE_PERSISTENT_ASSIGN(v8::Object, isolate, wrapper_, wrapper);

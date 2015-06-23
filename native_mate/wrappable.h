@@ -66,6 +66,9 @@ class Wrappable {
   Wrappable();
   virtual ~Wrappable();
 
+  // Returns the Isolate this object is created in.
+  v8::Isolate* isolate() const { return isolate_; }
+
   virtual ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate);
 
   // Called after the "_init" method gets called in JavaScript.
@@ -74,6 +77,7 @@ class Wrappable {
  private:
   static MATE_WEAK_CALLBACK(WeakCallback, v8::Object, Wrappable);
 
+  v8::Isolate* isolate_;
   v8::UniquePersistent<v8::Object> wrapper_;  // Weak
 
   DISALLOW_COPY_AND_ASSIGN(Wrappable);
