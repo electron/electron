@@ -980,9 +980,28 @@ size.
 Prints windows' web page as PDF with Chromium's preview printing custom
 settings.
 
-By default, the options will be
+By default, an empty `options` will be regarded as
 `{marginsType:0, printBackgrounds:false, printSelectionOnly:false,
   landscape:false}`.
+
+```javascript
+var BrowserWindow = require('browser-window');
+var fs = require('fs');
+
+var win = new BrowserWindow({width: 800, height: 600});
+win.loadUrl("http://github.com");
+
+win.webContents.on("did-finish-load", function() {
+  // Use default printing options
+  win.webContents.printToPDF({}, function(error, data) {
+    if (error) throw error;
+    fs.writeFile(dist, data, function(error) {
+      if (err)
+        alert('write pdf file error', error);
+    })
+  })
+});
+```
 
 ### WebContents.send(channel[, args...])
 
