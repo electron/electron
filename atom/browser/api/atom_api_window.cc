@@ -58,7 +58,7 @@ void Window::WillCreatePopupWindow(const base::string16& frame_name,
                                    const GURL& target_url,
                                    const std::string& partition_id,
                                    WindowOpenDisposition disposition) {
-  Emit("-new-window", target_url, frame_name, static_cast<int>(disposition));
+  Emit("-new-window", target_url, frame_name);
 }
 
 void Window::WillNavigate(bool* prevent_default, const GURL& url) {

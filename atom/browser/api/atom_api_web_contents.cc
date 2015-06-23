@@ -90,6 +90,22 @@ struct Converter<PrintSettings> {
   }
 };
 
+template<>
+struct Converter<WindowOpenDisposition> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   WindowOpenDisposition val) {
+    std::string disposition = "other";
+    switch (val) {
+      case CURRENT_TAB: disposition = "default"; break;
+      case NEW_FOREGROUND_TAB: disposition = "foreground-tab"; break;
+      case NEW_BACKGROUND_TAB: disposition = "background-tab"; break;
+      case NEW_POPUP: case NEW_WINDOW: disposition = "new-window"; break;
+      default: break;
+    }
+    return mate::ConvertToV8(isolate, disposition);
+  }
+};
+
 }  // namespace mate
 
 
@@ -187,10 +203,7 @@ bool WebContents::ShouldCreateWebContents(
     const GURL& target_url,
     const std::string& partition_id,
     content::SessionStorageNamespace* session_storage_namespace) {
-  Emit("-new-window",
-       target_url,
-       frame_name,
-       static_cast<int>(NEW_FOREGROUND_TAB));
+  Emit("new-window", target_url, frame_name, NEW_FOREGROUND_TAB);
   return false;
 }
 
@@ -202,7 +215,7 @@ content::WebContents* WebContents::OpenURLFromTab(
     content::WebContents* source,
     const content::OpenURLParams& params) {
   if (params.disposition != CURRENT_TAB) {
-    Emit("-new-window", params.url, "", static_cast<int>(params.disposition));
+    Emit("new-window", params.url, "", params.disposition);
     return nullptr;
   }
 
