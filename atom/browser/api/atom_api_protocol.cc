@@ -67,9 +67,8 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
   void GetJobTypeInUI() override {
     DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    v8::Locker locker(isolate);
-    v8::HandleScope handle_scope(isolate);
+    v8::Locker locker(registry_->isolate());
+    v8::HandleScope handle_scope(registry_->isolate());
 
     // Call the JS handler.
     Protocol::JsProtocolHandler callback =
@@ -85,7 +84,7 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
       return;
     } else if (result->IsObject()) {
       v8::Local<v8::Object> obj = result->ToObject();
-      mate::Dictionary dict(isolate, obj);
+      mate::Dictionary dict(registry_->isolate(), obj);
       std::string name = mate::V8ToString(obj->GetConstructorName());
       if (name == "RequestStringJob") {
         std::string mime_type, charset, data;

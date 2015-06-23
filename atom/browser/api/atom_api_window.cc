@@ -142,20 +142,18 @@ void Window::OnDevToolsFocus() {
 void Window::OnDevToolsOpened() {
   Emit("devtools-opened");
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
-  auto handle =
-      WebContents::CreateFrom(isolate, window_->GetDevToolsWebContents());
-  devtools_web_contents_.Reset(isolate, handle.ToV8());
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  auto handle = WebContents::CreateFrom(isolate(),
+                                        window_->GetDevToolsWebContents());
+  devtools_web_contents_.Reset(isolate(), handle.ToV8());
 }
 
 void Window::OnDevToolsClosed() {
   Emit("devtools-closed");
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
   devtools_web_contents_.Reset();
 }
 

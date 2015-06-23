@@ -55,11 +55,10 @@ bool Menu::IsCommandIdVisible(int command_id) const {
 
 bool Menu::GetAcceleratorForCommandId(int command_id,
                                       ui::Accelerator* accelerator) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
   v8::Local<v8::Value> val = get_accelerator_.Run(command_id);
-  return mate::ConvertFromV8(isolate, val, accelerator);
+  return mate::ConvertFromV8(isolate(), val, accelerator);
 }
 
 void Menu::ExecuteCommand(int command_id, int event_flags) {

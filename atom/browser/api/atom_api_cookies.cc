@@ -46,18 +46,17 @@ bool GetCookieListFromStore(
   return true;
 }
 
-void RunGetCookiesCallbackOnUIThread(const std::string& error_message,
+void RunGetCookiesCallbackOnUIThread(v8::Isolate* isolate,
+                                     const std::string& error_message,
                                      const net::CookieList& cookie_list,
                                      const Cookies::CookiesCallback& callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
 
   if (!error_message.empty()) {
-    v8::Local<v8::String> error = v8::String::NewFromUtf8(isolate,
-        error_message.c_str());
+    v8::Local<v8::Value> error = mate::ConvertToV8(isolate, error_message);
     callback.Run(error, v8::Null(isolate));
     return;
   }
@@ -65,17 +64,16 @@ void RunGetCookiesCallbackOnUIThread(const std::string& error_message,
 }
 
 void RunRemoveCookiesCallbackOnUIThread(
+    v8::Isolate* isolate,
     const std::string& error_message,
     const Cookies::CookiesCallback& callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
 
   if (!error_message.empty()) {
-    v8::Local<v8::String> error = v8::String::NewFromUtf8(isolate,
-        error_message.c_str());
+    v8::Local<v8::Value> error = mate::ConvertToV8(isolate, error_message);
     callback.Run(error, v8::Null(isolate));
     return;
   }
@@ -83,24 +81,23 @@ void RunRemoveCookiesCallbackOnUIThread(
   callback.Run(v8::Null(isolate), v8::Null(isolate));
 }
 
-void RunSetCookiesCallbackOnUIThread(const std::string& error_message,
+void RunSetCookiesCallbackOnUIThread(v8::Isolate* isolate,
+                                     const std::string& error_message,
                                      bool set_success,
                                      const Cookies::CookiesCallback& callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
 
   if (!error_message.empty()) {
-    v8::Local<v8::String> error = v8::String::NewFromUtf8(isolate,
-        error_message.c_str());
+    v8::Local<v8::Value> error = mate::ConvertToV8(isolate, error_message);
     callback.Run(error, v8::Null(isolate));
     return;
   }
   if (!set_success) {
-    v8::Local<v8::String> error = v8::String::NewFromUtf8(isolate,
-        "Failed to set cookies");
+    v8::Local<v8::Value> error = mate::ConvertToV8(
+        isolate, "Failed to set cookies");
     callback.Run(error, v8::Null(isolate));
   }
 
@@ -209,8 +206,8 @@ void Cookies::GetCookiesOnIOThread(scoped_ptr<base::DictionaryValue> filter,
           base::Bind(&Cookies::OnGetCookies, base::Unretained(this),
               Passed(&filter), callback))) {
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-        base::Bind(&RunGetCookiesCallbackOnUIThread, "Url is not valid",
-            net::CookieList(), callback));
+        base::Bind(&RunGetCookiesCallbackOnUIThread, isolate(),
+                   "Url is not valid", net::CookieList(), callback));
   }
 }
 
@@ -223,7 +220,7 @@ void Cookies::OnGetCookies(scoped_ptr<base::DictionaryValue> filter,
       result.push_back(cookie);
   }
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, base::Bind(
-      &RunGetCookiesCallbackOnUIThread, "", result, callback));
+      &RunGetCookiesCallbackOnUIThread, isolate(), "", result, callback));
 }
 
 void Cookies::Remove(const mate::Dictionary& details,
@@ -238,7 +235,7 @@ void Cookies::Remove(const mate::Dictionary& details,
     error_message = "Url is not valid.";
   }
   if (!error_message.empty()) {
-     RunRemoveCookiesCallbackOnUIThread(error_message, callback);
+     RunRemoveCookiesCallbackOnUIThread(isolate(), error_message, callback);
      return;
   }
   content::BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
@@ -256,7 +253,7 @@ void Cookies::RemoveCookiesOnIOThread(const GURL& url, const std::string& name,
 
 void Cookies::OnRemoveCookies(const CookiesCallback& callback) {
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-      base::Bind(&RunRemoveCookiesCallbackOnUIThread, "", callback));
+      base::Bind(&RunRemoveCookiesCallbackOnUIThread, isolate(), "", callback));
 }
 
 void Cookies::Set(const base::DictionaryValue& options,
@@ -273,7 +270,7 @@ void Cookies::Set(const base::DictionaryValue& options,
   }
 
   if (!error_message.empty()) {
-    RunSetCookiesCallbackOnUIThread(error_message, false, callback);
+    RunSetCookiesCallbackOnUIThread(isolate(), error_message, false, callback);
     return;
   }
 
@@ -328,7 +325,8 @@ void Cookies::SetCookiesOnIOThread(scoped_ptr<base::DictionaryValue> details,
 void Cookies::OnSetCookies(const CookiesCallback& callback,
                            bool set_success) {
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-      base::Bind(&RunSetCookiesCallbackOnUIThread, "", set_success, callback));
+      base::Bind(&RunSetCookiesCallbackOnUIThread, isolate(), "", set_success,
+                 callback));
 }
 
 mate::ObjectTemplateBuilder Cookies::GetObjectTemplateBuilder(

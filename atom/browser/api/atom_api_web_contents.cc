@@ -310,9 +310,8 @@ void WebContents::DidStopLoading() {
 
 void WebContents::DidGetResourceResponseStart(
     const content::ResourceRequestDetails& details) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
   base::DictionaryValue response_headers;
 
   net::HttpResponseHeaders* headers = details.headers.get();
