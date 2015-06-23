@@ -62,6 +62,9 @@ class App : public mate::EventEmitter,
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
   void SetDesktopName(const std::string& desktop_name);
   void SetAppUserModelId(const std::string& app_id);
+  v8::Local<v8::Value> DefaultSession(v8::Isolate* isolate);
+
+  v8::Global<v8::Value> default_session_;
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };

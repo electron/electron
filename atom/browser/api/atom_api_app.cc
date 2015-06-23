@@ -12,6 +12,7 @@
 #endif
 
 #include "atom/browser/api/atom_api_menu.h"
+#include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
@@ -217,6 +218,16 @@ void App::SetAppUserModelId(const std::string& app_id) {
 #endif
 }
 
+v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
+  if (default_session_.IsEmpty()) {
+    auto browser_context = static_cast<AtomBrowserContext*>(
+        AtomBrowserMainParts::Get()->browser_context());
+    auto handle = Session::Create(isolate, browser_context);
+    default_session_.Reset(isolate, handle.ToV8());
+  }
+  return v8::Local<v8::Value>::New(isolate, default_session_);
+}
+
 mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   auto browser = base::Unretained(Browser::Get());
@@ -240,7 +251,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("resolveProxy", &App::ResolveProxy)
       .SetMethod("setDesktopName", &App::SetDesktopName)
-      .SetMethod("setAppUserModelId", &App::SetAppUserModelId);
+      .SetMethod("setAppUserModelId", &App::SetAppUserModelId)
+      .SetProperty("defaultSession", &App::DefaultSession);
 }
 
 // static

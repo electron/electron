@@ -5,7 +5,7 @@
 #include "atom/browser/api/atom_api_session.h"
 
 #include "atom/browser/api/atom_api_cookies.h"
-#include "content/public/browser/browser_context.h"
+#include "atom/browser/atom_browser_context.h"
 #include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -16,8 +16,8 @@ namespace atom {
 
 namespace api {
 
-Session::Session(content::BrowserContext* browser_context):
-  browser_context_(browser_context) {
+Session::Session(AtomBrowserContext* browser_context)
+    : browser_context_(browser_context) {
 }
 
 Session::~Session() {
@@ -40,7 +40,7 @@ mate::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
 // static
 mate::Handle<Session> Session::Create(
     v8::Isolate* isolate,
-    content::BrowserContext* browser_context) {
+    AtomBrowserContext* browser_context) {
   return mate::CreateHandle(isolate, new Session(browser_context));
 }
 
