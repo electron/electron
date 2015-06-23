@@ -249,9 +249,7 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
-  Emit("render-view-deleted",
-       render_view_host->GetProcess()->GetID(),
-       render_view_host->GetRoutingID());
+  Emit("render-view-deleted", render_view_host->GetProcess()->GetID());
 }
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
