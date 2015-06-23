@@ -109,6 +109,8 @@
       'atom/browser/atom_browser_client.h',
       'atom/browser/atom_browser_context.cc',
       'atom/browser/atom_browser_context.h',
+      'atom/browser/atom_download_manager_delegate.cc',
+      'atom/browser/atom_download_manager_delegate.h',
       'atom/browser/atom_browser_main_parts.cc',
       'atom/browser/atom_browser_main_parts.h',
       'atom/browser/atom_browser_main_parts_linux.cc',

@@ -9,6 +9,7 @@
 
 namespace atom {
 
+class AtomDownloadManagerDelegate;
 class AtomURLRequestJobFactory;
 class WebViewManager;
 
@@ -25,11 +26,13 @@ class AtomBrowserContext : public brightray::BrowserContext {
       const base::FilePath& base_path) override;
 
   // content::BrowserContext:
+  content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
   content::BrowserPluginGuestManager* GetGuestManager() override;
 
   AtomURLRequestJobFactory* job_factory() const { return job_factory_; }
 
  private:
+  scoped_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
   scoped_ptr<WebViewManager> guest_manager_;
 
   AtomURLRequestJobFactory* job_factory_;  // Weak reference.

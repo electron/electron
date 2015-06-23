@@ -5,6 +5,7 @@
 #include "atom/browser/atom_browser_context.h"
 
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_download_manager_delegate.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/asar/asar_protocol_handler.h"
 #include "atom/browser/net/http_protocol_handler.h"
@@ -96,6 +97,16 @@ AtomBrowserContext::CreateHttpCacheBackendFactory(
     return new NoCacheBackend;
   else
     return brightray::BrowserContext::CreateHttpCacheBackendFactory(base_path);
+}
+
+content::DownloadManagerDelegate*
+AtomBrowserContext::GetDownloadManagerDelegate() {
+  if (!download_manager_delegate_.get()) {
+    auto download_manager = content::BrowserContext::GetDownloadManager(this);
+    download_manager_delegate_.reset(
+        new AtomDownloadManagerDelegate(download_manager));
+  }
+  return download_manager_delegate_.get();
 }
 
 content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
