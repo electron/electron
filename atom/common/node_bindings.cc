@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "atom/common/atom_command_line.h"
+#include "atom/common/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "base/command_line.h"
 #include "base/base_paths.h"
@@ -185,8 +186,7 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
   if (node::use_debug_agent)
     node::EnableDebug(env);
 
-  v8::Local<v8::Value> msg = mate::StringToV8(env->isolate(), "loaded");
-  node::MakeCallback(env->isolate(), env->process_object(), "emit", 1, &msg);
+  mate::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
 
 void NodeBindings::PrepareMessageLoop() {

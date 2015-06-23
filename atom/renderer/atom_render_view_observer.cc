@@ -7,8 +7,11 @@
 #include <string>
 #include <vector>
 
-#include "atom/common/api/api_messages.h"
+// Put this before event_emitter_caller.h to have string16 support.
 #include "atom/common/native_mate_converters/string16_converter.h"
+
+#include "atom/common/api/api_messages.h"
+#include "atom/common/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_renderer_client.h"
@@ -134,13 +137,10 @@ void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
   v8::Local<v8::Context> context = frame->mainWorldScriptContext();
   v8::Context::Scope context_scope(context);
 
-  std::vector<v8::Local<v8::Value>> arguments = ListValueToVector(
-      isolate, args);
-  arguments.insert(arguments.begin(), mate::ConvertToV8(isolate, channel));
-
   v8::Local<v8::Object> ipc;
-  if (GetIPCObject(isolate, context, &ipc))
-    node::MakeCallback(isolate, ipc, "emit", arguments.size(), &arguments[0]);
+  if (GetIPCObject(isolate, context, &ipc)) {
+    mate::EmitEvent(isolate, ipc, channel, ListValueToVector(isolate, args));
+  }
 }
 
 }  // namespace atom

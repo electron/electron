@@ -21,15 +21,28 @@ v8::Local<v8::Value> CallEmitWithArgs(v8::Isolate* isolate,
 
 }  // namespace internal
 
-// obj.emit(name, args...);
+// obj.emit.apply(obj, name, args...);
 // The caller is responsible of allocating a HandleScope.
-template<typename... Args>
+template<typename StringType, typename... Args>
 v8::Local<v8::Value> EmitEvent(v8::Isolate* isolate,
                                v8::Local<v8::Object> obj,
-                               const base::StringPiece& name,
+                               const StringType& name,
+                               const internal::ValueVector& args) {
+  internal::ValueVector concatenated_args = { StringToV8(isolate, name) };
+  concatenated_args.reserve(1 + args.size());
+  concatenated_args.insert(concatenated_args.end(), args.begin(), args.end());
+  return internal::CallEmitWithArgs(isolate, obj, &concatenated_args);
+}
+
+// obj.emit(name, args...);
+// The caller is responsible of allocating a HandleScope.
+template<typename StringType, typename... Args>
+v8::Local<v8::Value> EmitEvent(v8::Isolate* isolate,
+                               v8::Local<v8::Object> obj,
+                               const StringType& name,
                                const Args&... args) {
   internal::ValueVector converted_args = {
-      ConvertToV8(isolate, name),
+      StringToV8(isolate, name),
       ConvertToV8(isolate, args)...,
   };
   return internal::CallEmitWithArgs(isolate, obj, &converted_args);
