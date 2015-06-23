@@ -54,6 +54,9 @@ class Wrappable {
   // object constructed by GetObjectTemplateBuilder.
   v8::Local<v8::Object> GetWrapper(v8::Isolate* isolate);
 
+  // Returns the Isolate this object is created in.
+  v8::Isolate* isolate() const { return isolate_; }
+
   // Bind the C++ class to the JS wrapper.
   void Wrap(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
@@ -65,9 +68,6 @@ class Wrappable {
  protected:
   Wrappable();
   virtual ~Wrappable();
-
-  // Returns the Isolate this object is created in.
-  v8::Isolate* isolate() const { return isolate_; }
 
   virtual ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate);
 
