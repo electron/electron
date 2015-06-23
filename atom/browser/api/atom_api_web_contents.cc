@@ -745,18 +745,15 @@ void WebContents::SetAllowTransparency(bool allow) {
   if (guest_opaque_ != allow)
     return;
 
+  auto render_view_host = web_contents()->GetRenderViewHost();
   guest_opaque_ = !allow;
-  if (!web_contents()->GetRenderViewHost()->GetView())
+  if (!render_view_host->GetView())
     return;
 
   if (guest_opaque_) {
-    web_contents()
-        ->GetRenderViewHost()
-        ->GetView()
-        ->SetBackgroundColorToDefault();
+    render_view_host->GetView()->SetBackgroundColorToDefault();
   } else {
-    web_contents()->GetRenderViewHost()->GetView()->SetBackgroundColor(
-        SK_ColorTRANSPARENT);
+    render_view_host->GetView()->SetBackgroundColor(SK_ColorTRANSPARENT);
   }
 }
 
