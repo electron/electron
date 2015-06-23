@@ -24,10 +24,6 @@ wrapWebContents = (webContents) ->
     else
       webContents.once 'did-finish-load', @_executeJavaScript.bind(this, code)
 
-  # The processId and routingId and identify a webContents.
-  webContents.getId = -> @getProcessId()
-  webContents.equal = (other) -> @getId() is other.getId()
-
   # The navigation controller.
   controller = new NavigationController(webContents)
   for name, method of NavigationController.prototype when method instanceof Function

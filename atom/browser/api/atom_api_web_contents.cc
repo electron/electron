@@ -453,6 +453,14 @@ bool WebContents::IsAlive() const {
   return web_contents() != NULL;
 }
 
+int WebContents::GetID() const {
+  return web_contents()->GetRenderProcessHost()->GetID();
+}
+
+bool WebContents::Equal(const WebContents* web_contents) const {
+  return GetID() == web_contents->GetID();
+}
+
 void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   content::NavigationController::LoadURLParams params(url);
 
@@ -504,14 +512,6 @@ void WebContents::GoForward() {
 void WebContents::GoToOffset(int offset) {
   atom::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoToOffset(offset);
-}
-
-int WebContents::GetRoutingID() const {
-  return web_contents()->GetRoutingID();
-}
-
-int WebContents::GetProcessID() const {
-  return web_contents()->GetRenderProcessHost()->GetID();
 }
 
 bool WebContents::IsCrashed() const {
@@ -770,6 +770,8 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
         .SetMethod("destroy", &WebContents::Destroy)
         .SetMethod("isAlive", &WebContents::IsAlive)
+        .SetMethod("getId", &WebContents::GetID)
+        .SetMethod("equal", &WebContents::Equal)
         .SetMethod("_loadUrl", &WebContents::LoadURL)
         .SetMethod("getTitle", &WebContents::GetTitle)
         .SetMethod("isLoading", &WebContents::IsLoading)
@@ -779,8 +781,6 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("_goBack", &WebContents::GoBack)
         .SetMethod("_goForward", &WebContents::GoForward)
         .SetMethod("_goToOffset", &WebContents::GoToOffset)
-        .SetMethod("getRoutingId", &WebContents::GetRoutingID)
-        .SetMethod("getProcessId", &WebContents::GetProcessID)
         .SetMethod("isCrashed", &WebContents::IsCrashed)
         .SetMethod("setUserAgent", &WebContents::SetUserAgent)
         .SetMethod("insertCSS", &WebContents::InsertCSS)
