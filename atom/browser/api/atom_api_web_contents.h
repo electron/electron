@@ -89,6 +89,7 @@ class WebContents : public mate::EventEmitter,
   void ToggleDevTools();
   void InspectElement(int x, int y);
   void InspectServiceWorker();
+  v8::Local<v8::Value> Session(v8::Isolate* isolate);
   void HasServiceWorker(const base::Callback<void(bool)>&);
   void UnregisterServiceWorker(const base::Callback<void(bool)>&);
   void SetAudioMuted(bool muted);
@@ -238,6 +239,9 @@ class WebContents : public mate::EventEmitter,
 
   // Returns the default size of the guestview.
   gfx::Size GetDefaultSize() const;
+
+
+  v8::Global<v8::Value> session_;
 
   // Stores whether the contents of the guest can be transparent.
   bool guest_opaque_;
