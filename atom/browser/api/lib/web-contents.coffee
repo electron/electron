@@ -79,9 +79,7 @@ wrapWebContents = (webContents) ->
     if options.printBackgrounds
       printingSetting.shouldPrintBackgrounds = options.printBackground
 
-    webContents._printToPDF printingSetting, callback
-
-  webContents
+    @_printToPDF printingSetting, callback
 
 binding._setWrapWebContents wrapWebContents
 process.once 'exit', binding._clearWrapWebContents
