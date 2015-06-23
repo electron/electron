@@ -45,6 +45,10 @@ describe 'asar package', ->
           assert /ENOENT/.test e
         async = true
 
+      it 'reads a normal file with unpacked files', ->
+        p = path.join fixtures, 'asar', 'unpack.asar', 'a.txt'
+        assert.equal fs.readFileSync(p).toString(), 'a\n'
+
     describe 'fs.readFile', ->
       it 'reads a normal file', (done) ->
         p = path.join fixtures, 'asar', 'a.asar', 'file1'
@@ -371,6 +375,21 @@ describe 'asar package', ->
           assert.equal content, fs.readFileSync(file).toString()
           done()
         child.send file
+
+    describe 'internalModuleReadFile', ->
+      internalModuleReadFile = process.binding('fs').internalModuleReadFile
+
+      it 'read a normal file', ->
+        file1 = path.join fixtures, 'asar', 'a.asar', 'file1'
+        assert.equal internalModuleReadFile(file1).toString(), 'file1\n'
+        file2 = path.join fixtures, 'asar', 'a.asar', 'file2'
+        assert.equal internalModuleReadFile(file2).toString(), 'file2\n'
+        file3 = path.join fixtures, 'asar', 'a.asar', 'file3'
+        assert.equal internalModuleReadFile(file3).toString(), 'file3\n'
+
+      it 'reads a normal file with unpacked files', ->
+        p = path.join fixtures, 'asar', 'unpack.asar', 'a.txt'
+        assert.equal internalModuleReadFile(p).toString(), 'a\n'
 
   describe 'asar protocol', ->
     url = require 'url'
