@@ -57,8 +57,6 @@
     'lib_sources': [
       'atom/app/atom_content_client.cc',
       'atom/app/atom_content_client.h',
-      'atom/app/atom_main_args.cc',
-      'atom/app/atom_main_args.h',
       'atom/app/atom_main_delegate.cc',
       'atom/app/atom_main_delegate.h',
       'atom/app/atom_main_delegate_mac.mm',
@@ -231,6 +229,8 @@
       'atom/common/asar/asar_util.h',
       'atom/common/asar/scoped_temporary_file.cc',
       'atom/common/asar/scoped_temporary_file.h',
+      'atom/common/atom_command_line.cc',
+      'atom/common/atom_command_line.h',
       'atom/common/common_message_generator.cc',
       'atom/common/common_message_generator.h',
       'atom/common/crash_reporter/crash_reporter.cc',

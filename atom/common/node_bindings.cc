@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "atom/app/atom_main_args.h"
+#include "atom/common/atom_command_line.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "base/command_line.h"
 #include "base/base_paths.h"
@@ -127,6 +127,12 @@ void NodeBindings::Initialize() {
   // Open node's error reporting system for browser process.
   node::g_standalone_mode = is_browser_;
   node::g_upstream_node_mode = false;
+
+#if defined(OS_LINUX)
+  // Get real command line in renderer process forked by zygote.
+  if (!is_browser_)
+    AtomCommandLine::InitializeFromCommandLine();
+#endif
 
   // Parse the debug args.
   auto args = AtomCommandLine::argv();

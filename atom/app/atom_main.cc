@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "atom/app/atom_main.h"
-#include "atom/app/atom_main_args.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -33,6 +32,7 @@
 #endif  // defined(OS_MACOSX)
 
 #include "atom/app/node_main.h"
+#include "atom/common/atom_command_line.h"
 #include "base/i18n/icu_util.h"
 
 #if defined(OS_WIN)
