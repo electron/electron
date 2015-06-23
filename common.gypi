@@ -38,15 +38,16 @@
     'target_conditions': [
       ['_target_name in ["libuv", "http_parser", "openssl", "cares", "node", "zlib"]', {
         'msvs_disabled_warnings': [
-          4703,  # potentially uninitialized local pointer variable 'req' used
           4013,  # 'free' undefined; assuming extern returning int
           4018,  # signed/unsigned mismatch
           4054,  #
+          4055,  # 'type cast' : from data pointer 'void *' to function pointer
           4057,  # 'function' : 'volatile LONG *' differs in indirection to slightly different base types from 'unsigned long *'
           4189,  #
           4131,  # uses old-style declarator
           4133,  # incompatible types
           4146,  # unary minus operator applied to unsigned type, result still unsigned
+          4164,  # intrinsic function not declared
           4152,  # function/data pointer conversion in expression
           4206,  # translation unit is empty
           4204,  # non-constant aggregate initializer
@@ -58,6 +59,7 @@
           4389,  # '==' : signed/unsigned mismatch
           4505,  # unreferenced local function has been removed
           4701,  # potentially uninitialized local variable 'sizew' used
+          4703,  # potentially uninitialized local pointer variable 'req' used
           4706,  # assignment within conditional expression
           4804,  # unsafe use of type 'bool' in operation
           4996,  # this function or variable may be unsafe.

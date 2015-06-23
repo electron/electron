@@ -85,10 +85,6 @@ def main():
                       os.path.join(DIST_DIR, MKSNAPSHOT_NAME))
 
   if PLATFORM == 'win32':
-    # Upload PDBs to Windows symbol server.
-    execute([sys.executable,
-             os.path.join(SOURCE_ROOT, 'script', 'upload-windows-pdb.py')])
-
     # Upload node headers.
     execute([sys.executable,
              os.path.join(SOURCE_ROOT, 'script', 'upload-node-headers.py'),

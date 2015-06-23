@@ -354,7 +354,7 @@ void Protocol::EmitEventInUI(const std::string& event,
 // static
 mate::Handle<Protocol> Protocol::Create(
     v8::Isolate* isolate, AtomBrowserContext* browser_context) {
-  return CreateHandle(isolate, new Protocol(browser_context));
+  return mate::CreateHandle(isolate, new Protocol(browser_context));
 }
 
 }  // namespace api

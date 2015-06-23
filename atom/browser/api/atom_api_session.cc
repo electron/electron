@@ -41,7 +41,7 @@ mate::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
 mate::Handle<Session> Session::Create(
     v8::Isolate* isolate,
     content::BrowserContext* browser_context) {
-  return CreateHandle(isolate, new Session(browser_context));
+  return mate::CreateHandle(isolate, new Session(browser_context));
 }
 
 }  // namespace api

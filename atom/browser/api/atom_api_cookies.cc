@@ -343,7 +343,7 @@ mate::ObjectTemplateBuilder Cookies::GetObjectTemplateBuilder(
 mate::Handle<Cookies> Cookies::Create(
     v8::Isolate* isolate,
     content::BrowserContext* browser_context) {
-  return CreateHandle(isolate, new Cookies(browser_context));
+  return mate::CreateHandle(isolate, new Cookies(browser_context));
 }
 
 }  // namespace api
