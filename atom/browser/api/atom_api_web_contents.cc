@@ -12,6 +12,7 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
 #include "atom/common/api/api_messages.h"
+#include "atom/common/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
@@ -249,7 +250,17 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
-  Emit("render-view-deleted", render_view_host->GetProcess()->GetID());
+  int process_id = render_view_host->GetProcess()->GetID();
+  Emit("render-view-deleted", process_id);
+
+  // process.emit('ATOM_BROWSER_RELEASE_RENDER_VIEW', processId);
+  // Tell the rpc server that a render view has been deleted and we need to
+  // release all objects owned by it.
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  node::Environment* env = node::Environment::GetCurrent(isolate());
+  mate::EmitEvent(isolate(), env->process_object(),
+                  "ATOM_BROWSER_RELEASE_RENDER_VIEW", process_id);
 }
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {

@@ -30,11 +30,6 @@ wrapWebContents = (webContents) ->
     do (name, method) ->
       webContents[name] = -> method.apply controller, arguments
 
-  # Tell the rpc server that a render view has been deleted and we need to
-  # release all objects owned by it.
-  webContents.on 'render-view-deleted', (event, processId) ->
-    process.emit 'ATOM_BROWSER_RELEASE_RENDER_VIEW', processId
-
   # Dispatch IPC messages to the ipc module.
   webContents.on 'ipc-message', (event, packed) ->
     [channel, args...] = packed
