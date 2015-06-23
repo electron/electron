@@ -68,6 +68,8 @@ class WebContents : public mate::EventEmitter,
 
   void Destroy();
   bool IsAlive() const;
+  int GetID() const;
+  bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
   base::string16 GetTitle() const;
   bool IsLoading() const;
@@ -77,8 +79,6 @@ class WebContents : public mate::EventEmitter,
   void GoBack();
   void GoForward();
   void GoToOffset(int offset);
-  int GetRoutingID() const;
-  int GetProcessID() const;
   bool IsCrashed() const;
   void SetUserAgent(const std::string& user_agent);
   void InsertCSS(const std::string& css);

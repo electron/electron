@@ -12,6 +12,7 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
 #include "atom/common/api/api_messages.h"
+#include "atom/common/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
@@ -87,6 +88,22 @@ struct Converter<PrintSettings> {
     dict.Get("silent", &(out->silent));
     dict.Get("printBackground", &(out->print_background));
     return true;
+  }
+};
+
+template<>
+struct Converter<WindowOpenDisposition> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   WindowOpenDisposition val) {
+    std::string disposition = "other";
+    switch (val) {
+      case CURRENT_TAB: disposition = "default"; break;
+      case NEW_FOREGROUND_TAB: disposition = "foreground-tab"; break;
+      case NEW_BACKGROUND_TAB: disposition = "background-tab"; break;
+      case NEW_POPUP: case NEW_WINDOW: disposition = "new-window"; break;
+      default: break;
+    }
+    return mate::ConvertToV8(isolate, disposition);
   }
 };
 
@@ -187,10 +204,7 @@ bool WebContents::ShouldCreateWebContents(
     const GURL& target_url,
     const std::string& partition_id,
     content::SessionStorageNamespace* session_storage_namespace) {
-  Emit("-new-window",
-       target_url,
-       frame_name,
-       static_cast<int>(NEW_FOREGROUND_TAB));
+  Emit("new-window", target_url, frame_name, NEW_FOREGROUND_TAB);
   return false;
 }
 
@@ -202,7 +216,7 @@ content::WebContents* WebContents::OpenURLFromTab(
     content::WebContents* source,
     const content::OpenURLParams& params) {
   if (params.disposition != CURRENT_TAB) {
-    Emit("-new-window", params.url, "", static_cast<int>(params.disposition));
+    Emit("new-window", params.url, "", params.disposition);
     return nullptr;
   }
 
@@ -236,9 +250,17 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
-  Emit("render-view-deleted",
-       render_view_host->GetProcess()->GetID(),
-       render_view_host->GetRoutingID());
+  int process_id = render_view_host->GetProcess()->GetID();
+  Emit("render-view-deleted", process_id);
+
+  // process.emit('ATOM_BROWSER_RELEASE_RENDER_VIEW', processId);
+  // Tell the rpc server that a render view has been deleted and we need to
+  // release all objects owned by it.
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  node::Environment* env = node::Environment::GetCurrent(isolate());
+  mate::EmitEvent(isolate(), env->process_object(),
+                  "ATOM_BROWSER_RELEASE_RENDER_VIEW", process_id);
 }
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
@@ -299,9 +321,8 @@ void WebContents::DidStopLoading() {
 
 void WebContents::DidGetResourceResponseStart(
     const content::ResourceRequestDetails& details) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  v8::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
   base::DictionaryValue response_headers;
 
   net::HttpResponseHeaders* headers = details.headers.get();
@@ -453,6 +474,14 @@ bool WebContents::IsAlive() const {
   return web_contents() != NULL;
 }
 
+int WebContents::GetID() const {
+  return web_contents()->GetRenderProcessHost()->GetID();
+}
+
+bool WebContents::Equal(const WebContents* web_contents) const {
+  return GetID() == web_contents->GetID();
+}
+
 void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   content::NavigationController::LoadURLParams params(url);
 
@@ -504,14 +533,6 @@ void WebContents::GoForward() {
 void WebContents::GoToOffset(int offset) {
   atom::AtomBrowserClient::SuppressRendererProcessRestartForOnce();
   web_contents()->GetController().GoToOffset(offset);
-}
-
-int WebContents::GetRoutingID() const {
-  return web_contents()->GetRoutingID();
-}
-
-int WebContents::GetProcessID() const {
-  return web_contents()->GetRenderProcessHost()->GetID();
 }
 
 bool WebContents::IsCrashed() const {
@@ -745,18 +766,15 @@ void WebContents::SetAllowTransparency(bool allow) {
   if (guest_opaque_ != allow)
     return;
 
+  auto render_view_host = web_contents()->GetRenderViewHost();
   guest_opaque_ = !allow;
-  if (!web_contents()->GetRenderViewHost()->GetView())
+  if (!render_view_host->GetView())
     return;
 
   if (guest_opaque_) {
-    web_contents()
-        ->GetRenderViewHost()
-        ->GetView()
-        ->SetBackgroundColorToDefault();
+    render_view_host->GetView()->SetBackgroundColorToDefault();
   } else {
-    web_contents()->GetRenderViewHost()->GetView()->SetBackgroundColor(
-        SK_ColorTRANSPARENT);
+    render_view_host->GetView()->SetBackgroundColor(SK_ColorTRANSPARENT);
   }
 }
 
@@ -770,6 +788,8 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
         .SetMethod("destroy", &WebContents::Destroy)
         .SetMethod("isAlive", &WebContents::IsAlive)
+        .SetMethod("getId", &WebContents::GetID)
+        .SetMethod("equal", &WebContents::Equal)
         .SetMethod("_loadUrl", &WebContents::LoadURL)
         .SetMethod("getTitle", &WebContents::GetTitle)
         .SetMethod("isLoading", &WebContents::IsLoading)
@@ -779,8 +799,6 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("_goBack", &WebContents::GoBack)
         .SetMethod("_goForward", &WebContents::GoForward)
         .SetMethod("_goToOffset", &WebContents::GoToOffset)
-        .SetMethod("getRoutingId", &WebContents::GetRoutingID)
-        .SetMethod("getProcessId", &WebContents::GetProcessID)
         .SetMethod("isCrashed", &WebContents::IsCrashed)
         .SetMethod("setUserAgent", &WebContents::SetUserAgent)
         .SetMethod("insertCSS", &WebContents::InsertCSS)

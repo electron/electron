@@ -8,8 +8,6 @@
 #include "native_mate/arguments.h"
 #include "native_mate/object_template_builder.h"
 
-#include "atom/common/node_includes.h"
-
 namespace mate {
 
 namespace {
@@ -38,11 +36,9 @@ v8::Local<v8::Object> CreateEventObject(v8::Isolate* isolate) {
 EventEmitter::EventEmitter() {
 }
 
-bool EventEmitter::CallEmit(v8::Isolate* isolate,
-                            const base::StringPiece& name,
-                            content::WebContents* sender,
-                            IPC::Message* message,
-                            ValueArray args) {
+v8::Local<v8::Object> EventEmitter::CreateEvent(v8::Isolate* isolate,
+                                                content::WebContents* sender,
+                                                IPC::Message* message) const {
   v8::Local<v8::Object> event;
   bool use_native_event = sender && message;
 
@@ -53,16 +49,7 @@ bool EventEmitter::CallEmit(v8::Isolate* isolate,
   } else {
     event = CreateEventObject(isolate);
   }
-
-  // args = [name, event, args...];
-  args.insert(args.begin(), event);
-  args.insert(args.begin(), mate::StringToV8(isolate, name));
-
-  // this.emit.apply(this, args);
-  node::MakeCallback(isolate, GetWrapper(isolate), "emit", args.size(),
-                     &args[0]);
-
-  return event->Get(StringToV8(isolate, "defaultPrevented"))->BooleanValue();
+  return event;
 }
 
 }  // namespace mate
