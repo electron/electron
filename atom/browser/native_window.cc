@@ -544,13 +544,6 @@ void NativeWindow::BeforeUnloadFired(content::WebContents* tab,
                                      bool proceed,
                                      bool* proceed_to_fire_unload) {
   *proceed_to_fire_unload = proceed;
-
-  if (!proceed) {
-    WindowList::WindowCloseCancelled(this);
-
-    // Cancel unresponsive event when window close is cancelled.
-    window_unresposive_closure_.Cancel();
-  }
 }
 
 void NativeWindow::MoveContents(content::WebContents* source,
@@ -592,6 +585,13 @@ void NativeWindow::RendererResponsive(content::WebContents* source) {
 void NativeWindow::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
   // Do nothing, we override this method just to avoid compilation error since
   // there are two virtual functions named BeforeUnloadFired.
+}
+
+void NativeWindow::BeforeUnloadDialogCancelled() {
+  WindowList::WindowCloseCancelled(this);
+
+  // Cancel unresponsive event when window close is cancelled.
+  window_unresposive_closure_.Cancel();
 }
 
 void NativeWindow::TitleWasSet(content::NavigationEntry* entry,
