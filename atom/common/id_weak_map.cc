@@ -47,6 +47,14 @@ std::vector<int32_t> IDWeakMap::Keys() const {
   return keys;
 }
 
+std::vector<v8::Local<v8::Object>> IDWeakMap::Values(v8::Isolate* isolate) {
+  std::vector<v8::Local<v8::Object>> keys;
+  keys.reserve(map_.size());
+  for (const auto& iter : map_)
+    keys.emplace_back(v8::Local<v8::Object>::New(isolate, *iter.second));
+  return keys;
+}
+
 void IDWeakMap::Remove(int32_t id) {
   auto iter = map_.find(id);
   if (iter == map_.end())

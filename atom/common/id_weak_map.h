@@ -31,6 +31,9 @@ class IDWeakMap {
   // Returns IDs of all available objects.
   std::vector<int32_t> Keys() const;
 
+  // Returns all objects.
+  std::vector<v8::Local<v8::Object>> Values(v8::Isolate* isolate);
+
   // Remove object with |id| in the WeakMap.
   void Remove(int32_t key);
 
