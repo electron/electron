@@ -15,10 +15,13 @@
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/ui/browser_dialogs.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "storage/browser/fileapi/isolated_context.h"
+
+using content::BrowserThread;
 
 namespace atom {
 
@@ -84,6 +87,22 @@ base::DictionaryValue* CreateFileSystemValue(const FileSystem& file_system) {
   file_system_value->SetString("rootURL", file_system.root_url);
   file_system_value->SetString("fileSystemPath", file_system.file_system_path);
   return file_system_value;
+}
+
+void WriteToFile(const base::FilePath& path,
+                 const std::string& content) {
+  DCHECK_CURRENTLY_ON(BrowserThread::FILE);
+  DCHECK(!path.empty());
+
+  base::WriteFile(path, content.data(), content.size());
+}
+
+void AppendToFile(const base::FilePath& path,
+                  const std::string& content) {
+  DCHECK_CURRENTLY_ON(BrowserThread::FILE);
+  DCHECK(!path.empty());
+
+  base::AppendToFile(path, content.data(), content.size());
 }
 
 }  // namespace
@@ -237,12 +256,11 @@ void CommonWebContentsDelegate::DevToolsSaveToFile(
   }
 
   saved_files_[url] = path;
-  base::WriteFile(path, content.data(), content.size());
-
-  // Notify devtools.
-  base::StringValue url_value(url);
-  web_contents_->CallClientFunction(
-      "DevToolsAPI.savedURL", &url_value, nullptr, nullptr);
+  BrowserThread::PostTaskAndReply(
+      BrowserThread::FILE, FROM_HERE,
+      base::Bind(&WriteToFile, path, content),
+      base::Bind(&CommonWebContentsDelegate::OnDevToolsSaveToFile,
+                 base::Unretained(this), url));
 }
 
 void CommonWebContentsDelegate::DevToolsAppendToFile(
@@ -250,12 +268,12 @@ void CommonWebContentsDelegate::DevToolsAppendToFile(
   PathsMap::iterator it = saved_files_.find(url);
   if (it == saved_files_.end())
     return;
-  base::AppendToFile(it->second, content.data(), content.size());
 
-  // Notify devtools.
-  base::StringValue url_value(url);
-  web_contents_->CallClientFunction(
-      "DevToolsAPI.appendedToURL", &url_value, nullptr, nullptr);
+  BrowserThread::PostTaskAndReply(
+      BrowserThread::FILE, FROM_HERE,
+      base::Bind(&AppendToFile, it->second, content),
+      base::Bind(&CommonWebContentsDelegate::OnDevToolsAppendToFile,
+                 base::Unretained(this), url));
 }
 
 void CommonWebContentsDelegate::DevToolsAddFileSystem() {
@@ -316,6 +334,22 @@ void CommonWebContentsDelegate::DevToolsRemoveFileSystem(
        &file_system_path_value,
        nullptr,
        nullptr);
+}
+
+void CommonWebContentsDelegate::OnDevToolsSaveToFile(
+    const std::string& url) {
+  // Notify DevTools.
+  base::StringValue url_value(url);
+  web_contents_->CallClientFunction(
+      "DevToolsAPI.savedURL", &url_value, nullptr, nullptr);
+}
+
+void CommonWebContentsDelegate::OnDevToolsAppendToFile(
+    const std::string& url) {
+  // Notify DevTools.
+  base::StringValue url_value(url);
+  web_contents_->CallClientFunction(
+      "DevToolsAPI.appendedToURL", &url_value, nullptr, nullptr);
 }
 
 void CommonWebContentsDelegate::SetHtmlApiFullscreen(bool enter_fullscreen) {
