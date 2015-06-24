@@ -564,14 +564,6 @@ void NativeWindow::BeforeUnloadFired(content::WebContents* tab,
   }
 }
 
-void NativeWindow::ActivateContents(content::WebContents* contents) {
-  FocusOnWebView();
-}
-
-void NativeWindow::DeactivateContents(content::WebContents* contents) {
-  BlurWebView();
-}
-
 void NativeWindow::MoveContents(content::WebContents* source,
                                 const gfx::Rect& pos) {
   SetBounds(pos);

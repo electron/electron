@@ -235,8 +235,6 @@ class NativeWindow : public CommonWebContentsDelegate,
   void BeforeUnloadFired(content::WebContents* tab,
                          bool proceed,
                          bool* proceed_to_fire_unload) override;
-  void ActivateContents(content::WebContents* contents) override;
-  void DeactivateContents(content::WebContents* contents) override;
   void MoveContents(content::WebContents* source,
                     const gfx::Rect& pos) override;
   void CloseContents(content::WebContents* source) override;
