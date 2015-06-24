@@ -85,8 +85,7 @@ std::string RemoveWhitespace(const std::string& str) {
 
 NativeWindow::NativeWindow(content::WebContents* web_contents,
                            const mate::Dictionary& options)
-    : CommonWebContentsDelegate(false),
-      content::WebContentsObserver(web_contents),
+    : content::WebContentsObserver(web_contents),
       has_frame_(true),
       transparent_(false),
       enable_larger_than_screen_(false),

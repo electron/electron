@@ -107,9 +107,8 @@ void AppendToFile(const base::FilePath& path,
 
 }  // namespace
 
-CommonWebContentsDelegate::CommonWebContentsDelegate(bool is_guest)
-    : is_guest_(is_guest),
-      owner_window_(nullptr),
+CommonWebContentsDelegate::CommonWebContentsDelegate()
+    : owner_window_(nullptr),
       html_fullscreen_(false),
       native_fullscreen_(false) {
 }
@@ -178,11 +177,6 @@ void CommonWebContentsDelegate::RequestToLockMouse(
 
 bool CommonWebContentsDelegate::CanOverscrollContent() const {
   return false;
-}
-
-bool CommonWebContentsDelegate::IsPopupOrPanel(
-    const content::WebContents* source) const {
-  return !is_guest_;
 }
 
 content::JavaScriptDialogManager*

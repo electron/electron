@@ -164,6 +164,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
+  bool IsPopupOrPanel(const content::WebContents* source) const override;
   void HandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;

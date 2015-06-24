@@ -23,7 +23,7 @@ class CommonWebContentsDelegate
     : public brightray::DefaultWebContentsDelegate,
       public brightray::InspectableWebContentsDelegate {
  public:
-  explicit CommonWebContentsDelegate(bool is_guest);
+  CommonWebContentsDelegate();
   virtual ~CommonWebContentsDelegate();
 
   // Create a InspectableWebContents object and takes onwership of
@@ -44,8 +44,6 @@ class CommonWebContentsDelegate
     return web_contents_.get();
   }
 
-  bool is_guest() const { return is_guest_; }
-
  protected:
   // content::WebContentsDelegate:
   content::WebContents* OpenURLFromTab(
@@ -55,7 +53,6 @@ class CommonWebContentsDelegate
                           bool user_gesture,
                           bool last_unlocked_by_target) override;
   bool CanOverscrollContent() const override;
-  bool IsPopupOrPanel(const content::WebContents* source) const override;
   content::JavaScriptDialogManager* GetJavaScriptDialogManager(
       content::WebContents* source) override;
   content::ColorChooser* OpenColorChooser(
@@ -91,9 +88,6 @@ class CommonWebContentsDelegate
 
   // Set fullscreen mode triggered by html api.
   void SetHtmlApiFullscreen(bool enter_fullscreen);
-
-  // Whether this is guest WebContents or NativeWindow.
-  const bool is_guest_;
 
   // The window that this WebContents belongs to.
   NativeWindow* owner_window_;

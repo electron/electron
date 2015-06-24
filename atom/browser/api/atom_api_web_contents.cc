@@ -149,8 +149,7 @@ WebContents::WebContents(brightray::InspectableWebContents* web_contents)
 }
 
 WebContents::WebContents(content::WebContents* web_contents)
-    : CommonWebContentsDelegate(false),
-      content::WebContentsObserver(web_contents),
+    : content::WebContentsObserver(web_contents),
       guest_opaque_(true),
       guest_host_(nullptr),
       auto_size_enabled_(false),
@@ -161,8 +160,7 @@ WebContents::WebContents(content::WebContents* web_contents)
 }
 
 WebContents::WebContents(const mate::Dictionary& options)
-    : CommonWebContentsDelegate(true),
-      guest_opaque_(true),
+    : guest_opaque_(true),
       guest_host_(nullptr),
       auto_size_enabled_(false),
       is_full_page_plugin_(false),
@@ -233,6 +231,10 @@ content::WebContents* WebContents::OpenURLFromTab(
     return nullptr;
 
   return CommonWebContentsDelegate::OpenURLFromTab(source, params);
+}
+
+bool WebContents::IsPopupOrPanel(const content::WebContents* source) const {
+  return type_ == BROWSER_WINDOW;
 }
 
 void WebContents::HandleKeyboardEvent(
@@ -412,7 +414,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 }
 
 void WebContents::RenderViewReady() {
-  if (!is_guest())
+  if (type_ != WEB_VIEW)
     return;
 
   // We don't want to accidentally set the opacity of an interstitial page.
@@ -466,7 +468,7 @@ void WebContents::WillAttach(content::WebContents* embedder_web_contents,
 }
 
 void WebContents::Destroy() {
-  if (is_guest() && managed_web_contents()) {
+  if (type_ == WEB_VIEW && managed_web_contents()) {
     // When force destroying the "destroyed" event is not emitted.
     WebContentsDestroyed();
 
@@ -561,10 +563,11 @@ void WebContents::ExecuteJavaScript(const base::string16& code) {
 }
 
 void WebContents::OpenDevTools(mate::Arguments* args) {
-  if (!inspectable_web_contents())
+  if (type_ == REMOTE)
     return;
+
   bool detach = false;
-  if (is_guest()) {
+  if (type_ == WEB_VIEW) {
     detach = true;
   } else if (args && args->Length() == 1) {
     mate::Dictionary options;
@@ -575,13 +578,14 @@ void WebContents::OpenDevTools(mate::Arguments* args) {
 }
 
 void WebContents::CloseDevTools() {
-  if (!inspectable_web_contents())
+  if (type_ == REMOTE)
     return;
+
   inspectable_web_contents()->CloseDevTools();
 }
 
 bool WebContents::IsDevToolsOpened() {
-  if (!inspectable_web_contents())
+  if (type_ == REMOTE)
     return false;
   return inspectable_web_contents()->IsDevToolsViewShowing();
 }
@@ -594,8 +598,9 @@ void WebContents::ToggleDevTools() {
 }
 
 void WebContents::InspectElement(int x, int y) {
-  if (!inspectable_web_contents())
+  if (type_ == REMOTE)
     return;
+
   OpenDevTools(nullptr);
   scoped_refptr<content::DevToolsAgentHost> agent(
     content::DevToolsAgentHost::GetOrCreateFor(web_contents()));
@@ -603,8 +608,9 @@ void WebContents::InspectElement(int x, int y) {
 }
 
 void WebContents::InspectServiceWorker() {
-  if (!inspectable_web_contents())
+  if (type_ == REMOTE)
     return;
+
   for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
     if (agent_host->GetType() ==
         content::DevToolsAgentHost::TYPE_SERVICE_WORKER) {
@@ -790,7 +796,7 @@ void WebContents::SetAllowTransparency(bool allow) {
 }
 
 bool WebContents::IsGuest() const {
-  return is_guest();
+  return type_ == WEB_VIEW;
 }
 
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
