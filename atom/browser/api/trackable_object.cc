@@ -54,7 +54,7 @@ void TrackableObject::ReleaseAllWeakReferences() {
   weak_map_.Clear();
 }
 
-TrackableObject::TrackableObject() : weak_map_id_(0) {
+TrackableObject::TrackableObject() : weak_map_id_(0), wrapped_(nullptr) {
 }
 
 TrackableObject::~TrackableObject() {
@@ -63,10 +63,19 @@ TrackableObject::~TrackableObject() {
 
 void TrackableObject::AfterInit(v8::Isolate* isolate) {
   weak_map_id_ = weak_map_.Add(isolate, GetWrapper(isolate));
+  if (wrapped_)
+    AttachAsUserData(wrapped_);
 }
 
 void TrackableObject::AttachAsUserData(base::SupportsUserData* wrapped) {
-  wrapped->SetUserData(kTrackedObjectKey, new IDUserData(weak_map_id_));
+  if (weak_map_id_ != 0) {
+    wrapped->SetUserData(kTrackedObjectKey, new IDUserData(weak_map_id_));
+    wrapped_ = nullptr;
+  } else {
+    // If the TrackableObject is not ready yet then delay SetUserData until
+    // AfterInit is called.
+    wrapped_ = wrapped;
+  }
 }
 
 }  // namespace mate

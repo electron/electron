@@ -142,7 +142,6 @@ class WebContents : public mate::TrackableObject,
   ~WebContents();
 
   // mate::Wrappable:
-  void AfterInit(v8::Isolate* isolate);
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
 
@@ -240,7 +239,6 @@ class WebContents : public mate::TrackableObject,
 
   // Returns the default size of the guestview.
   gfx::Size GetDefaultSize() const;
-
 
   v8::Global<v8::Value> session_;
 

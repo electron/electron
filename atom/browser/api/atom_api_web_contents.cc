@@ -155,6 +155,7 @@ WebContents::WebContents(content::WebContents* web_contents)
       auto_size_enabled_(false),
       is_full_page_plugin_(false),
       inspectable_web_contents_(nullptr) {
+  AttachAsUserData(web_contents);
 }
 
 WebContents::WebContents(const mate::Dictionary& options)
@@ -176,6 +177,7 @@ WebContents::WebContents(const mate::Dictionary& options)
   if (options.Get("embedder", &embedder) && embedder)
     owner_window = NativeWindow::FromWebContents(embedder->web_contents());
 
+  AttachAsUserData(web_contents);
   InitWithWebContents(web_contents, owner_window);
   inspectable_web_contents_ = managed_web_contents();
 
@@ -608,7 +610,7 @@ void WebContents::InspectServiceWorker() {
 
 v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
   if (session_.IsEmpty()) {
-    mate::Handle<api::Session> handle = Session::Create(
+    mate::Handle<api::Session> handle = Session::CreateFrom(
         isolate,
         static_cast<AtomBrowserContext*>(web_contents()->GetBrowserContext()));
     session_.Reset(isolate, handle.ToV8());
@@ -782,11 +784,6 @@ void WebContents::SetAllowTransparency(bool allow) {
 
 bool WebContents::IsGuest() const {
   return is_guest();
-}
-
-void WebContents::AfterInit(v8::Isolate* isolate) {
-  mate::TrackableObject::AfterInit(isolate);
-  AttachAsUserData(web_contents());
 }
 
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(

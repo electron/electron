@@ -45,6 +45,7 @@ class TrackableObject : public mate::EventEmitter {
   static atom::IDWeakMap weak_map_;
 
   int32_t weak_map_id_;
+  base::SupportsUserData* wrapped_;
 
   DISALLOW_COPY_AND_ASSIGN(TrackableObject);
 };

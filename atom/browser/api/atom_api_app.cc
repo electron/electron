@@ -176,7 +176,7 @@ v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
   if (default_session_.IsEmpty()) {
     auto browser_context = static_cast<AtomBrowserContext*>(
         AtomBrowserMainParts::Get()->browser_context());
-    auto handle = Session::Create(isolate, browser_context);
+    auto handle = Session::CreateFrom(isolate, browser_context);
     default_session_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, default_session_);
