@@ -49,6 +49,13 @@ Window::~Window() {
     Destroy();
 }
 
+void Window::AfterInit(v8::Isolate* isolate) {
+  mate::TrackableObject<Window>::AfterInit(isolate);
+  auto web_contents = window_->managed_web_contents();
+  auto handle = WebContents::CreateFrom(isolate, web_contents);
+  web_contents_.Reset(isolate, handle.ToV8());
+}
+
 void Window::OnPageTitleUpdated(bool* prevent_default,
                                 const std::string& title) {
   *prevent_default = Emit("page-title-updated", title);
@@ -441,12 +448,10 @@ int32_t Window::ID() const {
 }
 
 v8::Local<v8::Value> Window::WebContents(v8::Isolate* isolate) {
-  if (web_contents_.IsEmpty()) {
-    auto handle =
-        WebContents::CreateFrom(isolate, window_->managed_web_contents());
-    web_contents_.Reset(isolate, handle.ToV8());
-  }
-  return v8::Local<v8::Value>::New(isolate, web_contents_);
+  if (web_contents_.IsEmpty())
+    return v8::Null(isolate);
+  else
+    return v8::Local<v8::Value>::New(isolate, web_contents_);
 }
 
 v8::Local<v8::Value> Window::DevToolsWebContents(v8::Isolate* isolate) {

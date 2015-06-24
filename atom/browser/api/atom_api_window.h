@@ -52,6 +52,9 @@ class Window : public mate::TrackableObject<Window>,
   explicit Window(const mate::Dictionary& options);
   virtual ~Window();
 
+  // mate::Wrappable:
+  void AfterInit(v8::Isolate* isolate) override;
+
   // NativeWindowObserver:
   void OnPageTitleUpdated(bool* prevent_default,
                           const std::string& title) override;
