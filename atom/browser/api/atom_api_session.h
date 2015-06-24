@@ -5,8 +5,13 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_SESSION_H_
 #define ATOM_BROWSER_API_ATOM_API_SESSION_H_
 
+#include <string>
+
+#include "base/callback.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
+
+class GURL;
 
 namespace atom {
 
@@ -16,6 +21,8 @@ namespace api {
 
 class Session: public mate::Wrappable {
  public:
+  using ResolveProxyCallback = base::Callback<void(std::string)>;
+
   static mate::Handle<Session> Create(v8::Isolate* isolate,
                                       AtomBrowserContext* browser_context);
 
@@ -28,6 +35,7 @@ class Session: public mate::Wrappable {
       v8::Isolate* isolate) override;
 
  private:
+  void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
 
   v8::Global<v8::Value> cookies_;

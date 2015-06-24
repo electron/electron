@@ -17,7 +17,6 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
@@ -26,10 +25,6 @@
 #include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
-#include "net/base/load_flags.h"
-#include "net/proxy/proxy_service.h"
-#include "net/url_request/url_request_context.h"
-#include "net/url_request/url_request_context_getter.h"
 
 #if defined(OS_WIN)
 #include "base/strings/utf_string_conversions.h"
@@ -94,43 +89,6 @@ int GetPathConstant(const std::string& name) {
   else
     return -1;
 }
-
-class ResolveProxyHelper {
- public:
-  ResolveProxyHelper(const GURL& url, App::ResolveProxyCallback callback)
-      : callback_(callback) {
-    auto browser_context = AtomBrowserMainParts::Get()->browser_context();
-    net::ProxyService* proxy_service = browser_context->
-        url_request_context_getter()->GetURLRequestContext()->proxy_service();
-
-    // Start the request.
-    int result = proxy_service->ResolveProxy(
-        url, net::LOAD_NORMAL, &proxy_info_,
-        base::Bind(&ResolveProxyHelper::OnResolveProxyCompleted,
-                   base::Unretained(this)),
-        &pac_req_, nullptr, net::BoundNetLog());
-
-    // Completed synchronously.
-    if (result != net::ERR_IO_PENDING)
-      OnResolveProxyCompleted(result);
-  }
-
-  void OnResolveProxyCompleted(int result) {
-    std::string proxy;
-    if (result == net::OK)
-      proxy = proxy_info_.ToPacString();
-    callback_.Run(proxy);
-
-    delete this;
-  }
-
- private:
-  App::ResolveProxyCallback callback_;
-  net::ProxyInfo proxy_info_;
-  net::ProxyService::PacRequest* pac_req_;
-
-  DISALLOW_COPY_AND_ASSIGN(ResolveProxyHelper);
-};
 
 }  // namespace
 
@@ -200,10 +158,6 @@ void App::SetPath(mate::Arguments* args,
     args->ThrowError("Failed to set path");
 }
 
-void App::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
-  new ResolveProxyHelper(url, callback);
-}
-
 void App::SetDesktopName(const std::string& desktop_name) {
 #if defined(OS_LINUX)
   scoped_ptr<base::Environment> env(base::Environment::Create());
@@ -249,7 +203,6 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
 #endif
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)
-      .SetMethod("resolveProxy", &App::ResolveProxy)
       .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("setAppUserModelId", &App::SetAppUserModelId)
       .SetProperty("defaultSession", &App::DefaultSession);
