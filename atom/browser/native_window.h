@@ -16,8 +16,6 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
-#include "content/public/browser/notification_registrar.h"
-#include "content/public/browser/notification_observer.h"
 #include "content/public/browser/readback_types.h"
 #include "native_mate/persistent_dictionary.h"
 #include "ui/gfx/image/image.h"
@@ -51,8 +49,7 @@ namespace atom {
 struct DraggableRegion;
 
 class NativeWindow : public CommonWebContentsDelegate,
-                     public content::WebContentsObserver,
-                     public content::NotificationObserver {
+                     public content::WebContentsObserver {
  public:
   typedef base::Callback<void(const SkBitmap& bitmap)> CapturePageCallback;
 
@@ -244,12 +241,8 @@ class NativeWindow : public CommonWebContentsDelegate,
   // Implementations of content::WebContentsObserver.
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
+  void TitleWasSet(content::NavigationEntry* entry, bool explicit_set) override;
   bool OnMessageReceived(const IPC::Message& message) override;
-
-  // Implementations of content::NotificationObserver.
-  void Observe(int type,
-               const content::NotificationSource& source,
-               const content::NotificationDetails& details) override;
 
   // Implementations of brightray::InspectableWebContentsDelegate.
   void DevToolsFocused() override;
@@ -279,9 +272,6 @@ class NativeWindow : public CommonWebContentsDelegate,
   void OnCapturePageDone(const CapturePageCallback& callback,
                          const SkBitmap& bitmap,
                          content::ReadbackResponse response);
-
-  // Notification manager.
-  content::NotificationRegistrar registrar_;
 
   // Observers of this window.
   ObserverList<NativeWindowObserver> observers_;

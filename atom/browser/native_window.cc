@@ -30,9 +30,6 @@
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/public/browser/navigation_entry.h"
-#include "content/public/browser/notification_details.h"
-#include "content/public/browser/notification_source.h"
-#include "content/public/browser/notification_types.h"
 #include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -140,10 +137,6 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       CHROME_VERSION_STRING);
   web_contents->GetMutableRendererPrefs()->user_agent_override =
       content::BuildUserAgentFromProduct(product_name);
-
-  // Get notified of title updated message.
-  registrar_.Add(this, content::NOTIFICATION_WEB_CONTENTS_TITLE_UPDATED,
-      content::Source<content::WebContents>(web_contents));
 }
 
 NativeWindow::~NativeWindow() {
@@ -430,10 +423,6 @@ void NativeWindow::NotifyWindowClosed() {
   is_closed_ = true;
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowClosed());
 
-  // Do not receive any notification after window has been closed, there is a
-  // crash that seems to be caused by this: http://git.io/YqMG5g.
-  registrar_.RemoveAll();
-
   WindowList::RemoveWindow(this);
 }
 
@@ -605,6 +594,17 @@ void NativeWindow::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
   // there are two virtual functions named BeforeUnloadFired.
 }
 
+void NativeWindow::TitleWasSet(content::NavigationEntry* entry,
+                               bool explicit_set) {
+  bool prevent_default = false;
+  std::string text = base::UTF16ToUTF8(entry->GetTitle());
+  FOR_EACH_OBSERVER(NativeWindowObserver,
+                    observers_,
+                    OnPageTitleUpdated(&prevent_default, text));
+  if (!prevent_default)
+    SetTitle(text);
+}
+
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(NativeWindow, message)
@@ -614,26 +614,6 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   IPC_END_MESSAGE_MAP()
 
   return handled;
-}
-
-void NativeWindow::Observe(int type,
-                           const content::NotificationSource& source,
-                           const content::NotificationDetails& details) {
-  if (type == content::NOTIFICATION_WEB_CONTENTS_TITLE_UPDATED) {
-    std::pair<NavigationEntry*, bool>* title =
-        content::Details<std::pair<NavigationEntry*, bool>>(details).ptr();
-
-    if (title->first) {
-      bool prevent_default = false;
-      std::string text = base::UTF16ToUTF8(title->first->GetTitle());
-      FOR_EACH_OBSERVER(NativeWindowObserver,
-                        observers_,
-                        OnPageTitleUpdated(&prevent_default, text));
-
-      if (!prevent_default)
-        SetTitle(text);
-    }
-  }
 }
 
 void NativeWindow::DevToolsFocused() {
