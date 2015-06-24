@@ -65,7 +65,7 @@ void TrackableObject::AfterInit(v8::Isolate* isolate) {
   weak_map_id_ = weak_map_.Add(isolate, GetWrapper(isolate));
 }
 
-void TrackableObject::Attach(base::SupportsUserData* wrapped) {
+void TrackableObject::AttachAsUserData(base::SupportsUserData* wrapped) {
   wrapped->SetUserData(kTrackedObjectKey, new IDUserData(weak_map_id_));
 }
 

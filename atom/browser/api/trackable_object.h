@@ -39,7 +39,7 @@ class TrackableObject : public mate::EventEmitter {
   ~TrackableObject() override;
 
   // Wrap TrackableObject into a class that SupportsUserData.
-  void Attach(base::SupportsUserData* wrapped);
+  void AttachAsUserData(base::SupportsUserData* wrapped);
 
  private:
   static atom::IDWeakMap weak_map_;

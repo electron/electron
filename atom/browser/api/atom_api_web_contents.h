@@ -142,6 +142,7 @@ class WebContents : public mate::TrackableObject,
   ~WebContents();
 
   // mate::Wrappable:
+  void AfterInit(v8::Isolate* isolate);
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
 

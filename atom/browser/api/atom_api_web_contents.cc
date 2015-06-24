@@ -784,6 +784,11 @@ bool WebContents::IsGuest() const {
   return is_guest();
 }
 
+void WebContents::AfterInit(v8::Isolate* isolate) {
+  mate::TrackableObject::AfterInit(isolate);
+  AttachAsUserData(web_contents());
+}
+
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   if (template_.IsEmpty())
@@ -873,6 +878,13 @@ gfx::Size WebContents::GetDefaultSize() const {
 // static
 mate::Handle<WebContents> WebContents::CreateFrom(
     v8::Isolate* isolate, brightray::InspectableWebContents* web_contents) {
+  // We have an existing WebContents object in JS.
+  auto existing = TrackableObject::FromWrappedClass(
+      isolate, web_contents->GetWebContents());
+  if (existing)
+    return mate::CreateHandle(isolate, static_cast<WebContents*>(existing));
+
+  // Otherwise create a new WebContents wrapper object.
   auto handle = mate::CreateHandle(isolate, new WebContents(web_contents));
   g_wrap_web_contents.Run(handle.ToV8());
   return handle;
@@ -881,6 +893,12 @@ mate::Handle<WebContents> WebContents::CreateFrom(
 // static
 mate::Handle<WebContents> WebContents::CreateFrom(
     v8::Isolate* isolate, content::WebContents* web_contents) {
+  // We have an existing WebContents object in JS.
+  auto existing = TrackableObject::FromWrappedClass(isolate, web_contents);
+  if (existing)
+    return mate::CreateHandle(isolate, static_cast<WebContents*>(existing));
+
+  // Otherwise create a new WebContents wrapper object.
   auto handle = mate::CreateHandle(isolate, new WebContents(web_contents));
   g_wrap_web_contents.Run(handle.ToV8());
   return handle;
