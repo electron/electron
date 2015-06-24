@@ -89,7 +89,10 @@ template<typename T>
 struct Converter<T*, typename enable_if<
                        is_convertible<T*, Wrappable*>::value>::type> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, T* val) {
-    return val->GetWrapper(isolate);
+    if (val)
+      return val->GetWrapper(isolate);
+    else
+      return v8::Null(isolate);
   }
 
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val, T** out) {
