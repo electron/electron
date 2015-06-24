@@ -220,6 +220,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void OnGpuProcessCrashed(base::TerminationStatus exit_code) override;
 
  private:
+  enum Type {
+    BROWSER_WINDOW,  // Used by BrowserWindow.
+    WEB_VIEW,  // Used by <webview>.
+    REMOTE,  // Thin wrap around an existing WebContents.
+  };
+
   // Called when received a message from renderer.
   void OnRendererMessage(const base::string16& channel,
                          const base::ListValue& args);
@@ -272,6 +278,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Whether the guest view is inside a plugin document.
   bool is_full_page_plugin_;
+
+  // The type of current WebContents.
+  Type type_;
 
   // Current InspectableWebContents object, can be nullptr for WebContents of
   // devtools. It is a weak reference.

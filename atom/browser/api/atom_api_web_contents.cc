@@ -144,6 +144,7 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 
 WebContents::WebContents(brightray::InspectableWebContents* web_contents)
     : WebContents(web_contents->GetWebContents()) {
+  type_ = BROWSER_WINDOW;
   inspectable_web_contents_ = web_contents;
 }
 
@@ -154,6 +155,7 @@ WebContents::WebContents(content::WebContents* web_contents)
       guest_host_(nullptr),
       auto_size_enabled_(false),
       is_full_page_plugin_(false),
+      type_(REMOTE),
       inspectable_web_contents_(nullptr) {
   AttachAsUserData(web_contents);
 }
@@ -163,7 +165,8 @@ WebContents::WebContents(const mate::Dictionary& options)
       guest_opaque_(true),
       guest_host_(nullptr),
       auto_size_enabled_(false),
-      is_full_page_plugin_(false) {
+      is_full_page_plugin_(false),
+      type_(WEB_VIEW) {
   auto browser_context = AtomBrowserMainParts::Get()->browser_context();
   content::SiteInstance* site_instance = content::SiteInstance::CreateForURL(
       browser_context, GURL("chrome-guest://fake-host"));
