@@ -36,7 +36,7 @@ class IDWeakMap {
 
  private:
   // Returns next available ID.
-  int GetNextID();
+  int32_t GetNextID();
 
   static void WeakCallback(
       const v8::WeakCallbackData<v8::Object, IDWeakMap>& data);

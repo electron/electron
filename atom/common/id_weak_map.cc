@@ -55,7 +55,7 @@ void IDWeakMap::Remove(int32_t id) {
     map_.erase(iter);
 }
 
-int IDWeakMap::GetNextID() {
+int32_t IDWeakMap::GetNextID() {
   return ++next_id_;
 }
 
