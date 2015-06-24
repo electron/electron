@@ -4,7 +4,27 @@
 
 #include "atom/browser/api/trackable_object.h"
 
+#include "base/supports_user_data.h"
+
 namespace mate {
+
+namespace {
+
+const char* kTrackedObjectKey = "TrackedObjectKey";
+
+class IDUserData : public base::SupportsUserData::Data {
+ public:
+  explicit IDUserData(int32_t id) : id_(id) {}
+
+  operator int32_t() const { return id_; }
+
+ private:
+  int32_t id_;
+
+  DISALLOW_COPY_AND_ASSIGN(IDUserData);
+};
+
+}  // namespace
 
 atom::IDWeakMap TrackableObject::weak_map_;
 
@@ -21,6 +41,15 @@ TrackableObject* TrackableObject::FromWeakMapID(v8::Isolate* isolate,
 }
 
 // static
+TrackableObject* TrackableObject::FromWrappedClass(
+    v8::Isolate* isolate, base::SupportsUserData* wrapped) {
+  auto id = static_cast<IDUserData*>(wrapped->GetUserData(kTrackedObjectKey));
+  if (!id)
+    return nullptr;
+  return FromWeakMapID(isolate, *id);
+}
+
+// static
 void TrackableObject::ReleaseAllWeakReferences() {
   weak_map_.Clear();
 }
@@ -34,6 +63,10 @@ TrackableObject::~TrackableObject() {
 
 void TrackableObject::AfterInit(v8::Isolate* isolate) {
   weak_map_id_ = weak_map_.Add(isolate, GetWrapper(isolate));
+}
+
+void TrackableObject::Attach(base::SupportsUserData* wrapped) {
+  wrapped->SetUserData(kTrackedObjectKey, new IDUserData(weak_map_id_));
 }
 
 }  // namespace mate

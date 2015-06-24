@@ -8,14 +8,22 @@
 #include "atom/browser/api/event_emitter.h"
 #include "atom/common/id_weak_map.h"
 
+namespace base {
+class SupportsUserData;
+}
+
 namespace mate {
 
 // All instances of TrackableObject will be kept in a weak map and can be got
 // from its ID.
 class TrackableObject : public mate::EventEmitter {
  public:
-  // Find out the TrackableObject from its ID in weak map:
+  // Find out the TrackableObject from its ID in weak map.
   static TrackableObject* FromWeakMapID(v8::Isolate* isolate, int32_t id);
+
+  // Find out the TrackableObject from the class it wraps.
+  static TrackableObject* FromWrappedClass(
+      v8::Isolate* isolate, base::SupportsUserData* wrapped);
 
   // Releases all weak references in weak map, called when app is terminating.
   static void ReleaseAllWeakReferences();
@@ -29,6 +37,9 @@ class TrackableObject : public mate::EventEmitter {
  protected:
   TrackableObject();
   ~TrackableObject() override;
+
+  // Wrap TrackableObject into a class that SupportsUserData.
+  void Attach(base::SupportsUserData* wrapped);
 
  private:
   static atom::IDWeakMap weak_map_;
