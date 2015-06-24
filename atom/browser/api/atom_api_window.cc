@@ -72,6 +72,7 @@ void Window::WillCloseWindow(bool* prevent_default) {
 void Window::OnWindowClosed() {
   Emit("closed");
 
+  RemoveFromWeakMap();
   window_->RemoveObserver(this);
 }
 
@@ -542,7 +543,10 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   v8::Local<v8::Function> constructor = mate::CreateConstructor<Window>(
       isolate, "BrowserWindow", base::Bind(&Window::New));
   mate::Dictionary browser_window(isolate, constructor);
-  browser_window.SetMethod("fromId", &mate::TrackableObject::FromWeakMapID);
+  browser_window.SetMethod("fromId",
+                           &mate::TrackableObject<Window>::FromWeakMapID);
+  browser_window.SetMethod("getAllWindows",
+                           &mate::TrackableObject<Window>::GetAll);
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("BrowserWindow", browser_window);

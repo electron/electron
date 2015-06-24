@@ -37,7 +37,7 @@ namespace api {
 
 class WebContents;
 
-class Window : public mate::TrackableObject,
+class Window : public mate::TrackableObject<Window>,
                public NativeWindowObserver {
  public:
   static mate::Wrappable* New(v8::Isolate* isolate,

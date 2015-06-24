@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/trackable_object.h"
 
+#include "atom/browser/atom_browser_main_parts.h"
+#include "base/bind.h"
 #include "base/supports_user_data.h"
 
 namespace mate {
@@ -26,56 +28,41 @@ class IDUserData : public base::SupportsUserData::Data {
 
 }  // namespace
 
-atom::IDWeakMap TrackableObject::weak_map_;
-
-// static
-TrackableObject* TrackableObject::FromWeakMapID(v8::Isolate* isolate,
-                                                int32_t id) {
-  v8::MaybeLocal<v8::Object> object = weak_map_.Get(isolate, id);
-  if (object.IsEmpty())
-    return nullptr;
-
-  TrackableObject* self = nullptr;
-  mate::ConvertFromV8(isolate, object.ToLocalChecked(), &self);
-  return self;
+TrackableObjectBase::TrackableObjectBase()
+    : weak_map_id_(0), wrapped_(nullptr) {
 }
 
-// static
-TrackableObject* TrackableObject::FromWrappedClass(
-    v8::Isolate* isolate, base::SupportsUserData* wrapped) {
-  auto id = static_cast<IDUserData*>(wrapped->GetUserData(kTrackedObjectKey));
-  if (!id)
-    return nullptr;
-  return FromWeakMapID(isolate, *id);
+TrackableObjectBase::~TrackableObjectBase() {
 }
 
-// static
-void TrackableObject::ReleaseAllWeakReferences() {
-  weak_map_.Clear();
-}
-
-TrackableObject::TrackableObject() : weak_map_id_(0), wrapped_(nullptr) {
-}
-
-TrackableObject::~TrackableObject() {
-  weak_map_.Remove(weak_map_id_);
-}
-
-void TrackableObject::AfterInit(v8::Isolate* isolate) {
-  weak_map_id_ = weak_map_.Add(isolate, GetWrapper(isolate));
+void TrackableObjectBase::AfterInit(v8::Isolate* isolate) {
   if (wrapped_)
     AttachAsUserData(wrapped_);
 }
 
-void TrackableObject::AttachAsUserData(base::SupportsUserData* wrapped) {
+void TrackableObjectBase::AttachAsUserData(base::SupportsUserData* wrapped) {
   if (weak_map_id_ != 0) {
     wrapped->SetUserData(kTrackedObjectKey, new IDUserData(weak_map_id_));
     wrapped_ = nullptr;
   } else {
-    // If the TrackableObject is not ready yet then delay SetUserData until
+    // If the TrackableObjectBase is not ready yet then delay SetUserData until
     // AfterInit is called.
     wrapped_ = wrapped;
   }
+}
+
+// static
+int32_t TrackableObjectBase::GetIDFromWrappedClass(base::SupportsUserData* w) {
+  auto id = static_cast<IDUserData*>(w->GetUserData(kTrackedObjectKey));
+  if (id)
+    return *id;
+  else
+    return 0;
+}
+
+// static
+void TrackableObjectBase::RegisterDestructionCallback(void (*c)()) {
+  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(base::Bind(c));
 }
 
 }  // namespace mate

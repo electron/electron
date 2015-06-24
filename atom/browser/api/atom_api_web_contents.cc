@@ -424,6 +424,7 @@ void WebContents::WebContentsDestroyed() {
   // The RenderViewDeleted was not called when the WebContents is destroyed.
   RenderViewDeleted(web_contents()->GetRenderViewHost());
   Emit("destroyed");
+  RemoveFromWeakMap();
 }
 
 void WebContents::NavigationEntryCommitted(

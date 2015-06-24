@@ -46,7 +46,7 @@ struct SetSizeParams {
   scoped_ptr<gfx::Size> normal_size;
 };
 
-class WebContents : public mate::TrackableObject,
+class WebContents : public mate::TrackableObject<WebContents>,
                     public content::BrowserPluginGuestDelegate,
                     public CommonWebContentsDelegate,
                     public content::WebContentsObserver,

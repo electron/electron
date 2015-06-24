@@ -19,7 +19,7 @@ class AtomBrowserContext;
 
 namespace api {
 
-class Session: public mate::TrackableObject {
+class Session: public mate::TrackableObject<Session> {
  public:
   using ResolveProxyCallback = base::Callback<void(std::string)>;
 

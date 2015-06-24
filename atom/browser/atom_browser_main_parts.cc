@@ -37,13 +37,19 @@ AtomBrowserMainParts::AtomBrowserMainParts()
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {
-  mate::TrackableObject::ReleaseAllWeakReferences();
+  for (const auto& callback : destruction_callbacks_)
+    callback.Run();
 }
 
 // static
 AtomBrowserMainParts* AtomBrowserMainParts::Get() {
   DCHECK(self_);
   return self_;
+}
+
+void AtomBrowserMainParts::RegisterDestructionCallback(
+    const base::Closure& callback) {
+  destruction_callbacks_.push_back(callback);
 }
 
 brightray::BrowserContext* AtomBrowserMainParts::CreateBrowserContext() {

@@ -42,10 +42,6 @@ BrowserWindow::setMenu = (menu) ->
   @menu = menu  # Keep a reference of menu in case of GC.
   @_setMenu menu
 
-BrowserWindow.getAllWindows = ->
-  windows = BrowserWindow.windows
-  windows.get key for key in windows.keys()
-
 BrowserWindow.getFocusedWindow = ->
   windows = BrowserWindow.getAllWindows()
   return window for window in windows when window.isFocused()
