@@ -5,6 +5,9 @@
 #ifndef ATOM_BROWSER_ATOM_BROWSER_MAIN_PARTS_H_
 #define ATOM_BROWSER_ATOM_BROWSER_MAIN_PARTS_H_
 
+#include <list>
+
+#include "base/callback.h"
 #include "base/timer/timer.h"
 #include "brightray/browser/browser_main_parts.h"
 
@@ -23,6 +26,10 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   virtual ~AtomBrowserMainParts();
 
   static AtomBrowserMainParts* Get();
+
+  // Register a callback that should be destroyed before JavaScript environment
+  // gets destroyed.
+  void RegisterDestructionCallback(const base::Closure& callback);
 
   Browser* browser() { return browser_.get(); }
 
@@ -52,6 +59,9 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   scoped_ptr<AtomBindings> atom_bindings_;
 
   base::Timer gc_timer_;
+
+  // List of callbacks should be executed before destroying JS env.
+  std::list<base::Closure> destruction_callbacks_;
 
   static AtomBrowserMainParts* self_;
 

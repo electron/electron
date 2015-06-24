@@ -155,6 +155,7 @@ WebContents::WebContents(content::WebContents* web_contents)
       auto_size_enabled_(false),
       is_full_page_plugin_(false),
       inspectable_web_contents_(nullptr) {
+  AttachAsUserData(web_contents);
 }
 
 WebContents::WebContents(const mate::Dictionary& options)
@@ -176,6 +177,7 @@ WebContents::WebContents(const mate::Dictionary& options)
   if (options.Get("embedder", &embedder) && embedder)
     owner_window = NativeWindow::FromWebContents(embedder->web_contents());
 
+  AttachAsUserData(web_contents);
   InitWithWebContents(web_contents, owner_window);
   inspectable_web_contents_ = managed_web_contents();
 
@@ -422,6 +424,7 @@ void WebContents::WebContentsDestroyed() {
   // The RenderViewDeleted was not called when the WebContents is destroyed.
   RenderViewDeleted(web_contents()->GetRenderViewHost());
   Emit("destroyed");
+  RemoveFromWeakMap();
 }
 
 void WebContents::NavigationEntryCommitted(
@@ -608,7 +611,7 @@ void WebContents::InspectServiceWorker() {
 
 v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
   if (session_.IsEmpty()) {
-    mate::Handle<api::Session> handle = Session::Create(
+    mate::Handle<api::Session> handle = Session::CreateFrom(
         isolate,
         static_cast<AtomBrowserContext*>(web_contents()->GetBrowserContext()));
     session_.Reset(isolate, handle.ToV8());
@@ -873,6 +876,13 @@ gfx::Size WebContents::GetDefaultSize() const {
 // static
 mate::Handle<WebContents> WebContents::CreateFrom(
     v8::Isolate* isolate, brightray::InspectableWebContents* web_contents) {
+  // We have an existing WebContents object in JS.
+  auto existing = TrackableObject::FromWrappedClass(
+      isolate, web_contents->GetWebContents());
+  if (existing)
+    return mate::CreateHandle(isolate, static_cast<WebContents*>(existing));
+
+  // Otherwise create a new WebContents wrapper object.
   auto handle = mate::CreateHandle(isolate, new WebContents(web_contents));
   g_wrap_web_contents.Run(handle.ToV8());
   return handle;
@@ -881,6 +891,12 @@ mate::Handle<WebContents> WebContents::CreateFrom(
 // static
 mate::Handle<WebContents> WebContents::CreateFrom(
     v8::Isolate* isolate, content::WebContents* web_contents) {
+  // We have an existing WebContents object in JS.
+  auto existing = TrackableObject::FromWrappedClass(isolate, web_contents);
+  if (existing)
+    return mate::CreateHandle(isolate, static_cast<WebContents*>(existing));
+
+  // Otherwise create a new WebContents wrapper object.
   auto handle = mate::CreateHandle(isolate, new WebContents(web_contents));
   g_wrap_web_contents.Run(handle.ToV8());
   return handle;

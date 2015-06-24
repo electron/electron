@@ -6,11 +6,9 @@
 #ifndef ATOM_COMMON_API_ATOM_API_ID_WEAK_MAP_H_
 #define ATOM_COMMON_API_ATOM_API_ID_WEAK_MAP_H_
 
-#include <map>
 #include <vector>
 
-#include "base/basictypes.h"
-#include "native_mate/scoped_persistent.h"
+#include "atom/common/id_weak_map.h"
 #include "native_mate/wrappable.h"
 
 namespace atom {
@@ -33,16 +31,8 @@ class IDWeakMap : public mate::Wrappable {
   bool Has(int32_t key) const;
   std::vector<int32_t> Keys() const;
   void Remove(int32_t key);
-  int GetNextID();
 
-  static void WeakCallback(
-      const v8::WeakCallbackData<v8::Object, IDWeakMap>& data);
-
-  int32_t next_id_;
-
-  typedef scoped_refptr<mate::RefCountedPersistent<v8::Object> >
-      RefCountedV8Object;
-  std::map<int32_t, RefCountedV8Object> map_;
+  atom::IDWeakMap map_;
 
   DISALLOW_COPY_AND_ASSIGN(IDWeakMap);
 };

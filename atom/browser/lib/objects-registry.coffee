@@ -1,5 +1,5 @@
 EventEmitter = require('events').EventEmitter
-IDWeakMap = require 'id-weak-map'
+IDWeakMap = process.atomBinding('id_weak_map').IDWeakMap
 v8Util = process.atomBinding 'v8_util'
 
 # Class to reference all objects.

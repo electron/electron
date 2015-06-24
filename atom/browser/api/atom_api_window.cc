@@ -49,6 +49,13 @@ Window::~Window() {
     Destroy();
 }
 
+void Window::AfterInit(v8::Isolate* isolate) {
+  mate::TrackableObject<Window>::AfterInit(isolate);
+  auto web_contents = window_->managed_web_contents();
+  auto handle = WebContents::CreateFrom(isolate, web_contents);
+  web_contents_.Reset(isolate, handle.ToV8());
+}
+
 void Window::OnPageTitleUpdated(bool* prevent_default,
                                 const std::string& title) {
   *prevent_default = Emit("page-title-updated", title);
@@ -72,6 +79,7 @@ void Window::WillCloseWindow(bool* prevent_default) {
 void Window::OnWindowClosed() {
   Emit("closed");
 
+  RemoveFromWeakMap();
   window_->RemoveObserver(this);
 }
 
@@ -401,8 +409,20 @@ void Window::SetOverlayIcon(const gfx::Image& overlay,
   window_->SetOverlayIcon(overlay, description);
 }
 
-void Window::SetMenu(ui::SimpleMenuModel* menu) {
-  window_->SetMenu(menu);
+void Window::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
+  mate::Handle<Menu> menu;
+  if (value->IsObject() &&
+      mate::V8ToString(value->ToObject()->GetConstructorName()) == "Menu" &&
+      mate::ConvertFromV8(isolate, value, &menu)) {
+    menu_.Reset(isolate, menu.ToV8());
+    window_->SetMenu(menu->model());
+  } else if (value->IsNull()) {
+    menu_.Reset();
+    window_->SetMenu(nullptr);
+  } else {
+    isolate->ThrowException(v8::Exception::TypeError(
+        mate::StringToV8(isolate, "Invalid Menu")));
+  }
 }
 
 void Window::SetAutoHideMenuBar(bool auto_hide) {
@@ -435,13 +455,15 @@ bool Window::IsVisibleOnAllWorkspaces() {
   return window_->IsVisibleOnAllWorkspaces();
 }
 
+int32_t Window::ID() const {
+  return weak_map_id();
+}
+
 v8::Local<v8::Value> Window::WebContents(v8::Isolate* isolate) {
-  if (web_contents_.IsEmpty()) {
-    auto handle =
-        WebContents::CreateFrom(isolate, window_->managed_web_contents());
-    web_contents_.Reset(isolate, handle.ToV8());
-  }
-  return v8::Local<v8::Value>::New(isolate, web_contents_);
+  if (web_contents_.IsEmpty())
+    return v8::Null(isolate);
+  else
+    return v8::Local<v8::Value>::New(isolate, web_contents_);
 }
 
 v8::Local<v8::Value> Window::DevToolsWebContents(v8::Isolate* isolate) {
@@ -505,7 +527,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("capturePage", &Window::CapturePage)
       .SetMethod("setProgressBar", &Window::SetProgressBar)
       .SetMethod("setOverlayIcon", &Window::SetOverlayIcon)
-      .SetMethod("_setMenu", &Window::SetMenu)
+      .SetMethod("setMenu", &Window::SetMenu)
       .SetMethod("setAutoHideMenuBar", &Window::SetAutoHideMenuBar)
       .SetMethod("isMenuBarAutoHide", &Window::IsMenuBarAutoHide)
       .SetMethod("setMenuBarVisibility", &Window::SetMenuBarVisibility)
@@ -518,6 +540,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("showDefinitionForSelection",
                  &Window::ShowDefinitionForSelection)
 #endif
+      .SetProperty("id", &Window::ID)
       .SetProperty("webContents", &Window::WebContents)
       .SetProperty("devToolsWebContents", &Window::DevToolsWebContents);
 }
@@ -529,14 +552,21 @@ void Window::BuildPrototype(v8::Isolate* isolate,
 
 namespace {
 
+using atom::api::Window;
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
-  using atom::api::Window;
   v8::Isolate* isolate = context->GetIsolate();
   v8::Local<v8::Function> constructor = mate::CreateConstructor<Window>(
       isolate, "BrowserWindow", base::Bind(&Window::New));
+  mate::Dictionary browser_window(isolate, constructor);
+  browser_window.SetMethod("fromId",
+                           &mate::TrackableObject<Window>::FromWeakMapID);
+  browser_window.SetMethod("getAllWindows",
+                           &mate::TrackableObject<Window>::GetAll);
+
   mate::Dictionary dict(isolate, exports);
-  dict.Set("BrowserWindow", static_cast<v8::Local<v8::Value>>(constructor));
+  dict.Set("BrowserWindow", browser_window);
 }
 
 }  // namespace

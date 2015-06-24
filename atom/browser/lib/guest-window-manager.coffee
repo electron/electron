@@ -48,17 +48,14 @@ ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', (event, args...) ->
     event.returnValue = createGuest event.sender, args...
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', (event, guestId) ->
-  return unless BrowserWindow.windows.has guestId
-  BrowserWindow.windows.get(guestId).destroy()
+  BrowserWindow.fromId(guestId)?.destroy()
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', (event, guestId, method, args...) ->
-  return unless BrowserWindow.windows.has guestId
-  BrowserWindow.windows.get(guestId)[method] args...
+  BrowserWindow.fromId(guestId)?[method] args...
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', (event, guestId, message, targetOrigin) ->
-  return unless BrowserWindow.windows.has guestId
-  guestContents = BrowserWindow.windows.get(guestId).webContents
-  if guestContents.getUrl().indexOf(targetOrigin) is 0 or targetOrigin is '*'
+  guestContents = BrowserWindow.fromId(guestId)?.webContents
+  if guestContents?.getUrl().indexOf(targetOrigin) is 0 or targetOrigin is '*'
     guestContents.send 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', message, targetOrigin
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', (event, message, targetOrigin) ->
@@ -67,5 +64,4 @@ ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', (event, mess
     embedder.send 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', message, targetOrigin
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', (event, guestId, method, args...) ->
-  return unless BrowserWindow.windows.has guestId
-  BrowserWindow.windows.get(guestId).webContents?[method] args...
+  BrowserWindow.fromId(guestId)?.webContents?[method] args...

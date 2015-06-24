@@ -68,6 +68,7 @@ class ResolveProxyHelper {
 
 Session::Session(AtomBrowserContext* browser_context)
     : browser_context_(browser_context) {
+  AttachAsUserData(browser_context);
 }
 
 Session::~Session() {
@@ -93,9 +94,13 @@ mate::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
 }
 
 // static
-mate::Handle<Session> Session::Create(
+mate::Handle<Session> Session::CreateFrom(
     v8::Isolate* isolate,
     AtomBrowserContext* browser_context) {
+  auto existing = TrackableObject::FromWrappedClass(isolate, browser_context);
+  if (existing)
+    return mate::CreateHandle(isolate, static_cast<Session*>(existing));
+
   return mate::CreateHandle(isolate, new Session(browser_context));
 }
 

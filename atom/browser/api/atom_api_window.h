@@ -10,8 +10,8 @@
 
 #include "base/memory/scoped_ptr.h"
 #include "ui/gfx/image/image.h"
+#include "atom/browser/api/trackable_object.h"
 #include "atom/browser/native_window_observer.h"
-#include "atom/browser/api/event_emitter.h"
 #include "native_mate/handle.h"
 
 class GURL;
@@ -25,10 +25,6 @@ class Arguments;
 class Dictionary;
 }
 
-namespace ui {
-class SimpleMenuModel;
-}
-
 namespace atom {
 
 class NativeWindow;
@@ -37,7 +33,7 @@ namespace api {
 
 class WebContents;
 
-class Window : public mate::EventEmitter,
+class Window : public mate::TrackableObject<Window>,
                public NativeWindowObserver {
  public:
   static mate::Wrappable* New(v8::Isolate* isolate,
@@ -51,6 +47,9 @@ class Window : public mate::EventEmitter,
  protected:
   explicit Window(const mate::Dictionary& options);
   virtual ~Window();
+
+  // mate::Wrappable:
+  void AfterInit(v8::Isolate* isolate) override;
 
   // NativeWindowObserver:
   void OnPageTitleUpdated(bool* prevent_default,
@@ -134,7 +133,7 @@ class Window : public mate::EventEmitter,
   void SetProgressBar(double progress);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
-  void SetMenu(ui::SimpleMenuModel* menu);
+  void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
   void SetAutoHideMenuBar(bool auto_hide);
   bool IsMenuBarAutoHide();
   void SetMenuBarVisibility(bool visible);
@@ -147,11 +146,13 @@ class Window : public mate::EventEmitter,
   void SetVisibleOnAllWorkspaces(bool visible);
   bool IsVisibleOnAllWorkspaces();
 
+  int32_t ID() const;
   v8::Local<v8::Value> WebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
 
   v8::Global<v8::Value> web_contents_;
   v8::Global<v8::Value> devtools_web_contents_;
+  v8::Global<v8::Value> menu_;
 
   scoped_ptr<NativeWindow> window_;
 

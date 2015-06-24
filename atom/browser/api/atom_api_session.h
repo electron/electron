@@ -7,9 +7,9 @@
 
 #include <string>
 
+#include "atom/browser/api/trackable_object.h"
 #include "base/callback.h"
 #include "native_mate/handle.h"
-#include "native_mate/wrappable.h"
 
 class GURL;
 
@@ -19,12 +19,13 @@ class AtomBrowserContext;
 
 namespace api {
 
-class Session: public mate::Wrappable {
+class Session: public mate::TrackableObject<Session> {
  public:
   using ResolveProxyCallback = base::Callback<void(std::string)>;
 
-  static mate::Handle<Session> Create(v8::Isolate* isolate,
-                                      AtomBrowserContext* browser_context);
+  // Gets or creates Session from the |browser_context|.
+  static mate::Handle<Session> CreateFrom(
+      v8::Isolate* isolate, AtomBrowserContext* browser_context);
 
  protected:
   explicit Session(AtomBrowserContext* browser_context);

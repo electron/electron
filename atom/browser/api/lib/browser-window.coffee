@@ -1,24 +1,15 @@
 EventEmitter = require('events').EventEmitter
-IDWeakMap = require 'id-weak-map'
 app = require 'app'
 ipc = require 'ipc'
 
 BrowserWindow = process.atomBinding('window').BrowserWindow
 BrowserWindow::__proto__ = EventEmitter.prototype
 
-# Store all created windows in the weak map.
-BrowserWindow.windows = new IDWeakMap
-
 BrowserWindow::_init = ->
   # Simulate the application menu on platforms other than OS X.
   if process.platform isnt 'darwin'
     menu = app.getApplicationMenu()
     @setMenu menu if menu?
-
-  # Remember the window ID.
-  Object.defineProperty this, 'id',
-    value: BrowserWindow.windows.add(this)
-    enumerable: true
 
   # Make new windows requested by links behave like "window.open"
   @on '-new-window', (event, url, frameName) =>
@@ -36,21 +27,6 @@ BrowserWindow::_init = ->
   @on 'focus', (event) =>
     app.emit 'browser-window-focus', event, this
 
-  # Remove the window from weak map immediately when it's destroyed, since we
-  # could be iterating windows before GC happened.
-  @once 'closed', =>
-    BrowserWindow.windows.remove @id if BrowserWindow.windows.has @id
-
-BrowserWindow::setMenu = (menu) ->
-  throw new TypeError('Invalid menu') unless menu is null or menu?.constructor?.name is 'Menu'
-
-  @menu = menu  # Keep a reference of menu in case of GC.
-  @_setMenu menu
-
-BrowserWindow.getAllWindows = ->
-  windows = BrowserWindow.windows
-  windows.get key for key in windows.keys()
-
 BrowserWindow.getFocusedWindow = ->
   windows = BrowserWindow.getAllWindows()
   return window for window in windows when window.isFocused()
@@ -62,9 +38,6 @@ BrowserWindow.fromWebContents = (webContents) ->
 BrowserWindow.fromDevToolsWebContents = (webContents) ->
   windows = BrowserWindow.getAllWindows()
   return window for window in windows when window.devToolsWebContents?.equal webContents
-
-BrowserWindow.fromId = (id) ->
-  BrowserWindow.windows.get id if BrowserWindow.windows.has id
 
 # Helpers.
 BrowserWindow::loadUrl = -> @webContents.loadUrl.apply @webContents, arguments
