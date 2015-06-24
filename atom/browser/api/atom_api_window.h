@@ -10,8 +10,8 @@
 
 #include "base/memory/scoped_ptr.h"
 #include "ui/gfx/image/image.h"
+#include "atom/browser/api/trackable_object.h"
 #include "atom/browser/native_window_observer.h"
-#include "atom/browser/api/event_emitter.h"
 #include "native_mate/handle.h"
 
 class GURL;
@@ -37,7 +37,7 @@ namespace api {
 
 class WebContents;
 
-class Window : public mate::EventEmitter,
+class Window : public mate::TrackableObject,
                public NativeWindowObserver {
  public:
   static mate::Wrappable* New(v8::Isolate* isolate,
@@ -147,6 +147,7 @@ class Window : public mate::EventEmitter,
   void SetVisibleOnAllWorkspaces(bool visible);
   bool IsVisibleOnAllWorkspaces();
 
+  int32_t ID() const;
   v8::Local<v8::Value> WebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
 

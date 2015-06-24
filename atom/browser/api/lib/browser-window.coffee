@@ -15,11 +15,6 @@ BrowserWindow::_init = ->
     menu = app.getApplicationMenu()
     @setMenu menu if menu?
 
-  # Remember the window ID.
-  Object.defineProperty this, 'id',
-    value: BrowserWindow.windows.add(this)
-    enumerable: true
-
   # Make new windows requested by links behave like "window.open"
   @on '-new-window', (event, url, frameName) =>
     event.sender = @webContents
@@ -62,9 +57,6 @@ BrowserWindow.fromWebContents = (webContents) ->
 BrowserWindow.fromDevToolsWebContents = (webContents) ->
   windows = BrowserWindow.getAllWindows()
   return window for window in windows when window.devToolsWebContents?.equal webContents
-
-BrowserWindow.fromId = (id) ->
-  BrowserWindow.windows.get id if BrowserWindow.windows.has id
 
 # Helpers.
 BrowserWindow::loadUrl = -> @webContents.loadUrl.apply @webContents, arguments

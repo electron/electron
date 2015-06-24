@@ -435,6 +435,10 @@ bool Window::IsVisibleOnAllWorkspaces() {
   return window_->IsVisibleOnAllWorkspaces();
 }
 
+int32_t Window::ID() const {
+  return weak_map_id();
+}
+
 v8::Local<v8::Value> Window::WebContents(v8::Isolate* isolate) {
   if (web_contents_.IsEmpty()) {
     auto handle =
@@ -518,6 +522,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("showDefinitionForSelection",
                  &Window::ShowDefinitionForSelection)
 #endif
+      .SetProperty("id", &Window::ID)
       .SetProperty("webContents", &Window::WebContents)
       .SetProperty("devToolsWebContents", &Window::DevToolsWebContents);
 }
@@ -529,14 +534,18 @@ void Window::BuildPrototype(v8::Isolate* isolate,
 
 namespace {
 
+using atom::api::Window;
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
-  using atom::api::Window;
   v8::Isolate* isolate = context->GetIsolate();
   v8::Local<v8::Function> constructor = mate::CreateConstructor<Window>(
       isolate, "BrowserWindow", base::Bind(&Window::New));
+  mate::Dictionary browser_window(isolate, constructor);
+  browser_window.SetMethod("fromId", &mate::TrackableObject::FromWeakMapID);
+
   mate::Dictionary dict(isolate, exports);
-  dict.Set("BrowserWindow", static_cast<v8::Local<v8::Value>>(constructor));
+  dict.Set("BrowserWindow", browser_window);
 }
 
 }  // namespace
