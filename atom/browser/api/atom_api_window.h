@@ -25,10 +25,6 @@ class Arguments;
 class Dictionary;
 }
 
-namespace ui {
-class SimpleMenuModel;
-}
-
 namespace atom {
 
 class NativeWindow;
@@ -137,7 +133,7 @@ class Window : public mate::TrackableObject<Window>,
   void SetProgressBar(double progress);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
-  void SetMenu(ui::SimpleMenuModel* menu);
+  void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
   void SetAutoHideMenuBar(bool auto_hide);
   bool IsMenuBarAutoHide();
   void SetMenuBarVisibility(bool visible);
@@ -156,6 +152,7 @@ class Window : public mate::TrackableObject<Window>,
 
   v8::Global<v8::Value> web_contents_;
   v8::Global<v8::Value> devtools_web_contents_;
+  v8::Global<v8::Value> menu_;
 
   scoped_ptr<NativeWindow> window_;
 

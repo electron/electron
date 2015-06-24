@@ -409,8 +409,20 @@ void Window::SetOverlayIcon(const gfx::Image& overlay,
   window_->SetOverlayIcon(overlay, description);
 }
 
-void Window::SetMenu(ui::SimpleMenuModel* menu) {
-  window_->SetMenu(menu);
+void Window::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
+  mate::Handle<Menu> menu;
+  if (value->IsObject() &&
+      mate::V8ToString(value->ToObject()->GetConstructorName()) == "Menu" &&
+      mate::ConvertFromV8(isolate, value, &menu)) {
+    menu_.Reset(isolate, menu.ToV8());
+    window_->SetMenu(menu->model());
+  } else if (value->IsNull()) {
+    menu_.Reset();
+    window_->SetMenu(nullptr);
+  } else {
+    isolate->ThrowException(v8::Exception::TypeError(
+        mate::StringToV8(isolate, "Invalid Menu")));
+  }
 }
 
 void Window::SetAutoHideMenuBar(bool auto_hide) {
@@ -515,7 +527,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("capturePage", &Window::CapturePage)
       .SetMethod("setProgressBar", &Window::SetProgressBar)
       .SetMethod("setOverlayIcon", &Window::SetOverlayIcon)
-      .SetMethod("_setMenu", &Window::SetMenu)
+      .SetMethod("setMenu", &Window::SetMenu)
       .SetMethod("setAutoHideMenuBar", &Window::SetAutoHideMenuBar)
       .SetMethod("isMenuBarAutoHide", &Window::IsMenuBarAutoHide)
       .SetMethod("setMenuBarVisibility", &Window::SetMenuBarVisibility)

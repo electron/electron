@@ -27,12 +27,6 @@ BrowserWindow::_init = ->
   @on 'focus', (event) =>
     app.emit 'browser-window-focus', event, this
 
-BrowserWindow::setMenu = (menu) ->
-  throw new TypeError('Invalid menu') unless menu is null or menu?.constructor?.name is 'Menu'
-
-  @menu = menu  # Keep a reference of menu in case of GC.
-  @_setMenu menu
-
 BrowserWindow.getFocusedWindow = ->
   windows = BrowserWindow.getAllWindows()
   return window for window in windows when window.isFocused()
