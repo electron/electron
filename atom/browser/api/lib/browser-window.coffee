@@ -1,5 +1,5 @@
 EventEmitter = require('events').EventEmitter
-IDWeakMap = require 'id-weak-map'
+IDWeakMap = process.atomBinding('id_weak_map').IDWeakMap
 app = require 'app'
 ipc = require 'ipc'
 
