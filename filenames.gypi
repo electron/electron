@@ -254,6 +254,8 @@
       'atom/common/event_emitter_caller.cc',
       'atom/common/event_emitter_caller.h',
       'atom/common/google_api_key.h',
+      'atom/common/id_weak_map.cc',
+      'atom/common/id_weak_map.h',
       'atom/common/linux/application_info.cc',
       'atom/common/native_mate_converters/accelerator_converter.cc',
       'atom/common/native_mate_converters/accelerator_converter.h',
