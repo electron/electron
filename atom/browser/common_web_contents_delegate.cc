@@ -123,6 +123,9 @@ void CommonWebContentsDelegate::InitWithWebContents(
   owner_window_ = owner_window;
   web_contents->SetDelegate(this);
 
+  NativeWindowRelay* relay = new NativeWindowRelay(owner_window_->GetWeakPtr());
+  web_contents->SetUserData(relay->key, relay);
+
   printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
   printing::PrintPreviewMessageHandler::CreateForWebContents(web_contents);
 

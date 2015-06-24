@@ -56,6 +56,8 @@ using content::NavigationEntry;
 using content::RenderWidgetHostView;
 using content::RenderWidgetHost;
 
+DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
+
 namespace atom {
 
 namespace {

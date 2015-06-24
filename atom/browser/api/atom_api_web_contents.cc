@@ -177,8 +177,11 @@ WebContents::WebContents(const mate::Dictionary& options)
 
   NativeWindow* owner_window = nullptr;
   WebContents* embedder = nullptr;
-  if (options.Get("embedder", &embedder) && embedder)
-    owner_window = NativeWindow::FromWebContents(embedder->web_contents());
+  if (options.Get("embedder", &embedder) && embedder) {
+    auto relay = NativeWindowRelay::FromWebContents(embedder->web_contents());
+    if (relay)
+      owner_window = relay->window.get();
+  }
 
   AttachAsUserData(web_contents);
   InitWithWebContents(web_contents, owner_window);

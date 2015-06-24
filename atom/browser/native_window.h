@@ -17,6 +17,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "content/public/browser/readback_types.h"
+#include "content/public/browser/web_contents_user_data.h"
 #include "native_mate/persistent_dictionary.h"
 #include "ui/gfx/image/image.h"
 
@@ -302,6 +303,21 @@ class NativeWindow : public CommonWebContentsDelegate,
   base::WeakPtrFactory<NativeWindow> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindow);
+};
+
+
+// This class provides a hook to get a NativeWindow from a WebContents.
+class NativeWindowRelay :
+    public content::WebContentsUserData<NativeWindowRelay> {
+ public:
+  explicit NativeWindowRelay(base::WeakPtr<NativeWindow> window)
+    : key(UserDataKey()), window(window) {}
+
+  void* key;
+  base::WeakPtr<NativeWindow> window;
+
+ private:
+  friend class content::WebContentsUserData<NativeWindow>;
 };
 
 }  // namespace atom
