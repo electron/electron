@@ -108,8 +108,7 @@ void AppendToFile(const base::FilePath& path,
 }  // namespace
 
 CommonWebContentsDelegate::CommonWebContentsDelegate()
-    : owner_window_(nullptr),
-      html_fullscreen_(false),
+    : html_fullscreen_(false),
       native_fullscreen_(false) {
 }
 
@@ -119,10 +118,10 @@ CommonWebContentsDelegate::~CommonWebContentsDelegate() {
 void CommonWebContentsDelegate::InitWithWebContents(
     content::WebContents* web_contents,
     NativeWindow* owner_window) {
-  owner_window_ = owner_window;
+  owner_window_ = owner_window->GetWeakPtr();
   web_contents->SetDelegate(this);
 
-  NativeWindowRelay* relay = new NativeWindowRelay(owner_window_->GetWeakPtr());
+  NativeWindowRelay* relay = new NativeWindowRelay(owner_window_);
   web_contents->SetUserData(relay->key, relay);
 
   printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
@@ -199,7 +198,7 @@ void CommonWebContentsDelegate::RunFileChooser(
     content::WebContents* guest,
     const content::FileChooserParams& params) {
   if (!web_dialog_helper_)
-    web_dialog_helper_.reset(new WebDialogHelper(owner_window_));
+    web_dialog_helper_.reset(new WebDialogHelper(owner_window()));
   web_dialog_helper_->RunFileChooser(guest, params);
 }
 
@@ -207,7 +206,7 @@ void CommonWebContentsDelegate::EnumerateDirectory(content::WebContents* guest,
                                                    int request_id,
                                                    const base::FilePath& path) {
   if (!web_dialog_helper_)
-    web_dialog_helper_.reset(new WebDialogHelper(owner_window_));
+    web_dialog_helper_.reset(new WebDialogHelper(owner_window()));
   web_dialog_helper_->EnumerateDirectory(guest, request_id, path);
 }
 
@@ -243,7 +242,7 @@ void CommonWebContentsDelegate::DevToolsSaveToFile(
   } else {
     file_dialog::Filters filters;
     base::FilePath default_path(base::FilePath::FromUTF8Unsafe(url));
-    if (!file_dialog::ShowSaveDialog(owner_window_, url, default_path,
+    if (!file_dialog::ShowSaveDialog(owner_window(), url, default_path,
                                      filters, &path)) {
       base::StringValue url_value(url);
       web_contents_->CallClientFunction(
@@ -278,7 +277,7 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem() {
   base::FilePath default_path;
   std::vector<base::FilePath> paths;
   int flag = file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
-  if (!file_dialog::ShowOpenDialog(owner_window_, "", default_path,
+  if (!file_dialog::ShowOpenDialog(owner_window(), "", default_path,
                                    filters, flag, &paths))
     return;
 

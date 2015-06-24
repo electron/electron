@@ -44,6 +44,8 @@ class CommonWebContentsDelegate
     return web_contents_.get();
   }
 
+  NativeWindow* owner_window() const { return owner_window_.get(); }
+
  protected:
   // content::WebContentsDelegate:
   content::WebContents* OpenURLFromTab(
@@ -90,7 +92,7 @@ class CommonWebContentsDelegate
   void SetHtmlApiFullscreen(bool enter_fullscreen);
 
   // The window that this WebContents belongs to.
-  NativeWindow* owner_window_;
+  base::WeakPtr<NativeWindow> owner_window_;
 
   // Whether window is fullscreened by HTML5 api.
   bool html_fullscreen_;
