@@ -4,17 +4,11 @@
 
 #include "atom/browser/api/atom_api_power_save_blocker.h"
 
+#include <string>
+
 #include "content/public/browser/power_save_blocker.h"
-#include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
-
 #include "atom/common/node_includes.h"
-
-namespace {
-
-const char kPowerSaveBlockerDescription[] = "Electron";
-
-}  // namespace
 
 namespace mate {
 
@@ -24,19 +18,15 @@ struct Converter<content::PowerSaveBlocker::PowerSaveBlockerType> {
                      v8::Local<v8::Value> val,
                      content::PowerSaveBlocker::PowerSaveBlockerType* out) {
     using content::PowerSaveBlocker;
-    int type;
+    std::string type;
     if (!ConvertFromV8(isolate, val, &type))
       return false;
-    switch (static_cast<PowerSaveBlocker::PowerSaveBlockerType>(type)) {
-      case PowerSaveBlocker::kPowerSaveBlockPreventAppSuspension:
-        *out = PowerSaveBlocker::kPowerSaveBlockPreventAppSuspension;
-        break;
-      case PowerSaveBlocker::kPowerSaveBlockPreventDisplaySleep:
-        *out = PowerSaveBlocker::kPowerSaveBlockPreventDisplaySleep;
-        break;
-      default:
-        return false;
-    }
+    if (type == "prevent-app-suspension")
+      *out = PowerSaveBlocker::kPowerSaveBlockPreventAppSuspension;
+    else if (type == "prevent-display-sleep")
+      *out = PowerSaveBlocker::kPowerSaveBlockPreventDisplaySleep;
+    else
+      return false;
     return true;
   }
 };
@@ -47,7 +37,9 @@ namespace atom {
 
 namespace api {
 
-PowerSaveBlocker::PowerSaveBlocker() {
+PowerSaveBlocker::PowerSaveBlocker()
+    : current_blocker_type_(
+        content::PowerSaveBlocker::kPowerSaveBlockPreventAppSuspension) {
 }
 
 PowerSaveBlocker::~PowerSaveBlocker() {
@@ -81,7 +73,7 @@ void PowerSaveBlocker::UpdatePowerSaveBlocker() {
         content::PowerSaveBlocker::Create(
             new_blocker_type,
             content::PowerSaveBlocker::kReasonOther,
-            kPowerSaveBlockerDescription);
+            ATOM_PRODUCT_NAME);
     power_save_blocker_.swap(new_blocker);
     current_blocker_type_ = new_blocker_type;
   }

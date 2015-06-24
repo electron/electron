@@ -44,8 +44,8 @@ class PowerSaveBlocker : public mate::Wrappable {
   content::PowerSaveBlocker::PowerSaveBlockerType current_blocker_type_;
 
   // Map from id to the corresponding blocker type for each request.
-  typedef std::map<int, content::PowerSaveBlocker::PowerSaveBlockerType>
-      PowerSaveBlockerTypeMap;
+  using PowerSaveBlockerTypeMap =
+      std::map<int, content::PowerSaveBlocker::PowerSaveBlockerType>;
   PowerSaveBlockerTypeMap power_save_blocker_types_;
 
 
