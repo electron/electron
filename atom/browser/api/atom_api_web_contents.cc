@@ -163,29 +163,42 @@ WebContents::WebContents(const mate::Dictionary& options)
     : guest_opaque_(true),
       guest_host_(nullptr),
       auto_size_enabled_(false),
-      is_full_page_plugin_(false),
-      type_(WEB_VIEW) {
+      is_full_page_plugin_(false) {
+  bool is_guest = false;
+  options.Get("isGuest", &is_guest);
+
+  type_ = is_guest ? WEB_VIEW : BROWSER_WINDOW;
+
   auto browser_context = AtomBrowserMainParts::Get()->browser_context();
-  content::SiteInstance* site_instance = content::SiteInstance::CreateForURL(
-      browser_context, GURL("chrome-guest://fake-host"));
-
-  content::WebContents::CreateParams params(browser_context, site_instance);
-  params.guest_delegate = this;
-  auto web_contents = content::WebContents::Create(params);
-
-  NativeWindow* owner_window = nullptr;
-  WebContents* embedder = nullptr;
-  if (options.Get("embedder", &embedder) && embedder) {
-    auto relay = NativeWindowRelay::FromWebContents(embedder->web_contents());
-    if (relay)
-      owner_window = relay->window.get();
+  content::WebContents* web_contents;
+  if (is_guest) {
+    content::SiteInstance* site_instance = content::SiteInstance::CreateForURL(
+        browser_context, GURL("chrome-guest://fake-host"));
+    content::WebContents::CreateParams params(browser_context, site_instance);
+    params.guest_delegate = this;
+    web_contents = content::WebContents::Create(params);
+  } else {
+    content::WebContents::CreateParams params(browser_context);
+    web_contents = content::WebContents::Create(params);
   }
 
+  Observe(web_contents);
   AttachAsUserData(web_contents);
-  InitWithWebContents(web_contents, owner_window);
+  InitWithWebContents(web_contents);
   inspectable_web_contents_ = managed_web_contents();
 
-  Observe(GetWebContents());
+  if (is_guest) {
+    NativeWindow* owner_window = nullptr;
+    WebContents* embedder = nullptr;
+    if (options.Get("embedder", &embedder) && embedder) {
+      // New WebContents's owner_window is the embedder's owner_window.
+      auto relay = NativeWindowRelay::FromWebContents(embedder->web_contents());
+      if (relay)
+        owner_window = relay->window.get();
+    }
+    if (owner_window)
+      SetOwnerWindow(owner_window);
+  }
 }
 
 WebContents::~WebContents() {

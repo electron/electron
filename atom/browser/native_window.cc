@@ -94,7 +94,8 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       has_dialog_attached_(false),
       zoom_factor_(1.0),
       weak_factory_(this) {
-  InitWithWebContents(web_contents, this);
+  InitWithWebContents(web_contents);
+  SetOwnerWindow(this);
 
   options.Get(switches::kFrame, &has_frame_);
   options.Get(switches::kTransparent, &transparent_);

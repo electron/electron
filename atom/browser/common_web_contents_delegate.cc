@@ -116,13 +116,8 @@ CommonWebContentsDelegate::~CommonWebContentsDelegate() {
 }
 
 void CommonWebContentsDelegate::InitWithWebContents(
-    content::WebContents* web_contents,
-    NativeWindow* owner_window) {
-  owner_window_ = owner_window->GetWeakPtr();
+    content::WebContents* web_contents) {
   web_contents->SetDelegate(this);
-
-  NativeWindowRelay* relay = new NativeWindowRelay(owner_window_);
-  web_contents->SetUserData(relay->key, relay);
 
   printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
   printing::PrintPreviewMessageHandler::CreateForWebContents(web_contents);
@@ -130,6 +125,13 @@ void CommonWebContentsDelegate::InitWithWebContents(
   // Create InspectableWebContents.
   web_contents_.reset(brightray::InspectableWebContents::Create(web_contents));
   web_contents_->SetDelegate(this);
+}
+
+void CommonWebContentsDelegate::SetOwnerWindow(NativeWindow* owner_window) {
+  content::WebContents* web_contents = GetWebContents();
+  owner_window_ = owner_window->GetWeakPtr();
+  NativeWindowRelay* relay = new NativeWindowRelay(owner_window_);
+  web_contents->SetUserData(relay->key, relay);
 }
 
 void CommonWebContentsDelegate::DestroyWebContents() {

@@ -26,10 +26,12 @@ class CommonWebContentsDelegate
   CommonWebContentsDelegate();
   virtual ~CommonWebContentsDelegate();
 
-  // Create a InspectableWebContents object and takes onwership of
+  // Creates a InspectableWebContents object and takes onwership of
   // |web_contents|.
-  void InitWithWebContents(content::WebContents* web_contents,
-                           NativeWindow* owner_window);
+  void InitWithWebContents(content::WebContents* web_contents);
+
+  // Set the window as owner window.
+  void SetOwnerWindow(NativeWindow* owner_window);
 
   // Destroy the managed InspectableWebContents object.
   void DestroyWebContents();
