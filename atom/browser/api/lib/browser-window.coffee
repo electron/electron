@@ -1,13 +1,9 @@
 EventEmitter = require('events').EventEmitter
-IDWeakMap = process.atomBinding('id_weak_map').IDWeakMap
 app = require 'app'
 ipc = require 'ipc'
 
 BrowserWindow = process.atomBinding('window').BrowserWindow
 BrowserWindow::__proto__ = EventEmitter.prototype
-
-# Store all created windows in the weak map.
-BrowserWindow.windows = new IDWeakMap
 
 BrowserWindow::_init = ->
   # Simulate the application menu on platforms other than OS X.
@@ -30,11 +26,6 @@ BrowserWindow::_init = ->
     app.emit 'browser-window-blur', event, this
   @on 'focus', (event) =>
     app.emit 'browser-window-focus', event, this
-
-  # Remove the window from weak map immediately when it's destroyed, since we
-  # could be iterating windows before GC happened.
-  @once 'closed', =>
-    BrowserWindow.windows.remove @id if BrowserWindow.windows.has @id
 
 BrowserWindow::setMenu = (menu) ->
   throw new TypeError('Invalid menu') unless menu is null or menu?.constructor?.name is 'Menu'
