@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/event_emitter.h"
+#include "atom/browser/api/trackable_object.h"
 #include "atom/browser/common_web_contents_delegate.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "content/public/common/favicon_url.h"
@@ -46,7 +46,7 @@ struct SetSizeParams {
   scoped_ptr<gfx::Size> normal_size;
 };
 
-class WebContents : public mate::EventEmitter,
+class WebContents : public mate::TrackableObject,
                     public content::BrowserPluginGuestDelegate,
                     public CommonWebContentsDelegate,
                     public content::WebContentsObserver,

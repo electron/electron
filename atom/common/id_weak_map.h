@@ -34,6 +34,9 @@ class IDWeakMap {
   // Remove object with |id| in the WeakMap.
   void Remove(int32_t key);
 
+  // Clears the weak map.
+  void Clear();
+
  private:
   // Returns next available ID.
   int32_t GetNextID();

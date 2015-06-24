@@ -4,6 +4,7 @@
 
 #include "atom/browser/atom_browser_main_parts.h"
 
+#include "atom/browser/api/trackable_object.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/browser.h"
@@ -36,6 +37,7 @@ AtomBrowserMainParts::AtomBrowserMainParts()
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {
+  mate::TrackableObject::ReleaseAllWeakReferences();
 }
 
 // static
