@@ -26,12 +26,13 @@ if process.platform is 'darwin'
     setMenu: bindings.dockSetMenu
 
 # Be compatible with old API.
-app.once 'ready', -> app.emit 'finish-launching'
+app.once 'ready', -> @emit 'finish-launching'
 app.terminate = app.quit
 app.exit = process.exit
-app.getHomeDir = -> app.getPath 'home'
-app.getDataPath = -> app.getPath 'userData'
-app.setDataPath = (path) -> app.setPath 'userData', path
+app.getHomeDir = -> @getPath 'home'
+app.getDataPath = -> @getPath 'userData'
+app.setDataPath = (path) -> @setPath 'userData', path
+app.resolveProxy = -> @defaultSession.resolveProxy.apply @defaultSession, arguments
 
 # Only one App object pemitted.
 module.exports = app

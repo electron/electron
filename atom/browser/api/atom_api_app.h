@@ -9,10 +9,7 @@
 
 #include "atom/browser/api/event_emitter.h"
 #include "atom/browser/browser_observer.h"
-#include "base/callback.h"
 #include "native_mate/handle.h"
-
-class GURL;
 
 namespace base {
 class FilePath;
@@ -29,8 +26,6 @@ namespace api {
 class App : public mate::EventEmitter,
             public BrowserObserver {
  public:
-  typedef base::Callback<void(std::string)> ResolveProxyCallback;
-
   static mate::Handle<App> Create(v8::Isolate* isolate);
 
  protected:
@@ -59,9 +54,11 @@ class App : public mate::EventEmitter,
                const std::string& name,
                const base::FilePath& path);
 
-  void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
   void SetDesktopName(const std::string& desktop_name);
   void SetAppUserModelId(const std::string& app_id);
+  v8::Local<v8::Value> DefaultSession(v8::Isolate* isolate);
+
+  v8::Global<v8::Value> default_session_;
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };

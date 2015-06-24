@@ -5,24 +5,29 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_SESSION_H_
 #define ATOM_BROWSER_API_ATOM_API_SESSION_H_
 
+#include <string>
+
+#include "base/callback.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
 
-namespace content {
-class BrowserContext;
-}
+class GURL;
 
 namespace atom {
+
+class AtomBrowserContext;
 
 namespace api {
 
 class Session: public mate::Wrappable {
  public:
+  using ResolveProxyCallback = base::Callback<void(std::string)>;
+
   static mate::Handle<Session> Create(v8::Isolate* isolate,
-                                      content::BrowserContext* browser_context);
+                                      AtomBrowserContext* browser_context);
 
  protected:
-  explicit Session(content::BrowserContext* browser_context);
+  explicit Session(AtomBrowserContext* browser_context);
   ~Session();
 
   // mate::Wrappable implementations:
@@ -30,12 +35,12 @@ class Session: public mate::Wrappable {
       v8::Isolate* isolate) override;
 
  private:
+  void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
 
   v8::Global<v8::Value> cookies_;
 
-  // The webContents which owns the Sesssion.
-  content::BrowserContext* browser_context_;
+  AtomBrowserContext* browser_context_;  // weak ref
 
   DISALLOW_COPY_AND_ASSIGN(Session);
 };

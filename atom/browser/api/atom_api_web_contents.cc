@@ -608,7 +608,9 @@ void WebContents::InspectServiceWorker() {
 
 v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
   if (session_.IsEmpty()) {
-    auto handle = Session::Create(isolate, web_contents()->GetBrowserContext());
+    mate::Handle<api::Session> handle = Session::Create(
+        isolate,
+        static_cast<AtomBrowserContext*>(web_contents()->GetBrowserContext()));
     session_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, session_);
