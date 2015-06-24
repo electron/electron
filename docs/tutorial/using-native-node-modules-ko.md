@@ -38,8 +38,6 @@ $ cd /path-to-module/
 $ HOME=~/.electron-gyp node-gyp rebuild --target=0.25.0 --arch=ia64 --dist-url=https://atom.io/download/atom-shell
 ```
 
-
-
 `HOME=~/.electron-gyp`은 변경할 헤더의 위치를 찾습니다. `--target=0.25.0`은 Electron의 버전입니다.
 `--dist-url=...`은 헤더를 다운로드 하는 주소입니다. `--arch=ia64`는 64비트 시스템을 타겟으로 빌드 한다는 것을 `node-gyp`에게 알려줍니다.
 

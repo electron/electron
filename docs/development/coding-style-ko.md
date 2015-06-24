@@ -4,7 +4,6 @@
 
 C++과 Python스크립트는 Chromium의 [코딩 스타일](http://www.chromium.org/developers/coding-style)을 따릅니다.
 파이선 스크립트 `script/cpplint.py`를 사용하여 모든 파일이 해당 코딩스타일에 맞게 코딩 되었는지 확인할 수 있습니다.
-
 파이선의 버전은 2.7을 사용합니다.
 
 ## CoffeeScript
