@@ -125,7 +125,7 @@ app.on('select-certificate', function(event, host, url, list, callback) {
 `event.preventDefault()` prevents from using the first certificate from
 the store.
 
-### Event: 'gpu-crashed'
+### Event: 'gpu-process-crashed'
 
 Emitted when the gpu process is crashed.
 
