@@ -10,7 +10,6 @@
 
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/common_web_contents_delegate.h"
-#include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "content/public/common/favicon_url.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
@@ -28,26 +27,12 @@ class Dictionary;
 
 namespace atom {
 
+struct SetSizeParams;
+class WebViewGuestDelegate;
+
 namespace api {
 
-// A struct of parameters for SetSize(). The parameters are all declared as
-// scoped pointers since they are all optional. Null pointers indicate that the
-// parameter has not been provided, and the last used value should be used. Note
-// that when |enable_auto_size| is true, providing |normal_size| is not
-// meaningful. This is because the normal size of the guestview is overridden
-// whenever autosizing occurs.
-struct SetSizeParams {
-  SetSizeParams() {}
-  ~SetSizeParams() {}
-
-  scoped_ptr<bool> enable_auto_size;
-  scoped_ptr<gfx::Size> min_size;
-  scoped_ptr<gfx::Size> max_size;
-  scoped_ptr<gfx::Size> normal_size;
-};
-
 class WebContents : public mate::TrackableObject<WebContents>,
-                    public content::BrowserPluginGuestDelegate,
                     public CommonWebContentsDelegate,
                     public content::WebContentsObserver,
                     public content::GpuDataManagerObserver {
@@ -115,17 +100,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   bool SendIPCMessage(const base::string16& channel,
                       const base::ListValue& args);
 
-  // Used to toggle autosize mode for this GuestView, and set both the automatic
-  // and normal sizes.
+  // Methods for creating <webview>.
   void SetSize(const SetSizeParams& params);
-
-  // Sets the transparency of the guest.
   void SetAllowTransparency(bool allow);
-
   bool IsGuest() const;
-
-  // Returns whether this guest has an associated embedder.
-  bool attached() const { return !!embedder_web_contents_; }
 
   // Returns the current InspectableWebContents object, nullptr will be returned
   // if current WebContents can not beinspected, e.g. it is the devtools.
@@ -204,7 +182,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const content::LoadCommittedDetails& details,
       const content::FrameNavigateParams& params) override;
   bool OnMessageReceived(const IPC::Message& message) override;
-  void RenderViewReady() override;
   void WebContentsDestroyed() override;
   void NavigationEntryCommitted(
       const content::LoadCommittedDetails& load_details) override;
@@ -213,15 +190,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const std::vector<content::FaviconURL>& urls) override;
   void PluginCrashed(const base::FilePath& plugin_path,
                      base::ProcessId plugin_pid) override;
-
-  // content::BrowserPluginGuestDelegate:
-  void DidAttach(int guest_proxy_routing_id) final;
-  content::WebContents* GetOwnerWebContents() const final;
-  void GuestSizeChanged(const gfx::Size& new_size) final;
-  void SetGuestHost(content::GuestHost* guest_host) final;
-  void WillAttach(content::WebContents* embedder_web_contents,
-                  int element_instance_id,
-                  bool is_full_page_plugin) final;
 
   // content::GpuDataManagerObserver:
   void OnGpuProcessCrashed(base::TerminationStatus exit_code) override;
@@ -242,49 +210,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              const base::ListValue& args,
                              IPC::Message* message);
 
-  // This method is invoked when the contents auto-resized to give the container
-  // an opportunity to match it if it wishes.
-  //
-  // This gives the derived class an opportunity to inform its container element
-  // or perform other actions.
-  void GuestSizeChangedDueToAutoSize(const gfx::Size& old_size,
-                                     const gfx::Size& new_size);
-
-  // Returns the default size of the guestview.
-  gfx::Size GetDefaultSize() const;
-
   v8::Global<v8::Value> session_;
 
-  // Stores whether the contents of the guest can be transparent.
-  bool guest_opaque_;
-
-  // The WebContents that attaches this guest view.
-  content::WebContents* embedder_web_contents_;
-
-  // The size of the container element.
-  gfx::Size element_size_;
-
-  // The size of the guest content. Note: In autosize mode, the container
-  // element may not match the size of the guest.
-  gfx::Size guest_size_;
-
-  // A pointer to the guest_host.
-  content::GuestHost* guest_host_;
-
-  // Indicates whether autosize mode is enabled or not.
-  bool auto_size_enabled_;
-
-  // The maximum size constraints of the container element in autosize mode.
-  gfx::Size max_auto_size_;
-
-  // The minimum size constraints of the container element in autosize mode.
-  gfx::Size min_auto_size_;
-
-  // The size that will be used when autosize mode is disabled.
-  gfx::Size normal_size_;
-
-  // Whether the guest view is inside a plugin document.
-  bool is_full_page_plugin_;
+  scoped_ptr<WebViewGuestDelegate> guest_delegate_;
 
   // The type of current WebContents.
   Type type_;

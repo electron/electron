@@ -25,9 +25,6 @@ class EventEmitter : public Wrappable {
  public:
   typedef std::vector<v8::Local<v8::Value>> ValueArray;
 
- protected:
-  EventEmitter();
-
   // this.emit(name, new Event(), args...);
   template<typename... Args>
   bool Emit(const base::StringPiece& name, const Args&... args) {
@@ -47,6 +44,9 @@ class EventEmitter : public Wrappable {
     return event->Get(
         StringToV8(isolate(), "defaultPrevented"))->BooleanValue();
   }
+
+ protected:
+  EventEmitter();
 
  private:
   v8::Local<v8::Object> CreateEvent(v8::Isolate* isolate,
