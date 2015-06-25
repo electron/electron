@@ -596,7 +596,7 @@ void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
 }
 
 const char* NativeWindow::AppCommandToString(int command_id) {
-  switch(command_id) {
+  switch (command_id) {
   case APPCOMMAND_BROWSER_BACKWARD:
     return "browser-backward";
   case APPCOMMAND_BROWSER_FORWARD:

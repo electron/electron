@@ -67,7 +67,7 @@ class NativeWindowObserver {
   virtual void OnRendererResponsive() {}
 
   // Called on Windows when App Commands arrive (WM_APPCOMMAND)
-  virtual void OnExecuteWindowsCommand(std::string& command_name) {}
+  virtual void OnExecuteWindowsCommand(const std::string& command_name) {}
 };
 
 }  // namespace atom
