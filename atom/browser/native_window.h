@@ -77,12 +77,9 @@ class NativeWindow : public CommonWebContentsDelegate,
 
   // Create window with existing WebContents, the caller is responsible for
   // managing the window's live.
-  static NativeWindow* Create(content::WebContents* web_contents,
-                              const mate::Dictionary& options);
-
-  // Create window with new WebContents, the caller is responsible for
-  // managing the window's live.
-  static NativeWindow* Create(const mate::Dictionary& options);
+  static NativeWindow* Create(
+      brightray::InspectableWebContents* inspectable_web_contents,
+      const mate::Dictionary& options);
 
   // Find a window from its WebContents
   static NativeWindow* FromWebContents(content::WebContents* web_contents);
@@ -200,7 +197,7 @@ class NativeWindow : public CommonWebContentsDelegate,
   }
 
   brightray::InspectableWebContents* inspectable_web_contents() const {
-    return managed_web_contents();
+    return inspectable_web_contents_;
   }
 
   bool has_frame() const { return has_frame_; }
@@ -210,8 +207,8 @@ class NativeWindow : public CommonWebContentsDelegate,
   }
 
  protected:
-  explicit NativeWindow(content::WebContents* web_contents,
-                        const mate::Dictionary& options);
+  NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,
+               const mate::Dictionary& options);
 
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(
@@ -299,6 +296,9 @@ class NativeWindow : public CommonWebContentsDelegate,
 
   // Page's default zoom factor.
   double zoom_factor_;
+
+  // The page this window is viewing.
+  brightray::InspectableWebContents* inspectable_web_contents_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_;
 

@@ -142,8 +142,9 @@ class NativeWindowClientView : public views::ClientView {
 
 }  // namespace
 
-NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
-                                     const mate::Dictionary& options)
+NativeWindowViews::NativeWindowViews(
+    brightray::InspectableWebContents* web_contents,
+    const mate::Dictionary& options)
     : NativeWindow(web_contents, options),
       window_(new views::Widget),
       web_view_(inspectable_web_contents()->GetView()->GetView()),
@@ -973,9 +974,10 @@ ui::WindowShowState NativeWindowViews::GetRestoredState() {
 }
 
 // static
-NativeWindow* NativeWindow::Create(content::WebContents* web_contents,
-                                   const mate::Dictionary& options) {
-  return new NativeWindowViews(web_contents, options);
+NativeWindow* NativeWindow::Create(
+    brightray::InspectableWebContents* inspectable_web_contents,
+    const mate::Dictionary& options) {
+  return new NativeWindowViews(inspectable_web_contents, options);
 }
 
 }  // namespace atom

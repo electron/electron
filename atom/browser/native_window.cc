@@ -83,9 +83,10 @@ std::string RemoveWhitespace(const std::string& str) {
 
 }  // namespace
 
-NativeWindow::NativeWindow(content::WebContents* web_contents,
-                           const mate::Dictionary& options)
-    : content::WebContentsObserver(web_contents),
+NativeWindow::NativeWindow(
+    brightray::InspectableWebContents* inspectable_web_contents,
+    const mate::Dictionary& options)
+    : content::WebContentsObserver(inspectable_web_contents->GetWebContents()),
       has_frame_(true),
       transparent_(false),
       enable_larger_than_screen_(false),
@@ -94,9 +95,6 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       has_dialog_attached_(false),
       zoom_factor_(1.0),
       weak_factory_(this) {
-  InitWithWebContents(web_contents);
-  SetOwnerWindow(this);
-
   options.Get(switches::kFrame, &has_frame_);
   options.Get(switches::kTransparent, &transparent_);
   options.Get(switches::kEnableLargerThanScreen, &enable_larger_than_screen_);
@@ -137,7 +135,7 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       RemoveWhitespace(browser->GetName()).c_str(),
       browser->GetVersion().c_str(),
       CHROME_VERSION_STRING);
-  web_contents->GetMutableRendererPrefs()->user_agent_override =
+  web_contents()->GetMutableRendererPrefs()->user_agent_override =
       content::BuildUserAgentFromProduct(product_name);
 }
 
@@ -145,13 +143,6 @@ NativeWindow::~NativeWindow() {
   // It's possible that the windows gets destroyed before it's closed, in that
   // case we need to ensure the OnWindowClosed message is still notified.
   NotifyWindowClosed();
-}
-
-// static
-NativeWindow* NativeWindow::Create(const mate::Dictionary& options) {
-  auto browser_context = AtomBrowserMainParts::Get()->browser_context();
-  content::WebContents::CreateParams create_params(browser_context);
-  return Create(content::WebContents::Create(create_params), options);
 }
 
 // static

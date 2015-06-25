@@ -28,9 +28,9 @@ class NativeWindowViews : public NativeWindow,
                           public views::WidgetDelegateView,
                           public views::WidgetObserver {
  public:
-  explicit NativeWindowViews(content::WebContents* web_contents,
-                            const mate::Dictionary& options);
-  virtual ~NativeWindowViews();
+  NativeWindowViews(brightray::InspectableWebContents* inspectable_web_contents,
+                    const mate::Dictionary& options);
+  ~NativeWindowViews() override;
 
   // NativeWindow:
   void Close() override;

@@ -23,9 +23,9 @@ namespace atom {
 
 class NativeWindowMac : public NativeWindow {
  public:
-  explicit NativeWindowMac(content::WebContents* web_contents,
-                           const mate::Dictionary& options);
-  virtual ~NativeWindowMac();
+  NativeWindowMac(brightray::InspectableWebContents* inspectable_web_contents,
+                  const mate::Dictionary& options);
+  ~NativeWindowMac() override;
 
   // NativeWindow implementation.
   void Close() override;

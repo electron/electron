@@ -38,8 +38,16 @@ void OnCapturePageDone(
 }  // namespace
 
 
-Window::Window(const mate::Dictionary& options)
-    : window_(NativeWindow::Create(options)) {
+Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
+  // Creates the WebContents used by BrowserWindow.
+  mate::Dictionary web_contents_options(isolate, v8::Object::New(isolate));
+  auto web_contents = WebContents::Create(isolate, web_contents_options);
+  web_contents_.Reset(isolate, web_contents.ToV8());
+
+  // Creates BrowserWindow.
+  window_.reset(NativeWindow::Create(web_contents->managed_web_contents(),
+                                     options));
+  web_contents->SetOwnerWindow(window_.get());
   window_->InitFromOptions(options);
   window_->AddObserver(this);
 }
@@ -47,13 +55,6 @@ Window::Window(const mate::Dictionary& options)
 Window::~Window() {
   if (window_)
     Destroy();
-}
-
-void Window::AfterInit(v8::Isolate* isolate) {
-  mate::TrackableObject<Window>::AfterInit(isolate);
-  auto web_contents = window_->managed_web_contents();
-  auto handle = WebContents::CreateFrom(isolate, web_contents);
-  web_contents_.Reset(isolate, handle.ToV8());
 }
 
 void Window::OnPageTitleUpdated(bool* prevent_default,
@@ -173,7 +174,7 @@ mate::Wrappable* Window::New(v8::Isolate* isolate,
                      "Cannot create BrowserWindow before app is ready");
     return nullptr;
   }
-  return new Window(options);
+  return new Window(isolate, options);
 }
 
 void Window::Destroy() {

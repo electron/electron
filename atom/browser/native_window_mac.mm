@@ -104,7 +104,7 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 
 - (void)windowDidMove:(NSNotification*)notification {
   // TODO(zcbenz): Remove the alias after figuring out a proper
-  // way to disptach move. 
+  // way to disptach move.
   shell_->NotifyWindowMove();
   shell_->NotifyWindowMoved();
 }
@@ -303,8 +303,9 @@ SkRegion* DraggableRegionsToSkRegion(
 
 }  // namespace
 
-NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
-                                 const mate::Dictionary& options)
+NativeWindowMac::NativeWindowMac(
+    brightray::InspectableWebContents* web_contents,
+    const mate::Dictionary& options)
     : NativeWindow(web_contents, options),
       is_kiosk_(false),
       attention_request_id_(0) {
@@ -834,9 +835,10 @@ void NativeWindowMac::InstallDraggableRegionView() {
 }
 
 // static
-NativeWindow* NativeWindow::Create(content::WebContents* web_contents,
-                                   const mate::Dictionary& options) {
-  return new NativeWindowMac(web_contents, options);
+NativeWindow* NativeWindow::Create(
+    brightray::InspectableWebContents* inspectable_web_contents,
+    const mate::Dictionary& options) {
+  return new NativeWindowMac(inspectable_web_contents, options);
 }
 
 }  // namespace atom
