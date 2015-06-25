@@ -351,6 +351,40 @@ void NativeWindow::RequestToClosePage() {
     web_contents->Close();
 }
 
+void NativeWindow::CloseContents(content::WebContents* source) {
+  if (!inspectable_web_contents_)
+    return;
+
+  inspectable_web_contents_->GetView()->SetDelegate(nullptr);
+  inspectable_web_contents_ = nullptr;
+
+  // When the web contents is gone, close the window immediately, but the
+  // memory will not be freed until you call delete.
+  // In this way, it would be safe to manage windows via smart pointers. If you
+  // want to free memory when the window is closed, you can do deleting by
+  // overriding the OnWindowClosed method in the observer.
+  CloseImmediately();
+
+  // Do not sent "unresponsive" event after window is closed.
+  window_unresposive_closure_.Cancel();
+}
+
+void NativeWindow::RendererUnresponsive(content::WebContents* source) {
+  // Schedule the unresponsive shortly later, since we may receive the
+  // responsive event soon. This could happen after the whole application had
+  // blocked for a while.
+  // Also notice that when closing this event would be ignored because we have
+  // explicity started a close timeout counter. This is on purpose because we
+  // don't want the unresponsive event to be sent too early when user is closing
+  // the window.
+  ScheduleUnresponsiveEvent(50);
+}
+
+void NativeWindow::RendererResponsive(content::WebContents* source) {
+  window_unresposive_closure_.Cancel();
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
+}
+
 void NativeWindow::AppendExtraCommandLineSwitches(
     base::CommandLine* command_line) {
   // Append --node-integration to renderer process.
@@ -485,52 +519,6 @@ void NativeWindow::NotifyWindowLeaveHtmlFullScreen() {
                     OnWindowLeaveHtmlFullScreen());
 }
 
-void NativeWindow::RenderViewCreated(
-    content::RenderViewHost* render_view_host) {
-  if (!transparent_)
-    return;
-
-  content::RenderWidgetHostImpl* impl = content::RenderWidgetHostImpl::FromID(
-      render_view_host->GetProcess()->GetID(),
-      render_view_host->GetRoutingID());
-  if (impl)
-    impl->SetBackgroundOpaque(false);
-}
-
-void NativeWindow::CloseContents(content::WebContents* source) {
-  if (!inspectable_web_contents_)
-    return;
-
-  inspectable_web_contents_->GetView()->SetDelegate(nullptr);
-  inspectable_web_contents_ = nullptr;
-
-  // When the web contents is gone, close the window immediately, but the
-  // memory will not be freed until you call delete.
-  // In this way, it would be safe to manage windows via smart pointers. If you
-  // want to free memory when the window is closed, you can do deleting by
-  // overriding the OnWindowClosed method in the observer.
-  CloseImmediately();
-
-  // Do not sent "unresponsive" event after window is closed.
-  window_unresposive_closure_.Cancel();
-}
-
-void NativeWindow::RendererUnresponsive(content::WebContents* source) {
-  // Schedule the unresponsive shortly later, since we may receive the
-  // responsive event soon. This could happen after the whole application had
-  // blocked for a while.
-  // Also notice that when closing this event would be ignored because we have
-  // explicity started a close timeout counter. This is on purpose because we
-  // don't want the unresponsive event to be sent too early when user is closing
-  // the window.
-  ScheduleUnresponsiveEvent(50);
-}
-
-void NativeWindow::RendererResponsive(content::WebContents* source) {
-  window_unresposive_closure_.Cancel();
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
-}
-
 void NativeWindow::DevToolsFocused() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsFocus());
 }
@@ -541,6 +529,18 @@ void NativeWindow::DevToolsOpened() {
 
 void NativeWindow::DevToolsClosed() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsClosed());
+}
+
+void NativeWindow::RenderViewCreated(
+    content::RenderViewHost* render_view_host) {
+  if (!transparent_)
+    return;
+
+  content::RenderWidgetHostImpl* impl = content::RenderWidgetHostImpl::FromID(
+      render_view_host->GetProcess()->GetID(),
+      render_view_host->GetRoutingID());
+  if (impl)
+    impl->SetBackgroundOpaque(false);
 }
 
 void NativeWindow::BeforeUnloadDialogCancelled() {
