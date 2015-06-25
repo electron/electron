@@ -498,6 +498,9 @@ void NativeWindow::RenderViewCreated(
 }
 
 void NativeWindow::CloseContents(content::WebContents* source) {
+  if (!inspectable_web_contents_)
+    return;
+
   inspectable_web_contents_->GetView()->SetDelegate(nullptr);
   inspectable_web_contents_ = nullptr;
 
