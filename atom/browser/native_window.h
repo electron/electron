@@ -163,16 +163,14 @@ class NativeWindow : public content::WebContentsObserver,
   virtual void SetMenuBarVisibility(bool visible);
   virtual bool IsMenuBarVisible();
 
-  // The same with closing a tab in a real browser.
-  //
-  // Should be called by platform code when user want to close the window.
-  virtual void CloseWebContents();
-
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
 
   content::WebContents* GetWebContents() const;
+
+  // Requests the WebContents to close, can be cancelled by the page.
+  virtual void RequestToClosePage();
 
   // Methods called by the WebContents.
   virtual void CloseContents(content::WebContents* source);

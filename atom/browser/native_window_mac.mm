@@ -149,7 +149,7 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   // When user tries to close the window by clicking the close button, we do
   // not close the window immediately, instead we try to close the web page
   // fisrt, and when the web page is closed the window will also be closed.
-  shell_->CloseWebContents();
+  shell_->RequestToClosePage();
   return NO;
 }
 

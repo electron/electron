@@ -315,7 +315,14 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
       kBGRA_8888_SkColorType);
 }
 
-void NativeWindow::CloseWebContents() {
+content::WebContents* NativeWindow::GetWebContents() const {
+  if (inspectable_web_contents_)
+    return inspectable_web_contents_->GetWebContents();
+  else
+    return nullptr;
+}
+
+void NativeWindow::RequestToClosePage() {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(NativeWindowObserver,
                     observers_,
@@ -342,13 +349,6 @@ void NativeWindow::CloseWebContents() {
     web_contents->DispatchBeforeUnload(false);
   else
     web_contents->Close();
-}
-
-content::WebContents* NativeWindow::GetWebContents() const {
-  if (inspectable_web_contents_)
-    return inspectable_web_contents_->GetWebContents();
-  else
-    return nullptr;
 }
 
 void NativeWindow::AppendExtraCommandLineSwitches(
