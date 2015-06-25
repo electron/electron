@@ -1,4 +1,4 @@
-# Tray
+﻿# Tray
 
 `Tray`는 OS의 알림영역에 아이콘을 표시합니다. 보통 컨텍스트 메뉴(context menu)를 같이 사용합니다.
 

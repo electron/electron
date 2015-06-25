@@ -2,16 +2,14 @@
 
 ## 빌드전 요구사양
 
-* Python 2.7.x. Some distributions like CentOS still use Python 2.6.x
-so you may need to check your Python version with `python -V`.
-* Node.js v0.12.x. There are various ways to install Node. One can download 
-source code from [Node.js] (http://nodejs.org) and compile from source. 
-Doing so permits installing Node to your own home directory as a standard user.  
-Or try repositories such as [NodeSource] (https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories)
-* Clang 3.4 or later
-* Development headers of GTK+ and libnotify
+* Python 2.7.x. 몇몇 CentOS와 같은 배포판들은 아직도 Python 2.6.x 버전을 사용합니다. 그래서 `python -V`를 통해 버전을 확인해 줄 필요가 있습니다.
+* Node.js v0.12.x. Node를 설치하는 방법은 여러가지가 있습니다. 그중 하나는 [Node.js](http://nodejs.org) 사이트에서 소스코드를 받아 빌드하는 방법입니다.
+이렇게 하면 Node를 일반 유저로 홈 디렉터리에 설치할 수 있습니다. 또는 [NodeSource](https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories) 에서 받아올 수도 있습니다.
+자세한 내용은 [Node.js 설치 방법](https://github.com/joyent/node/wiki/Installation) 을 참고하세요.
+* Clang 3.4 또는 최신 버전
+* GTK+ 와 libnotify의 개발용 헤더
 
-On Ubuntu, install the following libraries:
+Ubuntu를 사용하고 있다면 다음 커맨드로 설치하면 합니다:
 
 ```bash
 $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
@@ -20,14 +18,12 @@ $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
                        libxss1 gcc-multilib g++-multilib
 ```
 
-Other distributions may offer similar packages for installation via package 
-managers such as yum. Or one can compile from source code.
-
+다른 배포판의 경우 yum과 같은 패키지 매니저를 통해 패키지를 설치 할 수 있습니다. 패키지의 이름은 대부분 비슷할 것입니다.
+또는 소스코드를 내려받아 직접 빌드하는 방법도 있습니다.
 
 ## 가상머신을 사용하여 빌드 하는 경우
 
-If you plan to build electron on a virtual machine, you will need a fixed-size
-device container of at least 25 gigabytes in size. 
+만약 Electron을 가상머신으로 빌드 할 계획이라면 해당 가상머신의 스토리지를 최소 25GB 이상을 확보해 놓아야 합니다.
 
 
 ## 코드 가져오기
@@ -38,10 +34,10 @@ $ git clone https://github.com/atom/electron.git
 
 ## 부트 스트랩
 
-The bootstrap script will download all necessary build dependencies and create
-build project files. You must have Python 2.7.x for the script to succeed. 
-Downloading certain files could take a long time. Notice that we are using 
-`ninja` to build Electron so there is no `Makefile` generated.
+부트스트랩 스크립트는 필수적인 빌드 종속성 라이브러리들을 모두 다운로드하고 프로젝트 파일을 생성합니다.
+스크립트가 정상적으로 작동하기 위해선 Python 2.7.x 버전이 필요합니다.
+아마 다운로드 작업이 상당히 많은 시간을 소요할 것입니다.
+참고로 Electron은 빌드 툴체인으로 `ninja`를 사용하므로 `Makefile`은 생성되지 않습니다.
 
 ```bash
 $ cd electron
@@ -50,48 +46,42 @@ $ ./script/bootstrap.py -v
 
 ## 빌드 하기
 
-If you would like to build both `Release` and `Debug` targets:
+`Release` 와 `Debug` 두 타겟 모두 빌드 합니다:
 
 ```bash
 $ ./script/build.py
 ```
 
-This script will cause a very large Electron executable to be placed in
-the directory `out/R`. The file size is in excess of 1.3 gigabytes. This 
-happens because the Release target binary contains debugging symbols. 
-To reduce the file size, run the `create-dist.py` script:
+이 스크립트는 `out/R` 디렉터리에 크기가 매우 큰 Electron 실행 파일을 배치합니다. 파일 크기는 1.3GB를 초과합니다.
+이러한 문제가 발생하는 이유는 Release 타겟 바이너리가 디버그 심볼을 포함하기 때문입니다.
+파일 크기를 줄이려면 `create-dist.py` 스크립트를 실행하세요:
 
 ```bash
 $ ./script/create-dist.py
 ```
 
-This will put a working distribution with much smaller file sizes in 
-the `dist` directory. After running the create-dist.py script, you 
-may want to remove the 1.3+ gigabyte binary which is still in out/R.
+이 스크립트는 매우 작은 배포판을 `dist` 디렉터리에 생성합니다.
+create-dist.py 스크립트를 실행한 이후 1.3GB를 초과하는 공간을 차지하는 out/R 폴더의 실행파일 바이너리는 삭제해도 됩니다.
 
-You can also build the `Debug` target only:
+`Debug` 타겟만 빌드 할 수도 있습니다:
 
 ```bash
 $ ./script/build.py -c D
 ```
 
-After building is done, you can find the `electron` debug binary 
-under `out/D`.
-
+빌드가 모두 끝나면 `out/D` 디렉터리에서 `electron` 디버그 바이너리를 찾을 수 있습니다.
 
 ## 정리 하기
 
-
-To clean the build files:
+빌드 파일들을 정리합니다:
 
 ```bash
 $ ./script/clean.py
 ```
 
-
 ## 문제 해결
 
-Make sure you have installed all the build dependencies. 
+개발 종속성 라이브러리들을 제대로 설치했는지 확인하세요. 
 
 ## 테스트
 

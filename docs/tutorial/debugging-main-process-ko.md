@@ -1,7 +1,7 @@
 ﻿# 메인 프로세스 디버깅하기
 
 브라우저 창의 개발자 콘솔은 랜더러 프로세스의 스크립트만 디버깅이 가능합니다. (다시말해 웹 페이지)
-메인 프로세스의 디버깅 방법을 제공하기 위해, Electron은 `--debug` 과 `--debug-brk` 스위치들을 제공합니다.
+메인 프로세스의 디버깅 방법을 제공하기 위해 Electron은 `--debug` 과 `--debug-brk` 스위치들을 제공합니다.
 
 ## 커맨드 라인 스위치(command line switches)
 
@@ -15,7 +15,7 @@
 
 ## node-inspector로 디버깅 하기
 
-__주의:__ Electron은 node v0.11.13 버전을 사용합니다, node-inspector는 현재 아주 잘 작동하지 않습니다.
+__주의:__ Electron은 node v0.11.13 버전을 사용합니다. node-inspector는 현재 아주 잘 작동하지 않습니다.
 그리고 메인 프로세스의 `process`를 node-inspector 콘솔 내에서 검사할 경우 크래시가 발생할 수 있습니다.
 
 ### 1. [node-inspector][node-inspector] 서버 시작

@@ -23,12 +23,12 @@ electron/resources/app
 └── index.html
 ```
 
-그리고 `Electron.app`을 실행하면 (Linux에선 `electron` Windows에선 `electron.exe`입니다), Electron은 해당 앱을 실행시킵니다.
+그리고 `Electron.app`을 실행하면(Linux에선 `electron` Windows에선 `electron.exe`입니다) Electron은 해당 앱을 실행시킵니다.
 최종 사용자에게는 이 `electron` 폴더(Electron.app)를 배포하면 됩니다.
 
 ## asar로 앱 패키징 하기
 
-소스파일 전체를 복사해서 배포하는 것과는 별개로, [asar](https://github.com/atom/asar) 아카이브를 통해
+소스파일 전체를 복사해서 배포하는 것과는 별개로 [asar](https://github.com/atom/asar) 아카이브를 통해
 어플리케이션의 소스코드가 사용자에게 노출되는 것을 방지할 수 있습니다.
 
 `asar` 아카이브를 사용할 땐 단순히 `app` 폴더 대신에 어플리케이션을 패키징한 `app.asar` 파일로 대체하면됩니다.
@@ -52,7 +52,7 @@ electron/resources/
 
 ## 다운로드한 바이너리의 리소스를 앱에 맞게 수정하기
 
-어플리케이션을 Electron에 번들링한 후, 해당 어플리케이션에 맞게 리브랜딩 할 수 있습니다.
+어플리케이션을 Electron에 번들링한 후 해당 어플리케이션에 맞게 리브랜딩 할 수 있습니다.
 
 ### Windows
 

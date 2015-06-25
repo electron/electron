@@ -1,4 +1,4 @@
-# Accelerator
+﻿# Accelerator
 
 Accelerator는 키보드 단축키를 표현하는 문자열입니다, 여러 혼합키와 키코드를 `+` 문자를
 이용하여 결합할 수 있습니다.

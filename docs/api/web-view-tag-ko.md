@@ -1,4 +1,4 @@
-# `<webview>` ÅÂ±×
+ï»¿# `<webview>` íƒœê·¸
 
 Use the `webview` tag to embed 'guest' content (such as web pages) in your
 Electron app. The guest content is contained within the `webview` container;
@@ -10,7 +10,7 @@ app; it doesn't have the same permissions as your web page and all interactions
 between your app and embedded content will be asynchronous. This keeps your app
 safe from the embedded content.
 
-## ¿¹Á¦
+## ì˜ˆì œ
 
 To embed a web page in your app, add the `webview` tag to your app's embedder
 page (this is the app page that will display the guest content). In its simplest
@@ -45,7 +45,7 @@ and displays a "loading..." message during the load time:
 </script>
 ```
 
-## ÅÂ±× ¼Ó¼º
+## íƒœê·¸ ì†ì„±
 
 ### src
 
@@ -308,7 +308,7 @@ page can handle it by listening to the `channel` event of `ipc` module.
 See [WebContents.send](browser-window-ko.md#webcontentssendchannel-args) for
 examples.
 
-## DOM ÀÌº¥Æ®
+## DOM ì´ë²¤íŠ¸
 
 ### did-finish-load
 

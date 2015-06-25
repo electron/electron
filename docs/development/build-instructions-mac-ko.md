@@ -6,8 +6,7 @@
 * [Xcode](https://developer.apple.com/technologies/tools/) >= 5.1
 * [node.js](http://nodejs.org) (external).
 
-If you are using the python downloaded by Homebrew, you also need to install
-following python modules:
+만약 Homebrew를 이용해 파이선을 설치했다면 다음 파이선 모듈도 같이 설치해야 합니다:
 
 * pyobjc
 
@@ -19,9 +18,8 @@ $ git clone https://github.com/atom/electron.git
 
 ## 부트 스트랩
 
-The bootstrap script will download all necessary build dependencies and create
-build project files. Notice that we're using `ninja` to build Electron so
-there is no Xcode project generated.
+부트스트랩 스크립트는 필수적인 빌드 종속성 라이브러리들을 모두 다운로드하고 프로젝트 파일을 생성합니다.
+참고로 Electron은 빌드 툴체인으로 `ninja`를 사용하므로 Xcode 프로젝트는 생성되지 않습니다.
 
 ```bash
 $ cd electron
@@ -30,24 +28,23 @@ $ ./script/bootstrap.py -v
 
 ## 빌드 하기
 
-Build both `Release` and `Debug` targets:
+`Release` 와 `Debug` 두 타겟 모두 빌드 합니다:
 
 ```bash
 $ ./script/build.py
 ```
 
-You can also only build the `Debug` target:
+`Debug` 타겟만 빌드 할 수도 있습니다:
 
 ```bash
 $ ./script/build.py -c D
 ```
 
-After building is done, you can find `Electron.app` under `out/D`.
+빌드가 모두 끝나면 `out/D` 디렉터리에서 `Electron.app` 실행 파일을 찾을 수 있습니다.
 
 ## 32비트 지원
 
-Electron can only be built for 64bit target on OS X, and there is no plan to
-support 32bit OS X in future.
+Electron은 현재 OS X 64비트 빌드만 지원하고 있습니다. 그리고 앞으로도 OS X 32비트는 지원할 계획이 없습니다.
 
 ## 테스트
 
