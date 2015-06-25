@@ -24,6 +24,7 @@
 #include "base/path_service.h"
 #include "brightray/browser/brightray_paths.h"
 #include "content/public/browser/client_certificate_delegate.h"
+#include "content/public/browser/gpu_data_manager.h"
 #include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -135,10 +136,12 @@ void OnClientCertificateSelected(
 
 App::App() {
   Browser::Get()->AddObserver(this);
+  content::GpuDataManager::GetInstance()->AddObserver(this);
 }
 
 App::~App() {
   Browser::Get()->RemoveObserver(this);
+  content::GpuDataManager::GetInstance()->RemoveObserver(this);
 }
 
 void App::OnBeforeQuit(bool* prevent_default) {
@@ -204,6 +207,10 @@ void App::OnSelectCertificate(
   if (!prevent_default)
     shared_delegate->ContinueWithCertificate(
         cert_request_info->client_certs[0].get());
+}
+
+void App::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
+  Emit("gpu-crashed");
 }
 
 base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
