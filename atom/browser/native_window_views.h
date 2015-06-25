@@ -28,9 +28,9 @@ class NativeWindowViews : public NativeWindow,
                           public views::WidgetDelegateView,
                           public views::WidgetObserver {
  public:
-  explicit NativeWindowViews(content::WebContents* web_contents,
-                            const mate::Dictionary& options);
-  virtual ~NativeWindowViews();
+  NativeWindowViews(brightray::InspectableWebContents* inspectable_web_contents,
+                    const mate::Dictionary& options);
+  ~NativeWindowViews() override;
 
   // NativeWindow:
   void Close() override;
@@ -120,15 +120,14 @@ class NativeWindowViews : public NativeWindow,
   bool ExecuteWindowsCommand(int command_id) override;
 #endif
 
-  // brightray::InspectableWebContentsDelegate:
+  // brightray::InspectableWebContentsViewDelegate:
   gfx::ImageSkia GetDevToolsWindowIcon() override;
 #if defined(USE_X11)
   void GetDevToolsWindowWMClass(
       std::string* name, std::string* class_name) override;
 #endif
 
-  // content::WebContentsDelegate:
-  void ActivateContents(content::WebContents* contents) override;
+  // NativeWindow:
   void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) override;

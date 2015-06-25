@@ -11,6 +11,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
@@ -24,14 +25,12 @@
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "content/public/browser/favicon_status.h"
-#include "content/public/browser/guest_host.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
-#include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/resource_request_details.h"
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/storage_partition.h"
@@ -57,10 +56,10 @@ struct PrintSettings {
 namespace mate {
 
 template<>
-struct Converter<atom::api::SetSizeParams> {
+struct Converter<atom::SetSizeParams> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     atom::api::SetSizeParams* out) {
+                     atom::SetSizeParams* out) {
     mate::Dictionary params;
     if (!ConvertFromV8(isolate, val, &params))
       return false;
@@ -116,9 +115,6 @@ namespace api {
 
 namespace {
 
-const int kDefaultWidth = 300;
-const int kDefaultHeight = 300;
-
 v8::Persistent<v8::ObjectTemplate> template_;
 
 // The wrapWebContents funtion which is implemented in JavaScript
@@ -142,46 +138,50 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 
 }  // namespace
 
-WebContents::WebContents(brightray::InspectableWebContents* web_contents)
-    : WebContents(web_contents->GetWebContents()) {
-  inspectable_web_contents_ = web_contents;
-}
-
 WebContents::WebContents(content::WebContents* web_contents)
-    : CommonWebContentsDelegate(false),
-      content::WebContentsObserver(web_contents),
-      guest_opaque_(true),
-      guest_host_(nullptr),
-      auto_size_enabled_(false),
-      is_full_page_plugin_(false),
-      inspectable_web_contents_(nullptr) {
+    : content::WebContentsObserver(web_contents),
+      type_(REMOTE) {
   AttachAsUserData(web_contents);
 }
 
-WebContents::WebContents(const mate::Dictionary& options)
-    : CommonWebContentsDelegate(true),
-      guest_opaque_(true),
-      guest_host_(nullptr),
-      auto_size_enabled_(false),
-      is_full_page_plugin_(false) {
+WebContents::WebContents(const mate::Dictionary& options) {
+  bool is_guest = false;
+  options.Get("isGuest", &is_guest);
+
+  type_ = is_guest ? WEB_VIEW : BROWSER_WINDOW;
+
   auto browser_context = AtomBrowserMainParts::Get()->browser_context();
-  content::SiteInstance* site_instance = content::SiteInstance::CreateForURL(
-      browser_context, GURL("chrome-guest://fake-host"));
+  content::WebContents* web_contents;
+  if (is_guest) {
+    content::SiteInstance* site_instance = content::SiteInstance::CreateForURL(
+        browser_context, GURL("chrome-guest://fake-host"));
+    content::WebContents::CreateParams params(browser_context, site_instance);
+    guest_delegate_.reset(new WebViewGuestDelegate);
+    params.guest_delegate = guest_delegate_.get();
+    web_contents = content::WebContents::Create(params);
+  } else {
+    content::WebContents::CreateParams params(browser_context);
+    web_contents = content::WebContents::Create(params);
+  }
 
-  content::WebContents::CreateParams params(browser_context, site_instance);
-  params.guest_delegate = this;
-  auto web_contents = content::WebContents::Create(params);
-
-  NativeWindow* owner_window = nullptr;
-  WebContents* embedder = nullptr;
-  if (options.Get("embedder", &embedder) && embedder)
-    owner_window = NativeWindow::FromWebContents(embedder->web_contents());
-
+  Observe(web_contents);
   AttachAsUserData(web_contents);
-  InitWithWebContents(web_contents, owner_window);
-  inspectable_web_contents_ = managed_web_contents();
+  InitWithWebContents(web_contents);
 
-  Observe(GetWebContents());
+  if (is_guest) {
+    guest_delegate_->Initialize(this);
+
+    NativeWindow* owner_window = nullptr;
+    WebContents* embedder = nullptr;
+    if (options.Get("embedder", &embedder) && embedder) {
+      // New WebContents's owner_window is the embedder's owner_window.
+      auto relay = NativeWindowRelay::FromWebContents(embedder->web_contents());
+      if (relay)
+        owner_window = relay->window.get();
+    }
+    if (owner_window)
+      SetOwnerWindow(owner_window);
+  }
 }
 
 WebContents::~WebContents() {
@@ -193,8 +193,12 @@ bool WebContents::AddMessageToConsole(content::WebContents* source,
                                       const base::string16& message,
                                       int32 line_no,
                                       const base::string16& source_id) {
-  Emit("console-message", level, message, line_no, source_id);
-  return true;
+  if (type_ == BROWSER_WINDOW) {
+    return false;
+  } else {
+    Emit("console-message", level, message, line_no, source_id);
+    return true;
+  }
 }
 
 bool WebContents::ShouldCreateWebContents(
@@ -206,19 +210,21 @@ bool WebContents::ShouldCreateWebContents(
     const GURL& target_url,
     const std::string& partition_id,
     content::SessionStorageNamespace* session_storage_namespace) {
-  Emit("new-window", target_url, frame_name, NEW_FOREGROUND_TAB);
+  if (type_ == BROWSER_WINDOW)
+    Emit("-new-window", target_url, frame_name, NEW_FOREGROUND_TAB);
+  else
+    Emit("new-window", target_url, frame_name, NEW_FOREGROUND_TAB);
   return false;
-}
-
-void WebContents::CloseContents(content::WebContents* source) {
-  Emit("close");
 }
 
 content::WebContents* WebContents::OpenURLFromTab(
     content::WebContents* source,
     const content::OpenURLParams& params) {
   if (params.disposition != CURRENT_TAB) {
-    Emit("new-window", params.url, "", params.disposition);
+    if (type_ == BROWSER_WINDOW)
+      Emit("-new-window", params.url, "", params.disposition);
+    else
+      Emit("new-window", params.url, "", params.disposition);
     return nullptr;
   }
 
@@ -229,15 +235,43 @@ content::WebContents* WebContents::OpenURLFromTab(
   return CommonWebContentsDelegate::OpenURLFromTab(source, params);
 }
 
+void WebContents::BeforeUnloadFired(content::WebContents* tab,
+                                    bool proceed,
+                                    bool* proceed_to_fire_unload) {
+  if (type_ == BROWSER_WINDOW)
+    *proceed_to_fire_unload = proceed;
+  else
+    *proceed_to_fire_unload = true;
+}
+
+void WebContents::MoveContents(content::WebContents* source,
+                               const gfx::Rect& pos) {
+  Emit("move", pos);
+}
+
+void WebContents::CloseContents(content::WebContents* source) {
+  Emit("closed");
+  if (type_ == BROWSER_WINDOW)
+    owner_window()->CloseContents(source);
+}
+
+void WebContents::ActivateContents(content::WebContents* source) {
+  Emit("activate");
+}
+
+bool WebContents::IsPopupOrPanel(const content::WebContents* source) const {
+  return type_ == BROWSER_WINDOW;
+}
+
 void WebContents::HandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
-  if (!attached())
-    return;
-
-  // Send the unhandled keyboard events back to the embedder to reprocess them.
-  embedder_web_contents_->GetDelegate()->HandleKeyboardEvent(
-      web_contents(), event);
+  if (type_ == BROWSER_WINDOW) {
+    owner_window()->HandleKeyboardEvent(source, event);
+  } else if (type_ == WEB_VIEW && guest_delegate_) {
+    // Send the unhandled keyboard events back to the embedder.
+    guest_delegate_->HandleKeyboardEvent(source, event);
+  }
 }
 
 void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
@@ -249,6 +283,23 @@ void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
 void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
   CommonWebContentsDelegate::ExitFullscreenModeForTab(source);
   Emit("leave-html-full-screen");
+}
+
+void WebContents::RendererUnresponsive(content::WebContents* source) {
+  Emit("unresponsive");
+  if (type_ == BROWSER_WINDOW)
+    owner_window()->RendererUnresponsive(source);
+}
+
+void WebContents::RendererResponsive(content::WebContents* source) {
+  Emit("responsive");
+  if (type_ == BROWSER_WINDOW)
+    owner_window()->RendererResponsive(source);
+}
+
+void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
+  // Do nothing, we override this method just to avoid compilation error since
+  // there are two virtual functions named BeforeUnloadFired.
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
@@ -405,21 +456,6 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
   return handled;
 }
 
-void WebContents::RenderViewReady() {
-  if (!is_guest())
-    return;
-
-  // We don't want to accidentally set the opacity of an interstitial page.
-  // WebContents::GetRenderWidgetHostView will return the RWHV of an
-  // interstitial page if one is showing at this time. We only want opacity
-  // to apply to web pages.
-  auto render_view_host_view = web_contents()->GetRenderViewHost()->GetView();
-  if (guest_opaque_)
-    render_view_host_view->SetBackgroundColorToDefault();
-  else
-    render_view_host_view->SetBackgroundColor(SK_ColorTRANSPARENT);
-}
-
 void WebContents::WebContentsDestroyed() {
   // The RenderViewDeleted was not called when the WebContents is destroyed.
   RenderViewDeleted(web_contents()->GetRenderViewHost());
@@ -433,40 +469,12 @@ void WebContents::NavigationEntryCommitted(
        details.is_in_page, details.did_replace_entry);
 }
 
-void WebContents::DidAttach(int guest_proxy_routing_id) {
-  Emit("did-attach");
-}
-
-content::WebContents* WebContents::GetOwnerWebContents() const {
-  return embedder_web_contents_;
-}
-
-void WebContents::GuestSizeChanged(const gfx::Size& new_size) {
-  if (!auto_size_enabled_)
-    return;
-  GuestSizeChangedDueToAutoSize(guest_size_, new_size);
-  guest_size_ = new_size;
-}
-
-void WebContents::SetGuestHost(content::GuestHost* guest_host) {
-  guest_host_ = guest_host;
-}
-
-void WebContents::WillAttach(content::WebContents* embedder_web_contents,
-                             int element_instance_id,
-                             bool is_full_page_plugin) {
-  embedder_web_contents_ = embedder_web_contents;
-  is_full_page_plugin_ = is_full_page_plugin;
-}
-
 void WebContents::Destroy() {
-  if (is_guest() && managed_web_contents()) {
+  if (type_ == WEB_VIEW && managed_web_contents()) {
     // When force destroying the "destroyed" event is not emitted.
     WebContentsDestroyed();
 
-    // Give the content module an opportunity to perform some cleanup.
-    guest_host_->WillDestroy();
-    guest_host_ = nullptr;
+    guest_delegate_->Destroy();
 
     Observe(nullptr);
     DestroyWebContents();
@@ -555,29 +563,32 @@ void WebContents::ExecuteJavaScript(const base::string16& code) {
 }
 
 void WebContents::OpenDevTools(mate::Arguments* args) {
-  if (!inspectable_web_contents())
+  if (type_ == REMOTE)
     return;
+
   bool detach = false;
-  if (is_guest()) {
+  if (type_ == WEB_VIEW) {
     detach = true;
   } else if (args && args->Length() == 1) {
     mate::Dictionary options;
     args->GetNext(&options) && options.Get("detach", &detach);
   }
-  inspectable_web_contents()->SetCanDock(!detach);
-  inspectable_web_contents()->ShowDevTools();
+  managed_web_contents()->SetCanDock(!detach);
+  managed_web_contents()->ShowDevTools();
 }
 
 void WebContents::CloseDevTools() {
-  if (!inspectable_web_contents())
+  if (type_ == REMOTE)
     return;
-  inspectable_web_contents()->CloseDevTools();
+
+  managed_web_contents()->CloseDevTools();
 }
 
 bool WebContents::IsDevToolsOpened() {
-  if (!inspectable_web_contents())
+  if (type_ == REMOTE)
     return false;
-  return inspectable_web_contents()->IsDevToolsViewShowing();
+
+  return managed_web_contents()->IsDevToolsViewShowing();
 }
 
 void WebContents::ToggleDevTools() {
@@ -588,8 +599,9 @@ void WebContents::ToggleDevTools() {
 }
 
 void WebContents::InspectElement(int x, int y) {
-  if (!inspectable_web_contents())
+  if (type_ == REMOTE)
     return;
+
   OpenDevTools(nullptr);
   scoped_refptr<content::DevToolsAgentHost> agent(
     content::DevToolsAgentHost::GetOrCreateFor(web_contents()));
@@ -597,13 +609,14 @@ void WebContents::InspectElement(int x, int y) {
 }
 
 void WebContents::InspectServiceWorker() {
-  if (!inspectable_web_contents())
+  if (type_ == REMOTE)
     return;
+
   for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
     if (agent_host->GetType() ==
         content::DevToolsAgentHost::TYPE_SERVICE_WORKER) {
       OpenDevTools(nullptr);
-      inspectable_web_contents()->AttachTo(agent_host);
+      managed_web_contents()->AttachTo(agent_host);
       break;
     }
   }
@@ -715,76 +728,17 @@ bool WebContents::SendIPCMessage(const base::string16& channel,
 }
 
 void WebContents::SetSize(const SetSizeParams& params) {
-  bool enable_auto_size =
-      params.enable_auto_size ? *params.enable_auto_size : auto_size_enabled_;
-  gfx::Size min_size = params.min_size ? *params.min_size : min_auto_size_;
-  gfx::Size max_size = params.max_size ? *params.max_size : max_auto_size_;
-
-  if (params.normal_size)
-    normal_size_ = *params.normal_size;
-
-  min_auto_size_ = min_size;
-  min_auto_size_.SetToMin(max_size);
-  max_auto_size_ = max_size;
-  max_auto_size_.SetToMax(min_size);
-
-  enable_auto_size &= !min_auto_size_.IsEmpty() && !max_auto_size_.IsEmpty();
-
-  content::RenderViewHost* rvh = web_contents()->GetRenderViewHost();
-  if (enable_auto_size) {
-    // Autosize is being enabled.
-    rvh->EnableAutoResize(min_auto_size_, max_auto_size_);
-    normal_size_.SetSize(0, 0);
-  } else {
-    // Autosize is being disabled.
-    // Use default width/height if missing from partially defined normal size.
-    if (normal_size_.width() && !normal_size_.height())
-      normal_size_.set_height(GetDefaultSize().height());
-    if (!normal_size_.width() && normal_size_.height())
-      normal_size_.set_width(GetDefaultSize().width());
-
-    gfx::Size new_size;
-    if (!normal_size_.IsEmpty()) {
-      new_size = normal_size_;
-    } else if (!guest_size_.IsEmpty()) {
-      new_size = guest_size_;
-    } else {
-      new_size = GetDefaultSize();
-    }
-
-    if (auto_size_enabled_) {
-      // Autosize was previously enabled.
-      rvh->DisableAutoResize(new_size);
-      GuestSizeChangedDueToAutoSize(guest_size_, new_size);
-    } else {
-      // Autosize was already disabled.
-      guest_host_->SizeContents(new_size);
-    }
-
-    guest_size_ = new_size;
-  }
-
-  auto_size_enabled_ = enable_auto_size;
+  if (guest_delegate_)
+    guest_delegate_->SetSize(params);
 }
 
 void WebContents::SetAllowTransparency(bool allow) {
-  if (guest_opaque_ != allow)
-    return;
-
-  auto render_view_host = web_contents()->GetRenderViewHost();
-  guest_opaque_ = !allow;
-  if (!render_view_host->GetView())
-    return;
-
-  if (guest_opaque_) {
-    render_view_host->GetView()->SetBackgroundColorToDefault();
-  } else {
-    render_view_host->GetView()->SetBackgroundColor(SK_ColorTRANSPARENT);
-  }
+  if (guest_delegate_)
+    guest_delegate_->SetAllowTransparency(allow);
 }
 
 bool WebContents::IsGuest() const {
-  return is_guest();
+  return type_ == WEB_VIEW;
 }
 
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
@@ -854,38 +808,6 @@ void WebContents::OnRendererMessageSync(const base::string16& channel,
                                         IPC::Message* message) {
   // webContents.emit(channel, new Event(sender, message), args...);
   EmitWithSender(base::UTF16ToUTF8(channel), web_contents(), message, args);
-}
-
-void WebContents::GuestSizeChangedDueToAutoSize(const gfx::Size& old_size,
-                                                const gfx::Size& new_size) {
-  Emit("size-changed",
-       old_size.width(), old_size.height(),
-       new_size.width(), new_size.height());
-}
-
-gfx::Size WebContents::GetDefaultSize() const {
-  if (is_full_page_plugin_) {
-    // Full page plugins default to the size of the owner's viewport.
-    return embedder_web_contents_->GetRenderWidgetHostView()
-                                 ->GetVisibleViewportSize();
-  } else {
-    return gfx::Size(kDefaultWidth, kDefaultHeight);
-  }
-}
-
-// static
-mate::Handle<WebContents> WebContents::CreateFrom(
-    v8::Isolate* isolate, brightray::InspectableWebContents* web_contents) {
-  // We have an existing WebContents object in JS.
-  auto existing = TrackableObject::FromWrappedClass(
-      isolate, web_contents->GetWebContents());
-  if (existing)
-    return mate::CreateHandle(isolate, static_cast<WebContents*>(existing));
-
-  // Otherwise create a new WebContents wrapper object.
-  auto handle = mate::CreateHandle(isolate, new WebContents(web_contents));
-  g_wrap_web_contents.Run(handle.ToV8());
-  return handle;
 }
 
 // static

@@ -30,9 +30,6 @@
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/public/browser/navigation_entry.h"
-#include "content/public/browser/notification_details.h"
-#include "content/public/browser/notification_source.h"
-#include "content/public/browser/notification_types.h"
 #include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -59,6 +56,8 @@ using content::NavigationEntry;
 using content::RenderWidgetHostView;
 using content::RenderWidgetHost;
 
+DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
+
 namespace atom {
 
 namespace {
@@ -84,10 +83,10 @@ std::string RemoveWhitespace(const std::string& str) {
 
 }  // namespace
 
-NativeWindow::NativeWindow(content::WebContents* web_contents,
-                           const mate::Dictionary& options)
-    : CommonWebContentsDelegate(false),
-      content::WebContentsObserver(web_contents),
+NativeWindow::NativeWindow(
+    brightray::InspectableWebContents* inspectable_web_contents,
+    const mate::Dictionary& options)
+    : content::WebContentsObserver(inspectable_web_contents->GetWebContents()),
       has_frame_(true),
       transparent_(false),
       enable_larger_than_screen_(false),
@@ -95,8 +94,9 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       node_integration_(true),
       has_dialog_attached_(false),
       zoom_factor_(1.0),
+      inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
-  InitWithWebContents(web_contents, this);
+  inspectable_web_contents->GetView()->SetDelegate(this);
 
   options.Get(switches::kFrame, &has_frame_);
   options.Get(switches::kTransparent, &transparent_);
@@ -138,12 +138,8 @@ NativeWindow::NativeWindow(content::WebContents* web_contents,
       RemoveWhitespace(browser->GetName()).c_str(),
       browser->GetVersion().c_str(),
       CHROME_VERSION_STRING);
-  web_contents->GetMutableRendererPrefs()->user_agent_override =
+  web_contents()->GetMutableRendererPrefs()->user_agent_override =
       content::BuildUserAgentFromProduct(product_name);
-
-  // Get notified of title updated message.
-  registrar_.Add(this, content::NOTIFICATION_WEB_CONTENTS_TITLE_UPDATED,
-      content::Source<content::WebContents>(web_contents));
 }
 
 NativeWindow::~NativeWindow() {
@@ -153,18 +149,11 @@ NativeWindow::~NativeWindow() {
 }
 
 // static
-NativeWindow* NativeWindow::Create(const mate::Dictionary& options) {
-  auto browser_context = AtomBrowserMainParts::Get()->browser_context();
-  content::WebContents::CreateParams create_params(browser_context);
-  return Create(content::WebContents::Create(create_params), options);
-}
-
-// static
 NativeWindow* NativeWindow::FromWebContents(
     content::WebContents* web_contents) {
   WindowList& window_list = *WindowList::GetInstance();
   for (NativeWindow* window : window_list) {
-    if (window->GetWebContents() == web_contents)
+    if (window->web_contents() == web_contents)
       return window;
   }
   return nullptr;
@@ -279,24 +268,22 @@ bool NativeWindow::HasModalDialog() {
 }
 
 void NativeWindow::FocusOnWebView() {
-  GetWebContents()->GetRenderViewHost()->Focus();
+  web_contents()->GetRenderViewHost()->Focus();
 }
 
 void NativeWindow::BlurWebView() {
-  GetWebContents()->GetRenderViewHost()->Blur();
+  web_contents()->GetRenderViewHost()->Blur();
 }
 
 bool NativeWindow::IsWebViewFocused() {
-  RenderWidgetHostView* host_view =
-      GetWebContents()->GetRenderViewHost()->GetView();
+  auto host_view = web_contents()->GetRenderViewHost()->GetView();
   return host_view && host_view->HasFocus();
 }
 
 void NativeWindow::CapturePage(const gfx::Rect& rect,
                                const CapturePageCallback& callback) {
-  content::WebContents* contents = GetWebContents();
-  RenderWidgetHostView* const view = contents->GetRenderWidgetHostView();
-  RenderWidgetHost* const host = view ? view->GetRenderWidgetHost() : nullptr;
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  const auto host = view ? view->GetRenderWidgetHost() : nullptr;
   if (!view || !host) {
     callback.Run(SkBitmap());
     return;
@@ -326,19 +313,13 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
       kBGRA_8888_SkColorType);
 }
 
-void NativeWindow::CloseWebContents() {
+void NativeWindow::RequestToClosePage() {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(NativeWindowObserver,
                     observers_,
                     WillCloseWindow(&prevent_default));
   if (prevent_default) {
     WindowList::WindowCloseCancelled(this);
-    return;
-  }
-
-  content::WebContents* web_contents(GetWebContents());
-  if (!web_contents) {
-    CloseImmediately();
     return;
   }
 
@@ -349,10 +330,45 @@ void NativeWindow::CloseWebContents() {
   if (window_unresposive_closure_.IsCancelled())
     ScheduleUnresponsiveEvent(5000);
 
-  if (web_contents->NeedToFireBeforeUnload())
-    web_contents->DispatchBeforeUnload(false);
+  if (web_contents()->NeedToFireBeforeUnload())
+    web_contents()->DispatchBeforeUnload(false);
   else
-    web_contents->Close();
+    web_contents()->Close();
+}
+
+void NativeWindow::CloseContents(content::WebContents* source) {
+  if (!inspectable_web_contents_)
+    return;
+
+  inspectable_web_contents_->GetView()->SetDelegate(nullptr);
+  inspectable_web_contents_ = nullptr;
+  Observe(nullptr);
+
+  // When the web contents is gone, close the window immediately, but the
+  // memory will not be freed until you call delete.
+  // In this way, it would be safe to manage windows via smart pointers. If you
+  // want to free memory when the window is closed, you can do deleting by
+  // overriding the OnWindowClosed method in the observer.
+  CloseImmediately();
+
+  // Do not sent "unresponsive" event after window is closed.
+  window_unresposive_closure_.Cancel();
+}
+
+void NativeWindow::RendererUnresponsive(content::WebContents* source) {
+  // Schedule the unresponsive shortly later, since we may receive the
+  // responsive event soon. This could happen after the whole application had
+  // blocked for a while.
+  // Also notice that when closing this event would be ignored because we have
+  // explicity started a close timeout counter. This is on purpose because we
+  // don't want the unresponsive event to be sent too early when user is closing
+  // the window.
+  ScheduleUnresponsiveEvent(50);
+}
+
+void NativeWindow::RendererResponsive(content::WebContents* source) {
+  window_unresposive_closure_.Cancel();
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
 }
 
 void NativeWindow::AppendExtraCommandLineSwitches(
@@ -430,10 +446,6 @@ void NativeWindow::NotifyWindowClosed() {
   is_closed_ = true;
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowClosed());
 
-  // Do not receive any notification after window has been closed, there is a
-  // crash that seems to be caused by this: http://git.io/YqMG5g.
-  registrar_.RemoveAll();
-
   WindowList::RemoveWindow(this);
 }
 
@@ -493,50 +505,16 @@ void NativeWindow::NotifyWindowLeaveHtmlFullScreen() {
                     OnWindowLeaveHtmlFullScreen());
 }
 
-bool NativeWindow::ShouldCreateWebContents(
-    content::WebContents* web_contents,
-    int route_id,
-    int main_frame_route_id,
-    WindowContainerType window_container_type,
-    const base::string16& frame_name,
-    const GURL& target_url,
-    const std::string& partition_id,
-    content::SessionStorageNamespace* session_storage_namespace) {
-  FOR_EACH_OBSERVER(NativeWindowObserver,
-                    observers_,
-                    WillCreatePopupWindow(frame_name,
-                                          target_url,
-                                          partition_id,
-                                          NEW_FOREGROUND_TAB));
-  return false;
+void NativeWindow::DevToolsFocused() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsFocus());
 }
 
-// In atom-shell all reloads and navigations started by renderer process would
-// be redirected to this method, so we can have precise control of how we
-// would open the url (in our case, is to restart the renderer process). See
-// AtomRendererClient::ShouldFork for how this is done.
-content::WebContents* NativeWindow::OpenURLFromTab(
-    content::WebContents* source,
-    const content::OpenURLParams& params) {
-  if (params.disposition != CURRENT_TAB) {
-    FOR_EACH_OBSERVER(NativeWindowObserver,
-                      observers_,
-                      WillCreatePopupWindow(base::string16(),
-                                            params.url,
-                                            "",
-                                            params.disposition));
-    return nullptr;
-  }
+void NativeWindow::DevToolsOpened() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsOpened());
+}
 
-  // Give user a chance to prevent navigation.
-  bool prevent_default = false;
-  FOR_EACH_OBSERVER(NativeWindowObserver,
-                    observers_,
-                    WillNavigate(&prevent_default, params.url));
-  if (prevent_default)
-    return nullptr;
-
-  return CommonWebContentsDelegate::OpenURLFromTab(source, params);
+void NativeWindow::DevToolsClosed() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsClosed());
 }
 
 void NativeWindow::RenderViewCreated(
@@ -551,66 +529,22 @@ void NativeWindow::RenderViewCreated(
     impl->SetBackgroundOpaque(false);
 }
 
-void NativeWindow::BeforeUnloadFired(content::WebContents* tab,
-                                     bool proceed,
-                                     bool* proceed_to_fire_unload) {
-  *proceed_to_fire_unload = proceed;
+void NativeWindow::BeforeUnloadDialogCancelled() {
+  WindowList::WindowCloseCancelled(this);
 
-  if (!proceed) {
-    WindowList::WindowCloseCancelled(this);
-
-    // Cancel unresponsive event when window close is cancelled.
-    window_unresposive_closure_.Cancel();
-  }
-}
-
-void NativeWindow::ActivateContents(content::WebContents* contents) {
-  FocusOnWebView();
-}
-
-void NativeWindow::DeactivateContents(content::WebContents* contents) {
-  BlurWebView();
-}
-
-void NativeWindow::MoveContents(content::WebContents* source,
-                                const gfx::Rect& pos) {
-  SetBounds(pos);
-}
-
-void NativeWindow::CloseContents(content::WebContents* source) {
-  // Destroy the WebContents before we close the window.
-  DestroyWebContents();
-
-  // When the web contents is gone, close the window immediately, but the
-  // memory will not be freed until you call delete.
-  // In this way, it would be safe to manage windows via smart pointers. If you
-  // want to free memory when the window is closed, you can do deleting by
-  // overriding the OnWindowClosed method in the observer.
-  CloseImmediately();
-
-  // Do not sent "unresponsive" event after window is closed.
+  // Cancel unresponsive event when window close is cancelled.
   window_unresposive_closure_.Cancel();
 }
 
-void NativeWindow::RendererUnresponsive(content::WebContents* source) {
-  // Schedule the unresponsive shortly later, since we may receive the
-  // responsive event soon. This could happen after the whole application had
-  // blocked for a while.
-  // Also notice that when closing this event would be ignored because we have
-  // explicity started a close timeout counter. This is on purpose because we
-  // don't want the unresponsive event to be sent too early when user is closing
-  // the window.
-  ScheduleUnresponsiveEvent(50);
-}
-
-void NativeWindow::RendererResponsive(content::WebContents* source) {
-  window_unresposive_closure_.Cancel();
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
-}
-
-void NativeWindow::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
-  // Do nothing, we override this method just to avoid compilation error since
-  // there are two virtual functions named BeforeUnloadFired.
+void NativeWindow::TitleWasSet(content::NavigationEntry* entry,
+                               bool explicit_set) {
+  bool prevent_default = false;
+  std::string text = base::UTF16ToUTF8(entry->GetTitle());
+  FOR_EACH_OBSERVER(NativeWindowObserver,
+                    observers_,
+                    OnPageTitleUpdated(&prevent_default, text));
+  if (!prevent_default)
+    SetTitle(text);
 }
 
 bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
@@ -622,38 +556,6 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   IPC_END_MESSAGE_MAP()
 
   return handled;
-}
-
-void NativeWindow::Observe(int type,
-                           const content::NotificationSource& source,
-                           const content::NotificationDetails& details) {
-  if (type == content::NOTIFICATION_WEB_CONTENTS_TITLE_UPDATED) {
-    std::pair<NavigationEntry*, bool>* title =
-        content::Details<std::pair<NavigationEntry*, bool>>(details).ptr();
-
-    if (title->first) {
-      bool prevent_default = false;
-      std::string text = base::UTF16ToUTF8(title->first->GetTitle());
-      FOR_EACH_OBSERVER(NativeWindowObserver,
-                        observers_,
-                        OnPageTitleUpdated(&prevent_default, text));
-
-      if (!prevent_default)
-        SetTitle(text);
-    }
-  }
-}
-
-void NativeWindow::DevToolsFocused() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsFocus());
-}
-
-void NativeWindow::DevToolsOpened() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsOpened());
-}
-
-void NativeWindow::DevToolsClosed() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsClosed());
 }
 
 void NativeWindow::ScheduleUnresponsiveEvent(int ms) {

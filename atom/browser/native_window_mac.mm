@@ -68,7 +68,7 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 }
 
 - (void)windowDidBecomeMain:(NSNotification*)notification {
-  content::WebContents* web_contents = shell_->GetWebContents();
+  content::WebContents* web_contents = shell_->web_contents();
   if (!web_contents)
     return;
 
@@ -82,7 +82,7 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 }
 
 - (void)windowDidResignMain:(NSNotification*)notification {
-  content::WebContents* web_contents = shell_->GetWebContents();
+  content::WebContents* web_contents = shell_->web_contents();
   if (!web_contents)
     return;
 
@@ -104,7 +104,7 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 
 - (void)windowDidMove:(NSNotification*)notification {
   // TODO(zcbenz): Remove the alias after figuring out a proper
-  // way to disptach move. 
+  // way to disptach move.
   shell_->NotifyWindowMove();
   shell_->NotifyWindowMoved();
 }
@@ -149,7 +149,7 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   // When user tries to close the window by clicking the close button, we do
   // not close the window immediately, instead we try to close the web page
   // fisrt, and when the web page is closed the window will also be closed.
-  shell_->CloseWebContents();
+  shell_->RequestToClosePage();
   return NO;
 }
 
@@ -303,8 +303,9 @@ SkRegion* DraggableRegionsToSkRegion(
 
 }  // namespace
 
-NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
-                                 const mate::Dictionary& options)
+NativeWindowMac::NativeWindowMac(
+    brightray::InspectableWebContents* web_contents,
+    const mate::Dictionary& options)
     : NativeWindow(web_contents, options),
       is_kiosk_(false),
       attention_request_id_(0) {
@@ -385,9 +386,7 @@ NativeWindowMac::NativeWindowMac(content::WebContents* web_contents,
 }
 
 NativeWindowMac::~NativeWindowMac() {
-  // Force InspectableWebContents to be destroyed before we destroy window,
-  // because it may still be observing the window at this time.
-  DestroyWebContents();
+  Observe(nullptr);
 }
 
 void NativeWindowMac::Close() {
@@ -678,10 +677,9 @@ void NativeWindowMac::SetOverlayIcon(const gfx::Image& overlay,
 }
 
 void NativeWindowMac::ShowDefinitionForSelection() {
-  content::WebContents* web_contents = GetWebContents();
-  if (!web_contents)
+  if (!web_contents())
     return;
-  content::RenderWidgetHostView* rwhv = web_contents->GetRenderWidgetHostView();
+  auto rwhv = web_contents()->GetRenderWidgetHostView();
   if (!rwhv)
     return;
   rwhv->ShowDefinitionForSelection();
@@ -705,10 +703,9 @@ bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
 bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {
   if (!draggable_region_)
     return false;
-  content::WebContents* web_contents = GetWebContents();
-  if (!web_contents)
+  if (!web_contents())
     return false;
-  NSView* webView = web_contents->GetNativeView();
+  NSView* webView = web_contents()->GetNativeView();
   NSInteger webViewHeight = NSHeight([webView bounds]);
   // |draggable_region_| is stored in local platform-indepdent coordiate system
   // while |point| is in local Cocoa coordinate system. Do the conversion
@@ -815,16 +812,15 @@ void NativeWindowMac::UninstallView() {
 }
 
 void NativeWindowMac::ClipWebView() {
-  content::WebContents* web_contents = GetWebContents();
-  if (!web_contents)
+  if (!web_contents())
     return;
-  NSView* webView = web_contents->GetNativeView();
+  NSView* webView = web_contents()->GetNativeView();
   webView.layer.masksToBounds = YES;
   webView.layer.cornerRadius = kAtomWindowCornerRadius;
 }
 
 void NativeWindowMac::InstallDraggableRegionView() {
-  NSView* webView = GetWebContents()->GetNativeView();
+  NSView* webView = web_contents()->GetNativeView();
   base::scoped_nsobject<NSView> controlRegion(
       [[ControlRegionView alloc] initWithShellWindow:this]);
   [controlRegion setFrame:NSMakeRect(0, 0,
@@ -834,9 +830,10 @@ void NativeWindowMac::InstallDraggableRegionView() {
 }
 
 // static
-NativeWindow* NativeWindow::Create(content::WebContents* web_contents,
-                                   const mate::Dictionary& options) {
-  return new NativeWindowMac(web_contents, options);
+NativeWindow* NativeWindow::Create(
+    brightray::InspectableWebContents* inspectable_web_contents,
+    const mate::Dictionary& options) {
+  return new NativeWindowMac(inspectable_web_contents, options);
 }
 
 }  // namespace atom

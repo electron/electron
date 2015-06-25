@@ -12,14 +12,18 @@ BrowserWindow::_init = ->
     @setMenu menu if menu?
 
   # Make new windows requested by links behave like "window.open"
-  @on '-new-window', (event, url, frameName) =>
-    event.sender = @webContents
+  @webContents.on '-new-window', (event, url, frameName) ->
     options = show: true, width: 800, height: 600
     ipc.emit 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', event, url, frameName, options
 
-  # Redirect "will-navigate" to webContents.
-  @on '-will-navigate', (event, url) =>
-    @webContents.emit 'will-navigate', event, url
+  # window.move(...)
+  @webContents.on 'move', (event, size) =>
+    @setSize size
+
+  # Hide the auto-hide menu when webContents is focused.
+  @webContents.on 'activate', =>
+    if process.platform isnt 'darwin' and @isMenuBarAutoHide() and @isMenuBarVisible()
+      @setMenuBarVisibility false
 
   # Redirect focus/blur event to app instance too.
   @on 'blur', (event) =>

@@ -23,11 +23,11 @@ namespace atom {
 
 class NativeWindowMac : public NativeWindow {
  public:
-  explicit NativeWindowMac(content::WebContents* web_contents,
-                           const mate::Dictionary& options);
-  virtual ~NativeWindowMac();
+  NativeWindowMac(brightray::InspectableWebContents* inspectable_web_contents,
+                  const mate::Dictionary& options);
+  ~NativeWindowMac() override;
 
-  // NativeWindow implementation.
+  // NativeWindow:
   void Close() override;
   void CloseImmediately() override;
   void Focus(bool focus) override;
@@ -91,7 +91,7 @@ class NativeWindowMac : public NativeWindow {
   void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) override;
 
-  // Implementations of content::WebContentsDelegate.
+  // NativeWindow:
   void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent&) override;

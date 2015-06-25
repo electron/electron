@@ -16,7 +16,8 @@
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
-#include "browser/inspectable_web_contents_view.h"
+#include "brightray/browser/inspectable_web_contents.h"
+#include "brightray/browser/inspectable_web_contents_view.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "native_mate/dictionary.h"
 #include "ui/aura/window.h"
@@ -132,7 +133,7 @@ class NativeWindowClientView : public views::ClientView {
   virtual ~NativeWindowClientView() {}
 
   bool CanClose() override {
-    static_cast<NativeWindowViews*>(contents_view())->CloseWebContents();
+    static_cast<NativeWindowViews*>(contents_view())->RequestToClosePage();
     return false;
   }
 
@@ -142,8 +143,9 @@ class NativeWindowClientView : public views::ClientView {
 
 }  // namespace
 
-NativeWindowViews::NativeWindowViews(content::WebContents* web_contents,
-                                     const mate::Dictionary& options)
+NativeWindowViews::NativeWindowViews(
+    brightray::InspectableWebContents* web_contents,
+    const mate::Dictionary& options)
     : NativeWindow(web_contents, options),
       window_(new views::Widget),
       web_view_(inspectable_web_contents()->GetView()->GetView()),
@@ -726,9 +728,9 @@ void NativeWindowViews::OnWidgetActivationChanged(
   else
     NotifyWindowBlur();
 
-  if (active && GetWebContents() &&
+  if (active && inspectable_web_contents() &&
       !inspectable_web_contents()->IsDevToolsViewShowing())
-    GetWebContents()->Focus();
+    web_contents()->Focus();
 
   // Hide menu bar when window is blured.
   if (!active && menu_bar_autohide_ && menu_bar_visible_)
@@ -870,13 +872,6 @@ void NativeWindowViews::GetDevToolsWindowWMClass(
 }
 #endif
 
-void NativeWindowViews::ActivateContents(content::WebContents* contents) {
-  NativeWindow::ActivateContents(contents);
-  // Hide menu bar when web view is clicked.
-  if (menu_bar_autohide_ && menu_bar_visible_)
-    SetMenuBarVisibility(false);
-}
-
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
@@ -973,9 +968,10 @@ ui::WindowShowState NativeWindowViews::GetRestoredState() {
 }
 
 // static
-NativeWindow* NativeWindow::Create(content::WebContents* web_contents,
-                                   const mate::Dictionary& options) {
-  return new NativeWindowViews(web_contents, options);
+NativeWindow* NativeWindow::Create(
+    brightray::InspectableWebContents* inspectable_web_contents,
+    const mate::Dictionary& options) {
+  return new NativeWindowViews(inspectable_web_contents, options);
 }
 
 }  // namespace atom

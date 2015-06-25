@@ -65,12 +65,15 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   if (!item)
     return;
 
+  NativeWindow* window = nullptr;
+  auto relay = NativeWindowRelay::FromWebContents(item->GetWebContents());
+  if (relay)
+    window = relay->window.get();
+
   file_dialog::Filters filters;
   base::FilePath path;
-  auto owner_window_ = NativeWindow::FromWebContents(item->GetWebContents());
-  if (!file_dialog::ShowSaveDialog(
-          owner_window_, item->GetURL().spec(),
-          default_path, filters, &path)) {
+  if (!file_dialog::ShowSaveDialog(window, item->GetURL().spec(), default_path,
+                                   filters, &path)) {
     return;
   }
 

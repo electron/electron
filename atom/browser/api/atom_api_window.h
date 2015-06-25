@@ -45,20 +45,12 @@ class Window : public mate::TrackableObject<Window>,
   NativeWindow* window() const { return window_.get(); }
 
  protected:
-  explicit Window(const mate::Dictionary& options);
+  Window(v8::Isolate* isolate, const mate::Dictionary& options);
   virtual ~Window();
-
-  // mate::Wrappable:
-  void AfterInit(v8::Isolate* isolate) override;
 
   // NativeWindowObserver:
   void OnPageTitleUpdated(bool* prevent_default,
                           const std::string& title) override;
-  void WillCreatePopupWindow(const base::string16& frame_name,
-                             const GURL& target_url,
-                             const std::string& partition_id,
-                             WindowOpenDisposition disposition) override;
-  void WillNavigate(bool* prevent_default, const GURL& url) override;
   void WillCloseWindow(bool* prevent_default) override;
   void OnWindowClosed() override;
   void OnWindowBlur() override;
@@ -153,6 +145,8 @@ class Window : public mate::TrackableObject<Window>,
   v8::Global<v8::Value> web_contents_;
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> menu_;
+
+  api::WebContents* api_web_contents_;
 
   scoped_ptr<NativeWindow> window_;
 

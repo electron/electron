@@ -38,8 +38,17 @@ void OnCapturePageDone(
 }  // namespace
 
 
-Window::Window(const mate::Dictionary& options)
-    : window_(NativeWindow::Create(options)) {
+Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
+  // Creates the WebContents used by BrowserWindow.
+  mate::Dictionary web_contents_options(isolate, v8::Object::New(isolate));
+  auto web_contents = WebContents::Create(isolate, web_contents_options);
+  web_contents_.Reset(isolate, web_contents.ToV8());
+  api_web_contents_ = web_contents.get();
+
+  // Creates BrowserWindow.
+  window_.reset(NativeWindow::Create(web_contents->managed_web_contents(),
+                                     options));
+  web_contents->SetOwnerWindow(window_.get());
   window_->InitFromOptions(options);
   window_->AddObserver(this);
 }
@@ -49,27 +58,9 @@ Window::~Window() {
     Destroy();
 }
 
-void Window::AfterInit(v8::Isolate* isolate) {
-  mate::TrackableObject<Window>::AfterInit(isolate);
-  auto web_contents = window_->managed_web_contents();
-  auto handle = WebContents::CreateFrom(isolate, web_contents);
-  web_contents_.Reset(isolate, handle.ToV8());
-}
-
 void Window::OnPageTitleUpdated(bool* prevent_default,
                                 const std::string& title) {
   *prevent_default = Emit("page-title-updated", title);
-}
-
-void Window::WillCreatePopupWindow(const base::string16& frame_name,
-                                   const GURL& target_url,
-                                   const std::string& partition_id,
-                                   WindowOpenDisposition disposition) {
-  Emit("-new-window", target_url, frame_name);
-}
-
-void Window::WillNavigate(bool* prevent_default, const GURL& url) {
-  *prevent_default = Emit("-will-navigate", url);
 }
 
 void Window::WillCloseWindow(bool* prevent_default) {
@@ -78,6 +69,12 @@ void Window::WillCloseWindow(bool* prevent_default) {
 
 void Window::OnWindowClosed() {
   Emit("closed");
+
+  if (api_web_contents_) {
+    api_web_contents_->DestroyWebContents();
+    api_web_contents_ = nullptr;
+    web_contents_.Reset();
+  }
 
   RemoveFromWeakMap();
   window_->RemoveObserver(this);
@@ -152,8 +149,8 @@ void Window::OnDevToolsOpened() {
 
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  auto handle = WebContents::CreateFrom(isolate(),
-                                        window_->GetDevToolsWebContents());
+  auto handle = WebContents::CreateFrom(
+      isolate(), api_web_contents_->GetDevToolsWebContents());
   devtools_web_contents_.Reset(isolate(), handle.ToV8());
 }
 
@@ -173,12 +170,11 @@ mate::Wrappable* Window::New(v8::Isolate* isolate,
                      "Cannot create BrowserWindow before app is ready");
     return nullptr;
   }
-  return new Window(options);
+  return new Window(isolate, options);
 }
 
 void Window::Destroy() {
-  window_->DestroyWebContents();
-  window_->CloseImmediately();
+  window_->CloseContents(nullptr);
 }
 
 void Window::Close() {
