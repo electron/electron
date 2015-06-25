@@ -51,7 +51,7 @@ class EventEmitter : public Wrappable {
  private:
   v8::Local<v8::Object> CreateEvent(v8::Isolate* isolate,
                                     content::WebContents* sender,
-                                    IPC::Message* message) const;
+                                    IPC::Message* message);
 
   DISALLOW_COPY_AND_ASSIGN(EventEmitter);
 };

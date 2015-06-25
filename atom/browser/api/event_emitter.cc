@@ -6,6 +6,7 @@
 
 #include "atom/browser/api/event.h"
 #include "native_mate/arguments.h"
+#include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 
 namespace mate {
@@ -15,8 +16,8 @@ namespace {
 v8::Persistent<v8::ObjectTemplate> event_template;
 
 void PreventDefault(mate::Arguments* args) {
-  args->GetThis()->Set(StringToV8(args->isolate(), "defaultPrevented"),
-                       v8::True(args->isolate()));
+  mate::Dictionary self(args->isolate(), args->GetThis());
+  self.Set("defaultPrevented", true);
 }
 
 // Create a pure JavaScript Event object.
@@ -38,7 +39,7 @@ EventEmitter::EventEmitter() {
 
 v8::Local<v8::Object> EventEmitter::CreateEvent(v8::Isolate* isolate,
                                                 content::WebContents* sender,
-                                                IPC::Message* message) const {
+                                                IPC::Message* message) {
   v8::Local<v8::Object> event;
   bool use_native_event = sender && message;
 
@@ -49,6 +50,7 @@ v8::Local<v8::Object> EventEmitter::CreateEvent(v8::Isolate* isolate,
   } else {
     event = CreateEventObject(isolate);
   }
+  mate::Dictionary(isolate, event).Set("sender", GetWrapper(isolate));
   return event;
 }
 
