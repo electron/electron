@@ -219,7 +219,7 @@ Emitted when devtools is closed.
 
 Emitted when devtools is focused / opened.
 
-### Event: 'app-command' (Windows):
+### Event: 'app-command':
 
 Emitted when an [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx) is invoked. These are typically related to keyboard media keys or browser commands, as well as the "Back" button built into some mice on Windows.
 
@@ -235,6 +235,8 @@ someWindow.on('app-command', function(e, cmd) => {
   }
 });
 ```
+
+__Note__: This event is only fired on Windows
 
 ### Class Method: BrowserWindow.getAllWindows()
 
