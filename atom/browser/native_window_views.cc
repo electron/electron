@@ -872,13 +872,6 @@ void NativeWindowViews::GetDevToolsWindowWMClass(
 }
 #endif
 
-void NativeWindowViews::ActivateContents(content::WebContents* contents) {
-  NativeWindow::ActivateContents(contents);
-  // Hide menu bar when web view is clicked.
-  if (menu_bar_autohide_ && menu_bar_visible_)
-    SetMenuBarVisibility(false);
-}
-
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {

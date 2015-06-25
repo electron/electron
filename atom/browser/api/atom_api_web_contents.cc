@@ -267,8 +267,7 @@ void WebContents::CloseContents(content::WebContents* source) {
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
-  if (type_ == BROWSER_WINDOW)
-    owner_window()->CloseContents(source);
+  Emit("activate");
 }
 
 bool WebContents::IsPopupOrPanel(const content::WebContents* source) const {

@@ -128,7 +128,6 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
   // NativeWindow:
-  void ActivateContents(content::WebContents* contents) override;
   void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) override;

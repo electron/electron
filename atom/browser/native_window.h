@@ -178,7 +178,6 @@ class NativeWindow : public content::WebContentsObserver,
   virtual void CloseContents(content::WebContents* source);
   virtual void RendererUnresponsive(content::WebContents* source);
   virtual void RendererResponsive(content::WebContents* source);
-  virtual void ActivateContents(content::WebContents* contents) {}
   virtual void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) {}

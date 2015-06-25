@@ -20,6 +20,11 @@ BrowserWindow::_init = ->
   @webContents.on 'move', (event, size) =>
     @setSize size
 
+  # Hide the auto-hide menu when webContents is focused.
+  @webContents.on 'activate', =>
+    if process.platform isnt 'darwin' and @isMenuBarAutoHide() and @isMenuBarVisible()
+      @setMenuBarVisibility false
+
   # Redirect focus/blur event to app instance too.
   @on 'blur', (event) =>
     app.emit 'browser-window-blur', event, this
