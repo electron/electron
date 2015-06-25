@@ -153,7 +153,7 @@ NativeWindow* NativeWindow::FromWebContents(
     content::WebContents* web_contents) {
   WindowList& window_list = *WindowList::GetInstance();
   for (NativeWindow* window : window_list) {
-    if (window->GetWebContents() == web_contents)
+    if (window->web_contents() == web_contents)
       return window;
   }
   return nullptr;
@@ -268,24 +268,22 @@ bool NativeWindow::HasModalDialog() {
 }
 
 void NativeWindow::FocusOnWebView() {
-  GetWebContents()->GetRenderViewHost()->Focus();
+  web_contents()->GetRenderViewHost()->Focus();
 }
 
 void NativeWindow::BlurWebView() {
-  GetWebContents()->GetRenderViewHost()->Blur();
+  web_contents()->GetRenderViewHost()->Blur();
 }
 
 bool NativeWindow::IsWebViewFocused() {
-  RenderWidgetHostView* host_view =
-      GetWebContents()->GetRenderViewHost()->GetView();
+  auto host_view = web_contents()->GetRenderViewHost()->GetView();
   return host_view && host_view->HasFocus();
 }
 
 void NativeWindow::CapturePage(const gfx::Rect& rect,
                                const CapturePageCallback& callback) {
-  content::WebContents* contents = GetWebContents();
-  RenderWidgetHostView* const view = contents->GetRenderWidgetHostView();
-  RenderWidgetHost* const host = view ? view->GetRenderWidgetHost() : nullptr;
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  const auto host = view ? view->GetRenderWidgetHost() : nullptr;
   if (!view || !host) {
     callback.Run(SkBitmap());
     return;
@@ -315,13 +313,6 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
       kBGRA_8888_SkColorType);
 }
 
-content::WebContents* NativeWindow::GetWebContents() const {
-  if (inspectable_web_contents_)
-    return inspectable_web_contents_->GetWebContents();
-  else
-    return nullptr;
-}
-
 void NativeWindow::RequestToClosePage() {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(NativeWindowObserver,
@@ -332,12 +323,6 @@ void NativeWindow::RequestToClosePage() {
     return;
   }
 
-  content::WebContents* web_contents(GetWebContents());
-  if (!web_contents) {
-    CloseImmediately();
-    return;
-  }
-
   // Assume the window is not responding if it doesn't cancel the close and is
   // not closed in 5s, in this way we can quickly show the unresponsive
   // dialog when the window is busy executing some script withouth waiting for
@@ -345,10 +330,10 @@ void NativeWindow::RequestToClosePage() {
   if (window_unresposive_closure_.IsCancelled())
     ScheduleUnresponsiveEvent(5000);
 
-  if (web_contents->NeedToFireBeforeUnload())
-    web_contents->DispatchBeforeUnload(false);
+  if (web_contents()->NeedToFireBeforeUnload())
+    web_contents()->DispatchBeforeUnload(false);
   else
-    web_contents->Close();
+    web_contents()->Close();
 }
 
 void NativeWindow::CloseContents(content::WebContents* source) {
@@ -357,6 +342,7 @@ void NativeWindow::CloseContents(content::WebContents* source) {
 
   inspectable_web_contents_->GetView()->SetDelegate(nullptr);
   inspectable_web_contents_ = nullptr;
+  Observe(nullptr);
 
   // When the web contents is gone, close the window immediately, but the
   // memory will not be freed until you call delete.

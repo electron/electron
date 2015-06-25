@@ -167,8 +167,6 @@ class NativeWindow : public content::WebContentsObserver,
     return weak_factory_.GetWeakPtr();
   }
 
-  content::WebContents* GetWebContents() const;
-
   // Requests the WebContents to close, can be cancelled by the page.
   virtual void RequestToClosePage();
 

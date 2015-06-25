@@ -68,7 +68,7 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 }
 
 - (void)windowDidBecomeMain:(NSNotification*)notification {
-  content::WebContents* web_contents = shell_->GetWebContents();
+  content::WebContents* web_contents = shell_->web_contents();
   if (!web_contents)
     return;
 
@@ -82,7 +82,7 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 }
 
 - (void)windowDidResignMain:(NSNotification*)notification {
-  content::WebContents* web_contents = shell_->GetWebContents();
+  content::WebContents* web_contents = shell_->web_contents();
   if (!web_contents)
     return;
 
@@ -677,10 +677,9 @@ void NativeWindowMac::SetOverlayIcon(const gfx::Image& overlay,
 }
 
 void NativeWindowMac::ShowDefinitionForSelection() {
-  content::WebContents* web_contents = GetWebContents();
-  if (!web_contents)
+  if (!web_contents())
     return;
-  content::RenderWidgetHostView* rwhv = web_contents->GetRenderWidgetHostView();
+  auto rwhv = web_contents()->GetRenderWidgetHostView();
   if (!rwhv)
     return;
   rwhv->ShowDefinitionForSelection();
@@ -704,10 +703,9 @@ bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
 bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {
   if (!draggable_region_)
     return false;
-  content::WebContents* web_contents = GetWebContents();
-  if (!web_contents)
+  if (!web_contents())
     return false;
-  NSView* webView = web_contents->GetNativeView();
+  NSView* webView = web_contents()->GetNativeView();
   NSInteger webViewHeight = NSHeight([webView bounds]);
   // |draggable_region_| is stored in local platform-indepdent coordiate system
   // while |point| is in local Cocoa coordinate system. Do the conversion
@@ -814,16 +812,15 @@ void NativeWindowMac::UninstallView() {
 }
 
 void NativeWindowMac::ClipWebView() {
-  content::WebContents* web_contents = GetWebContents();
-  if (!web_contents)
+  if (!web_contents())
     return;
-  NSView* webView = web_contents->GetNativeView();
+  NSView* webView = web_contents()->GetNativeView();
   webView.layer.masksToBounds = YES;
   webView.layer.cornerRadius = kAtomWindowCornerRadius;
 }
 
 void NativeWindowMac::InstallDraggableRegionView() {
-  NSView* webView = GetWebContents()->GetNativeView();
+  NSView* webView = web_contents()->GetNativeView();
   base::scoped_nsobject<NSView> controlRegion(
       [[ControlRegionView alloc] initWithShellWindow:this]);
   [controlRegion setFrame:NSMakeRect(0, 0,

@@ -63,7 +63,7 @@ ProcessOwner GetProcessOwner(int process_id,
 
   // First search for NativeWindow.
   for (auto native_window : *WindowList::GetInstance())
-    if (web_contents == native_window->GetWebContents()) {
+    if (web_contents == native_window->web_contents()) {
       *window = native_window;
       return OWNER_NATIVE_WINDOW;
     }
