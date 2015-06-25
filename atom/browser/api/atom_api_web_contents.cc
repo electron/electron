@@ -140,8 +140,7 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 
 WebContents::WebContents(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
-      type_(REMOTE),
-      inspectable_web_contents_(nullptr) {
+      type_(REMOTE) {
   AttachAsUserData(web_contents);
 }
 
@@ -168,7 +167,6 @@ WebContents::WebContents(const mate::Dictionary& options) {
   Observe(web_contents);
   AttachAsUserData(web_contents);
   InitWithWebContents(web_contents);
-  inspectable_web_contents_ = managed_web_contents();
 
   if (is_guest) {
     guest_delegate_->Initialize(this);
@@ -575,21 +573,22 @@ void WebContents::OpenDevTools(mate::Arguments* args) {
     mate::Dictionary options;
     args->GetNext(&options) && options.Get("detach", &detach);
   }
-  inspectable_web_contents()->SetCanDock(!detach);
-  inspectable_web_contents()->ShowDevTools();
+  managed_web_contents()->SetCanDock(!detach);
+  managed_web_contents()->ShowDevTools();
 }
 
 void WebContents::CloseDevTools() {
   if (type_ == REMOTE)
     return;
 
-  inspectable_web_contents()->CloseDevTools();
+  managed_web_contents()->CloseDevTools();
 }
 
 bool WebContents::IsDevToolsOpened() {
   if (type_ == REMOTE)
     return false;
-  return inspectable_web_contents()->IsDevToolsViewShowing();
+
+  return managed_web_contents()->IsDevToolsViewShowing();
 }
 
 void WebContents::ToggleDevTools() {
@@ -617,7 +616,7 @@ void WebContents::InspectServiceWorker() {
     if (agent_host->GetType() ==
         content::DevToolsAgentHost::TYPE_SERVICE_WORKER) {
       OpenDevTools(nullptr);
-      inspectable_web_contents()->AttachTo(agent_host);
+      managed_web_contents()->AttachTo(agent_host);
       break;
     }
   }

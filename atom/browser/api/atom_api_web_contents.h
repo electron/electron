@@ -105,12 +105,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetAllowTransparency(bool allow);
   bool IsGuest() const;
 
-  // Returns the current InspectableWebContents object, nullptr will be returned
-  // if current WebContents can not beinspected, e.g. it is the devtools.
-  brightray::InspectableWebContents* inspectable_web_contents() const {
-    return inspectable_web_contents_;
-  }
-
  protected:
   explicit WebContents(content::WebContents* web_contents);
   explicit WebContents(const mate::Dictionary& options);
@@ -216,10 +210,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // The type of current WebContents.
   Type type_;
-
-  // Current InspectableWebContents object, can be nullptr for WebContents of
-  // devtools. It is a weak reference.
-  brightray::InspectableWebContents* inspectable_web_contents_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
