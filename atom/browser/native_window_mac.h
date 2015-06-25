@@ -27,7 +27,7 @@ class NativeWindowMac : public NativeWindow {
                   const mate::Dictionary& options);
   ~NativeWindowMac() override;
 
-  // NativeWindow implementation.
+  // NativeWindow:
   void Close() override;
   void CloseImmediately() override;
   void Focus(bool focus) override;
@@ -91,7 +91,7 @@ class NativeWindowMac : public NativeWindow {
   void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) override;
 
-  // Implementations of content::WebContentsDelegate.
+  // NativeWindow:
   void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent&) override;

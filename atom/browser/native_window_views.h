@@ -127,7 +127,7 @@ class NativeWindowViews : public NativeWindow,
       std::string* name, std::string* class_name) override;
 #endif
 
-  // content::WebContentsDelegate:
+  // NativeWindow:
   void ActivateContents(content::WebContents* contents) override;
   void HandleKeyboardEvent(
       content::WebContents*,

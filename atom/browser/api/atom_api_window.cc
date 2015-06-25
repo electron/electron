@@ -43,6 +43,7 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   mate::Dictionary web_contents_options(isolate, v8::Object::New(isolate));
   auto web_contents = WebContents::Create(isolate, web_contents_options);
   web_contents_.Reset(isolate, web_contents.ToV8());
+  api_web_contents_ = web_contents.get();
 
   // Creates BrowserWindow.
   window_.reset(NativeWindow::Create(web_contents->managed_web_contents(),
@@ -62,23 +63,18 @@ void Window::OnPageTitleUpdated(bool* prevent_default,
   *prevent_default = Emit("page-title-updated", title);
 }
 
-void Window::WillCreatePopupWindow(const base::string16& frame_name,
-                                   const GURL& target_url,
-                                   const std::string& partition_id,
-                                   WindowOpenDisposition disposition) {
-  Emit("-new-window", target_url, frame_name);
-}
-
-void Window::WillNavigate(bool* prevent_default, const GURL& url) {
-  *prevent_default = Emit("-will-navigate", url);
-}
-
 void Window::WillCloseWindow(bool* prevent_default) {
   *prevent_default = Emit("close");
 }
 
 void Window::OnWindowClosed() {
   Emit("closed");
+
+  if (api_web_contents_) {
+    api_web_contents_->DestroyWebContents();
+    api_web_contents_ = nullptr;
+    web_contents_.Reset();
+  }
 
   RemoveFromWeakMap();
   window_->RemoveObserver(this);
@@ -153,8 +149,8 @@ void Window::OnDevToolsOpened() {
 
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  auto handle = WebContents::CreateFrom(isolate(),
-                                        window_->GetDevToolsWebContents());
+  auto handle = WebContents::CreateFrom(
+      isolate(), api_web_contents_->GetDevToolsWebContents());
   devtools_web_contents_.Reset(isolate(), handle.ToV8());
 }
 
@@ -178,8 +174,7 @@ mate::Wrappable* Window::New(v8::Isolate* isolate,
 }
 
 void Window::Destroy() {
-  window_->DestroyWebContents();
-  window_->CloseImmediately();
+  window_->CloseContents(nullptr);
 }
 
 void Window::Close() {

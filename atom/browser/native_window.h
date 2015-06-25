@@ -9,7 +9,6 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/common_web_contents_delegate.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/browser/ui/accelerator_util.h"
 #include "base/cancelable_callback.h"
@@ -17,17 +16,22 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "content/public/browser/readback_types.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "native_mate/persistent_dictionary.h"
 #include "ui/gfx/image/image.h"
+#include "ui/gfx/image/image_skia.h"
 
 namespace base {
 class CommandLine;
 }
 
+namespace brightray {
+class InspectableWebContents;
+}
+
 namespace content {
-class BrowserContext;
-class WebContents;
+struct NativeWebKeyboardEvent;
 struct WebPreferences;
 }
 
@@ -49,8 +53,7 @@ namespace atom {
 
 struct DraggableRegion;
 
-class NativeWindow : public CommonWebContentsDelegate,
-                     public content::WebContentsObserver {
+class NativeWindow : public content::WebContentsObserver {
  public:
   typedef base::Callback<void(const SkBitmap& bitmap)> CapturePageCallback;
 
@@ -167,6 +170,17 @@ class NativeWindow : public CommonWebContentsDelegate,
     return weak_factory_.GetWeakPtr();
   }
 
+  content::WebContents* GetWebContents() const;
+
+  // Methods called by the WebContents.
+  virtual void CloseContents(content::WebContents* source);
+  virtual void RendererUnresponsive(content::WebContents* source);
+  virtual void RendererResponsive(content::WebContents* source);
+  virtual void ActivateContents(content::WebContents* contents) {}
+  virtual void HandleKeyboardEvent(
+      content::WebContents*,
+      const content::NativeWebKeyboardEvent& event) {}
+
   // Called when renderer process is going to be started.
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line);
   void OverrideWebkitPrefs(content::WebPreferences* prefs);
@@ -214,39 +228,11 @@ class NativeWindow : public CommonWebContentsDelegate,
   virtual void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) = 0;
 
-  // Implementations of content::WebContentsDelegate.
-  bool ShouldCreateWebContents(
-      content::WebContents* web_contents,
-      int route_id,
-      int main_frame_route_id,
-      WindowContainerType window_container_type,
-      const base::string16& frame_name,
-      const GURL& target_url,
-      const std::string& partition_id,
-      content::SessionStorageNamespace* session_storage_namespace) override;
-  content::WebContents* OpenURLFromTab(
-      content::WebContents* source,
-      const content::OpenURLParams& params) override;
-  void BeforeUnloadFired(content::WebContents* tab,
-                         bool proceed,
-                         bool* proceed_to_fire_unload) override;
-  void MoveContents(content::WebContents* source,
-                    const gfx::Rect& pos) override;
-  void CloseContents(content::WebContents* source) override;
-  void RendererUnresponsive(content::WebContents* source) override;
-  void RendererResponsive(content::WebContents* source) override;
-
   // Implementations of content::WebContentsObserver.
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
-  void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
   void BeforeUnloadDialogCancelled() override;
   void TitleWasSet(content::NavigationEntry* entry, bool explicit_set) override;
   bool OnMessageReceived(const IPC::Message& message) override;
-
-  // Implementations of brightray::InspectableWebContentsDelegate.
-  void DevToolsFocused() override;
-  void DevToolsOpened() override;
-  void DevToolsClosed() override;
 
   // Whether window has standard frame.
   bool has_frame_;

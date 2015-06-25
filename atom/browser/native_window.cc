@@ -94,6 +94,7 @@ NativeWindow::NativeWindow(
       node_integration_(true),
       has_dialog_attached_(false),
       zoom_factor_(1.0),
+      inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
   options.Get(switches::kFrame, &has_frame_);
   options.Get(switches::kTransparent, &transparent_);
@@ -341,6 +342,13 @@ void NativeWindow::CloseWebContents() {
     web_contents->Close();
 }
 
+content::WebContents* NativeWindow::GetWebContents() const {
+  if (inspectable_web_contents_)
+    return inspectable_web_contents_->GetWebContents();
+  else
+    return nullptr;
+}
+
 void NativeWindow::AppendExtraCommandLineSwitches(
     base::CommandLine* command_line) {
   // Append --node-integration to renderer process.
@@ -475,52 +483,6 @@ void NativeWindow::NotifyWindowLeaveHtmlFullScreen() {
                     OnWindowLeaveHtmlFullScreen());
 }
 
-bool NativeWindow::ShouldCreateWebContents(
-    content::WebContents* web_contents,
-    int route_id,
-    int main_frame_route_id,
-    WindowContainerType window_container_type,
-    const base::string16& frame_name,
-    const GURL& target_url,
-    const std::string& partition_id,
-    content::SessionStorageNamespace* session_storage_namespace) {
-  FOR_EACH_OBSERVER(NativeWindowObserver,
-                    observers_,
-                    WillCreatePopupWindow(frame_name,
-                                          target_url,
-                                          partition_id,
-                                          NEW_FOREGROUND_TAB));
-  return false;
-}
-
-// In atom-shell all reloads and navigations started by renderer process would
-// be redirected to this method, so we can have precise control of how we
-// would open the url (in our case, is to restart the renderer process). See
-// AtomRendererClient::ShouldFork for how this is done.
-content::WebContents* NativeWindow::OpenURLFromTab(
-    content::WebContents* source,
-    const content::OpenURLParams& params) {
-  if (params.disposition != CURRENT_TAB) {
-    FOR_EACH_OBSERVER(NativeWindowObserver,
-                      observers_,
-                      WillCreatePopupWindow(base::string16(),
-                                            params.url,
-                                            "",
-                                            params.disposition));
-    return nullptr;
-  }
-
-  // Give user a chance to prevent navigation.
-  bool prevent_default = false;
-  FOR_EACH_OBSERVER(NativeWindowObserver,
-                    observers_,
-                    WillNavigate(&prevent_default, params.url));
-  if (prevent_default)
-    return nullptr;
-
-  return CommonWebContentsDelegate::OpenURLFromTab(source, params);
-}
-
 void NativeWindow::RenderViewCreated(
     content::RenderViewHost* render_view_host) {
   if (!transparent_)
@@ -533,20 +495,8 @@ void NativeWindow::RenderViewCreated(
     impl->SetBackgroundOpaque(false);
 }
 
-void NativeWindow::BeforeUnloadFired(content::WebContents* tab,
-                                     bool proceed,
-                                     bool* proceed_to_fire_unload) {
-  *proceed_to_fire_unload = proceed;
-}
-
-void NativeWindow::MoveContents(content::WebContents* source,
-                                const gfx::Rect& pos) {
-  SetBounds(pos);
-}
-
 void NativeWindow::CloseContents(content::WebContents* source) {
-  // Destroy the WebContents before we close the window.
-  DestroyWebContents();
+  inspectable_web_contents_ = nullptr;
 
   // When the web contents is gone, close the window immediately, but the
   // memory will not be freed until you call delete.
@@ -573,11 +523,6 @@ void NativeWindow::RendererUnresponsive(content::WebContents* source) {
 void NativeWindow::RendererResponsive(content::WebContents* source) {
   window_unresposive_closure_.Cancel();
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
-}
-
-void NativeWindow::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
-  // Do nothing, we override this method just to avoid compilation error since
-  // there are two virtual functions named BeforeUnloadFired.
 }
 
 void NativeWindow::BeforeUnloadDialogCancelled() {
@@ -607,18 +552,6 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   IPC_END_MESSAGE_MAP()
 
   return handled;
-}
-
-void NativeWindow::DevToolsFocused() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsFocus());
-}
-
-void NativeWindow::DevToolsOpened() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsOpened());
-}
-
-void NativeWindow::DevToolsClosed() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsClosed());
 }
 
 void NativeWindow::ScheduleUnresponsiveEvent(int ms) {

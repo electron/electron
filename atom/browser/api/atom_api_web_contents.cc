@@ -142,12 +142,6 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 
 }  // namespace
 
-WebContents::WebContents(brightray::InspectableWebContents* web_contents)
-    : WebContents(web_contents->GetWebContents()) {
-  type_ = BROWSER_WINDOW;
-  inspectable_web_contents_ = web_contents;
-}
-
 WebContents::WebContents(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
       guest_opaque_(true),
@@ -210,8 +204,12 @@ bool WebContents::AddMessageToConsole(content::WebContents* source,
                                       const base::string16& message,
                                       int32 line_no,
                                       const base::string16& source_id) {
-  Emit("console-message", level, message, line_no, source_id);
-  return true;
+  if (type_ == BROWSER_WINDOW) {
+    return false;
+  } else {
+    Emit("console-message", level, message, line_no, source_id);
+    return true;
+  }
 }
 
 bool WebContents::ShouldCreateWebContents(
@@ -223,19 +221,21 @@ bool WebContents::ShouldCreateWebContents(
     const GURL& target_url,
     const std::string& partition_id,
     content::SessionStorageNamespace* session_storage_namespace) {
-  Emit("new-window", target_url, frame_name, NEW_FOREGROUND_TAB);
+  if (type_ == BROWSER_WINDOW)
+    Emit("-new-window", target_url, frame_name, NEW_FOREGROUND_TAB);
+  else
+    Emit("new-window", target_url, frame_name, NEW_FOREGROUND_TAB);
   return false;
-}
-
-void WebContents::CloseContents(content::WebContents* source) {
-  Emit("close");
 }
 
 content::WebContents* WebContents::OpenURLFromTab(
     content::WebContents* source,
     const content::OpenURLParams& params) {
   if (params.disposition != CURRENT_TAB) {
-    Emit("new-window", params.url, "", params.disposition);
+    if (type_ == BROWSER_WINDOW)
+      Emit("-new-window", params.url, "", params.disposition);
+    else
+      Emit("new-window", params.url, "", params.disposition);
     return nullptr;
   }
 
@@ -246,6 +246,31 @@ content::WebContents* WebContents::OpenURLFromTab(
   return CommonWebContentsDelegate::OpenURLFromTab(source, params);
 }
 
+void WebContents::BeforeUnloadFired(content::WebContents* tab,
+                                    bool proceed,
+                                    bool* proceed_to_fire_unload) {
+  if (type_ == BROWSER_WINDOW)
+    *proceed_to_fire_unload = proceed;
+  else
+    *proceed_to_fire_unload = true;
+}
+
+void WebContents::MoveContents(content::WebContents* source,
+                               const gfx::Rect& pos) {
+  Emit("move", pos);
+}
+
+void WebContents::CloseContents(content::WebContents* source) {
+  Emit("closed");
+  if (type_ == BROWSER_WINDOW)
+    owner_window()->CloseContents(source);
+}
+
+void WebContents::ActivateContents(content::WebContents* source) {
+  if (type_ == BROWSER_WINDOW)
+    owner_window()->CloseContents(source);
+}
+
 bool WebContents::IsPopupOrPanel(const content::WebContents* source) const {
   return type_ == BROWSER_WINDOW;
 }
@@ -253,12 +278,12 @@ bool WebContents::IsPopupOrPanel(const content::WebContents* source) const {
 void WebContents::HandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
-  if (!attached())
-    return;
-
-  // Send the unhandled keyboard events back to the embedder to reprocess them.
-  embedder_web_contents_->GetDelegate()->HandleKeyboardEvent(
-      web_contents(), event);
+  if (type_ == BROWSER_WINDOW) {
+    owner_window()->HandleKeyboardEvent(source, event);
+  } else if (type_ == WEB_VIEW && !attached()) {
+    // Send the unhandled keyboard events back to the embedder.
+    embedder_web_contents_->GetDelegate()->HandleKeyboardEvent(source, event);
+  }
 }
 
 void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
@@ -270,6 +295,23 @@ void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
 void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
   CommonWebContentsDelegate::ExitFullscreenModeForTab(source);
   Emit("leave-html-full-screen");
+}
+
+void WebContents::RendererUnresponsive(content::WebContents* source) {
+  Emit("unresponsive");
+  if (type_ == BROWSER_WINDOW)
+    owner_window()->RendererUnresponsive(source);
+}
+
+void WebContents::RendererResponsive(content::WebContents* source) {
+  Emit("responsive");
+  if (type_ == BROWSER_WINDOW)
+    owner_window()->RendererResponsive(source);
+}
+
+void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
+  // Do nothing, we override this method just to avoid compilation error since
+  // there are two virtual functions named BeforeUnloadFired.
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
@@ -896,21 +938,6 @@ gfx::Size WebContents::GetDefaultSize() const {
   } else {
     return gfx::Size(kDefaultWidth, kDefaultHeight);
   }
-}
-
-// static
-mate::Handle<WebContents> WebContents::CreateFrom(
-    v8::Isolate* isolate, brightray::InspectableWebContents* web_contents) {
-  // We have an existing WebContents object in JS.
-  auto existing = TrackableObject::FromWrappedClass(
-      isolate, web_contents->GetWebContents());
-  if (existing)
-    return mate::CreateHandle(isolate, static_cast<WebContents*>(existing));
-
-  // Otherwise create a new WebContents wrapper object.
-  auto handle = mate::CreateHandle(isolate, new WebContents(web_contents));
-  g_wrap_web_contents.Run(handle.ToV8());
-  return handle;
 }
 
 // static

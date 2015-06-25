@@ -58,8 +58,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Create from an existing WebContents.
   static mate::Handle<WebContents> CreateFrom(
-      v8::Isolate* isolate, brightray::InspectableWebContents* web_contents);
-  static mate::Handle<WebContents> CreateFrom(
       v8::Isolate* isolate, content::WebContents* web_contents);
 
   // Create a new WebContents.
@@ -136,7 +134,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   }
 
  protected:
-  explicit WebContents(brightray::InspectableWebContents* web_contents);
   explicit WebContents(content::WebContents* web_contents);
   explicit WebContents(const mate::Dictionary& options);
   ~WebContents();
@@ -160,10 +157,16 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const GURL& target_url,
       const std::string& partition_id,
       content::SessionStorageNamespace* session_storage_namespace) override;
-  void CloseContents(content::WebContents* source) override;
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params) override;
+  void BeforeUnloadFired(content::WebContents* tab,
+                         bool proceed,
+                         bool* proceed_to_fire_unload) override;
+  void MoveContents(content::WebContents* source,
+                    const gfx::Rect& pos) override;
+  void CloseContents(content::WebContents* source) override;
+  void ActivateContents(content::WebContents* contents) override;
   bool IsPopupOrPanel(const content::WebContents* source) const override;
   void HandleKeyboardEvent(
       content::WebContents* source,
@@ -171,8 +174,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void EnterFullscreenModeForTab(content::WebContents* source,
                                  const GURL& origin) override;
   void ExitFullscreenModeForTab(content::WebContents* source) override;
+  void RendererUnresponsive(content::WebContents* source) override;
+  void RendererResponsive(content::WebContents* source) override;
 
   // content::WebContentsObserver:
+  void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;
   void DocumentLoadedInFrame(
