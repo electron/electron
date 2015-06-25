@@ -3,6 +3,7 @@
 #import <AppKit/AppKit.h>
 
 #include "browser/inspectable_web_contents.h"
+#include "browser/inspectable_web_contents_view_delegate.h"
 #import "browser/mac/bry_inspectable_web_contents_view.h"
 
 namespace brightray {
@@ -26,10 +27,14 @@ gfx::NativeView InspectableWebContentsViewMac::GetNativeView() const {
 
 void InspectableWebContentsViewMac::ShowDevTools() {
   [view_ setDevToolsVisible:YES];
+  if (GetDelegate())
+    GetDelegate()->DevToolsOpened();
 }
 
 void InspectableWebContentsViewMac::CloseDevTools() {
   [view_ setDevToolsVisible:NO];
+  if (GetDelegate())
+    GetDelegate()->DevToolsClosed();
 }
 
 bool InspectableWebContentsViewMac::IsDevToolsViewShowing() {

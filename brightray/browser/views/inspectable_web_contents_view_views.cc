@@ -2,6 +2,7 @@
 
 #include "browser/inspectable_web_contents_delegate.h"
 #include "browser/inspectable_web_contents_impl.h"
+#include "browser/inspectable_web_contents_view_delegate.h"
 
 #include "base/strings/utf_string_conversions.h"
 #include "ui/views/controls/webview/webview.h"
@@ -27,9 +28,8 @@ class DevToolsWindowDelegate : public views::ClientView,
     // A WidgetDelegate should be deleted on DeleteDelegate.
     set_owned_by_client();
 
-    InspectableWebContentsDelegate* delegate = shell->inspectable_web_contents()->GetDelegate();
-    if (delegate)
-      icon_ = delegate->GetDevToolsWindowIcon();
+    if (shell->GetDelegate())
+      icon_ = shell->GetDelegate()->GetDevToolsWindowIcon();
   }
   virtual ~DevToolsWindowDelegate() {}
 
@@ -115,6 +115,8 @@ void InspectableWebContentsViewViews::ShowDevTools() {
     devtools_web_view_->RequestFocus();
     Layout();
   }
+  if (GetDelegate())
+    GetDelegate()->DevToolsOpened();
 }
 
 void InspectableWebContentsViewViews::CloseDevTools() {
@@ -131,6 +133,8 @@ void InspectableWebContentsViewViews::CloseDevTools() {
     devtools_web_view_->SetWebContents(NULL);
     Layout();
   }
+  if (GetDelegate())
+    GetDelegate()->DevToolsClosed();
 }
 
 bool InspectableWebContentsViewViews::IsDevToolsViewShowing() {
@@ -153,9 +157,8 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked) {
 
 #if defined(USE_X11)
     params.wm_role_name = "devtools";
-    InspectableWebContentsDelegate* delegate = inspectable_web_contents()->GetDelegate();
-    if (delegate)
-      delegate->GetDevToolsWindowWMClass(&params.wm_class_name, &params.wm_class_class);
+    if (GetDelegate())
+      GetDelegate()->GetDevToolsWindowWMClass(&params.wm_class_name, &params.wm_class_class);
 #endif
 
     devtools_window_->Init(params);

@@ -13,9 +13,20 @@ class View;
 
 namespace brightray {
 
+class InspectableWebContentsViewDelegate;
+
 class InspectableWebContentsView {
  public:
+  InspectableWebContentsView() : delegate_(nullptr) {}
   virtual ~InspectableWebContentsView() {}
+
+  // The delegate manages its own life.
+  void SetDelegate(InspectableWebContentsViewDelegate* delegate) {
+    delegate_ = delegate;
+  }
+  InspectableWebContentsViewDelegate* GetDelegate() const {
+    return delegate_;
+  }
 
 #if defined(TOOLKIT_VIEWS)
   // Returns the container control, which has devtools view attached.
@@ -35,6 +46,9 @@ class InspectableWebContentsView {
   virtual void SetIsDocked(bool docked) = 0;
   virtual void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) = 0;
+
+ private:
+  InspectableWebContentsViewDelegate* delegate_;  // weak references.
 };
 
 }  // namespace brightray

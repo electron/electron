@@ -10,6 +10,7 @@
 #include "browser/browser_main_parts.h"
 #include "browser/inspectable_web_contents_delegate.h"
 #include "browser/inspectable_web_contents_view.h"
+#include "browser/inspectable_web_contents_view_delegate.h"
 
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
@@ -302,9 +303,6 @@ void InspectableWebContentsImpl::LoadCompleted() {
   // If the devtools can dock, "SetIsDocked" will be called by devtools itself.
   if (!can_dock_)
     SetIsDocked(DispatchCallback(), false);
-
-  if (delegate_)
-    delegate_->DevToolsOpened();
 }
 
 void InspectableWebContentsImpl::SetInspectedPageBounds(const gfx::Rect& rect) {
@@ -510,9 +508,6 @@ void InspectableWebContentsImpl::WebContentsDestroyed() {
 
   for (const auto& pair : pending_requests_)
     delete pair.first;
-
-  if (delegate_)
-    delegate_->DevToolsClosed();
 }
 
 bool InspectableWebContentsImpl::AddMessageToConsole(
@@ -552,8 +547,8 @@ void InspectableWebContentsImpl::CloseContents(content::WebContents* source) {
 
 void InspectableWebContentsImpl::WebContentsFocused(
     content::WebContents* contents) {
-  if (delegate_)
-    delegate_->DevToolsFocused();
+  if (view_->GetDelegate())
+    view_->GetDelegate()->DevToolsFocused();
 }
 
 void InspectableWebContentsImpl::OnURLFetchComplete(const net::URLFetcher* source) {
