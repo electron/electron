@@ -261,6 +261,9 @@ class NativeWindow : public content::WebContentsObserver,
                          const SkBitmap& bitmap,
                          content::ReadbackResponse response);
 
+  // Convert Win32 WM_APPCOMMANDS to strings
+  const char* AppCommandToString(int command_id);
+
   // Observers of this window.
   ObserverList<NativeWindowObserver> observers_;
 

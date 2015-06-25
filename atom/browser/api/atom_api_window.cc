@@ -162,8 +162,8 @@ void Window::OnDevToolsClosed() {
   devtools_web_contents_.Reset();
 }
 
-void Window::OnExecuteWindowsCommand(int command_id) {
-  Emit("app-command", command_id);
+void Window::OnExecuteWindowsCommand(std::string& command_name) {
+  Emit("app-command", command_name);
 }
 
 // static
