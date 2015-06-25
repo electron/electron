@@ -120,7 +120,7 @@ class NativeWindowViews : public NativeWindow,
   bool ExecuteWindowsCommand(int command_id) override;
 #endif
 
-  // brightray::InspectableWebContentsDelegate:
+  // brightray::InspectableWebContentsViewDelegate:
   gfx::ImageSkia GetDevToolsWindowIcon() override;
 #if defined(USE_X11)
   void GetDevToolsWindowWMClass(

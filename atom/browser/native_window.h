@@ -15,6 +15,7 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
+#include "brightray/browser/inspectable_web_contents_view_delegate.h"
 #include "content/public/browser/readback_types.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
@@ -53,7 +54,8 @@ namespace atom {
 
 struct DraggableRegion;
 
-class NativeWindow : public content::WebContentsObserver {
+class NativeWindow : public content::WebContentsObserver,
+                     public brightray::InspectableWebContentsViewDelegate {
  public:
   typedef base::Callback<void(const SkBitmap& bitmap)> CapturePageCallback;
 
@@ -228,7 +230,12 @@ class NativeWindow : public content::WebContentsObserver {
   virtual void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) = 0;
 
-  // Implementations of content::WebContentsObserver.
+  // brightray::InspectableWebContentsViewDelegate:
+  void DevToolsFocused() override;
+  void DevToolsOpened() override;
+  void DevToolsClosed() override;
+
+  // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void BeforeUnloadDialogCancelled() override;
   void TitleWasSet(content::NavigationEntry* entry, bool explicit_set) override;

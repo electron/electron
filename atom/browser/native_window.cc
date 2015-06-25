@@ -96,6 +96,8 @@ NativeWindow::NativeWindow(
       zoom_factor_(1.0),
       inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
+  inspectable_web_contents->GetView()->SetDelegate(this);
+
   options.Get(switches::kFrame, &has_frame_);
   options.Get(switches::kTransparent, &transparent_);
   options.Get(switches::kEnableLargerThanScreen, &enable_larger_than_screen_);
@@ -496,6 +498,7 @@ void NativeWindow::RenderViewCreated(
 }
 
 void NativeWindow::CloseContents(content::WebContents* source) {
+  inspectable_web_contents_->GetView()->SetDelegate(nullptr);
   inspectable_web_contents_ = nullptr;
 
   // When the web contents is gone, close the window immediately, but the
@@ -523,6 +526,18 @@ void NativeWindow::RendererUnresponsive(content::WebContents* source) {
 void NativeWindow::RendererResponsive(content::WebContents* source) {
   window_unresposive_closure_.Cancel();
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
+}
+
+void NativeWindow::DevToolsFocused() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsFocus());
+}
+
+void NativeWindow::DevToolsOpened() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsOpened());
+}
+
+void NativeWindow::DevToolsClosed() {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsClosed());
 }
 
 void NativeWindow::BeforeUnloadDialogCancelled() {
