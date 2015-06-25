@@ -9,6 +9,9 @@
 #include "atom/browser/api/atom_api_cookies.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
+#include "base/thread_task_runner_handle.h"
+#include "content/public/browser/browser_thread.h"
+#include "content/public/browser/storage_partition.h"
 #include "native_mate/callback.h"
 #include "native_mate/object_template_builder.h"
 #include "net/base/load_flags.h"
@@ -29,35 +32,58 @@ class ResolveProxyHelper {
   ResolveProxyHelper(AtomBrowserContext* browser_context,
                      const GURL& url,
                      Session::ResolveProxyCallback callback)
-      : callback_(callback) {
-    net::ProxyService* proxy_service = browser_context->
-        url_request_context_getter()->GetURLRequestContext()->proxy_service();
+      : callback_(callback),
+        original_thread_(base::ThreadTaskRunnerHandle::Get()),
+        weak_ptr_factory_(this) {
+    scoped_refptr<net::URLRequestContextGetter> getter =
+        browser_context->GetDefaultStoragePartition(browser_context)
+            ->GetURLRequestContext();
 
-    // Start the request.
-    int result = proxy_service->ResolveProxy(
-        url, net::LOAD_NORMAL, &proxy_info_,
-        base::Bind(&ResolveProxyHelper::OnResolveProxyCompleted,
-                   base::Unretained(this)),
-        &pac_req_, nullptr, net::BoundNetLog());
-
-    // Completed synchronously.
-    if (result != net::ERR_IO_PENDING)
-      OnResolveProxyCompleted(result);
+    getter->GetNetworkTaskRunner()->PostTask(
+        FROM_HERE,
+        base::Bind(&ResolveProxyHelper::ResolveProxy,
+                   weak_ptr_factory_.GetWeakPtr(),
+                   getter, url));
   }
 
   void OnResolveProxyCompleted(int result) {
     std::string proxy;
     if (result == net::OK)
       proxy = proxy_info_.ToPacString();
-    callback_.Run(proxy);
+    original_thread_->PostTask(FROM_HERE,
+                               base::Bind(callback_, proxy));
 
     delete this;
   }
 
  private:
+  void ResolveProxy(
+      scoped_refptr<net::URLRequestContextGetter> getter,
+      const GURL& url) {
+    DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+
+    net::ProxyService* proxy_service =
+        getter->GetURLRequestContext()->proxy_service();
+
+    net::CompletionCallback completion_callback =
+        base::Bind(&ResolveProxyHelper::OnResolveProxyCompleted,
+                   weak_ptr_factory_.GetWeakPtr());
+
+    // Start the request.
+    int result = proxy_service->ResolveProxy(
+        url, net::LOAD_NORMAL, &proxy_info_, completion_callback,
+        &pac_req_, nullptr, net::BoundNetLog());
+
+    // Completed synchronously.
+    if (result != net::ERR_IO_PENDING)
+      completion_callback.Run(result);
+  }
+
   Session::ResolveProxyCallback callback_;
   net::ProxyInfo proxy_info_;
   net::ProxyService::PacRequest* pac_req_;
+  scoped_refptr<base::SingleThreadTaskRunner> original_thread_;
+  base::WeakPtrFactory<ResolveProxyHelper> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(ResolveProxyHelper);
 };
