@@ -125,6 +125,10 @@ app.on('select-certificate', function(event, host, url, list, callback) {
 `event.preventDefault()` prevents from using the first certificate from
 the store.
 
+### Event: 'gpu-process-crashed'
+
+Emitted when the gpu process is crashed.
+
 ## app.quit()
 
 Try to close all windows. The `before-quit` event will first be emitted. If all

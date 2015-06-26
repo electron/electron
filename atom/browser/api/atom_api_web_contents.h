@@ -12,7 +12,6 @@
 #include "atom/browser/common_web_contents_delegate.h"
 #include "content/public/common/favicon_url.h"
 #include "content/public/browser/web_contents_observer.h"
-#include "content/public/browser/gpu_data_manager_observer.h"
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
 
@@ -34,8 +33,7 @@ namespace api {
 
 class WebContents : public mate::TrackableObject<WebContents>,
                     public CommonWebContentsDelegate,
-                    public content::WebContentsObserver,
-                    public content::GpuDataManagerObserver {
+                    public content::WebContentsObserver {
  public:
   // For node.js callback function type: function(error, buffer)
   typedef base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>
@@ -184,9 +182,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const std::vector<content::FaviconURL>& urls) override;
   void PluginCrashed(const base::FilePath& plugin_path,
                      base::ProcessId plugin_pid) override;
-
-  // content::GpuDataManagerObserver:
-  void OnGpuProcessCrashed(base::TerminationStatus exit_code) override;
 
  private:
   enum Type {

@@ -328,11 +328,6 @@ void WebContents::PluginCrashed(const base::FilePath& plugin_path,
   Emit("plugin-crashed", info.name, info.version);
 }
 
-void WebContents::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
-  if (exit_code == base::TERMINATION_STATUS_PROCESS_CRASHED)
-    Emit("gpu-crashed");
-}
-
 void WebContents::DocumentLoadedInFrame(
     content::RenderFrameHost* render_frame_host) {
   if (!render_frame_host->GetParent())
