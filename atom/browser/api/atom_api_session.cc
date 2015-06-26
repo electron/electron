@@ -33,17 +33,13 @@ class ResolveProxyHelper {
                      const GURL& url,
                      Session::ResolveProxyCallback callback)
       : callback_(callback),
-        original_thread_(base::ThreadTaskRunnerHandle::Get()),
-        weak_ptr_factory_(this) {
-    scoped_refptr<net::URLRequestContextGetter> getter =
-        browser_context->GetDefaultStoragePartition(browser_context)
-            ->GetURLRequestContext();
-
-    getter->GetNetworkTaskRunner()->PostTask(
+        original_thread_(base::ThreadTaskRunnerHandle::Get()) {
+    scoped_refptr<net::URLRequestContextGetter> context_getter =
+        browser_context->GetRequestContext();
+    context_getter->GetNetworkTaskRunner()->PostTask(
         FROM_HERE,
         base::Bind(&ResolveProxyHelper::ResolveProxy,
-                   weak_ptr_factory_.GetWeakPtr(),
-                   getter, url));
+                   base::Unretained(this), context_getter, url));
   }
 
   void OnResolveProxyCompleted(int result) {
@@ -52,22 +48,19 @@ class ResolveProxyHelper {
       proxy = proxy_info_.ToPacString();
     original_thread_->PostTask(FROM_HERE,
                                base::Bind(callback_, proxy));
-
     delete this;
   }
 
  private:
-  void ResolveProxy(
-      scoped_refptr<net::URLRequestContextGetter> getter,
-      const GURL& url) {
+  void ResolveProxy(scoped_refptr<net::URLRequestContextGetter> context_getter,
+                    const GURL& url) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
     net::ProxyService* proxy_service =
-        getter->GetURLRequestContext()->proxy_service();
-
+        context_getter->GetURLRequestContext()->proxy_service();
     net::CompletionCallback completion_callback =
         base::Bind(&ResolveProxyHelper::OnResolveProxyCompleted,
-                   weak_ptr_factory_.GetWeakPtr());
+                   base::Unretained(this));
 
     // Start the request.
     int result = proxy_service->ResolveProxy(
@@ -83,12 +76,9 @@ class ResolveProxyHelper {
   net::ProxyInfo proxy_info_;
   net::ProxyService::PacRequest* pac_req_;
   scoped_refptr<base::SingleThreadTaskRunner> original_thread_;
-  base::WeakPtrFactory<ResolveProxyHelper> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(ResolveProxyHelper);
 };
-
-
 
 }  // namespace
 
