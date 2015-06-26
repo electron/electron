@@ -16,8 +16,8 @@
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
-#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
+#include "base/strings/string_number_conversions.h"
 #include "chrome/browser/printing/printing_message_filter.h"
 #include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
 #include "chrome/browser/speech/tts_message_filter.h"
@@ -78,6 +78,9 @@ ProcessOwner GetProcessOwner(int process_id,
 
 scoped_refptr<net::X509Certificate> ImportCertFromFile(
     const base::FilePath& path) {
+  if (path.empty())
+    return nullptr;
+
   std::string cert_data;
   if (!base::ReadFileToString(path, &cert_data))
     return nullptr;
@@ -113,9 +116,9 @@ AtomBrowserClient::~AtomBrowserClient() {
 
 void AtomBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
-  int id = host->GetID();
-  host->AddFilter(new printing::PrintingMessageFilter(host->GetID()));
-  host->AddFilter(new TtsMessageFilter(id, host->GetBrowserContext()));
+  int process_id = host->GetID();
+  host->AddFilter(new printing::PrintingMessageFilter(process_id));
+  host->AddFilter(new TtsMessageFilter(process_id, host->GetBrowserContext()));
 }
 
 content::SpeechRecognitionManagerDelegate*
@@ -211,12 +214,12 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 }
 
 void AtomBrowserClient::DidCreatePpapiPlugin(
-    content::BrowserPpapiHost* browser_host) {
+    content::BrowserPpapiHost* host) {
   auto command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kEnablePlugins))
-    browser_host->GetPpapiHost()->AddHostFactoryFilter(
-        scoped_ptr<ppapi::host::HostFactory>(
-            new chrome::ChromeBrowserPepperHostFactory(browser_host)));
+  if (command_line->HasSwitch(switches::kEnablePlugins)) {
+    host->GetPpapiHost()->AddHostFactoryFilter(
+        make_scoped_ptr(new chrome::ChromeBrowserPepperHostFactory(host)));
+  }
 }
 
 content::QuotaPermissionContext*
@@ -228,21 +231,20 @@ void AtomBrowserClient::SelectClientCertificate(
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
     scoped_ptr<content::ClientCertificateDelegate> delegate) {
-  auto command_line = base::CommandLine::ForCurrentProcess();
-  auto cert_path = command_line->GetSwitchValueNative(
-      switches::kClientCertificate);
+  // --client-certificate=`path`
+  auto cmd = base::CommandLine::ForCurrentProcess();
+  if (cmd->HasSwitch(switches::kClientCertificate)) {
+    auto cert_path = cmd->GetSwitchValuePath(switches::kClientCertificate);
+    auto certificate = ImportCertFromFile(cert_path);
+    if (certificate.get())
+      delegate->ContinueWithCertificate(certificate.get());
+    return;
+  }
 
-  scoped_refptr<net::X509Certificate> certificate;
-  if (!cert_path.empty()) {
-    certificate = ImportCertFromFile(base::FilePath(cert_path));
-  } else if (!cert_request_info->client_certs.empty()) {
+  if (!cert_request_info->client_certs.empty())
     Browser::Get()->ClientCertificateSelector(web_contents,
                                               cert_request_info,
                                               delegate.Pass());
-  }
-
-  if (certificate.get())
-    delegate->ContinueWithCertificate(certificate.get());
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
