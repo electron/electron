@@ -198,7 +198,6 @@ class NativeWindow : public content::WebContentsObserver,
   void NotifyWindowLeaveFullScreen();
   void NotifyWindowEnterHtmlFullScreen();
   void NotifyWindowLeaveHtmlFullScreen();
-  void NotifyExecuteWindowsCommand(int command_id);
 
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);
@@ -260,9 +259,6 @@ class NativeWindow : public content::WebContentsObserver,
   void OnCapturePageDone(const CapturePageCallback& callback,
                          const SkBitmap& bitmap,
                          content::ReadbackResponse response);
-
-  // Convert Win32 WM_APPCOMMANDS to strings
-  const char* AppCommandToString(int command_id);
 
   // Observers of this window.
   ObserverList<NativeWindowObserver> observers_;
