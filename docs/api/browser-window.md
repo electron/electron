@@ -1113,9 +1113,9 @@ win.webContents.on('did-finish-load', function() {
       *  `secure` Boolean - Whether the cookie is marked as Secure (typically HTTPS)
       *  `http_only` Boolean - Whether the cookie is marked as HttpOnly
       *  `session` Boolean - Whether the cookie is a session cookie or a persistent
-      *    cookie with an expiration date.
+         cookie with an expiration date.
       *  `expirationDate` Double - (Option) The expiration date of the cookie as
-           the number of seconds since the UNIX epoch. Not provided for session cookies.
+         the number of seconds since the UNIX epoch. Not provided for session cookies.
 
 
 ### WebContents.session.cookies.set(details, callback)
