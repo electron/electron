@@ -14,7 +14,6 @@ describe 'cookies module', ->
 
   it 'should get cookies', (done) ->
     server = http.createServer (req, res) ->
-      console.log req
       res.setHeader('Set-Cookie', ['type=dummy'])
       res.end('finished')
       server.close()
