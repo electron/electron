@@ -580,7 +580,6 @@ void NativeWindow::NotifyWindowUnresponsive() {
                       OnRendererUnresponsive());
 }
 
-
 void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
                                      const SkBitmap& bitmap,
                                      content::ReadbackResponse response) {

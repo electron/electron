@@ -925,7 +925,6 @@ bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
                       observers_,
                       OnExecuteWindowsCommand(command));
   }
-
   return false;
 }
 #endif
