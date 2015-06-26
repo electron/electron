@@ -18,7 +18,7 @@ class ContentClient : public content::ContentClient {
  private:
   std::string GetProduct() const override;
   std::string GetUserAgent() const override;
-  base::string16 GetLocalizedString(int message_id) const;
+  base::string16 GetLocalizedString(int message_id) const override;
   base::StringPiece GetDataResource(int resource_id,
                                     ui::ScaleFactor) const override;
   gfx::Image& GetNativeImageNamed(int resource_id) const override;
