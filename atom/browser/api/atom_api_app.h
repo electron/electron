@@ -42,6 +42,10 @@ class App : public mate::EventEmitter,
   void OnActivateWithNoOpenWindows() override;
   void OnWillFinishLaunching() override;
   void OnFinishLaunching() override;
+  void OnSelectCertificate(
+      content::WebContents* web_contents,
+      net::SSLCertRequestInfo* cert_request_info,
+      scoped_ptr<content::ClientCertificateDelegate> delegate) override;
 
   // mate::Wrappable:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(

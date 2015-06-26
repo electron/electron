@@ -101,6 +101,30 @@ Emitted when a [browserWindow](browser-window.md) gets blurred.
 
 Emitted when a [browserWindow](browser-window.md) gets focused.
 
+### Event: 'select-certificate'
+
+Emitted when client certificate is requested.
+
+* `event` Event
+* `webContents` [WebContents](browser-window.md#class-webcontents)
+* `url` String
+* `certificateList` [Objects]
+  * `data` PEM encoded data
+  * `issuerName` Issuer's Common Name
+* `callback` Function
+
+```
+app.on('select-certificate', function(event, host, url, list, callback) {
+  event.preventDefault();
+  callback(list[0]);
+})
+```
+
+`url` corresponds to the navigation entry requesting the client certificate,
+`callback` needs to be called with an entry filtered from the list.
+`event.preventDefault()` prevents from using the first certificate from
+the store.
+
 ## app.quit()
 
 Try to close all windows. The `before-quit` event will first be emitted. If all

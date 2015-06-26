@@ -16,15 +16,18 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "brightray/browser/brightray_paths.h"
+#include "content/public/browser/client_certificate_delegate.h"
 #include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "net/ssl/ssl_cert_request_info.h"
 
 #if defined(OS_WIN)
 #include "base/strings/utf_string_conversions.h"
@@ -57,6 +60,21 @@ struct Converter<Browser::UserTask> {
 };
 #endif
 
+template<>
+struct Converter<scoped_refptr<net::X509Certificate>> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const scoped_refptr<net::X509Certificate>& val) {
+    mate::Dictionary dict(isolate, v8::Object::New(isolate));
+    std::string encoded_data;
+    net::X509Certificate::GetPEMEncoded(
+        val->os_cert_handle(), &encoded_data);
+    dict.Set("data", encoded_data);
+    dict.Set("issuerName", val->issuer().GetDisplayName());
+    return dict.GetHandle();
+  }
+};
+
 }  // namespace mate
 
 
@@ -88,6 +106,29 @@ int GetPathConstant(const std::string& name) {
     return base::FILE_MODULE;
   else
     return -1;
+}
+
+void OnClientCertificateSelected(
+    v8::Isolate* isolate,
+    std::shared_ptr<content::ClientCertificateDelegate> delegate,
+    mate::Arguments* args) {
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  mate::Dictionary cert_data;
+  if (!(args->Length() == 1 && args->GetNext(&cert_data))) {
+    args->ThrowError();
+    return;
+  }
+
+  std::string encoded_data;
+  cert_data.Get("data", &encoded_data);
+
+  auto certs =
+      net::X509Certificate::CreateCertificateListFromBytes(
+          encoded_data.data(), encoded_data.size(),
+          net::X509Certificate::FORMAT_AUTO);
+
+  delegate->ContinueWithCertificate(certs[0].get());
 }
 
 }  // namespace
@@ -142,6 +183,27 @@ void App::OnFinishLaunching() {
   default_session_.Reset(isolate(), handle.ToV8());
 
   Emit("ready");
+}
+
+void App::OnSelectCertificate(
+    content::WebContents* web_contents,
+    net::SSLCertRequestInfo* cert_request_info,
+    scoped_ptr<content::ClientCertificateDelegate> delegate) {
+  std::shared_ptr<content::ClientCertificateDelegate>
+      shared_delegate(delegate.release());
+  bool prevent_default =
+      Emit("select-certificate",
+           api::WebContents::CreateFrom(isolate(), web_contents),
+           cert_request_info->host_and_port.ToString(),
+           cert_request_info->client_certs,
+           base::Bind(&OnClientCertificateSelected,
+                      isolate(),
+                      shared_delegate));
+
+  // Default to first certificate from the platform store.
+  if (!prevent_default)
+    shared_delegate->ContinueWithCertificate(
+        cert_request_info->client_certs[0].get());
 }
 
 base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {

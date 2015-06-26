@@ -9,6 +9,8 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/window_list.h"
 #include "base/message_loop/message_loop.h"
+#include "content/public/browser/client_certificate_delegate.h"
+#include "net/ssl/ssl_cert_request_info.h"
 
 namespace atom {
 
@@ -102,6 +104,17 @@ void Browser::WillFinishLaunching() {
 void Browser::DidFinishLaunching() {
   is_ready_ = true;
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnFinishLaunching());
+}
+
+void Browser::ClientCertificateSelector(
+    content::WebContents* web_contents,
+    net::SSLCertRequestInfo* cert_request_info,
+    scoped_ptr<content::ClientCertificateDelegate> delegate) {
+  FOR_EACH_OBSERVER(BrowserObserver,
+                    observers_,
+                    OnSelectCertificate(web_contents,
+                                        cert_request_info,
+                                        delegate.Pass()));
 }
 
 void Browser::NotifyAndShutdown() {
