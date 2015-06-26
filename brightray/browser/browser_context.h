@@ -25,6 +25,26 @@ class BrowserContext : public content::BrowserContext,
 
   virtual void Initialize();
 
+  // content::BrowserContext:
+  scoped_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(
+      const base::FilePath& partition_path) override;
+  bool IsOffTheRecord() const override;
+  net::URLRequestContextGetter* GetRequestContext() override;
+  net::URLRequestContextGetter* GetRequestContextForRenderProcess(
+      int renderer_child_id);
+  net::URLRequestContextGetter* GetMediaRequestContext() override;
+  net::URLRequestContextGetter* GetMediaRequestContextForRenderProcess(
+      int renderer_child_id) override;
+  net::URLRequestContextGetter* GetMediaRequestContextForStoragePartition(
+      const base::FilePath& partition_path, bool in_memory) override;
+  content::ResourceContext* GetResourceContext() override;
+  content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
+  content::BrowserPluginGuestManager* GetGuestManager() override;
+  storage::SpecialStoragePolicy* GetSpecialStoragePolicy() override;
+  content::PushMessagingService* GetPushMessagingService() override;
+  content::SSLHostStateDelegate* GetSSLHostStateDelegate() override;
+  content::PermissionManager* GetPermissionManager() override;
+
   net::URLRequestContextGetter* CreateRequestContext(
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector protocol_interceptors);
@@ -48,25 +68,6 @@ class BrowserContext : public content::BrowserContext,
   class ResourceContext;
 
   void RegisterInternalPrefs(PrefRegistrySimple* pref_registry);
-
-  scoped_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(
-      const base::FilePath& partition_path) override;
-  bool IsOffTheRecord() const override;
-  net::URLRequestContextGetter* GetRequestContext() override;
-  net::URLRequestContextGetter* GetRequestContextForRenderProcess(
-      int renderer_child_id);
-  net::URLRequestContextGetter* GetMediaRequestContext() override;
-  net::URLRequestContextGetter* GetMediaRequestContextForRenderProcess(
-      int renderer_child_id) override;
-  net::URLRequestContextGetter* GetMediaRequestContextForStoragePartition(
-      const base::FilePath& partition_path, bool in_memory) override;
-  content::ResourceContext* GetResourceContext() override;
-  content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
-  content::BrowserPluginGuestManager* GetGuestManager() override;
-  storage::SpecialStoragePolicy* GetSpecialStoragePolicy() override;
-  content::PushMessagingService* GetPushMessagingService() override;
-  content::SSLHostStateDelegate* GetSSLHostStateDelegate() override;
-  content::PermissionManager* GetPermissionManager() override;
 
   base::FilePath path_;
   scoped_ptr<ResourceContext> resource_context_;
