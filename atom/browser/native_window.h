@@ -248,6 +248,9 @@ class NativeWindow : public content::WebContentsObserver,
   // Window icon.
   gfx::ImageSkia icon_;
 
+  // Observers of this window.
+  ObserverList<NativeWindowObserver> observers_;
+
  private:
   // Schedule a notification unresponsive event.
   void ScheduleUnresponsiveEvent(int ms);
@@ -259,9 +262,6 @@ class NativeWindow : public content::WebContentsObserver,
   void OnCapturePageDone(const CapturePageCallback& callback,
                          const SkBitmap& bitmap,
                          content::ReadbackResponse response);
-
-  // Observers of this window.
-  ObserverList<NativeWindowObserver> observers_;
 
   // The windows has been closed.
   bool is_closed_;

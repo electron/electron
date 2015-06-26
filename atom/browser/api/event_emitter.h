@@ -39,7 +39,7 @@ class EventEmitter : public Wrappable {
                       const Args&... args) {
     v8::Locker locker(isolate());
     v8::HandleScope handle_scope(isolate());
-    v8::Local<v8::Object> event = CreateEvent(isolate(), sender, message);
+    v8::Local<v8::Object> event = CreateJSEvent(isolate(), sender, message);
     EmitEvent(isolate(), GetWrapper(isolate()), name, event, args...);
     return event->Get(
         StringToV8(isolate(), "defaultPrevented"))->BooleanValue();
@@ -49,9 +49,9 @@ class EventEmitter : public Wrappable {
   EventEmitter();
 
  private:
-  v8::Local<v8::Object> CreateEvent(v8::Isolate* isolate,
-                                    content::WebContents* sender,
-                                    IPC::Message* message);
+  v8::Local<v8::Object> CreateJSEvent(v8::Isolate* isolate,
+                                      content::WebContents* sender,
+                                      IPC::Message* message);
 
   DISALLOW_COPY_AND_ASSIGN(EventEmitter);
 };

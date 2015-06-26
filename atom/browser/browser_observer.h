@@ -8,9 +8,9 @@
 #include <string>
 
 #include "base/memory/scoped_ptr.h"
+#include "content/public/browser/client_certificate_delegate.h"
 
 namespace content {
-class ClientCertificateDelegate;
 class WebContents;
 }
 

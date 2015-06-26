@@ -37,9 +37,9 @@ v8::Local<v8::Object> CreateEventObject(v8::Isolate* isolate) {
 EventEmitter::EventEmitter() {
 }
 
-v8::Local<v8::Object> EventEmitter::CreateEvent(v8::Isolate* isolate,
-                                                content::WebContents* sender,
-                                                IPC::Message* message) {
+v8::Local<v8::Object> EventEmitter::CreateJSEvent(v8::Isolate* isolate,
+                                                  content::WebContents* sender,
+                                                  IPC::Message* message) {
   v8::Local<v8::Object> event;
   bool use_native_event = sender && message;
 
