@@ -219,6 +219,21 @@ Emitted when devtools is closed.
 
 Emitted when devtools is focused / opened.
 
+### Event: 'app-command':
+
+Emitted when an [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx) is invoked. These are typically related to keyboard media keys or browser commands, as well as the "Back" button built into some mice on Windows.
+
+```js
+someWindow.on('app-command', function(e, cmd) {
+  // Navigate the window back when the user hits their mouse back button
+  if (cmd === 'browser-backward' && someWindow.webContents.canGoBack()) {
+    someWindow.webContents.goBack();
+  }
+});
+```
+
+__Note__: This event is only fired on Windows.
+
 ### Class Method: BrowserWindow.getAllWindows()
 
 Returns an array of all opened browser windows.

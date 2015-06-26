@@ -162,6 +162,10 @@ void Window::OnDevToolsClosed() {
   devtools_web_contents_.Reset();
 }
 
+void Window::OnExecuteWindowsCommand(const std::string& command_name) {
+  Emit("app-command", command_name);
+}
+
 // static
 mate::Wrappable* Window::New(v8::Isolate* isolate,
                              const mate::Dictionary& options) {

@@ -71,6 +71,7 @@ class Window : public mate::TrackableObject<Window>,
   void OnDevToolsFocus() override;
   void OnDevToolsOpened() override;
   void OnDevToolsClosed() override;
+  void OnExecuteWindowsCommand(const std::string& command_name) override;
 
  private:
   // APIs for NativeWindow.
