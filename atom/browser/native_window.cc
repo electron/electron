@@ -443,10 +443,10 @@ void NativeWindow::NotifyWindowClosed() {
   if (is_closed_)
     return;
 
+  WindowList::RemoveWindow(this);
+
   is_closed_ = true;
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnWindowClosed());
-
-  WindowList::RemoveWindow(this);
 }
 
 void NativeWindow::NotifyWindowBlur() {

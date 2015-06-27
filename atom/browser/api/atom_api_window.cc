@@ -68,8 +68,6 @@ void Window::WillCloseWindow(bool* prevent_default) {
 }
 
 void Window::OnWindowClosed() {
-  Emit("closed");
-
   if (api_web_contents_) {
     api_web_contents_->DestroyWebContents();
     api_web_contents_ = nullptr;
@@ -78,6 +76,8 @@ void Window::OnWindowClosed() {
 
   RemoveFromWeakMap();
   window_->RemoveObserver(this);
+
+  Emit("closed");
 }
 
 void Window::OnWindowBlur() {
