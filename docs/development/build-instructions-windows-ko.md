@@ -8,11 +8,8 @@
 * [Node.js](http://nodejs.org/download/)
 * [git](http://git-scm.com)
 
-아직 Windows를 설치하지 않았다면 [modern.ie](https://www.modern.ie/en-us/virtualization-tools#downloads)에서 Electron을 빌드할 수 있는 timebombed Windows 버전을 확인할 수 있습니다.
-
-If you don't have a Windows installation at the moment,
-[modern.ie](https://www.modern.ie/en-us/virtualization-tools#downloads) has
-timebombed versions of Windows that you can use to build Electron.
+현재 Windows를 설치하지 않았다면 [modern.ie](https://www.modern.ie/en-us/virtualization-tools#downloads)에서
+사용기한이 정해져있는 무료 가상머신 버전의 Windows를 받아 Electron을 빌드할 수도 있습니다.
 
 Electron은 전적으로 command-line 스크립트를 사용하여 빌드합니다. 그렇기에 Electron을 개발하는데 아무런 에디터나 사용할 수 있습니다.
 하지만 이 말은 Visual Studio를 개발을 위해 사용할 수 없다는 말이 됩니다. 나중에 Visual Studio를 이용한 빌드 방법도 제공할 예정입니다.

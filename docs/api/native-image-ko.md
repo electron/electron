@@ -1,17 +1,15 @@
 ﻿# NativeImage
 
-In Electron for the APIs that take images, you can pass either file paths or
-`NativeImage` instances. When passing `null`, an empty image will be used.
+Electron은 파일 경로나 `NativeImage` 인스턴스를 전달하여 사용하는 이미지 API를 가지고 있습니다. `null`을 전달할 경우 빈 이미지가 사용됩니다.
 
-For example, when creating a tray or setting a window's icon, you can pass an image
-file path as a `String`:
+예를 들어 트레이 메뉴를 만들거나 윈도우의 아이콘을 설정할 때 다음과 같이 `문자열`인 파일 경로를 전달할 수 있습니다:
 
 ```javascript
 var appIcon = new Tray('/Users/somebody/images/icon.png');
 var window = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
 ```
 
-Or read the image from the clipboard:
+또는 클립보드로부터 이미지를 읽어올 수 있습니다:
 
 ```javascript
 var clipboard = require('clipboard');
@@ -19,12 +17,11 @@ var image = clipboard.readImage();
 var appIcon = new Tray(image);
 ```
 
-## Supported formats
+## 지원하는 포맷
 
-Currently `PNG` and `JPEG` are supported. It is recommended to use `PNG`
-because of its support for transparency and lossless compression.
+현재 `PNG` 와 `JPEG` 포맷을 지원하고 있습니다. 손실 없는 이미지 압축과 투명도 지원을 위해 `PNG` 사용을 권장합니다.
 
-## High resolution image
+## 고해상도 이미지
 
 On platforms that have high-DPI support, you can append `@2x` after image's
 file name's base name to mark it as a high resolution image.
