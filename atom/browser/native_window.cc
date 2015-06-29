@@ -189,10 +189,12 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   if (options.Get(switches::kAlwaysOnTop, &top) && top) {
     SetAlwaysOnTop(true);
   }
+#if defined(OS_MACOSX) || defined(OS_WIN)
   bool fullscreen;
   if (options.Get(switches::kFullscreen, &fullscreen) && fullscreen) {
     SetFullScreen(true);
   }
+#endif
   bool skip;
   if (options.Get(switches::kSkipTaskbar, &skip) && skip) {
     SetSkipTaskbar(skip);

@@ -285,13 +285,20 @@ NativeWindowViews::NativeWindowViews(
 
   // Before the window is mapped the SetWMSpecState can not work, so we have
   // to manually set the _NET_WM_STATE.
+  std::vector<::Atom> state_atom_list;
   bool skip_taskbar = false;
   if (options.Get(switches::kSkipTaskbar, &skip_taskbar) && skip_taskbar) {
-    std::vector<::Atom> state_atom_list;
     state_atom_list.push_back(GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
-    ui::SetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", "ATOM",
-                             state_atom_list);
   }
+
+  // Before the window is mapped, there is no SHOW_FULLSCREEN_STATE.
+  bool fullscreen = false;
+  if (options.Get(switches::kFullscreen, & fullscreen) && fullscreen) {
+    state_atom_list.push_back(GetAtom("_NET_WM_STATE_FULLSCREEN"));
+  }
+
+  ui::SetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", "ATOM",
+                           state_atom_list);
 
   // Set the _NET_WM_WINDOW_TYPE.
   std::string window_type;
