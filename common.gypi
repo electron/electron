@@ -8,6 +8,7 @@
     # Reflects node's config.gypi.
     'component%': 'static_library',
     'python': 'python',
+    'openssl_fips': '',
     'openssl_no_asm': 1,
     'node_target_type': 'shared_library',
     'node_install_npm': 'false',
