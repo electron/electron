@@ -33,6 +33,9 @@ for (var i in argv) {
 
 // Create default menu.
 app.once('ready', function() {
+  if (Menu.getApplicationMenu())
+    return;
+
   var template;
   if (process.platform == 'darwin') {
     template = [
