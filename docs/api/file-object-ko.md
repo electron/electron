@@ -1,11 +1,9 @@
-﻿# `File` object
+﻿# `File` 객체
 
-The DOM's File interface provides abstraction around native files, in order to
-let users work on native files directly with HTML5 file API, Electron has
-added a `path` attribute to `File` interface which exposes the file's real path
-on filesystem.
+DOM의 File 인터페이스는 네이티브 파일을 추상화 합니다. 유저가 직접적으로 HTML5 File API를 사용하여 작업할 때 파일의 경로를
+알 수 있도록 Electron은 파일시스템의 실제 파일 경로를 담은 `path` 속성을 File 인터페이스에 추가하였습니다.
 
-Example on getting real path of a dragged file:
+다음 예제는 drag n drop한 파일의 실제 경로를 가져옵니다:
 
 ```html
 <div id="holder">

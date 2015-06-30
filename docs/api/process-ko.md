@@ -1,13 +1,12 @@
-﻿# Process object
+﻿# 프로세스 객체
 
-The `process` object in Electron has the following differences from the one in
-upstream node:
+Electron의 `process` 객체는 기존의 node와는 달리 약간의 차이점이 있습니다:
 
-* `process.type` String - Process's type, can be `browser` (i.e. main process) or `renderer`.
-* `process.versions['electron']` String - Version of Electron.
-* `process.versions['chrome']` String - Version of Chromium.
-* `process.resourcesPath` String - Path to JavaScript source code.
+* `process.type` String - 프로세스의 타입, `browser` (메인 프로세스) 또는 `renderer`가 됩니다.
+* `process.versions['electron']` String - Electron의 버전.
+* `process.versions['chrome']` String - Chromium의 버전.
+* `process.resourcesPath` String - JavaScript 소스코드의 경로.
 
 ## process.hang
 
-Causes the main thread of the current process hang.
+현재 프로세스의 주 스레드를 중단시킵니다.

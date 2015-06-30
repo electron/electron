@@ -2,7 +2,7 @@
 
 **This module has only been implemented for OS X.**
 
-Check out [atom/grunt-atom-shell-installer](https://github.com/atom/grunt-atom-shell-installer)
+Check out [atom/grunt-electron-installer](https://github.com/atom/grunt-electron-installer)
 for building a Windows installer for your app.
 
 The `auto-updater` module is a simple wrap around the

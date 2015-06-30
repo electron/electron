@@ -23,16 +23,11 @@ var appIcon = new Tray(image);
 
 ## 고해상도 이미지
 
-On platforms that have high-DPI support, you can append `@2x` after image's
-file name's base name to mark it as a high resolution image.
+플랫폼이 high-DPI를 지원하는 경우 `@2x`와 같이 이미지의 파일명 뒤에 접미사를 추가하여 고해상도 이미지로 지정할 수 있습니다.
 
-For example if `icon.png` is a normal image that has standard resolution, the
-`icon@2x.png` would be treated as a high resolution image that has double DPI
-density.
+예를 들어 `icon.png` 라는 기본 해상도의 이미지를 기준으로 크기를 두 배로 늘린 이미지를 `icon@2x.png`와 같이 이름을 지정하면 고해상도 이미지로 처리됩니다.
 
-If you want to support displays with different DPI density at the same time, you
-can put images with different sizes in the same folder, and use the filename
-without DPI suffixes, like this:
+서로 다른 해상도(DPI)의 이미지를 지원하고 싶다면 다중 해상도의 이미지를 접미사를 붙여 한 폴더에 넣으면 됩니다. 이 이미지를 사용(로드)할 땐 접미사를 붙이지 않습니다:
 
 ```text
 images/
@@ -46,7 +41,7 @@ images/
 var appIcon = new Tray('/Users/somebody/images/icon.png');
 ```
 
-Following suffixes as DPI denses are also supported:
+지원하는 DPI 접미사는 다음과 같습니다:
 
 * `@1x`
 * `@1.25x`
@@ -60,77 +55,73 @@ Following suffixes as DPI denses are also supported:
 * `@4x`
 * `@5x`
 
-## Template image
+## 템플릿 이미지
 
-Template images consist of black and clear colors (and an alpha channel).
-Template images are not intended to be used as standalone images and are usually
-mixed with other content to create the desired final appearance.
+템플릿 이미지는 검은색과 명확한 색상(알파 채널)으로 이루어져 있습니다.
+템플릿 이미지는 단독 이미지로 사용되지 않고 다른 컨텐츠와 혼합되어 최종 외관 만드는데 사용됩니다.
 
-The most common case is to use template image for menu bar icon so it can adapt
-to both light and dark menu bars.
+가장 일반적으로 템플릿 이미지는 밝고 어두운 테마 색상으로 변경할 수 있는 메뉴 바 아이콘 등에 사용되고 있습니다.
 
-Template image is only supported on Mac.
+템플릿 이미지는 Mac 운영체제만 지원합니다.
 
-To mark an image as template image, its filename should end with the word
-`Template`, examples are:
+템플릿 이미지를 지정하려면 다음 예제와 같이 파일명에 `Template` 문자열을 추가해야 합니다:
 
 * `xxxTemplate.png`
 * `xxxTemplate@2x.png`
 
 ## nativeImage.createEmpty()
 
-Creates an empty `NativeImage` instance.
+빈 `NativeImage` 인스턴스를 만듭니다.
 
 ## nativeImage.createFromPath(path)
 
 * `path` String
 
-Creates a new `NativeImage` instance from a file located at `path`.
+`path`로부터 이미지를 로드하여 새로운 `NativeImage` 인스턴스를 만듭니다.
 
 ## nativeImage.createFromBuffer(buffer[, scaleFactor])
 
 * `buffer` [Buffer][buffer]
 * `scaleFactor` Double
 
-Creates a new `NativeImage` instance from `buffer`. The `scaleFactor` is 1.0 by
-default.
+`buffer`로부터 이미지를 로드하여 새로운 `NativeImage` 인스턴스를 만듭니다. `scaleFactor`는 1.0이 기본입니다.
 
 ## nativeImage.createFromDataUrl(dataUrl)
 
 * `dataUrl` String
 
-Creates a new `NativeImage` instance from `dataUrl`.
+`dataUrl`로부터 이미지를 로드하여 새로운 `NativeImage` 인스턴스를 만듭니다.
 
 ## Class: NativeImage
 
-This class is used to represent an image.
+이미지를 표현한 클래스입니다.
 
 ### NativeImage.toPng()
 
-Returns a [Buffer][buffer] that contains image's `PNG` encoded data.
+`PNG` 이미지를 인코딩한 데이터를 [Buffer][buffer]로 반환합니다.
 
 ### NativeImage.toJpeg(quality)
 
 * `quality` Integer
 
-Returns a [Buffer][buffer] that contains image's `JPEG` encoded data.
+`JPEG` 이미지를 인코딩한 데이터를 [Buffer][buffer]로 반환합니다.
 
 ### NativeImage.toDataUrl()
 
-Returns the data URL of image.
+이미지의 data URL을 반환합니다.
 
 ### NativeImage.isEmpty()
 
-Returns whether the image is empty.
+이미지가 비었는지를 체크합니다.
 
 ### NativeImage.getSize()
 
-Returns the size of the image.
-
-[buffer]: https://iojs.org/api/buffer.html#buffer_class_buffer
+이미지의 사이즈를 반환합니다.
 
 ### NativeImage.setTemplateImage(option)
 
 * `option` Boolean
 
-Marks the image as template image.
+해당 이미지를 템플릿 이미지로 설정합니다.
+
+[buffer]: https://iojs.org/api/buffer.html#buffer_class_buffer
