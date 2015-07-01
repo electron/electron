@@ -45,7 +45,7 @@ class DevToolsWindowDelegate : public views::ClientView,
   views::Widget* GetWidget() override { return widget_; }
   const views::Widget* GetWidget() const override { return widget_; }
   views::View* GetContentsView() override { return view_; }
-  views::ClientView* CreateClientView(views::Widget* widget) { return this; }
+  views::ClientView* CreateClientView(views::Widget* widget) override { return this; }
 
   // views::ClientView:
   bool CanClose() override {
