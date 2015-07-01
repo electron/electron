@@ -6,6 +6,7 @@
   'variables': {
     # Required by breakpad.
     'os_bsd': 0,
+    'chromeos': 0,
     # Reflects node's config.gypi.
     'component%': 'static_library',
     'python': 'python',
