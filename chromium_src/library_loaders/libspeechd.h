@@ -20,19 +20,19 @@ class LibSpeechdLoader {
 
   bool loaded() const { return loaded_; }
 
-  typeof(&::spd_open) spd_open;
-  typeof(&::spd_say) spd_say;
-  typeof(&::spd_stop) spd_stop;
-  typeof(&::spd_close) spd_close;
-  typeof(&::spd_pause) spd_pause;
-  typeof(&::spd_resume) spd_resume;
-  typeof(&::spd_set_notification_on) spd_set_notification_on;
-  typeof(&::spd_set_voice_rate) spd_set_voice_rate;
-  typeof(&::spd_set_voice_pitch) spd_set_voice_pitch;
-  typeof(&::spd_list_synthesis_voices) spd_list_synthesis_voices;
-  typeof(&::spd_set_synthesis_voice) spd_set_synthesis_voice;
-  typeof(&::spd_list_modules) spd_list_modules;
-  typeof(&::spd_set_output_module) spd_set_output_module;
+  decltype(&::spd_open) spd_open;
+  decltype(&::spd_say) spd_say;
+  decltype(&::spd_stop) spd_stop;
+  decltype(&::spd_close) spd_close;
+  decltype(&::spd_pause) spd_pause;
+  decltype(&::spd_resume) spd_resume;
+  decltype(&::spd_set_notification_on) spd_set_notification_on;
+  decltype(&::spd_set_voice_rate) spd_set_voice_rate;
+  decltype(&::spd_set_voice_pitch) spd_set_voice_pitch;
+  decltype(&::spd_list_synthesis_voices) spd_list_synthesis_voices;
+  decltype(&::spd_set_synthesis_voice) spd_set_synthesis_voice;
+  decltype(&::spd_list_modules) spd_list_modules;
+  decltype(&::spd_set_output_module) spd_set_output_module;
 
 
  private:

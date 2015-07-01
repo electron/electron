@@ -44,7 +44,7 @@ def run_gyp(target_arch, component):
   defines = [
     '-Dlibchromiumcontent_component={0}'.format(component),
     '-Dtarget_arch={0}'.format(target_arch),
-    '-Dhost_arch={0}'.format(target_arch),
+    '-Dhost_arch=x64',
     '-Dlibrary=static_library',
   ]
   return subprocess.call([python, gyp, '-f', 'ninja', '--depth', '.',

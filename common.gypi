@@ -1,5 +1,6 @@
 {
   'includes': [
+    'toolchain.gypi',
     'vendor/brightray/brightray.gypi',
   ],
   'variables': {

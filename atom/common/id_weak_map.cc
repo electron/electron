@@ -23,7 +23,7 @@ int32_t IDWeakMap::Add(v8::Isolate* isolate, v8::Local<v8::Object> object) {
 
   auto global = make_linked_ptr(new v8::Global<v8::Object>(isolate, object));
   global->SetWeak(this, &WeakCallback);
-  map_.emplace(id, global);
+  map_[id] = global;
   return id;
 }
 

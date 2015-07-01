@@ -6,6 +6,8 @@
 /vendor/brightray/vendor/download/
 /vendor/python_26/
 /vendor/npm/
+/vendor/llvm/
+/vendor/llvm-build/
 /vendor/.gclient
 node_modules/
 *.xcodeproj

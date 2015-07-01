@@ -29,6 +29,9 @@ def main():
   update_node_modules('.')
   bootstrap_brightray(args.dev, args.url, args.target_arch)
 
+  if PLATFORM != 'win32':
+    update_clang()
+
   create_chrome_version_h()
   touch_config_gypi()
   run_update()
@@ -104,6 +107,11 @@ def update_win32_python():
   with scoped_cwd(VENDOR_DIR):
     if not os.path.exists('python_26'):
       execute_stdout(['git', 'clone', PYTHON_26_URL])
+
+
+def update_clang():
+  execute_stdout([os.path.join(SOURCE_ROOT, 'script', 'update-clang.sh')])
+
 
 def create_chrome_version_h():
   version_file = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
