@@ -32,6 +32,9 @@ def main():
   if PLATFORM != 'win32':
     update_clang()
 
+  if args.target_arch == 'arm':
+    download_arm_sysroot()
+
   create_chrome_version_h()
   touch_config_gypi()
   run_update()
@@ -111,6 +114,12 @@ def update_win32_python():
 
 def update_clang():
   execute_stdout([os.path.join(SOURCE_ROOT, 'script', 'update-clang.sh')])
+
+
+def download_arm_sysroot():
+  execute_stdout([os.path.join(SOURCE_ROOT, 'script',
+                               'install-debian.wheezy.sysroot.py'),
+                  '--arch', 'arm'])
 
 
 def create_chrome_version_h():
