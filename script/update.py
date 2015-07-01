@@ -6,6 +6,7 @@ import subprocess
 import sys
 
 from lib.config import get_target_arch
+from lib.util import get_host_arch
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -48,7 +49,7 @@ def run_gyp(target_arch, component):
   defines = [
     '-Dlibchromiumcontent_component={0}'.format(component),
     '-Dtarget_arch={0}'.format(target_arch),
-    '-Dhost_arch=x64',
+    '-Dhost_arch={0}'.format(get_host_arch()),
     '-Dlibrary=static_library',
   ]
   return subprocess.call([python, gyp, '-f', 'ninja', '--depth', '.',
