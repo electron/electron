@@ -152,9 +152,9 @@ bool StringToAccelerator(const std::string& description,
       key = ui::VKEY_HOME;
     } else if (tokens[i] == "end") {
       key = ui::VKEY_END;
-    } else if (tokens[i] == "pagedown") {
-      key = ui::VKEY_PRIOR;
     } else if (tokens[i] == "pageup") {
+      key = ui::VKEY_PRIOR;
+    } else if (tokens[i] == "pagedown") {
       key = ui::VKEY_NEXT;
     } else if (tokens[i] == "esc" || tokens[i] == "escape") {
       key = ui::VKEY_ESCAPE;
