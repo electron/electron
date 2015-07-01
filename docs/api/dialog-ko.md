@@ -75,7 +75,7 @@ will be passed via `callback(filename)`
   * `title` String - Title of the message box, some platforms will not show it
   * `message` String - Content of the message box
   * `detail` String - Extra information of the message
-  * `icon` [NativeImage](native-image.md)
+  * `icon` [NativeImage](native-image-ko.md)
 * `callback` Function
 
 Shows a message box, it will block until the message box is closed. It returns

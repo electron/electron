@@ -18,7 +18,7 @@
 
 * [개요](api/synopsis-ko.md)
 * [프로세스 객체](api/process-ko.md)
-* [크롬 Command-Line 스위치에 대한 지원](api/chrome-command-line-switches-ko.md)
+* [크롬 Command-Line 스위치 지원](api/chrome-command-line-switches-ko.md)
 
 커스텀 DOM Element:
 
@@ -38,6 +38,7 @@
 * [menu](api/menu-ko.md)
 * [menu-item](api/menu-item-ko.md)
 * [power-monitor](api/power-monitor-ko.md)
+* [power-save-blocker](api/power-save-blocker-ko.md)
 * [protocol](api/protocol-ko.md)
 * [tray](api/tray-ko.md)
 

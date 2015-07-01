@@ -16,7 +16,7 @@ win.show();
 ```
 
 You can also create a window without chrome by using
-[Frameless Window](frameless-window.md) API.
+[Frameless Window](frameless-window-ko.md) API.
 
 ## Class: BrowserWindow
 
@@ -48,11 +48,11 @@ You can also create a window without chrome by using
     zoom percent / 100, so `3.0` represents `300%`
   * `kiosk` Boolean - The kiosk mode
   * `title` String - Default window title
-  * `icon` [NativeImage](native-image.md) - The window icon, when omitted on
+  * `icon` [NativeImage](native-image-ko.md) - The window icon, when omitted on
     Windows the executable's icon would be used as window icon
   * `show` Boolean - Whether window should be shown when created
   * `frame` Boolean - Specify `false` to create a
-    [Frameless Window](frameless-window.md)
+    [Frameless Window](frameless-window-ko.md)
   * `node-integration` Boolean - Whether node integration is enabled, default
     is `true`
   * `accept-first-mouse` Boolean - Whether the web view accepts a single
@@ -68,7 +68,7 @@ You can also create a window without chrome by using
     scripts run in the window. This script will always have access to node APIs
     no matter whether node integration is turned on for the window, and the path
     of `preload` script has to be absolute path.
-  * `transparent` Boolean - Makes the window [transparent](frameless-window.md)
+  * `transparent` Boolean - Makes the window [transparent](frameless-window-ko.md)
   * `type` String - Specifies the type of the window, possible types are
     `desktop`, `dock`, `toolbar`, `splash`, `notification`. This only works on
     Linux.
@@ -566,11 +566,11 @@ Opens the developer tools for the service worker context present in the web cont
 
 Captures the snapshot of page within `rect`, upon completion `callback` would be
 called with `callback(image)`, the `image` is an instance of
-[NativeImage](native-image.md) that stores data of the snapshot. Omitting the
+[NativeImage](native-image-ko.md) that stores data of the snapshot. Omitting the
 `rect` would capture the whole visible page.
 
 **Note:** Be sure to read documents on remote buffer in
-[remote](remote.md) if you are going to use this API in renderer
+[remote](remote-ko.md) if you are going to use this API in renderer
 process.
 
 ### BrowserWindow.print([options])
@@ -613,7 +613,7 @@ it will assume `app.getName().desktop`.
 
 ### BrowserWindow.setOverlayIcon(overlay, description)
 
-* `overlay` [NativeImage](native-image.md) - the icon to display on the bottom
+* `overlay` [NativeImage](native-image-ko.md) - the icon to display on the bottom
 right corner of the taskbar icon. If this parameter is `null`, the overlay is
 cleared
 * `description` String - a description that will be provided to Accessibility

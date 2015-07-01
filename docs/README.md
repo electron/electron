@@ -38,6 +38,7 @@ Modules for the main process:
 * [menu](api/menu.md)
 * [menu-item](api/menu-item.md)
 * [power-monitor](api/power-monitor.md)
+* [power-save-blocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
 * [tray](api/tray.md)
 

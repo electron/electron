@@ -1,8 +1,8 @@
-﻿# web-frame
+# web-frame
 
-The `web-frame` module can custom the rendering of current web page.
+`web-frame` 모듈은 현재 웹 페이지의 랜더링 상태를 커스터마이즈 할 수 있도록 해줍니다.
 
-An example of zooming current page to 200%.
+다음 예제는 현재 페이지를 200% 줌 합니다.
 
 ```javascript
 var webFrame = require('web-frame');
@@ -11,26 +11,24 @@ webFrame.setZoomFactor(2);
 
 ## webFrame.setZoomFactor(factor)
 
-* `factor` Number - Zoom factor
+* `factor` Number - Zoom 값
 
-Changes the zoom factor to the specified factor, zoom factor is
-zoom percent / 100, so 300% = 3.0.
+지정한 값으로 페이지를 줌 합니다. 줌 값은 퍼센트 / 100입니다. (예시: 300% = 3.0)
 
 ## webFrame.getZoomFactor()
 
-Returns the current zoom factor.
+현재 줌 값을 반환합니다.
 
 ## webFrame.setZoomLevel(level)
 
 * `level` Number - Zoom level
 
-Changes the zoom level to the specified level, 0 is "original size", and each
-increment above or below represents zooming 20% larger or smaller to default
-limits of 300% and 50% of original size, respectively.
+지정한 레벨로 줌 레벨을 변경합니다. 0은 "기본 크기" 입니다.
+그리고 각각 레벨 값을 올리거나 내릴 때마다 20%씩 커지거나 작아지고 기본 크기의 50%부터 300%까지 조절 제한이 있습니다.
 
 ## webFrame.getZoomLevel()
 
-Returns the current zoom level.
+현재 줌 레벨을 반환합니다.
 
 ## webFrame.setSpellCheckProvider(language, autoCorrectWord, provider)
 
@@ -38,12 +36,11 @@ Returns the current zoom level.
 * `autoCorrectWord` Boolean
 * `provider` Object
 
-Sets a provider for spell checking in input fields and text areas.
+Input field나 text area에 철자 검사(spell checking) 제공자를 설정합니다.
 
-The `provider` must be an object that has a `spellCheck` method that returns
-whether the word passed is correctly spelled.
+`provider`는 반드시 전달된 단어의 철자가 맞았는지 검사하는 `spellCheck` 메소드를 가지고 있어야 합니다.
 
-An example of using [node-spellchecker][spellchecker] as provider:
+[node-spellchecker][spellchecker]를 철자 검사 제공자로 사용하는 예제입니다:
 
 ```javascript
 require('web-frame').setSpellCheckProvider("en-US", true, {
@@ -57,10 +54,8 @@ require('web-frame').setSpellCheckProvider("en-US", true, {
 
 * `scheme` String
 
-Sets the `scheme` as secure scheme.
+지정한 `scheme`을 보안 스킴으로 설정합니다.
 
-Secure schemes do not trigger mixed content warnings. For example, `https` and
-`data` are secure schemes because they cannot be corrupted by active network
-attackers.
+보안 스킴은 혼합된 컨텐츠 경고를 발생시키지 않습니다. 예를 들어 `https` 와 `data`는 네트워크 공격자로부터 손상될 가능성이 없기 때문에 보안 스킴입니다.
 
 [spellchecker]: https://github.com/atom/node-spellchecker

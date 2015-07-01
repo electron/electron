@@ -92,21 +92,21 @@ click on the application's dock icon.
 * `event` Event
 * `window` BrowserWindow
 
-Emitted when a [browserWindow](browser-window.md) gets blurred.
+Emitted when a [browserWindow](browser-window-ko.md) gets blurred.
 
 ## Event: browser-window-focus
 
 * `event` Event
 * `window` BrowserWindow
 
-Emitted when a [browserWindow](browser-window.md) gets focused.
+Emitted when a [browserWindow](browser-window-ko.md) gets focused.
 
 ### Event: 'select-certificate'
 
 Emitted when client certificate is requested.
 
 * `event` Event
-* `webContents` [WebContents](browser-window.md#class-webcontents)
+* `webContents` [WebContents](browser-window-ko.md#class-webcontents)
 * `url` String
 * `certificateList` [Objects]
   * `data` PEM encoded data

@@ -5,7 +5,7 @@ application menus and context menus. Each menu consists of multiple menu
 items, and each menu item can have a submenu.
 
 Below is an example of creating a menu dynamically in a web page by using
-the [remote](remote.md) module, and showing it when the user right clicks
+the [remote](remote-ko.md) module, and showing it when the user right clicks
 the page:
 
 ```html
@@ -191,7 +191,7 @@ emulating default Cocoa menu behaviors, usually you would just use the
 * `template` Array
 
 Generally, the `template` is just an array of `options` for constructing
-[MenuItem](menu-item.md), the usage can be referenced above.
+[MenuItem](menu-item-ko.md), the usage can be referenced above.
 
 You can also attach other fields to element of the `template`, and they will
 become properties of the constructed menu items.

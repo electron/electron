@@ -1,49 +1,47 @@
 ﻿# global-shortcut
 
-The `global-shortcut` module can register/unregister a global keyboard shortcut
-in operating system, so that you can customize the operations for various shortcuts.
-Note that the shortcut is global, even if the app does not get focused, it will still work.
+`global-shortcut` 모듈은 사용자가 다양한 단축키 작업을 정의 할 수 있도록 운영체제의 전역 키보드 단축키를 설정 등록/해제 하는 방법을 제공합니다.
+참고로 설정된 단축키는 어플리케이션이 백그라운드로 작동(창이 포커스 되지 않음) 할 때도 여전히 계속 작동합니다.
 
 ```javascript
 var globalShortcut = require('global-shortcut');
 
-// Register a 'ctrl+x' shortcut listener.
+// 'ctrl+x' 단축키를 리스너에 등록합니다.
 var ret = globalShortcut.register('ctrl+x', function() { console.log('ctrl+x is pressed'); })
 
 if (!ret) {
   console.log('registration failed');
 }
 
-// Check whether a shortcut is registered.
+// 단축키가 등록되었는지 확인합니다.
 console.log(globalShortcut.isRegistered('ctrl+x'));
 
-// Unregister a shortcut.
+// 단축키의 등록을 해제합니다.
 globalShortcut.unregister('ctrl+x');
 
-// Unregister all shortcuts.
+// 모든 단축키의 등록을 해제합니다.
 globalShortcut.unregisterAll();
 ```
 
 ## globalShortcut.register(accelerator, callback)
 
-* `accelerator` [Accelerator](accelerator.md)
+* `accelerator` [Accelerator](accelerator-ko.md)
 * `callback` Function
 
-Registers a global shortcut of `accelerator`, the `callback` would be called when
-the registered shortcut is pressed by user.
+`accelerator`로 표현된 전역 단축키를 등록합니다. 유저로부터 등록된 단축키가 눌렸을 경우 `callback` 함수가 호출됩니다.
 
 ## globalShortcut.isRegistered(accelerator)
 
-* `accelerator` [Accelerator](accelerator.md)
+* `accelerator` [Accelerator](accelerator-ko.md)
 
-Returns `true` or `false` depending on if the shortcut `accelerator` is registered.
+지정된 `accelerator` 단축키가 등록되었는지 여부를 확인합니다. 반환값은 boolean(true, false) 입니다.
 
 ## globalShortcut.unregister(accelerator)
 
-* `accelerator` [Accelerator](accelerator.md)
+* `accelerator` [Accelerator](accelerator-ko.md)
 
-Unregisters the global shortcut of `keycode`.
+`키코드`에 해당하는 전역 단축키를 등록 해제합니다.
 
 ## globalShortcut.unregisterAll()
 
-Unregisters all the global shortcuts.
+모든 전역 단축키 등록을 해제합니다.

@@ -20,7 +20,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 win.loadUrl('https://github.com');
 ```
 
-Note: for the reverse (access renderer process from main process), you can use [webContents.executeJavascript](https://github.com/atom/electron/blob/master/docs/api/browser-window.md#browserwindowwebcontents).
+Note: for the reverse (access renderer process from main process), you can use [webContents.executeJavascript](https://github.com/atom/electron/blob/master/docs/api/browser-window-ko.md#browserwindowwebcontents).
 
 ## Remote objects
 
@@ -139,7 +139,7 @@ Returns the object returned by `require(module)` in the main process.
 
 ## remote.getCurrentWindow()
 
-Returns the [BrowserWindow](browser-window.md) object which this web page
+Returns the [BrowserWindow](browser-window-ko.md) object which this web page
 belongs to.
 
 ## remote.getCurrentWebContent()

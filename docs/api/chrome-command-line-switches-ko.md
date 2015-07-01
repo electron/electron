@@ -1,4 +1,4 @@
-﻿# Supported Chrome command line switches
+﻿# 크롬 Command-Line 스위치 지원
 
 The following command lines switches in Chrome browser are also supported in
 Electron, you can use [app.commandLine.appendSwitch][append-switch] to append
@@ -63,9 +63,9 @@ connection, and the endpoint host in a `SOCKS` proxy connection).
 
 Like `--host-rules` but these `rules` only apply to the host resolver.
 
-[app]: app.md
-[append-switch]: app.md#appcommandlineappendswitchswitch-value
-[ready]: app.md#event-ready
+[app]: app-ko.md
+[append-switch]: app-ko.md#appcommandlineappendswitchswitch-value
+[ready]: app-ko.md#event-ready
 
 ## --ignore-certificate-errors
 
