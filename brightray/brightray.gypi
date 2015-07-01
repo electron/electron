@@ -153,7 +153,6 @@
             ],
             'cflags_cc': [
               '-D__STRICT_ANSI__',
-              '-std=gnu++11',
               '-fno-rtti',
             ],
           }],  # OS=="linux"
