@@ -45,7 +45,7 @@ window.open = (url, frameName='', features='') ->
         value
   options.x ?= options.left if options.left
   options.y ?= options.top if options.top
-  options.title ?= name
+  options.title ?= frameName
   options.width ?= 800
   options.height ?= 600
 
