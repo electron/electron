@@ -14,6 +14,10 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 def main():
   os.chdir(SOURCE_ROOT)
 
+  if platform.architecture()[0] != '64bit':
+    print 'Electron is required to be built on a 64bit machine'
+    return 1
+
   update_external_binaries()
   return update_gyp()
 
@@ -49,13 +53,6 @@ def run_gyp(target_arch, component):
   ]
   return subprocess.call([python, gyp, '-f', 'ninja', '--depth', '.',
                           'atom.gyp', '-Icommon.gypi'] + defines)
-
-
-def get_host_arch():
-  if platform.architecture()[0] == '32bit':
-    return 'ia32'
-  else:
-    return 'x64'
 
 
 if __name__ == '__main__':
