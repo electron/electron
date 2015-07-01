@@ -34,7 +34,7 @@ bool LibSpeechdLoader::Load(const std::string& library_name) {
 
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DLOPEN)
   spd_open =
-      reinterpret_cast<typeof(this->spd_open)>(
+      reinterpret_cast<decltype(this->spd_open)>(
           dlsym(library_, "spd_open"));
 #endif
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DT_NEEDED)
@@ -47,7 +47,7 @@ bool LibSpeechdLoader::Load(const std::string& library_name) {
 
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DLOPEN)
   spd_say =
-      reinterpret_cast<typeof(this->spd_say)>(
+      reinterpret_cast<decltype(this->spd_say)>(
           dlsym(library_, "spd_say"));
 #endif
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DT_NEEDED)
@@ -60,7 +60,7 @@ bool LibSpeechdLoader::Load(const std::string& library_name) {
 
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DLOPEN)
   spd_stop =
-      reinterpret_cast<typeof(this->spd_stop)>(
+      reinterpret_cast<decltype(this->spd_stop)>(
           dlsym(library_, "spd_stop"));
 #endif
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DT_NEEDED)
@@ -73,7 +73,7 @@ bool LibSpeechdLoader::Load(const std::string& library_name) {
 
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DLOPEN)
   spd_close =
-      reinterpret_cast<typeof(this->spd_close)>(
+      reinterpret_cast<decltype(this->spd_close)>(
           dlsym(library_, "spd_close"));
 #endif
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DT_NEEDED)
@@ -86,7 +86,7 @@ bool LibSpeechdLoader::Load(const std::string& library_name) {
 
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DLOPEN)
   spd_pause =
-      reinterpret_cast<typeof(this->spd_pause)>(
+      reinterpret_cast<decltype(this->spd_pause)>(
           dlsym(library_, "spd_pause"));
 #endif
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DT_NEEDED)
@@ -99,7 +99,7 @@ bool LibSpeechdLoader::Load(const std::string& library_name) {
 
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DLOPEN)
   spd_resume =
-      reinterpret_cast<typeof(this->spd_resume)>(
+      reinterpret_cast<decltype(this->spd_resume)>(
           dlsym(library_, "spd_resume"));
 #endif
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DT_NEEDED)
@@ -112,7 +112,7 @@ bool LibSpeechdLoader::Load(const std::string& library_name) {
 
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DLOPEN)
   spd_set_notification_on =
-      reinterpret_cast<typeof(this->spd_set_notification_on)>(
+      reinterpret_cast<decltype(this->spd_set_notification_on)>(
           dlsym(library_, "spd_set_notification_on"));
 #endif
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DT_NEEDED)
@@ -125,7 +125,7 @@ bool LibSpeechdLoader::Load(const std::string& library_name) {
 
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DLOPEN)
   spd_set_voice_rate =
-      reinterpret_cast<typeof(this->spd_set_voice_rate)>(
+      reinterpret_cast<decltype(this->spd_set_voice_rate)>(
           dlsym(library_, "spd_set_voice_rate"));
 #endif
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DT_NEEDED)
@@ -138,7 +138,7 @@ bool LibSpeechdLoader::Load(const std::string& library_name) {
 
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DLOPEN)
   spd_set_voice_pitch =
-      reinterpret_cast<typeof(this->spd_set_voice_pitch)>(
+      reinterpret_cast<decltype(this->spd_set_voice_pitch)>(
           dlsym(library_, "spd_set_voice_pitch"));
 #endif
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DT_NEEDED)
@@ -151,7 +151,7 @@ bool LibSpeechdLoader::Load(const std::string& library_name) {
 
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DLOPEN)
   spd_list_synthesis_voices =
-      reinterpret_cast<typeof(this->spd_list_synthesis_voices)>(
+      reinterpret_cast<decltype(this->spd_list_synthesis_voices)>(
           dlsym(library_, "spd_list_synthesis_voices"));
 #endif
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DT_NEEDED)
@@ -164,7 +164,7 @@ bool LibSpeechdLoader::Load(const std::string& library_name) {
 
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DLOPEN)
   spd_set_synthesis_voice =
-      reinterpret_cast<typeof(this->spd_set_synthesis_voice)>(
+      reinterpret_cast<decltype(this->spd_set_synthesis_voice)>(
           dlsym(library_, "spd_set_synthesis_voice"));
 #endif
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DT_NEEDED)
@@ -177,7 +177,7 @@ bool LibSpeechdLoader::Load(const std::string& library_name) {
 
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DLOPEN)
   spd_list_modules =
-      reinterpret_cast<typeof(this->spd_list_modules)>(
+      reinterpret_cast<decltype(this->spd_list_modules)>(
           dlsym(library_, "spd_list_modules"));
 #endif
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DT_NEEDED)
@@ -190,7 +190,7 @@ bool LibSpeechdLoader::Load(const std::string& library_name) {
 
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DLOPEN)
   spd_set_output_module =
-      reinterpret_cast<typeof(this->spd_set_output_module)>(
+      reinterpret_cast<decltype(this->spd_set_output_module)>(
           dlsym(library_, "spd_set_output_module"));
 #endif
 #if defined(LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DT_NEEDED)
