@@ -1,6 +1,6 @@
 {
   'includes': [
-    'clang.gypi',
+    'toolchain.gypi',
     'vendor/brightray/brightray.gypi',
   ],
   'variables': {
