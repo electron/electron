@@ -175,11 +175,6 @@
                   }],
                 ],
               }],
-              ['clang==1', {
-                'cflags': [
-                  '-no-integrated-as',
-                ],
-              }],
               ['arm_tune!=""', {
                 'cflags': [
                   '-mtune=<(arm_tune)',
