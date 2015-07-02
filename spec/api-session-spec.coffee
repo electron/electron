@@ -4,12 +4,12 @@ http    = require 'http'
 path    = require 'path'
 BrowserWindow = remote.require 'browser-window'
 
-describe 'cookies module', ->
+describe 'session module', ->
   fixtures = path.resolve __dirname, 'fixtures'
   w = null
   url = "http://127.0.0.1"
 
-  beforeEach -> w = new BrowserWindow(show: true)
+  beforeEach -> w = new BrowserWindow(show: false, width: 400, height: 400)
   afterEach -> w.destroy()
 
   it 'should get cookies', (done) ->
@@ -69,3 +69,16 @@ describe 'cookies module', ->
                 throw error if error
                 assert.equal 0, cookies_list.length
                 done()
+
+  describe 'session.clearStorageData(options)', ->
+    fixtures = path.resolve __dirname, 'fixtures'
+    it 'clears localstorage data', (done) ->
+      ipc = remote.require('ipc')
+      ipc.on 'count', (event, count) ->
+        ipc.removeAllListeners 'count'
+        assert not count
+        done()
+      w.loadUrl 'file://' + path.join(fixtures, 'api', 'localstorage.html')
+      w.webContents.on 'did-finish-load', ->
+        w.webContents.session.clearStorageData "file://", ['localstorage'], ['persistent'], ->
+          w.webContents.send 'getcount'
