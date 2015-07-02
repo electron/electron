@@ -46,7 +46,8 @@ def main():
     execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
 
   # CI's npm is not reliable.
-  execute(['npm', 'install', 'npm'])
+  npm = 'npm.cmd' if sys.platform == 'win32' else 'npm'
+  execute([npm, 'install', 'npm'])
 
   rm_rf(os.path.join(SOURCE_ROOT, 'out'))
   rm_rf(os.path.join(SOURCE_ROOT, 'node_modules'))
