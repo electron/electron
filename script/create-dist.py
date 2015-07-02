@@ -80,6 +80,8 @@ def main():
   rm_rf(DIST_DIR)
   os.makedirs(DIST_DIR)
 
+  target_arch = get_target_arch()
+
   force_build()
   create_symbols()
   copy_binaries()
@@ -89,11 +91,13 @@ def main():
 
   if PLATFORM == 'linux':
     strip_binaries()
-    copy_system_libraries()
+    if target_arch != 'arm':
+      copy_system_libraries()
 
   create_version()
   create_dist_zip()
-  create_chrome_binary_zip('chromedriver', get_chromedriver_version())
+  if target_arch != 'arm':
+    create_chrome_binary_zip('chromedriver', get_chromedriver_version())
   create_chrome_binary_zip('mksnapshot', ATOM_SHELL_VERSION)
   create_symbols_zip()
 
@@ -129,9 +133,13 @@ def copy_license():
 
 
 def strip_binaries():
+  if get_target_arch() == 'arm':
+    strip = 'arm-linux-gnueabihf-strip'
+  else:
+    strip = 'strip'
   for binary in TARGET_BINARIES[PLATFORM]:
     if binary.endswith('.so') or '.' not in binary:
-      execute(['strip', os.path.join(DIST_DIR, binary)])
+      execute([strip, os.path.join(DIST_DIR, binary)])
 
 
 def copy_system_libraries():

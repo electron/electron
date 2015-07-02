@@ -1,9 +1,15 @@
 {
   'variables': {
+    # The abosulte version of <(DEPTH).
+    'source_root': '<!(cd <(DEPTH) && pwd -P)',
+
     # Clang stuff.
     'make_clang_dir%': 'vendor/llvm-build/Release+Asserts',
     # Set this to true when building with Clang.
     'clang%': 1,
+
+    # Path to sysroot dir.
+    'sysroot%': '',
 
     'variables': {
       # Set ARM architecture version.
@@ -51,6 +57,7 @@
     ],
   },
   'conditions': [
+    # Setup building with clang.
     ['clang==1', {
       'make_global_settings': [
         ['CC', '<(make_clang_dir)/bin/clang'],
@@ -85,6 +92,36 @@
       },
     }],  # clang==1
 
+    # Setup sysroot environment.
+    ['OS=="linux" and target_arch in ["arm", "ia32"]', {
+      'variables': {
+        'conditions': [
+          ['target_arch=="arm"', {
+            # sysroot needs to be an absolute path otherwise it generates
+            # incorrect results when passed to pkg-config
+            'sysroot': '<(source_root)/vendor/debian_wheezy_arm-sysroot',
+          }],
+          ['target_arch=="ia32"', {
+            'sysroot': '<(source_root)/vendor/debian_wheezy_i386-sysroot',
+          }],
+        ],
+      },
+      'target_defaults': {
+        'target_conditions': [
+          ['_toolset=="target"', {
+            'cflags': [
+              '--sysroot=<(sysroot)',
+            ],
+            'ldflags': [
+              '--sysroot=<(sysroot)',
+              '<!(<(source_root)/tools/linux/sysroot_ld_path.sh <(sysroot))',
+            ],
+          }]
+        ],
+      },
+    }],  # target_arch==arm
+
+    # Setup cross-compilation on Linux.
     ['OS=="linux"', {
       'target_defaults': {
         'target_conditions': [
@@ -136,11 +173,6 @@
                       '-march=<(arm_arch)',
                     ],
                   }],
-                ],
-              }],
-              ['clang==1', {
-                'cflags': [
-                  '-no-integrated-as',
                 ],
               }],
               ['arm_tune!=""', {

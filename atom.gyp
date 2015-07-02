@@ -5,8 +5,6 @@
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
     'version%': '0.28.3',
-
-    'atom_source_root': '<!(["python", "tools/atom_source_root.py"])',
   },
   'includes': [
     'filenames.gypi',
@@ -18,7 +16,7 @@
       'ATOM_PROJECT_NAME="<(project_name)"',
     ],
     'mac_framework_dirs': [
-      '<(atom_source_root)/external_binaries',
+      '<(source_root)/external_binaries',
     ],
   },
   'targets': [
@@ -45,7 +43,6 @@
           'dependencies': [
             '<(project_name)_framework',
             '<(project_name)_helper',
-            'vendor/breakpad/breakpad.gyp:dump_syms',
           ],
           'xcode_settings': {
             'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name)',
@@ -156,6 +153,10 @@
                 'atom/browser/default_app',
               ]
             },
+          ],
+        }, {
+          'dependencies': [
+            'vendor/breakpad/breakpad.gyp:dump_syms#host',
           ],
         }],  # OS=="win"
         ['OS=="linux"', {

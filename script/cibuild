@@ -15,22 +15,32 @@ LINUX_DEPS = [
   'libgnome-keyring-dev',
   'libgtk2.0-dev',
   'libnotify-dev',
-  'gcc-4.8',
-  'g++-4.8',
   'gcc-multilib',
   'g++-multilib',
+]
+
+LINUX_DEPS_ARM = [
+  'libc6-dev-armhf-cross',
+  'linux-libc-dev-armhf-cross',
+  'g++-arm-linux-gnueabihf',
 ]
 
 
 def main():
   os.environ['CI'] = '1'
 
+  target_arch = 'x64'
+  if os.environ.has_key('TARGET_ARCH'):
+    target_arch = os.environ['TARGET_ARCH']
+
   is_travis = (os.getenv('TRAVIS') == 'true')
   if is_travis and sys.platform == 'linux2':
     print 'Setup travis CI'
-    execute(['sudo', 'add-apt-repository', '-y', 'ppa:ubuntu-toolchain-r/test'])
     execute(['sudo', 'apt-get', 'update'])
-    execute(['sudo', 'apt-get', 'install'] + LINUX_DEPS)
+    deps = LINUX_DEPS
+    if target_arch == 'arm':
+      deps += LINUX_DEPS_ARM
+    execute(['sudo', 'apt-get', 'install'] + deps)
 
     os.environ['DISPLAY'] = ':99.0'
     execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
@@ -43,20 +53,15 @@ def main():
   rm_rf(os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor', 'download',
                      'libchromiumcontent'))
 
-  if is_travis and sys.platform == 'linux2':
-    with scoped_env('CXX', 'g++-4.8'):
-      with scoped_env('CC', 'gcc-4.8'):
-        run_script('bootstrap.py', ['--dev'])
-    run_script('update.py')
-  else:
-    run_script('bootstrap.py', ['--dev'])
+  run_script('bootstrap.py', ['--dev', '--target_arch=' + target_arch])
 
   run_script('cpplint.py')
   if sys.platform != 'win32':
     run_script('pylint.py')
   run_script('coffeelint.py')
   run_script('build.py', ['-c', 'Debug'])
-  run_script('test.py', ['--ci'])
+  if target_arch == 'x64':
+    run_script('test.py', ['--ci'])
 
 
 def run_script(script, args=[]):

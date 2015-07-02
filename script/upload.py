@@ -15,7 +15,6 @@ from lib.github import GitHub
 
 ATOM_SHELL_REPO = 'atom/electron'
 ATOM_SHELL_VERSION = get_atom_shell_version()
-CHROMEDRIVER_VERSION = get_chromedriver_version()
 
 PROJECT_NAME = atom_gyp()['project_name%']
 PRODUCT_NAME = atom_gyp()['product_name%']
@@ -31,9 +30,6 @@ SYMBOLS_NAME = '{0}-{1}-{2}-{3}-symbols.zip'.format(PROJECT_NAME,
                                                     ATOM_SHELL_VERSION,
                                                     PLATFORM,
                                                     get_target_arch())
-CHROMEDRIVER_NAME = 'chromedriver-{0}-{1}-{2}.zip'.format(CHROMEDRIVER_VERSION,
-                                                          PLATFORM,
-                                                          get_target_arch())
 MKSNAPSHOT_NAME = 'mksnapshot-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
                                                       PLATFORM,
                                                       get_target_arch())
@@ -78,9 +74,11 @@ def main():
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, SYMBOLS_NAME))
 
   # Upload chromedriver and mksnapshot for minor version update.
-  if parse_version(args.version)[2] == '0':
+  if get_target_arch() != 'arm' and parse_version(args.version)[2] == '0':
+    chromedriver = 'chromedriver-{0}-{1}-{2}.zip'.format(
+        get_chromedriver_version(), PLATFORM, get_target_arch())
     upload_atom_shell(github, release_id,
-                      os.path.join(DIST_DIR, CHROMEDRIVER_NAME))
+                      os.path.join(DIST_DIR, chromedriver))
     upload_atom_shell(github, release_id,
                       os.path.join(DIST_DIR, MKSNAPSHOT_NAME))
 

@@ -6,6 +6,7 @@
   'variables': {
     # Required by breakpad.
     'os_bsd': 0,
+    'chromeos': 0,
     # Reflects node's config.gypi.
     'component%': 'static_library',
     'python': 'python',
@@ -32,8 +33,6 @@
     'V8_BASE': '',
     'v8_postmortem_support': 'false',
     'v8_enable_i18n_support': 'false',
-    # Required by Linux (empty for now, should support it in future).
-    'sysroot': '',
   },
   # Settings to compile node under Windows.
   'target_defaults': {
