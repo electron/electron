@@ -5,7 +5,7 @@ import platform
 import subprocess
 import sys
 
-from lib.config import get_target_arch
+from lib.config import get_target_arch, PLATFORM
 from lib.util import get_host_arch
 
 
@@ -41,6 +41,9 @@ def update_gyp():
 
 
 def run_gyp(target_arch, component):
+  env = os.environ.copy()
+  if PLATFORM == 'linux' and target_arch != get_host_arch():
+    env['GYP_CROSSCOMPILE'] = '1'
   python = sys.executable
   if sys.platform == 'cygwin':
     # Force using win32 python on cygwin.
@@ -53,7 +56,7 @@ def run_gyp(target_arch, component):
     '-Dlibrary=static_library',
   ]
   return subprocess.call([python, gyp, '-f', 'ninja', '--depth', '.',
-                          'atom.gyp', '-Icommon.gypi'] + defines)
+                          'atom.gyp', '-Icommon.gypi'] + defines, env=env)
 
 
 if __name__ == '__main__':
