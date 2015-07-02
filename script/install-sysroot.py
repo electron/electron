@@ -28,17 +28,17 @@ from lib.util import get_host_arch
 
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-URL_PREFIX = 'http://storage.googleapis.com'
-URL_PATH = 'chrome-linux-sysroot/toolchain'
+URL_PREFIX = 'https://github.com'
+URL_PATH = 'atom/debian-sysroot-image-creator/releases/download'
 REVISION_AMD64 = 264817
 REVISION_I386 = 264817
-REVISION_ARM = 285950
+REVISION_ARM = 'v0.1.0'
 TARBALL_AMD64 = 'debian_wheezy_amd64_sysroot.tgz'
 TARBALL_I386 = 'debian_wheezy_i386_sysroot.tgz'
 TARBALL_ARM = 'debian_wheezy_arm_sysroot.tgz'
 TARBALL_AMD64_SHA1SUM = '74b7231e12aaf45c5c5489d9aebb56bd6abb3653'
 TARBALL_I386_SHA1SUM = 'fe3d284926839683b00641bc66c9023f872ea4b4'
-TARBALL_ARM_SHA1SUM = 'fc2f54db168887c5190c4c6686c869bedf668b4e'
+TARBALL_ARM_SHA1SUM = '72e668c57b8591e108759584942ddb6f6cee1322'
 SYSROOT_DIR_AMD64 = 'debian_wheezy_amd64-sysroot'
 SYSROOT_DIR_I386 = 'debian_wheezy_i386-sysroot'
 SYSROOT_DIR_ARM = 'debian_wheezy_arm-sysroot'

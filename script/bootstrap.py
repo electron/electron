@@ -117,8 +117,7 @@ def update_clang():
 
 
 def download_arm_sysroot():
-  execute_stdout([os.path.join(SOURCE_ROOT, 'script',
-                               'install-debian.wheezy.sysroot.py'),
+  execute_stdout([os.path.join(SOURCE_ROOT, 'script', 'install-sysroot.py'),
                   '--arch', 'arm'])
 
 
