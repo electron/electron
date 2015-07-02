@@ -19,15 +19,28 @@ LINUX_DEPS = [
   'g++-multilib',
 ]
 
+LINUX_ARM_DEPS = [
+  'libc6-dev-armhf-cross',
+  'linux-libc-dev-armhf-cross',
+  'g++-arm-linux-gnueabihf',
+]
+
 
 def main():
   os.environ['CI'] = '1'
+
+  target_arch = 'x64'
+  if os.environ.has_key('TARGET_ARCH'):
+    target_arch = os.environ['TARGET_ARCH']
 
   is_travis = (os.getenv('TRAVIS') == 'true')
   if is_travis and sys.platform == 'linux2':
     print 'Setup travis CI'
     execute(['sudo', 'apt-get', 'update'])
-    execute(['sudo', 'apt-get', 'install'] + LINUX_DEPS)
+    deps = LINUX_DEPS
+    if target_arch == 'arm':
+      deps += LINUX_ARM_DEPS
+    execute(['sudo', 'apt-get', 'install'] + deps)
 
     os.environ['DISPLAY'] = ':99.0'
     execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
@@ -39,10 +52,6 @@ def main():
   rm_rf(os.path.join(SOURCE_ROOT, 'vendor', 'apm', 'node_modules'))
   rm_rf(os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor', 'download',
                      'libchromiumcontent'))
-
-  target_arch = 'x64'
-  if os.environ.has_key('TARGET_ARCH'):
-    target_arch = os.environ['TARGET_ARCH']
 
   run_script('bootstrap.py', ['--dev', '--target_arch=' + target_arch])
 
