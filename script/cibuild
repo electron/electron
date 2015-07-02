@@ -40,7 +40,11 @@ def main():
   rm_rf(os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor', 'download',
                      'libchromiumcontent'))
 
-  run_script('bootstrap.py', ['--dev'])
+  target_arch = 'x64'
+  if os.environ.has_key('TARGET_ARCH'):
+    target_arch = os.environ['TARGET_ARCH']
+
+  run_script('bootstrap.py', ['--dev', '--target_arch=' + target_arch])
 
   run_script('cpplint.py')
   if sys.platform != 'win32':
