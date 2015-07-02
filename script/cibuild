@@ -15,8 +15,6 @@ LINUX_DEPS = [
   'libgnome-keyring-dev',
   'libgtk2.0-dev',
   'libnotify-dev',
-  'gcc-4.8',
-  'g++-4.8',
   'gcc-multilib',
   'g++-multilib',
 ]
@@ -28,7 +26,6 @@ def main():
   is_travis = (os.getenv('TRAVIS') == 'true')
   if is_travis and sys.platform == 'linux2':
     print 'Setup travis CI'
-    execute(['sudo', 'add-apt-repository', '-y', 'ppa:ubuntu-toolchain-r/test'])
     execute(['sudo', 'apt-get', 'update'])
     execute(['sudo', 'apt-get', 'install'] + LINUX_DEPS)
 
@@ -44,9 +41,10 @@ def main():
                      'libchromiumcontent'))
 
   if is_travis and sys.platform == 'linux2':
-    with scoped_env('CXX', 'g++-4.8'):
-      with scoped_env('CC', 'gcc-4.8'):
-        run_script('bootstrap.py', ['--dev'])
+    with scoped_env('GYP_DEFINES', 'clang=1'):
+      with scoped_env('CXX', 'clang++'):
+        with scoped_env('CC', 'clang'):
+          run_script('bootstrap.py', ['--dev'])
     run_script('update.py')
   else:
     run_script('bootstrap.py', ['--dev'])
