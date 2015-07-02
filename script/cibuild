@@ -19,10 +19,19 @@ LINUX_DEPS = [
   'g++-multilib',
 ]
 
-LINUX_ARM_DEPS = [
+LINUX_DEPS_ARM = [
   'libc6-dev-armhf-cross',
   'linux-libc-dev-armhf-cross',
   'g++-arm-linux-gnueabihf',
+]
+
+LINUX_DEPS_I386 = [
+  'linux-libc-dev:i386',
+  'libdbus-1-dev:i386',
+  'libgconf2-dev:i386',
+  'libgnome-keyring-dev:i386',
+  'libgtk2.0-dev:i386',
+  'libnotify-dev:i386',
 ]
 
 
@@ -39,7 +48,9 @@ def main():
     execute(['sudo', 'apt-get', 'update'])
     deps = LINUX_DEPS
     if target_arch == 'arm':
-      deps += LINUX_ARM_DEPS
+      deps += LINUX_DEPS_ARM
+    elif target_arch == 'ia32':
+      deps += LINUX_DEPS_I386
     execute(['sudo', 'apt-get', 'install'] + deps)
 
     os.environ['DISPLAY'] = ':99.0'
