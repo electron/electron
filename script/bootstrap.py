@@ -25,12 +25,13 @@ def main():
     enable_verbose_mode()
   if sys.platform == 'cygwin':
     update_win32_python()
-  update_submodules()
-  update_node_modules('.')
-  bootstrap_brightray(args.dev, args.url, args.target_arch)
 
   if PLATFORM != 'win32':
     update_clang()
+
+  update_submodules()
+  update_node_modules('.')
+  bootstrap_brightray(args.dev, args.url, args.target_arch)
 
   if args.target_arch == 'arm':
     download_arm_sysroot()
@@ -91,6 +92,12 @@ def bootstrap_brightray(is_dev, url, target_arch):
 def update_node_modules(dirname, env=None):
   if env is None:
     env = os.environ
+  if PLATFORM == 'linux':
+    llvm_dir = os.path.join(SOURCE_ROOT, 'vendor', 'llvm-build',
+                            'Release+Asserts', 'bin')
+    env['CC']  = os.path.join(llvm_dir, 'clang')
+    env['CXX'] = os.path.join(llvm_dir, 'clang++')
+    env['npm_config_clang'] = '1'
   with scoped_cwd(dirname):
     if is_verbose_mode():
       execute_stdout([NPM, 'install', '--verbose'], env)

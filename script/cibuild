@@ -40,14 +40,7 @@ def main():
   rm_rf(os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor', 'download',
                      'libchromiumcontent'))
 
-  if is_travis and sys.platform == 'linux2':
-    with scoped_env('GYP_DEFINES', 'clang=1'):
-      with scoped_env('CXX', 'clang++'):
-        with scoped_env('CC', 'clang'):
-          run_script('bootstrap.py', ['--dev'])
-    run_script('update.py')
-  else:
-    run_script('bootstrap.py', ['--dev'])
+  run_script('bootstrap.py', ['--dev'])
 
   run_script('cpplint.py')
   if sys.platform != 'win32':
