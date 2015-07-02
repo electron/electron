@@ -74,15 +74,13 @@ def main():
   upload_atom_shell(github, release_id, os.path.join(DIST_DIR, SYMBOLS_NAME))
 
   # Upload chromedriver and mksnapshot for minor version update.
-  if parse_version(args.version)[2] == '0':
+  if get_target_arch() != 'arm' and parse_version(args.version)[2] == '0':
+    chromedriver = 'chromedriver-{0}-{1}-{2}.zip'.format(
+        get_chromedriver_version(), PLATFORM, get_target_arch())
+    upload_atom_shell(github, release_id,
+                      os.path.join(DIST_DIR, chromedriver))
     upload_atom_shell(github, release_id,
                       os.path.join(DIST_DIR, MKSNAPSHOT_NAME))
-
-    if get_target_arch() != 'arm':
-      chromedriver = 'chromedriver-{0}-{1}-{2}.zip'.format(
-          get_chromedriver_version(), PLATFORM, get_target_arch())
-      upload_atom_shell(github, release_id,
-                        os.path.join(DIST_DIR, chromedriver))
 
   if PLATFORM == 'win32':
     # Upload node headers.
