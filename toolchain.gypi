@@ -8,6 +8,9 @@
     # Set this to true when building with Clang.
     'clang%': 1,
 
+    # Path to sysroot dir.
+    'sysroot%': '',
+
     'variables': {
       # Set ARM architecture version.
       'arm_version%': 7,
@@ -90,11 +93,18 @@
     }],  # clang==1
 
     # Setup sysroot environment.
-    ['OS=="linux" and target_arch=="arm"', {
+    ['OS=="linux" and target_arch in ["arm", "ia32"]', {
       'variables': {
-        # sysroot needs to be an absolute path otherwise it generates
-        # incorrect results when passed to pkg-config
-        'sysroot': '<(source_root)/vendor/debian_wheezy_arm-sysroot',
+        'conditions': [
+          ['target_arch=="arm"', {
+            # sysroot needs to be an absolute path otherwise it generates
+            # incorrect results when passed to pkg-config
+            'sysroot': '<(source_root)/vendor/debian_wheezy_arm-sysroot',
+          }],
+          ['target_arch=="ia32"', {
+            'sysroot': '<(source_root)/vendor/debian_wheezy_i386-sysroot',
+          }],
+        ],
       },
       'target_defaults': {
         'target_conditions': [

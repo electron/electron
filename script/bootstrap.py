@@ -33,8 +33,8 @@ def main():
   update_node_modules('.')
   bootstrap_brightray(args.dev, args.url, args.target_arch)
 
-  if args.target_arch == 'arm':
-    download_arm_sysroot()
+  if args.target_arch in ['arm', 'ia32'] and PLATFORM == 'linux':
+    download_sysroot(args.target_arch)
 
   create_chrome_version_h()
   touch_config_gypi()
@@ -123,9 +123,11 @@ def update_clang():
   execute_stdout([os.path.join(SOURCE_ROOT, 'script', 'update-clang.sh')])
 
 
-def download_arm_sysroot():
+def download_sysroot(target_arch):
+  if target_arch == 'ia32':
+    target_arch = 'i386'
   execute_stdout([os.path.join(SOURCE_ROOT, 'script', 'install-sysroot.py'),
-                  '--arch', 'arm'])
+                  '--arch', target_arch])
 
 
 def create_chrome_version_h():
