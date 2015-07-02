@@ -129,9 +129,13 @@ def copy_license():
 
 
 def strip_binaries():
+  if get_target_arch() == 'arm':
+    strip = 'arm-linux-gnueabihf-strip'
+  else:
+    strip = 'strip'
   for binary in TARGET_BINARIES[PLATFORM]:
     if binary.endswith('.so') or '.' not in binary:
-      execute(['strip', os.path.join(DIST_DIR, binary)])
+      execute([strip, os.path.join(DIST_DIR, binary)])
 
 
 def copy_system_libraries():
