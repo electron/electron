@@ -45,6 +45,9 @@ def main():
     os.environ['DISPLAY'] = ':99.0'
     execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
 
+  # CI's npm is not reliable.
+  execute(['npm', 'install', 'npm'])
+
   rm_rf(os.path.join(SOURCE_ROOT, 'out'))
   rm_rf(os.path.join(SOURCE_ROOT, 'node_modules'))
   rm_rf(os.path.join(SOURCE_ROOT, 'frameworks'))

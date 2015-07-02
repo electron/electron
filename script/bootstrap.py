@@ -12,7 +12,13 @@ from lib.util import execute_stdout, get_atom_shell_version, scoped_cwd
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
 PYTHON_26_URL = 'https://chromium.googlesource.com/chromium/deps/python_26'
-NPM = 'npm.cmd' if sys.platform in ['win32', 'cygwin'] else 'npm'
+
+if os.environ.has_key('CI'):
+  NPM = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'npm')
+else:
+  NPM = 'npm'
+if sys.platform in ['win32', 'cygwin']:
+  NPM += '.cmd'
 
 
 def main():
