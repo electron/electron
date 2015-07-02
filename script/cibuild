@@ -45,10 +45,6 @@ def main():
     os.environ['DISPLAY'] = ':99.0'
     execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
 
-  # CI's npm is not reliable.
-  npm = 'npm.cmd' if sys.platform == 'win32' else 'npm'
-  execute([npm, 'install', 'npm'])
-
   rm_rf(os.path.join(SOURCE_ROOT, 'out'))
   rm_rf(os.path.join(SOURCE_ROOT, 'node_modules'))
   rm_rf(os.path.join(SOURCE_ROOT, 'frameworks'))
@@ -56,6 +52,10 @@ def main():
   rm_rf(os.path.join(SOURCE_ROOT, 'vendor', 'apm', 'node_modules'))
   rm_rf(os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor', 'download',
                      'libchromiumcontent'))
+
+  # CI's npm is not reliable.
+  npm = 'npm.cmd' if sys.platform == 'win32' else 'npm'
+  execute([npm, 'install', 'npm'])
 
   run_script('bootstrap.py', ['--dev', '--target_arch=' + target_arch])
 
