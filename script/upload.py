@@ -38,17 +38,18 @@ MKSNAPSHOT_NAME = 'mksnapshot-{0}-{1}-{2}.zip'.format(ATOM_SHELL_VERSION,
 def main():
   args = parse_args()
 
-  if not dist_newer_than_head():
-    create_dist = os.path.join(SOURCE_ROOT, 'script', 'create-dist.py')
-    execute([sys.executable, create_dist])
+  if not args.publish_release:
+    if not dist_newer_than_head():
+      create_dist = os.path.join(SOURCE_ROOT, 'script', 'create-dist.py')
+      execute([sys.executable, create_dist])
 
-  build_version = get_atom_shell_build_version()
-  if not ATOM_SHELL_VERSION.startswith(build_version):
-    error = 'Tag name ({0}) should match build version ({1})\n'.format(
-        ATOM_SHELL_VERSION, build_version)
-    sys.stderr.write(error)
-    sys.stderr.flush()
-    return 1
+    build_version = get_atom_shell_build_version()
+    if not ATOM_SHELL_VERSION.startswith(build_version):
+      error = 'Tag name ({0}) should match build version ({1})\n'.format(
+          ATOM_SHELL_VERSION, build_version)
+      sys.stderr.write(error)
+      sys.stderr.flush()
+      return 1
 
   github = GitHub(auth_token())
   releases = github.repos(ATOM_SHELL_REPO).releases.get()
