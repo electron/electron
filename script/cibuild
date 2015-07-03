@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 
+from lib.config import PLATFORM
 from lib.util import execute, rm_rf, scoped_env
 
 
@@ -34,7 +35,7 @@ def main():
     target_arch = os.environ['TARGET_ARCH']
 
   is_travis = (os.getenv('TRAVIS') == 'true')
-  if is_travis and sys.platform == 'linux2':
+  if is_travis and PLATFORM == 'linux':
     print 'Setup travis CI'
     execute(['sudo', 'apt-get', 'update'])
     deps = LINUX_DEPS
@@ -54,7 +55,7 @@ def main():
                      'libchromiumcontent'))
 
   # CI's npm is not reliable.
-  npm = 'npm.cmd' if sys.platform == 'win32' else 'npm'
+  npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
   execute([npm, 'install', 'npm@2.12.1'])
 
   is_release = os.environ.has_key('ELECTRON_RELEASE')
@@ -64,7 +65,7 @@ def main():
   run_script('bootstrap.py', args)
 
   run_script('cpplint.py')
-  if sys.platform != 'win32':
+  if PLATFORM != 'win32':
     run_script('pylint.py')
   run_script('coffeelint.py')
   if is_release:
@@ -72,7 +73,8 @@ def main():
     run_script('create-dist.py')
   elif target_arch == 'x64':
     run_script('build.py', ['-c', 'D'])
-    run_script('test.py', ['--ci'])
+    if PLATFORM != 'win32':
+      run_script('test.py', ['--ci'])
 
 
 def run_script(script, args=[]):
