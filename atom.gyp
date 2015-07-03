@@ -15,8 +15,12 @@
       'ATOM_PRODUCT_NAME="<(product_name)"',
       'ATOM_PROJECT_NAME="<(project_name)"',
     ],
-    'mac_framework_dirs': [
-      '<(source_root)/external_binaries',
+    'conditions': [
+      ['OS=="mac"', {
+        'mac_framework_dirs': [
+          '<(source_root)/external_binaries',
+        ],
+      }],
     ],
   },
   'targets': [
