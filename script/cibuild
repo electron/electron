@@ -81,8 +81,4 @@ def run_script(script, args=[]):
 
 
 if __name__ == '__main__':
-  try:
-    sys.exit(main())
-  except subprocess.CalledProcessError:
-    run_script('clean.py')
-    raise
+  sys.exit(main())
