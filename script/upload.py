@@ -51,7 +51,15 @@ def main():
     return 1
 
   github = GitHub(auth_token())
-  release_id = create_or_get_release_draft(github, args.version)
+  releases = github.repos(ATOM_SHELL_REPO).releases.get()
+  tag_exists = False
+  for release in releases:
+    if release['tag_name'] == args.version:
+      tag_exists = True
+      break
+
+  release_id = create_or_get_release_draft(github, releases, args.version,
+                                           tag_exists)
 
   if args.publish_release:
     # Upload the SHASUMS.txt.
@@ -82,11 +90,11 @@ def main():
     upload_atom_shell(github, release_id,
                       os.path.join(DIST_DIR, MKSNAPSHOT_NAME))
 
-  if PLATFORM == 'win32':
+  if PLATFORM == 'win32' and not tag_exists:
     # Upload node headers.
     execute([sys.executable,
              os.path.join(SOURCE_ROOT, 'script', 'upload-node-headers.py'),
-             '-v', ATOM_SHELL_VERSION])
+             '-v', args.version])
 
 
 def parse_args():
@@ -145,20 +153,24 @@ def get_text_with_editor(name):
   os.unlink(t.name)
   return text
 
-def create_or_get_release_draft(github, tag):
+def create_or_get_release_draft(github, releases, tag, tag_exists):
   name = '{0} {1}'.format(PROJECT_NAME, tag)
-  releases = github.repos(ATOM_SHELL_REPO).releases.get()
+  # Search for existing draft.
   for release in releases:
-    # The untagged commit doesn't have a matching tag_name, so also check name.
-    if release['tag_name'] == tag or release['name'] == name:
+    if release['draft']:
       return release['id']
 
+  if tag_exists:
+    tag += '-do-not-publish-me'
   return create_release_draft(github, tag)
 
 
 def create_release_draft(github, tag):
   name = '{0} {1}'.format(PROJECT_NAME, tag)
-  body = get_text_with_editor(name)
+  if os.environ.has_key('CI'):
+    body = '(placeholder)'
+  else:
+    body = get_text_with_editor(name)
   if body == '':
     sys.stderr.write('Quit due to empty release note.\n')
     sys.exit(0)
