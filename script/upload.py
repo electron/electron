@@ -59,8 +59,7 @@ def main():
       tag_exists = True
       break
 
-  release = create_or_get_release_draft(github, releases, args.version,
-                                        tag_exists)
+  release = create_or_get_release_draft(github, releases, tag_exists)
 
   if args.publish_release:
     # Upload the SHASUMS.txt.
@@ -155,20 +154,25 @@ def get_text_with_editor(name):
   os.unlink(t.name)
   return text
 
-def create_or_get_release_draft(github, releases, tag, tag_exists):
+def create_or_get_release_draft(github, releases, tag_exists):
   # Search for existing draft.
   for release in releases:
     if release['draft']:
       return release
 
   if tag_exists:
-    tag = 'do-not-publish-me'
-  return create_release_draft(github, tag)
+    version = 'do-not-publish-me'
+  else:
+    version = get_bumped_version()
+  return create_release_draft(github, version)
 
 
 def create_release_draft(github, tag):
   if os.environ.has_key('CI'):
-    name = '{0} pending draft'.format(PROJECT_NAME)
+    if tag == 'do-not-publish-me':
+      name = '{0} pending draft'.format(PROJECT_NAME)
+    else:
+      name = '{0} {1}'.format(PROJECT_NAME, tag)
     body = '(placeholder)'
   else:
     name = '{0} {1}'.format(PROJECT_NAME, tag)
@@ -212,6 +216,14 @@ def auth_token():
              'environment variable, which is your personal token')
   assert token, message
   return token
+
+
+def get_bumped_version():
+  message = execute(['git', 'log', '--format=%B', '-n', '1', 'HEAD']).strip()
+  if message.startswith('Bump '):
+    return message[5:]
+  else:
+    return ATOM_SHELL_VERSION
 
 
 if __name__ == '__main__':
