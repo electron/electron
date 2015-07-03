@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import subprocess
 import sys
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
@@ -113,7 +114,7 @@ def update_node_modules(dirname, env=None):
     if os.environ.has_key('CI'):
       try:
         execute_stdout(args, env)
-      except:
+      except subprocess.CalledProcessError:
         pass
     else:
       execute_stdout(args, env)
