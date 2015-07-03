@@ -6,7 +6,8 @@ import platform
 import sys
 
 
-BASE_URL = 'http://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent'
+BASE_URL = os.getenv('LIBCHROMIUMCONTENT_MIRROR') or \
+    'http://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent'
 LIBCHROMIUMCONTENT_COMMIT = 'a4410de75315f3ecc00db2314bfab184dcd914f8'
 
 PLATFORM = {
