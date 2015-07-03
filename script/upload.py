@@ -58,8 +58,8 @@ def main():
       tag_exists = True
       break
 
-  release_id = create_or_get_release_draft(github, releases, args.version,
-                                           tag_exists)
+  release = create_or_get_release_draft(github, releases, args.version,
+                                        tag_exists)
 
   if args.publish_release:
     # Upload the SHASUMS.txt.
@@ -72,23 +72,21 @@ def main():
              os.path.join(SOURCE_ROOT, 'script', 'upload-index-json.py')])
 
     # Press the publish button.
-    publish_release(github, release_id)
+    publish_release(github, release['id'])
 
     # Do not upload other files when passed "-p".
     return
 
   # Upload atom-shell with GitHub Releases API.
-  upload_atom_shell(github, release_id, os.path.join(DIST_DIR, DIST_NAME))
-  upload_atom_shell(github, release_id, os.path.join(DIST_DIR, SYMBOLS_NAME))
+  upload_atom_shell(github, release, os.path.join(DIST_DIR, DIST_NAME))
+  upload_atom_shell(github, release, os.path.join(DIST_DIR, SYMBOLS_NAME))
 
   # Upload chromedriver and mksnapshot for minor version update.
   if get_target_arch() != 'arm' and parse_version(args.version)[2] == '0':
     chromedriver = 'chromedriver-{0}-{1}-{2}.zip'.format(
         get_chromedriver_version(), PLATFORM, get_target_arch())
-    upload_atom_shell(github, release_id,
-                      os.path.join(DIST_DIR, chromedriver))
-    upload_atom_shell(github, release_id,
-                      os.path.join(DIST_DIR, MKSNAPSHOT_NAME))
+    upload_atom_shell(github, release, os.path.join(DIST_DIR, chromedriver))
+    upload_atom_shell(github, release, os.path.join(DIST_DIR, MKSNAPSHOT_NAME))
 
   if PLATFORM == 'win32' and not tag_exists:
     # Upload node headers.
@@ -160,7 +158,7 @@ def create_or_get_release_draft(github, releases, tag, tag_exists):
   # Search for existing draft.
   for release in releases:
     if release['draft']:
-      return release['id']
+      return release
 
   if tag_exists:
     tag = 'do-not-publish-me'
@@ -180,14 +178,25 @@ def create_release_draft(github, tag):
 
   data = dict(tag_name=tag, name=name, body=body, draft=True)
   r = github.repos(ATOM_SHELL_REPO).releases.post(data=data)
-  return r['id']
+  return r
 
 
-def upload_atom_shell(github, release_id, file_path):
+def upload_atom_shell(github, release, file_path):
+  # Delete the original file before uploading in CI.
+  if os.environ.has_key('CI'):
+    try:
+      for asset in release['assets']:
+        if asset['name'] == os.path.basename(file_path):
+          github.repos(ATOM_SHELL_REPO).releases.assets(asset['id']).delete()
+          break
+    except Exception:
+      pass
+  return
+
   params = {'name': os.path.basename(file_path)}
   headers = {'Content-Type': 'application/zip'}
   with open(file_path, 'rb') as f:
-    github.repos(ATOM_SHELL_REPO).releases(release_id).assets.post(
+    github.repos(ATOM_SHELL_REPO).releases(release['id']).assets.post(
         params=params, headers=headers, data=f, verify=False)
 
 
