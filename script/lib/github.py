@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 
 import json
+import os
 import re
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(__file__, '..', '..', '..',
+                                             'vendor', 'requests', 'build',
+                                             'lib')))
 import requests
 
 GITHUB_URL = 'https://api.github.com'
