@@ -154,7 +154,6 @@ def get_text_with_editor(name):
   return text
 
 def create_or_get_release_draft(github, releases, tag, tag_exists):
-  name = '{0} {1}'.format(PROJECT_NAME, tag)
   # Search for existing draft.
   for release in releases:
     if release['draft']:
