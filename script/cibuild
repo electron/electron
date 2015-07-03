@@ -70,7 +70,7 @@ def main():
   if is_release:
     run_script('build.py', ['-c', 'R'])
     run_script('create-dist.py')
-  elif target_arch == 'x64':
+  elif PLATFORM == 'win32' or target_arch == 'x64':
     run_script('build.py', ['-c', 'D'])
     if PLATFORM != 'win32':
       run_script('test.py', ['--ci'])
