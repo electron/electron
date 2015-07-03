@@ -55,7 +55,7 @@ def main():
   releases = github.repos(ATOM_SHELL_REPO).releases.get()
   tag_exists = False
   for release in releases:
-    if release['tag_name'] == args.version:
+    if not release['draft'] and release['tag_name'] == args.version:
       tag_exists = True
       break
 
