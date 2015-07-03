@@ -48,7 +48,7 @@ def main():
   if PLATFORM == 'linux':
     os.environ['DISPLAY'] = ':99.0'
 
-  execute(['clean.py'])
+  run_script('clean.py')
 
   # CI's npm is not reliable.
   npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
@@ -84,4 +84,5 @@ if __name__ == '__main__':
   try:
     sys.exit(main())
   except subprocess.CalledProcessError:
-    execute(['clean.py'])
+    run_script('clean.py')
+    raise
