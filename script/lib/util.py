@@ -209,8 +209,18 @@ def parse_version(version):
 
 
 def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
+  env = os.environ.copy()
+  BOTO_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', 'vendor',
+                                          'boto'))
+  env['PYTHONPATH'] = os.path.pathsep.join([
+    env.get('PYTHONPATH', ''),
+    os.path.join(BOTO_DIR, 'build', 'lib'),
+    os.path.join(BOTO_DIR, 'build', 'lib.linux-x86_64-2.7')])
+
+  boto = os.path.join(BOTO_DIR, 'bin', 's3put')
   args = [
-    's3put',
+    sys.executable,
+    boto,
     '--bucket', bucket,
     '--access_key', access_key,
     '--secret_key', secret_key,
@@ -219,4 +229,4 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
     '--grant', 'public-read'
   ] + files
 
-  execute(args)
+  execute(args, env)

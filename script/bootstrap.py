@@ -37,7 +37,7 @@ def main():
     update_clang()
 
   update_submodules()
-  setup_requests()
+  setup_python_libs()
   update_node_modules('.')
   bootstrap_brightray(args.dev, args.url, args.target_arch)
 
@@ -85,9 +85,10 @@ def update_submodules():
   execute_stdout(['git', 'submodule', 'update', '--init', '--recursive'])
 
 
-def setup_requests():
-  with scoped_cwd(os.path.join(VENDOR_DIR, 'requests')):
-    execute_stdout([sys.executable, 'setup.py', 'build'])
+def setup_python_libs():
+  for lib in ('requests', 'boto'):
+    with scoped_cwd(os.path.join(VENDOR_DIR, lib)):
+      execute_stdout([sys.executable, 'setup.py', 'build'])
 
 
 def bootstrap_brightray(is_dev, url, target_arch):
