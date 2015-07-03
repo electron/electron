@@ -48,7 +48,7 @@ def main():
   if PLATFORM == 'linux':
     os.environ['DISPLAY'] = ':99.0'
 
-  rm_rf(os.path.join(SOURCE_ROOT, 'out'))
+  execute(['clean.py'])
 
   # CI's npm is not reliable.
   npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
@@ -81,4 +81,7 @@ def run_script(script, args=[]):
 
 
 if __name__ == '__main__':
-  sys.exit(main())
+  try:
+    sys.exit(main())
+  except subprocess.CalledProcessError:
+    execute(['clean.py'])
