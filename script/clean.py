@@ -16,6 +16,7 @@ def main():
   rm_rf('out')
   rm_rf('spec/node_modules')
   rm_rf('vendor/brightray/vendor/download/libchromiumcontent')
+  rm_rf(os.path.expanduser('~/.node-gyp'))
 
 
 if __name__ == '__main__':
