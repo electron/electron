@@ -15,7 +15,7 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 def main():
   os.chdir(SOURCE_ROOT)
 
-  if platform.architecture()[0] != '64bit':
+  if PLATFORM != 'win32' and platform.architecture()[0] != '64bit':
     print 'Electron is required to be built on a 64bit machine'
     return 1
 
