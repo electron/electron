@@ -43,15 +43,12 @@ def main():
       deps += LINUX_DEPS_ARM
     execute(['sudo', 'apt-get', 'install'] + deps)
 
-    os.environ['DISPLAY'] = ':99.0'
     execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
 
-  rm_rf(os.path.join(SOURCE_ROOT, 'out'))
-  rm_rf(os.path.join(SOURCE_ROOT, 'frameworks'))
-  rm_rf(os.path.join(SOURCE_ROOT, 'external_binaries'))
-  rm_rf(os.path.join(SOURCE_ROOT, 'vendor', 'apm', 'node_modules'))
-  rm_rf(os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor', 'download',
-                     'libchromiumcontent'))
+  if PLATFORM == 'linux':
+    os.environ['DISPLAY'] = ':99.0'
+
+  run_script('clean.py')
 
   # CI's npm is not reliable.
   npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
@@ -70,6 +67,7 @@ def main():
   if is_release:
     run_script('build.py', ['-c', 'R'])
     run_script('create-dist.py')
+    run_script('upload.py')
   elif PLATFORM == 'win32' or target_arch == 'x64':
     run_script('build.py', ['-c', 'D'])
     if PLATFORM != 'win32':

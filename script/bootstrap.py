@@ -37,6 +37,7 @@ def main():
     update_clang()
 
   update_submodules()
+  setup_requests()
   update_node_modules('.')
   bootstrap_brightray(args.dev, args.url, args.target_arch)
 
@@ -84,6 +85,11 @@ def update_submodules():
   execute_stdout(['git', 'submodule', 'update', '--init', '--recursive'])
 
 
+def setup_requests():
+  with scoped_cwd(os.path.join(VENDOR_DIR, 'requests')):
+    execute_stdout([sys.executable, 'setup.py', 'build'])
+
+
 def bootstrap_brightray(is_dev, url, target_arch):
   bootstrap = os.path.join(VENDOR_DIR, 'brightray', 'script', 'bootstrap')
   args = [
@@ -109,7 +115,7 @@ def update_node_modules(dirname, env=None):
   with scoped_cwd(dirname):
     args = [NPM, 'install']
     if is_verbose_mode():
-      args += '--verbose'
+      args += ['--verbose']
     # Ignore npm install errors when running in CI.
     if os.environ.has_key('CI'):
       try:
