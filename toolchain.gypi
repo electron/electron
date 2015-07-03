@@ -1,8 +1,5 @@
 {
   'variables': {
-    # The abosulte version of <(DEPTH).
-    'source_root': '<!(cd <(DEPTH) && pwd -P)',
-
     # Clang stuff.
     'make_clang_dir%': 'vendor/llvm-build/Release+Asserts',
     # Set this to true when building with Clang.
@@ -32,6 +29,11 @@
       ['OS=="win"', {
         'clang%': 0,
       }],  # OS=="win"
+
+      # Define the abosulte version of <(DEPTH).
+      ['OS!="win"', {
+        'source_root': '<!(cd <(DEPTH) && pwd -P)',
+      }],  # OS!="win"
 
       # Set default compiler flags depending on ARM version.
       ['arm_version==6', {
