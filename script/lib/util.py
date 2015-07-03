@@ -133,11 +133,11 @@ def make_zip(zip_file_path, files, dirs):
 def rm_rf(path):
   try:
     shutil.rmtree(path)
+  except WindowsError:  # pylint: disable=E0602
+    pass
   except OSError as e:
     if e.errno != errno.ENOENT:
       raise
-  except WindowsError:  # pylint: disable=E0602
-    pass
 
 
 def safe_unlink(path):
