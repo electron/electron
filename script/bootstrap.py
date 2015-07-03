@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import subprocess
 import sys
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
@@ -12,7 +13,13 @@ from lib.util import execute_stdout, get_atom_shell_version, scoped_cwd
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
 PYTHON_26_URL = 'https://chromium.googlesource.com/chromium/deps/python_26'
-NPM = 'npm.cmd' if sys.platform in ['win32', 'cygwin'] else 'npm'
+
+if os.environ.has_key('CI'):
+  NPM = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'npm')
+else:
+  NPM = 'npm'
+if sys.platform in ['win32', 'cygwin']:
+  NPM += '.cmd'
 
 
 def main():
@@ -93,16 +100,24 @@ def update_node_modules(dirname, env=None):
   if env is None:
     env = os.environ
   if PLATFORM == 'linux':
+    # Use prebuilt clang for building native modules.
     llvm_dir = os.path.join(SOURCE_ROOT, 'vendor', 'llvm-build',
                             'Release+Asserts', 'bin')
     env['CC']  = os.path.join(llvm_dir, 'clang')
     env['CXX'] = os.path.join(llvm_dir, 'clang++')
     env['npm_config_clang'] = '1'
   with scoped_cwd(dirname):
+    args = [NPM, 'install']
     if is_verbose_mode():
-      execute_stdout([NPM, 'install', '--verbose'], env)
+      args += '--verbose'
+    # Ignore npm install errors when running in CI.
+    if os.environ.has_key('CI'):
+      try:
+        execute_stdout(args, env)
+      except subprocess.CalledProcessError:
+        pass
     else:
-      execute_stdout([NPM, 'install'], env)
+      execute_stdout(args, env)
 
 
 def update_electron_modules(dirname, target_arch):

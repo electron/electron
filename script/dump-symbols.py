@@ -15,8 +15,8 @@ CHROMIUM_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor',
 
 
 def main(destination):
-  if PLATFORM == 'win32':
-    register_required_dll()
+  # if PLATFORM == 'win32':
+  #   register_required_dll()
 
   rm_rf(destination)
   (project_name, product_name) = get_names_from_gyp()

@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 
+from lib.config import PLATFORM
 from lib.util import execute, rm_rf, scoped_env
 
 
@@ -34,7 +35,7 @@ def main():
     target_arch = os.environ['TARGET_ARCH']
 
   is_travis = (os.getenv('TRAVIS') == 'true')
-  if is_travis and sys.platform == 'linux2':
+  if is_travis and PLATFORM == 'linux':
     print 'Setup travis CI'
     execute(['sudo', 'apt-get', 'update'])
     deps = LINUX_DEPS
@@ -46,22 +47,33 @@ def main():
     execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
 
   rm_rf(os.path.join(SOURCE_ROOT, 'out'))
-  rm_rf(os.path.join(SOURCE_ROOT, 'node_modules'))
   rm_rf(os.path.join(SOURCE_ROOT, 'frameworks'))
   rm_rf(os.path.join(SOURCE_ROOT, 'external_binaries'))
   rm_rf(os.path.join(SOURCE_ROOT, 'vendor', 'apm', 'node_modules'))
   rm_rf(os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor', 'download',
                      'libchromiumcontent'))
 
-  run_script('bootstrap.py', ['--dev', '--target_arch=' + target_arch])
+  # CI's npm is not reliable.
+  npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
+  execute([npm, 'install', 'npm@2.12.1'])
+
+  is_release = os.environ.has_key('ELECTRON_RELEASE')
+  args = ['--target_arch=' + target_arch]
+  if not is_release:
+    args += ['--dev']
+  run_script('bootstrap.py', args)
 
   run_script('cpplint.py')
-  if sys.platform != 'win32':
+  if PLATFORM != 'win32':
     run_script('pylint.py')
   run_script('coffeelint.py')
-  run_script('build.py', ['-c', 'Debug'])
-  if target_arch == 'x64':
-    run_script('test.py', ['--ci'])
+  if is_release:
+    run_script('build.py', ['-c', 'R'])
+    run_script('create-dist.py')
+  elif PLATFORM == 'win32' or target_arch == 'x64':
+    run_script('build.py', ['-c', 'D'])
+    if PLATFORM != 'win32':
+      run_script('test.py', ['--ci'])
 
 
 def run_script(script, args=[]):
