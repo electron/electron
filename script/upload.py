@@ -108,6 +108,9 @@ def parse_args():
 
 
 def get_atom_shell_build_version():
+  if os.environ.has_key('CI'):
+    # In CI we just build as told.
+    return ATOM_SHELL_VERSION
   if PLATFORM == 'darwin':
     atom_shell = os.path.join(SOURCE_ROOT, 'out', 'R',
                               '{0}.app'.format(PRODUCT_NAME), 'Contents',
