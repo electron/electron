@@ -49,11 +49,6 @@ def main():
     os.environ['DISPLAY'] = ':99.0'
 
   rm_rf(os.path.join(SOURCE_ROOT, 'out'))
-  rm_rf(os.path.join(SOURCE_ROOT, 'frameworks'))
-  rm_rf(os.path.join(SOURCE_ROOT, 'external_binaries'))
-  rm_rf(os.path.join(SOURCE_ROOT, 'vendor', 'apm', 'node_modules'))
-  rm_rf(os.path.join(SOURCE_ROOT, 'vendor', 'brightray', 'vendor', 'download',
-                     'libchromiumcontent'))
 
   # CI's npm is not reliable.
   npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
