@@ -106,7 +106,7 @@ def parse_args():
 
 
 def get_atom_shell_build_version():
-  if os.environ.has_key('CI'):
+  if get_target_arch() == 'arm' or os.environ.has_key('CI'):
     # In CI we just build as told.
     return ATOM_SHELL_VERSION
   if PLATFORM == 'darwin':
