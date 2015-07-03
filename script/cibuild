@@ -54,7 +54,7 @@ def main():
   npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
   execute([npm, 'install', 'npm@2.12.1'])
 
-  is_release = not is_travis
+  is_release = os.environ.has_key('ELECTRON_RELEASE')
   args = ['--target_arch=' + target_arch]
   if not is_release:
     args += ['--dev']
