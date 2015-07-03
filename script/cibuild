@@ -55,7 +55,7 @@ def main():
 
   # CI's npm is not reliable.
   npm = 'npm.cmd' if sys.platform == 'win32' else 'npm'
-  execute([npm, 'install', 'npm'])
+  execute([npm, 'install', 'npm@2.12.1'])
 
   run_script('bootstrap.py', ['--dev', '--target_arch=' + target_arch])
 
