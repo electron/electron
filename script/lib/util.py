@@ -136,6 +136,8 @@ def rm_rf(path):
   except OSError as e:
     if e.errno != errno.ENOENT:
       raise
+  except WindowsError:  # pylint: disable=E0602
+    pass
 
 
 def safe_unlink(path):
