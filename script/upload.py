@@ -191,8 +191,8 @@ def upload_atom_shell(github, release, file_path):
           break
     except Exception:
       pass
-  return
 
+  # Upload the file.
   params = {'name': os.path.basename(file_path)}
   headers = {'Content-Type': 'application/zip'}
   with open(file_path, 'rb') as f:
