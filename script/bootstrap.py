@@ -109,7 +109,7 @@ def update_node_modules(dirname, env=None):
   with scoped_cwd(dirname):
     args = [NPM, 'install']
     if is_verbose_mode():
-      args += '--verbose'
+      args.append('--verbose')
     # Ignore npm install errors when running in CI.
     if os.environ.has_key('CI'):
       try:
