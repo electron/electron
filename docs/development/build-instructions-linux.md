@@ -96,6 +96,15 @@ $ ./script/clean.py
 
 Make sure you have installed all the build dependencies.
 
+### error while loading shared libraries: libtinfo.so.5
+
+Prebulit `clang` will try to link to `libtinfo.so.5`. Depending on the host architecture,
+symlink to appropirate `libncurses`
+
+```bash
+$ sudo ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5
+```
+
 ## Tests
 
 ```bash
