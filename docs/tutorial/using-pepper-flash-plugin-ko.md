@@ -1,16 +1,16 @@
-# Pepper ÇÃ·¡½Ã ÇÃ·¯±×ÀÎ »ç¿ëÇÏ±â
+ï»¿# Pepper í”Œë˜ì‹œ í”ŒëŸ¬ê·¸ì¸ ì‚¬ìš©í•˜ê¸°
 
-ÇÊ¿äÇÏ´Ù¸é Pepper ÇÃ·¡½Ã ÇÃ·¯±×ÀÎÀ» »ç¿ëÇÒ ¼ö ÀÖ½À´Ï´Ù. Electron¿¡¼­ pepper ÇÃ·¡½Ã ÇÃ·¯±×ÀÎÀ» »ç¿ëÇÏ±â À§ÇØ¼­´Â, µû·Î pepper ÇÃ·¡½Ã ÇÃ·¯±×ÀÎÀÇ À§Ä¡¸¦ ÁöÁ¤ÇØ ÁÖ¾î¾ßÇÕ´Ï´Ù.
+í•„ìš”í•˜ë‹¤ë©´ Pepper í”Œë˜ì‹œ í”ŒëŸ¬ê·¸ì¸ì„ ì‚¬ìš©í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤. Electronì—ì„œ pepper í”Œë˜ì‹œ í”ŒëŸ¬ê·¸ì¸ì„ ì‚¬ìš©í•˜ê¸° ìœ„í•´ì„  ë”°ë¡œ pepper í”Œë˜ì‹œ í”ŒëŸ¬ê·¸ì¸ì˜ ìœ„ì¹˜ë¥¼ ì§€ì •í•´ ì£¼ì–´ì•¼í•©ë‹ˆë‹¤.
 
-## ÇÃ·¡½Ã ÇÃ·¯±×ÀÎ ÁØºñÇÏ±â
+## í”Œë˜ì‹œ í”ŒëŸ¬ê·¸ì¸ ì¤€ë¹„í•˜ê¸°
 
-Å©·Ò ºê¶ó¿ìÀúÀÇ `chrome://plugins` ÆäÀÌÁö¿¡ Á¢¼ÓÇÑ ÈÄ `¼¼ºÎÁ¤º¸`¿¡¼­ ÇÃ·¡½Ã ÇÃ·¯±×ÀÎÀÇ À§Ä¡¿Í ¹öÀüÀ» Ã£À» ¼ö ÀÖ½À´Ï´Ù.
-Electron¿¡¼­ ÇÃ·¡½Ã ÇÃ·¯±×ÀÎÀ» Áö¿øÇÏ±â À§ÇØ¼± ÀÌ µÎ °¡Áö¸¦ º¹»çÇØ ¿Í¾ß ÇÕ´Ï´Ù.
+í¬ë¡¬ ë¸Œë¼ìš°ì €ì˜ `chrome://plugins` í˜ì´ì§€ì— ì ‘ì†í•œ í›„ `ì„¸ë¶€ì •ë³´`ì—ì„œ í”Œë˜ì‹œ í”ŒëŸ¬ê·¸ì¸ì˜ ìœ„ì¹˜ì™€ ë²„ì „ì„ ì°¾ì„ ìˆ˜ ìˆìŠµë‹ˆë‹¤.
+Electronì—ì„œ í”Œë˜ì‹œ í”ŒëŸ¬ê·¸ì¸ì„ ì§€ì›í•˜ê¸° ìœ„í•´ì„  ì´ ë‘ ê°€ì§€ë¥¼ ë³µì‚¬í•´ ì™€ì•¼ í•©ë‹ˆë‹¤.
 
-## Electron ½ºÀ§Ä¡ Ãß°¡
+## Electron ìŠ¤ìœ„ì¹˜ ì¶”ê°€
 
-ÇÃ·¯±×ÀÎÀ» »ç¿ëÇÏ±â À§ÇØ Á÷Á¢ÀûÀ¸·Î `--ppapi-flash-path` ¿Í `ppapi-flash-version` ÇÃ·¡±×¸¦ ready ÀÌº¥Æ®°¡ È£ÃâµÇ±â Àü¿¡ Ãß°¡ÇØ¾ßÇÕ´Ï´Ù.
-±×¸®°í `browser-window`¿¡ `plugins` ½ºÀ§Ä¡µµ Ãß°¡ÇØ¾ßÇÕ´Ï´Ù.
+í”ŒëŸ¬ê·¸ì¸ì„ ì‚¬ìš©í•˜ê¸° ìœ„í•´ ì§ì ‘ì ìœ¼ë¡œ `--ppapi-flash-path` ì™€ `ppapi-flash-version` í”Œë˜ê·¸ë¥¼ ready ì´ë²¤íŠ¸ê°€ í˜¸ì¶œë˜ê¸° ì „ì— ì¶”ê°€í•´ì•¼í•©ë‹ˆë‹¤.
+ê·¸ë¦¬ê³  `browser-window`ì— `plugins` ìŠ¤ìœ„ì¹˜ë„ ì¶”ê°€í•´ì•¼í•©ë‹ˆë‹¤.
 
 ```javascript
 var app = require('app');
@@ -30,10 +30,10 @@ app.on('window-all-closed', function() {
   }
 });
 
-// ÇÃ·¡½Ã ÇÃ·¯±×ÀÎÀÇ À§Ä¡¸¦ ¼³Á¤ÇÕ´Ï´Ù.
-// WindowsÀÇ °æ¿ì, /path/to/pepflashplayer.dll
-// MacÀÇ °æ¿ì, /path/to/PepperFlashPlayer.plugin
-// LinuxÀÇ °æ¿ì, /path/to/libpepflashplayer.so
+// í”Œë˜ì‹œ í”ŒëŸ¬ê·¸ì¸ì˜ ìœ„ì¹˜ë¥¼ ì„¤ì •í•©ë‹ˆë‹¤.
+// Windowsì˜ ê²½ìš°, /path/to/pepflashplayer.dll
+// Macì˜ ê²½ìš°, /path/to/PepperFlashPlayer.plugin
+// Linuxì˜ ê²½ìš°, /path/to/libpepflashplayer.so
 app.commandLine.appendSwitch('ppapi-flash-path', '/path/to/libpepflashplayer.so');
 
 // Specify flash version, for example, v17.0.0.169
@@ -52,8 +52,8 @@ app.on('ready', function() {
 });
 ```
 
-## `<webview>` ÅÂ±×¸¦ ÀÌ¿ëÇÏ¿© ÇÃ·¯±×ÀÎÀ» È°¼ºÈ­
-`plugins` ¼Ó¼ºÀ» `<webview>` ÅÂ±×¿¡ Ãß°¡ÇÕ´Ï´Ù.
+## `<webview>` íƒœê·¸ë¥¼ ì´ìš©í•˜ì—¬ í”ŒëŸ¬ê·¸ì¸ì„ í™œì„±í™”
+`plugins` ì†ì„±ì„ `<webview>` íƒœê·¸ì— ì¶”ê°€í•©ë‹ˆë‹¤.
 ```html
 <webview src="http://www.adobe.com/software/flash/about/" plugins></webview>
 ```

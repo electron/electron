@@ -1,36 +1,30 @@
-﻿# 데스크톱 환경 통합
+# 데스크톱 환경 통합
 
-Different operating systems provide different features on integrating desktop
-applications into their desktop environments. For example, on Windows
-applications can put shortcuts in the JumpList of task bar, and on Mac
-applications can put a custom menu in the dock menu.
+어플리케이션을 배포할 서로 다른 운영체제 시스템의 환경과 기능에 맞춰 사용 환경을 통합할 수 있습니다.
+예를 들어 Windows에선 태스크바의 JumpList에 바로가기를 추가할 수 있고 Mac(OS X)에선 dock menu에 커스텀 메뉴를 추가할 수 있습니다.
 
-This guide explains how to integrate your application into those desktop
-environments with Electron APIs.
+이 가이드는 Electron API를 이용하여 각 운영체제 시스템의 기능을 활용하는 방법을 설명합니다.
 
 ## 최근 사용한 문서 (Windows & OS X)
 
-Windows and OS X provide easy access to a list of recent documents opened by
-the application via JumpList and dock menu.
+Windows와 OS X는 dock menu나 JumpList등을 통하여 최근 문서 리스트에 쉽게 접근할 수 있습니다.
 
 __JumpList:__
 
-![JumpList Recent Files](http://i.msdn.microsoft.com/dynimg/IC420538.png)
+![JumpList 최근 문서](http://i.msdn.microsoft.com/dynimg/IC420538.png)
 
-__Application dock menu:__
+__어플리케이션 dock menu:__
 
 <img src="https://cloud.githubusercontent.com/assets/639601/5069610/2aa80758-6e97-11e4-8cfb-c1a414a10774.png" height="353" width="428" >
 
-To add a file to recent documents, you can use
-[app.addRecentDocument][addrecentdocument] API:
+파일을 최근 문서에 추가하려면 [app.addRecentDocument][addrecentdocument] API를 사용할 수 있습니다:
 
 ```javascript
 var app = require('app');
 app.addRecentDocument('/Users/USERNAME/Desktop/work.type');
 ```
 
-And you can use [app.clearRecentDocuments](clearrecentdocuments) API to empty
-the recent documents list:
+그리고 [app.clearRecentDocuments](clearrecentdocuments) API로 최근 문서 리스트를 비울 수 있습니다:
 
 ```javascript
 app.clearRecentDocuments();
@@ -38,30 +32,26 @@ app.clearRecentDocuments();
 
 ### Windows에서 주의할 점
 
-In order to be able to use this feature on Windows, your application has to be
-registered as a handler of the file type of the document, otherwise the file
-won't appear in JumpList even after you have added it. You can find everything
-on registering your application in [Application Registration][app-registration].
+이 기능을 Windows에서 사용할 땐 운영체제 시스템에 어플리케이션에서 사용하는 파일 확장자가 등록되어 있어야 합니다.
+그렇지 않은 경우 파일을 JumpList에 추가해도 추가되지 않습니다.
+어플리케이션 등록에 관련된 API의 모든 내용은 [Application Registration][app-registration]에서 찾아볼 수 있습니다.
 
-When a user clicks a file from JumpList, a new instance of your application will
-be started with the path of the file added as a command line argument.
+유저가 JumpList에서 파일을 클릭할 경우 클릭된 파일의 경로가 커맨드 라인 인자로 추가되어 새로운 인스턴스의 어플리케이션이 실행됩니다.
 
 ### OS X에서 주의할 점
 
-When a file is requested from the recent documents menu, the `open-file` event
-of `app` module would be emitted for it.
+파일이 최근 문서 메뉴에서 요청될 경우 `app` 모듈의 `open-file` 이벤트가 호출됩니다.
 
 ## 커스텀 독 메뉴 (OS X)
 
-OS X enables developers to specify a custom menu for the dock, which usually
-contains some shortcuts for commonly used features of your application:
+OS X는 개발자가 dock에 커스텀 메뉴를 만들 수 있도록 허용하고 있습니다.
+보통 어플리케이션의 특정 기능 바로가기를 만들 때 사용합니다:
 
-__Dock menu of Terminal.app:__
+__Terminal.app의 dock menu:__
 
 <img src="https://cloud.githubusercontent.com/assets/639601/5069962/6032658a-6e9c-11e4-9953-aa84006bdfff.png" height="354" width="341" >
 
-To set your custom dock menu, you can use the `app.dock.setMenu` API, which is
-only available on OS X:
+커스텀 dock menu를 설정하려면 `app.dock.setMenu` API를 사용하면 됩니다. OS X에서만 사용 가능합니다:
 
 ```javascript
 var app = require('app');
@@ -79,36 +69,29 @@ app.dock.setMenu(dockMenu);
 
 ## 사용자 작업 (Windows)
 
-On Windows you can specify custom actions in the `Tasks` category of JumpList,
-as quoted from MSDN:
+Windows에선 JumpList의 `Tasks` 카테고리에 원하는 작업을 설정할 수 있습니다.
+MSDN에선 해당 기능을 다음과 같이 설명하고 있습니다:
 
-> Applications define tasks based on both the program's features and the key
-> things a user is expected to do with them. Tasks should be context-free, in
-> that the application does not need to be running for them to work. They
-> should also be the statistically most common actions that a normal user would
-> perform in an application, such as compose an email message or open the
-> calendar in a mail program, create a new document in a word processor, launch
-> an application in a certain mode, or launch one of its subcommands. An
-> application should not clutter the menu with advanced features that standard
-> users won't need or one-time actions such as registration. Do not use tasks
-> for promotional items such as upgrades or special offers.
+> 어플리케이션 작업은 프로그램의 기능 그리고 주요사양 두가지를 기반으로 유저의 행동을 예측하여 정의합니다.
+> 실행할 필요가 없는 어플리케이션 작업은 작동하지 않을 때 반드시 context-free를 유지해야 합니다.
+> 작업은 일반 사용자가 프로그램을 실행하거나 이메일 프로그램으로 이메일을 작성하거나 달력을 불러오고
+> 워드 프로세서로 새 문서를 작성, 특정 모드, 부속 명령으로 프로그램을 실행하는 등의
+> 통계적, 일반적으로 가장 많이 사용되는 작업인지를 고려해야 합니다.
+> 어플리케이션 작업은 일반 유저가 필요로 하지 않는 고급 기능을 조잡하게 채우거나 등록과 같은 일회성의 작업을 포함해선 안됩니다.
+> 작업에 특별 이벤트 또는 업그레이드 등의 홍보성 작업을 추가하면 안됩니다.
 >
-> It is strongly recommended that the task list be static. It should remain the
-> same regardless of the state or status of the application. While it is
-> possible to vary the list dynamically, you should consider that this could
-> confuse the user who does not expect that portion of the destination list to
-> change.
+> 작업 리스트는 가능한 한 정적으로 유지되는 것을 적극 권장합니다.
+> 이것은 동일한 상태 또는 응용 프로그램의 상태에 관계없이 유지되어야 합니다.
+> 작업 목록은 동적으로 변경할 수 있지만 몇몇 유저는 예상하지 못한 작업 목록 변경에 혼동할 수 있다는 점을 고려해야 합니다.
 
-__Tasks of Internet Explorer:__
+__Internet Explorer의 작업:__
 
 ![IE](http://i.msdn.microsoft.com/dynimg/IC420539.png)
 
-Unlike the dock menu in OS X which is a real menu, user tasks in Windows work
-like application shortcuts that when user clicks a task, a program would be
-executed with specified arguments.
+OS X의 말 그대로 메뉴로 작동하는 dock menu 와는 달리 Windows의 사용자 작업은 어플리케이션 바로가기처럼 작동합니다.
+유저가 작업을 클릭할 시 설정한 인자와 함께 새로운 어플리케이션이 실행됩니다.
 
-To set user tasks for your application, you can use
-[app.setUserTasks][setusertaskstasks] API:
+사용자 작업을 설정하려면 [app.setUserTasks][setusertaskstasks] API를 사용하여 구현할 수 있습니다:
 
 ```javascript
 var app = require('app');
@@ -124,66 +107,54 @@ app.setUserTasks([
 ]);
 ```
 
-To clean your tasks list, just call `app.setUserTasks` with empty array:
+작업 리스트를 비우려면 간단히 `app.setUserTasks` 메서드의 첫번째 인자에 빈 배열을 넣어 호출하면 됩니다:
 
 ```javascript
 app.setUserTasks([]);
 ```
 
-The user tasks will still show even after your application closes, so the icon
-and program path specified for a task should exist until your application is
-uninstalled.
+사용자 작업 리스트는 어플리케이션이 종료되어도 태스크바에 여전히 보존됩니다. 그러므로 어플리케이션이 삭제되기 전까지 이 기능이 제대로 작동하도록 하기 위해 반드시 프로그램 경로와 아이콘 경로를 지정해야 합니다.
 
 ## Unity 런처 숏컷 기능 (Linux)
 
-In Unity, you can add custom entries to its launcher via modifying `.desktop`
-file, see [Adding shortcuts to a launcher][unity-launcher].
+Unity 환경에선 `.desktop` 파일을 수정함으로써 런처에 새로운 커스텀 엔트리를 추가할 수 있습니다. [Adding shortcuts to a launcher][unity-launcher] 가이드를 참고하세요.
 
-__Launcher shortcuts of Audacious:__
+__Audacious의 런처 숏컷:__
 
 ![audacious](https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles?action=AttachFile&do=get&target=shortcuts.png)
 
 ## Taskbar progress 기능 (Windows & Unity)
 
-On Windows, a taskbar button can be used to display a progress bar. This enables
-a window to provide progress information to the user without the user having to
-switch to the window itself.
+Windows에선 태스크바의 어플리케이션 버튼에 progress bar를 추가할 수 있습니다.
+이 기능은 사용자가 어플리케이션의 창을 열지 않고도 어플리케이션의 작업의 상태 정보를 시각적으로 보여줄 수 있도록 해줍니다.
 
-The Unity DE also has a similar feature that allows you to specify the progress
-bar in the launcher.
+또한 Unity DE도 런처에 progress bar를 부착할 수 있습니다.
 
-__Progress bar in taskbar button:__
+__태스크바 버튼의 progress bar:__
 
 ![Taskbar Progress Bar](https://cloud.githubusercontent.com/assets/639601/5081682/16691fda-6f0e-11e4-9676-49b6418f1264.png)
 
-__Progress bar in Unity launcher:__
+__Unity 런처의 progress bar:__
 
 ![Unity Launcher](https://cloud.githubusercontent.com/assets/639601/5081747/4a0a589e-6f0f-11e4-803f-91594716a546.png)
 
-To set the progress bar for a Window, you can use the
-[BrowserWindow.setProgressBar][setprogressbar] API:
+이 기능은 [BrowserWindow.setProgressBar][setprogressbar] API를 사용하여 구현할 수 있습니다:
 
 ```javascript
 var window = new BrowserWindow({...});
 window.setProgressBar(0.5);
 ```
 
-## 윈도우 파일 제시 (OS X)
+## 윈도우 대표 파일 제시 (OS X)
 
-On OS X a window can set its represented file, so the file's icon can show in
-the title bar, and when users Command-Click or Control-Click on the tile a path
-popup will show.
+OS X는 윈도우에서 대표 파일을 설정할 수 있습니다. 쉽게 말해 타이틀바에서 파일 아이콘을 볼 수 있을 때 사용자가 Command-Click 또는 Control-Click 할 경우 파일 경로 팝업이 보여집니다.
+또한 윈도우의 상태도 지정할 수 있습니다. 쉽게 말해 로드된 문서의 수정여부를 타이틀바 파일 아이콘에 표시할 수 있습니다.
 
-You can also set the edited state of a window so that the file icon can indicate
-whether the document in this window has been modified.
-
-__Represented file popup menu:__
+__대표 파일 팝업 메뉴:__
 
 <img src="https://cloud.githubusercontent.com/assets/639601/5082061/670a949a-6f14-11e4-987a-9aaa04b23c1d.png" height="232" width="663" >
 
-To set the represented file of window, you can use the
-[BrowserWindow.setRepresentedFilename][setrepresentedfilename] and
-[BrowserWindow.setDocumentEdited][setdocumentedited] APIs:
+대표 파일 관련 API는 [BrowserWindow.setRepresentedFilename][setrepresentedfilename] 과 [BrowserWindow.setDocumentEdited][setdocumentedited]를 사용할 수 있습니다:
 
 ```javascript
 var window = new BrowserWindow({...});

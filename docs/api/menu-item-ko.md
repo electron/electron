@@ -1,20 +1,20 @@
-# menu-item
+ï»¿# menu-item
 
 ## Class: MenuItem
 
 ### new MenuItem(options)
 
 * `options` Object
-  * `click` Function - ¸Ş´º ¾ÆÀÌÅÛÀÌ Å¬¸¯µÉ ¶§ È£ÃâµÇ´Â Äİ¹éÇÔ¼ö
-  * `selector` String - First Responder°¡ Å¬¸¯µÉ ¶§ È£Ãâ µÇ´Â ¼±ÅÃÀÚ (OS X Àü¿ë)
-  * `type` String - `MenuItem`ÀÇ Å¸ÀÔ `normal`, `separator`, `submenu`, `checkbox` ¶Ç´Â `radio` »ç¿ë°¡´É
+  * `click` Function - ë©”ë‰´ ì•„ì´í…œì´ í´ë¦­ë  ë•Œ í˜¸ì¶œë˜ëŠ” ì½œë°±í•¨ìˆ˜
+  * `selector` String - First Responderê°€ í´ë¦­ë  ë•Œ í˜¸ì¶œ ë˜ëŠ” ì„ íƒì (OS X ì „ìš©)
+  * `type` String - `MenuItem`ì˜ íƒ€ì… `normal`, `separator`, `submenu`, `checkbox` ë˜ëŠ” `radio` ì‚¬ìš©ê°€ëŠ¥
   * `label` String
   * `sublabel` String
-  * `accelerator` [Accelerator](accelerator.md)
-  * `icon` [NativeImage](native-image.md)
+  * `accelerator` [Accelerator](accelerator-ko.md)
+  * `icon` [NativeImage](native-image-ko.md)
   * `enabled` Boolean
   * `visible` Boolean
   * `checked` Boolean
-  * `submenu` Menu - º¸Á¶¸Ş´º¸¦ ¼³Á¤ÇÕ´Ï´Ù. `type`ÀÌ `submenu`ÀÏ °æ¿ì ¹İµå½Ã ¼³Á¤ÇØ¾ßÇÕ´Ï´Ù. ÀÏ¹İ ¸Ş´º ¾ÆÀÌÅÛÀÏ °æ¿ì »ı·«ÇÒ ¼ö ÀÖ½À´Ï´Ù.     
-  * `id` String - ÇöÀç ¸Ş´º ¾ÆÀÌÅÛ¿¡ ´ëÇØ À¯ÀÏÅ°¸¦ ÁöÁ¤ÇÕ´Ï´Ù. ÀÌ Å°´Â ÀÌÈÄ `position` ¿É¼Ç¿¡¼­ »ç¿ëÇÒ ¼ö ÀÖ½À´Ï´Ù.
-  * `position` String - ¹Ì¸® ÁöÁ¤ÇÑ `id`¸¦ ÀÌ¿ëÇÏ¿© ¸Ş´º ¾ÆÀÌÅÛÀÇ À§Ä¡¸¦ ¼¼¹ĞÇÏ°Ô Á¶Á¤ÇÕ´Ï´Ù.
+  * `submenu` Menu - ë³´ì¡°ë©”ë‰´ë¥¼ ì„¤ì •í•©ë‹ˆë‹¤. `type`ì´ `submenu`ì¼ ê²½ìš° ë°˜ë“œì‹œ ì„¤ì •í•´ì•¼í•©ë‹ˆë‹¤. ì¼ë°˜ ë©”ë‰´ ì•„ì´í…œì¼ ê²½ìš° ìƒëµí•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.     
+  * `id` String - í˜„ì¬ ë©”ë‰´ ì•„ì´í…œì— ëŒ€í•´ ìœ ì¼í‚¤ë¥¼ ì§€ì •í•©ë‹ˆë‹¤. ì´ í‚¤ëŠ” ì´í›„ `position` ì˜µì…˜ì—ì„œ ì‚¬ìš©í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
+  * `position` String - ë¯¸ë¦¬ ì§€ì •í•œ `id`ë¥¼ ì´ìš©í•˜ì—¬ ë©”ë‰´ ì•„ì´í…œì˜ ìœ„ì¹˜ë¥¼ ì„¸ë°€í•˜ê²Œ ì¡°ì •í•©ë‹ˆë‹¤.
