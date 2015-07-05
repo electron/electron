@@ -26,8 +26,10 @@ namespace api {
 
 class Protocol : public mate::EventEmitter {
  public:
-  typedef base::Callback<v8::Local<v8::Value>(const net::URLRequest*)>
-          JsProtocolHandler;
+  using JsProtocolHandler =
+      base::Callback<v8::Local<v8::Value>(v8::Local<v8::Value>,
+                                          const net::URLRequest*)>;
+  using CompletionCallback = base::Callback<void(bool)>;
 
   static mate::Handle<Protocol> Create(
       v8::Isolate* isolate, AtomBrowserContext* browser_context);
@@ -46,6 +48,15 @@ class Protocol : public mate::EventEmitter {
  private:
   typedef std::map<std::string, JsProtocolHandler> ProtocolHandlersMap;
 
+  // Callback called if protocol can be registered.
+  void OnRegisterProtocol(const std::string& scheme,
+                          const JsProtocolHandler& callback,
+                          bool is_handled);
+  // Callback called if protocol can be intercepted.
+  void OnInterceptProtocol(const std::string& scheme,
+                           const JsProtocolHandler& callback,
+                           bool is_handled);
+
   // Register schemes to standard scheme list.
   void RegisterStandardSchemes(const std::vector<std::string>& schemes);
 
@@ -57,9 +68,8 @@ class Protocol : public mate::EventEmitter {
   void UnregisterProtocol(v8::Isolate* isolate, const std::string& scheme);
 
   // Returns whether a scheme has been registered.
-  // FIXME Should accept a callback and be asynchronous so we do not have to use
-  // locks.
-  bool IsHandledProtocol(const std::string& scheme);
+  void IsHandledProtocol(const std::string& scheme,
+                         const CompletionCallback& callback);
 
   // Intercept/unintercept an existing protocol handler.
   void InterceptProtocol(v8::Isolate* isolate,

@@ -7,17 +7,19 @@ protocol = remote.require 'protocol'
 
 describe 'protocol module', ->
   describe 'protocol.registerProtocol', ->
-    it 'throws error when scheme is already registered', (done) ->
-      register = -> protocol.registerProtocol('test1', ->)
+    it 'error when scheme is already registered', (done) ->
+      register = ->
+        protocol.registerProtocol 'test1', (error, request) ->
+          assert error instanceof Error
+          protocol.unregisterProtocol 'test1'
+          done()
       protocol.once 'registered', (event, scheme) ->
         assert.equal scheme, 'test1'
-        assert.throws register, /The scheme is already registered/
-        protocol.unregisterProtocol 'test1'
-        done()
+        register()
       register()
 
     it 'calls the callback when scheme is visited', (done) ->
-      protocol.registerProtocol 'test2', (request) ->
+      protocol.registerProtocol 'test2', (error, request) ->
         assert.equal request.url, 'test2://test2'
         protocol.unregisterProtocol 'test2'
         done()
@@ -169,16 +171,28 @@ describe 'protocol module', ->
           protocol.unregisterProtocol 'atom-file-job'
 
   describe 'protocol.isHandledProtocol', ->
-    it 'returns true if the scheme can be handled', ->
-      assert.equal protocol.isHandledProtocol('file'), true
-      assert.equal protocol.isHandledProtocol('http'), true
-      assert.equal protocol.isHandledProtocol('https'), true
-      assert.equal protocol.isHandledProtocol('atom'), false
+    it 'returns true if the file scheme can be handled', (done) ->
+      protocol.isHandledProtocol 'file', (result) ->
+        assert.equal result, true
+        done()
+    it 'returns true if the http scheme can be handled', (done) ->
+      protocol.isHandledProtocol 'http', (result) ->
+        assert.equal result, true
+        done()
+    it 'returns true if the https scheme can be handled', (done) ->
+      protocol.isHandledProtocol 'https', (result) ->
+        assert.equal result, true
+        done()
+    it 'returns false if the atom scheme cannot be handled', (done) ->
+      protocol.isHandledProtocol 'atom', (result) ->
+        assert.equal result, false
+        done()
 
   describe 'protocol.interceptProtocol', ->
-    it 'throws error when scheme is not a registered one', ->
-      register = -> protocol.interceptProtocol('test-intercept', ->)
-      assert.throws register, /Scheme does not exist/
+    it 'throws error when scheme is not a registered one', (done) ->
+      protocol.interceptProtocol 'test-intercept', (error, request) ->
+        assert error instanceof Error
+        done()
 
     it 'throws error when scheme is a custom protocol', (done) ->
       protocol.once 'unregistered', (event, scheme) ->
@@ -186,9 +200,9 @@ describe 'protocol module', ->
         done()
       protocol.once 'registered', (event, scheme) ->
         assert.equal scheme, 'atom'
-        register = -> protocol.interceptProtocol('test-intercept', ->)
-        assert.throws register, /Scheme does not exist/
-        protocol.unregisterProtocol scheme
+        protocol.interceptProtocol 'test-intercept', (error, request) ->
+          assert error instanceof Error
+          protocol.unregisterProtocol scheme
       protocol.registerProtocol('atom', ->)
 
     it 'returns original job when callback returns nothing', (done) ->
@@ -206,7 +220,7 @@ describe 'protocol module', ->
           error: (xhr, errorType, error) ->
             free()
             assert false, 'Got error: ' + errorType + ' ' + error
-      protocol.interceptProtocol targetScheme, (request) ->
+      protocol.interceptProtocol targetScheme, (error, request) ->
         if process.platform is 'win32'
           pathInUrl = path.normalize request.url.substr(8)
           assert.equal pathInUrl.toLowerCase(), __filename.toLowerCase()
