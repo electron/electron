@@ -215,11 +215,8 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 
 void AtomBrowserClient::DidCreatePpapiPlugin(
     content::BrowserPpapiHost* host) {
-  auto command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kEnablePlugins)) {
-    host->GetPpapiHost()->AddHostFactoryFilter(
-        make_scoped_ptr(new chrome::ChromeBrowserPepperHostFactory(host)));
-  }
+  host->GetPpapiHost()->AddHostFactoryFilter(
+      make_scoped_ptr(new chrome::ChromeBrowserPepperHostFactory(host)));
 }
 
 content::QuotaPermissionContext*
