@@ -142,7 +142,7 @@ Returns the object returned by `require(module)` in the main process.
 Returns the [BrowserWindow](browser-window.md) object which this web page
 belongs to.
 
-## remote.getCurrentWebContent()
+## remote.getCurrentWebContents()
 
 Returns the WebContents object of this web page.
 
