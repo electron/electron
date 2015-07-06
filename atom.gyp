@@ -116,6 +116,9 @@
           ],
         }],  # OS!="mac"
         ['OS=="win"', {
+          'include_dirs': [
+            '<(libchromiumcontent_dir)/gen/ui/resources',
+          ],
           'copies': [
             {
               'variables': {
