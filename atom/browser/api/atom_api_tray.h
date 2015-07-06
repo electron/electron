@@ -47,6 +47,9 @@ class Tray : public mate::EventEmitter,
   void OnBalloonClicked() override;
   void OnBalloonClosed() override;
 
+  // mate::Wrappable:
+  bool IsDestroyed() const override;
+
   void Destroy();
   void SetImage(mate::Arguments* args, const gfx::Image& image);
   void SetPressedImage(mate::Arguments* args, const gfx::Image& image);
@@ -57,8 +60,6 @@ class Tray : public mate::EventEmitter,
   void SetContextMenu(mate::Arguments* args, Menu* menu);
 
  private:
-  bool CheckTrayLife(mate::Arguments* args);
-
   scoped_ptr<TrayIcon> tray_icon_;
 
   DISALLOW_COPY_AND_ASSIGN(Tray);
