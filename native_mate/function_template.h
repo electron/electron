@@ -12,8 +12,7 @@
 #include "base/callback.h"
 #include "base/logging.h"
 #include "native_mate/arguments.h"
-#include "native_mate/compat.h"
-#include "native_mate/converter.h"
+#include "native_mate/wrappable.h"
 #include "v8/include/v8.h"
 
 namespace mate {
@@ -25,6 +24,25 @@ enum CreateFunctionTemplateFlags {
 };
 
 namespace internal {
+
+// Check if the class has been destroyed.
+template<typename T, typename Enable = void>
+struct DestroyedChecker {
+  static bool IsDestroyed(Arguments* args) {
+    return false;
+  }
+};
+template<typename T>
+struct DestroyedChecker<T*, typename enable_if<
+                              is_convertible<T*, Wrappable*>::value>::type> {
+  static bool IsDestroyed(Arguments* args) {
+    T* object;
+    if (args->GetHolder(&object))
+      return static_cast<Wrappable*>(object)->IsDestroyed();
+    else
+      return false;
+  }
+};
 
 template<typename T>
 struct CallbackParamTraits {
@@ -358,6 +376,12 @@ struct Dispatcher<R(P1)> {
     HolderT* holder = static_cast<HolderT*>(holder_base);
 
     typename CallbackParamTraits<P1>::LocalType a1;
+    if ((holder->flags & HolderIsFirstArgument) &&
+        DestroyedChecker<typename
+            CallbackParamTraits<P1>::LocalType>::IsDestroyed(&args)) {
+      args.ThrowError("Object has been destroyed");
+      MATE_METHOD_RETURN_UNDEFINED();
+    }
     if (!GetNextArgument(&args, holder->flags, true, &a1)) {
       args.ThrowError();
       MATE_METHOD_RETURN_UNDEFINED();
@@ -381,6 +405,12 @@ struct Dispatcher<R(P1, P2)> {
 
     typename CallbackParamTraits<P1>::LocalType a1;
     typename CallbackParamTraits<P2>::LocalType a2;
+    if ((holder->flags & HolderIsFirstArgument) &&
+        DestroyedChecker<typename
+            CallbackParamTraits<P1>::LocalType>::IsDestroyed(&args)) {
+      args.ThrowError("Object has been destroyed");
+      MATE_METHOD_RETURN_UNDEFINED();
+    }
     if (!GetNextArgument(&args, holder->flags, true, &a1) ||
         !GetNextArgument(&args, holder->flags, false, &a2)) {
       args.ThrowError();
@@ -406,6 +436,12 @@ struct Dispatcher<R(P1, P2, P3)> {
     typename CallbackParamTraits<P1>::LocalType a1;
     typename CallbackParamTraits<P2>::LocalType a2;
     typename CallbackParamTraits<P3>::LocalType a3;
+    if ((holder->flags & HolderIsFirstArgument) &&
+        DestroyedChecker<typename
+            CallbackParamTraits<P1>::LocalType>::IsDestroyed(&args)) {
+      args.ThrowError("Object has been destroyed");
+      MATE_METHOD_RETURN_UNDEFINED();
+    }
     if (!GetNextArgument(&args, holder->flags, true, &a1) ||
         !GetNextArgument(&args, holder->flags, false, &a2) ||
         !GetNextArgument(&args, holder->flags, false, &a3)) {
@@ -433,6 +469,12 @@ struct Dispatcher<R(P1, P2, P3, P4)> {
     typename CallbackParamTraits<P2>::LocalType a2;
     typename CallbackParamTraits<P3>::LocalType a3;
     typename CallbackParamTraits<P4>::LocalType a4;
+    if ((holder->flags & HolderIsFirstArgument) &&
+        DestroyedChecker<typename
+            CallbackParamTraits<P1>::LocalType>::IsDestroyed(&args)) {
+      args.ThrowError("Object has been destroyed");
+      MATE_METHOD_RETURN_UNDEFINED();
+    }
     if (!GetNextArgument(&args, holder->flags, true, &a1) ||
         !GetNextArgument(&args, holder->flags, false, &a2) ||
         !GetNextArgument(&args, holder->flags, false, &a3) ||
@@ -464,6 +506,12 @@ struct Dispatcher<R(P1, P2, P3, P4, P5)> {
     typename CallbackParamTraits<P3>::LocalType a3;
     typename CallbackParamTraits<P4>::LocalType a4;
     typename CallbackParamTraits<P5>::LocalType a5;
+    if ((holder->flags & HolderIsFirstArgument) &&
+        DestroyedChecker<typename
+            CallbackParamTraits<P1>::LocalType>::IsDestroyed(&args)) {
+      args.ThrowError("Object has been destroyed");
+      MATE_METHOD_RETURN_UNDEFINED();
+    }
     if (!GetNextArgument(&args, holder->flags, true, &a1) ||
         !GetNextArgument(&args, holder->flags, false, &a2) ||
         !GetNextArgument(&args, holder->flags, false, &a3) ||
@@ -497,6 +545,12 @@ struct Dispatcher<R(P1, P2, P3, P4, P5, P6)> {
     typename CallbackParamTraits<P4>::LocalType a4;
     typename CallbackParamTraits<P5>::LocalType a5;
     typename CallbackParamTraits<P6>::LocalType a6;
+    if ((holder->flags & HolderIsFirstArgument) &&
+        DestroyedChecker<typename
+            CallbackParamTraits<P1>::LocalType>::IsDestroyed(&args)) {
+      args.ThrowError("Object has been destroyed");
+      MATE_METHOD_RETURN_UNDEFINED();
+    }
     if (!GetNextArgument(&args, holder->flags, true, &a1) ||
         !GetNextArgument(&args, holder->flags, false, &a2) ||
         !GetNextArgument(&args, holder->flags, false, &a3) ||
@@ -532,6 +586,12 @@ struct Dispatcher<R(P1, P2, P3, P4, P5, P6, P7)> {
     typename CallbackParamTraits<P5>::LocalType a5;
     typename CallbackParamTraits<P6>::LocalType a6;
     typename CallbackParamTraits<P7>::LocalType a7;
+    if ((holder->flags & HolderIsFirstArgument) &&
+        DestroyedChecker<typename
+            CallbackParamTraits<P1>::LocalType>::IsDestroyed(&args)) {
+      args.ThrowError("Object has been destroyed");
+      MATE_METHOD_RETURN_UNDEFINED();
+    }
     if (!GetNextArgument(&args, holder->flags, true, &a1) ||
         !GetNextArgument(&args, holder->flags, false, &a2) ||
         !GetNextArgument(&args, holder->flags, false, &a3) ||

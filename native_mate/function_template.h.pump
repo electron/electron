@@ -15,8 +15,7 @@ $var MAX_ARITY = 7
 #include "base/callback.h"
 #include "base/logging.h"
 #include "native_mate/arguments.h"
-#include "native_mate/compat.h"
-#include "native_mate/converter.h"
+#include "native_mate/wrappable.h"
 #include "v8/include/v8.h"
 
 namespace mate {
@@ -28,6 +27,25 @@ enum CreateFunctionTemplateFlags {
 };
 
 namespace internal {
+
+// Check if the class has been destroyed.
+template<typename T, typename Enable = void>
+struct DestroyedChecker {
+  static bool IsDestroyed(Arguments* args) {
+    return false;
+  }
+};
+template<typename T>
+struct DestroyedChecker<T*, typename enable_if<
+                              is_convertible<T*, Wrappable*>::value>::type> {
+  static bool IsDestroyed(Arguments* args) {
+    T* object;
+    if (args->GetHolder(&object))
+      return static_cast<Wrappable*>(object)->IsDestroyed();
+    else
+      return false;
+  }
+};
 
 template<typename T>
 struct CallbackParamTraits {
@@ -183,6 +201,11 @@ $if ARITY != 0 [[
 $for ARG [[    typename CallbackParamTraits<P$(ARG)>::LocalType a$(ARG);
 
 ]]
+    if ((holder->flags & HolderIsFirstArgument) &&
+        DestroyedChecker<typename CallbackParamTraits<P1>::LocalType>::IsDestroyed(&args)) {
+      args.ThrowError("Object has been destroyed");
+      MATE_METHOD_RETURN_UNDEFINED();
+    }
     if ($for ARG  ||
         [[!GetNextArgument(&args, holder->flags, $if ARG == 1 [[true]] $else [[false]], &a$(ARG))]]) {
       args.ThrowError();

@@ -64,6 +64,10 @@ v8::Local<v8::Object> Wrappable::GetWrapper(v8::Isolate* isolate) {
   return wrapper;
 }
 
+bool Wrappable::IsDestroyed() const {
+  return false;
+}
+
 namespace internal {
 
 void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val) {

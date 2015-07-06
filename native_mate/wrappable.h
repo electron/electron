@@ -54,6 +54,10 @@ class Wrappable {
   // object constructed by GetObjectTemplateBuilder.
   v8::Local<v8::Object> GetWrapper(v8::Isolate* isolate);
 
+  // Returns whether this class has been destroyed, users should override this
+  // method to indicate the native type's state.
+  virtual bool IsDestroyed() const;
+
   // Returns the Isolate this object is created in.
   v8::Isolate* isolate() const { return isolate_; }
 
