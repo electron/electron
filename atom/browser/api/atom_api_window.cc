@@ -177,6 +177,10 @@ mate::Wrappable* Window::New(v8::Isolate* isolate,
   return new Window(isolate, options);
 }
 
+bool Window::IsDestroyed() const {
+  return !window_ || window_->IsClosed();
+}
+
 void Window::Destroy() {
   window_->CloseContents(nullptr);
 }
