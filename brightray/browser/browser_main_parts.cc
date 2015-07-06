@@ -37,6 +37,7 @@
 #endif
 
 #if defined(OS_WIN)
+#include "ui/base/cursor/cursor_loader_win.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/gfx/platform_font_win.h"
@@ -105,6 +106,10 @@ void BrowserMainParts::ToolkitInitialized() {
 #if defined(OS_WIN)
   gfx::PlatformFontWin::adjust_font_callback = &AdjustUIFont;
   gfx::PlatformFontWin::get_minimum_font_size_callback = &GetMinimumFontSize;
+
+  wchar_t module_name[MAX_PATH] = { 0 };
+  if (GetModuleFileName(NULL, module_name, MAX_PATH))
+    ui::CursorLoaderWin::SetCursorResourceModule(module_name);
 #endif
 }
 
