@@ -148,6 +148,8 @@
               '_FILE_OFFSET_BITS=64',
               # "use_nss_certs" is set to 1 in libchromiumcontent.
               'USE_NSS_CERTS',
+              # USE_NSS is set to be compatible with Chrome < 45.
+              'USE_NSS',
             ],
             'cflags_cc': [
               '-D__STRICT_ANSI__',
