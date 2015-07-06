@@ -23,7 +23,8 @@ namespace {
 template<typename T, typename Enable = void>
 struct CallbackTraits {
   static v8::Local<v8::FunctionTemplate> CreateTemplate(v8::Isolate* isolate,
-                                                         T callback) {
+                                                        T callback,
+                                                        bool = true) {
     return CreateFunctionTemplate(isolate, base::Bind(callback));
   }
 };
@@ -32,7 +33,7 @@ struct CallbackTraits {
 template<typename T>
 struct CallbackTraits<base::Callback<T> > {
   static v8::Local<v8::FunctionTemplate> CreateTemplate(
-      v8::Isolate* isolate, const base::Callback<T>& callback) {
+      v8::Isolate* isolate, const base::Callback<T>& callback, bool = true) {
     return CreateFunctionTemplate(isolate, callback);
   }
 };
@@ -44,10 +45,12 @@ struct CallbackTraits<base::Callback<T> > {
 template<typename T>
 struct CallbackTraits<T, typename enable_if<
                            is_member_function_pointer<T>::value>::type> {
-  static v8::Local<v8::FunctionTemplate> CreateTemplate(v8::Isolate* isolate,
-                                                         T callback) {
-    return CreateFunctionTemplate(isolate, base::Bind(callback),
-                                  HolderIsFirstArgument);
+  static v8::Local<v8::FunctionTemplate> CreateTemplate(
+      v8::Isolate* isolate, T callback, bool safe_after_destroyed = false) {
+    int flags = HolderIsFirstArgument;
+    if (safe_after_destroyed)
+      flags |= SafeAfterDestroyed;
+    return CreateFunctionTemplate(isolate, base::Bind(callback), flags);
   }
 };
 
@@ -87,22 +90,34 @@ class ObjectTemplateBuilder {
   // for creating raw function templates.
   template<typename T>
   ObjectTemplateBuilder& SetMethod(const base::StringPiece& name,
-                                   const T& callback) {
-    return SetImpl(name, CallbackTraits<T>::CreateTemplate(isolate_, callback));
+                                   const T& callback,
+                                   bool safe_after_destroyed = false) {
+    return SetImpl(name,
+                   CallbackTraits<T>::CreateTemplate(isolate_,
+                                                     callback,
+                                                     safe_after_destroyed));
   }
   template<typename T>
   ObjectTemplateBuilder& SetProperty(const base::StringPiece& name,
-                                     const T& getter) {
-    return SetPropertyImpl(name,
-                           CallbackTraits<T>::CreateTemplate(isolate_, getter),
-                           v8::Local<v8::FunctionTemplate>());
+                                     const T& getter,
+                                     bool safe_after_destroyed = false) {
+    return SetPropertyImpl(
+        name,
+        CallbackTraits<T>::CreateTemplate(isolate_, getter,
+                                          safe_after_destroyed),
+        v8::Local<v8::FunctionTemplate>());
   }
   template<typename T, typename U>
   ObjectTemplateBuilder& SetProperty(const base::StringPiece& name,
-                                     const T& getter, const U& setter) {
-    return SetPropertyImpl(name,
-                           CallbackTraits<T>::CreateTemplate(isolate_, getter),
-                           CallbackTraits<U>::CreateTemplate(isolate_, setter));
+                                     const T& getter,
+                                     const U& setter,
+                                     bool safe_after_destroyed = false) {
+    return SetPropertyImpl(
+        name,
+        CallbackTraits<T>::CreateTemplate(isolate_, getter,
+                                          safe_after_destroyed),
+        CallbackTraits<U>::CreateTemplate(isolate_, setter,
+                                          safe_after_destroyed));
   }
 
   v8::Local<v8::ObjectTemplate> Build();

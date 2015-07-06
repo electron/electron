@@ -21,6 +21,7 @@ class PerIsolateData;
 
 enum CreateFunctionTemplateFlags {
   HolderIsFirstArgument = 1 << 0,
+  SafeAfterDestroyed = 1 << 1,
 };
 
 namespace internal {
@@ -377,6 +378,7 @@ struct Dispatcher<R(P1)> {
 
     typename CallbackParamTraits<P1>::LocalType a1;
     if ((holder->flags & HolderIsFirstArgument) &&
+        !(holder->flags & SafeAfterDestroyed) &&
         DestroyedChecker<typename
             CallbackParamTraits<P1>::LocalType>::IsDestroyed(&args)) {
       args.ThrowError("Object has been destroyed");
@@ -406,6 +408,7 @@ struct Dispatcher<R(P1, P2)> {
     typename CallbackParamTraits<P1>::LocalType a1;
     typename CallbackParamTraits<P2>::LocalType a2;
     if ((holder->flags & HolderIsFirstArgument) &&
+        !(holder->flags & SafeAfterDestroyed) &&
         DestroyedChecker<typename
             CallbackParamTraits<P1>::LocalType>::IsDestroyed(&args)) {
       args.ThrowError("Object has been destroyed");
@@ -437,6 +440,7 @@ struct Dispatcher<R(P1, P2, P3)> {
     typename CallbackParamTraits<P2>::LocalType a2;
     typename CallbackParamTraits<P3>::LocalType a3;
     if ((holder->flags & HolderIsFirstArgument) &&
+        !(holder->flags & SafeAfterDestroyed) &&
         DestroyedChecker<typename
             CallbackParamTraits<P1>::LocalType>::IsDestroyed(&args)) {
       args.ThrowError("Object has been destroyed");
@@ -470,6 +474,7 @@ struct Dispatcher<R(P1, P2, P3, P4)> {
     typename CallbackParamTraits<P3>::LocalType a3;
     typename CallbackParamTraits<P4>::LocalType a4;
     if ((holder->flags & HolderIsFirstArgument) &&
+        !(holder->flags & SafeAfterDestroyed) &&
         DestroyedChecker<typename
             CallbackParamTraits<P1>::LocalType>::IsDestroyed(&args)) {
       args.ThrowError("Object has been destroyed");
@@ -507,6 +512,7 @@ struct Dispatcher<R(P1, P2, P3, P4, P5)> {
     typename CallbackParamTraits<P4>::LocalType a4;
     typename CallbackParamTraits<P5>::LocalType a5;
     if ((holder->flags & HolderIsFirstArgument) &&
+        !(holder->flags & SafeAfterDestroyed) &&
         DestroyedChecker<typename
             CallbackParamTraits<P1>::LocalType>::IsDestroyed(&args)) {
       args.ThrowError("Object has been destroyed");
@@ -546,6 +552,7 @@ struct Dispatcher<R(P1, P2, P3, P4, P5, P6)> {
     typename CallbackParamTraits<P5>::LocalType a5;
     typename CallbackParamTraits<P6>::LocalType a6;
     if ((holder->flags & HolderIsFirstArgument) &&
+        !(holder->flags & SafeAfterDestroyed) &&
         DestroyedChecker<typename
             CallbackParamTraits<P1>::LocalType>::IsDestroyed(&args)) {
       args.ThrowError("Object has been destroyed");
@@ -587,6 +594,7 @@ struct Dispatcher<R(P1, P2, P3, P4, P5, P6, P7)> {
     typename CallbackParamTraits<P6>::LocalType a6;
     typename CallbackParamTraits<P7>::LocalType a7;
     if ((holder->flags & HolderIsFirstArgument) &&
+        !(holder->flags & SafeAfterDestroyed) &&
         DestroyedChecker<typename
             CallbackParamTraits<P1>::LocalType>::IsDestroyed(&args)) {
       args.ThrowError("Object has been destroyed");

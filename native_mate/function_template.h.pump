@@ -24,6 +24,7 @@ class PerIsolateData;
 
 enum CreateFunctionTemplateFlags {
   HolderIsFirstArgument = 1 << 0,
+  SafeAfterDestroyed = 1 << 1,
 };
 
 namespace internal {
@@ -202,6 +203,7 @@ $for ARG [[    typename CallbackParamTraits<P$(ARG)>::LocalType a$(ARG);
 
 ]]
     if ((holder->flags & HolderIsFirstArgument) &&
+        !(holder->flags & SafeAfterDestroyed) &&
         DestroyedChecker<typename CallbackParamTraits<P1>::LocalType>::IsDestroyed(&args)) {
       args.ThrowError("Object has been destroyed");
       MATE_METHOD_RETURN_UNDEFINED();
