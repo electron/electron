@@ -1,6 +1,6 @@
 # crash-reporter
 
-An example of automatically submitting crash reporters to remote server:
+An example of automatically submitting crash reporters to a remote server:
 
 ```javascript
 crashReporter = require('crash-reporter');
@@ -24,20 +24,20 @@ crashReporter.start({
   * `ignoreSystemCrashHandler` Boolean, default: false
   * `extra` Object
     * An object you can define which content will be send along with the report.
-    * Only string properties are send correctly.
+    * Only string properties are sent correctly.
     * Nested objects are not supported.
 
-Developers are required to call the API before using other crashReporter APIs.
+Developers are required to call this method before using other crashReporter APIs.
 
 
 **Note:** On OS X, electron uses a new `crashpad` client, which is different
 with the `breakpad` on Windows and Linux. To enable crash collection feature,
-you are required to call `crashReporter.start` API to initiliaze `crashpad` in
-main process, even you only collect crash report in renderer process.
+you are required to call `crashReporter.start` API to initialize `crashpad` in
+main process and in each renderer process that you wish to collect crash reports.
 
 ## crashReporter.getLastCrashReport()
 
-Returns the date and ID of last crash report, when there was no crash report
+Returns the date and ID of the last crash report, when there was no crash report
 sent or the crash reporter is not started, `null` will be returned.
 
 ## crashReporter.getUploadedReports()
