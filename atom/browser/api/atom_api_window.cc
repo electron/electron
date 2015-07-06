@@ -177,6 +177,10 @@ mate::Wrappable* Window::New(v8::Isolate* isolate,
   return new Window(isolate, options);
 }
 
+bool Window::IsDestroyed() const {
+  return !window_ || window_->IsClosed();
+}
+
 void Window::Destroy() {
   window_->CloseContents(nullptr);
 }
@@ -477,7 +481,7 @@ v8::Local<v8::Value> Window::DevToolsWebContents(v8::Isolate* isolate) {
 void Window::BuildPrototype(v8::Isolate* isolate,
                             v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
-      .SetMethod("destroy", &Window::Destroy)
+      .SetMethod("destroy", &Window::Destroy, true)
       .SetMethod("close", &Window::Close)
       .SetMethod("isClosed", &Window::IsClosed)
       .SetMethod("focus", &Window::Focus)
@@ -540,9 +544,9 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("showDefinitionForSelection",
                  &Window::ShowDefinitionForSelection)
 #endif
-      .SetProperty("id", &Window::ID)
-      .SetProperty("webContents", &Window::WebContents)
-      .SetProperty("devToolsWebContents", &Window::DevToolsWebContents);
+      .SetProperty("id", &Window::ID, true)
+      .SetProperty("webContents", &Window::WebContents, true)
+      .SetProperty("devToolsWebContents", &Window::DevToolsWebContents, true);
 }
 
 }  // namespace api

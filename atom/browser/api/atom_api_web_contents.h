@@ -111,6 +111,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // mate::Wrappable:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
+  bool IsDestroyed() const override;
 
   // content::WebContentsDelegate:
   bool AddMessageToConsole(content::WebContents* source,

@@ -740,8 +740,8 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   if (template_.IsEmpty())
     template_.Reset(isolate, mate::ObjectTemplateBuilder(isolate)
-        .SetMethod("destroy", &WebContents::Destroy)
-        .SetMethod("isAlive", &WebContents::IsAlive)
+        .SetMethod("destroy", &WebContents::Destroy, true)
+        .SetMethod("isAlive", &WebContents::IsAlive, true)
         .SetMethod("getId", &WebContents::GetID)
         .SetMethod("equal", &WebContents::Equal)
         .SetMethod("_loadUrl", &WebContents::LoadURL)
@@ -775,7 +775,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("unselect", &WebContents::Unselect)
         .SetMethod("replace", &WebContents::Replace)
         .SetMethod("replaceMisspelling", &WebContents::ReplaceMisspelling)
-        .SetMethod("_send", &WebContents::SendIPCMessage)
+        .SetMethod("_send", &WebContents::SendIPCMessage, true)
         .SetMethod("setSize", &WebContents::SetSize)
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
         .SetMethod("isGuest", &WebContents::IsGuest)
@@ -790,6 +790,10 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
 
   return mate::ObjectTemplateBuilder(
       isolate, v8::Local<v8::ObjectTemplate>::New(isolate, template_));
+}
+
+bool WebContents::IsDestroyed() const {
+  return !IsAlive();
 }
 
 void WebContents::OnRendererMessage(const base::string16& channel,
