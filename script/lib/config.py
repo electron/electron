@@ -8,7 +8,7 @@ import sys
 
 BASE_URL = os.getenv('LIBCHROMIUMCONTENT_MIRROR') or \
     'http://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent'
-LIBCHROMIUMCONTENT_COMMIT = '078eaea7bafb480b0a3f829b168c18d108000cb2'
+LIBCHROMIUMCONTENT_COMMIT = 'e4505342f14c0131d64a5fd523485ef93df92050'
 
 PLATFORM = {
   'cygwin': 'win32',
