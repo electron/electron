@@ -118,8 +118,6 @@
         'defines': [
           # We are using Release version libchromiumcontent:
           'NDEBUG',
-          # We are using OpenSSL on all platforms:
-          'USE_OPENSSL',
           # Needed by gin:
           'V8_USE_EXTERNAL_STARTUP_DATA',
           # From skia_for_chromium_defines.gypi:
@@ -148,8 +146,8 @@
               '_LARGEFILE_SOURCE',
               '_LARGEFILE64_SOURCE',
               '_FILE_OFFSET_BITS=64',
-              # Relying on openssl cert store until crbug.com/462040
-              'USE_OPENSSL_CERTS',
+              # "use_nss_certs" is set to 1 in libchromiumcontent.
+              'USE_NSS_CERTS',
             ],
             'cflags_cc': [
               '-D__STRICT_ANSI__',
