@@ -30,10 +30,17 @@ library versions, so we can have the best possible binary size and performance.
 
 ## Minimal bootstrapping
 
-All of Chromium's prebuilt binaries are downloaded when running the bootstrap
-script. By default both static libraries and shared libraries will be
-downloaded and the final size should be between 800MB and 2GB according to the
-platform.
+All of Chromium's prebuilt binaries(libchromiumcontent) are downloaded when
+running the bootstrap script. By default both static libraries and shared
+libraries will be downloaded and the final size should be between 800MB and 2GB
+according to the platform.
+
+By default, libchromiumcontent is downloaded from Amazon Web Services.
+If the `LIBCHROMIUMCONTENT_MIRROR` environment variable is set, bootrstrap
+script will download from it.
+[libchromiumcontent-qiniu-mirror](https://github.com/hokein/libchromiumcontent-qiniu-mirror)
+is a mirror for libchromiumcontent. If you have trouble in accessing AWS, you can
+switch download address to it via `export LIBCHROMIUMCONTENT_MIRROR=http://7xk3d2.dl1.z0.glb.clouddn.com/`
 
 If you only want to build Electron quickly for testing or development, you
 can only download the shared library versions by passing the `--dev` parameter:
