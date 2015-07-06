@@ -792,6 +792,10 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
       isolate, v8::Local<v8::ObjectTemplate>::New(isolate, template_));
 }
 
+bool WebContents::IsDestroyed() const {
+  return !IsAlive();
+}
+
 void WebContents::OnRendererMessage(const base::string16& channel,
                                     const base::ListValue& args) {
   // webContents.emit(channel, new Event(), args...);
