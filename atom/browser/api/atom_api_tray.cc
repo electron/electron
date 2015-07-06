@@ -110,7 +110,7 @@ void Tray::SetContextMenu(mate::Arguments* args, Menu* menu) {
 void Tray::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::ObjectTemplate> prototype) {
   mate::ObjectTemplateBuilder(isolate, prototype)
-      .SetMethod("destroy", &Tray::Destroy)
+      .SetMethod("destroy", &Tray::Destroy, true)
       .SetMethod("setImage", &Tray::SetImage)
       .SetMethod("setPressedImage", &Tray::SetPressedImage)
       .SetMethod("setToolTip", &Tray::SetToolTip)
