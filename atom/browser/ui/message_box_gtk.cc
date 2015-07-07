@@ -184,14 +184,12 @@ void ShowMessageBox(NativeWindow* parent,
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
   if (Browser::Get()->is_ready()) {
-    GtkWidget* dialog = gtk_message_dialog_new(
-        NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
-        "%s", base::UTF16ToUTF8(title).c_str());
-    gtk_message_dialog_format_secondary_text(
-        GTK_MESSAGE_DIALOG(dialog),
-        "%s", base::UTF16ToUTF8(content).c_str());
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(dialog);
+    GtkMessageBox box(true, nullptr, MESSAGE_BOX_TYPE_ERROR, { "OK" }, "Error",
+                      base::UTF16ToUTF8(title).c_str(),
+                      base::UTF16ToUTF8(content).c_str(),
+                      gfx::ImageSkia());
+    box.Show();
+    gtk_dialog_run(GTK_DIALOG(box.dialog()));
   } else {
     fprintf(stderr,
             ANSI_TEXT_BOLD ANSI_BACKGROUND_GRAY
