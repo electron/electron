@@ -34,7 +34,7 @@ class FileChooserDialog {
                     const std::string& title,
                     const base::FilePath& default_path,
                     const Filters& filters)
-      : dialog_scope_(new atom::NativeWindow::DialogScope(parent_window)) {
+      : dialog_scope_(parent_window) {
     const char* confirm_text = GTK_STOCK_OK;
     if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
       confirm_text = GTK_STOCK_SAVE;
@@ -131,12 +131,12 @@ class FileChooserDialog {
  private:
   void AddFilters(const Filters& filters);
 
+  atom::NativeWindow::DialogScope dialog_scope_;
+
   GtkWidget* dialog_;
 
   SaveDialogCallback save_callback_;
   OpenDialogCallback open_callback_;
-
-  scoped_ptr<atom::NativeWindow::DialogScope> dialog_scope_;
 
   DISALLOW_COPY_AND_ASSIGN(FileChooserDialog);
 };
