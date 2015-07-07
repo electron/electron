@@ -73,6 +73,8 @@ def main():
     if PLATFORM != 'win32':
       run_script('test.py', ['--ci'])
 
+  run_script('clean.py')
+
 
 def run_script(script, args=[]):
   print 'Running', script
