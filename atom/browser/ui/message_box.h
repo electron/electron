@@ -22,7 +22,9 @@ class NativeWindow;
 enum MessageBoxType {
   MESSAGE_BOX_TYPE_NONE = 0,
   MESSAGE_BOX_TYPE_INFORMATION,
-  MESSAGE_BOX_TYPE_WARNING
+  MESSAGE_BOX_TYPE_WARNING,
+  MESSAGE_BOX_TYPE_ERROR,
+  MESSAGE_BOX_TYPE_QUESTION,
 };
 
 typedef base::Callback<void(int code)> MessageBoxCallback;

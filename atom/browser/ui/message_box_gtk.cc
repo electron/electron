@@ -41,7 +41,7 @@ class GtkMessageBox {
         nullptr,  // parent
         modal ? GTK_DIALOG_MODAL :   // modal dialog
                 static_cast<GtkDialogFlags>(0),  // no flags
-        GTK_MESSAGE_OTHER,  // no icon
+        GetMessageType(type),  // type
         GTK_BUTTONS_NONE,  // no buttons
         "%s", message.c_str());
     gtk_message_dialog_format_secondary_text(
@@ -73,6 +73,21 @@ class GtkMessageBox {
 
   ~GtkMessageBox() {
     gtk_widget_destroy(dialog_);
+  }
+
+  GtkMessageType GetMessageType(MessageBoxType type) {
+    switch (type) {
+      case MESSAGE_BOX_TYPE_INFORMATION:
+        return GTK_MESSAGE_INFO;
+      case MESSAGE_BOX_TYPE_WARNING:
+        return GTK_MESSAGE_WARNING;
+      case MESSAGE_BOX_TYPE_QUESTION:
+        return GTK_MESSAGE_QUESTION;
+      case MESSAGE_BOX_TYPE_ERROR:
+        return GTK_MESSAGE_ERROR;
+      default:
+        return GTK_MESSAGE_OTHER;
+    }
   }
 
   const char* TranslateToStock(int id, const std::string& text) {

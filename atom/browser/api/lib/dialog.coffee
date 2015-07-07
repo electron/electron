@@ -9,7 +9,7 @@ fileDialogProperties =
   multiSelections: 1 << 2
   createDirectory: 1 << 3
 
-messageBoxTypes = ['none', 'info', 'warning']
+messageBoxTypes = ['none', 'info', 'warning', 'error', 'question']
 
 parseArgs = (window, options, callback) ->
   unless window is null or window?.constructor is BrowserWindow

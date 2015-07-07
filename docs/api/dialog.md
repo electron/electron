@@ -70,7 +70,7 @@ will be passed via `callback(filename)`
 
 * `browserWindow` BrowserWindow
 * `options` Object
-  * `type` String - Can be `"none"`, `"info"` or `"warning"`
+  * `type` String - Can be `"none"`, `"info"`, `"error"`, `"question"` or `"warning"`
   * `buttons` Array - Array of texts for buttons
   * `title` String - Title of the message box, some platforms will not show it
   * `message` String - Content of the message box
