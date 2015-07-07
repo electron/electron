@@ -4,48 +4,17 @@
 
 #include "atom/browser/ui/file_dialog.h"
 
-#include <gdk/gdk.h>
-#include <gdk/gdkx.h>
-#include <gtk/gtk.h>
-
-// This conflicts with mate::Converter,
-#undef True
-#undef False
-// and V8.
-#undef None
-
 #include "atom/browser/native_window.h"
 #include "base/callback.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
 #include "chrome/browser/ui/libgtk2ui/gtk2_signal.h"
-#include "ui/aura/window.h"
-#include "ui/aura/window_tree_host.h"
+#include "chrome/browser/ui/libgtk2ui/gtk2_util.h"
 #include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
 
 namespace file_dialog {
 
 namespace {
-
-const char kAuraTransientParent[] = "aura-transient-parent";
-
-void SetGtkTransientForAura(GtkWidget* dialog, aura::Window* parent) {
-  if (!parent || !parent->GetHost())
-    return;
-
-  gtk_widget_realize(dialog);
-  GdkWindow* gdk_window = gtk_widget_get_window(dialog);
-
-  // TODO(erg): Check to make sure we're using X11 if wayland or some other
-  // display server ever happens. Otherwise, this will crash.
-  XSetTransientForHint(GDK_WINDOW_XDISPLAY(gdk_window),
-                       GDK_WINDOW_XID(gdk_window),
-                       parent->GetHost()->GetAcceleratedWidget());
-
-  // We also set the |parent| as a property of |dialog|, so that we can unlink
-  // the two later.
-  g_object_set_data(G_OBJECT(dialog), kAuraTransientParent, parent);
-}
 
 // Makes sure that .jpg also shows .JPG.
 gboolean FileFilterCaseInsensitive(const GtkFileFilterInfo* file_info,
@@ -81,7 +50,7 @@ class FileChooserDialog {
         NULL);
     if (parent_window) {
       gfx::NativeWindow window = parent_window->GetNativeWindow();
-      SetGtkTransientForAura(dialog_, window);
+      libgtk2ui::SetGtkTransientForAura(dialog_, window);
     }
 
     if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
