@@ -92,7 +92,13 @@ module.exports =
     options.message ?= ''
     options.detail ?= ''
     options.icon ?= null
-    options.cancelId ?= 0
+
+    unless options.cancelId?
+      options.cancelId = 0
+      for text, i in options.buttons
+        if text.toLowerCase() in ['cancel', 'no']
+          options.cancelId = i
+          break
 
     binding.showMessageBox messageBoxType,
                            options.buttons,

@@ -207,18 +207,10 @@ void MessageDialog::Close() {
 }
 
 int MessageDialog::GetResult() const {
-  // When the dialog is closed without choosing anything, we think the user
-  // chose 'Cancel', otherwise we think the default behavior is chosen.
-  if (result_ == -1) {
-    for (size_t i = 0; i < buttons_.size(); ++i)
-      if (LowerCaseEqualsASCII(buttons_[i]->GetText(), "cancel")) {
-        return i;
-      }
-
+  if (result_ == -1)
     return cancel_id_;
-  } else {
+  else
     return result_;
-  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

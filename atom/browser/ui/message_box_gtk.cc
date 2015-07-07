@@ -93,19 +93,16 @@ class GtkMessageBox {
 
   const char* TranslateToStock(int id, const std::string& text) {
     std::string lower = base::StringToLowerASCII(text);
-    if (lower == "cancel") {
-      cancel_id_ = id;
+    if (lower == "cancel")
       return GTK_STOCK_CANCEL;
-    } else if (lower == "no") {
-      cancel_id_ = id;
+    else if (lower == "no")
       return GTK_STOCK_NO;
-    } else if (lower == "ok") {
+    else if (lower == "ok")
       return GTK_STOCK_OK;
-    } else if (lower == "yes") {
+    else if (lower == "yes")
       return GTK_STOCK_YES;
-    } else {
+    else
       return text.c_str();
-    }
   }
 
   void Show() {
