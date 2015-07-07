@@ -9,17 +9,18 @@ describe 'protocol module', ->
   describe 'protocol.registerProtocol', ->
     it 'error when scheme is already registered', (done) ->
       register = ->
-        protocol.registerProtocol 'test1', (error, request) ->
-          assert error instanceof Error
-          protocol.unregisterProtocol 'test1'
-          done()
-      protocol.once 'registered', (event, scheme) ->
-        assert.equal scheme, 'test1'
-        register()
+        protocol.registerProtocol 'test1', ((request) ->), (error, scheme) ->
+          if error?
+            protocol.unregisterProtocol 'test1', (error, scheme) ->
+              assert.equal scheme, 'test1'
+              done()
+          else
+            assert.equal scheme, 'test1'
+            register()
       register()
 
     it 'calls the callback when scheme is visited', (done) ->
-      protocol.registerProtocol 'test2', (error, request) ->
+      protocol.registerProtocol 'test2', (request) ->
         assert.equal request.url, 'test2://test2'
         protocol.unregisterProtocol 'test2'
         done()
@@ -28,7 +29,7 @@ describe 'protocol module', ->
   describe 'protocol.unregisterProtocol', ->
     it 'throws error when scheme does not exist', ->
       unregister = -> protocol.unregisterProtocol 'test3'
-      assert.throws unregister, /The scheme has not been registered/
+      assert.throws unregister, /The Scheme has not been registered/
 
   describe 'registered protocol callback', ->
     it 'returns string should send the string as request content', (done) ->
@@ -190,37 +191,39 @@ describe 'protocol module', ->
 
   describe 'protocol.interceptProtocol', ->
     it 'throws error when scheme is not a registered one', (done) ->
-      protocol.interceptProtocol 'test-intercept', (error, request) ->
-        assert error instanceof Error
-        done()
+      protocol.interceptProtocol 'test-intercept', ( ->), (error, scheme) ->
+        if error?
+          assert.equal scheme, 'test-intercept'
+          done()
 
     it 'throws error when scheme is a custom protocol', (done) ->
-      protocol.once 'unregistered', (event, scheme) ->
+      protocol.once 'unregistered', (scheme) ->
         assert.equal scheme, 'atom'
         done()
-      protocol.once 'registered', (event, scheme) ->
+      protocol.once 'registered', (scheme) ->
         assert.equal scheme, 'atom'
-        protocol.interceptProtocol 'test-intercept', (error, request) ->
-          assert error instanceof Error
-          protocol.unregisterProtocol scheme
+        protocol.interceptProtocol 'test-intercept', (->), (error, newScheme) ->
+          if error?
+            assert.equal newScheme, 'test-intercept'
+            protocol.unregisterProtocol scheme
       protocol.registerProtocol('atom', ->)
 
     it 'returns original job when callback returns nothing', (done) ->
       targetScheme = 'file'
-      protocol.once 'intercepted', (event, scheme) ->
+      protocol.once 'intercepted', (scheme) ->
         assert.equal scheme, targetScheme
         free = -> protocol.uninterceptProtocol targetScheme
         $.ajax
           url: "#{targetScheme}://#{__filename}",
           success: ->
-            protocol.once 'unintercepted', (event, scheme) ->
+            protocol.once 'unintercepted', (scheme) ->
               assert.equal scheme, targetScheme
               done()
             free()
           error: (xhr, errorType, error) ->
             free()
             assert false, 'Got error: ' + errorType + ' ' + error
-      protocol.interceptProtocol targetScheme, (error, request) ->
+      protocol.interceptProtocol targetScheme, (request) ->
         if process.platform is 'win32'
           pathInUrl = path.normalize request.url.substr(8)
           assert.equal pathInUrl.toLowerCase(), __filename.toLowerCase()

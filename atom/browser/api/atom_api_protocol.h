@@ -12,6 +12,7 @@
 #include "atom/browser/api/event_emitter.h"
 #include "base/callback.h"
 #include "native_mate/handle.h"
+#include "net/base/completion_callback.h"
 
 namespace net {
 class URLRequest;
@@ -27,9 +28,8 @@ namespace api {
 class Protocol : public mate::EventEmitter {
  public:
   using JsProtocolHandler =
-      base::Callback<v8::Local<v8::Value>(v8::Local<v8::Value>,
-                                          const net::URLRequest*)>;
-  using CompletionCallback = base::Callback<void(bool)>;
+      base::Callback<v8::Local<v8::Value>(const net::URLRequest*)>;
+  using JsCompletionCallback = base::Callback<void(v8::Local<v8::Value>)>;
 
   static mate::Handle<Protocol> Create(
       v8::Isolate* isolate, AtomBrowserContext* browser_context);
@@ -50,12 +50,14 @@ class Protocol : public mate::EventEmitter {
 
   // Callback called if protocol can be registered.
   void OnRegisterProtocol(const std::string& scheme,
-                          const JsProtocolHandler& callback,
-                          bool is_handled);
+                          const JsProtocolHandler& handler,
+                          const JsCompletionCallback& callback,
+                          int is_handled);
   // Callback called if protocol can be intercepted.
   void OnInterceptProtocol(const std::string& scheme,
-                           const JsProtocolHandler& callback,
-                           bool is_handled);
+                           const JsProtocolHandler& handler,
+                           const JsCompletionCallback& callback,
+                           int is_handled);
 
   // Register schemes to standard scheme list.
   void RegisterStandardSchemes(const std::vector<std::string>& schemes);
@@ -64,27 +66,28 @@ class Protocol : public mate::EventEmitter {
   // |callback|.
   void RegisterProtocol(v8::Isolate* isolate,
                         const std::string& scheme,
-                        const JsProtocolHandler& callback);
-  void UnregisterProtocol(v8::Isolate* isolate, const std::string& scheme);
+                        const JsProtocolHandler& handler,
+                        const JsCompletionCallback& callback);
+  void UnregisterProtocol(v8::Isolate* isolate, const std::string& scheme,
+                          const JsCompletionCallback& callback);
 
   // Returns whether a scheme has been registered.
   void IsHandledProtocol(const std::string& scheme,
-                         const CompletionCallback& callback);
+                         const net::CompletionCallback& callback);
 
   // Intercept/unintercept an existing protocol handler.
   void InterceptProtocol(v8::Isolate* isolate,
                          const std::string& scheme,
-                         const JsProtocolHandler& callback);
-  void UninterceptProtocol(v8::Isolate* isolate, const std::string& scheme);
+                         const JsProtocolHandler& handler,
+                         const JsCompletionCallback& callback);
+  void UninterceptProtocol(v8::Isolate* isolate, const std::string& scheme,
+                           const JsCompletionCallback& callback);
 
   // The networking related operations have to be done in IO thread.
   void RegisterProtocolInIO(const std::string& scheme);
   void UnregisterProtocolInIO(const std::string& scheme);
   void InterceptProtocolInIO(const std::string& scheme);
   void UninterceptProtocolInIO(const std::string& scheme);
-
-  // Do protocol.emit(event, parameter) under UI thread.
-  void EmitEventInUI(const std::string& event, const std::string& parameter);
 
   AtomBrowserContext* browser_context_;
   AtomURLRequestJobFactory* job_factory_;

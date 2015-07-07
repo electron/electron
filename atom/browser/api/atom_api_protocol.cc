@@ -25,16 +25,12 @@ namespace mate {
 template<>
 struct Converter<const net::URLRequest*> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                  const net::URLRequest* val) {
-    if (val) {
-      return mate::ObjectTemplateBuilder(isolate)
-          .SetValue("method", val->method())
-          .SetValue("url", val->url().spec())
-          .SetValue("referrer", val->referrer())
-          .Build()->NewInstance();
-    } else {
-      return v8::Null(isolate);
-    }
+                                   const net::URLRequest* val) {
+    return mate::ObjectTemplateBuilder(isolate)
+        .SetValue("method", val->method())
+        .SetValue("url", val->url().spec())
+        .SetValue("referrer", val->referrer())
+        .Build()->NewInstance();
   }
 };
 
@@ -77,8 +73,7 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
     // Call the JS handler.
     Protocol::JsProtocolHandler callback =
         registry_->GetProtocolHandler(request()->url().scheme());
-    v8::Local<v8::Value> result =
-        callback.Run(v8::Null(registry_->isolate()), request());
+    v8::Local<v8::Value> result = callback.Run(request());
 
     // Determine the type of the job we are going to create.
     if (result->IsString()) {
@@ -208,81 +203,88 @@ Protocol::JsProtocolHandler Protocol::GetProtocolHandler(
 }
 
 void Protocol::OnRegisterProtocol(const std::string& scheme,
-                                  const JsProtocolHandler& callback,
-                                  bool is_handled) {
+                                  const JsProtocolHandler& handler,
+                                  const JsCompletionCallback& callback,
+                                  int is_handled) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
 
   if (is_handled || ContainsKey(protocol_handlers_, scheme)) {
     callback.Run(v8::Exception::Error(
-        mate::StringToV8(isolate(), "The Scheme is already registered")),
-                         nullptr);
+        mate::StringToV8(isolate(), "The Scheme is already registered")));
     return;
   }
 
-  protocol_handlers_[scheme] = callback;
-  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-                          base::Bind(&Protocol::RegisterProtocolInIO,
-                                     base::Unretained(this), scheme));
+  protocol_handlers_[scheme] = handler;
+  BrowserThread::PostTaskAndReply(BrowserThread::IO, FROM_HERE,
+                                  base::Bind(&Protocol::RegisterProtocolInIO,
+                                             base::Unretained(this), scheme),
+                                  base::Bind(callback, v8::Null(isolate())));
 }
 
 void Protocol::OnInterceptProtocol(const std::string& scheme,
-                                   const JsProtocolHandler& callback,
-                                   bool is_handled) {
+                                   const JsProtocolHandler& handler,
+                                   const JsCompletionCallback& callback,
+                                   int is_handled) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   if (!is_handled) {
     callback.Run(v8::Exception::Error(
-        mate::StringToV8(isolate(), "Scheme does not exist.")), nullptr);
+        mate::StringToV8(isolate(), "Scheme does not exist.")));
     return;
   }
 
   if (ContainsKey(protocol_handlers_, scheme)) {
     callback.Run(v8::Exception::Error(
-        mate::StringToV8(isolate(), "Cannot intercept custom protocols.")),
-                         nullptr);
+        mate::StringToV8(isolate(), "Cannot intercept custom protocols.")));
     return;
   }
 
-  protocol_handlers_[scheme] = callback;
-  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-                          base::Bind(&Protocol::InterceptProtocolInIO,
-                                     base::Unretained(this), scheme));
+  protocol_handlers_[scheme] = handler;
+  BrowserThread::PostTaskAndReply(BrowserThread::IO, FROM_HERE,
+                                  base::Bind(&Protocol::InterceptProtocolInIO,
+                                             base::Unretained(this), scheme),
+                                  base::Bind(callback, v8::Null(isolate())));
 }
 
 mate::ObjectTemplateBuilder Protocol::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
-      .SetMethod("registerProtocol", &Protocol::RegisterProtocol)
-      .SetMethod("unregisterProtocol", &Protocol::UnregisterProtocol)
+      .SetMethod("_registerProtocol", &Protocol::RegisterProtocol)
+      .SetMethod("_unregisterProtocol", &Protocol::UnregisterProtocol)
       .SetMethod("registerStandardSchemes", &Protocol::RegisterStandardSchemes)
       .SetMethod("isHandledProtocol", &Protocol::IsHandledProtocol)
-      .SetMethod("interceptProtocol", &Protocol::InterceptProtocol)
-      .SetMethod("uninterceptProtocol", &Protocol::UninterceptProtocol);
+      .SetMethod("_interceptProtocol", &Protocol::InterceptProtocol)
+      .SetMethod("_uninterceptProtocol", &Protocol::UninterceptProtocol);
 }
 
 void Protocol::RegisterProtocol(v8::Isolate* isolate,
                                 const std::string& scheme,
-                                const JsProtocolHandler& callback) {
+                                const JsProtocolHandler& handler,
+                                const JsCompletionCallback& callback) {
   IsHandledProtocol(scheme,
                     base::Bind(&Protocol::OnRegisterProtocol,
                                base::Unretained(this),
-                               scheme, callback));
+                               scheme, handler, callback));
 }
 
 void Protocol::UnregisterProtocol(v8::Isolate* isolate,
-                                  const std::string& scheme) {
+                                  const std::string& scheme,
+                                  const JsCompletionCallback& callback) {
   ProtocolHandlersMap::iterator it(protocol_handlers_.find(scheme));
-  if (it == protocol_handlers_.end())
-    return node::ThrowError(isolate, "The scheme has not been registered");
+  if (it == protocol_handlers_.end()) {
+    callback.Run(v8::Exception::Error(
+        mate::StringToV8(isolate, "The Scheme has not been registered")));
+    return;
+  }
 
   protocol_handlers_.erase(it);
-  BrowserThread::PostTask(BrowserThread::IO,
-                          FROM_HERE,
-                          base::Bind(&Protocol::UnregisterProtocolInIO,
-                                     base::Unretained(this), scheme));
+  BrowserThread::PostTaskAndReply(BrowserThread::IO, FROM_HERE,
+      base::Bind(&Protocol::UnregisterProtocolInIO,
+                 base::Unretained(this), scheme),
+      base::Bind(callback, v8::Null(isolate)));
 }
 
 void Protocol::RegisterStandardSchemes(
@@ -291,7 +293,7 @@ void Protocol::RegisterStandardSchemes(
 }
 
 void Protocol::IsHandledProtocol(const std::string& scheme,
-                                 const CompletionCallback& callback) {
+                                 const net::CompletionCallback& callback) {
   BrowserThread::PostTaskAndReplyWithResult(BrowserThread::IO, FROM_HERE,
       base::Bind(&AtomURLRequestJobFactory::IsHandledProtocol,
                  base::Unretained(job_factory_), scheme),
@@ -300,68 +302,54 @@ void Protocol::IsHandledProtocol(const std::string& scheme,
 
 void Protocol::InterceptProtocol(v8::Isolate* isolate,
                                  const std::string& scheme,
-                                 const JsProtocolHandler& callback) {
+                                 const JsProtocolHandler& handler,
+                                 const JsCompletionCallback& callback) {
   BrowserThread::PostTaskAndReplyWithResult(BrowserThread::IO, FROM_HERE,
       base::Bind(&AtomURLRequestJobFactory::HasProtocolHandler,
                  base::Unretained(job_factory_), scheme),
       base::Bind(&Protocol::OnInterceptProtocol,
-                 base::Unretained(this), scheme, callback));
+                 base::Unretained(this), scheme, handler, callback));
 }
 
 void Protocol::UninterceptProtocol(v8::Isolate* isolate,
-                                   const std::string& scheme) {
+                                   const std::string& scheme,
+                                   const JsCompletionCallback& callback) {
   ProtocolHandlersMap::iterator it(protocol_handlers_.find(scheme));
-  if (it == protocol_handlers_.end())
-    return node::ThrowError(isolate, "The scheme has not been registered");
+  if (it == protocol_handlers_.end()) {
+    callback.Run(v8::Exception::Error(
+        mate::StringToV8(isolate, "The Scheme has not been registered")));
+    return;
+  }
 
   protocol_handlers_.erase(it);
-  BrowserThread::PostTask(BrowserThread::IO,
-                          FROM_HERE,
-                          base::Bind(&Protocol::UninterceptProtocolInIO,
-                                     base::Unretained(this), scheme));
+  BrowserThread::PostTaskAndReply(BrowserThread::IO, FROM_HERE,
+      base::Bind(&Protocol::UninterceptProtocolInIO,
+                 base::Unretained(this), scheme),
+      base::Bind(callback, v8::Null(isolate)));
 }
 
 void Protocol::RegisterProtocolInIO(const std::string& scheme) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   job_factory_->SetProtocolHandler(scheme, new CustomProtocolHandler(this));
-  BrowserThread::PostTask(BrowserThread::UI,
-                          FROM_HERE,
-                          base::Bind(&Protocol::EmitEventInUI,
-                                     base::Unretained(this),
-                                     "registered", scheme));
 }
 
 void Protocol::UnregisterProtocolInIO(const std::string& scheme) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   job_factory_->SetProtocolHandler(scheme, NULL);
-  BrowserThread::PostTask(BrowserThread::UI,
-                          FROM_HERE,
-                          base::Bind(&Protocol::EmitEventInUI,
-                                     base::Unretained(this),
-                                     "unregistered", scheme));
 }
 
 void Protocol::InterceptProtocolInIO(const std::string& scheme) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   ProtocolHandler* original_handler = job_factory_->GetProtocolHandler(scheme);
-  if (original_handler == NULL) {
-    BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, base::Bind(
-        &Protocol::EmitEventInUI,
-        base::Unretained(this),
-        "error", "There is no protocol handler to intercpet"));
-    return;
+  if (original_handler == nullptr) {
+    NOTREACHED();
   }
 
   job_factory_->ReplaceProtocol(
       scheme, new CustomProtocolHandler(this, original_handler));
-  BrowserThread::PostTask(BrowserThread::UI,
-                          FROM_HERE,
-                          base::Bind(&Protocol::EmitEventInUI,
-                                     base::Unretained(this),
-                                     "intercepted", scheme));
 }
 
 void Protocol::UninterceptProtocolInIO(const std::string& scheme) {
@@ -369,28 +357,14 @@ void Protocol::UninterceptProtocolInIO(const std::string& scheme) {
 
   CustomProtocolHandler* handler = static_cast<CustomProtocolHandler*>(
       job_factory_->GetProtocolHandler(scheme));
-  if (handler->original_handler() == NULL) {
-    BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, base::Bind(
-        &Protocol::EmitEventInUI,
-        base::Unretained(this),
-        "error", "The protocol is not intercpeted"));
-    return;
+  if (handler->original_handler() == nullptr) {
+    NOTREACHED();
   }
 
   // Reset the protocol handler to the orignal one and delete current protocol
   // handler.
   ProtocolHandler* original_handler = handler->ReleaseDefaultProtocolHandler();
   delete job_factory_->ReplaceProtocol(scheme, original_handler);
-  BrowserThread::PostTask(BrowserThread::UI,
-                          FROM_HERE,
-                          base::Bind(&Protocol::EmitEventInUI,
-                                     base::Unretained(this),
-                                     "unintercepted", scheme));
-}
-
-void Protocol::EmitEventInUI(const std::string& event,
-                             const std::string& parameter) {
-  Emit(event, parameter);
 }
 
 // static
