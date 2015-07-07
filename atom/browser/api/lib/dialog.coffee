@@ -92,9 +92,11 @@ module.exports =
     options.message ?= ''
     options.detail ?= ''
     options.icon ?= null
+    options.cancelId ?= 0
 
     binding.showMessageBox messageBoxType,
                            options.buttons,
+                           options.cancelId,
                            [options.title, options.message, options.detail],
                            options.icon,
                            window,
