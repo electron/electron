@@ -16,6 +16,7 @@ LINUX_DEPS = [
   'libgnome-keyring-dev',
   'libgtk2.0-dev',
   'libnotify-dev',
+  'libnss3-dev',
   'gcc-multilib',
   'g++-multilib',
 ]
