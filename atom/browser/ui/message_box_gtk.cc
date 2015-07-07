@@ -12,6 +12,7 @@
 #include "chrome/browser/ui/libgtk2ui/gtk2_signal.h"
 #include "chrome/browser/ui/libgtk2ui/gtk2_util.h"
 #include "chrome/browser/ui/libgtk2ui/skia_utils_gtk2.h"
+#include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
 
 #define ANSI_FOREGROUND_RED   "\x1b[31m"
 #define ANSI_FOREGROUND_BLACK "\x1b[30m"
@@ -25,7 +26,7 @@ namespace {
 
 class GtkMessageBox {
  public:
-  GtkMessageBox(bool synchronous,
+  GtkMessageBox(bool modal,
                 NativeWindow* parent_window,
                 MessageBoxType type,
                 const std::vector<std::string>& buttons,
@@ -35,15 +36,11 @@ class GtkMessageBox {
                 const gfx::ImageSkia& icon)
       : dialog_scope_(parent_window),
         cancel_id_(0) {
-    // The dialog should be modal when showed synchronous.
-    int flags = GTK_DIALOG_NO_SEPARATOR;
-    if (synchronous)
-      flags |= GTK_DIALOG_MODAL;
-
     // Create dialog.
     dialog_ = gtk_message_dialog_new(
         nullptr,  // parent
-        static_cast<GtkDialogFlags>(flags),  // flags
+        modal ? GTK_DIALOG_MODAL :   // modal dialog
+                static_cast<GtkDialogFlags>(0),  // no flags
         GTK_MESSAGE_OTHER,  // no icon
         GTK_BUTTONS_NONE,  // no buttons
         "%s", message.c_str());
@@ -95,13 +92,21 @@ class GtkMessageBox {
     }
   }
 
+  void Show() {
+    gtk_widget_show_all(dialog_);
+    // We need to call gtk_window_present after making the widgets visible to
+    // make sure window gets correctly raised and gets focus.
+    int time = views::X11DesktopHandler::get()->wm_user_time_ms();
+    gtk_window_present_with_time(GTK_WINDOW(dialog_), time);
+  }
+
   void RunAsynchronous(const MessageBoxCallback& callback) {
     callback_ = callback;
     g_signal_connect(dialog_, "delete-event",
                      G_CALLBACK(gtk_widget_hide_on_delete), nullptr);
     g_signal_connect(dialog_, "response",
                      G_CALLBACK(OnResponseDialogThunk), this);
-    gtk_widget_show_all(dialog_);
+    Show();
   }
 
   CHROMEGTK_CALLBACK_1(GtkMessageBox, void, OnResponseDialog, int);
@@ -141,7 +146,7 @@ int ShowMessageBox(NativeWindow* parent,
                    const std::string& detail,
                    const gfx::ImageSkia& icon) {
   GtkMessageBox box(true, parent, type, buttons, title, message, detail, icon);
-  gtk_widget_show_all(box.dialog());
+  box.Show();
   int response = gtk_dialog_run(GTK_DIALOG(box.dialog()));
   if (response < 0)
     return box.cancel_id();
