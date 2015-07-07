@@ -45,6 +45,8 @@ class GtkMessageBox {
     if (!detail.empty())
       gtk_message_dialog_format_secondary_text(
           GTK_MESSAGE_DIALOG(dialog_), "%s", detail.c_str());
+    if (!title.empty())
+      gtk_window_set_title(GTK_WINDOW(dialog_), title.c_str());
 
     // Set dialog's icon.
     if (!icon.isNull()) {
