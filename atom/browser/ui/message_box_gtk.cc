@@ -26,8 +26,7 @@ namespace {
 
 class GtkMessageBox {
  public:
-  GtkMessageBox(bool modal,
-                NativeWindow* parent_window,
+  GtkMessageBox(NativeWindow* parent_window,
                 MessageBoxType type,
                 const std::vector<std::string>& buttons,
                 const std::string& title,
@@ -39,8 +38,7 @@ class GtkMessageBox {
     // Create dialog.
     dialog_ = gtk_message_dialog_new(
         nullptr,  // parent
-        modal ? GTK_DIALOG_MODAL :   // modal dialog
-                static_cast<GtkDialogFlags>(0),  // no flags
+        static_cast<GtkDialogFlags>(0),  // no flags
         GetMessageType(type),  // type
         GTK_BUTTONS_NONE,  // no buttons
         "%s", message.c_str());
@@ -115,6 +113,16 @@ class GtkMessageBox {
     gtk_window_present_with_time(GTK_WINDOW(dialog_), time);
   }
 
+  int RunSynchronous() {
+    gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
+    Show();
+    int response = gtk_dialog_run(GTK_DIALOG(dialog_));
+    if (response < 0)
+      return cancel_id_;
+    else
+      return response;
+  }
+
   void RunAsynchronous(const MessageBoxCallback& callback) {
     callback_ = callback;
     g_signal_connect(dialog_, "delete-event",
@@ -125,9 +133,6 @@ class GtkMessageBox {
   }
 
   CHROMEGTK_CALLBACK_1(GtkMessageBox, void, OnResponseDialog, int);
-
-  GtkWidget* dialog() const { return dialog_; }
-  int cancel_id() const { return cancel_id_; }
 
  private:
   atom::NativeWindow::DialogScope dialog_scope_;
@@ -160,13 +165,8 @@ int ShowMessageBox(NativeWindow* parent,
                    const std::string& message,
                    const std::string& detail,
                    const gfx::ImageSkia& icon) {
-  GtkMessageBox box(true, parent, type, buttons, title, message, detail, icon);
-  box.Show();
-  int response = gtk_dialog_run(GTK_DIALOG(box.dialog()));
-  if (response < 0)
-    return box.cancel_id();
-  else
-    return response;
+  return GtkMessageBox(parent, type, buttons, title, message, detail,
+                       icon).RunSynchronous();
 }
 
 void ShowMessageBox(NativeWindow* parent,
@@ -177,19 +177,16 @@ void ShowMessageBox(NativeWindow* parent,
                     const std::string& detail,
                     const gfx::ImageSkia& icon,
                     const MessageBoxCallback& callback) {
-  auto box = new GtkMessageBox(
-      false, parent, type, buttons, title, message, detail, icon);
-  box->RunAsynchronous(callback);
+  (new GtkMessageBox(parent, type, buttons, title, message, detail,
+                     icon))->RunAsynchronous(callback);
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
   if (Browser::Get()->is_ready()) {
-    GtkMessageBox box(true, nullptr, MESSAGE_BOX_TYPE_ERROR, { "OK" }, "Error",
-                      base::UTF16ToUTF8(title).c_str(),
-                      base::UTF16ToUTF8(content).c_str(),
-                      gfx::ImageSkia());
-    box.Show();
-    gtk_dialog_run(GTK_DIALOG(box.dialog()));
+    GtkMessageBox(nullptr, MESSAGE_BOX_TYPE_ERROR, { "OK" }, "Error",
+                  base::UTF16ToUTF8(title).c_str(),
+                  base::UTF16ToUTF8(content).c_str(),
+                  gfx::ImageSkia()).RunSynchronous();
   } else {
     fprintf(stderr,
             ANSI_TEXT_BOLD ANSI_BACKGROUND_GRAY
