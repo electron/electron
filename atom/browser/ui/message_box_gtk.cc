@@ -42,9 +42,9 @@ class GtkMessageBox {
         GetMessageType(type),  // type
         GTK_BUTTONS_NONE,  // no buttons
         "%s", message.c_str());
-    gtk_message_dialog_format_secondary_text(
-        GTK_MESSAGE_DIALOG(dialog_),
-        "%s", detail.empty() ? nullptr : detail.c_str());
+    if (!detail.empty())
+      gtk_message_dialog_format_secondary_text(
+          GTK_MESSAGE_DIALOG(dialog_), "%s", detail.c_str());
 
     // Set dialog's icon.
     if (!icon.isNull()) {
