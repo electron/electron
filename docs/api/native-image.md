@@ -114,7 +114,7 @@ Returns a [Buffer][buffer] that contains image's `PNG` encoded data.
 
 ### NativeImage.toJpeg(quality)
 
-* `quality` Integer
+* `quality` Integer between 0 - 100 (required)
 
 Returns a [Buffer][buffer] that contains image's `JPEG` encoded data.
 
