@@ -101,12 +101,6 @@ module.exports =
           options.cancelId = i
           break
 
-    # On OS X the "Cancel" is always get selected when dialog is cancelled.
-    if process.platform is 'darwin'
-      for text, i in options.buttons when text is 'Cancel'
-        options.cancelId = i
-        break
-
     binding.showMessageBox messageBoxType,
                            options.buttons,
                            options.cancelId,
