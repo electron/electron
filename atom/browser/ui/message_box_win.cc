@@ -22,6 +22,7 @@ namespace {
 const int kIDStart = 100;
 
 int ShowMessageBoxUTF16(HWND parent,
+                        MessageBoxType type,
                         const std::vector<base::string16>& buttons,
                         int cancel_id,
                         const base::string16& title,
@@ -43,6 +44,19 @@ int ShowMessageBoxUTF16(HWND parent,
   config.pszWindowTitle = title.c_str();
   config.pButtons       = &dialog_buttons.front();
   config.cButtons       = dialog_buttons.size();
+
+  // Show icon according to dialog's type.
+  switch (type) {
+    case MESSAGE_BOX_TYPE_INFORMATION:
+      config.pszMainIcon = TD_INFORMATION_ICON;
+      break;
+    case MESSAGE_BOX_TYPE_WARNING:
+      config.pszMainIcon = TD_WARNING_ICON;
+      break;
+    case MESSAGE_BOX_TYPE_ERROR:
+      config.pszMainIcon = TD_ERROR_ICON;
+      break;
+  }
 
   // If "detail" is empty then don't make message hilighted.
   if (detail.empty()) {
@@ -98,6 +112,7 @@ int ShowMessageBox(NativeWindow* parent,
 
   NativeWindow::DialogScope dialog_scope(parent);
   return ShowMessageBoxUTF16(hwnd_parent,
+                             type,
                              utf16_buttons,
                              cancel_id,
                              base::UTF8ToUTF16(title),
