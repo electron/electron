@@ -11,7 +11,9 @@
 #include "base/callback.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread.h"
+#include "base/win/scoped_gdi_object.h"
 #include "content/public/browser/browser_thread.h"
+#include "ui/gfx/icon_util.h"
 
 namespace atom {
 
@@ -27,7 +29,8 @@ int ShowMessageBoxUTF16(HWND parent,
                         int cancel_id,
                         const base::string16& title,
                         const base::string16& message,
-                        const base::string16& detail) {
+                        const base::string16& detail,
+                        const gfx::ImageSkia& icon) {
   std::vector<TASKDIALOG_BUTTON> dialog_buttons;
   for (size_t i = 0; i < buttons.size(); ++i)
     dialog_buttons.push_back({i + kIDStart, buttons[i].c_str()});
@@ -45,17 +48,24 @@ int ShowMessageBoxUTF16(HWND parent,
   config.pButtons       = &dialog_buttons.front();
   config.cButtons       = dialog_buttons.size();
 
-  // Show icon according to dialog's type.
-  switch (type) {
-    case MESSAGE_BOX_TYPE_INFORMATION:
-      config.pszMainIcon = TD_INFORMATION_ICON;
-      break;
-    case MESSAGE_BOX_TYPE_WARNING:
-      config.pszMainIcon = TD_WARNING_ICON;
-      break;
-    case MESSAGE_BOX_TYPE_ERROR:
-      config.pszMainIcon = TD_ERROR_ICON;
-      break;
+  base::win::ScopedHICON hicon;
+  if (!icon.isNull()) {
+    hicon.Set(IconUtil::CreateHICONFromSkBitmap(*icon.bitmap()));
+    config.dwFlags |= TDF_USE_HICON_MAIN;
+    config.hMainIcon = hicon.Get();
+  } else {
+    // Show icon according to dialog's type.
+    switch (type) {
+      case MESSAGE_BOX_TYPE_INFORMATION:
+        config.pszMainIcon = TD_INFORMATION_ICON;
+        break;
+      case MESSAGE_BOX_TYPE_WARNING:
+        config.pszMainIcon = TD_WARNING_ICON;
+        break;
+      case MESSAGE_BOX_TYPE_ERROR:
+        config.pszMainIcon = TD_ERROR_ICON;
+        break;
+    }
   }
 
   // If "detail" is empty then don't make message hilighted.
@@ -117,7 +127,8 @@ int ShowMessageBox(NativeWindow* parent,
                              cancel_id,
                              base::UTF8ToUTF16(title),
                              base::UTF8ToUTF16(message),
-                             base::UTF8ToUTF16(detail));
+                             base::UTF8ToUTF16(detail),
+                             icon);
 }
 
 void ShowMessageBox(NativeWindow* parent,
