@@ -119,6 +119,12 @@
           'include_dirs': [
             '<(libchromiumcontent_dir)/gen/ui/resources',
           ],
+          'msvs_settings': {
+            'VCManifestTool': {
+              'EmbedManifest': 'true',
+              'AdditionalManifestFiles': 'atom/browser/resources/win/atom.manifest',
+            }
+          },
           'copies': [
             {
               'variables': {
@@ -266,8 +272,9 @@
             'libraries': [
               '-limm32.lib',
               '-loleacc.lib',
-              '-lComdlg32.lib',
-              '-lWininet.lib',
+              '-lcomctl32.lib',
+              '-lcomdlg32.lib',
+              '-lwininet.lib',
             ],
           },
           'dependencies': [

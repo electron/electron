@@ -101,12 +101,6 @@ module.exports =
           options.cancelId = i
           break
 
-    # On OS X the "Cancel" is always get selected when dialog is cancelled.
-    if process.platform is 'darwin'
-      for text, i in options.buttons when text is 'Cancel'
-        options.cancelId = i
-        break
-
     binding.showMessageBox messageBoxType,
                            options.buttons,
                            options.cancelId,
@@ -119,4 +113,5 @@ module.exports =
     binding.showErrorBox args...
 
 # Mark standard asynchronous functions.
-v8Util.setHiddenValue f, 'asynchronous', true for k, f of module.exports
+for api in ['showMessageBox', 'showOpenDialog', 'showSaveDialog']
+  v8Util.setHiddenValue module.exports[api], 'asynchronous', true

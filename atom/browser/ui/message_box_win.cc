@@ -4,333 +4,161 @@
 
 #include "atom/browser/ui/message_box.h"
 
-#include "atom/browser/native_window.h"
-#include "base/callback.h"
-#include "base/message_loop/message_loop.h"
-#include "base/run_loop.h"
-#include "base/strings/string_util.h"
-#include "base/strings/string16.h"
-#include "base/strings/utf_string_conversions.h"
-#include "ui/views/background.h"
-#include "ui/views/controls/button/label_button.h"
-#include "ui/views/controls/message_box_view.h"
-#include "ui/views/layout/grid_layout.h"
-#include "ui/views/layout/layout_constants.h"
-#include "ui/views/bubble/bubble_border.h"
-#include "ui/views/bubble/bubble_frame_view.h"
-#include "ui/views/widget/widget.h"
-#include "ui/views/widget/widget_delegate.h"
-#include "ui/wm/core/shadow_types.h"
+#include <windows.h>
+#include <commctrl.h>
 
-#if defined(OS_WIN)
-#include "ui/base/win/message_box_win.h"
-#endif
+#include <map>
+#include <vector>
+
+#include "atom/browser/native_window_views.h"
+#include "base/callback.h"
+#include "base/strings/string_util.h"
+#include "base/strings/utf_string_conversions.h"
+#include "base/threading/thread.h"
+#include "base/win/scoped_gdi_object.h"
+#include "content/public/browser/browser_thread.h"
+#include "ui/gfx/icon_util.h"
 
 namespace atom {
 
 namespace {
 
-// The group used by the buttons.  This name is chosen voluntarily big not to
-// conflict with other groups that could be in the dialog content.
-const int kButtonGroup = 1127;
+// Small command ID values are already taken by Windows, we have to start from
+// a large number to avoid conflicts with Windows.
+const int kIDStart = 100;
 
-class MessageDialogClientView;
-
-class MessageDialog : public views::WidgetDelegate,
-                      public views::View,
-                      public views::ButtonListener {
- public:
-  MessageDialog(NativeWindow* parent_window,
-                MessageBoxType type,
-                const std::vector<std::string>& buttons,
-                int cancel_id,
-                const std::string& title,
-                const std::string& message,
-                const std::string& detail,
-                const gfx::ImageSkia& icon);
-  virtual ~MessageDialog();
-
-  void Show(base::RunLoop* run_loop = NULL);
-  void Close();
-
-  int GetResult() const;
-
-  void set_callback(const MessageBoxCallback& callback) {
-    delete_on_close_ = true;
-    callback_ = callback;
-  }
-
- private:
-  // Overridden from views::WidgetDelegate:
-  base::string16 GetWindowTitle() const override;
-  gfx::ImageSkia GetWindowAppIcon() override;
-  gfx::ImageSkia GetWindowIcon() override;
-  bool ShouldShowWindowIcon() const override;
-  views::Widget* GetWidget() override;
-  const views::Widget* GetWidget() const override;
-  views::View* GetContentsView() override;
-  views::View* GetInitiallyFocusedView() override;
-  ui::ModalType GetModalType() const override;
-  views::NonClientFrameView* CreateNonClientFrameView(
-      views::Widget* widget) override;
-  views::ClientView* CreateClientView(views::Widget* widget) override;
-
-  // Overridden from views::View:
-  gfx::Size GetPreferredSize() const override;
-  void Layout() override;
-  bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
-
-  // Overridden from views::ButtonListener:
-  void ButtonPressed(views::Button* sender, const ui::Event& event) override;
-
-  gfx::ImageSkia icon_;
-
-  bool delete_on_close_;
-  int cancel_id_;
-  int result_;
-  base::string16 title_;
-
-  NativeWindow* parent_;
-  scoped_ptr<views::Widget> widget_;
-  views::MessageBoxView* message_box_view_;
-  std::vector<views::LabelButton*> buttons_;
-
-  base::RunLoop* run_loop_;
-  scoped_ptr<NativeWindow::DialogScope> dialog_scope_;
-  MessageBoxCallback callback_;
-
-  DISALLOW_COPY_AND_ASSIGN(MessageDialog);
+// Get the common ID from button's name.
+struct CommonButtonID {
+  int button;
+  int id;
 };
+CommonButtonID GetCommonID(const base::string16& button) {
+  base::string16 lower = base::StringToLowerASCII(button);
+  if (lower == L"ok")
+    return { TDCBF_OK_BUTTON, IDOK };
+  else if (lower == L"yes")
+    return { TDCBF_YES_BUTTON, IDYES };
+  else if (lower == L"no")
+    return { TDCBF_NO_BUTTON, IDNO };
+  else if (lower == L"cancel")
+    return { TDCBF_CANCEL_BUTTON, IDCANCEL };
+  else if (lower == L"retry")
+    return { TDCBF_RETRY_BUTTON, IDRETRY };
+  else if (lower == L"close")
+    return { TDCBF_CLOSE_BUTTON, IDCLOSE };
+  return { -1, -1 };
+}
 
-class MessageDialogClientView : public views::ClientView {
- public:
-  MessageDialogClientView(MessageDialog* dialog, views::Widget* widget)
-      : views::ClientView(widget, dialog),
-        dialog_(dialog) {
-  }
-
-  // views::ClientView:
-  bool CanClose() override {
-    dialog_->Close();
-    return false;
-  }
-
- private:
-  MessageDialog* dialog_;
-
-  DISALLOW_COPY_AND_ASSIGN(MessageDialogClientView);
-};
-
-////////////////////////////////////////////////////////////////////////////////
-// MessageDialog, public:
-
-MessageDialog::MessageDialog(NativeWindow* parent_window,
-                             MessageBoxType type,
-                             const std::vector<std::string>& buttons,
-                             int cancel_id,
-                             const std::string& title,
-                             const std::string& message,
-                             const std::string& detail,
-                             const gfx::ImageSkia& icon)
-    : icon_(icon),
-      delete_on_close_(false),
-      cancel_id_(cancel_id),
-      result_(-1),
-      title_(base::UTF8ToUTF16(title)),
-      parent_(parent_window),
-      message_box_view_(NULL),
-      run_loop_(NULL),
-      dialog_scope_(new NativeWindow::DialogScope(parent_window)) {
-  DCHECK_GT(buttons.size(), 0u);
-  set_owned_by_client();
-
-  if (!parent_)
-    set_background(views::Background::CreateStandardPanelBackground());
-
-  std::string content = message + "\n" + detail;
-  views::MessageBoxView::InitParams box_params(base::UTF8ToUTF16(content));
-  message_box_view_ = new views::MessageBoxView(box_params);
-  AddChildView(message_box_view_);
-
+// Determine whether the buttons are common buttons, if so map common ID
+// to button ID.
+void MapToCommonID(const std::vector<base::string16>& buttons,
+                   std::map<int, int>* id_map,
+                   TASKDIALOG_COMMON_BUTTON_FLAGS* button_flags,
+                   std::vector<TASKDIALOG_BUTTON>* dialog_buttons) {
   for (size_t i = 0; i < buttons.size(); ++i) {
-    views::LabelButton* button = new views::LabelButton(
-        this, base::UTF8ToUTF16(buttons[i]));
-    button->set_tag(i);
-    button->SetMinSize(gfx::Size(60, 30));
-    button->SetStyle(views::Button::STYLE_BUTTON);
-    button->SetGroup(kButtonGroup);
-
-    buttons_.push_back(button);
-    AddChildView(button);
-  }
-
-  // First button is always default button.
-  buttons_[0]->SetIsDefault(true);
-  buttons_[0]->AddAccelerator(ui::Accelerator(ui::VKEY_RETURN, ui::EF_NONE));
-
-  views::Widget::InitParams params;
-  params.delegate = this;
-  params.type = views::Widget::InitParams::TYPE_WINDOW;
-  params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
-  if (parent_) {
-    params.parent = parent_->GetNativeWindow();
-    params.opacity = views::Widget::InitParams::TRANSLUCENT_WINDOW;
-    // Use bubble style for dialog has a parent.
-    params.remove_standard_frame = true;
-  }
-
-  widget_.reset(new views::Widget);
-  widget_->Init(params);
-  widget_->UpdateWindowIcon();
-
-  // Bind to ESC.
-  AddAccelerator(ui::Accelerator(ui::VKEY_ESCAPE, ui::EF_NONE));
-}
-
-MessageDialog::~MessageDialog() {
-}
-
-void MessageDialog::Show(base::RunLoop* run_loop) {
-  run_loop_ = run_loop;
-  widget_->Show();
-}
-
-void MessageDialog::Close() {
-  dialog_scope_.reset();
-
-  if (delete_on_close_) {
-    callback_.Run(GetResult());
-    base::MessageLoop::current()->DeleteSoon(FROM_HERE, this);
-  } else if (run_loop_) {
-    run_loop_->Quit();
+    auto common = GetCommonID(buttons[i]);
+    if (common.button != -1) {
+      // It is a common button.
+      (*id_map)[common.id] = i;
+      (*button_flags) |= common.button;
+    } else {
+      // It is a custom button.
+      dialog_buttons->push_back({i + kIDStart, buttons[i].c_str()});
+    }
   }
 }
 
-int MessageDialog::GetResult() const {
-  if (result_ == -1)
-    return cancel_id_;
+int ShowMessageBoxUTF16(HWND parent,
+                        MessageBoxType type,
+                        const std::vector<base::string16>& buttons,
+                        int cancel_id,
+                        const base::string16& title,
+                        const base::string16& message,
+                        const base::string16& detail,
+                        const gfx::ImageSkia& icon) {
+  TASKDIALOG_FLAGS flags = TDF_SIZE_TO_CONTENT;  // show all content.
+  if (cancel_id != 0)
+    flags |= TDF_ALLOW_DIALOG_CANCELLATION;  // allow dialog to be cancelled.
+
+  TASKDIALOGCONFIG config = { 0 };
+  config.cbSize     = sizeof(config);
+  config.hwndParent = parent;
+  config.hInstance  = GetModuleHandle(NULL);
+  config.dwFlags    = flags;
+
+  if (!title.empty())
+    config.pszWindowTitle = title.c_str();
+
+  base::win::ScopedHICON hicon;
+  if (!icon.isNull()) {
+    hicon.Set(IconUtil::CreateHICONFromSkBitmap(*icon.bitmap()));
+    config.dwFlags |= TDF_USE_HICON_MAIN;
+    config.hMainIcon = hicon.Get();
+  } else {
+    // Show icon according to dialog's type.
+    switch (type) {
+      case MESSAGE_BOX_TYPE_INFORMATION:
+        config.pszMainIcon = TD_INFORMATION_ICON;
+        break;
+      case MESSAGE_BOX_TYPE_WARNING:
+        config.pszMainIcon = TD_WARNING_ICON;
+        break;
+      case MESSAGE_BOX_TYPE_ERROR:
+        config.pszMainIcon = TD_ERROR_ICON;
+        break;
+    }
+  }
+
+  // If "detail" is empty then don't make message hilighted.
+  if (detail.empty()) {
+    config.pszContent = message.c_str();
+  } else {
+    config.pszMainInstruction = message.c_str();
+    config.pszContent = detail.c_str();
+  }
+
+  // Iterate through the buttons, put common buttons in dwCommonButtons
+  // and custom buttons in pButtons.
+  std::map<int, int> id_map;
+  std::vector<TASKDIALOG_BUTTON> dialog_buttons;
+  MapToCommonID(buttons, &id_map, &config.dwCommonButtons, &dialog_buttons);
+  if (dialog_buttons.size() > 0) {
+    config.pButtons = &dialog_buttons.front();
+    config.cButtons = dialog_buttons.size();
+    config.dwFlags |= TDF_USE_COMMAND_LINKS;  // custom buttons as links.
+  }
+
+  int id = 0;
+  TaskDialogIndirect(&config, &id, NULL, NULL);
+  if (id_map.find(id) != id_map.end())  // common button.
+    return id_map[id];
+  else if (id >= kIDStart)  // custom button.
+    return id - kIDStart;
   else
-    return result_;
+    return cancel_id;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// MessageDialog, private:
-
-base::string16 MessageDialog::GetWindowTitle() const {
-  return title_;
-}
-
-gfx::ImageSkia MessageDialog::GetWindowAppIcon() {
-  return icon_;
-}
-
-gfx::ImageSkia MessageDialog::GetWindowIcon() {
-  return icon_;
-}
-
-bool MessageDialog::ShouldShowWindowIcon() const {
-  return true;
-}
-
-views::Widget* MessageDialog::GetWidget() {
-  return widget_.get();
-}
-
-const views::Widget* MessageDialog::GetWidget() const {
-  return widget_.get();
-}
-
-views::View* MessageDialog::GetContentsView() {
-  return this;
-}
-
-views::View* MessageDialog::GetInitiallyFocusedView() {
-  if (buttons_.size() > 0)
-    return buttons_[0];
-  else
-    return this;
-}
-
-ui::ModalType MessageDialog::GetModalType() const {
-  return ui::MODAL_TYPE_SYSTEM;
-}
-
-views::NonClientFrameView* MessageDialog::CreateNonClientFrameView(
-    views::Widget* widget) {
-  if (!parent_)
-    return NULL;
-
-  // Create a bubble style frame like Chrome.
-  views::BubbleFrameView* frame =  new views::BubbleFrameView(gfx::Insets());
-  const SkColor color = widget->GetNativeTheme()->GetSystemColor(
-      ui::NativeTheme::kColorId_DialogBackground);
-  scoped_ptr<views::BubbleBorder> border(new views::BubbleBorder(
-      views::BubbleBorder::FLOAT, views::BubbleBorder::SMALL_SHADOW, color));
-  frame->SetBubbleBorder(border.Pass());
-  wm::SetShadowType(widget->GetNativeWindow(), wm::SHADOW_TYPE_NONE);
-  return frame;
-}
-
-views::ClientView* MessageDialog::CreateClientView(views::Widget* widget) {
-  return new MessageDialogClientView(this, widget);
-}
-
-gfx::Size MessageDialog::GetPreferredSize() const {
-  gfx::Size size(0, buttons_[0]->GetPreferredSize().height());
-  for (size_t i = 0; i < buttons_.size(); ++i)
-    size.Enlarge(buttons_[i]->GetPreferredSize().width(), 0);
-
-  // Button spaces.
-  size.Enlarge(views::kRelatedButtonHSpacing * (buttons_.size() - 1),
-               views::kRelatedControlVerticalSpacing);
-
-  // The message box view.
-  gfx::Size contents_size = message_box_view_->GetPreferredSize();
-  size.Enlarge(0, contents_size.height());
-  if (contents_size.width() > size.width())
-    size.set_width(contents_size.width());
-
-  return size;
-}
-
-void MessageDialog::Layout() {
-  gfx::Rect bounds = GetContentsBounds();
-
-  // Layout the row containing the buttons.
-  int x = bounds.width();
-  int height = buttons_[0]->GetPreferredSize().height() +
-               views::kRelatedControlVerticalSpacing;
-
-  // NB: We iterate through the buttons backwards here because
-  // Mac and Windows buttons are laid out in opposite order.
-  for (int i = buttons_.size() - 1; i >= 0; --i) {
-    gfx::Size size = buttons_[i]->GetPreferredSize();
-    x -= size.width() + views::kRelatedButtonHSpacing;
-
-    buttons_[i]->SetBounds(x, bounds.height() - height,
-                           size.width(), size.height());
-  }
-
-  // Layout the message box view.
-  message_box_view_->SetBounds(bounds.x(), bounds.y(), bounds.width(),
-                               bounds.height() - height);
-}
-
-bool MessageDialog::AcceleratorPressed(const ui::Accelerator& accelerator) {
-  DCHECK_EQ(accelerator.key_code(), ui::VKEY_ESCAPE);
-  widget_->Close();
-  return true;
-}
-
-void MessageDialog::ButtonPressed(views::Button* sender,
-                                  const ui::Event& event) {
-  result_ = sender->tag();
-  widget_->Close();
+void RunMessageBoxInNewThread(base::Thread* thread,
+                              NativeWindow* parent,
+                              MessageBoxType type,
+                              const std::vector<std::string>& buttons,
+                              int cancel_id,
+                              const std::string& title,
+                              const std::string& message,
+                              const std::string& detail,
+                              const gfx::ImageSkia& icon,
+                              const MessageBoxCallback& callback) {
+  int result = ShowMessageBox(parent, type, buttons, cancel_id, title, message,
+                              detail, icon);
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE, base::Bind(callback, result));
+  content::BrowserThread::DeleteSoon(
+      content::BrowserThread::UI, FROM_HERE, thread);
 }
 
 }  // namespace
 
-int ShowMessageBox(NativeWindow* parent_window,
+int ShowMessageBox(NativeWindow* parent,
                    MessageBoxType type,
                    const std::vector<std::string>& buttons,
                    int cancel_id,
@@ -338,20 +166,26 @@ int ShowMessageBox(NativeWindow* parent_window,
                    const std::string& message,
                    const std::string& detail,
                    const gfx::ImageSkia& icon) {
-  MessageDialog dialog(
-      parent_window, type, buttons, cancel_id, title, message, detail, icon);
-  {
-    base::MessageLoop::ScopedNestableTaskAllower allow(
-        base::MessageLoopForUI::current());
-    base::RunLoop run_loop;
-    dialog.Show(&run_loop);
-    run_loop.Run();
-  }
+  std::vector<base::string16> utf16_buttons;
+  for (const auto& button : buttons)
+    utf16_buttons.push_back(base::UTF8ToUTF16(button));
 
-  return dialog.GetResult();
+  HWND hwnd_parent = parent ?
+      static_cast<atom::NativeWindowViews*>(parent)->GetAcceleratedWidget() :
+      NULL;
+
+  NativeWindow::DialogScope dialog_scope(parent);
+  return ShowMessageBoxUTF16(hwnd_parent,
+                             type,
+                             utf16_buttons,
+                             cancel_id,
+                             base::UTF8ToUTF16(title),
+                             base::UTF8ToUTF16(message),
+                             base::UTF8ToUTF16(detail),
+                             icon);
 }
 
-void ShowMessageBox(NativeWindow* parent_window,
+void ShowMessageBox(NativeWindow* parent,
                     MessageBoxType type,
                     const std::vector<std::string>& buttons,
                     int cancel_id,
@@ -360,15 +194,25 @@ void ShowMessageBox(NativeWindow* parent_window,
                     const std::string& detail,
                     const gfx::ImageSkia& icon,
                     const MessageBoxCallback& callback) {
-  // The dialog would be deleted when the dialog is closed.
-  MessageDialog* dialog = new MessageDialog(
-      parent_window, type, buttons, cancel_id, title, message, detail, icon);
-  dialog->set_callback(callback);
-  dialog->Show();
+  scoped_ptr<base::Thread> thread(
+      new base::Thread(ATOM_PRODUCT_NAME "MessageBoxThread"));
+  thread->init_com_with_mta(false);
+  if (!thread->Start()) {
+    callback.Run(cancel_id);
+    return;
+  }
+
+  base::Thread* unretained = thread.release();
+  unretained->message_loop()->PostTask(
+      FROM_HERE,
+      base::Bind(&RunMessageBoxInNewThread, base::Unretained(unretained),
+                 parent, type, buttons, cancel_id, title, message, detail, icon,
+                 callback));
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
-  ui::MessageBox(NULL, content, title, MB_OK | MB_ICONERROR | MB_TASKMODAL);
+  ShowMessageBoxUTF16(NULL, MESSAGE_BOX_TYPE_ERROR, {}, 0, L"Error", title,
+                      content, gfx::ImageSkia());
 }
 
 }  // namespace atom
