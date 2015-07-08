@@ -31,20 +31,26 @@ int ShowMessageBoxUTF16(HWND parent,
   for (size_t i = 0; i < buttons.size(); ++i)
     dialog_buttons.push_back({i + kIDStart, buttons[i].c_str()});
 
-  TASKDIALOG_FLAGS flags = TDF_SIZE_TO_CONTENT;
+  TASKDIALOG_FLAGS flags = TDF_SIZE_TO_CONTENT;  // show all content.
   if (cancel_id != 0)
-    flags |= TDF_ALLOW_DIALOG_CANCELLATION;
+    flags |= TDF_ALLOW_DIALOG_CANCELLATION;  // allow dialog to be cancelled.
 
   TASKDIALOGCONFIG config = { 0 };
-  config.cbSize             = sizeof(config);
-  config.hwndParent         = parent;
-  config.hInstance          = GetModuleHandle(NULL);
-  config.dwFlags            = flags;
-  config.pszWindowTitle     = title.c_str();
-  config.pszMainInstruction = message.c_str();
-  config.pszContent         = detail.c_str();
-  config.pButtons           = &dialog_buttons.front();
-  config.cButtons           = dialog_buttons.size();
+  config.cbSize         = sizeof(config);
+  config.hwndParent     = parent;
+  config.hInstance      = GetModuleHandle(NULL);
+  config.dwFlags        = flags;
+  config.pszWindowTitle = title.c_str();
+  config.pButtons       = &dialog_buttons.front();
+  config.cButtons       = dialog_buttons.size();
+
+  // If "detail" is empty then don't make message hilighted.
+  if (detail.empty()) {
+    config.pszContent = message.c_str();
+  } else {
+    config.pszMainInstruction = message.c_str();
+    config.pszContent = detail.c_str();
+  }
 
   int id = 0;
   TaskDialogIndirect(&config, &id, NULL, NULL);
