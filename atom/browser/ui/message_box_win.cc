@@ -17,6 +17,10 @@ namespace atom {
 
 namespace {
 
+// Small command ID values are already taken by Windows, we have to start from
+// a large number to avoid conflicts with Windows.
+const int kIDStart = 100;
+
 int ShowMessageBoxUTF16(HWND parent,
                         const std::vector<base::string16>& buttons,
                         int cancel_id,
@@ -25,13 +29,17 @@ int ShowMessageBoxUTF16(HWND parent,
                         const base::string16& detail) {
   std::vector<TASKDIALOG_BUTTON> dialog_buttons;
   for (size_t i = 0; i < buttons.size(); ++i)
-    dialog_buttons.push_back({i, buttons[i].c_str()});
+    dialog_buttons.push_back({i + kIDStart, buttons[i].c_str()});
+
+  TASKDIALOG_FLAGS flags = TDF_SIZE_TO_CONTENT;
+  if (cancel_id != 0)
+    flags |= TDF_ALLOW_DIALOG_CANCELLATION;
 
   TASKDIALOGCONFIG config = { 0 };
   config.cbSize             = sizeof(config);
   config.hwndParent         = parent;
   config.hInstance          = GetModuleHandle(NULL);
-  config.dwFlags            = TDF_SIZE_TO_CONTENT;
+  config.dwFlags            = flags;
   config.pszWindowTitle     = title.c_str();
   config.pszMainInstruction = message.c_str();
   config.pszContent         = detail.c_str();
@@ -40,7 +48,10 @@ int ShowMessageBoxUTF16(HWND parent,
 
   int id = 0;
   TaskDialogIndirect(&config, &id, NULL, NULL);
-  return id;
+  if (id == 0 || id == IDCANCEL)
+    return cancel_id;
+  else
+    return id - kIDStart;
 }
 
 void RunMessageBoxInNewThread(base::Thread* thread,
