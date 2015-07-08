@@ -87,6 +87,7 @@ app.commandLine.appendSwitch 'enable-npapi'
 # Set the user path according to application's name.
 app.setPath 'userData', path.join(app.getPath('appData'), app.getName())
 app.setPath 'userCache', path.join(app.getPath('cache'), app.getName())
+app.setAppPath packagePath
 
 # Load the chrome extension support.
 require './chrome-extension'
