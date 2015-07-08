@@ -41,6 +41,7 @@ namespace {
 
 void ShowMessageBox(int type,
                     const std::vector<std::string>& buttons,
+                    int cancel_id,
                     const std::vector<std::string>& texts,
                     const gfx::ImageSkia& icon,
                     atom::NativeWindow* window,
@@ -57,11 +58,12 @@ void ShowMessageBox(int type,
   if (mate::Converter<atom::MessageBoxCallback>::FromV8(args->isolate(),
                                                         peek,
                                                         &callback)) {
-    atom::ShowMessageBox(window, (atom::MessageBoxType)type, buttons, title,
-                         message, detail, icon, callback);
+    atom::ShowMessageBox(window, (atom::MessageBoxType)type, buttons, cancel_id,
+                         title, message, detail, icon, callback);
   } else {
     int chosen = atom::ShowMessageBox(window, (atom::MessageBoxType)type,
-                                      buttons, title, message, detail, icon);
+                                      buttons, cancel_id, title, message,
+                                      detail, icon);
     args->Return(chosen);
   }
 }

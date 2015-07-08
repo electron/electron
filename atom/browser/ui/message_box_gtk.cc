@@ -29,12 +29,13 @@ class GtkMessageBox {
   GtkMessageBox(NativeWindow* parent_window,
                 MessageBoxType type,
                 const std::vector<std::string>& buttons,
+                int cancel_id,
                 const std::string& title,
                 const std::string& message,
                 const std::string& detail,
                 const gfx::ImageSkia& icon)
       : dialog_scope_(parent_window),
-        cancel_id_(0) {
+        cancel_id_(cancel_id) {
     // Create dialog.
     dialog_ = gtk_message_dialog_new(
         nullptr,  // parent
@@ -92,19 +93,16 @@ class GtkMessageBox {
 
   const char* TranslateToStock(int id, const std::string& text) {
     std::string lower = base::StringToLowerASCII(text);
-    if (lower == "cancel") {
-      cancel_id_ = id;
+    if (lower == "cancel")
       return GTK_STOCK_CANCEL;
-    } else if (lower == "no") {
-      cancel_id_ = id;
+    else if (lower == "no")
       return GTK_STOCK_NO;
-    } else if (lower == "ok") {
+    else if (lower == "ok")
       return GTK_STOCK_OK;
-    } else if (lower == "yes") {
+    else if (lower == "yes")
       return GTK_STOCK_YES;
-    } else {
+    else
       return text.c_str();
-    }
   }
 
   void Show() {
@@ -163,29 +161,31 @@ void GtkMessageBox::OnResponseDialog(GtkWidget* widget, int response) {
 int ShowMessageBox(NativeWindow* parent,
                    MessageBoxType type,
                    const std::vector<std::string>& buttons,
+                   int cancel_id,
                    const std::string& title,
                    const std::string& message,
                    const std::string& detail,
                    const gfx::ImageSkia& icon) {
-  return GtkMessageBox(parent, type, buttons, title, message, detail,
+  return GtkMessageBox(parent, type, buttons, cancel_id, title, message, detail,
                        icon).RunSynchronous();
 }
 
 void ShowMessageBox(NativeWindow* parent,
                     MessageBoxType type,
                     const std::vector<std::string>& buttons,
+                    int cancel_id,
                     const std::string& title,
                     const std::string& message,
                     const std::string& detail,
                     const gfx::ImageSkia& icon,
                     const MessageBoxCallback& callback) {
-  (new GtkMessageBox(parent, type, buttons, title, message, detail,
+  (new GtkMessageBox(parent, type, buttons, cancel_id, title, message, detail,
                      icon))->RunAsynchronous(callback);
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
   if (Browser::Get()->is_ready()) {
-    GtkMessageBox(nullptr, MESSAGE_BOX_TYPE_ERROR, { "OK" }, "Error",
+    GtkMessageBox(nullptr, MESSAGE_BOX_TYPE_ERROR, { "OK" }, 0, "Error",
                   base::UTF16ToUTF8(title).c_str(),
                   base::UTF16ToUTF8(content).c_str(),
                   gfx::ImageSkia()).RunSynchronous();

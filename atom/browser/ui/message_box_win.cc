@@ -43,6 +43,7 @@ class MessageDialog : public views::WidgetDelegate,
   MessageDialog(NativeWindow* parent_window,
                 MessageBoxType type,
                 const std::vector<std::string>& buttons,
+                int cancel_id,
                 const std::string& title,
                 const std::string& message,
                 const std::string& detail,
@@ -85,6 +86,7 @@ class MessageDialog : public views::WidgetDelegate,
   gfx::ImageSkia icon_;
 
   bool delete_on_close_;
+  int cancel_id_;
   int result_;
   base::string16 title_;
 
@@ -125,12 +127,14 @@ class MessageDialogClientView : public views::ClientView {
 MessageDialog::MessageDialog(NativeWindow* parent_window,
                              MessageBoxType type,
                              const std::vector<std::string>& buttons,
+                             int cancel_id,
                              const std::string& title,
                              const std::string& message,
                              const std::string& detail,
                              const gfx::ImageSkia& icon)
     : icon_(icon),
       delete_on_close_(false),
+      cancel_id_(cancel_id),
       result_(-1),
       title_(base::UTF8ToUTF16(title)),
       parent_(parent_window),
@@ -203,18 +207,10 @@ void MessageDialog::Close() {
 }
 
 int MessageDialog::GetResult() const {
-  // When the dialog is closed without choosing anything, we think the user
-  // chose 'Cancel', otherwise we think the default behavior is chosen.
-  if (result_ == -1) {
-    for (size_t i = 0; i < buttons_.size(); ++i)
-      if (LowerCaseEqualsASCII(buttons_[i]->GetText(), "cancel")) {
-        return i;
-      }
-
-    return 0;
-  } else {
+  if (result_ == -1)
+    return cancel_id_;
+  else
     return result_;
-  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -337,12 +333,13 @@ void MessageDialog::ButtonPressed(views::Button* sender,
 int ShowMessageBox(NativeWindow* parent_window,
                    MessageBoxType type,
                    const std::vector<std::string>& buttons,
+                   int cancel_id,
                    const std::string& title,
                    const std::string& message,
                    const std::string& detail,
                    const gfx::ImageSkia& icon) {
   MessageDialog dialog(
-      parent_window, type, buttons, title, message, detail, icon);
+      parent_window, type, buttons, cancel_id, title, message, detail, icon);
   {
     base::MessageLoop::ScopedNestableTaskAllower allow(
         base::MessageLoopForUI::current());
@@ -357,6 +354,7 @@ int ShowMessageBox(NativeWindow* parent_window,
 void ShowMessageBox(NativeWindow* parent_window,
                     MessageBoxType type,
                     const std::vector<std::string>& buttons,
+                    int cancel_id,
                     const std::string& title,
                     const std::string& message,
                     const std::string& detail,
@@ -364,7 +362,7 @@ void ShowMessageBox(NativeWindow* parent_window,
                     const MessageBoxCallback& callback) {
   // The dialog would be deleted when the dialog is closed.
   MessageDialog* dialog = new MessageDialog(
-      parent_window, type, buttons, title, message, detail, icon);
+      parent_window, type, buttons, cancel_id, title, message, detail, icon);
   dialog->set_callback(callback);
   dialog->Show();
 }
