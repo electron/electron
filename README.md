@@ -14,6 +14,9 @@ editor](https://github.com/atom/atom).
 Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
 announcements.
 
+This project adheres to the [Open Code of Conduct][code-of-conduct]. By participating, you are expected to uphold this code.
+[code-of-conduct]: http://todogroup.org/opencodeofconduct/#Electron/opensource@github.com
+
 ## Downloads
 
 Prebuilt binaries and debug symbols of Electron for Linux, Windows and Mac can
