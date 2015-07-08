@@ -37,6 +37,10 @@ def get_target_arch():
     return 'x64'
 
 
+def get_chromedriver_version():
+  return 'v2.15'
+
+
 def s3_config():
   config = (os.environ.get('ATOM_SHELL_S3_BUCKET', ''),
             os.environ.get('ATOM_SHELL_S3_ACCESS_KEY', ''),

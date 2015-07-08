@@ -7,9 +7,9 @@ import subprocess
 import sys
 import tempfile
 
-from lib.config import PLATFORM, get_target_arch
+from lib.config import PLATFORM, get_target_arch, get_chromedriver_version
 from lib.util import atom_gyp, execute, get_atom_shell_version, parse_version, \
-                     get_chromedriver_version, scoped_cwd
+                     scoped_cwd
 from lib.github import GitHub
 
 
@@ -83,7 +83,7 @@ def main():
   upload_atom_shell(github, release, os.path.join(DIST_DIR, SYMBOLS_NAME))
 
   # Upload chromedriver and mksnapshot for minor version update.
-  if get_target_arch() != 'arm' and parse_version(args.version)[2] == '0':
+  if parse_version(args.version)[2] == '0':
     chromedriver = 'chromedriver-{0}-{1}-{2}.zip'.format(
         get_chromedriver_version(), PLATFORM, get_target_arch())
     upload_atom_shell(github, release, os.path.join(DIST_DIR, chromedriver))

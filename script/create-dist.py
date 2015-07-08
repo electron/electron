@@ -8,9 +8,9 @@ import sys
 import stat
 
 from lib.config import LIBCHROMIUMCONTENT_COMMIT, BASE_URL, PLATFORM, \
-                       get_target_arch
+                       get_target_arch, get_chromedriver_version
 from lib.util import scoped_cwd, rm_rf, get_atom_shell_version, make_zip, \
-                     execute, get_chromedriver_version, atom_gyp
+                     execute, atom_gyp
 
 
 ATOM_SHELL_VERSION = get_atom_shell_version()
@@ -96,8 +96,7 @@ def main():
 
   create_version()
   create_dist_zip()
-  if target_arch != 'arm':
-    create_chrome_binary_zip('chromedriver', get_chromedriver_version())
+  create_chrome_binary_zip('chromedriver', get_chromedriver_version())
   create_chrome_binary_zip('mksnapshot', ATOM_SHELL_VERSION)
   create_symbols_zip()
 
