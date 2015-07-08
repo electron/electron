@@ -113,4 +113,5 @@ module.exports =
     binding.showErrorBox args...
 
 # Mark standard asynchronous functions.
-v8Util.setHiddenValue f, 'asynchronous', true for k, f of module.exports
+for api in ['showMessageBox', 'showOpenDialog', 'showSaveDialog']
+  v8Util.setHiddenValue module.exports[api], 'asynchronous', true

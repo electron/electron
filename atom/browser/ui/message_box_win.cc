@@ -4,11 +4,11 @@
 
 #include "atom/browser/ui/message_box.h"
 
-#include <map>
-#include <vector>
-
 #include <windows.h>
 #include <commctrl.h>
+
+#include <map>
+#include <vector>
 
 #include "atom/browser/native_window_views.h"
 #include "base/callback.h"
@@ -76,17 +76,18 @@ int ShowMessageBoxUTF16(HWND parent,
                         const base::string16& message,
                         const base::string16& detail,
                         const gfx::ImageSkia& icon) {
-  TASKDIALOG_FLAGS flags = TDF_SIZE_TO_CONTENT |  // show all content.
-                           TDF_USE_COMMAND_LINKS;  // custom buttons as links.
+  TASKDIALOG_FLAGS flags = TDF_SIZE_TO_CONTENT;  // show all content.
   if (cancel_id != 0)
     flags |= TDF_ALLOW_DIALOG_CANCELLATION;  // allow dialog to be cancelled.
 
   TASKDIALOGCONFIG config = { 0 };
-  config.cbSize         = sizeof(config);
-  config.hwndParent     = parent;
-  config.hInstance      = GetModuleHandle(NULL);
-  config.dwFlags        = flags;
-  config.pszWindowTitle = title.c_str();
+  config.cbSize     = sizeof(config);
+  config.hwndParent = parent;
+  config.hInstance  = GetModuleHandle(NULL);
+  config.dwFlags    = flags;
+
+  if (!title.empty())
+    config.pszWindowTitle = title.c_str();
 
   base::win::ScopedHICON hicon;
   if (!icon.isNull()) {
@@ -121,8 +122,11 @@ int ShowMessageBoxUTF16(HWND parent,
   std::map<int, int> id_map;
   std::vector<TASKDIALOG_BUTTON> dialog_buttons;
   MapToCommonID(buttons, &id_map, &config.dwCommonButtons, &dialog_buttons);
-  config.pButtons = &dialog_buttons.front();
-  config.cButtons = dialog_buttons.size();
+  if (dialog_buttons.size() > 0) {
+    config.pButtons = &dialog_buttons.front();
+    config.cButtons = dialog_buttons.size();
+    config.dwFlags |= TDF_USE_COMMAND_LINKS;  // custom buttons as links.
+  }
 
   int id = 0;
   TaskDialogIndirect(&config, &id, NULL, NULL);
@@ -207,6 +211,8 @@ void ShowMessageBox(NativeWindow* parent,
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
+  ShowMessageBoxUTF16(NULL, MESSAGE_BOX_TYPE_ERROR, {}, 0, L"Error", title,
+                      content, gfx::ImageSkia());
 }
 
 }  // namespace atom
