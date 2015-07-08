@@ -102,7 +102,7 @@ var appIcon = new Tray('/Users/somebody/images/icon.png');
 
 ### NativeImage.toJpeg(quality)
 
-* `quality` Integer
+* `quality` Integer (0 - 100 사이의 값)
 
 `JPEG` 이미지를 인코딩한 데이터를 [Buffer][buffer]로 반환합니다.
 

@@ -44,6 +44,14 @@ $ cd electron
 $ ./script/bootstrap.py -v
 ```
 
+### 크로스 컴파일
+
+크로스 컴파일을 하려면 `bootstrap.py` 스크립트의 `--target_arch` 파라미터에 `arm` 또는 `ia32` 타겟 아키텍쳐를 전달하면 됩니다.
+
+```bash
+$ ./script/bootstrap.py -v --target_arch=arm
+```
+
 ## 빌드 하기
 
 `Release` 와 `Debug` 두 타겟 모두 빌드 합니다:

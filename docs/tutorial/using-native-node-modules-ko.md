@@ -11,9 +11,8 @@ Node v0.11.x 버전부터는 V8 API의 중대한 변경이 있었습니다. 하�
 Node v0.11.x 버전에선 작동하지 않습니다. Electron은 내부적으로 Node v0.11.13 버전을 사용합니다. 그래서 위에서 설명한 문제가 발생합니다.
 
 이 문제를 해결하기 위해 모듈이 Node v0.11.x 버전을 지원할 수 있도록 해야합니다.
-현재 [많은 모듈들](https://www.npmjs.org/browse/depended/nan)이 안정적으로 두 버전 모두 지원하고 있지만
-오래된 모듈의 경우 Node v0.10.x 버전만을 지원하고 있습니다.
-예를들어 [nan](https://github.com/rvagg/nan) 모듈을 사용해야 하는 경우 Node v0.11.x 버전으로 포팅 할 필요가 있습니다.
+현재 [많은 모듈들](https://www.npmjs.org/browse/depended/nan)이 안정적으로 두 버전 모두 지원하고 있지만 오래된 모듈의 경우 Node v0.10.x 버전만을 지원하고 있습니다.
+예를 들어 [nan](https://github.com/rvagg/nan) 모듈을 사용해야 하는 경우 Node v0.11.x 버전으로 포팅 할 필요가 있습니다.
 
 ## 네이티브 모듈 설치하는 방법
 
