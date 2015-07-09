@@ -3,6 +3,7 @@
 The `global-shortcut` module can register/unregister a global keyboard shortcut
 in operating system, so that you can customize the operations for various shortcuts.
 Note that the shortcut is global, even if the app does not get focused, it will still work.
+You should not use this module until the ready event of app module gets emitted.
 
 ```javascript
 var globalShortcut = require('global-shortcut');
