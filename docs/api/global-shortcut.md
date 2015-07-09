@@ -10,25 +10,25 @@ var app = require('app');
 var globalShortcut = require('global-shortcut');
 
 app.on('ready', function() {
-    // Register a 'ctrl+x' shortcut listener.
-    var ret = globalShortcut.register('ctrl+x', function() {
-        console.log('ctrl+x is pressed');
-    })
+  // Register a 'ctrl+x' shortcut listener.
+  var ret = globalShortcut.register('ctrl+x', function() {
+    console.log('ctrl+x is pressed');
+  })
 
-    if (!ret) {
-      console.log('registration failed');
-    }
+  if (!ret) {
+    console.log('registration failed');
+  }
 
-    // Check whether a shortcut is registered.
-    console.log(globalShortcut.isRegistered('ctrl+x'));
+  // Check whether a shortcut is registered.
+  console.log(globalShortcut.isRegistered('ctrl+x'));
 });
 
 app.on('will-quit', function() {
-    // Unregister a shortcut.
-    globalShortcut.unregister('ctrl+x');
+  // Unregister a shortcut.
+  globalShortcut.unregister('ctrl+x');
 
-    // Unregister all shortcuts.
-    globalShortcut.unregisterAll();
+  // Unregister all shortcuts.
+  globalShortcut.unregisterAll();
 });
 ```
 
