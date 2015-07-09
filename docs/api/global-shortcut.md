@@ -6,23 +6,30 @@ Note that the shortcut is global, even if the app does not get focused, it will 
 You should not use this module until the ready event of app module gets emitted.
 
 ```javascript
+var app = require('app');
 var globalShortcut = require('global-shortcut');
 
-// Register a 'ctrl+x' shortcut listener.
-var ret = globalShortcut.register('ctrl+x', function() { console.log('ctrl+x is pressed'); })
+app.on('ready', function() {
+    // Register a 'ctrl+x' shortcut listener.
+    var ret = globalShortcut.register('ctrl+x', function() {
+        console.log('ctrl+x is pressed');
+    })
 
-if (!ret) {
-  console.log('registration failed');
-}
+    if (!ret) {
+      console.log('registration failed');
+    }
 
-// Check whether a shortcut is registered.
-console.log(globalShortcut.isRegistered('ctrl+x'));
+    // Check whether a shortcut is registered.
+    console.log(globalShortcut.isRegistered('ctrl+x'));
+});
 
-// Unregister a shortcut.
-globalShortcut.unregister('ctrl+x');
+app.on('will-quit', function() {
+    // Unregister a shortcut.
+    globalShortcut.unregister('ctrl+x');
 
-// Unregister all shortcuts.
-globalShortcut.unregisterAll();
+    // Unregister all shortcuts.
+    globalShortcut.unregisterAll();
+});
 ```
 
 ## globalShortcut.register(accelerator, callback)
