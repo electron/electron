@@ -28,8 +28,10 @@ describe 'protocol module', ->
 
   describe 'protocol.unregisterProtocol', ->
     it 'throws error when scheme does not exist', ->
-      unregister = -> protocol.unregisterProtocol 'test3'
-      assert.throws unregister, /The Scheme has not been registered/
+      protocol.unregisterProtocol 'test3', (->), (error, scheme) ->
+        if (error)
+          assert.equal scheme, 'test3'
+          done()
 
   describe 'registered protocol callback', ->
     it 'returns string should send the string as request content', (done) ->
