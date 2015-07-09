@@ -107,6 +107,9 @@ const char kDisableHttpCache[] = "disable-http-cache";
 // Register schemes to standard.
 const char kRegisterStandardSchemes[] = "register-standard-schemes";
 
+// The browser process app model ID
+const char kAppUserModelId[] = "app-user-model-id";
+
 }  // namespace switches
 
 }  // namespace atom

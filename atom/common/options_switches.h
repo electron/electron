@@ -58,6 +58,8 @@ extern const char kPageVisibility[];
 extern const char kDisableHttpCache[];
 extern const char kRegisterStandardSchemes[];
 
+extern const char kAppUserModelId[];
+
 }  // namespace switches
 
 }  // namespace atom
