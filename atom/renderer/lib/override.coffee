@@ -3,7 +3,7 @@ ipc = require 'ipc'
 remote = require 'remote'
 
 # Helper function to resolve relative url.
-a = document.createElement 'a'
+a = window.top.document.createElement 'a'
 resolveUrl = (url) ->
   a.href = url
   a.href
