@@ -88,3 +88,17 @@ console.log(clipboard.has('<p>selection</p>'));
 Reads the `data` in clipboard.
 
 **Note:** This API is experimental and could be removed in future.
+
+## clipboard.write(data[, type])
+
+* `data` Object
+  * `text` String
+  * `html` String
+  * `image` [NativeImage](native-image.md)
+* `type` String
+
+```javascript
+var clipboard = require('clipboard');
+clipboard.write({text: 'test', html: "<b>test</b>"});
+```
+Writes the `data` iinto clipboard.
