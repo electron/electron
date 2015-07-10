@@ -220,3 +220,12 @@ describe '<webview> tag', ->
       webview.setAttribute 'nodeintegration', 'on'      
       webview.src = "file://#{fixtures}/pages/history.html"
       document.body.appendChild webview
+
+  describe '<webview>.getGuestInstanceId()', ->
+    it 'should be non-zero when the webview is attached', (done) ->
+      webview.addEventListener 'did-finish-load', (e) ->
+        assert not isNaN(webview.getGuestInstanceId())
+        done()
+        
+      document.body.appendChild webview
+      webview.src = "file://#{fixtures}/pages/a.html"
