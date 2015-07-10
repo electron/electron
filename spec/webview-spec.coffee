@@ -144,7 +144,7 @@ describe '<webview> tag', ->
   describe 'new-window event', ->
     it 'emits when window.open is called', (done) ->
       webview.addEventListener 'new-window', (e) ->
-        assert.equal e.url, 'http://host'
+        assert.equal e.url, 'http://host/'
         assert.equal e.frameName, 'host'
         done()
       webview.src = "file://#{fixtures}/pages/window-open.html"

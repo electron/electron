@@ -192,7 +192,7 @@ describe 'browser-window module', ->
     it 'emits when window.open is called', (done) ->
       w.webContents.once 'new-window', (e, url, frameName) ->
         e.preventDefault()
-        assert.equal url, 'http://host'
+        assert.equal url, 'http://host/'
         assert.equal frameName, 'host'
         done()
       w.loadUrl "file://#{fixtures}/pages/window-open.html"
