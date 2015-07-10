@@ -36,6 +36,10 @@ Enables remote debug over HTTP on the specified `port`.
 Uses a specified proxy server, overrides system settings. This switch only
 affects HTTP and HTTPS requests.
 
+## --proxy-pac-url=`url`
+
+Uses the PAC script at the specified `url`.
+
 ## --no-proxy-server
 
 Don't use a proxy server, always make direct connections. Overrides any other
