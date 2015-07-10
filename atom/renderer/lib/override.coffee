@@ -2,6 +2,12 @@ process = global.process
 ipc = require 'ipc'
 remote = require 'remote'
 
+# Helper function to resolve relative url.
+a = document.createElement 'a'
+resolveUrl = (url) ->
+  a.href = url
+  a.href
+
 # Window object returned by "window.open".
 class BrowserWindowProxy
   constructor: (@guestId) ->
@@ -48,6 +54,9 @@ window.open = (url, frameName='', features='') ->
   options.title ?= frameName
   options.width ?= 800
   options.height ?= 600
+
+  # Resolve relative urls.
+  url = resolveUrl url
 
   (options[name] = parseInt(options[name], 10) if options[name]?) for name in ints
 
