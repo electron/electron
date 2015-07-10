@@ -72,6 +72,9 @@ const char kNoProxyServer[] = "no-proxy-server";
 // affects HTTP and HTTPS requests.
 const char kProxyServer[] = "proxy-server";
 
+// Uses the pac script at the given URL.
+const char kProxyPacUrl[] = "proxy-pac-url";
+
 }  // namespace
 
 net::URLRequestJobFactory* URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
@@ -183,12 +186,18 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     // --proxy-server
     net::DhcpProxyScriptFetcherFactory dhcp_factory;
-    if (command_line.HasSwitch(kNoProxyServer))
+    if (command_line.HasSwitch(kNoProxyServer)) {
       storage_->set_proxy_service(net::ProxyService::CreateDirect());
-    else if (command_line.HasSwitch(kProxyServer))
+    } else if (command_line.HasSwitch(kProxyServer)) {
       storage_->set_proxy_service(net::ProxyService::CreateFixed(
           command_line.GetSwitchValueASCII(kProxyServer)));
-    else
+    } else if (command_line.HasSwitch(kProxyPacUrl)) {
+      auto proxy_config = net::ProxyConfig::CreateFromCustomPacURL(
+          GURL(command_line.GetSwitchValueASCII(kProxyPacUrl)));
+      proxy_config.set_pac_mandatory(true);
+      storage_->set_proxy_service(net::ProxyService::CreateFixed(
+          proxy_config));
+    } else {
       storage_->set_proxy_service(
           net::CreateProxyServiceUsingV8ProxyResolver(
               proxy_config_service_.release(),
@@ -197,7 +206,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
               host_resolver.get(),
               NULL,
               url_request_context_->network_delegate()));
-
+    }
 
     std::vector<std::string> schemes;
     schemes.push_back(std::string("basic"));
