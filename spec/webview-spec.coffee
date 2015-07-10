@@ -191,6 +191,14 @@ describe '<webview> tag', ->
       webview.src = "file://#{fixtures}/pages/a.html"
       document.body.appendChild webview
 
+  describe 'close event', ->
+    it 'should fire when interior page calls window.close', ->
+      webview.addEventListener 'close', ->
+        done()
+
+      webview.src = "file://#{fixtures}/pages/close.html"
+      document.body.appendChild webview
+
   describe '<webview>.reload()', ->
     it 'should emit beforeunload handler', (done) ->
       listener = (e) ->
@@ -217,6 +225,6 @@ describe '<webview> tag', ->
         webview.removeEventListener 'ipc-message', listener
         done()
       webview.addEventListener 'ipc-message', listener
-      webview.setAttribute 'nodeintegration', 'on'      
+      webview.setAttribute 'nodeintegration', 'on'
       webview.src = "file://#{fixtures}/pages/history.html"
       document.body.appendChild webview
