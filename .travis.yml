@@ -3,6 +3,7 @@ git:
 notifications:
   email: false
 
+sudo: false
 language: cpp
 compiler: clang
 os:
@@ -11,15 +12,29 @@ os:
 env:
   - TARGET_ARCH=x64
 
+addons:
+  apt:
+    packages:
+    - libdbus-1-dev
+    - libgconf2-dev
+    - libgnome-keyring-dev
+    - libgtk2.0-dev
+    - libnotify-dev
+    - libnss3-dev
+    - gcc-multilib
+    - g++-multilib
+
 matrix:
   include:
     - os: linux
       env: TARGET_ARCH=arm
+      addons:
+        apt:
+          packages:
+          - libc6-dev-armhf-cross
+          - g++4.6-arm-linux-gnueabihf
     - os: linux
       env: TARGET_ARCH=ia32
-  allow_failures:
-    - env: TARGET_ARCH=arm
-    - env: TARGET_ARCH=ia32
 
 script: './script/cibuild'
 

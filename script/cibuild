@@ -10,23 +10,6 @@ from lib.util import execute, rm_rf, scoped_env
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
-LINUX_DEPS = [
-  'libdbus-1-dev',
-  'libgconf2-dev',
-  'libgnome-keyring-dev',
-  'libgtk2.0-dev',
-  'libnotify-dev',
-  'libnss3-dev',
-  'gcc-multilib',
-  'g++-multilib',
-]
-
-LINUX_DEPS_ARM = [
-  'libc6-dev-armhf-cross',
-  'linux-libc-dev-armhf-cross',
-  'g++-arm-linux-gnueabihf',
-]
-
 
 def main():
   os.environ['CI'] = '1'
@@ -37,13 +20,6 @@ def main():
 
   is_travis = (os.getenv('TRAVIS') == 'true')
   if is_travis and PLATFORM == 'linux':
-    print 'Setup travis CI'
-    execute(['sudo', 'apt-get', 'update'])
-    deps = LINUX_DEPS
-    if target_arch == 'arm':
-      deps += LINUX_DEPS_ARM
-    execute(['sudo', 'apt-get', 'install'] + deps)
-
     execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
 
   if PLATFORM == 'linux':
