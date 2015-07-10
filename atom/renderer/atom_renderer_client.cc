@@ -92,8 +92,10 @@ void AtomRendererClient::WebKitInitialized() {
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
 
 #if defined(OS_WIN)
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  base::string16 explicit_app_id = command_line->GetSwitchValueNative(switches::kAppUserModelId);
+  base::CommandLine* command_line =
+    base::CommandLine::ForCurrentProcess();
+  base::string16 explicit_app_id =
+    command_line->GetSwitchValueNative(switches::kAppUserModelId);
 
   if (explicit_app_id.length() > 0) {
     SetCurrentProcessExplicitAppUserModelID(explicit_app_id.c_str());

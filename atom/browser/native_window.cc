@@ -8,6 +8,10 @@
 #include <utility>
 #include <vector>
 
+#if defined(OS_WIN)
+#include <shlobj.h>
+#endif
+
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
@@ -50,7 +54,6 @@
 
 #if defined(OS_WIN)
 #include "ui/gfx/switches.h"
-#include <shlobj.h>
 #endif
 
 using content::NavigationEntry;
