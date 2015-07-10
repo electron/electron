@@ -250,7 +250,7 @@ void WebContents::MoveContents(content::WebContents* source,
 }
 
 void WebContents::CloseContents(content::WebContents* source) {
-  Emit("closed");
+  Emit("close");
   if (type_ == BROWSER_WINDOW)
     owner_window()->CloseContents(source);
 }

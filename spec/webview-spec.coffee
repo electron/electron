@@ -192,7 +192,7 @@ describe '<webview> tag', ->
       document.body.appendChild webview
 
   describe 'close event', ->
-    it 'should fire when interior page calls window.close', ->
+    it 'should fire when interior page calls window.close', (done) ->
       webview.addEventListener 'close', ->
         done()
 
