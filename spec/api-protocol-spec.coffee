@@ -7,13 +7,16 @@ protocol = remote.require 'protocol'
 
 describe 'protocol module', ->
   describe 'protocol.registerProtocol', ->
-    it 'throws error when scheme is already registered', (done) ->
-      register = -> protocol.registerProtocol('test1', ->)
-      protocol.once 'registered', (event, scheme) ->
-        assert.equal scheme, 'test1'
-        assert.throws register, /The scheme is already registered/
-        protocol.unregisterProtocol 'test1'
-        done()
+    it 'error when scheme is already registered', (done) ->
+      register = ->
+        protocol.registerProtocol 'test1', ((request) ->), (error, scheme) ->
+          if error?
+            protocol.unregisterProtocol 'test1', (error, scheme) ->
+              assert.equal scheme, 'test1'
+              done()
+          else
+            assert.equal scheme, 'test1'
+            register()
       register()
 
     it 'calls the callback when scheme is visited', (done) ->
@@ -25,8 +28,10 @@ describe 'protocol module', ->
 
   describe 'protocol.unregisterProtocol', ->
     it 'throws error when scheme does not exist', ->
-      unregister = -> protocol.unregisterProtocol 'test3'
-      assert.throws unregister, /The scheme has not been registered/
+      protocol.unregisterProtocol 'test3', (->), (error, scheme) ->
+        if (error)
+          assert.equal scheme, 'test3'
+          done()
 
   describe 'registered protocol callback', ->
     it 'returns string should send the string as request content', (done) ->
@@ -169,37 +174,51 @@ describe 'protocol module', ->
           protocol.unregisterProtocol 'atom-file-job'
 
   describe 'protocol.isHandledProtocol', ->
-    it 'returns true if the scheme can be handled', ->
-      assert.equal protocol.isHandledProtocol('file'), true
-      assert.equal protocol.isHandledProtocol('http'), true
-      assert.equal protocol.isHandledProtocol('https'), true
-      assert.equal protocol.isHandledProtocol('atom'), false
+    it 'returns true if the file scheme can be handled', (done) ->
+      protocol.isHandledProtocol 'file', (result) ->
+        assert.equal result, true
+        done()
+    it 'returns true if the http scheme can be handled', (done) ->
+      protocol.isHandledProtocol 'http', (result) ->
+        assert.equal result, true
+        done()
+    it 'returns true if the https scheme can be handled', (done) ->
+      protocol.isHandledProtocol 'https', (result) ->
+        assert.equal result, true
+        done()
+    it 'returns false if the atom scheme cannot be handled', (done) ->
+      protocol.isHandledProtocol 'atom', (result) ->
+        assert.equal result, false
+        done()
 
   describe 'protocol.interceptProtocol', ->
-    it 'throws error when scheme is not a registered one', ->
-      register = -> protocol.interceptProtocol('test-intercept', ->)
-      assert.throws register, /Scheme does not exist/
+    it 'throws error when scheme is not a registered one', (done) ->
+      protocol.interceptProtocol 'test-intercept', ( ->), (error, scheme) ->
+        if error?
+          assert.equal scheme, 'test-intercept'
+          done()
 
     it 'throws error when scheme is a custom protocol', (done) ->
-      protocol.once 'unregistered', (event, scheme) ->
+      protocol.once 'unregistered', (scheme) ->
         assert.equal scheme, 'atom'
         done()
-      protocol.once 'registered', (event, scheme) ->
+      protocol.once 'registered', (scheme) ->
         assert.equal scheme, 'atom'
-        register = -> protocol.interceptProtocol('test-intercept', ->)
-        assert.throws register, /Scheme does not exist/
-        protocol.unregisterProtocol scheme
+        protocol.interceptProtocol 'test-intercept', (->), (error, newScheme) ->
+          if error?
+            assert.equal newScheme, 'test-intercept'
+            protocol.unregisterProtocol scheme
       protocol.registerProtocol('atom', ->)
 
     it 'returns original job when callback returns nothing', (done) ->
       targetScheme = 'file'
-      protocol.once 'intercepted', (event, scheme) ->
+      protocol.once 'intercepted', (scheme) ->
         assert.equal scheme, targetScheme
         free = -> protocol.uninterceptProtocol targetScheme
         $.ajax
           url: "#{targetScheme}://#{__filename}",
           success: ->
-            protocol.once 'unintercepted', (event, scheme) ->
+            protocol.once 'unintercepted', (scheme) ->
               assert.equal scheme, targetScheme
               done()
             free()

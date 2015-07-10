@@ -56,11 +56,9 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
   bool IsSafeRedirectTarget(const GURL& location) const override;
 
  private:
-  typedef std::map<std::string, ProtocolHandler*> ProtocolHandlerMap;
+  using ProtocolHandlerMap = std::map<std::string, ProtocolHandler*>;
 
   ProtocolHandlerMap protocol_handler_map_;
-
-  mutable base::Lock lock_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomURLRequestJobFactory);
 };
