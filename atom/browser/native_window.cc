@@ -10,11 +10,8 @@
 
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/browser.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
-#include "atom/common/atom_version.h"
-#include "atom/common/chrome_version.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/options_switches.h"
@@ -24,7 +21,6 @@
 #include "base/prefs/pref_service.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
@@ -36,7 +32,6 @@
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/renderer_preferences.h"
-#include "content/public/common/user_agent.h"
 #include "content/public/common/web_preferences.h"
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
@@ -72,14 +67,6 @@ const char* kWebRuntimeFeatures[] = {
   switches::kSharedWorker,
   switches::kPageVisibility,
 };
-
-std::string RemoveWhitespace(const std::string& str) {
-  std::string trimmed;
-  if (base::RemoveChars(str, " ", &trimmed))
-    return trimmed;
-  else
-    return str;
-}
 
 }  // namespace
 
@@ -130,16 +117,6 @@ NativeWindow::NativeWindow(
   options.Get(switches::kZoomFactor, &zoom_factor_);
 
   WindowList::AddWindow(this);
-
-  // Override the user agent to contain application and atom-shell's version.
-  Browser* browser = Browser::Get();
-  std::string product_name = base::StringPrintf(
-      "%s/%s Chrome/%s " ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING,
-      RemoveWhitespace(browser->GetName()).c_str(),
-      browser->GetVersion().c_str(),
-      CHROME_VERSION_STRING);
-  web_contents()->GetMutableRendererPrefs()->user_agent_override =
-      content::BuildUserAgentFromProduct(product_name);
 }
 
 NativeWindow::~NativeWindow() {
