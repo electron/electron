@@ -75,6 +75,8 @@ var mainWindow = null;
 
 // 모든 창이 닫히면 어플리케이션 종료.
 app.on('window-all-closed', function() {
+  // OSX의 대부분의 어플리케이션에선 유저가 Cmd + Q 커맨드로 확실하게 종료하기 전까지는
+  // 어플리케이션이 메뉴바에 남아 계속 실행됩니다.
   if (process.platform != 'darwin') {
     app.quit();
   }
@@ -112,16 +114,16 @@ app.on('ready', function() {
   </head>
   <body>
     <h1>헬로 월드!</h1>
-    우리는 io.js <script>document.write(process.version)</script> 버전과
-    Electron <script>document.write(process.versions['electron'])</script> 버전을 사용합니다.
+    이 어플리케이션은 io.js <script>document.write(process.version)</script> 과
+    Electron <script>document.write(process.versions['electron'])</script>을 사용합니다.
   </body>
 </html>
 ```
 
 ## 앱 실행하기
 
-앱을 작성한 후 [어플리케이션 배포](./application-distribution-ko.md) 가이드를 따라 앱을 패키징 하고
-패키징한 앱을 실행해 볼 수 있습니다. 또한 Electron 실행파일을 다운로드 받아 바로 실행해 볼 수도 있습니다.
+앱을 작성한 후 [어플리케이션 배포](./application-distribution-ko.md) 가이드를 따라 앱을 패키징 하고 패키징한 앱을 실행할 수 있습니다.
+또는 Electron 실행파일을 다운로드 받아 바로 실행해 볼 수도 있습니다.
 
 Windows의 경우:
 

@@ -25,8 +25,13 @@ Electron도 상당히 비슷한 접근을 했습니다:
 
 ## 부트스트랩 최소화
 
-모든 사전 빌드 된 Chromium 바이너리들은 부트스트랩 스크립트가 실행될 때 다운로드됩니다.
+Prebuilt된 모든 Chromium 바이너리들은 부트스트랩 스크립트가 실행될 때 다운로드됩니다.
 기본적으로 공유 라이브러리와 정적 라이브러리 모두 다운로드되며 최종 전체 파일 크기는 플랫폼에 따라 800MB에서 2GB까지 차지합니다.
+
+기본적으로 libchromiumcontent는 Amazon Web Service를 통해 다운로드 됩니다.
+만약 `LIBCHROMIUMCONTENT_MIRROR` 환경 변수가 설정되어 있으면 부트스트랩은 해당 링크를 사용하여 바이너리를 다운로드 합니다.
+[libchromiumcontent-qiniu-mirror](https://github.com/hokein/libchromiumcontent-qiniu-mirror)는 libchromiumcontent의 미러입니다.
+만약 AWS에 접근할 수 없다면 `export LIBCHROMIUMCONTENT_MIRROR=http://7xk3d2.dl1.z0.glb.clouddn.com/`를 통해 다운로드 할 수 있습니다.
 
 만약 빠르게 Electron의 개발 또는 테스트만 하고 싶다면 `--dev` 플래그를 추가하여 공유 라이브러리만 다운로드할 수 있습니다:
 

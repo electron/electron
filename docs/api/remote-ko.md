@@ -1,7 +1,6 @@
 ﻿# remote
 
-The `remote` module provides a simple way to do inter-process communication
-between the renderer process and the main process.
+`remote` 모듈은 메인 프로세스와 랜더러 프로세스 사이에 inter-process 통신을 하기 위한 가장 간단한 방법입니다.
 
 In Electron, only GUI-unrelated modules are available in the renderer process.
 Without the `remote` module, users who wanted to call a main process API in

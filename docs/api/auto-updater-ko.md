@@ -1,6 +1,6 @@
 ﻿# auto-updater
 
-**This module has only been implemented for OS X.**
+**이 모듈은 현재 OS X에서만 사용할 수 있습니다.**
 
 Check out [atom/grunt-electron-installer](https://github.com/atom/grunt-electron-installer)
 for building a Windows installer for your app.

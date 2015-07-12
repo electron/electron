@@ -89,7 +89,16 @@ $ ./script/clean.py
 
 ## 문제 해결
 
-개발 종속성 라이브러리들을 제대로 설치했는지 확인하세요. 
+개발 종속성 라이브러리들을 제대로 설치했는지 확인하세요.
+
+## libtinfo.so.5 동적 링크 라이브러리를 로드하는 도중 에러가 발생할 경우
+
+미리 빌드된 `clang`은 `libtinfo.so.5`로 링크를 시도합니다.
+플랫폼에 따라 적당한 `libncurses` symlink를 추가하세요.
+
+```bash
+$ sudo ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5
+```
 
 ## 테스트
 

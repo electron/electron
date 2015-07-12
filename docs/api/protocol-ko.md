@@ -19,18 +19,20 @@ app.on('ready', function() {
 
 **알림:** 이 모듈은 app의 `ready` 이벤트가 발생한 이후에만 사용할 수 있습니다.
 
-## protocol.registerProtocol(scheme, handler)
+## protocol.registerProtocol(scheme, handler, callback)
 
 * `scheme` String
 * `handler` Function
+* `callback` Function 
 
-지정한 `scheme`을 기반으로 커스텀 프로토콜을 등록합니다. 등록한 `scheme` 프로토콜에 요청이 들어올 경우 `request` 인자와 함께 `handler` 함수가 호출됩니다.
+지정한 `scheme`을 기반으로 커스텀 프로토콜을 등록합니다. `handler`는 등록한 `scheme` 프로토콜에 요청이 들어올 경우 `request` 인자와 함께 `handler(request)` 형식으로 호출됩니다.
 
-호출된 `handler` 함수에선 요청에 대한 해당 프로토콜의 작업 결과를 응답(반환) 해야 할 필요가 있습니다.
+`handler` 함수에선 요청에 대한 해당 프로토콜의 작업 결과를 응답(반환) 해야 합니다.
 
-## protocol.unregisterProtocol(scheme)
+## protocol.unregisterProtocol(scheme, callback)
 
 * `scheme` String
+* `callback` Function
 
 지정한 `scheme` 프로토콜을 등록 해제합니다.
 
@@ -40,23 +42,27 @@ app.on('ready', function() {
 
 지정한 `value` 배열을 사용하여 미리 지정된 스킴으로 등록합니다.
 
-## protocol.isHandledProtocol(scheme)
+## protocol.isHandledProtocol(scheme, callback)
 
 * `scheme` String
+* `callback` Function
 
 해당 `scheme`에 처리자(handler)가 등록되었는지 확인합니다.
+지정한 `callback`에 결과가 boolean 값으로 반환됩니다.
 
-## protocol.interceptProtocol(scheme, handler)
+## protocol.interceptProtocol(scheme, handler, callback)
 
 * `scheme` String
 * `handler` Function
+* `callback` Function
 
 지정한 `scheme`의 작업을 `handler`로 변경합니다.
 `handler`에서 `null` 또는 `undefined`를 반환 할 경우 해당 프로토콜의 기본 동작(응답)으로 대체 됩니다.
 
-## protocol.uninterceptProtocol(scheme)
+## protocol.uninterceptProtocol(scheme, callback)
 
 * `scheme` String
+* `callback` Function
 
 변경된 프로토콜의 작업을 해제합니다.
 
