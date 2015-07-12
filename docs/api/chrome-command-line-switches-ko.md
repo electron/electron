@@ -51,8 +51,10 @@ Hostname 맵핑 규칙을 설정합니다. (`,`로 분리)
   also force the port of the resulting socket address to be 77.
 * `MAP * baz, EXCLUDE www.google.com` Remaps everything to "baz", except for
   "www.google.com".
-  
-이 맵핑은 네트워크 요청시의 endpoint를 지정합니다. (TCP 연결과 직접 연결의 호스트 resolver, http 프록시 연결의 `CONNECT`, `SOCKS` 프록시 연결의 endpoint 호스트)
+
+These mappings apply to the endpoint host in a net request (the TCP connect
+and host resolver in a direct connection, and the `CONNECT` in an http proxy
+connection, and the endpoint host in a `SOCKS` proxy connection).
 
 ## --host-resolver-rules=`rules`
 
@@ -86,14 +88,16 @@ Net log 이벤트를 지정한 `path`에 로그로 기록합니다.
 
 ## --vmodule=`pattern`
 
-`--v` 옵션에 전달된 값을 덮어쓰고 모듈당 최대 V-logging 레벨을 지정합니다.
-예를 들어 `my_module=2,foo*=3`는 `my_module.*`, `foo*.*`와 같은 파일 이름 패턴을 가진 모든 소스 코드들의 로깅 레벨을 각각 2와 3으로 설정합니다.
+Gives the per-module maximal V-logging levels to override the value given by
+`--v`. E.g. `my_module=2,foo*=3` would change the logging level for all code in
+source files `my_module.*` and `foo*.*`.
 
-슬래시(`/`), 백슬래시(`\`)를 포함하는 모든 패턴은 모듈뿐만 아니라 모든 경로명에 대해서도 테스트 됩니다.
-예를 들어 `*/foo/bar/*=2` 표현식은 `foo/bar` 디렉터리 안의 모든 소스 코드의 로깅 레벨을 2로 지정합니다.
+Any pattern containing a forward or backward slash will be tested against the
+whole pathname and not just the module. E.g. `*/foo/bar/*=2` would change the
+logging level for all code in source files under a `foo/bar` directory.
 
-모든 크로미움과 관련된 로그를 비활성화하고 어플리케이션의 로그만 활성화 하려면 다음과 같이 코드를 작성하면 됩니다:
-
+To disable all chromium related logs and only enable your application logs you
+can do:
 
 ```javascript
 app.commandLine.appendSwitch('v', -1);

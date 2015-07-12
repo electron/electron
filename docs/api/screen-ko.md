@@ -1,14 +1,13 @@
 ﻿# screen
 
-`screen` 모듈은 화면 크기, 디스플레이, 커서 위치 등등의 다양한 정보를 가져옵니다.
-이 모듈은 `app` 모듈의 `ready` 이벤트가 발생하기 전까지 사용할 수 없습니다.
+Gets various info about screen size, displays, cursor position, etc. You should
+not use this module until the `ready` event of `app` module gets emitted.
 
-`screen`은 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter)를 상속 받았습니다.
+`screen` is an [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
 
-한가지 주의할 점은 랜더러 / DevTools에선 이 모듈의 이름인 `screen`은 이미 DOM 속성에 `window.screen`로 존재 하므로 `screen = require('screen')`를
-사용할 수 없습니다. 밑의 예제와 같이 `atomScreen`등의 이름으로 변수 이름을 대체하여 사용해야 합니다.
+Make sure to note that in the renderer / DevTools, `window.screen` is a reserved DOM property, so writing `screen = require('screen')` won't work. In our examples below, we use `atomScreen` as the variable name instead.
 
-다음 예제는 화면 전체를 채우는 윈도우 창을 생성합니다:
+An example of creating a window that fills the whole screen:
 
 ```javascript
 var app = require('app');
@@ -23,7 +22,7 @@ app.on('ready', function() {
 });
 ```
 
-다음 예제는 확장 디스플레이에 윈도우를 생성합니다:
+Another example of creating a window in the external display:
 
 ```javascript
 var app = require('app');
@@ -56,14 +55,14 @@ app.on('ready', function() {
 * `event` Event
 * `newDisplay` Object
 
-새로운 디스플레이가 추가되면 발생합니다.
+Emitted when `newDisplay` has been added.
 
 ## Event: display-removed
 
 * `event` Event
 * `oldDisplay` Object
 
-기존의 디스플레이가 제거되면 발생합니다.
+Emitted when `oldDisplay` has been removed.
 
 ## Event: display-metrics-changed
 
@@ -71,21 +70,21 @@ app.on('ready', function() {
 * `display` Object
 * `changedMetrics` Array
 
-`display`의 하나 또는 다수의 매트릭스가 변경될 경우 발생합니다.
-`changedMetrics`는 변경에 대한 정보를 담은 문자열의 배열입니다.
-`bounds`, `workArea`, `scaleFactor`, `rotation`등이 변경될 수 있습니다.
+Emitted when a `display` has one or more metrics changed, `changedMetrics` is
+an array of strings that describe the changes. Possible changes are `bounds`,
+`workArea`, `scaleFactor` and `rotation`.
 
 ## screen.getCursorScreenPoint()
 
-현재 마우스 포인터의 절대 위치를 반환합니다.
+Returns the current absolute position of the mouse pointer.
 
 ## screen.getPrimaryDisplay()
 
-기본 디스플레이를 반환합니다.
+Returns the primary display.
 
 ## screen.getAllDisplays()
 
-사용 가능한 모든 디스플레이를 배열로 반환합니다.
+Returns an array of displays that are currently available.
 
 ## screen.getDisplayNearestPoint(point)
 
@@ -93,7 +92,7 @@ app.on('ready', function() {
   * `x` Integer
   * `y` Integer
 
-지정한 좌표에 가까운 디스플레이를 반환합니다.
+Returns the display nearest the specified point.
 
 ## screen.getDisplayMatching(rect)
 
@@ -103,4 +102,4 @@ app.on('ready', function() {
   * `width` Integer
   * `height` Integer
 
-지정한 범위에 가장 가깝게 교차한 디스플레이를 반환합니다.
+Returns the display that most closely intersects the provided bounds.

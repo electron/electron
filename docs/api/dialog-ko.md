@@ -1,17 +1,17 @@
 ﻿# dialog
 
-`dialog` 모듈은 네이티브 시스템의 대화 상자를 조작할 때 사용할 수 있는 API입니다.
-웹 어플리케이션에서 일반 네이티브 어플리케이션과 같은 사용자 경험을 제공할 수 있습니다.
+The `dialog` module provides APIs to show native system dialogs, so web
+applications can deliver the same user experience as native applications.
 
-다음 예제는 파일과 디렉터리를 다중으로 선택하는 대화 상자를 표시하는 예제입니다:
+An example of showing a dialog to select multiple files and directories:
 
 ```javascript
-var win = ...;  // 대화 상자를 사용할 창 객체
+var win = ...;  // window in which to show the dialog
 var dialog = require('dialog');
 console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}));
 ```
 
-**OS X 주의**: 대화 상자를 시트처럼 보여지게 하려면 `browserWindow` 인자에 `BrowserWindow` 객체의 참조를 제공하면 됩니다.
+**Note for OS X**: If you want to present dialogs as sheets, the only thing you have to do is provide a `BrowserWindow` reference in the `browserWindow` parameter.
 
 ## dialog.showOpenDialog([browserWindow], [options], [callback])
 
@@ -20,15 +20,16 @@ console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', '
   * `title` String
   * `defaultPath` String
   * `filters` Array
-  * `properties` Array - 대화 상자가 사용할 기능(모드)이 담긴 배열입니다.
-    다음을 포함할 수 있습니다: `openFile`, `openDirectory`, `multiSelections`, `createDirectory`
+  * `properties` Array - Contains which features the dialog should use, can
+    contain `openFile`, `openDirectory`, `multiSelections` and
+    `createDirectory`
 * `callback` Function
 
-사용할 대화 상자의 기능이 담긴 배열입니다. 다음을 포함할 수 있습니다: `openFile`, `openDirectory`, `multiSelections`, `createDirectory`
+On success, returns an array of file paths chosen by the user, otherwise
+returns `undefined`.
 
-작업에 성공하면 유저가 선택한 파일의 경로를 포함한 배열을 반환합니다. 그 외의 경우엔 `undefined`를 반환합니다.
-
-`filters`를 지정하면 유저가 선택 가능한 파일 형식을 지정할 수 있습니다. 예제는 다음과 같습니다:
+The `filters` specifies an array of file types that can be displayed or
+selected, an example is:
 
 ```javascript
 {
@@ -40,10 +41,12 @@ console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', '
 }
 ```
 
-`callback`이 전달되면 메소드가 비동기로 작동되며 결과는 `callback(filenames)`을 통해 전달됩니다.
+If a `callback` is passed, the API call would be asynchronous and the result
+would be passed via `callback(filenames)`
 
-Windows와 Linux에선 파일 선택 모드, 디렉터리 선택 모드를 동시에 사용할 수 없습니다.
-그래서 이 두 플랫폼에선 `properties`를 `['openFile', 'openDirectory']`로 설정하면 디렉터리 선택 대화 상자가 표시됩니다.
+**Note:** On Windows and Linux, an open dialog can not be both a file selector
+and a directory selector, so if you set `properties` to
+`['openFile', 'openDirectory']` on these platforms, a directory selector will be shown.
 
 ## dialog.showSaveDialog([browserWindow], [options], [callback])
 
@@ -54,41 +57,36 @@ Windows와 Linux에선 파일 선택 모드, 디렉터리 선택 모드를 동�
   * `filters` Array
 * `callback` Function
 
-작업에 성공하면 
+On success, returns the path of the file chosen by the user, otherwise returns
+`undefined`.
 
-작업에 성공하면 유저가 선택한 파일의 경로를 포함한 배열을 반환합니다. 그 외의 경우엔 `undefined`를 반환합니다.
+The `filters` specifies an array of file types that can be displayed, see
+`dialog.showOpenDialog` for an example.
 
-`filters`를 지정하면 유저가 저장 가능한 파일 형식을 지정할 수 있습니다. 사용 방법은 `dialog.showOpenDialog`의 `filters` 속성과 같습니다.
-
-`callback`이 전달되면 메소드가 비동기로 작동되며 결과는 `callback(filename)`을 통해 전달됩니다.
+If a `callback` is passed, the API call will be asynchronous and the result
+will be passed via `callback(filename)`
 
 ## dialog.showMessageBox([browserWindow], options, [callback])
 
 * `browserWindow` BrowserWindow
 * `options` Object
-  ** `type` String - `"none"`, `"info"`, `"error"`, `"question"`, `"warning"` 중 하나를 사용할 수 있습니다.
-  * `buttons` Array - 버튼들의 라벨을 포함한 배열입니다.
-  * `title` String - 메시지 상자의 제목입니다. 몇몇 플랫폼에선 보이지 않을 수 있습니다.
-  * `message` String - 메시지 상자의 본문 내용입니다.
-  * `detail` String - 메시지의 추가 정보입니다.
+  * `type` String - Can be `"none"`, `"info"` or `"warning"`
+  * `buttons` Array - Array of texts for buttons
+  * `title` String - Title of the message box, some platforms will not show it
+  * `message` String - Content of the message box
+  * `detail` String - Extra information of the message
   * `icon` [NativeImage](native-image-ko.md)
-  * `cancelId` Integer - 유저가 대화 상자의 버튼을 클릭하지 않고 대화 상자를 취소했을 때 반환되는 버튼의 index입니다.
-    기본적으로 버튼 리스트가 "cancel" 또는 "no" 라벨을 가지고 있을 때 해당 버튼의 index를 반환합니다. 따로 두 라벨이 지정되지 않은 경우 0을 반환합니다.
-    OS X와 Windows에선 `cancelId` 지정 여부에 상관없이 "Cancel" 버튼이 언제나 `cancelId`로 지정됩니다.
 * `callback` Function
 
-메시지 상자를 표시합니다. `browserWindow`를 지정하면 메시지 상자가 완전히 닫힐 때까지는 창을 사용할 수 없습니다.
-완료시 유저가 선택한 버튼의 index를 반환합니다.
+Shows a message box, it will block until the message box is closed. It returns
+the index of the clicked button.
 
-역주: 부정을 표현하는 "아니오", "취소"와 같은 한글 단어는 지원되지 않습니다.
-만약 OS X 또는 Windows에서 "확인", "취소"와 같은 순서로 버튼을 지정하게 될 때 Alt + f4로 해당 대화 상자를 끄게 되면 "확인"을 누른걸로 판단되어 버립니다.
-이를 해결하려면 "Cancel"을 대신 사용하거나 BrowserWindow API를 사용하여 메시지 상자를 직접 구현해야합니다.
-
-`callback`이 전달되면 메소드가 비동기로 작동되며 결과는 `callback(response)`을 통해 전달됩니다.
+If a `callback` is passed, the API call will be asynchronous and the result
+will be passed via `callback(response)`
 
 ## dialog.showErrorBox(title, content)
 
-에러 메시지를 보여주는 모달 대화 상자를 표시합니다.
+Runs a modal dialog that shows an error message.
 
-이 API는 `app` 모듈의 `ready` 이벤트가 발생하기 전에 사용할 수 있습니다.
-이 메소드는 보통 어플리케이션이 시작되기 전에 특정한 에러를 표시하기 위해 사용됩니다.
+This API can be called safely before the `ready` event of `app` module emits, it
+is usually used to report errors in early stage of startup.

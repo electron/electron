@@ -139,10 +139,6 @@ This method guarantees all `beforeunload` and `unload` handlers are correctly
 executed. It is possible that a window cancels the quitting by returning
 `false` in `beforeunload` handler.
 
-## app.getAppPath()
-
-Returns the current application directory.
-
 ## app.getPath(name)
 
 * `name` String
