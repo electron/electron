@@ -1055,7 +1055,9 @@ app.on('ready', function() {
 2. There is no way to send synchronous messages from the main process to a
    renderer process, because it would be very easy to cause dead locks.
 
-## Class: WebContents.session.cookies
+## Class: Session
+
+### Session.cookies
 
 The `cookies` gives you ability to query and modify cookies, an example is:
 
@@ -1091,7 +1093,7 @@ win.webContents.on('did-finish-load', function() {
 });
 ```
 
-### WebContents.session.cookies.get(details, callback)
+### Session.cookies.get(details, callback)
 
 * `details` Object
   * `url` String - Retrieves cookies which are associated with `url`.
@@ -1118,7 +1120,7 @@ win.webContents.on('did-finish-load', function() {
          the number of seconds since the UNIX epoch. Not provided for session cookies.
 
 
-### WebContents.session.cookies.set(details, callback)
+### Session.cookies.set(details, callback)
 
 * `details` Object
   * `url` String - Retrieves cookies which are associated with `url`
@@ -1134,10 +1136,26 @@ win.webContents.on('did-finish-load', function() {
 * `callback` Function - function(error)
   * `error` Error
 
-### WebContents.session.cookies.remove(details, callback)
+### Session.cookies.remove(details, callback)
 
 * `details` Object
   * `url` String - The URL associated with the cookie
   * `name` String - The name of cookie to remove
 * `callback` Function - function(error)
   * `error` Error
+
+### Session.clearCache()
+
+Clears the session's http cache.
+
+### Session.clearStorageData(origin, storageType, quotaType, callback)
+
+* `origin` String - should follow `window.location.origin` representation `scheme`://`host`:`port`
+* `storageType` Array - specifies the type of storage, can contain -
+    `appcache`, `cookies`, `filesystem`, `indexdb`, `localstorage`, `shadercache`, `websql`,
+    `serviceworkers`
+* `quotaType` Array - specifies the storage quota type, can contain -
+    `temporary`, `persistent`
+* `callback` Function
+
+`callback` is invoked when the deletion process is scheduled.
