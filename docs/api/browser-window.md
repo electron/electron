@@ -784,6 +784,10 @@ Emitted when a plugin process is crashed.
 
 Emitted when the WebContents is destroyed.
 
+### WebContents.session
+
+Returns the `Session` object used by this WebContents.
+
 ### WebContents.loadUrl(url, [options])
 
 * `url` URL
