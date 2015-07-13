@@ -130,28 +130,37 @@ class ResolveProxyHelper {
   DISALLOW_COPY_AND_ASSIGN(ResolveProxyHelper);
 };
 
-void Noop(int result) {
-  DCHECK(result == net::OK);
+// Runs the callback in UI thread.
+void RunCallbackInUI(const net::CompletionCallback& callback, int result) {
+  BrowserThread::PostTask(
+      BrowserThread::UI, FROM_HERE, base::Bind(callback, result));
 }
 
-void DoClearCache(disk_cache::Backend** cache_ptr,
+// Callback of HttpCache::GetBackend.
+void OnGetBackend(disk_cache::Backend** backend_ptr,
+                  const net::CompletionCallback& callback,
                   int result) {
-  DCHECK(result == net::OK);
-  if (cache_ptr && *cache_ptr)
-    (*cache_ptr)->DoomAllEntries(base::Bind(&Noop));
+  if (result != net::OK) {
+    RunCallbackInUI(callback, result);
+  } else if (backend_ptr && *backend_ptr) {
+    (*backend_ptr)->DoomAllEntries(base::Bind(&RunCallbackInUI, callback));
+  } else {
+    RunCallbackInUI(callback, net::ERR_FAILED);
+  }
 }
 
-void ClearHttpCacheOnIO(net::URLRequestContextGetter* getter) {
-  typedef disk_cache::Backend* Backendptr;
-  Backendptr* cache_ptr = new Backendptr(nullptr);
-  auto request_context = getter->GetURLRequestContext();
-  net::CompletionCallback callback(base::Bind(&DoClearCache,
-                                              base::Owned(cache_ptr)));
+void ClearHttpCacheInIO(content::BrowserContext* browser_context,
+                        const net::CompletionCallback& callback) {
+  auto request_context =
+      browser_context->GetRequestContext()->GetURLRequestContext();
   auto http_cache = request_context->http_transaction_factory()->GetCache();
-  int rv = http_cache->GetBackend(cache_ptr, callback);
 
+  disk_cache::Backend** backend_ptr = nullptr;
+  net::CompletionCallback on_get_backend =
+      base::Bind(&OnGetBackend, base::Owned(backend_ptr), callback);
+  int rv = http_cache->GetBackend(backend_ptr, on_get_backend);
   if (rv != net::ERR_IO_PENDING)
-    callback.Run(net::OK);
+    on_get_backend.Run(net::OK);
 }
 
 }  // namespace
@@ -168,12 +177,11 @@ void Session::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
   new ResolveProxyHelper(browser_context_, url, callback);
 }
 
-void Session::ClearCache(const base::Closure& callback) {
-  auto getter = browser_context_->GetRequestContext();
-  BrowserThread::PostTaskAndReply(BrowserThread::IO, FROM_HERE,
-      base::Bind(&ClearHttpCacheOnIO,
-                 base::Unretained(getter)),
-      callback);
+void Session::ClearCache(const net::CompletionCallback& callback) {
+  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
+      base::Bind(&ClearHttpCacheInIO,
+                 base::Unretained(browser_context_),
+                 callback));
 }
 
 void Session::ClearStorageData(const GURL& origin,
