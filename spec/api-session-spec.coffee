@@ -80,5 +80,9 @@ describe 'session module', ->
         done()
       w.loadUrl 'file://' + path.join(fixtures, 'api', 'localstorage.html')
       w.webContents.on 'did-finish-load', ->
-        w.webContents.session.clearStorageData "file://", ['localstorage'], ['persistent'], ->
+        options =
+          origin: "file://",
+          storages: ['localstorage'],
+          quotas: ['persistent'],
+        w.webContents.session.clearStorageData options, ->
           w.webContents.send 'getcount'
