@@ -8,6 +8,10 @@
 #include <utility>
 #include <vector>
 
+#if defined(OS_WIN)
+#include <shlobj.h>
+#endif
+
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
@@ -387,6 +391,16 @@ void NativeWindow::AppendExtraCommandLineSwitches(
   if (zoom_factor_ != 1.0)
     command_line->AppendSwitchASCII(switches::kZoomFactor,
                                     base::DoubleToString(zoom_factor_));
+
+#if defined(OS_WIN)
+  PWSTR explicit_app_id;
+
+  if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&explicit_app_id))) {
+    base::string16 appId = base::string16(explicit_app_id);
+    command_line->AppendSwitchNative(switches::kAppUserModelId, appId);
+    CoTaskMemFree(explicit_app_id);
+  }
+#endif
 
   if (web_preferences_.IsEmpty())
     return;
