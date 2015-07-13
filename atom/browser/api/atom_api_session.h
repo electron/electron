@@ -6,13 +6,16 @@
 #define ATOM_BROWSER_API_ATOM_API_SESSION_H_
 
 #include <string>
-#include <vector>
 
 #include "atom/browser/api/trackable_object.h"
 #include "native_mate/handle.h"
 #include "net/base/completion_callback.h"
 
 class GURL;
+
+namespace mate {
+class Arguments;
+}
 
 namespace atom {
 
@@ -39,10 +42,7 @@ class Session: public mate::TrackableObject<Session> {
  private:
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
   void ClearCache(const net::CompletionCallback& callback);
-  void ClearStorageData(const GURL& origin,
-                        const std::vector<std::string>& storage_types,
-                        const std::vector<std::string>& quota_types,
-                        const base::Closure& callback);
+  void ClearStorageData(mate::Arguments* args);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
 
   v8::Global<v8::Value> cookies_;

@@ -1148,18 +1148,22 @@ win.webContents.on('did-finish-load', function() {
 * `callback` Function - function(error)
   * `error` Error
 
-### Session.clearCache()
+### Session.clearCache(callback)
 
-Clears the session's http cache.
+* `callback` Function - Called when operation is done
 
-### Session.clearStorageData(origin, storageType, quotaType, callback)
+Clears the session's HTTP cache.
 
-* `origin` String - should follow `window.location.origin` representation `scheme`://`host`:`port`
-* `storageType` Array - specifies the type of storage, can contain -
-    `appcache`, `cookies`, `filesystem`, `indexdb`, `localstorage`, `shadercache`, `websql`,
-    `serviceworkers`
-* `quotaType` Array - specifies the storage quota type, can contain -
-    `temporary`, `persistent`
-* `callback` Function
+### Session.clearStorageData([options, ]callback)
 
-`callback` is invoked when the deletion process is scheduled.
+* `options` Object
+  * `origin` String - Should follow `window.location.origin`'s representation
+    `scheme://host:port`
+  * `storages` Array - The types of storages to clear, can contain:
+    `appcache`, `cookies`, `filesystem`, `indexdb`, `localstorage`,
+    `shadercache`, `websql`, `serviceworkers`
+  * `quotas` Array - The types of quotas to clear, can contain:
+    `temporary`, `persistent`, `syncable`
+* `callback` Function - Called when operation is done
+
+Clears the data of web storages.

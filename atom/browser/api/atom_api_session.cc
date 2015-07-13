@@ -5,6 +5,7 @@
 #include "atom/browser/api/atom_api_session.h"
 
 #include <string>
+#include <vector>
 
 #include "atom/browser/api/atom_api_cookies.h"
 #include "atom/browser/atom_browser_context.h"
@@ -28,48 +29,73 @@ using content::StoragePartition;
 
 namespace {
 
-int GetStorageMask(const std::vector<std::string>& storage_types) {
-  int storage_mask = 0;
+struct ClearStorageDataOptions {
+  GURL origin;
+  uint32 storage_types = StoragePartition::REMOVE_DATA_MASK_ALL;
+  uint32 quota_types = StoragePartition::QUOTA_MANAGED_STORAGE_MASK_ALL;
+};
 
-  for (auto &it : storage_types) {
+uint32 GetStorageMask(const std::vector<std::string>& storage_types) {
+  uint32 storage_mask = 0;
+  for (const auto& it : storage_types) {
     auto type = base::StringToLowerASCII(it);
-    if (type == "appcache") {
+    if (type == "appcache")
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_APPCACHE;
-    } else if (type == "cookies") {
+    else if (type == "cookies")
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_COOKIES;
-    } else if (type == "filesystem") {
+    else if (type == "filesystem")
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_FILE_SYSTEMS;
-    } else if (type == "indexdb") {
+    else if (type == "indexdb")
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_INDEXEDDB;
-    } else if (type == "localstorage") {
+    else if (type == "localstorage")
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_LOCAL_STORAGE;
-    } else if (type == "shadercache") {
+    else if (type == "shadercache")
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_SHADER_CACHE;
-    } else if (type == "websql") {
+    else if (type == "websql")
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_WEBSQL;
-    } else if (type == "serviceworkers") {
+    else if (type == "serviceworkers")
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_SERVICE_WORKERS;
-    }
   }
-
   return storage_mask;
 }
 
-int GetQuotaMask(const std::vector<std::string>& quota_types) {
-  int quota_mask = 0;
-
-  for (auto &type : quota_types) {
-    if (type == "temporary") {
+uint32 GetQuotaMask(const std::vector<std::string>& quota_types) {
+  uint32 quota_mask = 0;
+  for (const auto& it : quota_types) {
+    auto type = base::StringToLowerASCII(it);
+    if (type == "temporary")
       quota_mask |= StoragePartition::QUOTA_MANAGED_STORAGE_MASK_TEMPORARY;
-    } else if (type == "persistent") {
+    else if (type == "persistent")
       quota_mask |= StoragePartition::QUOTA_MANAGED_STORAGE_MASK_PERSISTENT;
-    }
+    else if (type == "syncable")
+      quota_mask |= StoragePartition::QUOTA_MANAGED_STORAGE_MASK_SYNCABLE;
   }
-
   return quota_mask;
 }
 
 }  // namespace
+
+namespace mate {
+
+template<>
+struct Converter<ClearStorageDataOptions> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     ClearStorageDataOptions* out) {
+    mate::Dictionary options;
+    if (!ConvertFromV8(isolate, val, &options))
+      return false;
+    options.Get("origin", &out->origin);
+    std::vector<std::string> types;
+    if (options.Get("storages", &types))
+      out->storage_types = GetStorageMask(types);
+    if (options.Get("quotas", &types))
+      out->quota_types = GetQuotaMask(types);
+    return true;
+  }
+};
+
+}  // namespace mate
 
 namespace atom {
 
@@ -154,8 +180,12 @@ void ClearHttpCacheInIO(content::BrowserContext* browser_context,
   auto request_context =
       browser_context->GetRequestContext()->GetURLRequestContext();
   auto http_cache = request_context->http_transaction_factory()->GetCache();
+  if (!http_cache)
+    RunCallbackInUI(callback, net::ERR_FAILED);
 
-  disk_cache::Backend** backend_ptr = nullptr;
+  // Call GetBackend and make the backend's ptr accessable in OnGetBackend.
+  using BackendPtr = disk_cache::Backend*;
+  BackendPtr* backend_ptr = new BackendPtr(nullptr);
   net::CompletionCallback on_get_backend =
       base::Bind(&OnGetBackend, base::Owned(backend_ptr), callback);
   int rv = http_cache->GetBackend(backend_ptr, on_get_backend);
@@ -184,14 +214,20 @@ void Session::ClearCache(const net::CompletionCallback& callback) {
                  callback));
 }
 
-void Session::ClearStorageData(const GURL& origin,
-                               const std::vector<std::string>& storage_types,
-                               const std::vector<std::string>& quota_types,
-                               const base::Closure& callback) {
+void Session::ClearStorageData(mate::Arguments* args) {
+  // clearStorageData([options, ]callback)
+  ClearStorageDataOptions options;
+  args->GetNext(&options);
+  base::Closure callback;
+  if (!args->GetNext(&callback)) {
+    args->ThrowError();
+    return;
+  }
+
   auto storage_partition =
       content::BrowserContext::GetStoragePartition(browser_context_, nullptr);
   storage_partition->ClearData(
-      GetStorageMask(storage_types), GetQuotaMask(quota_types), origin,
+      options.storage_types, options.quota_types, options.origin,
       content::StoragePartition::OriginMatcherFunction(),
       base::Time(), base::Time::Max(), callback);
 }
