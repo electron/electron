@@ -7,13 +7,14 @@
 #include <algorithm>
 #include <string>
 
-#include "atom/browser/atom_browser_context.h"
 #include "base/strings/string_util.h"
+#include "base/thread_task_runner_handle.h"
 #include "net/base/io_buffer.h"
 #include "net/base/net_errors.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_fetcher.h"
 #include "net/url_request/url_fetcher_response_writer.h"
+#include "net/url_request/url_request_context_builder.h"
 #include "net/url_request/url_request_status.h"
 
 namespace atom {
@@ -74,7 +75,6 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
 }  // namespace
 
 URLRequestFetchJob::URLRequestFetchJob(
-    AtomBrowserContext* browser_context,
     net::URLRequest* request,
     net::NetworkDelegate* network_delegate,
     const GURL& url,
@@ -90,7 +90,7 @@ URLRequestFetchJob::URLRequestFetchJob(
     request_type = GetRequestType(method);
 
   fetcher_.reset(net::URLFetcher::Create(url, request_type, this));
-  fetcher_->SetRequestContext(browser_context->url_request_context_getter());
+  fetcher_->SetRequestContext(GetRequestContext());
   fetcher_->SaveResponseWithWriter(make_scoped_ptr(new ResponsePiper(this)));
 
   // Use |request|'s referrer if |referrer| is not specified.
@@ -105,6 +105,17 @@ URLRequestFetchJob::URLRequestFetchJob(
   if (request->GetFullRequestHeaders(&headers)) {
     fetcher_->SetExtraRequestHeaders(headers.ToString());
   }
+}
+
+net::URLRequestContextGetter* URLRequestFetchJob::GetRequestContext() {
+  if (!url_request_context_getter_.get()) {
+    auto task_runner = base::ThreadTaskRunnerHandle::Get();
+    net::URLRequestContextBuilder builder;
+    builder.set_proxy_service(net::ProxyService::CreateDirect());
+    url_request_context_getter_ =
+        new net::TrivialURLRequestContextGetter(builder.Build(), task_runner);
+  }
+  return url_request_context_getter_.get();
 }
 
 void URLRequestFetchJob::HeadersCompleted() {

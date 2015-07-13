@@ -61,8 +61,7 @@ class AdapterRequestJob : public net::URLRequestJob {
                                const std::string& charset,
                                scoped_refptr<base::RefCountedBytes> data);
   void CreateFileJobAndStart(const base::FilePath& path);
-  void CreateHttpJobAndStart(AtomBrowserContext* browser_context,
-                             const GURL& url,
+  void CreateHttpJobAndStart(const GURL& url,
                              const std::string& method,
                              const std::string& referrer);
   void CreateJobFromProtocolHandlerAndStart();

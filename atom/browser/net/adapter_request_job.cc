@@ -4,7 +4,6 @@
 
 #include "atom/browser/net/adapter_request_job.h"
 
-#include "atom/browser/atom_browser_context.h"
 #include "base/threading/sequenced_worker_pool.h"
 #include "atom/browser/net/url_request_buffer_job.h"
 #include "atom/browser/net/url_request_fetch_job.h"
@@ -115,7 +114,6 @@ void AdapterRequestJob::CreateFileJobAndStart(const base::FilePath& path) {
 }
 
 void AdapterRequestJob::CreateHttpJobAndStart(
-    AtomBrowserContext* browser_context,
     const GURL& url,
     const std::string& method,
     const std::string& referrer) {
@@ -124,7 +122,7 @@ void AdapterRequestJob::CreateHttpJobAndStart(
     return;
   }
 
-  real_job_ = new URLRequestFetchJob(browser_context, request(),
+  real_job_ = new URLRequestFetchJob(request(),
                                      network_delegate(), url, method, referrer);
   real_job_->Start();
 }

@@ -132,7 +132,7 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
 
         BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
             base::Bind(&AdapterRequestJob::CreateHttpJobAndStart, GetWeakPtr(),
-                       registry_->browser_context(), url, method, referrer));
+                       url, method, referrer));
         return;
       }
     }
@@ -211,8 +211,7 @@ std::string ConvertErrorCode(int error_code) {
 }  // namespace
 
 Protocol::Protocol(AtomBrowserContext* browser_context)
-    : browser_context_(browser_context),
-      job_factory_(browser_context->job_factory()) {
+    : job_factory_(browser_context->job_factory()) {
   CHECK(job_factory_);
 }
 
