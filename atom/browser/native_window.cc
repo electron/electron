@@ -393,12 +393,11 @@ void NativeWindow::AppendExtraCommandLineSwitches(
                                     base::DoubleToString(zoom_factor_));
 
 #if defined(OS_WIN)
-  PWSTR explicit_app_id;
-
-  if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&explicit_app_id))) {
-    base::string16 appId = base::string16(explicit_app_id);
-    command_line->AppendSwitchNative(switches::kAppUserModelId, appId);
-    CoTaskMemFree(explicit_app_id);
+  // Append --app-user-model-id.
+  PWSTR current_app_id;
+  if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
+    command_line->AppendSwitchNative(switches::kAppUserModelId, current_app_id);
+    CoTaskMemFree(current_app_id);
   }
 #endif
 

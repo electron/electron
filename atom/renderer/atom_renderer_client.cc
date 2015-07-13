@@ -91,17 +91,6 @@ void AtomRendererClient::WebKitInitialized() {
   blink::WebCustomElement::addEmbedderCustomElementName("webview");
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
 
-#if defined(OS_WIN)
-  base::CommandLine* command_line =
-    base::CommandLine::ForCurrentProcess();
-  base::string16 explicit_app_id =
-    command_line->GetSwitchValueNative(switches::kAppUserModelId);
-
-  if (explicit_app_id.length() > 0) {
-    SetCurrentProcessExplicitAppUserModelID(explicit_app_id.c_str());
-  }
-#endif
-
   node_bindings_->Initialize();
   node_bindings_->PrepareMessageLoop();
 
@@ -117,6 +106,15 @@ void AtomRendererClient::WebKitInitialized() {
 
 void AtomRendererClient::RenderThreadStarted() {
   content::RenderThread::Get()->AddObserver(this);
+
+#if defined(OS_WIN)
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  base::string16 app_id =
+      command_line->GetSwitchValueNative(switches::kAppUserModelId);
+  if (!app_id.empty()) {
+    SetCurrentProcessExplicitAppUserModelID(app_id.c_str());
+  }
+#endif
 }
 
 void AtomRendererClient::RenderFrameCreated(
