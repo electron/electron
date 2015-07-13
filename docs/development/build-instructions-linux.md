@@ -48,7 +48,15 @@ $ ./script/bootstrap.py -v
 
 ### Cross compilation
 
-If you want to cross compile for `arm` or `ia32` targets, you can pass the
+If you want to build for `arm` target, you should also install following
+dependencies:
+
+```bash
+$ sudo apt-get install libc6-dev-armhf-cross linux-libc-dev-armhf-cross \
+                       g++-arm-linux-gnueabihf
+```
+
+And to cross compile for `arm` or `ia32` targets, you should pass the
 `--target_arch` parameter to the `bootstrap.py` script:
 
 ```bash
