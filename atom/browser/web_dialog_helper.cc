@@ -7,10 +7,13 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/atom_browser_context.h"
+#include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
 #include "base/bind.h"
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
+#include "base/prefs/pref_service.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
@@ -19,6 +22,8 @@
 #include "ui/shell_dialogs/selected_file_info.h"
 
 namespace {
+
+const char kSelectFileLastDirectory[] = "selectfile.last_directory";
 
 file_dialog::Filters GetFileTypesFromAcceptType(
     const std::vector<base::string16>& accept_types) {
@@ -103,9 +108,13 @@ void WebDialogHelper::RunFileChooser(content::WebContents* web_contents,
     }
 
     std::vector<base::FilePath> paths;
+    AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
+        window_->web_contents()->GetBrowserContext());
+    base::FilePath default_file_path = browser_context->prefs()->GetFilePath(
+        kSelectFileLastDirectory).Append(params.default_file_name);
     if (file_dialog::ShowOpenDialog(window_,
                                     base::UTF16ToUTF8(params.title),
-                                    params.default_file_name,
+                                    default_file_path,
                                     filters,
                                     flags,
                                     &paths)) {
@@ -114,6 +123,10 @@ void WebDialogHelper::RunFileChooser(content::WebContents* web_contents,
         info.file_path = path;
         info.display_name = path.BaseName().value();
         result.push_back(info);
+      }
+      if (!paths.empty()) {
+        browser_context->prefs()->SetFilePath(kSelectFileLastDirectory,
+                                              paths[0].DirName());
       }
     }
   }
