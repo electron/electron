@@ -5,6 +5,7 @@ path    = require 'path'
 BrowserWindow = remote.require 'browser-window'
 
 describe 'session module', ->
+  @timeout 10000
   fixtures = path.resolve __dirname, 'fixtures'
   w = null
   url = "http://127.0.0.1"
@@ -22,29 +23,27 @@ describe 'session module', ->
     server.listen port, '127.0.0.1', ->
       {port} = server.address()
       w.loadUrl "#{url}:#{port}"
-      w.webContents.on 'did-finish-load', ()->
+      w.webContents.on 'did-finish-load', ->
         w.webContents.session.cookies.get {url: url}, (error, cookies) ->
-          throw error if error
-          assert.equal 1, cookies.length
+          return done(error) if error
           assert.equal 'type', cookies[0].name
           assert.equal 'dummy', cookies[0].value
           done()
 
-  it 'should overwrite the existent cookie', (done) ->
+  it 'should over-write the existent cookie', (done) ->
     w.loadUrl 'file://' + path.join(fixtures, 'page', 'a.html')
-    w.webContents.on 'did-finish-load', ()->
+    w.webContents.on 'did-finish-load', ->
       w.webContents.session.cookies.set {url: url, name: 'type', value: 'dummy2'}, (error) ->
-        throw error if error
+        return done(error) if error
         w.webContents.session.cookies.get {url: url}, (error, cookies_list) ->
-          throw error if error
-          assert.equal 1, cookies_list.length
+          return done(error) if error
           assert.equal 'type', cookies_list[0].name
           assert.equal 'dummy2', cookies_list[0].value
           done()
 
   it 'should set new cookie', (done) ->
     w.loadUrl 'file://' + path.join(fixtures, 'page', 'a.html')
-    w.webContents.on 'did-finish-load', ()->
+    w.webContents.on 'did-finish-load', ->
       w.webContents.session.cookies.set {url: url, name: 'key', value: 'dummy2'}, (error) ->
         return done(error) if error
         w.webContents.session.cookies.get {url: url}, (error, cookies_list) ->
@@ -52,24 +51,21 @@ describe 'session module', ->
           for cookie in cookies_list
             if cookie.name is 'key'
                assert.equal 'dummy2', cookie.value
-               done()
-               return
+               return done()
           done('Can not find cookie')
 
   it 'should remove cookies', (done) ->
     w.loadUrl 'file://' + path.join(fixtures, 'page', 'a.html')
-    w.webContents.on 'did-finish-load', ()->
-      w.webContents.session.cookies.get {url: url}, (error, cookies_list) ->
-        count = 0
-        for cookie in cookies_list
-          w.webContents.session.cookies.remove {url: url, name: cookie.name}, (error) ->
-            throw error if error
-            ++count
-            if count == cookies_list.length
-              w.webContents.session.cookies.get {url: url}, (error, cookies_list) ->
-                throw error if error
-                assert.equal 0, cookies_list.length
-                done()
+    w.webContents.on 'did-finish-load', ->
+      w.webContents.session.cookies.set {url: url, name: 'key', value: 'dummy2'}, (error) ->
+        return done(error) if error
+        w.webContents.session.cookies.remove {url: url, name: 'key'}, (error) ->
+          return done(error) if error
+          w.webContents.session.cookies.get {url: url}, (error, list) ->
+            return done(error) if error
+            for cookie in list when cookie.name is 'key'
+               return done('Cookie not deleted')
+            done()
 
   describe 'session.clearStorageData(options)', ->
     fixtures = path.resolve __dirname, 'fixtures'
