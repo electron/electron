@@ -26,6 +26,10 @@ BrowserWindow::_init = ->
     if process.platform isnt 'darwin' and @isMenuBarAutoHide() and @isMenuBarVisible()
       @setMenuBarVisibility false
 
+  # Forward the crashed event.
+  @webContents.on 'crashed', =>
+    @emit 'crashed'
+
   # Redirect focus/blur event to app instance too.
   @on 'blur', (event) =>
     app.emit 'browser-window-blur', event, this
