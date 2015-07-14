@@ -19,6 +19,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   virtual ~AtomBrowserContext();
 
   // brightray::URLRequestContextGetter::Delegate:
+  std::string GetUserAgent() override;
   net::URLRequestJobFactory* CreateURLRequestJobFactory(
       content::ProtocolHandlerMap* handlers,
       content::URLRequestInterceptorScopedVector* interceptors) override;
