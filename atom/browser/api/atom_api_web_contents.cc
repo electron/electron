@@ -149,6 +149,7 @@ WebContents::WebContents(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
       type_(REMOTE) {
   AttachAsUserData(web_contents);
+  web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 }
 
 WebContents::WebContents(const mate::Dictionary& options) {
@@ -174,6 +175,8 @@ WebContents::WebContents(const mate::Dictionary& options) {
   Observe(web_contents);
   AttachAsUserData(web_contents);
   InitWithWebContents(web_contents);
+
+  web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
   if (is_guest) {
     guest_delegate_->Initialize(this);
@@ -630,9 +633,7 @@ void WebContents::InspectServiceWorker() {
 
 v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
   if (session_.IsEmpty()) {
-    mate::Handle<api::Session> handle = Session::CreateFrom(
-        isolate,
-        static_cast<AtomBrowserContext*>(web_contents()->GetBrowserContext()));
+    auto handle = Session::CreateFrom(isolate, GetBrowserContext());
     session_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, session_);
@@ -805,6 +806,10 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
 
 bool WebContents::IsDestroyed() const {
   return !IsAlive();
+}
+
+AtomBrowserContext* WebContents::GetBrowserContext() const {
+  return static_cast<AtomBrowserContext*>(web_contents()->GetBrowserContext());
 }
 
 void WebContents::OnRendererMessage(const base::string16& channel,
