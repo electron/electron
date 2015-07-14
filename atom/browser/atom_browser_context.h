@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_ATOM_BROWSER_CONTEXT_H_
 #define ATOM_BROWSER_ATOM_BROWSER_CONTEXT_H_
 
+#include <string>
+
 #include "brightray/browser/browser_context.h"
 
 namespace atom {
