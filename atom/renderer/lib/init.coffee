@@ -93,6 +93,7 @@ else
     delete global.process
     delete global.setImmediate
     delete global.clearImmediate
+    delete global.global
 
 # Load the script specfied by the "preload" attribute.
 if preloadScript
