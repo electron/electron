@@ -62,11 +62,18 @@ AtomBrowserContext::~AtomBrowserContext() {
 
 std::string AtomBrowserContext::GetUserAgent() {
   Browser* browser = Browser::Get();
-  std::string user_agent = base::StringPrintf(
-      "%s/%s Chrome/%s " ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING,
-      RemoveWhitespace(browser->GetName()).c_str(),
-      browser->GetVersion().c_str(),
-      CHROME_VERSION_STRING);
+  std::string name = RemoveWhitespace(browser->GetName());
+  std::string user_agent;
+  if (name == ATOM_PRODUCT_NAME) {
+    user_agent = "Chrome/" CHROME_VERSION_STRING " "
+                 ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING;
+  } else {
+    user_agent = base::StringPrintf(
+        "%s/%s Chrome/%s " ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING,
+        name.c_str(),
+        browser->GetVersion().c_str(),
+        CHROME_VERSION_STRING);
+  }
   return content::BuildUserAgentFromProduct(user_agent);
 }
 
