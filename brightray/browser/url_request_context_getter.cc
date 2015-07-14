@@ -175,7 +175,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         new net::ChannelIDService(new net::DefaultChannelIDStore(NULL),
                                   base::WorkerPool::GetTaskRunner(true))));
     storage_->set_http_user_agent_settings(new net::StaticHttpUserAgentSettings(
-        "en-us,en", base::EmptyString()));
+        "en-us,en", delegate_->GetUserAgent()));
 
     scoped_ptr<net::HostResolver> host_resolver(net::HostResolver::CreateDefaultResolver(nullptr));
 
