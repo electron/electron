@@ -9,23 +9,23 @@ var app = require('app');
 var globalShortcut = require('global-shortcut');
 
 app.on('ready', function() {
-    // 'ctrl+x' 단축키를 리스너에 등록합니다.
-    var ret = globalShortcut.register('ctrl+x', function() { console.log('ctrl+x is pressed'); })
+  // 'ctrl+x' 단축키를 리스너에 등록합니다.
+  var ret = globalShortcut.register('ctrl+x', function() { console.log('ctrl+x is pressed'); })
 
-    if (!ret) {
-      console.log('registration failed');
-    }
+  if (!ret) {
+    console.log('registration failed');
+  }
 
-    // 단축키가 등록되었는지 확인합니다.
-    console.log(globalShortcut.isRegistered('ctrl+x'));
+  // 단축키가 등록되었는지 확인합니다.
+  console.log(globalShortcut.isRegistered('ctrl+x'));
 });
 
 app.on('will-quit', function() {
-    // 단축키의 등록을 해제합니다.
-    globalShortcut.unregister('ctrl+x');
+  // 단축키의 등록을 해제합니다.
+  globalShortcut.unregister('ctrl+x');
 
-    // 모든 단축키의 등록을 해제합니다.
-    globalShortcut.unregisterAll();
+  // 모든 단축키의 등록을 해제합니다.
+  globalShortcut.unregisterAll();
 });
 ```
 

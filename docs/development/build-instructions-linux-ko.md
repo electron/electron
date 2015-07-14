@@ -46,7 +46,14 @@ $ ./script/bootstrap.py -v
 
 ### 크로스 컴파일
 
-크로스 컴파일을 하려면 `bootstrap.py` 스크립트의 `--target_arch` 파라미터에 `arm` 또는 `ia32` 타겟 아키텍쳐를 전달하면 됩니다.
+`arm` 아키텍쳐로 빌드 하려면 먼저 종속성 라이브러리를 설치해야 합니다:
+
+```bash
+$ sudo apt-get install libc6-dev-armhf-cross linux-libc-dev-armhf-cross \
+                       g++-arm-linux-gnueabihf
+```
+
+그리고 `bootstrap.py` 스크립트의 `--target_arch` 파라미터에 `arm` 또는 `ia32` 아키텍쳐를 지정하여 크로스 컴파일 할 수 있습니다:
 
 ```bash
 $ ./script/bootstrap.py -v --target_arch=arm

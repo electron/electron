@@ -13,6 +13,9 @@ app.on('ready', function() {
     protocol.registerProtocol('atom', function(request) {
       var url = request.url.substr(7)
       return new protocol.RequestFileJob(path.normalize(__dirname + '/' + url));
+    }, function (error, scheme) {
+      if (!error)
+        console.log(scheme, ' registered successfully')
     });
 });
 ```

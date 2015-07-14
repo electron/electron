@@ -16,7 +16,7 @@ win.show();
 ```
 
 You can also create a window without chrome by using
-[Frameless Window](frameless-window-ko.md) API.
+[Frameless Window](frameless-window.md) API.
 
 ## Class: BrowserWindow
 
@@ -48,11 +48,11 @@ You can also create a window without chrome by using
     zoom percent / 100, so `3.0` represents `300%`
   * `kiosk` Boolean - The kiosk mode
   * `title` String - Default window title
-  * `icon` [NativeImage](native-image-ko.md) - The window icon, when omitted on
+  * `icon` [NativeImage](native-image.md) - The window icon, when omitted on
     Windows the executable's icon would be used as window icon
   * `show` Boolean - Whether window should be shown when created
   * `frame` Boolean - Specify `false` to create a
-    [Frameless Window](frameless-window-ko.md)
+    [Frameless Window](frameless-window.md)
   * `node-integration` Boolean - Whether node integration is enabled, default
     is `true`
   * `accept-first-mouse` Boolean - Whether the web view accepts a single
@@ -68,7 +68,7 @@ You can also create a window without chrome by using
     scripts run in the window. This script will always have access to node APIs
     no matter whether node integration is turned on for the window, and the path
     of `preload` script has to be absolute path.
-  * `transparent` Boolean - Makes the window [transparent](frameless-window-ko.md)
+  * `transparent` Boolean - Makes the window [transparent](frameless-window.md)
   * `type` String - Specifies the type of the window, possible types are
     `desktop`, `dock`, `toolbar`, `splash`, `notification`. This only works on
     Linux.
@@ -566,11 +566,11 @@ Opens the developer tools for the service worker context present in the web cont
 
 Captures the snapshot of page within `rect`, upon completion `callback` would be
 called with `callback(image)`, the `image` is an instance of
-[NativeImage](native-image-ko.md) that stores data of the snapshot. Omitting the
+[NativeImage](native-image.md) that stores data of the snapshot. Omitting the
 `rect` would capture the whole visible page.
 
 **Note:** Be sure to read documents on remote buffer in
-[remote](remote-ko.md) if you are going to use this API in renderer
+[remote](remote.md) if you are going to use this API in renderer
 process.
 
 ### BrowserWindow.print([options])
@@ -613,7 +613,7 @@ it will assume `app.getName().desktop`.
 
 ### BrowserWindow.setOverlayIcon(overlay, description)
 
-* `overlay` [NativeImage](native-image-ko.md) - the icon to display on the bottom
+* `overlay` [NativeImage](native-image.md) - the icon to display on the bottom
 right corner of the taskbar icon. If this parameter is `null`, the overlay is
 cleared
 * `description` String - a description that will be provided to Accessibility
@@ -783,6 +783,10 @@ Emitted when a plugin process is crashed.
 ### Event: 'destroyed'
 
 Emitted when the WebContents is destroyed.
+
+### WebContents.session
+
+Returns the `Session` object used by this WebContents.
 
 ### WebContents.loadUrl(url, [options])
 
@@ -1055,7 +1059,9 @@ app.on('ready', function() {
 2. There is no way to send synchronous messages from the main process to a
    renderer process, because it would be very easy to cause dead locks.
 
-## Class: WebContents.session.cookies
+## Class: Session
+
+### Session.cookies
 
 The `cookies` gives you ability to query and modify cookies, an example is:
 
@@ -1091,7 +1097,7 @@ win.webContents.on('did-finish-load', function() {
 });
 ```
 
-### WebContents.session.cookies.get(details, callback)
+### Session.cookies.get(details, callback)
 
 * `details` Object
   * `url` String - Retrieves cookies which are associated with `url`.
@@ -1113,12 +1119,12 @@ win.webContents.on('did-finish-load', function() {
       *  `secure` Boolean - Whether the cookie is marked as Secure (typically HTTPS)
       *  `http_only` Boolean - Whether the cookie is marked as HttpOnly
       *  `session` Boolean - Whether the cookie is a session cookie or a persistent
-          cookie with an expiration date.
+         cookie with an expiration date.
       *  `expirationDate` Double - (Option) The expiration date of the cookie as
-          the number of seconds since the UNIX epoch. Not provided for session cookies.
+         the number of seconds since the UNIX epoch. Not provided for session cookies.
 
 
-### WebContents.session.cookies.set(details, callback)
+### Session.cookies.set(details, callback)
 
 * `details` Object
   * `url` String - Retrieves cookies which are associated with `url`
@@ -1134,10 +1140,30 @@ win.webContents.on('did-finish-load', function() {
 * `callback` Function - function(error)
   * `error` Error
 
-### WebContents.session.cookies.remove(details, callback)
+### Session.cookies.remove(details, callback)
 
 * `details` Object
   * `url` String - The URL associated with the cookie
   * `name` String - The name of cookie to remove
 * `callback` Function - function(error)
   * `error` Error
+
+### Session.clearCache(callback)
+
+* `callback` Function - Called when operation is done
+
+Clears the session's HTTP cache.
+
+### Session.clearStorageData([options, ]callback)
+
+* `options` Object
+  * `origin` String - Should follow `window.location.origin`'s representation
+    `scheme://host:port`
+  * `storages` Array - The types of storages to clear, can contain:
+    `appcache`, `cookies`, `filesystem`, `indexdb`, `localstorage`,
+    `shadercache`, `websql`, `serviceworkers`
+  * `quotas` Array - The types of quotas to clear, can contain:
+    `temporary`, `persistent`, `syncable`
+* `callback` Function - Called when operation is done
+
+Clears the data of web storages.
