@@ -46,14 +46,15 @@ describe 'session module', ->
     w.loadUrl 'file://' + path.join(fixtures, 'page', 'a.html')
     w.webContents.on 'did-finish-load', ()->
       w.webContents.session.cookies.set {url: url, name: 'key', value: 'dummy2'}, (error) ->
-        throw error if error
+        return done(error) if error
         w.webContents.session.cookies.get {url: url}, (error, cookies_list) ->
-          throw error if error
-          assert.equal 2, cookies_list.length
+          return done(error) if error
           for cookie in cookies_list
             if cookie.name is 'key'
                assert.equal 'dummy2', cookie.value
-               done();
+               done()
+               return
+          done('Can not find cookie')
 
   it 'should remove cookies', (done) ->
     w.loadUrl 'file://' + path.join(fixtures, 'page', 'a.html')
