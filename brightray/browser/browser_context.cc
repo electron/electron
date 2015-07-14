@@ -114,6 +114,10 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
   return url_request_getter_.get();
 }
 
+net::NetLog* BrowserContext::GetNetLog() {
+  return url_request_getter_->net_log();
+}
+
 net::NetworkDelegate* BrowserContext::CreateNetworkDelegate() {
   return new NetworkDelegate;
 }

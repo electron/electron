@@ -80,6 +80,10 @@ void BrowserClient::GetAdditionalAllowedSchemesForFileSystem(
   additional_schemes->push_back(content::kChromeUIScheme);
 }
 
+net::NetLog* BrowserClient::GetNetLog() {
+  return browser_context()->GetNetLog();
+}
+
 base::FilePath BrowserClient::GetDefaultDownloadDirectory() {
   // ~/Downloads
   base::FilePath path;
