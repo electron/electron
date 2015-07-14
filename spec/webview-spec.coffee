@@ -34,7 +34,7 @@ describe '<webview> tag', ->
   describe 'nodeintegration attribute', ->
     it 'inserts no node symbols when not set', (done) ->
       webview.addEventListener 'console-message', (e) ->
-        assert.equal e.message, 'undefined undefined undefined'
+        assert.equal e.message, 'undefined undefined undefined undefined'
         done()
       webview.src = "file://#{fixtures}/pages/c.html"
       document.body.appendChild webview
