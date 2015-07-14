@@ -1065,7 +1065,7 @@ app.on('ready', function() {
 
 The `cookies` gives you ability to query and modify cookies, an example is:
 
-```javascipt
+```javascript
 var BrowserWindow = require('browser-window');
 
 var win = new BrowserWindow({ width: 800, height: 600 });
