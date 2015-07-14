@@ -1,7 +1,8 @@
-assert  = require 'assert'
-remote  = require 'remote'
-http    = require 'http'
-path    = require 'path'
+assert = require 'assert'
+remote = require 'remote'
+http   = require 'http'
+path   = require 'path'
+app    = remote.require 'app'
 BrowserWindow = remote.require 'browser-window'
 
 describe 'session module', ->
@@ -15,7 +16,7 @@ describe 'session module', ->
 
   it 'should get cookies', (done) ->
     server = http.createServer (req, res) ->
-      res.setHeader('Set-Cookie', ['type=dummy'])
+      res.setHeader('Set-Cookie', ['0=0'])
       res.end('finished')
       server.close()
 
@@ -24,48 +25,37 @@ describe 'session module', ->
       {port} = server.address()
       w.loadUrl "#{url}:#{port}"
       w.webContents.on 'did-finish-load', ->
-        w.webContents.session.cookies.get {url: url}, (error, cookies) ->
+        w.webContents.session.cookies.get {url: url}, (error, list) ->
           return done(error) if error
-          assert.equal 'type', cookies[0].name
-          assert.equal 'dummy', cookies[0].value
-          done()
-
-  it 'should over-write the existent cookie', (done) ->
-    w.loadUrl 'file://' + path.join(fixtures, 'page', 'a.html')
-    w.webContents.on 'did-finish-load', ->
-      w.webContents.session.cookies.set {url: url, name: 'type', value: 'dummy2'}, (error) ->
-        return done(error) if error
-        w.webContents.session.cookies.get {url: url}, (error, cookies_list) ->
-          return done(error) if error
-          assert.equal 'type', cookies_list[0].name
-          assert.equal 'dummy2', cookies_list[0].value
-          done()
-
-  it 'should set new cookie', (done) ->
-    w.loadUrl 'file://' + path.join(fixtures, 'page', 'a.html')
-    w.webContents.on 'did-finish-load', ->
-      w.webContents.session.cookies.set {url: url, name: 'key', value: 'dummy2'}, (error) ->
-        return done(error) if error
-        w.webContents.session.cookies.get {url: url}, (error, cookies_list) ->
-          return done(error) if error
-          for cookie in cookies_list
-            if cookie.name is 'key'
-               assert.equal 'dummy2', cookie.value
-               return done()
+          for cookie in list when cookie.name is '0'
+            if cookie.value is '0'
+              return done()
+            else
+              return done("cookie value is #{cookie.value} while expecting 0")
           done('Can not find cookie')
 
-  it 'should remove cookies', (done) ->
-    w.loadUrl 'file://' + path.join(fixtures, 'page', 'a.html')
-    w.webContents.on 'did-finish-load', ->
-      w.webContents.session.cookies.set {url: url, name: 'key', value: 'dummy2'}, (error) ->
+  it 'should over-write the existent cookie', (done) ->
+    app.defaultSession.cookies.set {url: url, name: '1', value: '1'}, (error) ->
+      return done(error) if error
+      app.defaultSession.cookies.get {url: url}, (error, list) ->
         return done(error) if error
-        w.webContents.session.cookies.remove {url: url, name: 'key'}, (error) ->
+        for cookie in list when cookie.name is '1'
+          if cookie.value is '1'
+            return done()
+          else
+            return done("cookie value is #{cookie.value} while expecting 1")
+        done('Can not find cookie')
+
+  it 'should remove cookies', (done) ->
+    app.defaultSession.cookies.set {url: url, name: '2', value: '2'}, (error) ->
+      return done(error) if error
+      app.defaultSession.cookies.remove {url: url, name: '2'}, (error) ->
+        return done(error) if error
+        app.defaultSession.cookies.get {url: url}, (error, list) ->
           return done(error) if error
-          w.webContents.session.cookies.get {url: url}, (error, list) ->
-            return done(error) if error
-            for cookie in list when cookie.name is 'key'
-               return done('Cookie not deleted')
-            done()
+          for cookie in list when cookie.name is '2'
+             return done('Cookie not deleted')
+          done()
 
   describe 'session.clearStorageData(options)', ->
     fixtures = path.resolve __dirname, 'fixtures'
