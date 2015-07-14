@@ -98,6 +98,7 @@ int ShowMessageBoxUTF16(HWND parent,
     // Show icon according to dialog's type.
     switch (type) {
       case MESSAGE_BOX_TYPE_INFORMATION:
+      case MESSAGE_BOX_TYPE_QUESTION:
         config.pszMainIcon = TD_INFORMATION_ICON;
         break;
       case MESSAGE_BOX_TYPE_WARNING:
