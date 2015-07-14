@@ -6,15 +6,12 @@
 
 #include <set>
 
-#include "atom/browser/browser.h"
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_view_guest_delegate.h"
-#include "atom/common/atom_version.h"
-#include "atom/common/chrome_version.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
@@ -23,7 +20,6 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
@@ -40,7 +36,6 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
-#include "content/public/common/user_agent.h"
 #include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -56,14 +51,6 @@ struct PrintSettings {
   bool silent;
   bool print_background;
 };
-
-std::string RemoveWhitespace(const std::string& str) {
-  std::string trimmed;
-  if (base::RemoveChars(str, " ", &trimmed))
-    return trimmed;
-  else
-    return str;
-}
 
 void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
                       std::string user_agent) {
@@ -162,6 +149,7 @@ WebContents::WebContents(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
       type_(REMOTE) {
   AttachAsUserData(web_contents);
+  web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 }
 
 WebContents::WebContents(const mate::Dictionary& options) {
@@ -187,7 +175,8 @@ WebContents::WebContents(const mate::Dictionary& options) {
   Observe(web_contents);
   AttachAsUserData(web_contents);
   InitWithWebContents(web_contents);
-  SetUserAgent(std::string());
+
+  web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
   if (is_guest) {
     guest_delegate_->Initialize(this);
@@ -567,17 +556,6 @@ bool WebContents::IsCrashed() const {
 }
 
 void WebContents::SetUserAgent(const std::string& user_agent) {
-  if (user_agent.empty()) {
-    // Default User Agent.
-    Browser* browser = Browser::Get();
-    std::string product_name = base::StringPrintf(
-        "%s/%s Chrome/%s " ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING,
-        RemoveWhitespace(browser->GetName()).c_str(),
-        browser->GetVersion().c_str(),
-        CHROME_VERSION_STRING);
-    const_cast<std::string&>(user_agent) =
-        content::BuildUserAgentFromProduct(product_name);
-  }
   web_contents()->SetUserAgentOverride(user_agent);
   scoped_refptr<net::URLRequestContextGetter> getter =
       web_contents()->GetBrowserContext()->GetRequestContext();
@@ -655,9 +633,7 @@ void WebContents::InspectServiceWorker() {
 
 v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
   if (session_.IsEmpty()) {
-    mate::Handle<api::Session> handle = Session::CreateFrom(
-        isolate,
-        static_cast<AtomBrowserContext*>(web_contents()->GetBrowserContext()));
+    auto handle = Session::CreateFrom(isolate, GetBrowserContext());
     session_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, session_);
@@ -830,6 +806,10 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
 
 bool WebContents::IsDestroyed() const {
   return !IsAlive();
+}
+
+AtomBrowserContext* WebContents::GetBrowserContext() const {
+  return static_cast<AtomBrowserContext*>(web_contents()->GetBrowserContext());
 }
 
 void WebContents::OnRendererMessage(const base::string16& channel,

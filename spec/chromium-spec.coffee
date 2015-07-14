@@ -2,6 +2,7 @@ assert = require 'assert'
 http = require 'http'
 https = require 'https'
 path = require 'path'
+ws = require 'ws'
 
 describe 'chromium feature', ->
   fixtures = path.resolve __dirname, 'fixtures'
@@ -88,3 +89,25 @@ describe 'chromium feature', ->
       navigator.webkitPersistentStorage.requestQuota 1024 * 1024, (grantedBytes) ->
         assert.equal grantedBytes, 1048576
         done()
+
+  describe 'websockets', ->
+    wss = null
+    server = null
+    WebSocketServer = ws.Server
+
+    afterEach ->
+      wss.close()
+      server.close()
+
+    it 'has user agent', (done) ->
+      server = http.createServer()
+      server.listen 0, '127.0.0.1', ->
+        port = server.address().port
+        wss = new WebSocketServer(server: server)
+        wss.on 'error', done
+        wss.on 'connection', (ws) ->
+          if ws.upgradeReq.headers['user-agent']
+            done()
+          else
+            done('user agent is empty')
+        websocket = new WebSocket("ws://127.0.0.1:#{port}")

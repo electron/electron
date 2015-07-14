@@ -27,6 +27,7 @@ class Dictionary;
 namespace atom {
 
 struct SetSizeParams;
+class AtomBrowserContext;
 class WebViewGuestDelegate;
 
 namespace api {
@@ -190,6 +191,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
     WEB_VIEW,  // Used by <webview>.
     REMOTE,  // Thin wrap around an existing WebContents.
   };
+
+  AtomBrowserContext* GetBrowserContext() const;
 
   // Called when received a message from renderer.
   void OnRendererMessage(const base::string16& channel,
