@@ -77,6 +77,10 @@ const char kProxyPacUrl[] = "proxy-pac-url";
 
 }  // namespace
 
+std::string URLRequestContextGetter::Delegate::GetUserAgent() {
+  return base::EmptyString();
+}
+
 net::URLRequestJobFactory* URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector* protocol_interceptors) {
