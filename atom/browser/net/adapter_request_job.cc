@@ -114,6 +114,7 @@ void AdapterRequestJob::CreateFileJobAndStart(const base::FilePath& path) {
 }
 
 void AdapterRequestJob::CreateHttpJobAndStart(
+    net::URLRequestContextGetter* request_context_getter,
     const GURL& url,
     const std::string& method,
     const std::string& referrer) {
@@ -122,7 +123,7 @@ void AdapterRequestJob::CreateHttpJobAndStart(
     return;
   }
 
-  real_job_ = new URLRequestFetchJob(request(),
+  real_job_ = new URLRequestFetchJob(request_context_getter, request(),
                                      network_delegate(), url, method, referrer);
   real_job_->Start();
 }

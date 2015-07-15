@@ -75,6 +75,7 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
 }  // namespace
 
 URLRequestFetchJob::URLRequestFetchJob(
+    net::URLRequestContextGetter* request_context_getter,
     net::URLRequest* request,
     net::NetworkDelegate* network_delegate,
     const GURL& url,
@@ -90,7 +91,12 @@ URLRequestFetchJob::URLRequestFetchJob(
     request_type = GetRequestType(method);
 
   fetcher_.reset(net::URLFetcher::Create(url, request_type, this));
-  fetcher_->SetRequestContext(GetRequestContext());
+  // Use request context if provided else create one.
+  if (request_context_getter)
+    fetcher_->SetRequestContext(request_context_getter);
+  else
+    fetcher_->SetRequestContext(GetRequestContext());
+
   fetcher_->SaveResponseWithWriter(make_scoped_ptr(new ResponsePiper(this)));
 
   // Use |request|'s referrer if |referrer| is not specified.

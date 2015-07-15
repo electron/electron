@@ -7,6 +7,7 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/net/adapter_request_job.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -31,6 +32,23 @@ struct Converter<const net::URLRequest*> {
         .SetValue("url", val->url().spec())
         .SetValue("referrer", val->referrer())
         .Build()->NewInstance();
+  }
+};
+
+template<>
+struct Converter<net::URLRequestContextGetter*> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     net::URLRequestContextGetter** out) {
+    if (val->IsNull() || val->IsUndefined()) {
+      *out = nullptr;
+      return true;
+    }
+
+    atom::api::Session* session;
+    if (!Converter<atom::api::Session*>::FromV8(isolate, val, &session))
+      return false;
+    *out = session->GetBrowserContext()->GetRequestContext();
+    return true;
   }
 };
 
@@ -126,13 +144,15 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
       } else if (name == "RequestHttpJob") {
         GURL url;
         std::string method, referrer;
+        net::URLRequestContextGetter* getter;
         dict.Get("url", &url);
         dict.Get("method", &method);
         dict.Get("referrer", &referrer);
+        dict.Get("session", &getter);
 
         BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
             base::Bind(&AdapterRequestJob::CreateHttpJobAndStart, GetWeakPtr(),
-                       url, method, referrer));
+                       base::Unretained(getter), url, method, referrer));
         return;
       }
     }
