@@ -47,20 +47,21 @@ NotifyIcon::~NotifyIcon() {
 
 void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
                                   bool left_mouse_click) {
+  NOTIFYICONIDENTIFIER icon_id;
+  memset(&icon_id, 0, sizeof(NOTIFYICONIDENTIFIER));
+  icon_id.uID = icon_id_;
+  icon_id.hWnd = window_;
+  icon_id.cbSize = sizeof(NOTIFYICONIDENTIFIER);
+  RECT rect = { 0 };
+  Shell_NotifyIconGetRect(&icon_id, &rect);
+
   // Pass to the observer if appropriate.
   if (left_mouse_click) {
-    NOTIFYICONIDENTIFIER icon_id;
-    memset(&icon_id, 0, sizeof(NOTIFYICONIDENTIFIER));
-    icon_id.uID = icon_id_;
-    icon_id.hWnd = window_;
-    icon_id.cbSize = sizeof(NOTIFYICONIDENTIFIER);
-
-    RECT rect = { 0 };
-    Shell_NotifyIconGetRect(&icon_id, &rect);
-
     NotifyClicked(gfx::Rect(rect));
     return;
   }
+
+  NotifyRightClicked(gfx::Rect(rect));
 
   if (!menu_model_)
     return;
