@@ -25,7 +25,6 @@ app.on('ready', function(){
 
 __Platform limitations:__
 
-* On OS X `clicked` event will be ignored if the tray icon has context menu.
 * On Linux app indicator will be used if it is supported, otherwise
   `GtkStatusIcon` will be used instead.
 * App indicator will only be showed when it has context menu.
@@ -56,6 +55,20 @@ Creates a new tray icon associated with the `image`.
 Emitted when the tray icon is clicked.
 
 __Note:__ The `bounds` payload is only implemented on OS X and Windows 7 or newer.
+
+### Event: 'right-clicked'
+
+* `event`
+* `bounds` Object - the bounds of tray icon
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
+
+Emitted when the tray icon is right clicked.
+
+__Note:__ This is only implemented on OS X and Windows. On Windows, this event
+will be emitted if the tray icon has context menu.
 
 ### Event: 'double-clicked'
 
