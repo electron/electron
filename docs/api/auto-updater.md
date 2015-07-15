@@ -85,7 +85,7 @@ to the update request provided:
   "url": "http://mycompany.com/myapp/releases/myrelease",
   "name": "My Release Name",
   "notes": "Theses are some release notes innit",
-  "pub_date": "2013-09-18T12:29:53+01:00",
+  "pub_date": "2013-09-18T12:29:53+01:00"
 }
 ```
 
