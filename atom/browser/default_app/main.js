@@ -237,7 +237,7 @@ app.once('ready', function() {
           },
           {
             label: 'Toggle &Developer Tools',
-            accelerator: 'Alt+Ctrl+I',
+            accelerator: 'Shift+Ctrl+I',
             click: function() {
               var focusedWindow = BrowserWindow.getFocusedWindow();
               if (focusedWindow)
