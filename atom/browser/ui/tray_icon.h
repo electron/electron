@@ -56,6 +56,7 @@ class TrayIcon {
   void NotifyBalloonShow();
   void NotifyBalloonClicked();
   void NotifyBalloonClosed();
+  void NotifyRightClicked(const gfx::Rect& bounds = gfx::Rect());
 
  protected:
   TrayIcon();

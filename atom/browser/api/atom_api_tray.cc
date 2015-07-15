@@ -60,6 +60,10 @@ void Tray::OnBalloonClosed() {
   Emit("balloon-closed");
 }
 
+void Tray::OnRightClicked(const gfx::Rect& bounds) {
+  Emit("right-clicked", bounds);
+}
+
 bool Tray::IsDestroyed() const {
   return !tray_icon_;
 }

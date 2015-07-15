@@ -18,6 +18,7 @@ class TrayIconObserver {
   virtual void OnBalloonShow() {}
   virtual void OnBalloonClicked() {}
   virtual void OnBalloonClosed() {}
+  virtual void OnRightClicked(const gfx::Rect&) {}
 
  protected:
   virtual ~TrayIconObserver() {}

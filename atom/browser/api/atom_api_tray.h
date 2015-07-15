@@ -46,6 +46,7 @@ class Tray : public mate::EventEmitter,
   void OnBalloonShow() override;
   void OnBalloonClicked() override;
   void OnBalloonClosed() override;
+  void OnRightClicked(const gfx::Rect&) override;
 
   // mate::Wrappable:
   bool IsDestroyed() const override;

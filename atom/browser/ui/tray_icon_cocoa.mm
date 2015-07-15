@@ -75,7 +75,7 @@ const CGFloat kMargin = 3;
                                    title_width + kStatusItemLength,
                                    [[statusItem_ statusBar] thickness]);
     [title_ drawInRect:title_rect
-          withAttributes:[self titleAttributes]];
+        withAttributes:[self titleAttributes]];
     [statusItem_ setLength:title_width + kStatusItemLength];
   }
 }
@@ -129,11 +129,7 @@ const CGFloat kMargin = 3;
       [statusItem_ popUpStatusItemMenu:[menu_controller_ menu]];
     }
 
-    NSRect frame = event.window.frame;
-    gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
-    NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
-    bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
-    trayIcon_->NotifyClicked(bounds);
+    trayIcon_->NotifyClicked([self getBoundsFromEvent:event]);
   }
 
   if (event.clickCount == 2 && !menu_controller_) {
@@ -142,11 +138,22 @@ const CGFloat kMargin = 3;
   [self setNeedsDisplay:YES];
 }
 
+- (void)rightMouseUp:(NSEvent*)event {
+  trayIcon_->NotifyRightClicked([self getBoundsFromEvent:event]);
+}
+
 -(BOOL) shouldHighlight {
   BOOL is_menu_open = [menu_controller_ isMenuOpen];
   return isHighlightEnable_ && (inMouseEventSequence_ || is_menu_open);
 }
 
+-(gfx::Rect) getBoundsFromEvent:(NSEvent*)event {
+  NSRect frame = event.window.frame;
+  gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
+  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
+  bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
+  return bounds;
+}
 @end
 
 namespace atom {
