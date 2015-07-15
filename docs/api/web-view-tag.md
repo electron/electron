@@ -326,6 +326,12 @@ page can handle it by listening to the `channel` event of `ipc` module.
 See [WebContents.send](browser-window.md#webcontentssendchannel-args) for
 examples.
 
+### `<webview`.getGuestInstanceId()
+
+Returns a unique identifier representing the WebView on the page, which can be
+useful for routing IPC replies to messages sent from the WebView to the
+Browser process.
+
 ## DOM events
 
 ### did-finish-load

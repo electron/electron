@@ -245,10 +245,17 @@ registerWebViewElement = ->
   proto.attachedCallback = ->
     internal = v8Util.getHiddenValue this, 'internal'
     return unless internal
+    
     unless internal.elementAttached
       guestViewInternal.registerEvents internal, internal.viewInstanceId
       internal.elementAttached = true
       internal.attributes[webViewConstants.ATTRIBUTE_SRC].parse()
+      
+  proto.getGuestInstanceId = ->
+    internal = v8Util.getHiddenValue this, 'internal'
+    return unless internal
+    
+    internal.guestInstanceId;
 
   # Public-facing API methods.
   methods = [
