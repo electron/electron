@@ -288,7 +288,8 @@ class NativeWindow : public content::WebContentsObserver,
   // Page's default zoom factor.
   double zoom_factor_;
 
-  // Used to maintain the aspect ratio of a view which is inside of the content view.
+  // Used to maintain the aspect ratio of a view which is inside of the
+  // content view.
   double interiorContentAspectRatio = 0.0;
   gfx::Size interiorContentExtraSize;
 
