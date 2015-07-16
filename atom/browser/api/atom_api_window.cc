@@ -249,7 +249,8 @@ bool Window::IsFullscreen() {
   return window_->IsFullscreen();
 }
 
-void Window::MaintainContentAspectRatio(double aspectRatio, double width, double height) {
+void Window::MaintainContentAspectRatio(double aspectRatio,
+                                        double width, double height) {
   window_->MaintainContentAspectRatio(aspectRatio, gfx::Size(width, height));
 }
 
@@ -502,7 +503,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isMinimized", &Window::IsMinimized)
       .SetMethod("setFullScreen", &Window::SetFullScreen)
       .SetMethod("isFullScreen", &Window::IsFullscreen)
-      .SetMethod("maintainContentAspectRatio", &Window::MaintainContentAspectRatio)
+      .SetMethod("maintainContentAspectRatio",
+                 &Window::MaintainContentAspectRatio)
       .SetMethod("getBounds", &Window::GetBounds)
       .SetMethod("setBounds", &Window::SetBounds)
       .SetMethod("getSize", &Window::GetSize)

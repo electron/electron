@@ -95,7 +95,8 @@ class Window : public mate::TrackableObject<Window>,
   bool IsMinimized();
   void SetFullScreen(bool fullscreen);
   bool IsFullscreen();
-  void MaintainContentAspectRatio(double aspectRatio, double width, double height);
+  void MaintainContentAspectRatio(double aspectRatio,
+                                  double width, double height);
   void SetBounds(const gfx::Rect& bounds);
   gfx::Rect GetBounds();
   void SetSize(int width, int height);
