@@ -144,6 +144,15 @@ Displays a tray balloon.
 
 __Note:__ This is only implemented on Windows.
 
+### Tray.popContextMenu([position])
+
+* `position` Object - The pop position
+  * `x` Integer
+  * `y` Integer
+
+__Note:__ This is only implemented on OS X and Windows.
+The `position` is only available on Windows, and it is (0, 0) by default.
+
 ### Tray.setContextMenu(menu)
 
 * `menu` Menu
