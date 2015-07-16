@@ -54,6 +54,11 @@ bool GetChildNode(const base::DictionaryValue* root,
                   const std::string& name,
                   const base::DictionaryValue* dir,
                   const base::DictionaryValue** out) {
+  if (name == "") {
+    *out = root;
+    return true;
+  }
+
   const base::DictionaryValue* files = NULL;
   return GetFilesNode(root, dir, &files) &&
          files->GetDictionaryWithoutPathExpansion(name, out);

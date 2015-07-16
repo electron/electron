@@ -1,9 +1,9 @@
 # global-shortcut
 
 The `global-shortcut` module can register/unregister a global keyboard shortcut
-in operating system, so that you can customize the operations for various shortcuts.
-Note that the shortcut is global, even if the app does not get focused, it will still work.
-You should not use this module until the ready event of app module gets emitted.
+with the operating system, so that you can customize the operations for various shortcuts.
+Note that the shortcut is global; it will work even if the app does not have the keyboard focus.
+You should not use this module until the `ready` event of the app module is emitted.
 
 ```javascript
 var app = require('app');
@@ -37,14 +37,14 @@ app.on('will-quit', function() {
 * `accelerator` [Accelerator](accelerator.md)
 * `callback` Function
 
-Registers a global shortcut of `accelerator`, the `callback` would be called when
-the registered shortcut is pressed by user.
+Registers a global shortcut of `accelerator`. The `callback` is called when
+the registered shortcut is pressed by the user.
 
 ## globalShortcut.isRegistered(accelerator)
 
 * `accelerator` [Accelerator](accelerator.md)
 
-Returns `true` or `false` depending on if the shortcut `accelerator` is registered.
+Returns `true` or `false` depending on whether the shortcut `accelerator` is registered.
 
 ## globalShortcut.unregister(accelerator)
 

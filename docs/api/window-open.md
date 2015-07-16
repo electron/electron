@@ -2,7 +2,7 @@
 
 When `window.open` is called to create a new window in web page, a new instance
 of `BrowserWindow` will be created for the `url`, and a proxy will be returned
-to `window.open` to let the page to have limited control over it.
+to `window.open` to let the page have limited control over it.
 
 The proxy only has some limited standard functionality implemented to be
 compatible with traditional web pages, for full control of the created window
