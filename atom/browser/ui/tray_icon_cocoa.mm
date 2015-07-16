@@ -212,7 +212,7 @@ void TrayIconCocoa::SetHighlightMode(bool highlight) {
   [status_item_view_ setHighlight:highlight];
 }
 
-void TrayIconCocoa::PopContextMenu() {
+void TrayIconCocoa::PopContextMenu(const gfx::Point& pos) {
   [status_item_view_ popContextMenu];
 }
 
