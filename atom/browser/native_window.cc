@@ -203,7 +203,7 @@ gfx::Size NativeWindow::GetInteriorContentExtraSize() {
   return interiorContentExtraSize;
 }
 
-void NativeWindow::MaintainAspectRatioOfInteriorContent(double aspectRatio, const gfx::Size& extraSize) {
+void NativeWindow::MaintainContentAspectRatio(double aspectRatio, const gfx::Size& extraSize) {
   interiorContentAspectRatio = aspectRatio;
   interiorContentExtraSize = extraSize;
 }
