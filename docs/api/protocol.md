@@ -110,7 +110,9 @@ Create a request job which sends a buffer as response.
 ## Class: protocol.RequestHttpJob(options)
 
 * `options` Object
-  * `session` [Session](browser-window.md#class-session)
+  * `session` [Session](browser-window.md#class-session) - By default it is
+    the app's default session, setting it to `null` will create a new session
+    for the requests
   * `url` String
   * `method` String - Default is `GET`
   * `referrer` String
