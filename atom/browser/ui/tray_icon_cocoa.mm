@@ -9,8 +9,12 @@
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/screen.h"
 
+namespace {
+
 const CGFloat kStatusItemLength = 26;
 const CGFloat kMargin = 3;
+
+}  //  namespace
 
 @interface StatusItemView : NSView {
   atom::TrayIconCocoa* trayIcon_; // weak
@@ -88,7 +92,7 @@ const CGFloat kMargin = 3;
   }
 }
 
-- (CGFloat) titleWidth {
+- (CGFloat)titleWidth {
   if (!title_) return 0;
   NSAttributedString* attributes =
       [[NSAttributedString alloc] initWithString:title_
@@ -96,7 +100,7 @@ const CGFloat kMargin = 3;
   return [attributes size].width;
 }
 
-- (NSDictionary *)titleAttributes {
+- (NSDictionary*)titleAttributes {
   NSFont* font = [NSFont menuBarFontOfSize:0];
   NSColor* foregroundColor = [NSColor blackColor];
 
@@ -108,6 +112,7 @@ const CGFloat kMargin = 3;
 
 - (void)setImage:(NSImage*)image {
   image_.reset([image copy]);
+  [self setNeedsDisplay:YES];
 }
 
 - (void)setAlternateImage:(NSImage*)image {
@@ -118,20 +123,21 @@ const CGFloat kMargin = 3;
   isHighlightEnable_ = highlight;
 }
 
--(void)setTitle:(NSString*) title {
+- (void)setTitle:(NSString*)title {
   title_.reset([title copy]);
+  [self setNeedsDisplay:YES];
 }
 
 - (void)setMenuController:(AtomMenuController*)menu {
   menuController_ = menu;
 }
 
--(void)mouseDown:(NSEvent *)event {
+- (void)mouseDown:(NSEvent*)event {
   inMouseEventSequence_ = YES;
   [self setNeedsDisplay:YES];
 }
 
--(void)mouseUp:(NSEvent *)event {
+- (void)mouseUp:(NSEvent*)event {
   if (!inMouseEventSequence_) {
      // If the menu is showing, when user clicked the tray icon, the `mouseDown`
      // event will be dissmissed, we need to close the menu at this time.
@@ -168,12 +174,12 @@ const CGFloat kMargin = 3;
   trayIcon_->NotifyRightClicked([self getBoundsFromEvent:event]);
 }
 
--(BOOL) shouldHighlight {
+- (BOOL)shouldHighlight {
   BOOL is_menu_open = [menuController_ isMenuOpen];
   return isHighlightEnable_ && (inMouseEventSequence_ || is_menu_open);
 }
 
--(gfx::Rect) getBoundsFromEvent:(NSEvent*)event {
+- (gfx::Rect)getBoundsFromEvent:(NSEvent*)event {
   NSRect frame = event.window.frame;
   gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
   NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
