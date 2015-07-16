@@ -203,10 +203,6 @@ Session::Session(AtomBrowserContext* browser_context)
 Session::~Session() {
 }
 
-AtomBrowserContext* Session::GetBrowserContext() const {
-  return browser_context_;
-}
-
 void Session::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
   new ResolveProxyHelper(browser_context_, url, callback);
 }

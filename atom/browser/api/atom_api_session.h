@@ -31,7 +31,7 @@ class Session: public mate::TrackableObject<Session> {
   static mate::Handle<Session> CreateFrom(
       v8::Isolate* isolate, AtomBrowserContext* browser_context);
 
-  AtomBrowserContext* GetBrowserContext() const;
+  AtomBrowserContext* browser_context() const { return browser_context_; }
 
  protected:
   explicit Session(AtomBrowserContext* browser_context);

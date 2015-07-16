@@ -46,6 +46,8 @@ class Protocol : public mate::EventEmitter {
 
   JsProtocolHandler GetProtocolHandler(const std::string& scheme);
 
+  AtomBrowserContext* browser_context() const { return browser_context_; }
+
  protected:
   explicit Protocol(AtomBrowserContext* browser_context);
 
@@ -92,6 +94,7 @@ class Protocol : public mate::EventEmitter {
                             const JsProtocolHandler& handler);
   int UninterceptProtocolInIO(const std::string& scheme);
 
+  AtomBrowserContext* browser_context_;
   AtomURLRequestJobFactory* job_factory_;
   ProtocolHandlersMap protocol_handlers_;
 

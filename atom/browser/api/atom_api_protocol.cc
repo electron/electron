@@ -39,7 +39,7 @@ template<>
 struct Converter<net::URLRequestContextGetter*> {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      net::URLRequestContextGetter** out) {
-    if (val->IsNull() || val->IsUndefined()) {
+    if (val->IsNull()) {
       *out = nullptr;
       return true;
     }
@@ -47,7 +47,7 @@ struct Converter<net::URLRequestContextGetter*> {
     atom::api::Session* session;
     if (!Converter<atom::api::Session*>::FromV8(isolate, val, &session))
       return false;
-    *out = session->GetBrowserContext()->GetRequestContext();
+    *out = session->browser_context()->GetRequestContext();
     return true;
   }
 };
@@ -144,7 +144,8 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
       } else if (name == "RequestHttpJob") {
         GURL url;
         std::string method, referrer;
-        net::URLRequestContextGetter* getter;
+        net::URLRequestContextGetter* getter =
+            registry_->browser_context()->GetRequestContext();
         dict.Get("url", &url);
         dict.Get("method", &method);
         dict.Get("referrer", &referrer);
@@ -231,7 +232,8 @@ std::string ConvertErrorCode(int error_code) {
 }  // namespace
 
 Protocol::Protocol(AtomBrowserContext* browser_context)
-    : job_factory_(browser_context->job_factory()) {
+    : browser_context_(browser_context),
+      job_factory_(browser_context->job_factory()) {
   CHECK(job_factory_);
 }
 
