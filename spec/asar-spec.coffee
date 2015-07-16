@@ -85,6 +85,11 @@ describe 'asar package', ->
           done()
 
     describe 'fs.lstatSync', ->
+      it 'handles path with trailing slash correctly', ->
+        p = path.join fixtures, 'asar', 'a.asar', 'link2', 'link2', 'file1'
+        fs.lstatSync p
+        fs.lstatSync p + '/'
+
       it 'returns information of root', ->
         p = path.join fixtures, 'asar', 'a.asar'
         stats = fs.lstatSync p
@@ -136,6 +141,10 @@ describe 'asar package', ->
           assert.throws throws, /ENOENT/
 
     describe 'fs.lstat', ->
+      it 'handles path with trailing slash correctly', (done) ->
+        p = path.join fixtures, 'asar', 'a.asar', 'link2', 'link2', 'file1'
+        fs.lstat p + '/', done
+
       it 'returns information of root', (done) ->
         p = path.join fixtures, 'asar', 'a.asar'
         stats = fs.lstat p, (err, stats) ->
