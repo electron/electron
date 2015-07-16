@@ -95,6 +95,33 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   shell_->NotifyWindowBlur();
 }
 
+- (NSSize)windowWillResize:(NSWindow *)sender toSize:(NSSize)frameSize {
+  NSSize newSize = frameSize;
+  double interiorContentAspectRatio = shell_->GetInteriorContentAspectRatio();
+
+  if (interiorContentAspectRatio > 0.0) {
+    NSRect windowFrame = [sender frame];
+    NSRect contentViewBounds = [[sender contentView] bounds];
+    gfx::Size interiorContentExtraSize = shell_->GetInteriorContentExtraSize();
+    double extraWidthPlusFrame = windowFrame.size.width - contentViewBounds.size.width + interiorContentExtraSize.width();
+    double extraHeightPlusFrame = windowFrame.size.height - contentViewBounds.size.height + interiorContentExtraSize.height();
+
+    newSize.width = roundf(((frameSize.height - extraHeightPlusFrame) * interiorContentAspectRatio) + extraWidthPlusFrame);
+
+    // If the new width is less than the frame size use it as the primary constraint. This ensures that the value returned
+    // by this method will never be larger than the users requested window size.
+    if (newSize.width < frameSize.width) {
+        newSize.height = roundf(((newSize.width - extraWidthPlusFrame) / interiorContentAspectRatio) + extraHeightPlusFrame);
+    }
+    else {
+        newSize.width = roundf(((newSize.height - extraHeightPlusFrame) * interiorContentAspectRatio) + extraWidthPlusFrame);
+        newSize.height = roundf(((frameSize.width - extraWidthPlusFrame) / interiorContentAspectRatio) + extraHeightPlusFrame);
+    }
+  }
+
+  return newSize;
+}
+
 - (void)windowDidResize:(NSNotification*)notification {
   if (!shell_->has_frame())
     shell_->ClipWebView();

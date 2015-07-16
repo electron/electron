@@ -107,6 +107,9 @@ class NativeWindow : public content::WebContentsObserver,
   virtual bool IsMinimized() = 0;
   virtual void SetFullScreen(bool fullscreen) = 0;
   virtual bool IsFullscreen() const = 0;
+  double GetInteriorContentAspectRatio();
+  virtual gfx::Size GetInteriorContentExtraSize();
+  virtual void MaintainAspectRatioOfInteriorContent(double aspectRatio, const gfx::Size& extraSize);
   virtual void SetBounds(const gfx::Rect& bounds) = 0;
   virtual gfx::Rect GetBounds() = 0;
   virtual void SetSize(const gfx::Size& size);
@@ -284,6 +287,10 @@ class NativeWindow : public content::WebContentsObserver,
 
   // Page's default zoom factor.
   double zoom_factor_;
+
+  // Used to maintain the aspect ratio of a view which is inside of the content view.
+  double interiorContentAspectRatio = 0.0;
+  gfx::Size interiorContentExtraSize;
 
   // The page this window is viewing.
   brightray::InspectableWebContents* inspectable_web_contents_;
