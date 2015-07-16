@@ -9,13 +9,12 @@
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/screen.h"
 
-
 const CGFloat kStatusItemLength = 26;
 const CGFloat kMargin = 3;
 
 @interface StatusItemView : NSView {
   atom::TrayIconCocoa* trayIcon_; // weak
-  AtomMenuController* menu_controller_; // weak
+  AtomMenuController* menuController_; // weak
   BOOL isHighlightEnable_;
   BOOL inMouseEventSequence_;
   base::scoped_nsobject<NSImage> image_;
@@ -33,7 +32,10 @@ const CGFloat kMargin = 3;
   isHighlightEnable_ = YES;
   statusItem_.reset([[[NSStatusBar systemStatusBar] statusItemWithLength:
       NSVariableStatusItemLength] retain]);
-  NSRect frame = NSMakeRect(0, 0, 26, [[statusItem_ statusBar] thickness]);
+  NSRect frame = NSMakeRect(0,
+                            0,
+                            kStatusItemLength,
+                            [[statusItem_ statusBar] thickness]);
   if ((self = [super initWithFrame:frame])) {
     [statusItem_ setView:self];
   }
@@ -46,38 +48,52 @@ const CGFloat kMargin = 3;
 }
 
 - (void)drawRect:(NSRect)dirtyRect {
+  // Draw the tray icon and title that align with NSSStatusItem, layout:
+  //   ----------------
+  //   | icon | title |
+  ///  ----------------
   BOOL highlight = [self shouldHighlight];
-  [statusItem_ drawStatusBarBackgroundInRect:[self bounds]
+  CGFloat titleWidth = [self titleWidth];
+  // Calculate the total icon bounds.
+  NSRect statusItemBounds = NSMakeRect(0,
+                                       0,
+                                       kStatusItemLength + titleWidth,
+                                       [[statusItem_ statusBar] thickness]);
+  [statusItem_ drawStatusBarBackgroundInRect:statusItemBounds
                                withHighlight:highlight];
-  NSRect icon_frame = NSMakeRect(0,
-                                 0,
-                                 kStatusItemLength,
-                                 [[statusItem_ statusBar] thickness]);
-  NSRect icon_draw_rect = NSInsetRect(icon_frame, kMargin, kMargin);
+  [statusItem_ setLength:titleWidth + kStatusItemLength];
+  if (title_) {
+    NSRect titleDrawRect = NSMakeRect(kStatusItemLength,
+                                      0,
+                                      titleWidth + kStatusItemLength,
+                                      [[statusItem_ statusBar] thickness]);
+    [title_ drawInRect:titleDrawRect
+        withAttributes:[self titleAttributes]];
+  }
+
+  NSRect iconRect = NSMakeRect(0,
+                               0,
+                               kStatusItemLength,
+                               [[statusItem_ statusBar] thickness]);
   if (highlight && alternateImage_) {
-    [alternateImage_ drawInRect:icon_draw_rect
+    [alternateImage_ drawInRect:NSInsetRect(iconRect, kMargin, kMargin)
                        fromRect:NSZeroRect
                       operation:NSCompositeSourceOver
                        fraction:1];
   } else {
-    [image_ drawInRect:icon_draw_rect
+    [image_ drawInRect:NSInsetRect(iconRect, kMargin, kMargin)
               fromRect:NSZeroRect
              operation:NSCompositeSourceOver
               fraction:1];
   }
-  if (title_) {
-    NSAttributedString* attributes =
-        [[NSAttributedString alloc] initWithString:title_
-                                        attributes:[self titleAttributes]];
-    CGFloat title_width  = [attributes size].width;
-    NSRect title_rect = NSMakeRect(kStatusItemLength,
-                                   0,
-                                   title_width + kStatusItemLength,
-                                   [[statusItem_ statusBar] thickness]);
-    [title_ drawInRect:title_rect
-        withAttributes:[self titleAttributes]];
-    [statusItem_ setLength:title_width + kStatusItemLength];
-  }
+}
+
+- (CGFloat) titleWidth {
+  if (!title_) return 0;
+  NSAttributedString* attributes =
+      [[NSAttributedString alloc] initWithString:title_
+                                      attributes:[self titleAttributes]];
+  return [attributes size].width;
 }
 
 - (NSDictionary *)titleAttributes {
@@ -103,12 +119,11 @@ const CGFloat kMargin = 3;
 }
 
 -(void)setTitle:(NSString*) title {
-  //title_= [title retain];
   title_.reset([title copy]);
 }
 
 - (void)setMenuController:(AtomMenuController*)menu {
-  menu_controller_ = menu;
+  menuController_ = menu;
 }
 
 -(void)mouseDown:(NSEvent *)event {
@@ -125,14 +140,14 @@ const CGFloat kMargin = 3;
   }
   inMouseEventSequence_ = NO;
   if (event.clickCount == 1) {
-    if (menu_controller_) {
-      [statusItem_ popUpStatusItemMenu:[menu_controller_ menu]];
+    if (menuController_) {
+      [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
     }
 
     trayIcon_->NotifyClicked([self getBoundsFromEvent:event]);
   }
 
-  if (event.clickCount == 2 && !menu_controller_) {
+  if (event.clickCount == 2 && !menuController_) {
     trayIcon_->NotifyDoubleClicked();
   }
   [self setNeedsDisplay:YES];
@@ -143,7 +158,7 @@ const CGFloat kMargin = 3;
 }
 
 -(BOOL) shouldHighlight {
-  BOOL is_menu_open = [menu_controller_ isMenuOpen];
+  BOOL is_menu_open = [menuController_ isMenuOpen];
   return isHighlightEnable_ && (inMouseEventSequence_ || is_menu_open);
 }
 
