@@ -58,6 +58,7 @@ class Tray : public mate::EventEmitter,
   void SetTitle(mate::Arguments* args, const std::string& title);
   void SetHighlightMode(mate::Arguments* args, bool highlight);
   void DisplayBalloon(mate::Arguments* args, const mate::Dictionary& options);
+  void PopContextMenu();
   void SetContextMenu(mate::Arguments* args, Menu* menu);
 
  private:

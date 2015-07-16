@@ -106,6 +106,10 @@ void Tray::DisplayBalloon(mate::Arguments* args,
   tray_icon_->DisplayBalloon(icon, title, content);
 }
 
+void Tray::PopContextMenu() {
+  tray_icon_->PopContextMenu();
+}
+
 void Tray::SetContextMenu(mate::Arguments* args, Menu* menu) {
   tray_icon_->SetContextMenu(menu->model());
 }
@@ -121,6 +125,7 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setTitle", &Tray::SetTitle)
       .SetMethod("setHighlightMode", &Tray::SetHighlightMode)
       .SetMethod("displayBalloon", &Tray::DisplayBalloon)
+      .SetMethod("popContextMenu", &Tray::PopContextMenu)
       .SetMethod("_setContextMenu", &Tray::SetContextMenu);
 }
 

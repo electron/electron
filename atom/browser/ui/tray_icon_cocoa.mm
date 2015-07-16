@@ -153,6 +153,17 @@ const CGFloat kMargin = 3;
   [self setNeedsDisplay:YES];
 }
 
+- (void)popContextMenu {
+  if (menuController_ && ![menuController_ isMenuOpen]) {
+    // redraw the dray icon to show highlight if it is enabled.
+    [self setNeedsDisplay:YES];
+    [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
+    // The popUpStatusItemMenu returns only after the showing menu is closed.
+    // When it returns, we need to redraw the tray icon to not show highlight.
+    [self setNeedsDisplay:YES];
+  }
+}
+
 - (void)rightMouseUp:(NSEvent*)event {
   trayIcon_->NotifyRightClicked([self getBoundsFromEvent:event]);
 }
@@ -199,6 +210,10 @@ void TrayIconCocoa::SetTitle(const std::string& title) {
 
 void TrayIconCocoa::SetHighlightMode(bool highlight) {
   [status_item_view_ setHighlight:highlight];
+}
+
+void TrayIconCocoa::PopContextMenu() {
+  [status_item_view_ popContextMenu];
 }
 
 void TrayIconCocoa::SetContextMenu(ui::SimpleMenuModel* menu_model) {
