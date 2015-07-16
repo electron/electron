@@ -58,6 +58,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   scoped_refptr<base::SingleThreadTaskRunner> GetNetworkTaskRunner() const override;
 
   net::HostResolver* host_resolver();
+  net::NetLog* net_log() { return net_log_.get(); }
 
  private:
   Delegate* delegate_;

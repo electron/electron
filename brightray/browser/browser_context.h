@@ -48,6 +48,7 @@ class BrowserContext : public content::BrowserContext,
   net::URLRequestContextGetter* CreateRequestContext(
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector protocol_interceptors);
+  net::NetLog* GetNetLog();
 
   net::URLRequestContextGetter* url_request_context_getter() const {
     return url_request_getter_.get();
