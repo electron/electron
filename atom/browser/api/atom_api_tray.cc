@@ -106,8 +106,10 @@ void Tray::DisplayBalloon(mate::Arguments* args,
   tray_icon_->DisplayBalloon(icon, title, content);
 }
 
-void Tray::PopContextMenu() {
-  tray_icon_->PopContextMenu();
+void Tray::PopContextMenu(mate::Arguments* args) {
+  gfx::Point pos;
+  args->GetNext(&pos);
+  tray_icon_->PopContextMenu(pos);
 }
 
 void Tray::SetContextMenu(mate::Arguments* args, Menu* menu) {

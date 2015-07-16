@@ -49,6 +49,7 @@ class NotifyIcon : public TrayIcon {
   void DisplayBalloon(const gfx::Image& icon,
                       const base::string16& title,
                       const base::string16& contents) override;
+  void PopContextMenu(const gfx::Point& pos) override;
   void SetContextMenu(ui::SimpleMenuModel* menu_model) override;
 
  private:
