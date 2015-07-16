@@ -110,6 +110,7 @@ Create a request job which sends a buffer as response.
 ## Class: protocol.RequestHttpJob(options)
 
 * `options` Object
+  * `session` [Session](browser-window.md#class-session)
   * `url` String
   * `method` String - Default is `GET`
   * `referrer` String
