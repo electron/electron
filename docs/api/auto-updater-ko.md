@@ -2,38 +2,30 @@
 
 **이 모듈은 현재 OS X에서만 사용할 수 있습니다.**
 
-Check out [atom/grunt-electron-installer](https://github.com/atom/grunt-electron-installer)
-for building a Windows installer for your app.
+Windows 어플리케이션 인스톨러를 생성하려면 [atom/grunt-electron-installer](https://github.com/atom/grunt-electron-installer)를 참고하세요.
 
-The `auto-updater` module is a simple wrap around the
-[Squirrel.Mac](https://github.com/Squirrel/Squirrel.Mac) framework.
+`auto-updater` 모듈은 [Squirrel.Mac](https://github.com/Squirrel/Squirrel.Mac) 프레임워크의 간단한 Wrapper입니다.
 
-Squirrel.Mac requires that your `.app` folder is signed using the
+Squirrel.Mac은 업데이트 설치를 위해 `.app` 폴더에
 [codesign](https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man1/codesign.1.html)
-utility for updates to be installed.
+툴을 사용한 서명을 요구합니다.
 
 ## Squirrel
 
-Squirrel is an OS X framework focused on making application updates **as safe
-and transparent as updates to a website**.
+Squirrel은 어플리케이션이 **안전하고 투명한 웹사이트 업데이트**를 할 수 있도록 하는데 초점이 맞춰진 OS X 프레임워크입니다.
 
-Instead of publishing a feed of versions from which your app must select,
-Squirrel updates to the version your server tells it to. This allows you to
-intelligently update your clients based on the request you give to Squirrel.
+Squirrel은 사용자에게 어플리케이션의 업데이트를 알릴 필요 없이 서버가 지시하는 버전을 받아온 후 자동으로 업데이트합니다.
+이 기능을 사용하면 Squirrel을 통해 클라이언트의 어플리케이션을 지능적으로 업데이트 할 수 있습니다.
 
-Your request can include authentication details, custom headers or a request
-body so that your server has the context it needs in order to supply the most
-suitable update.
+요청시 커스텀 헤더 또는 요청 본문에 인증 정보를 포함시킬 수도 있습니다.
+서버에선 이러한 요청을 분류 처리하여 적당한 업데이트를 제공할 수 있습니다.
 
-The update JSON Squirrel requests should be dynamically generated based on
-criteria in the request, and whether an update is required. Squirrel relies
-on server side support for determining whether an update is required, see
-[Server Support](#server-support).
+Squirrel JSON 업데이트 요청시 처리는 반드시 어떤 업데이트가 필요한지 요청의 기준에 맞춰 동적으로 생성되어야 합니다.
+Squirrel은 사용해야 하는 업데이트 선택하는 과정을 서버에 의존합니다. [서버 지원](#server-support)을 참고하세요.
 
-Squirrel's installer is also designed to be fault tolerant, and ensure that any
-updates installed are valid.
+Squirrel의 인스톨러는 오류에 관대하게 설계되었습니다. 그리고 업데이트가 유효한지 확인합니다.
 
-## Update Requests
+## 업데이트 요청
 
 Squirrel is indifferent to the request the client application provides for
 update checking. `Accept: application/json` is added to the request headers
@@ -59,7 +51,7 @@ var autoUpdater = require('auto-updater');
 autoUpdater.setFeedUrl('http://mycompany.com/myapp/latest?version=' + app.getVersion());
 ```
 
-## Server Support
+## 서버 지원
 
 Your server should determine whether an update is required based on the
 [Update Request](#update-requests) your client issues.
@@ -75,7 +67,7 @@ If no update is required your server must respond with a status code of
 [204 No Content](http://tools.ietf.org/html/rfc2616#section-10.2.5). Squirrel
 will check for an update again at the interval you specify.
 
-## Update JSON Format
+## JSON 포맷 업데이트
 
 When an update is available, Squirrel expects the following schema in response
 to the update request provided:

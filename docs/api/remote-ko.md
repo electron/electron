@@ -21,7 +21,7 @@ win.loadUrl('https://github.com');
 
 Note: for the reverse (access renderer process from main process), you can use [webContents.executeJavascript](https://github.com/atom/electron/blob/master/docs/api/browser-window-ko.md#browserwindowwebcontents).
 
-## Remote objects
+## Remote 객체
 
 Each object (including functions) returned by the `remote` module represents an
 object in the main process (we call it a remote object or remote function).
