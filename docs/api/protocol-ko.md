@@ -32,6 +32,9 @@ app.on('ready', function() {
 
 `handler` 함수에선 요청에 대한 해당 프로토콜의 작업 결과를 응답(반환) 해야 합니다.
 
+기본적으로 스킴은 `http:`와 비슷합니다. `file:`과 같이 "표준 URI 구문"을 다르게 해석되게 하려면
+`protocol.registerStandardSchemes` 메서드를 이용해서 사용자 정의 스킴을 표준 스킴으로 만들 수 있습니다.
+
 ## protocol.unregisterProtocol(scheme, callback)
 
 * `scheme` String
@@ -43,7 +46,10 @@ app.on('ready', function() {
 
 * `value` Array
 
-지정한 `value` 배열을 사용하여 미리 지정된 스킴으로 등록합니다.
+지정한 `value` 배열을 사용하여 미리 지정된 표준 스킴으로 등록합니다.
+
+표준 스킴은 RFC 3986 [표준 URI 구문](https://tools.ietf.org/html/rfc3986#section-3)에 해당합니다.
+이 표준은 `file:`과 `filesystem:`을 포함합니다.
 
 ## protocol.isHandledProtocol(scheme, callback)
 
@@ -78,8 +84,8 @@ app.on('ready', function() {
 ## Class: protocol.RequestStringJob(options)
 
 * `options` Object
-  * `mimeType` String - `text/plain`이 기본
-  * `charset` String - `UTF-8`이 기본
+  * `mimeType` String - 기본값: `text/plain`
+  * `charset` String - 기본값: `UTF-8`
   * `data` String
 
 문자열을 반환하는 request 작업을 생성합니다.
@@ -87,8 +93,8 @@ app.on('ready', function() {
 ## Class: protocol.RequestBufferJob(options)
 
 * `options` Object
-  * `mimeType` String - Default is `application/octet-stream`
-  * `encoding` String - Default is `UTF-8`
+  * `mimeType` String - 기본값: `application/octet-stream`
+  * `encoding` String - 기본값: `UTF-8`
   * `data` Buffer
 
 버퍼를 반환하는 request 작업을 생성합니다.
@@ -96,8 +102,10 @@ app.on('ready', function() {
 ## Class: protocol.RequestHttpJob(options)
 
 * `options` Object
+  * `session` [Session](browser-window.md#class-session) - 기본적으로 이 옵션은 어플리케이션의 기본 세션입니다.
+    `null`로 설정하면 요청을 위한 새로운 세션을 만듭니다.
   * `url` String
-  * `method` String - Default is `GET`
+  * `method` String - 기본값: `GET`
   * `referrer` String
 
 `url`의 요청 결과를 그대로 반환하는 request 작업을 생성합니다.

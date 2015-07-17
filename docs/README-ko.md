@@ -66,7 +66,3 @@
 * [빌드 설명서 (Windows)](development/build-instructions-windows-ko.md)
 * [빌드 설명서 (Linux)](development/build-instructions-linux-ko.md)
 * [디버거에서 디버그 심볼 서버 설정](development/setting-up-symbol-server-ko.md)
-
-이 참조문서는 [@preco21](https://github.com/preco21)에 의해 번역되었습니다.
-문서내에서 오타나 잘못된 번역을 발견하면 `plusb21@gmail.com` 이메일로 알려주시면 감사하겠습니다.
-문서는 항시 최신버전을 유지할 수 없으므로 원본을 같이 참고하는 것을 권장합니다.

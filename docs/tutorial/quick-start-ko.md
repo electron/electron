@@ -75,8 +75,8 @@ var mainWindow = null;
 
 // 모든 창이 닫히면 어플리케이션 종료.
 app.on('window-all-closed', function() {
-  // OSX의 대부분의 어플리케이션에선 유저가 Cmd + Q 커맨드로 확실하게 종료하기 전까지는
-  // 어플리케이션이 메뉴바에 남아 계속 실행됩니다.
+  // OS X의 대부분의 어플리케이션은 유저가 Cmd + Q 커맨드로 확실하게 종료하기 전까지
+  // 메뉴바에 남아 계속 실행됩니다.
   if (process.platform != 'darwin') {
     app.quit();
   }
