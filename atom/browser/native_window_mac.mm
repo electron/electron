@@ -114,8 +114,8 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
         newSize.height = roundf(((newSize.width - extraWidthPlusFrame) / interiorContentAspectRatio) + extraHeightPlusFrame);
     }
     else {
-        newSize.width = roundf(((newSize.height - extraHeightPlusFrame) * interiorContentAspectRatio) + extraWidthPlusFrame);
         newSize.height = roundf(((frameSize.width - extraWidthPlusFrame) / interiorContentAspectRatio) + extraHeightPlusFrame);
+        newSize.width = roundf(((newSize.height - extraHeightPlusFrame) * interiorContentAspectRatio) + extraWidthPlusFrame);
     }
   }
 
