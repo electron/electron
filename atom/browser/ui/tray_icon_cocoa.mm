@@ -41,6 +41,8 @@ const CGFloat kMargin = 3;
                             kStatusItemLength,
                             [[statusItem_ statusBar] thickness]);
   if ((self = [super initWithFrame:frame])) {
+    [self registerForDraggedTypes:
+        [NSArray arrayWithObjects:NSFilenamesPboardType, nil]];
     [statusItem_ setView:self];
   }
   return self;
@@ -172,6 +174,24 @@ const CGFloat kMargin = 3;
 
 - (void)rightMouseUp:(NSEvent*)event {
   trayIcon_->NotifyRightClicked([self getBoundsFromEvent:event]);
+}
+
+- (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender {
+  return NSDragOperationCopy;
+}
+
+- (BOOL)performDragOperation:(id <NSDraggingInfo>)sender {
+  NSPasteboard* pboard = [sender draggingPasteboard];
+
+  if ([[pboard types] containsObject:NSFilenamesPboardType]) {
+    std::vector<std::string> dropFiles;
+    NSArray* files = [pboard propertyListForType:NSFilenamesPboardType];
+    for (NSString* file in files)
+      dropFiles.push_back(base::SysNSStringToUTF8(file));
+    trayIcon_->NotfiyDropFiles(dropFiles);
+    return YES;
+  }
+  return NO;
 }
 
 - (BOOL)shouldHighlight {

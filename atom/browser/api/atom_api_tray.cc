@@ -64,6 +64,10 @@ void Tray::OnRightClicked(const gfx::Rect& bounds) {
   Emit("right-clicked", bounds);
 }
 
+void Tray::OnDropFiles(const std::vector<std::string>& files) {
+  Emit("drop-files", files);
+}
+
 bool Tray::IsDestroyed() const {
   return !tray_icon_;
 }

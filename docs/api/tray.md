@@ -95,6 +95,15 @@ closes it.
 
 __Note:__ This is only implemented on Windows.
 
+### Event: 'drop-files'
+
+* `event`
+* `files` Array - the file path of dropped files.
+
+Emitted when dragged files are dropped in the tray icon.
+
+__Note:__ This is only implemented on OS X.
+
 ### Tray.destroy()
 
 Destroys the tray icon immediately.

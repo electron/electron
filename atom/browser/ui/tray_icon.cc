@@ -53,4 +53,8 @@ void TrayIcon::NotifyRightClicked(const gfx::Rect& bounds) {
   FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnRightClicked(bounds));
 }
 
+void TrayIcon::NotfiyDropFiles(const std::vector<std::string>& files) {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDropFiles(files));
+}
+
 }  // namespace atom
