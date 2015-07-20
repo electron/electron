@@ -1167,3 +1167,39 @@ Clears the session's HTTP cache.
 * `callback` Function - Called when operation is done
 
 Clears the data of web storages.
+
+### Session.setProxy(config, callback)
+
+* `config` String
+* `callback` Function - Called when operation is done
+
+Parses the `config` indicating which proxies to use for the session.
+
+```
+config = scheme-proxies[";"<scheme-proxies>]
+scheme-proxies = [<url-scheme>"="]<proxy-uri-list>
+url-scheme = "http" | "https" | "ftp" | "socks"
+proxy-uri-list = <proxy-uri>[","<proxy-uri-list>]
+proxy-uri = [<proxy-scheme>"://"]<proxy-host>[":"<proxy-port>]
+
+  For example:
+       "http=foopy:80;ftp=foopy2"  -- use HTTP proxy "foopy:80" for http://
+                                      URLs, and HTTP proxy "foopy2:80" for
+                                      ftp:// URLs.
+       "foopy:80"                  -- use HTTP proxy "foopy:80" for all URLs.
+       "foopy:80,bar,direct://"    -- use HTTP proxy "foopy:80" for all URLs,
+                                      failing over to "bar" if "foopy:80" is
+                                      unavailable, and after that using no
+                                      proxy.
+       "socks4://foopy"            -- use SOCKS v4 proxy "foopy:1080" for all
+                                      URLs.
+       "http=foopy,socks5://bar.com -- use HTTP proxy "foopy" for http URLs,
+                                      and fail over to the SOCKS5 proxy
+                                      "bar.com" if "foopy" is unavailable.
+       "http=foopy,direct://       -- use HTTP proxy "foopy" for http URLs,
+                                      and use no proxy if "foopy" is
+                                      unavailable.
+       "http=foopy;socks=foopy2   --  use HTTP proxy "foopy" for http URLs,
+                                      and use socks4://foopy2 for all other
+                                      URLs.
+```
