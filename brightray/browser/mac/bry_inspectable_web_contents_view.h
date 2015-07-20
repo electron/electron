@@ -5,6 +5,8 @@
 #include "base/mac/scoped_nsobject.h"
 #include "ui/base/cocoa/base_view.h"
 
+@class CAShapeLayer;
+
 namespace brightray {
 class InspectableWebContentsViewMac;
 }
@@ -18,6 +20,9 @@ using brightray::InspectableWebContentsViewMac;
   base::scoped_nsobject<NSWindow> devtools_window_;
   BOOL devtools_visible_;
   BOOL devtools_docked_;
+
+  // Weak reference to the mask of the hosted layer.
+  CAShapeLayer* layerMask_;
 
   DevToolsContentsResizingStrategy strategy_;
 }
