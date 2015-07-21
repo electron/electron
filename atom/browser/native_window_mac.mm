@@ -512,6 +512,9 @@ void NativeWindowMac::SetContentSize(const gfx::Size& size) {
 }
 
 gfx::Size NativeWindowMac::GetContentSize() {
+  if (!has_frame_)
+    return GetSize();
+
   NSRect bounds = [[window_ contentView] bounds];
   return gfx::Size(bounds.size.width, bounds.size.height);
 }
