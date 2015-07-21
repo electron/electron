@@ -330,9 +330,13 @@ Returns whether the window is visible to the user.
 
 Maximizes the window.
 
+__Note__: A hidden window will show after calling the API.
+
 ### BrowserWindow.unmaximize()
 
 Unmaximizes the window.
+
+__Note__: A hidden window will show after calling the API.
 
 ### BrowserWindow.isMaximized()
 
@@ -343,9 +347,13 @@ Returns whether the window is maximized.
 Minimizes the window. On some platforms the minimized window will be shown in
 the Dock.
 
+__Note__: A hidden window will show after calling the API.
+
 ### BrowserWindow.restore()
 
 Restores the window from minimized state to its previous state.
+
+__Note__: A hidden window will show after calling the API.
 
 ### BrowserWindow.isMinimized()
 
