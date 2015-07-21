@@ -27,6 +27,8 @@ __Platform limitations:__
 
 * On Linux app indicator will be used if it is supported, otherwise
   `GtkStatusIcon` will be used instead.
+* On Linux distributions that only have app indicator support, you have to
+  install `libappindicator1` to make tray icon work.
 * App indicator will only be showed when it has context menu.
 * When app indicator is used on Linux, `clicked` event is ignored.
 
