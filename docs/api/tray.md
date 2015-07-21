@@ -25,7 +25,6 @@ app.on('ready', function(){
 
 __Platform limitations:__
 
-* On OS X `clicked` event will be ignored if the tray icon has context menu.
 * On Linux app indicator will be used if it is supported, otherwise
   `GtkStatusIcon` will be used instead.
 * App indicator will only be showed when it has context menu.
@@ -57,6 +56,20 @@ Emitted when the tray icon is clicked.
 
 __Note:__ The `bounds` payload is only implemented on OS X and Windows 7 or newer.
 
+### Event: 'right-clicked'
+
+* `event`
+* `bounds` Object - the bounds of tray icon
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
+
+Emitted when the tray icon is right clicked.
+
+__Note:__ This is only implemented on OS X and Windows. On Windows, this event
+will be emitted if the tray icon has context menu.
+
 ### Event: 'double-clicked'
 
 Emitted when the tray icon is double clicked.
@@ -81,6 +94,15 @@ Emitted when the tray balloon is closed because of timeout or user manually
 closes it.
 
 __Note:__ This is only implemented on Windows.
+
+### Event: 'drop-files'
+
+* `event`
+* `files` Array - the file path of dropped files.
+
+Emitted when dragged files are dropped in the tray icon.
+
+__Note:__ This is only implemented on OS X.
 
 ### Tray.destroy()
 
@@ -130,6 +152,15 @@ __Note:__ This is only implemented on OS X.
 Displays a tray balloon.
 
 __Note:__ This is only implemented on Windows.
+
+### Tray.popContextMenu([position])
+
+* `position` Object - The pop position
+  * `x` Integer
+  * `y` Integer
+
+__Note:__ This is only implemented on OS X and Windows.
+The `position` is only available on Windows, and it is (0, 0) by default.
 
 ### Tray.setContextMenu(menu)
 

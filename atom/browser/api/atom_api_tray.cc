@@ -60,6 +60,14 @@ void Tray::OnBalloonClosed() {
   Emit("balloon-closed");
 }
 
+void Tray::OnRightClicked(const gfx::Rect& bounds) {
+  Emit("right-clicked", bounds);
+}
+
+void Tray::OnDropFiles(const std::vector<std::string>& files) {
+  Emit("drop-files", files);
+}
+
 bool Tray::IsDestroyed() const {
   return !tray_icon_;
 }
@@ -102,6 +110,12 @@ void Tray::DisplayBalloon(mate::Arguments* args,
   tray_icon_->DisplayBalloon(icon, title, content);
 }
 
+void Tray::PopContextMenu(mate::Arguments* args) {
+  gfx::Point pos;
+  args->GetNext(&pos);
+  tray_icon_->PopContextMenu(pos);
+}
+
 void Tray::SetContextMenu(mate::Arguments* args, Menu* menu) {
   tray_icon_->SetContextMenu(menu->model());
 }
@@ -117,6 +131,7 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setTitle", &Tray::SetTitle)
       .SetMethod("setHighlightMode", &Tray::SetHighlightMode)
       .SetMethod("displayBalloon", &Tray::DisplayBalloon)
+      .SetMethod("popContextMenu", &Tray::PopContextMenu)
       .SetMethod("_setContextMenu", &Tray::SetContextMenu);
 }
 

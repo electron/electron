@@ -13,7 +13,7 @@
 #include "base/mac/scoped_nsobject.h"
 
 @class AtomMenuController;
-@class StatusItemController;
+@class StatusItemView;
 
 namespace atom {
 
@@ -27,12 +27,12 @@ class TrayIconCocoa : public TrayIcon {
   void SetToolTip(const std::string& tool_tip) override;
   void SetTitle(const std::string& title) override;
   void SetHighlightMode(bool highlight) override;
+  void PopContextMenu(const gfx::Point& pos) override;
   void SetContextMenu(ui::SimpleMenuModel* menu_model) override;
 
  private:
-  base::scoped_nsobject<NSStatusItem> item_;
-
-  base::scoped_nsobject<StatusItemController> controller_;
+  // Atom custom view for NSStatusItem.
+  base::scoped_nsobject<StatusItemView> status_item_view_;
 
   // Status menu shown when right-clicking the system icon.
   base::scoped_nsobject<AtomMenuController> menu_;

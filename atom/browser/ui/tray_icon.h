@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_UI_TRAY_ICON_H_
 
 #include <string>
+#include <vector>
 
 #include "atom/browser/ui/tray_icon_observer.h"
 #include "base/observer_list.h"
@@ -46,6 +47,8 @@ class TrayIcon {
                               const base::string16& title,
                               const base::string16& contents);
 
+  virtual void PopContextMenu(const gfx::Point& pos);
+
   // Set the context menu for this icon.
   virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) = 0;
 
@@ -56,6 +59,8 @@ class TrayIcon {
   void NotifyBalloonShow();
   void NotifyBalloonClicked();
   void NotifyBalloonClosed();
+  void NotifyRightClicked(const gfx::Rect& bounds = gfx::Rect());
+  void NotfiyDropFiles(const std::vector<std::string>& files);
 
  protected:
   TrayIcon();
