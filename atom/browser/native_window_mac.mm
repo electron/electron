@@ -357,7 +357,7 @@ NativeWindowMac::NativeWindowMac(
   // On OS X the initial window size doesn't include window frame.
   bool use_content_size = false;
   options.Get(switches::kUseContentSize, &use_content_size);
-  if (has_frame_ && !use_content_size)
+  if (!has_frame_ || !use_content_size)
     SetSize(gfx::Size(width, height));
 
   // Enable the NSView to accept first mouse event.
@@ -494,6 +494,11 @@ gfx::Rect NativeWindowMac::GetBounds() {
 }
 
 void NativeWindowMac::SetContentSize(const gfx::Size& size) {
+  if (!has_frame_) {
+    SetSize(size);
+    return;
+  }
+
   NSRect frame_nsrect = [window_ frame];
   NSSize frame = frame_nsrect.size;
   NSSize content = [window_ contentRectForFrameRect:frame_nsrect].size;
