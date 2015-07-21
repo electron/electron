@@ -117,6 +117,15 @@ describe 'browser-window module', ->
       assert.equal after[0], size[0]
       assert.equal after[1], size[1]
 
+    it 'works for framless window', ->
+      w.destroy()
+      w = new BrowserWindow(show: false, frame: false, width: 400, height: 400)
+      size = [400, 400]
+      w.setContentSize size[0], size[1]
+      after = w.getContentSize()
+      assert.equal after[0], size[0]
+      assert.equal after[1], size[1]
+
   describe 'BrowserWindow.fromId(id)', ->
     it 'returns the window with id', ->
       assert.equal w.id, BrowserWindow.fromId(w.id).id
@@ -130,6 +139,16 @@ describe 'browser-window module', ->
       assert.equal contentSize[1], 400
 
     it 'make window created with window size when not used', ->
+      size = w.getSize()
+      assert.equal size[0], 400
+      assert.equal size[1], 400
+
+    it 'works for framless window', ->
+      w.destroy()
+      w = new BrowserWindow(show: false, frame: false, width: 400, height: 400, 'use-content-size': true)
+      contentSize = w.getContentSize()
+      assert.equal contentSize[0], 400
+      assert.equal contentSize[1], 400
       size = w.getSize()
       assert.equal size[0], 400
       assert.equal size[1], 400
