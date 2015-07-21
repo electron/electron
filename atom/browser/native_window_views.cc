@@ -393,14 +393,14 @@ bool NativeWindowViews::IsVisible() {
 }
 
 void NativeWindowViews::Maximize() {
-  if (IsVisible())
-    window_->Maximize();
-  else
-    window_->native_widget_private()->ShowWithWindowState(
-        ui::SHOW_STATE_MAXIMIZED);
+  if (!IsVisible())
+    Show();
+  window_->Maximize();
 }
 
 void NativeWindowViews::Unmaximize() {
+  if (!IsVisible())
+    Show();
   window_->Restore();
 }
 
@@ -409,14 +409,14 @@ bool NativeWindowViews::IsMaximized() {
 }
 
 void NativeWindowViews::Minimize() {
-  if (IsVisible())
-    window_->Minimize();
-  else
-    window_->native_widget_private()->ShowWithWindowState(
-        ui::SHOW_STATE_MINIMIZED);
+  if (!IsVisible())
+    Show();
+  window_->Minimize();
 }
 
 void NativeWindowViews::Restore() {
+  if (!IsVisible())
+    Show();
   window_->Restore();
 }
 

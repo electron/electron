@@ -434,10 +434,14 @@ bool NativeWindowMac::IsVisible() {
 }
 
 void NativeWindowMac::Maximize() {
+  if (!IsVisible())
+    Show();
   [window_ zoom:nil];
 }
 
 void NativeWindowMac::Unmaximize() {
+  if (!IsVisible())
+    Show();
   [window_ zoom:nil];
 }
 
@@ -446,10 +450,14 @@ bool NativeWindowMac::IsMaximized() {
 }
 
 void NativeWindowMac::Minimize() {
+  if (!IsVisible())
+    Show();
   [window_ miniaturize:nil];
 }
 
 void NativeWindowMac::Restore() {
+  if (!IsVisible())
+    Show();
   [window_ deminiaturize:nil];
 }
 
