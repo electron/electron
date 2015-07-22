@@ -131,10 +131,13 @@ void AdapterRequestJob::CreateHttpJobAndStart(
 void AdapterRequestJob::CreateJobFromProtocolHandlerAndStart() {
   real_job_ = protocol_handler_->MaybeCreateJob(request(),
                                                 network_delegate());
-  if (!real_job_.get())
+  if (!real_job_.get()) {
     CreateErrorJobAndStart(net::ERR_NOT_IMPLEMENTED);
-  else
+  } else {
+    // Copy headers from original request.
+    real_job_->SetExtraRequestHeaders(request()->extra_request_headers());
     real_job_->Start();
+  }
 }
 
 }  // namespace atom
