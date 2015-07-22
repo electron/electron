@@ -46,6 +46,8 @@ class AdapterRequestJob : public net::URLRequestJob {
   bool GetCharset(std::string* charset) override;
   void GetResponseInfo(net::HttpResponseInfo* info) override;
   int GetResponseCode() const override;
+  void GetLoadTimingInfo(
+      net::LoadTimingInfo* load_timing_info) const override;
 
   base::WeakPtr<AdapterRequestJob> GetWeakPtr();
 

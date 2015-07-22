@@ -43,7 +43,11 @@ bool AdapterRequestJob::ReadRawData(net::IOBuffer* buf,
                                     int buf_size,
                                     int *bytes_read) {
   DCHECK(!real_job_.get());
-  return real_job_->ReadRawData(buf, buf_size, bytes_read);
+  // Read post-filtered data if available.
+  if (real_job_->HasFilter())
+    return real_job_->Read(buf, buf_size, bytes_read);
+  else
+    return real_job_->ReadRawData(buf, buf_size, bytes_read);
 }
 
 bool AdapterRequestJob::IsRedirectResponse(GURL* location,
@@ -73,6 +77,11 @@ void AdapterRequestJob::GetResponseInfo(net::HttpResponseInfo* info) {
 
 int AdapterRequestJob::GetResponseCode() const {
   return real_job_->GetResponseCode();
+}
+
+void AdapterRequestJob::GetLoadTimingInfo(
+    net::LoadTimingInfo* load_timing_info) const {
+  real_job_->GetLoadTimingInfo(load_timing_info);
 }
 
 base::WeakPtr<AdapterRequestJob> AdapterRequestJob::GetWeakPtr() {
