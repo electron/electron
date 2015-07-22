@@ -269,6 +269,7 @@ registerWebViewElement = ->
     "goToOffset"
     "isCrashed"
     "setUserAgent"
+    "getUserAgent"
     "executeJavaScript"
     "insertCSS"
     "openDevTools"

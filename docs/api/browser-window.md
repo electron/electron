@@ -875,6 +875,10 @@ Whether the renderer process has crashed.
 
 Overrides the user agent for this page.
 
+### WebContents.getUserAgent()
+
+Returns a `String` represents the user agent for this page.
+
 ### WebContents.insertCSS(css)
 
 * `css` String
