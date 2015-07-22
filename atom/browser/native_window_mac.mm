@@ -97,25 +97,25 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 
 - (NSSize)windowWillResize:(NSWindow *)sender toSize:(NSSize)frameSize {
   NSSize newSize = frameSize;
-  double interiorContentAspectRatio = shell_->GetInteriorContentAspectRatio();
+  double aspectRatio = shell_->GetAspectRatio();
 
-  if (interiorContentAspectRatio > 0.0) {
-    NSRect windowFrame = [sender frame];
-    NSRect contentViewBounds = [[sender contentView] bounds];
-    gfx::Size interiorContentExtraSize = shell_->GetInteriorContentExtraSize();
-    double extraWidthPlusFrame = windowFrame.size.width - contentViewBounds.size.width + interiorContentExtraSize.width();
-    double extraHeightPlusFrame = windowFrame.size.height - contentViewBounds.size.height + interiorContentExtraSize.height();
+  if (aspectRatio > 0.0) {
+    gfx::Size windowFrameSize = shell_->GetSize();
+    gfx::Size contentViewSize = shell_->GetContentSize();
+    gfx::Size aspectRatioExtraSize = shell_->GetAspectRatioExtraSize();
+    double extraWidthPlusFrame = windowFrameSize.width() - contentViewSize.width() + aspectRatioExtraSize.width();
+    double extraHeightPlusFrame = windowFrameSize.height() - contentViewSize.height() + aspectRatioExtraSize.height();
 
-    newSize.width = roundf(((frameSize.height - extraHeightPlusFrame) * interiorContentAspectRatio) + extraWidthPlusFrame);
+    newSize.width = roundf(((frameSize.height - extraHeightPlusFrame) * aspectRatio) + extraWidthPlusFrame);
 
     // If the new width is less than the frame size use it as the primary constraint. This ensures that the value returned
     // by this method will never be larger than the users requested window size.
-    if (newSize.width < frameSize.width) {
-        newSize.height = roundf(((newSize.width - extraWidthPlusFrame) / interiorContentAspectRatio) + extraHeightPlusFrame);
+    if (newSize.width <= frameSize.width) {
+        newSize.height = roundf(((newSize.width - extraWidthPlusFrame) / aspectRatio) + extraHeightPlusFrame);
     }
     else {
-        newSize.height = roundf(((frameSize.width - extraWidthPlusFrame) / interiorContentAspectRatio) + extraHeightPlusFrame);
-        newSize.width = roundf(((newSize.height - extraHeightPlusFrame) * interiorContentAspectRatio) + extraWidthPlusFrame);
+        newSize.height = roundf(((frameSize.width - extraWidthPlusFrame) / aspectRatio) + extraHeightPlusFrame);
+        newSize.width = roundf(((newSize.height - extraHeightPlusFrame) * aspectRatio) + extraWidthPlusFrame);
     }
   }
 
