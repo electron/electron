@@ -563,6 +563,10 @@ void WebContents::SetUserAgent(const std::string& user_agent) {
       base::Bind(&SetUserAgentInIO, getter, user_agent));
 }
 
+std::string WebContents::GetUserAgent() {
+  return web_contents()->GetUserAgentOverride();
+}
+
 void WebContents::InsertCSS(const std::string& css) {
   web_contents()->InsertCSS(css);
 }
@@ -767,6 +771,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("_goToOffset", &WebContents::GoToOffset)
         .SetMethod("isCrashed", &WebContents::IsCrashed)
         .SetMethod("setUserAgent", &WebContents::SetUserAgent)
+        .SetMethod("getUserAgent", &WebContents::GetUserAgent)
         .SetMethod("insertCSS", &WebContents::InsertCSS)
         .SetMethod("_executeJavaScript", &WebContents::ExecuteJavaScript)
         .SetMethod("openDevTools", &WebContents::OpenDevTools)

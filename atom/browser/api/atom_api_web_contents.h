@@ -63,6 +63,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void GoToOffset(int offset);
   bool IsCrashed() const;
   void SetUserAgent(const std::string& user_agent);
+  std::string GetUserAgent();
   void InsertCSS(const std::string& css);
   void ExecuteJavaScript(const base::string16& code);
   void OpenDevTools(mate::Arguments* args);
