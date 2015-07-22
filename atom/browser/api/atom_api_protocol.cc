@@ -80,16 +80,13 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
         registry_(registry) {
   }
 
-  // AdapterRequestJob:
-  void GetJobTypeInUI() override {
+  void GetJobTypeInUI(const Protocol::JsProtocolHandler& callback) {
     DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
     v8::Locker locker(registry_->isolate());
     v8::HandleScope handle_scope(registry_->isolate());
 
     // Call the JS handler.
-    Protocol::JsProtocolHandler callback =
-        registry_->GetProtocolHandler(request()->url().scheme());
     v8::Local<v8::Value> result = callback.Run(request());
 
     // Determine the type of the job we are going to create.
@@ -170,6 +167,14 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
     BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
         base::Bind(&AdapterRequestJob::CreateErrorJobAndStart,
                    GetWeakPtr(), net::ERR_NOT_IMPLEMENTED));
+  }
+
+  // AdapterRequestJob:
+  void GetJobType() override {
+    BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
+        base::Bind(&CustomProtocolRequestJob::GetJobTypeInUI,
+                   base::Unretained(this),
+                   registry_->GetProtocolHandler(request()->url().scheme())));
   }
 
  private:

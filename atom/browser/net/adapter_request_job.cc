@@ -27,11 +27,7 @@ AdapterRequestJob::AdapterRequestJob(ProtocolHandler* protocol_handler,
 
 void AdapterRequestJob::Start() {
   DCHECK(!real_job_.get());
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI,
-      FROM_HERE,
-      base::Bind(&AdapterRequestJob::GetJobTypeInUI,
-                 weak_factory_.GetWeakPtr()));
+  GetJobType();
 }
 
 void AdapterRequestJob::Kill() {
