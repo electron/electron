@@ -195,18 +195,18 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     Show();
 }
 
-double NativeWindow::GetInteriorContentAspectRatio() {
-  return interiorContentAspectRatio;
+double NativeWindow::GetAspectRatio() {
+  return aspectRatio_;
 }
 
-gfx::Size NativeWindow::GetInteriorContentExtraSize() {
-  return interiorContentExtraSize;
+gfx::Size NativeWindow::GetAspectRatioExtraSize() {
+  return aspectRatioExtraSize_;
 }
 
-void NativeWindow::MaintainContentAspectRatio(double aspectRatio,
-                                              const gfx::Size& extraSize) {
-  interiorContentAspectRatio = aspectRatio;
-  interiorContentExtraSize = extraSize;
+void NativeWindow::SetAspectRatio(double aspectRatio,
+                                  const gfx::Size& extraSize) {
+  aspectRatio_ = aspectRatio;
+  aspectRatioExtraSize_ = extraSize;
 }
 
 void NativeWindow::SetSize(const gfx::Size& size) {
