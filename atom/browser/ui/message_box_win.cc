@@ -123,7 +123,12 @@ int ShowMessageBoxUTF16(HWND parent,
   // and custom buttons in pButtons.
   std::map<int, int> id_map;
   std::vector<TASKDIALOG_BUTTON> dialog_buttons;
-  MapToCommonID(buttons, &id_map, &config.dwCommonButtons, &dialog_buttons);
+  if (options & MESSAGE_BOX_NO_LINK) {
+    for (size_t i = 0; i < buttons.size(); ++i)
+      dialog_buttons.push_back({i + kIDStart, buttons[i].c_str()});
+  } else {
+    MapToCommonID(buttons, &id_map, &config.dwCommonButtons, &dialog_buttons);
+  }
   if (dialog_buttons.size() > 0) {
     config.pButtons = &dialog_buttons.front();
     config.cButtons = dialog_buttons.size();
@@ -146,13 +151,14 @@ void RunMessageBoxInNewThread(base::Thread* thread,
                               MessageBoxType type,
                               const std::vector<std::string>& buttons,
                               int cancel_id,
+                              int options,
                               const std::string& title,
                               const std::string& message,
                               const std::string& detail,
                               const gfx::ImageSkia& icon,
                               const MessageBoxCallback& callback) {
-  int result = ShowMessageBox(parent, type, buttons, cancel_id, title, message,
-                              detail, icon);
+  int result = ShowMessageBox(parent, type, buttons, cancel_id, options, title,
+                              message, detail, icon);
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE, base::Bind(callback, result));
   content::BrowserThread::DeleteSoon(
@@ -212,8 +218,8 @@ void ShowMessageBox(NativeWindow* parent,
   unretained->message_loop()->PostTask(
       FROM_HERE,
       base::Bind(&RunMessageBoxInNewThread, base::Unretained(unretained),
-                 parent, type, buttons, cancel_id, title, message, detail, icon,
-                 callback));
+                 parent, type, buttons, cancel_id, options, title, message,
+                 detail, icon, callback));
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
