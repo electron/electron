@@ -105,7 +105,9 @@ module.exports =
                            options.buttons,
                            options.cancelId,
                            0,
-                           [options.title, options.message, options.detail],
+                           options.title,
+                           options.message,
+                           options.detail,
                            options.icon,
                            window,
                            callback
