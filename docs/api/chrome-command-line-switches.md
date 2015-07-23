@@ -2,7 +2,7 @@
 
 This page lists the command line switches used by the Chrome browser that are also supported by
 Electron. You can use [app.commandLine.appendSwitch][append-switch] to append
-them to your app's main script before the [ready][ready] event of [app][app]
+them in your app's main script before the [ready][ready] event of [app][app]
 module is emitted:
 
 ```javascript
