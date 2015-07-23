@@ -1,6 +1,6 @@
 # crash-reporter
 
-An example of automatically submitting crash reporters to a remote server:
+The following is an example of automatically submitting a crash report to a remote server:
 
 ```javascript
 crashReporter = require('crash-reporter');
@@ -18,31 +18,30 @@ crashReporter.start({
   * `productName` String, default: Electron
   * `companyName` String, default: GitHub, Inc
   * `submitUrl` String, default: http://54.249.141.255:1127/post
-    * URL that crash reports would be sent to as POST
+    * URL that crash reports will be sent to as POST
   * `autoSubmit` Boolean, default: true
     * Send the crash report without user interaction
   * `ignoreSystemCrashHandler` Boolean, default: false
   * `extra` Object
-    * An object you can define which content will be send along with the report.
+    * An object you can define that will be sent along with the report.
     * Only string properties are sent correctly.
     * Nested objects are not supported.
 
-Developers are required to call this method before using other crashReporter APIs.
+Developers are required to call this method before using other `crashReporter` APIs.
 
-
-**Note:** On OS X, electron uses a new `crashpad` client, which is different
-with the `breakpad` on Windows and Linux. To enable crash collection feature,
-you are required to call `crashReporter.start` API to initialize `crashpad` in
-main process and in each renderer process that you wish to collect crash reports.
+**Note:** On OS X, Electron uses a new `crashpad` client, which is different
+from `breakpad` on Windows and Linux. To enable the crash collection feature,
+you are required to call `crashReporter.start` API to initialize `crashpad` in the
+main process and in each renderer process from which you wish to collect crash reports.
 
 ## crashReporter.getLastCrashReport()
 
-Returns the date and ID of the last crash report, when there was no crash report
-sent or the crash reporter is not started, `null` will be returned.
+Returns the date and ID of the last crash report. If no crash reports have been
+sent or the crash reporter has not been started, `null` is returned.
 
 ## crashReporter.getUploadedReports()
 
-Returns all uploaded crash reports, each report contains date and uploaded ID.
+Returns all uploaded crash reports. Each report contains the date and uploaded ID.
 
 # crash-reporter payload
 
@@ -54,8 +53,8 @@ The crash reporter will send the following data to the `submitUrl` as `POST`:
 * `process_type` String - e.g. 'renderer'
 * `ptime` Number
 * `_version` String - The version in `package.json`
-* `_productName` String - The product name in the crashReporter `options` object
+* `_productName` String - The product name in the `crashReporter` `options` object
 * `prod` String - Name of the underlying product. In this case Electron
-* `_companyName` String - The company name in the crashReporter `options` object
+* `_companyName` String - The company name in the `crashReporter` `options` object
 * `upload_file_minidump` File - The crashreport as file
-* All level one properties of the `extra` object in the crashReporter `options` object
+* All level one properties of the `extra` object in the `crashReporter` `options` object
