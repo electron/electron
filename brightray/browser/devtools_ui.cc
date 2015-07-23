@@ -11,11 +11,10 @@
 #include "base/memory/ref_counted_memory.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
-#include "content/public/browser/devtools_http_handler.h"
+#include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/url_data_source.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_ui.h"
-#include "ui/base/resource/resource_bundle.h"
 
 using content::WebContents;
 
@@ -64,17 +63,10 @@ class BundledDataSource : public content::URLDataSource {
                         int render_view_id,
                         const GotDataCallback& callback) override {
     std::string filename = PathWithoutParams(path);
-
-    int resource_id =
-        content::DevToolsHttpHandler::GetFrontendResourceId(filename);
-
-    DLOG_IF(WARNING, resource_id == -1)
-        << "Unable to find dev tool resource: " << filename
-        << ". If you compiled with debug_devtools=1, try running with "
-           "--debug-devtools.";
-    const ResourceBundle& rb = ResourceBundle::GetSharedInstance();
-    scoped_refptr<base::RefCountedStaticMemory> bytes(rb.LoadDataResourceBytes(
-        resource_id));
+    base::StringPiece resource =
+      content::DevToolsFrontendHost::GetFrontendResource(filename);
+    scoped_refptr<base::RefCountedStaticMemory> bytes(
+        new base::RefCountedStaticMemory(resource.data(), resource.length()));
     callback.Run(bytes.get());
   }
 
