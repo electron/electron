@@ -249,10 +249,6 @@ bool Window::IsFullscreen() {
   return window_->IsFullscreen();
 }
 
-void Window::SetAspectRatio(double aspect_ratio, const gfx::Size& extraSize) {
-  window_->SetAspectRatio(aspect_ratio, extraSize);
-}
-
 void Window::SetBounds(const gfx::Rect& bounds) {
   window_->SetBounds(bounds);
 }
@@ -454,6 +450,12 @@ void Window::ShowDefinitionForSelection() {
   window_->ShowDefinitionForSelection();
 }
 #endif
+
+void Window::SetAspectRatio(double aspect_ratio, mate::Arguments* args) {
+  gfx::Size extra_size;
+  args->GetNext(&extra_size);
+  window_->SetAspectRatio(aspect_ratio, extra_size);
+}
 
 void Window::SetVisibleOnAllWorkspaces(bool visible) {
   return window_->SetVisibleOnAllWorkspaces(visible);

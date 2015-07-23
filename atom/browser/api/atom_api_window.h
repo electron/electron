@@ -95,7 +95,6 @@ class Window : public mate::TrackableObject<Window>,
   bool IsMinimized();
   void SetFullScreen(bool fullscreen);
   bool IsFullscreen();
-  void SetAspectRatio(double aspect_ratio, const gfx::Size& extraSize);
   void SetBounds(const gfx::Rect& bounds);
   gfx::Rect GetBounds();
   void SetSize(int width, int height);
@@ -135,6 +134,7 @@ class Window : public mate::TrackableObject<Window>,
   bool IsMenuBarAutoHide();
   void SetMenuBarVisibility(bool visible);
   bool IsMenuBarVisible();
+  void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
 
 #if defined(OS_MACOSX)
   void ShowDefinitionForSelection();
