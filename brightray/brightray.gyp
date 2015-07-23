@@ -163,8 +163,8 @@
               # Link with system libraries.
               'link_settings': {
                 'libraries': [
-                  # ffmpegsumo.lib is required for linking with ffmpegsumo.dll
-                  '<(libchromiumcontent_dir)/ffmpegsumo.lib',
+                  # ffmpeg.dll.lib is required for linking with ffmpeg.dll
+                  '<(libchromiumcontent_dir)/ffmpeg.dll.lib',
                   # content_browser.gypi:
                   '-lsensorsapi.lib',
                   '-lportabledeviceguids.lib',
@@ -195,7 +195,7 @@
                       'winspool.lib',
                     ],
                     'DelayLoadDLLs': [
-                      'ffmpegsumo.dll',
+                      'ffmpeg.dll',
                       # content_common.gypi:
                       'd3d9.dll',
                       'dxva2.dll',
