@@ -361,6 +361,17 @@ Sets whether the window should be in fullscreen mode.
 
 Returns whether the window is in fullscreen mode.
 
+### BrowserWindow.setAspectRatio(aspectRatio, [extraSize])
+
+* `aspectRatio` The aspect ratio we want to maintain for some portion of the content view.
+* `rect` Object - The extra size to not be included in the aspect ratio to be maintained.
+  * `width` Integer
+  * `height` Integer
+
+This will have a window maintain an aspect ratio. The extra size allows a developer to be able to have space, specifified in pixels, not included within the aspect ratio calculations. This API already takes into account the difference between a window's size and it's content size.
+
+Consider a normal window with an HD video player and associated controls. Perhaps there are 15 pixels of controls on the left edge, 25 pixels of controls on the right edge and 50 pixels of controls below the player. In order to maintain a 16:9 aspect ratio (standard aspect ratio for HD @1920x1080) within the player itself we would call this function with arguments of 16/9 and [ 40, 50 ]. The second argument doesn't care where the extra width and height are within the content view — only that they exist. Just sum any extra width and height areas you have within the overall content view.
+
 ### BrowserWindow.setBounds(options)
 
 * `options` Object
