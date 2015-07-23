@@ -51,7 +51,10 @@ class PlatformNotificationServiceImpl
       const content::PlatformNotificationData& notification_data) override;
   void ClosePersistentNotification(
       content::BrowserContext* browser_context,
-      const std::string& persistent_notification_id) override;
+      int64_t persistent_notification_id) override;
+  bool GetDisplayedPersistentNotifications(
+      content::BrowserContext* browser_context,
+      std::set<std::string>* displayed_notifications) override;
 
   scoped_ptr<NotificationPresenter> notification_presenter_;
 
