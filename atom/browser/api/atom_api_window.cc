@@ -249,8 +249,8 @@ bool Window::IsFullscreen() {
   return window_->IsFullscreen();
 }
 
-void Window::SetAspectRatio(double aspectRatio, gfx::Size extraSize) {
-  window_->SetAspectRatio(aspectRatio, extraSize);
+void Window::SetAspectRatio(double aspect_ratio, const gfx::Size& extraSize) {
+  window_->SetAspectRatio(aspect_ratio, extraSize);
 }
 
 void Window::SetBounds(const gfx::Rect& bounds) {

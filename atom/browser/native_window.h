@@ -107,9 +107,6 @@ class NativeWindow : public content::WebContentsObserver,
   virtual bool IsMinimized() = 0;
   virtual void SetFullScreen(bool fullscreen) = 0;
   virtual bool IsFullscreen() const = 0;
-  double GetAspectRatio();
-  virtual gfx::Size GetAspectRatioExtraSize();
-  virtual void SetAspectRatio(double aspectRatio, const gfx::Size& extraSize);
   virtual void SetBounds(const gfx::Rect& bounds) = 0;
   virtual gfx::Rect GetBounds() = 0;
   virtual void SetSize(const gfx::Size& size);
@@ -165,6 +162,11 @@ class NativeWindow : public content::WebContentsObserver,
   virtual bool IsMenuBarAutoHide();
   virtual void SetMenuBarVisibility(bool visible);
   virtual bool IsMenuBarVisible();
+
+  // Set the aspect ratio when resizing window.
+  double GetAspectRatio();
+  gfx::Size GetAspectRatioExtraSize();
+  void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size);
 
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
@@ -290,8 +292,8 @@ class NativeWindow : public content::WebContentsObserver,
 
   // Used to maintain the aspect ratio of a view which is inside of the
   // content view.
-  double aspectRatio_ = 0.0;
-  gfx::Size aspectRatioExtraSize_;
+  double aspect_ratio_;
+  gfx::Size aspect_ratio_extraSize_;
 
   // The page this window is viewing.
   brightray::InspectableWebContents* inspectable_web_contents_;

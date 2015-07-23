@@ -85,6 +85,7 @@ NativeWindow::NativeWindow(
       node_integration_(true),
       has_dialog_attached_(false),
       zoom_factor_(1.0),
+      aspect_ratio_(0.0),
       inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
   inspectable_web_contents->GetView()->SetDelegate(this);
@@ -195,20 +196,6 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     Show();
 }
 
-double NativeWindow::GetAspectRatio() {
-  return aspectRatio_;
-}
-
-gfx::Size NativeWindow::GetAspectRatioExtraSize() {
-  return aspectRatioExtraSize_;
-}
-
-void NativeWindow::SetAspectRatio(double aspectRatio,
-                                  const gfx::Size& extraSize) {
-  aspectRatio_ = aspectRatio;
-  aspectRatioExtraSize_ = extraSize;
-}
-
 void NativeWindow::SetSize(const gfx::Size& size) {
   SetBounds(gfx::Rect(GetPosition(), size));
 }
@@ -258,6 +245,20 @@ void NativeWindow::SetMenuBarVisibility(bool visible) {
 
 bool NativeWindow::IsMenuBarVisible() {
   return true;
+}
+
+double NativeWindow::GetAspectRatio() {
+  return aspect_ratio_;
+}
+
+gfx::Size NativeWindow::GetAspectRatioExtraSize() {
+  return aspect_ratio_extraSize_;
+}
+
+void NativeWindow::SetAspectRatio(double aspect_ratio,
+                                  const gfx::Size& extra_size) {
+  aspect_ratio_ = aspect_ratio;
+  aspect_ratio_extraSize_ = extra_size;
 }
 
 bool NativeWindow::HasModalDialog() {
