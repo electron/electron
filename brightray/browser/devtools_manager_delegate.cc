@@ -12,27 +12,21 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "browser/browser_context.h"
+#include "common/content_client.h"
+#include "components/devtools_discovery/basic_target_descriptor.h"
+#include "components/devtools_http_handler/devtools_http_handler.h"
 #include "content/public/browser/devtools_agent_host.h"
-#include "content/public/browser/devtools_http_handler.h"
-#include "content/public/browser/devtools_target.h"
+#include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/navigation_entry.h"
-#include "content/public/browser/render_view_host.h"
-#include "content/public/browser/web_contents.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/url_constants.h"
 #include "content/public/common/user_agent.h"
+#include "net/base/net_errors.h"
 #include "net/socket/tcp_server_socket.h"
 #include "net/socket/stream_socket.h"
 #include "ui/base/resource/resource_bundle.h"
 
-using content::DevToolsAgentHost;
-using content::RenderViewHost;
-using content::WebContents;
-using content::BrowserContext;
-using content::DevToolsTarget;
-using content::DevToolsHttpHandler;
 
 namespace brightray {
 
@@ -43,12 +37,8 @@ namespace {
 // since libcontentchromium doesn't expose content_shell resources.
 const int kIDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE = 25500;
 
-const char kTargetTypePage[] = "page";
-const char kTargetTypeServiceWorker[] = "service_worker";
-const char kTargetTypeOther[] = "other";
-
 class TCPServerSocketFactory
-    : public content::DevToolsHttpHandler::ServerSocketFactory {
+    : public devtools_http_handler::DevToolsHttpHandler::ServerSocketFactory {
  public:
   TCPServerSocketFactory(const std::string& address, int port)
       : address_(address), port_(port) {
@@ -71,7 +61,7 @@ class TCPServerSocketFactory
   DISALLOW_COPY_AND_ASSIGN(TCPServerSocketFactory);
 };
 
-scoped_ptr<content::DevToolsHttpHandler::ServerSocketFactory>
+scoped_ptr<devtools_http_handler::DevToolsHttpHandler::ServerSocketFactory>
 CreateSocketFactory() {
   auto& command_line = *base::CommandLine::ForCurrentProcess();
   // See if the user specified a port on the command line (useful for
@@ -88,77 +78,24 @@ CreateSocketFactory() {
       DLOG(WARNING) << "Invalid http debugger port number " << temp_port;
     }
   }
-  return scoped_ptr<content::DevToolsHttpHandler::ServerSocketFactory>(
-      new TCPServerSocketFactory("127.0.0.1", port));
+  return scoped_ptr<
+      devtools_http_handler::DevToolsHttpHandler::ServerSocketFactory>(
+          new TCPServerSocketFactory("127.0.0.1", port));
 }
 
-class Target : public content::DevToolsTarget {
- public:
-  explicit Target(scoped_refptr<DevToolsAgentHost> agent_host);
-
-  std::string GetId() const override { return agent_host_->GetId(); }
-  std::string GetParentId() const override { return std::string(); }
-  std::string GetType() const override {
-    switch (agent_host_->GetType()) {
-      case DevToolsAgentHost::TYPE_WEB_CONTENTS:
-        return kTargetTypePage;
-      case DevToolsAgentHost::TYPE_SERVICE_WORKER:
-        return kTargetTypeServiceWorker;
-      default:
-        break;
-    }
-    return kTargetTypeOther;
-  }
-  std::string GetTitle() const override { return agent_host_->GetTitle(); }
-  std::string GetDescription() const override { return std::string(); }
-  GURL GetURL() const override { return agent_host_->GetURL(); }
-  GURL GetFaviconURL() const override { return favicon_url_; }
-  base::TimeTicks GetLastActivityTime() const override {
-    return last_activity_time_;
-  }
-  bool IsAttached() const override { return agent_host_->IsAttached(); }
-  scoped_refptr<DevToolsAgentHost> GetAgentHost() const override {
-    return agent_host_;
-  }
-  bool Activate() const override;
-  bool Close() const override;
-
- private:
-  scoped_refptr<DevToolsAgentHost> agent_host_;
-  GURL favicon_url_;
-  base::TimeTicks last_activity_time_;
-};
-
-Target::Target(scoped_refptr<DevToolsAgentHost> agent_host)
-    : agent_host_(agent_host) {
-  if (WebContents* web_contents = agent_host_->GetWebContents()) {
-    content::NavigationController& controller = web_contents->GetController();
-    content::NavigationEntry* entry = controller.GetActiveEntry();
-    if (entry != NULL && entry->GetURL().is_valid())
-      favicon_url_ = entry->GetFavicon().url;
-    last_activity_time_ = web_contents->GetLastActiveTime();
-  }
-}
-
-bool Target::Activate() const {
-  return agent_host_->Activate();
-}
-
-bool Target::Close() const {
-  return agent_host_->Close();
-}
 
 // DevToolsDelegate --------------------------------------------------------
 
-class DevToolsDelegate : public content::DevToolsHttpHandlerDelegate {
+class DevToolsDelegate :
+    public devtools_http_handler::DevToolsHttpHandlerDelegate {
  public:
   DevToolsDelegate();
   virtual ~DevToolsDelegate();
 
-  // content::DevToolsHttpHandlerDelegate.
+  // devtools_http_handler::DevToolsHttpHandlerDelegate.
   std::string GetDiscoveryPageHTML() override;
-  bool BundlesFrontendResources() override;
-  base::FilePath GetDebugFrontendDir() override;
+  std::string GetFrontendResource(const std::string& path) override;
+  std::string GetPageThumbnailData(const GURL& url) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(DevToolsDelegate);
@@ -175,12 +112,14 @@ std::string DevToolsDelegate::GetDiscoveryPageHTML() {
       kIDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE).as_string();
 }
 
-bool DevToolsDelegate::BundlesFrontendResources() {
-  return true;
+
+std::string DevToolsDelegate::GetFrontendResource(
+  const std::string& path) {
+  return content::DevToolsFrontendHost::GetFrontendResource(path).as_string();
 }
 
-base::FilePath DevToolsDelegate::GetDebugFrontendDir() {
-  return base::FilePath();
+std::string DevToolsDelegate::GetPageThumbnailData(const GURL& url) {
+  return std::string();
 }
 
 }  // namespace
@@ -188,12 +127,16 @@ base::FilePath DevToolsDelegate::GetDebugFrontendDir() {
 // DevToolsManagerDelegate ---------------------------------------------------
 
 // static
-content::DevToolsHttpHandler*
+devtools_http_handler::DevToolsHttpHandler*
 DevToolsManagerDelegate::CreateHttpHandler() {
-  return DevToolsHttpHandler::Start(CreateSocketFactory(),
-                                    std::string(),
-                                    new DevToolsDelegate,
-                                    base::FilePath());
+  return new devtools_http_handler::DevToolsHttpHandler(
+      CreateSocketFactory(),
+      std::string(),
+      new DevToolsDelegate,
+      base::FilePath(),
+      base::FilePath(),
+      std::string(),
+      GetBrightrayUserAgent());
 }
 
 DevToolsManagerDelegate::DevToolsManagerDelegate() {
@@ -206,24 +149,6 @@ base::DictionaryValue* DevToolsManagerDelegate::HandleCommand(
     content::DevToolsAgentHost* agent_host,
     base::DictionaryValue* command) {
   return NULL;
-}
-
-std::string DevToolsManagerDelegate::GetPageThumbnailData(
-    const GURL& url) {
-  return std::string();
-}
-
-scoped_ptr<content::DevToolsTarget>
-DevToolsManagerDelegate::CreateNewTarget(const GURL& url) {
-  return scoped_ptr<content::DevToolsTarget>();
-}
-
-void DevToolsManagerDelegate::EnumerateTargets(TargetCallback callback) {
-  TargetList targets;
-  for (const auto& agent_host : DevToolsAgentHost::GetOrCreateAll()) {
-    targets.push_back(new Target(agent_host));
-  }
-  callback.Run(targets);
 }
 
 }  // namespace brightray
