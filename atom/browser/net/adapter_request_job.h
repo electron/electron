@@ -46,13 +46,15 @@ class AdapterRequestJob : public net::URLRequestJob {
   bool GetCharset(std::string* charset) override;
   void GetResponseInfo(net::HttpResponseInfo* info) override;
   int GetResponseCode() const override;
+  void GetLoadTimingInfo(
+      net::LoadTimingInfo* load_timing_info) const override;
 
   base::WeakPtr<AdapterRequestJob> GetWeakPtr();
 
   ProtocolHandler* default_protocol_handler() { return protocol_handler_; }
 
   // Override this function to determine which job should be started.
-  virtual void GetJobTypeInUI() = 0;
+  virtual void GetJobType() = 0;
 
   void CreateErrorJobAndStart(int error_code);
   void CreateStringJobAndStart(const std::string& mime_type,
