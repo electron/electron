@@ -21,7 +21,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/devtools_http_handler.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -364,7 +363,7 @@ void InspectableWebContentsImpl::LoadNetworkResource(
   auto browser_context = static_cast<BrowserContext*>(devtools_web_contents_->GetBrowserContext());
 
   net::URLFetcher* fetcher =
-      net::URLFetcher::Create(gurl, net::URLFetcher::GET, this);
+      (net::URLFetcher::Create(gurl, net::URLFetcher::GET, this)).release();
   pending_requests_[fetcher] = callback;
   fetcher->SetRequestContext(browser_context->url_request_context_getter());
   fetcher->SetExtraRequestHeaders(headers);
@@ -577,8 +576,7 @@ void InspectableWebContentsImpl::CloseContents(content::WebContents* source) {
   CloseDevTools();
 }
 
-void InspectableWebContentsImpl::WebContentsFocused(
-    content::WebContents* contents) {
+void InspectableWebContentsImpl::OnWebContentsFocused() {
   if (view_->GetDelegate())
     view_->GetDelegate()->DevToolsFocused();
 }

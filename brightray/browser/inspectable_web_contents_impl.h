@@ -125,6 +125,7 @@ class InspectableWebContentsImpl :
   void AboutToNavigateRenderFrame(content::RenderFrameHost* old_host,
                                   content::RenderFrameHost* new_host) override;
   void WebContentsDestroyed() override;
+  void OnWebContentsFocused() override;
 
   // content::WebContentsDelegate:
   bool AddMessageToConsole(content::WebContents* source,
@@ -144,7 +145,6 @@ class InspectableWebContentsImpl :
   void HandleKeyboardEvent(
       content::WebContents*, const content::NativeWebKeyboardEvent&) override;
   void CloseContents(content::WebContents* source) override;
-  void WebContentsFocused(content::WebContents* contents) override;
 
   // net::URLFetcherDelegate:
   void OnURLFetchComplete(const net::URLFetcher* source) override;
