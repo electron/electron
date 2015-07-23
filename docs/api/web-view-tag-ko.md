@@ -215,6 +215,10 @@ Whether the renderer process has crashed.
 
 Overrides the user agent for guest page.
 
+### `<webview>`.getUserAgent()
+
+Returns a `String` represents the user agent for guest page.
+
 ### `<webview>`.insertCSS(css)
 
 * `css` String

@@ -66,23 +66,27 @@ Windows와 Linux에선 파일 선택 모드, 디렉터리 선택 모드를 동�
 
 * `browserWindow` BrowserWindow
 * `options` Object
-  ** `type` String - `"none"`, `"info"`, `"error"`, `"question"`, `"warning"` 중 하나를 사용할 수 있습니다.
+  * `type` String - `"none"`, `"info"`, `"error"`, `"question"`, `"warning"` 중 하나를 사용할 수 있습니다.
+    Windows에선 따로 `icon`을 설정하지 않은 이상 "question"과 "info"는 같은 아이콘으로 표시됩니다.
   * `buttons` Array - 버튼들의 라벨을 포함한 배열입니다.
-  * `title` String - 메시지 상자의 제목입니다. 몇몇 플랫폼에선 보이지 않을 수 있습니다.
-  * `message` String - 메시지 상자의 본문 내용입니다.
+  * `title` String - 대화 상자의 제목입니다. 몇몇 플랫폼에선 보이지 않을 수 있습니다.
+  * `message` String - 대화 상자의 본문 내용입니다.
   * `detail` String - 메시지의 추가 정보입니다.
   * `icon` [NativeImage](native-image-ko.md)
   * `cancelId` Integer - 유저가 대화 상자의 버튼을 클릭하지 않고 대화 상자를 취소했을 때 반환되는 버튼의 index입니다.
     기본적으로 버튼 리스트가 "cancel" 또는 "no" 라벨을 가지고 있을 때 해당 버튼의 index를 반환합니다. 따로 두 라벨이 지정되지 않은 경우 0을 반환합니다.
     OS X와 Windows에선 `cancelId` 지정 여부에 상관없이 "Cancel" 버튼이 언제나 `cancelId`로 지정됩니다.
+  * `noLink` Boolean - Windows Electron은 "Cancel"이나 "Yes"와 같은 흔히 사용되는 버튼을 찾으려고 시도하고
+    대화 상자 내에서 해당 버튼을 커맨드 링크처럼 만듭니다. 이 기능으로 앱을 좀 더 Modern Windows 앱처럼 만들 수 있습니다.
+    이 기능을 원하지 않으면 `noLink`를 true로 지정하면 됩니다.
 * `callback` Function
 
-메시지 상자를 표시합니다. `browserWindow`를 지정하면 메시지 상자가 완전히 닫힐 때까지는 창을 사용할 수 없습니다.
+대화 상자를 표시합니다. `browserWindow`를 지정하면 대화 상자가 완전히 닫힐 때까지는 창을 사용할 수 없습니다.
 완료시 유저가 선택한 버튼의 index를 반환합니다.
 
 역주: 부정을 표현하는 "아니오", "취소"와 같은 한글 단어는 지원되지 않습니다.
 만약 OS X 또는 Windows에서 "확인", "취소"와 같은 순서로 버튼을 지정하게 될 때 Alt + f4로 해당 대화 상자를 끄게 되면 "확인"을 누른걸로 판단되어 버립니다.
-이를 해결하려면 "Cancel"을 대신 사용하거나 BrowserWindow API를 사용하여 메시지 상자를 직접 구현해야합니다.
+이를 해결하려면 "Cancel"을 대신 사용하거나 BrowserWindow API를 사용하여 대화 상자를 직접 구현해야합니다.
 
 `callback`이 전달되면 메소드가 비동기로 작동되며 결과는 `callback(response)`을 통해 전달됩니다.
 
