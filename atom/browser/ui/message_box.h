@@ -28,8 +28,8 @@ enum MessageBoxType {
 };
 
 enum MessageBoxOptions {
-  MESSAGE_BOX_NONE     = 0,
-  MESSAGE_BOX_NO_LINKS = 1 << 0,
+  MESSAGE_BOX_NONE    = 0,
+  MESSAGE_BOX_NO_LINK = 1 << 0,
 };
 
 typedef base::Callback<void(int code)> MessageBoxCallback;

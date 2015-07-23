@@ -72,6 +72,7 @@ int ShowMessageBoxUTF16(HWND parent,
                         MessageBoxType type,
                         const std::vector<base::string16>& buttons,
                         int cancel_id,
+                        int options,
                         const base::string16& title,
                         const base::string16& message,
                         const base::string16& detail,
@@ -126,7 +127,8 @@ int ShowMessageBoxUTF16(HWND parent,
   if (dialog_buttons.size() > 0) {
     config.pButtons = &dialog_buttons.front();
     config.cButtons = dialog_buttons.size();
-    config.dwFlags |= TDF_USE_COMMAND_LINKS;  // custom buttons as links.
+    if (!(options & MESSAGE_BOX_NO_LINK))
+      config.dwFlags |= TDF_USE_COMMAND_LINKS;  // custom buttons as links.
   }
 
   int id = 0;
@@ -181,6 +183,7 @@ int ShowMessageBox(NativeWindow* parent,
                              type,
                              utf16_buttons,
                              cancel_id,
+                             options,
                              base::UTF8ToUTF16(title),
                              base::UTF8ToUTF16(message),
                              base::UTF8ToUTF16(detail),
@@ -214,7 +217,7 @@ void ShowMessageBox(NativeWindow* parent,
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
-  ShowMessageBoxUTF16(NULL, MESSAGE_BOX_TYPE_ERROR, {}, 0, L"Error", title,
+  ShowMessageBoxUTF16(NULL, MESSAGE_BOX_TYPE_ERROR, {}, 0, 0, L"Error", title,
                       content, gfx::ImageSkia());
 }
 
