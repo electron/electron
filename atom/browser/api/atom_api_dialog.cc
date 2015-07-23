@@ -42,28 +42,24 @@ namespace {
 void ShowMessageBox(int type,
                     const std::vector<std::string>& buttons,
                     int cancel_id,
-                    const std::vector<std::string>& texts,
+                    int options,
+                    const std::string& title,
+                    const std::string& message,
+                    const std::string& detail,
                     const gfx::ImageSkia& icon,
                     atom::NativeWindow* window,
                     mate::Arguments* args) {
-  // FIXME We are exceeding the parameters limit of base::Bind here, so we have
-  // to pass some parameters in an array. We should remove this once we have
-  // variadic template support in base::Bind.
-  const std::string& title = texts[0];
-  const std::string& message = texts[1];
-  const std::string& detail = texts[2];
-
   v8::Local<v8::Value> peek = args->PeekNext();
   atom::MessageBoxCallback callback;
   if (mate::Converter<atom::MessageBoxCallback>::FromV8(args->isolate(),
                                                         peek,
                                                         &callback)) {
     atom::ShowMessageBox(window, (atom::MessageBoxType)type, buttons, cancel_id,
-                         title, message, detail, icon, callback);
+                         options, title, message, detail, icon, callback);
   } else {
     int chosen = atom::ShowMessageBox(window, (atom::MessageBoxType)type,
-                                      buttons, cancel_id, title, message,
-                                      detail, icon);
+                                      buttons, cancel_id, options, title,
+                                      message, detail, icon);
     args->Return(chosen);
   }
 }

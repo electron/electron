@@ -72,6 +72,7 @@ int ShowMessageBoxUTF16(HWND parent,
                         MessageBoxType type,
                         const std::vector<base::string16>& buttons,
                         int cancel_id,
+                        int options,
                         const base::string16& title,
                         const base::string16& message,
                         const base::string16& detail,
@@ -122,11 +123,17 @@ int ShowMessageBoxUTF16(HWND parent,
   // and custom buttons in pButtons.
   std::map<int, int> id_map;
   std::vector<TASKDIALOG_BUTTON> dialog_buttons;
-  MapToCommonID(buttons, &id_map, &config.dwCommonButtons, &dialog_buttons);
+  if (options & MESSAGE_BOX_NO_LINK) {
+    for (size_t i = 0; i < buttons.size(); ++i)
+      dialog_buttons.push_back({i + kIDStart, buttons[i].c_str()});
+  } else {
+    MapToCommonID(buttons, &id_map, &config.dwCommonButtons, &dialog_buttons);
+  }
   if (dialog_buttons.size() > 0) {
     config.pButtons = &dialog_buttons.front();
     config.cButtons = dialog_buttons.size();
-    config.dwFlags |= TDF_USE_COMMAND_LINKS;  // custom buttons as links.
+    if (!(options & MESSAGE_BOX_NO_LINK))
+      config.dwFlags |= TDF_USE_COMMAND_LINKS;  // custom buttons as links.
   }
 
   int id = 0;
@@ -144,13 +151,14 @@ void RunMessageBoxInNewThread(base::Thread* thread,
                               MessageBoxType type,
                               const std::vector<std::string>& buttons,
                               int cancel_id,
+                              int options,
                               const std::string& title,
                               const std::string& message,
                               const std::string& detail,
                               const gfx::ImageSkia& icon,
                               const MessageBoxCallback& callback) {
-  int result = ShowMessageBox(parent, type, buttons, cancel_id, title, message,
-                              detail, icon);
+  int result = ShowMessageBox(parent, type, buttons, cancel_id, options, title,
+                              message, detail, icon);
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE, base::Bind(callback, result));
   content::BrowserThread::DeleteSoon(
@@ -163,6 +171,7 @@ int ShowMessageBox(NativeWindow* parent,
                    MessageBoxType type,
                    const std::vector<std::string>& buttons,
                    int cancel_id,
+                   int options,
                    const std::string& title,
                    const std::string& message,
                    const std::string& detail,
@@ -180,6 +189,7 @@ int ShowMessageBox(NativeWindow* parent,
                              type,
                              utf16_buttons,
                              cancel_id,
+                             options,
                              base::UTF8ToUTF16(title),
                              base::UTF8ToUTF16(message),
                              base::UTF8ToUTF16(detail),
@@ -190,6 +200,7 @@ void ShowMessageBox(NativeWindow* parent,
                     MessageBoxType type,
                     const std::vector<std::string>& buttons,
                     int cancel_id,
+                    int options,
                     const std::string& title,
                     const std::string& message,
                     const std::string& detail,
@@ -207,12 +218,12 @@ void ShowMessageBox(NativeWindow* parent,
   unretained->message_loop()->PostTask(
       FROM_HERE,
       base::Bind(&RunMessageBoxInNewThread, base::Unretained(unretained),
-                 parent, type, buttons, cancel_id, title, message, detail, icon,
-                 callback));
+                 parent, type, buttons, cancel_id, options, title, message,
+                 detail, icon, callback));
 }
 
 void ShowErrorBox(const base::string16& title, const base::string16& content) {
-  ShowMessageBoxUTF16(NULL, MESSAGE_BOX_TYPE_ERROR, {}, 0, L"Error", title,
+  ShowMessageBoxUTF16(NULL, MESSAGE_BOX_TYPE_ERROR, {}, 0, 0, L"Error", title,
                       content, gfx::ImageSkia());
 }
 
