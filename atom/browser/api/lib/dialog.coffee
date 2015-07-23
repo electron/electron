@@ -104,6 +104,7 @@ module.exports =
     binding.showMessageBox messageBoxType,
                            options.buttons,
                            options.cancelId,
+                           0,
                            [options.title, options.message, options.detail],
                            options.icon,
                            window,
