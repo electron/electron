@@ -11,6 +11,7 @@
 #include "base/logging.h"
 #include "content/public/common/content_switches.h"
 #include "net/log/net_log_util.h"
+#include "net/log/net_log_capture_mode.h"
 #include "net/url_request/url_request_context.h"
 
 namespace {
@@ -65,7 +66,7 @@ NetLog::NetLog(net::URLRequestContext* context)
         net::CreateNetLogEntriesForActiveObjects(contexts, this);
       }
 
-      DeprecatedAddObserver(this, net::NetLog::LogLevel::LOG_STRIP_PRIVATE_DATA);
+      DeprecatedAddObserver(this, net::NetLogCaptureMode::Default());
     }
   }
 }
