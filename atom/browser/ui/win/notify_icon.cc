@@ -40,13 +40,14 @@ NotifyIcon::NotifyIcon(NotifyIconHost* host,
     base::MD5Sum(explicit_app_id,
       sizeof(wchar_t) * wcslen(explicit_app_id),
       (base::MD5Digest*)&tray_app_id_hash_);
+    has_tray_app_id_hash_ = true;
 
     CoTaskMemFree(explicit_app_id);
   }
 
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
-  icon_data.uFlags = NIF_MESSAGE;
+  icon_data.uFlags |= NIF_MESSAGE;
   icon_data.uCallbackMessage = message_id_;
   BOOL result = Shell_NotifyIcon(NIM_ADD, &icon_data);
   // This can happen if the explorer process isn't running when we try to
@@ -89,7 +90,7 @@ void NotifyIcon::ResetIcon() {
   // Delete any previously existing icon.
   Shell_NotifyIcon(NIM_DELETE, &icon_data);
   InitIconData(&icon_data);
-  icon_data.uFlags = NIF_MESSAGE;
+  icon_data.uFlags |= NIF_MESSAGE;
   icon_data.uCallbackMessage = message_id_;
   icon_data.hIcon = icon_.Get();
   // If we have an image, then set the NIF_ICON flag, which tells
@@ -106,7 +107,7 @@ void NotifyIcon::SetImage(const gfx::Image& image) {
   // Create the icon.
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
-  icon_data.uFlags = NIF_ICON;
+  icon_data.uFlags |= NIF_ICON;
   icon_.Set(IconUtil::CreateHICONFromSkBitmap(image.AsBitmap()));
   icon_data.hIcon = icon_.Get();
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
@@ -123,7 +124,7 @@ void NotifyIcon::SetToolTip(const std::string& tool_tip) {
   // Create the icon.
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
-  icon_data.uFlags = NIF_TIP;
+  icon_data.uFlags |= NIF_TIP;
   wcscpy_s(icon_data.szTip, base::UTF8ToUTF16(tool_tip).c_str());
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
@@ -135,7 +136,7 @@ void NotifyIcon::DisplayBalloon(const gfx::Image& icon,
                                 const base::string16& contents) {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
-  icon_data.uFlags = NIF_INFO;
+  icon_data.uFlags |= NIF_INFO;
   icon_data.dwInfoFlags = NIIF_INFO;
   wcscpy_s(icon_data.szInfoTitle, title.c_str());
   wcscpy_s(icon_data.szInfo, contents.c_str());
@@ -180,9 +181,12 @@ void NotifyIcon::InitIconData(NOTIFYICONDATA* icon_data) {
   icon_data->hWnd = window_;
   icon_data->uID = icon_id_;
 
-  memcpy(reinterpret_cast<void*>(&icon_data->guidItem),
-    &tray_app_id_hash_,
-    sizeof(GUID));
+  if (has_tray_app_id_hash_) {
+    icon_data->uFlags |= NIF_GUID;
+    memcpy(reinterpret_cast<void*>(&icon_data->guidItem),
+      &tray_app_id_hash_,
+      sizeof(GUID));
+  }
 }
 
 }  // namespace atom

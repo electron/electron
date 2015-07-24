@@ -78,6 +78,7 @@ class NotifyIcon : public TrayIcon {
 
   // A hash of the app model ID
   GUID tray_app_id_hash_;
+  bool has_tray_app_id_hash_;
 
   DISALLOW_COPY_AND_ASSIGN(NotifyIcon);
 };
