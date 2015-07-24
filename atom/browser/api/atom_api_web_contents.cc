@@ -733,6 +733,14 @@ void WebContents::ReplaceMisspelling(const base::string16& word) {
   web_contents()->ReplaceMisspelling(word);
 }
 
+void WebContents::Focus() {
+  web_contents()->Focus();
+}
+
+void WebContents::TabTraverse(bool reverse) {
+  web_contents()->FocusThroughTabTraversal(reverse);
+}
+
 bool WebContents::SendIPCMessage(const base::string16& channel,
                                  const base::ListValue& args) {
   return Send(new AtomViewMsg_Message(routing_id(), channel, args));
@@ -792,6 +800,8 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("unselect", &WebContents::Unselect)
         .SetMethod("replace", &WebContents::Replace)
         .SetMethod("replaceMisspelling", &WebContents::ReplaceMisspelling)
+        .SetMethod("focus", &WebContents::Focus)
+        .SetMethod("tabTraverse", &WebContents::TabTraverse)
         .SetMethod("_send", &WebContents::SendIPCMessage, true)
         .SetMethod("setSize", &WebContents::SetSize)
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
