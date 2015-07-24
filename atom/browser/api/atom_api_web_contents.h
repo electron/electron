@@ -96,6 +96,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Replace(const base::string16& word);
   void ReplaceMisspelling(const base::string16& word);
 
+  // Focus.
+  void Focus();
+  void TabTraverse(bool reverse);
+
   // Sending messages to browser.
   bool SendIPCMessage(const base::string16& channel,
                       const base::ListValue& args);
