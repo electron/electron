@@ -257,25 +257,3 @@ describe 'browser-window module', ->
         assert.equal url, 'https://www.github.com/'
         done()
       w.loadUrl "file://#{fixtures}/pages/will-navigate.html"
-
-  describe 'dom-ready event', ->
-    return if isCI and process.platform is 'darwin'
-    it 'emits when document is loaded', (done) ->
-      ipc = remote.require 'ipc'
-      server = http.createServer (req, res) ->
-        action = url.parse(req.url, true).pathname
-        if action == '/logo.png'
-          img = fs.readFileSync(path.join(fixtures, 'assets', 'logo.png'))
-          res.writeHead(200, {'Content-Type': 'image/png'})
-          setTimeout ->
-            res.end(img, 'binary')
-          , 2000
-          server.close()
-      server.listen 62542, '127.0.0.1'
-      ipc.on 'dom-ready', (e, state) ->
-        ipc.removeAllListeners 'dom-ready'
-        assert.equal state, 'interactive'
-        done()
-      w.webContents.on 'did-finish-load', ->
-        w.close()
-      w.loadUrl "file://#{fixtures}/pages/f.html"
