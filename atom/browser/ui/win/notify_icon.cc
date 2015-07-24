@@ -40,7 +40,7 @@ NotifyIcon::NotifyIcon(NotifyIconHost* host,
     base::MD5Sum(explicit_app_id,
       sizeof(wchar_t) * wcslen(explicit_app_id),
       (base::MD5Digest*)&tray_app_id_hash_);
-      
+
     CoTaskMemFree(explicit_app_id);
   }
 
@@ -179,7 +179,10 @@ void NotifyIcon::InitIconData(NOTIFYICONDATA* icon_data) {
   icon_data->cbSize = sizeof(NOTIFYICONDATA);
   icon_data->hWnd = window_;
   icon_data->uID = icon_id_;
-  memcpy((void*)&icon_data->guidItem, &tray_app_id_hash_, sizeof(GUID));
+
+  memcpy(reinterpret_cast<void*>(&icon_data->guidItem),
+    &tray_app_id_hash_,
+    sizeof(GUID));
 }
 
 }  // namespace atom

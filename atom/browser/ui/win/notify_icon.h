@@ -75,7 +75,7 @@ class NotifyIcon : public TrayIcon {
 
   // The context menu.
   ui::SimpleMenuModel* menu_model_;
-  
+
   // A hash of the app model ID
   GUID tray_app_id_hash_;
 
