@@ -29,7 +29,7 @@ window.addEventListener('contextmenu', function (e) {
 
 Another example of creating the application menu with the simple template API:
 
-**Note to Window and Linux users** the `selector` member of each menu item is a Mac-only [Accellerator option](https://github.com/atom/electron/blob/master/docs/api/accelerator.md).
+**Note to Window and Linux users** the `selector` member of each menu item is a Mac-only [Accelerator option](https://github.com/atom/electron/blob/master/docs/api/accelerator.md).
 
 ```html
 <!-- index.html -->
