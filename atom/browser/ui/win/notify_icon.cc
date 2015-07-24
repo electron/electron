@@ -29,18 +29,21 @@ NotifyIcon::NotifyIcon(NotifyIconHost* host,
       window_(window),
       message_id_(message),
       menu_model_(NULL) {
-        
-  // NB: If we have an App Model ID, we should propagate that to the tray. 
+
+  // NB: If we have an App Model ID, we should propagate that to the tray.
   // Doing this prevents duplicate items from showing up in the notification
   // preferences (i.e. "Always Show / Show notifications only / etc")
   PWSTR explicit_app_id;
-  
+
   if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&explicit_app_id))) {
     // GUIDs and MD5 hashes are the same length. So convenient!
-    MD5Sum(explicit_app_id, sizeof(wchar_t) * wcslen(explicit_app_id), (MD5Digest*)&tray_app_id_hash_);
+    base::MD5Sum(explicit_app_id,
+      sizeof(wchar_t) * wcslen(explicit_app_id),
+      (base::MD5Digest*)&tray_app_id_hash_);
+      
     CoTaskMemFree(explicit_app_id);
   }
-        
+
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
   icon_data.uFlags = NIF_MESSAGE;
@@ -176,7 +179,7 @@ void NotifyIcon::InitIconData(NOTIFYICONDATA* icon_data) {
   icon_data->cbSize = sizeof(NOTIFYICONDATA);
   icon_data->hWnd = window_;
   icon_data->uID = icon_id_;
-  memcpy(icon_data->guidItem, tray_app_id_hash_, sizeof(GUID));
+  memcpy((void*)&icon_data->guidItem, &tray_app_id_hash_, sizeof(GUID));
 }
 
 }  // namespace atom
