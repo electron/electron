@@ -36,6 +36,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/ui/views/global_menu_bar_x11.h"
 #include "atom/browser/ui/views/frameless_view.h"
+#include "atom/browser/ui/views/native_frame_view.h"
 #include "atom/browser/ui/x/window_state_watcher.h"
 #include "atom/browser/ui/x/x_window_utils.h"
 #include "base/environment.h"
@@ -491,14 +492,6 @@ gfx::Size NativeWindowViews::GetContentSize() {
 
 void NativeWindowViews::SetMinimumSize(const gfx::Size& size) {
   minimum_size_ = size;
-
-#if defined(USE_X11)
-  XSizeHints size_hints;
-  size_hints.flags = PMinSize;
-  size_hints.min_width = size.width();
-  size_hints.min_height = size.height();
-  XSetWMNormalHints(gfx::GetXDisplay(), GetAcceleratedWidget(), &size_hints);
-#endif
 }
 
 gfx::Size NativeWindowViews::GetMinimumSize() {
@@ -507,14 +500,6 @@ gfx::Size NativeWindowViews::GetMinimumSize() {
 
 void NativeWindowViews::SetMaximumSize(const gfx::Size& size) {
   maximum_size_ = size;
-
-#if defined(USE_X11)
-  XSizeHints size_hints;
-  size_hints.flags = PMaxSize;
-  size_hints.max_width = size.width();
-  size_hints.max_height = size.height();
-  XSetWMNormalHints(gfx::GetXDisplay(), GetAcceleratedWidget(), &size_hints);
-#endif
 }
 
 gfx::Size NativeWindowViews::GetMaximumSize() {
@@ -899,7 +884,7 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
   return frame_view;
 #else
   if (has_frame_) {
-    return new views::NativeFrameView(widget);
+    return new NativeFrameView(this, widget);
   } else {
     FramelessView* frame_view = new FramelessView;
     frame_view->Init(this, widget);
