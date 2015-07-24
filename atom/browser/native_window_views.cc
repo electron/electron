@@ -929,7 +929,7 @@ bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
   } else if ((command_id & sc_mask) == SC_MAXIMIZE) {
     NotifyWindowMaximize();
   } else {
-    std::string command = AppCommandToString(command_id & sc_mask);
+    std::string command = AppCommandToString(command_id);
     FOR_EACH_OBSERVER(NativeWindowObserver,
                       observers_,
                       OnExecuteWindowsCommand(command));
