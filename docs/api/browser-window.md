@@ -1042,6 +1042,18 @@ win.webContents.on("did-finish-load", function() {
 });
 ```
 
+### WebContents.addWorkSpace(path)
+
+* `path` String
+
+Adds the specified path to devtools workspace.
+
+### WebContents.removeWorkSpace(path)
+
+* `path` String
+
+Removes the specified path from devtools workspace.
+
 ### WebContents.send(channel[, args...])
 
 * `channel` String

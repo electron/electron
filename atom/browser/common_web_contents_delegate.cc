@@ -274,16 +274,21 @@ void CommonWebContentsDelegate::DevToolsAppendToFile(
                  base::Unretained(this), url));
 }
 
-void CommonWebContentsDelegate::DevToolsAddFileSystem() {
-  file_dialog::Filters filters;
-  base::FilePath default_path;
-  std::vector<base::FilePath> paths;
-  int flag = file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
-  if (!file_dialog::ShowOpenDialog(owner_window(), "", default_path,
-                                   filters, flag, &paths))
-    return;
+void CommonWebContentsDelegate::DevToolsAddFileSystem(
+    const base::FilePath& file_system_path) {
+  base::FilePath path = file_system_path;
+  if (path.empty()) {
+    file_dialog::Filters filters;
+    base::FilePath default_path;
+    std::vector<base::FilePath> paths;
+    int flag = file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
+    if (!file_dialog::ShowOpenDialog(owner_window(), "", default_path,
+                                     filters, flag, &paths))
+      return;
 
-  base::FilePath path = paths[0];
+    path = paths[0];
+  }
+
   std::string registered_name;
   std::string file_system_id = RegisterFileSystem(GetDevToolsWebContents(),
                                                   path,
@@ -313,20 +318,20 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem() {
 }
 
 void CommonWebContentsDelegate::DevToolsRemoveFileSystem(
-    const std::string& file_system_path) {
+    const base::FilePath& file_system_path) {
   if (!web_contents_)
     return;
 
-  base::FilePath path = base::FilePath::FromUTF8Unsafe(file_system_path);
-  storage::IsolatedContext::GetInstance()->RevokeFileSystemByPath(path);
+  storage::IsolatedContext::GetInstance()->
+      RevokeFileSystemByPath(file_system_path);
 
   for (auto it = saved_paths_.begin(); it != saved_paths_.end(); ++it)
-    if (it->second == path) {
+    if (it->second == file_system_path) {
       saved_paths_.erase(it);
       break;
     }
 
-  base::StringValue file_system_path_value(file_system_path);
+  base::StringValue file_system_path_value(file_system_path.AsUTF8Unsafe());
   web_contents_->CallClientFunction(
       "DevToolsAPI.fileSystemRemoved",
        &file_system_path_value,
