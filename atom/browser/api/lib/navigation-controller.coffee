@@ -40,6 +40,7 @@ class NavigationController
   loadUrl: (url, options={}) ->
     @pendingIndex = -1
     @webContents._loadUrl url, options
+    @webContents.emit 'load-url', url, options
 
   getUrl: ->
     if @currentIndex is -1
