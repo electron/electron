@@ -76,6 +76,13 @@ will be emitted if the tray icon has context menu.
 
 Emitted when the tray icon is double clicked.
 
+* `event`
+* `bounds` Object - the bounds of tray icon
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
+  
 __Note:__ This is only implemented on OS X.
 
 ### Event: 'balloon-show'
