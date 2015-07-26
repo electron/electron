@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Constants for the names of various preferences, for easier changing.
+#include "chrome/common/pref_names.h"
 
 namespace prefs {
 
-extern const char kSelectFileLastDirectory[];
+const char kSelectFileLastDirectory[] = "selectfile.last_directory";
 
 }  // namespace prefs
