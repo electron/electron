@@ -152,6 +152,8 @@ content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
 void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
   pref_registry->RegisterFilePathPref(prefs::kSelectFileLastDirectory,
                                       base::FilePath());
+  pref_registry->RegisterFilePathPref(prefs::kDownloadDefaultDirectory,
+                                      base::FilePath());
 }
 
 }  // namespace atom

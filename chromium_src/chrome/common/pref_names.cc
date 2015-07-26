@@ -7,5 +7,6 @@
 namespace prefs {
 
 const char kSelectFileLastDirectory[] = "selectfile.last_directory";
+const char kDownloadDefaultDirectory[] = "download.default_directory";
 
 }  // namespace prefs

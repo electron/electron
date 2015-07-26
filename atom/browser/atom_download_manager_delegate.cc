@@ -6,10 +6,13 @@
 
 #include <string>
 
+#include "atom/browser/atom_browser_context.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
 #include "base/bind.h"
 #include "base/files/file_util.h"
+#include "base/prefs/pref_service.h"
+#include "chrome/common/pref_names.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_manager.h"
@@ -77,6 +80,11 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
     return;
   }
 
+  // Remeber the last selected download directory.
+  AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
+      download_manager_->GetBrowserContext());
+  browser_context->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
+                                        path.DirName());
   callback.Run(path,
                content::DownloadItem::TARGET_DISPOSITION_PROMPT,
                content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path);
@@ -92,6 +100,11 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
     const content::DownloadTargetCallback& callback) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
+  AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
+      download_manager_->GetBrowserContext());
+  default_download_path_ = browser_context->prefs()->GetFilePath(
+      prefs::kDownloadDefaultDirectory);
+  // If users didn't set download path, use 'Downloads' directory by default.
   if (default_download_path_.empty()) {
     auto path = download_manager_->GetBrowserContext()->GetPath();
     default_download_path_ = path.Append(FILE_PATH_LITERAL("Downloads"));

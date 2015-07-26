@@ -7,5 +7,6 @@
 namespace prefs {
 
 extern const char kSelectFileLastDirectory[];
+extern const char kDownloadDefaultDirectory[];
 
 }  // namespace prefs

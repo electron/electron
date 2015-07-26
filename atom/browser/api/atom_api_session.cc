@@ -10,8 +10,11 @@
 #include "atom/browser/api/atom_api_cookies.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
-#include "base/thread_task_runner_handle.h"
+#include "base/files/file_path.h"
+#include "base/prefs/pref_service.h"
 #include "base/strings/string_util.h"
+#include "base/thread_task_runner_handle.h"
+#include "chrome/common/pref_names.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
 #include "native_mate/callback.h"
@@ -251,6 +254,11 @@ void Session::SetProxy(const std::string& proxy,
       base::Bind(&SetProxyInIO, base::Unretained(getter), proxy, callback));
 }
 
+void Session::SetDownloadPath(const std::string& path) {
+  browser_context_->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
+                                         base::FilePath(path));
+}
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
     auto handle = atom::api::Cookies::Create(isolate, browser_context_);
@@ -266,6 +274,7 @@ mate::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("clearCache", &Session::ClearCache)
       .SetMethod("clearStorageData", &Session::ClearStorageData)
       .SetMethod("setProxy", &Session::SetProxy)
+      .SetMethod("setDownloadPath", &Session::SetDownloadPath)
       .SetProperty("cookies", &Session::Cookies);
 }
 
