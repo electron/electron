@@ -1001,6 +1001,12 @@ size.
     * 0 - default
     * 1 - none
     * 2 - minimum
+  * `pageSize` String - Specify page size of the generated PDF
+    * `A4`
+    * `A3`
+    * `Legal`
+    * `Letter`
+    * `Tabloid`
   * `printBackground` Boolean - Whether to print CSS backgrounds.
   * `printSelectionOnly` Boolean - Whether to print selection only.
   * `landscape` Boolean - `true` for landscape, `false` for portrait.
@@ -1027,9 +1033,10 @@ win.webContents.on("did-finish-load", function() {
   // Use default printing options
   win.webContents.printToPDF({}, function(error, data) {
     if (error) throw error;
-    fs.writeFile(dist, data, function(error) {
+    fs.writeFile("/tmp/print.pdf", data, function(error) {
       if (err)
-        alert('write pdf file error', error);
+        throw error;
+      console.log("Write PDF successfully.");
     })
   })
 });
