@@ -1220,3 +1220,7 @@ proxy-uri = [<proxy-scheme>"://"]<proxy-host>[":"<proxy-port>]
                                       and use socks4://foopy2 for all other
                                       URLs.
 ```
+
+### Session.setDownloadPath(path)
+
+* `path` String - The download location
