@@ -33,8 +33,8 @@ void TrayIcon::NotifyClicked(const gfx::Rect& bounds) {
   FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnClicked(bounds));
 }
 
-void TrayIcon::NotifyDoubleClicked() {
-  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDoubleClicked());
+void TrayIcon::NotifyDoubleClicked(const gfx::Rect& bounds) {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDoubleClicked(bounds));
 }
 
 void TrayIcon::NotifyBalloonShow() {
