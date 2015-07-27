@@ -176,4 +176,4 @@ it from [here](https://github.com/atom/electron/releases).
 ### Run as a distribution
 After you're done writing your app, you can create a distribution by
 following the [Application distribution](./application-distribution.md) guide
-and then execute the packaged app.
+and then executing the packaged app.
