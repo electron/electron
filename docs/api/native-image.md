@@ -132,6 +132,10 @@ Returns the size of the image.
 
 [buffer]: https://iojs.org/api/buffer.html#buffer_class_buffer
 
+### NativeImage.isTemplateImage()
+
+Returns whether the image is a template image.
+
 ### NativeImage.setTemplateImage(option)
 
 * `option` Boolean
