@@ -1,3 +1,7 @@
+// Copyright (c) 2015 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
 #ifndef ATOM_BROWSER_UI_EVENT_UTIL_H_
 #define ATOM_BROWSER_UI_EVENT_UTIL_H_
 
@@ -15,6 +19,6 @@ int EventFlagsFromNSEvent(NSEvent* event);
 
 gfx::Rect GetBoundsFromEvent(NSEvent* event);
 
-} // namespace event_util
+}  // namespace event_util
 
-#endif // ATOM_BROWSER_UI_EVENT_UTIL_H_
+#endif  // ATOM_BROWSER_UI_EVENT_UTIL_H_
