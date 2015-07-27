@@ -43,6 +43,7 @@ const char kChromeUIDevToolsURL[] = "chrome-devtools://devtools/devtools.html?"
                                     "textColor=rgba(0,0,0,1)&"
                                     "experiments=true";
 const char kDevToolsBoundsPref[] = "brightray.devtools.bounds";
+const char kDevToolsZoomPref[] = "brightray.devtools.zoom";
 
 const char kFrontendHostId[] = "id";
 const char kFrontendHostMethod[] = "method";
@@ -71,11 +72,8 @@ void DictionaryToRect(const base::DictionaryValue& dict, gfx::Rect* bounds) {
   *bounds = gfx::Rect(x, y, width, height);
 }
 
-double GetZoomLevelForWebContents(content::WebContents* web_contents) {
-  return content::HostZoomMap::GetZoomLevel(web_contents);
-}
-
-void SetZoomLevelForWebContents(content::WebContents* web_contents, double level) {
+void SetZoomLevelForWebContents(content::WebContents* web_contents,
+                                double level) {
   content::HostZoomMap::SetZoomLevel(web_contents, level);
 }
 
@@ -156,6 +154,7 @@ void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
   auto bounds_dict = make_scoped_ptr(new base::DictionaryValue);
   RectToDictionary(gfx::Rect(0, 0, 800, 600), bounds_dict.get());
   registry->RegisterDictionaryPref(kDevToolsBoundsPref, bounds_dict.release());
+  registry->RegisterDoublePref(kDevToolsZoomPref, 0.);
 }
 
 InspectableWebContentsImpl::InspectableWebContentsImpl(
@@ -166,7 +165,8 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
       web_contents_(web_contents),
       weak_factory_(this) {
   auto context = static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
-  auto bounds_dict = context->prefs()->GetDictionary(kDevToolsBoundsPref);
+  pref_service_ = context->prefs();
+  auto bounds_dict = pref_service_->GetDictionary(kDevToolsBoundsPref);
   if (bounds_dict)
     DictionaryToRect(*bounds_dict, &devtools_bounds_);
 
@@ -282,14 +282,24 @@ gfx::Rect InspectableWebContentsImpl::GetDevToolsBounds() const {
 }
 
 void InspectableWebContentsImpl::SaveDevToolsBounds(const gfx::Rect& bounds) {
-  auto context = static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
   base::DictionaryValue bounds_dict;
   RectToDictionary(bounds, &bounds_dict);
-  context->prefs()->Set(kDevToolsBoundsPref, bounds_dict);
+  pref_service_->Set(kDevToolsBoundsPref, bounds_dict);
   devtools_bounds_ = bounds;
 }
 
+double InspectableWebContentsImpl::GetDevToolsZoomLevel() const {
+  return pref_service_->GetDouble(kDevToolsZoomPref);
+}
+
+void InspectableWebContentsImpl::UpdateDevToolsZoomLevel(double level) {
+  pref_service_->SetDouble(kDevToolsZoomPref, level);
+}
+
 void InspectableWebContentsImpl::ActivateWindow() {
+  // Set the zoom level.
+  SetZoomLevelForWebContents(GetDevToolsWebContents(),
+                             GetDevToolsZoomLevel());
 }
 
 void InspectableWebContentsImpl::CloseWindow() {
@@ -404,17 +414,20 @@ void InspectableWebContentsImpl::SetWhitelistedShortcuts(const std::string& mess
 }
 
 void InspectableWebContentsImpl::ZoomIn() {
-  double level = GetZoomLevelForWebContents(GetDevToolsWebContents());
-  SetZoomLevelForWebContents(GetDevToolsWebContents(), GetNextZoomLevel(level, false));
+  double new_level = GetNextZoomLevel(GetDevToolsZoomLevel(), false);
+  SetZoomLevelForWebContents(GetDevToolsWebContents(), new_level);
+  UpdateDevToolsZoomLevel(new_level);
 }
 
 void InspectableWebContentsImpl::ZoomOut() {
-  double level = GetZoomLevelForWebContents(GetDevToolsWebContents());
-  SetZoomLevelForWebContents(GetDevToolsWebContents(), GetNextZoomLevel(level, true));
+  double new_level = GetNextZoomLevel(GetDevToolsZoomLevel(), true);
+  SetZoomLevelForWebContents(GetDevToolsWebContents(), new_level);
+  UpdateDevToolsZoomLevel(new_level);
 }
 
 void InspectableWebContentsImpl::ResetZoom() {
   SetZoomLevelForWebContents(GetDevToolsWebContents(), 0.);
+  UpdateDevToolsZoomLevel(0.);
 }
 
 void InspectableWebContentsImpl::SetDevicesUpdatesEnabled(bool enabled) {
