@@ -1,22 +1,24 @@
 #include "atom/browser/ui/event_util.h"
-#include "ui/base/accelerators/accelerator.h"
+
+#include "ui/events/event_constants.h"
 
 namespace event_util {
-    bool isLeftButtonEvent(NSEvent* event) {
+
+    bool IsLeftButtonEvent(NSEvent* event) {
       NSEventType type = [event type];
       return type == NSLeftMouseDown ||
         type == NSLeftMouseDragged ||
         type == NSLeftMouseUp;
     }
 
-    bool isRightButtonEvent(NSEvent* event) {
+    bool IsRightButtonEvent(NSEvent* event) {
       NSEventType type = [event type];
       return type == NSRightMouseDown ||
         type == NSRightMouseDragged ||
         type == NSRightMouseUp;
     }
 
-    bool isMiddleButtonEvent(NSEvent* event) {
+    bool IsMiddleButtonEvent(NSEvent* event) {
       if ([event buttonNumber] != 2)
         return false;
 
@@ -33,9 +35,9 @@ namespace event_util {
       flags |= (modifiers & NSControlKeyMask) ? ui::EF_CONTROL_DOWN : 0;
       flags |= (modifiers & NSAlternateKeyMask) ? ui::EF_ALT_DOWN : 0;
       flags |= (modifiers & NSCommandKeyMask) ? ui::EF_COMMAND_DOWN : 0;
-      flags |= isLeftButtonEvent(event) ? ui::EF_LEFT_MOUSE_BUTTON : 0;
-      flags |= isRightButtonEvent(event) ? ui::EF_RIGHT_MOUSE_BUTTON : 0;
-      flags |= isMiddleButtonEvent(event) ? ui::EF_MIDDLE_MOUSE_BUTTON : 0;
+      flags |= IsLeftButtonEvent(event) ? ui::EF_LEFT_MOUSE_BUTTON : 0;
+      flags |= IsRightButtonEvent(event) ? ui::EF_RIGHT_MOUSE_BUTTON : 0;
+      flags |= IsMiddleButtonEvent(event) ? ui::EF_MIDDLE_MOUSE_BUTTON : 0;
       return flags;
     }
 
@@ -44,4 +46,20 @@ namespace event_util {
       NSUInteger modifiers = [event modifierFlags];
       return EventFlagsFromNSEventWithModifiers(event, modifiers);
     }
+
+    gfx::Rect GetBoundsFromEvent(NSEvent* event) {
+        NSRect frame = event.window.frame;
+
+        gfx::Rect bounds(
+            frame.origin.x,
+            0,
+            NSWidth(frame),
+            NSHeight(frame)
+        );
+
+        NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
+        bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
+        return bounds;
+    }
+
 } // namespace event_util

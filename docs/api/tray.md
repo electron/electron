@@ -53,6 +53,7 @@ Creates a new tray icon associated with the `image`.
   * `y` Integer
   * `width` Integer
   * `height` Integer
+* [`modifiers`](https://code.google.com/p/chromium/codesearch#chromium/src/ui/events/event_constants.h&l=77) number - bitsum of keyboard modifiers and mouse keys
 
 Emitted when the tray icon is clicked.
 
@@ -66,6 +67,7 @@ __Note:__ The `bounds` payload is only implemented on OS X and Windows 7 or newe
   * `y` Integer
   * `width` Integer
   * `height` Integer
+* [`modifiers`](https://code.google.com/p/chromium/codesearch#chromium/src/ui/events/event_constants.h&l=77) number - bitsum of keyboard modifiers and mouse keys
 
 Emitted when the tray icon is right clicked.
 
@@ -82,7 +84,8 @@ Emitted when the tray icon is double clicked.
   * `y` Integer
   * `width` Integer
   * `height` Integer
-  
+* [`modifiers`](https://code.google.com/p/chromium/codesearch#chromium/src/ui/events/event_constants.h&l=77) number - bitsum of keyboard modifiers and mouse keys
+
 __Note:__ This is only implemented on OS X.
 
 ### Event: 'balloon-show'

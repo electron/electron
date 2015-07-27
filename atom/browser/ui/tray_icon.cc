@@ -29,12 +29,14 @@ void TrayIcon::DisplayBalloon(const gfx::Image& icon,
 void TrayIcon::PopContextMenu(const gfx::Point& pos) {
 }
 
-void TrayIcon::NotifyClicked(const gfx::Rect& bounds) {
-  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnClicked(bounds));
+void TrayIcon::NotifyClicked(const gfx::Rect& bounds, int modifiers) {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_,
+    OnClicked(bounds, modifiers));
 }
 
-void TrayIcon::NotifyDoubleClicked(const gfx::Rect& bounds) {
-  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDoubleClicked(bounds));
+void TrayIcon::NotifyDoubleClicked(const gfx::Rect& bounds, int modifiers) {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_,
+    OnDoubleClicked(bounds, modifiers));
 }
 
 void TrayIcon::NotifyBalloonShow() {
@@ -49,8 +51,9 @@ void TrayIcon::NotifyBalloonClosed() {
   FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnBalloonClosed());
 }
 
-void TrayIcon::NotifyRightClicked(const gfx::Rect& bounds) {
-  FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnRightClicked(bounds));
+void TrayIcon::NotifyRightClicked(const gfx::Rect& bounds, int modifiers) {
+  FOR_EACH_OBSERVER(TrayIconObserver, observers_,
+    OnRightClicked(bounds, modifiers));
 }
 
 void TrayIcon::NotfiyDropFiles(const std::vector<std::string>& files) {

@@ -5,6 +5,7 @@
 #include "atom/browser/ui/tray_icon_cocoa.h"
 
 #include "atom/browser/ui/cocoa/atom_menu_controller.h"
+#include "atom/browser/ui/event_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/screen.h"
@@ -147,16 +148,21 @@ const CGFloat kMargin = 3;
      return;
   }
   inMouseEventSequence_ = NO;
+
+  // Single click
   if (event.clickCount == 1) {
     if (menuController_) {
       [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
     }
 
-    trayIcon_->NotifyClicked([self getBoundsFromEvent:event]);
+    trayIcon_->NotifyClicked(event_util::GetBoundsFromEvent(event),
+      event_util::EventFlagsFromNSEvent(event));
   }
 
+  // Double click
   if (event.clickCount == 2 && !menuController_) {
-    trayIcon_->NotifyDoubleClicked([self getBoundsFromEvent:event]);
+    trayIcon_->NotifyDoubleClicked(event_util::GetBoundsFromEvent(event),
+      event_util::EventFlagsFromNSEvent(event));
   }
   [self setNeedsDisplay:YES];
 }
@@ -173,7 +179,8 @@ const CGFloat kMargin = 3;
 }
 
 - (void)rightMouseUp:(NSEvent*)event {
-  trayIcon_->NotifyRightClicked([self getBoundsFromEvent:event]);
+  trayIcon_->NotifyRightClicked(event_util::GetBoundsFromEvent(event),
+    event_util::EventFlagsFromNSEvent(event));
 }
 
 - (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender {
@@ -199,13 +206,6 @@ const CGFloat kMargin = 3;
   return isHighlightEnable_ && (inMouseEventSequence_ || is_menu_open);
 }
 
-- (gfx::Rect)getBoundsFromEvent:(NSEvent*)event {
-  NSRect frame = event.window.frame;
-  gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
-  NSScreen* screen = [[NSScreen screens] objectAtIndex:0];
-  bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
-  return bounds;
-}
 @end
 
 namespace atom {

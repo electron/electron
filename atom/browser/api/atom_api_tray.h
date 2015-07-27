@@ -42,12 +42,12 @@ class Tray : public mate::EventEmitter,
   virtual ~Tray();
 
   // TrayIconObserver:
-  void OnClicked(const gfx::Rect& bounds) override;
-  void OnDoubleClicked(const gfx::Rect& bounds) override;
+  void OnClicked(const gfx::Rect& bounds, int modifiers) override;
+  void OnDoubleClicked(const gfx::Rect& bounds, int modifiers) override;
   void OnBalloonShow() override;
   void OnBalloonClicked() override;
   void OnBalloonClosed() override;
-  void OnRightClicked(const gfx::Rect& bounds) override;
+  void OnRightClicked(const gfx::Rect& bounds, int modifiers) override;
   void OnDropFiles(const std::vector<std::string>& files) override;
 
   // mate::Wrappable:

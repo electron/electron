@@ -54,12 +54,13 @@ class TrayIcon {
 
   void AddObserver(TrayIconObserver* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(TrayIconObserver* obs) { observers_.RemoveObserver(obs); }
-  void NotifyClicked(const gfx::Rect& = gfx::Rect());
-  void NotifyDoubleClicked(const gfx::Rect& = gfx::Rect());
+  void NotifyClicked(const gfx::Rect& = gfx::Rect(), int modifiers = 0);
+  void NotifyDoubleClicked(const gfx::Rect& = gfx::Rect(), int modifiers = 0);
   void NotifyBalloonShow();
   void NotifyBalloonClicked();
   void NotifyBalloonClosed();
-  void NotifyRightClicked(const gfx::Rect& bounds = gfx::Rect());
+  void NotifyRightClicked(const gfx::Rect& bounds = gfx::Rect(),
+    int modifiers = 0);
   void NotfiyDropFiles(const std::vector<std::string>& files);
 
  protected:
