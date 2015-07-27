@@ -22,9 +22,9 @@
 
 Elementos DOM customizados:
 
-* [`File` object](api/file-object.md)
-* [`<webview>` tag](api/web-view-tag.md)
-* [`window.open` function](api/window-open.md)
+* [Objeto `File`](api/file-object.md)
+* [Etiqueta `<webview>`](api/web-view-tag.md)
+* [Función `window.open`](api/window-open.md)
 
 Módulos del proceso principal:
 
