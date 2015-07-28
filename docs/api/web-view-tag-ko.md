@@ -130,10 +130,10 @@ If "on", the guest page will have web security disabled.
 
 ## API
 
-The webview element must be loaded before using the methods.  
+The webview element must be loaded before using the methods.
 **Example**
 ```javascript
-webview.addEventListener("dom-ready", function(){
+webview.addEventListener("dom-ready", function() {
   webview.openDevTools();
 });
 ```
