@@ -107,7 +107,7 @@ Emitted when there is an error while updating.
 
 ## Event: checking-for-update
 
-Emitted when checking for an update has started.
+Emitted when checking if an update has started.
 
 ## Event: update-available
 
