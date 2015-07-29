@@ -34,6 +34,7 @@ class NotifyIcon : public TrayIcon {
   // there is a registered observer, passes the click event to the observer,
   // otherwise displays the context menu if there is one.
   void HandleClickEvent(const gfx::Point& cursor_pos,
+                        int modifiers,
                         bool left_button_click,
                         bool double_button_click);
 

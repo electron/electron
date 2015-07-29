@@ -11,7 +11,9 @@
 #include "base/stl_util.h"
 #include "base/threading/non_thread_safe.h"
 #include "base/threading/thread.h"
+#include "base/win/win_util.h"
 #include "base/win/wrapped_window_proc.h"
+#include "ui/events/event_constants.h"
 #include "ui/gfx/screen.h"
 #include "ui/gfx/win/hwnd_util.h"
 
@@ -25,6 +27,17 @@ const UINT kNotifyIconMessage = WM_APP + 1;
 const UINT kBaseIconId = 2;
 
 const wchar_t kNotifyIconHostWindowClass[] = L"Electron_NotifyIconHostWindow";
+
+int GetKeyboardModifers() {
+  int modifiers = ui::EF_NONE;
+  if (base::win::IsShiftPressed())
+    modifiers |= ui::EF_SHIFT_DOWN;
+  if (base::win::IsCtrlPressed())
+    modifiers |= ui::EF_CONTROL_DOWN;
+  if (base::win::IsAltPressed())
+    modifiers |= ui::EF_ALT_DOWN;
+  return modifiers;
+}
 
 }  // namespace
 
@@ -155,6 +168,7 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
             gfx::Screen::GetNativeScreen()->GetCursorScreenPoint());
         win_icon->HandleClickEvent(
             cursor_pos,
+            GetKeyboardModifers(),
             (lparam == WM_LBUTTONDOWN || lparam == WM_LBUTTONDBLCLK),
             (lparam == WM_LBUTTONDBLCLK || lparam == WM_RBUTTONDBLCLK));
         return TRUE;

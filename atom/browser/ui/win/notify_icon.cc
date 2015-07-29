@@ -63,6 +63,7 @@ NotifyIcon::~NotifyIcon() {
 }
 
 void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
+                                  int modifiers,
                                   bool left_mouse_click,
                                   bool double_button_click) {
   NOTIFYICONIDENTIFIER icon_id;
@@ -80,12 +81,12 @@ void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
 
   if (left_mouse_click) {
     if (double_button_click)  // double left click
-      NotifyDoubleClicked(gfx::Rect(rect));
+      NotifyDoubleClicked(gfx::Rect(rect), modifiers);
     else  // single left click
-      NotifyClicked(gfx::Rect(rect));
+      NotifyClicked(gfx::Rect(rect), modifiers);
     return;
   } else if (!double_button_click) {  // single right click
-    NotifyRightClicked(gfx::Rect(rect));
+    NotifyRightClicked(gfx::Rect(rect), modifiers);
     PopContextMenu(cursor_pos);
   }
 }
