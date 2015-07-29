@@ -19,6 +19,7 @@
 #include "net/url_request/url_fetcher_delegate.h"
 #include "ui/gfx/geometry/rect.h"
 
+class PrefService;
 class PrefRegistrySimple;
 
 namespace content {
@@ -64,6 +65,10 @@ class InspectableWebContentsImpl :
   // Return the last position and size of devtools window.
   gfx::Rect GetDevToolsBounds() const;
   void SaveDevToolsBounds(const gfx::Rect& bounds);
+
+  // Return the last set zoom level of devtools window.
+  double GetDevToolsZoomLevel() const;
+  void UpdateDevToolsZoomLevel(double level);
 
  private:
   // DevToolsEmbedderMessageDispacher::Delegate
@@ -159,6 +164,8 @@ class InspectableWebContentsImpl :
   using PendingRequestsMap = std::map<const net::URLFetcher*, DispatchCallback>;
   PendingRequestsMap pending_requests_;
   InspectableWebContentsDelegate* delegate_;  // weak references.
+
+  PrefService* pref_service_; // weak reference.
 
   scoped_ptr<content::WebContents> web_contents_;
   scoped_ptr<content::WebContents> devtools_web_contents_;
