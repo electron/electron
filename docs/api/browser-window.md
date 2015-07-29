@@ -1224,3 +1224,6 @@ proxy-uri = [<proxy-scheme>"://"]<proxy-host>[":"<proxy-port>]
 ### Session.setDownloadPath(path)
 
 * `path` String - The download location
+
+Sets download saving directory. By default, the download directory will be the
+`Downloads` under the respective app folder.
