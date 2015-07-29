@@ -549,7 +549,7 @@ void NativeWindow::BeforeUnloadDialogCancelled() {
 void NativeWindow::TitleWasSet(content::NavigationEntry* entry,
                                bool explicit_set) {
   bool prevent_default = false;
-  std::string text = base::UTF16ToUTF8(entry->GetTitle());
+  std::string text = entry ? base::UTF16ToUTF8(entry->GetTitle()) : "";
   FOR_EACH_OBSERVER(NativeWindowObserver,
                     observers_,
                     OnPageTitleUpdated(&prevent_default, text));
