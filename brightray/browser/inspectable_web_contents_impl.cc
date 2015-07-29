@@ -384,13 +384,14 @@ void InspectableWebContentsImpl::RequestFileSystems() {
 
 void InspectableWebContentsImpl::AddFileSystem() {
   if (delegate_)
-    delegate_->DevToolsAddFileSystem();
+    delegate_->DevToolsAddFileSystem(base::FilePath());
 }
 
 void InspectableWebContentsImpl::RemoveFileSystem(
     const std::string& file_system_path) {
   if (delegate_)
-    delegate_->DevToolsRemoveFileSystem(file_system_path);
+    delegate_->DevToolsRemoveFileSystem(
+        base::FilePath::FromUTF8Unsafe(file_system_path));
 }
 
 void InspectableWebContentsImpl::UpgradeDraggedFileSystemPermissions(

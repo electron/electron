@@ -14,9 +14,10 @@ class InspectableWebContentsDelegate {
       const std::string& url, const std::string& content, bool save_as) {}
   virtual void DevToolsAppendToFile(
       const std::string& url, const std::string& content) {}
-  virtual void DevToolsAddFileSystem() {}
+  virtual void DevToolsAddFileSystem(
+      const base::FilePath& file_system_path) {}
   virtual void DevToolsRemoveFileSystem(
-      const std::string& file_system_path) {}
+      const base::FilePath& file_system_path) {}
 };
 
 }  // namespace brightray
