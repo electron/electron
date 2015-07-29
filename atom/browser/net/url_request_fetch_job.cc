@@ -107,10 +107,7 @@ URLRequestFetchJob::URLRequestFetchJob(
   }
 
   // Use |request|'s headers.
-  net::HttpRequestHeaders headers;
-  if (request->GetFullRequestHeaders(&headers)) {
-    fetcher_->SetExtraRequestHeaders(headers.ToString());
-  }
+  fetcher_->SetExtraRequestHeaders(request->extra_request_headers().ToString());
 }
 
 net::URLRequestContextGetter* URLRequestFetchJob::GetRequestContext() {

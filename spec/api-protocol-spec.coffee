@@ -81,6 +81,7 @@ describe 'protocol module', ->
 
     it 'returns RequestHttpJob should send respone', (done) ->
       server = http.createServer (req, res) ->
+        assert.notEqual req.headers.accept, ''
         res.writeHead(200, {'Content-Type': 'text/plain'})
         res.end('hello')
         server.close()
