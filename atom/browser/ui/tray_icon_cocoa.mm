@@ -12,8 +12,8 @@
 
 namespace {
 
-const CGFloat kStatusItemLength = 26;
-const CGFloat kMargin = 3;
+// By default, OS X sets 4px to tray image as left and right padding margin.
+const CGFloat kHorizontalMargin = 4;
 
 }  //  namespace
 
@@ -24,6 +24,7 @@ const CGFloat kMargin = 3;
   BOOL inMouseEventSequence_;
   base::scoped_nsobject<NSImage> image_;
   base::scoped_nsobject<NSImage> alternateImage_;
+  base::scoped_nsobject<NSImageView> image_view_;
   base::scoped_nsobject<NSString> title_;
   base::scoped_nsobject<NSStatusItem> statusItem_;
 }
@@ -37,11 +38,17 @@ const CGFloat kMargin = 3;
   isHighlightEnable_ = YES;
   statusItem_.reset([[[NSStatusBar systemStatusBar] statusItemWithLength:
       NSVariableStatusItemLength] retain]);
+  CGFloat itemLength = [[statusItem_ statusBar] thickness];
   NSRect frame = NSMakeRect(0,
                             0,
-                            kStatusItemLength,
-                            [[statusItem_ statusBar] thickness]);
+                            itemLength,
+                            itemLength);
   if ((self = [super initWithFrame:frame])) {
+    image_view_.reset([[[NSImageView alloc] initWithFrame:frame] retain]);
+    // Unregister image_view_ as a dragged destination, allows its parent view
+    // (StatusItemView) handle dragging events.
+    [image_view_ unregisterDraggedTypes];
+    [self addSubview:image_view_];
     [self registerForDraggedTypes:
         [NSArray arrayWithObjects:NSFilenamesPboardType, nil]];
     [statusItem_ setView:self];
@@ -55,44 +62,53 @@ const CGFloat kMargin = 3;
 }
 
 - (void)drawRect:(NSRect)dirtyRect {
-  // Draw the tray icon and title that align with NSSStatusItem, layout:
+  // Draw the tray icon and title that align with NSStatusItem, layout:
   //   ----------------
   //   | icon | title |
   ///  ----------------
   BOOL highlight = [self shouldHighlight];
   CGFloat titleWidth = [self titleWidth];
-  // Calculate the total icon bounds.
+  CGFloat statusItemHeight = [[statusItem_ statusBar] thickness];
+  CGFloat iconWidth =((highlight && alternateImage_) ?
+      [alternateImage_ size].width : [image_ size].width) +
+      2 * kHorizontalMargin;
+  NSRect iconRect = NSMakeRect(0, 0, iconWidth, statusItemHeight);
+
+  // Calculate the total status item bounds.
+  CGFloat statusItemWidth = iconWidth + titleWidth;
+  // If title is set, need to add right margin to the title.
+  if (title_) {
+    statusItemWidth += kHorizontalMargin;
+  }
   NSRect statusItemBounds = NSMakeRect(0,
                                        0,
-                                       kStatusItemLength + titleWidth,
-                                       [[statusItem_ statusBar] thickness]);
+                                       statusItemWidth,
+                                       statusItemHeight);
   [statusItem_ drawStatusBarBackgroundInRect:statusItemBounds
                                withHighlight:highlight];
-  [statusItem_ setLength:titleWidth + kStatusItemLength];
+  [statusItem_ setLength:statusItemWidth];
+
+  // Custom ImageView
+  [image_view_ setFrame: iconRect];
+  if (highlight && alternateImage_) {
+    [image_view_ setImage:alternateImage_];
+  } else {
+    [image_view_ setImage:image_];
+  }
+
   if (title_) {
-    NSRect titleDrawRect = NSMakeRect(kStatusItemLength,
+    NSRect titleDrawRect = NSMakeRect(iconWidth,
                                       0,
-                                      titleWidth + kStatusItemLength,
-                                      [[statusItem_ statusBar] thickness]);
+                                      statusItemWidth - kHorizontalMargin,
+                                      statusItemHeight);
     [title_ drawInRect:titleDrawRect
         withAttributes:[self titleAttributes]];
   }
+}
 
-  NSRect iconRect = NSMakeRect(0,
-                               0,
-                               kStatusItemLength,
-                               [[statusItem_ statusBar] thickness]);
-  if (highlight && alternateImage_) {
-    [alternateImage_ drawInRect:NSInsetRect(iconRect, kMargin, kMargin)
-                       fromRect:NSZeroRect
-                      operation:NSCompositeSourceOver
-                       fraction:1];
-  } else {
-    [image_ drawInRect:NSInsetRect(iconRect, kMargin, kMargin)
-              fromRect:NSZeroRect
-             operation:NSCompositeSourceOver
-              fraction:1];
-  }
+- (BOOL) isDarkMode {
+  return [[[NSAppearance currentAppearance] name] hasPrefix:
+      NSAppearanceNameVibrantDark];
 }
 
 - (CGFloat)titleWidth {
@@ -105,7 +121,8 @@ const CGFloat kMargin = 3;
 
 - (NSDictionary*)titleAttributes {
   NSFont* font = [NSFont menuBarFontOfSize:0];
-  NSColor* foregroundColor = [NSColor blackColor];
+  NSColor* foregroundColor =
+      [self isDarkMode] ? [NSColor whiteColor] : [NSColor blackColor];
 
   return [NSDictionary dictionaryWithObjectsAndKeys:
           font, NSFontAttributeName,
