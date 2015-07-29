@@ -55,7 +55,7 @@ class TrayIcon {
   void AddObserver(TrayIconObserver* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(TrayIconObserver* obs) { observers_.RemoveObserver(obs); }
   void NotifyClicked(const gfx::Rect& = gfx::Rect());
-  void NotifyDoubleClicked();
+  void NotifyDoubleClicked(const gfx::Rect& = gfx::Rect());
   void NotifyBalloonShow();
   void NotifyBalloonClicked();
   void NotifyBalloonClosed();

@@ -156,7 +156,7 @@ const CGFloat kMargin = 3;
   }
 
   if (event.clickCount == 2 && !menuController_) {
-    trayIcon_->NotifyDoubleClicked();
+    trayIcon_->NotifyDoubleClicked([self getBoundsFromEvent:event]);
   }
   [self setNeedsDisplay:YES];
 }

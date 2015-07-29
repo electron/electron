@@ -44,8 +44,8 @@ void Tray::OnClicked(const gfx::Rect& bounds) {
   Emit("clicked", bounds);
 }
 
-void Tray::OnDoubleClicked() {
-  Emit("double-clicked");
+void Tray::OnDoubleClicked(const gfx::Rect& bounds) {
+  Emit("double-clicked", bounds);
 }
 
 void Tray::OnBalloonShow() {

@@ -43,7 +43,7 @@ class Tray : public mate::EventEmitter,
 
   // TrayIconObserver:
   void OnClicked(const gfx::Rect& bounds) override;
-  void OnDoubleClicked() override;
+  void OnDoubleClicked(const gfx::Rect& bounds) override;
   void OnBalloonShow() override;
   void OnBalloonClicked() override;
   void OnBalloonClosed() override;
