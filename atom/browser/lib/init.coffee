@@ -38,7 +38,7 @@ process.on 'uncaughtException', (error) ->
   # Show error in GUI.
   stack = error.stack ? "#{error.name}: #{error.message}"
   message = "Uncaught Exception:\n#{stack}"
-  require('dialog').showErrorBox 'A JavaScript error occured in the browser process', message
+  require('dialog').showErrorBox 'A JavaScript error occured in the main process', message
 
 # Emit 'exit' event on quit.
 app = require 'app'
