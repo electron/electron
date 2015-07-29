@@ -53,6 +53,7 @@ Creates a new tray icon associated with the `image`.
   * `y` Integer
   * `width` Integer
   * `height` Integer
+* [`modifiers`][modifiers] Integer - bitsum of keyboard modifiers and mouse keys
 
 Emitted when the tray icon is clicked.
 
@@ -66,6 +67,7 @@ __Note:__ The `bounds` payload is only implemented on OS X and Windows 7 or newe
   * `y` Integer
   * `width` Integer
   * `height` Integer
+* [`modifiers`][modifiers] Integer - bitsum of keyboard modifiers and mouse keys
 
 Emitted when the tray icon is right clicked.
 
@@ -80,6 +82,7 @@ will be emitted if the tray icon has context menu.
   * `y` Integer
   * `width` Integer
   * `height` Integer
+* [`modifiers`][modifiers] Integer - bitsum of keyboard modifiers and mouse keys
 
 Emitted when the tray icon is double clicked.
 
@@ -178,3 +181,4 @@ The `position` is only available on Windows, and it is (0, 0) by default.
 Sets the context menu for this icon.
 
 [event-emitter]: http://nodejs.org/api/events.html#events_class_events_eventemitter
+[modifiers]: https://code.google.com/p/chromium/codesearch#chromium/src/ui/events/event_constants.h&l=77

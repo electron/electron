@@ -6,6 +6,7 @@
 
 #include "atom/browser/ui/cocoa/atom_menu_controller.h"
 #include "base/strings/sys_string_conversions.h"
+#include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/screen.h"
 
@@ -147,16 +148,23 @@ const CGFloat kMargin = 3;
      return;
   }
   inMouseEventSequence_ = NO;
+
+  // Single click
   if (event.clickCount == 1) {
     if (menuController_) {
       [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
     }
 
-    trayIcon_->NotifyClicked([self getBoundsFromEvent:event]);
+    trayIcon_->NotifyClicked(
+        [self getBoundsFromEvent:event],
+        ui::EventFlagsFromModifiers([event modifierFlags]));
   }
 
+  // Double click
   if (event.clickCount == 2 && !menuController_) {
-    trayIcon_->NotifyDoubleClicked([self getBoundsFromEvent:event]);
+    trayIcon_->NotifyDoubleClicked(
+        [self getBoundsFromEvent:event],
+        ui::EventFlagsFromModifiers([event modifierFlags]));
   }
   [self setNeedsDisplay:YES];
 }
@@ -173,7 +181,9 @@ const CGFloat kMargin = 3;
 }
 
 - (void)rightMouseUp:(NSEvent*)event {
-  trayIcon_->NotifyRightClicked([self getBoundsFromEvent:event]);
+  trayIcon_->NotifyRightClicked(
+      [self getBoundsFromEvent:event],
+      ui::EventFlagsFromModifiers([event modifierFlags]));
 }
 
 - (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender {

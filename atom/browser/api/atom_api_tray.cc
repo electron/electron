@@ -40,12 +40,12 @@ mate::Wrappable* Tray::New(v8::Isolate* isolate, const gfx::Image& image) {
   return new Tray(image);
 }
 
-void Tray::OnClicked(const gfx::Rect& bounds) {
-  Emit("clicked", bounds);
+void Tray::OnClicked(const gfx::Rect& bounds, int modifiers) {
+  Emit("clicked", bounds, modifiers);
 }
 
-void Tray::OnDoubleClicked(const gfx::Rect& bounds) {
-  Emit("double-clicked", bounds);
+void Tray::OnDoubleClicked(const gfx::Rect& bounds, int modifiers) {
+  Emit("double-clicked", bounds, modifiers);
 }
 
 void Tray::OnBalloonShow() {
@@ -60,8 +60,8 @@ void Tray::OnBalloonClosed() {
   Emit("balloon-closed");
 }
 
-void Tray::OnRightClicked(const gfx::Rect& bounds) {
-  Emit("right-clicked", bounds);
+void Tray::OnRightClicked(const gfx::Rect& bounds, int modifiers) {
+  Emit("right-clicked", bounds, modifiers);
 }
 
 void Tray::OnDropFiles(const std::vector<std::string>& files) {
