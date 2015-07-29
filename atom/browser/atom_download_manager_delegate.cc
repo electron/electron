@@ -102,12 +102,12 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
 
   AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
       download_manager_->GetBrowserContext());
-  default_download_path_ = browser_context->prefs()->GetFilePath(
+  base::FilePath default_download_path = browser_context->prefs()->GetFilePath(
       prefs::kDownloadDefaultDirectory);
   // If users didn't set download path, use 'Downloads' directory by default.
-  if (default_download_path_.empty()) {
+  if (default_download_path.empty()) {
     auto path = download_manager_->GetBrowserContext()->GetPath();
-    default_download_path_ = path.Append(FILE_PATH_LITERAL("Downloads"));
+    default_download_path = path.Append(FILE_PATH_LITERAL("Downloads"));
   }
 
   if (!download->GetForcedFilePath().empty()) {
@@ -131,7 +131,7 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
                  download->GetContentDisposition(),
                  download->GetSuggestedFilename(),
                  download->GetMimeType(),
-                 default_download_path_,
+                 default_download_path,
                  download_path_callback));
   return true;
 }

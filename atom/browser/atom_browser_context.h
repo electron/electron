@@ -32,7 +32,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
   content::BrowserPluginGuestManager* GetGuestManager() override;
 
-  // brightray::BrowserContext::
+  // brightray::BrowserContext:
   void RegisterPrefs(PrefRegistrySimple* pref_registry) override;
 
   AtomURLRequestJobFactory* job_factory() const { return job_factory_; }
