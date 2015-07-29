@@ -183,6 +183,7 @@ void NativeImage::SetTemplateImage(bool setAsTemplate) {
 }
 
 bool NativeImage::IsTemplateImage() {
+  return false;
 }
 #endif
 

@@ -47,13 +47,16 @@ Creates a new tray icon associated with the `image`.
 
 ### Event: 'clicked'
 
-* `event`
+* `event` Event
+  * `altKey` Boolean
+  * `shiftKey` Boolean
+  * `ctrlKey` Boolean
+  * `metaKey` Boolean
 * `bounds` Object - the bounds of tray icon
   * `x` Integer
   * `y` Integer
   * `width` Integer
   * `height` Integer
-* [`modifiers`][modifiers] Integer - bitsum of keyboard modifiers and mouse keys
 
 Emitted when the tray icon is clicked.
 
@@ -61,32 +64,37 @@ __Note:__ The `bounds` payload is only implemented on OS X and Windows 7 or newe
 
 ### Event: 'right-clicked'
 
-* `event`
+* `event` Event
+  * `altKey` Boolean
+  * `shiftKey` Boolean
+  * `ctrlKey` Boolean
+  * `metaKey` Boolean
 * `bounds` Object - the bounds of tray icon
   * `x` Integer
   * `y` Integer
   * `width` Integer
   * `height` Integer
-* [`modifiers`][modifiers] Integer - bitsum of keyboard modifiers and mouse keys
 
 Emitted when the tray icon is right clicked.
 
-__Note:__ This is only implemented on OS X and Windows. On Windows, this event
-will be emitted if the tray icon has context menu.
+__Note:__ This is only implemented on OS X and Windows.
 
 ### Event: 'double-clicked'
 
-* `event`
+* `event` Event
+  * `altKey` Boolean
+  * `shiftKey` Boolean
+  * `ctrlKey` Boolean
+  * `metaKey` Boolean
 * `bounds` Object - the bounds of tray icon
   * `x` Integer
   * `y` Integer
   * `width` Integer
   * `height` Integer
-* [`modifiers`][modifiers] Integer - bitsum of keyboard modifiers and mouse keys
 
 Emitted when the tray icon is double clicked.
 
-__Note:__ This is only implemented on OS X.
+__Note:__ This is only implemented on OS X and Windows.
 
 ### Event: 'balloon-show'
 
@@ -171,8 +179,9 @@ __Note:__ This is only implemented on Windows.
   * `x` Integer
   * `y` Integer
 
-__Note:__ This is only implemented on OS X and Windows.
 The `position` is only available on Windows, and it is (0, 0) by default.
+
+__Note:__ This is only implemented on OS X and Windows.
 
 ### Tray.setContextMenu(menu)
 
@@ -181,4 +190,3 @@ The `position` is only available on Windows, and it is (0, 0) by default.
 Sets the context menu for this icon.
 
 [event-emitter]: http://nodejs.org/api/events.html#events_class_events_eventemitter
-[modifiers]: https://code.google.com/p/chromium/codesearch#chromium/src/ui/events/event_constants.h&l=77

@@ -14,6 +14,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
+#include "ui/events/event_constants.h"
 #include "ui/gfx/image/image.h"
 
 #include "atom/common/node_includes.h"
@@ -41,11 +42,24 @@ mate::Wrappable* Tray::New(v8::Isolate* isolate, const gfx::Image& image) {
 }
 
 void Tray::OnClicked(const gfx::Rect& bounds, int modifiers) {
-  Emit("clicked", bounds, modifiers);
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  EmitCustomEvent("clicked",
+                  ModifiersToObject(isolate(), modifiers), bounds);
 }
 
 void Tray::OnDoubleClicked(const gfx::Rect& bounds, int modifiers) {
-  Emit("double-clicked", bounds, modifiers);
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  EmitCustomEvent("double-clicked",
+                  ModifiersToObject(isolate(), modifiers), bounds);
+}
+
+void Tray::OnRightClicked(const gfx::Rect& bounds, int modifiers) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  EmitCustomEvent("right-clicked",
+                  ModifiersToObject(isolate(), modifiers), bounds);
 }
 
 void Tray::OnBalloonShow() {
@@ -58,10 +72,6 @@ void Tray::OnBalloonClicked() {
 
 void Tray::OnBalloonClosed() {
   Emit("balloon-closed");
-}
-
-void Tray::OnRightClicked(const gfx::Rect& bounds, int modifiers) {
-  Emit("right-clicked", bounds, modifiers);
 }
 
 void Tray::OnDropFiles(const std::vector<std::string>& files) {
@@ -118,6 +128,16 @@ void Tray::PopContextMenu(mate::Arguments* args) {
 
 void Tray::SetContextMenu(mate::Arguments* args, Menu* menu) {
   tray_icon_->SetContextMenu(menu->model());
+}
+
+v8::Local<v8::Object> Tray::ModifiersToObject(v8::Isolate* isolate,
+                                              int modifiers) {
+  mate::Dictionary obj(isolate, v8::Object::New(isolate));
+  obj.Set("shiftKey", static_cast<bool>(modifiers & ui::EF_SHIFT_DOWN));
+  obj.Set("ctrlKey", static_cast<bool>(modifiers & ui::EF_CONTROL_DOWN));
+  obj.Set("altKey", static_cast<bool>(modifiers & ui::EF_ALT_DOWN));
+  obj.Set("metaKey", static_cast<bool>(modifiers & ui::EF_COMMAND_DOWN));
+  return obj.GetHandle();
 }
 
 // static
