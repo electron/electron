@@ -181,6 +181,7 @@ gfx::Size NativeImage::GetSize() {
 #if !defined(OS_MACOSX)
 void NativeImage::SetTemplateImage(bool setAsTemplate) {
 }
+
 bool NativeImage::IsTemplateImage() {
 }
 #endif

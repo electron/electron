@@ -15,7 +15,7 @@ void NativeImage::SetTemplateImage(bool setAsTemplate) {
 }
 
 bool NativeImage::IsTemplateImage() {
-    return [image_.AsNSImage() isTemplate];
+  return [image_.AsNSImage() isTemplate];
 }
 
 }  // namespace api
