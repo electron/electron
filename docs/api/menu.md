@@ -29,6 +29,8 @@ window.addEventListener('contextmenu', function (e) {
 
 Another example of creating the application menu with the simple template API:
 
+**Note to Window and Linux users** the `selector` member of each menu item is a Mac-only [Accelerator option](https://github.com/atom/electron/blob/master/docs/api/accelerator.md).
+
 ```html
 <!-- index.html -->
 <script>
@@ -54,12 +56,12 @@ var template = [
       },
       {
         label: 'Hide Electron',
-        accelerator: 'Command+H',
+        accelerator: 'CmdOrCtrl+H',
         selector: 'hide:'
       },
       {
         label: 'Hide Others',
-        accelerator: 'Command+Shift+H',
+        accelerator: 'CmdOrCtrl+Shift+H',
         selector: 'hideOtherApplications:'
       },
       {
@@ -71,7 +73,7 @@ var template = [
       },
       {
         label: 'Quit',
-        accelerator: 'Command+Q',
+        accelerator: 'CmdOrCtrl+Q',
         selector: 'terminate:'
       },
     ]
@@ -81,12 +83,12 @@ var template = [
     submenu: [
       {
         label: 'Undo',
-        accelerator: 'Command+Z',
+        accelerator: 'CmdOrCtrl+Z',
         selector: 'undo:'
       },
       {
         label: 'Redo',
-        accelerator: 'Shift+Command+Z',
+        accelerator: 'Shift+CmdOrCtrl+Z',
         selector: 'redo:'
       },
       {
@@ -94,22 +96,22 @@ var template = [
       },
       {
         label: 'Cut',
-        accelerator: 'Command+X',
+        accelerator: 'CmdOrCtrl+X',
         selector: 'cut:'
       },
       {
         label: 'Copy',
-        accelerator: 'Command+C',
+        accelerator: 'CmdOrCtrl+C',
         selector: 'copy:'
       },
       {
         label: 'Paste',
-        accelerator: 'Command+V',
+        accelerator: 'CmdOrCtrl+V',
         selector: 'paste:'
       },
       {
         label: 'Select All',
-        accelerator: 'Command+A',
+        accelerator: 'CmdOrCtrl+A',
         selector: 'selectAll:'
       }
     ]
@@ -119,12 +121,12 @@ var template = [
     submenu: [
       {
         label: 'Reload',
-        accelerator: 'Command+R',
+        accelerator: 'CmdOrCtrl+R',
         click: function() { remote.getCurrentWindow().reload(); }
       },
       {
         label: 'Toggle DevTools',
-        accelerator: 'Alt+Command+I',
+        accelerator: 'Alt+CmdOrCtrl+I',
         click: function() { remote.getCurrentWindow().toggleDevTools(); }
       },
     ]
@@ -134,12 +136,12 @@ var template = [
     submenu: [
       {
         label: 'Minimize',
-        accelerator: 'Command+M',
+        accelerator: 'CmdOrCtrl+M',
         selector: 'performMiniaturize:'
       },
       {
         label: 'Close',
-        accelerator: 'Command+W',
+        accelerator: 'CmdOrCtrl+W',
         selector: 'performClose:'
       },
       {
