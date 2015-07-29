@@ -77,14 +77,13 @@ You can also create a window without chrome by using
   * `web-preferences` Object - Settings of web page's features
     * `javascript` Boolean
     * `web-security` Boolean - When setting `false`, it will disable the same-origin
-      policy(Ususally using testing websites by people) and set `allow_displaying_insecure_content`
-      and `allow_running_insecure_content` to `true`.
+      policy(Usually using testing websites by people), and set `allow_displaying_insecure_content`
+      and `allow_running_insecure_content` to `true` if these two options are not
+      set by user.
     * `allow-displaying-insecure-content` Boolean - Allow a https page to display
-      content like image from http URLs. This option will be overrided to `true`
-      when `web-security` option is set.
+      content like image from http URLs.
     * `allow-running-insecure-content` Boolean - Allow a https page to run JavaScript,
-      CSS or plugins from http URLs. This option will be overrided to `true` when
-      `web-security` option is set.
+      CSS or plugins from http URLs.
     * `images` Boolean
     * `java` Boolean
     * `text-areas-are-resizable` Boolean

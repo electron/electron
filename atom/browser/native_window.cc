@@ -434,15 +434,15 @@ void NativeWindow::OverrideWebkitPrefs(content::WebPreferences* prefs) {
     prefs->experimental_webgl_enabled = b;
   if (web_preferences_.Get("webaudio", &b))
     prefs->webaudio_enabled = b;
-  if (web_preferences_.Get("allow-displaying-insecure-content", &b))
-    prefs->allow_displaying_insecure_content = b;
-  if (web_preferences_.Get("allow-running-insecure-content", &b))
-    prefs->allow_running_insecure_content = b;
   if (web_preferences_.Get("web-security", &b)) {
     prefs->web_security_enabled = b;
     prefs->allow_displaying_insecure_content = !b;
     prefs->allow_running_insecure_content = !b;
   }
+  if (web_preferences_.Get("allow-displaying-insecure-content", &b))
+    prefs->allow_displaying_insecure_content = b;
+  if (web_preferences_.Get("allow-running-insecure-content", &b))
+    prefs->allow_running_insecure_content = b;
   if (web_preferences_.Get("extra-plugin-dirs", &list)) {
     if (content::PluginService::GetInstance()->NPAPIPluginsSupported()) {
       for (size_t i = 0; i < list.size(); ++i)
