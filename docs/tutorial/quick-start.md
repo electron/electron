@@ -130,24 +130,41 @@ Finally the `index.html` is the web page you want to show:
 
 ## Run your app
 
-After you're done writing your app, you can create a distribution by
-following the [Application distribution](./application-distribution.md) guide
-and then execute the packaged app. You can also just use the downloaded
-Electron binary to execute your app directly.
+Once you've created your initial `main.js`, `index.html`, and `package.json` files,
+you'll probably want to try running your app locally to test it and make sure it's
+working as expected.
 
-On Windows:
+### electron-prebuilt
+If you've installed `electron-prebuilt` globally with `npm`, then you need only
+run the following in your app's source directory:
+
+```bash
+electron .
+```
+
+If you've installed it locally, then run:
+
+```bash
+./node_modules/.bin/electron .
+```
+
+### Manually Downloaded Electron Binary
+If you downloaded Electron manually, you can also just use the included
+binary to execute your app directly.
+
+#### Windows
 
 ```bash
 $ .\electron\electron.exe your-app\
 ```
 
-On Linux:
+#### Linux
 
 ```bash
 $ ./electron/electron your-app/
 ```
 
-On OS X:
+#### OS X
 
 ```bash
 $ ./Electron.app/Contents/MacOS/Electron your-app/
@@ -155,3 +172,8 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 
 `Electron.app` here is part of the Electron's release package, you can download
 it from [here](https://github.com/atom/electron/releases).
+
+### Run as a distribution
+After you're done writing your app, you can create a distribution by
+following the [Application distribution](./application-distribution.md) guide
+and then executing the packaged app.
