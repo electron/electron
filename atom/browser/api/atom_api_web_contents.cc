@@ -14,6 +14,7 @@
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/event_emitter_caller.h"
+#include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
@@ -689,6 +690,22 @@ void WebContents::PrintToPDF(const base::DictionaryValue& setting,
       PrintToPDF(setting, callback);
 }
 
+void WebContents::AddWorkSpace(const base::FilePath& path) {
+  if (path.empty()) {
+    node::ThrowError(isolate(), "path cannot be empty");
+    return;
+  }
+  DevToolsAddFileSystem(path);
+}
+
+void WebContents::RemoveWorkSpace(const base::FilePath& path) {
+  if (path.empty()) {
+    node::ThrowError(isolate(), "path cannot be empty");
+    return;
+  }
+  DevToolsRemoveFileSystem(path);
+}
+
 void WebContents::Undo() {
   web_contents()->Undo();
 }
@@ -812,6 +829,8 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
         .SetMethod("print", &WebContents::Print)
         .SetMethod("_printToPDF", &WebContents::PrintToPDF)
+        .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
+        .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
         .SetProperty("session", &WebContents::Session)
         .Build());
 
