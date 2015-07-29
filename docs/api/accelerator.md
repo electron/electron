@@ -1,6 +1,6 @@
 # Accelerator
 
-An accelerator is string that represents a keyboard shortcut, it can contain
+An accelerator is a string that represents a keyboard shortcut. It can contain
 multiple modifiers and key codes, combined by the `+` character.
 
 Examples:
@@ -10,7 +10,7 @@ Examples:
 
 ## Platform notice
 
-On Linux and Windows, the `Command` key would not have any effect, you can
+On Linux and Windows, the `Command` key does not have any effect so
 use `CommandOrControl` which represents `Command` on OS X and `Control` on
 Linux and Windows to define some accelerators.
 
