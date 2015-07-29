@@ -76,7 +76,15 @@ You can also create a window without chrome by using
     textured window. Defaults to `true`.
   * `web-preferences` Object - Settings of web page's features
     * `javascript` Boolean
-    * `web-security` Boolean
+    * `web-security` Boolean - When setting `false`, it will disable the same-origin
+      policy(Ususally using testing websites by people) and set `allow_displaying_insecure_content`
+      and `allow_running_insecure_content` to `true`.
+    * `allow-displaying-insecure-content` Boolean - Allow a https page to display
+      content like image from http URLs. This option will be overrided to `true`
+      when `web-security` option is set.
+    * `allow-running-insecure-content` Boolean - Allow a https page to run JavaScript,
+      CSS or plugins from http URLs. This option will be overrided to `true` when
+      `web-security` option is set.
     * `images` Boolean
     * `java` Boolean
     * `text-areas-are-resizable` Boolean
