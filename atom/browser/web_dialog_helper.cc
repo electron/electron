@@ -43,13 +43,14 @@ file_dialog::Filters GetFileTypesFromAcceptType(
       // Skip the first character.
       extensions.push_back(extension.substr(1));
     } else {
-      if (ascii_type == "image/*" || ascii_type == "audio/*" ||
-          ascii_type == "video/*") {
-        // For MIME Type
-        net::GetExtensionsForMimeType(ascii_type, &extensions);
-      }
+      // For MIME Type, `audio/*, vidio/*, image/*
+      net::GetExtensionsForMimeType(ascii_type, &extensions);
     }
   }
+
+  // If no valid exntesion is added, return empty filters.
+  if (extensions.empty())
+    return filters;
 
   filters.push_back(file_dialog::Filter());
   for (const auto& extension : extensions) {
