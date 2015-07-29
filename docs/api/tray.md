@@ -71,8 +71,7 @@ __Note:__ The `bounds` payload is only implemented on OS X and Windows 7 or newe
 
 Emitted when the tray icon is right clicked.
 
-__Note:__ This is only implemented on OS X and Windows. On Windows, this event
-will be emitted if the tray icon has context menu.
+__Note:__ This is only implemented on OS X and Windows.
 
 ### Event: 'double-clicked'
 
@@ -86,7 +85,7 @@ will be emitted if the tray icon has context menu.
 
 Emitted when the tray icon is double clicked.
 
-__Note:__ This is only implemented on OS X.
+__Note:__ This is only implemented on OS X and Windows.
 
 ### Event: 'balloon-show'
 
@@ -171,8 +170,9 @@ __Note:__ This is only implemented on Windows.
   * `x` Integer
   * `y` Integer
 
-__Note:__ This is only implemented on OS X and Windows.
 The `position` is only available on Windows, and it is (0, 0) by default.
+
+__Note:__ This is only implemented on OS X and Windows.
 
 ### Tray.setContextMenu(menu)
 
