@@ -57,10 +57,17 @@ require('web-frame').setSpellCheckProvider("en-US", true, {
 
 * `scheme` String
 
-Sets the `scheme` as secure scheme.
+Registers the `scheme` as secure scheme.
 
 Secure schemes do not trigger mixed content warnings. For example, `https` and
 `data` are secure schemes because they cannot be corrupted by active network
 attackers.
+
+## webFrame.registerUrlSchemeAsBypassingCsp(scheme)
+
+* `scheme` String
+
+Resources will be loaded from this `scheme` regardless of
+page's Content Security Policy.
 
 [spellchecker]: https://github.com/atom/node-spellchecker
