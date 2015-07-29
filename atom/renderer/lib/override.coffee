@@ -61,7 +61,7 @@ window.open = (url, frameName='', features='') ->
   (options[name] = parseInt(options[name], 10) if options[name]?) for name in ints
 
   # Inherit the node-integration option of current window.
-  unless options['node-integration']
+  unless options['node-integration']?
     for arg in process.argv when arg.indexOf('--node-integration=') is 0
       options['node-integration'] = arg.substr(-4) is 'true'
       break
