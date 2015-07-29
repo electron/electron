@@ -364,6 +364,8 @@
       'chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.cc',
       'chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.h',
       'chromium_src/chrome/common/chrome_utility_messages.h',
+      'chromium_src/chrome/common/pref_names.cc',
+      'chromium_src/chrome/common/pref_names.h',
       'chromium_src/chrome/common/print_messages.cc',
       'chromium_src/chrome/common/print_messages.h',
       'chromium_src/chrome/common/tts_messages.h',
