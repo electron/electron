@@ -63,7 +63,8 @@ NotifyIcon::~NotifyIcon() {
 }
 
 void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
-                                  bool left_mouse_click) {
+                                  bool left_mouse_click,
+                                  bool double_button_click) {
   NOTIFYICONIDENTIFIER icon_id;
   memset(&icon_id, 0, sizeof(NOTIFYICONIDENTIFIER));
   icon_id.uID = icon_id_;
@@ -72,14 +73,16 @@ void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
   RECT rect = { 0 };
   Shell_NotifyIconGetRect(&icon_id, &rect);
 
-  // Pass to the observer if appropriate.
   if (left_mouse_click) {
-    NotifyClicked(gfx::Rect(rect));
+    if (double_button_click)  // double left click
+      NotifyDoubleClicked(gfx::Rect(rect));
+    else  // single left click
+      NotifyClicked(gfx::Rect(rect));
     return;
+  } else if (!double_button_click) {  // single right click
+    NotifyRightClicked(gfx::Rect(rect));
+    PopContextMenu(cursor_pos);
   }
-
-  NotifyRightClicked(gfx::Rect(rect));
-  PopContextMenu(cursor_pos);
 }
 
 void NotifyIcon::ResetIcon() {

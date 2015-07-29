@@ -146,12 +146,17 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
 
       case WM_LBUTTONDOWN:
       case WM_RBUTTONDOWN:
+      case WM_LBUTTONDBLCLK:
+      case WM_RBUTTONDBLCLK:
       case WM_CONTEXTMENU:
         // Walk our icons, find which one was clicked on, and invoke its
         // HandleClickEvent() method.
         gfx::Point cursor_pos(
             gfx::Screen::GetNativeScreen()->GetCursorScreenPoint());
-        win_icon->HandleClickEvent(cursor_pos, lparam == WM_LBUTTONDOWN);
+        win_icon->HandleClickEvent(
+            cursor_pos,
+            (lparam == WM_LBUTTONDOWN || lparam == WM_LBUTTONDBLCLK),
+            (lparam == WM_LBUTTONDBLCLK || lparam == WM_RBUTTONDBLCLK));
         return TRUE;
     }
   }
