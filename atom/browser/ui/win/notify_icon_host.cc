@@ -5,6 +5,7 @@
 #include "atom/browser/ui/win/notify_icon_host.h"
 
 #include <commctrl.h>
+#include <winuser.h>
 
 #include "atom/browser/ui/win/notify_icon.h"
 #include "base/bind.h"
@@ -28,6 +29,11 @@ const UINT kBaseIconId = 2;
 
 const wchar_t kNotifyIconHostWindowClass[] = L"Electron_NotifyIconHostWindow";
 
+bool IsWinPressed() {
+  return ((::GetKeyState(VK_LWIN) & 0x8000) == 0x8000) ||
+         ((::GetKeyState(VK_RWIN) & 0x8000) == 0x8000);
+}
+
 int GetKeyboardModifers() {
   int modifiers = ui::EF_NONE;
   if (base::win::IsShiftPressed())
@@ -36,6 +42,8 @@ int GetKeyboardModifers() {
     modifiers |= ui::EF_CONTROL_DOWN;
   if (base::win::IsAltPressed())
     modifiers |= ui::EF_ALT_DOWN;
+  if (IsWinPressed())
+    modifiers |= ui::EF_COMMAND_DOWN;
   return modifiers;
 }
 

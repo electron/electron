@@ -51,6 +51,7 @@ Creates a new tray icon associated with the `image`.
   * `altKey` Boolean
   * `shiftKey` Boolean
   * `ctrlKey` Boolean
+  * `metaKey` Boolean
 * `bounds` Object - the bounds of tray icon
   * `x` Integer
   * `y` Integer
@@ -67,6 +68,7 @@ __Note:__ The `bounds` payload is only implemented on OS X and Windows 7 or newe
   * `altKey` Boolean
   * `shiftKey` Boolean
   * `ctrlKey` Boolean
+  * `metaKey` Boolean
 * `bounds` Object - the bounds of tray icon
   * `x` Integer
   * `y` Integer
@@ -83,6 +85,7 @@ __Note:__ This is only implemented on OS X and Windows.
   * `altKey` Boolean
   * `shiftKey` Boolean
   * `ctrlKey` Boolean
+  * `metaKey` Boolean
 * `bounds` Object - the bounds of tray icon
   * `x` Integer
   * `y` Integer

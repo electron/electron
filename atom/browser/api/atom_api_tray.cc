@@ -136,6 +136,7 @@ v8::Local<v8::Object> Tray::ModifiersToObject(v8::Isolate* isolate,
   obj.Set("shiftKey", static_cast<bool>(modifiers & ui::EF_SHIFT_DOWN));
   obj.Set("ctrlKey", static_cast<bool>(modifiers & ui::EF_CONTROL_DOWN));
   obj.Set("altKey", static_cast<bool>(modifiers & ui::EF_ALT_DOWN));
+  obj.Set("metaKey", static_cast<bool>(modifiers & ui::EF_COMMAND_DOWN));
   return obj.GetHandle();
 }
 
