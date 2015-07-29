@@ -28,20 +28,18 @@ NotifyIcon::NotifyIcon(NotifyIconHost* host,
       icon_id_(id),
       window_(window),
       message_id_(message),
-      menu_model_(NULL) {
-
+      menu_model_(NULL),
+      has_tray_app_id_hash_(false) {
   // NB: If we have an App Model ID, we should propagate that to the tray.
   // Doing this prevents duplicate items from showing up in the notification
   // preferences (i.e. "Always Show / Show notifications only / etc")
   PWSTR explicit_app_id;
-
   if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&explicit_app_id))) {
     // GUIDs and MD5 hashes are the same length. So convenient!
     base::MD5Sum(explicit_app_id,
-      sizeof(wchar_t) * wcslen(explicit_app_id),
-      (base::MD5Digest*)&tray_app_id_hash_);
+                 sizeof(wchar_t) * wcslen(explicit_app_id),
+                 reinterpret_cast<base::MD5Digest*>(&tray_app_id_hash_));
     has_tray_app_id_hash_ = true;
-
     CoTaskMemFree(explicit_app_id);
   }
 
@@ -184,8 +182,8 @@ void NotifyIcon::InitIconData(NOTIFYICONDATA* icon_data) {
   if (has_tray_app_id_hash_) {
     icon_data->uFlags |= NIF_GUID;
     memcpy(reinterpret_cast<void*>(&icon_data->guidItem),
-      &tray_app_id_hash_,
-      sizeof(GUID));
+           &tray_app_id_hash_,
+           sizeof(GUID));
   }
 }
 
