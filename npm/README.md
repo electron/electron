@@ -1,12 +1,13 @@
 # electron-prebuilt
 
 [![build status](http://img.shields.io/travis/mafintosh/electron-prebuilt.svg?style=flat)](http://travis-ci.org/mafintosh/electron-prebuilt)
+[![dat](http://img.shields.io/badge/Development%20sponsored%20by-dat-green.svg?style=flat)](http://dat-data.com/)
 
-Install [electron](https://github.com/atom/electron) (formerly called **atom-shell**) prebuilt binaries for command-line use using npm.
+Install [electron](https://github.com/atom/electron) prebuilt binaries for command-line use using npm. This module helps you easily install the `electron` command for use on the command line without having to compile anything.
 
 Works on Mac, Windows and Linux OSes that Electron supports (e.g. Electron [does not support Windows XP](https://github.com/atom/electron/issues/691)).
 
-Electron is a javascript runtime that bundles Node.js and Chromium. You use it similar to the `node` command on the command line for executing javascript programs. This module helps you easily install the `electron` command for use on the command line without having to compile anything.
+Electron is a JavaScript runtime that bundles Node.js and Chromium. You use it similar to the `node` command on the command line for executing JavaScript programs. For more info you can read [this intro blog post](http://maxogden.com/electron-fundamentals.html) or dive into the [Electron documentation](https://github.com/atom/electron/tree/master/docs)
 
 ## Installation
 
@@ -50,8 +51,8 @@ electron your-app/
 
 ## Programmatic usage
 
-If you require `electron-prebuilt` inside your node app it will return the file path to the binary.
-Use this to spawn electron
+Most people use this from the command line, but if you require `electron-prebuilt` inside your node app it will return the file path to the binary.
+Use this to spawn electron from node scripts.
 
 ``` js
 var electron = require('electron-prebuilt')
