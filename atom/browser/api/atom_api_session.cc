@@ -10,6 +10,7 @@
 #include "atom/browser/api/atom_api_cookies.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
+#include "atom/common/native_mate_converters/file_path_converter.h"
 #include "base/files/file_path.h"
 #include "base/prefs/pref_service.h"
 #include "base/strings/string_util.h"
@@ -254,9 +255,9 @@ void Session::SetProxy(const std::string& proxy,
       base::Bind(&SetProxyInIO, base::Unretained(getter), proxy, callback));
 }
 
-void Session::SetDownloadPath(const std::string& path) {
-  browser_context_->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
-                                         base::FilePath(path));
+void Session::SetDownloadPath(const base::FilePath& path) {
+  browser_context_->prefs()->SetFilePath(
+      prefs::kDownloadDefaultDirectory, path);
 }
 
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
