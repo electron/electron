@@ -44,20 +44,28 @@ __플랫폼별 한계:__
 
 ### Event: 'clicked'
 
-* `event`
+* `event` Event
+  * `altKey` Boolean
+  * `shiftKey` Boolean
+  * `ctrlKey` Boolean
+  * `metaKey` Boolean
 * `bounds` Object - 트레이 아이콘의 범위
   * `x` Integer
   * `y` Integer
   * `width` Integer
   * `height` Integer
 
-트레이 아이콘이 클릭될 때 호출됩니다.
+트레이 아이콘이 클릭될 때 발생하는 이벤트입니다.
 
-__주의:__ `bounds`는 OS X와 Window 7 이후 버전에서만 작동합니다.
+__주의:__ `bounds`는 OS X 와 Windows 7 이후 버전에서만 작동합니다.
 
 ### Event: 'right-clicked'
 
-* `event`
+* `event` Event
+  * `altKey` Boolean
+  * `shiftKey` Boolean
+  * `ctrlKey` Boolean
+  * `metaKey` Boolean
 * `bounds` Object - 트레이 아이콘의 범위
   * `x` Integer
   * `y` Integer
@@ -66,30 +74,40 @@ __주의:__ `bounds`는 OS X와 Window 7 이후 버전에서만 작동합니다.
 
 트레이 아이콘을 오른쪽 클릭될 때 호출 됩니다.
 
-__주의:__ 이 기능은 Windows와 OS X에서만 사용할 수 있습니다.
-Windows에서는 이 이벤트가 컨텍스트 메뉴를 가지고 있을 때만 호출됩니다.
+__주의:__ 이 기능은 OS X 와 Windows 운영체제에서만 작동합니다.
 
 ### Event: 'double-clicked'
 
-트레이 아이콘이 더블 클릭될 때 호출됩니다.
+* `event` Event
+  * `altKey` Boolean
+  * `shiftKey` Boolean
+  * `ctrlKey` Boolean
+  * `metaKey` Boolean
+* `bounds` Object - 트레이 아이콘의 범위
+  * `x` Integer
+  * `y` Integer
+  * `width` Integer
+  * `height` Integer
 
-__주의:__ 이 기능은 OS X에서만 작동합니다.
+트레이 아이콘이 더블 클릭될 때 발생하는 이벤트입니다.
+
+__주의:__ 이 기능은 OS X 와 Windows 운영체제에서만 작동합니다.
 
 ### Event: 'balloon-show'
 
-알림풍선이 보여질 때 호출됩니다.
+알림풍선이 보여질 때 발생하는 이벤트입니다.
 
 __주의:__ 이 기능은 Windows에서만 작동합니다.
 
 ### Event: 'balloon-clicked'
 
-알림풍선이 클릭될 때 호출됩니다.
+알림풍선이 클릭될 때 발생하는 이벤트입니다.
 
 __주의:__ 이 기능은 Windows에서만 작동합니다.
 
 ### Event: 'balloon-closed'
 
-알림풍선이 시간이 지나 사라지거나 유저가 클릭하여 닫을 때 호출됩니다.
+알림풍선이 시간이 지나 사라지거나 유저가 클릭하여 닫을 때 발생하는 이벤트입니다.
 
 __주의:__ 이 기능은 Windows에서만 작동합니다.
 
@@ -98,7 +116,7 @@ __주의:__ 이 기능은 Windows에서만 작동합니다.
 * `event`
 * `files` Array - 드롭된 파일의 경로
 
-트레이 아이콘에 파일이 드롭되면 호출됩니다.
+트레이 아이콘에 파일이 드롭되면 발생하는 이벤트입니다.
 
 __주의:__ 이 기능은 OS X에서만 작동합니다.
 
@@ -159,8 +177,9 @@ __알림:__ 이 기능은 Windows에서만 작동합니다.
   * `x` Integer
   * `y` Integer
 
-__주의:__ 이 기능은 Windows와 OS X에서만 작동합니다.
 `position`은 Windows에서만 사용할 수 있으며 기본값은 (0, 0)입니다.
+
+__주의:__ 이 기능은 Windows 와 OS X에서만 작동합니다.
 
 ### Tray.setContextMenu(menu)
 

@@ -37,7 +37,7 @@ Electron 프로세스 내에서 작동하는 웹 페이지는 __랜더러 프로
 Electron에는 메인 프로세스와 랜더러 프로세스간에 통신을 할 수 있도록 [ipc](../api/ipc-renderer-ko.md) 모듈을 제공하고 있습니다.
 또한 [remote](../api/remote-ko.md) 모듈을 사용하여 RPC 스타일로 통신할 수도 있습니다.
 
-## 나의 첫번째 Electron 앱 만들기
+## 첫번째 Electron 앱 만들기
 
 보통 Electron 앱은 다음과 같은 폴더 구조를 가집니다:
 
@@ -125,19 +125,45 @@ app.on('ready', function() {
 앱을 작성한 후 [어플리케이션 배포](./application-distribution-ko.md) 가이드를 따라 앱을 패키징 하고 패키징한 앱을 실행할 수 있습니다.
 또는 Electron 실행파일을 다운로드 받아 바로 실행해 볼 수도 있습니다.
 
-Windows의 경우:
+### electron-prebuilt
+
+`npm`을 통해 `electron-prebuilt` 패키지를 전역에 설치하면 간단한 명령으로 앱을 실행해 볼 수 있습니다.
+
+앱 디렉터리 내에서 이렇게 실행합니다:
+
+```bash
+electron .
+```
+
+또는 앱 디렉터리 밖에서 앱 디렉터리를 입력해도 됩니다:
+
+```bash
+electron app
+```
+
+npm 모듈을 로컬에 설치했다면 이렇게 실행할 수 있습니다:
+
+```bash
+./node_modules/.bin/electron .
+```
+
+### 임의로 다운로드 받은 Electron
+
+만약 Electron 바이너리를 임의로 다운로드 받았다면 다음과 같이 앱 디렉터리에 놓고 실행하면 됩니다.
+
+#### Windows
 
 ```bash
 $ .\electron\electron.exe your-app\
 ```
 
-Linux의 경우:
+#### Linux
 
 ```bash
 $ ./electron/electron your-app/
 ```
 
-OS X의 경우:
+#### OS X
 
 ```bash
 $ ./Electron.app/Contents/MacOS/Electron your-app/
@@ -145,3 +171,7 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 
 앱 실행파일은 `Electron`의 release 패키지에 포함되어 있습니다.
 [여기](https://github.com/atom/electron/releases)에서 다운로드 받을 수 있습니다.
+
+### 배포용 파일 만들기
+
+모든 앱 작성이 끝났다면 [어플리케이션 배포](./application-distribution-ko.md) 가이드를 보고 본격적으로 제작한 앱을 배포할 수 있습니다.

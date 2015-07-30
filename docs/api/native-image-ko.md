@@ -124,4 +124,8 @@ var appIcon = new Tray('/Users/somebody/images/icon.png');
 
 해당 이미지를 템플릿 이미지로 설정합니다.
 
+### NativeImage.isTemplateImage()
+
+이미지가 템플릿 이미지인지 확인합니다.
+
 [buffer]: https://iojs.org/api/buffer.html#buffer_class_buffer
