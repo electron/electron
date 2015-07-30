@@ -65,7 +65,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent();
   void InsertCSS(const std::string& css);
-  void ExecuteJavaScript(const base::string16& code);
+  void ExecuteJavaScript(const base::string16& code,
+                         bool has_user_gesture);
   void OpenDevTools(mate::Arguments* args);
   void CloseDevTools();
   bool IsDevToolsOpened();

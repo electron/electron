@@ -46,11 +46,11 @@ wrapWebContents = (webContents) ->
   # web contents has been loaded.
   webContents.loaded = false
   webContents.once 'did-finish-load', -> @loaded = true
-  webContents.executeJavaScript = (code) ->
+  webContents.executeJavaScript = (code, hasUserGesture=false) ->
     if @loaded
-      @_executeJavaScript code
+      @_executeJavaScript code, hasUserGesture
     else
-      webContents.once 'did-finish-load', @_executeJavaScript.bind(this, code)
+      webContents.once 'did-finish-load', @_executeJavaScript.bind(this, code, hasUserGesture)
 
   # The navigation controller.
   controller = new NavigationController(webContents)

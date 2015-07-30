@@ -905,11 +905,12 @@ Returns a `String` represents the user agent for this page.
 
 Injects CSS into this page.
 
-### WebContents.executeJavaScript(code)
+### WebContents.executeJavaScript(code, userGesture)
 
 * `code` String
+* `userGesture` Boolean - Default false
 
-Evaluates `code` in page.
+Evaluates `code` in page. If `userGesture` is set will simulate user gesture.
 
 ### WebContents.setAudioMuted(muted)
 
