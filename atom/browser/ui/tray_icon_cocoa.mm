@@ -14,6 +14,8 @@ namespace {
 
 // By default, OS X sets 4px to tray image as left and right padding margin.
 const CGFloat kHorizontalMargin = 4;
+// OS X tends to make the title 2px lower.
+const CGFloat kVerticalTitleMargin = 2;
 
 }  //  namespace
 
@@ -33,24 +35,33 @@ const CGFloat kHorizontalMargin = 4;
 
 @implementation StatusItemView
 
-- (id)initWithIcon:(atom::TrayIconCocoa*)icon {
+- (id)initWithImage:(NSImage*)image icon:(atom::TrayIconCocoa*)icon {
+  image_.reset([image copy]);
   trayIcon_ = icon;
   isHighlightEnable_ = YES;
-  statusItem_.reset([[[NSStatusBar systemStatusBar] statusItemWithLength:
-      NSVariableStatusItemLength] retain]);
-  CGFloat itemLength = [[statusItem_ statusBar] thickness];
-  NSRect frame = NSMakeRect(0,
-                            0,
-                            itemLength,
-                            itemLength);
+
+  // Get the initial size.
+  NSStatusBar* statusBar = [NSStatusBar systemStatusBar];
+  NSRect frame = NSMakeRect(0, 0, [self fullWidth], [statusBar thickness]);
+
   if ((self = [super initWithFrame:frame])) {
-    image_view_.reset([[[NSImageView alloc] initWithFrame:frame] retain]);
+    // Setup the image view.
+    NSRect iconFrame = frame;
+    iconFrame.size.width = [self iconWidth];
+    image_view_.reset([[NSImageView alloc] initWithFrame:iconFrame]);
+    [image_view_ setImageScaling:NSImageScaleNone];
+    [image_view_ setImageAlignment:NSImageAlignCenter];
+    [self addSubview:image_view_];
+
     // Unregister image_view_ as a dragged destination, allows its parent view
     // (StatusItemView) handle dragging events.
     [image_view_ unregisterDraggedTypes];
-    [self addSubview:image_view_];
-    [self registerForDraggedTypes:
-        [NSArray arrayWithObjects:NSFilenamesPboardType, nil]];
+    NSArray* types = [NSArray arrayWithObjects:NSFilenamesPboardType, nil];
+    [self registerForDraggedTypes:types];
+
+    // Create the status item.
+    statusItem_.reset([[[NSStatusBar systemStatusBar]
+                        statusItemWithLength:NSWidth(frame)] retain]);
     [statusItem_ setView:self];
   }
   return self;
@@ -66,68 +77,94 @@ const CGFloat kHorizontalMargin = 4;
   //   ----------------
   //   | icon | title |
   ///  ----------------
-  BOOL highlight = [self shouldHighlight];
-  CGFloat titleWidth = [self titleWidth];
-  CGFloat statusItemHeight = [[statusItem_ statusBar] thickness];
-  CGFloat iconWidth =((highlight && alternateImage_) ?
-      [alternateImage_ size].width : [image_ size].width) +
-      2 * kHorizontalMargin;
-  NSRect iconRect = NSMakeRect(0, 0, iconWidth, statusItemHeight);
 
-  // Calculate the total status item bounds.
-  CGFloat statusItemWidth = iconWidth + titleWidth;
-  // If title is set, need to add right margin to the title.
-  if (title_) {
-    statusItemWidth += kHorizontalMargin;
-  }
-  NSRect statusItemBounds = NSMakeRect(0,
-                                       0,
-                                       statusItemWidth,
-                                       statusItemHeight);
+  // Draw background.
+  BOOL highlight = [self shouldHighlight];
+  CGFloat thickness = [[statusItem_ statusBar] thickness];
+  NSRect statusItemBounds = NSMakeRect(0, 0, [statusItem_ length], thickness);
   [statusItem_ drawStatusBarBackgroundInRect:statusItemBounds
                                withHighlight:highlight];
-  [statusItem_ setLength:statusItemWidth];
 
-  // Custom ImageView
-  [image_view_ setFrame: iconRect];
-  if (highlight && alternateImage_) {
+  // Make use of NSImageView to draw the image, which can correctly draw
+  // template image under dark menu bar.
+  if (highlight && alternateImage_ &&
+      [image_view_ image] != alternateImage_.get()) {
     [image_view_ setImage:alternateImage_];
-  } else {
+  } else if ([image_view_ image] != image_.get()) {
     [image_view_ setImage:image_];
   }
 
   if (title_) {
-    NSRect titleDrawRect = NSMakeRect(iconWidth,
-                                      0,
-                                      statusItemWidth - kHorizontalMargin,
-                                      statusItemHeight);
+    // Highlight the text when icon is highlighted or in dark mode.
+    highlight |= [self isDarkMode];
+    // Draw title.
+    NSRect titleDrawRect = NSMakeRect(
+        [self iconWidth], -kVerticalTitleMargin, [self titleWidth], thickness);
     [title_ drawInRect:titleDrawRect
-        withAttributes:[self titleAttributes]];
+        withAttributes:[self titleAttributesWithHighlight:highlight]];
   }
 }
 
-- (BOOL) isDarkMode {
-  return [[[NSAppearance currentAppearance] name] hasPrefix:
-      NSAppearanceNameVibrantDark];
+- (BOOL)isDarkMode {
+  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+  NSString* mode = [defaults stringForKey:@"AppleInterfaceStyle"];
+  return mode && [mode isEqualToString:@"Dark"];
 }
 
+// The width of the full status item.
+- (CGFloat)fullWidth {
+  if (title_)
+    return [self iconWidth] + [self titleWidth] + kHorizontalMargin;
+  else
+    return [self iconWidth];
+}
+
+// The width of the icon.
+- (CGFloat)iconWidth {
+  CGFloat thickness = [[NSStatusBar systemStatusBar] thickness];
+  CGFloat imageHeight = [image_ size].height;
+  CGFloat imageWidth = [image_ size].width;
+  CGFloat iconWidth = imageWidth;
+  if (imageWidth < thickness) {
+    // Image's width must be larger than menu bar's height.
+    iconWidth = thickness;
+  } else {
+    CGFloat verticalMargin = thickness - imageHeight;
+    // Image must have same horizontal vertical margin.
+    if (verticalMargin > 0 && imageWidth != imageHeight)
+      iconWidth = imageWidth + verticalMargin;
+    CGFloat horizontalMargin = thickness - imageWidth;
+    // Image must have at least kHorizontalMargin horizontal margin on each
+    // side.
+    if (horizontalMargin < 2 * kHorizontalMargin)
+      iconWidth = imageWidth + 2 * kHorizontalMargin;
+  }
+  return iconWidth;
+}
+
+// The width of the title.
 - (CGFloat)titleWidth {
-  if (!title_) return 0;
-  NSAttributedString* attributes =
+  if (!title_)
+     return 0;
+  base::scoped_nsobject<NSAttributedString> attributes(
       [[NSAttributedString alloc] initWithString:title_
-                                      attributes:[self titleAttributes]];
+                                      attributes:[self titleAttributes]]);
   return [attributes size].width;
 }
 
-- (NSDictionary*)titleAttributes {
+- (NSDictionary*)titleAttributesWithHighlight:(BOOL)highlight {
   NSFont* font = [NSFont menuBarFontOfSize:0];
-  NSColor* foregroundColor =
-      [self isDarkMode] ? [NSColor whiteColor] : [NSColor blackColor];
-
+  NSColor* foregroundColor = highlight ?
+      [NSColor whiteColor] :
+      [NSColor colorWithRed:0.265625 green:0.25390625 blue:0.234375 alpha:1.0];
   return [NSDictionary dictionaryWithObjectsAndKeys:
-          font, NSFontAttributeName,
-          foregroundColor, NSForegroundColorAttributeName,
-          nil];
+             font, NSFontAttributeName,
+             foregroundColor, NSForegroundColorAttributeName,
+             nil];
+}
+
+- (NSDictionary*)titleAttributes {
+  return [self titleAttributesWithHighlight:[self isDarkMode]];
 }
 
 - (void)setImage:(NSImage*)image {
@@ -144,7 +181,11 @@ const CGFloat kHorizontalMargin = 4;
 }
 
 - (void)setTitle:(NSString*)title {
-  title_.reset([title copy]);
+  if (title.length > 0)
+    title_.reset([title copy]);
+  else
+    title_.reset();
+  [statusItem_ setLength:[self fullWidth]];
   [self setNeedsDisplay:YES];
 }
 
@@ -188,7 +229,7 @@ const CGFloat kHorizontalMargin = 4;
 
 - (void)popContextMenu {
   if (menuController_ && ![menuController_ isMenuOpen]) {
-    // redraw the dray icon to show highlight if it is enabled.
+    // Redraw the dray icon to show highlight if it is enabled.
     [self setNeedsDisplay:YES];
     [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
     // The popUpStatusItemMenu returns only after the showing menu is closed.
@@ -222,8 +263,8 @@ const CGFloat kHorizontalMargin = 4;
 }
 
 - (BOOL)shouldHighlight {
-  BOOL is_menu_open = [menuController_ isMenuOpen];
-  return isHighlightEnable_ && (inMouseEventSequence_ || is_menu_open);
+  BOOL isMenuOpen = menuController_ && [menuController_ isMenuOpen];
+  return isHighlightEnable_ && (inMouseEventSequence_ || isMenuOpen);
 }
 
 - (gfx::Rect)getBoundsFromEvent:(NSEvent*)event {
@@ -238,7 +279,6 @@ const CGFloat kHorizontalMargin = 4;
 namespace atom {
 
 TrayIconCocoa::TrayIconCocoa() {
-  status_item_view_.reset([[StatusItemView alloc] initWithIcon:this]);
 }
 
 TrayIconCocoa::~TrayIconCocoa() {
@@ -246,7 +286,13 @@ TrayIconCocoa::~TrayIconCocoa() {
 }
 
 void TrayIconCocoa::SetImage(const gfx::Image& image) {
-  [status_item_view_ setImage:image.AsNSImage()];
+  if (status_item_view_) {
+    [status_item_view_ setImage:image.AsNSImage()];
+  } else {
+    status_item_view_.reset(
+        [[StatusItemView alloc] initWithImage:image.AsNSImage()
+                                         icon:this]);
+  }
 }
 
 void TrayIconCocoa::SetPressedImage(const gfx::Image& image) {
