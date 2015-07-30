@@ -20,10 +20,7 @@ tracing.startRecording('*', tracing.DEFAULT_OPTIONS, function() {
 
 * `callback` Function
 
-카테고리 그룹 세트를 가져옵니다. 카테고리 그룹은 도달 대상이 되는 코드 경로를 변경할 수 있습니다.
-
-Get a set of category groups. The category groups can change as new code paths
-are reached.
+카테고리 그룹 세트를 가져옵니다. 카테고리 그룹은 도달된 코드 경로를 변경할 수 있습니다.
 
 Once all child processes have acked to the `getCategories` request, `callback`
 is invoked with an array of category groups.

@@ -56,14 +56,14 @@ app.on('ready', function() {
 * `event` Event
 * `newDisplay` Object
 
-새로운 디스플레이가 추가되면 발생합니다.
+새로운 디스플레이가 추가되면 발생하는 이벤트입니다.
 
 ## Event: display-removed
 
 * `event` Event
 * `oldDisplay` Object
 
-기존의 디스플레이가 제거되면 발생합니다.
+기존의 디스플레이가 제거되면 발생하는 이벤트입니다.
 
 ## Event: display-metrics-changed
 
@@ -71,7 +71,7 @@ app.on('ready', function() {
 * `display` Object
 * `changedMetrics` Array
 
-`display`의 하나 또는 다수의 매트릭스가 변경될 경우 발생합니다.
+`display`의 하나 또는 다수의 매트릭스가 변경될 때 발생하는 이벤트입니다.
 `changedMetrics`는 변경에 대한 정보를 담은 문자열의 배열입니다.
 `bounds`, `workArea`, `scaleFactor`, `rotation`등이 변경될 수 있습니다.
 
