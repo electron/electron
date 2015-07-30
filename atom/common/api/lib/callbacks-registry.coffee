@@ -1,3 +1,5 @@
+global = global  # the "global.global" might be deleted later
+
 module.exports =
 class CallbacksRegistry
   constructor: ->
