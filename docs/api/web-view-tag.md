@@ -225,11 +225,14 @@ Returns a `String` represents the user agent for guest page.
 
 Injects CSS into guest page.
 
-### `<webview>`.executeJavaScript(code)
+### `<webview>`.executeJavaScript(code, userGesture)
 
 * `code` String
+* `userGesture` Boolean - Default false
 
-Evaluates `code` in guest page.
+Evaluates `code` in page. If `userGesture` is set will create user gesture context,
+HTML api like `requestFullScreen` which require user action can take advantage
+of this option for automation.
 
 ### `<webview>`.openDevTools()
 

@@ -910,7 +910,9 @@ Injects CSS into this page.
 * `code` String
 * `userGesture` Boolean - Default false
 
-Evaluates `code` in page. If `userGesture` is set will simulate user gesture.
+Evaluates `code` in page. If `userGesture` is set will create user gesture context,
+HTML api like `requestFullScreen` which require user action can take advantage
+of this option for automation.
 
 ### WebContents.setAudioMuted(muted)
 
