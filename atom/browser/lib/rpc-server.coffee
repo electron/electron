@@ -50,6 +50,7 @@ unwrapArgs = (sender, args) ->
       when 'remote-object' then objectsRegistry.get meta.id
       when 'array' then unwrapArgs sender, meta.value
       when 'buffer' then new Buffer(meta.value)
+      when 'promise' then Promise.resolve(then: metaToValue(meta.then))
       when 'object'
         ret = v8Util.createObjectWithName meta.name
         for member in meta.members
