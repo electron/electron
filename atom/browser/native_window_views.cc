@@ -184,7 +184,7 @@ const char* AppCommandToString(int command_id) {
     case APPCOMMAND_DICTATE_OR_COMMAND_CONTROL_TOGGLE:
       return "dictate-or-command-control-toggle";
     default:
-      return "unkown";
+      return "unknown";
   }
 }
 #endif
