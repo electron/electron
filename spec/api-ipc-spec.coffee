@@ -52,6 +52,15 @@ describe 'ipc module', ->
       print_name = remote.require path.join(fixtures, 'module', 'print_name.js')
       assert.equal print_name.print(buf), 'Buffer'
 
+  describe 'remote promise in renderer', ->
+    it 'can be used as promise', (done) ->
+      promise = remote.require path.join(fixtures, 'module', 'promise.js')
+      promise.toPromise(1234)
+        .then (value) => value * 2
+        .then (value) =>
+          assert.equal value, 2468
+          done()
+
   describe 'ipc.sender.send', ->
     it 'should work when sending an object containing id property', (done) ->
       obj = id: 1, name: 'ly'
