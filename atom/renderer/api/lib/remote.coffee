@@ -44,6 +44,7 @@ metaToValue = (meta) ->
     when 'value' then meta.value
     when 'array' then (metaToValue(el) for el in meta.members)
     when 'buffer' then new Buffer(meta.value)
+    when 'promise' then Promise.resolve(then: metaToValue(meta.then))
     when 'error'
       throw new Error("#{meta.message}\n#{meta.stack}")
     else

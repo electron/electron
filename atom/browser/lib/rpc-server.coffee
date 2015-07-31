@@ -10,6 +10,7 @@ valueToMeta = (sender, value) ->
   meta.type = 'buffer' if Buffer.isBuffer value
   meta.type = 'value' if value is null
   meta.type = 'array' if Array.isArray value
+  meta.type = 'promise' if Promise.resolve(value) == value
 
   # Treat the arguments object as array.
   meta.type = 'array' if meta.type is 'object' and value.callee? and value.length?
@@ -29,6 +30,8 @@ valueToMeta = (sender, value) ->
     meta.members.push {name: prop, type: typeof field} for prop, field of value
   else if meta.type is 'buffer'
     meta.value = Array::slice.call value, 0
+  else if meta.type is 'promise'
+    meta.then = valueToMeta(sender, value.then.bind(value))
   else
     meta.type = 'value'
     meta.value = value
