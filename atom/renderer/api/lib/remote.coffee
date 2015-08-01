@@ -20,7 +20,7 @@ wrapArgs = (args, visited=[]) ->
       type: 'array', value: wrapArgs(value, visited)
     else if Buffer.isBuffer value
       type: 'buffer', value: Array::slice.call(value, 0)
-    else if Promise.resolve(value) == value
+    else if value? and value.constructor.name is 'Promise'
       type: 'promise', then: valueToMeta(value.then.bind(value))
     else if value? and typeof value is 'object' and v8Util.getHiddenValue value, 'atomId'
       type: 'remote-object', id: v8Util.getHiddenValue value, 'atomId'

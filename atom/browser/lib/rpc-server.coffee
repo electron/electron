@@ -10,7 +10,7 @@ valueToMeta = (sender, value) ->
   meta.type = 'buffer' if Buffer.isBuffer value
   meta.type = 'value' if value is null
   meta.type = 'array' if Array.isArray value
-  meta.type = 'promise' if Promise.resolve(value) == value
+  meta.type = 'promise' if value? and value.constructor.name is 'Promise'
 
   # Treat the arguments object as array.
   meta.type = 'array' if meta.type is 'object' and value.callee? and value.length?
