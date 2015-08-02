@@ -10,6 +10,7 @@
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/asar/asar_protocol_handler.h"
 #include "atom/browser/net/http_protocol_handler.h"
+#include "atom/browser/net/ftp_protocol_handler.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
@@ -151,16 +152,8 @@ AtomURLRequestJobFactory *AtomBrowserContext::CreateJobFactory() {
       url::kWsScheme, new HttpProtocolHandler(url::kWsScheme));
   job_factory->SetProtocolHandler(
       url::kWssScheme, new HttpProtocolHandler(url::kWssScheme));
-
-  // cannot get host_resolver on AtomBrowserContext init
-  /*
-  auto host_resolver = url_request_context_getter()
-                          ->GetURLRequestContext()
-                          ->host_resolver();
   job_factory->SetProtocolHandler(
-      url::kFtpScheme, new net::FtpProtocolHandler(
-          new net::FtpNetworkLayer(host_resolver)));
-  */
+      url::kFtpScheme, new FtpProtocolHandler());
 
   return job_factory;
 }
