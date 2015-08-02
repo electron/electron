@@ -38,6 +38,8 @@ class AtomBrowserContext : public brightray::BrowserContext {
   AtomURLRequestJobFactory* job_factory() const { return job_factory_; }
 
  private:
+  AtomURLRequestJobFactory* CreateJobFactory();
+
   scoped_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
   scoped_ptr<WebViewManager> guest_manager_;
 

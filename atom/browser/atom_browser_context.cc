@@ -56,8 +56,8 @@ std::string RemoveWhitespace(const std::string& str) {
 
 }  // namespace
 
-AtomBrowserContext::AtomBrowserContext()
-    : job_factory_(new AtomURLRequestJobFactory) {
+AtomBrowserContext::AtomBrowserContext() {
+  job_factory_ = CreateJobFactory();
 }
 
 AtomBrowserContext::~AtomBrowserContext() {
@@ -89,28 +89,6 @@ net::URLRequestJobFactory* AtomBrowserContext::CreateURLRequestJobFactory(
        it != handlers->end(); ++it)
     job_factory->SetProtocolHandler(it->first, it->second.release());
   handlers->clear();
-
-  job_factory->SetProtocolHandler(
-      url::kDataScheme, new net::DataProtocolHandler);
-  job_factory->SetProtocolHandler(
-      url::kFileScheme, new asar::AsarProtocolHandler(
-          BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
-              base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
-  job_factory->SetProtocolHandler(
-      url::kHttpScheme, new HttpProtocolHandler(url::kHttpScheme));
-  job_factory->SetProtocolHandler(
-      url::kHttpsScheme, new HttpProtocolHandler(url::kHttpsScheme));
-  job_factory->SetProtocolHandler(
-      url::kWsScheme, new HttpProtocolHandler(url::kWsScheme));
-  job_factory->SetProtocolHandler(
-      url::kWssScheme, new HttpProtocolHandler(url::kWssScheme));
-
-  auto host_resolver = url_request_context_getter()
-                          ->GetURLRequestContext()
-                          ->host_resolver();
-  job_factory->SetProtocolHandler(
-      url::kFtpScheme, new net::FtpProtocolHandler(
-          new net::FtpNetworkLayer(host_resolver)));
 
   // Set up interceptors in the reverse order.
   scoped_ptr<net::URLRequestJobFactory> top_job_factory = job_factory.Pass();
@@ -154,6 +132,37 @@ void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
                                       base::FilePath());
   pref_registry->RegisterFilePathPref(prefs::kDownloadDefaultDirectory,
                                       base::FilePath());
+}
+
+AtomURLRequestJobFactory *AtomBrowserContext::CreateJobFactory() {
+  AtomURLRequestJobFactory *job_factory = new AtomURLRequestJobFactory();
+
+  job_factory->SetProtocolHandler(
+      url::kDataScheme, new net::DataProtocolHandler);
+  job_factory->SetProtocolHandler(
+      url::kFileScheme, new asar::AsarProtocolHandler(
+          BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
+              base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
+  job_factory->SetProtocolHandler(
+      url::kHttpScheme, new HttpProtocolHandler(url::kHttpScheme));
+  job_factory->SetProtocolHandler(
+      url::kHttpsScheme, new HttpProtocolHandler(url::kHttpsScheme));
+  job_factory->SetProtocolHandler(
+      url::kWsScheme, new HttpProtocolHandler(url::kWsScheme));
+  job_factory->SetProtocolHandler(
+      url::kWssScheme, new HttpProtocolHandler(url::kWssScheme));
+
+  // cannot get host_resolver on AtomBrowserContext init
+  /*
+  auto host_resolver = url_request_context_getter()
+                          ->GetURLRequestContext()
+                          ->host_resolver();
+  job_factory->SetProtocolHandler(
+      url::kFtpScheme, new net::FtpProtocolHandler(
+          new net::FtpNetworkLayer(host_resolver)));
+  */
+
+  return job_factory;
 }
 
 }  // namespace atom
