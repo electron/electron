@@ -23,6 +23,10 @@
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
 
+#if defined(OS_WIN)
+#include "atom/browser/ui/win/thumbar_host.h"
+#endif
+
 class SkRegion;
 
 namespace base {
@@ -144,6 +148,10 @@ class NativeWindow : public content::WebContentsObserver,
                               const std::string& description) = 0;
   virtual void SetVisibleOnAllWorkspaces(bool visible) = 0;
   virtual bool IsVisibleOnAllWorkspaces() = 0;
+#if defined(OS_WIN)
+  virtual bool SetThumbarButtons(
+      const std::vector<ThumbarHost::ThumbarButton>& buttons) = 0;
+#endif
 
   virtual bool IsClosed() const { return is_closed_; }
 

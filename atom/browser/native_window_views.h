@@ -23,6 +23,9 @@ namespace atom {
 class GlobalMenuBarX11;
 class MenuBar;
 class WindowStateWatcher;
+#if defined(OS_WIN)
+class AtomDesktopWindowTreeHostWin;
+#endif
 
 class NativeWindowViews : public NativeWindow,
                           public views::WidgetDelegateView,
@@ -79,6 +82,10 @@ class NativeWindowViews : public NativeWindow,
   bool IsMenuBarVisible() override;
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
+#if defined(OS_WIN)
+  bool SetThumbarButtons(
+      const std::vector<ThumbarHost::ThumbarButton>& buttons) override;
+#endif
 
   gfx::AcceleratedWidget GetAcceleratedWidget();
 
@@ -154,6 +161,8 @@ class NativeWindowViews : public NativeWindow,
   // Handles window state events.
   scoped_ptr<WindowStateWatcher> window_state_watcher_;
 #elif defined(OS_WIN)
+  // Weak ref.
+  AtomDesktopWindowTreeHostWin* atom_desktop_window_tree_host_win_;
   // Records window was whether restored from minimized state or maximized
   // state.
   bool is_minimized_;
