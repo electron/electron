@@ -34,6 +34,10 @@ IPC_MESSAGE_ROUTED2(AtomViewMsg_Message,
                     base::string16 /* channel */,
                     base::ListValue /* arguments */)
 
+IPC_MESSAGE_ROUTED2(AtomViewMsg_ExecuteJavaScript,
+                    base::string16 /* code */,
+                    bool /* has user gesture */)
+
 // Sent by the renderer when the draggable regions are updated.
 IPC_MESSAGE_ROUTED1(AtomViewHostMsg_UpdateDraggableRegions,
                     std::vector<atom::DraggableRegion> /* regions */)

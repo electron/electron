@@ -572,8 +572,9 @@ void WebContents::InsertCSS(const std::string& css) {
   web_contents()->InsertCSS(css);
 }
 
-void WebContents::ExecuteJavaScript(const base::string16& code) {
-  web_contents()->GetMainFrame()->ExecuteJavaScript(code);
+void WebContents::ExecuteJavaScript(const base::string16& code,
+                                    bool has_user_gesture) {
+  Send(new AtomViewMsg_ExecuteJavaScript(routing_id(), code, has_user_gesture));
 }
 
 void WebContents::OpenDevTools(mate::Arguments* args) {
