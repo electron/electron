@@ -589,7 +589,7 @@ void NativeWindowMac::SetResizable(bool resizable) {
     [window_ setStyleMask:[window_ styleMask] | NSResizableWindowMask];
   } else {
     [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
-    [window_ setStyleMask:[window_ styleMask] ^ NSResizableWindowMask];
+    [window_ setStyleMask:[window_ styleMask] & (~NSResizableWindowMask)];
   }
 }
 
