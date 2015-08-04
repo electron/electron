@@ -152,14 +152,15 @@
         ['OS=="win"', {
           'conditions': [
             ['libchromiumcontent_component', {
-              # sandbox, base_static, devtools_discovery, devtools_http_handler
-              # are always linked statically.
+              # sandbox, base_static, devtools_discovery, devtools_http_handler,
+              # http_server are always linked statically.
               'link_settings': {
                 'libraries': [
                   '<(libchromiumcontent_dir)/base_static.lib',
                   '<(libchromiumcontent_dir)/sandbox.lib',
                   '<(libchromiumcontent_dir)/devtools_discovery.lib',
                   '<(libchromiumcontent_dir)/devtools_http_handler.lib',
+                  '<(libchromiumcontent_dir)/http_server.lib',
                 ],
               },
             }, {
