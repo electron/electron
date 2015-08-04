@@ -4,6 +4,10 @@
 
 #include "atom/browser/atom_browser_client.h"
 
+#if defined(OS_WIN)
+#include <shlobj.h>
+#endif
+
 #include "atom/browser/atom_access_token_store.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
@@ -190,9 +194,19 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   if (process_type != "renderer")
     return;
 
+  // The registered standard schemes.
   if (!g_custom_schemes.empty())
     command_line->AppendSwitchASCII(switches::kRegisterStandardSchemes,
                                     g_custom_schemes);
+
+#if defined(OS_WIN)
+  // Append --app-user-model-id.
+  PWSTR current_app_id;
+  if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
+    command_line->AppendSwitchNative(switches::kAppUserModelId, current_app_id);
+    CoTaskMemFree(current_app_id);
+  }
+#endif
 
   NativeWindow* window;
   WebViewManager::WebViewInfo info;

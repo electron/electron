@@ -37,7 +37,8 @@ class CrashService {
   // other members in that case. |operating_dir| is where the CrashService
   // should store breakpad's checkpoint file. |dumps_path| is the directory
   // where the crash dumps should be stored.
-  bool Initialize(const base::FilePath& operating_dir,
+  bool Initialize(const base::string16& application_name,
+                  const base::FilePath& operating_dir,
                   const base::FilePath& dumps_path);
 
   // Command line switches:
