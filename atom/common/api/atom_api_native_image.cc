@@ -148,17 +148,18 @@ mate::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
 
 v8::Local<v8::Value> NativeImage::ToPNG(v8::Isolate* isolate) {
   scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
-  return node::Buffer::New(isolate,
-                           reinterpret_cast<const char*>(png->front()),
-                           png->size());
+  return node::Buffer::Copy(isolate,
+                            reinterpret_cast<const char*>(png->front()),
+                            static_cast<size_t>(png->size())).ToLocalChecked();
 }
 
 v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
   std::vector<unsigned char> output;
   gfx::JPEG1xEncodedDataFromImage(image_, quality, &output);
-  return node::Buffer::New(isolate,
-                           reinterpret_cast<const char*>(&output.front()),
-                           output.size());
+  return node::Buffer::Copy(
+      isolate,
+      reinterpret_cast<const char*>(&output.front()),
+      static_cast<size_t>(output.size())).ToLocalChecked();
 }
 
 std::string NativeImage::ToDataURL() {
