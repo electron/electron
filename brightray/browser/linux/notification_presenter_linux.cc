@@ -153,12 +153,16 @@ void NotificationPresenterLinux::DeleteNotification(NotifyNotification* notifica
 }
 
 void NotificationPresenterLinux::OnNotificationClosed(NotifyNotification* notification) {
+  if (!notification)
+    return;
   GetDelegateFromNotification(notification)->NotificationClosed();
   DeleteNotification(notification);
 }
 
 void NotificationPresenterLinux::OnNotificationView(
     NotifyNotification* notification, char* action) {
+  if (!notification)
+    return;
   GetDelegateFromNotification(notification)->NotificationClick();
   DeleteNotification(notification);
 }
