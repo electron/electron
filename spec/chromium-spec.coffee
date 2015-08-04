@@ -3,6 +3,7 @@ http = require 'http'
 https = require 'https'
 path = require 'path'
 ws = require 'ws'
+remote = require 'remote'
 
 describe 'chromium feature', ->
   fixtures = path.resolve __dirname, 'fixtures'
@@ -39,9 +40,31 @@ describe 'chromium feature', ->
       assert.equal b.constructor.name, 'BrowserWindowProxy'
       b.close()
 
+  describe 'window.opener', ->
+    ipc = remote.require 'ipc'
+    url = "file://#{fixtures}/pages/window-opener.html"
+    w = null
+
+    afterEach ->
+      w?.destroy()
+      ipc.removeAllListeners 'opener'
+
+    it 'is null for main window', (done) ->
+      ipc.on 'opener', (event, opener) ->
+        done(if opener is null then undefined else opener)
+      BrowserWindow = remote.require 'browser-window'
+      w = new BrowserWindow(show: false)
+      w.loadUrl url
+
+    it 'is not null for window opened by window.open', (done) ->
+      b = window.open url, 'test2', 'show=no'
+      ipc.on 'opener', (event, opener) ->
+        b.close()
+        done(if opener isnt null then undefined else opener)
+
   describe 'creating a Uint8Array under browser side', ->
     it 'does not crash', ->
-      RUint8Array = require('remote').getGlobal 'Uint8Array'
+      RUint8Array = remote.getGlobal 'Uint8Array'
       new RUint8Array
 
   describe 'webgl', ->
