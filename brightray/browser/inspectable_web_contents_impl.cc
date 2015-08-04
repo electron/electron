@@ -183,8 +183,8 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
     gfx::Rect display = gfx::Screen::GetNativeScreen()
         ->GetDisplayNearestWindow(web_contents->GetNativeView()).bounds();
     if (!IsPointInRect(devtools_bounds_.origin(), display)) {
-      devtools_bounds_.set_x(0);
-      devtools_bounds_.set_y(0);
+      devtools_bounds_.set_x(display.x() + (display.width() - devtools_bounds_.width()) / 2);
+      devtools_bounds_.set_y(display.y() + (display.height() - devtools_bounds_.height()) / 2);
     }
   }
 
