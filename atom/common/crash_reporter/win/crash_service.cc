@@ -14,6 +14,7 @@
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/string_util.h"
 #include "base/time/time.h"
 #include "base/win/windows_version.h"
 #include "vendor/breakpad/src/client/windows/crash_generation/client_info.h"
@@ -24,6 +25,7 @@ namespace breakpad {
 
 namespace {
 
+const wchar_t kWaitEventFormat[] = L"$1CrashServiceWaitEvent";
 const wchar_t kTestPipeName[] = L"\\\\.\\pipe\\ChromeCrashServices";
 
 const wchar_t kGoogleReportURL[] = L"https://clients2.google.com/cr/report";
@@ -193,7 +195,8 @@ CrashService::~CrashService() {
   delete sender_;
 }
 
-bool CrashService::Initialize(const base::FilePath& operating_dir,
+bool CrashService::Initialize(const base::string16& application_name,
+                              const base::FilePath& operating_dir,
                               const base::FilePath& dumps_path) {
   using google_breakpad::CrashReportSender;
   using google_breakpad::CrashGenerationServer;
@@ -298,11 +301,10 @@ bool CrashService::Initialize(const base::FilePath& operating_dir,
 
   // Create or open an event to signal the browser process that the crash
   // service is initialized.
-  HANDLE running_event =
-      ::CreateEventW(NULL, TRUE, TRUE, L"g_atom_shell_crash_service");
-  // If the browser already had the event open, the CreateEvent call did not
-  // signal it. We need to do it manually.
-  ::SetEvent(running_event);
+  base::string16 wait_name = ReplaceStringPlaceholders(
+      kWaitEventFormat, application_name, NULL);
+  HANDLE wait_event = ::CreateEventW(NULL, TRUE, FALSE, wait_name.c_str());
+  ::SetEvent(wait_event);
 
   return true;
 }
