@@ -144,7 +144,6 @@
               'destination': '<(PRODUCT_DIR)',
               'files': [
                 '<@(copied_libraries)',
-                '<(libchromiumcontent_dir)/ffmpegsumo.dll',
                 '<(libchromiumcontent_dir)/libEGL.dll',
                 '<(libchromiumcontent_dir)/libGLESv2.dll',
                 '<(libchromiumcontent_dir)/icudtl.dat',
@@ -193,7 +192,6 @@
               'destination': '<(PRODUCT_DIR)',
               'files': [
                 '<@(copied_libraries)',
-                '<(libchromiumcontent_dir)/libffmpegsumo.so',
                 '<(libchromiumcontent_dir)/icudtl.dat',
                 '<(libchromiumcontent_dir)/content_shell.pak',
                 '<(libchromiumcontent_dir)/natives_blob.bin',
@@ -441,7 +439,6 @@
               'destination': '<(PRODUCT_DIR)/<(product_name) Framework.framework/Versions/A/Libraries',
               'files': [
                 '<@(copied_libraries)',
-                '<(libchromiumcontent_dir)/ffmpegsumo.so',
               ],
             },
             {
