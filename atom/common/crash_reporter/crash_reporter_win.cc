@@ -51,8 +51,10 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
   // Wait until the crash service is started.
   HANDLE waiting_event =
       ::CreateEventW(NULL, TRUE, FALSE, L"g_atom_shell_crash_service");
-  if (waiting_event != INVALID_HANDLE_VALUE)
+  if (waiting_event != NULL) {
     WaitForSingleObject(waiting_event, 1000);
+    CloseHandle(waiting_event);
+  }
 
   // ExceptionHandler() attaches our handler and ~ExceptionHandler() detaches
   // it, so we must explicitly reset *before* we instantiate our new handler
