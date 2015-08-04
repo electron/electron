@@ -263,6 +263,8 @@ describe '<webview> tag', ->
         document.body.appendChild webview
 
   describe 'executeJavaScript', ->
+    return unless process.env.TRAVIS is 'true'
+
     it 'should support user gesture', (done) ->
       listener = (e) ->
         webview.removeEventListener 'enter-html-full-screen', listener
