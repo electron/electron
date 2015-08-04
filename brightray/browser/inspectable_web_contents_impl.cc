@@ -28,6 +28,7 @@
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_fetcher.h"
 #include "net/url_request/url_fetcher_response_writer.h"
+#include "ui/gfx/screen.h"
 
 namespace brightray {
 
@@ -70,6 +71,11 @@ void DictionaryToRect(const base::DictionaryValue& dict, gfx::Rect* bounds) {
   dict.GetInteger("width", &width);
   dict.GetInteger("height", &height);
   *bounds = gfx::Rect(x, y, width, height);
+}
+
+bool IsPointInRect(const gfx::Point& point, const gfx::Rect& rect) {
+  return point.x() > rect.x() && point.x() < (rect.width() + rect.x()) &&
+         point.y() > rect.y() && point.y() < (rect.height() + rect.y());
 }
 
 void SetZoomLevelForWebContents(content::WebContents* web_contents,
@@ -167,8 +173,20 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
   auto context = static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
   pref_service_ = context->prefs();
   auto bounds_dict = pref_service_->GetDictionary(kDevToolsBoundsPref);
-  if (bounds_dict)
+  if (bounds_dict) {
     DictionaryToRect(*bounds_dict, &devtools_bounds_);
+    // Sometimes the devtools window is out of screen or has too small size.
+    if (devtools_bounds_.height() < 100 || devtools_bounds_.width() < 100) {
+      devtools_bounds_.set_height(600);
+      devtools_bounds_.set_width(800);
+    }
+    gfx::Rect display = gfx::Screen::GetNativeScreen()
+        ->GetDisplayNearestWindow(web_contents->GetNativeView()).bounds();
+    if (!IsPointInRect(devtools_bounds_.origin(), display)) {
+      devtools_bounds_.set_x(display.x() + (display.width() - devtools_bounds_.width()) / 2);
+      devtools_bounds_.set_y(display.y() + (display.height() - devtools_bounds_.height()) / 2);
+    }
+  }
 
   view_.reset(CreateInspectableContentsView(this));
 }
