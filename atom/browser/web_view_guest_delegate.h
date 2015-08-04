@@ -70,7 +70,8 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   void SetGuestHost(content::GuestHost* guest_host) final;
   void WillAttach(content::WebContents* embedder_web_contents,
                   int element_instance_id,
-                  bool is_full_page_plugin) final;
+                  bool is_full_page_plugin,
+                  const base::Closure& completion_callback) final;
 
  private:
   // This method is invoked when the contents auto-resized to give the container
