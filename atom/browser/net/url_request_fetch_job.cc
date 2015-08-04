@@ -90,7 +90,7 @@ URLRequestFetchJob::URLRequestFetchJob(
   else
     request_type = GetRequestType(method);
 
-  fetcher_.reset(net::URLFetcher::Create(url, request_type, this));
+  fetcher_ = net::URLFetcher::Create(url, request_type, this);
   // Use request context if provided else create one.
   if (request_context_getter)
     fetcher_->SetRequestContext(request_context_getter.get());
