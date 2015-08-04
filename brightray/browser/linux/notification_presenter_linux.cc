@@ -13,6 +13,7 @@
 #include "content/public/common/platform_notification_data.h"
 #include "common/application_info.h"
 #include "dbus/dbus.h"
+#include "third_party/skia/include/core/SkBitmap.h"
 
 namespace brightray {
 
@@ -111,11 +112,12 @@ void NotificationPresenterLinux::ShowNotification(
         notification, "default", "View", OnNotificationViewThunk, this, nullptr);
   }
 
-  GdkPixbuf* pixbuf = libgtk2ui::GdkPixbufFromSkBitmap(icon);
-
-  notify_notification_set_image_from_pixbuf(notification, pixbuf);
-  notify_notification_set_timeout(notification, NOTIFY_EXPIRES_DEFAULT);
-  g_object_unref(pixbuf);
+  if (!icon.drawsNothing()) {
+    GdkPixbuf* pixbuf = libgtk2ui::GdkPixbufFromSkBitmap(icon);
+    notify_notification_set_image_from_pixbuf(notification, pixbuf);
+    notify_notification_set_timeout(notification, NOTIFY_EXPIRES_DEFAULT);
+    g_object_unref(pixbuf);
+  }
 
   GError* error = nullptr;
   notify_notification_show(notification, &error);
