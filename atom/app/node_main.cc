@@ -8,6 +8,7 @@
 #include "atom/common/node_includes.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"
+#include "gin/v8_initializer.h"
 
 namespace atom {
 
@@ -19,7 +20,7 @@ int NodeMain(int argc, char *argv[]) {
 
   int exit_code = 1;
   {
-    gin::IsolateHolder::LoadV8Snapshot();
+    gin::V8Initializer::LoadV8Snapshot();
     gin::IsolateHolder::Initialize(
         gin::IsolateHolder::kNonStrictMode,
         gin::ArrayBufferAllocator::SharedInstance());
