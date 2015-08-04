@@ -26,6 +26,8 @@ namespace breakpad {
 namespace {
 
 const wchar_t kWaitEventFormat[] = L"$1CrashServiceWaitEvent";
+const wchar_t kClassNameFormat[] = L"$1CrashServiceWindow";
+
 const wchar_t kTestPipeName[] = L"\\\\.\\pipe\\ChromeCrashServices";
 
 const wchar_t kGoogleReportURL[] = L"https://clients2.google.com/cr/report";
@@ -113,13 +115,18 @@ LRESULT __stdcall CrashSvcWndProc(HWND hwnd, UINT message,
 // This is the main and only application window.
 HWND g_top_window = NULL;
 
-bool CreateTopWindow(HINSTANCE instance, bool visible) {
+bool CreateTopWindow(HINSTANCE instance,
+                     const base::string16& application_name,
+                     bool visible) {
+  base::string16 class_name = ReplaceStringPlaceholders(
+      kClassNameFormat, application_name, NULL);
+
   WNDCLASSEXW wcx = {0};
   wcx.cbSize = sizeof(wcx);
   wcx.style = CS_HREDRAW | CS_VREDRAW;
   wcx.lpfnWndProc = CrashSvcWndProc;
   wcx.hInstance = instance;
-  wcx.lpszClassName = L"crash_svc_class";
+  wcx.lpszClassName = class_name.c_str();
   ATOM atom = ::RegisterClassExW(&wcx);
   DWORD style = visible ? WS_POPUPWINDOW | WS_VISIBLE : WS_OVERLAPPED;
 
@@ -263,6 +270,7 @@ bool CrashService::Initialize(const base::string16& application_name,
   }
 
   if (!CreateTopWindow(::GetModuleHandleW(NULL),
+                       application_name,
                        !cmd_line.HasSwitch(kNoWindow))) {
     LOG(ERROR) << "could not create window";
     if (security_attributes.lpSecurityDescriptor)
