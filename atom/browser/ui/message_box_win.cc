@@ -10,6 +10,7 @@
 #include <map>
 #include <vector>
 
+#include "atom/browser/browser.h"
 #include "atom/browser/native_window_views.h"
 #include "base/callback.h"
 #include "base/strings/string_util.h"
@@ -87,7 +88,12 @@ int ShowMessageBoxUTF16(HWND parent,
   config.hInstance  = GetModuleHandle(NULL);
   config.dwFlags    = flags;
 
-  if (!title.empty())
+  // TaskDialogIndirect doesn't allow empty name, if we set empty title it
+  // will show "electron.exe" in title.
+  base::string16 app_name = base::UTF8ToUTF16(Browser::Get()->GetName());
+  if (title.empty())
+    config.pszWindowTitle = app_name.c_str();
+  else
     config.pszWindowTitle = title.c_str();
 
   base::win::ScopedHICON hicon;
