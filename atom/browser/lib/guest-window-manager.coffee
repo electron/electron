@@ -64,3 +64,6 @@ ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', (event, mess
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WEB_CONTENTS_METHOD', (event, guestId, method, args...) ->
   BrowserWindow.fromId(guestId)?.webContents?[method] args...
+
+ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_IS_GUEST_WINDOW', (event) ->
+  event.returnValue = v8Util.getHiddenValue(event.sender, 'embedder') isnt undefined
