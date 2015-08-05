@@ -11,6 +11,7 @@ resolveUrl = (url) ->
 # Window object returned by "window.open".
 class BrowserWindowProxy
   constructor: (@guestId) ->
+    @closed = false
     ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED', (guestId) =>
       if guestId is @guestId
         @closed = true
