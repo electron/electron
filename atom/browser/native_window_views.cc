@@ -717,17 +717,17 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
   return false;
 }
 
-#if defined(OS_WIN)
 bool NativeWindowViews::SetThumbarButtons(
-    const std::vector<ThumbarHost::ThumbarButton>& buttons) {
+    const std::vector<NativeWindow::ThumbarButton>& buttons) {
+#if defined(OS_WIN)
   if (atom_desktop_window_tree_host_win_) {
     return atom_desktop_window_tree_host_win_->SetThumbarButtons(
         views::HWNDForNativeWindow(window_->GetNativeWindow()),
         buttons);
   }
+#endif
   return false;
 }
-#endif
 
 gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() {
   return GetNativeWindow()->GetHost()->GetAcceleratedWidget();

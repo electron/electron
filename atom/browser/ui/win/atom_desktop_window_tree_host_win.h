@@ -9,6 +9,7 @@
 
 #include <vector>
 
+#include "atom/browser/native_window.h"
 #include "atom/browser/ui/win/thumbar_host.h"
 #include "base/memory/scoped_ptr.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_win.h"
@@ -24,7 +25,7 @@ class AtomDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin {
 
   bool SetThumbarButtons(
       HWND window,
-      const std::vector<ThumbarHost::ThumbarButton>& buttons);
+      const std::vector<NativeWindow::ThumbarButton>& buttons);
 
  protected:
   bool PreHandleMSG(UINT message,

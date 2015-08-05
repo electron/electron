@@ -6,6 +6,7 @@
 
 #include <shobjidl.h>
 
+#include "atom/browser/native_window.h"
 #include "atom/browser/ui/win/thumbar_host.h"
 
 namespace atom {
@@ -22,7 +23,7 @@ AtomDesktopWindowTreeHostWin::~AtomDesktopWindowTreeHostWin() {
 
 bool AtomDesktopWindowTreeHostWin::SetThumbarButtons(
     HWND window,
-    const std::vector<ThumbarHost::ThumbarButton>& buttons) {
+    const std::vector<NativeWindow::ThumbarButton>& buttons) {
   if (!thumbar_host_.get()) {
     thumbar_host_.reset(new ThumbarHost(window));
   }

@@ -6,6 +6,8 @@
 
 #include <shobjidl.h>
 
+#include <string>
+
 #include "base/win/scoped_comptr.h"
 #include "base/win/win_util.h"
 #include "base/win/wrapped_window_proc.h"
@@ -64,7 +66,7 @@ ThumbarHost::~ThumbarHost() {
 }
 
 bool ThumbarHost::SetThumbarButtons(
-    const std::vector<ThumbarHost::ThumbarButton>& buttons) {
+    const std::vector<atom::NativeWindow::ThumbarButton>& buttons) {
   if (buttons.size() > kMaxButtonsCount)
     return false;
 
@@ -112,7 +114,7 @@ bool ThumbarHost::SetThumbarButtons(
   if (!is_initialized_) {
     is_initialized_ = true;
     is_success = taskbar->ThumbBarAddButtons(
-        window_, kMaxButtonsCount, thumb_buttons) == S_OK;
+        window_, buttons.size(), thumb_buttons) == S_OK;
   } else {
     is_success = taskbar->ThumbBarUpdateButtons(
         window_, kMaxButtonsCount, thumb_buttons) == S_OK;

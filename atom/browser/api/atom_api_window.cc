@@ -20,17 +20,12 @@
 
 #include "atom/common/node_includes.h"
 
-#if defined(OS_WIN)
-#include "atom/browser/ui/win/thumbar_host.h"
-#endif
-
 namespace mate {
 
-#if defined(OS_WIN)
 template<>
-struct Converter<atom::ThumbarHost::ThumbarButton> {
+struct Converter<atom::NativeWindow::ThumbarButton> {
   static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
-                     atom::ThumbarHost::ThumbarButton* out) {
+                     atom::NativeWindow::ThumbarButton* out) {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
@@ -40,7 +35,6 @@ struct Converter<atom::ThumbarHost::ThumbarButton> {
     return dict.Get("icon", &(out->icon));
   }
 };
-#endif
 
 }  // namespace mate
 
@@ -437,12 +431,10 @@ void Window::SetOverlayIcon(const gfx::Image& overlay,
   window_->SetOverlayIcon(overlay, description);
 }
 
-#if defined(OS_WIN)
 void Window::SetThumbarButtons(
-    const std::vector<ThumbarHost::ThumbarButton>& buttons) {
+    const std::vector<NativeWindow::ThumbarButton>& buttons) {
   window_->SetThumbarButtons(buttons);
 }
-#endif
 
 void Window::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   mate::Handle<Menu> menu;
@@ -569,9 +561,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("capturePage", &Window::CapturePage)
       .SetMethod("setProgressBar", &Window::SetProgressBar)
       .SetMethod("setOverlayIcon", &Window::SetOverlayIcon)
-#if defined(OS_WIN)
       .SetMethod("setThumbarButtons", &Window::SetThumbarButtons)
-#endif
       .SetMethod("setMenu", &Window::SetMenu)
       .SetMethod("setAutoHideMenuBar", &Window::SetAutoHideMenuBar)
       .SetMethod("isMenuBarAutoHide", &Window::IsMenuBarAutoHide)

@@ -82,10 +82,8 @@ class NativeWindowViews : public NativeWindow,
   bool IsMenuBarVisible() override;
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
-#if defined(OS_WIN)
   bool SetThumbarButtons(
-      const std::vector<ThumbarHost::ThumbarButton>& buttons) override;
-#endif
+      const std::vector<NativeWindow::ThumbarButton>& buttons) override;
 
   gfx::AcceleratedWidget GetAcceleratedWidget();
 

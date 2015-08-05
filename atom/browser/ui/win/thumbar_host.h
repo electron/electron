@@ -8,35 +8,24 @@
 #include <windows.h>
 
 #include <map>
-#include <string>
 #include <vector>
 
-#include "base/callback.h"
-#include "ui/gfx/image/image.h"
+#include "atom/browser/native_window.h"
 
 namespace atom {
 
 class ThumbarHost {
  public:
-  using ThumbarButtonClickedCallback = base::Closure;
-
-  struct ThumbarButton {
-    std::string tooltip;
-    gfx::Image icon;
-    std::vector<std::string> flags;
-    ThumbarButtonClickedCallback clicked_callback;
-  };
-
   explicit ThumbarHost(HWND window);
   ~ThumbarHost();
 
   bool SetThumbarButtons(
-      const std::vector<ThumbarHost::ThumbarButton>& buttons);
+      const std::vector<NativeWindow::ThumbarButton>& buttons);
   bool HandleThumbarButtonEvent(int button_id);
 
  private:
   using ThumbarButtonClickedCallbackMap = std::map<
-      int, ThumbarButtonClickedCallback>;
+      int, NativeWindow::ThumbarButtonClickedCallback>;
   ThumbarButtonClickedCallbackMap thumbar_button_clicked_callback_map_;
 
   bool is_initialized_;
