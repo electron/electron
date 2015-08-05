@@ -45,8 +45,8 @@
 #include "ui/gfx/x/x11_types.h"
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
-#include "atom/browser/atom_desktop_window_tree_host_win.h"
 #include "atom/browser/ui/views/win_frame_view.h"
+#include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
 #include "base/win/scoped_comptr.h"
 #include "base/win/windows_version.h"
 #include "ui/base/win/shell.h"
