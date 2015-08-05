@@ -23,6 +23,8 @@
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
 
+class SkRegion;
+
 namespace base {
 class CommandLine;
 }
@@ -203,11 +205,11 @@ class NativeWindow : public content::WebContentsObserver,
   void NotifyWindowLeaveFullScreen();
   void NotifyWindowEnterHtmlFullScreen();
   void NotifyWindowLeaveHtmlFullScreen();
+  void NotifyWindowExecuteWindowsCommand(const std::string& command);
 
   void AddObserver(NativeWindowObserver* obs) {
     observers_.AddObserver(obs);
   }
-
   void RemoveObserver(NativeWindowObserver* obs) {
     observers_.RemoveObserver(obs);
   }
@@ -217,6 +219,10 @@ class NativeWindow : public content::WebContentsObserver,
   }
 
   bool has_frame() const { return has_frame_; }
+  bool transparent() const { return transparent_; }
+  SkRegion* draggable_region() const { return draggable_region_.get(); }
+  bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
+  gfx::ImageSkia icon() const { return icon_; }
 
   void set_has_dialog_attached(bool has_dialog_attached) {
     has_dialog_attached_ = has_dialog_attached;
@@ -225,10 +231,6 @@ class NativeWindow : public content::WebContentsObserver,
  protected:
   NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,
                const mate::Dictionary& options);
-
-  // Called when the window needs to update its draggable region.
-  virtual void UpdateDraggableRegions(
-      const std::vector<DraggableRegion>& regions) = 0;
 
   // brightray::InspectableWebContentsViewDelegate:
   void DevToolsFocused() override;
@@ -241,22 +243,11 @@ class NativeWindow : public content::WebContentsObserver,
   void TitleWasSet(content::NavigationEntry* entry, bool explicit_set) override;
   bool OnMessageReceived(const IPC::Message& message) override;
 
-  // Whether window has standard frame.
-  bool has_frame_;
-
-  // Whether window is transparent.
-  bool transparent_;
-
-  // Whether window can be resized larger than screen.
-  bool enable_larger_than_screen_;
-
-  // Window icon.
-  gfx::ImageSkia icon_;
-
-  // Observers of this window.
-  ObserverList<NativeWindowObserver> observers_;
-
  private:
+  // Called when the window needs to update its draggable region.
+  void UpdateDraggableRegions(
+      const std::vector<DraggableRegion>& regions);
+
   // Schedule a notification unresponsive event.
   void ScheduleUnresponsiveEvent(int ms);
 
@@ -267,6 +258,22 @@ class NativeWindow : public content::WebContentsObserver,
   void OnCapturePageDone(const CapturePageCallback& callback,
                          const SkBitmap& bitmap,
                          content::ReadbackResponse response);
+
+  // Whether window has standard frame.
+  bool has_frame_;
+
+  // Whether window is transparent.
+  bool transparent_;
+
+  // For custom drag, the whole window is non-draggable and the draggable region
+  // has to been explicitly provided.
+  scoped_ptr<SkRegion> draggable_region_;  // used in custom drag.
+
+  // Whether window can be resized larger than screen.
+  bool enable_larger_than_screen_;
+
+  // Window icon.
+  gfx::ImageSkia icon_;
 
   // The windows has been closed.
   bool is_closed_;
@@ -297,6 +304,9 @@ class NativeWindow : public content::WebContentsObserver,
 
   // The page this window is viewing.
   brightray::InspectableWebContents* inspectable_web_contents_;
+
+  // Observers of this window.
+  ObserverList<NativeWindowObserver> observers_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_;
 

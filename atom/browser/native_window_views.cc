@@ -20,7 +20,6 @@
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "native_mate/dictionary.h"
-#include "ui/aura/window.h"
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/hit_test.h"
 #include "ui/gfx/image/image.h"
@@ -39,13 +38,8 @@
 #include "atom/browser/ui/views/native_frame_view.h"
 #include "atom/browser/ui/x/window_state_watcher.h"
 #include "atom/browser/ui/x/x_window_utils.h"
-#include "base/environment.h"
-#include "base/nix/xdg_util.h"
 #include "base/strings/string_util.h"
 #include "chrome/browser/ui/libgtk2ui/unity_service.h"
-#include "dbus/bus.h"
-#include "dbus/object_proxy.h"
-#include "dbus/message.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/x11_types.h"
 #include "ui/views/window/native_frame_view.h"
@@ -68,42 +62,6 @@ namespace {
 const int kMenuBarHeight = 20;
 #else
 const int kMenuBarHeight = 25;
-#endif
-
-#if defined(USE_X11)
-// Returns true if the bus name "com.canonical.AppMenu.Registrar" is available.
-bool ShouldUseGlobalMenuBar() {
-  dbus::Bus::Options options;
-  scoped_refptr<dbus::Bus> bus(new dbus::Bus(options));
-
-  dbus::ObjectProxy* object_proxy =
-      bus->GetObjectProxy(DBUS_SERVICE_DBUS, dbus::ObjectPath(DBUS_PATH_DBUS));
-  dbus::MethodCall method_call(DBUS_INTERFACE_DBUS, "ListNames");
-  scoped_ptr<dbus::Response> response(object_proxy->CallMethodAndBlock(
-      &method_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT));
-  if (!response) {
-    bus->ShutdownAndBlock();
-    return false;
-  }
-
-  dbus::MessageReader reader(response.get());
-  dbus::MessageReader array_reader(NULL);
-  if (!reader.PopArray(&array_reader)) {
-    bus->ShutdownAndBlock();
-    return false;
-  }
-  while (array_reader.HasMoreData()) {
-    std::string name;
-    if (array_reader.PopString(&name) &&
-        name == "com.canonical.AppMenu.Registrar") {
-      bus->ShutdownAndBlock();
-      return true;
-    }
-  }
-
-  bus->ShutdownAndBlock();
-  return false;
-}
 #endif
 
 bool IsAltKey(const content::NativeWebKeyboardEvent& event) {
@@ -232,7 +190,7 @@ NativeWindowViews::NativeWindowViews(
   options.Get(switches::kResizable, &resizable_);
 #endif
 
-  if (enable_larger_than_screen_)
+  if (enable_larger_than_screen())
     // We need to set a default maximum window size here otherwise Windows
     // will not allow us to resize the window larger than scree.
     // Setting directly to INT_MAX somehow doesn't work, so we just devide
@@ -252,9 +210,9 @@ NativeWindowViews::NativeWindowViews(
   params.bounds = bounds;
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
-  params.remove_standard_frame = !has_frame_;
+  params.remove_standard_frame = !has_frame();
 
-  if (transparent_)
+  if (transparent())
     params.opacity = views::Widget::InitParams::TRANSLUCENT_WINDOW;
 
 #if defined(USE_X11)
@@ -312,24 +270,24 @@ NativeWindowViews::NativeWindowViews(
   set_background(views::Background::CreateStandardPanelBackground());
   AddChildView(web_view_);
 
-  if (has_frame_ &&
+  if (has_frame() &&
       options.Get(switches::kUseContentSize, &use_content_size_) &&
       use_content_size_)
     bounds = ContentBoundsToWindowBounds(bounds);
 
 #if defined(OS_WIN)
-  if (!has_frame_) {
+  if (!has_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
     DWORD frame_style = WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX |
                         WS_CAPTION;
     // We should not show a frame for transparent window.
-    if (transparent_)
+    if (transparent())
       frame_style &= ~(WS_THICKFRAME | WS_CAPTION);
     ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
   }
 
-  if (transparent_) {
+  if (transparent()) {
     // Transparent window on Windows has to have WS_EX_COMPOSITED style.
     LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
     ex_style |= WS_EX_COMPOSITED;
@@ -339,14 +297,14 @@ NativeWindowViews::NativeWindowViews(
 
   // TODO(zcbenz): This was used to force using native frame on Windows 2003, we
   // should check whether setting it in InitParams can work.
-  if (has_frame_) {
+  if (has_frame()) {
     window_->set_frame_type(views::Widget::FrameType::FRAME_TYPE_FORCE_NATIVE);
     window_->FrameTypeChanged();
   }
 
   // The given window is most likely not rectangular since it uses
   // transparency and has no standard frame, don't show a shadow for it.
-  if (transparent_ && !has_frame_)
+  if (transparent() && !has_frame())
     wm::SetShadowType(GetNativeWindow(), wm::SHADOW_TYPE_NONE);
 
   window_->UpdateWindowIcon();
@@ -469,7 +427,7 @@ gfx::Rect NativeWindowViews::GetBounds() {
 }
 
 void NativeWindowViews::SetContentSize(const gfx::Size& size) {
-  if (!has_frame_) {
+  if (!has_frame()) {
     NativeWindow::SetSize(size);
     return;
   }
@@ -480,7 +438,7 @@ void NativeWindowViews::SetContentSize(const gfx::Size& size) {
 }
 
 gfx::Size NativeWindowViews::GetContentSize() {
-  if (!has_frame_)
+  if (!has_frame())
     return GetSize();
 
   gfx::Size content_size =
@@ -628,7 +586,7 @@ void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
 #endif
 
   // Do not show menu bar in frameless window.
-  if (!has_frame_)
+  if (!has_frame())
     return;
 
   if (!menu_bar_) {
@@ -753,29 +711,6 @@ gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() {
   return GetNativeWindow()->GetHost()->GetAcceleratedWidget();
 }
 
-void NativeWindowViews::UpdateDraggableRegions(
-    const std::vector<DraggableRegion>& regions) {
-  if (has_frame_)
-    return;
-
-  SkRegion* draggable_region = new SkRegion;
-
-  // By default, the whole window is non-draggable. We need to explicitly
-  // include those draggable regions.
-  for (std::vector<DraggableRegion>::const_iterator iter = regions.begin();
-       iter != regions.end(); ++iter) {
-    const DraggableRegion& region = *iter;
-    draggable_region->op(
-        region.bounds.x(),
-        region.bounds.y(),
-        region.bounds.right(),
-        region.bounds.bottom(),
-        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
-  }
-
-  draggable_region_.reset(draggable_region);
-}
-
 void NativeWindowViews::OnWidgetActivationChanged(
     views::Widget* widget, bool active) {
   if (widget != window_.get())
@@ -835,7 +770,7 @@ bool NativeWindowViews::ShouldHandleSystemCommands() const {
 }
 
 gfx::ImageSkia NativeWindowViews::GetWindowAppIcon() {
-  return icon_;
+  return icon();
 }
 
 gfx::ImageSkia NativeWindowViews::GetWindowIcon() {
@@ -858,12 +793,12 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
     gfx::NativeView child,
     const gfx::Point& location) {
   // App window should claim mouse events that fall within the draggable region.
-  if (draggable_region_ &&
-      draggable_region_->contains(location.x(), location.y()))
+  if (draggable_region() &&
+      draggable_region()->contains(location.x(), location.y()))
     return false;
 
   // And the events on border for dragging resizable frameless window.
-  if (!has_frame_ && CanResize()) {
+  if (!has_frame() && CanResize()) {
     FramelessView* frame = static_cast<FramelessView*>(
         window_->non_client_view()->frame_view());
     return frame->ResizingBorderHitTest(location) == HTNOWHERE;
@@ -883,7 +818,7 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
   frame_view->Init(this, widget);
   return frame_view;
 #else
-  if (has_frame_) {
+  if (has_frame()) {
     return new NativeFrameView(this, widget);
   } else {
     FramelessView* frame_view = new FramelessView;
@@ -915,9 +850,7 @@ bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
     NotifyWindowMaximize();
   } else {
     std::string command = AppCommandToString(command_id);
-    FOR_EACH_OBSERVER(NativeWindowObserver,
-                      observers_,
-                      OnExecuteWindowsCommand(command));
+    NotifyWindowExecuteWindowsCommand(command);
   }
   return false;
 }
