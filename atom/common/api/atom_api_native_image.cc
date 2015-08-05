@@ -78,7 +78,7 @@ bool AddImageSkiaRep(gfx::ImageSkia* image,
   if (!decoded)
     return false;
 
-  image->AddRepresentation(gfx::ImageSkiaRep(*decoded.release(), scale_factor));
+  image->AddRepresentation(gfx::ImageSkiaRep(*decoded, scale_factor));
   return true;
 }
 
