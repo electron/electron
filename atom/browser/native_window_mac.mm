@@ -20,7 +20,26 @@
 #include "content/public/browser/render_widget_host_view.h"
 #include "native_mate/dictionary.h"
 
-static const CGFloat kAtomWindowCornerRadius = 4.0;
+namespace {
+
+// The radius of rounded corner.
+const CGFloat kAtomWindowCornerRadius = 4.0;
+
+// Prevents window from resizing during the scope.
+class ScopedDisableResize {
+ public:
+  ScopedDisableResize() { disable_resize_ = true; }
+  ~ScopedDisableResize() { disable_resize_ = false; }
+
+  static bool IsResizeDisabled() { return disable_resize_; }
+
+ private:
+  static bool disable_resize_;
+};
+
+bool ScopedDisableResize::disable_resize_ = false;
+
+}  // namespace
 
 @interface NSView (PrivateMethods)
 - (CGFloat)roundedCornerRadius;
@@ -214,8 +233,12 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   enable_larger_than_screen_ = enable;
 }
 
-// Enable the window to be larger than screen.
 - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
+  // Resizing is disabled.
+  if (ScopedDisableResize::IsResizeDisabled())
+    return [self frame];
+
+  // Enable the window to be larger than screen.
   if (enable_larger_than_screen_)
     return frameRect;
   else
@@ -561,6 +584,9 @@ gfx::Size NativeWindowMac::GetMaximumSize() {
 }
 
 void NativeWindowMac::SetResizable(bool resizable) {
+  // Change styleMask for frameless causes the window to change size, so we have
+  // to explicitly disables that.
+  ScopedDisableResize disable_resize;
   if (resizable) {
     [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:YES];
     [window_ setStyleMask:[window_ styleMask] | NSResizableWindowMask];
