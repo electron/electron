@@ -68,6 +68,25 @@ const char* kWebRuntimeFeatures[] = {
   switches::kPageVisibility,
 };
 
+// Convert draggable regions in raw format to SkRegion format. Caller is
+// responsible for deleting the returned SkRegion instance.
+SkRegion* DraggableRegionsToSkRegion(
+    const std::vector<DraggableRegion>& regions) {
+  SkRegion* sk_region = new SkRegion;
+  for (std::vector<DraggableRegion>::const_iterator iter = regions.begin();
+       iter != regions.end();
+       ++iter) {
+    const DraggableRegion& region = *iter;
+    sk_region->op(
+        region.bounds.x(),
+        region.bounds.y(),
+        region.bounds.right(),
+        region.bounds.bottom(),
+        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
+  }
+  return sk_region;
+}
+
 }  // namespace
 
 NativeWindow::NativeWindow(
@@ -557,6 +576,15 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   IPC_END_MESSAGE_MAP()
 
   return handled;
+}
+
+void NativeWindow::UpdateDraggableRegions(
+    const std::vector<DraggableRegion>& regions) {
+  // Draggable region is not supported for non-frameless window.
+  if (has_frame_)
+    return;
+
+  draggable_region_.reset(DraggableRegionsToSkRegion(regions));
 }
 
 void NativeWindow::ScheduleUnresponsiveEvent(int ms) {

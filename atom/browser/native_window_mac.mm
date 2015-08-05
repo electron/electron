@@ -318,29 +318,6 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 
 namespace atom {
 
-namespace {
-
-// Convert draggable regions in raw format to SkRegion format. Caller is
-// responsible for deleting the returned SkRegion instance.
-SkRegion* DraggableRegionsToSkRegion(
-    const std::vector<DraggableRegion>& regions) {
-  SkRegion* sk_region = new SkRegion;
-  for (std::vector<DraggableRegion>::const_iterator iter = regions.begin();
-       iter != regions.end();
-       ++iter) {
-    const DraggableRegion& region = *iter;
-    sk_region->op(
-        region.bounds.x(),
-        region.bounds.y(),
-        region.bounds.right(),
-        region.bounds.bottom(),
-        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
-  }
-  return sk_region;
-}
-
-}  // namespace
-
 NativeWindowMac::NativeWindowMac(
     brightray::InspectableWebContents* web_contents,
     const mate::Dictionary& options)
@@ -747,7 +724,7 @@ bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
 }
 
 bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {
-  if (!draggable_region_)
+  if (!draggable_region())
     return false;
   if (!web_contents())
     return false;
@@ -756,7 +733,7 @@ bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {
   // |draggable_region_| is stored in local platform-indepdent coordiate system
   // while |point| is in local Cocoa coordinate system. Do the conversion
   // to match these two.
-  return draggable_region_->contains(point.x, webViewHeight - point.y);
+  return draggable_region()->contains(point.x, webViewHeight - point.y);
 }
 
 void NativeWindowMac::HandleMouseEvent(NSEvent* event) {
@@ -774,15 +751,6 @@ void NativeWindowMac::HandleMouseEvent(NSEvent* event) {
         current_mouse_location.x + last_mouse_offset_.x,
         current_mouse_location.y + last_mouse_offset_.y)];
   }
-}
-
-void NativeWindowMac::UpdateDraggableRegions(
-    const std::vector<DraggableRegion>& regions) {
-  // Draggable region is not supported for non-frameless window.
-  if (has_frame_)
-    return;
-
-  draggable_region_.reset(DraggableRegionsToSkRegion(regions));
 }
 
 void NativeWindowMac::HandleKeyboardEvent(

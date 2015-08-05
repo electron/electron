@@ -23,6 +23,8 @@
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
 
+class SkRegion;
+
 namespace base {
 class CommandLine;
 }
@@ -217,6 +219,7 @@ class NativeWindow : public content::WebContentsObserver,
   }
 
   bool has_frame() const { return has_frame_; }
+  SkRegion* draggable_region() const { return draggable_region_.get(); }
 
   void set_has_dialog_attached(bool has_dialog_attached) {
     has_dialog_attached_ = has_dialog_attached;
@@ -225,10 +228,6 @@ class NativeWindow : public content::WebContentsObserver,
  protected:
   NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,
                const mate::Dictionary& options);
-
-  // Called when the window needs to update its draggable region.
-  virtual void UpdateDraggableRegions(
-      const std::vector<DraggableRegion>& regions) = 0;
 
   // brightray::InspectableWebContentsViewDelegate:
   void DevToolsFocused() override;
@@ -257,6 +256,10 @@ class NativeWindow : public content::WebContentsObserver,
   ObserverList<NativeWindowObserver> observers_;
 
  private:
+  // Called when the window needs to update its draggable region.
+  void UpdateDraggableRegions(
+      const std::vector<DraggableRegion>& regions);
+
   // Schedule a notification unresponsive event.
   void ScheduleUnresponsiveEvent(int ms);
 
@@ -297,6 +300,10 @@ class NativeWindow : public content::WebContentsObserver,
 
   // The page this window is viewing.
   brightray::InspectableWebContents* inspectable_web_contents_;
+
+  // For custom drag, the whole window is non-draggable and the draggable region
+  // has to been explicitly provided.
+  scoped_ptr<SkRegion> draggable_region_;  // used in custom drag.
 
   base::WeakPtrFactory<NativeWindow> weak_factory_;
 

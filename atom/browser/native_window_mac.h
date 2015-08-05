@@ -11,13 +11,11 @@
 #include <vector>
 
 #include "base/mac/scoped_nsobject.h"
-#include "base/memory/scoped_ptr.h"
 #include "atom/browser/native_window.h"
 
 @class AtomNSWindow;
 @class AtomNSWindowDelegate;
 @class FullSizeContentView;
-class SkRegion;
 
 namespace atom {
 
@@ -88,9 +86,6 @@ class NativeWindowMac : public NativeWindow {
   void ClipWebView();
 
  protected:
-  void UpdateDraggableRegions(
-      const std::vector<DraggableRegion>& regions) override;
-
   // NativeWindow:
   void HandleKeyboardEvent(
       content::WebContents*,
@@ -116,10 +111,6 @@ class NativeWindowMac : public NativeWindow {
 
   // The presentation options before entering kiosk mode.
   NSApplicationPresentationOptions kiosk_options_;
-
-  // For custom drag, the whole window is non-draggable and the draggable region
-  // has to been explicitly provided.
-  scoped_ptr<SkRegion> draggable_region_;  // used in custom drag.
 
   // Mouse location since the last mouse event, in screen coordinates. This is
   // used in custom drag to compute the window movement.

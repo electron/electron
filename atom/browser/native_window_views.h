@@ -82,14 +82,9 @@ class NativeWindowViews : public NativeWindow,
 
   gfx::AcceleratedWidget GetAcceleratedWidget();
 
-  SkRegion* draggable_region() const { return draggable_region_.get(); }
   views::Widget* widget() const { return window_.get(); }
 
  private:
-  // NativeWindow:
-  void UpdateDraggableRegions(
-      const std::vector<DraggableRegion>& regions) override;
-
   // views::WidgetObserver:
   void OnWidgetActivationChanged(
       views::Widget* widget, bool active) override;
@@ -176,8 +171,6 @@ class NativeWindowViews : public NativeWindow,
   gfx::Size minimum_size_;
   gfx::Size maximum_size_;
   gfx::Size widget_size_;
-
-  scoped_ptr<SkRegion> draggable_region_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowViews);
 };
