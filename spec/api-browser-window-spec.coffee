@@ -129,6 +129,14 @@ describe 'browser-window module', ->
     it 'returns the window with id', ->
       assert.equal w.id, BrowserWindow.fromId(w.id).id
 
+  describe 'BrowserWindow.setResizable(resizable)', ->
+    it 'does not change window size for frameless window', ->
+      w.destroy()
+      w = new BrowserWindow(show: true, frame: false)
+      s = w.getSize()
+      w.setResizable not w.isResizable()
+      assert.deepEqual s, w.getSize()
+
   describe '"use-content-size" option', ->
     it 'make window created with content size when used', ->
       w.destroy()
