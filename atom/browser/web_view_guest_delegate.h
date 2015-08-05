@@ -59,6 +59,9 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
  protected:
   // content::WebContentsObserver:
   void RenderViewReady() override;
+  void DidCommitProvisionalLoadForFrame(
+      content::RenderFrameHost* render_frame_host,
+      const GURL& url, ui::PageTransition transition_type) override;
 
   // content::BrowserPluginGuestDelegate:
   void DidAttach(int guest_proxy_routing_id) final;

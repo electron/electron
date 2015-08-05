@@ -4,6 +4,7 @@ webFrame = require 'web-frame'
 requestId = 0
 
 WEB_VIEW_EVENTS =
+  'load-commit': ['url', 'isMainFrame']
   'did-finish-load': []
   'did-fail-load': ['errorCode', 'errorDescription']
   'did-frame-finish-load': ['isMainFrame']
@@ -32,6 +33,7 @@ dispatchEvent = (webView, event, args...) ->
   for f, i in WEB_VIEW_EVENTS[event]
     domEvent[f] = args[i]
   webView.dispatchEvent domEvent
+  webView.onLoadCommit domEvent if event == 'load-commit'
 
 module.exports =
   registerEvents: (webView, viewInstanceId) ->
