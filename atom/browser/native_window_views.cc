@@ -43,9 +43,6 @@
 #include "base/nix/xdg_util.h"
 #include "base/strings/string_util.h"
 #include "chrome/browser/ui/libgtk2ui/unity_service.h"
-#include "dbus/bus.h"
-#include "dbus/object_proxy.h"
-#include "dbus/message.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/x11_types.h"
 #include "ui/views/window/native_frame_view.h"
@@ -68,42 +65,6 @@ namespace {
 const int kMenuBarHeight = 20;
 #else
 const int kMenuBarHeight = 25;
-#endif
-
-#if defined(USE_X11)
-// Returns true if the bus name "com.canonical.AppMenu.Registrar" is available.
-bool ShouldUseGlobalMenuBar() {
-  dbus::Bus::Options options;
-  scoped_refptr<dbus::Bus> bus(new dbus::Bus(options));
-
-  dbus::ObjectProxy* object_proxy =
-      bus->GetObjectProxy(DBUS_SERVICE_DBUS, dbus::ObjectPath(DBUS_PATH_DBUS));
-  dbus::MethodCall method_call(DBUS_INTERFACE_DBUS, "ListNames");
-  scoped_ptr<dbus::Response> response(object_proxy->CallMethodAndBlock(
-      &method_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT));
-  if (!response) {
-    bus->ShutdownAndBlock();
-    return false;
-  }
-
-  dbus::MessageReader reader(response.get());
-  dbus::MessageReader array_reader(NULL);
-  if (!reader.PopArray(&array_reader)) {
-    bus->ShutdownAndBlock();
-    return false;
-  }
-  while (array_reader.HasMoreData()) {
-    std::string name;
-    if (array_reader.PopString(&name) &&
-        name == "com.canonical.AppMenu.Registrar") {
-      bus->ShutdownAndBlock();
-      return true;
-    }
-  }
-
-  bus->ShutdownAndBlock();
-  return false;
-}
 #endif
 
 bool IsAltKey(const content::NativeWebKeyboardEvent& event) {
