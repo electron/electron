@@ -18,7 +18,7 @@ namespace atom {
 
 class ThumbarHost {
  public:
-  using ThumbarButtonClickedCallback = base::Callback<void(void)>;
+  using ThumbarButtonClickedCallback = base::Closure;
 
   struct ThumbarButton {
     std::string tooltip;

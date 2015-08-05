@@ -3,6 +3,9 @@
 // found in the LICENSE file.
 
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
+
+#include <shobjidl.h>
+
 #include "atom/browser/ui/win/thumbar_host.h"
 
 namespace atom {
@@ -32,8 +35,11 @@ bool AtomDesktopWindowTreeHostWin::PreHandleMSG(UINT message,
                                                 LRESULT* result) {
   switch (message) {
     case WM_COMMAND: {
+       // Handle thumbar button click message.
        int id = LOWORD(w_param);
-       if (thumbar_host_ && thumbar_host_->HandleThumbarButtonEvent(id))
+       int thbn_message = HIWORD(w_param);
+       if (thbn_message == THBN_CLICKED && thumbar_host_ &&
+           thumbar_host_->HandleThumbarButtonEvent(id))
          return true;
     }
   }

@@ -18,8 +18,13 @@ namespace atom {
 
 namespace {
 
+// From MSDN: https://msdn.microsoft.com/en-us/library/windows/desktop/
+// dd378460(v=vs.85).aspx#thumbbars
 // The thumbnail toolbar has a maximum of seven buttons due to the limited room.
 const int kMaxButtonsCount = 7;
+
+// The base id of Thumbar button.
+const int kButtonIdBase = 40001;
 
 bool GetThumbarButtonFlags(const std::vector<std::string>& flags,
                            THUMBBUTTONFLAGS* out) {
@@ -60,7 +65,18 @@ ThumbarHost::~ThumbarHost() {
 
 bool ThumbarHost::SetThumbarButtons(
     const std::vector<ThumbarHost::ThumbarButton>& buttons) {
-  THUMBBUTTON thumb_buttons[kMaxButtonsCount];
+  if (buttons.size() > kMaxButtonsCount)
+    return false;
+
+  base::win::ScopedComPtr<ITaskbarList3> taskbar;
+  if (FAILED(taskbar.CreateInstance(CLSID_TaskbarList,
+                                    nullptr,
+                                    CLSCTX_INPROC_SERVER)) ||
+      FAILED(taskbar->HrInit())) {
+    return false;
+  }
+
+  THUMBBUTTON thumb_buttons[kMaxButtonsCount] = {};
   thumbar_button_clicked_callback_map_.clear();
 
   // Once a toolbar with a set of buttons is added to thumbnail, there is no way
@@ -70,7 +86,8 @@ bool ThumbarHost::SetThumbarButtons(
   //
   // Initialize all thumb buttons with HIDDEN state.
   for (int i = 0; i < kMaxButtonsCount; ++i) {
-    thumb_buttons[i].iId = i;
+    thumb_buttons[i].iId = kButtonIdBase + i;
+    thumb_buttons[i].dwMask = THB_FLAGS;  // dwFlags is valid.
     thumb_buttons[i].dwFlags = THBF_HIDDEN;
   }
 
@@ -87,25 +104,25 @@ bool ThumbarHost::SetThumbarButtons(
                base::UTF8ToUTF16(buttons[i].tooltip).c_str());
     }
 
-    thumbar_button_clicked_callback_map_[i] =
+    thumbar_button_clicked_callback_map_[thumb_buttons[i].iId] =
         buttons[i].clicked_callback;
   }
 
-  base::win::ScopedComPtr<ITaskbarList3> taskbar;
-  if (FAILED(taskbar.CreateInstance(CLSID_TaskbarList,
-                                    nullptr,
-                                    CLSCTX_INPROC_SERVER)) ||
-      FAILED(taskbar->HrInit())) {
-    return false;
-  }
+  bool is_success = false;
   if (!is_initialized_) {
     is_initialized_ = true;
-    return taskbar->ThumbBarAddButtons(
+    is_success = taskbar->ThumbBarAddButtons(
+        window_, kMaxButtonsCount, thumb_buttons) == S_OK;
+  } else {
+    is_success = taskbar->ThumbBarUpdateButtons(
         window_, kMaxButtonsCount, thumb_buttons) == S_OK;
   }
 
-  return taskbar->ThumbBarUpdateButtons(
-      window_, kMaxButtonsCount, thumb_buttons) == S_OK;
+  // Release thumb_buttons' icons, the taskbar makes its own copy.
+  for (size_t i = 0; i < buttons.size(); ++i) {
+    ::DestroyIcon(thumb_buttons[i].hIcon);
+  }
+  return is_success;
 }
 
 bool ThumbarHost::HandleThumbarButtonEvent(int button_id) {
