@@ -522,6 +522,12 @@ void NativeWindow::NotifyWindowLeaveHtmlFullScreen() {
                     OnWindowLeaveHtmlFullScreen());
 }
 
+void NativeWindow::NotifyWindowExecuteWindowsCommand(
+    const std::string& command) {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnExecuteWindowsCommand(command));
+}
+
 void NativeWindow::DevToolsFocused() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsFocus());
 }

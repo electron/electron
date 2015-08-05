@@ -232,7 +232,7 @@ NativeWindowViews::NativeWindowViews(
   options.Get(switches::kResizable, &resizable_);
 #endif
 
-  if (enable_larger_than_screen_)
+  if (enable_larger_than_screen())
     // We need to set a default maximum window size here otherwise Windows
     // will not allow us to resize the window larger than scree.
     // Setting directly to INT_MAX somehow doesn't work, so we just devide
@@ -252,9 +252,9 @@ NativeWindowViews::NativeWindowViews(
   params.bounds = bounds;
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
-  params.remove_standard_frame = !has_frame_;
+  params.remove_standard_frame = !has_frame();
 
-  if (transparent_)
+  if (transparent())
     params.opacity = views::Widget::InitParams::TRANSLUCENT_WINDOW;
 
 #if defined(USE_X11)
@@ -312,24 +312,24 @@ NativeWindowViews::NativeWindowViews(
   set_background(views::Background::CreateStandardPanelBackground());
   AddChildView(web_view_);
 
-  if (has_frame_ &&
+  if (has_frame() &&
       options.Get(switches::kUseContentSize, &use_content_size_) &&
       use_content_size_)
     bounds = ContentBoundsToWindowBounds(bounds);
 
 #if defined(OS_WIN)
-  if (!has_frame_) {
+  if (!has_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
     DWORD frame_style = WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX |
                         WS_CAPTION;
     // We should not show a frame for transparent window.
-    if (transparent_)
+    if (transparent())
       frame_style &= ~(WS_THICKFRAME | WS_CAPTION);
     ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
   }
 
-  if (transparent_) {
+  if (transparent()) {
     // Transparent window on Windows has to have WS_EX_COMPOSITED style.
     LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
     ex_style |= WS_EX_COMPOSITED;
@@ -339,14 +339,14 @@ NativeWindowViews::NativeWindowViews(
 
   // TODO(zcbenz): This was used to force using native frame on Windows 2003, we
   // should check whether setting it in InitParams can work.
-  if (has_frame_) {
+  if (has_frame()) {
     window_->set_frame_type(views::Widget::FrameType::FRAME_TYPE_FORCE_NATIVE);
     window_->FrameTypeChanged();
   }
 
   // The given window is most likely not rectangular since it uses
   // transparency and has no standard frame, don't show a shadow for it.
-  if (transparent_ && !has_frame_)
+  if (transparent() && !has_frame())
     wm::SetShadowType(GetNativeWindow(), wm::SHADOW_TYPE_NONE);
 
   window_->UpdateWindowIcon();
@@ -469,7 +469,7 @@ gfx::Rect NativeWindowViews::GetBounds() {
 }
 
 void NativeWindowViews::SetContentSize(const gfx::Size& size) {
-  if (!has_frame_) {
+  if (!has_frame()) {
     NativeWindow::SetSize(size);
     return;
   }
@@ -480,7 +480,7 @@ void NativeWindowViews::SetContentSize(const gfx::Size& size) {
 }
 
 gfx::Size NativeWindowViews::GetContentSize() {
-  if (!has_frame_)
+  if (!has_frame())
     return GetSize();
 
   gfx::Size content_size =
@@ -628,7 +628,7 @@ void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
 #endif
 
   // Do not show menu bar in frameless window.
-  if (!has_frame_)
+  if (!has_frame())
     return;
 
   if (!menu_bar_) {
@@ -812,7 +812,7 @@ bool NativeWindowViews::ShouldHandleSystemCommands() const {
 }
 
 gfx::ImageSkia NativeWindowViews::GetWindowAppIcon() {
-  return icon_;
+  return icon();
 }
 
 gfx::ImageSkia NativeWindowViews::GetWindowIcon() {
@@ -840,7 +840,7 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
     return false;
 
   // And the events on border for dragging resizable frameless window.
-  if (!has_frame_ && CanResize()) {
+  if (!has_frame() && CanResize()) {
     FramelessView* frame = static_cast<FramelessView*>(
         window_->non_client_view()->frame_view());
     return frame->ResizingBorderHitTest(location) == HTNOWHERE;
@@ -860,7 +860,7 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
   frame_view->Init(this, widget);
   return frame_view;
 #else
-  if (has_frame_) {
+  if (has_frame()) {
     return new NativeFrameView(this, widget);
   } else {
     FramelessView* frame_view = new FramelessView;
@@ -892,9 +892,7 @@ bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
     NotifyWindowMaximize();
   } else {
     std::string command = AppCommandToString(command_id);
-    FOR_EACH_OBSERVER(NativeWindowObserver,
-                      observers_,
-                      OnExecuteWindowsCommand(command));
+    NotifyWindowExecuteWindowsCommand(command);
   }
   return false;
 }

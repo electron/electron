@@ -340,7 +340,7 @@ NativeWindowMac::NativeWindowMac(
 
   NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask |
                          NSMiniaturizableWindowMask | NSResizableWindowMask;
-  if (!useStandardWindow || transparent_ || !has_frame_) {
+  if (!useStandardWindow || transparent() || !has_frame()) {
     styleMask |= NSTexturedBackgroundWindowMask;
   }
 
@@ -350,12 +350,12 @@ NativeWindowMac::NativeWindowMac(
                   backing:NSBackingStoreBuffered
                     defer:YES]);
   [window_ setShell:this];
-  [window_ setEnableLargerThanScreen:enable_larger_than_screen_];
+  [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
 
   window_delegate_.reset([[AtomNSWindowDelegate alloc] initWithShell:this]);
   [window_ setDelegate:window_delegate_];
 
-  if (transparent_) {
+  if (transparent()) {
     // Make window has transparent background.
     [window_ setOpaque:NO];
     [window_ setHasShadow:NO];
@@ -363,7 +363,7 @@ NativeWindowMac::NativeWindowMac(
   }
 
   // Remove non-transparent corners, see http://git.io/vfonD.
-  if (!has_frame_)
+  if (!has_frame())
     [window_ setOpaque:NO];
 
   // We will manage window's lifetime ourselves.
@@ -372,7 +372,7 @@ NativeWindowMac::NativeWindowMac(
   // On OS X the initial window size doesn't include window frame.
   bool use_content_size = false;
   options.Get(switches::kUseContentSize, &use_content_size);
-  if (!has_frame_ || !use_content_size)
+  if (!has_frame() || !use_content_size)
     SetSize(gfx::Size(width, height));
 
   // Enable the NSView to accept first mouse event.
@@ -509,7 +509,7 @@ gfx::Rect NativeWindowMac::GetBounds() {
 }
 
 void NativeWindowMac::SetContentSize(const gfx::Size& size) {
-  if (!has_frame_) {
+  if (!has_frame()) {
     SetSize(size);
     return;
   }
@@ -527,7 +527,7 @@ void NativeWindowMac::SetContentSize(const gfx::Size& size) {
 }
 
 gfx::Size NativeWindowMac::GetContentSize() {
-  if (!has_frame_)
+  if (!has_frame())
     return GetSize();
 
   NSRect bounds = [[window_ contentView] bounds];
@@ -588,7 +588,7 @@ void NativeWindowMac::Center() {
 
 void NativeWindowMac::SetTitle(const std::string& title) {
   // We don't want the title to show in transparent window.
-  if (transparent_)
+  if (transparent())
     return;
 
   [window_ setTitle:base::SysUTF8ToNSString(title)];
@@ -779,7 +779,7 @@ void NativeWindowMac::HandleKeyboardEvent(
 
 void NativeWindowMac::InstallView() {
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
-  if (has_frame_) {
+  if (has_frame()) {
     // Add layer with white background for the contents view.
     base::scoped_nsobject<CALayer> layer([[CALayer alloc] init]);
     [layer setBackgroundColor:CGColorGetConstantColor(kCGColorWhite)];
