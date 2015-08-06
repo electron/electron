@@ -110,6 +110,11 @@ class InspectableWebContentsImpl :
   void SendJsonRequest(const DispatchCallback& callback,
                        const std::string& browser_id,
                        const std::string& url) override;
+  void GetPreferences(const DispatchCallback& callback) override;
+  void SetPreference(const std::string& name,
+                     const std::string& value) override;
+  void RemovePreference(const std::string& name) override;
+  void ClearPreferences() override;
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(const std::string& message) override;
