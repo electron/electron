@@ -126,7 +126,7 @@ bool TaskbarHost::SetProgressBar(HWND window, double value) {
   else if (value < 0)
     r = taskbar_->SetProgressState(window, TBPF_NOPROGRESS);
   else
-    r= taskbar_->SetProgressValue(window, static_cast<int>(value * 100), 100);
+    r = taskbar_->SetProgressValue(window, static_cast<int>(value * 100), 100);
   return SUCCEEDED(r);
 }
 
