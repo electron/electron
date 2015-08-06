@@ -130,6 +130,17 @@ bool TaskbarHost::SetProgressBar(HWND window, double value) {
   return SUCCEEDED(r);
 }
 
+bool TaskbarHost::SetOverlayIcon(
+    HWND window, const gfx::Image& overlay, const std::string& text) {
+  if (!InitailizeTaskbar())
+    return false;
+
+  base::win::ScopedHICON icon(
+      IconUtil::CreateHICONFromSkBitmap(overlay.AsBitmap()));
+  return SUCCEEDED(
+      taskbar_->SetOverlayIcon(window, icon, base::UTF8ToUTF16(text).c_str()));
+}
+
 bool TaskbarHost::HandleThumbarButtonEvent(int button_id) {
   if (ContainsKey(callback_map_, button_id)) {
     auto callback = callback_map_[button_id];
