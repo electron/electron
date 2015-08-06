@@ -54,7 +54,7 @@ TaskbarHost::~TaskbarHost() {
 
 bool TaskbarHost::SetThumbarButtons(
     HWND window, const std::vector<ThumbarButton>& buttons) {
-  if (!InitailizeTaskbar())
+  if (buttons.size() > kMaxButtonsCount || !InitailizeTaskbar())
     return false;
 
   callback_map_.clear();
