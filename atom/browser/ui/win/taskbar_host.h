@@ -28,9 +28,12 @@ class TaskbarHost {
   TaskbarHost();
   virtual ~TaskbarHost();
 
-  // Add or update the buttons in thumbar
+  // Add or update the buttons in thumbar.
   bool SetThumbarButtons(
       HWND window, const std::vector<ThumbarButton>& buttons);
+
+  // Sets the progress state in taskbar.
+  bool SetProgressBar(HWND window, double value);
 
   // Called by the window that there is a button in thumbar clicked.
   bool HandleThumbarButtonEvent(int button_id);

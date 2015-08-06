@@ -123,6 +123,25 @@ bool TaskbarHost::SetThumbarButtons(
   return SUCCEEDED(r);
 }
 
+bool TaskbarHost::SetProgressBar(HWND window, double value) {
+  base::win::ScopedComPtr<ITaskbarList3> taskbar;
+  if (FAILED(taskbar.CreateInstance(CLSID_TaskbarList,
+                                    nullptr,
+                                    CLSCTX_INPROC_SERVER)) ||
+      FAILED(taskbar->HrInit())) {
+    return false;
+  }
+
+  HRESULT r;
+  if (value > 1.0)
+    r = taskbar->SetProgressState(window, TBPF_INDETERMINATE);
+  else if (value < 0)
+    r = taskbar->SetProgressState(window, TBPF_NOPROGRESS);
+  else
+    r= taskbar->SetProgressValue(window, static_cast<int>(value * 100), 100);
+  return SUCCEEDED(r);
+}
+
 bool TaskbarHost::HandleThumbarButtonEvent(int button_id) {
   if (ContainsKey(callback_map_, button_id)) {
     auto callback = callback_map_[button_id];

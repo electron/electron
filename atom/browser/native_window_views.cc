@@ -621,24 +621,7 @@ gfx::NativeWindow NativeWindowViews::GetNativeWindow() {
 
 void NativeWindowViews::SetProgressBar(double progress) {
 #if defined(OS_WIN)
-  if (base::win::GetVersion() < base::win::VERSION_WIN7)
-    return;
-  base::win::ScopedComPtr<ITaskbarList3> taskbar;
-  if (FAILED(taskbar.CreateInstance(CLSID_TaskbarList, NULL,
-                                    CLSCTX_INPROC_SERVER) ||
-      FAILED(taskbar->HrInit()))) {
-    return;
-  }
-  HWND frame = views::HWNDForNativeWindow(GetNativeWindow());
-  if (progress > 1.0) {
-    taskbar->SetProgressState(frame, TBPF_INDETERMINATE);
-  } else if (progress < 0) {
-    taskbar->SetProgressState(frame, TBPF_NOPROGRESS);
-  } else if (progress >= 0) {
-    taskbar->SetProgressValue(frame,
-                              static_cast<int>(progress * 100),
-                              100);
-  }
+  taskbar_host_.SetProgressBar(GetAcceleratedWidget(), progress);
 #elif defined(USE_X11)
   if (unity::IsRunning()) {
     unity::SetProgressFraction(progress);
