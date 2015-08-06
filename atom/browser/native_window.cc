@@ -277,6 +277,11 @@ bool NativeWindow::HasModalDialog() {
   return has_dialog_attached_;
 }
 
+bool NativeWindow::SetThumbarButtons(
+    const std::vector<ThumbarButton>& buttons) {
+  return false;
+}
+
 void NativeWindow::FocusOnWebView() {
   web_contents()->GetRenderViewHost()->Focus();
 }

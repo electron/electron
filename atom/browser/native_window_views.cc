@@ -45,11 +45,13 @@
 #include "ui/views/window/native_frame_view.h"
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
+#include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
 #include "base/win/scoped_comptr.h"
 #include "base/win/windows_version.h"
 #include "ui/base/win/shell.h"
 #include "ui/gfx/icon_util.h"
 #include "ui/gfx/win/dpi.h"
+#include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #include "ui/views/win/hwnd_util.h"
 #endif
 
@@ -215,6 +217,14 @@ NativeWindowViews::NativeWindowViews(
   if (transparent())
     params.opacity = views::Widget::InitParams::TRANSLUCENT_WINDOW;
 
+#if defined(OS_WIN)
+  params.native_widget =
+      new views::DesktopNativeWidgetAura(window_.get());
+  atom_desktop_window_tree_host_win_ = new AtomDesktopWindowTreeHostWin(
+      window_.get(),
+      static_cast<views::DesktopNativeWidgetAura*>(params.native_widget));
+  params.desktop_window_tree_host = atom_desktop_window_tree_host_win_;
+#endif
 #if defined(USE_X11)
   std::string name = Browser::Get()->GetName();
   // Set WM_WINDOW_ROLE.
@@ -703,6 +713,18 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
   ui::GetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", &wm_states);
   return std::find(wm_states.begin(),
                    wm_states.end(), sticky_atom) != wm_states.end();
+#endif
+  return false;
+}
+
+bool NativeWindowViews::SetThumbarButtons(
+    const std::vector<NativeWindow::ThumbarButton>& buttons) {
+#if defined(OS_WIN)
+  if (atom_desktop_window_tree_host_win_) {
+    return atom_desktop_window_tree_host_win_->SetThumbarButtons(
+        views::HWNDForNativeWindow(window_->GetNativeWindow()),
+        buttons);
+  }
 #endif
   return false;
 }

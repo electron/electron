@@ -20,6 +20,24 @@
 
 #include "atom/common/node_includes.h"
 
+namespace mate {
+
+template<>
+struct Converter<atom::NativeWindow::ThumbarButton> {
+  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+                     atom::NativeWindow::ThumbarButton* out) {
+    mate::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+    dict.Get("click", &(out->clicked_callback));
+    dict.Get("tooltip", &(out->tooltip));
+    dict.Get("flags", &out->flags);
+    return dict.Get("icon", &(out->icon));
+  }
+};
+
+}  // namespace mate
+
 namespace atom {
 
 namespace api {
@@ -413,6 +431,11 @@ void Window::SetOverlayIcon(const gfx::Image& overlay,
   window_->SetOverlayIcon(overlay, description);
 }
 
+void Window::SetThumbarButtons(
+    const std::vector<NativeWindow::ThumbarButton>& buttons) {
+  window_->SetThumbarButtons(buttons);
+}
+
 void Window::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   mate::Handle<Menu> menu;
   if (value->IsObject() &&
@@ -538,6 +561,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("capturePage", &Window::CapturePage)
       .SetMethod("setProgressBar", &Window::SetProgressBar)
       .SetMethod("setOverlayIcon", &Window::SetOverlayIcon)
+      .SetMethod("setThumbarButtons", &Window::SetThumbarButtons)
       .SetMethod("setMenu", &Window::SetMenu)
       .SetMethod("setAutoHideMenuBar", &Window::SetAutoHideMenuBar)
       .SetMethod("isMenuBarAutoHide", &Window::IsMenuBarAutoHide)
