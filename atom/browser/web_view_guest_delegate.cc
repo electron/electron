@@ -5,7 +5,9 @@
 #include "atom/browser/web_view_guest_delegate.h"
 
 #include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/common/native_mate_converters/gurl_converter.h"
 #include "content/public/browser/guest_host.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 
@@ -126,6 +128,12 @@ void WebViewGuestDelegate::RenderViewReady() {
     render_view_host_view->SetBackgroundColorToDefault();
   else
     render_view_host_view->SetBackgroundColor(SK_ColorTRANSPARENT);
+}
+
+void WebViewGuestDelegate::DidCommitProvisionalLoadForFrame(
+    content::RenderFrameHost* render_frame_host,
+    const GURL& url, ui::PageTransition transition_type) {
+  api_web_contents_->Emit("load-commit", url, !render_frame_host->GetParent());
 }
 
 void WebViewGuestDelegate::DidAttach(int guest_proxy_routing_id) {

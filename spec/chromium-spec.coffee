@@ -37,6 +37,7 @@ describe 'chromium feature', ->
   describe 'window.open', ->
     it 'returns a BrowserWindowProxy object', ->
       b = window.open 'about:blank', 'test', 'show=no'
+      assert.equal b.closed, false
       assert.equal b.constructor.name, 'BrowserWindowProxy'
       b.close()
 

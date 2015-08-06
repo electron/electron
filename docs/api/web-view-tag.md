@@ -335,6 +335,15 @@ examples.
 
 ## DOM events
 
+### load-commit
+
+* `url` String
+* `isMainFrame` Boolean
+
+Fired when a load has committed. This includes navigation within the current
+document as well as subframe document-level loads, but does not include
+asynchronous resource loads.
+
 ### did-finish-load
 
 Fired when the navigation is done, i.e. the spinner of the tab will stop

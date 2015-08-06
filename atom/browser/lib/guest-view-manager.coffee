@@ -3,6 +3,7 @@ webContents = require 'web-contents'
 webViewManager = null  # Doesn't exist in early initialization.
 
 supportedWebViewEvents = [
+  'load-commit'
   'did-finish-load'
   'did-fail-load'
   'did-frame-finish-load'
