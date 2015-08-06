@@ -58,11 +58,15 @@ enum ProcessOwner {
   OWNER_GUEST_WEB_CONTENTS,
   OWNER_NONE,  // it might be devtools though.
 };
+
 ProcessOwner GetProcessOwner(int process_id,
                              NativeWindow** window,
                              WebViewManager::WebViewInfo* info) {
-  auto web_contents = content::WebContents::FromRenderViewHost(
-      content::RenderViewHost::FromID(process_id, kDefaultRoutingID));
+  content::RenderViewHost* rvh = content::RenderViewHost::FromID(
+      process_id, kDefaultRoutingID);
+  if (!rvh)
+    return OWNER_NONE;
+  auto web_contents = content::WebContents::FromRenderViewHost(rvh);
   if (!web_contents)
     return OWNER_NONE;
 
