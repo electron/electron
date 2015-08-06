@@ -12,10 +12,12 @@
 namespace atom {
 
 AtomDesktopWindowTreeHostWin::AtomDesktopWindowTreeHostWin(
+    MessageHandlerDelegate* delegate,
     views::internal::NativeWidgetDelegate* native_widget_delegate,
     views::DesktopNativeWidgetAura* desktop_native_widget_aura)
         : views::DesktopWindowTreeHostWin(native_widget_delegate,
-                                          desktop_native_widget_aura) {
+                                          desktop_native_widget_aura),
+          delegate_(delegate) {
 }
 
 AtomDesktopWindowTreeHostWin::~AtomDesktopWindowTreeHostWin() {

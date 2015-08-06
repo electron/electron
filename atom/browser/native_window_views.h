@@ -14,6 +14,10 @@
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/views/widget/widget_observer.h"
 
+#if defined(OS_WIN)
+#include "atom/browser/ui/win/message_handler_delegate.h"
+#endif
+
 namespace views {
 class UnhandledKeyboardEventHandler;
 }
@@ -28,6 +32,9 @@ class AtomDesktopWindowTreeHostWin;
 #endif
 
 class NativeWindowViews : public NativeWindow,
+#if defined(OS_WIN)
+                          public MessageHandlerDelegate,
+#endif
                           public views::WidgetDelegateView,
                           public views::WidgetObserver {
  public:

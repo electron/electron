@@ -16,25 +16,30 @@
 
 namespace atom {
 
+class MessageHandlerDelegate;
+
 class AtomDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin {
  public:
   AtomDesktopWindowTreeHostWin(
+      MessageHandlerDelegate* delegate,
       views::internal::NativeWidgetDelegate* native_widget_delegate,
       views::DesktopNativeWidgetAura* desktop_native_widget_aura);
-  ~AtomDesktopWindowTreeHostWin();
+  ~AtomDesktopWindowTreeHostWin() override;
 
   bool SetThumbarButtons(
       HWND window,
       const std::vector<NativeWindow::ThumbarButton>& buttons);
 
  protected:
-  bool PreHandleMSG(UINT message,
-                    WPARAM w_param,
-                    LPARAM l_param,
-                    LRESULT* result) override;
+  bool PreHandleMSG(
+      UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) override;
 
  private:
+  MessageHandlerDelegate* delegate_;  // weak ref
+
   scoped_ptr<ThumbarHost> thumbar_host_;
+
+  DISALLOW_COPY_AND_ASSIGN(AtomDesktopWindowTreeHostWin);
 };
 
 }  // namespace atom
