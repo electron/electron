@@ -5,13 +5,14 @@
 #ifndef ATOM_BROWSER_UI_WIN_TASKBAR_HOST_H_
 #define ATOM_BROWSER_UI_WIN_TASKBAR_HOST_H_
 
-#include <windows.h>
+#include <shobjidl.h>
 
 #include <map>
 #include <string>
 #include <vector>
 
 #include "base/callback.h"
+#include "base/win/scoped_comptr.h"
 #include "ui/gfx/image/image.h"
 
 namespace atom {
@@ -39,8 +40,14 @@ class TaskbarHost {
   bool HandleThumbarButtonEvent(int button_id);
 
  private:
+  // Initailize the taskbar object.
+  bool InitailizeTaskbar();
+
   using CallbackMap = std::map<int, base::Closure>;
   CallbackMap callback_map_;
+
+  // The COM object of taskbar.
+  base::win::ScopedComPtr<ITaskbarList3> taskbar_;
 
   // Whether we have already added the buttons to thumbar.
   bool thumbar_buttons_added_;

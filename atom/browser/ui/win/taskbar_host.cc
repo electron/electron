@@ -4,12 +4,9 @@
 
 #include "atom/browser/ui/win/taskbar_host.h"
 
-#include <shobjidl.h>
-
 #include <string>
 
 #include "base/stl_util.h"
-#include "base/win/scoped_comptr.h"
 #include "base/win/scoped_gdi_object.h"
 #include "base/strings/utf_string_conversions.h"
 #include "third_party/skia/include/core/SkBitmap.h"
@@ -57,13 +54,8 @@ TaskbarHost::~TaskbarHost() {
 
 bool TaskbarHost::SetThumbarButtons(
     HWND window, const std::vector<ThumbarButton>& buttons) {
-  base::win::ScopedComPtr<ITaskbarList3> taskbar;
-  if (FAILED(taskbar.CreateInstance(CLSID_TaskbarList,
-                                    nullptr,
-                                    CLSCTX_INPROC_SERVER)) ||
-      FAILED(taskbar->HrInit())) {
+  if (!InitailizeTaskbar())
     return false;
-  }
 
   callback_map_.clear();
 
@@ -115,30 +107,26 @@ bool TaskbarHost::SetThumbarButtons(
   // Finally add them to taskbar.
   HRESULT r;
   if (thumbar_buttons_added_)
-    r = taskbar->ThumbBarUpdateButtons(window, kMaxButtonsCount, thumb_buttons);
+    r = taskbar_->ThumbBarUpdateButtons(window, kMaxButtonsCount,
+                                        thumb_buttons);
   else
-    r = taskbar->ThumbBarAddButtons(window, kMaxButtonsCount, thumb_buttons);
+    r = taskbar_->ThumbBarAddButtons(window, kMaxButtonsCount, thumb_buttons);
 
   thumbar_buttons_added_ = true;
   return SUCCEEDED(r);
 }
 
 bool TaskbarHost::SetProgressBar(HWND window, double value) {
-  base::win::ScopedComPtr<ITaskbarList3> taskbar;
-  if (FAILED(taskbar.CreateInstance(CLSID_TaskbarList,
-                                    nullptr,
-                                    CLSCTX_INPROC_SERVER)) ||
-      FAILED(taskbar->HrInit())) {
+  if (!InitailizeTaskbar())
     return false;
-  }
 
   HRESULT r;
   if (value > 1.0)
-    r = taskbar->SetProgressState(window, TBPF_INDETERMINATE);
+    r = taskbar_->SetProgressState(window, TBPF_INDETERMINATE);
   else if (value < 0)
-    r = taskbar->SetProgressState(window, TBPF_NOPROGRESS);
+    r = taskbar_->SetProgressState(window, TBPF_NOPROGRESS);
   else
-    r= taskbar->SetProgressValue(window, static_cast<int>(value * 100), 100);
+    r= taskbar_->SetProgressValue(window, static_cast<int>(value * 100), 100);
   return SUCCEEDED(r);
 }
 
@@ -150,6 +138,17 @@ bool TaskbarHost::HandleThumbarButtonEvent(int button_id) {
     return true;
   }
   return false;
+}
+
+bool TaskbarHost::InitailizeTaskbar() {
+  if (FAILED(taskbar_.CreateInstance(CLSID_TaskbarList,
+                                     nullptr,
+                                     CLSCTX_INPROC_SERVER)) ||
+      FAILED(taskbar_->HrInit())) {
+    return false;
+  } else {
+    return true;
+  }
 }
 
 }  // namespace atom
