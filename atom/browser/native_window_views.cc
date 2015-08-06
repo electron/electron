@@ -46,6 +46,7 @@
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
+#include "atom/browser/ui/win/thumbar_host.h"
 #include "base/win/scoped_comptr.h"
 #include "base/win/windows_version.h"
 #include "ui/base/win/shell.h"
@@ -720,13 +721,12 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
 bool NativeWindowViews::SetThumbarButtons(
     const std::vector<NativeWindow::ThumbarButton>& buttons) {
 #if defined(OS_WIN)
-  if (atom_desktop_window_tree_host_win_) {
-    return atom_desktop_window_tree_host_win_->SetThumbarButtons(
-        views::HWNDForNativeWindow(window_->GetNativeWindow()),
-        buttons);
-  }
-#endif
+  if (!thumbar_host_)
+    thumbar_host_.reset(new ThumbarHost(GetAcceleratedWidget()));
+  return thumbar_host_->SetThumbarButtons(buttons);
+#else
   return false;
+#endif
 }
 
 gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() {
@@ -887,6 +887,18 @@ void NativeWindowViews::GetDevToolsWindowWMClass(
     std::string* name, std::string* class_name) {
   *class_name = Browser::Get()->GetName();
   *name = base::StringToLowerASCII(*class_name);
+}
+#endif
+
+#if defined(OS_WIN)
+bool NativeWindowViews::PreHandleMSG(
+    UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) {
+  // Handle thumbar button click message.
+  if (message == WM_COMMAND && HIWORD(w_param) == THBN_CLICKED &&
+      thumbar_host_)
+    return thumbar_host_->HandleThumbarButtonEvent(LOWORD(w_param));
+  else
+    return false;
 }
 #endif
 

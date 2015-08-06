@@ -4,10 +4,7 @@
 
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
 
-#include <shobjidl.h>
-
-#include "atom/browser/native_window.h"
-#include "atom/browser/ui/win/thumbar_host.h"
+#include "atom/browser/ui/win/message_handler_delegate.h"
 
 namespace atom {
 
@@ -23,31 +20,9 @@ AtomDesktopWindowTreeHostWin::AtomDesktopWindowTreeHostWin(
 AtomDesktopWindowTreeHostWin::~AtomDesktopWindowTreeHostWin() {
 }
 
-bool AtomDesktopWindowTreeHostWin::SetThumbarButtons(
-    HWND window,
-    const std::vector<NativeWindow::ThumbarButton>& buttons) {
-  if (!thumbar_host_.get()) {
-    thumbar_host_.reset(new ThumbarHost(window));
-  }
-  return thumbar_host_->SetThumbarButtons(buttons);
-}
-
-bool AtomDesktopWindowTreeHostWin::PreHandleMSG(UINT message,
-                                                WPARAM w_param,
-                                                LPARAM l_param,
-                                                LRESULT* result) {
-  switch (message) {
-    case WM_COMMAND: {
-       // Handle thumbar button click message.
-       int id = LOWORD(w_param);
-       int thbn_message = HIWORD(w_param);
-       if (thbn_message == THBN_CLICKED && thumbar_host_ &&
-           thumbar_host_->HandleThumbarButtonEvent(id))
-         return true;
-    }
-  }
-
-  return false;
+bool AtomDesktopWindowTreeHostWin::PreHandleMSG(
+    UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) {
+  return delegate_->PreHandleMSG(message, w_param, l_param, result);
 }
 
 }  // namespace atom

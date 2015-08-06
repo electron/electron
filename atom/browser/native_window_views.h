@@ -27,8 +27,10 @@ namespace atom {
 class GlobalMenuBarX11;
 class MenuBar;
 class WindowStateWatcher;
+
 #if defined(OS_WIN)
 class AtomDesktopWindowTreeHostWin;
+class ThumbarHost;
 #endif
 
 class NativeWindowViews : public NativeWindow,
@@ -134,6 +136,12 @@ class NativeWindowViews : public NativeWindow,
       std::string* name, std::string* class_name) override;
 #endif
 
+#if defined(OS_WIN)
+  // MessageHandlerDelegate:
+  bool PreHandleMSG(
+      UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) override;
+#endif
+
   // NativeWindow:
   void HandleKeyboardEvent(
       content::WebContents*,
@@ -171,6 +179,8 @@ class NativeWindowViews : public NativeWindow,
   // Records window was whether restored from minimized state or maximized
   // state.
   bool is_minimized_;
+  // In charge of running thumbar related APIs.
+  scoped_ptr<ThumbarHost> thumbar_host_;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.
