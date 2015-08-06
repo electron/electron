@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/ui/win/thumbar_host.h"
+#include "atom/browser/ui/win/taskbar_host.h"
 
 #include <shobjidl.h>
 
@@ -58,14 +58,14 @@ bool GetThumbarButtonFlags(const std::vector<std::string>& flags,
 
 }  // namespace
 
-ThumbarHost::ThumbarHost(HWND window) : is_initialized_(false),
+TaskbarHost::TaskbarHost(HWND window) : is_initialized_(false),
                                         window_(window) {
 }
 
-ThumbarHost::~ThumbarHost() {
+TaskbarHost::~TaskbarHost() {
 }
 
-bool ThumbarHost::SetThumbarButtons(
+bool TaskbarHost::SetThumbarButtons(
     const std::vector<atom::NativeWindow::ThumbarButton>& buttons) {
   if (buttons.size() > kMaxButtonsCount)
     return false;
@@ -127,7 +127,7 @@ bool ThumbarHost::SetThumbarButtons(
   return is_success;
 }
 
-bool ThumbarHost::HandleThumbarButtonEvent(int button_id) {
+bool TaskbarHost::HandleThumbarButtonEvent(int button_id) {
   if (thumbar_button_clicked_callback_map_.find(button_id) !=
       thumbar_button_clicked_callback_map_.end()) {
     auto callback = thumbar_button_clicked_callback_map_[button_id];

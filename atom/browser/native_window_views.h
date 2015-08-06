@@ -30,7 +30,7 @@ class WindowStateWatcher;
 
 #if defined(OS_WIN)
 class AtomDesktopWindowTreeHostWin;
-class ThumbarHost;
+class TaskbarHost;
 #endif
 
 class NativeWindowViews : public NativeWindow,
@@ -179,8 +179,8 @@ class NativeWindowViews : public NativeWindow,
   // Records window was whether restored from minimized state or maximized
   // state.
   bool is_minimized_;
-  // In charge of running thumbar related APIs.
-  scoped_ptr<ThumbarHost> thumbar_host_;
+  // In charge of running taskbar related APIs.
+  scoped_ptr<TaskbarHost> taskbar_host_;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.

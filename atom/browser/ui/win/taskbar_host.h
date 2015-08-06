@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_UI_WIN_THUMBAR_HOST_H_
-#define ATOM_BROWSER_UI_WIN_THUMBAR_HOST_H_
+#ifndef ATOM_BROWSER_UI_WIN_TASKBAR_HOST_H_
+#define ATOM_BROWSER_UI_WIN_TASKBAR_HOST_H_
 
 #include <windows.h>
 
@@ -14,10 +14,10 @@
 
 namespace atom {
 
-class ThumbarHost {
+class TaskbarHost {
  public:
-  explicit ThumbarHost(HWND window);
-  ~ThumbarHost();
+  explicit TaskbarHost(HWND window);
+  ~TaskbarHost();
 
   bool SetThumbarButtons(
       const std::vector<NativeWindow::ThumbarButton>& buttons);
@@ -32,9 +32,9 @@ class ThumbarHost {
 
   HWND window_;
 
-  DISALLOW_COPY_AND_ASSIGN(ThumbarHost);
+  DISALLOW_COPY_AND_ASSIGN(TaskbarHost);
 };
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_UI_WIN_THUMBAR_HOST_H_
+#endif  // ATOM_BROWSER_UI_WIN_TASKBAR_HOST_H_
