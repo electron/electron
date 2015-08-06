@@ -8,49 +8,40 @@
 
 #include <string>
 
+#include "base/stl_util.h"
 #include "base/win/scoped_comptr.h"
-#include "base/win/win_util.h"
-#include "base/win/wrapped_window_proc.h"
+#include "base/win/scoped_gdi_object.h"
 #include "base/strings/utf_string_conversions.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/gfx/icon_util.h"
-#include "ui/gfx/win/hwnd_util.h"
 
 namespace atom {
 
 namespace {
 
-// From MSDN: https://msdn.microsoft.com/en-us/library/windows/desktop/
-// dd378460(v=vs.85).aspx#thumbbars
+// From MSDN: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#thumbbars
 // The thumbnail toolbar has a maximum of seven buttons due to the limited room.
-const int kMaxButtonsCount = 7;
+const size_t kMaxButtonsCount = 7;
 
 // The base id of Thumbar button.
 const int kButtonIdBase = 40001;
 
 bool GetThumbarButtonFlags(const std::vector<std::string>& flags,
                            THUMBBUTTONFLAGS* out) {
-  if (flags.empty()) {
-    *out = THBF_ENABLED;
-    return true;
-  }
-  THUMBBUTTONFLAGS result = static_cast<THUMBBUTTONFLAGS>(0);
+  THUMBBUTTONFLAGS result = THBF_ENABLED;  // THBF_ENABLED == 0
   for (const auto& flag : flags) {
-    if (flag == "enabled") {
-      result |= THBF_ENABLED;
-    } else if (flag == "disabled") {
+    if (flag == "disabled")
       result |= THBF_DISABLED;
-    } else if (flag == "dismissonclick") {
+    else if (flag == "dismissonclick")
       result |= THBF_DISMISSONCLICK;
-    } else if (flag == "nobackground") {
+    else if (flag == "nobackground")
       result |= THBF_NOBACKGROUND;
-    } else if (flag == "hidden") {
+    else if (flag == "hidden")
       result |= THBF_HIDDEN;
-    } else if (flag == "noninteractive") {
+    else if (flag == "noninteractive")
       result |= THBF_NONINTERACTIVE;
-    } else {
+    else
       return false;
-    }
   }
   *out = result;
   return true;
@@ -58,7 +49,7 @@ bool GetThumbarButtonFlags(const std::vector<std::string>& flags,
 
 }  // namespace
 
-TaskbarHost::TaskbarHost() : is_initialized_(false) {
+TaskbarHost::TaskbarHost() : thumbar_buttons_added_(false) {
 }
 
 TaskbarHost::~TaskbarHost() {
@@ -66,9 +57,6 @@ TaskbarHost::~TaskbarHost() {
 
 bool TaskbarHost::SetThumbarButtons(
     HWND window, const std::vector<ThumbarButton>& buttons) {
-  if (buttons.size() > kMaxButtonsCount)
-    return false;
-
   base::win::ScopedComPtr<ITaskbarList3> taskbar;
   if (FAILED(taskbar.CreateInstance(CLSID_TaskbarList,
                                     nullptr,
@@ -77,59 +65,67 @@ bool TaskbarHost::SetThumbarButtons(
     return false;
   }
 
+  callback_map_.clear();
+
+  // The number of buttons in thumbar can not be changed once it is created,
+  // so we have to claim kMaxButtonsCount buttons initialy in case users add
+  // more buttons later.
+  base::win::ScopedHICON icons[kMaxButtonsCount] = {};
   THUMBBUTTON thumb_buttons[kMaxButtonsCount] = {};
-  thumbar_button_clicked_callback_map_.clear();
 
-  // Once a toolbar with a set of buttons is added to thumbnail, there is no way
-  // to remove it without re-creating the window.
-  // To achieve to re-set thumbar buttons,  we initialize the buttons with
-  // HIDDEN state and only updated the caller's specified buttons.
-  //
-  // Initialize all thumb buttons with HIDDEN state.
-  for (int i = 0; i < kMaxButtonsCount; ++i) {
-    thumb_buttons[i].iId = kButtonIdBase + i;
-    thumb_buttons[i].dwMask = THB_FLAGS;  // dwFlags is valid.
-    thumb_buttons[i].dwFlags = THBF_HIDDEN;
-  }
+  for (size_t i = 0; i < kMaxButtonsCount; ++i) {
+    THUMBBUTTON& thumb_button = thumb_buttons[i];
 
-  // Update the callers' specified buttons.
-  for (size_t i = 0; i < buttons.size(); ++i) {
-    if (!GetThumbarButtonFlags(buttons[i].flags, &thumb_buttons[i].dwFlags))
-      return false;
-    thumb_buttons[i].dwMask = THB_ICON | THB_FLAGS;
-    thumb_buttons[i].hIcon = IconUtil::CreateHICONFromSkBitmap(
-        buttons[i].icon.AsBitmap());
-    if (!buttons[i].tooltip.empty()) {
-      thumb_buttons[i].dwMask |= THB_TOOLTIP;
-      wcscpy_s(thumb_buttons[i].szTip,
-               base::UTF8ToUTF16(buttons[i].tooltip).c_str());
+    // Set ID.
+    thumb_button.iId = kButtonIdBase + i;
+    thumb_button.dwMask = THB_FLAGS;
+
+    if (i >= buttons.size()) {
+      // This button is used to occupy the place in toolbar, and it does not
+      // show.
+      thumb_button.dwFlags = THBF_HIDDEN;
+      continue;
     }
 
-    thumbar_button_clicked_callback_map_[thumb_buttons[i].iId] =
-        buttons[i].clicked_callback;
+    // This button is user's button.
+    const ThumbarButton& button = buttons[i];
+
+    // Generate flags.
+    thumb_button.dwFlags = THBF_ENABLED;
+    if (!GetThumbarButtonFlags(button.flags, &thumb_button.dwFlags))
+      return false;
+
+    // Set icon.
+    if (!button.icon.IsEmpty()) {
+      thumb_button.dwMask |= THB_ICON;
+      icons[i] = IconUtil::CreateHICONFromSkBitmap(button.icon.AsBitmap());
+      thumb_button.hIcon = icons[i].Get();
+    }
+
+    // Set tooltip.
+    if (!button.tooltip.empty()) {
+      thumb_button.dwMask |= THB_TOOLTIP;
+      wcscpy_s(thumb_button.szTip, base::UTF8ToUTF16(button.tooltip).c_str());
+    }
+
+    // Save callback.
+    callback_map_[thumb_button.iId] = button.clicked_callback;
   }
 
-  bool is_success = false;
-  if (!is_initialized_) {
-    is_initialized_ = true;
-    is_success = taskbar->ThumbBarAddButtons(
-        window, buttons.size(), thumb_buttons) == S_OK;
-  } else {
-    is_success = taskbar->ThumbBarUpdateButtons(
-        window, kMaxButtonsCount, thumb_buttons) == S_OK;
-  }
+  // Finally add them to taskbar.
+  HRESULT r;
+  if (thumbar_buttons_added_)
+    r = taskbar->ThumbBarUpdateButtons(window, kMaxButtonsCount, thumb_buttons);
+  else
+    r = taskbar->ThumbBarAddButtons(window, kMaxButtonsCount, thumb_buttons);
 
-  // Release thumb_buttons' icons, the taskbar makes its own copy.
-  for (size_t i = 0; i < buttons.size(); ++i) {
-    ::DestroyIcon(thumb_buttons[i].hIcon);
-  }
-  return is_success;
+  thumbar_buttons_added_ = true;
+  return SUCCEEDED(r);
 }
 
 bool TaskbarHost::HandleThumbarButtonEvent(int button_id) {
-  if (thumbar_button_clicked_callback_map_.find(button_id) !=
-      thumbar_button_clicked_callback_map_.end()) {
-    auto callback = thumbar_button_clicked_callback_map_[button_id];
+  if (ContainsKey(callback_map_, button_id)) {
+    auto callback = callback_map_[button_id];
     if (!callback.is_null())
       callback.Run();
     return true;

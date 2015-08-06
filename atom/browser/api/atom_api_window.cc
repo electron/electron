@@ -438,16 +438,18 @@ void Window::SetOverlayIcon(const gfx::Image& overlay,
   window_->SetOverlayIcon(overlay, description);
 }
 
-void Window::SetThumbarButtons(mate::Arguments* args) {
+bool Window::SetThumbarButtons(mate::Arguments* args) {
 #if defined(OS_WIN)
   std::vector<TaskbarHost::ThumbarButton> buttons;
   if (!args->GetNext(&buttons)) {
     args->ThrowError();
-    return;
+    return false;
   }
   auto window = static_cast<NativeWindowViews*>(window_.get());
-  window->taskbar_host().SetThumbarButtons(window->GetAcceleratedWidget(),
-                                           buttons);
+  return window->taskbar_host().SetThumbarButtons(
+      window->GetAcceleratedWidget(), buttons);
+#else
+  return false;
 #endif
 }
 

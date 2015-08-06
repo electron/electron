@@ -8,6 +8,7 @@
 #include <windows.h>
 
 #include <map>
+#include <string>
 #include <vector>
 
 #include "base/callback.h"
@@ -27,15 +28,19 @@ class TaskbarHost {
   TaskbarHost();
   virtual ~TaskbarHost();
 
+  // Add or update the buttons in thumbar
   bool SetThumbarButtons(
       HWND window, const std::vector<ThumbarButton>& buttons);
+
+  // Called by the window that there is a button in thumbar clicked.
   bool HandleThumbarButtonEvent(int button_id);
 
  private:
-  using ThumbarButtonClickedCallbackMap = std::map<int, base::Closure>;
-  ThumbarButtonClickedCallbackMap thumbar_button_clicked_callback_map_;
+  using CallbackMap = std::map<int, base::Closure>;
+  CallbackMap callback_map_;
 
-  bool is_initialized_;
+  // Whether we have already added the buttons to thumbar.
+  bool thumbar_buttons_added_;
 
   DISALLOW_COPY_AND_ASSIGN(TaskbarHost);
 };
