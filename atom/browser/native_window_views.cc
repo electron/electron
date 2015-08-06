@@ -46,7 +46,6 @@
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
-#include "atom/browser/ui/win/taskbar_host.h"
 #include "base/win/scoped_comptr.h"
 #include "base/win/windows_version.h"
 #include "ui/base/win/shell.h"
@@ -718,17 +717,6 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
   return false;
 }
 
-bool NativeWindowViews::SetThumbarButtons(
-    const std::vector<NativeWindow::ThumbarButton>& buttons) {
-#if defined(OS_WIN)
-  if (!taskbar_host_)
-    taskbar_host_.reset(new TaskbarHost(GetAcceleratedWidget()));
-  return taskbar_host_->SetThumbarButtons(buttons);
-#else
-  return false;
-#endif
-}
-
 gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() {
   return GetNativeWindow()->GetHost()->GetAcceleratedWidget();
 }
@@ -894,9 +882,8 @@ void NativeWindowViews::GetDevToolsWindowWMClass(
 bool NativeWindowViews::PreHandleMSG(
     UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) {
   // Handle thumbar button click message.
-  if (message == WM_COMMAND && HIWORD(w_param) == THBN_CLICKED &&
-      taskbar_host_)
-    return taskbar_host_->HandleThumbarButtonEvent(LOWORD(w_param));
+  if (message == WM_COMMAND && HIWORD(w_param) == THBN_CLICKED)
+    return taskbar_host_.HandleThumbarButtonEvent(LOWORD(w_param));
   else
     return false;
 }

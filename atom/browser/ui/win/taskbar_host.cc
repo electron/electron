@@ -58,15 +58,14 @@ bool GetThumbarButtonFlags(const std::vector<std::string>& flags,
 
 }  // namespace
 
-TaskbarHost::TaskbarHost(HWND window) : is_initialized_(false),
-                                        window_(window) {
+TaskbarHost::TaskbarHost() : is_initialized_(false) {
 }
 
 TaskbarHost::~TaskbarHost() {
 }
 
 bool TaskbarHost::SetThumbarButtons(
-    const std::vector<atom::NativeWindow::ThumbarButton>& buttons) {
+    HWND window, const std::vector<ThumbarButton>& buttons) {
   if (buttons.size() > kMaxButtonsCount)
     return false;
 
@@ -114,10 +113,10 @@ bool TaskbarHost::SetThumbarButtons(
   if (!is_initialized_) {
     is_initialized_ = true;
     is_success = taskbar->ThumbBarAddButtons(
-        window_, buttons.size(), thumb_buttons) == S_OK;
+        window, buttons.size(), thumb_buttons) == S_OK;
   } else {
     is_success = taskbar->ThumbBarUpdateButtons(
-        window_, kMaxButtonsCount, thumb_buttons) == S_OK;
+        window, kMaxButtonsCount, thumb_buttons) == S_OK;
   }
 
   // Release thumb_buttons' icons, the taskbar makes its own copy.

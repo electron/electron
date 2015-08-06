@@ -60,14 +60,6 @@ class NativeWindow : public content::WebContentsObserver,
                      public brightray::InspectableWebContentsViewDelegate {
  public:
   using CapturePageCallback = base::Callback<void(const SkBitmap& bitmap)>;
-  using ThumbarButtonClickedCallback = base::Closure;
-
-  struct ThumbarButton {
-    std::string tooltip;
-    gfx::Image icon;
-    std::vector<std::string> flags;
-    ThumbarButtonClickedCallback clicked_callback;
-  };
 
   class DialogScope {
    public:
@@ -103,6 +95,7 @@ class NativeWindow : public content::WebContentsObserver,
 
   virtual void Close() = 0;
   virtual void CloseImmediately() = 0;
+  virtual bool IsClosed() const { return is_closed_; }
   virtual void Focus(bool focus) = 0;
   virtual bool IsFocused() = 0;
   virtual void Show() = 0;
@@ -147,16 +140,17 @@ class NativeWindow : public content::WebContentsObserver,
   virtual void SetMenu(ui::MenuModel* menu);
   virtual bool HasModalDialog();
   virtual gfx::NativeWindow GetNativeWindow() = 0;
+
+  // Taskbar/Dock APIs.
   virtual void SetProgressBar(double progress) = 0;
   virtual void SetOverlayIcon(const gfx::Image& overlay,
                               const std::string& description) = 0;
+
+  // Workspace APIs.
   virtual void SetVisibleOnAllWorkspaces(bool visible) = 0;
   virtual bool IsVisibleOnAllWorkspaces() = 0;
-  virtual bool SetThumbarButtons(
-      const std::vector<ThumbarButton>& buttons);
 
-  virtual bool IsClosed() const { return is_closed_; }
-
+  // Webview APIs.
   virtual void FocusOnWebView();
   virtual void BlurWebView();
   virtual bool IsWebViewFocused();

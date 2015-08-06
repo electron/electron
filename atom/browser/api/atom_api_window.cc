@@ -18,14 +18,20 @@
 #include "native_mate/dictionary.h"
 #include "ui/gfx/geometry/rect.h"
 
+#if defined(OS_WIN)
+#include "atom/browser/native_window_views.h"
+#include "atom/browser/ui/win/taskbar_host.h"
+#endif
+
 #include "atom/common/node_includes.h"
 
+#if defined(OS_WIN)
 namespace mate {
 
 template<>
-struct Converter<atom::NativeWindow::ThumbarButton> {
+struct Converter<atom::TaskbarHost::ThumbarButton> {
   static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
-                     atom::NativeWindow::ThumbarButton* out) {
+                     atom::TaskbarHost::ThumbarButton* out) {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
@@ -37,6 +43,7 @@ struct Converter<atom::NativeWindow::ThumbarButton> {
 };
 
 }  // namespace mate
+#endif
 
 namespace atom {
 
@@ -431,9 +438,17 @@ void Window::SetOverlayIcon(const gfx::Image& overlay,
   window_->SetOverlayIcon(overlay, description);
 }
 
-void Window::SetThumbarButtons(
-    const std::vector<NativeWindow::ThumbarButton>& buttons) {
-  window_->SetThumbarButtons(buttons);
+void Window::SetThumbarButtons(mate::Arguments* args) {
+#if defined(OS_WIN)
+  std::vector<TaskbarHost::ThumbarButton> buttons;
+  if (!args->GetNext(&buttons)) {
+    args->ThrowError();
+    return;
+  }
+  auto window = static_cast<NativeWindowViews*>(window_.get());
+  window->taskbar_host().SetThumbarButtons(window->GetAcceleratedWidget(),
+                                           buttons);
+#endif
 }
 
 void Window::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {

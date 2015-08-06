@@ -16,6 +16,7 @@
 
 #if defined(OS_WIN)
 #include "atom/browser/ui/win/message_handler_delegate.h"
+#include "atom/browser/ui/win/taskbar_host.h"
 #endif
 
 namespace views {
@@ -30,7 +31,6 @@ class WindowStateWatcher;
 
 #if defined(OS_WIN)
 class AtomDesktopWindowTreeHostWin;
-class TaskbarHost;
 #endif
 
 class NativeWindowViews : public NativeWindow,
@@ -91,12 +91,14 @@ class NativeWindowViews : public NativeWindow,
   bool IsMenuBarVisible() override;
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
-  bool SetThumbarButtons(
-      const std::vector<NativeWindow::ThumbarButton>& buttons) override;
 
   gfx::AcceleratedWidget GetAcceleratedWidget();
 
   views::Widget* widget() const { return window_.get(); }
+
+#if defined(OS_WIN)
+  TaskbarHost& taskbar_host() { return taskbar_host_; }
+#endif
 
  private:
   // views::WidgetObserver:
@@ -180,7 +182,7 @@ class NativeWindowViews : public NativeWindow,
   // state.
   bool is_minimized_;
   // In charge of running taskbar related APIs.
-  scoped_ptr<TaskbarHost> taskbar_host_;
+  TaskbarHost taskbar_host_;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.
