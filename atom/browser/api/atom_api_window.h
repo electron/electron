@@ -130,8 +130,7 @@ class Window : public mate::TrackableObject<Window>,
   void SetProgressBar(double progress);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
-  void SetThumbarButtons(
-      const std::vector<NativeWindow::ThumbarButton>& buttons);
+  bool SetThumbarButtons(mate::Arguments* args);
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
   void SetAutoHideMenuBar(bool auto_hide);
   bool IsMenuBarAutoHide();

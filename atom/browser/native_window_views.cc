@@ -4,10 +4,6 @@
 
 #include "atom/browser/native_window_views.h"
 
-#if defined(OS_WIN)
-#include <shobjidl.h>
-#endif
-
 #include <string>
 #include <vector>
 
@@ -46,13 +42,9 @@
 #elif defined(OS_WIN)
 #include "atom/browser/ui/views/win_frame_view.h"
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
-#include "base/win/scoped_comptr.h"
-#include "base/win/windows_version.h"
 #include "ui/base/win/shell.h"
-#include "ui/gfx/icon_util.h"
 #include "ui/gfx/win/dpi.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
-#include "ui/views/win/hwnd_util.h"
 #endif
 
 namespace atom {
@@ -221,11 +213,11 @@ NativeWindowViews::NativeWindowViews(
   params.native_widget =
       new views::DesktopNativeWidgetAura(window_.get());
   atom_desktop_window_tree_host_win_ = new AtomDesktopWindowTreeHostWin(
+      this,
       window_.get(),
       static_cast<views::DesktopNativeWidgetAura*>(params.native_widget));
   params.desktop_window_tree_host = atom_desktop_window_tree_host_win_;
-#endif
-#if defined(USE_X11)
+#elif defined(USE_X11)
   std::string name = Browser::Get()->GetName();
   // Set WM_WINDOW_ROLE.
   params.wm_role_name = "browser-window";
@@ -621,24 +613,7 @@ gfx::NativeWindow NativeWindowViews::GetNativeWindow() {
 
 void NativeWindowViews::SetProgressBar(double progress) {
 #if defined(OS_WIN)
-  if (base::win::GetVersion() < base::win::VERSION_WIN7)
-    return;
-  base::win::ScopedComPtr<ITaskbarList3> taskbar;
-  if (FAILED(taskbar.CreateInstance(CLSID_TaskbarList, NULL,
-                                    CLSCTX_INPROC_SERVER) ||
-      FAILED(taskbar->HrInit()))) {
-    return;
-  }
-  HWND frame = views::HWNDForNativeWindow(GetNativeWindow());
-  if (progress > 1.0) {
-    taskbar->SetProgressState(frame, TBPF_INDETERMINATE);
-  } else if (progress < 0) {
-    taskbar->SetProgressState(frame, TBPF_NOPROGRESS);
-  } else if (progress >= 0) {
-    taskbar->SetProgressValue(frame,
-                              static_cast<int>(progress * 100),
-                              100);
-  }
+  taskbar_host_.SetProgressBar(GetAcceleratedWidget(), progress);
 #elif defined(USE_X11)
   if (unity::IsRunning()) {
     unity::SetProgressFraction(progress);
@@ -649,22 +624,7 @@ void NativeWindowViews::SetProgressBar(double progress) {
 void NativeWindowViews::SetOverlayIcon(const gfx::Image& overlay,
                                        const std::string& description) {
 #if defined(OS_WIN)
-  if (base::win::GetVersion() < base::win::VERSION_WIN7)
-    return;
-
-  base::win::ScopedComPtr<ITaskbarList3> taskbar;
-  if (FAILED(taskbar.CreateInstance(CLSID_TaskbarList, NULL,
-                                    CLSCTX_INPROC_SERVER) ||
-      FAILED(taskbar->HrInit()))) {
-    return;
-  }
-
-  HWND frame = views::HWNDForNativeWindow(GetNativeWindow());
-
-  std::wstring wstr = std::wstring(description.begin(), description.end());
-  taskbar->SetOverlayIcon(frame,
-      IconUtil::CreateHICONFromSkBitmap(overlay.AsBitmap()),
-      wstr.c_str());
+  taskbar_host_.SetOverlayIcon(GetAcceleratedWidget(), overlay, description);
 #endif
 }
 
@@ -713,18 +673,6 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
   ui::GetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", &wm_states);
   return std::find(wm_states.begin(),
                    wm_states.end(), sticky_atom) != wm_states.end();
-#endif
-  return false;
-}
-
-bool NativeWindowViews::SetThumbarButtons(
-    const std::vector<NativeWindow::ThumbarButton>& buttons) {
-#if defined(OS_WIN)
-  if (atom_desktop_window_tree_host_win_) {
-    return atom_desktop_window_tree_host_win_->SetThumbarButtons(
-        views::HWNDForNativeWindow(window_->GetNativeWindow()),
-        buttons);
-  }
 #endif
   return false;
 }
@@ -887,6 +835,17 @@ void NativeWindowViews::GetDevToolsWindowWMClass(
     std::string* name, std::string* class_name) {
   *class_name = Browser::Get()->GetName();
   *name = base::StringToLowerASCII(*class_name);
+}
+#endif
+
+#if defined(OS_WIN)
+bool NativeWindowViews::PreHandleMSG(
+    UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) {
+  // Handle thumbar button click message.
+  if (message == WM_COMMAND && HIWORD(w_param) == THBN_CLICKED)
+    return taskbar_host_.HandleThumbarButtonEvent(LOWORD(w_param));
+  else
+    return false;
 }
 #endif
 

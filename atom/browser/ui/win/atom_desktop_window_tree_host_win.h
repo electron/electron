@@ -10,31 +10,28 @@
 #include <vector>
 
 #include "atom/browser/native_window.h"
-#include "atom/browser/ui/win/thumbar_host.h"
-#include "base/memory/scoped_ptr.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_win.h"
 
 namespace atom {
 
+class MessageHandlerDelegate;
+
 class AtomDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin {
  public:
   AtomDesktopWindowTreeHostWin(
+      MessageHandlerDelegate* delegate,
       views::internal::NativeWidgetDelegate* native_widget_delegate,
       views::DesktopNativeWidgetAura* desktop_native_widget_aura);
-  ~AtomDesktopWindowTreeHostWin();
-
-  bool SetThumbarButtons(
-      HWND window,
-      const std::vector<NativeWindow::ThumbarButton>& buttons);
+  ~AtomDesktopWindowTreeHostWin() override;
 
  protected:
-  bool PreHandleMSG(UINT message,
-                    WPARAM w_param,
-                    LPARAM l_param,
-                    LRESULT* result) override;
+  bool PreHandleMSG(
+      UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) override;
 
  private:
-  scoped_ptr<ThumbarHost> thumbar_host_;
+  MessageHandlerDelegate* delegate_;  // weak ref
+
+  DISALLOW_COPY_AND_ASSIGN(AtomDesktopWindowTreeHostWin);
 };
 
 }  // namespace atom

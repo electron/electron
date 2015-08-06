@@ -14,6 +14,11 @@
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/views/widget/widget_observer.h"
 
+#if defined(OS_WIN)
+#include "atom/browser/ui/win/message_handler_delegate.h"
+#include "atom/browser/ui/win/taskbar_host.h"
+#endif
+
 namespace views {
 class UnhandledKeyboardEventHandler;
 }
@@ -23,11 +28,15 @@ namespace atom {
 class GlobalMenuBarX11;
 class MenuBar;
 class WindowStateWatcher;
+
 #if defined(OS_WIN)
 class AtomDesktopWindowTreeHostWin;
 #endif
 
 class NativeWindowViews : public NativeWindow,
+#if defined(OS_WIN)
+                          public MessageHandlerDelegate,
+#endif
                           public views::WidgetDelegateView,
                           public views::WidgetObserver {
  public:
@@ -82,12 +91,14 @@ class NativeWindowViews : public NativeWindow,
   bool IsMenuBarVisible() override;
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
-  bool SetThumbarButtons(
-      const std::vector<NativeWindow::ThumbarButton>& buttons) override;
 
   gfx::AcceleratedWidget GetAcceleratedWidget();
 
   views::Widget* widget() const { return window_.get(); }
+
+#if defined(OS_WIN)
+  TaskbarHost& taskbar_host() { return taskbar_host_; }
+#endif
 
  private:
   // views::WidgetObserver:
@@ -127,6 +138,12 @@ class NativeWindowViews : public NativeWindow,
       std::string* name, std::string* class_name) override;
 #endif
 
+#if defined(OS_WIN)
+  // MessageHandlerDelegate:
+  bool PreHandleMSG(
+      UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) override;
+#endif
+
   // NativeWindow:
   void HandleKeyboardEvent(
       content::WebContents*,
@@ -164,6 +181,8 @@ class NativeWindowViews : public NativeWindow,
   // Records window was whether restored from minimized state or maximized
   // state.
   bool is_minimized_;
+  // In charge of running taskbar related APIs.
+  TaskbarHost taskbar_host_;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.
