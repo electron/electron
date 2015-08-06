@@ -159,16 +159,20 @@ WebContents::WebContents(const mate::Dictionary& options) {
 
   type_ = is_guest ? WEB_VIEW : BROWSER_WINDOW;
 
-  auto browser_context = AtomBrowserMainParts::Get()->browser_context();
   content::WebContents* web_contents;
   if (is_guest) {
-    content::SiteInstance* site_instance = content::SiteInstance::CreateForURL(
-        browser_context, GURL("chrome-guest://fake-host"));
+    GURL guest_site;
+    options.Get("partition", &guest_site);
+    auto browser_context =
+        AtomBrowserMainParts::Get()->GetBrowserContextForPartition(guest_site);
+    auto site_instance =
+        content::SiteInstance::CreateForURL(browser_context, guest_site);
     content::WebContents::CreateParams params(browser_context, site_instance);
     guest_delegate_.reset(new WebViewGuestDelegate);
     params.guest_delegate = guest_delegate_.get();
     web_contents = content::WebContents::Create(params);
   } else {
+    auto browser_context = AtomBrowserMainParts::Get()->browser_context();
     content::WebContents::CreateParams params(browser_context);
     web_contents = content::WebContents::Create(params);
   }

@@ -10,6 +10,7 @@
 #include "base/files/file_path.h"
 #include "base/synchronization/lock.h"
 #include "content/public/browser/browser_plugin_guest_manager.h"
+#include "content/public/browser/site_instance.h"
 
 namespace content {
 class BrowserContext;
@@ -27,6 +28,7 @@ class WebViewManager : public content::BrowserPluginGuestManager {
     bool plugins;
     bool disable_web_security;
     base::FilePath preload_script;
+    GURL partition_id;
   };
 
   // Finds the WebViewManager attached with |web_contents| and returns the
@@ -57,7 +59,7 @@ class WebViewManager : public content::BrowserPluginGuestManager {
     content::WebContents* embedder;
   };
   // guest_instance_id => (web_contents, embedder)
-  std::map<int, WebContentsWithEmbedder> web_contents_embdder_map_;
+  std::map<int, WebContentsWithEmbedder> web_contents_embedder_map_;
 
   struct ElementInstanceKey {
     int embedder_process_id;

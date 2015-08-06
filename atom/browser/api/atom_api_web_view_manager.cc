@@ -43,7 +43,8 @@ struct Converter<atom::WebViewManager::WebViewInfo> {
 
     return options.Get("nodeIntegration", &(out->node_integration)) &&
            options.Get("plugins", &(out->plugins)) &&
-           options.Get("disableWebSecurity", &(out->disable_web_security));
+           options.Get("disableWebSecurity", &(out->disable_web_security)) &&
+           options.Get("partitionId", &(out->partition_id));
   }
 };
 

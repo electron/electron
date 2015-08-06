@@ -48,7 +48,7 @@ void WebViewManager::AddGuest(int guest_instance_id,
                               content::WebContents* web_contents,
                               const WebViewInfo& info) {
   base::AutoLock auto_lock(lock_);
-  web_contents_embdder_map_[guest_instance_id] = { web_contents, embedder };
+  web_contents_embedder_map_[guest_instance_id] = { web_contents, embedder };
   webview_info_map_[web_contents] = info;
 
   // Map the element in embedder to guest.
@@ -59,11 +59,12 @@ void WebViewManager::AddGuest(int guest_instance_id,
 
 void WebViewManager::RemoveGuest(int guest_instance_id) {
   base::AutoLock auto_lock(lock_);
-  if (!ContainsKey(web_contents_embdder_map_, guest_instance_id))
+  if (!ContainsKey(web_contents_embedder_map_, guest_instance_id))
     return;
 
-  auto web_contents = web_contents_embdder_map_[guest_instance_id].web_contents;
-  web_contents_embdder_map_.erase(guest_instance_id);
+  auto web_contents =
+      web_contents_embedder_map_[guest_instance_id].web_contents;
+  web_contents_embedder_map_.erase(guest_instance_id);
   webview_info_map_.erase(web_contents);
 
   // Remove the record of element in embedder too.
@@ -82,15 +83,15 @@ content::WebContents* WebViewManager::GetGuestByInstanceID(
     return nullptr;
 
   int guest_instance_id = element_instance_id_to_guest_map_[key];
-  if (ContainsKey(web_contents_embdder_map_, guest_instance_id))
-    return web_contents_embdder_map_[guest_instance_id].web_contents;
+  if (ContainsKey(web_contents_embedder_map_, guest_instance_id))
+    return web_contents_embedder_map_[guest_instance_id].web_contents;
   else
     return nullptr;
 }
 
 bool WebViewManager::ForEachGuest(content::WebContents* embedder_web_contents,
                                   const GuestCallback& callback) {
-  for (auto& item : web_contents_embdder_map_)
+  for (auto& item : web_contents_embedder_map_)
     if (item.second.embedder == embedder_web_contents &&
         callback.Run(item.second.web_contents))
       return true;

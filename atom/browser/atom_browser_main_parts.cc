@@ -26,6 +26,21 @@
 
 namespace atom {
 
+namespace {
+
+const base::FilePath::CharType kStoragePartitionDirName[] = "Partitions";
+
+void GetStoragePartitionConfig(const GURL& partition,
+                               base::FilePath* partition_path,
+                               bool* in_memory,
+                               std::string* id) {
+  *in_memory = (partition.path() != "/persist");
+  *id = partition.query();
+  *partition_path = base::FilePath(kStoragePartitionDirName).AppendASCII(*id);
+}
+
+}  // namespace
+
 // static
 AtomBrowserMainParts* AtomBrowserMainParts::self_ = NULL;
 
@@ -40,6 +55,7 @@ AtomBrowserMainParts::AtomBrowserMainParts()
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {
+  STLDeleteValues(&browser_context_map_);
   for (const auto& callback : destruction_callbacks_)
     callback.Run();
 }
@@ -48,6 +64,22 @@ AtomBrowserMainParts::~AtomBrowserMainParts() {
 AtomBrowserMainParts* AtomBrowserMainParts::Get() {
   DCHECK(self_);
   return self_;
+}
+
+content::BrowserContext* AtomBrowserMainParts::GetBrowserContextForPartition(
+    const GURL& partition) {
+  std::string id;
+  bool in_memory;
+  base::FilePath partition_path;
+  GetStoragePartitionConfig(partition, &partition_path, &in_memory, &id);
+  auto item = browser_context_map_.find(id);
+  if (item != browser_context_map_.end())
+    return item->second;
+
+  auto browser_context = CreateBrowserContext();
+  browser_context->Initialize(partition_path, in_memory);
+  browser_context_map_[id] = browser_context;
+  return browser_context;
 }
 
 void AtomBrowserMainParts::RegisterDestructionCallback(
