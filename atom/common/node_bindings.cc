@@ -7,8 +7,9 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/api/locker.h"
 #include "atom/common/atom_command_line.h"
-#include "atom/common/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "base/command_line.h"
 #include "base/base_paths.h"
@@ -17,7 +18,6 @@
 #include "base/path_service.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
-#include "native_mate/locker.h"
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebScopedMicrotaskSuppression.h"
 

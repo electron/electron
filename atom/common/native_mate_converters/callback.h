@@ -2,13 +2,17 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#ifndef ATOM_COMMON_NATIVE_MATE_CONVERTERS_CALLBACK_H_
+#define ATOM_COMMON_NATIVE_MATE_CONVERTERS_CALLBACK_H_
+
 #include <vector>
 
+#include "atom/common/api/locker.h"
 #include "base/bind.h"
 #include "base/callback.h"
 #include "native_mate/function_template.h"
-#include "native_mate/locker.h"
 #include "native_mate/scoped_persistent.h"
+#include "third_party/WebKit/public/web/WebScopedMicrotaskSuppression.h"
 
 namespace mate {
 
@@ -25,6 +29,9 @@ struct V8FunctionInvoker<v8::Local<v8::Value>(ArgTypes...)> {
                                  ArgTypes... raw) {
     Locker locker(isolate);
     v8::EscapableHandleScope handle_scope(isolate);
+    scoped_ptr<blink::WebScopedRunV8Script> script_scope(
+        Locker::IsBrowserProcess() ?
+        nullptr : new blink::WebScopedRunV8Script(isolate));
     v8::Local<v8::Function> holder = function->NewHandle();
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
@@ -40,6 +47,9 @@ struct V8FunctionInvoker<void(ArgTypes...)> {
                  ArgTypes... raw) {
     Locker locker(isolate);
     v8::HandleScope handle_scope(isolate);
+    scoped_ptr<blink::WebScopedRunV8Script> script_scope(
+        Locker::IsBrowserProcess() ?
+        nullptr : new blink::WebScopedRunV8Script(isolate));
     v8::Local<v8::Function> holder = function->NewHandle();
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
@@ -54,6 +64,9 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
                        ArgTypes... raw) {
     Locker locker(isolate);
     v8::HandleScope handle_scope(isolate);
+    scoped_ptr<blink::WebScopedRunV8Script> script_scope(
+        Locker::IsBrowserProcess() ?
+        nullptr : new blink::WebScopedRunV8Script(isolate));
     v8::Local<v8::Function> holder = function->NewHandle();
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
@@ -87,3 +100,5 @@ struct Converter<base::Callback<Sig> > {
 };
 
 }  // namespace mate
+
+#endif  // ATOM_COMMON_NATIVE_MATE_CONVERTERS_CALLBACK_H_
