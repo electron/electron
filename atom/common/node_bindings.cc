@@ -19,6 +19,7 @@
 #include "content/public/common/content_paths.h"
 #include "native_mate/locker.h"
 #include "native_mate/dictionary.h"
+#include "third_party/WebKit/public/web/WebScopedMicrotaskSuppression.h"
 
 #include "atom/common/node_includes.h"
 
@@ -226,6 +227,10 @@ void NodeBindings::UvRunOnce() {
 
   // Enter node context while dealing with uv events.
   v8::Context::Scope context_scope(env->context());
+
+  // Perform microtask checkpoint after running JavaScript.
+  scoped_ptr<blink::WebScopedRunV8Script> script_scope(
+      is_browser_ ? nullptr : new blink::WebScopedRunV8Script(env->isolate()));
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
