@@ -23,7 +23,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_http_handler.h"
 #include "content/public/browser/host_zoom_map.h"
-#include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "net/http/http_response_headers.h"

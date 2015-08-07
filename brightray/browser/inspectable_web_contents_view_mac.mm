@@ -50,4 +50,8 @@ void InspectableWebContentsViewMac::SetContentsResizingStrategy(
   [view_ setContentsResizingStrategy:strategy];
 }
 
+void InspectableWebContentsViewMac::SetTitle(const base::string16& title) {
+  [view_ setTitle:title];
+}
+
 }

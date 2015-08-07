@@ -32,5 +32,6 @@ using brightray::InspectableWebContentsViewMac;
 - (BOOL)isDevToolsVisible;
 - (void)setIsDocked:(BOOL)docked;
 - (void)setContentsResizingStrategy:(const DevToolsContentsResizingStrategy&)strategy;
+- (void)setTitle:(const base::string16&)title;
 
 @end
