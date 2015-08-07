@@ -23,6 +23,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_http_handler.h"
 #include "content/public/browser/host_zoom_map.h"
+#include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "net/http/http_response_headers.h"
@@ -49,6 +50,7 @@ const char kDevToolsZoomPref[] = "brightray.devtools.zoom";
 const char kFrontendHostId[] = "id";
 const char kFrontendHostMethod[] = "method";
 const char kFrontendHostParams[] = "params";
+const char kTitleFormat[] = "Developer Tools - %s";
 
 const char kDevToolsActionTakenHistogram[] = "DevTools.ActionTaken";
 const int kDevToolsActionTakenBoundary = 100;
@@ -346,6 +348,8 @@ void InspectableWebContentsImpl::InspectElementCompleted() {
 }
 
 void InspectableWebContentsImpl::InspectedURLChanged(const std::string& url) {
+  view_->SetTitle(base::UTF8ToUTF16(base::StringPrintf(kTitleFormat,
+                                                       url.c_str())));
 }
 
 void InspectableWebContentsImpl::LoadNetworkResource(
