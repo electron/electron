@@ -162,8 +162,7 @@ void AtomRenderViewObserver::OnJavaScriptExecuteRequest(
   v8::HandleScope handle_scope(isolate);
 
   blink::WebFrame* frame = render_view()->GetWebView()->mainFrame();
-  frame->executeScriptAndReturnValue(
-      blink::WebScriptSource(code));
+  frame->executeScriptAndReturnValue(blink::WebScriptSource(code));
 }
 
 }  // namespace atom
