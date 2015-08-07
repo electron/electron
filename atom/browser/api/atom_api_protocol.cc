@@ -10,10 +10,10 @@
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/net/adapter_request_job.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "content/public/browser/browser_thread.h"
-#include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "net/url_request/url_request_context.h"
 

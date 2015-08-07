@@ -135,3 +135,32 @@ describe 'chromium feature', ->
           else
             done('user agent is empty')
         websocket = new WebSocket("ws://127.0.0.1:#{port}")
+
+  describe 'Promise', ->
+    it 'resolves correctly in Node.js calls', (done) ->
+      document.registerElement('x-element', {
+        prototype: Object.create(HTMLElement.prototype, {
+          createdCallback: { value: -> }
+        })
+      })
+
+      setImmediate ->
+        called = false
+        Promise.resolve().then ->
+          done(if called then undefined else new Error('wrong sequnce'))
+        document.createElement 'x-element'
+        called = true
+
+    it 'resolves correctly in Electron calls', (done) ->
+      document.registerElement('y-element', {
+        prototype: Object.create(HTMLElement.prototype, {
+          createdCallback: { value: -> }
+        })
+      })
+
+      remote.getGlobal('setImmediate') ->
+        called = false
+        Promise.resolve().then ->
+          done(if called then undefined else new Error('wrong sequnce'))
+        document.createElement 'y-element'
+        called = true

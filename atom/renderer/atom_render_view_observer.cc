@@ -11,7 +11,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 
 #include "atom/common/api/api_messages.h"
-#include "atom/common/event_emitter_caller.h"
+#include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_renderer_client.h"
@@ -162,8 +162,7 @@ void AtomRenderViewObserver::OnJavaScriptExecuteRequest(
   v8::HandleScope handle_scope(isolate);
 
   blink::WebFrame* frame = render_view()->GetWebView()->mainFrame();
-  frame->executeScriptAndReturnValue(
-      blink::WebScriptSource(code));
+  frame->executeScriptAndReturnValue(blink::WebScriptSource(code));
 }
 
 }  // namespace atom
