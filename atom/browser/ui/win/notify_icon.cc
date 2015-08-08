@@ -162,6 +162,9 @@ void NotifyIcon::DisplayBalloon(const gfx::Image& icon,
 }
 
 void NotifyIcon::PopContextMenu(const gfx::Point& pos) {
+  // Returns if context menu isn't set.
+  if (!menu_model_)
+    return;
   // Set our window as the foreground window, so the context menu closes when
   // we click away from it.
   if (!SetForegroundWindow(window_))

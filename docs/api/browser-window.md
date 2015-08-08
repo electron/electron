@@ -643,6 +643,39 @@ Sets a 16px overlay onto the current taskbar icon, usually used to convey some s
 
 __Note:__ This API is only available on Windows (Windows 7 and above)
 
+
+### BrowserWindow.setThumbarButtons(buttons)
+
+* `buttons` Array
+  * `button` Object
+    * `icon` [NativeImage](native-image.md) - The icon showing in thumbnail
+      toolbar.
+    * `tooltip` String (optional) - The text of the button's tooltip.
+    * `flags` Array (optional) - Control specific states and behaviors
+      of the button. By default, it uses `enabled`. It can include following
+      Strings:
+      * `enabled` - The button is active and available to the user.
+      * `disabled` - The button is disabled. It is present, but has a visual
+        state that indicates that it will not respond to user action.
+      * `dismissonclick` - When the button is clicked, the taskbar button's
+        flyout closes immediately.
+      * `nobackground` - Do not draw a button border, use only the image.
+      * `hidden` - The button is not shown to the user.
+      * `noninteractive` - The button is enabled but not interactive; no
+        pressed button state is drawn. This value is intended for instances
+        where the button is used in a notification.
+    * `click` - Function
+
+Add a thumbnail toolbar with a specified set of buttons to the thumbnail image
+of a window in a taskbar button layout. Returns a `Boolean` object indicates
+whether the thumbnail has been added successfully.
+
+__Note:__ This API is only available on Windows (Windows 7 and above).
+The number of buttons in thumbnail toolbar should be no greater than 7 due to
+the limited room. Once you setup the thumbnail toolbar, the toolbar cannot be
+removed due to the platform's limitation. But you can call the API with an empty
+array to clean the buttons.
+
 ### BrowserWindow.showDefinitionForSelection()
 
 Shows pop-up dictionary that searches the selected word on the page.
@@ -905,11 +938,16 @@ Returns a `String` represents the user agent for this page.
 
 Injects CSS into this page.
 
-### WebContents.executeJavaScript(code)
+### WebContents.executeJavaScript(code[, userGesture])
 
 * `code` String
+* `userGesture` Boolean
 
 Evaluates `code` in page.
+
+In browser some HTML APIs like `requestFullScreen` can only be invoked if it
+is started by user gesture, by specifying `userGesture` to `true` developers
+can ignore this limitation.
 
 ### WebContents.setAudioMuted(muted)
 

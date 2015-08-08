@@ -20,7 +20,26 @@
 #include "content/public/browser/render_widget_host_view.h"
 #include "native_mate/dictionary.h"
 
-static const CGFloat kAtomWindowCornerRadius = 4.0;
+namespace {
+
+// The radius of rounded corner.
+const CGFloat kAtomWindowCornerRadius = 4.0;
+
+// Prevents window from resizing during the scope.
+class ScopedDisableResize {
+ public:
+  ScopedDisableResize() { disable_resize_ = true; }
+  ~ScopedDisableResize() { disable_resize_ = false; }
+
+  static bool IsResizeDisabled() { return disable_resize_; }
+
+ private:
+  static bool disable_resize_;
+};
+
+bool ScopedDisableResize::disable_resize_ = false;
+
+}  // namespace
 
 @interface NSView (PrivateMethods)
 - (CGFloat)roundedCornerRadius;
@@ -214,8 +233,12 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
   enable_larger_than_screen_ = enable;
 }
 
-// Enable the window to be larger than screen.
 - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
+  // Resizing is disabled.
+  if (ScopedDisableResize::IsResizeDisabled())
+    return [self frame];
+
+  // Enable the window to be larger than screen.
   if (enable_larger_than_screen_)
     return frameRect;
   else
@@ -318,29 +341,6 @@ static const CGFloat kAtomWindowCornerRadius = 4.0;
 
 namespace atom {
 
-namespace {
-
-// Convert draggable regions in raw format to SkRegion format. Caller is
-// responsible for deleting the returned SkRegion instance.
-SkRegion* DraggableRegionsToSkRegion(
-    const std::vector<DraggableRegion>& regions) {
-  SkRegion* sk_region = new SkRegion;
-  for (std::vector<DraggableRegion>::const_iterator iter = regions.begin();
-       iter != regions.end();
-       ++iter) {
-    const DraggableRegion& region = *iter;
-    sk_region->op(
-        region.bounds.x(),
-        region.bounds.y(),
-        region.bounds.right(),
-        region.bounds.bottom(),
-        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
-  }
-  return sk_region;
-}
-
-}  // namespace
-
 NativeWindowMac::NativeWindowMac(
     brightray::InspectableWebContents* web_contents,
     const mate::Dictionary& options)
@@ -363,7 +363,7 @@ NativeWindowMac::NativeWindowMac(
 
   NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask |
                          NSMiniaturizableWindowMask | NSResizableWindowMask;
-  if (!useStandardWindow || transparent_ || !has_frame_) {
+  if (!useStandardWindow || transparent() || !has_frame()) {
     styleMask |= NSTexturedBackgroundWindowMask;
   }
 
@@ -373,12 +373,12 @@ NativeWindowMac::NativeWindowMac(
                   backing:NSBackingStoreBuffered
                     defer:YES]);
   [window_ setShell:this];
-  [window_ setEnableLargerThanScreen:enable_larger_than_screen_];
+  [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
 
   window_delegate_.reset([[AtomNSWindowDelegate alloc] initWithShell:this]);
   [window_ setDelegate:window_delegate_];
 
-  if (transparent_) {
+  if (transparent()) {
     // Make window has transparent background.
     [window_ setOpaque:NO];
     [window_ setHasShadow:NO];
@@ -386,7 +386,7 @@ NativeWindowMac::NativeWindowMac(
   }
 
   // Remove non-transparent corners, see http://git.io/vfonD.
-  if (!has_frame_)
+  if (!has_frame())
     [window_ setOpaque:NO];
 
   // We will manage window's lifetime ourselves.
@@ -395,7 +395,7 @@ NativeWindowMac::NativeWindowMac(
   // On OS X the initial window size doesn't include window frame.
   bool use_content_size = false;
   options.Get(switches::kUseContentSize, &use_content_size);
-  if (!has_frame_ || !use_content_size)
+  if (!has_frame() || !use_content_size)
     SetSize(gfx::Size(width, height));
 
   // Enable the NSView to accept first mouse event.
@@ -532,7 +532,7 @@ gfx::Rect NativeWindowMac::GetBounds() {
 }
 
 void NativeWindowMac::SetContentSize(const gfx::Size& size) {
-  if (!has_frame_) {
+  if (!has_frame()) {
     SetSize(size);
     return;
   }
@@ -550,7 +550,7 @@ void NativeWindowMac::SetContentSize(const gfx::Size& size) {
 }
 
 gfx::Size NativeWindowMac::GetContentSize() {
-  if (!has_frame_)
+  if (!has_frame())
     return GetSize();
 
   NSRect bounds = [[window_ contentView] bounds];
@@ -584,12 +584,15 @@ gfx::Size NativeWindowMac::GetMaximumSize() {
 }
 
 void NativeWindowMac::SetResizable(bool resizable) {
+  // Change styleMask for frameless causes the window to change size, so we have
+  // to explicitly disables that.
+  ScopedDisableResize disable_resize;
   if (resizable) {
     [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:YES];
     [window_ setStyleMask:[window_ styleMask] | NSResizableWindowMask];
   } else {
     [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
-    [window_ setStyleMask:[window_ styleMask] ^ NSResizableWindowMask];
+    [window_ setStyleMask:[window_ styleMask] & (~NSResizableWindowMask)];
   }
 }
 
@@ -611,7 +614,7 @@ void NativeWindowMac::Center() {
 
 void NativeWindowMac::SetTitle(const std::string& title) {
   // We don't want the title to show in transparent window.
-  if (transparent_)
+  if (transparent())
     return;
 
   [window_ setTitle:base::SysUTF8ToNSString(title)];
@@ -747,7 +750,7 @@ bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
 }
 
 bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {
-  if (!draggable_region_)
+  if (!draggable_region())
     return false;
   if (!web_contents())
     return false;
@@ -756,7 +759,7 @@ bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {
   // |draggable_region_| is stored in local platform-indepdent coordiate system
   // while |point| is in local Cocoa coordinate system. Do the conversion
   // to match these two.
-  return draggable_region_->contains(point.x, webViewHeight - point.y);
+  return draggable_region()->contains(point.x, webViewHeight - point.y);
 }
 
 void NativeWindowMac::HandleMouseEvent(NSEvent* event) {
@@ -774,15 +777,6 @@ void NativeWindowMac::HandleMouseEvent(NSEvent* event) {
         current_mouse_location.x + last_mouse_offset_.x,
         current_mouse_location.y + last_mouse_offset_.y)];
   }
-}
-
-void NativeWindowMac::UpdateDraggableRegions(
-    const std::vector<DraggableRegion>& regions) {
-  // Draggable region is not supported for non-frameless window.
-  if (has_frame_)
-    return;
-
-  draggable_region_.reset(DraggableRegionsToSkRegion(regions));
 }
 
 void NativeWindowMac::HandleKeyboardEvent(
@@ -811,7 +805,7 @@ void NativeWindowMac::HandleKeyboardEvent(
 
 void NativeWindowMac::InstallView() {
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
-  if (has_frame_) {
+  if (has_frame()) {
     // Add layer with white background for the contents view.
     base::scoped_nsobject<CALayer> layer([[CALayer alloc] init]);
     [layer setBackgroundColor:CGColorGetConstantColor(kCGColorWhite)];

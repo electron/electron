@@ -13,7 +13,8 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
-#include "atom/common/event_emitter_caller.h"
+#include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -37,7 +38,6 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
-#include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/http/http_response_headers.h"
@@ -572,8 +572,9 @@ void WebContents::InsertCSS(const std::string& css) {
   web_contents()->InsertCSS(css);
 }
 
-void WebContents::ExecuteJavaScript(const base::string16& code) {
-  web_contents()->GetMainFrame()->ExecuteJavaScript(code);
+void WebContents::ExecuteJavaScript(const base::string16& code,
+                                    bool has_user_gesture) {
+  Send(new AtomViewMsg_ExecuteJavaScript(routing_id(), code, has_user_gesture));
 }
 
 void WebContents::OpenDevTools(mate::Arguments* args) {

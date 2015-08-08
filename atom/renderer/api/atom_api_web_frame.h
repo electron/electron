@@ -54,6 +54,9 @@ class WebFrame : public mate::Wrappable {
                              bool auto_spell_correct_turned_on,
                              v8::Local<v8::Object> provider);
 
+  void RegisterURLSchemeAsSecure(const std::string& scheme);
+  void RegisterURLSchemeAsBypassingCsp(const std::string& scheme);
+
   // mate::Wrappable:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate);

@@ -6,9 +6,9 @@
 
 #include "atom/browser/native_window.h"
 #include "atom/common/native_mate_converters/accelerator_converter.h"
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
-#include "native_mate/callback.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"

@@ -4,6 +4,7 @@ webFrame = require 'web-frame'
 requestId = 0
 
 WEB_VIEW_EVENTS =
+  'load-commit': ['url', 'isMainFrame']
   'did-finish-load': []
   'did-fail-load': ['errorCode', 'errorDescription']
   'did-frame-finish-load': ['isMainFrame']
@@ -27,11 +28,12 @@ WEB_VIEW_EVENTS =
   'leave-html-full-screen': []
 
 dispatchEvent = (webView, event, args...) ->
-  throw new Error("Unkown event #{event}") unless WEB_VIEW_EVENTS[event]?
+  throw new Error("Unknown event #{event}") unless WEB_VIEW_EVENTS[event]?
   domEvent = new Event(event)
   for f, i in WEB_VIEW_EVENTS[event]
     domEvent[f] = args[i]
   webView.dispatchEvent domEvent
+  webView.onLoadCommit domEvent if event == 'load-commit'
 
 module.exports =
   registerEvents: (webView, viewInstanceId) ->

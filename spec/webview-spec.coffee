@@ -261,3 +261,19 @@ describe '<webview> tag', ->
           done()
         webview.src = "file://#{fixtures}/pages/dom-ready.html?port=#{port}"
         document.body.appendChild webview
+
+  describe 'executeJavaScript', ->
+    return unless process.env.TRAVIS is 'true'
+
+    it 'should support user gesture', (done) ->
+      listener = (e) ->
+        webview.removeEventListener 'enter-html-full-screen', listener
+        done()
+      listener2 = (e) ->
+        jsScript = 'document.getElementsByTagName("video")[0].webkitRequestFullScreen()'
+        webview.executeJavaScript jsScript, true
+        webview.removeEventListener 'did-finish-load', listener2
+      webview.addEventListener 'enter-html-full-screen', listener
+      webview.addEventListener 'did-finish-load', listener2
+      webview.src = "file://#{fixtures}/pages/fullscreen.html"
+      document.body.appendChild webview

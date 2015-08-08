@@ -11,7 +11,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 
 #include "atom/common/api/api_messages.h"
-#include "atom/common/event_emitter_caller.h"
+#include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_renderer_client.h"
@@ -26,6 +26,8 @@
 #include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebKit.h"
+#include "third_party/WebKit/public/web/WebScopedUserGesture.h"
+#include "third_party/WebKit/public/web/WebScriptSource.h"
 #include "third_party/WebKit/public/web/WebView.h"
 #include "ui/base/resource/resource_bundle.h"
 
@@ -113,6 +115,8 @@ bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(AtomRenderViewObserver, message)
     IPC_MESSAGE_HANDLER(AtomViewMsg_Message, OnBrowserMessage)
+    IPC_MESSAGE_HANDLER(AtomViewMsg_ExecuteJavaScript,
+                        OnJavaScriptExecuteRequest)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -141,6 +145,24 @@ void AtomRenderViewObserver::OnBrowserMessage(const base::string16& channel,
   if (GetIPCObject(isolate, context, &ipc)) {
     mate::EmitEvent(isolate, ipc, channel, ListValueToVector(isolate, args));
   }
+}
+
+void AtomRenderViewObserver::OnJavaScriptExecuteRequest(
+    const base::string16& code, bool has_user_gesture) {
+  if (!document_created_)
+    return;
+
+  if (!render_view()->GetWebView())
+    return;
+
+  scoped_ptr<blink::WebScopedUserGesture> gesture(
+      has_user_gesture ? new blink::WebScopedUserGesture : nullptr);
+
+  v8::Isolate* isolate = blink::mainThreadIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  blink::WebFrame* frame = render_view()->GetWebView()->mainFrame();
+  frame->executeScriptAndReturnValue(blink::WebScriptSource(code));
 }
 
 }  // namespace atom

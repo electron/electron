@@ -10,6 +10,7 @@ valueToMeta = (sender, value) ->
   meta.type = 'buffer' if Buffer.isBuffer value
   meta.type = 'value' if value is null
   meta.type = 'array' if Array.isArray value
+  meta.type = 'promise' if value? and value.constructor.name is 'Promise'
 
   # Treat the arguments object as array.
   meta.type = 'array' if meta.type is 'object' and value.callee? and value.length?
@@ -29,6 +30,8 @@ valueToMeta = (sender, value) ->
     meta.members.push {name: prop, type: typeof field} for prop, field of value
   else if meta.type is 'buffer'
     meta.value = Array::slice.call value, 0
+  else if meta.type is 'promise'
+    meta.then = valueToMeta(sender, value.then.bind(value))
   else
     meta.type = 'value'
     meta.value = value
@@ -47,6 +50,7 @@ unwrapArgs = (sender, args) ->
       when 'remote-object' then objectsRegistry.get meta.id
       when 'array' then unwrapArgs sender, meta.value
       when 'buffer' then new Buffer(meta.value)
+      when 'promise' then Promise.resolve(then: metaToValue(meta.then))
       when 'object'
         ret = v8Util.createObjectWithName meta.name
         for member in meta.members

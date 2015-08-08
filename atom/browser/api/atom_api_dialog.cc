@@ -10,9 +10,9 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/ui/message_box.h"
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
-#include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"

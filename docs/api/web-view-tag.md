@@ -225,11 +225,14 @@ Returns a `String` represents the user agent for guest page.
 
 Injects CSS into guest page.
 
-### `<webview>`.executeJavaScript(code)
+### `<webview>`.executeJavaScript(code, userGesture)
 
 * `code` String
+* `userGesture` Boolean - Default false
 
-Evaluates `code` in guest page.
+Evaluates `code` in page. If `userGesture` is set will create user gesture context,
+HTML api like `requestFullScreen` which require user action can take advantage
+of this option for automation.
 
 ### `<webview>`.openDevTools()
 
@@ -331,6 +334,15 @@ See [WebContents.send](browser-window.md#webcontentssendchannel-args) for
 examples.
 
 ## DOM events
+
+### load-commit
+
+* `url` String
+* `isMainFrame` Boolean
+
+Fired when a load has committed. This includes navigation within the current
+document as well as subframe document-level loads, but does not include
+asynchronous resource loads.
 
 ### did-finish-load
 

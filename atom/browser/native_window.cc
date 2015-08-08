@@ -8,10 +8,6 @@
 #include <utility>
 #include <vector>
 
-#if defined(OS_WIN)
-#include <shlobj.h>
-#endif
-
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/window_list.h"
@@ -71,6 +67,22 @@ const char* kWebRuntimeFeatures[] = {
   switches::kSharedWorker,
   switches::kPageVisibility,
 };
+
+// Convert draggable regions in raw format to SkRegion format. Caller is
+// responsible for deleting the returned SkRegion instance.
+scoped_ptr<SkRegion> DraggableRegionsToSkRegion(
+    const std::vector<DraggableRegion>& regions) {
+  scoped_ptr<SkRegion> sk_region(new SkRegion);
+  for (const DraggableRegion& region : regions) {
+    sk_region->op(
+        region.bounds.x(),
+        region.bounds.y(),
+        region.bounds.right(),
+        region.bounds.bottom(),
+        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
+  }
+  return sk_region.Pass();
+}
 
 }  // namespace
 
@@ -384,15 +396,6 @@ void NativeWindow::AppendExtraCommandLineSwitches(
     command_line->AppendSwitchASCII(switches::kZoomFactor,
                                     base::DoubleToString(zoom_factor_));
 
-#if defined(OS_WIN)
-  // Append --app-user-model-id.
-  PWSTR current_app_id;
-  if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
-    command_line->AppendSwitchNative(switches::kAppUserModelId, current_app_id);
-    CoTaskMemFree(current_app_id);
-  }
-#endif
-
   if (web_preferences_.IsEmpty())
     return;
 
@@ -519,6 +522,12 @@ void NativeWindow::NotifyWindowLeaveHtmlFullScreen() {
                     OnWindowLeaveHtmlFullScreen());
 }
 
+void NativeWindow::NotifyWindowExecuteWindowsCommand(
+    const std::string& command) {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnExecuteWindowsCommand(command));
+}
+
 void NativeWindow::DevToolsFocused() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsFocus());
 }
@@ -570,6 +579,14 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   IPC_END_MESSAGE_MAP()
 
   return handled;
+}
+
+void NativeWindow::UpdateDraggableRegions(
+    const std::vector<DraggableRegion>& regions) {
+  // Draggable region is not supported for non-frameless window.
+  if (has_frame_)
+    return;
+  draggable_region_ = DraggableRegionsToSkRegion(regions);
 }
 
 void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
