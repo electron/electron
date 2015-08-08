@@ -21,8 +21,10 @@ var appIcon = new Tray(image);
 
 ## Supported formats
 
-Currently `PNG` and `JPEG` are supported. It is recommended to use `PNG`
-because of its support for transparency and lossless compression.
+Currently `PNG` and `JPEG` are supported. It is recommended to use `PNG` because
+of its support for transparency and lossless compression.
+
+On Windows, you can also load `ICO` icon from a file path.
 
 ## High resolution image
 
