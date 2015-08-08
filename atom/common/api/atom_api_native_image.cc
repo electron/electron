@@ -22,6 +22,9 @@
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/image/image_util.h"
+#if defined(OS_WIN)
+#include "ui/gfx/icon_util.h"
+#endif
 
 #include "atom/common/node_includes.h"
 
@@ -213,7 +216,23 @@ mate::Handle<NativeImage> NativeImage::CreateFromJPEG(
 mate::Handle<NativeImage> NativeImage::CreateFromPath(
     v8::Isolate* isolate, const base::FilePath& path) {
   gfx::ImageSkia image_skia;
-  PopulateImageSkiaRepsFromPath(&image_skia, path);
+  if (path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
+#if defined(OS_WIN)
+    HICON icon = static_cast<HICON>(LoadImage(NULL,
+  								path.value().c_str(),
+  								IMAGE_ICON,
+  								0,
+  								0,
+                  LR_DEFAULTSIZE | LR_LOADFROMFILE));
+    if (icon) {
+      scoped_ptr<SkBitmap> bitmap(IconUtil::CreateSkBitmapFromHICON(icon));
+      image_skia = *(new gfx::ImageSkia(gfx::ImageSkiaRep(*bitmap, 1.0f)));
+      DestroyIcon(icon);
+    }
+#endif
+  } else {
+    PopulateImageSkiaRepsFromPath(&image_skia, path);
+  }
   gfx::Image image(image_skia);
   mate::Handle<NativeImage> handle = Create(isolate, image);
 #if defined(OS_MACOSX)
