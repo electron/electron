@@ -23,6 +23,7 @@
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/image/image_util.h"
 #if defined(OS_WIN)
+#include "atom/common/asar/archive.h"
 #include "ui/gfx/icon_util.h"
 #endif
 
@@ -214,10 +215,22 @@ mate::Handle<NativeImage> NativeImage::CreateFromJPEG(
 
 // static
 mate::Handle<NativeImage> NativeImage::CreateFromPath(
-    v8::Isolate* isolate, const base::FilePath& path) {
+    v8::Isolate* isolate, const base::FilePath& file_path) {
   gfx::ImageSkia image_skia;
+  base::FilePath path(file_path);
   if (path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
 #if defined(OS_WIN)
+    // If file is in asar archive, we extract it to a temp file so LoadImage can
+    // load it
+    base::FilePath asar_path, relative_path;
+    if (asar::GetAsarArchivePath(path, &asar_path, &relative_path)) {
+      std::shared_ptr<asar::Archive> archive =
+        asar::GetOrCreateAsarArchive(asar_path);
+      if (archive) {
+        archive->CopyFileOut(relative_path, &path);
+      }
+    }
+
     HICON icon = static_cast<HICON>(LoadImage(NULL,
       path.value().c_str(),
       IMAGE_ICON,
