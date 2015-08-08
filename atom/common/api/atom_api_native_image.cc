@@ -219,11 +219,11 @@ mate::Handle<NativeImage> NativeImage::CreateFromPath(
   if (path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
 #if defined(OS_WIN)
     HICON icon = static_cast<HICON>(LoadImage(NULL,
-  								path.value().c_str(),
-  								IMAGE_ICON,
-  								0,
-  								0,
-                  LR_DEFAULTSIZE | LR_LOADFROMFILE));
+      path.value().c_str(),
+      IMAGE_ICON,
+      0,
+      0,
+      LR_DEFAULTSIZE | LR_LOADFROMFILE));
     if (icon) {
       scoped_ptr<SkBitmap> bitmap(IconUtil::CreateSkBitmapFromHICON(icon));
       image_skia = *(new gfx::ImageSkia(gfx::ImageSkiaRep(*bitmap, 1.0f)));
