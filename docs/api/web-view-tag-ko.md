@@ -213,11 +213,17 @@ webview.addEventListener("dom-ready", function() {
 
 게스트 페이지에 CSS를 삽입합니다.
 
-### `<webview>`.executeJavaScript(code)
+### `<webview>`.executeJavaScript(code[, userGesture])
 
 * `code` String
+* `userGesture` Boolean
 
 게스트 페이지에서 자바스크립트 `code`를 실행합니다.
+
+`userGesture`가 `true`로 설정되어 있으면 `requestFullScreen` HTML API 같이
+유저의 승인이 필요한 API를 유저의 승인을 무시하고 개발자가 API를 직접 사용할 수 있습니다.
+
+역주: 기본적으로 브라우저에선 전체화면, 웹캠, 파일 열기등의 API를 사용하려면 유저의 승인(이벤트)이 필요합니다.
 
 ### `<webview>`.openDevTools()
 
@@ -300,6 +306,15 @@ Service worker에 대한 개발자 툴을 엽니다.
 예제는 [WebContents.send](browser-window-ko.md#webcontentssendchannel-args)를 참고하세요.
 
 ## DOM 이벤트
+
+### load-commit
+
+* `url` String
+* `isMainFrame` Boolean
+
+Fired when a load has committed. This includes navigation within the current
+document as well as subframe document-level loads, but does not include
+asynchronous resource loads.
 
 ### did-finish-load
 

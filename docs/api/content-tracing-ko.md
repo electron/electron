@@ -22,60 +22,68 @@ tracing.startRecording('*', tracing.DEFAULT_OPTIONS, function() {
 
 카테고리 그룹 세트를 가져옵니다. 카테고리 그룹은 도달된 코드 경로를 변경할 수 있습니다.
 
-Once all child processes have acked to the `getCategories` request, `callback`
-is invoked with an array of category groups.
+모든 child 프로세스가 `getCategories` 요청을 받으면 `callback`이 호출되며 인자에 카테고리 그룹의 배열이 전달됩니다.
 
-## tracing.startRecording(categoryFilter, options, callback)
+## tracing.startRecording(categoryFilter, traceOptions, callback)
 
 * `categoryFilter` String
-* `options` Integer
+* `traceOptions` String
 * `callback` Function
 
-Start recording on all processes.
+모든 프로세스에서 레코딩을 시작합니다.
 
-Recording begins immediately locally, and asynchronously on child processes
-as soon as they receive the EnableRecording request. Once all child processes
-have acked to the `startRecording` request, `callback` will be called back.
+레코딩은 지역적으로 즉시 실행됩니다. 그리고 비동기로 child 프로세스는 곧 EnableRecording 요청을 받게 됩니다.
+모든 child 프로세스가 `startRecording` 요청을 받으면 `callback`이 호출됩니다.
 
-`categoryFilter` is a filter to control what category groups should be
-traced. A filter can have an optional `-` prefix to exclude category groups
-that contain a matching category. Having both included and excluded
-category patterns in the same list is not supported.
+`categoryFilter`는 어떤 카테고리 그룹이 트레이싱 되어야 하는지 필터링할 수 있습니다.
+필터는 `-` 접두사를 통해 특정 카테고리 그룹을 제외할 수 있습니다.
+카테고리 패턴은 같은 리스트 내에서 포함과 제외를 함께 사용할 수 없습니다.
 
-Examples:
+예제:
 
 * `test_MyTest*`,
 * `test_MyTest*,test_OtherStuff`,
 * `"-excluded_category1,-excluded_category2`
 
-`options` controls what kind of tracing is enabled, it could be a OR-ed
-combination of `tracing.DEFAULT_OPTIONS`, `tracing.ENABLE_SYSTRACE`,
-`tracing.ENABLE_SAMPLING` and `tracing.RECORD_CONTINUOUSLY`.
+`traceOptions`은 어떤 종류의 트레이싱을 사용할 수 있는지 지정하고 콤마로 리스트를 구분합니다.
+
+사용할 수 있는 옵션은 다음과 같습니다:
+
+* `record-until-full`
+* `record-continuously`
+* `trace-to-console`
+* `enable-sampling`
+* `enable-systrace`
+
+첫번째부터 3번째까지의 옵션은 추적 레코딩 모드입니다. 이에 따라 상호 배타적입니다.
+만약 레코딩 모드가 한 개 이상 지정되면 마지막 지정한 모드만 사용됩니다.
+어떤 모드도 설정되지 않았다면 `record-until-full` 모드가 기본으로 사용됩니다.
+
+추적 옵션은 `traceOptions`이 파싱되어 적용되기 전까지 다음과 같은 기본값이 사용됩니다.
+
+`record-until-full`이 기본 모드, `enable-sampling`과 `enable-systrace`옵션은 포함되지 않음
 
 ## tracing.stopRecording(resultFilePath, callback)
 
 * `resultFilePath` String
 * `callback` Function
 
-Stop recording on all processes.
+모든 프로세스에서 레코딩을 중지합니다.
 
-Child processes typically are caching trace data and only rarely flush and send
-trace data back to the main process. That is because it may be an expensive
-operation to send the trace data over IPC, and we would like to avoid much
-runtime overhead of tracing. So, to end tracing, we must asynchronously ask all
-child processes to flush any pending trace data.
+Child 프로세스는 일반적으로 추적 데이터와 희귀한 플러시 그리고 추적 데이터를 메인 프로세스로 보내는 작업에 대해 캐싱 합니다.
+이러한 일을 하는 이유는 IPC를 통해 추적 데이터를 보내는 작업은 매우 비싼 연산을 동반하기 때문입니다.
+우리는 추적에 의한 런타임 오버헤드를 피하는 것을 지향합니다.
+그래서 트레이싱이 끝나면 모든 child 프로세스에 보류된 추적 데이터를 플러시 할 것인지 물어봅니다.
 
-Once all child processes have acked to the `stopRecording` request, `callback`
-will be called back with a file that contains the traced data.
+모든 child 프로세스가 `stopRecording` 요청을 받으면 `callback`에 추적 데이터를 포함한 파일을 전달됩니다.
 
-Trace data will be written into `resultFilePath` if it is not empty, or into a
-temporary file. The actual file path will be passed to `callback` if it's not
-null.
+추적 데이터는 `resultFilePath` 해당 경로가 비어있는 경우에 한 해 해당 경로에 작성되거나 임시 파일에 작성됩니다.
+실제 파일 경로는 null이 아닌 이상 `callback`을 통해 전달됩니다.
 
-## tracing.startMonitoring(categoryFilter, options, callback)
+## tracing.startMonitoring(categoryFilter, traceOptions, callback)
 
 * `categoryFilter` String
-* `options` Integer
+* `traceOptions` String
 * `callback` Function
 
 Start monitoring on all processes.
@@ -104,13 +112,12 @@ Get the current monitoring traced data.
 
 Child processes typically are caching trace data and only rarely flush and send
 trace data back to the main process. That is because it may be an expensive
-operation to send the trace data over IPC, and we would like to avoid unneeded 
+operation to send the trace data over IPC, and we would like to avoid unneeded
 runtime overhead of tracing. So, to end tracing, we must asynchronously ask all
 child processes to flush any pending trace data.
 
 Once all child processes have acked to the `captureMonitoringSnapshot` request,
 the `callback` will be invoked with a file that contains the traced data.
-
 
 ## tracing.getTraceBufferUsage(callback)
 
