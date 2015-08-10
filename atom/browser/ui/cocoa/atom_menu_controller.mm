@@ -5,12 +5,12 @@
 
 #import "atom/browser/ui/cocoa/atom_menu_controller.h"
 
+#include "atom/browser/ui/atom_menu_model.h"
 #include "base/logging.h"
 #include "base/strings/sys_string_conversions.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/base/accelerators/platform_accelerator_cocoa.h"
 #include "ui/base/l10n/l10n_util_mac.h"
-#include "ui/base/models/simple_menu_model.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/image/image.h"
 
@@ -120,8 +120,7 @@
     [item setTarget:nil];
     [item setAction:nil];
     ui::MenuModel* submenuModel = model->GetSubmenuModelAt(index);
-    NSMenu* submenu =
-        [self menuFromModel:(ui::SimpleMenuModel*)submenuModel];
+    NSMenu* submenu = [self menuFromModel:submenuModel];
     [submenu setTitle:[item title]];
     [item setSubmenu:submenu];
 

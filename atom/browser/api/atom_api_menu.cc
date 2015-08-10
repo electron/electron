@@ -20,7 +20,7 @@ namespace atom {
 namespace api {
 
 Menu::Menu()
-    : model_(new ui::SimpleMenuModel(this)),
+    : model_(new AtomMenuModel(this)),
       parent_(NULL) {
 }
 
