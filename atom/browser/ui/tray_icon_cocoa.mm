@@ -207,23 +207,26 @@ const CGFloat kVerticalTitleMargin = 2;
   }
   inMouseEventSequence_ = NO;
 
-  // Single click
-  if (event.clickCount == 1) {
-    if (menuController_) {
-      [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
-    }
+  // Show menu when single clicked on the icon.
+  if (event.clickCount == 1 && menuController_)
+    [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
 
+  // Don't emit click events when menu is showing.
+  if (menuController_)
+    return;
+
+  // Single click event.
+  if (event.clickCount == 1)
     trayIcon_->NotifyClicked(
         [self getBoundsFromEvent:event],
         ui::EventFlagsFromModifiers([event modifierFlags]));
-  }
 
-  // Double click
-  if (event.clickCount == 2 && !menuController_) {
+  // Double click event.
+  if (event.clickCount == 2)
     trayIcon_->NotifyDoubleClicked(
         [self getBoundsFromEvent:event],
         ui::EventFlagsFromModifiers([event modifierFlags]));
-  }
+
   [self setNeedsDisplay:YES];
 }
 
