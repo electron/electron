@@ -47,7 +47,7 @@ class TrayIcon {
                               const base::string16& title,
                               const base::string16& contents);
 
-  virtual void PopContextMenu(const gfx::Point& pos);
+  virtual void PopUpContextMenu(const gfx::Point& pos);
 
   // Set the context menu for this icon.
   virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) = 0;

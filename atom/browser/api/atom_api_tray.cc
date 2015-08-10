@@ -120,10 +120,10 @@ void Tray::DisplayBalloon(mate::Arguments* args,
   tray_icon_->DisplayBalloon(icon, title, content);
 }
 
-void Tray::PopContextMenu(mate::Arguments* args) {
+void Tray::PopUpContextMenu(mate::Arguments* args) {
   gfx::Point pos;
   args->GetNext(&pos);
-  tray_icon_->PopContextMenu(pos);
+  tray_icon_->PopUpContextMenu(pos);
 }
 
 void Tray::SetContextMenu(mate::Arguments* args, Menu* menu) {
@@ -151,7 +151,7 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setTitle", &Tray::SetTitle)
       .SetMethod("setHighlightMode", &Tray::SetHighlightMode)
       .SetMethod("displayBalloon", &Tray::DisplayBalloon)
-      .SetMethod("popContextMenu", &Tray::PopContextMenu)
+      .SetMethod("popUpContextMenu", &Tray::PopUpContextMenu)
       .SetMethod("_setContextMenu", &Tray::SetContextMenu);
 }
 

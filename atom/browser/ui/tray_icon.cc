@@ -26,7 +26,7 @@ void TrayIcon::DisplayBalloon(const gfx::Image& icon,
                               const base::string16& contents) {
 }
 
-void TrayIcon::PopContextMenu(const gfx::Point& pos) {
+void TrayIcon::PopUpContextMenu(const gfx::Point& pos) {
 }
 
 void TrayIcon::NotifyClicked(const gfx::Rect& bounds, int modifiers) {

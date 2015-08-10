@@ -230,7 +230,7 @@ const CGFloat kVerticalTitleMargin = 2;
   [self setNeedsDisplay:YES];
 }
 
-- (void)popContextMenu {
+- (void)popUpContextMenu {
   if (menuController_ && ![menuController_ isMenuOpen]) {
     // Redraw the dray icon to show highlight if it is enabled.
     [self setNeedsDisplay:YES];
@@ -316,8 +316,8 @@ void TrayIconCocoa::SetHighlightMode(bool highlight) {
   [status_item_view_ setHighlight:highlight];
 }
 
-void TrayIconCocoa::PopContextMenu(const gfx::Point& pos) {
-  [status_item_view_ popContextMenu];
+void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos) {
+  [status_item_view_ popUpContextMenu];
 }
 
 void TrayIconCocoa::SetContextMenu(ui::SimpleMenuModel* menu_model) {

@@ -60,7 +60,7 @@ Creates a new tray icon associated with the `image`.
 
 Emitted when the tray icon is clicked.
 
-__Note:__ The `bounds` payload is only implemented on OS X and Windows 7 or newer.
+__Note:__ The `bounds` payload is only implemented on OS X and Windows.
 
 ### Event: 'right-clicked'
 
@@ -173,7 +173,7 @@ Displays a tray balloon.
 
 __Note:__ This is only implemented on Windows.
 
-### Tray.popContextMenu([position])
+### Tray.popUpContextMenu([position])
 
 * `position` Object - The pop position
   * `x` Integer
