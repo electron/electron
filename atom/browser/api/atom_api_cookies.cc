@@ -345,4 +345,4 @@ mate::Handle<Cookies> Cookies::Create(
 
 }  // namespace api
 
-}  // namespace atotContext
+}  // namespace atom
