@@ -19,6 +19,7 @@
 #include "chrome/common/pref_names.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
+#include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/base/load_flags.h"
 #include "net/disk_cache/disk_cache.h"
@@ -181,10 +182,10 @@ void OnGetBackend(disk_cache::Backend** backend_ptr,
   }
 }
 
-void ClearHttpCacheInIO(content::BrowserContext* browser_context,
-                        const net::CompletionCallback& callback) {
-  auto request_context =
-      browser_context->GetRequestContext()->GetURLRequestContext();
+void ClearHttpCacheInIO(
+    const scoped_refptr<net::URLRequestContextGetter>& context_getter,
+    const net::CompletionCallback& callback) {
+  auto request_context = context_getter->GetURLRequestContext();
   auto http_cache = request_context->http_transaction_factory()->GetCache();
   if (!http_cache)
     RunCallbackInUI<int>(callback, net::ERR_FAILED);
@@ -226,7 +227,7 @@ void Session::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
 void Session::ClearCache(const net::CompletionCallback& callback) {
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
       base::Bind(&ClearHttpCacheInIO,
-                 base::Unretained(browser_context_),
+                 make_scoped_refptr(browser_context_->GetRequestContext()),
                  callback));
 }
 

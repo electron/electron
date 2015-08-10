@@ -8,15 +8,25 @@
 #include <string>
 
 #include "base/callback.h"
-#include "base/values.h"
 #include "native_mate/wrappable.h"
 #include "native_mate/handle.h"
-#include "native_mate/dictionary.h"
-
 #include "net/cookies/canonical_cookie.h"
+
+namespace base {
+class DictionaryValue;
+}
 
 namespace content {
 class BrowserContext;
+}
+
+namespace mate {
+class Dictionary;
+}
+
+namespace net {
+class CookieStore;
+class URLRequestContextGetter;
 }
 
 namespace atom {
@@ -60,13 +70,15 @@ class Cookies : public mate::Wrappable {
   void OnSetCookies(const CookiesCallback& callback,
                     bool set_success);
 
-
-  // mate::Wrappable implementations:
+  // mate::Wrappable:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
 
  private:
-  content::BrowserContext* browser_context_;
+  // Must be called on IO thread.
+  net::CookieStore* GetCookieStore();
+
+  scoped_refptr<net::URLRequestContextGetter> request_context_getter_;
 
   DISALLOW_COPY_AND_ASSIGN(Cookies);
 };
