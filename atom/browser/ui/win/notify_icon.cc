@@ -86,8 +86,10 @@ void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
       NotifyClicked(gfx::Rect(rect), modifiers);
     return;
   } else if (!double_button_click) {  // single right click
-    NotifyRightClicked(gfx::Rect(rect), modifiers);
-    PopContextMenu(cursor_pos);
+    if (menu_model_)
+      PopContextMenu(cursor_pos);
+    else
+      NotifyRightClicked(gfx::Rect(rect), modifiers);
   }
 }
 
