@@ -18,7 +18,7 @@ class AtomBrowserContext;
 class URLRequestFetchJob : public net::URLRequestJob,
                            public net::URLFetcherDelegate {
  public:
-  URLRequestFetchJob(net::URLRequestContextGetter* request_context_getter,
+  URLRequestFetchJob(scoped_refptr<net::URLRequestContextGetter> context_getter,
                      net::URLRequest* request,
                      net::NetworkDelegate* network_delegate,
                      const GURL& url,

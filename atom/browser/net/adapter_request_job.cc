@@ -119,7 +119,7 @@ void AdapterRequestJob::CreateFileJobAndStart(const base::FilePath& path) {
 }
 
 void AdapterRequestJob::CreateHttpJobAndStart(
-    net::URLRequestContextGetter* request_context_getter,
+    scoped_refptr<net::URLRequestContextGetter> request_context_getter,
     const GURL& url,
     const std::string& method,
     const std::string& referrer) {

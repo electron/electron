@@ -16,6 +16,7 @@
 
 namespace net {
 class URLRequest;
+class URLRequestContextGetter;
 }
 
 namespace atom {
@@ -46,7 +47,9 @@ class Protocol : public mate::EventEmitter {
 
   JsProtocolHandler GetProtocolHandler(const std::string& scheme);
 
-  AtomBrowserContext* browser_context() const { return browser_context_; }
+  net::URLRequestContextGetter* request_context_getter() {
+    return request_context_getter_.get();
+  }
 
  protected:
   explicit Protocol(AtomBrowserContext* browser_context);
@@ -94,7 +97,8 @@ class Protocol : public mate::EventEmitter {
                             const JsProtocolHandler& handler);
   int UninterceptProtocolInIO(const std::string& scheme);
 
-  AtomBrowserContext* browser_context_;
+  scoped_refptr<net::URLRequestContextGetter> request_context_getter_;
+
   AtomURLRequestJobFactory* job_factory_;
   ProtocolHandlersMap protocol_handlers_;
 

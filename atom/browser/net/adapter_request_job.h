@@ -65,7 +65,7 @@ class AdapterRequestJob : public net::URLRequestJob {
                                scoped_refptr<base::RefCountedBytes> data);
   void CreateFileJobAndStart(const base::FilePath& path);
   void CreateHttpJobAndStart(
-      net::URLRequestContextGetter* request_context_getter,
+      scoped_refptr<net::URLRequestContextGetter> request_context_getter,
       const GURL& url,
       const std::string& method,
       const std::string& referrer);

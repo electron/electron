@@ -35,23 +35,6 @@ struct Converter<const net::URLRequest*> {
   }
 };
 
-template<>
-struct Converter<net::URLRequestContextGetter*> {
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
-                     net::URLRequestContextGetter** out) {
-    if (val->IsNull()) {
-      *out = nullptr;
-      return true;
-    }
-
-    atom::api::Session* session;
-    if (!Converter<atom::api::Session*>::FromV8(isolate, val, &session))
-      return false;
-    *out = session->browser_context()->GetRequestContext();
-    return true;
-  }
-};
-
 }  // namespace mate
 
 namespace atom {
@@ -141,16 +124,27 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
       } else if (name == "RequestHttpJob") {
         GURL url;
         std::string method, referrer;
-        net::URLRequestContextGetter* getter =
-            registry_->browser_context()->GetRequestContext();
         dict.Get("url", &url);
         dict.Get("method", &method);
         dict.Get("referrer", &referrer);
-        dict.Get("session", &getter);
+
+        v8::Local<v8::Value> value;
+        mate::Handle<Session> session;
+        scoped_refptr<net::URLRequestContextGetter> request_context_getter;
+        // "session" null -> pass nullptr;
+        // "session" a Session object -> use passed session.
+        // "session" undefined -> use current session;
+        if (dict.Get("session", &session))
+          request_context_getter =
+              session->browser_context()->GetRequestContext();
+        else if (dict.Get("session", &value) && value->IsNull())
+          request_context_getter = nullptr;
+        else
+          request_context_getter = registry_->request_context_getter();
 
         BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
             base::Bind(&AdapterRequestJob::CreateHttpJobAndStart, GetWeakPtr(),
-                       base::Unretained(getter), url, method, referrer));
+                       request_context_getter, url, method, referrer));
         return;
       }
     }
@@ -237,7 +231,7 @@ std::string ConvertErrorCode(int error_code) {
 }  // namespace
 
 Protocol::Protocol(AtomBrowserContext* browser_context)
-    : browser_context_(browser_context),
+    : request_context_getter_(browser_context->GetRequestContext()),
       job_factory_(browser_context->job_factory()) {
   CHECK(job_factory_);
 }
@@ -360,6 +354,10 @@ int Protocol::UnregisterProtocolInIO(const std::string& scheme) {
 int Protocol::InterceptProtocolInIO(const std::string& scheme,
                                     const JsProtocolHandler& handler) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+
+  // Force the request context to initialize, otherwise we might have nothing
+  // to intercept.
+  request_context_getter_->GetURLRequestContext();
 
   if (!job_factory_->HasProtocolHandler(scheme))
     return ERR_NO_SCHEME;

@@ -13,12 +13,12 @@
 
 class GURL;
 
-namespace mate {
-class Arguments;
-}
-
 namespace base {
 class FilePath;
+}
+
+namespace mate {
+class Arguments;
 }
 
 namespace atom {
