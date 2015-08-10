@@ -355,6 +355,10 @@ int Protocol::InterceptProtocolInIO(const std::string& scheme,
                                     const JsProtocolHandler& handler) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
+  // Force the request context to initialize, otherwise we might have nothing
+  // to intercept.
+  request_context_getter_->GetURLRequestContext();
+
   if (!job_factory_->HasProtocolHandler(scheme))
     return ERR_NO_SCHEME;
 
