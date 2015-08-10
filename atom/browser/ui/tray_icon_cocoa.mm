@@ -281,11 +281,13 @@ const CGFloat kVerticalTitleMargin = 2;
 
 namespace atom {
 
-TrayIconCocoa::TrayIconCocoa() {
+TrayIconCocoa::TrayIconCocoa() : menu_model_(nullptr) {
 }
 
 TrayIconCocoa::~TrayIconCocoa() {
   [status_item_view_ removeItem];
+  if (menu_model_)
+    menu_model_->RemoveObserver(this);
 }
 
 void TrayIconCocoa::SetImage(const gfx::Image& image) {
@@ -319,8 +321,18 @@ void TrayIconCocoa::PopContextMenu(const gfx::Point& pos) {
 }
 
 void TrayIconCocoa::SetContextMenu(ui::SimpleMenuModel* menu_model) {
+  // Substribe to MenuClosed event.
+  if (menu_model_)
+    menu_model_->RemoveObserver(this);
+  static_cast<AtomMenuModel*>(menu_model)->AddObserver(this);
+
+  // Create native menu.
   menu_.reset([[AtomMenuController alloc] initWithModel:menu_model]);
   [status_item_view_ setMenuController:menu_.get()];
+}
+
+void TrayIconCocoa::MenuClosed() {
+  [status_item_view_ setNeedsDisplay:YES];
 }
 
 // static
