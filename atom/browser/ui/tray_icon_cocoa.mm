@@ -207,27 +207,30 @@ const CGFloat kVerticalTitleMargin = 2;
   }
   inMouseEventSequence_ = NO;
 
-  // Single click
-  if (event.clickCount == 1) {
-    if (menuController_) {
-      [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
-    }
+  // Show menu when single clicked on the icon.
+  if (event.clickCount == 1 && menuController_)
+    [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
 
+  // Don't emit click events when menu is showing.
+  if (menuController_)
+    return;
+
+  // Single click event.
+  if (event.clickCount == 1)
     trayIcon_->NotifyClicked(
         [self getBoundsFromEvent:event],
         ui::EventFlagsFromModifiers([event modifierFlags]));
-  }
 
-  // Double click
-  if (event.clickCount == 2 && !menuController_) {
+  // Double click event.
+  if (event.clickCount == 2)
     trayIcon_->NotifyDoubleClicked(
         [self getBoundsFromEvent:event],
         ui::EventFlagsFromModifiers([event modifierFlags]));
-  }
+
   [self setNeedsDisplay:YES];
 }
 
-- (void)popContextMenu {
+- (void)popUpContextMenu {
   if (menuController_ && ![menuController_ isMenuOpen]) {
     // Redraw the dray icon to show highlight if it is enabled.
     [self setNeedsDisplay:YES];
@@ -278,11 +281,13 @@ const CGFloat kVerticalTitleMargin = 2;
 
 namespace atom {
 
-TrayIconCocoa::TrayIconCocoa() {
+TrayIconCocoa::TrayIconCocoa() : menu_model_(nullptr) {
 }
 
 TrayIconCocoa::~TrayIconCocoa() {
   [status_item_view_ removeItem];
+  if (menu_model_)
+    menu_model_->RemoveObserver(this);
 }
 
 void TrayIconCocoa::SetImage(const gfx::Image& image) {
@@ -311,13 +316,23 @@ void TrayIconCocoa::SetHighlightMode(bool highlight) {
   [status_item_view_ setHighlight:highlight];
 }
 
-void TrayIconCocoa::PopContextMenu(const gfx::Point& pos) {
-  [status_item_view_ popContextMenu];
+void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos) {
+  [status_item_view_ popUpContextMenu];
 }
 
 void TrayIconCocoa::SetContextMenu(ui::SimpleMenuModel* menu_model) {
+  // Substribe to MenuClosed event.
+  if (menu_model_)
+    menu_model_->RemoveObserver(this);
+  static_cast<AtomMenuModel*>(menu_model)->AddObserver(this);
+
+  // Create native menu.
   menu_.reset([[AtomMenuController alloc] initWithModel:menu_model]);
   [status_item_view_ setMenuController:menu_.get()];
+}
+
+void TrayIconCocoa::MenuClosed() {
+  [status_item_view_ setNeedsDisplay:YES];
 }
 
 // static
