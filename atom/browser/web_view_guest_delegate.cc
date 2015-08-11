@@ -162,6 +162,7 @@ void WebViewGuestDelegate::WillAttach(
     const base::Closure& completion_callback) {
   embedder_web_contents_ = embedder_web_contents;
   is_full_page_plugin_ = is_full_page_plugin;
+  completion_callback.Run();
 }
 
 void WebViewGuestDelegate::GuestSizeChangedDueToAutoSize(
