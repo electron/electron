@@ -13,8 +13,6 @@
 #include "content/public/browser/desktop_notification_delegate.h"
 #include "skia/ext/skia_utils_mac.h"
 
-#import <Foundation/Foundation.h>
-
 @interface BRYUserNotificationCenterDelegate : NSObject<NSUserNotificationCenterDelegate> {
  @private
   brightray::NotificationPresenterMac* presenter_;

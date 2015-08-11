@@ -6,10 +6,13 @@
 #ifndef BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_MAC_H_
 #define BRIGHTRAY_BROWSER_NOTIFICATION_PRESENTER_MAC_H_
 
-#import "browser/notification_presenter.h"
+#include "browser/notification_presenter.h"
 
-#import "base/mac/scoped_nsobject.h"
-#import <map>
+#include <map>
+
+#import <Foundation/Foundation.h>
+
+#include "base/mac/scoped_nsobject.h"
 
 @class BRYUserNotificationCenterDelegate;
 
