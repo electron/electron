@@ -12,6 +12,8 @@
     'python': 'python',
     'openssl_fips': '',
     'openssl_no_asm': 1,
+    'node_release_urlbase': 'https://atom.io/download/atom-shell',
+    'node_byteorder': '<!(python -c "import sys; print sys.byteorder")',
     'node_target_type': 'shared_library',
     'node_install_npm': 'false',
     'node_prefix': '',
