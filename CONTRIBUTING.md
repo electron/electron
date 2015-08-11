@@ -2,8 +2,8 @@
 
 :+1::tada: First off, thanks for taking the time to contribute! :tada::+1:
 
-This project adheres to the [Open Code of Conduct][code-of-conduct]. By participating, you are expected to uphold this code.
-[code-of-conduct]: http://todogroup.org/opencodeofconduct/#Electron/opensource@github.com
+This project adheres to the [Contributor Covenant 1.2](http://contributor-covenant.org/version/1/2/0).
+By participating, you are expected to uphold this code. Please report unacceptable behavior to atom@github.com.
 
 The following is a set of guidelines for contributing to Electron.
 These are just guidelines, not rules, use your best judgment and feel free to
