@@ -460,6 +460,16 @@
               ],
             },
             {
+              'postbuild_name': 'Fix path of ffmpeg',
+              'action': [
+                'install_name_tool',
+                '-change',
+                '@loader_path/libffmpeg.dylib',
+                '@rpath/libffmpeg.dylib',
+                '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
+              ],
+            },
+            {
               'postbuild_name': 'Add symlinks for framework subdirectories',
               'action': [
                 'tools/mac/create-framework-subdir-symlinks.sh',
