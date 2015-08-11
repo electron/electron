@@ -17,7 +17,6 @@ class MessageLoop;
 }
 
 namespace net {
-class NetLog;
 class HostMappingRules;
 class HostResolver;
 class NetworkDelegate;
@@ -27,6 +26,8 @@ class URLRequestJobFactory;
 }
 
 namespace brightray {
+
+class NetLog;
 
 class URLRequestContextGetter : public net::URLRequestContextGetter {
  public:
@@ -46,6 +47,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
   URLRequestContextGetter(
       Delegate* delegate,
+      NetLog* net_log,
       const base::FilePath& base_path,
       base::MessageLoop* io_loop,
       base::MessageLoop* file_loop,
@@ -58,17 +60,16 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   scoped_refptr<base::SingleThreadTaskRunner> GetNetworkTaskRunner() const override;
 
   net::HostResolver* host_resolver();
-  net::NetLog* net_log() { return net_log_.get(); }
 
  private:
   Delegate* delegate_;
 
+  NetLog* net_log_;
   base::FilePath base_path_;
   base::MessageLoop* io_loop_;
   base::MessageLoop* file_loop_;
 
   scoped_ptr<net::ProxyConfigService> proxy_config_service_;
-  scoped_ptr<net::NetLog> net_log_;
   scoped_ptr<net::NetworkDelegate> network_delegate_;
   scoped_ptr<net::URLRequestContextStorage> storage_;
   scoped_ptr<net::URLRequestContext> url_request_context_;

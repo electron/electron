@@ -100,11 +100,13 @@ void BrowserContext::RegisterInternalPrefs(PrefRegistrySimple* registry) {
 }
 
 net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
+    NetLog* net_log,
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector protocol_interceptors) {
   DCHECK(!url_request_getter_.get());
   url_request_getter_ = new URLRequestContextGetter(
       this,
+      net_log,
       GetPath(),
       BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
       BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::FILE),
@@ -112,10 +114,6 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
       protocol_interceptors.Pass());
   resource_context_->set_url_request_context_getter(url_request_getter_.get());
   return url_request_getter_.get();
-}
-
-net::NetLog* BrowserContext::GetNetLog() {
-  return url_request_getter_->net_log();
 }
 
 net::NetworkDelegate* BrowserContext::CreateNetworkDelegate() {

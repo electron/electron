@@ -5,29 +5,22 @@
 #ifndef BROWSER_NET_LOG_H_
 #define BROWSER_NET_LOG_H_
 
-#include "base/files/file_path.h"
 #include "base/files/scoped_file.h"
 #include "net/log/net_log.h"
-
-namespace net {
-class URLRequestContext;
-}
+#include "net/log/write_to_file_net_log_observer.h"
 
 namespace brightray {
 
-class NetLog : public net::NetLog,
-               public net::NetLog::ThreadSafeObserver {
+class NetLog : public net::NetLog {
  public:
-  explicit NetLog(net::URLRequestContext* context);
+  NetLog();
   ~NetLog() override;
 
-  void OnAddEntry(const net::NetLog::Entry& entry) override;
+  void StartLogging(net::URLRequestContext* url_request_context);
 
  private:
-  bool added_events_;
-  // We use raw pointer to prevent reference cycle.
-  net::URLRequestContext* const context_;
   base::ScopedFILE log_file_;
+  net::WriteToFileNetLogObserver write_to_file_observer_;
 
   DISALLOW_COPY_AND_ASSIGN(NetLog);
 };

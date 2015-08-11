@@ -63,7 +63,9 @@ net::URLRequestContextGetter* BrowserClient::CreateRequestContext(
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector protocol_interceptors) {
   auto context = static_cast<BrowserContext*>(browser_context);
-  return context->CreateRequestContext(protocol_handlers, protocol_interceptors.Pass());
+  return context->CreateRequestContext(static_cast<NetLog*>(GetNetLog()),
+                                       protocol_handlers,
+                                       protocol_interceptors.Pass());
 }
 
 content::MediaObserver* BrowserClient::GetMediaObserver() {
@@ -81,7 +83,7 @@ void BrowserClient::GetAdditionalAllowedSchemesForFileSystem(
 }
 
 net::NetLog* BrowserClient::GetNetLog() {
-  return browser_context()->GetNetLog();
+  return &net_log_;
 }
 
 base::FilePath BrowserClient::GetDefaultDownloadDirectory() {
