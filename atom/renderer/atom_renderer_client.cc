@@ -24,6 +24,7 @@
 #include "third_party/WebKit/public/web/WebPluginParams.h"
 #include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebRuntimeFeatures.h"
+#include "third_party/WebKit/Source/wtf/ArrayBufferContents.h"
 
 #include "atom/common/node_includes.h"
 
@@ -50,6 +51,17 @@ bool IsSwitchEnabled(base::CommandLine* command_line,
 
 bool IsGuestFrame(blink::WebFrame* frame) {
   return frame->uniqueName().utf8() == "ATOM_SHELL_GUEST_WEB_VIEW";
+}
+
+void* BlinkAllocate(size_t size) {
+  void* ptr = nullptr;
+  WTF::ArrayBufferContents::allocateMemory(
+      size, WTF::ArrayBufferContents::DontInitialize, ptr);
+  return ptr;
+}
+
+void BlinkFree(void* ptr, size_t size) {
+  WTF::ArrayBufferContents::freeMemory(ptr, size);
 }
 
 // Helper class to forward the messages to the client.
@@ -90,6 +102,9 @@ void AtomRendererClient::WebKitInitialized() {
 
   blink::WebCustomElement::addEmbedderCustomElementName("webview");
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
+
+  // Override Node's Buffer allocator with WTF's allocator.
+  node::Buffer::SetAllocator(&BlinkAllocate, &BlinkFree);
 
   node_bindings_->Initialize();
   node_bindings_->PrepareMessageLoop();
