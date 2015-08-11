@@ -5,10 +5,12 @@
 #ifndef ATOM_BROWSER_ATOM_BROWSER_CLIENT_H_
 #define ATOM_BROWSER_ATOM_BROWSER_CLIENT_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
 #include "brightray/browser/browser_client.h"
+#include "content/public/browser/render_process_host_observer.h"
 
 namespace content {
 class QuotaPermissionContext;
@@ -21,7 +23,8 @@ class SSLCertRequestInfo;
 
 namespace atom {
 
-class AtomBrowserClient : public brightray::BrowserClient {
+class AtomBrowserClient : public brightray::BrowserClient,
+                          public content::RenderProcessHostObserver {
  public:
   AtomBrowserClient();
   virtual ~AtomBrowserClient();
@@ -54,9 +57,16 @@ class AtomBrowserClient : public brightray::BrowserClient {
       net::SSLCertRequestInfo* cert_request_info,
       scoped_ptr<content::ClientCertificateDelegate> delegate) override;
 
- private:
+  // brightray::BrowserClient:
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
       const content::MainFunctionParams&) override;
+
+  // content::RenderProcessHostObserver:
+  void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
+
+ private:
+  // pending_render_process => current_render_process.
+  std::map<int, int> pending_processes_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
 };
