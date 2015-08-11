@@ -5,10 +5,11 @@
 #include "atom/app/node_main.h"
 
 #include "atom/browser/javascript_environment.h"
-#include "atom/common/node_includes.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
+
+#include "atom/common/node_includes.h"
 
 namespace atom {
 
