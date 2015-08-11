@@ -82,8 +82,11 @@
             ['libchromiumcontent_component', {
               'link_settings': {
                 'libraries': [
-                  # libgtk2ui is always linked statically.
+                  # Following libraries are always linked statically.
                   '<(libchromiumcontent_dir)/libgtk2ui.a',
+                  '<(libchromiumcontent_dir)/libdevtools_discovery.a',
+                  '<(libchromiumcontent_dir)/libdevtools_http_handler.a',
+                  '<(libchromiumcontent_dir)/libhttp_server.a',
                 ],
               },
             }, {
@@ -112,10 +115,19 @@
             ],
           },
           'conditions':  [
-            # Link with system frameworks.
-            ['libchromiumcontent_component==0', {
+            ['libchromiumcontent_component', {
               'link_settings': {
                 'libraries': [
+                  # Following libraries are always linked statically.
+                  '<(libchromiumcontent_dir)/libdevtools_discovery.a',
+                  '<(libchromiumcontent_dir)/libdevtools_http_handler.a',
+                  '<(libchromiumcontent_dir)/libhttp_server.a',
+                ],
+              },
+            }, {
+              'link_settings': {
+                'libraries': [
+                  # Link with system frameworks.
                   # ui_base.gypi:
                   '$(SDKROOT)/System/Library/Frameworks/Accelerate.framework',
                   # net.gypi:
