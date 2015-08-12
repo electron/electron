@@ -28,6 +28,8 @@ class Dictionary {
   Dictionary(v8::Isolate* isolate, v8::Local<v8::Object> object);
   ~Dictionary();
 
+  static Dictionary CreateEmpty(v8::Isolate* isolate);
+
   template<typename T>
   bool Get(const base::StringPiece& key, T* out) const {
     v8::Local<v8::Value> val = GetHandle()->Get(StringToV8(isolate_, key));
