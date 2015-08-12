@@ -110,6 +110,18 @@ void AskForOptions(v8::Isolate* isolate,
   handler.Run(request, wrapped_callback.ToLocalChecked());
 }
 
+bool IsErrorOptions(base::Value* value, int* error) {
+  if (value->IsType(base::Value::TYPE_DICTIONARY)) {
+    base::DictionaryValue* dict = static_cast<base::DictionaryValue*>(value);
+    if (dict->GetInteger("error", error))
+      return true;
+  } else if (value->IsType(base::Value::TYPE_INTEGER)) {
+    if (value->GetAsInteger(error))
+      return true;
+  }
+  return false;
+}
+
 }  // namespace internal
 
 }  // namespace atom

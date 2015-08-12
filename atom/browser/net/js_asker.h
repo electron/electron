@@ -29,6 +29,9 @@ void AskForOptions(v8::Isolate* isolate,
                    net::URLRequest* request,
                    const ResponseCallback& callback);
 
+// Test whether the |options| means an error.
+bool IsErrorOptions(base::Value* value, int* error);
+
 }  // namespace internal
 
 template<typename RequestJob>
@@ -63,13 +66,13 @@ class JsAsker : public RequestJob {
 
   // Called when the JS handler has sent the response, we need to decide whether
   // to start, or fail the job.
-  void OnResponse(bool success, scoped_ptr<base::Value> options) {
-    if (success && options) {
-      StartAsync(options.Pass());
+  void OnResponse(bool success, scoped_ptr<base::Value> value) {
+    int error = net::ERR_NOT_IMPLEMENTED;
+    if (success && value && !internal::IsErrorOptions(value.get(), &error)) {
+      StartAsync(value.Pass());
     } else {
       RequestJob::NotifyStartError(
-          net::URLRequestStatus(net::URLRequestStatus::FAILED,
-                                net::ERR_NOT_IMPLEMENTED));
+          net::URLRequestStatus(net::URLRequestStatus::FAILED, error));
     }
   }
 
