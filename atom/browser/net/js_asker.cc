@@ -54,22 +54,20 @@ void HandlerCallback(v8::Isolate* isolate,
       base::Bind(holder->callback, true, base::Passed(&options)));
 }
 
-// func.bind(func, ...).
-template<typename... ArgTypes>
+// func.bind(func, arg1, arg2).
+// NB(zcbenz): Using C++11 version crashes VS.
 v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
                                       v8::Local<v8::Context> context,
                                       v8::Local<v8::Function> func,
-                                      ArgTypes... args) {
+                                      v8::Local<v8::Value> arg1,
+                                      v8::Local<v8::Value> arg2) {
   v8::MaybeLocal<v8::Value> bind = func->Get(mate::StringToV8(isolate, "bind"));
   CHECK(!bind.IsEmpty());
   v8::Local<v8::Function> bind_func =
       v8::Local<v8::Function>::Cast(bind.ToLocalChecked());
-  std::vector<v8::Local<v8::Value>> converted = {
-    v8::Local<v8::Value>::Cast(func),
-    mate::ConvertToV8(isolate, args)...,
-  };
+  v8::Local<v8::Value> converted[] = { func, arg1, arg2 };
   return bind_func->Call(
-      context, func, converted.size(), &converted.front()).ToLocalChecked();
+      context, func, arraysize(converted), converted).ToLocalChecked();
 }
 
 // Generate the callback that will be passed to |handler|.
@@ -86,8 +84,7 @@ v8::MaybeLocal<v8::Value> GenerateCallback(v8::Isolate* isolate,
       v8::Local<v8::FunctionTemplate>::New(isolate, g_handler_callback_);
   CallbackHolder* holder = new CallbackHolder;
   holder->callback = callback;
-  return BindFunctionWith(isolate, context,
-                          handler_callback->GetFunction(),
+  return BindFunctionWith(isolate, context, handler_callback->GetFunction(),
                           v8::External::New(isolate, holder),
                           v8::Object::New(isolate));
 }
