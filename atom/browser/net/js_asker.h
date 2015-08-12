@@ -47,9 +47,7 @@ class JsAsker : public RequestJob {
         weak_factory_(this) {}
 
   // Subclass should do initailze work here.
-  virtual void StartAsync(scoped_ptr<base::Value> options) {
-    RequestJob::Start();
-  }
+  virtual void StartAsync(scoped_ptr<base::Value> options) = 0;
 
  private:
   // RequestJob:

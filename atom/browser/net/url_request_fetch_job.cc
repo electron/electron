@@ -75,42 +75,53 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
 }  // namespace
 
 URLRequestFetchJob::URLRequestFetchJob(
-    scoped_refptr<net::URLRequestContextGetter> request_context_getter,
     net::URLRequest* request,
     net::NetworkDelegate* network_delegate,
-    const GURL& url,
-    const std::string& method,
-    const std::string& referrer)
-    : net::URLRequestJob(request, network_delegate),
+    v8::Isolate* isolate,
+    const JavaScriptHandler& handler)
+    : JsAsker<net::URLRequestJob>(request, network_delegate, isolate, handler),
       pending_buffer_size_(0) {
+}
+
+void URLRequestFetchJob::StartAsync(scoped_ptr<base::Value> options) {
+  if (!options->IsType(base::Value::TYPE_DICTIONARY)) {
+    NotifyStartError(net::URLRequestStatus(
+          net::URLRequestStatus::FAILED, net::ERR_NOT_IMPLEMENTED));
+    return;
+  }
+
+  std::string url, method, referrer;
+  base::DictionaryValue* dict =
+      static_cast<base::DictionaryValue*>(options.get());
+  dict->GetString("url", &url);
+  dict->GetString("method", &method);
+  dict->GetString("referrer", &referrer);
+
   // Use |request|'s method if |method| is not specified.
   net::URLFetcher::RequestType request_type;
   if (method.empty())
-    request_type = GetRequestType(request->method());
+    request_type = GetRequestType(request()->method());
   else
     request_type = GetRequestType(method);
 
-  fetcher_ = net::URLFetcher::Create(url, request_type, this);
-  // Use request context if provided else create one.
-  if (request_context_getter)
-    fetcher_->SetRequestContext(request_context_getter.get());
-  else
-    fetcher_->SetRequestContext(GetRequestContext());
-
+  fetcher_ = net::URLFetcher::Create(GURL(url), request_type, this);
+  fetcher_->SetRequestContext(CreateRequestContext());
   fetcher_->SaveResponseWithWriter(make_scoped_ptr(new ResponsePiper(this)));
 
   // Use |request|'s referrer if |referrer| is not specified.
-  if (referrer.empty()) {
-    fetcher_->SetReferrer(request->referrer());
-  } else {
+  if (referrer.empty())
+    fetcher_->SetReferrer(request()->referrer());
+  else
     fetcher_->SetReferrer(referrer);
-  }
 
   // Use |request|'s headers.
-  fetcher_->SetExtraRequestHeaders(request->extra_request_headers().ToString());
+  fetcher_->SetExtraRequestHeaders(
+      request()->extra_request_headers().ToString());
+
+  fetcher_->Start();
 }
 
-net::URLRequestContextGetter* URLRequestFetchJob::GetRequestContext() {
+net::URLRequestContextGetter* URLRequestFetchJob::CreateRequestContext() {
   if (!url_request_context_getter_.get()) {
     auto task_runner = base::ThreadTaskRunnerHandle::Get();
     net::URLRequestContextBuilder builder;
@@ -150,12 +161,8 @@ int URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer, int num_bytes) {
   return bytes_read;
 }
 
-void URLRequestFetchJob::Start() {
-  fetcher_->Start();
-}
-
 void URLRequestFetchJob::Kill() {
-  URLRequestJob::Kill();
+  JsAsker<URLRequestJob>::Kill();
   fetcher_.reset();
 }
 

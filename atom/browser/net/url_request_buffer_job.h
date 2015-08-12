@@ -8,7 +8,6 @@
 #include <string>
 
 #include "atom/browser/net/js_asker.h"
-#include "atom/common/node_includes.h"
 #include "base/memory/ref_counted_memory.h"
 #include "net/url_request/url_request_simple_job.h"
 
