@@ -72,8 +72,8 @@ app.once 'ready', ->
     directory = getPathForHost parsed.hostname
     return callback() unless directory?
     callback path.join(directory, parsed.path)
-  protocol.registerFileProtocol 'chrome-extension', chromeExtensionHandler, ->
-    console.error 'Unable to register chrome-extension protocol'
+  protocol.registerFileProtocol 'chrome-extension', chromeExtensionHandler, (error) ->
+    console.error 'Unable to register chrome-extension protocol' if error
 
   BrowserWindow::_loadDevToolsExtensions = (extensionInfoArray) ->
     @devToolsWebContents?.executeJavaScript "DevToolsAPI.addExtensions(#{JSON.stringify(extensionInfoArray)});"

@@ -7,19 +7,22 @@
 
 #include <string>
 
+#include "atom/browser/net/js_asker.h"
+#include "atom/common/node_includes.h"
 #include "base/memory/ref_counted_memory.h"
 #include "net/url_request/url_request_simple_job.h"
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
-class URLRequestBufferJob : public net::URLRequestSimpleJob {
+class URLRequestBufferJob : public JsAsker<net::URLRequestSimpleJob> {
  public:
   URLRequestBufferJob(net::URLRequest* request,
                       net::NetworkDelegate* network_delegate,
-                      const std::string& mime_type,
-                      const std::string& charset,
-                      scoped_refptr<base::RefCountedBytes> data);
+                      v8::Isolate* isolate,
+                      const JavaScriptHandler& handler);
+
+  // JsAsker:
+  void StartAsync(scoped_ptr<base::Value> options) override;
 
   // URLRequestSimpleJob:
   int GetRefCountedData(std::string* mime_type,
@@ -30,7 +33,7 @@ class URLRequestBufferJob : public net::URLRequestSimpleJob {
  private:
   std::string mime_type_;
   std::string charset_;
-  scoped_refptr<base::RefCountedBytes> buffer_data_;
+  scoped_refptr<base::RefCountedBytes> data_;
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestBufferJob);
 };
