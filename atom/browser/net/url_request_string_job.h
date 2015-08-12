@@ -5,19 +5,22 @@
 #ifndef ATOM_BROWSER_NET_URL_REQUEST_STRING_JOB_H_
 #define ATOM_BROWSER_NET_URL_REQUEST_STRING_JOB_H_
 
+#include "atom/browser/net/js_asker.h"
 #include "net/url_request/url_request_simple_job.h"
 
 #include <string>
 
 namespace atom {
 
-class URLRequestStringJob : public net::URLRequestSimpleJob {
+class URLRequestStringJob : public JsAsker<net::URLRequestSimpleJob> {
  public:
   URLRequestStringJob(net::URLRequest* request,
                       net::NetworkDelegate* network_delegate,
-                      const std::string& mime_type,
-                      const std::string& charset,
-                      const std::string& data);
+                      v8::Isolate* isolate,
+                      const JavaScriptHandler& handler);
+
+  // JsAsker:
+  void StartAsync(scoped_ptr<base::Value> options) override;
 
   // URLRequestSimpleJob:
   int GetData(std::string* mime_type,

@@ -70,7 +70,7 @@ ProcessOwner GetProcessOwner(int process_id,
 
   // First search for NativeWindow.
   *window = NativeWindow::FromWebContents(web_contents);
-  if (window)
+  if (*window)
     return OWNER_NATIVE_WINDOW;
 
   // Then search for guest WebContents.

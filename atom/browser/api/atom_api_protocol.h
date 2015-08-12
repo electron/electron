@@ -9,10 +9,11 @@
 #include <map>
 #include <vector>
 
-#include "atom/browser/api/event_emitter.h"
+#include "atom/browser/net/atom_url_request_job_factory.h"
 #include "base/callback.h"
+#include "content/public/browser/browser_thread.h"
 #include "native_mate/handle.h"
-#include "net/base/completion_callback.h"
+#include "native_mate/wrappable.h"
 
 namespace net {
 class URLRequest;
@@ -26,30 +27,14 @@ class AtomURLRequestJobFactory;
 
 namespace api {
 
-class Protocol : public mate::EventEmitter {
+class Protocol : public mate::Wrappable {
  public:
-  using JsProtocolHandler =
-      base::Callback<v8::Local<v8::Value>(const net::URLRequest*)>;
-  using JsCompletionCallback = base::Callback<void(v8::Local<v8::Value>)>;
-
-  enum {
-    OK = 0,
-    ERR_SCHEME_REGISTERED,
-    ERR_SCHEME_UNREGISTERED,
-    ERR_SCHEME_INTERCEPTED,
-    ERR_SCHEME_UNINTERCEPTED,
-    ERR_NO_SCHEME,
-    ERR_SCHEME
-  };
+  using Handler =
+      base::Callback<void(const net::URLRequest*, v8::Local<v8::Value>)>;
+  using CompletionCallback = base::Callback<void(v8::Local<v8::Value>)>;
 
   static mate::Handle<Protocol> Create(
       v8::Isolate* isolate, AtomBrowserContext* browser_context);
-
-  JsProtocolHandler GetProtocolHandler(const std::string& scheme);
-
-  net::URLRequestContextGetter* request_context_getter() {
-    return request_context_getter_.get();
-  }
 
  protected:
   explicit Protocol(AtomBrowserContext* browser_context);
@@ -59,48 +44,77 @@ class Protocol : public mate::EventEmitter {
       v8::Isolate* isolate);
 
  private:
-  typedef std::map<std::string, JsProtocolHandler> ProtocolHandlersMap;
+  // Possible errors.
+  enum ProtocolError {
+    PROTOCOL_OK,  // no error
+    PROTOCOL_FAIL,  // operation failed, should never occur
+    PROTOCOL_REGISTERED,
+    PROTOCOL_NOT_REGISTERED,
+    PROTOCOL_INTERCEPTED,
+    PROTOCOL_NOT_INTERCEPTED,
+  };
 
-  // Callback called after performing action on IO thread.
-  void OnIOActionCompleted(const JsCompletionCallback& callback,
-                           int error);
+  // The protocol handler that will create a protocol handler for certain
+  // request job.
+  template<typename RequestJob>
+  class CustomProtocolHandler
+      : public net::URLRequestJobFactory::ProtocolHandler {
+   public:
+    CustomProtocolHandler(v8::Isolate* isolate, const Handler& handler)
+        : isolate_(isolate), handler_(handler) {}
+    ~CustomProtocolHandler() override {}
+
+    net::URLRequestJob* MaybeCreateJob(
+        net::URLRequest* request,
+        net::NetworkDelegate* network_delegate) const override {
+      return new RequestJob(request, network_delegate, isolate_, handler_);
+    }
+
+   private:
+    v8::Isolate* isolate_;
+    Protocol::Handler handler_;
+
+    DISALLOW_COPY_AND_ASSIGN(CustomProtocolHandler);
+  };
 
   // Register schemes to standard scheme list.
   void RegisterStandardSchemes(const std::vector<std::string>& schemes);
 
-  // Returns whether a scheme has been registered.
-  void IsHandledProtocol(const std::string& scheme,
-                         const net::CompletionCallback& callback);
-
-  // Register/unregister an networking |scheme| which would be handled by
-  // |callback|.
+  // Register the protocol with certain request job.
+  template<typename RequestJob>
   void RegisterProtocol(v8::Isolate* isolate,
                         const std::string& scheme,
-                        const JsProtocolHandler& handler,
-                        const JsCompletionCallback& callback);
-  void UnregisterProtocol(v8::Isolate* isolate, const std::string& scheme,
-                          const JsCompletionCallback& callback);
+                        const Handler& handler,
+                        const CompletionCallback& callback) {
+    content::BrowserThread::PostTaskAndReplyWithResult(
+        content::BrowserThread::IO, FROM_HERE,
+        base::Bind(&Protocol::RegisterProtocolInIO<RequestJob>,
+                   base::Unretained(this), scheme, handler),
+        base::Bind(&Protocol::OnIOCompleted,
+                   base::Unretained(this), callback));
+  }
+  template<typename RequestJob>
+  ProtocolError RegisterProtocolInIO(const std::string& scheme,
+                                     const Handler& handler) {
+    if (job_factory_->IsHandledProtocol(scheme))
+      return PROTOCOL_REGISTERED;
+    scoped_ptr<CustomProtocolHandler<RequestJob>> protocol_handler(
+        new CustomProtocolHandler<RequestJob>(isolate(), handler));
+    if (job_factory_->SetProtocolHandler(scheme, protocol_handler.Pass()))
+      return PROTOCOL_OK;
+    else
+      return PROTOCOL_FAIL;
+  }
 
-  // Intercept/unintercept an existing protocol handler.
-  void InterceptProtocol(v8::Isolate* isolate,
-                         const std::string& scheme,
-                         const JsProtocolHandler& handler,
-                         const JsCompletionCallback& callback);
-  void UninterceptProtocol(v8::Isolate* isolate, const std::string& scheme,
-                           const JsCompletionCallback& callback);
+  // Convert error code to JS exception and call the callback.
+  void OnIOCompleted(const CompletionCallback& callback, ProtocolError error);
 
-  // The networking related operations have to be done in IO thread.
-  int RegisterProtocolInIO(const std::string& scheme,
-                           const JsProtocolHandler& handler);
-  int UnregisterProtocolInIO(const std::string& scheme);
-  int InterceptProtocolInIO(const std::string& scheme,
-                            const JsProtocolHandler& handler);
-  int UninterceptProtocolInIO(const std::string& scheme);
+  // Convert error code to string.
+  std::string ErrorCodeToString(ProtocolError error);
 
   scoped_refptr<net::URLRequestContextGetter> request_context_getter_;
 
-  AtomURLRequestJobFactory* job_factory_;
-  ProtocolHandlersMap protocol_handlers_;
+  AtomURLRequestJobFactory* job_factory_;  // weak ref.
 
   DISALLOW_COPY_AND_ASSIGN(Protocol);
 };

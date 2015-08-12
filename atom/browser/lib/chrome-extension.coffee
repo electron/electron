@@ -64,14 +64,14 @@ app.once 'ready', ->
   catch e
 
   # The chrome-extension: can map a extension URL request to real file path.
-  protocol.registerProtocol 'chrome-extension', (request) ->
-    parsed = url.parse request.url
-    return unless parsed.hostname and parsed.path?
-    return unless /extension-\d+/.test parsed.hostname
+  # protocol.registerProtocol 'chrome-extension', (request) ->
+  #   parsed = url.parse request.url
+  #   return unless parsed.hostname and parsed.path?
+  #   return unless /extension-\d+/.test parsed.hostname
 
-    directory = getPathForHost parsed.hostname
-    return unless directory?
-    return new protocol.RequestFileJob(path.join(directory, parsed.path))
+  #   directory = getPathForHost parsed.hostname
+  #   return unless directory?
+  #   return new protocol.RequestFileJob(path.join(directory, parsed.path))
 
   BrowserWindow::_loadDevToolsExtensions = (extensionInfoArray) ->
     @devToolsWebContents?.executeJavaScript "DevToolsAPI.addExtensions(#{JSON.stringify(extensionInfoArray)});"

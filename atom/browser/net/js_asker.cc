@@ -1,0 +1,106 @@
+// Copyright (c) 2015 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+#include "atom/browser/net/js_asker.h"
+
+#include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/v8_value_converter.h"
+#include "native_mate/function_template.h"
+
+namespace atom {
+
+namespace internal {
+
+namespace {
+
+struct CallbackHolder {
+  ResponseCallback callback;
+};
+
+// Cached JavaScript version of |HandlerCallback|.
+v8::Persistent<v8::FunctionTemplate> g_handler_callback_;
+
+// Cached C++ version of |Function.prototype.bind|.
+base::Callback<v8::Local<v8::Value>(
+    v8::Local<v8::Value>, v8::Local<v8::Value>, v8::Local<v8::Value>)> g_bind;
+
+// The callback which is passed to |handler|.
+void HandlerCallback(v8::Local<v8::External> external, mate::Arguments* args) {
+  scoped_ptr<CallbackHolder> holder(
+        static_cast<CallbackHolder*>(external->Value()));
+  CHECK(holder);
+  v8::Local<v8::Value> value;
+  if (!args->GetNext(&value)) {
+    holder->callback.Run(false, nullptr);
+    return;
+  }
+
+  V8ValueConverter converter;
+  v8::Local<v8::Context> context = args->isolate()->GetCurrentContext();
+  scoped_ptr<base::Value> options(converter.FromV8Value(value, context));
+  holder->callback.Run(true, options.Pass());
+}
+
+// func.bind(...).
+template<typename... ArgTypes>
+v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
+                                      v8::Local<v8::Context> context,
+                                      v8::Local<v8::Function> func,
+                                      ArgTypes... args) {
+  v8::MaybeLocal<v8::Value> bind = func->Get(mate::StringToV8(isolate, "bind"));
+  CHECK(!bind.IsEmpty());
+  v8::Local<v8::Function> bind_func =
+      v8::Local<v8::Function>::Cast(bind.ToLocalChecked());
+  std::vector<v8::Local<v8::Value>> converted = {
+      func, mate::ConvertToV8(isolate, args)...,
+  };
+  return bind_func->Call(
+      context, func, converted.size(), &converted.front()).ToLocalChecked();
+}
+
+// Generate the callback that will be passed to |handler|.
+v8::MaybeLocal<v8::Value> GenerateCallback(v8::Isolate* isolate,
+                                           v8::Local<v8::Context> context,
+                                           const ResponseCallback& callback) {
+  // The FunctionTemplate is cached.
+  if (g_handler_callback_.IsEmpty())
+    g_handler_callback_.Reset(
+        isolate,
+        mate::CreateFunctionTemplate(isolate, base::Bind(&HandlerCallback)));
+
+  v8::Local<v8::FunctionTemplate> handler_callback =
+      v8::Local<v8::FunctionTemplate>::New(isolate, g_handler_callback_);
+  CallbackHolder* holder = new CallbackHolder;
+  holder->callback = callback;
+  return BindFunctionWith(isolate, context,
+                          handler_callback->GetFunction(),
+                          v8::External::New(isolate, holder));
+}
+
+}  // namespace
+
+void AskForOptions(v8::Isolate* isolate,
+                   const JavaScriptHandler& handler,
+                   net::URLRequest* request,
+                   const ResponseCallback& callback) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  v8::Context::Scope context_scope(context);
+  // We don't convert the callback to C++ directly because creating
+  // FunctionTemplate will cause memory leak since V8 never releases it. So we
+  // have to create the function object in JavaScript to work around it.
+  v8::MaybeLocal<v8::Value> wrapped_callback = GenerateCallback(
+      isolate, context, callback);
+  if (wrapped_callback.IsEmpty()) {
+    callback.Run(false, nullptr);
+    return;
+  }
+  handler.Run(request, wrapped_callback.ToLocalChecked());
+}
+
+}  // namespace internal
+
+}  // namespace atom
