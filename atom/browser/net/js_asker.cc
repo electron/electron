@@ -21,14 +21,21 @@ struct CallbackHolder {
 // Cached JavaScript version of |HandlerCallback|.
 v8::Persistent<v8::FunctionTemplate> g_handler_callback_;
 
-// Cached C++ version of |Function.prototype.bind|.
-base::Callback<v8::Local<v8::Value>(
-    v8::Local<v8::Value>, v8::Local<v8::Value>, v8::Local<v8::Value>)> g_bind;
-
 // The callback which is passed to |handler|.
-void HandlerCallback(v8::Local<v8::External> external, mate::Arguments* args) {
+void HandlerCallback(v8::Isolate* isolate,
+                     v8::Local<v8::External> external,
+                     v8::Local<v8::Object> state,
+                     mate::Arguments* args) {
+  // Check if the callback has already been called.
+  v8::Local<v8::String> called_symbol = mate::StringToSymbol(isolate, "called");
+  if (state->Has(called_symbol))
+    return;  // no nothing
+  else
+    state->Set(called_symbol, v8::Boolean::New(isolate, true));
+
+  // If there is no argument passed then we failed.
   scoped_ptr<CallbackHolder> holder(
-        static_cast<CallbackHolder*>(external->Value()));
+      static_cast<CallbackHolder*>(external->Value()));
   CHECK(holder);
   v8::Local<v8::Value> value;
   if (!args->GetNext(&value)) {
@@ -36,13 +43,14 @@ void HandlerCallback(v8::Local<v8::External> external, mate::Arguments* args) {
     return;
   }
 
+  // Pass whatever user passed to the actaul request job.
   V8ValueConverter converter;
   v8::Local<v8::Context> context = args->isolate()->GetCurrentContext();
   scoped_ptr<base::Value> options(converter.FromV8Value(value, context));
   holder->callback.Run(true, options.Pass());
 }
 
-// func.bind(...).
+// func.bind(func, ...).
 template<typename... ArgTypes>
 v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
                                       v8::Local<v8::Context> context,
@@ -75,7 +83,8 @@ v8::MaybeLocal<v8::Value> GenerateCallback(v8::Isolate* isolate,
   holder->callback = callback;
   return BindFunctionWith(isolate, context,
                           handler_callback->GetFunction(),
-                          v8::External::New(isolate, holder));
+                          v8::External::New(isolate, holder),
+                          v8::Object::New(isolate));
 }
 
 }  // namespace

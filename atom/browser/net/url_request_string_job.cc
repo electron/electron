@@ -19,16 +19,14 @@ URLRequestStringJob::URLRequestStringJob(net::URLRequest* request,
 }
 
 void URLRequestStringJob::StartAsync(scoped_ptr<base::Value> options) {
-  if (options) {
-    if (options->IsType(base::Value::TYPE_DICTIONARY)) {
-      base::DictionaryValue* dict =
-          static_cast<base::DictionaryValue*>(options.get());
-      dict->GetString("mimeType", &mime_type_);
-      dict->GetString("charset", &charset_);
-      dict->GetString("data", &data_);
-    } else if (options->IsType(base::Value::TYPE_STRING)) {
-      options->GetAsString(&data_);
-    }
+  if (options->IsType(base::Value::TYPE_DICTIONARY)) {
+    base::DictionaryValue* dict =
+        static_cast<base::DictionaryValue*>(options.get());
+    dict->GetString("mimeType", &mime_type_);
+    dict->GetString("charset", &charset_);
+    dict->GetString("data", &data_);
+  } else if (options->IsType(base::Value::TYPE_STRING)) {
+    options->GetAsString(&data_);
   }
   net::URLRequestSimpleJob::Start();
 }

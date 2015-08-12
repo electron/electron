@@ -64,7 +64,7 @@ class JsAsker : public RequestJob {
   // Called when the JS handler has sent the response, we need to decide whether
   // to start, or fail the job.
   void OnResponse(bool success, scoped_ptr<base::Value> options) {
-    if (success) {
+    if (success && options) {
       StartAsync(options.Pass());
     } else {
       RequestJob::NotifyStartError(
