@@ -6,10 +6,12 @@
 #define ATOM_BROWSER_NET_JS_ASKER_H_
 
 #include "base/callback.h"
+#include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/net_errors.h"
+#include "net/url_request/url_request_context_getter.h"
 #include "net/url_request/url_request_job.h"
 #include "v8/include/v8.h"
 
@@ -37,17 +39,25 @@ bool IsErrorOptions(base::Value* value, int* error);
 template<typename RequestJob>
 class JsAsker : public RequestJob {
  public:
-  JsAsker(net::URLRequest* request,
-          net::NetworkDelegate* network_delegate,
-          v8::Isolate* isolate,
-          const JavaScriptHandler& handler)
-      : RequestJob(request, network_delegate),
-        isolate_(isolate),
-        handler_(handler),
-        weak_factory_(this) {}
+  JsAsker(net::URLRequest* request, net::NetworkDelegate* network_delegate)
+      : RequestJob(request, network_delegate), weak_factory_(this) {}
+
+  // Called by |CustomProtocolHandler| to store handler related information.
+  void SetHandlerInfo(
+      v8::Isolate* isolate,
+      scoped_refptr<net::URLRequestContextGetter> request_context_getter,
+      const JavaScriptHandler& handler) {
+    isolate_ = isolate;
+    request_context_getter_ = request_context_getter;
+    handler_ = handler;
+  }
 
   // Subclass should do initailze work here.
   virtual void StartAsync(scoped_ptr<base::Value> options) = 0;
+
+  net::URLRequestContextGetter* request_context_getter() const {
+    return request_context_getter_.get();
+  }
 
  private:
   // RequestJob:
@@ -75,7 +85,9 @@ class JsAsker : public RequestJob {
   }
 
   v8::Isolate* isolate_;
+  scoped_refptr<net::URLRequestContextGetter> request_context_getter_;
   JavaScriptHandler handler_;
+
   base::WeakPtrFactory<JsAsker> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(JsAsker);

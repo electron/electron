@@ -62,18 +62,26 @@ class Protocol : public mate::Wrappable {
   class CustomProtocolHandler
       : public net::URLRequestJobFactory::ProtocolHandler {
    public:
-    CustomProtocolHandler(v8::Isolate* isolate, const Handler& handler)
-        : isolate_(isolate), handler_(handler) {}
+    CustomProtocolHandler(
+        v8::Isolate* isolate,
+        scoped_refptr<net::URLRequestContextGetter> request_context,
+        const Handler& handler)
+        : isolate_(isolate),
+          request_context_(request_context),
+          handler_(handler) {}
     ~CustomProtocolHandler() override {}
 
     net::URLRequestJob* MaybeCreateJob(
         net::URLRequest* request,
         net::NetworkDelegate* network_delegate) const override {
-      return new RequestJob(request, network_delegate, isolate_, handler_);
+      RequestJob* request_job = new RequestJob(request, network_delegate);
+      request_job->SetHandlerInfo(isolate_, request_context_, handler_);
+      return request_job;
     }
 
    private:
     v8::Isolate* isolate_;
+    scoped_refptr<net::URLRequestContextGetter> request_context_;
     Protocol::Handler handler_;
 
     DISALLOW_COPY_AND_ASSIGN(CustomProtocolHandler);
@@ -101,7 +109,8 @@ class Protocol : public mate::Wrappable {
     if (job_factory_->IsHandledProtocol(scheme))
       return PROTOCOL_REGISTERED;
     scoped_ptr<CustomProtocolHandler<RequestJob>> protocol_handler(
-        new CustomProtocolHandler<RequestJob>(isolate(), handler));
+        new CustomProtocolHandler<RequestJob>(
+            isolate(), request_context_getter_, handler));
     if (job_factory_->SetProtocolHandler(scheme, protocol_handler.Pass()))
       return PROTOCOL_OK;
     else
@@ -135,7 +144,7 @@ class Protocol : public mate::Wrappable {
 
   scoped_refptr<net::URLRequestContextGetter> request_context_getter_;
 
-  AtomURLRequestJobFactory* job_factory_;  // weak ref.
+  AtomURLRequestJobFactory* job_factory_;  // weak ref
 
   DISALLOW_COPY_AND_ASSIGN(Protocol);
 };

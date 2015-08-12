@@ -8,11 +8,8 @@ namespace atom {
 
 UrlRequestAsyncAsarJob::UrlRequestAsyncAsarJob(
     net::URLRequest* request,
-    net::NetworkDelegate* network_delegate,
-    v8::Isolate* isolate,
-    const JavaScriptHandler& handler)
-    : JsAsker<asar::URLRequestAsarJob>(request, network_delegate, isolate,
-                                       handler) {
+    net::NetworkDelegate* network_delegate)
+    : JsAsker<asar::URLRequestAsarJob>(request, network_delegate) {
 }
 
 void UrlRequestAsyncAsarJob::StartAsync(scoped_ptr<base::Value> options) {

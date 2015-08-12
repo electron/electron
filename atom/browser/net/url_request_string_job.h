@@ -14,10 +14,7 @@ namespace atom {
 
 class URLRequestStringJob : public JsAsker<net::URLRequestSimpleJob> {
  public:
-  URLRequestStringJob(net::URLRequest* request,
-                      net::NetworkDelegate* network_delegate,
-                      v8::Isolate* isolate,
-                      const JavaScriptHandler& handler);
+  URLRequestStringJob(net::URLRequest*, net::NetworkDelegate*);
 
   // JsAsker:
   void StartAsync(scoped_ptr<base::Value> options) override;

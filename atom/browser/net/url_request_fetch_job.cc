@@ -75,11 +75,8 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
 }  // namespace
 
 URLRequestFetchJob::URLRequestFetchJob(
-    net::URLRequest* request,
-    net::NetworkDelegate* network_delegate,
-    v8::Isolate* isolate,
-    const JavaScriptHandler& handler)
-    : JsAsker<net::URLRequestJob>(request, network_delegate, isolate, handler),
+    net::URLRequest* request, net::NetworkDelegate* network_delegate)
+    : JsAsker<net::URLRequestJob>(request, network_delegate),
       pending_buffer_size_(0) {
 }
 
@@ -91,11 +88,13 @@ void URLRequestFetchJob::StartAsync(scoped_ptr<base::Value> options) {
   }
 
   std::string url, method, referrer;
+  base::Value* session = nullptr;
   base::DictionaryValue* dict =
       static_cast<base::DictionaryValue*>(options.get());
   dict->GetString("url", &url);
   dict->GetString("method", &method);
   dict->GetString("referrer", &referrer);
+  dict->Get("session", &session);
 
   // Use |request|'s method if |method| is not specified.
   net::URLFetcher::RequestType request_type;
@@ -105,8 +104,13 @@ void URLRequestFetchJob::StartAsync(scoped_ptr<base::Value> options) {
     request_type = GetRequestType(method);
 
   fetcher_ = net::URLFetcher::Create(GURL(url), request_type, this);
-  fetcher_->SetRequestContext(CreateRequestContext());
   fetcher_->SaveResponseWithWriter(make_scoped_ptr(new ResponsePiper(this)));
+
+  // When |session| is set to |null| we use a new request context for fetch job.
+  if (session && session->IsType(base::Value::TYPE_NULL))
+    fetcher_->SetRequestContext(CreateRequestContext());
+  else
+    fetcher_->SetRequestContext(request_context_getter());
 
   // Use |request|'s referrer if |referrer| is not specified.
   if (referrer.empty())

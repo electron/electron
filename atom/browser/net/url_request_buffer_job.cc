@@ -11,12 +11,8 @@
 namespace atom {
 
 URLRequestBufferJob::URLRequestBufferJob(
-    net::URLRequest* request,
-    net::NetworkDelegate* network_delegate,
-    v8::Isolate* isolate,
-    const JavaScriptHandler& handler)
-    : JsAsker<net::URLRequestSimpleJob>(request, network_delegate, isolate,
-                                        handler) {
+    net::URLRequest* request, net::NetworkDelegate* network_delegate)
+    : JsAsker<net::URLRequestSimpleJob>(request, network_delegate) {
 }
 
 void URLRequestBufferJob::StartAsync(scoped_ptr<base::Value> options) {

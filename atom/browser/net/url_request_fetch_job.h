@@ -19,10 +19,7 @@ class AtomBrowserContext;
 class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
                            public net::URLFetcherDelegate {
  public:
-  URLRequestFetchJob(net::URLRequest* request,
-                     net::NetworkDelegate* network_delegate,
-                     v8::Isolate* isolate,
-                     const JavaScriptHandler& handler);
+  URLRequestFetchJob(net::URLRequest*, net::NetworkDelegate*);
 
   // Called by response writer.
   void HeadersCompleted();
