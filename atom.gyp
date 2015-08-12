@@ -224,8 +224,6 @@
         # Defined in Chromium but not exposed in its gyp file.
         'V8_USE_EXTERNAL_STARTUP_DATA',
         'ENABLE_PLUGINS',
-        # Needed by Node.
-        'NODE_WANT_INTERNALS=1',
       ],
       'sources': [
         '<@(lib_sources)',

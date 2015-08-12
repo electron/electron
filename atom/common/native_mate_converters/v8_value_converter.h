@@ -48,7 +48,9 @@ class V8ValueConverter {
   base::Value* FromV8Array(v8::Local<v8::Array> array,
                            FromV8ValueState* state,
                            v8::Isolate* isolate) const;
-
+  base::Value* FromNodeBuffer(v8::Local<v8::Value> value,
+                              FromV8ValueState* state,
+                              v8::Isolate* isolate) const;
   base::Value* FromV8Object(v8::Local<v8::Object> object,
                             FromV8ValueState* state,
                             v8::Isolate* isolate) const;

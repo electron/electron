@@ -11,6 +11,7 @@
 #include "base/logging.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/values.h"
+#include "vendor/node/src/node_buffer.h"
 
 namespace atom {
 
@@ -258,6 +259,10 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
     return FromV8Object(val->ToObject(), state, isolate);
   }
 
+  if (node::Buffer::HasInstance(val)) {
+    return FromNodeBuffer(val, state, isolate);
+  }
+
   if (val->IsObject()) {
     return FromV8Object(val->ToObject(), state, isolate);
   }
@@ -303,6 +308,14 @@ base::Value* V8ValueConverter::FromV8Array(
       result->Append(base::Value::CreateNullValue());
   }
   return result;
+}
+
+base::Value* V8ValueConverter::FromNodeBuffer(
+    v8::Local<v8::Value> value,
+    FromV8ValueState* state,
+    v8::Isolate* isolate) const {
+  return base::BinaryValue::CreateWithCopiedBuffer(
+      node::Buffer::Data(value), node::Buffer::Length(value));
 }
 
 base::Value* V8ValueConverter::FromV8Object(
