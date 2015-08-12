@@ -49,13 +49,13 @@ mate::ObjectTemplateBuilder Protocol::GetObjectTemplateBuilder(
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("registerStandardSchemes", &Protocol::RegisterStandardSchemes)
       .SetMethod("registerStringProtocol",
-                 &Protocol::RegisterProtocol<URLRequestStringJob>)
+                 &Protocol::JavaScriptRegisterProtocol<URLRequestStringJob>)
       .SetMethod("registerBufferProtocol",
-                 &Protocol::RegisterProtocol<URLRequestBufferJob>)
+                 &Protocol::JavaScriptRegisterProtocol<URLRequestBufferJob>)
       .SetMethod("registerFileProtocol",
-                 &Protocol::RegisterProtocol<UrlRequestAsyncAsarJob>)
+                 &Protocol::JavaScriptRegisterProtocol<UrlRequestAsyncAsarJob>)
       .SetMethod("registerHttpProtocol",
-                 &Protocol::RegisterProtocol<URLRequestFetchJob>);
+                 &Protocol::JavaScriptRegisterProtocol<URLRequestFetchJob>);
 }
 
 void Protocol::RegisterStandardSchemes(
@@ -65,6 +65,10 @@ void Protocol::RegisterStandardSchemes(
 
 void Protocol::OnIOCompleted(
     const CompletionCallback& callback, ProtocolError error) {
+  // The completion callback is optional.
+  if (callback.is_null())
+    return;
+
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
 

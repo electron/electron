@@ -12,6 +12,8 @@
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "base/callback.h"
 #include "content/public/browser/browser_thread.h"
+#include "native_mate/arguments.h"
+#include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
 
@@ -104,6 +106,25 @@ class Protocol : public mate::Wrappable {
       return PROTOCOL_OK;
     else
       return PROTOCOL_FAIL;
+  }
+
+  // Parse optional parameters for registerProtocol.
+  template<typename RequestJob>
+  void JavaScriptRegisterProtocol(v8::Isolate* isolate,
+                                  const std::string& scheme,
+                                  mate::Arguments* args) {
+    // protocol.registerProtocol(scheme[, options], handler[, callback]);
+    mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate);
+    Handler handler;
+    CompletionCallback callback;
+    args->GetNext(&options);
+    if (!args->GetNext(&handler)) {
+      args->ThrowError();
+      return;
+    }
+    args->GetNext(&callback);
+
+    RegisterProtocol<RequestJob>(isolate, scheme, handler, callback);
   }
 
   // Convert error code to JS exception and call the callback.

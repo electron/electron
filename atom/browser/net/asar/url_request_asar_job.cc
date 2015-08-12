@@ -5,6 +5,7 @@
 #include "atom/browser/net/asar/url_request_asar_job.h"
 
 #include <string>
+#include <vector>
 
 #include "base/bind.h"
 #include "base/files/file_util.h"

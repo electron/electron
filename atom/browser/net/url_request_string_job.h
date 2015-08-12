@@ -5,10 +5,10 @@
 #ifndef ATOM_BROWSER_NET_URL_REQUEST_STRING_JOB_H_
 #define ATOM_BROWSER_NET_URL_REQUEST_STRING_JOB_H_
 
+#include <string>
+
 #include "atom/browser/net/js_asker.h"
 #include "net/url_request/url_request_simple_job.h"
-
-#include <string>
 
 namespace atom {
 

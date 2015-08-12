@@ -4,6 +4,8 @@
 
 #include "atom/browser/net/js_asker.h"
 
+#include <vector>
+
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "native_mate/function_template.h"
