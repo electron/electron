@@ -65,7 +65,8 @@ v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
   v8::Local<v8::Function> bind_func =
       v8::Local<v8::Function>::Cast(bind.ToLocalChecked());
   std::vector<v8::Local<v8::Value>> converted = {
-      func, mate::ConvertToV8(isolate, args)...,
+    v8::Local<v8::Value>::Cast(func),
+    mate::ConvertToV8(isolate, args)...,
   };
   return bind_func->Call(
       context, func, converted.size(), &converted.front()).ToLocalChecked();
