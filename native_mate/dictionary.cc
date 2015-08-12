@@ -35,7 +35,7 @@ v8::Local<v8::Value> Converter<Dictionary>::ToV8(v8::Isolate* isolate,
 bool Converter<Dictionary>::FromV8(v8::Isolate* isolate,
                                    v8::Local<v8::Value> val,
                                    Dictionary* out) {
-  if (!val->IsObject())
+  if (!val->IsObject() || val->IsFunction())
     return false;
   *out = Dictionary(isolate, v8::Local<v8::Object>::Cast(val));
   return true;
