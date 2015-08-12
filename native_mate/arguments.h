@@ -36,8 +36,11 @@ class Arguments {
       insufficient_arguments_ = true;
       return false;
     }
-    v8::Local<v8::Value> val = (*info_)[next_++];
-    return ConvertFromV8(isolate_, val, out);
+    v8::Local<v8::Value> val = (*info_)[next_];
+    bool success = ConvertFromV8(isolate_, val, out);
+    if (success)
+      next_++;
+    return success;
   }
 
   template<typename T>
