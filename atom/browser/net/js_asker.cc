@@ -41,7 +41,9 @@ void HandlerCallback(v8::Isolate* isolate,
   CHECK(holder);
   v8::Local<v8::Value> value;
   if (!args->GetNext(&value)) {
-    holder->callback.Run(false, nullptr);
+    content::BrowserThread::PostTask(
+        content::BrowserThread::IO, FROM_HERE,
+        base::Bind(holder->callback, false, nullptr));
     return;
   }
 
