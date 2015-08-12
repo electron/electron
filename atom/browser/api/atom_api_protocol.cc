@@ -8,6 +8,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/net/url_request_string_job.h"
+#include "atom/browser/net/url_request_async_asar_job.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "native_mate/dictionary.h"
 
@@ -46,7 +47,9 @@ mate::ObjectTemplateBuilder Protocol::GetObjectTemplateBuilder(
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("registerStandardSchemes", &Protocol::RegisterStandardSchemes)
       .SetMethod("registerStringProtocol",
-                 &Protocol::RegisterProtocol<URLRequestStringJob>);
+                 &Protocol::RegisterProtocol<URLRequestStringJob>)
+      .SetMethod("registerFileProtocol",
+                 &Protocol::RegisterProtocol<UrlRequestAsyncAsarJob>);
 }
 
 void Protocol::RegisterStandardSchemes(

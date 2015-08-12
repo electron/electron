@@ -156,6 +156,8 @@
       'atom/browser/net/http_protocol_handler.h',
       'atom/browser/net/js_asker.cc',
       'atom/browser/net/js_asker.h',
+      'atom/browser/net/url_request_async_asar_job.cc',
+      'atom/browser/net/url_request_async_asar_job.h',
       'atom/browser/net/url_request_string_job.cc',
       'atom/browser/net/url_request_string_job.h',
       'atom/browser/net/url_request_buffer_job.cc',
