@@ -57,7 +57,7 @@ mate::ObjectTemplateBuilder Protocol::GetObjectTemplateBuilder(
       .SetMethod("registerHttpProtocol",
                  &Protocol::RegisterProtocol<URLRequestFetchJob>)
       .SetMethod("unregisterProtocol", &Protocol::UnregisterProtocol)
-      .SetMethod("isHandledProtocol", &Protocol::IsHandledProtocol)
+      .SetMethod("isProtocolHandled", &Protocol::IsProtocolHandled)
       .SetMethod("interceptStringProtocol",
                  &Protocol::InterceptProtocol<URLRequestStringJob>)
       .SetMethod("interceptBufferProtocol",
@@ -94,16 +94,16 @@ Protocol::ProtocolError Protocol::UnregisterProtocolInIO(
   return PROTOCOL_OK;
 }
 
-void Protocol::IsHandledProtocol(const std::string& scheme,
-                                 const BooleanCallback& callback) {
+void Protocol::IsProtocolHandled(const std::string& scheme,
+                                    const BooleanCallback& callback) {
   content::BrowserThread::PostTaskAndReplyWithResult(
       content::BrowserThread::IO, FROM_HERE,
-      base::Bind(&Protocol::IsHandledProtocolInIO,
+      base::Bind(&Protocol::IsProtocolHandledInIO,
                  base::Unretained(this), scheme),
       callback);
 }
 
-bool Protocol::IsHandledProtocolInIO(const std::string& scheme) {
+bool Protocol::IsProtocolHandledInIO(const std::string& scheme) {
   return job_factory_->IsHandledProtocol(scheme);
 }
 

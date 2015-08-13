@@ -135,7 +135,7 @@ app.on('ready', function() {
   app.setApplicationMenu(menu);
 
   // Test if using protocol module would crash.
-  require('protocol').registerProtocol('test-if-crashes', function() {});
+  require('protocol').registerStringProtocol('test-if-crashes', function() {});
 
   window = new BrowserWindow({
     title: 'Electron Tests',

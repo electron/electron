@@ -125,9 +125,9 @@ class Protocol : public mate::Wrappable {
   ProtocolError UnregisterProtocolInIO(const std::string& scheme);
 
   // Whether the protocol has handler registered.
-  void IsHandledProtocol(const std::string& scheme,
+  void IsProtocolHandled(const std::string& scheme,
                          const BooleanCallback& callback);
-  bool IsHandledProtocolInIO(const std::string& scheme);
+  bool IsProtocolHandledInIO(const std::string& scheme);
 
   // Replace the protocol handler with a new one.
   template<typename RequestJob>
