@@ -330,7 +330,7 @@ Prints webview's web page as PDF, Same with `webContents.printToPDF(options, cal
 Send `args..` to guest page via `channel` in asynchronous message, the guest
 page can handle it by listening to the `channel` event of `ipc` module.
 
-See [WebContents.send](browser-window.md#webcontentssendchannel-args) for
+See [WebContents.send](browser-window.md#webcontents-send-channel-args) for
 examples.
 
 ## DOM events
