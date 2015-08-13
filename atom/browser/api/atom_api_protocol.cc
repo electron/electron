@@ -56,7 +56,8 @@ mate::ObjectTemplateBuilder Protocol::GetObjectTemplateBuilder(
                  &Protocol::RegisterProtocol<UrlRequestAsyncAsarJob>)
       .SetMethod("registerHttpProtocol",
                  &Protocol::RegisterProtocol<URLRequestFetchJob>)
-      .SetMethod("unregisterProtocol", &Protocol::UnregisterProtocol);
+      .SetMethod("unregisterProtocol", &Protocol::UnregisterProtocol)
+      .SetMethod("isHandledProtocol", &Protocol::IsHandledProtocol);
 }
 
 void Protocol::RegisterStandardSchemes(
@@ -82,6 +83,19 @@ Protocol::ProtocolError Protocol::UnregisterProtocolInIO(
     return PROTOCOL_NOT_REGISTERED;
   job_factory_->SetProtocolHandler(scheme, nullptr);
   return PROTOCOL_OK;
+}
+
+void Protocol::IsHandledProtocol(const std::string& scheme,
+                                 const BooleanCallback& callback) {
+  content::BrowserThread::PostTaskAndReplyWithResult(
+      content::BrowserThread::IO, FROM_HERE,
+      base::Bind(&Protocol::IsHandledProtocolInIO,
+                 base::Unretained(this), scheme),
+      callback);
+}
+
+bool Protocol::IsHandledProtocolInIO(const std::string& scheme) {
+  return job_factory_->IsHandledProtocol(scheme);
 }
 
 void Protocol::OnIOCompleted(

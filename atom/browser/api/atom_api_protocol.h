@@ -34,6 +34,7 @@ class Protocol : public mate::Wrappable {
   using Handler =
       base::Callback<void(const net::URLRequest*, v8::Local<v8::Value>)>;
   using CompletionCallback = base::Callback<void(v8::Local<v8::Value>)>;
+  using BooleanCallback = base::Callback<void(bool)>;
 
   static mate::Handle<Protocol> Create(
       v8::Isolate* isolate, AtomBrowserContext* browser_context);
@@ -118,9 +119,14 @@ class Protocol : public mate::Wrappable {
       return PROTOCOL_FAIL;
   }
 
-  // Unregistered the protocol handler that handles |scheme|.
+  // Unregister the protocol handler that handles |scheme|.
   void UnregisterProtocol(const std::string& scheme, mate::Arguments* args);
   ProtocolError UnregisterProtocolInIO(const std::string& scheme);
+
+  // Whether the protocol has handler registered.
+  void IsHandledProtocol(const std::string& scheme,
+                         const BooleanCallback& callback);
+  bool IsHandledProtocolInIO(const std::string& scheme);
 
   // Convert error code to JS exception and call the callback.
   void OnIOCompleted(const CompletionCallback& callback, ProtocolError error);
