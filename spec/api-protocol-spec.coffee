@@ -9,13 +9,8 @@ describe 'protocol module', ->
   text = 'valar morghulis'
 
   afterEach (done) ->
-    protocol.unregisterProtocol protocolName, -> done()
-
-  describe 'protocol.unregisterProtocol', ->
-    it 'returns error when scheme does not exist', (done) ->
-      protocol.unregisterProtocol 'not-exist', (error) ->
-        assert.notEqual error, null
-        done()
+    protocol.unregisterProtocol protocolName, ->
+      protocol.uninterceptProtocol 'http', -> done()
 
   describe 'protocol.register(Any)Protocol', ->
     emptyHandler = (request, callback) -> callback()
@@ -60,6 +55,12 @@ describe 'protocol module', ->
             done()
           error: (xhr, errorType, error) ->
             done(error)
+
+  describe 'protocol.unregisterProtocol', ->
+    it 'returns error when scheme does not exist', (done) ->
+      protocol.unregisterProtocol 'not-exist', (error) ->
+        assert.notEqual error, null
+        done()
 
   describe 'protocol.registerStringProtocol', ->
     it 'sends string as response', (done) ->
@@ -235,23 +236,107 @@ describe 'protocol module', ->
             assert.equal errorType, 'error'
             done()
 
-  describe 'protocol.isHandledProtocol', ->
+  describe 'protocol.isProtocolHandled', ->
     it 'returns true for file:', (done) ->
-      protocol.isHandledProtocol 'file', (result) ->
+      protocol.isProtocolHandled 'file', (result) ->
         assert.equal result, true
         done()
 
     it 'returns true for http:', (done) ->
-      protocol.isHandledProtocol 'http', (result) ->
+      protocol.isProtocolHandled 'http', (result) ->
         assert.equal result, true
         done()
 
     it 'returns true for https:', (done) ->
-      protocol.isHandledProtocol 'https', (result) ->
+      protocol.isProtocolHandled 'https', (result) ->
         assert.equal result, true
         done()
 
     it 'returns false when scheme is not registred', (done) ->
-      protocol.isHandledProtocol 'atom', (result) ->
+      protocol.isProtocolHandled 'no-exist', (result) ->
         assert.equal result, false
+        done()
+
+    it 'returns true for custom protocol', (done) ->
+      emptyHandler = (request, callback) -> callback()
+      protocol.registerStringProtocol protocolName, emptyHandler, (error) ->
+        assert.equal error, null
+        protocol.isProtocolHandled protocolName, (result) ->
+          assert.equal result, true
+          done()
+
+    it 'returns true for intercepted protocol', (done) ->
+      emptyHandler = (request, callback) -> callback()
+      protocol.interceptStringProtocol 'http', emptyHandler, (error) ->
+        assert.equal error, null
+        protocol.isProtocolHandled 'http', (result) ->
+          assert.equal result, true
+          done()
+
+  describe 'protocol.intercept(Any)Protocol', ->
+    emptyHandler = (request, callback) -> callback()
+
+    it 'throws error when scheme is already intercepted', (done) ->
+      protocol.interceptStringProtocol 'http', emptyHandler, (error) ->
+        assert.equal error, null
+        protocol.interceptBufferProtocol 'http', emptyHandler, (error) ->
+          assert.notEqual error, null
+          done()
+
+    it 'does not crash when handler is called twice', (done) ->
+      doubleHandler = (request, callback) ->
+        callback(text)
+        callback()
+      protocol.interceptStringProtocol 'http', doubleHandler, (error) ->
+        $.ajax
+          url: 'http://fake-host'
+          success: (data) ->
+            assert.equal data, text
+            done()
+          error: (xhr, errorType, error) ->
+            done(error)
+
+    it 'sends error when callback is called with nothing', (done) ->
+      protocol.interceptBufferProtocol 'http', emptyHandler, (error) ->
+        $.ajax
+          url: 'http://fake-host'
+          success: (data) ->
+            done('request succeeded but it should not')
+          error: (xhr, errorType, error) ->
+            assert.equal errorType, 'error'
+            done()
+
+  describe 'protocol.interceptStringProtocol', ->
+    it 'can intercept http protocol', (done) ->
+      handler = (request, callback) -> callback(text)
+      protocol.interceptStringProtocol 'http', handler, (error) ->
+        $.ajax
+          url: 'http://fake-host'
+          success: (data) ->
+            assert.equal data, text
+            done()
+          error: (xhr, errorType, error) ->
+            done(error)
+
+  describe 'protocol.interceptBufferProtocol', ->
+    it 'can intercept http protocol', (done) ->
+      handler = (request, callback) -> callback(new Buffer(text))
+      protocol.interceptBufferProtocol 'http', handler, (error) ->
+        $.ajax
+          url: 'http://fake-host'
+          success: (data) ->
+            assert.equal data, text
+            done()
+          error: (xhr, errorType, error) ->
+            done(error)
+
+  describe 'protocol.uninterceptProtocol', ->
+    it 'returns error when scheme does not exist', (done) ->
+      protocol.uninterceptProtocol 'not-exist', (error) ->
+        assert.notEqual error, null
+        done()
+
+    it 'returns error when scheme is not intercepted', (done) ->
+      protocol.uninterceptProtocol 'http', (error) ->
+        assert.notEqual error, null
         done()
