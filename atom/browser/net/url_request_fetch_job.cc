@@ -96,6 +96,14 @@ void URLRequestFetchJob::StartAsync(scoped_ptr<base::Value> options) {
   dict->GetString("referrer", &referrer);
   dict->Get("session", &session);
 
+  // Check if URL is valid.
+  GURL formated_url(url);
+  if (!formated_url.is_valid()) {
+    NotifyStartError(net::URLRequestStatus(
+          net::URLRequestStatus::FAILED, net::ERR_INVALID_URL));
+    return;
+  }
+
   // Use |request|'s method if |method| is not specified.
   net::URLFetcher::RequestType request_type;
   if (method.empty())
@@ -103,7 +111,7 @@ void URLRequestFetchJob::StartAsync(scoped_ptr<base::Value> options) {
   else
     request_type = GetRequestType(method);
 
-  fetcher_ = net::URLFetcher::Create(GURL(url), request_type, this);
+  fetcher_ = net::URLFetcher::Create(formated_url, request_type, this);
   fetcher_->SaveResponseWithWriter(make_scoped_ptr(new ResponsePiper(this)));
 
   // When |session| is set to |null| we use a new request context for fetch job.
