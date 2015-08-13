@@ -11,6 +11,7 @@
 #include "base/values.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/net_errors.h"
+#include "net/http/http_response_headers.h"
 #include "net/url_request/url_request_context_getter.h"
 #include "net/url_request/url_request_job.h"
 #include "v8/include/v8.h"
@@ -70,6 +71,9 @@ class JsAsker : public RequestJob {
                    RequestJob::request(),
                    base::Bind(&JsAsker::OnResponse,
                               weak_factory_.GetWeakPtr())));
+  }
+  void GetResponseInfo(net::HttpResponseInfo* info) override {
+    info->headers = new net::HttpResponseHeaders("");
   }
 
   // Called when the JS handler has sent the response, we need to decide whether
