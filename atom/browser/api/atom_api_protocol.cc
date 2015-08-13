@@ -49,18 +49,39 @@ mate::ObjectTemplateBuilder Protocol::GetObjectTemplateBuilder(
   return mate::ObjectTemplateBuilder(isolate)
       .SetMethod("registerStandardSchemes", &Protocol::RegisterStandardSchemes)
       .SetMethod("registerStringProtocol",
-                 &Protocol::JavaScriptRegisterProtocol<URLRequestStringJob>)
+                 &Protocol::RegisterProtocol<URLRequestStringJob>)
       .SetMethod("registerBufferProtocol",
-                 &Protocol::JavaScriptRegisterProtocol<URLRequestBufferJob>)
+                 &Protocol::RegisterProtocol<URLRequestBufferJob>)
       .SetMethod("registerFileProtocol",
-                 &Protocol::JavaScriptRegisterProtocol<UrlRequestAsyncAsarJob>)
+                 &Protocol::RegisterProtocol<UrlRequestAsyncAsarJob>)
       .SetMethod("registerHttpProtocol",
-                 &Protocol::JavaScriptRegisterProtocol<URLRequestFetchJob>);
+                 &Protocol::RegisterProtocol<URLRequestFetchJob>)
+      .SetMethod("unregisterProtocol", &Protocol::UnregisterProtocol);
 }
 
 void Protocol::RegisterStandardSchemes(
     const std::vector<std::string>& schemes) {
   atom::AtomBrowserClient::SetCustomSchemes(schemes);
+}
+
+void Protocol::UnregisterProtocol(
+    const std::string& scheme, mate::Arguments* args) {
+  CompletionCallback callback;
+  args->GetNext(&callback);
+  content::BrowserThread::PostTaskAndReplyWithResult(
+      content::BrowserThread::IO, FROM_HERE,
+      base::Bind(&Protocol::UnregisterProtocolInIO,
+                 base::Unretained(this), scheme),
+      base::Bind(&Protocol::OnIOCompleted,
+                 base::Unretained(this), callback));
+}
+
+Protocol::ProtocolError Protocol::UnregisterProtocolInIO(
+    const std::string& scheme) {
+  if (!job_factory_->HasProtocolHandler(scheme))
+    return PROTOCOL_NOT_REGISTERED;
+  job_factory_->SetProtocolHandler(scheme, nullptr);
+  return PROTOCOL_OK;
 }
 
 void Protocol::OnIOCompleted(

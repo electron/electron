@@ -92,10 +92,11 @@ class Protocol : public mate::Wrappable {
 
   // Register the protocol with certain request job.
   template<typename RequestJob>
-  void RegisterProtocol(v8::Isolate* isolate,
-                        const std::string& scheme,
+  void RegisterProtocol(const std::string& scheme,
                         const Handler& handler,
-                        const CompletionCallback& callback) {
+                        mate::Arguments* args) {
+    CompletionCallback callback;
+    args->GetNext(&callback);
     content::BrowserThread::PostTaskAndReplyWithResult(
         content::BrowserThread::IO, FROM_HERE,
         base::Bind(&Protocol::RegisterProtocolInIO<RequestJob>,
@@ -117,24 +118,9 @@ class Protocol : public mate::Wrappable {
       return PROTOCOL_FAIL;
   }
 
-  // Parse optional parameters for registerProtocol.
-  template<typename RequestJob>
-  void JavaScriptRegisterProtocol(v8::Isolate* isolate,
-                                  const std::string& scheme,
-                                  mate::Arguments* args) {
-    // protocol.registerProtocol(scheme[, options], handler[, callback]);
-    mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate);
-    Handler handler;
-    CompletionCallback callback;
-    args->GetNext(&options);
-    if (!args->GetNext(&handler)) {
-      args->ThrowError();
-      return;
-    }
-    args->GetNext(&callback);
-
-    RegisterProtocol<RequestJob>(isolate, scheme, handler, callback);
-  }
+  // Unregistered the protocol handler that handles |scheme|.
+  void UnregisterProtocol(const std::string& scheme, mate::Arguments* args);
+  ProtocolError UnregisterProtocolInIO(const std::string& scheme);
 
   // Convert error code to JS exception and call the callback.
   void OnIOCompleted(const CompletionCallback& callback, ProtocolError error);
