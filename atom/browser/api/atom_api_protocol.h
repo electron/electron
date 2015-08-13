@@ -162,6 +162,10 @@ class Protocol : public mate::Wrappable {
     return PROTOCOL_OK;
   }
 
+  // Restore the |scheme| to its original protocol handler.
+  void UninterceptProtocol(const std::string& scheme, mate::Arguments* args);
+  ProtocolError UninterceptProtocolInIO(const std::string& scheme);
+
   // Convert error code to JS exception and call the callback.
   void OnIOCompleted(const CompletionCallback& callback, ProtocolError error);
 

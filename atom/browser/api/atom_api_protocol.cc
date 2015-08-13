@@ -65,7 +65,8 @@ mate::ObjectTemplateBuilder Protocol::GetObjectTemplateBuilder(
       .SetMethod("interceptFileProtocol",
                  &Protocol::InterceptProtocol<UrlRequestAsyncAsarJob>)
       .SetMethod("interceptHttpProtocol",
-                 &Protocol::InterceptProtocol<URLRequestFetchJob>);
+                 &Protocol::InterceptProtocol<URLRequestFetchJob>)
+      .SetMethod("uninterceptProtocol", &Protocol::UninterceptProtocol);
 }
 
 void Protocol::RegisterStandardSchemes(
@@ -104,6 +105,27 @@ void Protocol::IsHandledProtocol(const std::string& scheme,
 
 bool Protocol::IsHandledProtocolInIO(const std::string& scheme) {
   return job_factory_->IsHandledProtocol(scheme);
+}
+
+void Protocol::UninterceptProtocol(
+    const std::string& scheme, mate::Arguments* args) {
+  CompletionCallback callback;
+  args->GetNext(&callback);
+  content::BrowserThread::PostTaskAndReplyWithResult(
+      content::BrowserThread::IO, FROM_HERE,
+      base::Bind(&Protocol::UninterceptProtocolInIO,
+                 base::Unretained(this), scheme),
+      base::Bind(&Protocol::OnIOCompleted,
+                 base::Unretained(this), callback));
+}
+
+Protocol::ProtocolError Protocol::UninterceptProtocolInIO(
+    const std::string& scheme) {
+  if (!original_protocols_.contains(scheme))
+    return PROTOCOL_NOT_INTERCEPTED;
+  job_factory_->ReplaceProtocol(scheme,
+                                original_protocols_.take_and_erase(scheme));
+  return PROTOCOL_OK;
 }
 
 void Protocol::OnIOCompleted(
