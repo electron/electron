@@ -11,6 +11,7 @@
 
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "base/callback.h"
+#include "base/containers/scoped_ptr_hash_map.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
@@ -128,6 +129,39 @@ class Protocol : public mate::Wrappable {
                          const BooleanCallback& callback);
   bool IsHandledProtocolInIO(const std::string& scheme);
 
+  // Replace the protocol handler with a new one.
+  template<typename RequestJob>
+  void InterceptProtocol(const std::string& scheme,
+                         const Handler& handler,
+                         mate::Arguments* args) {
+    CompletionCallback callback;
+    args->GetNext(&callback);
+    content::BrowserThread::PostTaskAndReplyWithResult(
+        content::BrowserThread::IO, FROM_HERE,
+        base::Bind(&Protocol::InterceptProtocolInIO<RequestJob>,
+                   base::Unretained(this), scheme, handler),
+        base::Bind(&Protocol::OnIOCompleted,
+                   base::Unretained(this), callback));
+  }
+  template<typename RequestJob>
+  ProtocolError InterceptProtocolInIO(const std::string& scheme,
+                                      const Handler& handler) {
+    if (!job_factory_->IsHandledProtocol(scheme))
+      return PROTOCOL_NOT_REGISTERED;
+    // It is possible a protocol is handled but can not be intercepted.
+    if (!job_factory_->HasProtocolHandler(scheme))
+      return PROTOCOL_FAIL;
+    if (ContainsKey(original_protocols_, scheme))
+      return PROTOCOL_INTERCEPTED;
+    scoped_ptr<CustomProtocolHandler<RequestJob>> protocol_handler(
+        new CustomProtocolHandler<RequestJob>(
+            isolate(), request_context_getter_, handler));
+    original_protocols_.set(
+        scheme,
+        job_factory_->ReplaceProtocol(scheme, protocol_handler.Pass()));
+    return PROTOCOL_OK;
+  }
+
   // Convert error code to JS exception and call the callback.
   void OnIOCompleted(const CompletionCallback& callback, ProtocolError error);
 
@@ -135,6 +169,12 @@ class Protocol : public mate::Wrappable {
   std::string ErrorCodeToString(ProtocolError error);
 
   scoped_refptr<net::URLRequestContextGetter> request_context_getter_;
+
+  // Map that stores the original protocols of schemes.
+  using OriginalProtocolsMap = base::ScopedPtrHashMap<
+      std::string,
+      scoped_ptr<net::URLRequestJobFactory::ProtocolHandler>>;
+  OriginalProtocolsMap original_protocols_;
 
   AtomURLRequestJobFactory* job_factory_;  // weak ref
 

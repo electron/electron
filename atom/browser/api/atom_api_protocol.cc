@@ -57,7 +57,15 @@ mate::ObjectTemplateBuilder Protocol::GetObjectTemplateBuilder(
       .SetMethod("registerHttpProtocol",
                  &Protocol::RegisterProtocol<URLRequestFetchJob>)
       .SetMethod("unregisterProtocol", &Protocol::UnregisterProtocol)
-      .SetMethod("isHandledProtocol", &Protocol::IsHandledProtocol);
+      .SetMethod("isHandledProtocol", &Protocol::IsHandledProtocol)
+      .SetMethod("interceptStringProtocol",
+                 &Protocol::InterceptProtocol<URLRequestStringJob>)
+      .SetMethod("interceptBufferProtocol",
+                 &Protocol::InterceptProtocol<URLRequestBufferJob>)
+      .SetMethod("interceptFileProtocol",
+                 &Protocol::InterceptProtocol<UrlRequestAsyncAsarJob>)
+      .SetMethod("interceptHttpProtocol",
+                 &Protocol::InterceptProtocol<URLRequestFetchJob>);
 }
 
 void Protocol::RegisterStandardSchemes(
