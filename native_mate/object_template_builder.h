@@ -90,7 +90,7 @@ class ObjectTemplateBuilder {
   // for creating raw function templates.
   template<typename T>
   ObjectTemplateBuilder& SetMethod(const base::StringPiece& name,
-                                   const T& callback,
+                                   T callback,
                                    bool safe_after_destroyed = false) {
     return SetImpl(name,
                    CallbackTraits<T>::CreateTemplate(isolate_,
@@ -99,7 +99,7 @@ class ObjectTemplateBuilder {
   }
   template<typename T>
   ObjectTemplateBuilder& SetProperty(const base::StringPiece& name,
-                                     const T& getter,
+                                     T getter,
                                      bool safe_after_destroyed = false) {
     return SetPropertyImpl(
         name,
@@ -109,8 +109,8 @@ class ObjectTemplateBuilder {
   }
   template<typename T, typename U>
   ObjectTemplateBuilder& SetProperty(const base::StringPiece& name,
-                                     const T& getter,
-                                     const U& setter,
+                                     T getter,
+                                     U setter,
                                      bool safe_after_destroyed = false) {
     return SetPropertyImpl(
         name,
