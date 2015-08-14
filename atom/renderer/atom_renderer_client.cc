@@ -7,6 +7,7 @@
 #include <string>
 
 #include "atom/common/api/atom_bindings.h"
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_render_view_observer.h"
@@ -19,6 +20,8 @@
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_thread.h"
+#include "third_party/WebKit/public/web/WebArrayBuffer.h"
+#include "third_party/WebKit/public/web/WebArrayBufferConverter.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebPluginParams.h"
@@ -53,15 +56,35 @@ bool IsGuestFrame(blink::WebFrame* frame) {
   return frame->uniqueName().utf8() == "ATOM_SHELL_GUEST_WEB_VIEW";
 }
 
-void* BlinkAllocate(size_t size) {
-  void* ptr = nullptr;
-  WTF::ArrayBufferContents::allocateMemory(
-      size, WTF::ArrayBufferContents::DontInitialize, ptr);
-  return ptr;
+// global.Uint8Array;
+v8::Local<v8::Function> GetUint8ArrayConstructor(
+    v8::Isolate* isolate, v8::Local<v8::Context> context) {
+  v8::Local<v8::Value> constructor = context->Global()->Get(
+      mate::StringToV8(isolate, "Uint8Array"));
+  return v8::Local<v8::Function>::Cast(constructor);
 }
 
-void BlinkFree(void* ptr, size_t size) {
-  WTF::ArrayBufferContents::freeMemory(ptr, size);
+// new ArrayBuffer(size);
+v8::Local<v8::ArrayBuffer> BlinkArrayBufferCreate(
+    v8::Isolate* isolate, size_t size) {
+  blink::WebArrayBuffer buffer = blink::WebArrayBuffer::create(size, 1);
+  return v8::Local<v8::ArrayBuffer>::Cast(
+      blink::WebArrayBufferConverter::toV8Value(
+          &buffer, isolate->GetCurrentContext()->Global(), isolate));
+}
+
+// new Uint8Array(array_buffer, offset, size);
+v8::Local<v8::Uint8Array> BlinkUint8ArrayCreate(
+    v8::Local<v8::ArrayBuffer> ab, size_t offset, size_t size) {
+  v8::Local<v8::Context> context = ab->CreationContext();
+  v8::Isolate* isolate = context->GetIsolate();
+  v8::Local<v8::Function> constructor =
+      GetUint8ArrayConstructor(isolate, context);
+  v8::Local<v8::Value> args[] = {
+      ab, mate::ConvertToV8(isolate, offset), mate::ConvertToV8(isolate, size)
+  };
+  return v8::Local<v8::Uint8Array>::Cast(constructor->NewInstance(
+      context, arraysize(args), args).ToLocalChecked());
 }
 
 // Helper class to forward the messages to the client.
@@ -103,8 +126,9 @@ void AtomRendererClient::WebKitInitialized() {
   blink::WebCustomElement::addEmbedderCustomElementName("webview");
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
 
-  // Override Node's Buffer allocator with WTF's allocator.
-  node::Buffer::SetAllocator(&BlinkAllocate, &BlinkFree);
+  // Override Node's ArrayBuffer with DOM's ArrayBuffer.
+  node::Buffer::SetArrayBufferCreator(&BlinkArrayBufferCreate,
+                                      &BlinkUint8ArrayCreate);
 
   node_bindings_->Initialize();
   node_bindings_->PrepareMessageLoop();
