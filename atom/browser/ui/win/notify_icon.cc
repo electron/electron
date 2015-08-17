@@ -39,6 +39,16 @@ NotifyIcon::NotifyIcon(NotifyIconHost* host,
     base::MD5Sum(explicit_app_id,
                  sizeof(wchar_t) * wcslen(explicit_app_id),
                  reinterpret_cast<base::MD5Digest*>(&tray_app_id_hash_));
+
+    // Set the GUID to version 4 as described in RFC 4122, section 4.4.
+    // The format of GUID version 4 must be like
+    // xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx, where y is one of [8, 9, A, B].
+    tray_app_id_hash_.Data3 &= 0x0fff;
+    tray_app_id_hash_.Data3 |= 0x4000;
+
+    // Set y to one of [8, 9, A, B].
+    tray_app_id_hash_.Data4[0] = 1;
+
     has_tray_app_id_hash_ = true;
     CoTaskMemFree(explicit_app_id);
   }
