@@ -93,7 +93,7 @@ struct Converter<PrintSettings> {
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
     dict.Get("silent", &(out->silent));
-    dict.Get("printBackground", &(out->print_background));
+    dict.Get("printBackgrounds", &(out->print_background));
     return true;
   }
 };
