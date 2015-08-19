@@ -13,7 +13,7 @@ app.on('window-all-closed', function() {
 
 ## Events
 
-The following are events on `app`.
+The `app` object emits the following events:
 
 ### Event: 'will-finish-launching'
 
@@ -40,6 +40,8 @@ this case the `window-all-closed` event would not be emitted.
 
 ### Event: 'before-quit'
 
+Returns:
+
 * `event` Event
 
 Emitted before the application starts closing its windows.
@@ -47,6 +49,8 @@ Calling `event.preventDefault()` will prevent the default behaviour, which is
 terminating the application.
 
 ### Event: 'will-quit'
+
+Returns:
 
 * `event` Event
 
@@ -62,6 +66,8 @@ Emitted when the application is quitting.
 
 ### Event: 'open-file'
 
+Returns:
+
 * `event` Event
 * `path` String
 
@@ -75,6 +81,8 @@ event very early in your application startup to handle this case (even before th
 You should call `event.preventDefault()` if you want to handle this event.
 
 ### Event: 'open-url'
+
+Returns:
 
 * `event` Event
 * `url` String
@@ -92,12 +100,16 @@ clicks on the application's dock icon.
 
 ### Event: 'browser-window-blur'
 
+Returns:
+
 * `event` Event
 * `window` BrowserWindow
 
 Emitted when a [browserWindow](browser-window.md) gets blurred.
 
 ### Event: 'browser-window-focus'
+
+Returns:
 
 * `event` Event
 * `window` BrowserWindow
@@ -107,6 +119,8 @@ Emitted when a [browserWindow](browser-window.md) gets focused.
 ### Event: 'select-certificate'
 
 Emitted when a client certificate is requested.
+
+Returns:
 
 * `event` Event
 * `webContents` [WebContents](browser-window.md#class-webcontents)
@@ -133,7 +147,7 @@ Emitted when the gpu process crashes.
 
 ## Methods
 
-The following are methods on the `app` class.
+The `app` object has the following methods:
 
 ### `app.quit()`
 
