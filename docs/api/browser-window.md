@@ -1031,7 +1031,7 @@ Prints windows' web page as PDF with Chromium's preview printing custom
 settings.
 
 By default, an empty `options` will be regarded as
-`{marginsType:0, printBackgrounds:false, printSelectionOnly:false,
+`{marginsType:0, printBackground:false, printSelectionOnly:false,
   landscape:false}`.
 
 ```javascript
