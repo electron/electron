@@ -219,3 +219,4 @@ window.setDocumentEdited(true);
 [setdocumentedited]: ../api/browser-window-ko.md#browserwindowsetdocumenteditededited
 [app-registration]: http://msdn.microsoft.com/en-us/library/windows/desktop/ee872121(v=vs.85).aspx
 [unity-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
+[setthumbarbuttons]: ../api/browser-window.md#browserwindowsetthumbarbuttonsbuttons

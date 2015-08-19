@@ -60,6 +60,14 @@ python script\bootstrap.py -v --target_arch=x64
 
 ## 테스트
 
+프로젝트 코딩 스타일을 확인하려면:
+
+```powershell
+python script\cpplint.py
+```
+
+테스트를 실행하려면:
+
 ```powershell
 python script\test.py
 ```

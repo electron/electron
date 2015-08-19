@@ -296,6 +296,14 @@ Service worker에 대한 개발자 툴을 엽니다.
 
 페이지에서 `replaceMisspelling` 커맨드를 실행합니다.
 
+### `<webview>`.print([options])
+
+Webview 페이지를 인쇄합니다. `webContents.print([options])` 메서드와 같습니다.
+
+### `<webview>`.printToPDF(options, callback)
+
+Webview 페이지를 PDF 형식으로 인쇄합니다. `webContents.printToPDF(options, callback)` 메서드와 같습니다.
+
 ### `<webview>`.send(channel[, args...])
 
 * `channel` String
