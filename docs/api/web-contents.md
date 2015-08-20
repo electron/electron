@@ -8,7 +8,7 @@ It is responsible for rendering and controlling a web page and is a property of 
 ```javascript
 var BrowserWindow = require('browser-window');
 
-var win = new BroswerWindow({width: 800, height: 1500});
+var win = new BrowserWindow({width: 800, height: 1500});
 win.loadUrl("http://github.com");
 
 var webContents = win.webContents
@@ -163,7 +163,7 @@ See [session documentation](session.md) for this object's methods.
   * `httpReferrer` String - A HTTP Referrer url
   * `userAgent` String - A user agent originating the request
 
-Loads the `url` in the window, the `url` must contains the protocol prefix,
+Loads the `url` in the window, the `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`.
 
 ### `webContents.getUrl()`
@@ -177,11 +177,11 @@ win.loadUrl("http://github.com");
 var currentUrl = win.webContents.getUrl();
 ```
 
-Returns URL of current web page.
+Returns URL of the current web page.
 
 ### `webContents.getTitle()`
 
-Returns the title of web page.
+Returns the title of the current web page.
 
 ### `webContents.isLoading()`
 
@@ -189,7 +189,7 @@ Returns whether web page is still loading resources.
 
 ### `webContents.isWaitingForResponse()`
 
-Returns whether web page is waiting for a first-response for the main resource
+Returns whether the web page is waiting for a first-response for the main resource
 of the page.
 
 ### `webContents.stop()`
@@ -198,7 +198,7 @@ Stops any pending navigation.
 
 ### `webContents.reload()`
 
-Reloads current page.
+Reloads the current web page.
 
 ### `webContents.reloadIgnoringCache()`
 
@@ -206,11 +206,11 @@ Reloads current page and ignores cache.
 
 ### `webContents.canGoBack()`
 
-Returns whether the web page can go back.
+Returns whether the browser can go back to previous web page.
 
 ### `webContents.canGoForward()`
 
-Returns whether the web page can go forward.
+Returns whether the browser can go forward to next web page.
 
 ### `webContents.canGoToOffset(offset)`
 
@@ -224,17 +224,17 @@ Clears the navigation history.
 
 ### `webContents.goBack()`
 
-Makes the web page go back.
+Makes the browser go back a web page.
 
 ### `webContents.goForward()`
 
-Makes the web page go forward.
+Makes the browser go forward a web page.
 
 ### `webContents.goToIndex(index)`
 
 * `index` Integer
 
-Navigates to the specified absolute index.
+Navigates browser to the specified absolute web page index.
 
 ### `webContents.goToOffset(offset)`
 
@@ -254,13 +254,13 @@ Overrides the user agent for this page.
 
 ### `webContents.getUserAgent()`
 
-Returns a `String` represents the user agent for this page.
+Returns a `String` representing the user agent for this page.
 
 ### `webContents.insertCSS(css)`
 
 * `css` String
 
-Injects CSS into this page.
+Injects CSS into the current web page.
 
 ### `webContents.executeJavaScript(code[, userGesture])`
 
@@ -269,15 +269,13 @@ Injects CSS into this page.
 
 Evaluates `code` in page.
 
-In browser some HTML APIs like `requestFullScreen` can only be invoked if it
-is started by user gesture, by specifying `userGesture` to `true` developers
-can ignore this limitation.
+In the browser window some HTML APIs like `requestFullScreen` can only be invoked by a gesture from the user. Setting `userGesture` to `true` will remove this limitation.
 
 ### `webContents.setAudioMuted(muted)`
 
 + `muted` Boolean
 
-Set the page muted.
+Mute the audio on the current web page.
 
 ### `webContents.isAudioMuted()`
 
@@ -335,15 +333,15 @@ Executes editing command `replaceMisspelling` in page.
 
 * `callback` Function
 
-Checks if any serviceworker is registered and returns boolean as
+Checks if any ServiceWorker is registered and returns a boolean as
 response to `callback`.
 
 ### `webContents.unregisterServiceWorker(callback)`
 
 * `callback` Function
 
-Unregisters any serviceworker if present and returns boolean as
-response to `callback` when the JS promise is fullfilled or false
+Unregisters any ServiceWorker if present and returns a boolean as
+response to `callback` when the JS promise is fulfilled or false
 when the JS promise is rejected.
 
 ### `webContents.print([options])`
@@ -361,7 +359,7 @@ Calling `window.print()` in web page is equivalent to call
 `webContents.print({silent: false, printBackground: false})`.
 
 **Note:** On Windows, the print API relies on `pdf.dll`. If your application
-doesn't need print feature, you can safely remove `pdf.dll` in saving binary
+doesn't need the print feature, you can safely remove `pdf.dll` to reduce binary
 size.
 
 ### `webContents.printToPDF(options, callback)`
@@ -390,9 +388,16 @@ size.
 Prints window's web page as PDF with Chromium's preview printing custom
 settings.
 
-By default, an empty `options` will be regarded as
-`{marginsType:0, printBackgrounds:false, printSelectionOnly:false,
-  landscape:false}`.
+By default, an empty `options` will be regarded as:
+
+```javascript
+{
+  marginsType:0,
+  printBackgrounds:false,
+  printSelectionOnly:false,
+  landscape:false
+}
+```
 
 ```javascript
 var BrowserWindow = require('browser-window');

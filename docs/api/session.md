@@ -5,7 +5,7 @@ The `session` object is a property of [`webContents`](web-contents.md) which is 
 ```javascript
 var BrowserWindow = require('browser-window');
 
-var win = new BroswerWindow({ width: 800, height: 600 });
+var win = new BrowserWindow({ width: 800, height: 600 });
 win.loadUrl("http://github.com");
 
 var session = win.webContents.session
@@ -17,7 +17,7 @@ The `session` object has the following methods:
 
 ### session.cookies
 
-The `cookies` gives you ability to query and modify cookies, an example is:
+The `cookies` gives you ability to query and modify cookies. For example:
 
 ```javascript
 var BrowserWindow = require('browser-window');
@@ -33,7 +33,7 @@ win.webContents.on('did-finish-load', function() {
     console.log(cookies);
   });
 
-  // Query all cookies that are associated with a specific url.
+  // Query all cookies associated with a specific url.
   win.webContents.session.cookies.get({ url : "http://www.github.com" },
       function(error, cookies) {
         if (error) throw error;

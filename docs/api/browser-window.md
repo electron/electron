@@ -14,7 +14,7 @@ win.loadUrl('https://github.com');
 win.show();
 ```
 
-You can also create a window without Chrome by using
+You can also create a window without chrome by using
 [Frameless Window](frameless-window.md) API.
 
 ## Class: BrowserWindow
@@ -146,7 +146,7 @@ window.onbeforeunload = function(e) {
 
   // Unlike usual browsers, in which a string should be returned and the user is
   // prompted to confirm the page unload, Electron gives developers more options.
-  // Returning an empty string or false will prevent the unloading.
+  // Returning an empty string or `false` will prevent the unloading.
   // You can also use the dialog API to let the user confirm closing the application.
   e.returnValue = false;
 };
@@ -295,7 +295,7 @@ Objects created with `new BrowserWindow` have the following instance methods:
 var BrowserWindow = require('browser-window');
 
 // In this example `win` is our instance
-var win = new BroswerWindow({width: 800, height: 1500});
+var win = new BrowserWindow({ width: 800, height: 600 });
 
 ```
 
@@ -676,7 +676,7 @@ __Note:__ This API is only available on Windows (Windows 7 and above)
 
 ### `win.setThumbarButtons(buttons)`
 
-`buttons` Array od `button` Objects:
+`buttons` Array of `button` Objects:
 
 `button` Object, properties:
 
@@ -688,7 +688,7 @@ __Note:__ This API is only available on Windows (Windows 7 and above)
   Strings:
   * `enabled` - The button is active and available to the user.
   * `disabled` - The button is disabled. It is present, but has a visual
-    state that indicates that it will not respond to user action.
+    state indicating it will not respond to user action.
   * `dismissonclick` - When the button is clicked, the taskbar button's
     flyout closes immediately.
   * `nobackground` - Do not draw a button border, use only the image.
