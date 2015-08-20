@@ -67,6 +67,14 @@ The other building steps are exactly the same.
 
 ## Tests
 
+Test your changes confirm to the project coding style using:
+
+```powershell
+python script\cpplint.py
+```
+
+Test functionality using:
+
 ```powershell
 python script\test.py
 ```

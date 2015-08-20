@@ -1,6 +1,6 @@
 # Application packaging
 
-To protect your app's resources and source code from the users, you can choose
+To mitigate [issues](https://github.com/joyent/node/issues/6960) around long path names on Windows, slightly speed up `require` and conceal your source code from cursory inspection you can choose
 to package your app into an [asar][asar] archive with little changes to your
 source code.
 
@@ -161,3 +161,4 @@ After running the command, apart from the `app.asar`, there is also an
 should copy it together with `app.asar` when shipping it to users.
 
 [asar]: https://github.com/atom/asar
+

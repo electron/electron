@@ -99,6 +99,10 @@ void AtomBindings::OnCallNextTick(uv_async_t* handle) {
       continue;
 
     if (tick_info->length() == 0) {
+      env->isolate()->RunMicrotasks();
+    }
+
+    if (tick_info->length() == 0) {
       tick_info->set_index(0);
       continue;
     }

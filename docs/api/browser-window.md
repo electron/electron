@@ -76,7 +76,14 @@ You can also create a window without chrome by using
     textured window. Defaults to `true`.
   * `web-preferences` Object - Settings of web page's features
     * `javascript` Boolean
-    * `web-security` Boolean
+    * `web-security` Boolean - When setting `false`, it will disable the same-origin
+      policy(Usually using testing websites by people), and set `allow_displaying_insecure_content`
+      and `allow_running_insecure_content` to `true` if these two options are not
+      set by user.
+    * `allow-displaying-insecure-content` Boolean - Allow a https page to display
+      content like image from http URLs.
+    * `allow-running-insecure-content` Boolean - Allow a https page to run JavaScript,
+      CSS or plugins from http URLs.
     * `images` Boolean
     * `java` Boolean
     * `text-areas-are-resizable` Boolean
@@ -361,6 +368,19 @@ Sets whether the window should be in fullscreen mode.
 
 Returns whether the window is in fullscreen mode.
 
+### BrowserWindow.setAspectRatio(aspectRatio[, extraSize])
+
+* `aspectRatio` The aspect ratio we want to maintain for some portion of the content view.
+* `rect` Object - The extra size to not be included in the aspect ratio to be maintained.
+  * `width` Integer
+  * `height` Integer
+
+This will have a window maintain an aspect ratio. The extra size allows a developer to be able to have space, specifified in pixels, not included within the aspect ratio calculations. This API already takes into account the difference between a window's size and it's content size.
+
+Consider a normal window with an HD video player and associated controls. Perhaps there are 15 pixels of controls on the left edge, 25 pixels of controls on the right edge and 50 pixels of controls below the player. In order to maintain a 16:9 aspect ratio (standard aspect ratio for HD @1920x1080) within the player itself we would call this function with arguments of 16/9 and [ 40, 50 ]. The second argument doesn't care where the extra width and height are within the content view — only that they exist. Just sum any extra width and height areas you have within the overall content view.
+
+__Note__: This API is only implemented on OS X.
+
 ### BrowserWindow.setBounds(options)
 
 * `options` Object
@@ -622,6 +642,39 @@ screen readers
 Sets a 16px overlay onto the current taskbar icon, usually used to convey some sort of application status or to passively notify the user.
 
 __Note:__ This API is only available on Windows (Windows 7 and above)
+
+
+### BrowserWindow.setThumbarButtons(buttons)
+
+* `buttons` Array
+  * `button` Object
+    * `icon` [NativeImage](native-image.md) - The icon showing in thumbnail
+      toolbar.
+    * `tooltip` String (optional) - The text of the button's tooltip.
+    * `flags` Array (optional) - Control specific states and behaviors
+      of the button. By default, it uses `enabled`. It can include following
+      Strings:
+      * `enabled` - The button is active and available to the user.
+      * `disabled` - The button is disabled. It is present, but has a visual
+        state that indicates that it will not respond to user action.
+      * `dismissonclick` - When the button is clicked, the taskbar button's
+        flyout closes immediately.
+      * `nobackground` - Do not draw a button border, use only the image.
+      * `hidden` - The button is not shown to the user.
+      * `noninteractive` - The button is enabled but not interactive; no
+        pressed button state is drawn. This value is intended for instances
+        where the button is used in a notification.
+    * `click` - Function
+
+Add a thumbnail toolbar with a specified set of buttons to the thumbnail image
+of a window in a taskbar button layout. Returns a `Boolean` object indicates
+whether the thumbnail has been added successfully.
+
+__Note:__ This API is only available on Windows (Windows 7 and above).
+The number of buttons in thumbnail toolbar should be no greater than 7 due to
+the limited room. Once you setup the thumbnail toolbar, the toolbar cannot be
+removed due to the platform's limitation. But you can call the API with an empty
+array to clean the buttons.
 
 ### BrowserWindow.showDefinitionForSelection()
 
@@ -885,11 +938,16 @@ Returns a `String` represents the user agent for this page.
 
 Injects CSS into this page.
 
-### WebContents.executeJavaScript(code)
+### WebContents.executeJavaScript(code[, userGesture])
 
 * `code` String
+* `userGesture` Boolean
 
 Evaluates `code` in page.
+
+In browser some HTML APIs like `requestFullScreen` can only be invoked if it
+is started by user gesture, by specifying `userGesture` to `true` developers
+can ignore this limitation.
 
 ### WebContents.setAudioMuted(muted)
 
@@ -988,6 +1046,12 @@ size.
     * 0 - default
     * 1 - none
     * 2 - minimum
+  * `pageSize` String - Specify page size of the generated PDF
+    * `A4`
+    * `A3`
+    * `Legal`
+    * `Letter`
+    * `Tabloid`
   * `printBackground` Boolean - Whether to print CSS backgrounds.
   * `printSelectionOnly` Boolean - Whether to print selection only.
   * `landscape` Boolean - `true` for landscape, `false` for portrait.
@@ -1014,13 +1078,26 @@ win.webContents.on("did-finish-load", function() {
   // Use default printing options
   win.webContents.printToPDF({}, function(error, data) {
     if (error) throw error;
-    fs.writeFile(dist, data, function(error) {
+    fs.writeFile("/tmp/print.pdf", data, function(error) {
       if (err)
-        alert('write pdf file error', error);
+        throw error;
+      console.log("Write PDF successfully.");
     })
   })
 });
 ```
+
+### WebContents.addWorkSpace(path)
+
+* `path` String
+
+Adds the specified path to devtools workspace.
+
+### WebContents.removeWorkSpace(path)
+
+* `path` String
+
+Removes the specified path from devtools workspace.
 
 ### WebContents.send(channel[, args...])
 
@@ -1207,3 +1284,10 @@ proxy-uri = [<proxy-scheme>"://"]<proxy-host>[":"<proxy-port>]
                                       and use socks4://foopy2 for all other
                                       URLs.
 ```
+
+### Session.setDownloadPath(path)
+
+* `path` String - The download location
+
+Sets download saving directory. By default, the download directory will be the
+`Downloads` under the respective app folder.

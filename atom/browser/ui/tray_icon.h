@@ -47,19 +47,20 @@ class TrayIcon {
                               const base::string16& title,
                               const base::string16& contents);
 
-  virtual void PopContextMenu(const gfx::Point& pos);
+  virtual void PopUpContextMenu(const gfx::Point& pos);
 
   // Set the context menu for this icon.
   virtual void SetContextMenu(ui::SimpleMenuModel* menu_model) = 0;
 
   void AddObserver(TrayIconObserver* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(TrayIconObserver* obs) { observers_.RemoveObserver(obs); }
-  void NotifyClicked(const gfx::Rect& = gfx::Rect());
-  void NotifyDoubleClicked();
+  void NotifyClicked(const gfx::Rect& = gfx::Rect(), int modifiers = 0);
+  void NotifyDoubleClicked(const gfx::Rect& = gfx::Rect(), int modifiers = 0);
   void NotifyBalloonShow();
   void NotifyBalloonClicked();
   void NotifyBalloonClosed();
-  void NotifyRightClicked(const gfx::Rect& bounds = gfx::Rect());
+  void NotifyRightClicked(const gfx::Rect& bounds = gfx::Rect(),
+                          int modifiers = 0);
   void NotfiyDropFiles(const std::vector<std::string>& files);
 
  protected:

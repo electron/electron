@@ -8,10 +8,6 @@
 #include <utility>
 #include <vector>
 
-#if defined(OS_WIN)
-#include <shlobj.h>
-#endif
-
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/window_list.h"
@@ -72,6 +68,22 @@ const char* kWebRuntimeFeatures[] = {
   switches::kPageVisibility,
 };
 
+// Convert draggable regions in raw format to SkRegion format. Caller is
+// responsible for deleting the returned SkRegion instance.
+scoped_ptr<SkRegion> DraggableRegionsToSkRegion(
+    const std::vector<DraggableRegion>& regions) {
+  scoped_ptr<SkRegion> sk_region(new SkRegion);
+  for (const DraggableRegion& region : regions) {
+    sk_region->op(
+        region.bounds.x(),
+        region.bounds.y(),
+        region.bounds.right(),
+        region.bounds.bottom(),
+        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
+  }
+  return sk_region.Pass();
+}
+
 }  // namespace
 
 NativeWindow::NativeWindow(
@@ -85,6 +97,7 @@ NativeWindow::NativeWindow(
       node_integration_(true),
       has_dialog_attached_(false),
       zoom_factor_(1.0),
+      aspect_ratio_(0.0),
       inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
   inspectable_web_contents->GetView()->SetDelegate(this);
@@ -246,6 +259,20 @@ bool NativeWindow::IsMenuBarVisible() {
   return true;
 }
 
+double NativeWindow::GetAspectRatio() {
+  return aspect_ratio_;
+}
+
+gfx::Size NativeWindow::GetAspectRatioExtraSize() {
+  return aspect_ratio_extraSize_;
+}
+
+void NativeWindow::SetAspectRatio(double aspect_ratio,
+                                  const gfx::Size& extra_size) {
+  aspect_ratio_ = aspect_ratio;
+  aspect_ratio_extraSize_ = extra_size;
+}
+
 bool NativeWindow::HasModalDialog() {
   return has_dialog_attached_;
 }
@@ -369,15 +396,6 @@ void NativeWindow::AppendExtraCommandLineSwitches(
     command_line->AppendSwitchASCII(switches::kZoomFactor,
                                     base::DoubleToString(zoom_factor_));
 
-#if defined(OS_WIN)
-  // Append --app-user-model-id.
-  PWSTR current_app_id;
-  if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
-    command_line->AppendSwitchNative(switches::kAppUserModelId, current_app_id);
-    CoTaskMemFree(current_app_id);
-  }
-#endif
-
   if (web_preferences_.IsEmpty())
     return;
 
@@ -424,6 +442,10 @@ void NativeWindow::OverrideWebkitPrefs(content::WebPreferences* prefs) {
     prefs->allow_displaying_insecure_content = !b;
     prefs->allow_running_insecure_content = !b;
   }
+  if (web_preferences_.Get("allow-displaying-insecure-content", &b))
+    prefs->allow_displaying_insecure_content = b;
+  if (web_preferences_.Get("allow-running-insecure-content", &b))
+    prefs->allow_running_insecure_content = b;
   if (web_preferences_.Get("extra-plugin-dirs", &list)) {
     if (content::PluginService::GetInstance()->NPAPIPluginsSupported()) {
       for (size_t i = 0; i < list.size(); ++i)
@@ -500,6 +522,12 @@ void NativeWindow::NotifyWindowLeaveHtmlFullScreen() {
                     OnWindowLeaveHtmlFullScreen());
 }
 
+void NativeWindow::NotifyWindowExecuteWindowsCommand(
+    const std::string& command) {
+  FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
+                    OnExecuteWindowsCommand(command));
+}
+
 void NativeWindow::DevToolsFocused() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsFocus());
 }
@@ -534,7 +562,7 @@ void NativeWindow::BeforeUnloadDialogCancelled() {
 void NativeWindow::TitleWasSet(content::NavigationEntry* entry,
                                bool explicit_set) {
   bool prevent_default = false;
-  std::string text = base::UTF16ToUTF8(entry->GetTitle());
+  std::string text = entry ? base::UTF16ToUTF8(entry->GetTitle()) : "";
   FOR_EACH_OBSERVER(NativeWindowObserver,
                     observers_,
                     OnPageTitleUpdated(&prevent_default, text));
@@ -551,6 +579,14 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
   IPC_END_MESSAGE_MAP()
 
   return handled;
+}
+
+void NativeWindow::UpdateDraggableRegions(
+    const std::vector<DraggableRegion>& regions) {
+  // Draggable region is not supported for non-frameless window.
+  if (has_frame_)
+    return;
+  draggable_region_ = DraggableRegionsToSkRegion(regions);
 }
 
 void NativeWindow::ScheduleUnresponsiveEvent(int ms) {

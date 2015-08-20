@@ -120,7 +120,7 @@ class SrcAttribute extends WebViewAttribute
       ''
 
   setValueIgnoreMutation: (value) ->
-    WebViewAttribute::setValueIgnoreMutation value
+    WebViewAttribute::setValueIgnoreMutation.call(this, value)
     # takeRecords() is needed to clear queued up src mutations. Without it, it
     # is possible for this change to get picked up asyncronously by src's
     # mutation observer |observer|, and then get handled even though we do not

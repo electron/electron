@@ -130,10 +130,10 @@ If "on", the guest page will have web security disabled.
 
 ## Methods
 
-The webview element must be loaded before using the methods.  
+The webview element must be loaded before using the methods.
 **Example**
 ```javascript
-webview.addEventListener("dom-ready", function(){
+webview.addEventListener("dom-ready", function() {
   webview.openDevTools();
 });
 ```
@@ -225,11 +225,14 @@ Returns a `String` represents the user agent for guest page.
 
 Injects CSS into guest page.
 
-### `<webview>`.executeJavaScript(code)
+### `<webview>`.executeJavaScript(code, userGesture)
 
 * `code` String
+* `userGesture` Boolean - Default false
 
-Evaluates `code` in guest page.
+Evaluates `code` in page. If `userGesture` is set will create user gesture context,
+HTML api like `requestFullScreen` which require user action can take advantage
+of this option for automation.
 
 ### `<webview>`.openDevTools()
 
@@ -312,11 +315,11 @@ Executes editing command `replace` in page.
 
 Executes editing command `replaceMisspelling` in page.
 
-### `<webview>.print([options])`
+### `<webview>`.print([options])
 
 Prints webview's web page. Same with `webContents.print([options])`.
 
-### `<webview>.printToPDF(options, callback)`
+### `<webview>`.printToPDF(options, callback)
 
 Prints webview's web page as PDF, Same with `webContents.printToPDF(options, callback)`
 
@@ -331,6 +334,15 @@ See [WebContents.send](browser-window.md#webcontentssendchannel-args) for
 examples.
 
 ## DOM events
+
+### load-commit
+
+* `url` String
+* `isMainFrame` Boolean
+
+Fired when a load has committed. This includes navigation within the current
+document as well as subframe document-level loads, but does not include
+asynchronous resource loads.
 
 ### did-finish-load
 

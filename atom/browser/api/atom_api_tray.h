@@ -42,12 +42,12 @@ class Tray : public mate::EventEmitter,
   virtual ~Tray();
 
   // TrayIconObserver:
-  void OnClicked(const gfx::Rect& bounds) override;
-  void OnDoubleClicked() override;
+  void OnClicked(const gfx::Rect& bounds, int modifiers) override;
+  void OnDoubleClicked(const gfx::Rect& bounds, int modifiers) override;
+  void OnRightClicked(const gfx::Rect& bounds, int modifiers) override;
   void OnBalloonShow() override;
   void OnBalloonClicked() override;
   void OnBalloonClosed() override;
-  void OnRightClicked(const gfx::Rect& bounds) override;
   void OnDropFiles(const std::vector<std::string>& files) override;
 
   // mate::Wrappable:
@@ -60,10 +60,12 @@ class Tray : public mate::EventEmitter,
   void SetTitle(mate::Arguments* args, const std::string& title);
   void SetHighlightMode(mate::Arguments* args, bool highlight);
   void DisplayBalloon(mate::Arguments* args, const mate::Dictionary& options);
-  void PopContextMenu(mate::Arguments* args);
+  void PopUpContextMenu(mate::Arguments* args);
   void SetContextMenu(mate::Arguments* args, Menu* menu);
 
  private:
+  v8::Local<v8::Object> ModifiersToObject(v8::Isolate* isolate, int modifiers);
+
   scoped_ptr<TrayIcon> tray_icon_;
 
   DISALLOW_COPY_AND_ASSIGN(Tray);

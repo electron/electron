@@ -80,8 +80,9 @@ class CommonWebContentsDelegate
                           bool save_as) override;
   void DevToolsAppendToFile(const std::string& url,
                             const std::string& content) override;
-  void DevToolsAddFileSystem() override;
-  void DevToolsRemoveFileSystem(const std::string& file_system_path) override;
+  void DevToolsAddFileSystem(const base::FilePath& path) override;
+  void DevToolsRemoveFileSystem(
+      const base::FilePath& file_system_path) override;
 
  private:
   // Callback for when DevToolsSaveToFile has completed.

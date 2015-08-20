@@ -23,7 +23,7 @@ In most cases, you should just do everything in the `ready` event handler.
 
 ## Event: ready
 
-Emitted when Electron has finsished initialization.
+Emitted when Electron has finished initialization.
 
 ## Event: window-all-closed
 

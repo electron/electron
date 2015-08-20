@@ -22,3 +22,7 @@ matrix:
     - env: TARGET_ARCH=ia32
 
 script: './script/cibuild'
+
+branches:
+  only:
+    - master

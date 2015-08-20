@@ -18,25 +18,11 @@ namespace file_dialog {
 
 namespace {
 
-CFStringRef CreateUTIFromExtension(const std::string& ext) {
-  base::ScopedCFTypeRef<CFStringRef> ext_cf(base::SysUTF8ToCFStringRef(ext));
-  return UTTypeCreatePreferredIdentifierForTag(
-      kUTTagClassFilenameExtension, ext_cf.get(), NULL);
-}
-
 void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   NSMutableSet* file_type_set = [NSMutableSet set];
   for (size_t i = 0; i < filters.size(); ++i) {
     const Filter& filter = filters[i];
     for (size_t j = 0; j < filter.second.size(); ++j) {
-      base::ScopedCFTypeRef<CFStringRef> uti(
-          CreateUTIFromExtension(filter.second[j]));
-      [file_type_set addObject:base::mac::CFToNSCast(uti.get())];
-
-      // Always allow the extension itself, in case the UTI doesn't map
-      // back to the original extension correctly. This occurs with dynamic
-      // UTIs on 10.7 and 10.8.
-      // See http://crbug.com/148840, http://openradar.me/12316273
       base::ScopedCFTypeRef<CFStringRef> ext_cf(
           base::SysUTF8ToCFStringRef(filter.second[j]));
       [file_type_set addObject:base::mac::CFToNSCast(ext_cf.get())];

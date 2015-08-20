@@ -67,6 +67,8 @@ class NativeImage : public mate::Wrappable {
 
   // Mark the image as template image.
   void SetTemplateImage(bool setAsTemplate);
+  // Determine if the image is a template image.
+  bool IsTemplateImage();
 
   gfx::Image image_;
 

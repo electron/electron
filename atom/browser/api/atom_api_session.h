@@ -13,6 +13,10 @@
 
 class GURL;
 
+namespace base {
+class FilePath;
+}
+
 namespace mate {
 class Arguments;
 }
@@ -46,6 +50,7 @@ class Session: public mate::TrackableObject<Session> {
   void ClearCache(const net::CompletionCallback& callback);
   void ClearStorageData(mate::Arguments* args);
   void SetProxy(const std::string& proxy, const base::Closure& callback);
+  void SetDownloadPath(const base::FilePath& path);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
 
   v8::Global<v8::Value> cookies_;

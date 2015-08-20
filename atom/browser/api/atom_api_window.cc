@@ -8,17 +8,42 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "content/public/browser/render_process_host.h"
-#include "native_mate/callback.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/geometry/rect.h"
 
+#if defined(OS_WIN)
+#include "atom/browser/native_window_views.h"
+#include "atom/browser/ui/win/taskbar_host.h"
+#endif
+
 #include "atom/common/node_includes.h"
+
+#if defined(OS_WIN)
+namespace mate {
+
+template<>
+struct Converter<atom::TaskbarHost::ThumbarButton> {
+  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+                     atom::TaskbarHost::ThumbarButton* out) {
+    mate::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+    dict.Get("click", &(out->clicked_callback));
+    dict.Get("tooltip", &(out->tooltip));
+    dict.Get("flags", &out->flags);
+    return dict.Get("icon", &(out->icon));
+  }
+};
+
+}  // namespace mate
+#endif
 
 namespace atom {
 
@@ -413,6 +438,21 @@ void Window::SetOverlayIcon(const gfx::Image& overlay,
   window_->SetOverlayIcon(overlay, description);
 }
 
+bool Window::SetThumbarButtons(mate::Arguments* args) {
+#if defined(OS_WIN)
+  std::vector<TaskbarHost::ThumbarButton> buttons;
+  if (!args->GetNext(&buttons)) {
+    args->ThrowError();
+    return false;
+  }
+  auto window = static_cast<NativeWindowViews*>(window_.get());
+  return window->taskbar_host().SetThumbarButtons(
+      window->GetAcceleratedWidget(), buttons);
+#else
+  return false;
+#endif
+}
+
 void Window::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   mate::Handle<Menu> menu;
   if (value->IsObject() &&
@@ -450,6 +490,12 @@ void Window::ShowDefinitionForSelection() {
   window_->ShowDefinitionForSelection();
 }
 #endif
+
+void Window::SetAspectRatio(double aspect_ratio, mate::Arguments* args) {
+  gfx::Size extra_size;
+  args->GetNext(&extra_size);
+  window_->SetAspectRatio(aspect_ratio, extra_size);
+}
 
 void Window::SetVisibleOnAllWorkspaces(bool visible) {
   return window_->SetVisibleOnAllWorkspaces(visible);
@@ -498,6 +544,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isMinimized", &Window::IsMinimized)
       .SetMethod("setFullScreen", &Window::SetFullScreen)
       .SetMethod("isFullScreen", &Window::IsFullscreen)
+      .SetMethod("setAspectRatio", &Window::SetAspectRatio)
       .SetMethod("getBounds", &Window::GetBounds)
       .SetMethod("setBounds", &Window::SetBounds)
       .SetMethod("getSize", &Window::GetSize)
@@ -531,6 +578,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("capturePage", &Window::CapturePage)
       .SetMethod("setProgressBar", &Window::SetProgressBar)
       .SetMethod("setOverlayIcon", &Window::SetOverlayIcon)
+      .SetMethod("setThumbarButtons", &Window::SetThumbarButtons)
       .SetMethod("setMenu", &Window::SetMenu)
       .SetMethod("setAutoHideMenuBar", &Window::SetAutoHideMenuBar)
       .SetMethod("isMenuBarAutoHide", &Window::IsMenuBarAutoHide)

@@ -21,6 +21,7 @@ const MINIDUMP_TYPE kSmallDumpType = static_cast<MINIDUMP_TYPE>(
     MiniDumpWithProcessThreadData |  // Get PEB and TEB.
     MiniDumpWithUnloadedModules);  // Get unloaded modules when available.
 
+const wchar_t kWaitEventFormat[] = L"$1CrashServiceWaitEvent";
 const wchar_t kPipeNameFormat[] = L"\\\\.\\pipe\\$1 Crash Service";
 
 }  // namespace
@@ -47,12 +48,15 @@ void CrashReporterWin::InitBreakpad(const std::string& product_name,
 
   base::string16 pipe_name = ReplaceStringPlaceholders(
       kPipeNameFormat, base::UTF8ToUTF16(product_name), NULL);
+  base::string16 wait_name = ReplaceStringPlaceholders(
+      kWaitEventFormat, base::UTF8ToUTF16(product_name), NULL);
 
   // Wait until the crash service is started.
-  HANDLE waiting_event =
-      ::CreateEventW(NULL, TRUE, FALSE, L"g_atom_shell_crash_service");
-  if (waiting_event != INVALID_HANDLE_VALUE)
-    WaitForSingleObject(waiting_event, 1000);
+  HANDLE wait_event = ::CreateEventW(NULL, TRUE, FALSE, wait_name.c_str());
+  if (wait_event != NULL) {
+    WaitForSingleObject(wait_event, 1000);
+    CloseHandle(wait_event);
+  }
 
   // ExceptionHandler() attaches our handler and ~ExceptionHandler() detaches
   // it, so we must explicitly reset *before* we instantiate our new handler

@@ -27,11 +27,7 @@ AdapterRequestJob::AdapterRequestJob(ProtocolHandler* protocol_handler,
 
 void AdapterRequestJob::Start() {
   DCHECK(!real_job_.get());
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI,
-      FROM_HERE,
-      base::Bind(&AdapterRequestJob::GetJobTypeInUI,
-                 weak_factory_.GetWeakPtr()));
+  GetJobType();
 }
 
 void AdapterRequestJob::Kill() {
@@ -43,7 +39,11 @@ bool AdapterRequestJob::ReadRawData(net::IOBuffer* buf,
                                     int buf_size,
                                     int *bytes_read) {
   DCHECK(!real_job_.get());
-  return real_job_->ReadRawData(buf, buf_size, bytes_read);
+  // Read post-filtered data if available.
+  if (real_job_->HasFilter())
+    return real_job_->Read(buf, buf_size, bytes_read);
+  else
+    return real_job_->ReadRawData(buf, buf_size, bytes_read);
 }
 
 bool AdapterRequestJob::IsRedirectResponse(GURL* location,
@@ -73,6 +73,11 @@ void AdapterRequestJob::GetResponseInfo(net::HttpResponseInfo* info) {
 
 int AdapterRequestJob::GetResponseCode() const {
   return real_job_->GetResponseCode();
+}
+
+void AdapterRequestJob::GetLoadTimingInfo(
+    net::LoadTimingInfo* load_timing_info) const {
+  real_job_->GetLoadTimingInfo(load_timing_info);
 }
 
 base::WeakPtr<AdapterRequestJob> AdapterRequestJob::GetWeakPtr() {
@@ -114,7 +119,7 @@ void AdapterRequestJob::CreateFileJobAndStart(const base::FilePath& path) {
 }
 
 void AdapterRequestJob::CreateHttpJobAndStart(
-    net::URLRequestContextGetter* request_context_getter,
+    scoped_refptr<net::URLRequestContextGetter> request_context_getter,
     const GURL& url,
     const std::string& method,
     const std::string& referrer) {
@@ -131,10 +136,13 @@ void AdapterRequestJob::CreateHttpJobAndStart(
 void AdapterRequestJob::CreateJobFromProtocolHandlerAndStart() {
   real_job_ = protocol_handler_->MaybeCreateJob(request(),
                                                 network_delegate());
-  if (!real_job_.get())
+  if (!real_job_.get()) {
     CreateErrorJobAndStart(net::ERR_NOT_IMPLEMENTED);
-  else
+  } else {
+    // Copy headers from original request.
+    real_job_->SetExtraRequestHeaders(request()->extra_request_headers());
     real_job_->Start();
+  }
 }
 
 }  // namespace atom

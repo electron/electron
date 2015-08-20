@@ -7,6 +7,7 @@
 #include <map>
 
 #include "base/lazy_instance.h"
+#include "ui/gfx/geometry/size.h"
 
 namespace atom {
 
@@ -51,7 +52,9 @@ void GuestViewContainer::DidResizeElement(const gfx::Size& old_size,
   if (element_resize_callback_.is_null())
     return;
 
-  element_resize_callback_.Run(old_size, new_size);
+  base::MessageLoop::current()->PostTask(
+      FROM_HERE,
+      base::Bind(element_resize_callback_, old_size, new_size));
 }
 
 }  // namespace atom

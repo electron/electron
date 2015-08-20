@@ -9,12 +9,17 @@
 
 #include "atom/browser/api/atom_api_cookies.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
-#include "base/thread_task_runner_handle.h"
+#include "atom/common/native_mate_converters/file_path_converter.h"
+#include "base/files/file_path.h"
+#include "base/prefs/pref_service.h"
 #include "base/strings/string_util.h"
+#include "base/thread_task_runner_handle.h"
+#include "chrome/common/pref_names.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
-#include "native_mate/callback.h"
+#include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/base/load_flags.h"
 #include "net/disk_cache/disk_cache.h"
@@ -177,10 +182,10 @@ void OnGetBackend(disk_cache::Backend** backend_ptr,
   }
 }
 
-void ClearHttpCacheInIO(content::BrowserContext* browser_context,
-                        const net::CompletionCallback& callback) {
-  auto request_context =
-      browser_context->GetRequestContext()->GetURLRequestContext();
+void ClearHttpCacheInIO(
+    const scoped_refptr<net::URLRequestContextGetter>& context_getter,
+    const net::CompletionCallback& callback) {
+  auto request_context = context_getter->GetURLRequestContext();
   auto http_cache = request_context->http_transaction_factory()->GetCache();
   if (!http_cache)
     RunCallbackInUI<int>(callback, net::ERR_FAILED);
@@ -222,7 +227,7 @@ void Session::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
 void Session::ClearCache(const net::CompletionCallback& callback) {
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
       base::Bind(&ClearHttpCacheInIO,
-                 base::Unretained(browser_context_),
+                 make_scoped_refptr(browser_context_->GetRequestContext()),
                  callback));
 }
 
@@ -251,6 +256,11 @@ void Session::SetProxy(const std::string& proxy,
       base::Bind(&SetProxyInIO, base::Unretained(getter), proxy, callback));
 }
 
+void Session::SetDownloadPath(const base::FilePath& path) {
+  browser_context_->prefs()->SetFilePath(
+      prefs::kDownloadDefaultDirectory, path);
+}
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
     auto handle = atom::api::Cookies::Create(isolate, browser_context_);
@@ -266,6 +276,7 @@ mate::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("clearCache", &Session::ClearCache)
       .SetMethod("clearStorageData", &Session::ClearStorageData)
       .SetMethod("setProxy", &Session::SetProxy)
+      .SetMethod("setDownloadPath", &Session::SetDownloadPath)
       .SetProperty("cookies", &Session::Cookies);
 }
 

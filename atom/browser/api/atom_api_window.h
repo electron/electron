@@ -11,6 +11,7 @@
 #include "base/memory/scoped_ptr.h"
 #include "ui/gfx/image/image.h"
 #include "atom/browser/api/trackable_object.h"
+#include "atom/browser/native_window.h"
 #include "atom/browser/native_window_observer.h"
 #include "native_mate/handle.h"
 
@@ -129,11 +130,13 @@ class Window : public mate::TrackableObject<Window>,
   void SetProgressBar(double progress);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
+  bool SetThumbarButtons(mate::Arguments* args);
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
   void SetAutoHideMenuBar(bool auto_hide);
   bool IsMenuBarAutoHide();
   void SetMenuBarVisibility(bool visible);
   bool IsMenuBarVisible();
+  void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
 
 #if defined(OS_MACOSX)
   void ShowDefinitionForSelection();

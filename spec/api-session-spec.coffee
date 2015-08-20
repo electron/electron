@@ -20,8 +20,7 @@ describe 'session module', ->
       res.end('finished')
       server.close()
 
-    port = remote.process.port
-    server.listen port, '127.0.0.1', ->
+    server.listen 0, '127.0.0.1', ->
       {port} = server.address()
       w.loadUrl "#{url}:#{port}"
       w.webContents.on 'did-finish-load', ->

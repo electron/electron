@@ -82,7 +82,7 @@ bool AddImageSkiaRep(gfx::ImageSkia* image,
   if (!decoded)
     return false;
 
-  image->AddRepresentation(gfx::ImageSkiaRep(*decoded.release(), scale_factor));
+  image->AddRepresentation(gfx::ImageSkiaRep(*decoded, scale_factor));
   return true;
 }
 
@@ -117,7 +117,7 @@ bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
 }
 
 #if defined(OS_MACOSX)
-bool IsTemplateImage(const base::FilePath& path) {
+bool IsTemplateFilename(const base::FilePath& path) {
   return (MatchPattern(path.value(), "*Template.*") ||
           MatchPattern(path.value(), "*Template@*x.*"));
 }
@@ -143,6 +143,7 @@ mate::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
         .SetMethod("isEmpty", &NativeImage::IsEmpty)
         .SetMethod("getSize", &NativeImage::GetSize)
         .SetMethod("setTemplateImage", &NativeImage::SetTemplateImage)
+        .SetMethod("isTemplateImage", &NativeImage::IsTemplateImage)
         .Build());
 
   return mate::ObjectTemplateBuilder(
@@ -183,6 +184,10 @@ gfx::Size NativeImage::GetSize() {
 
 #if !defined(OS_MACOSX)
 void NativeImage::SetTemplateImage(bool setAsTemplate) {
+}
+
+bool NativeImage::IsTemplateImage() {
+  return false;
 }
 #endif
 
@@ -249,7 +254,7 @@ mate::Handle<NativeImage> NativeImage::CreateFromPath(
   gfx::Image image(image_skia);
   mate::Handle<NativeImage> handle = Create(isolate, image);
 #if defined(OS_MACOSX)
-  if (IsTemplateImage(path))
+  if (IsTemplateFilename(path))
     handle->SetTemplateImage(true);
 #endif
   return handle;

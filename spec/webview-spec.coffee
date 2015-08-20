@@ -1,5 +1,6 @@
 assert = require 'assert'
 path   = require 'path'
+http   = require 'http'
 
 describe '<webview> tag', ->
   fixtures = path.join __dirname, 'fixtures'
@@ -227,4 +228,52 @@ describe '<webview> tag', ->
       webview.addEventListener 'ipc-message', listener
       webview.setAttribute 'nodeintegration', 'on'
       webview.src = "file://#{fixtures}/pages/history.html"
+      document.body.appendChild webview
+
+  describe 'basic auth', ->
+    auth = require 'basic-auth'
+
+    it 'should authenticate with correct credentials', (done) ->
+      message = 'Authenticated'
+      server = http.createServer (req, res) ->
+        credentials = auth(req)
+        if credentials.name == 'test' and credentials.pass == 'test'
+          res.end(message)
+        else
+          res.end('failed')
+        server.close()
+      server.listen 0, '127.0.0.1', ->
+        {port} = server.address()
+        webview.addEventListener 'ipc-message', (e) ->
+          assert.equal e.channel, message
+          done()
+        webview.src = "file://#{fixtures}/pages/basic-auth.html?port=#{port}"
+        webview.setAttribute 'nodeintegration', 'on'
+        document.body.appendChild webview
+
+  describe 'dom-ready event', ->
+    it 'emits when document is loaded', (done) ->
+      server = http.createServer (req) ->
+        # Never respond, so the page never finished loading.
+      server.listen 0, '127.0.0.1', ->
+        {port} = server.address()
+        webview.addEventListener 'dom-ready', ->
+          done()
+        webview.src = "file://#{fixtures}/pages/dom-ready.html?port=#{port}"
+        document.body.appendChild webview
+
+  describe 'executeJavaScript', ->
+    return unless process.env.TRAVIS is 'true'
+
+    it 'should support user gesture', (done) ->
+      listener = (e) ->
+        webview.removeEventListener 'enter-html-full-screen', listener
+        done()
+      listener2 = (e) ->
+        jsScript = 'document.getElementsByTagName("video")[0].webkitRequestFullScreen()'
+        webview.executeJavaScript jsScript, true
+        webview.removeEventListener 'did-finish-load', listener2
+      webview.addEventListener 'enter-html-full-screen', listener
+      webview.addEventListener 'did-finish-load', listener2
+      webview.src = "file://#{fixtures}/pages/fullscreen.html"
       document.body.appendChild webview
