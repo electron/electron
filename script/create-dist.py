@@ -31,7 +31,6 @@ TARGET_BINARIES = {
     '{0}.exe'.format(PROJECT_NAME),  # 'electron.exe'
     'content_shell.pak',
     'd3dcompiler_47.dll',
-    'ffmpegsumo.dll',
     'icudtl.dat',
     'libEGL.dll',
     'libGLESv2.dll',
@@ -50,7 +49,6 @@ TARGET_BINARIES = {
     PROJECT_NAME,  # 'electron'
     'content_shell.pak',
     'icudtl.dat',
-    'libffmpegsumo.so',
     'libnode.so',
     'natives_blob.bin',
     'snapshot_blob.bin',
