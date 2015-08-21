@@ -99,7 +99,7 @@ MyApp.app/Contents
 실행파일 `electron`의 이름을 원하는 대로 바꿀 수 있습니다.
 리눅스 어플리케이션의 아이콘은 [.desktop](https://developer.gnome.org/integration-guide/stable/desktop-files.html.en) 파일을 사용하여 지정할 수 있습니다.
 
-### 역자주-자동화 
+### 역주-자동화 
 
 배포시에 Electron의 리소스를 일일이 수정하는 것은 매우 귀찮고 복잡합니다.
 하지만 이 작업을 자동화 시킬 수 있는 몇가지 방법이 있습니다: 

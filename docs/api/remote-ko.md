@@ -1,17 +1,13 @@
 ﻿# remote
 
-The `remote` module provides a simple way to do inter-process communication
-between the renderer process and the main process.
+`remote` 모듈은 메인 프로세스와 랜더러 프로세스 사이에 inter-process 통신을 간단하게 추상화 한 모듈입니다.
 
-In Electron, only GUI-unrelated modules are available in the renderer process.
-Without the `remote` module, users who wanted to call a main process API in
-the renderer process would have to explicitly send inter-process messages
-to the main process. With the `remote` module, users can invoke methods of
-main process object without explicitly sending inter-process messages,
-similar to Java's
-[RMI](http://en.wikipedia.org/wiki/Java_remote_method_invocation).
+Electron의 랜더러 프로세스에선 GUI와 관련 없는 모듈만 사용할 수 있습니다.
+기본적으로 랜더러 프로세스에서 메인 프로세스의 API를 사용하려면 inter-process 통신을 사용해야 합니다.
+하지만 `remote` 모듈을 사용하면 따로 inter-process 통신을 사용하지 않고 직접 명시적으로 사용할 수 있습니다.
+Java의 [RMI](http://en.wikipedia.org/wiki/Java_remote_method_invocation)와 개념이 비슷합니다.
 
-An example of creating a browser window in renderer process:
+다음 예제는 랜더러 프로세스에서 브라우저 창을 만드는 예제입니다:
 
 ```javascript
 var remote = require('remote');
@@ -20,51 +16,38 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 win.loadUrl('https://github.com');
 ```
 
-Note: for the reverse (access renderer process from main process), you can use [webContents.executeJavascript](https://github.com/atom/electron/blob/master/docs/api/browser-window-ko.md#browserwindowwebcontents).
+알림: 반대로 하려면(메인 프로세스에서 랜더러 프로세스에 접근) [webContents.executeJavascript](browser-window.md#webcontents-executejavascript-code) API를 사용하면 됩니다.
 
-## Remote objects
+## Remote 객체
 
-Each object (including functions) returned by the `remote` module represents an
-object in the main process (we call it a remote object or remote function).
-When you invoke methods of a remote object, call a remote function, or create
-a new object with the remote constructor (function), you are actually sending
-synchronous inter-process messages.
+`remote` 모듈로부터 반환된 각 객체(함수 포함)는 메인 프로세스의 객체를 추상화 한 객체입니다. (우리는 그것을 remote 객체 또는 remote 함수라고 부릅니다)
+Remote 모듈의 함수를 호출하거나, 객체에 접근하거나, 생성자로 객체를 생성하는 등의 작업은 실질적으로 동기형 inter-process 메시지를 보냅니다.
 
-In the example above, both `BrowserWindow` and `win` were remote objects and
-`new BrowserWindow` didn't create a `BrowserWindow` object in the renderer process.
-Instead, it created a `BrowserWindow` object in the main process and returned the
-corresponding remote object in the renderer process, namely the `win` object.
+위의 예제에서 사용한 두 `BrowserWindow`와 `win`은 remote 객체입니다. 그리고 `new BrowserWindow`이 생성하는 `BrowserWindow` 객체는 랜더러 프로세스에서 생성되지 않습니다.
+대신에 이 `BrowserWindow` 객체는 메인 프로세스에서 생성되며 랜더러 프로세스에 `win` 객체와 같이 이에 대응하는 remote 객체를 반환합니다.
 
-## Lifetime of remote objects
+## Remote 객체의 일생
 
-Electron makes sure that as long as the remote object in the renderer process
-lives (in other words, has not been garbage collected), the corresponding object
-in the main process would never be released. When the remote object has been
-garbage collected, the corresponding object in the main process would be
-dereferenced.
+Electron은 랜더러 프로세스의 remote 객체가 살아있는 한(다시 말해서 GC(garbage collection)가 일어나지 않습니다) 대응하는 메인 프로세스의 객체는 릴리즈되지 않습니다.
+Remote 객체가 GC 되려면 대응하는 메인 프로세스 내부 객체의 참조가 해제되어야만 합니다.
 
-If the remote object is leaked in renderer process (e.g. stored in a map but never
-freed), the corresponding object in the main process would also be leaked,
-so you should be very careful not to leak remote objects.
+만약 remote 객체가 랜더러 프로세스에서 누수가 생겼다면 (예시: 맵에 저장하고 할당 해제하지 않음) 대응하는 메인 프로세스의 객체도 누수가 생깁니다.
+그래서 remote 객체를 사용할 땐 메모리 누수가 생기지 않도록 매우 주의해서 사용해야 합니다.
 
-Primary value types like strings and numbers, however, are sent by copy.
+참고로 문자열, 숫자와 같은 원시 값 타입은 복사에 의한 참조로 전달됩니다.
 
-## Passing callbacks to the main process
+## 메인 프로세스로 콜백 넘기기
 
-Some APIs in the main process accept callbacks, and it would be tempting to
-pass callbacks when calling a remote function. The `remote` module does support
-doing this, but you should also be extremely careful with this.
+몇몇 메인 프로세스의 API는 콜백 함수를 사용합니다. 그리고 보통 remote 함수를 호출할 때 콜백 함수를 넘길 것입니다.
+`remote` 모듈은 이를 지원합니다. 하지만 반드시 주의해서 사용해야 합니다.
 
-First, in order to avoid deadlocks, the callbacks passed to the main process
-are called asynchronously, so you should not expect the main process to
-get the return value of the passed callbacks.
+첫째, 데드락을 피하기 위해 메인 프로세스로 전달된 콜백들은 비동기로 호출됩니다.
+그래서 전달된 콜백들이 언제나 값을 반환할 것이라고 기대하면 안 됩니다.
 
-Second, the callbacks passed to the main process will not get released
-automatically after they are called. Instead, they will persistent until the
-main process garbage-collects them.
+둘째, 콜백들은 메인 프로세스로 전송되고 호출된 후에도 자동으로 참조가 릴리즈 되지 않습니다.
+참조는 메인 프로세스에서 GC가 일어나기 전까지 계속 남아있게 됩니다.
 
-For example, the following code seems innocent at first glance. It installs a
-callback for the `close` event on a remote object:
+다음 코드를 보면 느낌이 팟 하고 올 것입니다. 이 예제는 remote 객체에 `close` 이벤트 콜백을 설치합니다:
 
 ```javascript
 var remote = require('remote');
@@ -73,87 +56,32 @@ remote.getCurrentWindow().on('close', function() {
 });
 ```
 
-The problem is that the callback would be stored in the main process until you
-explicitly uninstall it! So each time you reload your window, the callback would
-be installed again and previous callbacks would just leak. To make things
-worse, since the context of previously installed callbacks have been released,
-when the `close` event was emitted, exceptions would be raised in the main process.
+문제는 이 이벤트는 명시적으로 제거하지 않는 이상 계속해서 메인 프로세스에 남아있게 된다는 것입니다.
+그래서 매 창을 새로고침 할 때마다 콜백이 새롭게 설치되며 이전 콜백은 떨궈져 누수가 됩니다.
+설상가상으로 이전에 설치한 콜백의 콘텍스트가 릴리즈 되고 나서 `close` 이벤트가 발생하면 예외가 발생하고 메인 프로세스가 작동 중지됩니다.
 
-Generally, unless you are clear what you are doing, you should always avoid
-passing callbacks to the main process.
-
-## Remote buffer
-
-An instance of node's `Buffer` is an object, so when you get a `Buffer` from
-the main process, what you get is indeed a remote object (let's call it remote
-buffer), and everything would just follow the rules of remote objects.
-
-However you should remember that although a remote buffer behaves like the real
-`Buffer`, it's not a `Buffer` at all. If you pass a remote buffer to node APIs
-that accept a `Buffer`, you should assume the remote buffer would be treated
-like a normal object, instead of a `Buffer`.
-
-For example, you can call `BrowserWindow.capturePage` in the renderer process, which
-returns a `Buffer` by calling the passed callback:
-
-```javascript
-var remote = require('remote');
-var fs = require('fs');
-remote.getCurrentWindow().capturePage(function(image) {
-  var buf = image.toPng();
-  fs.writeFile('/tmp/screenshot.png', buf, function(err) {
-    console.log(err);
-  });
-});
-```
-
-But you may be surprised to find that the file written was corrupted. This is
-because when you called `fs.writeFile`, thinking that `buf` was a `Buffer` when
-in fact it was a remote buffer, and it was converted to string before it was
-written to the file. Since `buf` contained binary data and could not be represented
-by a UTF-8 encoded string, the written file was corrupted.
-
-The work-around is to write the `buf` in the main process, where it is a real
-`Buffer`:
-
-```javascript
-var remote = require('remote');
-remote.getCurrentWindow().capturePage(function(image) {
-  var buf = image.toPng();
-  remote.require('fs').writeFile('/tmp/screenshot.png', buf, function(err) {
-    console.log(err);
-  });
-});
-```
-
-The same thing could happen for all native types, but usually it would just
-throw a type error. The `Buffer` deserves your special attention because it
-might be converted to string, and APIs accepting `Buffer` usually accept string
-too, and data corruption could happen when it contains binary data.
+일반적으로 정확히 무엇을 할 것인지 잘 알고 있지 않는 이상 웬만하면 메인 프로세스로 콜백 함수를 넘기는 건 자제하는 게 좋습니다.
 
 ## remote.require(module)
 
 * `module` String
 
-Returns the object returned by `require(module)` in the main process.
+메인 프로세스의 `require(module)` API를 실행한 후 결과 객체를 반환합니다.
 
 ## remote.getCurrentWindow()
 
-Returns the [BrowserWindow](browser-window-ko.md) object which this web page
-belongs to.
+현재 웹 페이지가 들어있는 [BrowserWindow](browser-window-ko.md) 객체를 반환합니다.
 
-## remote.getCurrentWebContent()
+## remote.getCurrentWebContents()
 
-Returns the WebContents object of this web page.
+현재 웹 페이지의 WebContents 객체를 반환합니다.
 
 ## remote.getGlobal(name)
 
 * `name` String
 
-Returns the global variable of `name` (e.g. `global[name]`) in the main
-process.
+메인 프로세스의 전역 변수(`name`)를 가져옵니다. (예시: `global[name]`)
 
 ## remote.process
 
-Returns the `process` object in the main process. This is the same as
-`remote.getGlobal('process')`, but gets cached.
+메인 프로세스의 `process` 객체를 반환합니다. `remote.getGlobal('process')`와 같습니다. 하지만 캐시 됩니다.

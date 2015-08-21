@@ -102,7 +102,7 @@ var appIcon = new Tray('/Users/somebody/images/icon.png');
 
 ### NativeImage.toJpeg(quality)
 
-* `quality` Integer
+* `quality` Integer (0 - 100 사이의 값)
 
 `JPEG` 이미지를 인코딩한 데이터를 [Buffer][buffer]로 반환합니다.
 
@@ -123,5 +123,9 @@ var appIcon = new Tray('/Users/somebody/images/icon.png');
 * `option` Boolean
 
 해당 이미지를 템플릿 이미지로 설정합니다.
+
+### NativeImage.isTemplateImage()
+
+이미지가 템플릿 이미지인지 확인합니다.
 
 [buffer]: https://iojs.org/api/buffer.html#buffer_class_buffer

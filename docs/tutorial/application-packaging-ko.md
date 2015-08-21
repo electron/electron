@@ -1,6 +1,7 @@
 ﻿# 어플리케이션 패키징
 
-어플리케이션의 리소스와 소스코드를 유저로부터 보호하기 위해 약간의 구조 변경으로 어플리케이션을 [asar][asar] 아카이브로 패키징 할 수 있습니다.
+Windows에서 일어나는 긴 경로 이름에 대한 [issues](https://github.com/joyent/node/issues/6960)를 완화하고 `require` 속도를 약간 빠르게 하며
+어플리케이션의 리소스와 소스코드를 유저로부터 보호하기 위해 어플리케이션을 [asar][asar] 아카이브로 패키징 할 수 있습니다.
 
 ## `asar` 아카이브 생성
 
@@ -31,7 +32,7 @@ Electron은 Node.js로 부터 제공된 Node API와 Chromium으로부터 제공�
 `fs.readFile` 와 `require` 같은 Node API들을 지원하기 위해 Electron에선 `asar` 아카이브가 가상의 디렉터리 구조를 가지도록
 패치했습니다. 그래서 아카이브 내부에서 리소스들을 정상적인 파일 시스템처럼 접근할 수 있습니다.
 
-예를들어 `/path/to`라는 경로에 `example.asar`라는 아카이브가 있다고 가정하면:
+예를 들어 `/path/to`라는 경로에 `example.asar`라는 아카이브가 있다고 가정하면:
 
 ```bash
 $ asar list /path/to/example.asar
@@ -76,7 +77,7 @@ win.loadUrl('file:///path/to/example.asar/static/index.html');
 웹 페이지 내에선 아카이브 내의 파일을 `file:` 프로토콜을 사용하여 요청할 수 있습니다.
 이 또한 Node API와 같이 가상 디렉터리 구조를 가집니다.
 
-예를들어 jQuery의 `$.get`을 사용하여 파일을 가져올 수 있습니다:
+예를 들어 jQuery의 `$.get`을 사용하여 파일을 가져올 수 있습니다:
 
 ```html
 <script>

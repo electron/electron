@@ -1,62 +1,52 @@
-﻿# Frameless window
+# Frameless 윈도우
 
-A frameless window is a window that has no chrome.
+Frameless 윈도우는 테두리가 없는 윈도우 창을 말합니다.
 
-## Create a frameless window
+## Frameless 윈도우 만들기
 
-To create a frameless window, you only need to specify `frame` to `false` in
-[BrowserWindow](browser-window-ko.md)'s `options`:
-
+Frameless 윈도우를 만드려면 [BrowserWindow](browser-window-ko.md) 객체의 `options`에서 `frame` 옵션을 `false`로 지정하기만 하면됩니다:
 
 ```javascript
 var BrowserWindow = require('browser-window');
 var win = new BrowserWindow({ width: 800, height: 600, frame: false });
 ```
 
-## Transparent window
+## 투명한 창 만들기
 
-By setting the `transparent` option to `true`, you can also make the frameless
-window transparent:
+Frameless 윈도우의 창의 배경을 투명하게 만들고 싶다면 `transparent` 옵션을 `true`로 바꿔주기만 하면됩니다:
 
 ```javascript
 var win = new BrowserWindow({ transparent: true, frame: false });
 ```
 
-### Limitations
+### API의 한계
 
-* You can not click through the transparent area, we are going to introduce an
-  API to set window shape to solve this, but currently blocked at an
-  [upstream bug](https://code.google.com/p/chromium/issues/detail?id=387234).
-* Transparent window is not resizable, setting `resizable` to `true` may make
-  transparent window stop working on some platforms.
-* The `blur` filter only applies to the web page, so there is no way to apply
-  blur effect to the content below the window.
-* On Windows transparent window will not work when DWM is disabled.
-* On Linux users have to put `--enable-transparent-visuals --disable-gpu` in
-  command line to disable GPU and allow ARGB to make transparent window, this is
-  caused by an upstream bug that [alpha channel doesn't work on some NVidia
-  drivers](https://code.google.com/p/chromium/issues/detail?id=369209) on Linux.
-* On Mac the native window shadow will not show for transparent window.
 
-## Draggable region
 
-By default, the frameless window is non-draggable. Apps need to specify
-`-webkit-app-region: drag` in CSS to tell Electron which regions are draggable
-(like the OS's standard titlebar), and apps can also use
-`-webkit-app-region: no-drag` to exclude the non-draggable area from the
- draggable region. Note that only rectangular shape is currently supported.
+* 투명한 영역을 통과하여 클릭할 수 없습니다. 우리는 이 문제를 해결하기 위해 API를 제공할 예정이지만 현재로써는
+  [upstream 버그](https://code.google.com/p/chromium/issues/detail?id=387234)로 인해 중단된 상태입니다.
+* 투명한 창은 크기를 조절할 수 없습니다. `resizable` 속성을 `true`로 할 경우 몇몇 플랫폼에선 윈도우 크래시가 일어납니다.
+* `blur` 필터는 웹 페이지에서만 적용됩니다. 윈도우 아래 컨텐츠에는 블러 효과를 적용할 방법이 없습니다.
+* Windows에선 DWM(데스크톱 창 관리자)가 비활성화되어 있을 경우 작동하지 않습니다.
+* Linux를 사용할 경우 [alpha channel doesn't work on some NVidia drivers](https://code.google.com/p/chromium/issues/detail?id=369209) 
+  upstream 버그가 있으므로 CLI 옵션에 `--enable-transparent-visuals --disable-gpu`을 추가해야 합니다.
+  이 옵션은 GPU의 사용을 중단하고 윈도우를 생성하는데 ARGB를 사용할 수 있도록 해줍니다.
+* OS X(Mac)에선 네이티브 윈도우의 그림자가 투명한 창에선 보이지 않습니다.
 
-To make the whole window draggable, you can add `-webkit-app-region: drag` as
-`body`'s style:
+## 드래그 가능 위치 지정
+
+기본적으로 Frameless 윈도우는 드래그 할 수 없습니다.
+어플리케이션의 CSS에서 특정 범위를 `-webkit-app-region: drag`로 지정하면 OS의 기본 타이틀바 처럼 드래그 되도록 할 수 있습니다.
+그리고 `-webkit-app-region: no-drag`를 지정해서 드래그 불가능 영역을 만들 수도 있습니다. 현재 사각형 형태의 범위만 지원합니다.
+
+창 전체를 드래그 가능하게 만드려면 `-webkit-app-region: drag`을 `body`의 스타일에 지정하면 됩니다:
 
 ```html
 <body style="-webkit-app-region: drag">
 </body>
 ```
 
-And note that if you have made the whole window draggable, you must also mark
-buttons as non-draggable, otherwise it would be impossible for users to click on
-them:
+참고로 창 전체를 드래그 영역으로 지정할 경우 사용자가 버튼을 클릭할 수 없게 되므로 버튼은 드래그 불가능 영역으로 지정해야 합니다:
 
 ```css
 button {
@@ -64,15 +54,13 @@ button {
 }
 ```
 
-If you're only using a custom titlebar, you also need to make buttons in
-titlebar non-draggable.
+또한 커스텀 타이틀바를 만들어 사용할 때 타이틀바 내부의 버튼도 드래그 불가능 영역으로 지정해야 합니다.
 
-## Text selection
+## 텍스트 선택
 
-One thing on frameless window is that the dragging behaviour may conflict with
-selecting text, for example, when you drag the titlebar, you may accidentally
-select the text on titlebar. To prevent this, you need to disable text
-selection on dragging area like this:
+한가지, Frameless 윈도우에서 텍스트가 선택되는 드래그 동작은 혼란을 야기할 수 있습니다.
+예를 들어 타이틀바를 드래그 할 때 타이틀바의 텍스트를 실수로 선택할 수 있습니다.
+이를 방지하기 위해선 다음과 같이 드래그 영역의 텍스트 선택 동작을 비활성화해야 할 필요가 있습니다:
 
 ```css
 .titlebar {
@@ -81,9 +69,7 @@ selection on dragging area like this:
 }
 ```
 
-## Context menu
+## 컨텍스트 메뉴
 
-On some platforms, the draggable area would be treated as non-client frame, so
-when you right click on it a system menu would be popuped. To make context menu
-behave correctly on all platforms, you should never custom context menu on
-draggable areas.
+몇몇 플랫폼에선 드래그 가능 영역이 non-client 프레임으로 처리됩니다. 그래서 이 영역에서 오른쪽 클릭을 할 경우 시스템 메뉴가 팝업 됩니다.
+그래서 컨텍스트 메뉴 지정이 모든 플랫폼에서 정상적으로 작동하게 하려면 커스텀 컨텍스트 메뉴를 드래그 영역 내에 만들어선 안됩니다.

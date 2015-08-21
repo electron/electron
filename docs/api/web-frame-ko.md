@@ -1,6 +1,6 @@
 # web-frame
 
-`web-frame` 모듈은 현재 웹 페이지의 랜더링 상태를 커스터마이즈 할 수 있도록 해줍니다.
+`web-frame` 모듈은 현재 웹 페이지의 랜더링 상태를 설정 할 수 있도록 해줍니다.
 
 다음 예제는 현재 페이지를 200% 줌 합니다.
 
@@ -54,8 +54,14 @@ require('web-frame').setSpellCheckProvider("en-US", true, {
 
 * `scheme` String
 
-지정한 `scheme`을 보안 스킴으로 설정합니다.
+지정한 `scheme`을 보안 스킴으로 등록합니다.
 
-보안 스킴은 혼합된 컨텐츠 경고를 발생시키지 않습니다. 예를 들어 `https` 와 `data`는 네트워크 공격자로부터 손상될 가능성이 없기 때문에 보안 스킴입니다.
+보안 스킴은 혼합된 컨텐츠 경고를 발생시키지 않습니다. 예를 들어 `https` 와 `data`는 네트워크 공격자로부터 손상될 가능성이 없기 때문에 보안 스킴이라고 할 수 있습니다.
+
+## webFrame.registerUrlSchemeAsBypassingCsp(scheme)
+
+* `scheme` String
+
+페이지 컨텐츠의 보안 정책에 상관없이 이 `scheme`로부터 리소스가 로드됩니다.
 
 [spellchecker]: https://github.com/atom/node-spellchecker
