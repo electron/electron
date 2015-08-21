@@ -124,6 +124,33 @@ bool IsTemplateFilename(const base::FilePath& path) {
 }
 #endif
 
+#if defined(OS_WIN)
+bool ReadImageSkiaFromICO(gfx::ImageSkia* image, const base::FilePath& path) {
+  // If file is in asar archive, we extract it to a temp file so LoadImage can
+  // load it.
+  base::FilePath asar_path, relative_path;
+  base::FilePath image_path(path);
+  if (asar::GetAsarArchivePath(image_path, &asar_path, &relative_path)) {
+    std::shared_ptr<asar::Archive> archive =
+        asar::GetOrCreateAsarArchive(asar_path);
+    if (archive)
+      archive->CopyFileOut(relative_path, &image_path);
+  }
+
+  // Load the icon from file.
+  base::win::ScopedHICON icon(static_cast<HICON>(
+      LoadImage(NULL, image_path.value().c_str(), IMAGE_ICON, 0, 0,
+                LR_DEFAULTSIZE | LR_LOADFROMFILE)));
+  if (!icon)
+    return false;
+
+  // Convert the icon from the Windows specific HICON to gfx::ImageSkia.
+  scoped_ptr<SkBitmap> bitmap(IconUtil::CreateSkBitmapFromHICON(icon));
+  image->AddRepresentation(gfx::ImageSkiaRep(*bitmap, 1.0f));
+  return true;
+}
+#endif
+
 v8::Persistent<v8::ObjectTemplate> template_;
 
 }  // namespace
@@ -223,39 +250,17 @@ mate::Handle<NativeImage> NativeImage::CreateFromJPEG(
 mate::Handle<NativeImage> NativeImage::CreateFromPath(
     v8::Isolate* isolate, const base::FilePath& path) {
   gfx::ImageSkia image_skia;
-  base::FilePath image_path(path);
-  if (image_path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
+  if (path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
 #if defined(OS_WIN)
-    // If file is in asar archive, we extract it to a temp file so LoadImage can
-    // load it.
-    base::FilePath asar_path, relative_path;
-    if (asar::GetAsarArchivePath(image_path, &asar_path, &relative_path)) {
-      std::shared_ptr<asar::Archive> archive =
-          asar::GetOrCreateAsarArchive(asar_path);
-      if (archive) {
-        archive->CopyFileOut(relative_path, &image_path);
-      }
-    }
-
-    // Load the icon from file.
-    base::win::ScopedHICON icon(
-        static_cast<HICON>(
-            LoadImage(NULL, image_path.value().c_str(), IMAGE_ICON, 0, 0,
-                      LR_DEFAULTSIZE | LR_LOADFROMFILE)));
-
-    if (icon) {
-      // Convert the icon from the Windows specific HICON to gfx::ImageSkia.
-      scoped_ptr<SkBitmap> bitmap(IconUtil::CreateSkBitmapFromHICON(icon));
-      image_skia = gfx::ImageSkia(gfx::ImageSkiaRep(*bitmap, 1.0f));
-    }
+    ReadImageSkiaFromICO(&image_skia, path);
 #endif
   } else {
-    PopulateImageSkiaRepsFromPath(&image_skia, image_path);
+    PopulateImageSkiaRepsFromPath(&image_skia, path);
   }
   gfx::Image image(image_skia);
   mate::Handle<NativeImage> handle = Create(isolate, image);
 #if defined(OS_MACOSX)
-  if (IsTemplateFilename(image_path))
+  if (IsTemplateFilename(path))
     handle->SetTemplateImage(true);
 #endif
   return handle;
