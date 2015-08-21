@@ -120,7 +120,7 @@ already a handler for `scheme`.
 
 * `scheme` String
 * `handler` Function
-* `callback` Function
+* `completion` Function
 
 Intercepts `scheme` protocol and use `handler` as the protocol's new handler
 which sends file as response.
@@ -129,7 +129,7 @@ which sends file as response.
 
 * `scheme` String
 * `handler` Function
-* `callback` Function
+* `completion` Function
 
 Intercepts `scheme` protocol and use `handler` as the protocol's new handler
 which sends String as response.
@@ -138,7 +138,7 @@ which sends String as response.
 
 * `scheme` String
 * `handler` Function
-* `callback` Function
+* `completion` Function
 
 Intercepts `scheme` protocol and use `handler` as the protocol's new handler
 which sends `Buffer` as response.
@@ -147,7 +147,7 @@ which sends `Buffer` as response.
 
 * `scheme` String
 * `handler` Function
-* `callback` Function
+* `completion` Function
 
 Intercepts `scheme` protocol and use `handler` as the protocol's new handler
 which sends a new HTTP request as response.
@@ -155,6 +155,6 @@ which sends a new HTTP request as response.
 ## protocol.uninterceptProtocol(scheme[, completion])
 
 * `scheme` String
-* `callback` Function
+* `completion` Function
 
 Remove the interceptor installed for `scheme` and restore its original handler.
