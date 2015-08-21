@@ -36,10 +36,12 @@ selected, an example is:
   filters: [
     { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
     { name: 'Movies', extensions: ['mkv', 'avi', 'mp4'] },
-    { name: 'Custom File Type', extensions: ['as'] }
+    { name: 'Custom File Type', extensions: ['as'] },
+    { name: 'All Files', extensions: ['*'] }
   ]
 }
 ```
+The `extensions` array should contain extensions without wildcards or dots (e.g. `'png'` is good, `'.png'` and `'*.png'` are bad). To show all files, use the `'*'` wildcard (no other wildcard is supported).
 
 If a `callback` is passed, the API call would be asynchronous and the result
 would be passed via `callback(filenames)`
