@@ -4,7 +4,7 @@
     'product_name%': 'Electron',
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
-    'version%': '0.30.4',
+    'version%': '0.31.0',
   },
   'includes': [
     'filenames.gypi',
