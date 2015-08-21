@@ -14,6 +14,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "common/content_client.h"
 #include "components/devtools_discovery/basic_target_descriptor.h"
+#include "components/devtools_discovery/devtools_discovery_manager.h"
 #include "components/devtools_http_handler/devtools_http_handler.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
@@ -140,6 +141,12 @@ DevToolsManagerDelegate::CreateHttpHandler() {
 }
 
 DevToolsManagerDelegate::DevToolsManagerDelegate() {
+  // NB(zcbenz): This call does nothing, the only purpose is to make sure the
+  // devtools_discovery module is linked into the final executable on Linux.
+  // Though it is possible to achieve this by modifying the gyp settings, it
+  // would greatly increase gyp file's complexity, so I chose to instead do
+  // this hack.
+  devtools_discovery::DevToolsDiscoveryManager::GetInstance();
 }
 
 DevToolsManagerDelegate::~DevToolsManagerDelegate() {
