@@ -70,6 +70,52 @@ driver.wait(function() {
 driver.quit();
 ```
 
+## Setting up with WebdriverIO
+
+[WebdriverIO](http://webdriver.io/) provided a Node package for testing with web driver.
+
+### 1. Start chrome driver
+
+First you need to download the `chromedriver` binary, and run it:
+
+```bash
+$ chromedriver --url-base=/wd/hub --port=9515
+Starting ChromeDriver (v2.10.291558) on port 9515
+Only local connections are allowed.
+```
+
+Remember the port number `9515`, which will be used later
+
+### 2. Install WebDriverJS
+
+```bash
+$ npm install webdriverio
+```
+
+### 3. Connect to chrome driver
+```javascript
+var webdriverio = require('webdriverio');
+var options = {
+	host: "localhost", // Use localhost as chrome driver server 
+    port: 9515,        // "9515" is the port opened by chrome driver.
+    desiredCapabilities: {
+            browserName: 'chrome',
+            chromeOptions: {binary: '/Path-to-Your-App.app/Electron'} // Path to your Electron binary.
+        }
+};
+
+webdriverio
+    .remote(options)
+    .init()
+    .url('http://google.com')
+    .setValue('#q', 'webdriverio')
+    .click('#btnG')
+    .title(function(err, res) {
+        console.log('Title was: ' + res.value);
+    })
+    .end();
+```
+
 ## Workflow
 
 To test your application without rebuilding Electron, simply [place](https://github.com/atom/electron/blob/master/docs/tutorial/application-distribution.md) your app source into Electron's resource directory. 
