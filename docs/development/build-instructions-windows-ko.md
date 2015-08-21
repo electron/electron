@@ -60,6 +60,14 @@ python script\bootstrap.py -v --target_arch=x64
 
 ## 테스트
 
+프로젝트 코딩 스타일을 확인하려면:
+
+```powershell
+python script\cpplint.py
+```
+
+테스트를 실행하려면:
+
 ```powershell
 python script\test.py
 ```
@@ -93,7 +101,7 @@ Traceback (most recent call last):
 subprocess.CalledProcessError: Command '['npm.cmd', 'install']' returned non-zero exit status 3
 ```
 
-이 버그는 Cygwin python과 Win32 node를 같이 사용할 경우 발생합니다.
+이 버그는 Cygwin python과 Win32 node를 같이 사용할 때 발생합니다.
 부트스트랩 스크립트에서 Win32 python을  사용함으로써 이 문제를 해결할 수 있습니다 (`C:\Python27` 디렉터리에 python이 설치되었다는 것을 가정하면):
 
 ```bash

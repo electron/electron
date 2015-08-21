@@ -113,7 +113,56 @@ app.setUserTasks([
 app.setUserTasks([]);
 ```
 
-사용자 작업 리스트는 어플리케이션이 종료되어도 태스크바에 여전히 보존됩니다. 그러므로 어플리케이션이 삭제되기 전까지 이 기능이 제대로 작동하도록 하기 위해 반드시 프로그램 경로와 아이콘 경로를 지정해야 합니다.
+
+사용자 작업 리스트는 어플리케이션이 삭제되지 않는 한 종료되어도 태스크바에 보존됩니다. 이러한 이유로 반드시 프로그램 경로와 아이콘 경로를 지정해야 합니다.
+
+## 섬네일 툴바
+
+Windows에선 작업 표시줄의 어플리케이션 선택시 나오는 미리보기에 특정한 섬네일 툴바를 추가할 수 있습니다.
+이 기능은 유저가 윈도우를 활성화 하지 않고 특정한 커맨드를 실행시킬 수 있도록 할 수 있습니다.
+
+MSDN의 설명에 의하면:
+
+> 이 툴바는 표준 툴바의 공통 컨트롤과 비슷한 역할을 합니다. 버튼은 최대 7개 까지 만들 수 있습니다.
+> 각 버튼의 구조엔 ID, 이미지, 툴팁, 상태등이 정의되어있습니다. 태스크바에 구조가 전달되면 어플리케이션이
+> 상태에 따라 버튼을 숨기거나, 활성화하거나, 비활성화 할 수 있습니다.
+>
+> 예를 들어, 윈도우 미디어 플레이어는(WMP) 기본적으로
+> 미디어 플레이어가 공통적으로 사용하는 재생, 일시정지, 음소거, 정지등의 컨트롤을 포함하고 있습니다.
+
+__Windows Media Player의 섬네일 툴바:__
+
+![player](https://i-msdn.sec.s-msft.com/dynimg/IC420540.png)
+
+[BrowserWindow.setThumbarButtons][setthumbarbuttons] API를 통해 어플리케이션에 섬네일 툴바를 설정할 수 있습니다:
+
+```javascript
+var BrowserWindow = require('browser-window');
+var path = require('path');
+var win = new BrowserWindow({
+  width: 800,
+  height: 600
+});
+win.setThumbarButtons([
+  {
+    tooltip: "button1",
+    icon: path.join(__dirname, 'button1.png'),
+    click: function() { console.log("button2 clicked"); }
+  },
+  {
+    tooltip: "button2",
+    icon: path.join(__dirname, 'button2.png'),
+    flags:['enabled', 'dismissonclick'],
+    click: function() { console.log("button2 clicked."); }
+  }
+]);
+```
+
+섬네일 툴바를 비우려면 간단히 `BrowserWindow.setThumbarButtons` API에 빈 배열을 전달하면 됩니다:
+
+```javascript
+win.setThumbarButtons([]);
+```
 
 ## Unity 런처 숏컷 기능 (Linux)
 
@@ -170,3 +219,4 @@ window.setDocumentEdited(true);
 [setdocumentedited]: ../api/browser-window-ko.md#browserwindowsetdocumenteditededited
 [app-registration]: http://msdn.microsoft.com/en-us/library/windows/desktop/ee872121(v=vs.85).aspx
 [unity-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
+[setthumbarbuttons]: ../api/browser-window.md#browserwindowsetthumbarbuttonsbuttons

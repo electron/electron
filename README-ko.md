@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/atom/electron.svg?branch=master)](https://travis-ci.org/atom/electron)
 [![devDependency Status](https://david-dm.org/atom/electron/dev-status.svg)](https://david-dm.org/atom/electron#info=devDependencies)
+[![Join the Electron Community on Slack](http://atom-slack.herokuapp.com/badge.svg)](http://atom-slack.herokuapp.com/)
 
 ### [Electron](https://github.com/atom/electron/) 한국어 참조문서
 
@@ -34,7 +35,7 @@ npm install electron-prebuilt --save-dev
 ## 참조문서
 
 [docs](https://github.com/atom/electron/tree/master/docs/README-ko.md) 에 프레임워크 사용 가이드와 API 레퍼런스가 있습니다.
-추가적으로 Electron을 빌드 하는 방법과 프로젝트에 기여하는 방법도 문서에 포함되어 있으니 참고하기 바랍니다.
+추가적으로 Electron을 빌드 하는 방법과 프로젝트에 기여하는 방법이 문서에 포함되어 있으니 참고하시기 바랍니다.
 
 ## 커뮤니티
 

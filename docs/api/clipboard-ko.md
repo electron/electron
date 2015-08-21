@@ -86,3 +86,18 @@ console.log(clipboard.has('<p>selection</p>'));
 클립보드로부터 `data`를 읽어들입니다.
 
 **알림:** 이 API는 실험적인 기능이며 차후 최신버전에서 제외될 수 있습니다.
+
+## clipboard.write(data[, type])
+
+* `data` Object
+  * `text` String
+  * `html` String
+  * `image` [NativeImage](native-image.md)
+* `type` String
+
+```javascript
+var clipboard = require('clipboard');
+clipboard.write({text: 'test', html: "<b>test</b>"});
+```
+
+`data`를 클립보드에 씁니다.

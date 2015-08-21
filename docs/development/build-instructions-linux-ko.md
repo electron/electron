@@ -15,7 +15,7 @@ Ubuntu를 사용하고 있다면 다음 커맨드로 설치하면 합니다:
 $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
                        libnotify-dev libgnome-keyring-dev libgconf2-dev \
                        libasound2-dev libcap-dev libcups2-dev libxtst-dev \
-                       libxss1 gcc-multilib g++-multilib
+                       libxss1 libnss3-dev gcc-multilib g++-multilib
 ```
 
 다른 배포판의 경우 yum과 같은 패키지 매니저를 통해 패키지를 설치 할 수 있습니다. 패키지의 이름은 대부분 비슷할 것입니다.
@@ -42,6 +42,21 @@ $ git clone https://github.com/atom/electron.git
 ```bash
 $ cd electron
 $ ./script/bootstrap.py -v
+```
+
+### 크로스 컴파일
+
+`arm` 아키텍쳐로 빌드 하려면 먼저 종속성 라이브러리를 설치해야 합니다:
+
+```bash
+$ sudo apt-get install libc6-dev-armhf-cross linux-libc-dev-armhf-cross \
+                       g++-arm-linux-gnueabihf
+```
+
+그리고 `bootstrap.py` 스크립트의 `--target_arch` 파라미터에 `arm` 또는 `ia32` 아키텍쳐를 지정하여 크로스 컴파일 할 수 있습니다:
+
+```bash
+$ ./script/bootstrap.py -v --target_arch=arm
 ```
 
 ## 빌드 하기
@@ -81,9 +96,26 @@ $ ./script/clean.py
 
 ## 문제 해결
 
-개발 종속성 라이브러리들을 제대로 설치했는지 확인하세요. 
+개발 종속성 라이브러리들을 제대로 설치했는지 확인하세요.
+
+## libtinfo.so.5 동적 링크 라이브러리를 로드하는 도중 에러가 발생할 경우
+
+미리 빌드된 `clang`은 `libtinfo.so.5`로 링크를 시도합니다.
+플랫폼에 따라 적당한 `libncurses` symlink를 추가하세요.
+
+```bash
+$ sudo ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5
+```
 
 ## 테스트
+
+프로젝트 코딩 스타일을 확인하려면:
+
+```bash
+$ ./script/cpplint.py
+```
+
+테스트를 실행하려면:
 
 ```bash
 $ ./script/test.py

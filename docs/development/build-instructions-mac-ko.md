@@ -48,6 +48,14 @@ Electron은 현재 OS X 64비트 빌드만 지원하고 있습니다. 그리고 
 
 ## 테스트
 
+프로젝트 코딩 스타일을 확인하려면:
+
+```bash
+$ ./script/cpplint.py
+```
+
+테스트를 실행하려면:
+
 ```bash
 $ ./script/test.py
 ```

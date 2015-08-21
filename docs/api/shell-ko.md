@@ -25,8 +25,8 @@ shell.openExternal('https://github.com');
 
 * `url` String
 
-제공된 외부 프로토콜 URL을 기반으로 데스크톱의 기본 프로그램으로 엽니다. (예를들어 mailto: URL은 해당 URL을 기본 메일 에이전트로 엽니다.)
-역자주: 폴더는 'file:\\\\C:\\'와 같이 지정하여 열 수 있습니다. (`\\`로 경로를 표현한 이유는 Escape 문자열을 참고하세요.)
+제공된 외부 프로토콜 URL을 기반으로 데스크톱의 기본 프로그램으로 엽니다. (예를 들어 mailto: URL은 해당 URL을 기본 메일 에이전트로 엽니다.)
+역주: 폴더는 'file:\\\\C:\\'와 같이 지정하여 열 수 있습니다. (`\\`로 경로를 표현한 이유는 Escape 문자열을 참고하세요.)
 
 ## shell.moveItemToTrash(fullPath)
 
