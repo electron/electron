@@ -179,8 +179,6 @@
               # Link with system libraries.
               'link_settings': {
                 'libraries': [
-                  # ffmpeg.dll.lib is required for linking with ffmpeg.dll
-                  '<(libchromiumcontent_dir)/ffmpeg.dll.lib',
                   # content_browser.gypi:
                   '-lsensorsapi.lib',
                   '-lportabledeviceguids.lib',
@@ -200,6 +198,7 @@
                     'AdditionalDependencies': [
                       'advapi32.lib',
                       'dbghelp.lib',
+                      'delayimp.lib',
                       'dwmapi.lib',
                       'gdi32.lib',
                       'netapi32.lib',
@@ -211,7 +210,6 @@
                       'winspool.lib',
                     ],
                     'DelayLoadDLLs': [
-                      'ffmpeg.dll',
                       # content_common.gypi:
                       'd3d9.dll',
                       'dxva2.dll',
