@@ -5,7 +5,9 @@
 개발자 콘솔 확장기능은 간단하게 사용할 확장기능 플러그인의 소스코드를 다운로드한 후 `BrowserWindow.addDevToolsExtension` API를 이용하여
 어플리케이션 내에 로드할 수 있습니다. 한가지 주의할 점은 확장기능 사용시 창이 생성될 때 마다 일일이 해당 API를 호출할 필요는 없습니다.
 
-예시로 [React DevTools Extension](https://github.com/facebook/react-devtools)을 사용 한다면 먼저 소스코드를 다운로드 받고:
+예시로 [React DevTools Extension](https://github.com/facebook/react-devtools)을 사용합니다.
+
+먼저 소스코드를 다운로드 받습니다:
 
 ```bash
 $ cd /some-directory
@@ -18,7 +20,7 @@ $ git clone --recursive https://github.com/facebook/react-devtools.git
 require('remote').require('browser-window').addDevToolsExtension('/some-directory/react-devtools');
 ```
 
-확장기능을 unload 하려면 `BrowserWindow.removeDevToolsExtension` API를 사용하여 다음에 콘솔을 다시 열 때 해당 확장기능이 로드되지 않도록 할 수 있습니다:
+확장기능을 unload 하고 콘솔을 다시 열 때 해당 확장기능이 로드되지 않도록 하려면 `BrowserWindow.removeDevToolsExtension` API를 사용하면 됩니다:
 
 ```javascript
 require('remote').require('browser-window').removeDevToolsExtension('React Developer Tools');

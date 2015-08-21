@@ -315,11 +315,11 @@ Executes editing command `replace` in page.
 
 Executes editing command `replaceMisspelling` in page.
 
-### `<webview>.print([options])`
+### `<webview>`.print([options])
 
 Prints webview's web page. Same with `webContents.print([options])`.
 
-### `<webview>.printToPDF(options, callback)`
+### `<webview>`.printToPDF(options, callback)
 
 Prints webview's web page as PDF, Same with `webContents.printToPDF(options, callback)`
 

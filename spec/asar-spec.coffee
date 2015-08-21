@@ -10,11 +10,11 @@ describe 'asar package', ->
     describe 'fs.readFileSync', ->
       it 'reads a normal file', ->
         file1 = path.join fixtures, 'asar', 'a.asar', 'file1'
-        assert.equal fs.readFileSync(file1).toString(), 'file1\n'
+        assert.equal fs.readFileSync(file1).toString().trim(), 'file1'
         file2 = path.join fixtures, 'asar', 'a.asar', 'file2'
-        assert.equal fs.readFileSync(file2).toString(), 'file2\n'
+        assert.equal fs.readFileSync(file2).toString().trim(), 'file2'
         file3 = path.join fixtures, 'asar', 'a.asar', 'file3'
-        assert.equal fs.readFileSync(file3).toString(), 'file3\n'
+        assert.equal fs.readFileSync(file3).toString().trim(), 'file3'
 
       it 'reads from a empty file', ->
         file = path.join fixtures, 'asar', 'empty.asar', 'file1'
@@ -24,13 +24,13 @@ describe 'asar package', ->
 
       it 'reads a linked file', ->
         p = path.join fixtures, 'asar', 'a.asar', 'link1'
-        assert.equal fs.readFileSync(p).toString(), 'file1\n'
+        assert.equal fs.readFileSync(p).toString().trim(), 'file1'
 
       it 'reads a file from linked directory', ->
         p = path.join fixtures, 'asar', 'a.asar', 'link2', 'file1'
-        assert.equal fs.readFileSync(p).toString(), 'file1\n'
+        assert.equal fs.readFileSync(p).toString().trim(), 'file1'
         p = path.join fixtures, 'asar', 'a.asar', 'link2', 'link2', 'file1'
-        assert.equal fs.readFileSync(p).toString(), 'file1\n'
+        assert.equal fs.readFileSync(p).toString().trim(), 'file1'
 
       it 'throws ENOENT error when can not find file', ->
         p = path.join fixtures, 'asar', 'a.asar', 'not-exist'
@@ -47,14 +47,14 @@ describe 'asar package', ->
 
       it 'reads a normal file with unpacked files', ->
         p = path.join fixtures, 'asar', 'unpack.asar', 'a.txt'
-        assert.equal fs.readFileSync(p).toString(), 'a\n'
+        assert.equal fs.readFileSync(p).toString().trim(), 'a'
 
     describe 'fs.readFile', ->
       it 'reads a normal file', (done) ->
         p = path.join fixtures, 'asar', 'a.asar', 'file1'
         fs.readFile p, (err, content) ->
           assert.equal err, null
-          assert.equal String(content), 'file1\n'
+          assert.equal String(content).trim(), 'file1'
           done()
 
       it 'reads from a empty file', (done) ->
@@ -68,14 +68,14 @@ describe 'asar package', ->
         p = path.join fixtures, 'asar', 'a.asar', 'link1'
         fs.readFile p, (err, content) ->
           assert.equal err, null
-          assert.equal String(content), 'file1\n'
+          assert.equal String(content).trim(), 'file1'
           done()
 
       it 'reads a file from linked directory', (done) ->
         p = path.join fixtures, 'asar', 'a.asar', 'link2', 'link2', 'file1'
         fs.readFile p, (err, content) ->
           assert.equal err, null
-          assert.equal String(content), 'file1\n'
+          assert.equal String(content).trim(), 'file1'
           done()
 
       it 'throws ENOENT error when can not find file', (done) ->
@@ -342,7 +342,7 @@ describe 'asar package', ->
           fd = fs.openSync p, 'r'
           buffer = new Buffer(6)
           fs.readSync fd, buffer, 0, 6, 0
-          assert.equal String(buffer), 'file1\n'
+          assert.equal String(buffer).trim(), 'file1'
           fs.closeSync fd
 
       it 'throws ENOENT error when can not find file', ->
@@ -358,7 +358,7 @@ describe 'asar package', ->
           buffer = new Buffer(6)
           fs.read fd, buffer, 0, 6, 0, (err) ->
             assert.equal err, null
-            assert.equal String(buffer), 'file1\n'
+            assert.equal String(buffer).trim(), 'file1'
             fs.close fd, done
 
       it 'throws ENOENT error when can not find file', (done) ->
@@ -390,15 +390,15 @@ describe 'asar package', ->
 
       it 'read a normal file', ->
         file1 = path.join fixtures, 'asar', 'a.asar', 'file1'
-        assert.equal internalModuleReadFile(file1).toString(), 'file1\n'
+        assert.equal internalModuleReadFile(file1).toString().trim(), 'file1'
         file2 = path.join fixtures, 'asar', 'a.asar', 'file2'
-        assert.equal internalModuleReadFile(file2).toString(), 'file2\n'
+        assert.equal internalModuleReadFile(file2).toString().trim(), 'file2'
         file3 = path.join fixtures, 'asar', 'a.asar', 'file3'
-        assert.equal internalModuleReadFile(file3).toString(), 'file3\n'
+        assert.equal internalModuleReadFile(file3).toString().trim(), 'file3'
 
       it 'reads a normal file with unpacked files', ->
         p = path.join fixtures, 'asar', 'unpack.asar', 'a.txt'
-        assert.equal internalModuleReadFile(p).toString(), 'a\n'
+        assert.equal internalModuleReadFile(p).toString().trim(), 'a'
 
   describe 'asar protocol', ->
     url = require 'url'
@@ -409,25 +409,25 @@ describe 'asar package', ->
     it 'can request a file in package', (done) ->
       p = path.resolve fixtures, 'asar', 'a.asar', 'file1'
       $.get "file://#{p}", (data) ->
-        assert.equal data, 'file1\n'
+        assert.equal data.trim(), 'file1'
         done()
 
     it 'can request a file in package with unpacked files', (done) ->
       p = path.resolve fixtures, 'asar', 'unpack.asar', 'a.txt'
       $.get "file://#{p}", (data) ->
-        assert.equal data, 'a\n'
+        assert.equal data.trim(), 'a'
         done()
 
     it 'can request a linked file in package', (done) ->
       p = path.resolve fixtures, 'asar', 'a.asar', 'link2', 'link1'
       $.get "file://#{p}", (data) ->
-        assert.equal data, 'file1\n'
+        assert.equal data.trim(), 'file1'
         done()
 
     it 'can request a file in filesystem', (done) ->
       p = path.resolve fixtures, 'asar', 'file'
       $.get "file://#{p}", (data) ->
-        assert.equal data, 'file\n'
+        assert.equal data.trim(), 'file'
         done()
 
     it 'gets 404 when file is not found', (done) ->
@@ -484,7 +484,7 @@ describe 'asar package', ->
 
     it 'recognize asar archvies', ->
       p = path.join fixtures, 'asar', 'a.asar', 'link1'
-      assert.equal gfs.readFileSync(p).toString(), 'file1\n'
+      assert.equal gfs.readFileSync(p).toString().trim(), 'file1'
 
     it 'does not touch global fs object', ->
       assert.notEqual fs.readdir, gfs.readdir

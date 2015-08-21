@@ -11,6 +11,7 @@
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/base64.h"
 #include "base/strings/string_util.h"
 #include "native_mate/dictionary.h"
@@ -23,7 +24,11 @@
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/image/image_util.h"
 
-#include "atom/common/node_includes.h"
+#if defined(OS_WIN)
+#include "atom/common/asar/archive.h"
+#include "base/win/scoped_gdi_object.h"
+#include "ui/gfx/icon_util.h"
+#endif
 
 namespace atom {
 
@@ -116,6 +121,33 @@ bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
 bool IsTemplateFilename(const base::FilePath& path) {
   return (MatchPattern(path.value(), "*Template.*") ||
           MatchPattern(path.value(), "*Template@*x.*"));
+}
+#endif
+
+#if defined(OS_WIN)
+bool ReadImageSkiaFromICO(gfx::ImageSkia* image, const base::FilePath& path) {
+  // If file is in asar archive, we extract it to a temp file so LoadImage can
+  // load it.
+  base::FilePath asar_path, relative_path;
+  base::FilePath image_path(path);
+  if (asar::GetAsarArchivePath(image_path, &asar_path, &relative_path)) {
+    std::shared_ptr<asar::Archive> archive =
+        asar::GetOrCreateAsarArchive(asar_path);
+    if (archive)
+      archive->CopyFileOut(relative_path, &image_path);
+  }
+
+  // Load the icon from file.
+  base::win::ScopedHICON icon(static_cast<HICON>(
+      LoadImage(NULL, image_path.value().c_str(), IMAGE_ICON, 0, 0,
+                LR_DEFAULTSIZE | LR_LOADFROMFILE)));
+  if (!icon)
+    return false;
+
+  // Convert the icon from the Windows specific HICON to gfx::ImageSkia.
+  scoped_ptr<SkBitmap> bitmap(IconUtil::CreateSkBitmapFromHICON(icon));
+  image->AddRepresentation(gfx::ImageSkiaRep(*bitmap, 1.0f));
+  return true;
 }
 #endif
 
@@ -219,7 +251,13 @@ mate::Handle<NativeImage> NativeImage::CreateFromJPEG(
 mate::Handle<NativeImage> NativeImage::CreateFromPath(
     v8::Isolate* isolate, const base::FilePath& path) {
   gfx::ImageSkia image_skia;
-  PopulateImageSkiaRepsFromPath(&image_skia, path);
+  if (path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
+#if defined(OS_WIN)
+    ReadImageSkiaFromICO(&image_skia, path);
+#endif
+  } else {
+    PopulateImageSkiaRepsFromPath(&image_skia, path);
+  }
   gfx::Image image(image_skia);
   mate::Handle<NativeImage> handle = Create(isolate, image);
 #if defined(OS_MACOSX)

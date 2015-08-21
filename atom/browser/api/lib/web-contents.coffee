@@ -97,7 +97,7 @@ wrapWebContents = (webContents) ->
       printingSetting.marginsType = options.marginsType
     if options.printSelectionOnly
       printingSetting.shouldPrintSelectionOnly = options.printSelectionOnly
-    if options.printBackgrounds
+    if options.printBackground
       printingSetting.shouldPrintBackgrounds = options.printBackground
 
     if options.pageSize and PDFPageSize[options.pageSize]
