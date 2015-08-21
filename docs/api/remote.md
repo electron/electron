@@ -20,7 +20,8 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 win.loadUrl('https://github.com');
 ```
 
-Note: for the reverse (access renderer process from main process), you can use [webContents.executeJavascript](https://github.com/atom/electron/blob/master/docs/api/browser-window.md#browserwindowwebcontents).
+Note: for the reverse (access renderer process from main process), you can use
+[webContents.executeJavascript](browser-window.md#webcontents-executejavascript-code).
 
 ## Remote objects
 

@@ -30,6 +30,15 @@ BrowserWindow::_init = ->
   @webContents.on 'crashed', =>
     @emit 'crashed'
 
+  # Sometimes the webContents doesn't get focus when window is shown, so we have
+  # to force focusing on webContents in this case. The safest way is to focus it
+  # when we first start to load URL, if we do it earlier it won't have effect,
+  # if we do it later we might move focus in the page.
+  # Though this hack is only needed on OS X when the app is launched from
+  # Finder, we still do it on all platforms in case of other bugs we don't know.
+  @webContents.once 'load-url', ->
+    @focus()
+
   # Redirect focus/blur event to app instance too.
   @on 'blur', (event) =>
     app.emit 'browser-window-blur', event, this

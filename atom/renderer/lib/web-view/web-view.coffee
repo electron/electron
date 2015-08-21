@@ -157,10 +157,10 @@ class WebViewImpl
       enumerable: true
 
   # Updates state upon loadcommit.
-  onLoadCommit: (@baseUrlForDataUrl, @currentEntryIndex, @entryCount, @processId, url, isTopLevel) ->
+  onLoadCommit: (webViewEvent) ->
     oldValue = @webviewNode.getAttribute webViewConstants.ATTRIBUTE_SRC
-    newValue = url
-    if isTopLevel and (oldValue != newValue)
+    newValue = webViewEvent.url
+    if webViewEvent.isMainFrame and (oldValue != newValue)
       # Touching the src attribute triggers a navigation. To avoid
       # triggering a page reload on every guest-initiated navigation,
       # we do not handle this mutation
@@ -269,6 +269,7 @@ registerWebViewElement = ->
     "goToOffset"
     "isCrashed"
     "setUserAgent"
+    "getUserAgent"
     "executeJavaScript"
     "insertCSS"
     "openDevTools"

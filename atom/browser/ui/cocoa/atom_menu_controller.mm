@@ -5,60 +5,14 @@
 
 #import "atom/browser/ui/cocoa/atom_menu_controller.h"
 
+#include "atom/browser/ui/atom_menu_model.h"
 #include "base/logging.h"
 #include "base/strings/sys_string_conversions.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/base/accelerators/platform_accelerator_cocoa.h"
 #include "ui/base/l10n/l10n_util_mac.h"
-#include "ui/base/models/simple_menu_model.h"
+#include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/image/image.h"
-
-namespace {
-
-bool isLeftButtonEvent(NSEvent* event) {
-  NSEventType type = [event type];
-  return type == NSLeftMouseDown ||
-    type == NSLeftMouseDragged ||
-    type == NSLeftMouseUp;
-}
-
-bool isRightButtonEvent(NSEvent* event) {
-  NSEventType type = [event type];
-  return type == NSRightMouseDown ||
-    type == NSRightMouseDragged ||
-    type == NSRightMouseUp;
-}
-
-bool isMiddleButtonEvent(NSEvent* event) {
-  if ([event buttonNumber] != 2)
-    return false;
-
-  NSEventType type = [event type];
-  return type == NSOtherMouseDown ||
-    type == NSOtherMouseDragged ||
-    type == NSOtherMouseUp;
-}
-
-int EventFlagsFromNSEventWithModifiers(NSEvent* event, NSUInteger modifiers) {
-  int flags = 0;
-  flags |= (modifiers & NSAlphaShiftKeyMask) ? ui::EF_CAPS_LOCK_DOWN : 0;
-  flags |= (modifiers & NSShiftKeyMask) ? ui::EF_SHIFT_DOWN : 0;
-  flags |= (modifiers & NSControlKeyMask) ? ui::EF_CONTROL_DOWN : 0;
-  flags |= (modifiers & NSAlternateKeyMask) ? ui::EF_ALT_DOWN : 0;
-  flags |= (modifiers & NSCommandKeyMask) ? ui::EF_COMMAND_DOWN : 0;
-  flags |= isLeftButtonEvent(event) ? ui::EF_LEFT_MOUSE_BUTTON : 0;
-  flags |= isRightButtonEvent(event) ? ui::EF_RIGHT_MOUSE_BUTTON : 0;
-  flags |= isMiddleButtonEvent(event) ? ui::EF_MIDDLE_MOUSE_BUTTON : 0;
-  return flags;
-}
-
-// Retrieves a bitsum of ui::EventFlags from NSEvent.
-int EventFlagsFromNSEvent(NSEvent* event) {
-  NSUInteger modifiers = [event modifierFlags];
-  return EventFlagsFromNSEventWithModifiers(event, modifiers);
-}
-
-}  // namespace
 
 @interface AtomMenuController (Private)
 - (void)addSeparatorToMenu:(NSMenu*)menu
@@ -166,8 +120,7 @@ int EventFlagsFromNSEvent(NSEvent* event) {
     [item setTarget:nil];
     [item setAction:nil];
     ui::MenuModel* submenuModel = model->GetSubmenuModelAt(index);
-    NSMenu* submenu =
-        [self menuFromModel:(ui::SimpleMenuModel*)submenuModel];
+    NSMenu* submenu = [self menuFromModel:submenuModel];
     [submenu setTitle:[item title]];
     [item setSubmenu:submenu];
 
@@ -246,8 +199,9 @@ int EventFlagsFromNSEvent(NSEvent* event) {
           [[sender representedObject] pointerValue]);
   DCHECK(model);
   if (model) {
-    int event_flags = EventFlagsFromNSEvent([NSApp currentEvent]);
-    model->ActivatedAt(modelIndex, event_flags);
+    NSEvent* event = [NSApp currentEvent];
+    model->ActivatedAt(modelIndex,
+                       ui::EventFlagsFromModifiers([event modifierFlags]));
   }
 }
 

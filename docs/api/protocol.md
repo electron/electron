@@ -37,6 +37,11 @@ Registers a custom protocol of `scheme`, the `handler` would be called with
 You need to return a request job in the `handler` to specify which type of
 response you would like to send.
 
+By default the scheme is treated like `http:`, which is parsed differently
+from protocols that follows "generic URI syntax" like `file:`, so you probably
+want to call `protocol.registerStandardSchemes` to make your scheme treated as
+standard scheme.
+
 ## protocol.unregisterProtocol(scheme, callback)
 
 * `scheme` String
@@ -48,7 +53,11 @@ Unregisters the custom protocol of `scheme`.
 
 * `value` Array
 
-`value` is an array of custom schemes to be registered to the standard.
+`value` is an array of custom schemes to be registered as standard schemes.
+
+A standard scheme adheres to what RFC 3986 calls
+[generic URI syntax](https://tools.ietf.org/html/rfc3986#section-3). This
+includes `file:` and `filesystem:`.
 
 ## protocol.isHandledProtocol(scheme, callback)
 
@@ -101,6 +110,9 @@ Create a request job which sends a buffer as response.
 ## Class: protocol.RequestHttpJob(options)
 
 * `options` Object
+  * `session` [Session](browser-window.md#class-session) - By default it is
+    the app's default session, setting it to `null` will create a new session
+    for the requests
   * `url` String
   * `method` String - Default is `GET`
   * `referrer` String

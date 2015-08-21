@@ -134,6 +134,59 @@ The user tasks will still show even after your application closes, so the icon
 and program path specified for a task should exist until your application is
 uninstalled.
 
+## Thumbnail Toolbars
+
+On Windows, you can add a thumbnail toolbar with specified buttons in a taskbar
+layout of an application window. It provides users a way to access to a particualr
+window's command without restoring or activating the window.
+
+From MSDN, it's illustrated:
+
+> This toolbar is simply the familiar standard toolbar common control. It has a
+> maximum of seven buttons. Each button's ID, image, tooltip, and state are defined
+> in a structure, which is then passed to the taskbar. The application can show,
+> enable, disable, or hide buttons from the thumbnail toolbar as required by its
+> current state.
+>
+> For example, Windows Media Player might offer standard media transport controls
+> such as play, pause, mute, and stop.
+
+__Thumbnail toolbar of Windows Media Player:__
+
+![player](https://i-msdn.sec.s-msft.com/dynimg/IC420540.png)
+
+You can use [BrowserWindow.setThumbarButtons][setthumbarbuttons] to set thumbnail
+toolbar in your application:
+
+```
+var BrowserWindow = require('browser-window');
+var path = require('path');
+var win = new BrowserWindow({
+  width: 800,
+  height: 600
+});
+win.setThumbarButtons([
+  {
+    tooltip: "button1",
+    icon: path.join(__dirname, 'button1.png'),
+    click: function() { console.log("button2 clicked"); }
+  },
+  {
+    tooltip: "button2",
+    icon: path.join(__dirname, 'button2.png'),
+    flags:['enabled', 'dismissonclick'],
+    click: function() { console.log("button2 clicked."); }
+  }
+]);
+```
+
+To clean thumbnail toolbar buttons, just call `BrowserWindow.setThumbarButtons`
+with an empty array:
+
+```javascript
+win.setThumbarButtons([]);
+```
+
 ## Unity launcher shortcuts (Linux)
 
 In Unity, you can add custom entries to its launcher via modifying `.desktop`
@@ -199,3 +252,4 @@ window.setDocumentEdited(true);
 [setdocumentedited]: ../api/browser-window.md#browserwindowsetdocumenteditededited
 [app-registration]: http://msdn.microsoft.com/en-us/library/windows/desktop/ee872121(v=vs.85).aspx
 [unity-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
+[setthumbarbuttons]: ../api/browser-window.md#browserwindowsetthumbarbuttonsbuttons

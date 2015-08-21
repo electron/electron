@@ -40,11 +40,15 @@ def main():
   args = parse_args()
   node_headers_dir = os.path.join(DIST_DIR, 'node-{0}'.format(args.version))
   iojs_headers_dir = os.path.join(DIST_DIR, 'iojs-{0}'.format(args.version))
+  iojs2_headers_dir = os.path.join(DIST_DIR,
+                                   'iojs-{0}-headers'.format(args.version))
 
   copy_headers(node_headers_dir)
   create_header_tarball(node_headers_dir)
   copy_headers(iojs_headers_dir)
   create_header_tarball(iojs_headers_dir)
+  copy_headers(iojs2_headers_dir)
+  create_header_tarball(iojs2_headers_dir)
 
   # Upload node's headers to S3.
   bucket, access_key, secret_key = s3_config()

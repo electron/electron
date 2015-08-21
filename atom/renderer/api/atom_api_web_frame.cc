@@ -4,43 +4,19 @@
 
 #include "atom/renderer/api/atom_api_web_frame.h"
 
-// This defines are required by SchemeRegistry.h.
-#define ALWAYS_INLINE inline
-#define OS(WTF_FEATURE) (defined WTF_OS_##WTF_FEATURE  && WTF_OS_##WTF_FEATURE)  // NOLINT
-#define USE(WTF_FEATURE) (defined WTF_USE_##WTF_FEATURE  && WTF_USE_##WTF_FEATURE)  // NOLINT
-#define ENABLE(WTF_FEATURE) (defined ENABLE_##WTF_FEATURE  && ENABLE_##WTF_FEATURE)  // NOLINT
-
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/renderer/api/atom_api_spell_check_client.h"
 #include "content/public/renderer/render_frame.h"
-#include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
+#include "third_party/WebKit/public/web/WebSecurityPolicy.h"
 #include "third_party/WebKit/public/web/WebView.h"
-#include "third_party/WebKit/Source/platform/weborigin/SchemeRegistry.h"
 
 #include "atom/common/node_includes.h"
-
-namespace mate {
-
-template<>
-struct Converter<WTF::String> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     WTF::String* out) {
-    if (!val->IsString())
-      return false;
-
-    v8::String::Value s(val);
-    *out = WTF::String(reinterpret_cast<const base::char16*>(*s), s.length());
-    return true;
-  }
-};
-
-}  // namespace mate
 
 namespace atom {
 
@@ -106,6 +82,18 @@ void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
   web_frame_->view()->setSpellCheckClient(spell_check_client_.get());
 }
 
+void WebFrame::RegisterURLSchemeAsSecure(const std::string& scheme) {
+  // Register scheme to secure list (https, wss, data).
+  blink::WebSecurityPolicy::registerURLSchemeAsSecure(
+      blink::WebString::fromUTF8(scheme));
+}
+
+void WebFrame::RegisterURLSchemeAsBypassingCsp(const std::string& scheme) {
+  // Register scheme to bypass pages's Content Security Policy.
+  blink::WebSecurityPolicy::registerURLSchemeAsBypassingContentSecurityPolicy(
+      blink::WebString::fromUTF8(scheme));
+}
+
 mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
@@ -121,7 +109,9 @@ mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
       .SetMethod("attachGuest", &WebFrame::AttachGuest)
       .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider)
       .SetMethod("registerUrlSchemeAsSecure",
-                 &blink::SchemeRegistry::registerURLSchemeAsSecure);
+                 &WebFrame::RegisterURLSchemeAsSecure)
+      .SetMethod("registerUrlSchemeAsBypassingCsp",
+                 &WebFrame::RegisterURLSchemeAsBypassingCsp);
 }
 
 // static

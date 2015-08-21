@@ -70,7 +70,7 @@ will be passed via `callback(filename)`
 
 * `browserWindow` BrowserWindow
 * `options` Object
-  * `type` String - Can be `"none"`, `"info"`, `"error"`, `"question"` or `"warning"`
+  * `type` String - Can be `"none"`, `"info"`, `"error"`, `"question"` or `"warning"`. On Windows, "question" displays the same icon as "info", unless if you set an icon using the "icon" option
   * `buttons` Array - Array of texts for buttons
   * `title` String - Title of the message box, some platforms will not show it
   * `message` String - Content of the message box
@@ -80,7 +80,12 @@ will be passed via `callback(filename)`
     instead of clicking the buttons of the dialog. By default it is the index
     of the buttons that have "cancel" or "no" as label, or 0 if there is no such
     buttons. On OS X and Windows the index of "Cancel" button will always be
-    used as `cancelId`, not matter whether it is already specified.
+    used as `cancelId`, not matter whether it is already specified
+  * `noLink` Boolean - On Windows Electron would try to figure out which ones of
+    the `buttons` are common buttons (like "Cancel" or "Yes"), and show the
+    others as command links in the dialog, this can make the dialog appear in
+    the style of modern Windows apps. If you don't like this behavior, you can
+    specify `noLink` to `true`
 * `callback` Function
 
 Shows a message box, it will block until the message box is closed. It returns

@@ -8,9 +8,9 @@
 #include <string>
 
 #include "atom/browser/api/atom_api_window.h"
+#include "atom/browser/ui/atom_menu_model.h"
 #include "base/callback.h"
 #include "base/memory/scoped_ptr.h"
-#include "ui/base/models/simple_menu_model.h"
 #include "native_mate/wrappable.h"
 
 namespace atom {
@@ -18,7 +18,7 @@ namespace atom {
 namespace api {
 
 class Menu : public mate::Wrappable,
-             public ui::SimpleMenuModel::Delegate {
+             public AtomMenuModel::Delegate {
  public:
   static mate::Wrappable* Create();
 
@@ -33,7 +33,7 @@ class Menu : public mate::Wrappable,
   static void SendActionToFirstResponder(const std::string& action);
 #endif
 
-  ui::SimpleMenuModel* model() const { return model_.get(); }
+  AtomMenuModel* model() const { return model_.get(); }
 
  protected:
   Menu();
@@ -42,7 +42,7 @@ class Menu : public mate::Wrappable,
   // mate::Wrappable:
   void AfterInit(v8::Isolate* isolate) override;
 
-  // ui::SimpleMenuModel::Delegate implementations:
+  // ui::SimpleMenuModel::Delegate:
   bool IsCommandIdChecked(int command_id) const override;
   bool IsCommandIdEnabled(int command_id) const override;
   bool IsCommandIdVisible(int command_id) const override;
@@ -54,7 +54,7 @@ class Menu : public mate::Wrappable,
   virtual void Popup(Window* window) = 0;
   virtual void PopupAt(Window* window, int x, int y) = 0;
 
-  scoped_ptr<ui::SimpleMenuModel> model_;
+  scoped_ptr<AtomMenuModel> model_;
   Menu* parent_;
 
  private:
@@ -102,9 +102,9 @@ class Menu : public mate::Wrappable,
 namespace mate {
 
 template<>
-struct Converter<ui::SimpleMenuModel*> {
+struct Converter<atom::AtomMenuModel*> {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
-                     ui::SimpleMenuModel** out) {
+                     atom::AtomMenuModel** out) {
     // null would be tranfered to NULL.
     if (val->IsNull()) {
       *out = nullptr;

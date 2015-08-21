@@ -11,6 +11,9 @@ fileDialogProperties =
 
 messageBoxTypes = ['none', 'info', 'warning', 'error', 'question']
 
+messageBoxOptions =
+  noLink: 1 << 0
+
 parseArgs = (window, options, callback) ->
   unless window is null or window?.constructor is BrowserWindow
     # Shift.
@@ -101,10 +104,15 @@ module.exports =
           options.cancelId = i
           break
 
+    flags = if options.noLink then messageBoxOptions.noLink else 0
+
     binding.showMessageBox messageBoxType,
                            options.buttons,
                            options.cancelId,
-                           [options.title, options.message, options.detail],
+                           flags,
+                           options.title,
+                           options.message,
+                           options.detail,
                            options.icon,
                            window,
                            callback

@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "net/url_request/url_request_context_getter.h"
 #include "net/url_request/url_fetcher_delegate.h"
 #include "net/url_request/url_request_job.h"
 
@@ -17,13 +18,14 @@ class AtomBrowserContext;
 class URLRequestFetchJob : public net::URLRequestJob,
                            public net::URLFetcherDelegate {
  public:
-  URLRequestFetchJob(AtomBrowserContext* browser_context,
+  URLRequestFetchJob(scoped_refptr<net::URLRequestContextGetter> context_getter,
                      net::URLRequest* request,
                      net::NetworkDelegate* network_delegate,
                      const GURL& url,
                      const std::string& method,
                      const std::string& referrer);
 
+  net::URLRequestContextGetter* GetRequestContext();
   void HeadersCompleted();
   int DataAvailable(net::IOBuffer* buffer, int num_bytes);
 
@@ -41,6 +43,7 @@ class URLRequestFetchJob : public net::URLRequestJob,
   void OnURLFetchComplete(const net::URLFetcher* source) override;
 
  private:
+  scoped_refptr<net::URLRequestContextGetter> url_request_context_getter_;
   scoped_ptr<net::URLFetcher> fetcher_;
   scoped_refptr<net::IOBuffer> pending_buffer_;
   int pending_buffer_size_;

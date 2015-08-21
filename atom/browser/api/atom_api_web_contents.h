@@ -37,8 +37,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
                     public content::WebContentsObserver {
  public:
   // For node.js callback function type: function(error, buffer)
-  typedef base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>
-      PrintToPDFCallback;
+  using PrintToPDFCallback =
+      base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
 
   // Create from an existing WebContents.
   static mate::Handle<WebContents> CreateFrom(
@@ -63,8 +63,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void GoToOffset(int offset);
   bool IsCrashed() const;
   void SetUserAgent(const std::string& user_agent);
+  std::string GetUserAgent();
   void InsertCSS(const std::string& css);
-  void ExecuteJavaScript(const base::string16& code);
+  void ExecuteJavaScript(const base::string16& code,
+                         bool has_user_gesture);
   void OpenDevTools(mate::Arguments* args);
   void CloseDevTools();
   bool IsDevToolsOpened();
@@ -82,6 +84,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void PrintToPDF(const base::DictionaryValue& setting,
                   const PrintToPDFCallback& callback);
 
+  // DevTools workspace api.
+  void AddWorkSpace(const base::FilePath& path);
+  void RemoveWorkSpace(const base::FilePath& path);
+
   // Editing commands.
   void Undo();
   void Redo();
@@ -94,6 +100,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Unselect();
   void Replace(const base::string16& word);
   void ReplaceMisspelling(const base::string16& word);
+
+  // Focus.
+  void Focus();
+  void TabTraverse(bool reverse);
 
   // Sending messages to browser.
   bool SendIPCMessage(const base::string16& channel,

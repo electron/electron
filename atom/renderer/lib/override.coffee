@@ -11,6 +11,7 @@ resolveUrl = (url) ->
 # Window object returned by "window.open".
 class BrowserWindowProxy
   constructor: (@guestId) ->
+    @closed = false
     ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSED', (guestId) =>
       if guestId is @guestId
         @closed = true
@@ -61,7 +62,7 @@ window.open = (url, frameName='', features='') ->
   (options[name] = parseInt(options[name], 10) if options[name]?) for name in ints
 
   # Inherit the node-integration option of current window.
-  unless options['node-integration']
+  unless options['node-integration']?
     for arg in process.argv when arg.indexOf('--node-integration=') is 0
       options['node-integration'] = arg.substr(-4) is 'true'
       break
@@ -91,7 +92,7 @@ window.prompt = ->
   throw new Error('prompt() is and will not be supported.')
 
 # Simple implementation of postMessage.
-unless process.guestInstanceId?
+if ipc.sendSync 'ATOM_SHELL_GUEST_WINDOW_MANAGER_IS_GUEST_WINDOW'
   window.opener =
     postMessage: (message, targetOrigin='*') ->
       ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', message, targetOrigin

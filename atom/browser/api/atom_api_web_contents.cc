@@ -13,7 +13,9 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
-#include "atom/common/event_emitter_caller.h"
+#include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
@@ -36,7 +38,6 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
-#include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/http/http_response_headers.h"
@@ -563,12 +564,17 @@ void WebContents::SetUserAgent(const std::string& user_agent) {
       base::Bind(&SetUserAgentInIO, getter, user_agent));
 }
 
+std::string WebContents::GetUserAgent() {
+  return web_contents()->GetUserAgentOverride();
+}
+
 void WebContents::InsertCSS(const std::string& css) {
   web_contents()->InsertCSS(css);
 }
 
-void WebContents::ExecuteJavaScript(const base::string16& code) {
-  web_contents()->GetMainFrame()->ExecuteJavaScript(code);
+void WebContents::ExecuteJavaScript(const base::string16& code,
+                                    bool has_user_gesture) {
+  Send(new AtomViewMsg_ExecuteJavaScript(routing_id(), code, has_user_gesture));
 }
 
 void WebContents::OpenDevTools(mate::Arguments* args) {
@@ -685,6 +691,22 @@ void WebContents::PrintToPDF(const base::DictionaryValue& setting,
       PrintToPDF(setting, callback);
 }
 
+void WebContents::AddWorkSpace(const base::FilePath& path) {
+  if (path.empty()) {
+    node::ThrowError(isolate(), "path cannot be empty");
+    return;
+  }
+  DevToolsAddFileSystem(path);
+}
+
+void WebContents::RemoveWorkSpace(const base::FilePath& path) {
+  if (path.empty()) {
+    node::ThrowError(isolate(), "path cannot be empty");
+    return;
+  }
+  DevToolsRemoveFileSystem(path);
+}
+
 void WebContents::Undo() {
   web_contents()->Undo();
 }
@@ -729,6 +751,14 @@ void WebContents::ReplaceMisspelling(const base::string16& word) {
   web_contents()->ReplaceMisspelling(word);
 }
 
+void WebContents::Focus() {
+  web_contents()->Focus();
+}
+
+void WebContents::TabTraverse(bool reverse) {
+  web_contents()->FocusThroughTabTraversal(reverse);
+}
+
 bool WebContents::SendIPCMessage(const base::string16& channel,
                                  const base::ListValue& args) {
   return Send(new AtomViewMsg_Message(routing_id(), channel, args));
@@ -767,6 +797,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("_goToOffset", &WebContents::GoToOffset)
         .SetMethod("isCrashed", &WebContents::IsCrashed)
         .SetMethod("setUserAgent", &WebContents::SetUserAgent)
+        .SetMethod("getUserAgent", &WebContents::GetUserAgent)
         .SetMethod("insertCSS", &WebContents::InsertCSS)
         .SetMethod("_executeJavaScript", &WebContents::ExecuteJavaScript)
         .SetMethod("openDevTools", &WebContents::OpenDevTools)
@@ -787,6 +818,8 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("unselect", &WebContents::Unselect)
         .SetMethod("replace", &WebContents::Replace)
         .SetMethod("replaceMisspelling", &WebContents::ReplaceMisspelling)
+        .SetMethod("focus", &WebContents::Focus)
+        .SetMethod("tabTraverse", &WebContents::TabTraverse)
         .SetMethod("_send", &WebContents::SendIPCMessage, true)
         .SetMethod("setSize", &WebContents::SetSize)
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
@@ -797,6 +830,8 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
         .SetMethod("print", &WebContents::Print)
         .SetMethod("_printToPDF", &WebContents::PrintToPDF)
+        .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
+        .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
         .SetProperty("session", &WebContents::Session)
         .Build());
 

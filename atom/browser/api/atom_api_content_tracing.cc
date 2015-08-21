@@ -5,10 +5,11 @@
 #include <set>
 #include <string>
 
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "base/bind.h"
+#include "base/files/file_util.h"
 #include "content/public/browser/tracing_controller.h"
-#include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
@@ -46,6 +47,31 @@ struct Converter<base::trace_event::TraceOptions> {
 
 namespace {
 
+using CompletionCallback = base::Callback<void(const base::FilePath&)>;
+
+scoped_refptr<TracingController::TraceDataSink> GetTraceDataSink(
+    const base::FilePath& path, const CompletionCallback& callback) {
+  base::FilePath result_file_path = path;
+  if (result_file_path.empty() && !base::CreateTemporaryFile(&result_file_path))
+    LOG(ERROR) << "Creating temporary file failed";
+
+  return TracingController::CreateFileSink(result_file_path,
+                                           base::Bind(callback,
+                                                      result_file_path));
+}
+
+void StopRecording(const base::FilePath& path,
+                   const CompletionCallback& callback) {
+  TracingController::GetInstance()->DisableRecording(
+      GetTraceDataSink(path, callback));
+}
+
+void CaptureMonitoringSnapshot(const base::FilePath& path,
+                               const CompletionCallback& callback) {
+  TracingController::GetInstance()->CaptureMonitoringSnapshot(
+      GetTraceDataSink(path, callback));
+}
+
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   auto controller = base::Unretained(TracingController::GetInstance());
@@ -54,14 +80,12 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
       &TracingController::GetCategories, controller));
   dict.SetMethod("startRecording", base::Bind(
       &TracingController::EnableRecording, controller));
-  dict.SetMethod("stopRecording", base::Bind(
-      &TracingController::DisableRecording, controller, nullptr));
+  dict.SetMethod("stopRecording", &StopRecording);
   dict.SetMethod("startMonitoring", base::Bind(
       &TracingController::EnableMonitoring, controller));
   dict.SetMethod("stopMonitoring", base::Bind(
       &TracingController::DisableMonitoring, controller));
-  dict.SetMethod("captureMonitoringSnapshot", base::Bind(
-      &TracingController::CaptureMonitoringSnapshot, controller, nullptr));
+  dict.SetMethod("captureMonitoringSnapshot", &CaptureMonitoringSnapshot);
   dict.SetMethod("getTraceBufferUsage", base::Bind(
       &TracingController::GetTraceBufferUsage, controller));
   dict.SetMethod("setWatchEvent", base::Bind(

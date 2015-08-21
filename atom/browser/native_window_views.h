@@ -14,6 +14,11 @@
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/views/widget/widget_observer.h"
 
+#if defined(OS_WIN)
+#include "atom/browser/ui/win/message_handler_delegate.h"
+#include "atom/browser/ui/win/taskbar_host.h"
+#endif
+
 namespace views {
 class UnhandledKeyboardEventHandler;
 }
@@ -24,7 +29,14 @@ class GlobalMenuBarX11;
 class MenuBar;
 class WindowStateWatcher;
 
+#if defined(OS_WIN)
+class AtomDesktopWindowTreeHostWin;
+#endif
+
 class NativeWindowViews : public NativeWindow,
+#if defined(OS_WIN)
+                          public MessageHandlerDelegate,
+#endif
                           public views::WidgetDelegateView,
                           public views::WidgetObserver {
  public:
@@ -82,14 +94,13 @@ class NativeWindowViews : public NativeWindow,
 
   gfx::AcceleratedWidget GetAcceleratedWidget();
 
-  SkRegion* draggable_region() const { return draggable_region_.get(); }
   views::Widget* widget() const { return window_.get(); }
 
- private:
-  // NativeWindow:
-  void UpdateDraggableRegions(
-      const std::vector<DraggableRegion>& regions) override;
+#if defined(OS_WIN)
+  TaskbarHost& taskbar_host() { return taskbar_host_; }
+#endif
 
+ private:
   // views::WidgetObserver:
   void OnWidgetActivationChanged(
       views::Widget* widget, bool active) override;
@@ -127,6 +138,12 @@ class NativeWindowViews : public NativeWindow,
       std::string* name, std::string* class_name) override;
 #endif
 
+#if defined(OS_WIN)
+  // MessageHandlerDelegate:
+  bool PreHandleMSG(
+      UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) override;
+#endif
+
   // NativeWindow:
   void HandleKeyboardEvent(
       content::WebContents*,
@@ -159,9 +176,13 @@ class NativeWindowViews : public NativeWindow,
   // Handles window state events.
   scoped_ptr<WindowStateWatcher> window_state_watcher_;
 #elif defined(OS_WIN)
+  // Weak ref.
+  AtomDesktopWindowTreeHostWin* atom_desktop_window_tree_host_win_;
   // Records window was whether restored from minimized state or maximized
   // state.
   bool is_minimized_;
+  // In charge of running taskbar related APIs.
+  TaskbarHost taskbar_host_;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.
@@ -176,8 +197,6 @@ class NativeWindowViews : public NativeWindow,
   gfx::Size minimum_size_;
   gfx::Size maximum_size_;
   gfx::Size widget_size_;
-
-  scoped_ptr<SkRegion> draggable_region_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowViews);
 };

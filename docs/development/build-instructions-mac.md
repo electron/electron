@@ -51,6 +51,14 @@ support 32bit OS X in future.
 
 ## Tests
 
+Test your changes confirm to the project coding style using:
+
+```bash
+$ ./script/cpplint.py
+```
+
+Test functionality using:
+
 ```bash
 $ ./script/test.py
 ```

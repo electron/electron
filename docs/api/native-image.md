@@ -137,3 +137,7 @@ Returns the size of the image.
 * `option` Boolean
 
 Marks the image as template image.
+
+### NativeImage.isTemplateImage()
+
+Returns whether the image is a template image.

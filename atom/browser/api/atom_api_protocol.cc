@@ -7,12 +7,13 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/net/adapter_request_job.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "content/public/browser/browser_thread.h"
-#include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "net/url_request/url_request_context.h"
 
@@ -62,16 +63,13 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
         registry_(registry) {
   }
 
-  // AdapterRequestJob:
-  void GetJobTypeInUI() override {
+  void GetJobTypeInUI(const Protocol::JsProtocolHandler& callback) {
     DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
     v8::Locker locker(registry_->isolate());
     v8::HandleScope handle_scope(registry_->isolate());
 
     // Call the JS handler.
-    Protocol::JsProtocolHandler callback =
-        registry_->GetProtocolHandler(request()->url().scheme());
     v8::Local<v8::Value> result = callback.Run(request());
 
     // Determine the type of the job we are going to create.
@@ -130,9 +128,23 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
         dict.Get("method", &method);
         dict.Get("referrer", &referrer);
 
+        v8::Local<v8::Value> value;
+        mate::Handle<Session> session;
+        scoped_refptr<net::URLRequestContextGetter> request_context_getter;
+        // "session" null -> pass nullptr;
+        // "session" a Session object -> use passed session.
+        // "session" undefined -> use current session;
+        if (dict.Get("session", &session))
+          request_context_getter =
+              session->browser_context()->GetRequestContext();
+        else if (dict.Get("session", &value) && value->IsNull())
+          request_context_getter = nullptr;
+        else
+          request_context_getter = registry_->request_context_getter();
+
         BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
             base::Bind(&AdapterRequestJob::CreateHttpJobAndStart, GetWeakPtr(),
-                       registry_->browser_context(), url, method, referrer));
+                       request_context_getter, url, method, referrer));
         return;
       }
     }
@@ -149,6 +161,14 @@ class CustomProtocolRequestJob : public AdapterRequestJob {
     BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
         base::Bind(&AdapterRequestJob::CreateErrorJobAndStart,
                    GetWeakPtr(), net::ERR_NOT_IMPLEMENTED));
+  }
+
+  // AdapterRequestJob:
+  void GetJobType() override {
+    BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
+        base::Bind(&CustomProtocolRequestJob::GetJobTypeInUI,
+                   base::Unretained(this),
+                   registry_->GetProtocolHandler(request()->url().scheme())));
   }
 
  private:
@@ -211,7 +231,7 @@ std::string ConvertErrorCode(int error_code) {
 }  // namespace
 
 Protocol::Protocol(AtomBrowserContext* browser_context)
-    : browser_context_(browser_context),
+    : request_context_getter_(browser_context->GetRequestContext()),
       job_factory_(browser_context->job_factory()) {
   CHECK(job_factory_);
 }
@@ -334,6 +354,10 @@ int Protocol::UnregisterProtocolInIO(const std::string& scheme) {
 int Protocol::InterceptProtocolInIO(const std::string& scheme,
                                     const JsProtocolHandler& handler) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+
+  // Force the request context to initialize, otherwise we might have nothing
+  // to intercept.
+  request_context_getter_->GetURLRequestContext();
 
   if (!job_factory_->HasProtocolHandler(scheme))
     return ERR_NO_SCHEME;

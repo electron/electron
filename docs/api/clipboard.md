@@ -1,14 +1,14 @@
 # clipboard
 
-The `clipboard` provides methods to do copy/paste operations. An example of
-writing a string to clipboard:
+The `clipboard` provides methods to perform copy and paste operations. The following example
+shows how to write a string to the clipboard:
 
 ```javascript
 var clipboard = require('clipboard');
 clipboard.writeText('Example String');
 ```
 
-On X Window systems, there is also a selection clipboard, to manipulate in it
+On X Window systems, there is also a selection clipboard. To manipulate it
 you need to pass `selection` to each method:
 
 ```javascript
@@ -21,46 +21,46 @@ console.log(clipboard.readText('selection'));
 
 * `type` String
 
-Returns the content in clipboard as plain text.
+Returns the content in the clipboard as plain text.
 
 ## clipboard.writeText(text[, type])
 
 * `text` String
 * `type` String
 
-Writes the `text` into clipboard as plain text.
+Writes the `text` into the clipboard as plain text.
 
 ## clipboard.readHtml([type])
 
 * `type` String
 
-Returns the content in clipboard as markup.
+Returns the content in the clipboard as markup.
 
 ## clipboard.writeHtml(markup[, type])
 
 * `markup` String
 * `type` String
 
-Writes the `markup` into clipboard.
+Writes `markup` into the clipboard.
 
 ## clipboard.readImage([type])
 
 * `type` String
 
-Returns the content in clipboard as [NativeImage](native-image.md).
+Returns the content in the clipboard as a [NativeImage](native-image.md).
 
 ## clipboard.writeImage(image[, type])
 
 * `image` [NativeImage](native-image.md)
 * `type` String
 
-Writes the `image` into clipboard.
+Writes `image` into the clipboard.
 
 ## clipboard.clear([type])
 
 * `type` String
 
-Clears everything in clipboard.
+Clears the clipboard.
 
 ## clipboard.availableFormats([type])
 
@@ -71,7 +71,7 @@ Returns an array of supported `format` for the clipboard `type`.
 * `data` String
 * `type` String
 
-Returns whether clipboard supports the format of specified `data`.
+Returns whether the clipboard supports the format of specified `data`.
 
 ```javascript
 var clipboard = require('clipboard');
@@ -85,7 +85,7 @@ console.log(clipboard.has('<p>selection</p>'));
 * `data` String
 * `type` String
 
-Reads the `data` in clipboard.
+Reads `data` from the clipboard.
 
 **Note:** This API is experimental and could be removed in future.
 
@@ -101,4 +101,4 @@ Reads the `data` in clipboard.
 var clipboard = require('clipboard');
 clipboard.write({text: 'test', html: "<b>test</b>"});
 ```
-Writes the `data` iinto clipboard.
+Writes `data` into clipboard.

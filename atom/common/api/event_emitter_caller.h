@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_COMMON_EVENT_EMITTER_CALLER_H_
-#define ATOM_COMMON_EVENT_EMITTER_CALLER_H_
+#ifndef ATOM_COMMON_API_EVENT_EMITTER_CALLER_H_
+#define ATOM_COMMON_API_EVENT_EMITTER_CALLER_H_
 
 #include <vector>
 
@@ -50,4 +50,4 @@ v8::Local<v8::Value> EmitEvent(v8::Isolate* isolate,
 
 }  // namespace mate
 
-#endif  // ATOM_COMMON_EVENT_EMITTER_CALLER_H_
+#endif  // ATOM_COMMON_API_EVENT_EMITTER_CALLER_H_

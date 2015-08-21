@@ -4,7 +4,6 @@ path   = require 'path'
 remote = require 'remote'
 http   = require 'http'
 url    = require 'url'
-auth   = require 'basic-auth'
 
 BrowserWindow = remote.require 'browser-window'
 
@@ -117,9 +116,26 @@ describe 'browser-window module', ->
       assert.equal after[0], size[0]
       assert.equal after[1], size[1]
 
+    it 'works for framless window', ->
+      w.destroy()
+      w = new BrowserWindow(show: false, frame: false, width: 400, height: 400)
+      size = [400, 400]
+      w.setContentSize size[0], size[1]
+      after = w.getContentSize()
+      assert.equal after[0], size[0]
+      assert.equal after[1], size[1]
+
   describe 'BrowserWindow.fromId(id)', ->
     it 'returns the window with id', ->
       assert.equal w.id, BrowserWindow.fromId(w.id).id
+
+  describe 'BrowserWindow.setResizable(resizable)', ->
+    it 'does not change window size for frameless window', ->
+      w.destroy()
+      w = new BrowserWindow(show: true, frame: false)
+      s = w.getSize()
+      w.setResizable not w.isResizable()
+      assert.deepEqual s, w.getSize()
 
   describe '"use-content-size" option', ->
     it 'make window created with content size when used', ->
@@ -130,6 +146,16 @@ describe 'browser-window module', ->
       assert.equal contentSize[1], 400
 
     it 'make window created with window size when not used', ->
+      size = w.getSize()
+      assert.equal size[0], 400
+      assert.equal size[1], 400
+
+    it 'works for framless window', ->
+      w.destroy()
+      w = new BrowserWindow(show: false, frame: false, width: 400, height: 400, 'use-content-size': true)
+      contentSize = w.getContentSize()
+      assert.equal contentSize[0], 400
+      assert.equal contentSize[1], 400
       size = w.getSize()
       assert.equal size[0], 400
       assert.equal size[1], 400
@@ -239,48 +265,3 @@ describe 'browser-window module', ->
         assert.equal url, 'https://www.github.com/'
         done()
       w.loadUrl "file://#{fixtures}/pages/will-navigate.html"
-
-  describe 'dom-ready event', ->
-    return if isCI and process.platform is 'darwin'
-    it 'emits when document is loaded', (done) ->
-      ipc = remote.require 'ipc'
-      server = http.createServer (req, res) ->
-        action = url.parse(req.url, true).pathname
-        if action == '/logo.png'
-          img = fs.readFileSync(path.join(fixtures, 'assets', 'logo.png'))
-          res.writeHead(200, {'Content-Type': 'image/png'})
-          setTimeout ->
-            res.end(img, 'binary')
-          , 2000
-          server.close()
-      server.listen 62542, '127.0.0.1'
-      ipc.on 'dom-ready', (e, state) ->
-        ipc.removeAllListeners 'dom-ready'
-        assert.equal state, 'interactive'
-        done()
-      w.webContents.on 'did-finish-load', ->
-        w.close()
-      w.loadUrl "file://#{fixtures}/pages/f.html"
-
-  describe 'basic auth', ->
-    it 'should authenticate with correct credentials', (done) ->
-      ipc = remote.require 'ipc'
-      server = http.createServer (req, res) ->
-        action = url.parse(req.url, true).pathname
-        if action == '/'
-          credentials = auth(req)
-          if credentials.name == 'test' and credentials.pass == 'test'
-            res.end('Authenticated')
-            server.close()
-        else if action == '/jquery.js'
-          js = fs.readFileSync(path.join(__dirname, 'static', 'jquery-2.0.3.min.js'))
-          res.writeHead(200, {'Content-Type': 'text/javascript'})
-          res.end(js, 'utf-8')
-      server.listen 62342, '127.0.0.1'
-      ipc.on 'console-message', (e, message) ->
-        ipc.removeAllListeners 'console-message'
-        assert.equal message, 'Authenticated'
-        done()
-      w.webContents.on 'did-finish-load', ->
-        w.close()
-      w.loadUrl "file://#{fixtures}/pages/basic-auth.html"
