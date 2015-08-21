@@ -110,6 +110,11 @@ class InspectableWebContentsImpl :
   void SendJsonRequest(const DispatchCallback& callback,
                        const std::string& browser_id,
                        const std::string& url) override;
+  void GetPreferences(const DispatchCallback& callback) override;
+  void SetPreference(const std::string& name,
+                     const std::string& value) override;
+  void RemovePreference(const std::string& name) override;
+  void ClearPreferences() override;
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(const std::string& message) override;
@@ -125,6 +130,7 @@ class InspectableWebContentsImpl :
   void AboutToNavigateRenderFrame(content::RenderFrameHost* old_host,
                                   content::RenderFrameHost* new_host) override;
   void WebContentsDestroyed() override;
+  void OnWebContentsFocused() override;
 
   // content::WebContentsDelegate:
   bool AddMessageToConsole(content::WebContents* source,
@@ -144,7 +150,6 @@ class InspectableWebContentsImpl :
   void HandleKeyboardEvent(
       content::WebContents*, const content::NativeWebKeyboardEvent&) override;
   void CloseContents(content::WebContents* source) override;
-  void WebContentsFocused(content::WebContents* contents) override;
 
   // net::URLFetcherDelegate:
   void OnURLFetchComplete(const net::URLFetcher* source) override;

@@ -10,7 +10,7 @@
 
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
-#include "content/public/browser/devtools_http_handler.h"
+#include "components/devtools_http_handler/devtools_http_handler.h"
 #include "content/public/common/content_switches.h"
 #include "net/proxy/proxy_resolver_v8.h"
 

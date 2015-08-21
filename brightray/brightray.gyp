@@ -82,8 +82,11 @@
             ['libchromiumcontent_component', {
               'link_settings': {
                 'libraries': [
-                  # libgtk2ui is always linked statically.
+                  # Following libraries are always linked statically.
                   '<(libchromiumcontent_dir)/libgtk2ui.a',
+                  '<(libchromiumcontent_dir)/libdevtools_discovery.a',
+                  '<(libchromiumcontent_dir)/libdevtools_http_handler.a',
+                  '<(libchromiumcontent_dir)/libhttp_server.a',
                 ],
               },
             }, {
@@ -112,10 +115,19 @@
             ],
           },
           'conditions':  [
-            # Link with system frameworks.
-            ['libchromiumcontent_component==0', {
+            ['libchromiumcontent_component', {
               'link_settings': {
                 'libraries': [
+                  # Following libraries are always linked statically.
+                  '<(libchromiumcontent_dir)/libdevtools_discovery.a',
+                  '<(libchromiumcontent_dir)/libdevtools_http_handler.a',
+                  '<(libchromiumcontent_dir)/libhttp_server.a',
+                ],
+              },
+            }, {
+              'link_settings': {
+                'libraries': [
+                  # Link with system frameworks.
                   # ui_base.gypi:
                   '$(SDKROOT)/System/Library/Frameworks/Accelerate.framework',
                   # net.gypi:
@@ -152,19 +164,21 @@
         ['OS=="win"', {
           'conditions': [
             ['libchromiumcontent_component', {
-              # sandbox and base_static are always linked statically.
+              # sandbox, base_static, devtools_discovery, devtools_http_handler,
+              # http_server are always linked statically.
               'link_settings': {
                 'libraries': [
                   '<(libchromiumcontent_dir)/base_static.lib',
                   '<(libchromiumcontent_dir)/sandbox.lib',
+                  '<(libchromiumcontent_dir)/devtools_discovery.lib',
+                  '<(libchromiumcontent_dir)/devtools_http_handler.lib',
+                  '<(libchromiumcontent_dir)/http_server.lib',
                 ],
               },
             }, {
               # Link with system libraries.
               'link_settings': {
                 'libraries': [
-                  # ffmpegsumo.lib is required for linking with ffmpegsumo.dll
-                  '<(libchromiumcontent_dir)/ffmpegsumo.lib',
                   # content_browser.gypi:
                   '-lsensorsapi.lib',
                   '-lportabledeviceguids.lib',
@@ -184,6 +198,7 @@
                     'AdditionalDependencies': [
                       'advapi32.lib',
                       'dbghelp.lib',
+                      'delayimp.lib',
                       'dwmapi.lib',
                       'gdi32.lib',
                       'netapi32.lib',
@@ -195,7 +210,6 @@
                       'winspool.lib',
                     ],
                     'DelayLoadDLLs': [
-                      'ffmpegsumo.dll',
                       # content_common.gypi:
                       'd3d9.dll',
                       'dxva2.dll',

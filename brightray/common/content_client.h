@@ -10,6 +10,8 @@
 
 namespace brightray {
 
+std::string GetBrightrayUserAgent();
+
 class ContentClient : public content::ContentClient {
  public:
   ContentClient();

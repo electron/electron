@@ -17,11 +17,11 @@
 #include "base/metrics/histogram.h"
 #include "base/prefs/pref_registry_simple.h"
 #include "base/prefs/pref_service.h"
+#include "base/prefs/scoped_user_pref_update.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/devtools_http_handler.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -45,6 +45,7 @@ const char kChromeUIDevToolsURL[] = "chrome-devtools://devtools/devtools.html?"
                                     "experiments=true";
 const char kDevToolsBoundsPref[] = "brightray.devtools.bounds";
 const char kDevToolsZoomPref[] = "brightray.devtools.zoom";
+const char kDevToolsPreferences[] = "brightray.devtools.preferences";
 
 const char kFrontendHostId[] = "id";
 const char kFrontendHostMethod[] = "method";
@@ -161,6 +162,7 @@ void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
   RectToDictionary(gfx::Rect(0, 0, 800, 600), bounds_dict.get());
   registry->RegisterDictionaryPref(kDevToolsBoundsPref, bounds_dict.release());
   registry->RegisterDoublePref(kDevToolsZoomPref, 0.);
+  registry->RegisterDictionaryPref(kDevToolsPreferences);
 }
 
 InspectableWebContentsImpl::InspectableWebContentsImpl(
@@ -364,7 +366,7 @@ void InspectableWebContentsImpl::LoadNetworkResource(
   auto browser_context = static_cast<BrowserContext*>(devtools_web_contents_->GetBrowserContext());
 
   net::URLFetcher* fetcher =
-      net::URLFetcher::Create(gurl, net::URLFetcher::GET, this);
+      (net::URLFetcher::Create(gurl, net::URLFetcher::GET, this)).release();
   pending_requests_[fetcher] = callback;
   fetcher->SetRequestContext(browser_context->url_request_context_getter());
   fetcher->SetExtraRequestHeaders(headers);
@@ -468,6 +470,29 @@ void InspectableWebContentsImpl::SendJsonRequest(const DispatchCallback& callbac
                                          const std::string& browser_id,
                                          const std::string& url) {
   callback.Run(nullptr);
+}
+
+void InspectableWebContentsImpl::GetPreferences(
+    const DispatchCallback& callback) {
+  const base::DictionaryValue* prefs = pref_service_->GetDictionary(
+      kDevToolsPreferences);
+  callback.Run(prefs);
+}
+
+void InspectableWebContentsImpl::SetPreference(const std::string& name,
+                                               const std::string& value) {
+  DictionaryPrefUpdate update(pref_service_, kDevToolsPreferences);
+  update.Get()->SetStringWithoutPathExpansion(name, value);
+}
+
+void InspectableWebContentsImpl::RemovePreference(const std::string& name) {
+  DictionaryPrefUpdate update(pref_service_, kDevToolsPreferences);
+  update.Get()->RemoveWithoutPathExpansion(name, nullptr);
+}
+
+void InspectableWebContentsImpl::ClearPreferences() {
+  DictionaryPrefUpdate update(pref_service_, kDevToolsPreferences);
+  update.Get()->Clear();
 }
 
 void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(const std::string& message) {
@@ -577,8 +602,7 @@ void InspectableWebContentsImpl::CloseContents(content::WebContents* source) {
   CloseDevTools();
 }
 
-void InspectableWebContentsImpl::WebContentsFocused(
-    content::WebContents* contents) {
+void InspectableWebContentsImpl::OnWebContentsFocused() {
   if (view_->GetDelegate())
     view_->GetDelegate()->DevToolsFocused();
 }

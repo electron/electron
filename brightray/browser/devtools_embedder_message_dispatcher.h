@@ -73,6 +73,11 @@ class DevToolsEmbedderMessageDispatcher {
     virtual void SendJsonRequest(const DispatchCallback& callback,
                                  const std::string& browser_id,
                                  const std::string& url) = 0;
+    virtual void GetPreferences(const DispatchCallback& callback) = 0;
+    virtual void SetPreference(const std::string& name,
+                               const std::string& value) = 0;
+    virtual void RemovePreference(const std::string& name) = 0;
+    virtual void ClearPreferences() = 0;
   };
 
   using DispatchCallback = Delegate::DispatchCallback;

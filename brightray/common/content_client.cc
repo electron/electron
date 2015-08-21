@@ -14,6 +14,17 @@
 
 namespace brightray {
 
+std::string GetProductInternal() {
+  auto name = GetApplicationName();
+  base::RemoveChars(name, base::kWhitespaceASCII, &name);
+  return base::StringPrintf("%s/%s",
+      name.c_str(), GetApplicationVersion().c_str());
+}
+
+std::string GetBrightrayUserAgent() {
+  return content::BuildUserAgentFromProduct(GetProductInternal());
+}
+
 ContentClient::ContentClient() {
 }
 
@@ -21,14 +32,11 @@ ContentClient::~ContentClient() {
 }
 
 std::string ContentClient::GetProduct() const {
-  auto name = GetApplicationName();
-  base::RemoveChars(name, base::kWhitespaceASCII, &name);
-  return base::StringPrintf("%s/%s",
-      name.c_str(), GetApplicationVersion().c_str());
+  return GetProductInternal();
 }
 
 std::string ContentClient::GetUserAgent() const {
-  return content::BuildUserAgentFromProduct(GetProduct());
+  return GetBrightrayUserAgent();
 }
 
 base::string16 ContentClient::GetLocalizedString(int message_id) const {

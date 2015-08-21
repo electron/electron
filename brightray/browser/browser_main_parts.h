@@ -9,7 +9,7 @@
 #include "base/memory/scoped_ptr.h"
 #include "content/public/browser/browser_main_parts.h"
 
-namespace content {
+namespace devtools_http_handler {
 class DevToolsHttpHandler;
 }
 
@@ -58,7 +58,7 @@ class BrowserMainParts : public content::BrowserMainParts {
 
   scoped_ptr<BrowserContext> browser_context_;
   scoped_ptr<WebUIControllerFactory> web_ui_controller_factory_;
-  scoped_ptr<content::DevToolsHttpHandler> devtools_http_handler_;
+  scoped_ptr<devtools_http_handler::DevToolsHttpHandler> devtools_http_handler_;
 
 #if defined(TOOLKIT_VIEWS)
   scoped_ptr<ViewsDelegate> views_delegate_;

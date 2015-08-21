@@ -7,10 +7,10 @@
 
 #include "base/basictypes.h"
 #include "base/compiler_specific.h"
-#include "content/public/browser/devtools_http_handler_delegate.h"
+#include "components/devtools_http_handler/devtools_http_handler_delegate.h"
 #include "content/public/browser/devtools_manager_delegate.h"
 
-namespace content {
+namespace devtools_http_handler {
 class DevToolsHttpHandler;
 }
 
@@ -18,7 +18,7 @@ namespace brightray {
 
 class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
  public:
-  static content::DevToolsHttpHandler* CreateHttpHandler();
+  static devtools_http_handler::DevToolsHttpHandler* CreateHttpHandler();
 
   DevToolsManagerDelegate();
   virtual ~DevToolsManagerDelegate();
@@ -30,9 +30,6 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
                                          bool attached) override {}
   base::DictionaryValue* HandleCommand(content::DevToolsAgentHost* agent_host,
                                        base::DictionaryValue* command) override;
-  scoped_ptr<content::DevToolsTarget> CreateNewTarget(const GURL& url) override;
-  void EnumerateTargets(TargetCallback callback) override;
-  std::string GetPageThumbnailData(const GURL& url) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(DevToolsManagerDelegate);

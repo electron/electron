@@ -40,6 +40,7 @@
         '-Wextra',
         '-Wno-unused-parameter',
         '-Wno-missing-field-initializers',
+        '-Wno-unneeded-internal-declaration',
       ],
     },
     'msvs_configuration_attributes': {

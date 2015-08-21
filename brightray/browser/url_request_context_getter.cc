@@ -119,12 +119,14 @@ URLRequestContextGetter::Delegate::CreateHttpCacheBackendFactory(const base::Fil
 
 URLRequestContextGetter::URLRequestContextGetter(
     Delegate* delegate,
+    NetLog* net_log,
     const base::FilePath& base_path,
     base::MessageLoop* io_loop,
     base::MessageLoop* file_loop,
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector protocol_interceptors)
     : delegate_(delegate),
+      net_log_(net_log),
       base_path_(base_path),
       io_loop_(io_loop),
       file_loop_(file_loop),
@@ -157,8 +159,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     url_request_context_.reset(new net::URLRequestContext);
 
     // --log-net-log
-    net_log_.reset(new NetLog(url_request_context_.get()));
-    url_request_context_->set_net_log(net_log_.get());
+    net_log_->StartLogging(url_request_context_.get());
+    url_request_context_->set_net_log(net_log_);
 
     network_delegate_.reset(delegate_->CreateNetworkDelegate());
     url_request_context_->set_network_delegate(network_delegate_.get());
