@@ -960,14 +960,14 @@ when the JS promise is rejected.
 
 * `options` Object
   * `silent` Boolean - Don't ask user for print settings, defaults to `false`
-  * `printBackground` Boolean - Also prints the background color and image of
+  * `printBackgrounds` Boolean - Also prints the background color and image of
     the web page, defaults to `false`.
 
 Prints window's web page. When `silent` is set to `false`, Electron will pick
 up system's default printer and default settings for printing.
 
 Calling `window.print()` in web page is equivalent to call
-`WebContents.print({silent: false, printBackground: false})`.
+`WebContents.print({silent: false, printBackgrounds: false})`.
 
 **Note:** On Windows, the print API relies on `pdf.dll`. If your application
 doesn't need print feature, you can safely remove `pdf.dll` in saving binary
@@ -980,7 +980,7 @@ size.
     * 0 - default
     * 1 - none
     * 2 - minimum
-  * `printBackground` Boolean - Whether to print CSS backgrounds.
+  * `printBackgrounds` Boolean - Whether to print CSS backgrounds.
   * `printSelectionOnly` Boolean - Whether to print selection only.
   * `landscape` Boolean - `true` for landscape, `false` for portrait.
 
