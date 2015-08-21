@@ -1,6 +1,6 @@
 {
   "name": "electron-prebuilt",
-  "version": "0.30.5",
+  "version": "0.31.0",
   "description": "Install electron (formerly called atom-shell) prebuilts using npm",
   "repository": {
     "type": "git",
