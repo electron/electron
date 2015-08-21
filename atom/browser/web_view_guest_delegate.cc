@@ -158,9 +158,11 @@ void WebViewGuestDelegate::SetGuestHost(content::GuestHost* guest_host) {
 void WebViewGuestDelegate::WillAttach(
     content::WebContents* embedder_web_contents,
     int element_instance_id,
-    bool is_full_page_plugin) {
+    bool is_full_page_plugin,
+    const base::Closure& completion_callback) {
   embedder_web_contents_ = embedder_web_contents;
   is_full_page_plugin_ = is_full_page_plugin;
+  completion_callback.Run();
 }
 
 void WebViewGuestDelegate::GuestSizeChangedDueToAutoSize(

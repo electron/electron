@@ -5,6 +5,7 @@
 #include "atom/browser/javascript_environment.h"
 
 #include "gin/array_buffer.h"
+#include "gin/v8_initializer.h"
 
 namespace atom {
 
@@ -19,7 +20,7 @@ JavascriptEnvironment::JavascriptEnvironment()
 }
 
 bool JavascriptEnvironment::Initialize() {
-  gin::IsolateHolder::LoadV8Snapshot();
+  gin::V8Initializer::LoadV8Snapshot();
   gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
                                  gin::ArrayBufferAllocator::SharedInstance());
   return true;

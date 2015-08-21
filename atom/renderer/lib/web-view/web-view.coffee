@@ -123,11 +123,9 @@ class WebViewImpl
       # changed.
       @dispatchEvent webViewEvent
 
-  onElementResize: (oldSize, newSize) ->
+  onElementResize: (newSize) ->
     # Dispatch the 'resize' event.
     resizeEvent = new Event('resize', bubbles: true)
-    resizeEvent.oldWidth = oldSize.width
-    resizeEvent.oldHeight = oldSize.height
     resizeEvent.newWidth = newSize.width
     resizeEvent.newHeight = newSize.height
     @dispatchEvent resizeEvent

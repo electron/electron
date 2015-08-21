@@ -73,7 +73,8 @@ class Archive {
   scoped_ptr<base::DictionaryValue> header_;
 
   // Cached external temporary files.
-  base::ScopedPtrHashMap<base::FilePath, ScopedTemporaryFile> external_files_;
+  base::ScopedPtrHashMap<base::FilePath, scoped_ptr<ScopedTemporaryFile>>
+      external_files_;
 
   DISALLOW_COPY_AND_ASSIGN(Archive);
 };

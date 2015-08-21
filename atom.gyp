@@ -4,7 +4,7 @@
     'product_name%': 'Electron',
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
-    'version%': '0.30.5',
+    'version%': '0.31.0',
   },
   'includes': [
     'filenames.gypi',
@@ -144,7 +144,6 @@
               'destination': '<(PRODUCT_DIR)',
               'files': [
                 '<@(copied_libraries)',
-                '<(libchromiumcontent_dir)/ffmpegsumo.dll',
                 '<(libchromiumcontent_dir)/libEGL.dll',
                 '<(libchromiumcontent_dir)/libGLESv2.dll',
                 '<(libchromiumcontent_dir)/icudtl.dat',
@@ -193,7 +192,6 @@
               'destination': '<(PRODUCT_DIR)',
               'files': [
                 '<@(copied_libraries)',
-                '<(libchromiumcontent_dir)/libffmpegsumo.so',
                 '<(libchromiumcontent_dir)/icudtl.dat',
                 '<(libchromiumcontent_dir)/content_shell.pak',
                 '<(libchromiumcontent_dir)/natives_blob.bin',
@@ -226,8 +224,6 @@
         # Defined in Chromium but not exposed in its gyp file.
         'V8_USE_EXTERNAL_STARTUP_DATA',
         'ENABLE_PLUGINS',
-        # Needed by Node.
-        'NODE_WANT_INTERNALS=1',
       ],
       'sources': [
         '<@(lib_sources)',
@@ -441,7 +437,6 @@
               'destination': '<(PRODUCT_DIR)/<(product_name) Framework.framework/Versions/A/Libraries',
               'files': [
                 '<@(copied_libraries)',
-                '<(libchromiumcontent_dir)/ffmpegsumo.so',
               ],
             },
             {
@@ -459,6 +454,16 @@
                 '-change',
                 '/usr/local/lib/libnode.dylib',
                 '@rpath/libnode.dylib',
+                '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
+              ],
+            },
+            {
+              'postbuild_name': 'Fix path of ffmpeg',
+              'action': [
+                'install_name_tool',
+                '-change',
+                '@loader_path/libffmpeg.dylib',
+                '@rpath/libffmpeg.dylib',
                 '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
               ],
             },

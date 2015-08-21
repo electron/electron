@@ -11,6 +11,7 @@
 #include "base/logging.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/values.h"
+#include "vendor/node/src/node_buffer.h"
 
 namespace atom {
 
@@ -211,7 +212,7 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
     return NULL;
 
   if (val->IsNull())
-    return base::Value::CreateNullValue();
+    return base::Value::CreateNullValue().release();
 
   if (val->IsBoolean())
     return new base::FundamentalValue(val->ToBoolean()->Value());
@@ -258,6 +259,10 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
     return FromV8Object(val->ToObject(), state, isolate);
   }
 
+  if (node::Buffer::HasInstance(val)) {
+    return FromNodeBuffer(val, state, isolate);
+  }
+
   if (val->IsObject()) {
     return FromV8Object(val->ToObject(), state, isolate);
   }
@@ -271,7 +276,7 @@ base::Value* V8ValueConverter::FromV8Array(
     FromV8ValueState* state,
     v8::Isolate* isolate) const {
   if (!state->UpdateAndCheckUniqueness(val))
-    return base::Value::CreateNullValue();
+    return base::Value::CreateNullValue().release();
 
   scoped_ptr<v8::Context::Scope> scope;
   // If val was created in a different context than our current one, change to
@@ -305,12 +310,20 @@ base::Value* V8ValueConverter::FromV8Array(
   return result;
 }
 
+base::Value* V8ValueConverter::FromNodeBuffer(
+    v8::Local<v8::Value> value,
+    FromV8ValueState* state,
+    v8::Isolate* isolate) const {
+  return base::BinaryValue::CreateWithCopiedBuffer(
+      node::Buffer::Data(value), node::Buffer::Length(value));
+}
+
 base::Value* V8ValueConverter::FromV8Object(
     v8::Local<v8::Object> val,
     FromV8ValueState* state,
     v8::Isolate* isolate) const {
   if (!state->UpdateAndCheckUniqueness(val))
-    return base::Value::CreateNullValue();
+    return base::Value::CreateNullValue().release();
 
   scoped_ptr<v8::Context::Scope> scope;
   // If val was created in a different context than our current one, change to

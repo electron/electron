@@ -16,8 +16,7 @@ namespace atom {
 
 class GuestViewContainer : public content::BrowserPluginDelegate {
  public:
-  typedef base::Callback<void(const gfx::Size&, const gfx::Size&)>
-      ResizeCallback;
+  typedef base::Callback<void(const gfx::Size&)> ResizeCallback;
 
   explicit GuestViewContainer(content::RenderFrame* render_frame);
   ~GuestViewContainer() override;
@@ -28,8 +27,7 @@ class GuestViewContainer : public content::BrowserPluginDelegate {
 
   // content::BrowserPluginDelegate:
   void SetElementInstanceID(int element_instance_id) final;
-  void DidResizeElement(const gfx::Size& old_size,
-                        const gfx::Size& new_size) final;
+  void DidResizeElement(const gfx::Size& new_size) final;
 
  private:
   int element_instance_id_;

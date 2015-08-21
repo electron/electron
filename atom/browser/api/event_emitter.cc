@@ -56,7 +56,7 @@ v8::Local<v8::Object> EventEmitter::CreateJSEvent(
 v8::Local<v8::Object> EventEmitter::CreateCustomEvent(
     v8::Isolate* isolate, v8::Local<v8::Object> custom_event) {
   v8::Local<v8::Object> event = CreateEventObject(isolate);
-  event->SetPrototype(custom_event->CreationContext(), custom_event);
+  (void)event->SetPrototype(custom_event->CreationContext(), custom_event);
   mate::Dictionary(isolate, event).Set("sender", GetWrapper(isolate));
   return event;
 }

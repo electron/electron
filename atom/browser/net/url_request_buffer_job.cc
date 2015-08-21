@@ -11,15 +11,32 @@
 namespace atom {
 
 URLRequestBufferJob::URLRequestBufferJob(
-    net::URLRequest* request,
-    net::NetworkDelegate* network_delegate,
-    const std::string& mime_type,
-    const std::string& charset,
-    scoped_refptr<base::RefCountedBytes> data)
-    : net::URLRequestSimpleJob(request, network_delegate),
-      mime_type_(mime_type),
-      charset_(charset),
-      buffer_data_(data) {
+    net::URLRequest* request, net::NetworkDelegate* network_delegate)
+    : JsAsker<net::URLRequestSimpleJob>(request, network_delegate) {
+}
+
+void URLRequestBufferJob::StartAsync(scoped_ptr<base::Value> options) {
+  const base::BinaryValue* binary = nullptr;
+  if (options->IsType(base::Value::TYPE_DICTIONARY)) {
+    base::DictionaryValue* dict =
+        static_cast<base::DictionaryValue*>(options.get());
+    dict->GetString("mimeType", &mime_type_);
+    dict->GetString("charset", &charset_);
+    dict->GetBinary("data", &binary);
+  } else if (options->IsType(base::Value::TYPE_BINARY)) {
+    options->GetAsBinary(&binary);
+  }
+
+  if (!binary) {
+    NotifyStartError(net::URLRequestStatus(
+          net::URLRequestStatus::FAILED, net::ERR_NOT_IMPLEMENTED));
+    return;
+  }
+
+  data_ = new base::RefCountedBytes(
+      reinterpret_cast<const unsigned char*>(binary->GetBuffer()),
+      binary->GetSize());
+  net::URLRequestSimpleJob::Start();
 }
 
 int URLRequestBufferJob::GetRefCountedData(
@@ -29,7 +46,7 @@ int URLRequestBufferJob::GetRefCountedData(
     const net::CompletionCallback& callback) const {
   *mime_type = mime_type_;
   *charset = charset_;
-  *data = buffer_data_;
+  *data = data_;
   return net::OK;
 }
 

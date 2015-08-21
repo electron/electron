@@ -69,9 +69,9 @@ def main():
     run_script('build.py', ['-c', 'R'])
     run_script('create-dist.py')
     run_script('upload.py')
-  elif PLATFORM == 'win32' or target_arch == 'x64':
+  else:
     run_script('build.py', ['-c', 'D'])
-    if PLATFORM != 'win32':
+    if PLATFORM != 'win32' and target_arch == 'x64':
       run_script('test.py', ['--ci'])
 
   run_script('clean.py')

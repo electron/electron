@@ -85,32 +85,37 @@ net::URLRequestJobFactory* AtomBrowserContext::CreateURLRequestJobFactory(
     content::URLRequestInterceptorScopedVector* interceptors) {
   scoped_ptr<AtomURLRequestJobFactory> job_factory(job_factory_);
 
-  for (content::ProtocolHandlerMap::iterator it = handlers->begin();
-       it != handlers->end(); ++it)
-    job_factory->SetProtocolHandler(it->first, it->second.release());
+  for (auto& it : *handlers) {
+    job_factory->SetProtocolHandler(it.first,
+                                    make_scoped_ptr(it.second.release()));
+  }
   handlers->clear();
 
   job_factory->SetProtocolHandler(
-      url::kDataScheme, new net::DataProtocolHandler);
+      url::kDataScheme, make_scoped_ptr(new net::DataProtocolHandler));
   job_factory->SetProtocolHandler(
-      url::kFileScheme, new asar::AsarProtocolHandler(
+      url::kFileScheme, make_scoped_ptr(new asar::AsarProtocolHandler(
           BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
-              base::SequencedWorkerPool::SKIP_ON_SHUTDOWN)));
+              base::SequencedWorkerPool::SKIP_ON_SHUTDOWN))));
   job_factory->SetProtocolHandler(
-      url::kHttpScheme, new HttpProtocolHandler(url::kHttpScheme));
+      url::kHttpScheme,
+      make_scoped_ptr(new HttpProtocolHandler(url::kHttpScheme)));
   job_factory->SetProtocolHandler(
-      url::kHttpsScheme, new HttpProtocolHandler(url::kHttpsScheme));
+      url::kHttpsScheme,
+      make_scoped_ptr(new HttpProtocolHandler(url::kHttpsScheme)));
   job_factory->SetProtocolHandler(
-      url::kWsScheme, new HttpProtocolHandler(url::kWsScheme));
+      url::kWsScheme,
+      make_scoped_ptr(new HttpProtocolHandler(url::kWsScheme)));
   job_factory->SetProtocolHandler(
-      url::kWssScheme, new HttpProtocolHandler(url::kWssScheme));
+      url::kWssScheme,
+      make_scoped_ptr(new HttpProtocolHandler(url::kWssScheme)));
 
-  auto host_resolver = url_request_context_getter()
-                          ->GetURLRequestContext()
-                          ->host_resolver();
+  auto host_resolver =
+      url_request_context_getter()->GetURLRequestContext()->host_resolver();
   job_factory->SetProtocolHandler(
-      url::kFtpScheme, new net::FtpProtocolHandler(
-          new net::FtpNetworkLayer(host_resolver)));
+      url::kFtpScheme,
+      make_scoped_ptr(new net::FtpProtocolHandler(
+          new net::FtpNetworkLayer(host_resolver))));
 
   // Set up interceptors in the reverse order.
   scoped_ptr<net::URLRequestJobFactory> top_job_factory = job_factory.Pass();

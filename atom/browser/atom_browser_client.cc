@@ -20,6 +20,7 @@
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
+#include "base/stl_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "chrome/browser/printing/printing_message_filter.h"
@@ -58,20 +59,19 @@ enum ProcessOwner {
   OWNER_GUEST_WEB_CONTENTS,
   OWNER_NONE,  // it might be devtools though.
 };
+
 ProcessOwner GetProcessOwner(int process_id,
                              NativeWindow** window,
                              WebViewManager::WebViewInfo* info) {
-  auto web_contents = content::WebContents::FromRenderViewHost(
+  content::WebContents* web_contents = content::WebContents::FromRenderViewHost(
       content::RenderViewHost::FromID(process_id, kDefaultRoutingID));
   if (!web_contents)
     return OWNER_NONE;
 
   // First search for NativeWindow.
-  for (auto native_window : *WindowList::GetInstance())
-    if (web_contents == native_window->web_contents()) {
-      *window = native_window;
-      return OWNER_NATIVE_WINDOW;
-    }
+  *window = NativeWindow::FromWebContents(web_contents);
+  if (*window)
+    return OWNER_NATIVE_WINDOW;
 
   // Then search for guest WebContents.
   if (WebViewManager::GetInfoForWebContents(web_contents, info))
@@ -185,6 +185,13 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
     return;
 
   *new_instance = content::SiteInstance::CreateForURL(browser_context, url);
+
+  // Remember the original renderer process of the pending renderer process.
+  auto current_process = current_instance->GetProcess();
+  auto pending_process = (*new_instance)->GetProcess();
+  pending_processes_[pending_process->GetID()] = current_process->GetID();
+  // Clear the entry in map when process ends.
+  current_process->AddObserver(this);
 }
 
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
@@ -207,6 +214,10 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     CoTaskMemFree(current_app_id);
   }
 #endif
+
+  // If the process is a pending process, we should use the old one.
+  if (ContainsKey(pending_processes_, process_id))
+    process_id = pending_processes_[process_id];
 
   NativeWindow* window;
   WebViewManager::WebViewInfo info;
@@ -262,6 +273,17 @@ brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
     const content::MainFunctionParams&) {
   v8::V8::Initialize();  // Init V8 before creating main parts.
   return new AtomBrowserMainParts;
+}
+
+void AtomBrowserClient::RenderProcessHostDestroyed(
+    content::RenderProcessHost* host) {
+  int process_id = host->GetID();
+  for (const auto& entry : pending_processes_) {
+    if (entry.first == process_id || entry.second == process_id) {
+      pending_processes_.erase(entry.first);
+      break;
+    }
+  }
 }
 
 }  // namespace atom

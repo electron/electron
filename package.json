@@ -5,7 +5,7 @@
     "coffee-script": "^1.9.2",
     "coffeelint": "^1.9.4",
     "request": "*",
-    "runas": "^2.0.0"
+    "runas": "3.x"
   },
   "private": true,
   "scripts": {
