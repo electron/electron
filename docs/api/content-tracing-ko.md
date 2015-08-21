@@ -86,29 +86,26 @@ Child 프로세스는 일반적으로 추적 데이터와 희귀한 플러시 �
 * `traceOptions` String
 * `callback` Function
 
-Start monitoring on all processes.
+모든 프로세스에서 모니터링을 시작합니다.
 
-Monitoring begins immediately locally, and asynchronously on child processes as
-soon as they receive the `startMonitoring` request.
+모니터링은 지역적으로 즉시 시작됩니다. 그리고 이내 자식 프로세스들이 `startMonitoring` 비동기 요청을 받습니다.
 
-Once all child processes have acked to the `startMonitoring` request,
-`callback` will be called back.
+모든 자식 프로세스가 `startMonitoring` 요청을 받으면 `callback`이 호출됩니다.
 
 ## tracing.stopMonitoring(callback);
 
 * `callback` Function
 
-Stop monitoring on all processes.
+모든 프로세스에서 모니터링을 중단합니다.
 
-Once all child processes have acked to the `stopMonitoring` request, `callback`
-is called back.
+모든 자식 프로세스가 `stopMonitoring` 요청을 받으면 `callback`이 호출됩니다.
 
 ## tracing.captureMonitoringSnapshot(resultFilePath, callback)
 
 * `resultFilePath` String
 * `callback` Function
 
-Get the current monitoring traced data.
+현재 모니터링 추적 데이터를 가져옵니다.
 
 Child processes typically are caching trace data and only rarely flush and send
 trace data back to the main process. That is because it may be an expensive
@@ -137,5 +134,6 @@ process.
 
 ## tracing.cancelWatchEvent()
 
-Cancel the watch event. If tracing is enabled, this may race with the watch
-event callback.
+Watch 이벤트를 중단합니다. 만약 추적이 활성화되어 있다면 이 함수는 watch 이벤트 콜백과 race가 일어날 것입니다.
+
+Cancel the watch event. If tracing is enabled, this may race with the watch event callback.
