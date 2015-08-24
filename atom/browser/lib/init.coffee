@@ -92,5 +92,8 @@ app.setAppPath packagePath
 # Load the chrome extension support.
 require './chrome-extension'
 
+# Set main startup script of the app.
+mainStartupScript = packageJson.main or 'index.js'
+
 # Finally load app's main.js and transfer control to C++.
-Module._load path.join(packagePath, packageJson.main), Module, true
+Module._load path.join(packagePath, mainStartupScript), Module, true
