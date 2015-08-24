@@ -135,8 +135,8 @@ Returns:
 * `updateUrl` String
 * `quitAndUpdate` Function
 
-Emitted when an update has been downloaded. Calling `quitAndUpdate()` will restart
-the application and install the update.
+Emitted when an update has been downloaded. Calling `quitAndUpdate()` will
+restart the application and install the update.
 
 ## Methods
 

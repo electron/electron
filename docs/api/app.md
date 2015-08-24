@@ -2,7 +2,8 @@
 
 The `app` module is responsible for controlling the application's lifecycle.
 
-The following example shows how to quit the application when the last window is closed:
+The following example shows how to quit the application when the last window is
+closed:
 
 ```javascript
 var app = require('app');
@@ -19,9 +20,9 @@ The `app` object emits the following events:
 
 Emitted when the application has finished basic startup. On Windows and Linux,
 the `will-finish-launching` event is the same as the `ready` event; on OS X,
-this event represents the `applicationWillFinishLaunching` notification of `NSApplication`.
-You would usually set up listeners for the `open-file` and `open-url` events here,
-and start the crash reporter and auto updater.
+this event represents the `applicationWillFinishLaunching` notification of
+`NSApplication`. You would usually set up listeners for the `open-file` and
+`open-url` events here, and start the crash reporter and auto updater.
 
 In most cases, you should just do everything in the `ready` event handler.
 
@@ -58,7 +59,8 @@ Emitted when all windows have been closed and the application will quit.
 Calling `event.preventDefault()` will prevent the default behaviour, which is
 terminating the application.
 
-See the description of the `window-all-closed` event for the differences between the `will-quit` and `window-all-closed` events.
+See the description of the `window-all-closed` event for the differences between
+the `will-quit` and `window-all-closed` events.
 
 ### Event: 'quit'
 
@@ -71,12 +73,12 @@ Returns:
 * `event` Event
 * `path` String
 
-Emitted when the user wants to open a file with the application. The `open-file` event
-is usually emitted when the application is already open and the OS wants to reuse the
-application to open the file. `open-file` is also emitted when a file is dropped onto the
-dock and the application is not yet running. Make sure to listen for the `open-file`
-event very early in your application startup to handle this case (even before the
-`ready` event is emitted).
+Emitted when the user wants to open a file with the application. The `open-file`
+event is usually emitted when the application is already open and the OS wants
+to reuse the application to open the file. `open-file` is also emitted when a
+file is dropped onto the dock and the application is not yet running. Make sure
+to listen for the `open-file` event very early in your application startup to
+handle this case (even before the `ready` event is emitted).
 
 You should call `event.preventDefault()` if you want to handle this event.
 
@@ -95,8 +97,8 @@ You should call `event.preventDefault()` if you want to handle this event.
 ### Event: 'activate-with-no-open-windows'
 
 Emitted when the application is activated while there are no open windows, which
-usually happens when the user has closed all of the application's windows and then
-clicks on the application's dock icon.
+usually happens when the user has closed all of the application's windows and
+then clicks on the application's dock icon.
 
 ### Event: 'browser-window-blur'
 
@@ -137,9 +139,10 @@ app.on('select-certificate', function(event, host, url, list, callback) {
 })
 ```
 
-The `url` corresponds to the navigation entry requesting the client certificate and `callback` needs to be called with an entry filtered from the list.
-Using `event.preventDefault()` prevents the application from using the first certificate
-from the store.
+The `url` corresponds to the navigation entry requesting the client certificate
+and `callback` needs to be called with an entry filtered from the list. Using
+`event.preventDefault()` prevents the application from using the first
+certificate from the store.
 
 ### Event: 'gpu-process-crashed'
 
@@ -155,9 +158,9 @@ Try to close all windows. The `before-quit` event will emitted first. If all
 windows are successfully closed, the `will-quit` event will be emitted and by
 default the application will terminate.
 
-This method guarantees that all `beforeunload` and `unload` event handlers are correctly
-executed. It is possible that a window cancels the quitting by returning
-`false` in the `beforeunload` event handler.
+This method guarantees that all `beforeunload` and `unload` event handlers are
+correctly executed. It is possible that a window cancels the quitting by
+returning `false` in the `beforeunload` event handler.
 
 ### `app.getAppPath()`
 
@@ -208,8 +211,8 @@ directory. If you want to change this location, you have to override the
 ### `app.getVersion()`
 
 Returns the version of the loaded application. If no version is found in the
-application's `package.json` file, the version of the current bundle or executable is
-returned.
+application's `package.json` file, the version of the current bundle or
+executable is returned.
 
 ### `app.getName()`
 
@@ -258,8 +261,8 @@ Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
 * `title` String - The string to be displayed in a JumpList.
 * `description` String - Description of this task.
 * `iconPath` String - The absolute path to an icon to be displayed in a
-  JumpList, which can be an arbitrary resource file that contains an icon. You can
-  usually specify `process.execPath` to show the icon of the program.
+  JumpList, which can be an arbitrary resource file that contains an icon. You
+  can usually specify `process.execPath` to show the icon of the program.
 * `iconIndex` Integer - The icon index in the icon file. If an icon file
   consists of two or more icons, set this value to identify the icon. If an
   icon file consists of one icon, this value is 0.
@@ -275,7 +278,8 @@ to control some low-level Chromium behaviors.
 
 ### `app.commandLine.appendArgument(value)`
 
-Append an argument to Chromium's command line. The argument will be quoted correctly.
+Append an argument to Chromium's command line. The argument will be quoted
+correctly.
 
 **Note:** This will not affect `process.argv`.
 
@@ -287,9 +291,9 @@ Append an argument to Chromium's command line. The argument will be quoted corre
 When `critical` is passed, the dock icon will bounce until either the
 application becomes active or the request is canceled.
 
-When `informational` is passed, the dock icon will bounce for one second. However,
-the request remains active until either the application becomes active or
-the request is canceled.
+When `informational` is passed, the dock icon will bounce for one second.
+However, the request remains active until either the application becomes active
+or the request is canceled.
 
 Returns an ID representing the request.
 
