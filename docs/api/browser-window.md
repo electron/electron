@@ -660,7 +660,7 @@ Same as `webContents.loadUrl(url[, options])`.
 
 Same as `webContents.reload`.
 
-### `win.setMenu(menu)`
+### `win.setMenu(menu)` _OS X_
 
 * `menu` Menu
 
@@ -682,7 +682,7 @@ On Linux platform, only supports Unity desktop environment, you need to specify
 the `*.desktop` file name to `desktopName` field in `package.json`. By default,
 it will assume `app.getName().desktop`.
 
-### `win.setOverlayIcon(overlay, description)`
+### `win.setOverlayIcon(overlay, description)` _Windows_
 
 * `overlay` [NativeImage](native-image.md) - the icon to display on the bottom
 right corner of the taskbar icon. If this parameter is `null`, the overlay is
@@ -696,7 +696,7 @@ sort of application status or to passively notify the user.
 __Note:__ This API is only available on Windows (Windows 7 and above)
 
 
-### `win.setThumbarButtons(buttons)`
+### `win.setThumbarButtons(buttons)` _Windows_
 
 `buttons` Array of `button` Objects:
 
@@ -730,7 +730,7 @@ the limited room. Once you setup the thumbnail toolbar, the toolbar cannot be
 removed due to the platform's limitation. But you can call the API with an empty
 array to clean the buttons.
 
-### `win.showDefinitionForSelection()`
+### `win.showDefinitionForSelection()` _OS X_
 
 Shows pop-up dictionary that searches the selected word on the page.
 
