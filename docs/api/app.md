@@ -245,7 +245,7 @@ bar, and on OS X you can visit it from dock menu.
 
 Clears the recent documents list.
 
-### `app.setUserTasks(tasks)`
+### `app.setUserTasks(tasks)` _Windows_
 
 * `tasks` Array - Array of `Task` objects
 
@@ -283,7 +283,7 @@ correctly.
 
 **Note:** This will not affect `process.argv`.
 
-### app.dock.bounce([type])
+### `app.dock.bounce([type])` _OS X_
 
 * `type` String (optional) - Can be `critical` or `informational`. The default is
  `informational`
@@ -299,7 +299,7 @@ Returns an ID representing the request.
 
 **Note:** This API is only available on OS X.
 
-### `app.dock.cancelBounce(id)`
+### `app.dock.cancelBounce(id)` _OS X_
 
 * `id` Integer
 
@@ -307,7 +307,7 @@ Cancel the bounce of `id`.
 
 **Note:** This API is only available on OS X.
 
-### `app.dock.setBadge(text)`
+### `app.dock.setBadge(text)` _OS X_
 
 * `text` String
 
@@ -315,25 +315,25 @@ Sets the string to be displayed in the dock’s badging area.
 
 **Note:** This API is only available on OS X.
 
-### `app.dock.getBadge()`
+### `app.dock.getBadge()` _OS X_
 
 Returns the badge string of the dock.
 
 **Note:** This API is only available on OS X.
 
-### `app.dock.hide()`
+### `app.dock.hide()` _OS X_
 
 Hides the dock icon.
 
 **Note:** This API is only available on OS X.
 
-### `app.dock.show()`
+### `app.dock.show()` _OS X_
 
 Shows the dock icon.
 
 **Note:** This API is only available on OS X.
 
-### `app.dock.setMenu(menu)`
+### `app.dock.setMenu(menu)` _OS X_
 
 * `menu` Menu
 
