@@ -30,6 +30,10 @@ guestInstances = {}
 embedderElementsMap = {}
 reverseEmbedderElementsMap = {}
 
+# Moves the last element of array to the first one.
+moveLastToFirst = (list) ->
+  list.unshift list.pop()
+
 # Generate guestInstanceId.
 getNextInstanceId = (webContents) ->
   ++nextInstanceId
@@ -46,7 +50,13 @@ createGuest = (embedder, params) ->
   destroyEvents = ['destroyed', 'crashed', 'did-navigate-to-different-page']
   destroy = ->
     destroyGuest embedder, id if guestInstances[id]?
-  embedder.once event, destroy for event in destroyEvents
+  for event in destroyEvents
+    embedder.once event, destroy
+    # Users might also listen to the crashed event, so We must ensure the guest
+    # is destroyed before users' listener gets called. It is done by moving our
+    # listener to the first one in queue.
+    listeners = embedder._events[event]
+    moveLastToFirst listeners if Array.isArray listeners
   guest.once 'destroyed', ->
     embedder.removeListener event, destroy for event in destroyEvents
 
