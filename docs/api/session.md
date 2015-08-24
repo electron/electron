@@ -1,6 +1,8 @@
 # session
 
-The `session` object is a property of [`webContents`](web-contents.md) which is a property of [`BrowserWindow`](browser-window.md). You can access it through an instance of `BrowserWindow`. For example:
+The `session` object is a property of [`webContents`](web-contents.md) which is
+a property of [`BrowserWindow`](browser-window.md). You can access it through an
+instance of `BrowserWindow`. For example:
 
 ```javascript
 var BrowserWindow = require('browser-window');
@@ -58,7 +60,8 @@ win.webContents.on('did-finish-load', function() {
 * `url` String - Retrieves cookies which are associated with `url`.
   Empty implies retrieving cookies of all urls.
 * `name` String - Filters cookies by name
-* `domain` String - Retrieves cookies whose domains match or are subdomains of `domains`
+* `domain` String - Retrieves cookies whose domains match or are subdomains of
+  `domains`
 * `path` String - Retrieves cookies whose path matches `path`
 * `secure` Boolean - Filters cookies by their Secure property
 * `session` Boolean - Filters out session or persistent cookies.
@@ -75,7 +78,8 @@ win.webContents.on('did-finish-load', function() {
   *  `session` Boolean - Whether the cookie is a session cookie or a persistent
      cookie with an expiration date.
   *  `expirationDate` Double - (Option) The expiration date of the cookie as
-     the number of seconds since the UNIX epoch. Not provided for session cookies.
+     the number of seconds since the UNIX epoch. Not provided for session
+     cookies.
 
 ### `session.cookies.set(details, callback)`
 
@@ -86,8 +90,10 @@ win.webContents.on('did-finish-load', function() {
 * `value` String - The value of the cookie. Empty by default if omitted.
 * `domain` String - The domain of the cookie. Empty by default if omitted.
 * `path` String - The path of the cookie. Empty by default if omitted.
-* `secure` Boolean - Whether the cookie should be marked as Secure. Defaults to false.
-* `session` Boolean - Whether the cookie should be marked as HttpOnly. Defaults to false.
+* `secure` Boolean - Whether the cookie should be marked as Secure. Defaults to
+  false.
+* `session` Boolean - Whether the cookie should be marked as HttpOnly. Defaults
+  to false.
 * `expirationDate` Double -	The expiration date of the cookie as the number of
   seconds since the UNIX epoch. If omitted, the cookie becomes a session cookie.
 

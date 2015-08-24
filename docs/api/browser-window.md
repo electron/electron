@@ -1,6 +1,7 @@
 # BrowserWindow
 
-The `BrowserWindow` class gives you the ability to create a browser window, for example:
+The `BrowserWindow` class gives you the ability to create a browser window, for
+example:
 
 ```javascript
 var BrowserWindow = require('browser-window');
@@ -79,14 +80,14 @@ Properties `width` and `height` are required.
   textured window. Defaults to `true`.
 * `web-preferences` Object - Settings of web page's features, properties:
   * `javascript` Boolean
-  * `web-security` Boolean - When setting `false`, it will disable the same-origin
-    policy (Usually using testing websites by people), and set `allow_displaying_insecure_content`
+  * `web-security` Boolean - When setting `false`, it will disable the
+    same-origin policy (Usually using testing websites by people), and set `allow_displaying_insecure_content`
     and `allow_running_insecure_content` to `true` if these two options are not
     set by user.
   * `allow-displaying-insecure-content` Boolean - Allow an https page to display
     content like images from http URLs.
-  * `allow-running-insecure-content` Boolean - Allow a https page to run JavaScript,
-    CSS or plugins from http URLs.
+  * `allow-running-insecure-content` Boolean - Allow a https page to run
+    JavaScript, CSS or plugins from http URLs.
   * `images` Boolean
   * `java` Boolean
   * `text-areas-are-resizable` Boolean
@@ -147,8 +148,13 @@ window.onbeforeunload = function(e) {
   // Unlike usual browsers, in which a string should be returned and the user is
   // prompted to confirm the page unload, Electron gives developers more options.
   // Returning an empty string or `false` will prevent the unloading.
+<<<<<<< HEAD
   // You can also use the dialog API to let the user confirm closing the application.
   e.returnValue = false;
+=======
+  // You can also use the dialog API to let the user confirm closing the app.
+  return false;
+>>>>>>> Line wrap 80-col
 };
 ```
 
@@ -235,7 +241,9 @@ Emitted when devtools is focused / opened.
 
 ### Event: 'app-command':
 
-Emitted when an [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx is invoked. These are typically related to keyboard media keys or browser commands, as well as the "Back" button built into some mice on Windows.
+Emitted when an [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx
+is invoked. These are typically related to keyboard media keys or browser
+commands, as well as the "Back" button built into some mice on Windows.
 
 ```js
 someWindow.on('app-command', function(e, cmd) {
@@ -304,7 +312,8 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 The `WebContents` object this window owns, all web page related events and
 operations will be done via it.
 
-See the [`webContents` documentation](web-contents.md) for its methods and events.
+See the [`webContents` documentation](web-contents.md) for its methods and
+events.
 
 **Note:** Users should never store this object because it may become `null`
 when the renderer process (web page) has crashed.
@@ -395,14 +404,25 @@ Returns a boolean, whether the window is in fullscreen mode.
 
 ### `win.setAspectRatio(aspectRatio[, extraSize])`
 
-* `aspectRatio` The aspect ratio we want to maintain for some portion of the content view.
-* `rect` Object - The extra size to not be included in the aspect ratio to be maintained. Properties:
+* `aspectRatio` The aspect ratio we want to maintain for some portion of the
+content view.
+* `rect` Object - The extra size to not be included in the aspect ratio to be
+maintained. Properties:
   * `width` Integer
   * `height` Integer
 
-This will have a window maintain an aspect ratio. The extra size allows a developer to have space, specified in pixels, not included within the aspect ratio calculations. This API already takes into account the difference between a window's size and its content size.
+This will have a window maintain an aspect ratio. The extra size allows a
+developer to have space, specified in pixels, not included within the aspect ratio calculations. This API already takes into account the difference between a
+window's size and its content size.
 
-Consider a normal window with an HD video player and associated controls. Perhaps there are 15 pixels of controls on the left edge, 25 pixels of controls on the right edge and 50 pixels of controls below the player. In order to maintain a 16:9 aspect ratio (standard aspect ratio for HD @1920x1080) within the player itself we would call this function with arguments of 16/9 and [ 40, 50 ]. The second argument doesn't care where the extra width and height are within the content view--only that they exist. Just sum any extra width and height areas you have within the overall content view.
+Consider a normal window with an HD video player and associated controls.
+Perhaps there are 15 pixels of controls on the left edge, 25 pixels of controls
+on the right edge and 50 pixels of controls below the player. In order to
+maintain a 16:9 aspect ratio (standard aspect ratio for HD @1920x1080) within
+the player itself we would call this function with arguments of 16/9 and
+[ 40, 50 ]. The second argument doesn't care where the extra width and height
+are within the content view--only that they exist. Just sum any extra width and
+height areas you have within the overall content view.
 
 __Note__: This API is only implemented on OS X.
 
@@ -595,7 +615,8 @@ Starts inspecting element at position (`x`, `y`).
 
 ### `win.inspectServiceWorker()`
 
-Opens the developer tools for the service worker context present in the web contents.
+Opens the developer tools for the service worker context present in the web
+contents.
 
 ### `win.focusOnWebView()`
 
@@ -669,7 +690,8 @@ cleared
 * `description` String - a description that will be provided to Accessibility
 screen readers
 
-Sets a 16px overlay onto the current taskbar icon, usually used to convey some sort of application status or to passively notify the user.
+Sets a 16px overlay onto the current taskbar icon, usually used to convey some
+sort of application status or to passively notify the user.
 
 __Note:__ This API is only available on Windows (Windows 7 and above)
 
