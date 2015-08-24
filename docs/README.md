@@ -66,9 +66,3 @@ Modules for both processes:
 * [Build instructions (Windows)](development/build-instructions-windows.md)
 * [Build instructions (Linux)](development/build-instructions-linux.md)
 * [Setting up symbol server in debugger](development/setting-up-symbol-server.md)
-
-## Documentation Translations
-
-- [Korean](https://github.com/atom/electron/tree/master/docs-translations/ko)
-- [Japanese](https://github.com/atom/electron/tree/master/docs-translations/jp)
-- [Spanish](https://github.com/atom/electron/tree/master/docs-translations/es)
