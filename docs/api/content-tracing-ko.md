@@ -135,5 +135,3 @@ process.
 ## tracing.cancelWatchEvent()
 
 Watch 이벤트를 중단합니다. 만약 추적이 활성화되어 있다면 이 함수는 watch 이벤트 콜백과 race가 일어날 것입니다.
-
-Cancel the watch event. If tracing is enabled, this may race with the watch event callback.
