@@ -30,8 +30,8 @@ Properties `width` and `height` are required.
 
 `options` Object, properties:
 
-* `width` Integer **required** - Window's width.
-* `height` Integer **required** - Window's height.
+* `width` Integer (**required**) - Window's width.
+* `height` Integer (**required**) - Window's height.
 * `x` Integer - Window's left offset from screen.
 * `y` Integer - Window's top offset from screen.
 * `use-content-size` Boolean - The `width` and `height` would be used as web
@@ -402,12 +402,12 @@ Sets whether the window should be in fullscreen mode.
 
 Returns a boolean, whether the window is in fullscreen mode.
 
-### `win.setAspectRatio(aspectRatio[, extraSize])`
+### `win.setAspectRatio(aspectRatio[, extraSize])` _OS X_
 
 * `aspectRatio` The aspect ratio we want to maintain for some portion of the
 content view.
-* `rect` Object - The extra size to not be included in the aspect ratio to be
-maintained. Properties:
+* `extraSize` Object (optional) - The extra size not to be included while
+maintaining the aspect ratio. Properties:
   * `width` Integer
   * `height` Integer
 
@@ -589,7 +589,7 @@ __Note__: This API is only available on OS X.
 
 ### `win.openDevTools([options])`
 
-* `options` Object, optional. Properties:
+* `options` Object (optional). Properties:
   * `detach` Boolean - opens devtools in a new window
 
 Opens the developer tools.
@@ -624,7 +624,7 @@ contents.
 
 ### `win.capturePage([rect, ]callback)`
 
-* `rect` Object - The area of page to be captured, properties:
+* `rect` Object (optional)- The area of page to be captured, properties:
   * `x` Integer
   * `y` Integer
   * `width` Integer

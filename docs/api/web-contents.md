@@ -161,7 +161,7 @@ See [session documentation](session.md) for this object's methods.
 ### `webContents.loadUrl(url[, options])`
 
 * `url` URL
-* `options` Object, properties:
+* `options` Object (optional). Properties:
   * `httpReferrer` String - A HTTP Referrer url
   * `userAgent` String - A user agent originating the request
 
@@ -267,7 +267,7 @@ Injects CSS into the current web page.
 ### `webContents.executeJavaScript(code[, userGesture])`
 
 * `code` String
-* `userGesture` Boolean
+* `userGesture` Boolean (optional)
 
 Evaluates `code` in page.
 
@@ -350,7 +350,7 @@ when the JS promise is rejected.
 
 ### `webContents.print([options])`
 
-`options` Object, properties:
+`options` Object (optional). Properties:
 
 * `silent` Boolean - Don't ask user for print settings, defaults to `false`
 * `printBackground` Boolean - Also prints the background color and image of
@@ -438,8 +438,9 @@ Removes the specified path from devtools workspace.
 ### `webContents.send(channel[, args...])`
 
 * `channel` String
+* `args...` (optional)
 
-Send `args..` to the web page via `channel` in an asynchronous message, the web
+Send `args...` to the web page via `channel` in an asynchronous message, the web
 page can handle it by listening to the `channel` event of the `ipc` module.
 
 An example of sending messages from the main process to the renderer process:

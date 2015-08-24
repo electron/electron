@@ -116,7 +116,7 @@ Clears the session’s HTTP cache.
 
 ### `session.clearStorageData([options, ]callback)`
 
-* `options` Object
+* `options` Object (optional)
   * `origin` String - Should follow `window.location.origin`’s representation
     `scheme://host:port`
   * `storages` Array - The types of storages to clear, can contain:
