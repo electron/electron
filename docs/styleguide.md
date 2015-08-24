@@ -14,13 +14,17 @@ These are the ways that we construct the Electron documentation.
   - Hyphen separated filenames, however, are fine.
 - No headers following headers, add at least a one-sentence description.
 - Methods headers are wrapped in `code` ticks.
-- Event headers are wrapped in singe 'quotation' marks.
+- Event headers are wrapped in single 'quotation' marks.
 - No nesting lists more than 2 levels (unfortunately because of markdown
   renderer).
 - Add section titles: Events, Class Methods and Instance Methods.
 - Use 'will' over 'would' when describing outcomes.
 - Events and methods are `h3` headers.
 - Optional arguments written as `function (required[, optional])`.
+- Optional arguments are denoted when called out in list.
+- Line length is 80-column wrapped.
+- Platform specific methods are noted in italics following method header.
+ - ```### `method(foo, bar)` _Mac_```
 
 ## Reading Electron Documentation
 
