@@ -285,7 +285,7 @@ correctly.
 
 ### app.dock.bounce([type])
 
-* `type` String - Can be `critical` or `informational`. The default is
+* `type` String (optional) - Can be `critical` or `informational`. The default is
  `informational`
 
 When `critical` is passed, the dock icon will bounce until either the
