@@ -2,6 +2,7 @@
 
 #import <AppKit/AppKit.h>
 
+#include "base/strings/sys_string_conversions.h"
 #include "browser/inspectable_web_contents.h"
 #include "browser/inspectable_web_contents_view_delegate.h"
 #import "browser/mac/bry_inspectable_web_contents_view.h"
@@ -51,7 +52,7 @@ void InspectableWebContentsViewMac::SetContentsResizingStrategy(
 }
 
 void InspectableWebContentsViewMac::SetTitle(const base::string16& title) {
-  [view_ setTitle:title];
+  [view_ setTitle:base::SysUTF16ToNSString(title)];
 }
 
 }

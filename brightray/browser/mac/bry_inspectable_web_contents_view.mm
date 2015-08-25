@@ -2,7 +2,6 @@
 
 #import <QuartzCore/QuartzCore.h>
 
-#include "base/strings/sys_string_conversions.h"
 #include "browser/inspectable_web_contents_impl.h"
 #include "browser/inspectable_web_contents_view_mac.h"
 
@@ -175,11 +174,8 @@ const CGFloat kRoundedCornerRadius = 4;
   [contentsView setFrame:[self flipRectToNSRect:new_contents_bounds]];
 }
 
-- (void)setTitle:(const base::string16&)title {
-  if (devtools_window_) {
-    NSString* title_string = base::SysUTF16ToNSString(title);
-    [devtools_window_ setTitle:title_string];
-  }
+- (void)setTitle:(NSString*)title {
+  [devtools_window_ setTitle:title];
 }
 
 // Creates a path whose bottom two corners are rounded.
