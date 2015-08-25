@@ -14,6 +14,10 @@ class Widget;
 
 namespace brightray {
 
+namespace {
+class DevToolsWindowDelegate;
+}
+
 class InspectableWebContentsImpl;
 
 class InspectableWebContentsViewViews : public InspectableWebContentsView,
@@ -22,6 +26,10 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   explicit InspectableWebContentsViewViews(
       InspectableWebContentsImpl* inspectable_web_contents_impl);
   ~InspectableWebContentsViewViews();
+
+  DevToolsWindowDelegate* GetDevToolsWindowDelegate() const {
+    return devtools_window_delegate_;
+  }
 
   // InspectableWebContentsView:
   views::View* GetView() override;
@@ -32,6 +40,7 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   void SetIsDocked(bool docked) override;
   void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) override;
+  void SetTitle(const base::string16& title) override;
 
   InspectableWebContentsImpl* inspectable_web_contents() {
     return inspectable_web_contents_;
@@ -51,6 +60,7 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
 
   DevToolsContentsResizingStrategy strategy_;
   bool devtools_visible_;
+  DevToolsWindowDelegate* devtools_window_delegate_;
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewViews);
 };

@@ -50,6 +50,7 @@ const char kDevToolsPreferences[] = "brightray.devtools.preferences";
 const char kFrontendHostId[] = "id";
 const char kFrontendHostMethod[] = "method";
 const char kFrontendHostParams[] = "params";
+const char kTitleFormat[] = "Developer Tools - %s";
 
 const char kDevToolsActionTakenHistogram[] = "DevTools.ActionTaken";
 const int kDevToolsActionTakenBoundary = 100;
@@ -348,6 +349,8 @@ void InspectableWebContentsImpl::InspectElementCompleted() {
 }
 
 void InspectableWebContentsImpl::InspectedURLChanged(const std::string& url) {
+  view_->SetTitle(base::UTF8ToUTF16(base::StringPrintf(kTitleFormat,
+                                                       url.c_str())));
 }
 
 void InspectableWebContentsImpl::LoadNetworkResource(

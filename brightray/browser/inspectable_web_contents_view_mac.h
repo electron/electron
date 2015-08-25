@@ -24,6 +24,7 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
   void SetIsDocked(bool docked) override;
   void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) override;
+  void SetTitle(const base::string16& title) override;
 
   InspectableWebContentsImpl* inspectable_web_contents() {
     return inspectable_web_contents_;

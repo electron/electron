@@ -1,6 +1,7 @@
 #ifndef BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_VIEW_H_
 #define BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_VIEW_H_
 
+#include "base/strings/string16.h"
 #include "ui/gfx/native_widget_types.h"
 
 class DevToolsContentsResizingStrategy;
@@ -46,6 +47,7 @@ class InspectableWebContentsView {
   virtual void SetIsDocked(bool docked) = 0;
   virtual void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) = 0;
+  virtual void SetTitle(const base::string16& title) = 0;
 
  private:
   InspectableWebContentsViewDelegate* delegate_;  // weak references.
