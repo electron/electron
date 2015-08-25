@@ -72,7 +72,7 @@ driver.quit();
 
 ## Setting up with WebdriverIO
 
-[WebdriverIO](http://webdriver.io/) provided a Node package for testing with web driver.
+[WebdriverIO](http://webdriver.io/) provides a Node package for testing with web driver.
 
 ### 1. Start chrome driver
 
@@ -86,7 +86,7 @@ Only local connections are allowed.
 
 Remember the port number `9515`, which will be used later
 
-### 2. Install WebDriverJS
+### 2. Install WebdriverIO
 
 ```bash
 $ npm install webdriverio
@@ -96,22 +96,23 @@ $ npm install webdriverio
 ```javascript
 var webdriverio = require('webdriverio');
 var options = {
-	host: "localhost", // Use localhost as chrome driver server 
+    host: "localhost", // Use localhost as chrome driver server 
     port: 9515,        // "9515" is the port opened by chrome driver.
     desiredCapabilities: {
-            browserName: 'chrome',
-            chromeOptions: {binary: '/Path-to-Your-App.app/Electron'} // Path to your Electron binary.
-        }
+        browserName: 'chrome',
+        chromeOptions: {binary: '/Path-to-Your-App.app/Electron'} // Path to your Electron binary.
+    }
 };
 
-webdriverio
-    .remote(options)
+var client = webdriverio.remote(options);
+
+client
     .init()
     .url('http://google.com')
     .setValue('#q', 'webdriverio')
     .click('#btnG')
-    .title(function(err, res) {
-        console.log('Title was: ' + res.value);
+    .getTitle().then(function(title) {
+        console.log('Title was: ' + title);
     })
     .end();
 ```
