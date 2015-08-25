@@ -24,7 +24,7 @@ These are the ways that we construct the Electron documentation.
 - Optional arguments are denoted when called out in list.
 - Line length is 80-column wrapped.
 - Platform specific methods are noted in italics following method header.
- - ```### `method(foo, bar)` _Mac_```
+ - ```### `method(foo, bar)` _OS X_```
 
 ## Reading Electron Documentation
 
