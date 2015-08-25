@@ -54,7 +54,8 @@ You can also only build the Debug target:
 python script\build.py -c D
 ```
 
-After building is done, you can find `atom.exe` under `out\D`.
+After building is done, you can find `electron.exe` under `out\D` (debug 
+target) or under `out\R` (release target).
 
 ## 64bit build
 
