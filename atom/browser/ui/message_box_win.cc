@@ -78,9 +78,9 @@ int ShowMessageBoxUTF16(HWND parent,
                         const base::string16& message,
                         const base::string16& detail,
                         const gfx::ImageSkia& icon) {
-  TASKDIALOG_FLAGS flags = TDF_SIZE_TO_CONTENT;  // show all content.
-  if (cancel_id != 0)
-    flags |= TDF_ALLOW_DIALOG_CANCELLATION;  // allow dialog to be cancelled.
+  TASKDIALOG_FLAGS flags =
+      TDF_SIZE_TO_CONTENT |  // Show all content.
+      TDF_ALLOW_DIALOG_CANCELLATION;  // Allow canceling the dialog.
 
   TASKDIALOGCONFIG config = { 0 };
   config.cbSize     = sizeof(config);
