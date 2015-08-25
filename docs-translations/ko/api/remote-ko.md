@@ -70,7 +70,7 @@ remote.getCurrentWindow().on('close', function() {
 
 ## remote.getCurrentWindow()
 
-현재 웹 페이지가 들어있는 [BrowserWindow](browser-window.md) 객체를 반환합니다.
+현재 웹 페이지가 들어있는 [BrowserWindow](browser-window-ko.md) 객체를 반환합니다.
 
 ## remote.getCurrentWebContents()
 
