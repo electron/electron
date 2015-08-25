@@ -72,8 +72,8 @@ tracing.startRecording('*', tracing.DEFAULT_OPTIONS, function() {
 
 Child 프로세스는 일반적으로 추적 데이터와 희귀한 플러시 그리고 추적 데이터를 메인 프로세스로 보내는 작업에 대해 캐싱 합니다.
 이러한 일을 하는 이유는 IPC를 통해 추적 데이터를 보내는 작업은 매우 비싼 연산을 동반하기 때문입니다.
-우리는 추적에 의한 런타임 오버헤드를 피하는 것을 지향합니다.
-그래서 트레이싱이 끝나면 모든 child 프로세스에 보류된 추적 데이터를 플러시 할 것인지 물어봅니다.
+우리는 추적에 의한 런타임 오버헤드를 피하고자 합니다.
+그래서 추적이 끝나면 모든 child 프로세스에 보류된 추적 데이터를 플러시 할 것인지 물어봅니다.
 
 모든 child 프로세스가 `stopRecording` 요청을 받으면 `callback`에 추적 데이터를 포함한 파일을 전달됩니다.
 
@@ -107,21 +107,18 @@ Child 프로세스는 일반적으로 추적 데이터와 희귀한 플러시 �
 
 현재 모니터링 추적 데이터를 가져옵니다.
 
-Child processes typically are caching trace data and only rarely flush and send
-trace data back to the main process. That is because it may be an expensive
-operation to send the trace data over IPC, and we would like to avoid unneeded
-runtime overhead of tracing. So, to end tracing, we must asynchronously ask all
-child processes to flush any pending trace data.
+자식 프로세스들은 일반적으로 추적 데이터를 캐싱하며 드물게 플러시 하거나 메인 프로세스로 추적 데이터를 보냅니다.
+왜냐하면 IPC를 통해 추적 데이터를 보내는데에는 많은 자원을 소비하기 때문입니다.
+그리고 우리는 추적시 발생하는 불필요한 런타임 오버헤드를 피하고자 합니다.
+그래서 추적이 끝나면 반드시 비동기로 자식 프로세스들의 보류된 추적 데이터를 플러시 할 것인지 물어봅니다.
 
-Once all child processes have acked to the `captureMonitoringSnapshot` request,
-the `callback` will be invoked with a file that contains the traced data.
+모든 자식 프로세스가 `captureMonitoringSnapshot` 요청을 받으면 추적 데이터 파일을 포함하는 `callback`이 호출됩니다.
 
 ## tracing.getTraceBufferUsage(callback)
 
 * `callback` Function
 
-Get the maximum across processes of trace buffer percent full state. When the
-TraceBufferUsage value is determined, the `callback` is called.
+추적 버퍼 % 전체 상태의 프로세스간 최대치를 가져옵니다. TraceBufferUsage 값이 결정되면 `callback`이 호출됩니다.
 
 ## tracing.setWatchEvent(categoryName, eventName, callback)
 
@@ -129,8 +126,7 @@ TraceBufferUsage value is determined, the `callback` is called.
 * `eventName` String
 * `callback` Function
 
-`callback` will will be called every time the given event occurs on any
-process.
+`callback`은 지정된 이벤트가 어떤 작업을 발생시킬 때마다 호출됩니다.
 
 ## tracing.cancelWatchEvent()
 

@@ -35,10 +35,15 @@ console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', '
   filters: [
     { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
     { name: 'Movies', extensions: ['mkv', 'avi', 'mp4'] },
-    { name: 'Custom File Type', extensions: ['as'] }
+    { name: 'Custom File Type', extensions: ['as'] },
+    { name: 'All Files', extensions: ['*'] }
   ]
 }
 ```
+
+`extensions` 배열은 반드시 와일드카드와 마침표를 제외한 파일 확장자를 포함시켜야 합니다.
+예를 들어 `'png'`는 가능하지만 `'.png'`와 `'*.png'`는 안됩니다.
+모든 파일을 보여주려면 `'*'`와 같은 와일드카드를 사용하면 됩니다. (다른 와일드카드는 지원하지 않습니다)
 
 `callback`이 전달되면 메소드가 비동기로 작동되며 결과는 `callback(filenames)`을 통해 전달됩니다.
 

@@ -1,6 +1,6 @@
 ﻿# 어플리케이션 배포
 
-Electron 어플리케이션을 배포할 때는 어플리케이션 폴더의 이름을 `app`으로 지정한 후 Electron 실행파일의 리소스 디렉터리에 집어넣어야합니다.
+Electron 어플리케이션을 배포하려면 어플리케이션 폴더 이름을 `app`으로 지정한 후 Electron 실행파일의 리소스 디렉터리에 집어넣기만 하면 됩니다.
 리소스 디렉터리는 OS X에선 `Electron.app/Contents/Resources/` Windows와 Linux에선 `resources/` 입니다.
 
 예제:
@@ -23,8 +23,8 @@ electron/resources/app
 └── index.html
 ```
 
-그리고 `Electron.app`을 실행하면(Linux에선 `electron` Windows에선 `electron.exe`입니다) Electron은 해당 앱을 실행시킵니다.
-최종 사용자에게는 이 `electron` 폴더(Electron.app)를 배포하면 됩니다.
+그리고 `Electron.app`을 실행하면(Linux에선 `electron` Windows에선 `electron.exe`입니다) Electron 앱이 실행시킵니다.
+최종 사용자에겐 이 `electron` 폴더(Electron.app)를 배포하면 됩니다.
 
 ## asar로 앱 패키징 하기
 
@@ -101,7 +101,7 @@ MyApp.app/Contents
 
 ### 역주-자동화 
 
-배포시에 Electron의 리소스를 일일이 수정하는 것은 매우 귀찮고 복잡합니다.
+어플리케이션 배포시 Electron의 리소스를 일일이 수정하는 것은 매우 귀찮고 복잡합니다.
 하지만 이 작업을 자동화 시킬 수 있는 몇가지 방법이 있습니다: 
 
 * [electron-builder](https://github.com/loopline-systems/electron-builder)
@@ -110,6 +110,7 @@ MyApp.app/Contents
 ## Electron 소스코드를 다시 빌드하여 리소스 수정하기
 
 또한 Electron 소스코드를 다시 빌드할 때 어플리케이션 이름을 변경할 수 있습니다.
+
 `GYP_DEFINES` 환경변수를 사용하여 다음과 같이 다시 빌드할 수 있습니다:
 
 __Windows__
@@ -133,6 +134,6 @@ $ script/build.py -c Release -t myapp
 ### grunt-build-atom-shell
 
 Electron의 소스코드를 수정하고 다시 빌드하는 작업은 상당히 복잡합니다.
-이를 해결하기 위해 [grunt-build-atom-shell](https://github.com/paulcbetts/grunt-build-atom-shell)를 사용하여 빌드를 자동화 시킬 수 있습니다.
+일일이 소스코드를 수정하는 대신 [grunt-build-atom-shell](https://github.com/paulcbetts/grunt-build-atom-shell)을 사용하여 빌드를 자동화 시킬 수 있습니다.
 
 이 툴을 사용하면 자동으로 `.gyp`파일을 수정하고 다시 빌드합니다. 그리고 어플리케이션의 네이티브 Node 모듈 또한 새로운 실행파일 이름으로 매치 시킵니다.
