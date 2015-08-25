@@ -589,10 +589,6 @@ called with `callback(image)`, the `image` is an instance of
 [NativeImage](native-image.md) that stores data of the snapshot. Omitting the
 `rect` would capture the whole visible page.
 
-**Note:** Be sure to read documents on remote buffer in
-[remote](remote.md) if you are going to use this API in renderer
-process.
-
 ### BrowserWindow.print([options])
 
 Same with `webContents.print([options])`
