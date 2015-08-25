@@ -4,7 +4,7 @@ Frameless 윈도우는 테두리가 없는 윈도우 창을 말합니다.
 
 ## Frameless 윈도우 만들기
 
-Frameless 윈도우를 만드려면 [BrowserWindow](browser-window.md) 객체의 `options`에서 `frame` 옵션을 `false`로 지정하기만 하면됩니다:
+Frameless 윈도우를 만드려면 [BrowserWindow](browser-window-ko.md) 객체의 `options`에서 `frame` 옵션을 `false`로 지정하기만 하면됩니다:
 
 ```javascript
 var BrowserWindow = require('browser-window');

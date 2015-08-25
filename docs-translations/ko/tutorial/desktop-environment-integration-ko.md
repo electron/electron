@@ -211,12 +211,12 @@ window.setRepresentedFilename('/etc/passwd');
 window.setDocumentEdited(true);
 ```
 
-[addrecentdocument]: ../api/app.md#appaddrecentdocumentpath
-[clearrecentdocuments]: ../api/app.md#appclearrecentdocuments
-[setusertaskstasks]: ../api/app.md#appsetusertaskstasks
-[setprogressbar]: ../api/browser-window.md#browserwindowsetprogressbarprogress
-[setrepresentedfilename]: ../api/browser-window.md#browserwindowsetrepresentedfilenamefilename
-[setdocumentedited]: ../api/browser-window.md#browserwindowsetdocumenteditededited
+[addrecentdocument]: ../api/app-ko.md#appaddrecentdocumentpath
+[clearrecentdocuments]: ../api/app-ko.md#appclearrecentdocuments
+[setusertaskstasks]: ../api/app-ko.md#appsetusertaskstasks
+[setprogressbar]: ../api/browser-window-ko.md#browserwindowsetprogressbarprogress
+[setrepresentedfilename]: ../api/browser-window-ko.md#browserwindowsetrepresentedfilenamefilename
+[setdocumentedited]: ../api/browser-window-ko.md#browserwindowsetdocumenteditededited
 [app-registration]: http://msdn.microsoft.com/en-us/library/windows/desktop/ee872121(v=vs.85).aspx
 [unity-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
 [setthumbarbuttons]: ../api/browser-window.md#browserwindowsetthumbarbuttonsbuttons

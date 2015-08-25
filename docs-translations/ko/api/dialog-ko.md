@@ -77,7 +77,7 @@ Windows와 Linux에선 파일 선택 모드, 디렉터리 선택 모드를 동�
   * `title` String - 대화 상자의 제목입니다. 몇몇 플랫폼에선 보이지 않을 수 있습니다.
   * `message` String - 대화 상자의 본문 내용입니다.
   * `detail` String - 메시지의 추가 정보입니다.
-  * `icon` [NativeImage](native-image.md)
+  * `icon` [NativeImage](native-image-ko.md)
   * `cancelId` Integer - 유저가 대화 상자의 버튼을 클릭하지 않고 대화 상자를 취소했을 때 반환되는 버튼의 index입니다.
     기본적으로 버튼 리스트가 "cancel" 또는 "no" 라벨을 가지고 있을 때 해당 버튼의 index를 반환합니다. 따로 두 라벨이 지정되지 않은 경우 0을 반환합니다.
     OS X와 Windows에선 `cancelId` 지정 여부에 상관없이 "Cancel" 버튼이 언제나 `cancelId`로 지정됩니다.

@@ -6,7 +6,7 @@
 동기 메시지는 `event.returnValue`를 이용하여 반환값(답장)을 설정할 수 있습니다. 비동기 메시지라면 `event.sender.send(...)`를 사용하면 됩니다.
 
 또한 메인 프로세스에서 랜더러 프로세스로 메시지를 보내는 것도 가능합니다.
-자세한 내용은 [WebContents.send](browser-window.md#webcontentssendchannel-args)를 참고 하세요.
+자세한 내용은 [WebContents.send](browser-window-ko.md#webcontentssendchannel-args)를 참고 하세요.
 
 보내진 메시지들을 처리하는 예제입니다:
 

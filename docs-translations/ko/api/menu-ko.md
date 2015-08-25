@@ -3,7 +3,7 @@
 `Menu` 클래스는 어플리케이션 메뉴와 컨텍스트 메뉴를 만들 때 사용됩니다.
 메뉴는 여러 개의 메뉴 아이템으로 구성되고 서브 메뉴를 가질 수도 있습니다.
 
-다음 예제는 웹 페이지 내에서 [remote](remote.md) 모듈을 활용하여 동적으로 메뉴를 생성하는 예제입니다.
+다음 예제는 웹 페이지 내에서 [remote](remote-ko.md) 모듈을 활용하여 동적으로 메뉴를 생성하는 예제입니다.
 
 이 예제에서 만들어진 메뉴는 유저가 페이지에서 오른쪽 클릭을 할 때 마우스 위치에 팝업 형태로 표시됩니다:
 
@@ -28,7 +28,7 @@ window.addEventListener('contextmenu', function (e) {
 
 다음 예제는 template API를 활용하여 어플리케이션 메뉴를 만드는 간단한 예제입니다:
 
-**Windows 와 Linux 유저 주의:** 각 메뉴 아이템의 `selector` 멤버는 Mac 운영체제 전용입니다. [Accelerator 옵션](accelerator.md)
+**Windows 와 Linux 유저 주의:** 각 메뉴 아이템의 `selector` 멤버는 Mac 운영체제 전용입니다. [Accelerator 옵션](https://github.com/atom/electron/blob/master/docs/api/accelerator-ko.md)
 
 ```html
 <!-- index.html -->
@@ -189,7 +189,7 @@ Menu.setApplicationMenu(menu);
 
 * `template` Array
 
-기본적으로 `template`는 [MenuItem](menu-item.md)을 생성할 때 사용하는 `options`의 배열입니다. 사용법은 위에서 설명한 것과 같습니다.
+기본적으로 `template`는 [MenuItem](menu-item-ko.md)을 생성할 때 사용하는 `options`의 배열입니다. 사용법은 위에서 설명한 것과 같습니다.
 
 또한 `template`에는 다른 속성도 추가할 수 있으며 메뉴가 만들어질 때 해당 메뉴 아이템의 프로퍼티로 변환됩니다.
 

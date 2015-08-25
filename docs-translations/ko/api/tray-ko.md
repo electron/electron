@@ -38,7 +38,7 @@ __플랫폼별 한계:__
 
 ### new Tray(image)
 
-* `image` [NativeImage](native-image.md)
+* `image` [NativeImage](native-image-ko.md)
 
 전달된 `image`를 이용하여 트레이 아이콘을 만듭니다.
 
@@ -126,13 +126,13 @@ __주의:__ 이 기능은 OS X에서만 작동합니다.
 
 ### Tray.setImage(image)
 
-* `image` [NativeImage](native-image.md)
+* `image` [NativeImage](native-image-ko.md)
 
 `image`를 사용하여 트레이 아이콘의 이미지를 설정합니다.
 
 ### Tray.setPressedImage(image)
 
-* `image` [NativeImage](native-image.md)
+* `image` [NativeImage](native-image-ko.md)
 
 `image`를 사용하여 트레이 아이콘이 눌렸을 때의 이미지를 설정합니다.
 
@@ -163,7 +163,7 @@ __주의:__ 이 기능은 OS X에서만 작동합니다.
 ### Tray.displayBalloon(options)
 
 * `options` Object
-  * `icon` [NativeImage](native-image.md)
+  * `icon` [NativeImage](native-image-ko.md)
   * `title` String
   * `content` String
 

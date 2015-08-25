@@ -311,7 +311,7 @@ Webview 페이지를 PDF 형식으로 인쇄합니다. `webContents.printToPDF(o
 `channel`을 통해 게스트 페이지에 `args...` 비동기 메시지를 보냅니다.
 게스트 페이지에선 `ipc` 모듈의 `channel` 이벤트를 사용하면 이 메시지를 받을 수 있습니다.
 
-예제는 [WebContents.send](browser-window.md#webcontentssendchannel-args)를 참고하세요.
+예제는 [WebContents.send](browser-window-ko.md#webcontentssendchannel-args)를 참고하세요.
 
 ## DOM 이벤트
 
