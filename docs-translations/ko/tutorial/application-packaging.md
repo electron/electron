@@ -1,11 +1,11 @@
 ﻿# 어플리케이션 패키징
 
 Windows에서 일어나는 긴 경로 이름에 대한 [issues](https://github.com/joyent/node/issues/6960)를 완화하고 `require` 속도를 약간 빠르게 하며
-어플리케이션의 리소스와 소스코드를 유저로부터 보호하기 위해 어플리케이션을 [asar][asar] 아카이브로 패키징 할 수 있습니다.
+어플리케이션의 리소스와 소스코드를 좋지 않은 사용자로부터 보호하기 위해 어플리케이션을 [asar][asar] 아카이브로 패키징 할 수 있습니다.
 
 ## `asar` 아카이브 생성
 
-[asar][asar]아카이브는 tar과 비슷한 포맷으로 모든 리소스를 하나의 파일로 만듭니다.
+[asar][asar] 아카이브는 tar과 비슷한 포맷으로 모든 리소스를 하나의 파일로 만듭니다.
 그리고 Electron은 압축해제 없이 임의로 모든 파일을 읽어들일 수 있습니다.
 
 다음 몇가지 단계를 통해 어플리케이션을 `asar` 아카이브로 압축할 수 있습니다:
@@ -29,7 +29,7 @@ Electron은 Node.js로 부터 제공된 Node API와 Chromium으로부터 제공�
 
 ### Node API
 
-`fs.readFile` 와 `require` 같은 Node API들을 지원하기 위해 Electron에선 `asar` 아카이브가 가상의 디렉터리 구조를 가지도록
+Electron에선 `fs.readFile`과 `require` 같은 Node API들을 지원하기 위해 `asar` 아카이브가 가상의 디렉터리 구조를 가지도록
 패치했습니다. 그래서 아카이브 내부에서 리소스들을 정상적인 파일 시스템처럼 접근할 수 있습니다.
 
 예를 들어 `/path/to`라는 경로에 `example.asar`라는 아카이브가 있다고 가정하면:
