@@ -48,6 +48,8 @@ class CommonWebContentsDelegate
 
   NativeWindow* owner_window() const { return owner_window_.get(); }
 
+  bool is_html_fullscreen() const { return html_fullscreen_; }
+
  protected:
   // content::WebContentsDelegate:
   content::WebContents* OpenURLFromTab(
