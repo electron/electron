@@ -62,9 +62,9 @@ Hostname 맵핑 규칙을 설정합니다. (`,`로 분리)
 
 `--host-rules` 플래그와 비슷하지만 이 플래그는 host resolver에만 적용됩니다.
 
-[app]: app-ko.md
-[append-switch]: app-ko.md#appcommandlineappendswitchswitch-value
-[ready]: app-ko.md#event-ready
+[app]: app.md
+[append-switch]: app.md#appcommandlineappendswitchswitch-value
+[ready]: app.md#event-ready
 
 ## --ignore-certificate-errors
 
