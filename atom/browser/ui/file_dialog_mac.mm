@@ -23,6 +23,12 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   for (size_t i = 0; i < filters.size(); ++i) {
     const Filter& filter = filters[i];
     for (size_t j = 0; j < filter.second.size(); ++j) {
+      // If we meet a '*' file extension, we allow all the file types and no
+      // need to set the specified file types.
+      if (filter.second[j] == "*") {
+        [dialog setAllowsOtherFileTypes:YES];
+        return;
+      }
       base::ScopedCFTypeRef<CFStringRef> ext_cf(
           base::SysUTF8ToCFStringRef(filter.second[j]));
       [file_type_set addObject:base::mac::CFToNSCast(ext_cf.get())];

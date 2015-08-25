@@ -80,12 +80,15 @@ window.alert = (message, title='') ->
   buttons = ['OK']
   message = message.toString()
   dialog.showMessageBox remote.getCurrentWindow(), {message, title, buttons}
+  # Alert should always return undefined.
+  return
 
 # And the confirm().
 window.confirm = (message, title='') ->
   dialog = remote.require 'dialog'
   buttons = ['OK', 'Cancel']
-  not dialog.showMessageBox remote.getCurrentWindow(), {message, title, buttons}
+  cancelId = 1
+  not dialog.showMessageBox remote.getCurrentWindow(), {message, title, buttons, cancelId}
 
 # But we do not support prompt().
 window.prompt = ->

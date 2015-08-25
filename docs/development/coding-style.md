@@ -8,6 +8,13 @@ script `script/cpplint.py` to check whether all files confirm.
 
 The python's version we are using now is Python 2.7.
 
+The C++ code uses a lot of Chromium's abstractions and types, so it's 
+recommended to get acquainted with them. A good place to start is 
+Chromium's [Important Abstractions and Data Structures]
+(https://www.chromium.org/developers/coding-style/important-abstractions-and-data-structures) 
+document. The document mentions some special types, scoped types (that 
+automatically release their memory when going out of scope), logging mechanisms etc.
+
 ## CoffeeScript
 
 For CoffeeScript, we follow GitHub's [Style
