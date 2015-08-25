@@ -10,8 +10,8 @@
   * `type` String - `MenuItem`의 타입 `normal`, `separator`, `submenu`, `checkbox` 또는 `radio` 사용가능
   * `label` String
   * `sublabel` String
-  * `accelerator` [Accelerator](accelerator-ko.md)
-  * `icon` [NativeImage](native-image-ko.md)
+  * `accelerator` [Accelerator](accelerator.md)
+  * `icon` [NativeImage](native-image.md)
   * `enabled` Boolean
   * `visible` Boolean
   * `checked` Boolean

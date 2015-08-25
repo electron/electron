@@ -48,7 +48,7 @@ electron/resources/
 └── app.asar
 ```
 
-자세한 내용은 [어플리케이션 패키징](application-packaging-ko.md)에서 찾아볼 수 있습니다.
+자세한 내용은 [어플리케이션 패키징](application-packaging.md)에서 찾아볼 수 있습니다.
 
 ## 다운로드한 바이너리의 리소스를 앱에 맞게 수정하기
 
