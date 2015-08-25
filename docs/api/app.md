@@ -152,6 +152,8 @@ Emitted when the gpu process crashes.
 
 The `app` object has the following methods:
 
+**Note** Some methods are only available on specific operating systems and are labeled as such.
+
 ### `app.quit()`
 
 Try to close all windows. The `before-quit` event will emitted first. If all
@@ -267,7 +269,6 @@ Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
   consists of two or more icons, set this value to identify the icon. If an
   icon file consists of one icon, this value is 0.
 
-**Note:** This API is only available on Windows.
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 
@@ -297,15 +298,11 @@ or the request is canceled.
 
 Returns an ID representing the request.
 
-**Note:** This API is only available on OS X.
-
 ### `app.dock.cancelBounce(id)` _OS X_
 
 * `id` Integer
 
 Cancel the bounce of `id`.
-
-**Note:** This API is only available on OS X.
 
 ### `app.dock.setBadge(text)` _OS X_
 
@@ -313,33 +310,23 @@ Cancel the bounce of `id`.
 
 Sets the string to be displayed in the dock’s badging area.
 
-**Note:** This API is only available on OS X.
-
 ### `app.dock.getBadge()` _OS X_
 
 Returns the badge string of the dock.
-
-**Note:** This API is only available on OS X.
 
 ### `app.dock.hide()` _OS X_
 
 Hides the dock icon.
 
-**Note:** This API is only available on OS X.
-
 ### `app.dock.show()` _OS X_
 
 Shows the dock icon.
-
-**Note:** This API is only available on OS X.
 
 ### `app.dock.setMenu(menu)` _OS X_
 
 * `menu` Menu
 
 Sets the application's [dock menu][dock-menu].
-
-**Note:** This API is only available on OS X.
 
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
