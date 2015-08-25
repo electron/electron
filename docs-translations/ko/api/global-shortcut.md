@@ -32,20 +32,20 @@ app.on('will-quit', function() {
 
 ## globalShortcut.register(accelerator, callback)
 
-* `accelerator` [Accelerator](accelerator-ko.md)
+* `accelerator` [Accelerator](accelerator.md)
 * `callback` Function
 
 `accelerator`로 표현된 전역 단축키를 등록합니다. 유저로부터 등록된 단축키가 눌렸을 경우 `callback` 함수가 호출됩니다.
 
 ## globalShortcut.isRegistered(accelerator)
 
-* `accelerator` [Accelerator](accelerator-ko.md)
+* `accelerator` [Accelerator](accelerator.md)
 
 지정된 `accelerator` 단축키가 등록되었는지 여부를 확인합니다. 반환값은 boolean(true, false) 입니다.
 
 ## globalShortcut.unregister(accelerator)
 
-* `accelerator` [Accelerator](accelerator-ko.md)
+* `accelerator` [Accelerator](accelerator.md)
 
 `키코드`에 해당하는 전역 단축키를 등록 해제합니다.
 

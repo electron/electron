@@ -69,6 +69,6 @@ driver.quit();
 ## 작업환경
 
 따로 Electron을 다시 빌드하지 않는 경우 간단히 어플리케이션을 Electron의 리소스 디렉터리에
-[배치](https://github.com/atom/electron/blob/master/docs/tutorial/application-distribution-ko.md)하여 바로 테스트 할 수 있습니다.
+[배치](application-distribution.md)하여 바로 테스트 할 수 있습니다.
 
 [chrome-driver]: https://sites.google.com/a/chromium.org/chromedriver/

@@ -1,9 +1,9 @@
 ﻿# ipc (renderer)
 
 `ipc` 모듈은 메인 프로세스로 메시지를 동기 또는 비동기로 보내고 받을 수 있는 몇 가지 방법을 제공합니다.
-만약 랜더러 프로세스에서 메인 프로세스의 모듈을 직접적으로 사용하고 싶다면 [remote](remote-ko.md) 모듈을 사용하는 것을 고려해보는 것이 좋습니다.
+만약 랜더러 프로세스에서 메인 프로세스의 모듈을 직접적으로 사용하고 싶다면 [remote](remote.md) 모듈을 사용하는 것을 고려해보는 것이 좋습니다.
 
-[ipc (main process)](ipc-main-process-ko.md)에서 예제를 볼 수 있습니다.
+[ipc (main process)](ipc-main-process.md)에서 예제를 볼 수 있습니다.
 
 ## ipc.send(channel[, args...])
 
