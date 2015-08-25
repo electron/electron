@@ -19,6 +19,9 @@ namespace {
 // Makes sure that .jpg also shows .JPG.
 gboolean FileFilterCaseInsensitive(const GtkFileFilterInfo* file_info,
                                    std::string* file_extension) {
+  // Makes .* file extension matches all file types.
+  if (*file_extension == ".*")
+    return true;
   return EndsWith(file_info->filename, *file_extension, false);
 }
 
