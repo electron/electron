@@ -22,13 +22,13 @@ The `crash-reporter` module has the following methods:
 ### `crashReporter.start(options)`
 
 * `options` Object
-  * `productName` String, default: Electron
-  * `companyName` String, default: GitHub, Inc
-  * `submitUrl` String, default: http://54.249.141.255:1127/post
-    * URL that crash reports will be sent to as POST
-  * `autoSubmit` Boolean, default: true
-    * Send the crash report without user interaction
-  * `ignoreSystemCrashHandler` Boolean, default: false
+  * `productName` String, default: Electron.
+  * `companyName` String, default: GitHub, Inc.
+  * `submitUrl` String, default: http://54.249.141.255:1127/post.
+    * URL that crash reports will be sent to as POST.
+  * `autoSubmit` Boolean, default: `true`.
+    * Send the crash report without user interaction.
+  * `ignoreSystemCrashHandler` Boolean, default: `false`.
   * `extra` Object
     * An object you can define that will be sent along with the report.
     * Only string properties are sent correctly.
@@ -56,17 +56,17 @@ Returns all uploaded crash reports. Each report contains the date and uploaded I
 
 The crash reporter will send the following data to the `submitUrl` as `POST`:
 
-* `rept` String - e.g. 'electron-crash-service'
-* `ver` String - The version of Electron
-* `platform` String - e.g. 'win32'
-* `process_type` String - e.g. 'renderer'
+* `rept` String - e.g. 'electron-crash-service'.
+* `ver` String - The version of Electron.
+* `platform` String - e.g. 'win32'.
+* `process_type` String - e.g. 'renderer'.
 * `ptime` Number
-* `_version` String - The version in `package.json`
+* `_version` String - The version in `package.json`.
 * `_productName` String - The product name in the `crashReporter` `options`
-  object
-* `prod` String - Name of the underlying product. In this case Electron
+  object.
+* `prod` String - Name of the underlying product. In this case Electron.
 * `_companyName` String - The company name in the `crashReporter` `options`
-  object
-* `upload_file_minidump` File - The crashreport as file
-* All level one properties of the `extra` object in the `crashReporter`
+  object.
+* `upload_file_minidump` File - The crash report as file.
+* All level one properties of the `extra` object in the `crashReporter`.
   `options` object
