@@ -1,4 +1,4 @@
-﻿[![Electron Logo](http://electron.atom.io/images/electron-logo.svg)](http://electron.atom.io/)
+[![Electron Logo](http://electron.atom.io/images/electron-logo.svg)](http://electron.atom.io/)
 
 [![Build Status](https://travis-ci.org/atom/electron.svg?branch=master)](https://travis-ci.org/atom/electron)
 [![devDependency Status](https://david-dm.org/atom/electron/dev-status.svg)](https://david-dm.org/atom/electron#info=devDependencies)
@@ -33,7 +33,7 @@ npm install electron-prebuilt --save-dev
 
 ## 참조 문서
 
-[Docs](https://github.com/atom/electron/tree/master/docs/README-ko.md)에 개발 가이드와 API 레퍼런스가 있습니다.
+[Docs](https://github.com/atom/electron/tree/master/docs/README.md)에 개발 가이드와 API 레퍼런스가 있습니다.
 Electron을 빌드 하는 방법과 프로젝트에 기여하는 방법도 문서에 포함되어 있으니 참고하시기 바랍니다.
 
 ## 참조 문서(번역)
