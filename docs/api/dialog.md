@@ -11,7 +11,9 @@ var dialog = require('dialog');
 console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}));
 ```
 
-**Note for OS X**: If you want to present dialogs as sheets, the only thing you have to do is provide a `BrowserWindow` reference in the `browserWindow` parameter.
+**Note for OS X**: If you want to present dialogs as sheets, the only thing you
+have to do is provide a `BrowserWindow` reference in the `browserWindow`
+parameter.
 
 ## dialog.showOpenDialog([browserWindow], [options], [callback])
 
@@ -36,17 +38,22 @@ selected, an example is:
   filters: [
     { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
     { name: 'Movies', extensions: ['mkv', 'avi', 'mp4'] },
-    { name: 'Custom File Type', extensions: ['as'] }
+    { name: 'Custom File Type', extensions: ['as'] },
+    { name: 'All Files', extensions: ['*'] }
   ]
 }
 ```
+The `extensions` array should contain extensions without wildcards or dots (e.g.
+`'png'` is good, `'.png'` and `'*.png'` are bad). To show all files, use the
+`'*'` wildcard (no other wildcard is supported).
 
 If a `callback` is passed, the API call would be asynchronous and the result
 would be passed via `callback(filenames)`
 
 **Note:** On Windows and Linux, an open dialog can not be both a file selector
 and a directory selector, so if you set `properties` to
-`['openFile', 'openDirectory']` on these platforms, a directory selector will be shown.
+`['openFile', 'openDirectory']` on these platforms, a directory selector will be
+shown.
 
 ## dialog.showSaveDialog([browserWindow], [options], [callback])
 
@@ -70,7 +77,9 @@ will be passed via `callback(filename)`
 
 * `browserWindow` BrowserWindow
 * `options` Object
-  * `type` String - Can be `"none"`, `"info"`, `"error"`, `"question"` or `"warning"`. On Windows, "question" displays the same icon as "info", unless if you set an icon using the "icon" option
+  * `type` String - Can be `"none"`, `"info"`, `"error"`, `"question"` or
+  `"warning"`. On Windows, "question" displays the same icon as "info", unless
+  if you set an icon using the "icon" option
   * `buttons` Array - Array of texts for buttons
   * `title` String - Title of the message box, some platforms will not show it
   * `message` String - Content of the message box
