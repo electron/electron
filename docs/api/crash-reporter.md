@@ -2,7 +2,8 @@
 
 The `crash-reporter` module enables sending your app's crash reports.
 
-The following is an example of automatically submitting a crash report to a remote server:
+The following is an example of automatically submitting a crash report to a
+remote server:
 
 ```javascript
 crashReporter = require('crash-reporter');
@@ -33,11 +34,14 @@ The `crash-reporter` module has the following methods:
     * Only string properties are sent correctly.
     * Nested objects are not supported.
 
-Developers are required to call this method before using other `crashReporter` APIs.
+Developers are required to call this method before using other `crashReporter`
+APIs.
 
 **Note:** On OS X, Electron uses a new `crashpad` client, which is different
 from `breakpad` on Windows and Linux. To enable the crash collection feature,
-you are required to call the `crashReporter.start` API to initialize `crashpad` in the main process and in each renderer process from which you wish to collect crash reports.
+you are required to call the `crashReporter.start` API to initialize `crashpad`
+in the main process and in each renderer process from which you wish to collect
+crash reports.
 
 ### `crashReporter.getLastCrashReport()`
 
@@ -58,8 +62,11 @@ The crash reporter will send the following data to the `submitUrl` as `POST`:
 * `process_type` String - e.g. 'renderer'
 * `ptime` Number
 * `_version` String - The version in `package.json`
-* `_productName` String - The product name in the `crashReporter` `options` object
+* `_productName` String - The product name in the `crashReporter` `options`
+  object
 * `prod` String - Name of the underlying product. In this case Electron
-* `_companyName` String - The company name in the `crashReporter` `options` object
+* `_companyName` String - The company name in the `crashReporter` `options`
+  object
 * `upload_file_minidump` File - The crashreport as file
-* All level one properties of the `extra` object in the `crashReporter` `options` object
+* All level one properties of the `extra` object in the `crashReporter`
+  `options` object

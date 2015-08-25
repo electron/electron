@@ -29,7 +29,8 @@ tracing.startRecording('*', tracing.DEFAULT_OPTIONS, function() {
 Get a set of category groups. The category groups can change as new code paths
 are reached.
 
-Once all child processes have acked to the `getCategories` request, `callback` is invoked with an array of category groups.
+Once all child processes have acked to the `getCategories` request, `callback`
+is invoked with an array of category groups.
 
 ### `tracing.startRecording(categoryFilter, traceOptions, callback)`
 
@@ -81,7 +82,8 @@ Stop recording on all processes.
 
 Child processes typically are caching trace data and only rarely flush and send
 trace data back to the main process. That is because it may be an expensive
-operation to send the trace data over IPC, and we would like to avoid runtime overhead of tracing. So, to end tracing, we must asynchronously ask all
+operation to send the trace data over IPC, and we would like to avoid runtime
+overhead of tracing. So, to end tracing, we must asynchronously ask all
 child processes to flush any pending trace data.
 
 Once all child processes have acked to the `stopRecording` request, `callback`
@@ -111,7 +113,8 @@ Once all child processes have acked to the `startMonitoring` request the
 
 Stop monitoring on all processes.
 
-Once all child processes have acked to the `stopMonitoring` request the `callback` is called.
+Once all child processes have acked to the `stopMonitoring` request the
+`callback` is called.
 
 ### `tracing.captureMonitoringSnapshot(resultFilePath, callback)`
 
@@ -123,16 +126,20 @@ Get the current monitoring traced data.
 Child processes typically are caching trace data and only rarely flush and send
 trace data back to the main process. That is because it may be an expensive
 operation to send the trace data over IPC and we would like to avoid unneeded
-runtime overhead from tracing. So, to end tracing, we must asynchronously ask all child processes to flush any pending trace data.
+runtime overhead from tracing. So, to end tracing, we must asynchronously ask
+all child processes to flush any pending trace data.
 
-Once all child processes have acked to the `captureMonitoringSnapshot` request the `callback` will be called with a file that contains the traced data.
+Once all child processes have acked to the `captureMonitoringSnapshot` request
+the `callback` will be called with a file that contains the traced data.
 
 
 ### `tracing.getTraceBufferUsage(callback)`
 
 * `callback` Function
 
-Get the maximum usage across processes of trace buffer as a percentage of the full state. When the TraceBufferUsage value is determined the `callback` is called.
+Get the maximum usage across processes of trace buffer as a percentage of the
+full state. When the TraceBufferUsage value is determined the `callback` is
+called.
 
 ### `tracing.setWatchEvent(categoryName, eventName, callback)`
 

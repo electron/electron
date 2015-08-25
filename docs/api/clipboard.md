@@ -1,6 +1,7 @@
 # clipboard
 
-The `clipboard` object provides methods to perform copy and paste operations. The following example shows how to write a string to the clipboard:
+The `clipboard` object provides methods to perform copy and paste operations.
+The following example shows how to write a string to the clipboard:
 
 ```javascript
 var clipboard = require('clipboard');
