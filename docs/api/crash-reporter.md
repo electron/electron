@@ -1,5 +1,7 @@
 # crash-reporter
 
+The `crash-reporter` module enables sending your app's crash reports.
+
 The following is an example of automatically submitting a crash report to a remote server:
 
 ```javascript
@@ -12,7 +14,11 @@ crashReporter.start({
 });
 ```
 
-## crashReporter.start(options)
+## Methods
+
+The `crash-reporter` module has the following methods:
+
+### `crashReporter.start(options)`
 
 * `options` Object
   * `productName` String, default: Electron
@@ -31,19 +37,18 @@ Developers are required to call this method before using other `crashReporter` A
 
 **Note:** On OS X, Electron uses a new `crashpad` client, which is different
 from `breakpad` on Windows and Linux. To enable the crash collection feature,
-you are required to call `crashReporter.start` API to initialize `crashpad` in the
-main process and in each renderer process from which you wish to collect crash reports.
+you are required to call the `crashReporter.start` API to initialize `crashpad` in the main process and in each renderer process from which you wish to collect crash reports.
 
-## crashReporter.getLastCrashReport()
+### `crashReporter.getLastCrashReport()`
 
 Returns the date and ID of the last crash report. If no crash reports have been
 sent or the crash reporter has not been started, `null` is returned.
 
-## crashReporter.getUploadedReports()
+### `crashReporter.getUploadedReports()`
 
 Returns all uploaded crash reports. Each report contains the date and uploaded ID.
 
-# crash-reporter payload
+## crash-reporter Payload
 
 The crash reporter will send the following data to the `submitUrl` as `POST`:
 
