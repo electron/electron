@@ -21,7 +21,7 @@ The `crash-reporter` module has the following methods:
 
 ### `crashReporter.start(options)`
 
-* `options` Object
+* `options` Object, properties:
   * `productName` String, default: Electron.
   * `companyName` String, default: GitHub, Inc.
   * `submitUrl` String, default: http://54.249.141.255:1127/post.
@@ -50,7 +50,8 @@ sent or the crash reporter has not been started, `null` is returned.
 
 ### `crashReporter.getUploadedReports()`
 
-Returns all uploaded crash reports. Each report contains the date and uploaded ID.
+Returns all uploaded crash reports. Each report contains the date and uploaded
+ID.
 
 ## crash-reporter Payload
 

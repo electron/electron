@@ -1,6 +1,6 @@
 # clipboard
 
-The `clipboard` object provides methods to perform copy and paste operations.
+The `clipboard` module provides methods to perform copy and paste operations.
 The following example shows how to write a string to the clipboard:
 
 ```javascript
@@ -19,7 +19,7 @@ console.log(clipboard.readText('selection'));
 
 ## Methods
 
-The `clipboard` object has the following methods:
+The `clipboard` module has the following methods:
 
 ### `clipboard.readText([type])`
 
