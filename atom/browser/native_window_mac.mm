@@ -22,9 +22,6 @@
 
 namespace {
 
-// The radius of rounded corner.
-const CGFloat kAtomWindowCornerRadius = 4.0;
-
 // Prevents window from resizing during the scope.
 class ScopedDisableResize {
  public:
@@ -40,10 +37,6 @@ class ScopedDisableResize {
 bool ScopedDisableResize::disable_resize_ = false;
 
 }  // namespace
-
-@interface NSView (PrivateMethods)
-- (CGFloat)roundedCornerRadius;
-@end
 
 // This view always takes the size of its superview. It is intended to be used
 // as a NSWindow's contentView.  It is needed because NSWindow's implementation
@@ -153,9 +146,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)windowDidResize:(NSNotification*)notification {
-  if (!shell_->has_frame())
-    shell_->ClipWebView();
-
   shell_->NotifyWindowResize();
 }
 
@@ -613,8 +603,8 @@ void NativeWindowMac::Center() {
 }
 
 void NativeWindowMac::SetTitle(const std::string& title) {
-  // We don't want the title to show in transparent window.
-  if (transparent())
+  // We don't want the title to show in transparent or frameless window.
+  if (transparent() || !has_frame())
     return;
 
   [window_ setTitle:base::SysUTF8ToNSString(title)];
@@ -804,35 +794,27 @@ void NativeWindowMac::HandleKeyboardEvent(
 }
 
 void NativeWindowMac::InstallView() {
+  // Make sure the bottom corner is rounded: http://crbug.com/396264.
+  [[window_ contentView] setWantsLayer:YES];
+
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
   if (has_frame()) {
-    // Add layer with white background for the contents view.
-    base::scoped_nsobject<CALayer> layer([[CALayer alloc] init]);
-    [layer setBackgroundColor:CGColorGetConstantColor(kCGColorWhite)];
-    [view setLayer:layer];
     [view setFrame:[[window_ contentView] bounds]];
     [[window_ contentView] addSubview:view];
   } else {
-    if (base::mac::IsOSYosemiteOrLater()) {
-      // In OSX 10.10, adding subviews to the root view for the NSView hierarchy
-      // produces warnings. To eliminate the warnings, we resize the contentView
-      // to fill the window, and add subviews to that.
-      // http://crbug.com/380412
-      content_view_.reset([[FullSizeContentView alloc] init]);
-      [content_view_
-          setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-      [content_view_ setFrame:[[[window_ contentView] superview] bounds]];
-      [window_ setContentView:content_view_];
+    // In OSX 10.10, adding subviews to the root view for the NSView hierarchy
+    // produces warnings. To eliminate the warnings, we resize the contentView
+    // to fill the window, and add subviews to that.
+    // http://crbug.com/380412
+    content_view_.reset([[FullSizeContentView alloc] init]);
+    [content_view_
+        setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+    [content_view_ setFrame:[[[window_ contentView] superview] bounds]];
+    [window_ setContentView:content_view_];
 
-      [view setFrame:[content_view_ bounds]];
-      [content_view_ addSubview:view];
-    } else {
-      NSView* frameView = [[window_ contentView] superview];
-      [view setFrame:[frameView bounds]];
-      [frameView addSubview:view];
-    }
+    [view setFrame:[content_view_ bounds]];
+    [content_view_ addSubview:view];
 
-    ClipWebView();
     InstallDraggableRegionView();
 
     [[window_ standardWindowButton:NSWindowZoomButton] setHidden:YES];
@@ -849,14 +831,6 @@ void NativeWindowMac::InstallView() {
 void NativeWindowMac::UninstallView() {
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
   [view removeFromSuperview];
-}
-
-void NativeWindowMac::ClipWebView() {
-  if (!web_contents())
-    return;
-  NSView* webView = web_contents()->GetNativeView();
-  webView.layer.masksToBounds = YES;
-  webView.layer.cornerRadius = kAtomWindowCornerRadius;
 }
 
 void NativeWindowMac::InstallDraggableRegionView() {
