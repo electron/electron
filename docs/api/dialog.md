@@ -7,7 +7,7 @@ native applications.
 An example of showing a dialog to select multiple files and directories:
 
 ```javascript
-var win = ...;  // window in which to show the dialog
+var win = ...;  // BrowserWindow in which to show the dialog
 var dialog = require('dialog');
 console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', 'multiSelections' ]}));
 ```
@@ -55,7 +55,7 @@ The `extensions` array should contain extensions without wildcards or dots (e.g.
 If a `callback` is passed, the API call will be asynchronous and the result
 wil be passed via `callback(filenames)`
 
-**Note:** On Windows and Linux, an open dialog can not be both a file selector
+**Note:** On Windows and Linux an open dialog can not be both a file selector
 and a directory selector, so if you set `properties` to
 `['openFile', 'openDirectory']` on these platforms, a directory selector will be
 shown.

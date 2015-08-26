@@ -1,6 +1,6 @@
 # Frameless Window
 
-A frameless window is a window that has no [chrome]()—the parts of the window that display close, open, minify buttons and such. These are options on the [`BrowserWindow`](browser-window.md) class.
+A frameless window is a window that has no [chrome](https://developer.mozilla.org/en-US/docs/Glossary/Chrome), the parts of the window, like toolbars, that are not a part of the webp page. These are options on the [`BrowserWindow`](browser-window.md) class.
 
 ## Create a frameless window
 
@@ -30,11 +30,15 @@ var win = new BrowserWindow({ transparent: true, frame: false });
 * Transparent windows are not resizable. Setting `resizable` to `true` may make
   a transparent window stop working on some platforms.
 * The `blur` filter only applies to the web page, so there is no way to apply
-  blur effect to the content below the window (i.e. other applications open on the user's system).
-* On Windows operation shystems, transparent windows will not work when DWM is    disabled.
+  blur effect to the content below the window (i.e. other applications open on
+  the user's system).
+* On Windows operation shystems, transparent windows will not work when DWM is
+  disabled.
 * On Linux users have to put `--enable-transparent-visuals --disable-gpu` in
-  the command line to disable GPU and allow ARGB to make transparent window, this is caused by an upstream bug that [alpha channel doesn't work on some NVidia
-  drivers](https://code.google.com/p/chromium/issues/detail?id=369209) on Linux.
+  the command line to disable GPU and allow ARGB to make transparent window,
+  this is caused by an upstream bug that [alpha channel doesn't work on some
+  NVidia drivers](https://code.google.com/p/chromium/issues/detail?id=369209) on
+  Linux.
 * On Mac the native window shadow will not be shown on a transparent window.
 
 ## Draggable region
@@ -63,11 +67,15 @@ button {
 }
 ```
 
-If you're setting just a custom titlebar as draggable, you also need to make all buttons in titlebar non-draggable.
+If you're setting just a custom titlebar as draggable, you also need to make all
+buttons in titlebar non-draggable.
 
 ## Text selection
 
-In a frameless window the dragging behaviour may conflict with selecting text. For example, when you drag the titlebar you may accidentally select the text on the titlebar. To prevent this, you need to disable text selection within a draggable area like this:
+In a frameless window the dragging behaviour may conflict with selecting text.
+For example, when you drag the titlebar you may accidentally select the text on
+the titlebar. To prevent this, you need to disable text selection within a
+draggable area like this:
 
 ```css
 .titlebar {
