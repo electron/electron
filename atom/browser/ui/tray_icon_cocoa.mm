@@ -207,8 +207,14 @@ const CGFloat kVerticalTitleMargin = 2;
   }
   inMouseEventSequence_ = NO;
 
-  // Show menu when single clicked on the icon.
-  if (event.clickCount == 1 && menuController_)
+  // Show menu when there is a context menu.
+  // NB(hokein): Make tray's behavior more like official one's.
+  // When the tray icon gets clicked quickly multiple times, the
+  // event.clickCount doesn't always return 1. Instead, it returns a value that
+  // counts the clicked times.
+  // So we don't check the clickCount here, just pop up the menu for each click
+  // event.
+  if (menuController_)
     [statusItem_ popUpStatusItemMenu:[menuController_ menu]];
 
   // Don't emit click events when menu is showing.

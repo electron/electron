@@ -1,4 +1,4 @@
-# auto-updater
+# autoUpdater
 
 **This module has only been implemented for OS X.**
 
@@ -98,27 +98,35 @@ appropriate format.
 
 `pub_date` (if present) must be formatted according to ISO 8601.
 
-## Event: error
+## Events
+
+The `autoUpdater` object emits the following events:
+
+### Event: 'error'
+
+Returns:
 
 * `event` Event
 * `message` String
 
 Emitted when there is an error while updating.
 
-## Event: checking-for-update
+### Event: 'checking-for-update'
 
 Emitted when checking if an update has started.
 
-## Event: update-available
+### Event: 'update-available'
 
 Emitted when there is an available update. The update is downloaded
 automatically.
 
-## Event: update-not-available
+### Event: 'update-not-available'
 
 Emitted when there is no available update.
 
-## Event: update-downloaded
+### Event: 'update-downloaded'
+
+Returns:
 
 * `event` Event
 * `releaseNotes` String
@@ -127,17 +135,21 @@ Emitted when there is no available update.
 * `updateUrl` String
 * `quitAndUpdate` Function
 
-Emitted when an update has been downloaded. Calling `quitAndUpdate()` will restart
-the application and install the update.
+Emitted when an update has been downloaded. Calling `quitAndUpdate()` will
+restart the application and install the update.
 
-## autoUpdater.setFeedUrl(url)
+## Methods
+
+The `autoUpdater` object has the following methods:
+
+### `autoUpdater.setFeedUrl(url)`
 
 * `url` String
 
 Set the `url` and initialize the auto updater. The `url` cannot be changed
 once it is set.
 
-## autoUpdater.checkForUpdates()
+### `autoUpdater.checkForUpdates()`
 
 Ask the server whether there is an update. You must call `setFeedUrl` before
 using this API.

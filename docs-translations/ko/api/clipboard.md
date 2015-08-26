@@ -45,11 +45,11 @@ console.log(clipboard.readText('selection'));
 
 * `type` String
 
-클립보드로부터 [NativeImage](native-image-ko.md)로 이미지를 읽어들입니다.
+클립보드로부터 [NativeImage](native-image.md)로 이미지를 읽어들입니다.
 
 ## clipboard.writeImage(image[, type])
 
-* `image` [NativeImage](native-image-ko.md)
+* `image` [NativeImage](native-image.md)
 * `type` String
 
 클립보드에 `image`를 씁니다.
