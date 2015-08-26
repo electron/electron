@@ -17,7 +17,7 @@ var session = win.webContents.session
 
 The `session` object has the following methods:
 
-### session.cookies
+### `session.cookies`
 
 The `cookies` gives you ability to query and modify cookies. For example:
 
@@ -55,7 +55,7 @@ win.webContents.on('did-finish-load', function() {
 
 ### `session.cookies.get(details, callback)`
 
-`details` Object
+`details` Object, properties:
 
 * `url` String - Retrieves cookies which are associated with `url`.
   Empty implies retrieving cookies of all urls.
@@ -83,7 +83,7 @@ win.webContents.on('did-finish-load', function() {
 
 ### `session.cookies.set(details, callback)`
 
-`details` Object
+`details` Object, properties:
 
 * `url` String - Retrieves cookies which are associated with `url`
 * `name` String - The name of the cookie. Empty by default if omitted.
@@ -102,7 +102,7 @@ win.webContents.on('did-finish-load', function() {
 
 ### `session.cookies.remove(details, callback)`
 
-* `details` Object
+* `details` Object, proprties:
   * `url` String - The URL associated with the cookie
   * `name` String - The name of cookie to remove
 * `callback` Function - function(error)
@@ -116,22 +116,22 @@ Clears the session’s HTTP cache.
 
 ### `session.clearStorageData([options, ]callback)`
 
-* `options` Object (optional)
+* `options` Object (optional), proprties:
   * `origin` String - Should follow `window.location.origin`’s representation
-    `scheme://host:port`
+    `scheme://host:port`.
   * `storages` Array - The types of storages to clear, can contain:
     `appcache`, `cookies`, `filesystem`, `indexdb`, `local storage`,
     `shadercache`, `websql`, `serviceworkers`
   * `quotas` Array - The types of quotas to clear, can contain:
-    `temporary`, `persistent`, `syncable`
-* `callback` Function - Called when operation is done
+    `temporary`, `persistent`, `syncable`.
+* `callback` Function - Called when operation is done.
 
 Clears the data of web storages.
 
 ### `session.setProxy(config, callback)`
 
 * `config` String
-* `callback` Function - Called when operation is done
+* `callback` Function - Called when operation is done.
 
 Parses the `config` indicating which proxies to use for the session.
 

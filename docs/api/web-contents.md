@@ -13,8 +13,7 @@ var BrowserWindow = require('browser-window');
 var win = new BrowserWindow({width: 800, height: 1500});
 win.loadUrl("http://github.com");
 
-var webContents = win.webContents
-
+var webContents = win.webContents;
 ```
 
 ## Events
@@ -67,7 +66,7 @@ Returns:
 * `referrer` String
 * `headers` Object
 
-Emitted when details regarding a requested resource is available.
+Emitted when details regarding a requested resource are available.
 `status` indicates the socket connection to download the resource.
 
 ### Event: 'did-get-redirect-request'
@@ -79,7 +78,7 @@ Returns:
 * `newUrl` String
 * `isMainFrame` Boolean
 
-Emitted when a redirect was received while requesting a resource.
+Emitted when a redirect is received while requesting a resource.
 
 ### Event: 'dom-ready'
 
@@ -106,14 +105,14 @@ Returns:
 * `url` String
 * `frameName` String
 * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
-  `new-window` and `other`
+  `new-window` and `other`.
 
 Emitted when the page requests to open a new window for a `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.
 
 By default a new `BrowserWindow` will be created for the `url`.
 
-Calling `event.preventDefault()` can prevent creating new windows.
+Calling `event.preventDefault()` will prevent creating new windows.
 
 ### Event: 'will-navigate'
 
@@ -122,13 +121,13 @@ Returns:
 * `event` Event
 * `url` String
 
-Emitted when user or the page wants to start a navigation, it can happen when
-`window.location` object is changed or user clicks a link in the page.
+Emitted when a user or the page wants to start navigation. It can happen when the
+`window.location` object is changed or a user clicks a link in the page.
 
 This event will not emit when the navigation is started programmatically with
 APIs like `webContents.loadUrl` and `webContents.back`.
 
-Calling `event.preventDefault()` can prevent the navigation.
+Calling `event.preventDefault()` will prevent the navigation.
 
 ### Event: 'crashed'
 
@@ -154,16 +153,16 @@ The `webContents` object has the following instance methods:
 
 ### `webContents.session`
 
-Returns the `Session` object used by this webContents.
+Returns the `session` object used by this webContents.
 
 See [session documentation](session.md) for this object's methods.
 
 ### `webContents.loadUrl(url[, options])`
 
 * `url` URL
-* `options` Object (optional). Properties:
-  * `httpReferrer` String - A HTTP Referrer url
-  * `userAgent` String - A user agent originating the request
+* `options` Object (optional), properties:
+  * `httpReferrer` String - A HTTP Referrer url.
+  * `userAgent` String - A user agent originating the request.
 
 Loads the `url` in the window, the `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`.
@@ -191,7 +190,7 @@ Returns whether web page is still loading resources.
 
 ### `webContents.isWaitingForResponse()`
 
-Returns whether the web page is waiting for a first-response for the main
+Returns whether the web page is waiting for a first-response from the main
 resource of the page.
 
 ### `webContents.stop()`
@@ -252,11 +251,11 @@ Whether the renderer process has crashed.
 
 * `userAgent` String
 
-Overrides the user agent for this page.
+Overrides the user agent for this web page.
 
 ### `webContents.getUserAgent()`
 
-Returns a `String` representing the user agent for this page.
+Returns a `String` representing the user agent for this web page.
 
 ### `webContents.insertCSS(css)`
 
@@ -287,51 +286,51 @@ Returns whether this page has been muted.
 
 ### `webContents.undo()`
 
-Executes editing command `undo` in page.
+Executes the editing command `undo` in web page.
 
 ### `webContents.redo()`
 
-Executes editing command `redo` in page.
+Executes the editing command `redo` in web page.
 
 ### `webContents.cut()`
 
-Executes editing command `cut` in page.
+Executes the editing command `cut` in web page.
 
 ### `webContents.copy()`
 
-Executes editing command `copy` in page.
+Executes the editing command `copy` in web page.
 
 ### `webContents.paste()`
 
-Executes editing command `paste` in page.
+Executes the editing command `paste` in web page.
 
 ### `webContents.pasteAndMatchStyle()`
 
-Executes editing command `pasteAndMatchStyle` in page.
+Executes the editing command `pasteAndMatchStyle` in web page.
 
 ### `webContents.delete()`
 
-Executes editing command `delete` in page.
+Executes the editing command `delete` in web page.
 
 ### `webContents.selectAll()`
 
-Executes editing command `selectAll` in page.
+Executes the editing command `selectAll` in web page.
 
 ### `webContents.unselect()`
 
-Executes editing command `unselect` in page.
+Executes the editing command `unselect` in web page.
 
 ### `webContents.replace(text)`
 
 * `text` String
 
-Executes editing command `replace` in page.
+Executes the editing command `replace` in web page.
 
 ### `webContents.replaceMisspelling(text)`
 
 * `text` String
 
-Executes editing command `replaceMisspelling` in page.
+Executes the editing command `replaceMisspelling` in web page.
 
 ### `webContents.hasServiceWorker(callback)`
 
@@ -350,7 +349,7 @@ when the JS promise is rejected.
 
 ### `webContents.print([options])`
 
-`options` Object (optional). Properties:
+`options` Object (optional), properties:
 
 * `silent` Boolean - Don't ask user for print settings, defaults to `false`
 * `printBackground` Boolean - Also prints the background color and image of
@@ -359,7 +358,7 @@ when the JS promise is rejected.
 Prints window's web page. When `silent` is set to `false`, Electron will pick
 up system's default printer and default settings for printing.
 
-Calling `window.print()` in web page is equivalent to call
+Calling `window.print()` in web page is equivalent to calling
 `webContents.print({silent: false, printBackground: false})`.
 
 **Note:** On Windows, the print API relies on `pdf.dll`. If your application
@@ -374,7 +373,7 @@ size.
   * 0 - default
   * 1 - none
   * 2 - minimum
-* `pageSize` String - Specify page size of the generated PDF
+* `pageSize` String - Specify page size of the generated PDF.
   * `A4`
   * `A3`
   * `Legal`
@@ -387,7 +386,7 @@ size.
 `callback` Function - `function(error, data) {}`
 
 * `error` Error
-* `data` Buffer - PDF file content
+* `data` Buffer - PDF file content.
 
 Prints window's web page as PDF with Chromium's preview printing custom
 settings.
@@ -396,10 +395,10 @@ By default, an empty `options` will be regarded as:
 
 ```javascript
 {
-  marginsType:0,
-  printBackgrounds:false,
-  printSelectionOnly:false,
-  landscape:false
+  marginsType: 0,
+  printBackground: false,
+  printSelectionOnly: false,
+  landscape: false
 }
 ```
 
@@ -472,7 +471,7 @@ app.on('ready', function() {
 
 **Note:**
 
-1. The IPC message handler in web pages does not have an `event` parameter, which
-   is different from the handlers on the main process.
+1. The IPC message handler in web pages does not have an `event` parameter,
+   which is different from the handlers on the main process.
 2. There is no way to send synchronous messages from the main process to a
    renderer process, because it would be very easy to cause dead locks.

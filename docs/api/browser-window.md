@@ -1,6 +1,6 @@
 # BrowserWindow
 
-The `BrowserWindow` class gives you the ability to create a browser window, for
+The `BrowserWindow` class gives you the ability to create a browser window. For
 example:
 
 ```javascript
@@ -147,14 +147,9 @@ window.onbeforeunload = function(e) {
 
   // Unlike usual browsers, in which a string should be returned and the user is
   // prompted to confirm the page unload, Electron gives developers more options.
-  // Returning an empty string or `false` will prevent the unloading.
-<<<<<<< HEAD
+  // Returning empty string or false would prevent the unloading now.
   // You can also use the dialog API to let the user confirm closing the application.
   e.returnValue = false;
-=======
-  // You can also use the dialog API to let the user confirm closing the app.
-  return false;
->>>>>>> Line wrap 80-col
 };
 ```
 
@@ -307,7 +302,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ```
 
-### `win.webContents`
+### `win.webContents()`
 
 The `WebContents` object this window owns, all web page related events and
 operations will be done via it.
@@ -318,14 +313,14 @@ events.
 **Note:** Users should never store this object because it may become `null`
 when the renderer process (web page) has crashed.
 
-### `win.devToolsWebContents`
+### `win.devToolsWebContents()`
 
 Get the `WebContents` of devtools for this window.
 
 **Note:** Users should never store this object because it may become `null`
 when the devtools has been closed.
 
-### `win.id`
+### `win.id()`
 
 Get the unique ID of this window.
 
@@ -335,7 +330,8 @@ Force closing the window, the `unload` and `beforeunload` event won't be emitted
 for the web page, and `close` event will also not be emitted
 for this window, but it guarantees the `closed` event will be emitted.
 
-You should only use this method when the renderer process (web page) has crashed.
+You should only use this method when the renderer process (web page) has
+crashed.
 
 ### `win.close()`
 
@@ -412,7 +408,8 @@ maintaining the aspect ratio. Properties:
   * `height` Integer
 
 This will have a window maintain an aspect ratio. The extra size allows a
-developer to have space, specified in pixels, not included within the aspect ratio calculations. This API already takes into account the difference between a
+developer to have space, specified in pixels, not included within the aspect
+ratio calculations. This API already takes into account the difference between a
 window's size and its content size.
 
 Consider a normal window with an HD video player and associated controls.
@@ -631,20 +628,12 @@ contents.
   * `height` Integer
 * `callback` Function
 
-Captures a snapshot of the page within `rect`. Upon completion `callback` will be
-called with `callback(image)`. The `image` is an instance of
+Captures a snapshot of the page within `rect`. Upon completion `callback` will
+be called with `callback(image)`. The `image` is an instance of
 [NativeImage](native-image.md) that stores data of the snapshot. Omitting
 `rect` will capture the whole visible page.
 
-<<<<<<< HEAD
-### BrowserWindow.print([options])
-=======
-**Note:** Be sure to read documents on remote buffer in
-[remote](remote.md) if you are going to use this API in renderer
-process.
-
 ### `win.print([options])`
->>>>>>> Break out methods, standardize
 
 Same as `webContents.print([options])`
 
@@ -774,577 +763,3 @@ Sets whether the window should be visible on all workspaces.
 Returns whether the window is visible on all workspaces.
 
 **Note:** This API always returns false on Windows.
-<<<<<<< HEAD
-
-## Class: WebContents
-
-A `WebContents` is responsible for rendering and controlling a web page.
-
-`WebContents` is an
-[EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
-
-### Event: 'did-finish-load'
-
-Emitted when the navigation is done, i.e. the spinner of the tab will stop
-spinning, and the `onload` event was dispatched.
-
-### Event: 'did-fail-load'
-
-* `event` Event
-* `errorCode` Integer
-* `errorDescription` String
-
-This event is like `did-finish-load`, but emitted when the load failed or was
-cancelled, e.g. `window.stop()` is invoked.
-
-### Event: 'did-frame-finish-load'
-
-* `event` Event
-* `isMainFrame` Boolean
-
-Emitted when a frame has done navigation.
-
-### Event: 'did-start-loading'
-
-Corresponds to the points in time when the spinner of the tab starts spinning.
-
-### Event: 'did-stop-loading'
-
-Corresponds to the points in time when the spinner of the tab stops spinning.
-
-### Event: 'did-get-response-details'
-
-* `event` Event
-* `status` Boolean
-* `newUrl` String
-* `originalUrl` String
-* `httpResponseCode` Integer
-* `requestMethod` String
-* `referrer` String
-* `headers` Object
-
-Emitted when details regarding a requested resource is available.
-`status` indicates the socket connection to download the resource.
-
-### Event: 'did-get-redirect-request'
-
-* `event` Event
-* `oldUrl` String
-* `newUrl` String
-* `isMainFrame` Boolean
-
-Emitted when a redirect was received while requesting a resource.
-
-### Event: 'dom-ready'
-
-* `event` Event
-
-Emitted when document in the given frame is loaded.
-
-### Event: 'page-favicon-updated'
-
-* `event` Event
-* `favicons` Array - Array of Urls
-
-Emitted when page receives favicon urls.
-
-### Event: 'new-window'
-
-* `event` Event
-* `url` String
-* `frameName` String
-* `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
-  `new-window` and `other`
-
-Emitted when the page requested to open a new window for `url`. It could be
-requested by `window.open` or an external link like `<a target='_blank'>`.
-
-By default a new `BrowserWindow` will be created for the `url`.
-
-Calling `event.preventDefault()` can prevent creating new windows.
-
-### Event: 'will-navigate'
-
-* `event` Event
-* `url` String
-
-Emitted when user or the page wants to start a navigation, it can happen when
-`window.location` object is changed or user clicks a link in the page.
-
-This event will not emit when the navigation is started programmatically with APIs
-like `WebContents.loadUrl` and `WebContents.back`.
-
-Calling `event.preventDefault()` can prevent the navigation.
-
-### Event: 'crashed'
-
-Emitted when the renderer process is crashed.
-
-### Event: 'plugin-crashed'
-
-* `event` Event
-* `name` String
-* `version` String
-
-Emitted when a plugin process is crashed.
-
-### Event: 'destroyed'
-
-Emitted when the WebContents is destroyed.
-
-### WebContents.session
-
-Returns the `Session` object used by this WebContents.
-
-### WebContents.loadUrl(url, [options])
-
-* `url` URL
-* `options` URL
-  * `httpReferrer` String - A HTTP Referer url
-  * `userAgent` String - A user agent originating the request
-
-Loads the `url` in the window, the `url` must contains the protocol prefix,
-e.g. the `http://` or `file://`.
-
-### WebContents.getUrl()
-
-Returns URL of current web page.
-
-### WebContents.getTitle()
-
-Returns the title of web page.
-
-### WebContents.isLoading()
-
-Returns whether web page is still loading resources.
-
-### WebContents.isWaitingForResponse()
-
-Returns whether web page is waiting for a first-response for the main resource
-of the page.
-
-### WebContents.stop()
-
-Stops any pending navigation.
-
-### WebContents.reload()
-
-Reloads current page.
-
-### WebContents.reloadIgnoringCache()
-
-Reloads current page and ignores cache.
-
-### WebContents.canGoBack()
-
-Returns whether the web page can go back.
-
-### WebContents.canGoForward()
-
-Returns whether the web page can go forward.
-
-### WebContents.canGoToOffset(offset)
-
-* `offset` Integer
-
-Returns whether the web page can go to `offset`.
-
-### WebContents.clearHistory()
-
-Clears the navigation history.
-
-### WebContents.goBack()
-
-Makes the web page go back.
-
-### WebContents.goForward()
-
-Makes the web page go forward.
-
-### WebContents.goToIndex(index)
-
-* `index` Integer
-
-Navigates to the specified absolute index.
-
-### WebContents.goToOffset(offset)
-
-* `offset` Integer
-
-Navigates to the specified offset from the "current entry".
-
-### WebContents.isCrashed()
-
-Whether the renderer process has crashed.
-
-### WebContents.setUserAgent(userAgent)
-
-* `userAgent` String
-
-Overrides the user agent for this page.
-
-### WebContents.getUserAgent()
-
-Returns a `String` represents the user agent for this page.
-
-### WebContents.insertCSS(css)
-
-* `css` String
-
-Injects CSS into this page.
-
-### WebContents.executeJavaScript(code[, userGesture])
-
-* `code` String
-* `userGesture` Boolean
-
-Evaluates `code` in page.
-
-In browser some HTML APIs like `requestFullScreen` can only be invoked if it
-is started by user gesture, by specifying `userGesture` to `true` developers
-can ignore this limitation.
-
-### WebContents.setAudioMuted(muted)
-
-+ `muted` Boolean
-
-Set the page muted.
-
-### WebContents.isAudioMuted()
-
-Returns whether this page has been muted.
-
-### WebContents.undo()
-
-Executes editing command `undo` in page.
-
-### WebContents.redo()
-
-Executes editing command `redo` in page.
-
-### WebContents.cut()
-
-Executes editing command `cut` in page.
-
-### WebContents.copy()
-
-Executes editing command `copy` in page.
-
-### WebContents.paste()
-
-Executes editing command `paste` in page.
-
-### WebContents.pasteAndMatchStyle()
-
-Executes editing command `pasteAndMatchStyle` in page.
-
-### WebContents.delete()
-
-Executes editing command `delete` in page.
-
-### WebContents.selectAll()
-
-Executes editing command `selectAll` in page.
-
-### WebContents.unselect()
-
-Executes editing command `unselect` in page.
-
-### WebContents.replace(text)
-
-* `text` String
-
-Executes editing command `replace` in page.
-
-### WebContents.replaceMisspelling(text)
-
-* `text` String
-
-Executes editing command `replaceMisspelling` in page.
-
-### WebContents.hasServiceWorker(callback)
-
-* `callback` Function
-
-Checks if any serviceworker is registered and returns boolean as
-response to `callback`.
-
-### WebContents.unregisterServiceWorker(callback)
-
-* `callback` Function
-
-Unregisters any serviceworker if present and returns boolean as
-response to `callback` when the JS promise is fullfilled or false
-when the JS promise is rejected.  
-
-### WebContents.print([options])
-
-* `options` Object
-  * `silent` Boolean - Don't ask user for print settings, defaults to `false`
-  * `printBackground` Boolean - Also prints the background color and image of
-    the web page, defaults to `false`.
-
-Prints window's web page. When `silent` is set to `false`, Electron will pick
-up system's default printer and default settings for printing.
-
-Calling `window.print()` in web page is equivalent to call
-`WebContents.print({silent: false, printBackground: false})`.
-
-**Note:** On Windows, the print API relies on `pdf.dll`. If your application
-doesn't need print feature, you can safely remove `pdf.dll` in saving binary
-size.
-
-### WebContents.printToPDF(options, callback)
-
-* `options` Object
-  * `marginsType` Integer - Specify the type of margins to use
-    * 0 - default
-    * 1 - none
-    * 2 - minimum
-  * `pageSize` String - Specify page size of the generated PDF
-    * `A4`
-    * `A3`
-    * `Legal`
-    * `Letter`
-    * `Tabloid`
-  * `printBackground` Boolean - Whether to print CSS backgrounds.
-  * `printSelectionOnly` Boolean - Whether to print selection only.
-  * `landscape` Boolean - `true` for landscape, `false` for portrait.
-
-* `callback` Function - `function(error, data) {}`
-  * `error` Error
-  * `data` Buffer - PDF file content
-
-Prints windows' web page as PDF with Chromium's preview printing custom
-settings.
-
-By default, an empty `options` will be regarded as
-`{marginsType:0, printBackground:false, printSelectionOnly:false,
-  landscape:false}`.
-
-```javascript
-var BrowserWindow = require('browser-window');
-var fs = require('fs');
-
-var win = new BrowserWindow({width: 800, height: 600});
-win.loadUrl("http://github.com");
-
-win.webContents.on("did-finish-load", function() {
-  // Use default printing options
-  win.webContents.printToPDF({}, function(error, data) {
-    if (error) throw error;
-    fs.writeFile("/tmp/print.pdf", data, function(error) {
-      if (err)
-        throw error;
-      console.log("Write PDF successfully.");
-    })
-  })
-});
-```
-
-### WebContents.addWorkSpace(path)
-
-* `path` String
-
-Adds the specified path to devtools workspace.
-
-### WebContents.removeWorkSpace(path)
-
-* `path` String
-
-Removes the specified path from devtools workspace.
-
-### WebContents.send(channel[, args...])
-
-* `channel` String
-
-Send `args..` to the web page via `channel` in asynchronous message, the web
-page can handle it by listening to the `channel` event of `ipc` module.
-
-An example of sending messages from the main process to the renderer process:
-
-```javascript
-// On the main process.
-var window = null;
-app.on('ready', function() {
-  window = new BrowserWindow({width: 800, height: 600});
-  window.loadUrl('file://' + __dirname + '/index.html');
-  window.webContents.on('did-finish-load', function() {
-    window.webContents.send('ping', 'whoooooooh!');
-  });
-});
-```
-
-```html
-// index.html
-<html>
-<body>
-  <script>
-    require('ipc').on('ping', function(message) {
-      console.log(message);  // Prints "whoooooooh!"
-    });
-  </script>
-</body>
-</html>
-```
-
-**Note:**
-
-1. The IPC message handler in web pages do not have a `event` parameter, which
-   is different from the handlers on the main process.
-2. There is no way to send synchronous messages from the main process to a
-   renderer process, because it would be very easy to cause dead locks.
-
-## Class: Session
-
-### Session.cookies
-
-The `cookies` gives you ability to query and modify cookies, an example is:
-
-```javascript
-var BrowserWindow = require('browser-window');
-
-var win = new BrowserWindow({ width: 800, height: 600 });
-
-win.loadUrl('https://github.com');
-
-win.webContents.on('did-finish-load', function() {
-  // Query all cookies.
-  win.webContents.session.cookies.get({}, function(error, cookies) {
-    if (error) throw error;
-    console.log(cookies);
-  });
-
-  // Query all cookies that are associated with a specific url.
-  win.webContents.session.cookies.get({ url : "http://www.github.com" },
-      function(error, cookies) {
-        if (error) throw error;
-        console.log(cookies);
-  });
-
-  // Set a cookie with the given cookie data;
-  // may overwrite equivalent cookies if they exist.
-  win.webContents.session.cookies.set(
-    { url : "http://www.github.com", name : "dummy_name", value : "dummy"},
-    function(error, cookies) {
-      if (error) throw error;
-      console.log(cookies);
-  });
-});
-```
-
-### Session.cookies.get(details, callback)
-
-* `details` Object
-  * `url` String - Retrieves cookies which are associated with `url`.
-    Empty imples retrieving cookies of all urls.
-  * `name` String - Filters cookies by name
-  * `domain` String - Retrieves cookies whose domains match or are subdomains of `domains`
-  * `path` String - Retrieves cookies whose path matches `path`
-  * `secure` Boolean - Filters cookies by their Secure property
-  * `session` Boolean - Filters out session or persistent cookies.
-* `callback` Function - function(error, cookies)
-  * `error` Error
-  * `cookies` Array - array of `cookie` objects.
-    * `cookie` - Object
-      *  `name` String - The name of the cookie
-      *  `value` String - The value of the cookie
-      *  `domain` String - The domain of the cookie
-      *  `host_only` String - Whether the cookie is a host-only cookie
-      *  `path` String - The path of the cookie
-      *  `secure` Boolean - Whether the cookie is marked as Secure (typically HTTPS)
-      *  `http_only` Boolean - Whether the cookie is marked as HttpOnly
-      *  `session` Boolean - Whether the cookie is a session cookie or a persistent
-         cookie with an expiration date.
-      *  `expirationDate` Double - (Option) The expiration date of the cookie as
-         the number of seconds since the UNIX epoch. Not provided for session cookies.
-
-
-### Session.cookies.set(details, callback)
-
-* `details` Object
-  * `url` String - Retrieves cookies which are associated with `url`
-  * `name` String - The name of the cookie. Empty by default if omitted.
-  * `value` String - The value of the cookie. Empty by default if omitted.
-  * `domain` String - The domain of the cookie. Empty by default if omitted.
-  * `path` String - The path of the cookie. Empty by default if omitted.
-  * `secure` Boolean - Whether the cookie should be marked as Secure. Defaults to false.
-  * `session` Boolean - Whether the cookie should be marked as HttpOnly. Defaults to false.
-  * `expirationDate` Double -	The expiration date of the cookie as the number of
-    seconds since the UNIX epoch. If omitted, the cookie becomes a session cookie.
-
-* `callback` Function - function(error)
-  * `error` Error
-
-### Session.cookies.remove(details, callback)
-
-* `details` Object
-  * `url` String - The URL associated with the cookie
-  * `name` String - The name of cookie to remove
-* `callback` Function - function(error)
-  * `error` Error
-
-### Session.clearCache(callback)
-
-* `callback` Function - Called when operation is done
-
-Clears the session's HTTP cache.
-
-### Session.clearStorageData([options, ]callback)
-
-* `options` Object
-  * `origin` String - Should follow `window.location.origin`'s representation
-    `scheme://host:port`
-  * `storages` Array - The types of storages to clear, can contain:
-    `appcache`, `cookies`, `filesystem`, `indexdb`, `localstorage`,
-    `shadercache`, `websql`, `serviceworkers`
-  * `quotas` Array - The types of quotas to clear, can contain:
-    `temporary`, `persistent`, `syncable`
-* `callback` Function - Called when operation is done
-
-Clears the data of web storages.
-
-### Session.setProxy(config, callback)
-
-* `config` String
-* `callback` Function - Called when operation is done
-
-Parses the `config` indicating which proxies to use for the session.
-
-```
-config = scheme-proxies[";"<scheme-proxies>]
-scheme-proxies = [<url-scheme>"="]<proxy-uri-list>
-url-scheme = "http" | "https" | "ftp" | "socks"
-proxy-uri-list = <proxy-uri>[","<proxy-uri-list>]
-proxy-uri = [<proxy-scheme>"://"]<proxy-host>[":"<proxy-port>]
-
-  For example:
-       "http=foopy:80;ftp=foopy2"  -- use HTTP proxy "foopy:80" for http://
-                                      URLs, and HTTP proxy "foopy2:80" for
-                                      ftp:// URLs.
-       "foopy:80"                  -- use HTTP proxy "foopy:80" for all URLs.
-       "foopy:80,bar,direct://"    -- use HTTP proxy "foopy:80" for all URLs,
-                                      failing over to "bar" if "foopy:80" is
-                                      unavailable, and after that using no
-                                      proxy.
-       "socks4://foopy"            -- use SOCKS v4 proxy "foopy:1080" for all
-                                      URLs.
-       "http=foopy,socks5://bar.com -- use HTTP proxy "foopy" for http URLs,
-                                      and fail over to the SOCKS5 proxy
-                                      "bar.com" if "foopy" is unavailable.
-       "http=foopy,direct://       -- use HTTP proxy "foopy" for http URLs,
-                                      and use no proxy if "foopy" is
-                                      unavailable.
-       "http=foopy;socks=foopy2   --  use HTTP proxy "foopy" for http URLs,
-                                      and use socks4://foopy2 for all other
-                                      URLs.
-```
-
-### Session.setDownloadPath(path)
-
-* `path` String - The download location
-
-Sets download saving directory. By default, the download directory will be the
-`Downloads` under the respective app folder.
-=======
->>>>>>> Break out methods, standardize
