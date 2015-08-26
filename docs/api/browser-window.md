@@ -200,11 +200,9 @@ Emitted when the window is getting moved to a new position.
 
 __Note__: On OS X this event is just an alias of `moved`.
 
-### Event: 'moved'
+### Event: 'moved' _OS X_
 
 Emitted once when the window is moved to a new position.
-
-__Note__: This event is available only on OS X.
 
 ### Event: 'enter-full-screen'
 
@@ -234,7 +232,7 @@ Emitted when devtools is closed.
 
 Emitted when devtools is focused / opened.
 
-### Event: 'app-command':
+### Event: 'app-command' _Windows_
 
 Emitted when an [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx
 is invoked. These are typically related to keyboard media keys or browser
@@ -248,8 +246,6 @@ someWindow.on('app-command', function(e, cmd) {
   }
 });
 ```
-
-__Note__: This event is only fired on Windows.
 
 ## Methods
 
@@ -421,8 +417,6 @@ the player itself we would call this function with arguments of 16/9 and
 are within the content view--only that they exist. Just sum any extra width and
 height areas you have within the overall content view.
 
-__Note__: This API is only implemented on OS X.
-
 ### `win.setBounds(options)`
 
 `options` Object, properties:
@@ -554,35 +548,27 @@ Enters or leaves the kiosk mode.
 
 Returns whether the window is in kiosk mode.
 
-### `win.setRepresentedFilename(filename)`
+### `win.setRepresentedFilename(filename)` _OS X_
 
 * `filename` String
 
 Sets the pathname of the file the window represents, and the icon of the file
 will show in window's title bar.
 
-__Note__: This API is only available on OS X.
-
-### `win.getRepresentedFilename()`
+### `win.getRepresentedFilename()` _OS X_
 
 Returns the pathname of the file the window represents.
 
-__Note__: This API is only available on OS X.
-
-### `win.setDocumentEdited(edited)`
+### `win.setDocumentEdited(edited)` _OS X_
 
 * `edited` Boolean
 
 Specifies whether the window’s document has been edited, and the icon in title
 bar will become grey when set to `true`.
 
-__Note__: This API is only available on OS X.
-
-### `win.IsDocumentEdited()`
+### `win.IsDocumentEdited()` _OS X_
 
 Whether the window's document has been edited.
-
-__Note__: This API is only available on OS X.
 
 ### `win.openDevTools([options])`
 
@@ -656,8 +642,6 @@ Same as `webContents.reload`.
 Sets the `menu` as the window's menu bar, setting it to `null` will remove the
 menu bar.
 
-__Note:__ This API is not available on OS X.
-
 ### `win.setProgressBar(progress)`
 
 * `progress` Double
@@ -671,7 +655,7 @@ On Linux platform, only supports Unity desktop environment, you need to specify
 the `*.desktop` file name to `desktopName` field in `package.json`. By default,
 it will assume `app.getName().desktop`.
 
-### `win.setOverlayIcon(overlay, description)` _Windows_
+### `win.setOverlayIcon(overlay, description)` _Windows 7+_
 
 * `overlay` [NativeImage](native-image.md) - the icon to display on the bottom
 right corner of the taskbar icon. If this parameter is `null`, the overlay is
@@ -682,10 +666,8 @@ screen readers
 Sets a 16px overlay onto the current taskbar icon, usually used to convey some
 sort of application status or to passively notify the user.
 
-__Note:__ This API is only available on Windows (Windows 7 and above)
 
-
-### `win.setThumbarButtons(buttons)` _Windows_
+### `win.setThumbarButtons(buttons)` _Windows 7+_
 
 `buttons` Array of `button` Objects:
 
@@ -713,7 +695,6 @@ Add a thumbnail toolbar with a specified set of buttons to the thumbnail image
 of a window in a taskbar button layout. Returns a `Boolean` object indicates
 whether the thumbnail has been added successfully.
 
-__Note:__ This API is only available on Windows (Windows 7 and above).
 The number of buttons in thumbnail toolbar should be no greater than 7 due to
 the limited room. Once you setup the thumbnail toolbar, the toolbar cannot be
 removed due to the platform's limitation. But you can call the API with an empty
@@ -722,8 +703,6 @@ array to clean the buttons.
 ### `win.showDefinitionForSelection()` _OS X_
 
 Shows pop-up dictionary that searches the selected word on the page.
-
-__Note__: This API is only available on OS X.
 
 ### `win.setAutoHideMenuBar(hide)`
 
