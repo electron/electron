@@ -121,7 +121,7 @@ void BrowserMainParts::PreMainMessageLoopStart() {
 
 void BrowserMainParts::PreMainMessageLoopRun() {
   browser_context_.reset(CreateBrowserContext());
-  browser_context_->Initialize();
+  browser_context_->Initialize(base::FilePath());
 
   web_ui_controller_factory_.reset(
       new WebUIControllerFactory(browser_context_.get()));

@@ -121,6 +121,7 @@ URLRequestContextGetter::URLRequestContextGetter(
     Delegate* delegate,
     NetLog* net_log,
     const base::FilePath& base_path,
+    bool in_memory,
     base::MessageLoop* io_loop,
     base::MessageLoop* file_loop,
     content::ProtocolHandlerMap* protocol_handlers,
@@ -128,6 +129,7 @@ URLRequestContextGetter::URLRequestContextGetter(
     : delegate_(delegate),
       net_log_(net_log),
       base_path_(base_path),
+      in_memory_(in_memory),
       io_loop_(io_loop),
       file_loop_(file_loop),
       url_sec_mgr_(net::URLSecurityManager::Create(NULL, NULL)),
@@ -154,8 +156,8 @@ net::HostResolver* URLRequestContextGetter::host_resolver() {
 net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
 
-  auto& command_line = *base::CommandLine::ForCurrentProcess();
   if (!url_request_context_.get()) {
+    auto& command_line = *base::CommandLine::ForCurrentProcess();
     url_request_context_.reset(new net::URLRequestContext);
 
     // --log-net-log
@@ -166,11 +168,18 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     url_request_context_->set_network_delegate(network_delegate_.get());
 
     storage_.reset(new net::URLRequestContextStorage(url_request_context_.get()));
-    auto cookie_config = content::CookieStoreConfig(
-        base_path_.Append(FILE_PATH_LITERAL("Cookies")),
-        content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
-        NULL, NULL);
-    storage_->set_cookie_store(content::CreateCookieStore(cookie_config));
+
+    scoped_refptr<net::CookieStore> cookie_store = nullptr;
+    if (in_memory_) {
+      cookie_store = content::CreateCookieStore(content::CookieStoreConfig());
+    } else {
+      auto cookie_config = content::CookieStoreConfig(
+          base_path_.Append(FILE_PATH_LITERAL("Cookies")),
+          content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
+          NULL, NULL);
+      cookie_store = content::CreateCookieStore(cookie_config);
+    }
+    storage_->set_cookie_store(cookie_store.get());
     storage_->set_channel_id_service(make_scoped_ptr(
         new net::ChannelIDService(new net::DefaultChannelIDStore(NULL),
                                   base::WorkerPool::GetTaskRunner(true))));
@@ -265,7 +274,12 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     storage_->set_host_resolver(host_resolver.Pass());
     network_session_params.host_resolver = url_request_context_->host_resolver();
 
-    net::HttpCache::BackendFactory* backend = delegate_->CreateHttpCacheBackendFactory(base_path_);
+    net::HttpCache::BackendFactory* backend = nullptr;
+    if (in_memory_) {
+      backend = net::HttpCache::DefaultBackend::InMemory(0);
+    } else {
+      backend = delegate_->CreateHttpCacheBackendFactory(base_path_);
+    }
     storage_->set_http_transaction_factory(new net::HttpCache(network_session_params, backend));
 
     storage_->set_job_factory(delegate_->CreateURLRequestJobFactory(
