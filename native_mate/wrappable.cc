@@ -14,7 +14,7 @@ Wrappable::Wrappable() : isolate_(NULL) {
 }
 
 Wrappable::~Wrappable() {
-  MATE_PERSISTENT_RESET(wrapper_);
+  wrapper_.Reset();
 }
 
 void Wrappable::Wrap(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) {
@@ -23,14 +23,14 @@ void Wrappable::Wrap(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) {
 
   isolate_ = isolate;
 
-  MATE_SET_INTERNAL_FIELD_POINTER(wrapper, 0, this);
-  MATE_PERSISTENT_ASSIGN(v8::Object, isolate, wrapper_, wrapper);
-  MATE_PERSISTENT_SET_WEAK(wrapper_, this, WeakCallback);
+  wrapper->SetAlignedPointerInInternalField(0, this);
+  wrapper_.Reset(isolate, wrapper);
+  wrapper_.SetWeak(this, FirstWeakCallback, v8::WeakCallbackType::kParameter);
 
   // Call object._init if we have one.
   v8::Local<v8::Function> init;
   if (Dictionary(isolate, wrapper).Get("_init", &init))
-    init->Call(wrapper, 0, NULL);
+    init->Call(wrapper, 0, nullptr);
 
   AfterInit(isolate);
 }
@@ -45,10 +45,16 @@ ObjectTemplateBuilder Wrappable::GetObjectTemplateBuilder(
   return ObjectTemplateBuilder(isolate);
 }
 
-// static
-MATE_WEAK_CALLBACK(Wrappable::WeakCallback, v8::Object, Wrappable) {
-  MATE_WEAK_CALLBACK_INIT(Wrappable);
-  delete self;
+void Wrappable::FirstWeakCallback(const v8::WeakCallbackInfo<Wrappable>& data) {
+  Wrappable* wrappable = data.GetParameter();
+  wrappable->wrapper_.Reset();
+  data.SetSecondPassCallback(SecondWeakCallback);
+}
+
+void Wrappable::SecondWeakCallback(
+    const v8::WeakCallbackInfo<Wrappable>& data) {
+  Wrappable* wrappable = data.GetParameter();
+  delete wrappable;
 }
 
 v8::Local<v8::Object> Wrappable::GetWrapper(v8::Isolate* isolate) {
@@ -59,7 +65,15 @@ v8::Local<v8::Object> Wrappable::GetWrapper(v8::Isolate* isolate) {
       GetObjectTemplateBuilder(isolate).Build();
   CHECK(!templ.IsEmpty());
   CHECK_EQ(1, templ->InternalFieldCount());
-  v8::Local<v8::Object> wrapper = templ->NewInstance();
+  v8::Local<v8::Object> wrapper;
+  // |wrapper| may be empty in some extreme cases, e.g., when
+  // Object.prototype.constructor is overwritten.
+  if (!templ->NewInstance(isolate->GetCurrentContext()).ToLocal(&wrapper)) {
+    // The current wrappable object will be no longer managed by V8. Delete this
+    // now.
+    delete this;
+    return wrapper;
+  }
   Wrap(isolate, wrapper);
   return wrapper;
 }

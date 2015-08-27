@@ -79,7 +79,8 @@ class Wrappable {
   virtual void AfterInit(v8::Isolate* isolate) {}
 
  private:
-  static MATE_WEAK_CALLBACK(WeakCallback, v8::Object, Wrappable);
+  static void FirstWeakCallback(const v8::WeakCallbackInfo<Wrappable>& data);
+  static void SecondWeakCallback(const v8::WeakCallbackInfo<Wrappable>& data);
 
   v8::Isolate* isolate_;
   v8::UniquePersistent<v8::Object> wrapper_;  // Weak
