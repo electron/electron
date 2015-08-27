@@ -28,7 +28,7 @@ valueToMeta = (sender, value, optimizeSimpleObject=false) ->
     # Reference the original value if it's an object, because when it's
     # passed to renderer we would assume the renderer keeps a reference of
     # it.
-    [meta.id, meta.storeId] = objectsRegistry.add sender.getId(), value
+    meta.id = objectsRegistry.add sender.getId(), value
 
     meta.members = []
     meta.members.push {name: prop, type: typeof field} for prop, field of value
@@ -174,8 +174,8 @@ ipc.on 'ATOM_BROWSER_MEMBER_GET', (event, id, name) ->
   catch e
     event.returnValue = errorToMeta e
 
-ipc.on 'ATOM_BROWSER_DEREFERENCE', (event, storeId) ->
-  objectsRegistry.remove event.sender.getId(), storeId
+ipc.on 'ATOM_BROWSER_DEREFERENCE', (event, id) ->
+  objectsRegistry.remove event.sender.getId(), id
 
 ipc.on 'ATOM_BROWSER_GUEST_WEB_CONTENTS', (event, guestInstanceId) ->
   try
