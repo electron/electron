@@ -20,7 +20,6 @@ struct ObjectKey {
 
 void OnObjectGC(const v8::WeakCallbackInfo<ObjectKey>& data) {
   ObjectKey* key = data.GetParameter();
-  LOG(ERROR) << "OnObjectGC: " << key->id;
   key->map->Remove(key->id);
   delete key;
 }
