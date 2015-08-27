@@ -1,17 +1,19 @@
 # ipc (main process)
 
-Handles asynchronous and synchronous message sent from a renderer process (web
-page).
+The `ipc` module, when used in the main process, handles asynchronous and synchronous messages sent from a renderer process (web page). Messages sent from a renderer will be emitted to this module.
 
-The messages sent from a renderer would be emitted to this module, the event name
-is the `channel` when sending message. To reply a synchronous message, you need
-to set `event.returnValue`, to send an asynchronous back to the sender, you can
-use `event.sender.send(...)`.
+## Sending Messages
 
-It's also possible to send messages from main process to the renderer process,
-see [WebContents.send](browser-window.md#webcontentssendchannel-args) for more.
+It is also possible to send messages from the main process to the renderer
+process, see [WebContents.send](browser-window.md#webcontentssendchannel-args)
+for more information.
 
-An example of sending and handling messages:
+- When sending a message, the event name is the `channel`.
+- To reply a synchronous message, you need to set `event.returnValue`.
+- To send an asynchronous back to the sender, you can use `event.sender.send(...)`.
+
+An example of sending and handling messages between the render and main
+processes:
 
 ```javascript
 // In main process.
@@ -38,12 +40,34 @@ ipc.on('asynchronous-reply', function(arg) {
 ipc.send('asynchronous-message', 'ping');
 ```
 
-## Class: Event
+## Methods
 
-### Event.returnValue
+The `ipc` module has the following method:
 
-Assign to this to return an value to synchronous messages.
+### `ipc.on(channel, callback)`
 
-### Event.sender
+* `channel` String - The event name.
+* `callback` Function
 
-The `WebContents` that sent the message.
+When the event occurs the `callback` is called with an `event` object and a
+message, `arg`.
+
+## IPC Events
+
+The `event` object passed to the `callback` has the following methods:
+
+### `Event.returnValue`
+
+Set this to the value to be returned in a synchronous message.
+
+### `Event.sender`
+
+Returns the `WebContents` that sent the message.
+
+### `Event.sender.send(channel, arg)`
+
+* `channel` String - The event name.
+* `arg`
+
+This sends an asynchronous message back to the render process. The message,
+`arg`, can be any value.
