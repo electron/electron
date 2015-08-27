@@ -180,13 +180,8 @@ node::Environment* NodeBindings::CreateEnvironment(
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
   node::node_isolate = env->isolate();
-  if (node::use_debug_agent)
-    node::StartDebug(env, node::debug_wait_connect);
 
   node::LoadEnvironment(env);
-
-  if (node::use_debug_agent)
-    node::EnableDebug(env);
 
   mate::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
