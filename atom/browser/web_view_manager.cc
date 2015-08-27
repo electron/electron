@@ -5,27 +5,18 @@
 #include "atom/browser/web_view_manager.h"
 
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/atom_browser_main_parts.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
 
 namespace atom {
 
-namespace {
-
-WebViewManager* GetManagerFromWebContents(
-    const content::WebContents* web_contents) {
-  auto context = web_contents->GetBrowserContext();
-  if (!context)
-    return nullptr;
-  return static_cast<WebViewManager*>(context->GetGuestManager());
-}
-
-}  // namespace
-
 // static
 bool WebViewManager::GetInfoForWebContents(
     const content::WebContents* web_contents, WebViewInfo* info) {
-  auto manager = GetManagerFromWebContents(web_contents);
+  // use embedders' browser context to retrieve WebViewManager.
+  auto manager = static_cast<WebViewManager*>(
+      AtomBrowserMainParts::Get()->browser_context()->GetGuestManager());
   if (!manager)
     return false;
   base::AutoLock auto_lock(manager->lock_);
