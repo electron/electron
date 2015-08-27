@@ -102,7 +102,7 @@ metaToValue = (meta) ->
       # Track delegate object's life time, and tell the browser to clean up
       # when the object is GCed.
       v8Util.setDestructor ret, ->
-        ipc.send 'ATOM_BROWSER_DEREFERENCE', meta.storeId
+        ipc.send 'ATOM_BROWSER_DEREFERENCE', meta.id
 
       # Remember object's id.
       v8Util.setHiddenValue ret, 'atomId', meta.id
