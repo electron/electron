@@ -174,10 +174,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
-  node::node_isolate = env->isolate();
-
   node::LoadEnvironment(env);
-
   mate::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
 
