@@ -59,6 +59,8 @@ NodeDebugger::NodeDebugger(v8::Isolate* isolate)
     if (wait_for_connection)
       v8::Debug::DebugBreak(isolate_);
 
+    uv_async_init(uv_default_loop(), &weak_up_ui_handle_, ProcessMessageInUI);
+
     // Start a new IO thread.
     base::Thread::Options options;
     options.message_loop_type = base::MessageLoop::TYPE_IO;
@@ -106,9 +108,7 @@ void NodeDebugger::OnMessage(const std::string& message) {
       isolate_,
       reinterpret_cast<const uint16_t*>(message16.data()), message16.size());
 
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
-      base::Bind(&v8::Debug::ProcessDebugMessages));
+  uv_async_send(&weak_up_ui_handle_);
 }
 
 void NodeDebugger::SendMessage(const std::string& message) {
@@ -128,6 +128,11 @@ void NodeDebugger::SendConnectMessage() {
       "Embedding-Host: %s\r\n"
       "%s: 0\r\n",
       v8::V8::GetVersion(), ATOM_PRODUCT_NAME, kContentLength), true);
+}
+
+// static
+void NodeDebugger::ProcessMessageInUI(uv_async_t* handle) {
+  v8::Debug::ProcessDebugMessages();
 }
 
 // static

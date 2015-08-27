@@ -12,6 +12,7 @@
 #include "base/threading/thread.h"
 #include "net/test/embedded_test_server/stream_listen_socket.h"
 #include "v8/include/v8-debug.h"
+#include "vendor/node/deps/uv/include/uv.h"
 
 namespace atom {
 
@@ -30,6 +31,8 @@ class NodeDebugger : public net::test_server::StreamListenSocket::Delegate {
   void SendMessage(const std::string& message);
   void SendConnectMessage();
 
+  static void ProcessMessageInUI(uv_async_t* handle);
+
   static void DebugMessageHandler(const v8::Debug::Message& message);
 
   // net::test_server::StreamListenSocket::Delegate:
@@ -42,6 +45,8 @@ class NodeDebugger : public net::test_server::StreamListenSocket::Delegate {
   void DidClose(net::test_server::StreamListenSocket* socket) override;
 
   v8::Isolate* isolate_;
+
+  uv_async_t weak_up_ui_handle_;
 
   base::Thread thread_;
   scoped_ptr<net::test_server::StreamListenSocket> server_;
