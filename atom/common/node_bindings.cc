@@ -137,11 +137,6 @@ void NodeBindings::Initialize() {
     AtomCommandLine::InitializeFromCommandLine();
 #endif
 
-  // Parse the debug args.
-  auto args = AtomCommandLine::argv();
-  for (const std::string& arg : args)
-    node::ParseDebugOpt(arg.c_str());
-
   // Init node.
   // (we assume node::Init would not modify the parameters under embedded mode).
   node::Init(nullptr, nullptr, nullptr, nullptr);
