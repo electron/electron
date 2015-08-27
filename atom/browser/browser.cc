@@ -45,7 +45,8 @@ void Browser::Shutdown() {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnQuit());
 
   is_quiting_ = true;
-  base::MessageLoop::current()->Quit();
+  base::MessageLoop::current()->PostTask(
+      FROM_HERE, base::MessageLoop::QuitWhenIdleClosure());
 }
 
 std::string Browser::GetVersion() const {
