@@ -32,6 +32,13 @@ limits of 300% and 50% of original size, respectively.
 
 Returns the current zoom level.
 
+## webFrame.setZoomLevelLimits(minimumLevel, maximumLevel)
+
+* `minimumLevel` Number
+* `maximumLevel` Number
+
+Sets the maximum and minimum zoom level.
+
 ## webFrame.setSpellCheckProvider(language, autoCorrectWord, provider)
 
 * `language` String
