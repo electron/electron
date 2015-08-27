@@ -11,6 +11,7 @@
 #include "base/logging.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/values.h"
+#include "native_mate/dictionary.h"
 #include "vendor/node/src/node_buffer.h"
 
 namespace atom {
@@ -179,7 +180,8 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Array(
 
 v8::Local<v8::Value> V8ValueConverter::ToV8Object(
     v8::Isolate* isolate, const base::DictionaryValue* val) const {
-  v8::Local<v8::Object> result(v8::Object::New(isolate));
+  mate::Dictionary result = mate::Dictionary::CreateEmpty(isolate);
+  result.SetHidden("simple", true);
 
   for (base::DictionaryValue::Iterator iter(*val);
        !iter.IsAtEnd(); iter.Advance()) {
@@ -188,17 +190,14 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Object(
     CHECK(!child_v8.IsEmpty());
 
     v8::TryCatch try_catch;
-    result->Set(
-        v8::String::NewFromUtf8(isolate, key.c_str(), v8::String::kNormalString,
-                                key.length()),
-        child_v8);
+    result.Set(key, child_v8);
     if (try_catch.HasCaught()) {
       LOG(ERROR) << "Setter for property " << key.c_str() << " threw an "
                  << "exception.";
     }
   }
 
-  return result;
+  return result.GetHandle();
 }
 
 base::Value* V8ValueConverter::FromV8ValueImpl(

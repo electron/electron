@@ -4,13 +4,17 @@ objectsRegistry = require './objects-registry.js'
 v8Util = process.atomBinding 'v8_util'
 
 # Convert a real value into meta data.
-valueToMeta = (sender, value) ->
+valueToMeta = (sender, value, optimizeSimpleObject=false) ->
   meta = type: typeof value
 
   meta.type = 'buffer' if Buffer.isBuffer value
   meta.type = 'value' if value is null
   meta.type = 'array' if Array.isArray value
   meta.type = 'promise' if value? and value.constructor.name is 'Promise'
+
+  # Treat simple objects as value.
+  if optimizeSimpleObject and meta.type is 'object' and v8Util.getHiddenValue value, 'simple'
+    meta.type = 'value'
 
   # Treat the arguments object as array.
   meta.type = 'array' if meta.type is 'object' and value.callee? and value.length?
@@ -80,11 +84,11 @@ unwrapArgs = (sender, args) ->
 callFunction = (event, func, caller, args) ->
   if v8Util.getHiddenValue(func, 'asynchronous') and typeof args[args.length - 1] isnt 'function'
     args.push (ret) ->
-      event.returnValue = valueToMeta event.sender, ret
+      event.returnValue = valueToMeta event.sender, ret, true
     func.apply caller, args
   else
     ret = func.apply caller, args
-    event.returnValue = valueToMeta event.sender, ret
+    event.returnValue = valueToMeta event.sender, ret, true
 
 # Send by BrowserWindow when its render view is deleted.
 process.on 'ATOM_BROWSER_RELEASE_RENDER_VIEW', (id) ->
