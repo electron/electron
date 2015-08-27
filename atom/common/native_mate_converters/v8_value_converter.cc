@@ -17,7 +17,7 @@ namespace atom {
 
 namespace {
 
-const int kMaxRecursionDepth = 20;
+const int kMaxRecursionDepth = 100;
 
 }  // namespace
 
