@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include "media/base/video_frame.h"
+#include "content/public/browser/render_widget_host_view_frame_subscriber.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/browser/ui/accelerator_util.h"
 #include "base/cancelable_callback.h"
@@ -232,6 +234,8 @@ class NativeWindow : public content::WebContentsObserver,
     has_dialog_attached_ = has_dialog_attached;
   }
 
+  void OnFrameReceived(bool result, scoped_refptr<media::VideoFrame> frame);
+
  protected:
   NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,
                const mate::Dictionary& options);
@@ -243,6 +247,7 @@ class NativeWindow : public content::WebContentsObserver,
 
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
+  void RenderViewReady() override;
   void BeforeUnloadDialogCancelled() override;
   void TitleWasSet(content::NavigationEntry* entry, bool explicit_set) override;
   bool OnMessageReceived(const IPC::Message& message) override;
@@ -262,6 +267,8 @@ class NativeWindow : public content::WebContentsObserver,
   void OnCapturePageDone(const CapturePageCallback& callback,
                          const SkBitmap& bitmap,
                          content::ReadbackResponse response);
+
+  bool offscreen_;
 
   // Whether window has standard frame.
   bool has_frame_;
@@ -317,6 +324,29 @@ class NativeWindow : public content::WebContentsObserver,
   DISALLOW_COPY_AND_ASSIGN(NativeWindow);
 };
 
+class RenderSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
+ public:
+  RenderSubscriber(gfx::Size size, base::Callback<void(bool, scoped_refptr<media::VideoFrame>)> callback) : size_(size), callback_(callback) {}
+
+  bool ShouldCaptureFrame(const gfx::Rect& damage_rect,
+                          base::TimeTicks present_time,
+                          scoped_refptr<media::VideoFrame>* storage,
+                          DeliverFrameCallback* callback) override;
+
+  base::TimeTicks last_present_time() const { return last_present_time_; }
+
+  static void CallbackMethod(base::Callback<void(bool, scoped_refptr<media::VideoFrame>)> callback,
+                             scoped_refptr<media::VideoFrame> frame,
+                             base::TimeTicks present_time,
+                             bool success) {
+    callback.Run(success, frame);
+  }
+
+ private:
+  gfx::Size size_;
+  base::Callback<void(bool, scoped_refptr<media::VideoFrame>)> callback_;
+  base::TimeTicks last_present_time_;
+};
 
 // This class provides a hook to get a NativeWindow from a WebContents.
 class NativeWindowRelay :

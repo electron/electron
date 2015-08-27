@@ -17,6 +17,7 @@
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/geometry/rect.h"
+#include "v8/include/v8.h"
 
 #if defined(OS_WIN)
 #include "atom/browser/native_window_views.h"
@@ -90,6 +91,16 @@ void Window::OnPageTitleUpdated(bool* prevent_default,
 
 void Window::WillCloseWindow(bool* prevent_default) {
   *prevent_default = Emit("close");
+}
+
+void Window::OnFrameRendered(scoped_ptr<uint8[]> rgb, const int size) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+
+  v8::Local<v8::ArrayBuffer> data = v8::ArrayBuffer::New(isolate(), rgb.get(), size);
+  v8::Local<v8::Uint8ClampedArray> uint_data = v8::Uint8ClampedArray::New(data, 0, size);
+
+  Emit("frame-rendered", uint_data, size);
 }
 
 void Window::OnWindowClosed() {

@@ -8,6 +8,9 @@
 #include <utility>
 #include <vector>
 
+#include "content/public/browser/render_widget_host_view_frame_subscriber.h"
+#include "media/base/video_frame.h"
+#include "media/base/yuv_convert.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/window_list.h"
@@ -147,8 +150,9 @@ NativeWindow* NativeWindow::FromWebContents(
     content::WebContents* web_contents) {
   WindowList& window_list = *WindowList::GetInstance();
   for (NativeWindow* window : window_list) {
-    if (window->web_contents() == web_contents)
+    if (window->web_contents() == web_contents){
       return window;
+    }
   }
   return nullptr;
 }
@@ -200,6 +204,9 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   std::string title("Electron");
   options.Get(switches::kTitle, &title);
   SetTitle(title);
+
+  offscreen_ = false;
+  options.Get(switches::kOffScreenRender, &offscreen_);
 
   // Then show it.
   bool show = true;
@@ -540,6 +547,18 @@ void NativeWindow::DevToolsClosed() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsClosed());
 }
 
+void NativeWindow::RenderViewReady(){
+  if(offscreen_){
+    const auto view = web_contents()->GetRenderWidgetHostView();
+
+    scoped_ptr<content::RenderWidgetHostViewFrameSubscriber> subscriber(new RenderSubscriber(
+      view->GetVisibleViewportSize(), base::Bind(&NativeWindow::OnFrameReceived, base::Unretained(this))
+    ));
+
+    view->BeginFrameSubscription(subscriber.Pass());
+  }
+}
+
 void NativeWindow::RenderViewCreated(
     content::RenderViewHost* render_view_host) {
   if (!transparent_)
@@ -615,6 +634,43 @@ void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
                                      const SkBitmap& bitmap,
                                      content::ReadbackResponse response) {
   callback.Run(bitmap);
+}
+
+void NativeWindow::OnFrameReceived(bool result, scoped_refptr<media::VideoFrame> frame) {
+  if(result){
+    gfx::Rect rect = frame->visible_rect();
+
+    const int rgb_arr_size = rect.width()*rect.height()*4;
+    scoped_ptr<uint8[]> rgb_bytes(new uint8[rgb_arr_size]);
+
+    // Convert a frame of YUV to 32 bit ARGB.
+    media::ConvertYUVToRGB32(frame->data(media::VideoFrame::kYPlane),
+                             frame->data(media::VideoFrame::kUPlane),
+                             frame->data(media::VideoFrame::kVPlane),
+                             rgb_bytes.get(),
+                             rect.width(), rect.height(),
+                             frame->stride(media::VideoFrame::kYPlane),
+                             frame->stride(media::VideoFrame::kUVPlane),
+                             rect.width()*4,
+                             media::YV12);
+
+    FOR_EACH_OBSERVER(NativeWindowObserver,
+                      observers_,
+                      OnFrameRendered(rgb_bytes.Pass(), rgb_arr_size));
+  }
+}
+
+bool RenderSubscriber::ShouldCaptureFrame(const gfx::Rect& damage_rect,
+                        base::TimeTicks present_time,
+                        scoped_refptr<media::VideoFrame>* storage,
+                        DeliverFrameCallback* callback) {
+  last_present_time_ = present_time;
+  *storage = media::VideoFrame::CreateFrame(media::VideoFrame::YV12, size_,
+                                            gfx::Rect(size_), size_,
+                                            base::TimeDelta());
+
+  *callback = base::Bind(&RenderSubscriber::CallbackMethod, callback_, *storage);
+  return true;
 }
 
 }  // namespace atom

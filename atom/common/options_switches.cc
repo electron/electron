@@ -110,6 +110,8 @@ const char kRegisterStandardSchemes[] = "register-standard-schemes";
 // The browser process app model ID
 const char kAppUserModelId[] = "app-user-model-id";
 
+const char kOffScreenRender[] = "offscreen-render";
+
 }  // namespace switches
 
 }  // namespace atom

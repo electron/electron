@@ -60,6 +60,8 @@ extern const char kRegisterStandardSchemes[];
 
 extern const char kAppUserModelId[];
 
+extern const char kOffScreenRender[];
+
 }  // namespace switches
 
 }  // namespace atom
