@@ -154,6 +154,33 @@ describe '<webview> tag', ->
       webview.src = "data:text/html;base64,#{encoded}"
       document.body.appendChild webview
 
+  describe 'partition attribute', ->
+    isolatedWebview = null
+    beforeEach ->
+      isolatedWebview = new WebView
+
+    afterEach ->
+      document.body.removeChild isolatedWebview
+
+    it 'isolates storage for different id', (done) ->
+      listener = (e) ->
+        document.body.appendChild isolatedWebview
+        webview.removeEventListener 'did-finish-load', listener
+      listener2 = (e) ->
+        assert.equal e.message, "one 1"
+        webview.removeEventListener 'console-message', listener2
+      listener3 = (e) ->
+        assert.equal e.message, " 0"
+        isolatedWebview.removeEventListener 'console-message', listener3
+        done()
+      webview.addEventListener 'did-finish-load', listener
+      webview.addEventListener 'console-message', listener2
+      webview.src = "file://#{fixtures}/pages/partition/one.html"
+      isolatedWebview.addEventListener 'console-message', listener3
+      isolatedWebview.setAttribute 'partition', 'test'
+      isolatedWebview.src = "file://#{fixtures}/pages/partition/two.html"
+      document.body.appendChild webview
+
   describe 'new-window event', ->
     it 'emits when window.open is called', (done) ->
       webview.addEventListener 'new-window', (e) ->
