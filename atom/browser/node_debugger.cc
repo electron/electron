@@ -12,7 +12,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
-#include "net/socket/tcp_listen_socket.h"
+#include "net/test/embedded_test_server/tcp_listen_socket.h"
 
 #include "atom/common/node_includes.h"
 
@@ -84,7 +84,8 @@ bool NodeDebugger::IsRunning() const {
 }
 
 void NodeDebugger::StartServer(int port) {
-  server_ = net::TCPListenSocket::CreateAndListen("127.0.0.1", port, this);
+  server_ = net::test_server::TCPListenSocket::CreateAndListen(
+      "127.0.0.1", port, this);
   if (!server_) {
     LOG(ERROR) << "Cannot start debugger server";
     return;
@@ -143,8 +144,9 @@ void NodeDebugger::DebugMessageHandler(const v8::Debug::Message& message) {
   }
 }
 
-void NodeDebugger::DidAccept(net::StreamListenSocket* server,
-                             scoped_ptr<net::StreamListenSocket> socket) {
+void NodeDebugger::DidAccept(
+    net::test_server::StreamListenSocket* server,
+    scoped_ptr<net::test_server::StreamListenSocket> socket) {
   // Only accept one session.
   if (accepted_socket_) {
     socket->Send(std::string("Remote debugging session already active"), true);
@@ -155,7 +157,7 @@ void NodeDebugger::DidAccept(net::StreamListenSocket* server,
   SendConnectMessage();
 }
 
-void NodeDebugger::DidRead(net::StreamListenSocket* socket,
+void NodeDebugger::DidRead(net::test_server::StreamListenSocket* socket,
                            const char* data,
                            int len) {
   buffer_.append(data, len);
@@ -194,7 +196,7 @@ void NodeDebugger::DidRead(net::StreamListenSocket* socket,
   } while (true);
 }
 
-void NodeDebugger::DidClose(net::StreamListenSocket* socket) {
+void NodeDebugger::DidClose(net::test_server::StreamListenSocket* socket) {
   // If we lost the connection, then simulate a disconnect msg:
   OnMessage("{\"seq\":1,\"type\":\"request\",\"command\":\"disconnect\"}");
 }
