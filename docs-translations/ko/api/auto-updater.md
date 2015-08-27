@@ -1,4 +1,4 @@
-﻿# auto-updater
+﻿# autoUpdater
 
 **이 모듈은 현재 OS X에서만 사용할 수 있습니다.**
 
@@ -76,26 +76,30 @@ Squirrel은 "url"로 `Accept: application/zip` 헤더와 함께 업데이트 zip
 
 `pub_date`은 ISO 8601 표준에 따라 포맷된 날짜입니다.
 
-## Event: error
+## Events
+
+`autoUpdater` 객체는 다음과 같은 이벤트를 발생시킵니다:
+
+### Event: 'error'
 
 * `event` Event
 * `message` String
 
 업데이트시 에러가 나면 발생하는 이벤트입니다.
 
-## Event: checking-for-update
+### Event: 'checking-for-update'
 
 업데이트를 확인하기 시작할 때 발생하는 이벤트입니다.
 
-## Event: update-available
+### Event: 'update-available'
 
 사용 가능한 업데이트가 있을 때 발생하는 이벤트입니다. 이벤트는 자동으로 다운로드 됩니다.
 
-## Event: update-not-available
+### Event: 'update-not-available'
 
 사용 가능한 업데이트가 없을 때 발생하는 이벤트입니다.
 
-## Event: update-downloaded
+### Event: 'update-downloaded'
 
 * `event` Event
 * `releaseNotes` String
@@ -106,12 +110,16 @@ Squirrel은 "url"로 `Accept: application/zip` 헤더와 함께 업데이트 zip
 
 업데이트의 다운로드가 완료되었을 때 발생하는 이벤트입니다. `quitAndUpdate()`를 호출하면 어플리케이션을 종료하고 업데이트를 설치합니다.
 
-## autoUpdater.setFeedUrl(url)
+## Methods
+
+`autoUpdater` 객체에서 사용할 수 있는 메서드입니다:
+
+### `autoUpdater.setFeedUrl(url)`
 
 * `url` String
 
 `url`을 설정하고 자동 업데이터를 초기화합니다. `url`은 한번 설정되면 변경할 수 없습니다.
 
-## autoUpdater.checkForUpdates()
+### `autoUpdater.checkForUpdates()`
 
 서버에 새로운 업데이트가 있는지 요청을 보내 확인합니다. API를 사용하기 전에 `setFeedUrl`를 호출해야 합니다.

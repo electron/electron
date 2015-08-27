@@ -29,7 +29,7 @@ Starting ChromeDriver (v2.10.291558) on port 9515
 Only local connections are allowed.
 ```
 
-곧 사용하므로 포트 `9515`를 기억해 놓습니다.
+포트 `9515`는 나중에 사용하므로 기억해 놓읍시다
 
 ### 2. WebDriverJS 설치
 
@@ -64,6 +64,53 @@ driver.wait(function() {
 }, 1000);
 
 driver.quit();
+```
+
+## WebdriverIO 설정하기
+
+[WebdriverIO](http://webdriver.io/)는 웹 드라이버와 함께 테스트를 위해 제공되는 node 패키지입니다.
+
+### 1. 크롬 드라이버 시작
+
+먼저, `chromedriver` 바이너리를 다운로드 받고 실행합니다:
+
+```bash
+$ chromedriver --url-base=/wd/hub --port=9515
+Starting ChromeDriver (v2.10.291558) on port 9515
+Only local connections are allowed.
+```
+
+포트 `9515`는 나중에 사용하므로 기억해 놓읍시다
+
+### 2. WebDriverIO 설치
+
+```bash
+$ npm install webdriverio
+```
+
+### 3. 크롬 드라이버에 연결
+```javascript
+var webdriverio = require('webdriverio');
+var options = {
+    host: "localhost", // Use localhost as chrome driver server 
+    port: 9515,        // "9515" is the port opened by chrome driver.
+    desiredCapabilities: {
+        browserName: 'chrome',
+        chromeOptions: {binary: '/Path-to-Your-App.app/Electron'} // Path to your Electron binary.
+    }
+};
+
+var client = webdriverio.remote(options);
+    
+client
+    .init()
+    .url('http://google.com')
+    .setValue('#q', 'webdriverio')
+    .click('#btnG')
+    .getTitle().then(function(title) {
+        console.log('Title was: ' + title);
+    })
+    .end();
 ```
 
 ## 작업환경

@@ -4,7 +4,14 @@
 
 C++과 Python스크립트는 Chromium의 [코딩 스타일](http://www.chromium.org/developers/coding-style)을 따릅니다.
 파이선 스크립트 `script/cpplint.py`를 사용하여 모든 파일이 해당 코딩스타일에 맞게 코딩 되었는지 확인할 수 있습니다.
+
 파이선의 버전은 2.7을 사용합니다.
+
+C++ 코드는 많은 Chromium의 추상화와 타입을 사용합니다. 그래서 이에 대해 잘 알고 있어야 합니다.
+이와 관련하여 시작하기 좋은 장소로 Chromium의 [Important Abstractions and Data Structures]
+(https://www.chromium.org/developers/coding-style/important-abstractions-and-data-structures) 문서가 있습니다.
+이 문서에선 몇가지 특별한 타입과 스코프 타입(스코프 밖으로 나가면 자동으로 메모리에서 할당을 해제합니다. 스마트 포인터로 보시면 됩니다),
+로깅 메커니즘 등을 언급하고 있습니다.
 
 ## CoffeeScript
 
