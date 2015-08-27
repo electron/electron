@@ -9,6 +9,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/common/google_api_key.h"
+#include "content/public/browser/geolocation_provider.h"
 
 namespace atom {
 
@@ -24,6 +25,7 @@ const char* kGeolocationProviderUrl =
 }  // namespace
 
 AtomAccessTokenStore::AtomAccessTokenStore() {
+  content::GeolocationProvider::GetInstance()->UserDidOptIntoLocationServices();
 }
 
 AtomAccessTokenStore::~AtomAccessTokenStore() {

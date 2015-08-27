@@ -8,7 +8,7 @@ remote = require 'remote'
 describe 'chromium feature', ->
   fixtures = path.resolve __dirname, 'fixtures'
 
-  describe 'heap snapshot', ->
+  xdescribe 'heap snapshot', ->
     it 'does not crash', ->
       process.atomBinding('v8_util').takeHeapSnapshot()
 

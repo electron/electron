@@ -28,6 +28,11 @@ void SetHiddenValue(v8::Local<v8::Object> object,
   object->SetHiddenValue(key, value);
 }
 
+void DeleteHiddenValue(v8::Local<v8::Object> object,
+                       v8::Local<v8::String> key) {
+  object->DeleteHiddenValue(key);
+}
+
 int32_t GetObjectHash(v8::Local<v8::Object> object) {
   return object->GetIdentityHash();
 }
@@ -48,6 +53,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("createObjectWithName", &CreateObjectWithName);
   dict.SetMethod("getHiddenValue", &GetHiddenValue);
   dict.SetMethod("setHiddenValue", &SetHiddenValue);
+  dict.SetMethod("deleteHiddenValue", &DeleteHiddenValue);
   dict.SetMethod("getObjectHash", &GetObjectHash);
   dict.SetMethod("setDestructor", &SetDestructor);
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);

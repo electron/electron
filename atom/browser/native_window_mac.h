@@ -82,9 +82,6 @@ class NativeWindowMac : public NativeWindow {
   // Called to handle a mouse event.
   void HandleMouseEvent(NSEvent* event);
 
-  // Clip web view to rounded corner.
-  void ClipWebView();
-
  protected:
   // NativeWindow:
   void HandleKeyboardEvent(
