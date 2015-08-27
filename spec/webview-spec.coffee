@@ -48,18 +48,22 @@ describe '<webview> tag', ->
       webview.src = "file://#{fixtures}/pages/d.html"
       document.body.appendChild webview
 
-    it 'loads native modules when navigation happens', (done) ->
-      listener = (e) ->
-        webview.removeEventListener 'did-finish-load', listener
-        listener2 = (e) ->
-          assert.equal e.message, 'function'
-          done()
-        webview.addEventListener 'console-message', listener2
-        webview.reload()
-      webview.addEventListener 'did-finish-load', listener
-      webview.setAttribute 'nodeintegration', 'on'
-      webview.src = "file://#{fixtures}/pages/native-module.html"
-      document.body.appendChild webview
+    # If the test is executed with the debug build on Windows, we will skip it
+    # because native modules don't work with the debug build (see issue #2558).
+    if process.platform isnt 'win32' or
+        process.execPath.toLowerCase().indexOf('\\out\\d\\') is -1
+      it 'loads native modules when navigation happens', (done) ->
+        listener = (e) ->
+          webview.removeEventListener 'did-finish-load', listener
+          listener2 = (e) ->
+            assert.equal e.message, 'function'
+            done()
+          webview.addEventListener 'console-message', listener2
+          webview.reload()
+        webview.addEventListener 'did-finish-load', listener
+        webview.setAttribute 'nodeintegration', 'on'
+        webview.src = "file://#{fixtures}/pages/native-module.html"
+        document.body.appendChild webview
 
   describe 'preload attribute', ->
     it 'loads the script before other scripts in window', (done) ->
