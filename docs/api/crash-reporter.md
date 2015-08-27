@@ -1,4 +1,4 @@
-# crash-reporter
+# crashReporter
 
 The `crash-reporter` module enables sending your app's crash reports.
 
@@ -34,7 +34,7 @@ The `crash-reporter` module has the following methods:
     * Only string properties are sent correctly.
     * Nested objects are not supported.
 
-Developers are required to call this method before using other `crashReporter`
+You are required to call this method before using other `crashReporter`
 APIs.
 
 **Note:** On OS X, Electron uses a new `crashpad` client, which is different

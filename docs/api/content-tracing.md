@@ -41,8 +41,8 @@ Once all child processes have acknowledged the `getCategories` request the
 Start recording on all processes.
 
 Recording begins immediately locally and asynchronously on child processes
-as soon as they receive the EnableRecording request. Once all child processes
-have acknowledged the `startRecording` request the `callback` will be called.
+as soon as they receive the EnableRecording request. The `callback` will be
+called once all child processes have acknowledged the `startRecording` request.
 
 `categoryFilter` is a filter to control what category groups should be
 traced. A filter can have an optional `-` prefix to exclude category groups
@@ -66,11 +66,11 @@ list. Possible options are:
 
 The first 3 options are trace recoding modes and hence mutually exclusive.
 If more than one trace recording modes appear in the `traceOptions` string,
-the last one takes precedence. If none of the trace recording modes is
+the last one takes precedence. If none of the trace recording modes are
 specified, recording mode is `record-until-full`.
 
-The trace option will first be reset to the default option (record_mode set to
-`record-until-full`, enable_sampling and enable_systrace set to `false`)
+The trace option will first be reset to the default option (`record_mode` set to
+`record-until-full`, `enable_sampling` and `enable_systrace` set to `false`)
 before options parsed from `traceOptions` are applied on it.
 
 ### `tracing.stopRecording(resultFilePath, callback)`
@@ -80,11 +80,11 @@ before options parsed from `traceOptions` are applied on it.
 
 Stop recording on all processes.
 
-Child processes typically are caching trace data and only rarely flush and send
-trace data back to the main process. That is because it may be an expensive
-operation to send the trace data over IPC, and we would like to avoid runtime
-overhead of tracing. So, to end tracing, we must asynchronously ask all
-child processes to flush any pending trace data.
+Child processes typically cache trace data and only rarely flush and send
+trace data back to the main process. This helps to minimize the runtime overhead
+of tracing since sending trace data over IPC can be an expensive operation. So,
+to end tracing, we must asynchronously ask all child processes to flush any
+pending trace data.
 
 Once all child processes have acknowledged the `stopRecording` request,
 `callback` will be called with a file that contains the traced data.
@@ -123,7 +123,7 @@ Once all child processes have acknowledged the `stopMonitoring` request the
 
 Get the current monitoring traced data.
 
-Child processes are typically caching trace data and only rarely flush and send
+Child processes typically cache trace data and only rarely flush and send
 trace data back to the main process. This is because it may be an expensive
 operation to send the trace data over IPC and we would like to avoid unneeded
 runtime overhead from tracing. So, to end tracing, we must asynchronously ask
@@ -152,5 +152,5 @@ process.
 
 ### `tracing.cancelWatchEvent()`
 
-Cancel the watch event. If tracing is enabled this may race with the watch
-event callback.
+Cancel the watch event. This may lead to a race condition with the watch event
+callback if tracing is enabled.
