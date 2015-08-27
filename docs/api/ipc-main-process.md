@@ -64,10 +64,9 @@ Set this to the value to be returned in a synchronous message.
 
 Returns the `WebContents` that sent the message.
 
-### `Event.sender.send(channel, arg)`
+### `Event.sender.send(channel[, message])`
 
 * `channel` String - The event name.
-* `arg`
+* `message` (optional)
 
-This sends an asynchronous message back to the render process. The message,
-`arg`, can be any value.
+This sends an asynchronous message back to the render process. The `message` can be any value.
