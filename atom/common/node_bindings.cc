@@ -137,11 +137,6 @@ void NodeBindings::Initialize() {
     AtomCommandLine::InitializeFromCommandLine();
 #endif
 
-  // Parse the debug args.
-  auto args = AtomCommandLine::argv();
-  for (const std::string& arg : args)
-    node::ParseDebugOpt(arg.c_str());
-
   // Init node.
   // (we assume node::Init would not modify the parameters under embedded mode).
   node::Init(nullptr, nullptr, nullptr, nullptr);
@@ -179,15 +174,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
-  node::node_isolate = env->isolate();
-  if (node::use_debug_agent)
-    node::StartDebug(env, node::debug_wait_connect);
-
   node::LoadEnvironment(env);
-
-  if (node::use_debug_agent)
-    node::EnableDebug(env);
-
   mate::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
 
