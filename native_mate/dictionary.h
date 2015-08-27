@@ -37,9 +37,22 @@ class Dictionary {
   }
 
   template<typename T>
+  bool GetHidden(const base::StringPiece& key, T* out) const {
+    v8::Local<v8::Value> val = GetHandle()->GetHiddenValue(
+        StringToV8(isolate_, key));
+    return ConvertFromV8(isolate_, val, out);
+  }
+
+  template<typename T>
   bool Set(const base::StringPiece& key, T val) {
     return GetHandle()->Set(StringToV8(isolate_, key),
                             ConvertToV8(isolate_, val));
+  }
+
+  template<typename T>
+  bool SetHidden(const base::StringPiece& key, T val) {
+    return GetHandle()->SetHiddenValue(StringToV8(isolate_, key),
+                                       ConvertToV8(isolate_, val));
   }
 
   template<typename T>
