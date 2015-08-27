@@ -46,7 +46,7 @@ python script\build.py
 python script\build.py -c D
 ```
 
-빌드가 모두 끝나면 `out/D` 디렉터리에서 `atom.exe` 실행 파일을 찾을 수 있습니다.
+빌드가 모두 끝나면 `out/D` (디버그 타겟) 또는 `out/R` (릴리즈 타겟) 디렉터리에서 `electron.exe` 실행 파일을 찾을 수 있습니다.
 
 ## 64비트 빌드
 
