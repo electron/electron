@@ -4,9 +4,8 @@
 
 #include "browser/web_ui_controller_factory.h"
 
-#include "browser/browser_context.h"
 #include "browser/devtools_ui.h"
-
+#include "base/memory/singleton.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_ui.h"
 #include "content/public/common/url_constants.h"
@@ -19,9 +18,12 @@ const char kChromeUIDevToolsBundledHost[] = "devtools";
 
 }
 
-WebUIControllerFactory::WebUIControllerFactory(BrowserContext* browser_context)
-    : browser_context_(browser_context) {
-  DCHECK(browser_context_);
+// static
+WebUIControllerFactory* WebUIControllerFactory::GetInstance() {
+  return Singleton<WebUIControllerFactory>::get();
+}
+
+WebUIControllerFactory::WebUIControllerFactory() {
 }
 
 WebUIControllerFactory::~WebUIControllerFactory() {
@@ -48,11 +50,10 @@ bool WebUIControllerFactory::UseWebUIBindingsForURL(
 
 content::WebUIController* WebUIControllerFactory::CreateWebUIControllerForURL(
     content::WebUI* web_ui, const GURL& url) const {
-  DCHECK(browser_context_);
-
-  if (url.host() == kChromeUIDevToolsBundledHost)
-    return new DevToolsUI(browser_context_, web_ui);
-
+  if (url.host() == kChromeUIDevToolsBundledHost) {
+    auto browser_context = web_ui->GetWebContents()->GetBrowserContext();
+    return new DevToolsUI(browser_context, web_ui);
+  }
   return NULL;
 }
 

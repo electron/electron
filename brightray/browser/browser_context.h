@@ -23,7 +23,7 @@ class BrowserContext : public content::BrowserContext,
   BrowserContext();
   ~BrowserContext();
 
-  virtual void Initialize(const base::FilePath& partition_path,
+  virtual void Initialize(const std::string& partition_path,
                           bool in_memory = false);
 
   // content::BrowserContext:

@@ -6,8 +6,6 @@
 
 #include <string>
 
-#include "browser/browser_context.h"
-
 #include "base/memory/ref_counted_memory.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
@@ -93,7 +91,8 @@ class BundledDataSource : public content::URLDataSource {
 
 }  // namespace
 
-DevToolsUI::DevToolsUI(BrowserContext* browser_context, content::WebUI* web_ui)
+DevToolsUI::DevToolsUI(content::BrowserContext* browser_context,
+                       content::WebUI* web_ui)
     : WebUIController(web_ui) {
   web_ui->SetBindings(0);
   content::URLDataSource::Add(browser_context, new BundledDataSource());

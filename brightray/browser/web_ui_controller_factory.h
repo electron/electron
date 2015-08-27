@@ -9,13 +9,17 @@
 #include "content/public/browser/web_ui.h"
 #include "content/public/browser/web_ui_controller_factory.h"
 
+template <typename T> struct DefaultSingletonTraits;
+
 namespace brightray {
 
 class BrowserContext;
 
 class WebUIControllerFactory : public content::WebUIControllerFactory {
  public:
-  explicit WebUIControllerFactory(BrowserContext* browser_context);
+  static WebUIControllerFactory* GetInstance();
+
+  WebUIControllerFactory();
   virtual ~WebUIControllerFactory();
 
   content::WebUI::TypeID GetWebUIType(
@@ -28,11 +32,8 @@ class WebUIControllerFactory : public content::WebUIControllerFactory {
       content::WebUI* web_ui,
       const GURL& url) const override;
 
-  static WebUIControllerFactory* GetInstance();
-
  private:
-  // Weak reference to the browser context.
-  BrowserContext* browser_context_;
+  friend struct DefaultSingletonTraits<WebUIControllerFactory>;
 
   DISALLOW_COPY_AND_ASSIGN(WebUIControllerFactory);
 };

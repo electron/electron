@@ -69,7 +69,7 @@ class BrowserContext::ResourceContext : public content::ResourceContext {
 BrowserContext::BrowserContext() : resource_context_(new ResourceContext) {
 }
 
-void BrowserContext::Initialize(const base::FilePath& partition_path, bool in_memory) {
+void BrowserContext::Initialize(const std::string& partition_path, bool in_memory) {
   if (!PathService::Get(DIR_USER_DATA, &path_)) {
     PathService::Get(DIR_APP_DATA, &path_);
     path_ = path_.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
@@ -77,7 +77,7 @@ void BrowserContext::Initialize(const base::FilePath& partition_path, bool in_me
   }
 
   if (!partition_path.empty())
-    path_ = path_.Append(partition_path);
+    path_ = path_.Append(base::FilePath::FromUTF8Unsafe(partition_path));
   in_memory_ = in_memory;
 
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
