@@ -17,3 +17,4 @@ node_modules/
 *.pyc
 debug.log
 npm-debug.log
+atom/common/chrome_version.h

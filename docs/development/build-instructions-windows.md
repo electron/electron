@@ -54,7 +54,7 @@ You can also only build the Debug target:
 python script\build.py -c D
 ```
 
-After building is done, you can find `electron.exe` under `out\D` (debug 
+After building is done, you can find `electron.exe` under `out\D` (debug
 target) or under `out\R` (release target).
 
 ## 64bit build
@@ -80,6 +80,15 @@ Test functionality using:
 
 ```powershell
 python script\test.py
+```
+
+Tests that include native modules (e.g. `runas`) can't be executed with the
+debug build (see #2558 for details), but they will work with the release build.
+
+To run the tests with the release build use:
+
+```powershell
+python script\test.py -R
 ```
 
 ## Troubleshooting
