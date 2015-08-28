@@ -40,12 +40,14 @@ getNextInstanceId = (webContents) ->
   ++nextInstanceId
 
 # Generate URL encoded partition id.
-getPartitionId = (partition='default') ->
+getPartitionId = (partition) ->
   persist = partition.startsWith('persist:')
   # Guest site url will be chrome-guest://fake-host/{persist}?{partitionId}
   partitionId = "chrome-guest://fake-host/"
-  partitionId += if persist then 'persist?' else '?'
-  partitionId += crypto.createHash('sha256').update(partition).digest('hex')
+  if partition
+    partitionId += if persist then 'persist?' else '?'
+    partitionId += crypto.createHash('sha256').update(partition).digest('hex')
+  return partitionId
 
 # Create a new guest instance.
 createGuest = (embedder, params) ->

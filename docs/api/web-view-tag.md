@@ -140,7 +140,7 @@ If "on", the guest page will have web security disabled.
 
 Sets the storage partition used by the `webview`. If the storage partition ID starts with `persist:`,
 the `webview` will use a persistent storage partition available to all `webview` in the app with
-the same storage partition ID. If the ID is unset or if there is no `persist:` prefix, the `webview` will
+the same storage partition ID. if there is no `persist:` prefix, the `webview` will
 use an in-memory storage partition. By assigning the same partition ID, multiple `webview`
 can share the same storage partition.
 
