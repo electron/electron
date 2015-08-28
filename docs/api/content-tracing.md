@@ -7,6 +7,7 @@ generated file to view the result.
 
 ```javascript
 var tracing = require('content-tracing');
+
 tracing.startRecording('*', tracing.DEFAULT_OPTIONS, function() {
   console.log('Tracing started');
 

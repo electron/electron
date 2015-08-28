@@ -6,7 +6,8 @@ The following is an example of automatically submitting a crash report to a
 remote server:
 
 ```javascript
-crashReporter = require('crash-reporter');
+var crashReporter = require('crash-reporter');
+
 crashReporter.start({
   productName: 'YourName',
   companyName: 'YourCompany',
