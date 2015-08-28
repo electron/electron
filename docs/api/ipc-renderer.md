@@ -19,7 +19,7 @@ for it in the main process with [`ipc (main process)`](ipc-main-process.md).
 ### `ipc.send(channel[, arg1][, arg2][, ...])`
 
 * `channel` String - The event name.
-* `message` (optional)
+* `arg` (optional)
 
 Send an event to the main process asynchronously via a `channel`. Optionally,
 there can be a message: one or a series of arguments, `arg`, which can have any
@@ -29,7 +29,7 @@ type. The main process handles it by listening for the `channel` event with
 ### `ipc.sendSync(channel[, arg1][, arg2][, ...])`
 
 * `channel` String - The event name.
-* `message` (optional)
+* `arg` (optional)
 
 Send an event to the main process synchronously via a `channel`. Optionally,
 there can be a message: one or a series of arguments, `arg`, which can have any
@@ -45,7 +45,7 @@ using this method is not recommended.
 ### `ipc.sendToHost(channel[, arg1][, arg2][, ...])`
 
 * `channel` String - The event name.
-* `message` (optional)
+* `arg` (optional)
 
 Like `ipc.send` but the event will be sent to the host page in a `<webview>`
 instead of the main process. Optionally, there can be a message: one or a series
