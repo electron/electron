@@ -23,8 +23,11 @@ var paths = {
 
 if (!paths[platform]) throw new Error('Unknown platform: ' + platform)
 
-// downloads if not cached
-download({version: version}, extractFile)
+if (process.env.npm_config_arch) {
+    download({version: version, arch: process.env.npm_config_arch}, extractFile)
+} else {
+    download({version: version}, extractFile)
+}
 
 // unzips and makes path.txt point at the correct executable
 function extractFile (err, zipPath) {
