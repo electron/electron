@@ -1,4 +1,4 @@
-# menuItem
+# MenuItem
 
 The `menu-item` module allows you to add items to an application or content
 [`menu`](menu.md).

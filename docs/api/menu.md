@@ -1,4 +1,4 @@
-# menu
+# Menu
 
 The `menu` class is used to create native menus that can be used as
 application menus and
