@@ -74,6 +74,8 @@ You can also create a window without chrome by using
     Linux.
   * `standard-window` Boolean - Uses the OS X's standard window instead of the
     textured window. Defaults to `true`.
+  * `offscreen-render` Boolean - The frame of the window will be accessible
+    through the `frame-rendered` event in a buffer. Defaults to `false`.
   * `web-preferences` Object - Settings of web page's features
     * `javascript` Boolean
     * `web-security` Boolean - When setting `false`, it will disable the same-origin
@@ -225,6 +227,15 @@ Emitted when devtools is closed.
 ### Event: 'devtools-focused'
 
 Emitted when devtools is focused / opened.
+
+### Event: 'frame-rendered'
+
+* `event` Event
+* `frame` Buffer
+* `size` Number
+
+Emitted when *offscreen render* is enabled, the current frame's pixel data
+and size are available.
 
 ### Event: 'app-command':
 
@@ -720,6 +731,11 @@ Sets whether the window should be visible on all workspaces.
 Returns whether the window is visible on all workspaces.
 
 **Note:** This API always returns false on Windows.
+
+### BrowserWindow.setOffscreenRender(isOffscreen)
+
+Sets the offscreen rendering, if `true` the `frame-rendered` event will fire,
+when the frame changes.
 
 ## Class: WebContents
 

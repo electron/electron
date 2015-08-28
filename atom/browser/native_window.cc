@@ -330,6 +330,29 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
       kBGRA_8888_SkColorType);
 }
 
+void NativeWindow::SetOffscreenRender(bool isOffscreen) {
+  if (!isOffscreen && !offscreen_) return;
+
+  const auto view = web_contents()->GetRenderWidgetHostView();
+
+  if (view) {
+    if (isOffscreen) {
+      scoped_ptr<content::RenderWidgetHostViewFrameSubscriber> subscriber(
+        new RenderSubscriber(
+          view->GetVisibleViewportSize(),
+          base::Bind(&NativeWindow::OnFrameReceived, base::Unretained(this))
+        )
+      );
+
+      view->BeginFrameSubscription(subscriber.Pass());
+    } else {
+      view->EndFrameSubscription();
+    }
+
+    offscreen_ = isOffscreen;
+  }
+}
+
 void NativeWindow::RequestToClosePage() {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(NativeWindowObserver,
@@ -548,15 +571,7 @@ void NativeWindow::DevToolsClosed() {
 }
 
 void NativeWindow::RenderViewReady(){
-  if(offscreen_){
-    const auto view = web_contents()->GetRenderWidgetHostView();
-
-    scoped_ptr<content::RenderWidgetHostViewFrameSubscriber> subscriber(new RenderSubscriber(
-      view->GetVisibleViewportSize(), base::Bind(&NativeWindow::OnFrameReceived, base::Unretained(this))
-    ));
-
-    view->BeginFrameSubscription(subscriber.Pass());
-  }
+  SetOffscreenRender(offscreen_);
 }
 
 void NativeWindow::RenderViewCreated(
@@ -636,11 +651,12 @@ void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
   callback.Run(bitmap);
 }
 
-void NativeWindow::OnFrameReceived(bool result, scoped_refptr<media::VideoFrame> frame) {
-  if(result){
+void NativeWindow::OnFrameReceived(bool result,
+                                   scoped_refptr<media::VideoFrame> frame) {
+  if (result) {
     gfx::Rect rect = frame->visible_rect();
 
-    const int rgb_arr_size = rect.width()*rect.height()*4;
+    const int rgb_arr_size = rect.width() * rect.height() * 4;
     scoped_ptr<uint8[]> rgb_bytes(new uint8[rgb_arr_size]);
 
     // Convert a frame of YUV to 32 bit ARGB.
@@ -651,7 +667,7 @@ void NativeWindow::OnFrameReceived(bool result, scoped_refptr<media::VideoFrame>
                              rect.width(), rect.height(),
                              frame->stride(media::VideoFrame::kYPlane),
                              frame->stride(media::VideoFrame::kUVPlane),
-                             rect.width()*4,
+                             rect.width() * 4,
                              media::YV12);
 
     FOR_EACH_OBSERVER(NativeWindowObserver,
@@ -660,7 +676,8 @@ void NativeWindow::OnFrameReceived(bool result, scoped_refptr<media::VideoFrame>
   }
 }
 
-bool RenderSubscriber::ShouldCaptureFrame(const gfx::Rect& damage_rect,
+bool RenderSubscriber::ShouldCaptureFrame(
+                        const gfx::Rect& damage_rect,
                         base::TimeTicks present_time,
                         scoped_refptr<media::VideoFrame>* storage,
                         DeliverFrameCallback* callback) {

@@ -440,6 +440,10 @@ void Window::CapturePage(mate::Arguments* args) {
       rect, base::Bind(&OnCapturePageDone, args->isolate(), callback));
 }
 
+void Window::SetOffscreenRender(bool isOffscreen) {
+  window_->SetOffscreenRender(isOffscreen);
+}
+
 void Window::SetProgressBar(double progress) {
   window_->SetProgressBar(progress);
 }
@@ -602,6 +606,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
 #if defined(OS_MACOSX)
       .SetMethod("showDefinitionForSelection",
                  &Window::ShowDefinitionForSelection)
+      .SetMethod("setOffscreenRender", &Window::SetOffscreenRender)
 #endif
       .SetProperty("id", &Window::ID, true)
       .SetProperty("webContents", &Window::WebContents, true)

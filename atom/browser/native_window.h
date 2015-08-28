@@ -162,6 +162,9 @@ class NativeWindow : public content::WebContentsObserver,
   virtual void CapturePage(const gfx::Rect& rect,
                            const CapturePageCallback& callback);
 
+  // Offscreen render
+  virtual void SetOffscreenRender(bool isOffscreen);
+
   // Show popup dictionary.
   virtual void ShowDefinitionForSelection();
 
@@ -326,7 +329,10 @@ class NativeWindow : public content::WebContentsObserver,
 
 class RenderSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
  public:
-  RenderSubscriber(gfx::Size size, base::Callback<void(bool, scoped_refptr<media::VideoFrame>)> callback) : size_(size), callback_(callback) {}
+  RenderSubscriber(
+    gfx::Size size,
+    base::Callback<void(bool, scoped_refptr<media::VideoFrame>)> callback)
+      : size_(size), callback_(callback) { }
 
   bool ShouldCaptureFrame(const gfx::Rect& damage_rect,
                           base::TimeTicks present_time,
@@ -335,10 +341,11 @@ class RenderSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
 
   base::TimeTicks last_present_time() const { return last_present_time_; }
 
-  static void CallbackMethod(base::Callback<void(bool, scoped_refptr<media::VideoFrame>)> callback,
-                             scoped_refptr<media::VideoFrame> frame,
-                             base::TimeTicks present_time,
-                             bool success) {
+  static void CallbackMethod(
+    base::Callback<void(bool, scoped_refptr<media::VideoFrame>)> callback,
+    scoped_refptr<media::VideoFrame> frame,
+    base::TimeTicks present_time,
+    bool success) {
     callback.Run(success, frame);
   }
 

@@ -138,6 +138,7 @@ class Window : public mate::TrackableObject<Window>,
   void SetMenuBarVisibility(bool visible);
   bool IsMenuBarVisible();
   void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
+  void SetOffscreenRender(bool isOffscreen);
 
 #if defined(OS_MACOSX)
   void ShowDefinitionForSelection();
