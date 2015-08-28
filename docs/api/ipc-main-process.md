@@ -1,6 +1,8 @@
 # ipc (main process)
 
-The `ipc` module, when used in the main process, handles asynchronous and synchronous messages sent from a renderer process (web page). Messages sent from a renderer will be emitted to this module.
+The `ipc` module, when used in the main process, handles asynchronous and
+synchronous messages sent from a renderer process (web page). Messages sent from
+a renderer will be emitted to this module.
 
 ## Sending Messages
 
@@ -10,7 +12,8 @@ for more information.
 
 - When sending a message, the event name is the `channel`.
 - To reply a synchronous message, you need to set `event.returnValue`.
-- To send an asynchronous back to the sender, you can use `event.sender.send(...)`.
+- To send an asynchronous back to the sender, you can use
+  `event.sender.send(...)`.
 
 An example of sending and handling messages between the render and main
 processes:
@@ -40,9 +43,9 @@ ipc.on('asynchronous-reply', function(arg) {
 ipc.send('asynchronous-message', 'ping');
 ```
 
-## Methods
+## Listening for Messages
 
-The `ipc` module has the following method:
+The `ipc` module has the following method to listen for events:
 
 ### `ipc.on(channel, callback)`
 
