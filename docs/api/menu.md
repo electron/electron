@@ -1,12 +1,17 @@
 # menu
 
-The `Menu` class is used to create native menus that can be used as
-application menus and context menus. Each menu consists of multiple menu
-items, and each menu item can have a submenu.
+The `menu` class is used to create native menus that can be used as
+application menus and
+[context menus](https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/PopupGuide/ContextMenus).
+This module is a main process module which can be used in a render process via
+the `remote` module.
 
-Below is an example of creating a menu dynamically in a web page by using
-the [remote](remote.md) module, and showing it when the user right clicks
-the page:
+Each menu consists of multiple [menu items](menu-item.md) and each menu item can
+have a submenu.
+
+Below is an example of creating a menu dynamically in a web page
+(render process) by using the [remote](remote.md) module, and showing it when
+the user right clicks the page:
 
 ```html
 <!-- index.html -->
@@ -27,9 +32,11 @@ window.addEventListener('contextmenu', function (e) {
 </script>
 ```
 
-Another example of creating the application menu with the simple template API:
+An example of creating the application menu in the render process with the
+simple template API:
 
-**Note to Window and Linux users** the `selector` member of each menu item is a Mac-only [Accelerator option](https://github.com/atom/electron/blob/master/docs/api/accelerator.md).
+**Note to Window and Linux users** the `selector` member of each menu item is a
+Mac-only [Accelerator option](https://github.com/atom/electron/blob/master/docs/api/accelerator.md).
 
 ```html
 <!-- index.html -->
@@ -167,102 +174,104 @@ Menu.setApplicationMenu(menu);
 
 ## Class: Menu
 
-### new Menu()
+### `new Menu()`
 
 Creates a new menu.
 
-### Class Method: Menu.setApplicationMenu(menu)
+## Methods
+
+The `menu` class has the following methods:
+
+### `Menu.setApplicationMenu(menu)`
 
 * `menu` Menu
 
 Sets `menu` as the application menu on OS X. On Windows and Linux, the `menu`
 will be set as each window's top menu.
 
-### Class Method: Menu.sendActionToFirstResponder(action)
+### `Menu.sendActionToFirstResponder(action)` _OS X_
 
 * `action` String
 
-Sends the `action` to the first responder of application, this is used for
+Sends the `action` to the first responder of application. This is used for
 emulating default Cocoa menu behaviors, usually you would just use the
 `selector` property of `MenuItem`.
 
-**Note:** This method is OS X only.
-
-### Class Method: Menu.buildFromTemplate(template)
+### `Menu.buildFromTemplate(template)`
 
 * `template` Array
 
-Generally, the `template` is just an array of `options` for constructing
-[MenuItem](menu-item.md), the usage can be referenced above.
+Generally, the `template` is just an array of `options` for constructing a
+[MenuItem](menu-item.md). The usage can be referenced above.
 
-You can also attach other fields to element of the `template`, and they will
-become properties of the constructed menu items.
+You can also attach other fields to the element of the `template` and they
+will become properties of the constructed menu items.
 
-### Menu.popup(browserWindow, [x, y])
+### `Menu.popup(browserWindow[, x, y])`
 
 * `browserWindow` BrowserWindow
-* `x` Number
-* `y` Number
+* `x` Number (optional)
+* `y` Number (optional)
 
-Popups this menu as a context menu in the `browserWindow`. You can optionally
-provide a `(x,y)` coordinate to place the menu at, otherwise it will be placed
-at the current mouse cursor position.
+Pops up this menu as a context menu in the `browserWindow`. You
+can optionally provide a `x,y` coordinate to place the menu at, otherwise it
+will be placed at the current mouse cursor position.
 
-### Menu.append(menuItem)
+### `Menu.append(menuItem)`
 
 * `menuItem` MenuItem
 
 Appends the `menuItem` to the menu.
 
-### Menu.insert(pos, menuItem)
+### `Menu.insert(pos, menuItem)`
 
 * `pos` Integer
 * `menuItem` MenuItem
 
 Inserts the `menuItem` to the `pos` position of the menu.
 
-### Menu.items
+### `Menu.items()`
 
-Get the array containing the menu's items.
+Get an array containing the menu's items.
 
-## Notes on OS X application menu
+## Notes on OS X Application Menu
 
 OS X has a completely different style of application menu from Windows and
-Linux, and here are some notes on making your app's menu more native-like.
+Linux, here are some notes on making your app's menu more native-like.
 
-### Standard menus
+### Standard Menus
 
 On OS X there are many system defined standard menus, like the `Services` and
 `Windows` menus. To make your menu a standard menu, you can just set your menu's
-label to one of followings, and Electron will recognize them and make them
+label to one of following and Electron will recognize them and make them
 become standard menus:
 
 * `Window`
 * `Help`
 * `Services`
 
-### Standard menu item actions
+### Standard Menu Item Actions
 
 OS X has provided standard actions for some menu items (which are called
 `selector`s), like `About xxx`, `Hide xxx`, and `Hide Others`. To set the action
 of a menu item to a standard action, you can set the `selector` attribute of the
 menu item.
 
-### Main menu's name
+### Main Menu's Name
 
 On OS X the label of application menu's first item is always your app's name,
 no matter what label you set. To change it you have to change your app's name
 by modifying your app bundle's `Info.plist` file. See
 [About Information Property List Files](https://developer.apple.com/library/ios/documentation/general/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html)
-for more.
+for more information.
 
 
-## Menu item position
+## Menu Item Position
 
-You can make use of `position` and `id` to control how the item would be placed
+You can make use of `position` and `id` to control how the item will be placed
 when building a menu with `Menu.buildFromTemplate`.
 
-The `position` attribute of `MenuItem` has the form `[placement]=[id]` where
+The `position` attribute of `MenuItem` has the form `[placement]=[id]`, where
 placement is one of `before`, `after`, or `endof` and `id` is the unique ID of
 an existing item in the menu:
 
@@ -272,12 +281,12 @@ an existing item in the menu:
 * `after` - Inserts this item after id referenced item. If the referenced
   item doesn't exist the item will be inserted at the end of the menu.
 * `endof` - Inserts this item at the end of the logical group containing
-  the id referenced item. (Groups are created by separator items). If
-  the referenced item doesn't exist a new separator group is created with
+  the id referenced item (groups are created by separator items). If
+  the referenced item doesn't exist, a new separator group is created with
   the given id and this item is inserted after that separator.
 
-When an item is positioned following unpositioned items are inserted after
-it, until a new item is positioned. So if you want to position a group of
+When an item is positioned, all un-positioned items are inserted after
+it until a new item is positioned. So if you want to position a group of
 menu items in the same location you only need to specify a position for
 the first item.
 
