@@ -21,6 +21,8 @@ console.log(clipboard.readText('selection'));
 
 The `clipboard` module has the following methods:
 
+**Note:** Experimental APIs are marked as such and could be removed in future.
+
 ### `clipboard.readText([type])`
 
 * `type` String (optional)
@@ -84,16 +86,12 @@ var clipboard = require('clipboard');
 console.log(clipboard.has('<p>selection</p>'));
 ```
 
-**Note:** This API is experimental and could be removed in future.
-
 ### `clipboard.read(data[, type])` _Experimental_
 
 * `data` String
 * `type` String (optional)
 
 Reads `data` from the clipboard.
-
-**Note:** This API is experimental and could be removed in future.
 
 ### `clipboard.write(data[, type])`
 
