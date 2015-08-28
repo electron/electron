@@ -52,16 +52,43 @@ Primary value types like strings and numbers, however, are sent by copy.
 
 ## Passing callbacks to the main process
 
-Some APIs in the main process accept callbacks, and it would be tempting to
-pass callbacks when calling a remote function. The `remote` module does support
-doing this, but you should also be extremely careful with this.
+Code in the main process can accept callbacks from the renderer - for instance the `remote` module -
+but you should be extremely careful when using this feature.
 
 First, in order to avoid deadlocks, the callbacks passed to the main process
-are called asynchronously, so you should not expect the main process to
+are called asynchronously. You should not expect the main process to
 get the return value of the passed callbacks.
 
-Second, the callbacks passed to the main process will not get released
-automatically after they are called. Instead, they will persistent until the
+For instance you can't use a function from the renderer process in a `Array.map` called in the main process:
+
+```javascript
+// main process mapNumbers.js
+exports.withRendererCallback = function(mapper) {
+  return [1,2,3].map(mapper);
+}
+
+exports.withLocalCallback = function() {
+  return exports.mapNumbers(function(x) {
+    return x + 1; 
+  });
+}
+
+// renderer process
+var mapNumbers = require("remote").require("mapNumbers");
+
+var withRendererCb = mapNumbers.withRendererCallback(function(x) {
+  return x + 1;
+})
+
+var withLocalCb = mapNumbers.withLocalCallback()
+
+console.log(withRendererCb, withLocalCb) // [true, true, true], [2, 3, 4]
+```
+
+As you can see, the renderer callback's synchronous return value was not as expected,
+and didn't match the return value of an indentical callback that lives in the main process.
+
+Second, the callbacks passed to the main process will persist until the
 main process garbage-collects them.
 
 For example, the following code seems innocent at first glance. It installs a
@@ -74,14 +101,16 @@ remote.getCurrentWindow().on('close', function() {
 });
 ```
 
-The problem is that the callback would be stored in the main process until you
-explicitly uninstall it! So each time you reload your window, the callback would
-be installed again and previous callbacks would just leak. To make things
-worse, since the context of previously installed callbacks have been released,
-when the `close` event was emitted, exceptions would be raised in the main process.
+But remember the callback is referenced by the main process until you
+explicitly uninstall it! If you do not, each time you reload your window the callback will
+be installed again, leaking one callback each restart.
 
-Generally, unless you are clear what you are doing, you should always avoid
-passing callbacks to the main process.
+To make things worse, since the context of previously installed callbacks have been released,
+when the `close` event was emitted exceptions would be raised in the main process.
+
+To avoid this problem, ensure you clean up any references to renderer callbacks passed to the main 
+process. This involves cleaning up event handlers, or ensuring the main process is explicitly told to deference
+callbacks that came from a renderer process that is exiting.
 
 ## remote.require(module)
 
