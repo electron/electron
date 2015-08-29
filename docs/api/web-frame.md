@@ -1,45 +1,50 @@
-# web-frame
+# webFrame
 
-The `web-frame` module can custom the rendering of current web page.
+The `web-frame` module customizes the rendering of the current web page.
 
 An example of zooming current page to 200%.
 
 ```javascript
 var webFrame = require('web-frame');
+
 webFrame.setZoomFactor(2);
 ```
 
-## webFrame.setZoomFactor(factor)
+## Methods
 
-* `factor` Number - Zoom factor
+The `web-frame` module has the following methods:
+
+### `webFrame.setZoomFactor(factor)`
+
+* `factor` Number - Zoom factor.
 
 Changes the zoom factor to the specified factor, zoom factor is
 zoom percent / 100, so 300% = 3.0.
 
-## webFrame.getZoomFactor()
+### `webFrame.getZoomFactor()`
 
 Returns the current zoom factor.
 
-## webFrame.setZoomLevel(level)
+### `webFrame.setZoomLevel(level)`
 
 * `level` Number - Zoom level
 
-Changes the zoom level to the specified level, 0 is "original size", and each
+Changes the zoom level to the specified level. The "original size" is 0 and each
 increment above or below represents zooming 20% larger or smaller to default
 limits of 300% and 50% of original size, respectively.
 
-## webFrame.getZoomLevel()
+### `webFrame.getZoomLevel()`
 
 Returns the current zoom level.
 
-## webFrame.setZoomLevelLimits(minimumLevel, maximumLevel)
+### `webFrame.setZoomLevelLimits(minimumLevel, maximumLevel)`
 
 * `minimumLevel` Number
 * `maximumLevel` Number
 
 Sets the maximum and minimum zoom level.
 
-## webFrame.setSpellCheckProvider(language, autoCorrectWord, provider)
+### `webFrame.setSpellCheckProvider(language, autoCorrectWord, provider)`
 
 * `language` String
 * `autoCorrectWord` Boolean
@@ -60,7 +65,7 @@ require('web-frame').setSpellCheckProvider("en-US", true, {
 });
 ```
 
-## webFrame.registerUrlSchemeAsSecure(scheme)
+### `webFrame.registerUrlSchemeAsSecure(scheme)`
 
 * `scheme` String
 
@@ -70,11 +75,11 @@ Secure schemes do not trigger mixed content warnings. For example, `https` and
 `data` are secure schemes because they cannot be corrupted by active network
 attackers.
 
-## webFrame.registerUrlSchemeAsBypassingCsp(scheme)
+### `webFrame.registerUrlSchemeAsBypassingCsp(scheme)`
 
 * `scheme` String
 
-Resources will be loaded from this `scheme` regardless of
-page's Content Security Policy.
+Resources will be loaded from this `scheme` regardless of the current page's
+Content Security Policy.
 
 [spellchecker]: https://github.com/atom/node-spellchecker
