@@ -1,17 +1,17 @@
 # NativeImage
 
-In Electron for the APIs that take images, you can pass either file paths or
-`NativeImage` instances. When passing `null`, an empty image will be used.
+In Electron, for the APIs that take images, you can pass either file paths or
+`NativeImage` instances. An empty image will be used when `null` is passed.
 
-For example, when creating a tray or setting a window's icon, you can pass an image
-file path as a `String`:
+For example, when creating a tray or setting a window's icon, you can pass an
+image file path as a `String`:
 
 ```javascript
 var appIcon = new Tray('/Users/somebody/images/icon.png');
 var window = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
 ```
 
-Or read the image from the clipboard:
+Or read the image from the clipboard which returns a `NativeImage`:
 
 ```javascript
 var clipboard = require('clipboard');
@@ -31,7 +31,7 @@ On Windows, you can also load `ICO` icon from a file path.
 On platforms that have high-DPI support, you can append `@2x` after image's
 file name's base name to mark it as a high resolution image.
 
-For example if `icon.png` is a normal image that has standard resolution, the
+For example if `icon.png` is a normal image that has standard resolution, then
 `icon@2x.png` would be treated as a high resolution image that has double DPI
 density.
 
@@ -65,7 +65,7 @@ Following suffixes as DPI denses are also supported:
 * `@4x`
 * `@5x`
 
-## Template image
+## Template Image
 
 Template images consist of black and clear colors (and an alpha channel).
 Template images are not intended to be used as standalone images and are usually
@@ -74,72 +74,80 @@ mixed with other content to create the desired final appearance.
 The most common case is to use template image for menu bar icon so it can adapt
 to both light and dark menu bars.
 
-Template image is only supported on Mac.
+Template image is only supported on OS X.
 
-To mark an image as template image, its filename should end with the word
+To mark an image as a template image, its filename should end with the word
 `Template`, examples are:
 
 * `xxxTemplate.png`
 * `xxxTemplate@2x.png`
 
-## nativeImage.createEmpty()
+## Methods
+
+The `NativeImage` class has the following methods:
+
+### `NativeImage.createEmpty()`
 
 Creates an empty `NativeImage` instance.
 
-## nativeImage.createFromPath(path)
+### `NativeImage.createFromPath(path)`
 
 * `path` String
 
 Creates a new `NativeImage` instance from a file located at `path`.
 
-## nativeImage.createFromBuffer(buffer[, scaleFactor])
+### `NativeImage.createFromBuffer(buffer[, scaleFactor])`
 
 * `buffer` [Buffer][buffer]
-* `scaleFactor` Double
+* `scaleFactor` Double (optional)
 
-Creates a new `NativeImage` instance from `buffer`. The `scaleFactor` is 1.0 by
-default.
+Creates a new `NativeImage` instance from `buffer`. The default `scaleFactor` is
+1.0.
 
-## nativeImage.createFromDataUrl(dataUrl)
+### `NativeImage.createFromDataUrl(dataUrl)`
 
 * `dataUrl` String
 
 Creates a new `NativeImage` instance from `dataUrl`.
 
-## Class: NativeImage
+## Instance Methods
 
-This class is used to represent an image.
+The following methods are available on instances of `nativeImage`
 
-### NativeImage.toPng()
+```javascript
+var image = nativeImage.createFromPath('/Users/somebody/images/icon.png')
+```
 
-Returns a [Buffer][buffer] that contains image's `PNG` encoded data.
+### `image.toPng()`
 
-### NativeImage.toJpeg(quality)
+Returns a [Buffer][buffer] that contains the image's `PNG` encoded data.
 
-* `quality` Integer between 0 - 100 (required)
+### `image.toJpeg(quality)`
 
-Returns a [Buffer][buffer] that contains image's `JPEG` encoded data.
+* `quality` Integer between 0 - 100 (**required**)
 
-### NativeImage.toDataUrl()
+Returns a [Buffer][buffer] that contains the image's `JPEG` encoded data.
 
-Returns the data URL of image.
+### `image.toDataUrl()`
 
-### NativeImage.isEmpty()
+Returns the data URL of the image.
 
-Returns whether the image is empty.
+### `image.isEmpty()`
 
-### NativeImage.getSize()
+Returns a boolean whether the image is empty.
+
+### `image.getSize()`
 
 Returns the size of the image.
 
 [buffer]: https://iojs.org/api/buffer.html#buffer_class_buffer
 
-### NativeImage.setTemplateImage(option)
+### `image.setTemplateImage(option)`
 
 * `option` Boolean
 
 Marks the image as template image.
 
-### NativeImage.isTemplateImage()
+### `image.isTemplateImage()`
 
-Returns whether the image is a template image.
+Returns a boolean whether the image is a template image.
