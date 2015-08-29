@@ -11,6 +11,7 @@
 #include "atom/common/chrome_version.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/logging.h"
+#include "base/process/process_metrics.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
@@ -61,6 +62,9 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
   dict.SetMethod("crash", &Crash);
   dict.SetMethod("hang", &Hang);
   dict.SetMethod("log", &Log);
+#if defined(OS_POSIX)
+  dict.SetMethod("setFdLimit", &base::SetFdLimit);
+#endif
   dict.SetMethod("activateUvLoop",
       base::Bind(&AtomBindings::ActivateUVLoop, base::Unretained(this)));
 
