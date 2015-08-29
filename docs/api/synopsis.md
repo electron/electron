@@ -1,18 +1,22 @@
 # Synopsis
 
-All of [node.js's built-in modules](http://nodejs.org/api/) are available in
-Electron, and third-party node modules are fully supported too (including the
-[native modules](../tutorial/using-native-node-modules.md)).
+All of [Node.js's built-in modules](http://nodejs.org/api/) are available in
+Electron and third-party node modules also fully supported as well (including
+the [native modules](../tutorial/using-native-node-modules.md)).
 
 Electron also provides some extra built-in modules for developing native
 desktop applications. Some modules are only available on the main process, some
-are only available on the renderer process, and some can be used on both processes.
-The basic rule is: if a module is GUI or low-level system related, then it should
-be only available on the main process. You need to be familiar with the concept of
+are only available on the renderer process (web page), and some can be used on
+both processes.
+
+The basic rule is: if a module is
+[GUI](https://en.wikipedia.org/wiki/Graphical_user_interface) or low-level
+system related, then it should be only available on the main process. You need
+to be familiar with the concept of
 [main process vs. renderer process](../tutorial/quick-start.md#the-main-process)
 scripts to be able to use those modules.
 
-The main process script is just like a normal `node.js` script:
+The main process script is just like a normal Node.js script:
 
 ```javascript
 var app = require('app');
@@ -26,7 +30,7 @@ app.on('ready', function() {
 });
 ```
 
-The web page is no different than a normal web page, except for the extra
+The render process is no different than a normal web page, except for the extra
 ability to use node modules:
 
 ```html
