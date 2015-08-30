@@ -32,8 +32,10 @@ app.setAppPath = (path) ->
 app.getAppPath = ->
   appPath
 
-# Be compatible with old API.
-app.once 'ready', -> @emit 'finish-launching'
+app.once 'ready', ->
+  app.defaultSession.__proto__ = EventEmitter.prototype
+  # Be compatible with old API.
+  @emit 'finish-launching'
 app.terminate = app.quit
 app.exit = process.exit
 app.getHomeDir = -> @getPath 'home'

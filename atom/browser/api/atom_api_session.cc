@@ -9,6 +9,7 @@
 
 #include "atom/browser/api/atom_api_cookies.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -98,6 +99,19 @@ struct Converter<ClearStorageDataOptions> {
     if (options.Get("quotas", &types))
       out->quota_types = GetQuotaMask(types);
     return true;
+  }
+};
+
+template<>
+struct Converter<content::DownloadItem*> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   content::DownloadItem* val) {
+    return mate::ObjectTemplateBuilder(isolate)
+        .SetValue("url", val->GetURL())
+        .SetValue("filename", val->GetSuggestedFilename())
+        .SetValue("mimeType", val->GetMimeType())
+        .SetValue("hasUserGesture", val->HasUserGesture())
+        .Build()->NewInstance();
   }
 };
 
@@ -215,9 +229,28 @@ void SetProxyInIO(net::URLRequestContextGetter* getter,
 Session::Session(AtomBrowserContext* browser_context)
     : browser_context_(browser_context) {
   AttachAsUserData(browser_context);
+  // Observe DownloadManger to get download notifications.
+  auto download_manager =
+      content::BrowserContext::GetDownloadManager(browser_context);
+  download_manager->AddObserver(this);
 }
 
 Session::~Session() {
+  auto download_manager =
+      content::BrowserContext::GetDownloadManager(browser_context_);
+  download_manager->RemoveObserver(this);
+}
+
+void Session::OnDownloadCreated(content::DownloadManager* manager,
+                                    content::DownloadItem* item) {
+  auto web_contents = item->GetWebContents();
+  bool prevent_default = Emit("will-download", item,
+                              api::WebContents::CreateFrom(isolate(),
+                                                           web_contents));
+  if (prevent_default) {
+    item->Cancel(true);
+    item->Remove();
+  }
 }
 
 void Session::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
