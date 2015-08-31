@@ -78,8 +78,8 @@ Squirrel은 "url"로 `Accept: application/zip` 헤더와 함께 업데이트 zip
 
 ## 업데이트 서버 구현
 
-[Nuts](https://github.com/GitbookIO/nuts)는 위 업데이트 서버의 오픈 소스 구현입니다.
-이 구현은 Github 릴리즈와 통합되어 있습니다. Nuts는 `Squirrel.Mac`과 `Squirrel.Windows`를 지원하고 다운로드와 업데이트를 관리합니다.
+[Nuts](https://github.com/GitbookIO/nuts)는 위에서 설명한 업데이트 서버의 오픈 소스 구현입니다.
+이 구현은 Github 릴리즈와 완벽하게 통합되어 있습니다. Nuts는 `Squirrel.Mac`과 `Squirrel.Windows`를 지원하고 다운로드와 업데이트를 관리합니다.
 이 구현을 사용하면 cross-platform 지원을 신경 쓸 필요가 없습니다.
 
 ## Events
