@@ -1,6 +1,7 @@
 # web-frame
 
-The `web-frame` module can custom the rendering of current web page.
+The `web-frame` module allows you to customize the rendering of the current 
+web page.
 
 An example of zooming current page to 200%.
 
