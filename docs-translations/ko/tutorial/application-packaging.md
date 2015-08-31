@@ -118,7 +118,7 @@ originalFs.readFileSync('/path/to/example.asar');
 몇몇 API는 시스템의 실제 파일의 경로를 기반으로 작동하므로 이 API들을 사용할 땐 Electron은
 이 API가 원할하게 작동할 수 있도록 하기 위해 임시경로에 해당 파일들의 압축을 해제합니다. 이 작업은 약간의 오버헤드를 불러 일으킬 수 있습니다.
 
-해당하는 API 함수는 다음과 같습니다:
+해당하는 API 메서드는 다음과 같습니다:
 
 * `child_process.execFile`
 * `fs.open`

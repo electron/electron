@@ -5,7 +5,7 @@
 ### new MenuItem(options)
 
 * `options` Object
-  * `click` Function - 메뉴 아이템이 클릭될 때 호출되는 콜백함수
+  * `click` Function - 메뉴 아이템이 클릭될 때 호출되는 콜백 함수
   * `selector` String - First Responder가 클릭될 때 호출 되는 선택자 (OS X 전용)
   * `type` String - `MenuItem`의 타입 `normal`, `separator`, `submenu`, `checkbox` 또는 `radio` 사용가능
   * `label` String

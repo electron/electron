@@ -72,6 +72,15 @@ python script\cpplint.py
 python script\test.py
 ```
 
+테스트 실행시 `runas`와 같은 네이티브 모듈을 포함하는데 이 모듈은 디버그 빌드에서 같이 사용할 수 없습니다.
+하지만 여전히 릴리즈 빌드에선 사용할 수 있습니다.
+
+릴리즈 빌드로 테스트를 실행하려면 다음 커맨드를 사용하면 됩니다:
+
+```powershell
+python script\test.py -R
+```
+
 ## 문제 해결
 
 ### Command xxxx not found

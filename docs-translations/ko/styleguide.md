@@ -1,61 +1,55 @@
-# Electron Documentation Styleguide
+﻿# Electron 문서 스타일 가이드
 
-Find the appropriate section for your task: [reading Electron documentation](#)
-or [writing Electron documentation](#).
+[Electron 문서 읽기](#) 와 [Electron 문서 작성하기](#) 중 적당히 필요한 부분을 찾아 참고하세요:
 
-## Writing Electron Documentation
+## Electron 문서 작성하기
 
-These are the ways that we construct the Electron documentation.
+Electron 문서를 작성하는 규칙은 다음과 같습니다.
 
-- Maximum one `h1` title per page.
-- Use `bash` instead of `cmd` in code blocks (because of syntax highlighter).
-- Doc `h1` titles should match object name (i.e. `browser-window` ��
-  `BrowserWindow`).
-  - Hyphen separated filenames, however, are fine.
-- No headers following headers, add at least a one-sentence description.
-- Methods headers are wrapped in `code` ticks.
-- Event headers are wrapped in single 'quotation' marks.
-- No nesting lists more than 2 levels (unfortunately because of markdown
-  renderer).
-- Add section titles: Events, Class Methods and Instance Methods.
-- Use 'will' over 'would' when describing outcomes.
-- Events and methods are `h3` headers.
-- Optional arguments written as `function (required[, optional])`.
-- Optional arguments are denoted when called out in list.
-- Line length is 80-column wrapped.
-- Platform specific methods are noted in italics following method header.
+- `h1` 제목은 페이지당 한 개만 사용할 수 있습니다.
+- 코드 블럭에서 터미널 언어 선택시 `cmd` 대신 `bash`를 사용합니다. (syntax highlighter를 사용하기 위해서)
+- 문서의 `h1` 제목은 반드시 현재 객체 이름과 같게 해야 합니다. (예시: `browser-window` → `BrowserWindow`)
+ - 하이픈(-)으로 구분되었던 어떻게 되었던 간에 예시와 같이 작성합니다.
+- 헤더 밑에 헤더를 바로 사용하지 않습니다. 한 줄이라도 좋으니 헤더와 헤더 사이에 설명 추가합니다.
+- 메서드 헤더는 `code` 틱으로 표시합니다.
+- 이벤트 헤더는 한 '따옴표'로 표시합니다.
+- 리스트를 2 단계 이상 중첩하지 않습니다. (안타깝게도 markdown 랜더러가 지원하지 않습니다)
+- 섹션에 대한 제목을 추가합니다: Events, Class 메서드 그리고 인스턴스 메서드등.
+- 어떤 '것'의 사용 결과를 설명할 때 '될 것입니다' 형식을 사용하여 설명합니다.
+- 이벤트와 메서드에는 `h3` 헤더를 사용합니다.
+- 선택적 인수는 `function (required[, optional])` 형식으로 작성합니다.
+- 선택적 인수는 목록에서 호출되면 표시합니다.
+- 문장의 길이는 한 줄당 80 칸을 유지합니다.
+- 플랫폼 특정 메서드 헤더는 이탈릭체로 표시합니다.
  - ```### `method(foo, bar)` _OS X_```
 
-## Reading Electron Documentation
+## Electron 문서 읽기
 
-Here are some tips for understanding Electron documentation syntax.
+Electron 문서 구조를 이해하는 데 참고할 수 있는 유용한 도움말입니다.
 
 ### Methods
 
-An example of [method](https://developer.mozilla.org/en-US/docs/Glossary/Method)
-documentation:
+[Method](https://developer.mozilla.org/en-US/docs/Glossary/Method) 문서의 예제입니다:
 
 ---
 
 `methodName(required[, optional]))`
 
-* `require` String, **required**
+* `require` String, **필수**
 * `optional` Integer
 
 ---
 
-The method name is followed by the arguments it takes. Optional arguments are
-notated by brackets surrounding the optional argument as well as the comma
-required if this optional argument follows another argument.
+메서드 이름은 인수가 무엇을 받는지에 따라 결정됩니다. 선택적 인수는 브라켓([, ])으로 묶어
+이 인수가 다른 인수뒤에 선택적으로 사용할 수 있다는 것을 설명합니다.
 
-Below the method is more detailed information on each of the arguments. The type
-of argument is notated by either the common types: [`String`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String), [`Number`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number), [`Object`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object), [`Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)
-or a custom type like Electron's [`webContent`](api/web-content.md).
+메서드의 밑에선 각 인수에 대해 자세한 설명을 합니다. 인수의 타입은 일반적인 타입 중 하나를 받거나:
+[`String`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String), [`Number`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number), [`Object`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object), [`Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)
+Electron의 [`webContent`](api/web-content.md)같은 커스텀 타입을 받습니다.
 
 ### Events
 
-An example of [event](https://developer.mozilla.org/en-US/docs/Web/API/Event)
-documentation:
+[Event](https://developer.mozilla.org/en-US/docs/Web/API/Event) 문서의 예제입니다:
 
 ---
 
@@ -67,9 +61,8 @@ Returns:
 
 ---
 
-The event is a string that is used after a `.on` listener method. If it returns
-a value it and its type is noted below. If you were to listen and respond to
-this event it might look something like this:
+이벤트는 `.on` 리스너 메서드로 사용할 수 있습니다. 만약 이벤트에서 값을 반환한다면 문서에서 표시된 대로
+일정한 타입의 값을 반환합니다. 이벤트를 처리하거나 응답하려 한다면 다음과 같이 사용할 수 있습니다:
 
 ```javascript
 Alarm.on('wake-up', function(time) {

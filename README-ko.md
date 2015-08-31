@@ -36,7 +36,7 @@ npm install electron-prebuilt --save-dev
 [Docs](https://github.com/atom/electron/tree/master/docs/README.md)에 개발 가이드와 API 레퍼런스가 있습니다.
 Electron을 빌드 하는 방법과 프로젝트에 기여하는 방법도 문서에 포함되어 있으니 참고하시기 바랍니다.
 
-## 참조 문서(번역)
+## 참조 문서 (번역)
 
 - [한국어](https://github.com/atom/electron/tree/master/docs-translations/ko)
 - [일본어](https://github.com/atom/electron/tree/master/docs-translations/jp)
