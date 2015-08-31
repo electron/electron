@@ -40,6 +40,8 @@ Modules for the main process:
 * [power-monitor](api/power-monitor.md)
 * [power-save-blocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
+* [session](api/session.md)
+* [webContents](api/web-contents.md)
 * [tray](api/tray.md)
 
 Modules for the renderer process (web page):

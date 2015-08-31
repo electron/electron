@@ -45,6 +45,8 @@ class EventEmitter : public Wrappable {
                       content::WebContents* sender,
                       IPC::Message* message,
                       const Args&... args) {
+    v8::Locker locker(isolate());
+    v8::HandleScope handle_scope(isolate());
     v8::Local<v8::Object> event = CreateJSEvent(isolate(), sender, message);
     return EmitWithEvent(name, event, args...);
   }

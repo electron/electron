@@ -7,14 +7,14 @@ the location of Electron's headers when building native modules.
 ## Native Node module compatibility
 
 Since Node v0.11.x there were vital changes in the V8 API. So generally all
-native modules written for Node v0.10.x wouldn't work for Node v0.11.x. And
-because Electron internally uses Node v0.11.13, it carries with the same
+native modules written for Node v0.10.x wouldn't work for newer Node or io.js versions. And
+because Electron internally uses __io.js v3.1.0__, it carries with the same
 problem.
 
-To solve this, you should use modules that support Node v0.11.x,
+To solve this, you should use modules that support Node v0.11.x or later,
 [many modules](https://www.npmjs.org/browse/depended/nan) do support both now.
 For old modules that only support Node v0.10.x, you should use the
-[nan](https://github.com/rvagg/nan) module to port it to v0.11.x.
+[nan](https://github.com/rvagg/nan) module to port it to v0.11.x or later versions of Node or io.js.
 
 ## How to install native modules
 
