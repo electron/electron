@@ -237,7 +237,7 @@ Injects CSS into guest page.
 * `userGesture` Boolean - Default `false`.
 
 Evaluates `code` in page. If `userGesture` is set, it will create user gesture
-context. HTML API like `requestFullScreen` which require user action can take
+context. HTML APIs like `requestFullScreen`, which require user action, can take
 advantage of this option for automation.
 
 ### `<webview>.openDevTools()`
