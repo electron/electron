@@ -62,6 +62,16 @@ extern const char kAppUserModelId[];
 
 extern const char kOffScreenRender[];
 
+extern const char kModifiers[];
+extern const char kKeyCode[];
+
+extern const char kMovementX[];
+extern const char kMovementY[];
+extern const char kClickCount[];
+extern const char kMouseEventType[];
+extern const char kMouseEventButton[];
+extern const char kMouseWheelPrecise[];
+
 }  // namespace switches
 
 }  // namespace atom

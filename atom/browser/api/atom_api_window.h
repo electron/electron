@@ -138,6 +138,8 @@ class Window : public mate::TrackableObject<Window>,
   void SetMenuBarVisibility(bool visible);
   bool IsMenuBarVisible();
   void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
+  void SendKeyboardEvent(v8::Isolate* isolate, const mate::Dictionary& data);
+  void SendMouseEvent(v8::Isolate* isolate, const mate::Dictionary& data);
 
 #if defined(OS_MACOSX)
   void ShowDefinitionForSelection();

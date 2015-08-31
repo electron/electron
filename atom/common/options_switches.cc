@@ -112,6 +112,16 @@ const char kAppUserModelId[] = "app-user-model-id";
 
 const char kOffScreenRender[] = "offscreen-render";
 
+const char kModifiers[] = "modifiers";
+const char kKeyCode[] = "keycode";
+
+const char kMovementX[] = "movement-x";
+const char kMovementY[] = "movement-y";
+const char kClickCount[] = "click-count";
+const char kMouseEventType[] = "type";
+const char kMouseEventButton[] = "button";
+const char kMouseWheelPrecise[] = "precise";
+
 }  // namespace switches
 
 }  // namespace atom

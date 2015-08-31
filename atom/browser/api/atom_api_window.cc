@@ -8,6 +8,8 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
+#include "atom/common/options_switches.h"
+#include "atom/common/event_types.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -516,6 +518,144 @@ bool Window::IsVisibleOnAllWorkspaces() {
   return window_->IsVisibleOnAllWorkspaces();
 }
 
+void Window::SendKeyboardEvent(v8::Isolate* isolate, const mate::Dictionary& data){
+  auto type = blink::WebInputEvent::Type::Char;
+  int modifiers = 0;
+  int keycode = 0;
+  std::string type_str = "";
+  std::vector<std::string> modifier_array;
+
+  data.Get(switches::kMouseEventType, &type_str);
+  data.Get(switches::kModifiers, &modifier_array);
+  data.Get(switches::kKeyCode, &keycode);
+
+  if(type_str.compare(event_types::kKeyDown) == 0){
+    type = blink::WebInputEvent::Type::KeyDown;
+  }else if(type_str.compare(event_types::kKeyUp) == 0){
+    type = blink::WebInputEvent::Type::KeyUp;
+  }else if(type_str.compare(event_types::kChar) == 0){
+    type = blink::WebInputEvent::Type::Char;
+  }
+
+  for(std::vector<std::string>::iterator mod = modifier_array.begin(); mod != modifier_array.end(); ++mod) {
+    if(mod->compare(event_types::kModifierIsKeyPad) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::IsKeyPad;
+    }else if(mod->compare(event_types::kModifierIsAutoRepeat) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::IsAutoRepeat;
+    }else if(mod->compare(event_types::kModifierIsLeft) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::IsLeft;
+    }else if(mod->compare(event_types::kModifierIsRight) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::IsRight;
+    }else if(mod->compare(event_types::kModifierShiftKey) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::ShiftKey;
+    }else if(mod->compare(event_types::kModifierControlKey) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::ControlKey;
+    }else if(mod->compare(event_types::kModifierAltKey) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::AltKey;
+    }else if(mod->compare(event_types::kModifierMetaKey) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::MetaKey;
+    }else if(mod->compare(event_types::kModifierCapsLockOn) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::CapsLockOn;
+    }else if(mod->compare(event_types::kModifierNumLockOn) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::NumLockOn;
+    }
+  }
+
+  window_->SendKeyboardEvent(type, modifiers, keycode);
+}
+
+void Window::SendMouseEvent(v8::Isolate* isolate, const mate::Dictionary& data){
+  int x, y, movementX, movementY, clickCount;
+  std::string type_str = "";
+  std::string button_str = "";
+  std::vector<std::string> modifier_array;
+
+  blink::WebInputEvent::Type type = blink::WebInputEvent::Type::MouseMove;
+  blink::WebMouseEvent::Button button = blink::WebMouseEvent::Button::ButtonNone;
+  int modifiers = 0;
+
+  data.Get(switches::kMouseEventType, &type_str);
+  data.Get(switches::kMouseEventButton, &button_str);
+  data.Get(switches::kModifiers, &modifier_array);
+
+  if(type_str.compare(event_types::kMouseDown) == 0){
+    type = blink::WebInputEvent::Type::MouseDown;
+  }else if(type_str.compare(event_types::kMouseUp) == 0){
+    type = blink::WebInputEvent::Type::MouseUp;
+  }else if(type_str.compare(event_types::kMouseMove) == 0){
+    type = blink::WebInputEvent::Type::MouseMove;
+  }else if(type_str.compare(event_types::kMouseEnter) == 0){
+    type = blink::WebInputEvent::Type::MouseEnter;
+  }else if(type_str.compare(event_types::kMouseLeave) == 0){
+    type = blink::WebInputEvent::Type::MouseLeave;
+  }else if(type_str.compare(event_types::kContextMenu) == 0){
+    type = blink::WebInputEvent::Type::ContextMenu;
+  }else if(type_str.compare(event_types::kMouseWheel) == 0){
+    type = blink::WebInputEvent::Type::MouseWheel;
+  }
+
+  if(button_str.compare(event_types::kMouseLeftButton) == 0){
+    modifiers = modifiers & blink::WebInputEvent::Modifiers::LeftButtonDown;
+    button = blink::WebMouseEvent::Button::ButtonLeft;
+  }else if(button_str.compare(event_types::kMouseRightButton) == 0){
+    modifiers = modifiers & blink::WebInputEvent::Modifiers::RightButtonDown;
+    button = blink::WebMouseEvent::Button::ButtonRight;
+  }else if(button_str.compare(event_types::kMouseMiddleButton) == 0){
+    modifiers = modifiers & blink::WebInputEvent::Modifiers::MiddleButtonDown;
+    button = blink::WebMouseEvent::Button::ButtonMiddle;
+  }
+
+  for(std::vector<std::string>::iterator mod = modifier_array.begin(); mod != modifier_array.end(); ++mod) {
+    if(mod->compare(event_types::kModifierLeftButtonDown) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::LeftButtonDown;
+    }else if(mod->compare(event_types::kModifierMiddleButtonDown) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::MiddleButtonDown;
+    }else if(mod->compare(event_types::kModifierRightButtonDown) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::RightButtonDown;
+    }else if(mod->compare(event_types::kModifierShiftKey) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::ShiftKey;
+    }else if(mod->compare(event_types::kModifierControlKey) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::ControlKey;
+    }else if(mod->compare(event_types::kModifierAltKey) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::AltKey;
+    }else if(mod->compare(event_types::kModifierMetaKey) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::MetaKey;
+    }else if(mod->compare(event_types::kModifierCapsLockOn) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::CapsLockOn;
+    }else if(mod->compare(event_types::kModifierNumLockOn) == 0){
+      modifiers = modifiers & blink::WebInputEvent::Modifiers::NumLockOn;
+    }
+  }
+
+  if(type == blink::WebInputEvent::Type::MouseWheel){
+    bool precise = true;
+
+    x = 0;
+    y = 0;
+    data.Get(switches::kX, &x);
+    data.Get(switches::kY, &y);
+    data.Get(switches::kMouseWheelPrecise, &precise);
+
+    window_->SendMouseWheelEvent(modifiers, x, y, precise);
+  }else{
+    if (data.Get(switches::kX, &x) && data.Get(switches::kY, &y)) {
+      if(!data.Get(switches::kMovementX, &movementX)){
+        movementX = 0;
+      }
+
+      if(!data.Get(switches::kMovementY, &movementY)){
+        movementY = 0;
+      }
+
+      if(!data.Get(switches::kClickCount, &clickCount)){
+        clickCount = 0;
+      }
+
+      window_->SendMouseEvent(type, modifiers, button, x, y, movementX, movementY, clickCount);
+    }
+  }
+}
+
 int32_t Window::ID() const {
   return weak_map_id();
 }
@@ -599,6 +739,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
                  &Window::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &Window::IsVisibleOnAllWorkspaces)
+      .SetMethod("sendMouseEvent", &Window::SendMouseEvent)
+      .SetMethod("sendKeyboardEvent", &Window::SendKeyboardEvent)
 #if defined(OS_MACOSX)
       .SetMethod("showDefinitionForSelection",
                  &Window::ShowDefinitionForSelection)

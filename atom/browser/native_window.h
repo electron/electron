@@ -11,6 +11,8 @@
 
 #include "media/base/video_frame.h"
 #include "content/public/browser/render_widget_host_view_frame_subscriber.h"
+#include "content/public/browser/native_web_keyboard_event.h"
+#include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/browser/ui/accelerator_util.h"
 #include "base/cancelable_callback.h"
@@ -236,6 +238,10 @@ class NativeWindow : public content::WebContentsObserver,
 
   void OnFrameReceived(bool result, scoped_refptr<media::VideoFrame> frame);
 
+  void SendKeyboardEvent(blink::WebInputEvent::Type type, int modifiers, int keycode);
+  void SendMouseEvent(blink::WebInputEvent::Type type, int modifiers, blink::WebMouseEvent::Button button, int x, int y, int movementX, int movementY, int clickCount);
+  void SendMouseWheelEvent(int modifiers, int x, int y, bool clickCount);
+
  protected:
   NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,
                const mate::Dictionary& options);
@@ -248,6 +254,7 @@ class NativeWindow : public content::WebContentsObserver,
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void RenderViewReady() override;
+  void DidFinishLoad(content::RenderFrameHost* render_frame_host, const GURL& validated_url) override;
   void BeforeUnloadDialogCancelled() override;
   void TitleWasSet(content::NavigationEntry* entry, bool explicit_set) override;
   bool OnMessageReceived(const IPC::Message& message) override;
