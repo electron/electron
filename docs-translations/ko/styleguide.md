@@ -27,9 +27,9 @@ Electron 문서를 작성하는 규칙은 다음과 같습니다.
 
 Electron 문서 구조를 이해하는 데 참고할 수 있는 유용한 도움말입니다.
 
-### 메서드
+### Methods
 
-[메서드](https://developer.mozilla.org/en-US/docs/Glossary/Method) 문서의 예제입니다:
+[Method](https://developer.mozilla.org/en-US/docs/Glossary/Method) 문서의 예제입니다:
 
 ---
 
