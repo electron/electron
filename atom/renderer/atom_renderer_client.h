@@ -64,9 +64,6 @@ class AtomRendererClient : public content::ContentRendererClient,
   scoped_ptr<NodeBindings> node_bindings_;
   scoped_ptr<AtomBindings> atom_bindings_;
 
-  // The main frame.
-  blink::WebFrame* main_frame_;
-
   DISALLOW_COPY_AND_ASSIGN(AtomRendererClient);
 };
 

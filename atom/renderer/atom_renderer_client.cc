@@ -109,8 +109,7 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
 
 AtomRendererClient::AtomRendererClient()
     : node_bindings_(NodeBindings::Create(false)),
-      atom_bindings_(new AtomBindings),
-      main_frame_(nullptr) {
+      atom_bindings_(new AtomBindings) {
 }
 
 AtomRendererClient::~AtomRendererClient() {
@@ -185,11 +184,9 @@ bool AtomRendererClient::OverrideCreatePlugin(
 void AtomRendererClient::DidCreateScriptContext(
     blink::WebFrame* frame,
     v8::Handle<v8::Context> context) {
-  if (main_frame_)
+  // Only insert node integration for the main frame.
+  if (frame->parent())
     return;
-
-  // The first web frame is the main frame.
-  main_frame_ = frame;
 
   // Give the node loop a run to make sure everything is ready.
   node_bindings_->RunMessageLoop();
