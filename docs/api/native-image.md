@@ -115,7 +115,9 @@ Creates a new `NativeImage` instance from `dataUrl`.
 The following methods are available on instances of `nativeImage`
 
 ```javascript
-var image = nativeImage.createFromPath('/Users/somebody/images/icon.png')
+var NativeImage = require('native-image');
+
+var image = NativeImage.createFromPath('/Users/somebody/images/icon.png');
 ```
 
 ### `image.toPng()`
