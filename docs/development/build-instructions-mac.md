@@ -1,17 +1,19 @@
-# Build instructions (Mac)
+# Build Instructions (Mac)
+
+Follow the guidelines below for building Electron on Mac.
 
 ## Prerequisites
 
 * OS X >= 10.8
 * [Xcode](https://developer.apple.com/technologies/tools/) >= 5.1
-* [node.js](http://nodejs.org) (external).
+* [node.js](http://nodejs.org) (external)
 
-If you are using the python downloaded by Homebrew, you also need to install
+If you are using the Python downloaded by Homebrew, you also need to install
 following python modules:
 
 * pyobjc
 
-## Getting the code
+## Getting the Code
 
 ```bash
 $ git clone https://github.com/atom/electron.git
@@ -20,7 +22,7 @@ $ git clone https://github.com/atom/electron.git
 ## Bootstrapping
 
 The bootstrap script will download all necessary build dependencies and create
-build project files. Notice that we're using `ninja` to build Electron so
+the build project files. Notice that we're using `ninja` to build Electron so
 there is no Xcode project generated.
 
 ```bash
@@ -44,14 +46,14 @@ $ ./script/build.py -c D
 
 After building is done, you can find `Electron.app` under `out/D`.
 
-## 32bit support
+## 32bit Support
 
-Electron can only be built for 64bit target on OS X, and there is no plan to
+Electron can only be built for a 64bit target on OS X and there is no plan to
 support 32bit OS X in future.
 
 ## Tests
 
-Test your changes confirm to the project coding style using:
+Test your changes conform to the project coding style using:
 
 ```bash
 $ ./script/cpplint.py
