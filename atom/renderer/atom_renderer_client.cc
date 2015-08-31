@@ -229,6 +229,7 @@ bool AtomRendererClient::ShouldFork(blink::WebFrame* frame,
   // FIXME We only support GET here because http method will be ignored when
   // the OpenURLFromTab is triggered, which means form posting would not work,
   // we should solve this by patching Chromium in future.
+  *send_referrer = true;
   return http_method == "GET";
 }
 
