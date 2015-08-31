@@ -11,3 +11,10 @@ upstream node:
 ## process.hang
 
 Causes the main thread of the current process hang.
+
+## process.setFdLimit(maxDescriptors) _OS X_ _Linux_
+
+* `maxDescriptors` Integer
+
+Sets the file descriptor soft limit to `maxDescriptors` or the OS hard
+limit, whichever is lower for the current process.
