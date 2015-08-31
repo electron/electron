@@ -27,6 +27,7 @@
 #include "brightray/browser/inspectable_web_contents.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
+#include "content/common/view_messages.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
@@ -44,6 +45,7 @@
 #include "net/http/http_response_headers.h"
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
+#include "third_party/WebKit/public/web/WebDeviceEmulationParams.h"
 
 #include "atom/common/node_includes.h"
 
@@ -640,6 +642,88 @@ bool WebContents::IsDevToolsOpened() {
   return managed_web_contents()->IsDevToolsViewShowing();
 }
 
+void WebContents::EnableDeviceEmulation(const base::DictionaryValue& dict) {
+  if (type_ == REMOTE)
+    return;
+
+  blink::WebDeviceEmulationParams params;
+
+  if (dict.HasKey("screenPosition")) {
+    std::string screen_position;
+    if (!dict.GetString("screenPosition", &screen_position))
+      return;
+
+    screen_position = base::StringToLowerASCII(screen_position);
+
+    if (screen_position == "mobile") {
+      params.screenPosition = blink::WebDeviceEmulationParams::Mobile;
+    } else if (screen_position == "desktop") {
+      params.screenPosition = blink::WebDeviceEmulationParams::Desktop;
+    } else {
+      return;
+    }
+  }
+
+  if (dict.HasKey("screenSize")) {
+    if (!dict.GetInteger("screenSize.width", &params.screenSize.width))
+      return;
+    if (!dict.GetInteger("screenSize.height", &params.screenSize.height))
+      return;
+  }
+
+  if (dict.HasKey("viewPosition")) {
+    if (!dict.GetInteger("viewPosition.x", &params.viewPosition.x))
+      return;
+    if (!dict.GetInteger("viewPosition.y", &params.viewPosition.y))
+      return;
+  }
+
+  if (dict.HasKey("deviceScaleFactor")) {
+    double device_scale_factor;
+    if (!dict.GetDouble("deviceScaleFactor", &device_scale_factor))
+      return;
+    params.deviceScaleFactor = static_cast<float>(device_scale_factor);
+  }
+
+  if (dict.HasKey("viewSize")) {
+    if (!dict.GetInteger("viewSize.width", &params.viewSize.width))
+      return;
+    if (!dict.GetInteger("viewSize.height", &params.viewSize.height))
+      return;
+  }
+
+  if (dict.HasKey("fitToView")) {
+    if (!dict.GetBoolean("fitToView", &params.fitToView))
+      return;
+  }
+
+  if (dict.HasKey("offset")) {
+    double x, y;
+    if (!dict.GetDouble("offset.x", &x))
+      return;
+    if (!dict.GetDouble("offset.y", &y))
+      return;
+    params.offset.x = static_cast<float>(x);
+    params.offset.y = static_cast<float>(y);
+  }
+
+  if (dict.HasKey("scale")) {
+    double scale;
+    if (!dict.GetDouble("scale", &scale))
+      return;
+    params.scale = static_cast<float>(scale);
+  }
+
+  Send(new ViewMsg_EnableDeviceEmulation(routing_id(), params));
+}
+
+void WebContents::DisableDeviceEmulation() {
+  if (type_ == REMOTE)
+    return;
+
+  Send(new ViewMsg_DisableDeviceEmulation(routing_id()));
+}
+
 void WebContents::ToggleDevTools() {
   if (IsDevToolsOpened())
     CloseDevTools();
@@ -836,6 +920,10 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("openDevTools", &WebContents::OpenDevTools)
         .SetMethod("closeDevTools", &WebContents::CloseDevTools)
         .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
+        .SetMethod("enableDeviceEmulation",
+                   &WebContents::EnableDeviceEmulation)
+        .SetMethod("disableDeviceEmulation",
+                   &WebContents::DisableDeviceEmulation)
         .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)
         .SetMethod("inspectElement", &WebContents::InspectElement)
         .SetMethod("setAudioMuted", &WebContents::SetAudioMuted)
