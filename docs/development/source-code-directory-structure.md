@@ -1,15 +1,13 @@
-# Source code directory structure
+# Source Code Directory Structure
 
-## Overview
-
-The source code of Electron is separated into a few parts, and we are mostly
+The source code of Electron is separated into a few parts, mostly
 following Chromium on the separation conventions.
 
 You may need to become familiar with [Chromium's multi-process
 architecture](http://dev.chromium.org/developers/design-documents/multi-process-architecture)
 to understand the source code better.
 
-## Structure of source code
+## Structure of Source Code
 
 * **atom** - Source code of Electron.
   * **app** - System entry code.
@@ -45,18 +43,18 @@ to understand the source code better.
 * **common.gypi** - Compiler specific settings and building rules for other
   components like `node` and `breakpad`.
 
-## Structure of other directories
+## Structure of Other Directories
 
 * **script** - Scripts used for development purpose like building, packaging,
   testing, etc.
 * **tools** - Helper scripts used by gyp files, unlike `script`, scripts put
   here should never be invoked by users directly.
 * **vendor** - Source code of third party dependencies, we didn't use
-  `third_party` as name because it would confuse with the same directory in
+  `third_party` as name because it would confuse it with the same directory in
   Chromium's source code tree.
 * **node_modules** - Third party node modules used for building.
 * **out** - Temporary output directory of `ninja`.
 * **dist** - Temporary directory created by `script/create-dist.py` script
   when creating an distribution.
 * **external_binaries** - Downloaded binaries of third-party frameworks which
-  do not support to be built via `gyp`.
+  do not support building with `gyp`.
