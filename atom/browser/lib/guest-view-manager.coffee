@@ -1,4 +1,3 @@
-crypto = require 'crypto'
 ipc = require 'ipc'
 webContents = require 'web-contents'
 webViewManager = null  # Doesn't exist in early initialization.
@@ -41,12 +40,16 @@ getNextInstanceId = (webContents) ->
 
 # Generate URL encoded partition id.
 getPartitionId = (partition) ->
-  persist = partition.startsWith('persist:')
   # Guest site url will be chrome-guest://fake-host/{persist}?{partitionId}
   partitionId = "chrome-guest://fake-host/"
   if partition
-    partitionId += if persist then 'persist?' else '?'
-    partitionId += crypto.createHash('sha256').update(partition).digest('hex')
+    persist = partition.startsWith('persist:')
+    if persist
+      partition = partition.substring('persist:'.length)
+      partitionId += 'persist?'
+    else
+      partitionId += '?'
+    partitionId += encodeURIComponent(partition)
   return partitionId
 
 # Create a new guest instance.

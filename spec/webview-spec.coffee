@@ -155,30 +155,25 @@ describe '<webview> tag', ->
       document.body.appendChild webview
 
   describe 'partition attribute', ->
-    isolatedWebview = null
-    beforeEach ->
-      isolatedWebview = new WebView
-
-    afterEach ->
-      document.body.removeChild isolatedWebview
-
     it 'isolates storage for different id', (done) ->
       listener = (e) ->
-        document.body.appendChild isolatedWebview
-        webview.removeEventListener 'did-finish-load', listener
-      listener2 = (e) ->
-        assert.equal e.message, "one 1"
-        webview.removeEventListener 'console-message', listener2
-      listener3 = (e) ->
         assert.equal e.message, " 0"
-        isolatedWebview.removeEventListener 'console-message', listener3
+        webview.removeEventListener 'console-message', listener
         done()
-      webview.addEventListener 'did-finish-load', listener
-      webview.addEventListener 'console-message', listener2
+      window.localStorage.setItem 'test', 'one'
+      webview.addEventListener 'console-message', listener
       webview.src = "file://#{fixtures}/pages/partition/one.html"
-      isolatedWebview.addEventListener 'console-message', listener3
-      isolatedWebview.setAttribute 'partition', 'test'
-      isolatedWebview.src = "file://#{fixtures}/pages/partition/two.html"
+      webview.partition = "test"
+      document.body.appendChild webview
+
+    it 'uses current session storage when no id is provided', (done) ->
+      listener = (e) ->
+        assert.equal e.message, "one 1"
+        webview.removeEventListener 'console-message', listener
+        done()
+      window.localStorage.setItem 'test', 'one'
+      webview.addEventListener 'console-message', listener
+      webview.src = "file://#{fixtures}/pages/partition/one.html"
       document.body.appendChild webview
 
   describe 'new-window event', ->
