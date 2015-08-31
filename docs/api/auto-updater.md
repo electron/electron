@@ -98,6 +98,10 @@ appropriate format.
 
 `pub_date` (if present) must be formatted according to ISO 8601.
 
+## Update server implementations
+
+[Nuts](https://github.com/GitbookIO/nuts) is an open source implementation of the update server described above, it integrates beautifully with GitHub releases. Nuts manages downloads and updates, it’s compatible with `Squirrel.Mac` and `Squirrel.Windows` so you get cross-platform support out of the box.
+
 ## Events
 
 The `autoUpdater` object emits the following events:
