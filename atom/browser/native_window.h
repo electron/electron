@@ -242,6 +242,8 @@ class NativeWindow : public content::WebContentsObserver,
   void SendMouseEvent(blink::WebInputEvent::Type type, int modifiers, blink::WebMouseEvent::Button button, int x, int y, int movementX, int movementY, int clickCount);
   void SendMouseWheelEvent(int modifiers, int x, int y, bool clickCount);
 
+  void SetOffscreenRender(bool isOffscreen);
+
  protected:
   NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,
                const mate::Dictionary& options);
@@ -253,7 +255,6 @@ class NativeWindow : public content::WebContentsObserver,
 
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
-  void RenderViewReady() override;
   void DidFinishLoad(content::RenderFrameHost* render_frame_host, const GURL& validated_url) override;
   void BeforeUnloadDialogCancelled() override;
   void TitleWasSet(content::NavigationEntry* entry, bool explicit_set) override;

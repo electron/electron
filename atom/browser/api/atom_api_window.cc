@@ -442,6 +442,10 @@ void Window::CapturePage(mate::Arguments* args) {
       rect, base::Bind(&OnCapturePageDone, args->isolate(), callback));
 }
 
+void Window::SetOffscreenRender(bool isOffscreen) {
+  window_->SetOffscreenRender(isOffscreen);
+}
+
 void Window::SetProgressBar(double progress) {
   window_->SetProgressBar(progress);
 }
@@ -741,6 +745,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
                  &Window::IsVisibleOnAllWorkspaces)
       .SetMethod("sendMouseEvent", &Window::SendMouseEvent)
       .SetMethod("sendKeyboardEvent", &Window::SendKeyboardEvent)
+      .SetMethod("setOffscreenRender", &Window::SetOffscreenRender)
 #if defined(OS_MACOSX)
       .SetMethod("showDefinitionForSelection",
                  &Window::ShowDefinitionForSelection)
