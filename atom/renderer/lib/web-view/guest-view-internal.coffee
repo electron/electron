@@ -6,7 +6,7 @@ requestId = 0
 WEB_VIEW_EVENTS =
   'load-commit': ['url', 'isMainFrame']
   'did-finish-load': []
-  'did-fail-load': ['errorCode', 'errorDescription']
+  'did-fail-load': ['errorCode', 'errorDescription', 'validatedUrl']
   'did-frame-finish-load': ['isMainFrame']
   'did-start-loading': []
   'did-stop-loading': []
