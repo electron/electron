@@ -6,7 +6,7 @@ between the renderer process (web page) and the main process.
 In Electron, only GUI-unrelated modules are available in the renderer process.
 Without the `remote` module, users who want to call a main process API in
 the renderer process would have to explicitly send inter-process messages
-to the main process. With the `remote` module, users can invoke methods of the
+to the main process. With the `remote` module, you can invoke methods of the
 main process object without explicitly sending inter-process messages, similar
 to Java's [RMI](http://en.wikipedia.org/wiki/Java_remote_method_invocation).
 
@@ -32,15 +32,16 @@ a new object with the remote constructor (function), you are actually sending
 synchronous inter-process messages.
 
 In the example above, both `BrowserWindow` and `win` were remote objects and
-`new BrowserWindow` didn't create a `BrowserWindow` object in the renderer process.
-Instead, it created a `BrowserWindow` object in the main process and returned the
-corresponding remote object in the renderer process, namely the `win` object.
+`new BrowserWindow` didn't create a `BrowserWindow` object in the renderer
+process. Instead, it created a `BrowserWindow` object in the main process and
+returned the corresponding remote object in the renderer process, namely the
+`win` object.
 
 ## Lifetime of Remote Objects
 
 Electron makes sure that as long as the remote object in the renderer process
 lives (in other words, has not been garbage collected), the corresponding object
-in the main process will never be released. When the remote object has been
+in the main process will not be released. When the remote object has been
 garbage collected, the corresponding object in the main process will be
 dereferenced.
 
@@ -53,7 +54,8 @@ Primary value types like strings and numbers, however, are sent by copy.
 ## Passing callbacks to the main process
 
 Code in the main process can accept callbacks from the renderer - for instance
-the `remote` module - but you should be extremely careful when using this feature.
+the `remote` module - but you should be extremely careful when using this
+feature.
 
 First, in order to avoid deadlocks, the callbacks passed to the main process
 are called asynchronously. You should not expect the main process to
@@ -110,9 +112,9 @@ But remember the callback is referenced by the main process until you
 explicitly uninstall it. If you do not, each time you reload your window the
 callback will be installed again, leaking one callback for each restart.
 
-To make things worse, since the context of previously installed callbacks have
-been released, when the `close` event was emitted exceptions will be raised in
-the main process.
+To make things worse, since the context of previously installed callbacks has
+been released, exceptions will be raised in the main process when the `close`
+event is emitted .
 
 To avoid this problem, ensure you clean up any references to renderer callbacks
 passed to the main process. This involves cleaning up event handlers, or
