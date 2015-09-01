@@ -29,7 +29,7 @@ Returns the current zoom factor.
 
 * `level` Number - Zoom level
 
-Changes the zoom level to the specified level. The "original size" is 0 and each
+Changes the zoom level to the specified level. The original size is 0 and each
 increment above or below represents zooming 20% larger or smaller to default
 limits of 300% and 50% of original size, respectively.
 

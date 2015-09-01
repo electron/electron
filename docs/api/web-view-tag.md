@@ -2,10 +2,10 @@
 
 Use the `webview` tag to embed 'guest' content (such as web pages) in your
 Electron app. The guest content is contained within the `webview` container.
-An embedder page within your app controls how the guest content is laid out and
+An embedded page within your app controls how the guest content is laid out and
 rendered.
 
-Different from an `iframe`, the `webview` runs in a separate process than your
+Unlike an `iframe`, the `webview` runs in a separate process than your
 app. It doesn't have the same permissions as your web page and all interactions
 between your app and embedded content will be asynchronous. This keeps your app
 safe from the embedded content.
@@ -71,7 +71,7 @@ The `src` attribute can also accept data URLs, such as
 
 If "on", the `webview` container will automatically resize within the
 bounds specified by the attributes `minwidth`, `minheight`, `maxwidth`, and
-`maxheight`. These constraints do not impact the `webview` UNLESS `autosize` is
+`maxheight`. These constraints do not impact the `webview` unless `autosize` is
 enabled. When `autosize` is enabled, the `webview` container size cannot be less
 than the minimum values or greater than the maximum.
 
@@ -104,7 +104,7 @@ will be loaded by `require` in guest page under the hood.
 
 When the guest page doesn't have node integration this script will still have
 access to all Node APIs, but global objects injected by Node will be deleted
-after this script has completed execution.
+after this script has finished executing.
 
 ### `httpreferrer`
 
@@ -158,7 +158,7 @@ Returns a boolean whether guest page is still loading resources.
 
 ### `<webview>.isWaitingForResponse()`
 
-Returns a boolean whether guest page is waiting for a first-response for the
+Returns a boolean whether the guest page is waiting for a first-response for the
 main resource of the page.
 
 ### `<webview>.stop()`
@@ -167,25 +167,25 @@ Stops any pending navigation.
 
 ### `<webview>.reload()`
 
-Reloads guest page.
+Reloads the guest page.
 
 ### `<webview>.reloadIgnoringCache()`
 
-Reloads guest page and ignores cache.
+Reloads the guest page and ignores cache.
 
 ### `<webview>.canGoBack()`
 
-Returns a boolean whether guest page can go back.
+Returns a boolean whether the guest page can go back.
 
 ### `<webview>.canGoForward()`
 
-Returns a boolean whether guest page can go forward.
+Returns a boolean whether the guest page can go forward.
 
 ### `<webview>.canGoToOffset(offset)`
 
 * `offset` Integer
 
-Returns a boolean whether guest page can go to `offset`.
+Returns a boolean whether the guest page can go to `offset`.
 
 ### `<webview>.clearHistory()`
 
@@ -193,11 +193,11 @@ Clears the navigation history.
 
 ### `<webview>.goBack()`
 
-Makes guest page go back.
+Makes the guest page go back.
 
 ### `<webview>.goForward()`
 
-Makes guest page go forward.
+Makes the guest page go forward.
 
 ### `<webview>.goToIndex(index)`
 
@@ -219,7 +219,7 @@ Whether the renderer process has crashed.
 
 * `userAgent` String
 
-Overrides the user agent for guest page.
+Overrides the user agent for the guest page.
 
 ### `<webview>.getUserAgent()`
 
@@ -229,7 +229,7 @@ Returns a `String` representing the user agent for guest page.
 
 * `css` String
 
-Injects CSS into guest page.
+Injects CSS into the guest page.
 
 ### `<webview>.executeJavaScript(code, userGesture)`
 
@@ -237,8 +237,8 @@ Injects CSS into guest page.
 * `userGesture` Boolean - Default `false`.
 
 Evaluates `code` in page. If `userGesture` is set, it will create user gesture
-context. HTML APIs like `requestFullScreen`, which require user action, can take
-advantage of this option for automation.
+context in the page. HTML APIs like `requestFullScreen`, which require user
+action, can take advantage of this option for automation.
 
 ### `<webview>.openDevTools()`
 
