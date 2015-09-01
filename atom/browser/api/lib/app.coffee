@@ -1,9 +1,14 @@
 EventEmitter = require('events').EventEmitter
 
 bindings = process.atomBinding 'app'
+sessionBindings = process.atomBinding 'session'
 
 app = bindings.app
 app.__proto__ = EventEmitter.prototype
+
+wrapSession = (session) ->
+  # session is an Event Emitter.
+  session.__proto__ = EventEmitter.prototype
 
 app.setApplicationMenu = (menu) ->
   require('menu').setApplicationMenu menu
@@ -32,16 +37,18 @@ app.setAppPath = (path) ->
 app.getAppPath = ->
   appPath
 
-app.once 'ready', ->
-  app.defaultSession.__proto__ = EventEmitter.prototype
-  # Be compatible with old API.
-  @emit 'finish-launching'
+# Be compatible with old API.
+app.once 'ready', -> @emit 'finish-launching'
 app.terminate = app.quit
 app.exit = process.exit
 app.getHomeDir = -> @getPath 'home'
 app.getDataPath = -> @getPath 'userData'
 app.setDataPath = (path) -> @setPath 'userData', path
 app.resolveProxy = -> @defaultSession.resolveProxy.apply @defaultSession, arguments
+
+# Session wrapper.
+sessionBindings._setWrapSession wrapSession
+process.once 'exit', sessionBindings._clearWrapSession
 
 # Only one App object pemitted.
 module.exports = app

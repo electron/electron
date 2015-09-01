@@ -106,12 +106,12 @@ template<>
 struct Converter<content::DownloadItem*> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    content::DownloadItem* val) {
-    return mate::ObjectTemplateBuilder(isolate)
-        .SetValue("url", val->GetURL())
-        .SetValue("filename", val->GetSuggestedFilename())
-        .SetValue("mimeType", val->GetMimeType())
-        .SetValue("hasUserGesture", val->HasUserGesture())
-        .Build()->NewInstance();
+    mate::Dictionary dict(isolate, v8::Object::New(isolate));
+    dict.Set("url", val->GetURL());
+    dict.Set("filename", val->GetSuggestedFilename());
+    dict.Set("mimeType", val->GetMimeType());
+    dict.Set("hasUserGesture", val->HasUserGesture());
+    return dict.GetHandle();
   }
 };
 
@@ -122,6 +122,10 @@ namespace atom {
 namespace api {
 
 namespace {
+
+// The wrapSession funtion which is implemented in JavaScript
+using WrapSessionCallback = base::Callback<void(v8::Local<v8::Value>)>;
+WrapSessionCallback g_wrap_session;
 
 class ResolveProxyHelper {
  public:
@@ -321,9 +325,33 @@ mate::Handle<Session> Session::CreateFrom(
   if (existing)
     return mate::CreateHandle(isolate, static_cast<Session*>(existing));
 
-  return mate::CreateHandle(isolate, new Session(browser_context));
+  auto handle = mate::CreateHandle(isolate, new Session(browser_context));
+  g_wrap_session.Run(handle.ToV8());
+  return handle;
+}
+
+void SetWrapSession(const WrapSessionCallback& callback) {
+  g_wrap_session = callback;
+}
+
+void ClearWrapSession() {
+  g_wrap_session.Reset();
 }
 
 }  // namespace api
 
 }  // namespace atom
+
+namespace {
+
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
+  v8::Isolate* isolate = context->GetIsolate();
+  mate::Dictionary dict(isolate, exports);
+  dict.SetMethod("_setWrapSession", &atom::api::SetWrapSession);
+  dict.SetMethod("_clearWrapSession", &atom::api::ClearWrapSession);
+}
+
+}  // namespace
+
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_session, Initialize)

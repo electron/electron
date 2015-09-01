@@ -330,35 +330,3 @@ Sets the application's [dock menu][dock-menu].
 
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
-
-## `app.defaultSession`
-
-The default session of the app available once the (ready)[app.md#event-ready] event is fired.
-
-```javascript
-app.on('ready', function() {
-  var defaultSession = app.defaultSession;
-})
-```
-
-### Event: 'will-download'
-
-* `event` Event
-* `downloadItem` Object
-  * `url` String
-  * `filename` String
-  * `mimeType` String
-  * `hasUserGesture` Boolean
-* `webContents` (WebContents)[web-contents.md]
-
-Fired when a download is about to start. Calling `preventDefault()`
-will cancel the download.
-
-```javascript
-app.defaultSession.on('will-download', function(e, downloadItem, webContents) {
-  e.preventDefault();
-  require('request')(downloadItem.url, function(data) {
-    require('fs').writeFileSync('/somewhere', data);
-  });
-});
-```
