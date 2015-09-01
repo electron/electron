@@ -211,7 +211,7 @@ will become properties of the constructed menu items.
 
 * `browserWindow` BrowserWindow
 * `x` Number (optional)
-* `y` Number (optional)
+* `y` Number (**required** if `x` is used)
 
 Pops up this menu as a context menu in the `browserWindow`. You
 can optionally provide a `x,y` coordinate to place the menu at, otherwise it
