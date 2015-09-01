@@ -183,7 +183,7 @@ Menu.setApplicationMenu(menu);
 `action`을 어플리케이션의 first responder에 전달합니다.
 이 메서드는 Cocoa 메뉴 동작을 에뮬레이트 하는데 사용되며 보통 `MenuItem`의 `selector` 속성에 사용됩니다.
 
-**알림:** 이 메서드는 OS X에서만 사용할 수 있습니다.
+**참고:** 이 메서드는 OS X에서만 사용할 수 있습니다.
 
 ### Class Method: Menu.buildFromTemplate(template)
 

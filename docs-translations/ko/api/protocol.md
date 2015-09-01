@@ -20,7 +20,7 @@ app.on('ready', function() {
 });
 ```
 
-**알림:** 이 모듈은 `ready` 이벤트가 호출된 이후에만 사용할 수 있습니다.
+**참고:** 이 모듈은 `ready` 이벤트가 호출된 이후에만 사용할 수 있습니다.
 
 ## protocol.registerStandardSchemes(schemes)
 

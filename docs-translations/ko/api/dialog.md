@@ -52,7 +52,7 @@ console.log(dialog.showOpenDialog({ properties: [ 'openFile', 'openDirectory', '
 
 `callback`이 전달되면 메소드가 비동기로 작동되며 결과는 `callback(filenames)`을 통해 전달됩니다.
 
-**알림:** Windows와 Linux에선 파일 선택 모드, 디렉터리 선택 모드를 동시에 사용할 수 없습니다.
+**참고:** Windows와 Linux에선 파일 선택 모드, 디렉터리 선택 모드를 동시에 사용할 수 없습니다.
 이러한 이유로 `properties`를 `['openFile', 'openDirectory']`로 설정하면 디렉터리 선택 대화 상자가 표시됩니다.
 
 ### `dialog.showSaveDialog([browserWindow][, options][, callback])`
