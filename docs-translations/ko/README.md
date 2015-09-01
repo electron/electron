@@ -62,7 +62,7 @@
 * [소스 코드 디렉터리 구조](development/source-code-directory-structure.md)
 * [NW.js와 기술적으로 다른점 (이전 node-webkit)](development/atom-shell-vs-node-webkit.md)
 * [빌드 시스템 개요](development/build-system-overview.md)
-* [빌드 설명서 (Mac)](development/build-instructions-mac.md)
+* [빌드 설명서 (Mac)](development/build-instructions-osx.md)
 * [빌드 설명서 (Windows)](development/build-instructions-windows.md)
 * [빌드 설명서 (Linux)](development/build-instructions-linux.md)
 * [디버거에서 디버그 심볼 서버 설정](development/setting-up-symbol-server.md)

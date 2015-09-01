@@ -1,6 +1,6 @@
-# Build Instructions (Mac)
+# Build Instructions (OS X)
 
-Follow the guidelines below for building Electron on Mac.
+Follow the guidelines below for building Electron on OS X.
 
 ## Prerequisites
 
