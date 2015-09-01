@@ -18,20 +18,21 @@ var session = win.webContents.session
 ### Event: 'will-download'
 
 * `event` Event
-* `downloadItem` Object
+* `item` Object
   * `url` String
   * `filename` String
   * `mimeType` String
   * `hasUserGesture` Boolean
-* `webContents` (WebContents)[web-contents.md]
+* `webContents` [WebContents](web-contents.md)
 
-Fired when a download is about to start. Calling `preventDefault()`
-will cancel the download.
+Fired when Electron is about to download `item` in `webContents`.
+
+Calling `event.preventDefault()` will cancel the download.
 
 ```javascript
-session.on('will-download', function(e, downloadItem, webContents) {
-  e.preventDefault();
-  require('request')(downloadItem.url, function(data) {
+session.on('will-download', function(event, item, webContents) {
+  event.preventDefault();
+  require('request')(item.url, function(data) {
     require('fs').writeFileSync('/somewhere', data);
   });
 });
