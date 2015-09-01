@@ -115,6 +115,7 @@ Menu::insert = (pos, item) ->
 
   @setSublabel pos, item.sublabel if item.sublabel?
   @setIcon pos, item.icon if item.icon?
+  @setRole pos, item.role if item.role?
 
   # Make menu accessable to items.
   item.overrideReadOnlyProperty 'menu', this
