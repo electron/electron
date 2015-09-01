@@ -19,20 +19,20 @@ var image = clipboard.readImage();
 var appIcon = new Tray(image);
 ```
 
-## Supported formats
+## Supported Formats
 
-Currently `PNG` and `JPEG` are supported. It is recommended to use `PNG` because
-of its support for transparency and lossless compression.
+Currently `PNG` and `JPEG` image formats are supported. `PNG` is recommended
+because of its support for transparency and lossless compression.
 
-On Windows, you can also load `ICO` icon from a file path.
+On Windows, you can also load an `ICO` icon from a file path.
 
-## High resolution image
+## High Resolution Image
 
 On platforms that have high-DPI support, you can append `@2x` after image's
 base filename to mark it as a high resolution image.
 
 For example if `icon.png` is a normal image that has standard resolution, then
-`icon@2x.png` would be treated as a high resolution image that has double DPI
+`icon@2x.png` will be treated as a high resolution image that has double DPI
 density.
 
 If you want to support displays with different DPI densities at the same time,
