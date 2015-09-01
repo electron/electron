@@ -28,7 +28,6 @@ class WMState;
 namespace brightray {
 
 class BrowserContext;
-class WebUIControllerFactory;
 
 class BrowserMainParts : public content::BrowserMainParts {
  public:
@@ -57,7 +56,6 @@ class BrowserMainParts : public content::BrowserMainParts {
 #endif
 
   scoped_ptr<BrowserContext> browser_context_;
-  scoped_ptr<WebUIControllerFactory> web_ui_controller_factory_;
   scoped_ptr<devtools_http_handler::DevToolsHttpHandler> devtools_http_handler_;
 
 #if defined(TOOLKIT_VIEWS)

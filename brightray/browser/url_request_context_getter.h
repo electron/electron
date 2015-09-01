@@ -49,6 +49,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
       Delegate* delegate,
       NetLog* net_log,
       const base::FilePath& base_path,
+      bool in_memory,
       base::MessageLoop* io_loop,
       base::MessageLoop* file_loop,
       content::ProtocolHandlerMap* protocol_handlers,
@@ -66,6 +67,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
   NetLog* net_log_;
   base::FilePath base_path_;
+  bool in_memory_;
   base::MessageLoop* io_loop_;
   base::MessageLoop* file_loop_;
 

@@ -23,7 +23,8 @@ class BrowserContext : public content::BrowserContext,
   BrowserContext();
   ~BrowserContext();
 
-  virtual void Initialize();
+  virtual void Initialize(const std::string& partition_path,
+                          bool in_memory = false);
 
   // content::BrowserContext:
   scoped_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(
@@ -71,6 +72,7 @@ class BrowserContext : public content::BrowserContext,
   void RegisterInternalPrefs(PrefRegistrySimple* pref_registry);
 
   base::FilePath path_;
+  bool in_memory_;
   scoped_ptr<ResourceContext> resource_context_;
   scoped_refptr<URLRequestContextGetter> url_request_getter_;
   scoped_ptr<PrefService> prefs_;

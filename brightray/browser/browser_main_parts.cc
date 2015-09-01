@@ -121,12 +121,10 @@ void BrowserMainParts::PreMainMessageLoopStart() {
 
 void BrowserMainParts::PreMainMessageLoopRun() {
   browser_context_.reset(CreateBrowserContext());
-  browser_context_->Initialize();
+  browser_context_->Initialize(std::string());
 
-  web_ui_controller_factory_.reset(
-      new WebUIControllerFactory(browser_context_.get()));
   content::WebUIControllerFactory::RegisterFactory(
-      web_ui_controller_factory_.get());
+      WebUIControllerFactory::GetInstance());
 
   // --remote-debugging-port
   auto command_line = base::CommandLine::ForCurrentProcess();

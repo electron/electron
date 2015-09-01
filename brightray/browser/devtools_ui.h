@@ -6,6 +6,7 @@
 #define BRIGHTRAY_BROWSER_DEVTOOLS_UI_H_
 
 #include "base/compiler_specific.h"
+#include "content/public/browser/browser_context.h"
 #include "content/public/browser/web_ui_controller.h"
 
 namespace brightray {
@@ -14,7 +15,8 @@ class BrowserContext;
 
 class DevToolsUI : public content::WebUIController {
  public:
-  explicit DevToolsUI(BrowserContext* browser_context, content::WebUI* web_ui);
+  explicit DevToolsUI(content::BrowserContext* browser_context,
+                      content::WebUI* web_ui);
 
  private:
   DISALLOW_COPY_AND_ASSIGN(DevToolsUI);

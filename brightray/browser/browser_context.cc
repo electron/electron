@@ -69,12 +69,16 @@ class BrowserContext::ResourceContext : public content::ResourceContext {
 BrowserContext::BrowserContext() : resource_context_(new ResourceContext) {
 }
 
-void BrowserContext::Initialize() {
+void BrowserContext::Initialize(const std::string& partition_path, bool in_memory) {
   if (!PathService::Get(DIR_USER_DATA, &path_)) {
     PathService::Get(DIR_APP_DATA, &path_);
     path_ = path_.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
     PathService::Override(DIR_USER_DATA, path_);
   }
+
+  if (!partition_path.empty())
+    path_ = path_.Append(base::FilePath::FromUTF8Unsafe(partition_path));
+  in_memory_ = in_memory;
 
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
   base::PrefServiceFactory prefs_factory;
@@ -108,6 +112,7 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
       this,
       net_log,
       GetPath(),
+      in_memory_,
       BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::IO),
       BrowserThread::UnsafeGetMessageLoopForThread(BrowserThread::FILE),
       protocol_handlers,
@@ -130,7 +135,7 @@ scoped_ptr<content::ZoomLevelDelegate> BrowserContext::CreateZoomLevelDelegate(
 }
 
 bool BrowserContext::IsOffTheRecord() const {
-  return false;
+  return in_memory_;
 }
 
 net::URLRequestContextGetter* BrowserContext::GetRequestContext() {
