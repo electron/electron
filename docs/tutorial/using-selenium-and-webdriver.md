@@ -9,20 +9,20 @@ From [ChromeDriver - WebDriver for Chrome][chrome-driver]:
 > members of the Chromium and WebDriver teams.
 
 In Electron's [releases](https://github.com/atom/electron/releases) page you
-can find archives of `chromedriver`, there is no difference between Electron's
-distribution of `chromedriver` and upstream ones, so in order to use
-`chromedriver` together with Electron, you will need some special setup.
+can find archives of `chromedriver`. There is no difference between Electron's
+distribution of `chromedriver` and the upstream ones, but in order to use
+`chromedriver` with Electron, you will need a special setup.
 
-Also notice that only minor version update releases (e.g. `vX.X.0` releases)
+Also note that only minor version update releases (e.g. `vX.X.0` releases)
 include `chromedriver` archives, because `chromedriver` doesn't change as
 frequent as Electron itself.
 
 ## Setting up with WebDriverJs
 
-[WebDriverJs](https://code.google.com/p/selenium/wiki/WebDriverJs) provided
+[WebDriverJs](https://code.google.com/p/selenium/wiki/WebDriverJs) provides
 a Node package for testing with web driver, we will use it as an example.
 
-### 1. Start chrome driver
+### 1. Start ChromeDriver
 
 First you need to download the `chromedriver` binary, and run it:
 
@@ -40,7 +40,7 @@ Remember the port number `9515`, which will be used later
 $ npm install selenium-webdriver
 ```
 
-### 3. Connect to chrome driver
+### 3. Connect to ChromeDriver
 
 The usage of `selenium-webdriver` with Electron is basically the same with
 upstream, except that you have to manually specify how to connect chrome driver
@@ -72,9 +72,10 @@ driver.quit();
 
 ## Setting up with WebdriverIO
 
-[WebdriverIO](http://webdriver.io/) provides a Node package for testing with web driver.
+[WebdriverIO](http://webdriver.io/) provides a Node package for testing with web
+driver.
 
-### 1. Start chrome driver
+### 1. Start ChromeDriver
 
 First you need to download the `chromedriver` binary, and run it:
 
@@ -93,10 +94,11 @@ $ npm install webdriverio
 ```
 
 ### 3. Connect to chrome driver
+
 ```javascript
 var webdriverio = require('webdriverio');
 var options = {
-    host: "localhost", // Use localhost as chrome driver server 
+    host: "localhost", // Use localhost as chrome driver server
     port: 9515,        // "9515" is the port opened by chrome driver.
     desiredCapabilities: {
         browserName: 'chrome',
@@ -119,8 +121,8 @@ client
 
 ## Workflow
 
-To test your application without rebuilding Electron, simply [place](https://github.com/atom/electron/blob/master/docs/tutorial/application-distribution.md) your app source into Electron's resource directory. 
+To test your application without rebuilding Electron, simply
+[place](https://github.com/atom/electron/blob/master/docs/tutorial/application-distribution.md)
+your app source into Electron's resource directory.
 
 [chrome-driver]: https://sites.google.com/a/chromium.org/chromedriver/
-
-
