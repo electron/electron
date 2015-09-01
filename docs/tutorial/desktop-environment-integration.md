@@ -29,7 +29,7 @@ var app = require('app');
 app.addRecentDocument('/Users/USERNAME/Desktop/work.type');
 ```
 
-And you can use [app.clearRecentDocuments](clearrecentdocuments) API to empty
+And you can use [app.clearRecentDocuments][clearrecentdocuments] API to empty
 the recent documents list:
 
 ```javascript
