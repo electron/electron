@@ -40,7 +40,7 @@ $ HOME=~/.electron-gyp node-gyp rebuild --target=0.29.1 --arch=x64 --dist-url=ht
 
 ### npm을 이용한 방법
 
-또한 `npm`을 사용하여 모듈을 설치할 수도 있습니다.
+또한 `npm`을 통해 설치할 수도 있습니다.
 환경변수가 필요한 것을 제외하고 일반 Node 모듈을 설치하는 방법과 완전히 똑같습니다:
 
 ```bash

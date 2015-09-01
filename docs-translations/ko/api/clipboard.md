@@ -19,7 +19,7 @@ console.log(clipboard.readText('selection'));
 
 `clipboard` 모듈은 다음과 같은 메서드를 가지고 있습니다:
 
-**알림:** Experimental 마크가 붙은 API는 실험적인 기능이며 차후 최신 버전에서 제거될 수 있습니다.
+**참고:** Experimental 마크가 붙은 API는 실험적인 기능이며 차후 최신 버전에서 제거될 수 있습니다.
 
 ### `clipboard.readText([type])`
 

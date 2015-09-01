@@ -125,7 +125,7 @@ app.on('ready', function() {
 ## 앱 실행하기
 
 앱을 작성한 후 [어플리케이션 배포](application-distribution.md) 가이드를 따라 앱을 패키징 하고 패키징한 앱을 실행할 수 있습니다.
-또는 Electron 실행파일을 다운로드 받아 바로 실행해 볼 수도 있습니다.
+또한 Electron 실행파일을 다운로드 받아 바로 실행해 볼 수도 있습니다.
 
 ### electron-prebuilt
 

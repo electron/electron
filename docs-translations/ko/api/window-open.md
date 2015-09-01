@@ -19,7 +19,7 @@
 * `message` String
 * `targetOrigin` String
 
-부모 윈도우에 메시지를 보냅니다. 특정한 origin을 지정할 수도 있으며 `*`를 지정하면 따로 origin 설정을 사용하지 않습니다.
+부모 윈도우에 메시지를 보냅니다. origin을 특정할 수 있으며 `*`를 지정하면 따로 origin 설정을 사용하지 않습니다.
 
 ## Class: BrowserWindowProxy
 
@@ -52,6 +52,6 @@ Forcefully closes the child window without calling its unload event.
 * `message` String
 * `targetOrigin` String
 
-자식 윈도우에 메시지를 보냅니다. 특정한 origin을 지정할 수도 있으며 `*`를 지정하면 따로 origin 설정을 사용하지 않습니다.
+자식 윈도우에 메시지를 보냅니다. origin을 특정할 수 있으며 `*`를 지정하면 따로 origin 설정을 사용하지 않습니다.
 
 참고로 자식 윈도우의 `window.opener` 객체에는 다른 속성 없이 이 메서드 한 개만 구현되어 있습니다.
