@@ -6,7 +6,7 @@ the [native modules](../tutorial/using-native-node-modules.md)).
 
 Electron also provides some extra built-in modules for developing native
 desktop applications. Some modules are only available on the main process, some
-are only available on the renderer process (web page), and some can be used on
+are only available in the renderer process (web page), and some can be used in
 both processes.
 
 The basic rule is: if a module is
@@ -30,7 +30,7 @@ app.on('ready', function() {
 });
 ```
 
-The render process is no different than a normal web page, except for the extra
+The renderer process is no different than a normal web page, except for the extra
 ability to use node modules:
 
 ```html
