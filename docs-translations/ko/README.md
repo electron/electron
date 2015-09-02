@@ -20,11 +20,11 @@
 * [프로세스 객체](api/process.md)
 * [크롬 Command-Line 스위치 지원](api/chrome-command-line-switches.md)
 
-커스텀 DOM Element:
+커스텀 DOM elements:
 
 * [`File` 객체](api/file-object.md)
 * [`<webview>` 태그](api/web-view-tag.md)
-* [`window.open` 함수](api/window-open.md)
+* [`window.open` 메서드](api/window-open.md)
 
 메인 프로세스를 위한 모듈들:
 
@@ -40,6 +40,8 @@
 * [power-monitor](api/power-monitor.md)
 * [power-save-blocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
+* [session](api/session.md)
+* [webContents](api/web-contents.md)
 * [tray](api/tray.md)
 
 랜더러 프로세스를 위한 모듈들 (웹 페이지):
@@ -60,7 +62,7 @@
 
 * [코딩 스타일](development/coding-style.md)
 * [소스 코드 디렉터리 구조](development/source-code-directory-structure.md)
-* [NW.js와 기술적으로 다른점 (이전 node-webkit)](development/atom-shell-vs-node-webkit.md)
+* [NW.js(node-webkit)와 기술적으로 다른점](development/atom-shell-vs-node-webkit.md)
 * [빌드 시스템 개요](development/build-system-overview.md)
 * [빌드 설명서 (Mac)](development/build-instructions-osx.md)
 * [빌드 설명서 (Windows)](development/build-instructions-windows.md)

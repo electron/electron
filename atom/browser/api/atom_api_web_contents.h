@@ -10,8 +10,8 @@
 
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/common_web_contents_delegate.h"
-#include "content/public/common/favicon_url.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "content/public/common/favicon_url.h"
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
 

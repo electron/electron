@@ -8,11 +8,11 @@ generated file to view the result.
 ```javascript
 var contentTracing = require('content-tracing');
 
-tracing.startRecording('*', tracing.DEFAULT_OPTIONS, function() {
+contentTracing.startRecording('*', contentTracing.DEFAULT_OPTIONS, function() {
   console.log('Tracing started');
 
   setTimeout(function() {
-    tracing.stopRecording('', function(path) {
+    contentTracing.stopRecording('', function(path) {
       console.log('Tracing data recorded to ' + path);
     });
   }, 5000);

@@ -59,17 +59,4 @@ class MenuModel;
 
 @end
 
-// Exposed only for unit testing, do not call directly.
-@interface AtomMenuController (PrivateExposedForTesting)
-- (BOOL)validateUserInterfaceItem:(id<NSValidatedUserInterfaceItem>)item;
-@end
-
-// Protected methods that subclassers can override.
-@interface AtomMenuController (Protected)
-- (void)addItemToMenu:(NSMenu*)menu
-              atIndex:(NSInteger)index
-            fromModel:(ui::MenuModel*)model;
-- (NSMenu*)menuFromModel:(ui::MenuModel*)model;
-@end
-
 #endif  // ATOM_BROWSER_UI_COCOA_ATOM_MENU_CONTROLLER_H_

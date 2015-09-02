@@ -10,3 +10,9 @@ Electron의 `process` 객체는 기존의 node와는 달리 약간의 차이점�
 ## process.hang
 
 현재 프로세스의 주 스레드를 중단시킵니다.
+
+## process.setFdLimit(maxDescriptors) _OS X_ _Linux_
+
+* `maxDescriptors` Integer
+
+`maxDescriptors`에 file descriptor 소프트 리미트를 설정하거나 OS 하드 리미트를 설정합니다. 값은 현재 프로세스에 대해 낮은 값이어야 합니다.

@@ -26,13 +26,13 @@ $ node-inspector
 
 ### 2. Electron용 디버그 모드 활성화
 
-다음과 같이 debung 플래그로 Electron을 실행할 수도 있습니다:
+다음과 같이 debung 플래그로 Electron을 실행할 수 있습니다:
 
 ```bash
 $ electron --debug=5858 your/app
 ```
 
-또는 스크립트 첫번째 라인에서 일시정지:
+또는 스크립트 첫번째 라인에서 일시 정지할 수 있습니다:
 
 ```bash
 $ electron --debug-brk=5858 your/app

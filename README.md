@@ -48,6 +48,7 @@ contains documents describing how to build and contribute to Electron.
 - [Korean](https://github.com/atom/electron/tree/master/docs-translations/ko)
 - [Japanese](https://github.com/atom/electron/tree/master/docs-translations/jp)
 - [Spanish](https://github.com/atom/electron/tree/master/docs-translations/es)
+- [Simplified Chinese](https://github.com/atom/electron/tree/master/docs-translations/zh-CN)
 
 ## Community
 
