@@ -48,12 +48,13 @@ selected when you want to limit the user to a specific type. For example:
   ]
 }
 ```
+
 The `extensions` array should contain extensions without wildcards or dots (e.g.
 `'png'` is good but `'.png'` and `'*.png'` are bad). To show all files, use the
 `'*'` wildcard (no other wildcard is supported).
 
 If a `callback` is passed, the API call will be asynchronous and the result
-wil be passed via `callback(filenames)`
+will be passed via `callback(filenames)`
 
 **Note:** On Windows and Linux an open dialog can not be both a file selector
 and a directory selector, so if you set `properties` to
