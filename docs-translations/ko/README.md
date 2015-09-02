@@ -17,7 +17,7 @@
 ## API 레퍼런스
 
 * [개요](api/synopsis.md)
-* [프로세스 객체](api/process.md)
+* [process](api/process.md)
 * [크롬 Command-Line 스위치 지원](api/chrome-command-line-switches.md)
 
 커스텀 DOM elements:

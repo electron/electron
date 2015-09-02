@@ -9,7 +9,7 @@
 * Clang 3.4 또는 최신 버전
 * GTK+ 와 libnotify의 개발용 헤더
 
-Ubuntu를 사용하고 있다면 다음 커맨드로 설치하면 합니다:
+Ubuntu를 사용하고 있다면 다음과 같이 라이브러리를 설치해야 합니다:
 
 ```bash
 $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
@@ -18,7 +18,15 @@ $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
                        libxss1 libnss3-dev gcc-multilib g++-multilib
 ```
 
-다른 배포판의 경우 yum과 같은 패키지 매니저를 통해 패키지를 설치 할 수 있습니다. 패키지의 이름은 대부분 비슷할 것입니다.
+Fedora를 사용하고 있다면 다음과 같이 라이브러리를 설치해야 합니다:
+
+```bash
+$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-devel \
+                   xorg-x11-server-utils libcap-devel cups-devel libXtst-devel \
+                   alsa-lib-devel libXrandr-devel GConf2-devel nss-devel
+```
+
+다른 배포판의 경우 pacman 같은 패키지 매니저를 통해 패키지를 설치 할 수 있습니다. 패키지의 이름은 대부분 위 예시와 비슷할 것입니다.
 또는 소스코드를 내려받아 직접 빌드하는 방법도 있습니다.
 
 ## 가상머신을 사용하여 빌드 하는 경우
