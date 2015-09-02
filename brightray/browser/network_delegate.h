@@ -61,7 +61,6 @@ class NetworkDelegate : public net::NetworkDelegate {
                       net::CookieOptions* options) override;
   bool OnCanAccessFile(const net::URLRequest& request,
                        const base::FilePath& path) const override;
-  bool OnCanThrottleRequest(const net::URLRequest& request) const override;
   bool OnCanEnablePrivacyMode(
       const GURL& url,
       const GURL& first_party_for_cookies) const override;
