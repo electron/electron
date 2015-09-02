@@ -29,7 +29,8 @@ class AtomBrowserContext;
 namespace api {
 
 class Session: public mate::TrackableObject<Session>,
-               public content::DownloadManager::Observer {
+               public content::DownloadManager::Observer,
+               public content::DownloadItem::Observer {
  public:
   using ResolveProxyCallback = base::Callback<void(std::string)>;
 
@@ -46,6 +47,9 @@ class Session: public mate::TrackableObject<Session>,
   // content::DownloadManager::Observer:
   void OnDownloadCreated(content::DownloadManager* manager,
                          content::DownloadItem* item) override;
+
+  // content::DownloadItem::Observer:
+  void OnDownloadUpdated(content::DownloadItem* item) override;
 
   // mate::Wrappable implementations:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(

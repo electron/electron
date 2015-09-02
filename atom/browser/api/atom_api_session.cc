@@ -109,8 +109,23 @@ struct Converter<content::DownloadItem*> {
     mate::Dictionary dict(isolate, v8::Object::New(isolate));
     dict.Set("url", val->GetURL());
     dict.Set("filename", val->GetSuggestedFilename());
+    dict.Set("displayName", val->GetFileNameToReportUser());
     dict.Set("mimeType", val->GetMimeType());
     dict.Set("hasUserGesture", val->HasUserGesture());
+    dict.Set("percentComplete", val->PercentComplete());
+    dict.Set("currentSpeed", val->CurrentSpeed());
+
+    auto state = val->GetState();
+    if (state == content::DownloadItem::IN_PROGRESS) {
+      dict.Set("state", "InProgress");
+    } else if (state == content::DownloadItem::COMPLETE) {
+      dict.Set("state", "Complete");
+    } else if (state == content::DownloadItem::CANCELLED) {
+      dict.Set("state", "Cancelled");
+    } else if (state == content::DownloadItem::INTERRUPTED) {
+      dict.Set("state", "Interrupted");
+    }
+
     return dict.GetHandle();
   }
 };
@@ -254,7 +269,16 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
   if (prevent_default) {
     item->Cancel(true);
     item->Remove();
+    return;
   }
+
+  item->AddObserver(this);
+}
+
+void Session::OnDownloadUpdated(content::DownloadItem* item) {
+  auto web_contents = item->GetWebContents();
+  auto handle = api::WebContents::CreateFrom(isolate(), web_contents);
+  Emit("download-updated", item, handle);
 }
 
 void Session::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
