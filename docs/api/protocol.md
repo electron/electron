@@ -3,7 +3,7 @@
 The `protocol` module can register a custom protocol or intercept an existing
 protocol.
 
-An example of implementing a protocol that has the same effect with the
+An example of implementing a protocol that has the same effect as the
 `file://` protocol:
 
 ```javascript
@@ -22,50 +22,56 @@ app.on('ready', function() {
 });
 ```
 
-**Note:** This module can only be used after the `ready` event was emitted.
+**Note:** This module can only be used after the `ready` event in the `app`
+module is emitted.
 
-## protocol.registerStandardSchemes(schemes)
+## Methods
+
+The `protocol` module has the following methods:
+
+### `protocol.registerStandardSchemes(schemes)`
 
 * `schemes` Array - Custom schemes to be registered as standard schemes.
 
-A standard scheme adheres to what RFC 3986 calls
+A standard `scheme` adheres to what RFC 3986 calls
 [generic URI syntax](https://tools.ietf.org/html/rfc3986#section-3). This
 includes `file:` and `filesystem:`.
 
-## protocol.registerFileProtocol(scheme, handler[, completion])
+### `protocol.registerFileProtocol(scheme, handler[, completion])`
 
 * `scheme` String
 * `handler` Function
-* `completion` Function
+* `completion` Function (optional)
 
-Registers a protocol of `scheme` that will send file as response, the `handler`
-will be called with `handler(request, callback)` when a `request` is going to be
-created with `scheme`, and `completion` will be called with `completion(null)`
-when `scheme` is successfully registered, or `completion(error)` when failed.
+Registers a protocol of `scheme` that will send the file as a response. The
+`handler` will be called with `handler(request, callback)` when a `request` is
+going to be created with `scheme`. `completion` will be called with
+`completion(null)` when `scheme` is successfully registered or
+`completion(error)` when failed.
 
-To handle the `request`, the `callback` should be called with either file's path
-or an object that has `path` property, e.g. `callback(filePath)` or
+To handle the `request`, the `callback` should be called with either the file's
+path or an object that has a `path` property, e.g. `callback(filePath)` or
 `callback({path: filePath})`.
 
-When `callback` is called with nothing, or a number, or an object that has
-`error` property, the `request` will be failed with the `error` number you
-specified. For the available error numbers you can use, please check:
-https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h
+When `callback` is called with nothing, a number, or an object that has an
+`error` property, the `request` will fail with the `error` number you
+specified. For the available error numbers you can use, please see the
+[net error list](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
 
-By default the scheme is treated like `http:`, which is parsed differently
-from protocols that follows "generic URI syntax" like `file:`, so you probably
-want to call `protocol.registerStandardSchemes` to make your scheme treated as
-standard scheme.
+By default the `scheme` is treated like `http:`, which is parsed differently
+than protocols that follow the "generic URI syntax" like `file:`, so you
+probably want to call `protocol.registerStandardSchemes` to have your scheme
+treated as a standard scheme.
 
-## protocol.registerBufferProtocol(scheme, handler[, completion])
+### `protocol.registerBufferProtocol(scheme, handler[, completion])`
 
 * `scheme` String
 * `handler` Function
-* `completion` Function
+* `completion` Function (optional)
 
-Registers a protocol of `scheme` that will send `Buffer` as response, the
-`callback` should be called with either an `Buffer` object, or an object that
-has `data`, `mimeType`, `chart` properties.
+Registers a protocol of `scheme` that will send a `Buffer` as a response. The
+`callback` should be called with either a `Buffer` object or an object that
+has the `data`, `mimeType`, and `chart` properties.
 
 Example:
 
@@ -78,37 +84,37 @@ protocol.registerBufferProtocol('atom', function(request, callback) {
 });
 ```
 
-## protocol.registerStringProtocol(scheme, handler[, completion])
+### `protocol.registerStringProtocol(scheme, handler[, completion])`
 
 * `scheme` String
 * `handler` Function
-* `completion` Function
+* `completion` Function (optional)
 
-Registers a protocol of `scheme` that will send `String` as response, the
-`callback` should be called with either a `String`, or an object that
-has `data`, `mimeType`, `chart` properties.
+Registers a protocol of `scheme` that will send a `String` as a response. The
+`callback` should be called with either a `String` or an object that has the
+`data`, `mimeType`, and `chart` properties.
 
-## protocol.registerHttpProtocol(scheme, handler[, completion])
+### `protocol.registerHttpProtocol(scheme, handler[, completion])`
 
 * `scheme` String
 * `handler` Function
-* `completion` Function
+* `completion` Function (optional)
 
-Registers a protocol of `scheme` that will send a HTTP request as response, the
-`callback` should be called with an object that has `url`, `method`, `referer`,
-`session` properties.
+Registers a protocol of `scheme` that will send an HTTP request as a response.
+The `callback` should be called with an object that has the `url`, `method`,
+`referer`, and `session` properties.
 
-By default the HTTP request will reuse current session, if you want the request
-to have different session you should specify `session` to `null`.
+By default the HTTP request will reuse the current session. If you want the
+request to have a different session you should set `session` to `null`.
 
-## protocol.unregisterProtocol(scheme[, completion])
+### `protocol.unregisterProtocol(scheme[, completion])`
 
 * `scheme` String
-* `completion` Function
+* `completion` Function (optional)
 
 Unregisters the custom protocol of `scheme`.
 
-## protocol.isProtocolHandled(scheme, callback)
+### `protocol.isProtocolHandled(scheme, callback)`
 
 * `scheme` String
 * `callback` Function
@@ -116,43 +122,43 @@ Unregisters the custom protocol of `scheme`.
 The `callback` will be called with a boolean that indicates whether there is
 already a handler for `scheme`.
 
-## protocol.interceptFileProtocol(scheme, handler[, completion])
+### `protocol.interceptFileProtocol(scheme, handler[, completion])`
 
 * `scheme` String
 * `handler` Function
-* `completion` Function
+* `completion` Function (optional)
 
-Intercepts `scheme` protocol and use `handler` as the protocol's new handler
-which sends file as response.
+Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
+which sends a file as a response.
 
-## protocol.interceptStringProtocol(scheme, handler[, completion])
-
-* `scheme` String
-* `handler` Function
-* `completion` Function
-
-Intercepts `scheme` protocol and use `handler` as the protocol's new handler
-which sends String as response.
-
-## protocol.interceptBufferProtocol(scheme, handler[, completion])
+### `protocol.interceptStringProtocol(scheme, handler[, completion])`
 
 * `scheme` String
 * `handler` Function
-* `completion` Function
+* `completion` Function (optional)
 
-Intercepts `scheme` protocol and use `handler` as the protocol's new handler
-which sends `Buffer` as response.
+Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
+which sends a `String` as a response.
 
-## protocol.interceptHttpProtocol(scheme, handler[, completion])
+## `protocol.interceptBufferProtocol(scheme, handler[, completion])`
 
 * `scheme` String
 * `handler` Function
-* `completion` Function
+* `completion` Function (optional)
 
-Intercepts `scheme` protocol and use `handler` as the protocol's new handler
-which sends a new HTTP request as response.
+Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
+which sends a `Buffer` as a response.
 
-## protocol.uninterceptProtocol(scheme[, completion])
+## `protocol.interceptHttpProtocol(scheme, handler[, completion])`
+
+* `scheme` String
+* `handler` Function
+* `completion` Function (optional)
+
+Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
+which sends a new HTTP request as a response.
+
+## `protocol.uninterceptProtocol(scheme[, completion])`
 
 * `scheme` String
 * `completion` Function
