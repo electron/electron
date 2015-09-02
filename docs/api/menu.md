@@ -35,68 +35,20 @@ window.addEventListener('contextmenu', function (e) {
 An example of creating the application menu in the render process with the
 simple template API:
 
-**Note to Window and Linux users** the `selector` member of each menu item is a
-Mac-only [Accelerator option](https://github.com/atom/electron/blob/master/docs/api/accelerator.md).
-
-```html
-<!-- index.html -->
-<script>
-var remote = require('remote');
-var Menu = remote.require('menu');
+```javascript
 var template = [
-  {
-    label: 'Electron',
-    submenu: [
-      {
-        label: 'About Electron',
-        selector: 'orderFrontStandardAboutPanel:'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        label: 'Services',
-        submenu: []
-      },
-      {
-        type: 'separator'
-      },
-      {
-        label: 'Hide Electron',
-        accelerator: 'CmdOrCtrl+H',
-        selector: 'hide:'
-      },
-      {
-        label: 'Hide Others',
-        accelerator: 'CmdOrCtrl+Shift+H',
-        selector: 'hideOtherApplications:'
-      },
-      {
-        label: 'Show All',
-        selector: 'unhideAllApplications:'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        label: 'Quit',
-        accelerator: 'CmdOrCtrl+Q',
-        selector: 'terminate:'
-      },
-    ]
-  },
   {
     label: 'Edit',
     submenu: [
       {
         label: 'Undo',
         accelerator: 'CmdOrCtrl+Z',
-        selector: 'undo:'
+        role: 'undo'
       },
       {
         label: 'Redo',
         accelerator: 'Shift+CmdOrCtrl+Z',
-        selector: 'redo:'
+        role: 'redo'
       },
       {
         type: 'separator'
@@ -104,23 +56,23 @@ var template = [
       {
         label: 'Cut',
         accelerator: 'CmdOrCtrl+X',
-        selector: 'cut:'
+        role: 'cut'
       },
       {
         label: 'Copy',
         accelerator: 'CmdOrCtrl+C',
-        selector: 'copy:'
+        role: 'copy'
       },
       {
         label: 'Paste',
         accelerator: 'CmdOrCtrl+V',
-        selector: 'paste:'
+        role: 'paste'
       },
       {
         label: 'Select All',
         accelerator: 'CmdOrCtrl+A',
-        selector: 'selectAll:'
-      }
+        role: 'selectall'
+      },
     ]
   },
   {
@@ -129,47 +81,125 @@ var template = [
       {
         label: 'Reload',
         accelerator: 'CmdOrCtrl+R',
-        click: function() { remote.getCurrentWindow().reload(); }
+        click: function(item, focusedWindow) {
+          if (focusedWindow)
+            focusedWindow.reload();
+        }
       },
       {
-        label: 'Toggle DevTools',
-        accelerator: 'Alt+CmdOrCtrl+I',
-        click: function() { remote.getCurrentWindow().toggleDevTools(); }
+        label: 'Toggle Full Screen',
+        accelerator: (function() {
+          if (process.platform == 'darwin')
+            return 'Ctrl+Command+F';
+          else
+            return 'F11';
+        })(),
+        click: function(item, focusedWindow) {
+          if (focusedWindow)
+            focusedWindow.setFullScreen(!focusedWindow.isFullScreen());
+        }
+      },
+      {
+        label: 'Toggle Developer Tools',
+        accelerator: (function() {
+          if (process.platform == 'darwin')
+            return 'Alt+Command+I';
+          else
+            return 'Ctrl+Shift+I';
+        })(),
+        click: function(item, focusedWindow) {
+          if (focusedWindow)
+            focusedWindow.toggleDevTools();
+        }
       },
     ]
   },
   {
     label: 'Window',
+    role: 'window',
     submenu: [
       {
         label: 'Minimize',
         accelerator: 'CmdOrCtrl+M',
-        selector: 'performMiniaturize:'
+        role: 'minimize'
       },
       {
         label: 'Close',
         accelerator: 'CmdOrCtrl+W',
-        selector: 'performClose:'
+        role: 'close'
+      },
+    ]
+  },
+  {
+    label: 'Help',
+    role: 'help',
+    submenu: [
+      {
+        label: 'Learn More',
+        click: function() { require('shell').openExternal('http://electron.atom.io') }
+      },
+    ]
+  },
+];
+
+if (process.platform == 'darwin') {
+  var name = require('app').getName();
+  template.unshift({
+    label: name,
+    submenu: [
+      {
+        label: 'About ' + name,
+        role: 'about'
       },
       {
         type: 'separator'
       },
       {
-        label: 'Bring All to Front',
-        selector: 'arrangeInFront:'
-      }
+        label: 'Services',
+        role: 'services',
+        submenu: []
+      },
+      {
+        type: 'separator'
+      },
+      {
+        label: 'Hide ' + name,
+        accelerator: 'Command+H',
+        role: 'hide'
+      },
+      {
+        label: 'Hide Others',
+        accelerator: 'Command+Shift+H',
+        role: 'hideothers:'
+      },
+      {
+        label: 'Show All',
+        role: 'unhide:'
+      },
+      {
+        type: 'separator'
+      },
+      {
+        label: 'Quit',
+        accelerator: 'Command+Q',
+        click: function() { app.quit(); }
+      },
     ]
-  },
-  {
-    label: 'Help',
-    submenu: []
-  }
-];
+  });
+  // Window menu.
+  template[3].submenu.push(
+    {
+      type: 'separator'
+    },
+    {
+      label: 'Bring All to Front',
+      role: 'front'
+    }
+  );
+}
 
 menu = Menu.buildFromTemplate(template);
-
 Menu.setApplicationMenu(menu);
-</script>
 ```
 
 ## Class: Menu
@@ -242,29 +272,26 @@ Linux, here are some notes on making your app's menu more native-like.
 ### Standard Menus
 
 On OS X there are many system defined standard menus, like the `Services` and
-`Windows` menus. To make your menu a standard menu, you can just set your menu's
-label to one of following and Electron will recognize them and make them
+`Windows` menus. To make your menu a standard menu, you should set your menu's
+`role` to one of following and Electron will recognize them and make them
 become standard menus:
 
-* `Window`
-* `Help`
-* `Services`
+* `window`
+* `help`
+* `services`
 
 ### Standard Menu Item Actions
 
-OS X has provided standard actions for some menu items (which are called
-`selector`s), like `About xxx`, `Hide xxx`, and `Hide Others`. To set the action
-of a menu item to a standard action, you can set the `selector` attribute of the
-menu item.
+OS X has provided standard actions for some menu items, like `About xxx`,
+`Hide xxx`, and `Hide Others`. To set the action of a menu item to a standard
+action, you should set the `role` attribute of the menu item.
 
 ### Main Menu's Name
 
 On OS X the label of application menu's first item is always your app's name,
 no matter what label you set. To change it you have to change your app's name
-by modifying your app bundle's `Info.plist` file. See
-[About Information Property List Files](https://developer.apple.com/library/ios/documentation/general/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html)
-for more information.
-
+by modifying your app bundle's `Info.plist` file. See [About Information
+Property List Files][AboutInformationPropertyListFiles] for more information.
 
 ## Menu Item Position
 
@@ -339,3 +366,5 @@ Menu:
 - 2
 - 3
 ```
+
+[AboutInformationPropertyListFiles]: https://developer.apple.com/library/ios/documentation/general/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html
