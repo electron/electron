@@ -20,6 +20,7 @@ class Browser;
 class JavascriptEnvironment;
 class NodeBindings;
 class NodeDebugger;
+class BridgeTaskRunner;
 
 class AtomBrowserMainParts : public brightray::BrowserMainParts {
  public:
@@ -53,6 +54,10 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 
   // A fake BrowserProcess object that used to feed the source code from chrome.
   scoped_ptr<BrowserProcess> fake_browser_process_;
+
+  // The gin::PerIsolateData requires a task runner to create, so we feed it
+  // with a task runner that will post all work to main loop.
+  scoped_refptr<BridgeTaskRunner> bridge_task_runner_;
 
   scoped_ptr<Browser> browser_;
   scoped_ptr<JavascriptEnvironment> js_env_;
