@@ -1,10 +1,10 @@
 ﻿# remote
 
-`remote` 모듈은 메인 프로세스와 랜더러 프로세스 사이에 inter-process 통신을 간단하게 추상화 한 모듈입니다.
+`remote` 모듈은 메인 프로세스와 랜더러 프로세스(웹 페이지) 사이의 inter-process (IPC) 통신을 간단하게 추상화 한 모듈입니다.
 
 Electron의 랜더러 프로세스에선 GUI와 관련 없는 모듈만 사용할 수 있습니다.
-기본적으로 랜더러 프로세스에서 메인 프로세스의 API를 사용하려면 inter-process 통신을 사용해야 합니다.
-하지만 `remote` 모듈을 사용하면 따로 inter-process 통신을 사용하지 않고 직접 명시적으로 사용할 수 있습니다.
+기본적으로 랜더러 프로세스에서 메인 프로세스의 API를 사용하려면 메인 프로세스와 inter-process 통신을 해야 합니다.
+하지만 `remote` 모듈을 사용하면 따로 inter-process 통신을 하지 않고 직접 명시적으로 모듈을 사용할 수 있습니다.
 Java의 [RMI](http://en.wikipedia.org/wiki/Java_remote_method_invocation)와 개념이 비슷합니다.
 
 다음 예제는 랜더러 프로세스에서 브라우저 창을 만드는 예제입니다:
@@ -12,11 +12,12 @@ Java의 [RMI](http://en.wikipedia.org/wiki/Java_remote_method_invocation)와 개
 ```javascript
 var remote = require('remote');
 var BrowserWindow = remote.require('browser-window');
+
 var win = new BrowserWindow({ width: 800, height: 600 });
 win.loadUrl('https://github.com');
 ```
 
-**참고:** 반대로 하려면(메인 프로세스에서 랜더러 프로세스에 접근) [webContents.executeJavascript](browser-window.md#webcontents-executejavascript-code) API를 사용하면 됩니다.
+**참고:** 반대로 메인 프로세스에서 랜더러 프로세스에 접근 하려면 [webContents.executeJavascript](browser-window.md#webcontents-executejavascript-code) 메서드를 사용하면 됩니다.
 
 ## Remote 객체
 
@@ -26,7 +27,7 @@ Remote 모듈의 메서드를 호출하거나, 객체에 접근하거나, 생성
 위의 예제에서 사용한 두 `BrowserWindow`와 `win`은 remote 객체입니다. 그리고 `new BrowserWindow`이 생성하는 `BrowserWindow` 객체는 랜더러 프로세스에서 생성되지 않습니다.
 대신에 이 `BrowserWindow` 객체는 메인 프로세스에서 생성되며 랜더러 프로세스에 `win` 객체와 같이 이에 대응하는 remote 객체를 반환합니다.
 
-## Remote 객체의 일생
+## Remote 객체의 생명 주기
 
 Electron은 랜더러 프로세스의 remote 객체가 살아있는 한(다시 말해서 GC(garbage collection)가 일어나지 않습니다) 대응하는 메인 프로세스의 객체는 릴리즈되지 않습니다.
 Remote 객체가 GC 되려면 대응하는 메인 프로세스 내부 객체의 참조가 해제되어야만 합니다.
@@ -54,10 +55,12 @@ exports.withRendererCallback = function(mapper) {
 
 exports.withLocalCallback = function() {
   return exports.mapNumbers(function(x) {
-    return x + 1; 
+    return x + 1;
   });
 }
+```
 
+```javascript
 // 랜더러 프로세스
 var mapNumbers = require("remote").require("mapNumbers");
 
@@ -80,6 +83,7 @@ console.log(withRendererCb, withLocalCb) // [true, true, true], [2, 3, 4]
 
 ```javascript
 var remote = require('remote');
+
 remote.getCurrentWindow().on('close', function() {
   // blabla...
 });
@@ -94,26 +98,30 @@ remote.getCurrentWindow().on('close', function() {
 이러한 문제를 피하려면 랜더러 프로세스에서 메인 프로세스로 넘긴 함수의 참조를 사용 후 확실하게 제거해야 합니다.
 작업 후 이벤트 콜백을 포함하여 책임 있게 함수의 참조를 제거하거나 메인 프로세스에서 랜더러 프로세스가 종료될 때 내부적으로 함수 참조를 제거하도록 설계해야 합니다.
 
-## remote.require(module)
+## Methods
+
+`remote` 모듈은 다음과 같은 메서드를 가지고 있습니다:
+
+### `remote.require(module)`
 
 * `module` String
 
 메인 프로세스의 `require(module)` API를 실행한 후 결과 객체를 반환합니다.
 
-## remote.getCurrentWindow()
+### `remote.getCurrentWindow()`
 
-현재 웹 페이지가 들어있는 [BrowserWindow](browser-window.md) 객체를 반환합니다.
+현재 웹 페이지가 들어있는 [`BrowserWindow`](browser-window.md) 객체를 반환합니다.
 
-## remote.getCurrentWebContents()
+### `remote.getCurrentWebContents()`
 
-현재 웹 페이지의 WebContents 객체를 반환합니다.
+현재 웹 페이지의 [`WebContents`](web-contents.md) 객체를 반환합니다.
 
-## remote.getGlobal(name)
+### `remote.getGlobal(name)`
 
 * `name` String
 
 메인 프로세스의 전역 변수(`name`)를 가져옵니다. (예시: `global[name]`)
 
-## remote.process
+### `remote.process`
 
 메인 프로세스의 `process` 객체를 반환합니다. `remote.getGlobal('process')`와 같습니다. 하지만 캐시 됩니다.
