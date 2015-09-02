@@ -22,7 +22,8 @@ app.on('ready', function() {
 });
 ```
 
-**Note:** This module can only be used after the `ready` event was emitted.
+**Note:** This module can only be used after the `ready` event in the `app`
+module is emitted.
 
 ## Methods
 
@@ -42,10 +43,11 @@ includes `file:` and `filesystem:`.
 * `handler` Function
 * `completion` Function (optional)
 
-Registers a protocol of `scheme` that will send the file as a response. The `handler`
-will be called with `handler(request, callback)` when a `request` is going to be
-created with `scheme` and `completion` will be called with `completion(null)`
-when `scheme` is successfully registered, or `completion(error)` when failed.
+Registers a protocol of `scheme` that will send the file as a response. The
+`handler` will be called with `handler(request, callback)` when a `request` is
+going to be created with `scheme`. `completion` will be called with
+`completion(null)` when `scheme` is successfully registered or
+`completion(error)` when failed.
 
 To handle the `request`, the `callback` should be called with either the file's
 path or an object that has a `path` property, e.g. `callback(filePath)` or
@@ -53,13 +55,13 @@ path or an object that has a `path` property, e.g. `callback(filePath)` or
 
 When `callback` is called with nothing, a number, or an object that has an
 `error` property, the `request` will fail with the `error` number you
-specified. For the available error numbers you can use, please see:
-https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h
+specified. For the available error numbers you can use, please see the
+[net error list](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
 
 By default the `scheme` is treated like `http:`, which is parsed differently
-from protocols that follow "generic URI syntax" like `file:`, so you probably
-want to call `protocol.registerStandardSchemes` to have your scheme treated as a
-standard scheme.
+than protocols that follow the "generic URI syntax" like `file:`, so you
+probably want to call `protocol.registerStandardSchemes` to have your scheme
+treated as a standard scheme.
 
 ### `protocol.registerBufferProtocol(scheme, handler[, completion])`
 
