@@ -737,6 +737,61 @@ Returns whether the window is visible on all workspaces.
 Sets the offscreen rendering, if `true` the `frame-rendered` event will fire,
 when the frame changes.
 
+### BrowserWindow.sendMouseEvent(options)
+
+Sends a mouse event to the BrowserWindow.
+* `options` Object
+  * `type` String - The type of the mouse event.
+    * `down` String - Mouse down event.
+    * `up` String -  Mouse up event.
+    * `move` String - Mouse move event.
+    * `enter` String - Mouse enter event.
+    * `leave` String - Mouse leave event.
+    * `context-menu` String - Context menu event.
+    * `wheel` String - Mouse wheel event.
+  * `x` Integer - The x component of the location of the mouse event.
+  * `y` Integer - The y component of the location of the mouse event.
+  * `movement-x` Integer - The x component of the mouse movement since the last event.
+  * `movement-y` Integer - The y component of the mouse movement since the last event.
+  * `button` String - The mouse button associated with the mouse event. Also sets the associated modifier values on the event.
+    * `left` String - The left button was pressed.
+    * `right` String - The right button was pressed.
+    * `middle` String - The middle button was pressed.
+  * `click-count` Integer - The number of clicks associated with the mouse event.
+  * `precise` Boolean - For the `wheel` event type, this option sets the `hasPreciseScrollingDeltas` option of the event.
+  * `modifiers` Array of Strings - The modifier values associated with the event.
+    * `left-button-down` String - The left mouse button was pressed.
+    * `middle-button-down` String - The right mouse button was pressed.
+    * `right-button-down` String - The middle mouse button was pressed.
+    * `shift` String - The shift key was pressed.
+    * `control` String - The control key was pressed.
+    * `alt` String - The alt key was pressed.
+    * `meta` String - The meta key was pressed.
+    * `caps-lock` String - The caps-lock key was pressed.
+    * `num-lock` String - The num-lock key was pressed.
+
+### BrowserWindow.sendKeyboardEvent(options)
+
+Sends a keyboard event to the BrowserWindow.
+* `options` Object
+  * `type` String - The type of the keyboard event.
+    * `down` String - Key down event.
+    * `up` String -  Key up event.
+    * `char` String - Character event.
+  * `code` Integer - The key code of the key that generated the event.
+  * `native` Integer - The native key code of the key that generated the event.
+  * `modifiers` Array of Strings - The modifier values associated with the event.
+    * `keypad` String - Sets the `IsKeyPad` option of the event.
+    * `auto-repeat` String - Sets the `IsAutoRepeat` option of the event.
+    * `left` String - Sets the `IsLeft` option of the event.
+    * `right` String - Sets the `IsRight` option of the event.
+    * `shift` String - The shift key was pressed.
+    * `control` String - The control key was pressed.
+    * `alt` String - The alt key was pressed.
+    * `meta` String - The meta key was pressed.
+    * `caps-lock` String - The caps-lock key was pressed.
+    * `num-lock` String - The num-lock key was pressed.
+
 ## Class: WebContents
 
 A `WebContents` is responsible for rendering and controlling a web page.

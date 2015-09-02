@@ -47,6 +47,7 @@
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/screen.h"
 #include "ui/gl/gpu_switching_manager.h"
+#include "ui/events/event.h"
 
 #if defined(OS_WIN)
 #include "ui/gfx/switches.h"
@@ -572,10 +573,10 @@ void NativeWindow::DevToolsClosed() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsClosed());
 }
 
-void NativeWindow::SendKeyboardEvent(blink::WebInputEvent::Type type, int modifiers, int keycode){
+void NativeWindow::SendKeyboardEvent(blink::WebInputEvent::Type type, int modifiers, int keycode, int nativeKeycode){
   auto keyb_event = new content::NativeWebKeyboardEvent;
 
-  keyb_event->nativeKeyCode = keycode;
+  keyb_event->nativeKeyCode = nativeKeycode;
   keyb_event->windowsKeyCode = keycode;
   keyb_event->setKeyIdentifierFromWindowsKeyCode();
   keyb_event->type = type;
@@ -584,7 +585,7 @@ void NativeWindow::SendKeyboardEvent(blink::WebInputEvent::Type type, int modifi
   keyb_event->timeStampSeconds = base::Time::Now().ToDoubleT();
   keyb_event->skip_in_browser = false;
 
-  if (type == blink::WebInputEvent::Char || type == blink::WebInputEvent::KeyDown) {
+  if (type == blink::WebInputEvent::Char || type == blink::WebInputEvent::RawKeyDown) {
     keyb_event->text[0] = keycode;
     keyb_event->unmodifiedText[0] = keycode;
   }
@@ -592,6 +593,11 @@ void NativeWindow::SendKeyboardEvent(blink::WebInputEvent::Type type, int modifi
   const auto view = web_contents()->GetRenderWidgetHostView();
   const auto host = view ? view->GetRenderWidgetHost() : nullptr;
   host->ForwardKeyboardEvent(*keyb_event);
+
+  if(keyb_event->type == blink::WebInputEvent::Type::KeyDown){
+    keyb_event->type = blink::WebInputEvent::RawKeyDown;
+    host->ForwardKeyboardEvent(*keyb_event);
+  }
 }
 
 void NativeWindow::SendMouseEvent(blink::WebInputEvent::Type type, int modifiers, blink::WebMouseEvent::Button button, int x, int y, int movementX, int movementY, int clickCount){

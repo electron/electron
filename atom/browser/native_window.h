@@ -238,7 +238,7 @@ class NativeWindow : public content::WebContentsObserver,
 
   void OnFrameReceived(bool result, scoped_refptr<media::VideoFrame> frame);
 
-  void SendKeyboardEvent(blink::WebInputEvent::Type type, int modifiers, int keycode);
+  void SendKeyboardEvent(blink::WebInputEvent::Type type, int modifiers, int keycode, int nativeKeycode);
   void SendMouseEvent(blink::WebInputEvent::Type type, int modifiers, blink::WebMouseEvent::Button button, int x, int y, int movementX, int movementY, int clickCount);
   void SendMouseWheelEvent(int modifiers, int x, int y, bool clickCount);
 

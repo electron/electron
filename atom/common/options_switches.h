@@ -64,11 +64,12 @@ extern const char kOffScreenRender[];
 
 extern const char kModifiers[];
 extern const char kKeyCode[];
+extern const char kNativeKeyCode[];
 
 extern const char kMovementX[];
 extern const char kMovementY[];
 extern const char kClickCount[];
-extern const char kMouseEventType[];
+extern const char kEventType[];
 extern const char kMouseEventButton[];
 extern const char kMouseWheelPrecise[];
 

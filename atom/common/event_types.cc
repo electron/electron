@@ -16,8 +16,8 @@ const char kMouseLeave[] = "leave";
 const char kContextMenu[] = "context-menu";
 const char kMouseWheel[] = "wheel";
 
-const char kKeyDown[] = "key-down";
-const char kKeyUp[] = "key-up";
+const char kKeyDown[] = "down";
+const char kKeyUp[] = "up";
 const char kChar[] = "char";
 
 const char kMouseLeftButton[] = "left";

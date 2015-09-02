@@ -526,12 +526,14 @@ void Window::SendKeyboardEvent(v8::Isolate* isolate, const mate::Dictionary& dat
   auto type = blink::WebInputEvent::Type::Char;
   int modifiers = 0;
   int keycode = 0;
+  int native = 0;
   std::string type_str = "";
   std::vector<std::string> modifier_array;
 
-  data.Get(switches::kMouseEventType, &type_str);
+  data.Get(switches::kEventType, &type_str);
   data.Get(switches::kModifiers, &modifier_array);
   data.Get(switches::kKeyCode, &keycode);
+  data.Get(switches::kNativeKeyCode, &native);
 
   if(type_str.compare(event_types::kKeyDown) == 0){
     type = blink::WebInputEvent::Type::KeyDown;
@@ -565,7 +567,7 @@ void Window::SendKeyboardEvent(v8::Isolate* isolate, const mate::Dictionary& dat
     }
   }
 
-  window_->SendKeyboardEvent(type, modifiers, keycode);
+  window_->SendKeyboardEvent(type, modifiers, keycode, native);
 }
 
 void Window::SendMouseEvent(v8::Isolate* isolate, const mate::Dictionary& data){
@@ -578,7 +580,7 @@ void Window::SendMouseEvent(v8::Isolate* isolate, const mate::Dictionary& data){
   blink::WebMouseEvent::Button button = blink::WebMouseEvent::Button::ButtonNone;
   int modifiers = 0;
 
-  data.Get(switches::kMouseEventType, &type_str);
+  data.Get(switches::kEventType, &type_str);
   data.Get(switches::kMouseEventButton, &button_str);
   data.Get(switches::kModifiers, &modifier_array);
 
