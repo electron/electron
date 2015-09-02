@@ -62,6 +62,12 @@ BrowserWindow::loadUrl = -> @webContents.loadUrl.apply @webContents, arguments
 BrowserWindow::send = -> @webContents.send.apply @webContents, arguments
 
 # Be compatible with old API.
+BrowserWindow::undo = -> @webContents.undo()
+BrowserWindow::redo = -> @webContents.redo()
+BrowserWindow::cut = -> @webContents.cut()
+BrowserWindow::copy = -> @webContents.copy()
+BrowserWindow::paste = -> @webContents.paste()
+BrowserWindow::selectAll = -> @webContents.selectAll()
 BrowserWindow::restart = -> @webContents.reload()
 BrowserWindow::getUrl = -> @webContents.getUrl()
 BrowserWindow::reload = -> @webContents.reload.apply @webContents, arguments

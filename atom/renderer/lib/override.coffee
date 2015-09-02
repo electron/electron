@@ -94,14 +94,22 @@ window.confirm = (message, title='') ->
 window.prompt = ->
   throw new Error('prompt() is and will not be supported.')
 
-# Simple implementation of postMessage.
-if ipc.sendSync 'ATOM_SHELL_GUEST_WINDOW_MANAGER_IS_GUEST_WINDOW'
+# Implement window.postMessage if current window is a guest window.
+guestId = ipc.sendSync 'ATOM_SHELL_GUEST_WINDOW_MANAGER_GET_GUEST_ID'
+if guestId?
   window.opener =
     postMessage: (message, targetOrigin='*') ->
-      ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', message, targetOrigin
+      ipc.send 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', guestId, message, targetOrigin, location.origin
 
-ipc.on 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', (message, targetOrigin) ->
-  window.postMessage message, targetOrigin
+ipc.on 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', (guestId, message, sourceOrigin) ->
+  # Manually dispatch event instead of using postMessage because we also need to
+  # set event.source.
+  event = document.createEvent 'Event'
+  event.initEvent 'message', false, false
+  event.data = message
+  event.origin = sourceOrigin
+  event.source = new BrowserWindowProxy(guestId)
+  window.dispatchEvent event
 
 # Forward history operations to browser.
 sendHistoryOperation = (args...) ->

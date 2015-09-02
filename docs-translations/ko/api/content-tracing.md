@@ -1,30 +1,35 @@
-﻿# content-tracing
+﻿# contentTracing
 
-`content-trace` 모듈은 Chromium 컨텐츠 모듈단에서 생성된 데이터를 수집하고 추적하는데 사용됩니다.
+`content-tracing` 모듈은 Chromium 컨텐츠 모듈단에서 생성된 데이터를 수집하고 추적하는데 사용됩니다.
 이 모듈은 웹 인터페이스를 포함하고 있지 않으며 크롬 브라우저에서 `chrome://tracing/` 페이지를 열어 생성된 파일을 로드하면 결과를 볼 수 있습니다.
 
 ```javascript
-var tracing = require('content-tracing');
-tracing.startRecording('*', tracing.DEFAULT_OPTIONS, function() {
+var contentTracing = require('content-tracing');
+
+contentTracing.startRecording('*', contentTracing.DEFAULT_OPTIONS, function() {
   console.log('Tracing started');
 
   setTimeout(function() {
-    tracing.stopRecording('', function(path) {
+    contentTracing.stopRecording('', function(path) {
       console.log('Tracing data recorded to ' + path);
     });
   }, 5000);
 });
-```
+``
 
-## tracing.getCategories(callback)
+## Methods
+
+`content-tracing` 모듈은 다음과 같은 메서드를 가지고 있습니다:
+
+### `contentTracing.getCategories(callback)`
 
 * `callback` Function
 
 카테고리 그룹 세트를 가져옵니다. 카테고리 그룹은 도달된 코드 경로를 변경할 수 있습니다.
 
-모든 child 프로세스가 `getCategories` 요청을 받으면 `callback`이 호출되며 인자에 카테고리 그룹의 배열이 전달됩니다.
+모든 child 프로세스가 `getCategories` 요청을 승인하면 `callback`이 한 번 호출되며 인자에 카테고리 그룹의 배열이 전달됩니다.
 
-## tracing.startRecording(categoryFilter, traceOptions, callback)
+### `contentTracing.startRecording(categoryFilter, traceOptions, callback)`
 
 * `categoryFilter` String
 * `traceOptions` String
@@ -33,7 +38,7 @@ tracing.startRecording('*', tracing.DEFAULT_OPTIONS, function() {
 모든 프로세스에서 레코딩을 시작합니다.
 
 레코딩은 지역적으로 즉시 실행됩니다. 그리고 비동기로 child 프로세스는 곧 EnableRecording 요청을 받게 됩니다.
-모든 child 프로세스가 `startRecording` 요청을 받으면 `callback`이 호출됩니다.
+모든 child 프로세스가 `startRecording` 요청을 승인하면 `callback`이 한 번 호출됩니다.
 
 `categoryFilter`는 어떤 카테고리 그룹이 트레이싱 되어야 하는지 필터링할 수 있습니다.
 필터는 `-` 접두사를 통해 특정 카테고리 그룹을 제외할 수 있습니다.
@@ -63,7 +68,7 @@ tracing.startRecording('*', tracing.DEFAULT_OPTIONS, function() {
 
 `record-until-full`이 기본 모드, `enable-sampling`과 `enable-systrace`옵션은 포함되지 않음
 
-## tracing.stopRecording(resultFilePath, callback)
+## `contentTracing.stopRecording(resultFilePath, callback)`
 
 * `resultFilePath` String
 * `callback` Function
@@ -75,12 +80,12 @@ Child 프로세스는 일반적으로 추적 데이터와 희귀한 플러시 �
 우리는 추적에 의한 런타임 오버헤드를 피하고자 합니다.
 그래서 추적이 끝나면 모든 child 프로세스에 보류된 추적 데이터를 플러시 할 것인지 물어봅니다.
 
-모든 child 프로세스가 `stopRecording` 요청을 받으면 `callback`에 추적 데이터를 포함한 파일을 전달됩니다.
+모든 child 프로세스가 `stopRecording` 요청을 승인하면 `callback`에 추적 데이터 파일을 포함하여 한 번 호출됩니다.
 
 추적 데이터는 `resultFilePath` 해당 경로가 비어있는 경우에 한 해 해당 경로에 작성되거나 임시 파일에 작성됩니다.
 실제 파일 경로는 null이 아닌 이상 `callback`을 통해 전달됩니다.
 
-## tracing.startMonitoring(categoryFilter, traceOptions, callback)
+### `contentTracing.startMonitoring(categoryFilter, traceOptions, callback)`
 
 * `categoryFilter` String
 * `traceOptions` String
@@ -90,17 +95,17 @@ Child 프로세스는 일반적으로 추적 데이터와 희귀한 플러시 �
 
 모니터링은 지역적으로 즉시 시작됩니다. 그리고 이내 자식 프로세스들이 `startMonitoring` 비동기 요청을 받습니다.
 
-모든 자식 프로세스가 `startMonitoring` 요청을 받으면 `callback`이 호출됩니다.
+모든 자식 프로세스가 `startMonitoring` 요청을 승인하면 `callback`이 한 번 호출됩니다.
 
-## tracing.stopMonitoring(callback);
+### `contentTracing.stopMonitoring(callback)`
 
 * `callback` Function
 
 모든 프로세스에서 모니터링을 중단합니다.
 
-모든 자식 프로세스가 `stopMonitoring` 요청을 받으면 `callback`이 호출됩니다.
+모든 자식 프로세스가 `stopMonitoring` 요청을 승인하면 `callback`이 한 번 호출됩니다.
 
-## tracing.captureMonitoringSnapshot(resultFilePath, callback)
+### `contentTracing.captureMonitoringSnapshot(resultFilePath, callback)`
 
 * `resultFilePath` String
 * `callback` Function
@@ -112,15 +117,15 @@ Child 프로세스는 일반적으로 추적 데이터와 희귀한 플러시 �
 그리고 우리는 추적시 발생하는 불필요한 런타임 오버헤드를 피하고자 합니다.
 그래서 추적이 끝나면 반드시 비동기로 자식 프로세스들의 보류된 추적 데이터를 플러시 할 것인지 물어봅니다.
 
-모든 자식 프로세스가 `captureMonitoringSnapshot` 요청을 받으면 추적 데이터 파일을 포함하는 `callback`이 호출됩니다.
+모든 자식 프로세스가 `captureMonitoringSnapshot` 요청을 승인하면 추적 데이터 파일을 포함하는 `callback`이 한 번 호출됩니다.
 
-## tracing.getTraceBufferUsage(callback)
+### `contentTracing.getTraceBufferUsage(callback)`
 
 * `callback` Function
 
-추적 버퍼 % 전체 상태의 프로세스간 최대치를 가져옵니다. TraceBufferUsage 값이 결정되면 `callback`이 호출됩니다.
+추적 버퍼 % 전체 상태의 프로세스간 최대치를 가져옵니다. TraceBufferUsage 값이 결정되면 `callback`이 한 번 호출됩니다.
 
-## tracing.setWatchEvent(categoryName, eventName, callback)
+### `contentTracing.setWatchEvent(categoryName, eventName, callback)`
 
 * `categoryName` String
 * `eventName` String
@@ -128,6 +133,6 @@ Child 프로세스는 일반적으로 추적 데이터와 희귀한 플러시 �
 
 `callback`은 지정된 이벤트가 어떤 작업을 발생시킬 때마다 호출됩니다.
 
-## tracing.cancelWatchEvent()
+### `contentTracing.cancelWatchEvent()`
 
-Watch 이벤트를 중단합니다. 만약 추적이 활성화되어 있다면 이 함수는 watch 이벤트 콜백과 race가 일어날 것입니다.
+Watch 이벤트를 중단합니다. 만약 추적이 활성화되어 있다면 이 메서드는 watch 이벤트 콜백과 race가 일어날 것입니다.

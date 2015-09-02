@@ -23,7 +23,7 @@ powerSaveBlocker.stop(id);
 
 Power save blocker를 시작하고 시스템이 저전력 모드(슬립)로 진입하는 것을 막습니다. 정수로 된 식별 ID를 반환합니다.
 
-**알림:**
+**참고:**
 `prevent-display-sleep` 모드는 `prevent-app-suspension` 보다 우선순위가 높습니다.
 가장 높은 우선순위의 모드만 작동합니다. 다시 말해 `prevent-display-sleep` 모드는 언제나 `prevent-app-suspension` 모드의 효과를 덮어씌웁니다.
 

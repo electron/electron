@@ -1,6 +1,6 @@
 # NW.js와 기술적으로 다른점 (이전 node-webkit)
 
-__알림: Electron은 이전까지 Atom Shell로 불려졌습니다.__
+__주의: Electron은 Atom Shell의 새로운 이름입니다.__
 
 NW.js 처럼 Electron은 JavaScript와 HTML 그리고 Node 통합환경을 제공함으로써 웹 페이지에서 저수준 시스템에 접근할 수 있는 웹 기반 데스크탑 어플리케이션을 작성할 수 있도록 합니다.
 

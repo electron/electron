@@ -73,6 +73,7 @@ class Menu : public mate::Wrappable,
                        Menu* menu);
   void SetIcon(int index, const gfx::Image& image);
   void SetSublabel(int index, const base::string16& sublabel);
+  void SetRole(int index, const base::string16& role);
   void Clear();
   int GetIndexOfCommandId(int command_id);
   int GetItemCount() const;

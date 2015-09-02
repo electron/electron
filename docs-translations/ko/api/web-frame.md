@@ -1,8 +1,8 @@
 # web-frame
 
-`web-frame` 모듈은 현재 웹 페이지의 랜더링 상태를 설정 할 수 있도록 해줍니다.
+`web-frame` 모듈은 현재 웹 페이지의 랜더링 상태를 설정 할 수 있도록 관련 유틸리티를 제공하는 모듈입니다.
 
-다음 예제는 현재 페이지를 200% 줌 합니다.
+다음 예제는 현재 페이지를 200% 줌 합니다:
 
 ```javascript
 var webFrame = require('web-frame');
@@ -29,6 +29,13 @@ webFrame.setZoomFactor(2);
 ## webFrame.getZoomLevel()
 
 현재 줌 레벨을 반환합니다.
+
+## webFrame.setZoomLevelLimits(minimumLevel, maximumLevel)
+
+* `minimumLevel` Number
+* `maximumLevel` Number
+
+줌 레벨의 최대, 최소치를 지정합니다.
 
 ## webFrame.setSpellCheckProvider(language, autoCorrectWord, provider)
 

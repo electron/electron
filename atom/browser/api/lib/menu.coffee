@@ -67,7 +67,8 @@ Menu::_init = ->
     isCommandIdVisible: (commandId) => @commandsMap[commandId]?.visible
     getAcceleratorForCommandId: (commandId) => @commandsMap[commandId]?.accelerator
     getIconForCommandId: (commandId) => @commandsMap[commandId]?.icon
-    executeCommand: (commandId) => @commandsMap[commandId]?.click()
+    executeCommand: (commandId) =>
+      @commandsMap[commandId]?.click BrowserWindow.getFocusedWindow()
     menuWillShow: =>
       # Make sure radio groups have at least one menu item seleted.
       for id, group of @groupsMap
@@ -115,6 +116,7 @@ Menu::insert = (pos, item) ->
 
   @setSublabel pos, item.sublabel if item.sublabel?
   @setIcon pos, item.icon if item.icon?
+  @setRole pos, item.role if item.role?
 
   # Make menu accessable to items.
   item.overrideReadOnlyProperty 'menu', this

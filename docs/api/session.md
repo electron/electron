@@ -13,6 +13,31 @@ win.loadUrl("http://github.com");
 var session = win.webContents.session
 ```
 
+## Events
+
+### Event: 'will-download'
+
+* `event` Event
+* `item` Object
+  * `url` String
+  * `filename` String
+  * `mimeType` String
+  * `hasUserGesture` Boolean
+* `webContents` [WebContents](web-contents.md)
+
+Fired when Electron is about to download `item` in `webContents`.
+
+Calling `event.preventDefault()` will cancel the download.
+
+```javascript
+session.on('will-download', function(event, item, webContents) {
+  event.preventDefault();
+  require('request')(item.url, function(data) {
+    require('fs').writeFileSync('/somewhere', data);
+  });
+});
+```
+
 ## Methods
 
 The `session` object has the following methods:

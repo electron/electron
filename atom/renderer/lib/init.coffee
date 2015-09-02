@@ -29,8 +29,6 @@ for arg in process.argv
   if arg.indexOf('--guest-instance-id=') == 0
     # This is a guest web view.
     process.guestInstanceId = parseInt arg.substr(arg.indexOf('=') + 1)
-    # Set the frame name to make AtomRendererClient recognize this guest.
-    require('web-frame').setName 'ATOM_SHELL_GUEST_WEB_VIEW'
   else if arg.indexOf('--node-integration=') == 0
     nodeIntegration = arg.substr arg.indexOf('=') + 1
   else if arg.indexOf('--preload=') == 0
