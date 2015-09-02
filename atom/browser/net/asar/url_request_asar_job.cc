@@ -193,7 +193,7 @@ bool URLRequestAsarJob::IsRedirectResponse(GURL* location,
 
 net::Filter* URLRequestAsarJob::SetupFilter() const {
   // Bug 9936 - .svgz files needs to be decompressed.
-  return LowerCaseEqualsASCII(file_path_.Extension(), ".svgz")
+  return base::LowerCaseEqualsASCII(file_path_.Extension(), ".svgz")
       ? net::Filter::GZipFactory() : NULL;
 }
 
@@ -265,8 +265,7 @@ void URLRequestAsarJob::DidOpen(int result) {
   }
 
   if (type_ == TYPE_ASAR) {
-    int rv = stream_->Seek(base::File::FROM_BEGIN,
-                           file_info_.offset,
+    int rv = stream_->Seek(file_info_.offset,
                            base::Bind(&URLRequestAsarJob::DidSeek,
                                       weak_ptr_factory_.GetWeakPtr()));
     if (rv != net::ERR_IO_PENDING) {
@@ -285,8 +284,7 @@ void URLRequestAsarJob::DidOpen(int result) {
                        byte_range_.first_byte_position() + 1;
 
     if (remaining_bytes_ > 0 && byte_range_.first_byte_position() != 0) {
-      int rv = stream_->Seek(base::File::FROM_BEGIN,
-                             byte_range_.first_byte_position(),
+      int rv = stream_->Seek(byte_range_.first_byte_position(),
                              base::Bind(&URLRequestAsarJob::DidSeek,
                                         weak_ptr_factory_.GetWeakPtr()));
       if (rv != net::ERR_IO_PENDING) {

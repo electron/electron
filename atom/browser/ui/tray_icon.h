@@ -67,7 +67,7 @@ class TrayIcon {
   TrayIcon();
 
  private:
-  ObserverList<TrayIconObserver> observers_;
+  base::ObserverList<TrayIconObserver> observers_;
 
   DISALLOW_COPY_AND_ASSIGN(TrayIcon);
 };

@@ -27,7 +27,6 @@
 #include "third_party/WebKit/public/web/WebPluginParams.h"
 #include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebRuntimeFeatures.h"
-#include "third_party/WebKit/Source/wtf/ArrayBufferContents.h"
 
 #include "atom/common/node_includes.h"
 
@@ -205,7 +204,7 @@ void AtomRendererClient::DidCreateScriptContext(
   node_bindings_->LoadEnvironment(env);
 }
 
-bool AtomRendererClient::ShouldFork(blink::WebFrame* frame,
+bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
                                     const GURL& url,
                                     const std::string& http_method,
                                     bool is_initial_navigation,

@@ -14,6 +14,7 @@
 #include "atom/common/node_includes.h"
 #include "base/base64.h"
 #include "base/strings/string_util.h"
+#include "base/strings/pattern.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/base/data_url.h"
@@ -62,7 +63,7 @@ float GetScaleFactorFromPath(const base::FilePath& path) {
   // We don't try to convert string to float here because it is very very
   // expensive.
   for (unsigned i = 0; i < arraysize(kScaleFactorPairs); ++i) {
-    if (EndsWith(filename, kScaleFactorPairs[i].name, true))
+    if (base::EndsWith(filename, kScaleFactorPairs[i].name, true))
       return kScaleFactorPairs[i].scale;
   }
 
@@ -104,7 +105,7 @@ bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
                                    const base::FilePath& path) {
   bool succeed = false;
   std::string filename(path.BaseName().RemoveExtension().AsUTF8Unsafe());
-  if (MatchPattern(filename, "*@*x"))
+  if (base::MatchPattern(filename, "*@*x"))
     // Don't search for other representations if the DPI has been specified.
     return AddImageSkiaRep(image, path, GetScaleFactorFromPath(path));
   else
@@ -119,8 +120,8 @@ bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
 
 #if defined(OS_MACOSX)
 bool IsTemplateFilename(const base::FilePath& path) {
-  return (MatchPattern(path.value(), "*Template.*") ||
-          MatchPattern(path.value(), "*Template@*x.*"));
+  return (base::MatchPattern(path.value(), "*Template.*") ||
+          base::MatchPattern(path.value(), "*Template@*x.*"));
 }
 #endif
 
