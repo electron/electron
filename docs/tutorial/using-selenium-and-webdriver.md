@@ -8,14 +8,8 @@ From [ChromeDriver - WebDriver for Chrome][chrome-driver]:
 > implements WebDriver's wire protocol for Chromium. It is being developed by
 > members of the Chromium and WebDriver teams.
 
-In Electron's [releases](https://github.com/atom/electron/releases) page you
-can find archives of `chromedriver`, there is no difference between Electron's
-distribution of `chromedriver` and upstream ones, so in order to use
-`chromedriver` together with Electron, you will need some special setup.
-
-Also notice that only minor version update releases (e.g. `vX.X.0` releases)
-include `chromedriver` archives, because `chromedriver` doesn't change as
-frequent as Electron itself.
+In order to use `chromedriver` together with Electron you have to tell it where to
+find Electron and make it think Electron is Chrome browser.
 
 ## Setting up with WebDriverJs
 
