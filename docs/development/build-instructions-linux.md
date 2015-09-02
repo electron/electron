@@ -20,8 +20,16 @@ $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
                        libxss1 libnss3-dev gcc-multilib g++-multilib
 ```
 
+On Fedora, install the following libraries:
+
+```bash
+$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-devel \
+                   xorg-x11-server-utils libcap-devel cups-devel libXtst-devel \
+                   alsa-lib-devel libXrandr-devel GConf2-devel nss-devel
+```
+
 Other distributions may offer similar packages for installation via package
-managers such as yum. Or one can compile from source code.
+managers such as pacman. Or one can compile from source code.
 
 ## If You Use Virtual Machines For Building
 
