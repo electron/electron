@@ -4,7 +4,7 @@
 
 * Python 2.7.x. 몇몇 CentOS와 같은 배포판들은 아직도 Python 2.6.x 버전을 사용합니다. 그래서 `python -V`를 통해 버전을 확인해 줄 필요가 있습니다.
 * Node.js v0.12.x. Node를 설치하는 방법은 여러가지가 있습니다. 그중 하나는 [Node.js](http://nodejs.org) 사이트에서 소스코드를 받아 빌드하는 방법입니다.
-이렇게 하면 Node를 일반 유저로 홈 디렉터리에 설치할 수 있습니다. 또는 [NodeSource](https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories) 에서 받아올 수도 있습니다.
+이렇게 하면 Node를 일반 유저로 홈 디렉터리에 설치할 수 있습니다. 또는 [NodeSource](https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories)에서 소스 파일을 받아올 수 있습니다.
 자세한 내용은 [Node.js 설치 방법](https://github.com/joyent/node/wiki/Installation) 을 참고하세요.
 * Clang 3.4 또는 최신 버전
 * GTK+ 와 libnotify의 개발용 헤더
@@ -78,7 +78,7 @@ $ ./script/create-dist.py
 이 스크립트는 매우 작은 배포판을 `dist` 디렉터리에 생성합니다.
 create-dist.py 스크립트를 실행한 이후 1.3GB를 초과하는 공간을 차지하는 out/R 폴더의 실행파일 바이너리는 삭제해도 됩니다.
 
-`Debug` 타겟만 빌드 할 수도 있습니다:
+또는 `Debug` 타겟만 빌드 할 수 있습니다:
 
 ```bash
 $ ./script/build.py -c D

@@ -41,7 +41,7 @@ Electron 문서 구조를 이해하는 데 참고할 수 있는 유용한 도움
 ---
 
 메서드 이름은 인수가 무엇을 받는지에 따라 결정됩니다. 선택적 인수는 브라켓([, ])으로 묶어
-이 인수가 다른 인수뒤에 선택적으로 사용할 수 있다는 것을 설명합니다.
+이 인수가 다른 인수뒤에서 선택적으로 사용될 수 있다는 것을 표시합니다.
 
 메서드의 밑에선 각 인수에 대해 자세한 설명을 합니다. 인수의 타입은 일반적인 타입 중 하나를 받거나:
 [`String`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String), [`Number`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number), [`Object`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object), [`Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)

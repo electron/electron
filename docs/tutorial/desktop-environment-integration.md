@@ -29,7 +29,11 @@ var app = require('app');
 app.addRecentDocument('/Users/USERNAME/Desktop/work.type');
 ```
 
+<<<<<<< HEAD
 You can use [app.clearRecentDocuments](clearrecentdocuments) API to empty
+=======
+And you can use [app.clearRecentDocuments][clearrecentdocuments] API to empty
+>>>>>>> master
 the recent documents list:
 
 ```javascript

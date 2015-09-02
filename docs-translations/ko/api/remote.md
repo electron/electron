@@ -16,7 +16,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 win.loadUrl('https://github.com');
 ```
 
-알림: 반대로 하려면(메인 프로세스에서 랜더러 프로세스에 접근) [webContents.executeJavascript](browser-window.md#webcontents-executejavascript-code) API를 사용하면 됩니다.
+**참고:** 반대로 하려면(메인 프로세스에서 랜더러 프로세스에 접근) [webContents.executeJavascript](browser-window.md#webcontents-executejavascript-code) API를 사용하면 됩니다.
 
 ## Remote 객체
 
