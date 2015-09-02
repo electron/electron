@@ -269,7 +269,6 @@ Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
   consists of two or more icons, set this value to identify the icon. If an
   icon file consists of one icon, this value is 0.
 
-
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 Append a switch (with optional `value`) to Chromium's command line.
