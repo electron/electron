@@ -1,11 +1,9 @@
 window.onload = ->
-  inspectorFrame = document.getElementById('inspector-app-iframe').contentWindow
-
   # Use menu API to show context menu.
-  inspectorFrame.eval 'InspectorFrontendHost.showContextMenuAtPoint = parent.createMenu'
+  InspectorFrontendHost.showContextMenuAtPoint = createMenu
 
   # Use dialog API to override file chooser dialog.
-  inspectorFrame.eval 'WebInspector.createFileSelectorElement = parent.createFileSelectorElement'
+  WebInspector.createFileSelectorElement = createFileSelectorElement
 
 convertToMenuTemplate = (items) ->
   template = []
@@ -60,7 +58,3 @@ createFileSelectorElement = (callback) ->
   fileSelectorElement.style.display = 'none'
   fileSelectorElement.click = showFileChooserDialog.bind this, callback
   return fileSelectorElement
-
-# Exposed for iframe.
-window.createMenu = createMenu
-window.createFileSelectorElement = createFileSelectorElement
