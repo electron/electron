@@ -15,7 +15,7 @@ env:
 addons:
   apt:
     packages:
-    - libdbus-1-dev
+    - libdbus-glib-1-dev
     - libgconf2-dev
     - libgnome-keyring-dev
     - libgtk2.0-dev
