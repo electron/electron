@@ -236,7 +236,7 @@ Emitted when devtools is focused / opened.
 
 ### Event: 'app-command' _Windows_
 
-Emitted when an [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx
+Emitted when an [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx)
 is invoked. These are typically related to keyboard media keys or browser
 commands, as well as the "Back" button built into some mice on Windows.
 
