@@ -16,6 +16,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_view_manager.h"
+#include "atom/browser/web_view_constants.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -74,8 +75,12 @@ ProcessOwner GetProcessOwner(int process_id,
     return OWNER_NATIVE_WINDOW;
 
   // Then search for guest WebContents.
-  if (WebViewManager::GetInfoForWebContents(web_contents, info))
+  auto data = static_cast<WebViewManager::WebViewInfoUserData*>(
+      web_contents->GetUserData(web_view::kWebViewInfoKeyName));
+  if (data) {
+    *info = data->web_view_info();
     return OWNER_GUEST_WEB_CONTENTS;
+  }
 
   return OWNER_NONE;
 }
@@ -155,9 +160,10 @@ void AtomBrowserClient::OverrideWebkitPrefs(
 
   // Custom preferences of guest page.
   auto web_contents = content::WebContents::FromRenderViewHost(host);
-  WebViewManager::WebViewInfo info;
-  if (WebViewManager::GetInfoForWebContents(web_contents, &info)) {
-    prefs->web_security_enabled = !info.disable_web_security;
+  auto info = static_cast<WebViewManager::WebViewInfoUserData*>(
+      web_contents->GetUserData(web_view::kWebViewInfoKeyName));
+  if (info) {
+    prefs->web_security_enabled = !info->web_view_info().disable_web_security;
     return;
   }
 

@@ -155,6 +155,23 @@ describe '<webview> tag', ->
       document.body.appendChild webview
 
   describe 'partition attribute', ->
+    it 'inserts no node symbols when not set', (done) ->
+      webview.addEventListener 'console-message', (e) ->
+        assert.equal e.message, 'undefined undefined undefined undefined'
+        done()
+      webview.src = "file://#{fixtures}/pages/c.html"
+      webview.partition = "test"
+      document.body.appendChild webview
+
+    it 'inserts node symbols when set', (done) ->
+      webview.addEventListener 'console-message', (e) ->
+        assert.equal e.message, 'function object object'
+        done()
+      webview.setAttribute 'nodeintegration', 'on'
+      webview.src = "file://#{fixtures}/pages/d.html"
+      webview.partition = "test"
+      document.body.appendChild webview
+
     it 'isolates storage for different id', (done) ->
       listener = (e) ->
         assert.equal e.message, " 0"

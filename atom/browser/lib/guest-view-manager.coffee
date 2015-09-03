@@ -48,6 +48,8 @@ getPartitionId = (partition) ->
       partition = partition.substring('persist:'.length)
       partitionId += 'persist?'
     else
+      # Just to differentiate from same persistant ID
+      partition += "_temp"
       partitionId += '?'
     partitionId += encodeURIComponent(partition)
   return partitionId

@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/web_view_constants.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "content/public/browser/browser_context.h"
@@ -34,17 +35,19 @@ struct Converter<atom::WebViewManager::WebViewInfo> {
       return false;
 
     GURL preload_url;
-    if (!options.Get("preloadUrl", &preload_url))
+    if (!options.Get(atom::web_view::kPreloadUrl, &preload_url))
       return false;
 
     if (!preload_url.is_empty() &&
         !net::FileURLToFilePath(preload_url, &(out->preload_script)))
       return false;
 
-    return options.Get("nodeIntegration", &(out->node_integration)) &&
-           options.Get("plugins", &(out->plugins)) &&
-           options.Get("disableWebSecurity", &(out->disable_web_security)) &&
-           options.Get("partitionId", &(out->partition_id));
+    return options.Get(atom::web_view::kNodeIntegration,
+                       &(out->node_integration)) &&
+           options.Get(atom::web_view::kPlugins, &(out->plugins)) &&
+           options.Get(atom::web_view::kPartitionId, &(out->partition_id)) &&
+           options.Get(atom::web_view::kDisableWebSecurity,
+                       &(out->disable_web_security));
   }
 };
 
@@ -68,12 +71,15 @@ void AddGuest(int guest_instance_id,
               content::WebContents* guest_web_contents,
               atom::WebViewManager::WebViewInfo info) {
   auto manager = GetWebViewManager(embedder);
-  if (manager) {
-    info.guest_instance_id = guest_instance_id;
-    info.embedder = embedder;
+  if (manager)
     manager->AddGuest(guest_instance_id, element_instance_id, embedder,
-                      guest_web_contents, info);
-  }
+                      guest_web_contents);
+
+  info.guest_instance_id = guest_instance_id;
+  info.embedder = embedder;
+  auto data = new atom::WebViewManager::WebViewInfoUserData(info);
+  guest_web_contents->SetUserData(
+      atom::web_view::kWebViewInfoKeyName, data);
 }
 
 void RemoveGuest(content::WebContents* embedder, int guest_instance_id) {

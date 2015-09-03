@@ -226,6 +226,8 @@
       'atom/browser/ui/x/window_state_watcher.h',
       'atom/browser/ui/x/x_window_utils.cc',
       'atom/browser/ui/x/x_window_utils.h',
+      'atom/browser/web_view_constants.cc',
+      'atom/browser/web_view_constants.h',
       'atom/browser/web_view_guest_delegate.cc',
       'atom/browser/web_view_guest_delegate.h',
       'atom/browser/web_view_manager.cc',

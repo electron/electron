@@ -11,22 +11,6 @@
 
 namespace atom {
 
-// static
-bool WebViewManager::GetInfoForWebContents(
-    const content::WebContents* web_contents, WebViewInfo* info) {
-  // use embedders' browser context to retrieve WebViewManager.
-  auto manager = static_cast<WebViewManager*>(
-      AtomBrowserMainParts::Get()->browser_context()->GetGuestManager());
-  if (!manager)
-    return false;
-  base::AutoLock auto_lock(manager->lock_);
-  auto iter = manager->webview_info_map_.find(web_contents);
-  if (iter == manager->webview_info_map_.end())
-    return false;
-  *info = iter->second;
-  return true;
-}
-
 WebViewManager::WebViewManager(content::BrowserContext* context) {
 }
 
@@ -36,11 +20,9 @@ WebViewManager::~WebViewManager() {
 void WebViewManager::AddGuest(int guest_instance_id,
                               int element_instance_id,
                               content::WebContents* embedder,
-                              content::WebContents* web_contents,
-                              const WebViewInfo& info) {
+                              content::WebContents* web_contents) {
   base::AutoLock auto_lock(lock_);
   web_contents_embedder_map_[guest_instance_id] = { web_contents, embedder };
-  webview_info_map_[web_contents] = info;
 
   // Map the element in embedder to guest.
   int owner_process_id = embedder->GetRenderProcessHost()->GetID();
@@ -53,10 +35,7 @@ void WebViewManager::RemoveGuest(int guest_instance_id) {
   if (!ContainsKey(web_contents_embedder_map_, guest_instance_id))
     return;
 
-  auto web_contents =
-      web_contents_embedder_map_[guest_instance_id].web_contents;
   web_contents_embedder_map_.erase(guest_instance_id);
-  webview_info_map_.erase(web_contents);
 
   // Remove the record of element in embedder too.
   for (const auto& element : element_instance_id_to_guest_map_)
