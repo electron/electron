@@ -33,10 +33,11 @@ are reached.
 Once all child processes have acknowledged the `getCategories` request the
 `callback` is invoked with an array of category groups.
 
-### `contentTracing.startRecording(categoryFilter, traceOptions, callback)`
+### `contentTracing.startRecording(options, callback)`
 
-* `categoryFilter` String
-* `traceOptions` String
+* `options` Object
+  * `categoryFilter` String
+  * `traceOptions` String
 * `callback` Function
 
 Start recording on all processes.
@@ -94,10 +95,11 @@ Trace data will be written into `resultFilePath` if it is not empty or into a
 temporary file. The actual file path will be passed to `callback` if it's not
 `null`.
 
-### `contentTracing.startMonitoring(categoryFilter, traceOptions, callback)`
+### `contentTracing.startMonitoring(options, callback)`
 
-* `categoryFilter` String
-* `traceOptions` String
+* `options` Object
+  * `categoryFilter` String
+  * `traceOptions` String
 * `callback` Function
 
 Start monitoring on all processes.

@@ -136,7 +136,8 @@ bool Archive::Init() {
   }
 
   uint32 size;
-  if (!PickleIterator(Pickle(buf.data(), buf.size())).ReadUInt32(&size)) {
+  if (!base::PickleIterator(base::Pickle(buf.data(), buf.size())).ReadUInt32(
+          &size)) {
     LOG(ERROR) << "Failed to parse header size from " << path_.value();
     return false;
   }
@@ -149,7 +150,8 @@ bool Archive::Init() {
   }
 
   std::string header;
-  if (!PickleIterator(Pickle(buf.data(), buf.size())).ReadString(&header)) {
+  if (!base::PickleIterator(base::Pickle(buf.data(), buf.size())).ReadString(
+        &header)) {
     LOG(ERROR) << "Failed to parse header from " << path_.value();
     return false;
   }

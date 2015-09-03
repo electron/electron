@@ -4,10 +4,12 @@
 
 #include "atom/app/node_main.h"
 
+#include "atom/app/uv_task_runner.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/node_debugger.h"
 #include "atom/common/node_includes.h"
 #include "base/command_line.h"
+#include "base/thread_task_runner_handle.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
@@ -24,14 +26,20 @@ int NodeMain(int argc, char *argv[]) {
 
   int exit_code = 1;
   {
+    // Feed gin::PerIsolateData with a task runner.
+    uv_loop_t* loop = uv_default_loop();
+    scoped_refptr<UvTaskRunner> uv_task_runner(new UvTaskRunner(loop));
+    base::ThreadTaskRunnerHandle handle(uv_task_runner);
+
     gin::V8Initializer::LoadV8Snapshot();
+    gin::V8Initializer::LoadV8Natives();
     gin::IsolateHolder::Initialize(
         gin::IsolateHolder::kNonStrictMode,
         gin::ArrayBufferAllocator::SharedInstance());
 
     JavascriptEnvironment gin_env;
     node::Environment* env = node::CreateEnvironment(
-        gin_env.isolate(), uv_default_loop(), gin_env.context(), argc, argv,
+        gin_env.isolate(), loop, gin_env.context(), argc, argv,
         exec_argc, exec_argv);
 
     // Start our custom debugger implementation.

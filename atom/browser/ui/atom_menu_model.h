@@ -43,7 +43,7 @@ class AtomMenuModel : public ui::SimpleMenuModel {
   Delegate* delegate_;  // weak ref.
 
   std::map<int, base::string16> roles_;
-  ObserverList<Observer> observers_;
+  base::ObserverList<Observer> observers_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomMenuModel);
 };

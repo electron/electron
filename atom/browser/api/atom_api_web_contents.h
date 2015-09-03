@@ -135,7 +135,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
       int route_id,
       int main_frame_route_id,
       WindowContainerType window_container_type,
-      const base::string16& frame_name,
+      const std::string& frame_name,
       const GURL& target_url,
       const std::string& partition_id,
       content::SessionStorageNamespace* session_storage_namespace) override;
@@ -170,11 +170,13 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DidFailLoad(content::RenderFrameHost* render_frame_host,
                    const GURL& validated_url,
                    int error_code,
-                   const base::string16& error_description) override;
+                   const base::string16& error_description,
+                   bool was_ignored_by_handler) override;
   void DidFailProvisionalLoad(content::RenderFrameHost* render_frame_host,
                               const GURL& validated_url,
                               int error_code,
-                              const base::string16& error_description) override;
+                              const base::string16& error_description,
+                              bool was_ignored_by_handler) override;
   void DidStartLoading() override;
   void DidStopLoading() override;
   void DidGetResourceResponseStart(
