@@ -78,7 +78,8 @@ def main():
 
 
 def run_script(script, args=[]):
-  print 'Running', script
+  sys.stderr.write('\nRunning ' + script +'\n')
+  sys.stderr.flush()
   script = os.path.join(SOURCE_ROOT, 'script', script)
   subprocess.check_call([sys.executable, script] + args)
 
