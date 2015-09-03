@@ -7,12 +7,8 @@
 > ChromeDriver는 Chromium의 WebDriver wire 프로토콜 스텐드얼론 서버 구현입니다.
 > Chromium 과 WebDriver 팀 멤버에 의해 개발되었습니다.
 
-Electron의 [releases](https://github.com/atom/electron/releases) 페이지에서 `chromedriver` 릴리즈 압축파일을 찾을 수 있습니다.
-`chromedriver`의 Electron 배포판과 upstream과의 차이는 없습니다.
-`chromedriver`와 Electron을 함께 사용하려면 몇가지 설정이 필요합니다.
-
-또한 releases에는 `chromedriver`를 포함하여 주 버전만 업데이트 됩니다. (예시: `vX.X.0` releases)
-왜냐하면 `chromedriver`는 Electron 자체에서 자주 업데이트하지 않기 때문입니다.
+Electron과 `chromedriver`를 같이 사옹하려면 드라이버에서 Electron을 찾을 수 있도록 해야 하고
+Electron은 Chrome 브라우저와 비슷하다는 점을 기억해야 합니다.
 
 ## WebDriverJs 설정하기
 
