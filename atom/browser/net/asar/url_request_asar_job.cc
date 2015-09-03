@@ -172,7 +172,7 @@ bool URLRequestAsarJob::IsRedirectResponse(GURL* location,
 #if defined(OS_WIN)
   // Follow a Windows shortcut.
   // We just resolve .lnk file, ignore others.
-  if (!LowerCaseEqualsASCII(file_path_.Extension(), ".lnk"))
+  if (!base::LowerCaseEqualsASCII(file_path_.Extension(), ".lnk"))
     return false;
 
   base::FilePath new_path = file_path_;
