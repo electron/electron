@@ -62,6 +62,8 @@
       'atom/app/atom_main_delegate_mac.mm',
       'atom/app/node_main.cc',
       'atom/app/node_main.h',
+      'atom/app/uv_task_runner.cc',
+      'atom/app/uv_task_runner.h',
       'atom/browser/api/atom_api_app.cc',
       'atom/browser/api/atom_api_app.h',
       'atom/browser/api/atom_api_auto_updater.cc',

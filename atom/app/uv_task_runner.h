@@ -2,19 +2,22 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_BRIDGE_TASK_RUNNER_H_
-#define ATOM_BROWSER_BRIDGE_TASK_RUNNER_H_
+#ifndef ATOM_APP_UV_TASK_RUNNER_H_
+#define ATOM_APP_UV_TASK_RUNNER_H_
 
+#include <map>
+
+#include "base/callback.h"
 #include "base/single_thread_task_runner.h"
+#include "vendor/node/deps/uv/include/uv.h"
 
 namespace atom {
 
-// Post all tasks to the current message loop's task runner if available,
-// otherwise fail silently.
-class BridgeTaskRunner : public base::SingleThreadTaskRunner {
+// TaskRunner implementation that posts tasks into libuv's default loop.
+class UvTaskRunner : public base::SingleThreadTaskRunner {
  public:
-  BridgeTaskRunner() {}
-  ~BridgeTaskRunner() override {}
+  explicit UvTaskRunner(uv_loop_t* loop);
+  ~UvTaskRunner() override;
 
   // base::SingleThreadTaskRunner:
   bool PostDelayedTask(const tracked_objects::Location& from_here,
@@ -27,9 +30,15 @@ class BridgeTaskRunner : public base::SingleThreadTaskRunner {
       base::TimeDelta delay) override;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(BridgeTaskRunner);
+  static void OnTimeout(uv_timer_t* timer);
+
+  uv_loop_t* loop_;
+
+  std::map<uv_timer_t*, base::Closure> tasks_;
+
+  DISALLOW_COPY_AND_ASSIGN(UvTaskRunner);
 };
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_BRIDGE_TASK_RUNNER_H_
+#endif  // ATOM_APP_UV_TASK_RUNNER_H_
