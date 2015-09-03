@@ -48,6 +48,14 @@ describe '<webview> tag', ->
       webview.src = "file://#{fixtures}/pages/d.html"
       document.body.appendChild webview
 
+    it 'loads node symbols after POST navigation when set', (done) ->
+      webview.addEventListener 'console-message', (e) ->
+        assert.equal e.message, 'function object object'
+        done()
+      webview.setAttribute 'nodeintegration', 'on'
+      webview.src = "file://#{fixtures}/pages/post.html"
+      document.body.appendChild webview
+
     # If the test is executed with the debug build on Windows, we will skip it
     # because native modules don't work with the debug build (see issue #2558).
     if process.platform isnt 'win32' or

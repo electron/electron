@@ -62,7 +62,7 @@ Módulos de ambos procesos:
 * [Estructura de directorio](development/source-code-directory-structure.md)
 * [Diferencias técnicas con NW.js (anteriormente conocido como node-webkit)](development/atom-shell-vs-node-webkit.md)
 * [Sistema de compilación](development/build-system-overview.md)
-* [Instrucciones de compilación (Mac)](development/build-instructions-mac.md)
+* [Instrucciones de compilación (Mac)](development/build-instructions-osx.md)
 * [Instrucciones de compilación (Windows)](development/build-instructions-windows.md)
 * [Instrucciones de compilación (Linux)](development/build-instructions-linux.md)
 * [Configurando un servidor de símbolos en el depurador](development/setting-up-symbol-server.md)

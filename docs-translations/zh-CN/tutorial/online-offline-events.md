@@ -1,11 +1,8 @@
-# Online/Offline Event Detection
+# 在线/离线事件探测
+使用标准 HTML5 APIs 可以实现在线和离线事件的探测，就像以下例子：
 
-Online and offline event detection can be implemented in the renderer process
-using standard HTML5 APIs, as shown in the following example.
-
-_main.js_
-
-```javascript
+*main.js*
+````
 var app = require('app');
 var BrowserWindow = require('browser-window');
 var onlineStatusWindow;
@@ -14,11 +11,10 @@ app.on('ready', function() {
   onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false });
   onlineStatusWindow.loadUrl('file://' + __dirname + '/online-status.html');
 });
-```
+````
 
-_online-status.html_
-
-```html
+*online-status.html*
+````
 <!DOCTYPE html>
 <html>
   <body>
@@ -34,17 +30,12 @@ _online-status.html_
     </script>
   </body>
 </html>
-```
+````
 
-There may be instances where you want to respond to these events in the
-main process as well. The main process however does not have a
-`navigator` object and thus cannot detect these events directly. Using
-Electron's inter-process communication utilities, the events can be forwarded
-to the main process and handled as needed, as shown in the following example.
+也会有人想要在主进程也有回应这些事件的实例。然后主进程没有 `navigator` 对象因此不能直接探测在线还是离线。使用 Electron 的进程间通讯工具，事件就可以在主进程被使，就像下面的例子：
 
-_main.js_
-
-```javascript
+*main.js*
+````
 var app = require('app');
 var ipc = require('ipc');
 var BrowserWindow = require('browser-window');
@@ -58,11 +49,10 @@ app.on('ready', function() {
 ipc.on('online-status-changed', function(event, status) {
   console.log(status);
 });
-```
+````
 
-_online-status.html_
-
-```html
+*online-status.html*
+````
 <!DOCTYPE html>
 <html>
   <body>
@@ -79,4 +69,4 @@ _online-status.html_
     </script>
   </body>
 </html>
-```
+````

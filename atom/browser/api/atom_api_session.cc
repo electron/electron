@@ -9,6 +9,7 @@
 
 #include "atom/browser/api/atom_api_cookies.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -101,6 +102,19 @@ struct Converter<ClearStorageDataOptions> {
   }
 };
 
+template<>
+struct Converter<content::DownloadItem*> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   content::DownloadItem* val) {
+    mate::Dictionary dict(isolate, v8::Object::New(isolate));
+    dict.Set("url", val->GetURL());
+    dict.Set("filename", val->GetSuggestedFilename());
+    dict.Set("mimeType", val->GetMimeType());
+    dict.Set("hasUserGesture", val->HasUserGesture());
+    return dict.GetHandle();
+  }
+};
+
 }  // namespace mate
 
 namespace atom {
@@ -108,6 +122,10 @@ namespace atom {
 namespace api {
 
 namespace {
+
+// The wrapSession funtion which is implemented in JavaScript
+using WrapSessionCallback = base::Callback<void(v8::Local<v8::Value>)>;
+WrapSessionCallback g_wrap_session;
 
 class ResolveProxyHelper {
  public:
@@ -215,9 +233,28 @@ void SetProxyInIO(net::URLRequestContextGetter* getter,
 Session::Session(AtomBrowserContext* browser_context)
     : browser_context_(browser_context) {
   AttachAsUserData(browser_context);
+  // Observe DownloadManger to get download notifications.
+  auto download_manager =
+      content::BrowserContext::GetDownloadManager(browser_context);
+  download_manager->AddObserver(this);
 }
 
 Session::~Session() {
+  auto download_manager =
+      content::BrowserContext::GetDownloadManager(browser_context_);
+  download_manager->RemoveObserver(this);
+}
+
+void Session::OnDownloadCreated(content::DownloadManager* manager,
+                                    content::DownloadItem* item) {
+  auto web_contents = item->GetWebContents();
+  bool prevent_default = Emit("will-download", item,
+                              api::WebContents::CreateFrom(isolate(),
+                                                           web_contents));
+  if (prevent_default) {
+    item->Cancel(true);
+    item->Remove();
+  }
 }
 
 void Session::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
@@ -288,9 +325,33 @@ mate::Handle<Session> Session::CreateFrom(
   if (existing)
     return mate::CreateHandle(isolate, static_cast<Session*>(existing));
 
-  return mate::CreateHandle(isolate, new Session(browser_context));
+  auto handle = mate::CreateHandle(isolate, new Session(browser_context));
+  g_wrap_session.Run(handle.ToV8());
+  return handle;
+}
+
+void SetWrapSession(const WrapSessionCallback& callback) {
+  g_wrap_session = callback;
+}
+
+void ClearWrapSession() {
+  g_wrap_session.Reset();
 }
 
 }  // namespace api
 
 }  // namespace atom
+
+namespace {
+
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
+  v8::Isolate* isolate = context->GetIsolate();
+  mate::Dictionary dict(isolate, exports);
+  dict.SetMethod("_setWrapSession", &atom::api::SetWrapSession);
+  dict.SetMethod("_clearWrapSession", &atom::api::ClearWrapSession);
+}
+
+}  // namespace
+
+NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_session, Initialize)

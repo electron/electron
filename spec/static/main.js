@@ -15,11 +15,11 @@ ipc.on('message', function(event, arg) {
 });
 
 ipc.on('console.log', function(event, args) {
-  console.log.apply(console, args);
+  console.error.apply(console, args);
 });
 
 ipc.on('console.error', function(event, args) {
-  console.log.apply(console, args);
+  console.error.apply(console, args);
 });
 
 ipc.on('process.exit', function(event, code) {
