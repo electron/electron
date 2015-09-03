@@ -143,7 +143,7 @@ URLRequestContextGetter::URLRequestContextGetter(
   // must synchronously run on the glib message loop. This will be passed to
   // the URLRequestContextStorage on the IO thread in GetURLRequestContext().
   proxy_config_service_.reset(net::ProxyService::CreateSystemProxyConfigService(
-      io_loop_->message_loop_proxy(), file_loop_->message_loop_proxy()));
+      io_loop_->task_runner(), file_loop_->task_runner()));
 }
 
 URLRequestContextGetter::~URLRequestContextGetter() {
@@ -233,7 +233,8 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
             url_sec_mgr_.get(),
             host_resolver.get(),
             std::string(),  // gssapi_library_name
-            false,          // negotiate_disable_cname_lookup
+            std::string(),  // gssapi_library_nam
+            false,          // auth_android_negotiate_account_type
             true);          // negotiate_enable_port
 
     storage_->set_cert_verifier(net::CertVerifier::CreateDefault());

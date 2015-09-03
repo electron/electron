@@ -17,7 +17,7 @@ PermissionManager::~PermissionManager() {
 
 void PermissionManager::RequestPermission(
     content::PermissionType permission,
-    content::WebContents* web_contents,
+    content::RenderFrameHost* render_frame_host,
     int request_id,
     const GURL& requesting_origin,
     bool user_gesture,
@@ -27,7 +27,7 @@ void PermissionManager::RequestPermission(
 
 void PermissionManager::CancelPermissionRequest(
     content::PermissionType permission,
-    content::WebContents* web_contents,
+    content::RenderFrameHost* render_frame_host,
     int request_id,
     const GURL& requesting_origin) {
 }

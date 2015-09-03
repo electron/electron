@@ -20,7 +20,8 @@ namespace brightray {
 
 namespace {
 
-const char kChromeUIDevToolsBundledHost[] = "devtools";
+const char kChromeUIDevToolsHost[] = "devtools";
+const char kChromeUIDevToolsBundledPath[] = "bundled";
 
 std::string PathWithoutParams(const std::string& path) {
   return GURL(std::string("chrome-devtools://devtools/") + path)
@@ -29,19 +30,19 @@ std::string PathWithoutParams(const std::string& path) {
 
 std::string GetMimeTypeForPath(const std::string& path) {
   std::string filename = PathWithoutParams(path);
-  if (EndsWith(filename, ".html", false)) {
+  if (base::EndsWith(filename, ".html", false)) {
     return "text/html";
-  } else if (EndsWith(filename, ".css", false)) {
+  } else if (base::EndsWith(filename, ".css", false)) {
     return "text/css";
-  } else if (EndsWith(filename, ".js", false)) {
+  } else if (base::EndsWith(filename, ".js", false)) {
     return "application/javascript";
-  } else if (EndsWith(filename, ".png", false)) {
+  } else if (base::EndsWith(filename, ".png", false)) {
     return "image/png";
-  } else if (EndsWith(filename, ".gif", false)) {
+  } else if (base::EndsWith(filename, ".gif", false)) {
     return "image/gif";
-  } else if (EndsWith(filename, ".svg", false)) {
+  } else if (base::EndsWith(filename, ".svg", false)) {
     return "image/svg+xml";
-  } else if (EndsWith(filename, ".manifest", false)) {
+  } else if (base::EndsWith(filename, ".manifest", false)) {
     return "text/cache-manifest";
   }
   return "text/html";
@@ -53,19 +54,23 @@ class BundledDataSource : public content::URLDataSource {
 
   // content::URLDataSource implementation.
   std::string GetSource() const override {
-    return kChromeUIDevToolsBundledHost;
+    return kChromeUIDevToolsHost;
   }
 
   void StartDataRequest(const std::string& path,
                         int render_process_id,
-                        int render_view_id,
+                        int render_frame_id,
                         const GotDataCallback& callback) override {
-    std::string filename = PathWithoutParams(path);
-    base::StringPiece resource =
-      content::DevToolsFrontendHost::GetFrontendResource(filename);
-    scoped_refptr<base::RefCountedStaticMemory> bytes(
-        new base::RefCountedStaticMemory(resource.data(), resource.length()));
-    callback.Run(bytes.get());
+    // Serve request from local bundle.
+    std::string bundled_path_prefix(kChromeUIDevToolsBundledPath);
+    bundled_path_prefix += "/";
+    if (base::StartsWith(path, bundled_path_prefix,
+                         base::CompareCase::INSENSITIVE_ASCII)) {
+      StartBundledDataRequest(path.substr(bundled_path_prefix.length()),
+                              render_process_id, render_frame_id, callback);
+      return;
+    }
+    callback.Run(nullptr);
   }
 
   std::string GetMimeType(const std::string& path) const override {
@@ -82,6 +87,24 @@ class BundledDataSource : public content::URLDataSource {
 
   bool ShouldServeMimeTypeAsContentTypeHeader() const override {
     return true;
+  }
+
+  void StartBundledDataRequest(
+      const std::string& path,
+      int render_process_id,
+      int render_frame_id,
+      const content::URLDataSource::GotDataCallback& callback) {
+    std::string filename = PathWithoutParams(path);
+    base::StringPiece resource =
+        content::DevToolsFrontendHost::GetFrontendResource(filename);
+
+    DLOG_IF(WARNING, resource.empty())
+        << "Unable to find dev tool resource: " << filename
+        << ". If you compiled with debug_devtools=1, try running with "
+           "--debug-devtools.";
+    scoped_refptr<base::RefCountedStaticMemory> bytes(
+        new base::RefCountedStaticMemory(resource.data(), resource.length()));
+    callback.Run(bytes.get());
   }
 
  private:

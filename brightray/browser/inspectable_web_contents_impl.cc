@@ -38,11 +38,13 @@ const double kPresetZoomFactors[] = { 0.25, 0.333, 0.5, 0.666, 0.75, 0.9, 1.0,
                                       1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0,
                                       5.0 };
 
-const char kChromeUIDevToolsURL[] = "chrome-devtools://devtools/devtools.html?"
-                                    "can_dock=%s&"
-                                    "toolbarColor=rgba(223,223,223,1)&"
-                                    "textColor=rgba(0,0,0,1)&"
-                                    "experiments=true";
+const char kChromeUIDevToolsURL[] =
+    "chrome-devtools://devtools/bundled/inspector.html?"
+    "can_dock=%s&"
+    "toolbarColor=rgba(223,223,223,1)&"
+    "textColor=rgba(0,0,0,1)&"
+    "experiments=true";
+
 const char kDevToolsBoundsPref[] = "brightray.devtools.bounds";
 const char kDevToolsZoomPref[] = "brightray.devtools.zoom";
 const char kDevToolsPreferences[] = "brightray.devtools.preferences";
@@ -282,13 +284,13 @@ void InspectableWebContentsImpl::CallClientFunction(const std::string& function_
   std::string javascript = function_name + "(";
   if (arg1) {
     std::string json;
-    base::JSONWriter::Write(arg1, &json);
+    base::JSONWriter::Write(*arg1, &json);
     javascript.append(json);
     if (arg2) {
-      base::JSONWriter::Write(arg2, &json);
+      base::JSONWriter::Write(*arg2, &json);
       javascript.append(", ").append(json);
       if (arg3) {
-        base::JSONWriter::Write(arg3, &json);
+        base::JSONWriter::Write(*arg3, &json);
         javascript.append(", ").append(json);
       }
     }
@@ -586,7 +588,7 @@ bool InspectableWebContentsImpl::ShouldCreateWebContents(
     int route_id,
     int main_frame_route_id,
     WindowContainerType window_container_type,
-    const base::string16& frame_name,
+    const std::string& frame_name,
     const GURL& target_url,
     const std::string& partition_id,
     content::SessionStorageNamespace* session_storage_namespace) {
