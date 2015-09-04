@@ -1,12 +1,12 @@
 ## Guias
 
-* [Distribuir Aplicação](../../docs/tutorial/application-distribution-pt-BR.md)
-* [Empacotamento da aplicação](../../docs/tutorial/application-packaging-pt-BR.md)
-* [Usando módulos nativos](../../docs/tutorial/using-native-node-modules-pt-BR.md)
-* [Depuração do processo principal](../../docs/tutorial/debugging-main-process-pt-BR.md)
-* [Usando Selenium e WebDriver](../../docs/tutorial/using-selenium-and-webdriver-pt-BR.md)
-* [Extensão DevTools](../../docs/tutorial/devtools-extension-pt-BR.md)
-* [Usando o plugin papper flash](../../docs/tutorial/using-pepper-flash-plugin-pt-BR.md)
+* [Distribuir Aplicação](../../docs/tutorial/application-distribution.md)
+* [Empacotamento da aplicação](../../docs/tutorial/application-packaging.md)
+* [Usando módulos nativos](../../docs/tutorial/using-native-node-modules.md)
+* [Depuração do processo principal](../../docs/tutorial/debugging-main-process.md)
+* [Usando Selenium e WebDriver](../../docs/tutorial/using-selenium-and-webdriver.md)
+* [Extensão DevTools](../../docs/tutorial/devtools-extension.md)
+* [Usando o plugin papper flash](../../docs/tutorial/using-pepper-flash-plugin.md)
 
 ## Tutoriais
 
