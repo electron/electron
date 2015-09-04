@@ -10,9 +10,13 @@
 
 namespace atom {
 
+// Stores and applies the preferences of WebContents.
 class WebContentsPreferences
     : public content::WebContentsUserData<WebContentsPreferences> {
  public:
+  // Get the preferences of |web_contents|.
+  static WebContentsPreferences* From(content::WebContents* web_contents);
+
   WebContentsPreferences(content::WebContents* web_contents,
                          base::DictionaryValue&& web_preferences);
   ~WebContentsPreferences() override;

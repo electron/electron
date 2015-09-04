@@ -22,4 +22,11 @@ WebContentsPreferences::WebContentsPreferences(
 WebContentsPreferences::~WebContentsPreferences() {
 }
 
+// static
+WebContentsPreferences* WebContentsPreferences::From(
+    content::WebContents* web_contents) {
+  return static_cast<WebContentsPreferences*>(
+      web_contents->GetUserData(kWebPreferencesKey));
+}
+
 }  // namespace atom

@@ -424,7 +424,6 @@ void NativeWindow::OverrideWebkitPrefs(content::WebPreferences* prefs) {
     return;
 
   bool b;
-  std::vector<base::FilePath> list;
   if (web_preferences_.Get("javascript", &b))
     prefs->javascript_enabled = b;
   if (web_preferences_.Get("images", &b))
@@ -446,14 +445,6 @@ void NativeWindow::OverrideWebkitPrefs(content::WebPreferences* prefs) {
     prefs->allow_displaying_insecure_content = b;
   if (web_preferences_.Get("allow-running-insecure-content", &b))
     prefs->allow_running_insecure_content = b;
-  if (web_preferences_.Get("extra-plugin-dirs", &list)) {
-    if (content::PluginService::GetInstance()->NPAPIPluginsSupported()) {
-      for (size_t i = 0; i < list.size(); ++i)
-        content::PluginService::GetInstance()->AddExtraPluginDir(list[i]);
-    } else {
-      LOG(WARNING) << "NPAPI plugins not supported on this platform";
-    }
-  }
 }
 
 void NativeWindow::NotifyWindowClosed() {
