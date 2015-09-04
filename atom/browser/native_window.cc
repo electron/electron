@@ -15,12 +15,10 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/options_switches.h"
-#include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/json/json_writer.h"
 #include "base/prefs/pref_service.h"
 #include "base/message_loop/message_loop.h"
-#include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
@@ -77,9 +75,7 @@ NativeWindow::NativeWindow(
       transparent_(false),
       enable_larger_than_screen_(false),
       is_closed_(false),
-      node_integration_(true),
       has_dialog_attached_(false),
-      zoom_factor_(1.0),
       aspect_ratio_(0.0),
       inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
@@ -88,7 +84,6 @@ NativeWindow::NativeWindow(
   options.Get(switches::kFrame, &has_frame_);
   options.Get(switches::kTransparent, &transparent_);
   options.Get(switches::kEnableLargerThanScreen, &enable_larger_than_screen_);
-  options.Get(switches::kNodeIntegration, &node_integration_);
 
   // Tell the content module to initialize renderer widget with transparent
   // mode.
@@ -96,25 +91,6 @@ NativeWindow::NativeWindow(
 
   // Read icon before window is created.
   options.Get(switches::kIcon, &icon_);
-
-  // The "preload" option must be absolute path.
-  if (options.Get(switches::kPreloadScript, &preload_script_) &&
-      !preload_script_.IsAbsolute()) {
-    LOG(ERROR) << "Path of \"preload\" script must be absolute.";
-    preload_script_.clear();
-  }
-
-  // Be compatible with old API of "node-integration" option.
-  std::string old_string_token;
-  if (options.Get(switches::kNodeIntegration, &old_string_token) &&
-      old_string_token != "disable")
-    node_integration_ = true;
-
-  // Read the web preferences.
-  options.Get(switches::kWebPreferences, &web_preferences_);
-
-  // Read the zoom factor before any navigation.
-  options.Get(switches::kZoomFactor, &zoom_factor_);
 
   WindowList::AddWindow(this);
 }
@@ -362,22 +338,6 @@ void NativeWindow::RendererUnresponsive(content::WebContents* source) {
 void NativeWindow::RendererResponsive(content::WebContents* source) {
   window_unresposive_closure_.Cancel();
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnRendererResponsive());
-}
-
-void NativeWindow::AppendExtraCommandLineSwitches(
-    base::CommandLine* command_line) {
-  // Append --node-integration to renderer process.
-  command_line->AppendSwitchASCII(switches::kNodeIntegration,
-                                  node_integration_ ? "true" : "false");
-
-  // Append --preload.
-  if (!preload_script_.empty())
-    command_line->AppendSwitchPath(switches::kPreloadScript, preload_script_);
-
-  // Append --zoom-factor.
-  if (zoom_factor_ != 1.0)
-    command_line->AppendSwitchASCII(switches::kZoomFactor,
-                                    base::DoubleToString(zoom_factor_));
 }
 
 void NativeWindow::NotifyWindowClosed() {

@@ -69,6 +69,16 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
   options.Get(switches::kWebPreferences, &web_preferences);
 
+  // Be compatible with old options which are now in web_preferences.
+  std::string str;
+  double d;
+  if (options.Get(switches::kNodeIntegration, &str))
+    web_preferences.Set(switches::kNodeIntegration, str);
+  if (options.Get(switches::kPreloadScript, &str))
+    web_preferences.Set(switches::kPreloadScript, str);
+  if (options.Get(switches::kZoomFactor, &d))
+    web_preferences.Set(switches::kZoomFactor, d);
+
   // Creates the WebContents used by BrowserWindow.
   auto web_contents = WebContents::Create(isolate, web_preferences);
   web_contents_.Reset(isolate, web_contents.ToV8());

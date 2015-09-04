@@ -39,6 +39,7 @@
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
 #include "ui/base/l10n/l10n_util.h"
+#include "v8/include/v8.h"
 
 namespace atom {
 
@@ -231,7 +232,6 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   ProcessOwner owner = GetProcessOwner(process_id, &window, &info);
 
   if (owner == OWNER_NATIVE_WINDOW) {
-    window->AppendExtraCommandLineSwitches(command_line);
     WebContentsPreferences::AppendExtraCommandLineSwitches(
         window->web_contents(), command_line);
   } else if (owner == OWNER_GUEST_WEB_CONTENTS) {

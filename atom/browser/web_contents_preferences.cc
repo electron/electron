@@ -6,7 +6,9 @@
 
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
+#include "base/strings/string_number_conversions.h"
 #include "content/public/common/web_preferences.h"
+#include "storage/common/fileapi/file_system_util.h"  // IsAbsolute
 
 #if defined(OS_WIN)
 #include "ui/gfx/switches.h"
@@ -54,25 +56,51 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
     content::WebContents* web_contents, base::CommandLine* command_line) {
   WebContentsPreferences* self = From(web_contents);
   CHECK(self);
+  base::DictionaryValue& web_preferences = self->web_preferences_;
 
   bool b;
 #if defined(OS_WIN)
   // Check if DirectWrite is disabled.
-  if (self->web_preferences_.GetBoolean(switches::kDirectWrite, &b) && !b)
+  if (web_preferences.GetBoolean(switches::kDirectWrite, &b) && !b)
     command_line->AppendSwitch(::switches::kDisableDirectWrite);
 #endif
 
   // Check if plugins are enabled.
-  if (self->web_preferences_.GetBoolean("plugins", &b) && b)
+  if (web_preferences.GetBoolean("plugins", &b) && b)
     command_line->AppendSwitch(switches::kEnablePlugins);
 
   // This set of options are not availabe in WebPreferences, so we have to pass
   // them via command line and enable them in renderer procss.
   for (size_t i = 0; i < arraysize(kWebRuntimeFeatures); ++i) {
     const char* feature = kWebRuntimeFeatures[i];
-    if (self->web_preferences_.GetBoolean(feature, &b))
+    if (web_preferences.GetBoolean(feature, &b))
       command_line->AppendSwitchASCII(feature, b ? "true" : "false");
   }
+
+  // Check if we have node integration specified.
+  bool node_integration = true;
+  web_preferences.GetBoolean(switches::kNodeIntegration, &node_integration);
+  // Be compatible with old API of "node-integration" option.
+  std::string old_token;
+  if (web_preferences.GetString(switches::kNodeIntegration, &old_token) &&
+      old_token != "disable")
+    node_integration = true;
+  command_line->AppendSwitchASCII(switches::kNodeIntegration,
+                                  node_integration ? "true" : "false");
+
+  // The preload script.
+  base::FilePath::StringType preload;
+  if (web_preferences.GetString(switches::kPreloadScript, &preload) &&
+      !preload.empty() &&
+      base::FilePath(preload).IsAbsolute())
+    command_line->AppendSwitchNative(switches::kPreloadScript, preload);
+
+  // The zoom factor.
+  double zoom_factor = 1.0;
+  if (web_preferences.GetDouble(switches::kZoomFactor, &zoom_factor) &&
+      zoom_factor != 1.0)
+    command_line->AppendSwitchASCII(switches::kZoomFactor,
+                                    base::DoubleToString(zoom_factor));
 }
 
 void WebContentsPreferences::OverrideWebkitPrefs(
