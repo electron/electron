@@ -38,12 +38,29 @@ moveLastToFirst = (list) ->
 getNextInstanceId = (webContents) ->
   ++nextInstanceId
 
+# Generate URL encoded partition id.
+getPartitionId = (partition) ->
+  # Guest site url will be chrome-guest://fake-host/{persist}?{partitionId}
+  partitionId = "chrome-guest://fake-host/"
+  if partition
+    persist = partition.startsWith('persist:')
+    if persist
+      partition = partition.substring('persist:'.length)
+      partitionId += 'persist?'
+    else
+      # Just to differentiate from same persistant ID
+      partition += "_temp"
+      partitionId += '?'
+    partitionId += encodeURIComponent(partition)
+  return partitionId
+
 # Create a new guest instance.
 createGuest = (embedder, params) ->
   webViewManager ?= process.atomBinding 'web_view_manager'
 
   id = getNextInstanceId embedder
-  guest = webContents.create {isGuest: true, embedder}
+  partitionId = getPartitionId params.partition
+  guest = webContents.create {isGuest: true, partition: partitionId, embedder}
   guestInstances[id] = {guest, embedder}
 
   # Destroy guest when the embedder is gone or navigated.
@@ -120,6 +137,7 @@ attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
     plugins: params.plugins
     disableWebSecurity: params.disablewebsecurity
     preloadUrl: params.preload ? ''
+    partitionId: getPartitionId(params.partition)
 
   guest.attachParams = params
   embedderElementsMap[key] = guestInstanceId

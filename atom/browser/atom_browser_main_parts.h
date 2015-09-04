@@ -6,10 +6,14 @@
 #define ATOM_BROWSER_ATOM_BROWSER_MAIN_PARTS_H_
 
 #include <list>
+#include <map>
+#include <string>
 
 #include "base/callback.h"
+#include "base/containers/scoped_ptr_hash_map.h"
 #include "base/timer/timer.h"
 #include "brightray/browser/browser_main_parts.h"
+#include "content/public/browser/browser_context.h"
 
 class BrowserProcess;
 
@@ -28,6 +32,10 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   virtual ~AtomBrowserMainParts();
 
   static AtomBrowserMainParts* Get();
+
+  // Returns the BrowserContext associated with the partition.
+  content::BrowserContext* GetBrowserContextForPartition(
+      const GURL& partition);
 
   // Register a callback that should be destroyed before JavaScript environment
   // gets destroyed.
@@ -69,6 +77,10 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 
   // List of callbacks should be executed before destroying JS env.
   std::list<base::Closure> destruction_callbacks_;
+
+  // partition_id => browser_context
+  base::ScopedPtrHashMap<std::string, scoped_ptr<brightray::BrowserContext>>
+      browser_context_map_;
 
   static AtomBrowserMainParts* self_;
 
