@@ -118,6 +118,23 @@
 
 "on"으로 지정하면 페이지의 웹 보안을 해제합니다.
 
+### `partition`
+
+```html
+<webview src="https://github.com" partition="persist:github"></webview>
+<webview src="http://electron.atom.io" partition="electron"></webview>
+```
+
+`webview`에서 사용하는 스토리지 파티션을 지정합니다.
+스토리지 파티션 ID를 `persist:`로 시작하도록 지정하면 앱의 모든 `webview`에서 지정한 스토리지 파티션 ID를 사용하도록 할 수 있습니다.
+만약 `persist:` 접두사가 없을 경우 `webview`는 인 메모리 스토리지 파티션을 사용합니다.
+여러 `webview`에서 같은 파티션 ID를 사용하면 같은 스토리지 파티션을 공유합니다.
+만약 스토리지 파티션 ID가 지정되지 않으면 앱의 기본 스토리지를 사용합니다.
+
+이 값은 첫 탐색 이전에만 지정할 수 있습니다.
+즉. 작동중인 랜더러 프로세스의 스토리지 파티션은 변경할 수 없습니다.
+이후 이 값을 바꾸려고 시도하면 DOM 예외를 발생시킵니다.
+
 ## Methods
 
 `webview` 태그는 다음과 같은 메서드를 가지고 있습니다:
