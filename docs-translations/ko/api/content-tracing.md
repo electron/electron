@@ -29,10 +29,11 @@ contentTracing.startRecording('*', contentTracing.DEFAULT_OPTIONS, function() {
 
 모든 child 프로세스가 `getCategories` 요청을 승인하면 `callback`이 한 번 호출되며 인자에 카테고리 그룹의 배열이 전달됩니다.
 
-### `contentTracing.startRecording(categoryFilter, traceOptions, callback)`
+### `contentTracing.startRecording(options, callback)`
 
-* `categoryFilter` String
-* `traceOptions` String
+* `options` Object
+  * `categoryFilter` String
+  * `traceOptions` String
 * `callback` Function
 
 모든 프로세스에서 레코딩을 시작합니다.
@@ -85,10 +86,11 @@ Child 프로세스는 일반적으로 추적 데이터와 희귀한 플러시 �
 추적 데이터는 `resultFilePath` 해당 경로가 비어있는 경우에 한 해 해당 경로에 작성되거나 임시 파일에 작성됩니다.
 실제 파일 경로는 null이 아닌 이상 `callback`을 통해 전달됩니다.
 
-### `contentTracing.startMonitoring(categoryFilter, traceOptions, callback)`
+### `contentTracing.startMonitoring(options, callback)`
 
-* `categoryFilter` String
-* `traceOptions` String
+* `options` Object
+  * `categoryFilter` String
+  * `traceOptions` String
 * `callback` Function
 
 모든 프로세스에서 모니터링을 시작합니다.
