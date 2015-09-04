@@ -20,13 +20,13 @@
 * [Process Object](api/process.md)
 * [Supported Chrome Command Line Switches](api/chrome-command-line-switches.md)
 
-Custom DOM Elements:
+### Custom DOM Elements:
 
 * [`File` Object](api/file-object.md)
 * [`<webview>` Tag](api/web-view-tag.md)
 * [`window.open` Function](api/window-open.md)
 
-Modules for the Main Process:
+### Modules for the Main Process:
 
 * [app](api/app.md)
 * [auto-updater](api/auto-updater.md)
@@ -44,13 +44,13 @@ Modules for the Main Process:
 * [web-contents](api/web-contents.md)
 * [tray](api/tray.md)
 
-Modules for the Renderer Process (Web Page):
+### Modules for the Renderer Process (Web Page):
 
 * [ipc (renderer)](api/ipc-renderer.md)
 * [remote](api/remote.md)
 * [web-frame](api/web-frame.md)
 
-Modules for Both Processes:
+### Modules for Both Processes:
 
 * [clipboard](api/clipboard.md)
 * [crash-reporter](api/crash-reporter.md)
