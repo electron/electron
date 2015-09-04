@@ -116,7 +116,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
  protected:
   explicit WebContents(content::WebContents* web_contents);
-  explicit WebContents(const mate::Dictionary& options);
+  WebContents(v8::Isolate* isolate, const mate::Dictionary& options);
   ~WebContents();
 
   // mate::Wrappable:

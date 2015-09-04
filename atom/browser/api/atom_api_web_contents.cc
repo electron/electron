@@ -11,6 +11,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
@@ -153,7 +154,8 @@ WebContents::WebContents(content::WebContents* web_contents)
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 }
 
-WebContents::WebContents(const mate::Dictionary& options) {
+WebContents::WebContents(v8::Isolate* isolate,
+                         const mate::Dictionary& options) {
   bool is_guest = false;
   options.Get("isGuest", &is_guest);
 
@@ -184,6 +186,11 @@ WebContents::WebContents(const mate::Dictionary& options) {
   Observe(web_contents);
   AttachAsUserData(web_contents);
   InitWithWebContents(web_contents);
+
+  // Save the preferences.
+  base::DictionaryValue web_preferences;
+  mate::ConvertFromV8(isolate, options.GetHandle(), &web_preferences);
+  new WebContentsPreferences(web_contents, std::move(web_preferences));
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
@@ -890,7 +897,7 @@ mate::Handle<WebContents> WebContents::CreateFrom(
 // static
 mate::Handle<WebContents> WebContents::Create(
     v8::Isolate* isolate, const mate::Dictionary& options) {
-  auto handle =  mate::CreateHandle(isolate, new WebContents(options));
+  auto handle =  mate::CreateHandle(isolate, new WebContents(isolate, options));
   g_wrap_web_contents.Run(handle.ToV8());
   return handle;
 }
