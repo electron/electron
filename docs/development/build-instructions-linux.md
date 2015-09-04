@@ -1,15 +1,17 @@
-# Build instructions (Linux)
+# Build Instructions (Linux)
+
+Follow the guidelines below for building Electron on Linux.
 
 ## Prerequisites
 
 * Python 2.7.x. Some distributions like CentOS still use Python 2.6.x
-so you may need to check your Python version with `python -V`.
-* Node.js v0.12.x. There are various ways to install Node. One can download
-source code from [Node.js] (http://nodejs.org) and compile from source.
-Doing so permits installing Node to your own home directory as a standard user.
-Or try repositories such as [NodeSource] (https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories)
-* Clang 3.4 or later
-* Development headers of GTK+ and libnotify
+  so you may need to check your Python version with `python -V`.
+* Node.js v0.12.x. There are various ways to install Node. You can download
+  source code from [Node.js](http://nodejs.org) and compile from source.
+  Doing so permits installing Node on your own home directory as a standard user.
+  Or try repositories such as [NodeSource](https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories).
+* Clang 3.4 or later.
+* Development headers of GTK+ and libnotify.
 
 On Ubuntu, install the following libraries:
 
@@ -20,15 +22,23 @@ $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
                        libxss1 libnss3-dev gcc-multilib g++-multilib
 ```
 
+On Fedora, install the following libraries:
+
+```bash
+$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-devel \
+                   xorg-x11-server-utils libcap-devel cups-devel libXtst-devel \
+                   alsa-lib-devel libXrandr-devel GConf2-devel nss-devel
+```
+
 Other distributions may offer similar packages for installation via package
-managers such as yum. Or one can compile from source code.
+managers such as pacman. Or one can compile from source code.
 
 ## If You Use Virtual Machines For Building
 
-If you plan to build electron on a virtual machine, you will need a fixed-size
+If you plan to build Electron on a virtual machine you will need a fixed-size
 device container of at least 25 gigabytes in size.
 
-## Getting the code
+## Getting the Code
 
 ```bash
 $ git clone https://github.com/atom/electron.git
@@ -37,8 +47,8 @@ $ git clone https://github.com/atom/electron.git
 ## Bootstrapping
 
 The bootstrap script will download all necessary build dependencies and create
-build project files. You must have Python 2.7.x for the script to succeed.
-Downloading certain files could take a long time. Notice that we are using
+the build project files. You must have Python 2.7.x for the script to succeed.
+Downloading certain files can take a long time. Notice that we are using
 `ninja` to build Electron so there is no `Makefile` generated.
 
 ```bash
@@ -48,7 +58,7 @@ $ ./script/bootstrap.py -v
 
 ### Cross compilation
 
-If you want to build for `arm` target, you should also install following
+If you want to build for an `arm` target you should also install the following
 dependencies:
 
 ```bash
@@ -82,7 +92,7 @@ $ ./script/create-dist.py
 
 This will put a working distribution with much smaller file sizes in
 the `dist` directory. After running the create-dist.py script, you
-may want to remove the 1.3+ gigabyte binary which is still in out/R.
+may want to remove the 1.3+ gigabyte binary which is still in `out/R`.
 
 You can also build the `Debug` target only:
 
@@ -102,12 +112,12 @@ $ ./script/clean.py
 
 ## Troubleshooting
 
-Make sure you have installed all the build dependencies.
+Make sure you have installed all of the build dependencies.
 
-### error while loading shared libraries: libtinfo.so.5
+### Error While Loading Shared Libraries: libtinfo.so.5
 
 Prebulit `clang` will try to link to `libtinfo.so.5`. Depending on the host
-architecture, symlink to appropriate `libncurses`
+architecture, symlink to appropriate `libncurses`:
 
 ```bash
 $ sudo ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5
@@ -115,7 +125,7 @@ $ sudo ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5
 
 ## Tests
 
-Test your changes confirm to the project coding style using:
+Test your changes conform to the project coding style using:
 
 ```bash
 $ ./script/cpplint.py

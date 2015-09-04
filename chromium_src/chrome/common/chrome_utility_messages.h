@@ -27,7 +27,7 @@
 #if defined(OS_WIN)
 // A vector of filters, each being a Tuple containing a display string (i.e.
 // "Text Files") and a filter pattern (i.e. "*.txt").
-typedef std::vector<Tuple<base::string16, base::string16>>
+typedef std::vector<base::Tuple<base::string16, base::string16>>
     GetOpenFileNameFilter;
 #endif  // OS_WIN
 

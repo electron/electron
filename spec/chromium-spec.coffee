@@ -63,6 +63,15 @@ describe 'chromium feature', ->
         b.close()
         done(if opener isnt null then undefined else opener)
 
+  describe 'window.opener.postMessage', ->
+    it 'sets source and origin correctly', (done) ->
+      b = window.open "file://#{fixtures}/pages/window-opener-postMessage.html", 'test', 'show=no'
+      window.addEventListener 'message', (event) ->
+        b.close()
+        assert.equal event.source.guestId, b.guestId
+        assert.equal event.origin, 'file://'
+        done()
+
   describe 'creating a Uint8Array under browser side', ->
     it 'does not crash', ->
       RUint8Array = remote.getGlobal 'Uint8Array'

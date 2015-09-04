@@ -4,12 +4,12 @@
 
 * Python 2.7.x. 몇몇 CentOS와 같은 배포판들은 아직도 Python 2.6.x 버전을 사용합니다. 그래서 `python -V`를 통해 버전을 확인해 줄 필요가 있습니다.
 * Node.js v0.12.x. Node를 설치하는 방법은 여러가지가 있습니다. 그중 하나는 [Node.js](http://nodejs.org) 사이트에서 소스코드를 받아 빌드하는 방법입니다.
-이렇게 하면 Node를 일반 유저로 홈 디렉터리에 설치할 수 있습니다. 또는 [NodeSource](https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories) 에서 받아올 수도 있습니다.
+이렇게 하면 Node를 일반 유저로 홈 디렉터리에 설치할 수 있습니다. 또는 [NodeSource](https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories)에서 소스 파일을 받아올 수 있습니다.
 자세한 내용은 [Node.js 설치 방법](https://github.com/joyent/node/wiki/Installation) 을 참고하세요.
 * Clang 3.4 또는 최신 버전
 * GTK+ 와 libnotify의 개발용 헤더
 
-Ubuntu를 사용하고 있다면 다음 커맨드로 설치하면 합니다:
+Ubuntu를 사용하고 있다면 다음과 같이 라이브러리를 설치해야 합니다:
 
 ```bash
 $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
@@ -18,7 +18,15 @@ $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
                        libxss1 libnss3-dev gcc-multilib g++-multilib
 ```
 
-다른 배포판의 경우 yum과 같은 패키지 매니저를 통해 패키지를 설치 할 수 있습니다. 패키지의 이름은 대부분 비슷할 것입니다.
+Fedora를 사용하고 있다면 다음과 같이 라이브러리를 설치해야 합니다:
+
+```bash
+$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-devel \
+                   xorg-x11-server-utils libcap-devel cups-devel libXtst-devel \
+                   alsa-lib-devel libXrandr-devel GConf2-devel nss-devel
+```
+
+다른 배포판의 경우 pacman 같은 패키지 매니저를 통해 패키지를 설치 할 수 있습니다. 패키지의 이름은 대부분 위 예시와 비슷할 것입니다.
 또는 소스코드를 내려받아 직접 빌드하는 방법도 있습니다.
 
 ## 가상머신을 사용하여 빌드 하는 경우
@@ -78,7 +86,7 @@ $ ./script/create-dist.py
 이 스크립트는 매우 작은 배포판을 `dist` 디렉터리에 생성합니다.
 create-dist.py 스크립트를 실행한 이후 1.3GB를 초과하는 공간을 차지하는 out/R 폴더의 실행파일 바이너리는 삭제해도 됩니다.
 
-`Debug` 타겟만 빌드 할 수도 있습니다:
+또는 `Debug` 타겟만 빌드 할 수 있습니다:
 
 ```bash
 $ ./script/build.py -c D

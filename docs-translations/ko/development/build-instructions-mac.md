@@ -34,7 +34,7 @@ $ ./script/bootstrap.py -v
 $ ./script/build.py
 ```
 
-`Debug` 타겟만 빌드 할 수도 있습니다:
+또는 `Debug` 타겟만 빌드 할 수 있습니다:
 
 ```bash
 $ ./script/build.py -c D

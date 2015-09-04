@@ -85,6 +85,7 @@
             '-Wno-deprecated-declarations',
             '-Wno-return-type',
             '-Wno-gnu-folding-constant',
+            '-Wno-shift-negative-value',
           ],
         },
         'conditions': [
@@ -99,6 +100,7 @@
               '-Wno-unused-value',
               '-Wno-deprecated-declarations',
               '-Wno-return-type',
+              '-Wno-shift-negative-value',
               # Required when building as shared library.
               '-fPIC',
             ],

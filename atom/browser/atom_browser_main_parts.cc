@@ -7,12 +7,14 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/bridge_task_runner.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/node_debugger.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/node_bindings.h"
 #include "base/command_line.h"
+#include "base/thread_task_runner_handle.h"
 #include "chrome/browser/browser_process.h"
 #include "v8/include/v8-debug.h"
 
@@ -23,6 +25,23 @@
 #include "atom/common/node_includes.h"
 
 namespace atom {
+
+namespace {
+
+const base::FilePath::CharType kStoragePartitionDirname[] = "Partitions";
+
+void GetStoragePartitionConfig(const GURL& partition,
+                               base::FilePath* partition_path,
+                               bool* in_memory,
+                               std::string* id) {
+  *in_memory = (partition.path() != "/persist");
+  net::UnescapeRule::Type flags =
+      net::UnescapeRule::SPACES | net::UnescapeRule::URL_SPECIAL_CHARS;
+  *id = net::UnescapeURLComponent(partition.query(), flags);
+  *partition_path = base::FilePath(kStoragePartitionDirname).AppendASCII(*id);
+}
+
+}  // namespace
 
 // static
 AtomBrowserMainParts* AtomBrowserMainParts::self_ = NULL;
@@ -48,6 +67,21 @@ AtomBrowserMainParts* AtomBrowserMainParts::Get() {
   return self_;
 }
 
+content::BrowserContext* AtomBrowserMainParts::GetBrowserContextForPartition(
+    const GURL& partition) {
+  std::string id;
+  bool in_memory;
+  base::FilePath partition_path;
+  GetStoragePartitionConfig(partition, &partition_path, &in_memory, &id);
+  if (browser_context_map_.contains(id))
+    return browser_context_map_.get(id);
+
+  scoped_ptr<brightray::BrowserContext> browser_context(CreateBrowserContext());
+  browser_context->Initialize(partition_path.value(), in_memory);
+  browser_context_map_.set(id, browser_context.Pass());
+  return browser_context_map_.get(id);
+}
+
 void AtomBrowserMainParts::RegisterDestructionCallback(
     const base::Closure& callback) {
   destruction_callbacks_.push_back(callback);
@@ -64,9 +98,17 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   SetDPIFromGSettings();
 #endif
 
-  // The ProxyResolverV8 has setup a complete V8 environment, in order to avoid
-  // conflicts we only initialize our V8 environment after that.
-  js_env_.reset(new JavascriptEnvironment);
+  {
+    // Temporary set the bridge_task_runner_ as current thread's task runner,
+    // so we can fool gin::PerIsolateData to use it as its task runner, instead
+    // of getting current message loop's task runner, which is null for now.
+    bridge_task_runner_ = new BridgeTaskRunner;
+    base::ThreadTaskRunnerHandle handle(bridge_task_runner_);
+
+    // The ProxyResolverV8 has setup a complete V8 environment, in order to
+    // avoid conflicts we only initialize our V8 environment after that.
+    js_env_.reset(new JavascriptEnvironment);
+  }
 
   node_bindings_->Initialize();
 

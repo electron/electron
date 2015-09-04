@@ -153,7 +153,7 @@ class Browser : public WindowListObserver {
   void OnWindowAllClosed() override;
 
   // Observers of the browser.
-  ObserverList<BrowserObserver> observers_;
+  base::ObserverList<BrowserObserver> observers_;
 
   // Whether "ready" event has been emitted.
   bool is_ready_;

@@ -33,6 +33,7 @@
 
 #include "atom/app/node_main.h"
 #include "atom/common/atom_command_line.h"
+#include "base/at_exit.h"
 #include "base/i18n/icu_util.h"
 
 #if defined(OS_WIN)
@@ -134,6 +135,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   if (env->GetVar("ATOM_SHELL_INTERNAL_RUN_AS_NODE", &node_indicator) &&
       node_indicator == "1") {
     // Now that argv conversion is done, we can finally start.
+    base::AtExitManager atexit_manager;
     base::i18n::InitializeICU();
     return atom::NodeMain(argc, argv);
   } else if (env->GetVar("ATOM_SHELL_INTERNAL_CRASH_SERVICE",
@@ -165,6 +167,7 @@ int main(int argc, const char* argv[]) {
   char* node_indicator = getenv("ATOM_SHELL_INTERNAL_RUN_AS_NODE");
   if (node_indicator != NULL && strcmp(node_indicator, "1") == 0) {
     base::i18n::InitializeICU();
+    base::AtExitManager atexit_manager;
     return atom::NodeMain(argc, const_cast<char**>(argv));
   }
 

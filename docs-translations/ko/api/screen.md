@@ -5,8 +5,8 @@
 
 `screen`은 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter)를 상속 받았습니다.
 
-한가지 주의할 점은 랜더러 / DevTools에선 이 모듈의 이름인 `screen`은 이미 DOM 속성에 `window.screen`로 존재 하므로 `screen = require('screen')`를
-사용할 수 없습니다. 밑의 예제와 같이 `atomScreen`등의 이름으로 변수 이름을 대체하여 사용해야 합니다.
+**참고:** 랜더러 / DevTools에선 이미 DOM 속성이 `window.screen`을 가지고 있으므로 `screen = require('screen')` 형식으로 모듈을 사용할 수 없습니다.
+밑의 예제와 같이 `atomScreen` 같은 이름으로 모듈 이름을 대체하여 사용해야 합니다.
 
 다음 예제는 화면 전체를 채우는 윈도우 창을 생성합니다:
 
@@ -51,43 +51,57 @@ app.on('ready', function() {
 });
 ```
 
-## Event: display-added
+## Events
+
+`screen` 모듈은 다음과 같은 이벤트를 가지고 있습니다:
+
+### Event: 'display-added'
+
+Returns:
 
 * `event` Event
 * `newDisplay` Object
 
 새로운 디스플레이가 추가되면 발생하는 이벤트입니다.
 
-## Event: display-removed
+### Event: 'display-removed'
+
+Returns:
 
 * `event` Event
 * `oldDisplay` Object
 
 기존의 디스플레이가 제거되면 발생하는 이벤트입니다.
 
-## Event: display-metrics-changed
+### Event: 'display-metrics-changed'
+
+Returns:
 
 * `event` Event
 * `display` Object
 * `changedMetrics` Array
 
-`display`의 하나 또는 다수의 매트릭스가 변경될 때 발생하는 이벤트입니다.
+`display`에서 하나 또는 다수의 매트릭스가 변경될 때 발생하는 이벤트입니다.
 `changedMetrics`는 변경에 대한 정보를 담은 문자열의 배열입니다.
 `bounds`, `workArea`, `scaleFactor`, `rotation`등이 변경될 수 있습니다.
 
-## screen.getCursorScreenPoint()
+## Methods
+
+`screen` 모듈은 다음과 같은 메서드를 가지고 있습니다:
+
+### `screen.getCursorScreenPoint()`
 
 현재 마우스 포인터의 절대 위치를 반환합니다.
 
-## screen.getPrimaryDisplay()
+### `screen.getPrimaryDisplay()`
 
 기본 디스플레이를 반환합니다.
 
-## screen.getAllDisplays()
+### `screen.getAllDisplays()`
 
 사용 가능한 모든 디스플레이를 배열로 반환합니다.
 
-## screen.getDisplayNearestPoint(point)
+### `screen.getDisplayNearestPoint(point)`
 
 * `point` Object
   * `x` Integer
@@ -95,7 +109,7 @@ app.on('ready', function() {
 
 지정한 좌표에 가까운 디스플레이를 반환합니다.
 
-## screen.getDisplayMatching(rect)
+### `screen.getDisplayMatching(rect)`
 
 * `rect` Object
   * `x` Integer

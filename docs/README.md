@@ -40,6 +40,8 @@ Modules for the main process:
 * [power-monitor](api/power-monitor.md)
 * [power-save-blocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
+* [session](api/session.md)
+* [webContents](api/web-contents.md)
 * [tray](api/tray.md)
 
 Modules for the renderer process (web page):
@@ -62,7 +64,7 @@ Modules for both processes:
 * [Source code directory structure](development/source-code-directory-structure.md)
 * [Technical differences to NW.js (formerly node-webkit)](development/atom-shell-vs-node-webkit.md)
 * [Build system overview](development/build-system-overview.md)
-* [Build instructions (Mac)](development/build-instructions-mac.md)
+* [Build instructions (Mac)](development/build-instructions-osx.md)
 * [Build instructions (Windows)](development/build-instructions-windows.md)
 * [Build instructions (Linux)](development/build-instructions-linux.md)
 * [Setting up symbol server in debugger](development/setting-up-symbol-server.md)

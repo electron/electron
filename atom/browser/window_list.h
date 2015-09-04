@@ -60,7 +60,8 @@ class WindowList {
 
   // A list of observers which will be notified of every window addition and
   // removal across all WindowLists.
-  static base::LazyInstance<ObserverList<WindowListObserver>>::Leaky observers_;
+  static base::LazyInstance<base::ObserverList<WindowListObserver>>::Leaky
+      observers_;
 
   static WindowList* instance_;
 

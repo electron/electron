@@ -16,18 +16,22 @@ app.on('ready', function() {
 });
 ```
 
-## Event: suspend
+## Events
+
+`power-monitor` 모듈은 다음과 같은 이벤트를 가지고 있습니다:
+
+## Event: `suspend`
 
 시스템이 절전모드로 진입할 때 발생하는 이벤트입니다.
 
-## Event: resume
+## Event: `resume`
 
 시스템의 절전모드가 해제될 때 발생하는 이벤트입니다.
 
-## Event: on-ac
+## Event: `on-ac`
 
 시스템이 AC 어뎁터 충전기를 사용하기 시작할 때 발생하는 이벤트입니다.
 
-## Event: on-battery
+## Event: `on-battery`
 
 시스템이 배터리를 사용하기 시작할 때 발생하는 이벤트입니다.

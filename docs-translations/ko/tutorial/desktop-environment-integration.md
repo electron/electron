@@ -24,7 +24,7 @@ var app = require('app');
 app.addRecentDocument('/Users/USERNAME/Desktop/work.type');
 ```
 
-그리고 [app.clearRecentDocuments](clearrecentdocuments) API로 최근 문서 리스트를 비울 수 있습니다:
+그리고 [app.clearRecentDocuments][clearrecentdocuments] API로 최근 문서 리스트를 비울 수 있습니다:
 
 ```javascript
 app.clearRecentDocuments();

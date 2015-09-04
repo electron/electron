@@ -22,7 +22,7 @@ gboolean FileFilterCaseInsensitive(const GtkFileFilterInfo* file_info,
   // Makes .* file extension matches all file types.
   if (*file_extension == ".*")
     return true;
-  return EndsWith(file_info->filename, *file_extension, false);
+  return base::EndsWith(file_info->filename, *file_extension, false);
 }
 
 // Deletes |data| when gtk_file_filter_add_custom() is done with it.

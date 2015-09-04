@@ -310,7 +310,7 @@ class NativeWindow : public content::WebContentsObserver,
   brightray::InspectableWebContents* inspectable_web_contents_;
 
   // Observers of this window.
-  ObserverList<NativeWindowObserver> observers_;
+  base::ObserverList<NativeWindowObserver> observers_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_;
 

@@ -27,7 +27,6 @@
 #include "third_party/WebKit/public/web/WebPluginParams.h"
 #include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebRuntimeFeatures.h"
-#include "third_party/WebKit/Source/wtf/ArrayBufferContents.h"
 
 #include "atom/common/node_includes.h"
 
@@ -50,10 +49,6 @@ bool IsSwitchEnabled(base::CommandLine* command_line,
   else
     return false;
   return true;
-}
-
-bool IsGuestFrame(blink::WebFrame* frame) {
-  return frame->uniqueName().utf8() == "ATOM_SHELL_GUEST_WEB_VIEW";
 }
 
 // global.Uint8Array;
@@ -113,8 +108,7 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
 
 AtomRendererClient::AtomRendererClient()
     : node_bindings_(NodeBindings::Create(false)),
-      atom_bindings_(new AtomBindings),
-      main_frame_(nullptr) {
+      atom_bindings_(new AtomBindings) {
 }
 
 AtomRendererClient::~AtomRendererClient() {
@@ -189,14 +183,9 @@ bool AtomRendererClient::OverrideCreatePlugin(
 void AtomRendererClient::DidCreateScriptContext(
     blink::WebFrame* frame,
     v8::Handle<v8::Context> context) {
-  // Only attach node bindings in main frame or guest frame.
-  if (!IsGuestFrame(frame)) {
-    if (main_frame_)
-      return;
-
-    // The first web frame is the main frame.
-    main_frame_ = frame;
-  }
+  // Only insert node integration for the main frame.
+  if (frame->parent())
+    return;
 
   // Give the node loop a run to make sure everything is ready.
   node_bindings_->RunMessageLoop();
@@ -215,20 +204,17 @@ void AtomRendererClient::DidCreateScriptContext(
   node_bindings_->LoadEnvironment(env);
 }
 
-bool AtomRendererClient::ShouldFork(blink::WebFrame* frame,
+bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
                                     const GURL& url,
                                     const std::string& http_method,
                                     bool is_initial_navigation,
                                     bool is_server_redirect,
                                     bool* send_referrer) {
-  // Never fork renderer process for guests.
-  if (IsGuestFrame(frame))
-    return false;
-
   // Handle all the navigations and reloads in browser.
   // FIXME We only support GET here because http method will be ignored when
   // the OpenURLFromTab is triggered, which means form posting would not work,
   // we should solve this by patching Chromium in future.
+  *send_referrer = true;
   return http_method == "GET";
 }
 
