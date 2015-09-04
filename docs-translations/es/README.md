@@ -1,12 +1,12 @@
 ## Guías
 
-* [Distribución de aplicaciones](tutorial/application-distribution-es.md)
-* [Empaquetamiento de aplicaciones](tutorial/application-packaging-es.md)
-* [Utilizando módulos nativos](tutorial/using-native-node-modules-es.md)
-* [Depurando el proceso principal](tutorial/debugging-main-process-es.md)
-* [Utilizando Selenium y WebDriver](tutorial/using-selenium-and-webdriver-es.md)
-* [Extensión DevTools](tutorial/devtools-extension-es.md)
-* [Utilizando el plugin pepper flash](tutorial/using-pepper-flash-plugin-es.md)
+* [Distribución de aplicaciones](tutorial/application-distribution.md)
+* [Empaquetamiento de aplicaciones](tutorial/application-packaging.md)
+* [Utilizando módulos nativos](tutorial/using-native-node-modules.md)
+* [Depurando el proceso principal](tutorial/debugging-main-process.md)
+* [Utilizando Selenium y WebDriver](tutorial/using-selenium-and-webdriver.md)
+* [Extensión DevTools](tutorial/devtools-extension.md)
+* [Utilizando el plugin pepper flash](tutorial/using-pepper-flash-plugin.md)
 
 ## Tutoriales
 
