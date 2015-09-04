@@ -7,12 +7,14 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/bridge_task_runner.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/node_debugger.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/node_bindings.h"
 #include "base/command_line.h"
+#include "base/thread_task_runner_handle.h"
 #include "chrome/browser/browser_process.h"
 #include "v8/include/v8-debug.h"
 
@@ -64,9 +66,17 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   SetDPIFromGSettings();
 #endif
 
-  // The ProxyResolverV8 has setup a complete V8 environment, in order to avoid
-  // conflicts we only initialize our V8 environment after that.
-  js_env_.reset(new JavascriptEnvironment);
+  {
+    // Temporary set the bridge_task_runner_ as current thread's task runner,
+    // so we can fool gin::PerIsolateData to use it as its task runner, instead
+    // of getting current message loop's task runner, which is null for now.
+    bridge_task_runner_ = new BridgeTaskRunner;
+    base::ThreadTaskRunnerHandle handle(bridge_task_runner_);
+
+    // The ProxyResolverV8 has setup a complete V8 environment, in order to
+    // avoid conflicts we only initialize our V8 environment after that.
+    js_env_.reset(new JavascriptEnvironment);
+  }
 
   node_bindings_->Initialize();
 

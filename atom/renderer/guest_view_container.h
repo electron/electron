@@ -28,12 +28,15 @@ class GuestViewContainer : public content::BrowserPluginDelegate {
   // content::BrowserPluginDelegate:
   void SetElementInstanceID(int element_instance_id) final;
   void DidResizeElement(const gfx::Size& new_size) final;
+  base::WeakPtr<BrowserPluginDelegate> GetWeakPtr() final;
 
  private:
   int element_instance_id_;
   content::RenderFrame* render_frame_;
 
   ResizeCallback element_resize_callback_;
+
+  base::WeakPtrFactory<GuestViewContainer> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(GuestViewContainer);
 };

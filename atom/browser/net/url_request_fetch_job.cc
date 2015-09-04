@@ -23,7 +23,7 @@ namespace {
 
 // Convert string to RequestType.
 net::URLFetcher::RequestType GetRequestType(const std::string& raw) {
-  std::string method = StringToUpperASCII(raw);
+  std::string method = base::StringToUpperASCII(raw);
   if (method.empty() || method == "GET")
     return net::URLFetcher::GET;
   else if (method == "POST")
