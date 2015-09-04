@@ -2,8 +2,8 @@
 
 * [應用程式發布](tutorial/application-distribution.md)
 * [應用程式打包](tutorial/application-packaging.md)
-* [使用原生模組](tutorial/using-native-node-modules.md)
-* [Debug 主行程](tutorial/debugging-main-process.md)
+* [使用原生 node 模組](tutorial/using-native-node-modules.md)
+* [主行程 Debug](tutorial/debugging-main-process.md)
 * [使用 Selenium 和 WebDriver](tutorial/using-selenium-and-webdriver.md)
 * [DevTools 擴充](tutorial/devtools-extension.md)
 * [使用 Pepper Flash 套件](tutorial/using-pepper-flash-plugin.md)
@@ -22,7 +22,7 @@
 
 客製的 DOM 元素:
 
-* [`File`對象](api/file-object.md)
+* [`File`物件](api/file-object.md)
 * [`<webview>`物件](api/web-view-tag.md)
 * [`window.open`函數](api/window-open.md)
 
