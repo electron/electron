@@ -445,7 +445,7 @@ page can handle it by listening to the `channel` event of the `ipc` module.
 An example of sending messages from the main process to the renderer process:
 
 ```javascript
-// On the main process.
+// In the main process.
 var window = null;
 app.on('ready', function() {
   window = new BrowserWindow({width: 800, height: 600});
@@ -472,6 +472,6 @@ app.on('ready', function() {
 **Note:**
 
 1. The IPC message handler in web pages does not have an `event` parameter,
-   which is different from the handlers on the main process.
+   which is different from the handlers in the main process.
 2. There is no way to send synchronous messages from the main process to a
    renderer process, because it would be very easy to cause dead locks.

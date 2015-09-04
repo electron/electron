@@ -25,6 +25,7 @@ These are the ways that we construct the Electron documentation.
 - Line length is 80-column wrapped.
 - Platform specific methods are noted in italics following method header.
  - ```### `method(foo, bar)` _OS X_```
+- Prefer 'in the ___ process' over 'on'
 
 ## Reading Electron Documentation
 
