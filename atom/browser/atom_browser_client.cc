@@ -15,6 +15,7 @@
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/browser/web_view_constants.h"
 #include "atom/browser/window_list.h"
@@ -169,7 +170,7 @@ void AtomBrowserClient::OverrideWebkitPrefs(
 
   NativeWindow* window = NativeWindow::FromWebContents(web_contents);
   if (window)
-    window->OverrideWebkitPrefs(prefs);
+    WebContentsPreferences::OverrideWebkitPrefs(web_contents, prefs);
 }
 
 std::string AtomBrowserClient::GetApplicationLocale() {
@@ -231,6 +232,8 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 
   if (owner == OWNER_NATIVE_WINDOW) {
     window->AppendExtraCommandLineSwitches(command_line);
+    WebContentsPreferences::AppendExtraCommandLineSwitches(
+        window->web_contents(), command_line);
   } else if (owner == OWNER_GUEST_WEB_CONTENTS) {
     command_line->AppendSwitchASCII(
         switches::kGuestInstanceID, base::IntToString(info.guest_instance_id));

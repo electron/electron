@@ -31,8 +31,6 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/common/content_switches.h"
-#include "content/public/common/renderer_preferences.h"
-#include "content/public/common/web_preferences.h"
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/codec/png_codec.h"
@@ -380,34 +378,6 @@ void NativeWindow::AppendExtraCommandLineSwitches(
   if (zoom_factor_ != 1.0)
     command_line->AppendSwitchASCII(switches::kZoomFactor,
                                     base::DoubleToString(zoom_factor_));
-}
-
-void NativeWindow::OverrideWebkitPrefs(content::WebPreferences* prefs) {
-  if (web_preferences_.IsEmpty())
-    return;
-
-  bool b;
-  if (web_preferences_.Get("javascript", &b))
-    prefs->javascript_enabled = b;
-  if (web_preferences_.Get("images", &b))
-    prefs->images_enabled = b;
-  if (web_preferences_.Get("java", &b))
-    prefs->java_enabled = b;
-  if (web_preferences_.Get("text-areas-are-resizable", &b))
-    prefs->text_areas_are_resizable = b;
-  if (web_preferences_.Get("webgl", &b))
-    prefs->experimental_webgl_enabled = b;
-  if (web_preferences_.Get("webaudio", &b))
-    prefs->webaudio_enabled = b;
-  if (web_preferences_.Get("web-security", &b)) {
-    prefs->web_security_enabled = b;
-    prefs->allow_displaying_insecure_content = !b;
-    prefs->allow_running_insecure_content = !b;
-  }
-  if (web_preferences_.Get("allow-displaying-insecure-content", &b))
-    prefs->allow_displaying_insecure_content = b;
-  if (web_preferences_.Get("allow-running-insecure-content", &b))
-    prefs->allow_running_insecure_content = b;
 }
 
 void NativeWindow::NotifyWindowClosed() {

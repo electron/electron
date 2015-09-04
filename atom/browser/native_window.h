@@ -35,7 +35,6 @@ class InspectableWebContents;
 
 namespace content {
 struct NativeWebKeyboardEvent;
-struct WebPreferences;
 }
 
 namespace gfx {
@@ -191,7 +190,6 @@ class NativeWindow : public content::WebContentsObserver,
 
   // Called when renderer process is going to be started.
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line);
-  void OverrideWebkitPrefs(content::WebPreferences* prefs);
 
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
