@@ -131,6 +131,24 @@ page is loaded, use the `setUserAgent` method to change the user agent.
 
 If "on", the guest page will have web security disabled.
 
+### partition
+
+```html
+<webview src="https://github.com" partition="persist:github"></webview>
+<webview src="http://electron.atom.io" partition="electron"></webview>
+```
+
+Sets the storage partition used by the `webview`. If the storage partition ID starts with `persist:`,
+the `webview` will use a persistent storage partition available to all `webview` in the app with
+the same storage partition ID. if there is no `persist:` prefix, the `webview` will
+use an in-memory storage partition. By assigning the same partition ID, multiple `webview`
+can share the same storage partition. If the storage partition ID is unset then default storage
+of the app will be used.
+
+This value can only be modified before the first navigation, since the storage partition of an active
+renderer process cannot change. Subsequent attempts to modify the value will fail with a
+DOM exception.
+
 ## Methods
 
 The `webview` tag has the following methods:
