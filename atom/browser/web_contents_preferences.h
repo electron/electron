@@ -8,6 +8,10 @@
 #include "base/values.h"
 #include "content/public/browser/web_contents_user_data.h"
 
+namespace base {
+class CommandLine;
+}
+
 namespace atom {
 
 // Stores and applies the preferences of WebContents.
@@ -16,6 +20,10 @@ class WebContentsPreferences
  public:
   // Get the preferences of |web_contents|.
   static WebContentsPreferences* From(content::WebContents* web_contents);
+
+  // Append command paramters appending to |web_contents|'s preferences.
+  static void AppendExtraCommandLineSwitches(
+      content::WebContents* web_contents, base::CommandLine* command_line);
 
   WebContentsPreferences(content::WebContents* web_contents,
                          base::DictionaryValue&& web_preferences);

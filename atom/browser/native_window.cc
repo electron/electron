@@ -43,10 +43,6 @@
 #include "ui/gfx/screen.h"
 #include "ui/gl/gpu_switching_manager.h"
 
-#if defined(OS_WIN)
-#include "ui/gfx/switches.h"
-#endif
-
 using content::NavigationEntry;
 using content::RenderWidgetHostView;
 using content::RenderWidgetHost;
@@ -56,17 +52,6 @@ DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
 namespace atom {
 
 namespace {
-
-// Array of available web runtime features.
-const char* kWebRuntimeFeatures[] = {
-  switches::kExperimentalFeatures,
-  switches::kExperimentalCanvasFeatures,
-  switches::kSubpixelFontScaling,
-  switches::kOverlayScrollbars,
-  switches::kOverlayFullscreenVideo,
-  switches::kSharedWorker,
-  switches::kPageVisibility,
-};
 
 // Convert draggable regions in raw format to SkRegion format. Caller is
 // responsible for deleting the returned SkRegion instance.
@@ -395,28 +380,6 @@ void NativeWindow::AppendExtraCommandLineSwitches(
   if (zoom_factor_ != 1.0)
     command_line->AppendSwitchASCII(switches::kZoomFactor,
                                     base::DoubleToString(zoom_factor_));
-
-  if (web_preferences_.IsEmpty())
-    return;
-
-  bool b;
-#if defined(OS_WIN)
-  // Check if DirectWrite is disabled.
-  if (web_preferences_.Get(switches::kDirectWrite, &b) && !b)
-    command_line->AppendSwitch(::switches::kDisableDirectWrite);
-#endif
-
-  // Check if plugins are enabled.
-  if (web_preferences_.Get("plugins", &b) && b)
-    command_line->AppendSwitch(switches::kEnablePlugins);
-
-  // This set of options are not availabe in WebPreferences, so we have to pass
-  // them via command line and enable them in renderer procss.
-  for (size_t i = 0; i < arraysize(kWebRuntimeFeatures); ++i) {
-    const char* feature = kWebRuntimeFeatures[i];
-    if (web_preferences_.Get(feature, &b))
-      command_line->AppendSwitchASCII(feature, b ? "true" : "false");
-  }
 }
 
 void NativeWindow::OverrideWebkitPrefs(content::WebPreferences* prefs) {
