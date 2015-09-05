@@ -160,7 +160,7 @@ describe '<webview> tag', ->
         assert.equal e.message, 'undefined undefined undefined undefined'
         done()
       webview.src = "file://#{fixtures}/pages/c.html"
-      webview.partition = "test"
+      webview.partition = 'test1'
       document.body.appendChild webview
 
     it 'inserts node symbols when set', (done) ->
@@ -169,7 +169,7 @@ describe '<webview> tag', ->
         done()
       webview.setAttribute 'nodeintegration', 'on'
       webview.src = "file://#{fixtures}/pages/d.html"
-      webview.partition = "test"
+      webview.partition = 'test2'
       document.body.appendChild webview
 
     it 'isolates storage for different id', (done) ->
@@ -180,7 +180,7 @@ describe '<webview> tag', ->
       window.localStorage.setItem 'test', 'one'
       webview.addEventListener 'console-message', listener
       webview.src = "file://#{fixtures}/pages/partition/one.html"
-      webview.partition = "test"
+      webview.partition = 'test3'
       document.body.appendChild webview
 
     it 'uses current session storage when no id is provided', (done) ->
