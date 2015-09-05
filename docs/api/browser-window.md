@@ -48,8 +48,6 @@ Properties `width` and `height` are required.
 * `fullscreen` Boolean - Whether the window should show in fullscreen. When
   set to `false` the fullscreen button will also be hidden on OS X.
 * `skip-taskbar` Boolean - Whether to show the window in taskbar.
-* `zoom-factor` Number - The default zoom factor of the page, `3.0` represents
-`300%`.
 * `kiosk` Boolean - The kiosk mode.
 * `title` String - Default window title.
 * `icon` [NativeImage](native-image.md) - The window icon, when omitted on
@@ -57,8 +55,6 @@ Properties `width` and `height` are required.
 * `show` Boolean - Whether window should be shown when created.
 * `frame` Boolean - Specify `false` to create a
 [Frameless Window](frameless-window.md).
-* `node-integration` Boolean - Whether node integration is enabled. Default
-  is `true`.
 * `accept-first-mouse` Boolean - Whether the web view accepts a single
   mouse-down event that simultaneously activates the window.
 * `disable-auto-hide-cursor` Boolean - Whether to hide cursor when typing.
@@ -68,10 +64,6 @@ Properties `width` and `height` are required.
   than screen.
 * `dark-theme` Boolean - Forces using dark theme for the window, only works on
   some GTK+3 desktop environments.
-* `preload` String - Specifies a script that will be loaded before other
-  scripts run in the window. This script will always have access to node APIs
-  no matter whether node integration is turned on for the window, and the path
-  of `preload` script has to be absolute path.
 * `transparent` Boolean - Makes the window [transparent](frameless-window.md).
 * `type` String - Specifies the type of the window, possible types are
   `desktop`, `dock`, `toolbar`, `splash`, `notification`. This only works on
@@ -79,11 +71,25 @@ Properties `width` and `height` are required.
 * `standard-window` Boolean - Uses the OS X's standard window instead of the
   textured window. Defaults to `true`.
 * `web-preferences` Object - Settings of web page's features, properties:
+  * `node-integration` Boolean - Whether node integration is enabled. Default
+    is `true`.
+  * `preload` String - Specifies a script that will be loaded before other
+    scripts run in the page. This script will always have access to node APIs
+    no matter whether node integration is turned on for the page, and the path
+    of `preload` script has to be absolute path.
+  * `partition` String - Sets the session used by the page. If `partition`
+    starts with `persist:`, the page will use a persistent session available to
+    all pages in the app with the same `partition`. if there is no `persist:`
+    prefix, the page will use an in-memory session. By assigning the same
+    `partition`, multiple pages can share the same session. If the `partition`
+    is unset then default session of the app will be used.
+  * `zoom-factor` Number - The default zoom factor of the page, `3.0` represents
+    `300%`.
   * `javascript` Boolean
   * `web-security` Boolean - When setting `false`, it will disable the
-    same-origin policy (Usually using testing websites by people), and set `allow_displaying_insecure_content`
-    and `allow_running_insecure_content` to `true` if these two options are not
-    set by user.
+    same-origin policy (Usually using testing websites by people), and set
+    `allow_displaying_insecure_content` and `allow_running_insecure_content` to
+    `true` if these two options are not set by user.
   * `allow-displaying-insecure-content` Boolean - Allow an https page to display
     content like images from http URLs.
   * `allow-running-insecure-content` Boolean - Allow a https page to run
