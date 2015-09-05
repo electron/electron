@@ -128,7 +128,7 @@ app.on('ready', function() {
 
 ### electron-prebuilt
 
-`npm`을 통해 `electron-prebuilt` 패키지를 전역에 설치하면 간단한 명령으로 앱을 실행해 볼 수 있습니다.
+`npm`을 통해 `electron-prebuilt` 패키지를 전역에 설치하면 간단한 명령으로 앱을 실행할 수 있습니다.
 
 앱 디렉터리 내에서 이렇게 실행합니다:
 
