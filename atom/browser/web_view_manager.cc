@@ -5,13 +5,12 @@
 #include "atom/browser/web_view_manager.h"
 
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_browser_main_parts.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
 
 namespace atom {
 
-WebViewManager::WebViewManager(content::BrowserContext* context) {
+WebViewManager::WebViewManager() {
 }
 
 WebViewManager::~WebViewManager() {
@@ -21,7 +20,6 @@ void WebViewManager::AddGuest(int guest_instance_id,
                               int element_instance_id,
                               content::WebContents* embedder,
                               content::WebContents* web_contents) {
-  base::AutoLock auto_lock(lock_);
   web_contents_embedder_map_[guest_instance_id] = { web_contents, embedder };
 
   // Map the element in embedder to guest.
@@ -31,7 +29,6 @@ void WebViewManager::AddGuest(int guest_instance_id,
 }
 
 void WebViewManager::RemoveGuest(int guest_instance_id) {
-  base::AutoLock auto_lock(lock_);
   if (!ContainsKey(web_contents_embedder_map_, guest_instance_id))
     return;
 

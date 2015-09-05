@@ -37,6 +37,9 @@ class WebContentsPreferences
                          base::DictionaryValue&& web_preferences);
   ~WebContentsPreferences() override;
 
+  // $.extend(|web_preferences_|, |new_web_preferences|).
+  void Merge(const base::DictionaryValue& new_web_preferences);
+
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
 

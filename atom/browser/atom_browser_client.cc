@@ -16,8 +16,6 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_contents_preferences.h"
-#include "atom/browser/web_view_manager.h"
-#include "atom/browser/web_view_constants.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -55,37 +53,6 @@ bool g_suppress_renderer_process_restart = false;
 
 // Custom schemes to be registered to standard.
 std::string g_custom_schemes = "";
-
-// Find out the owner of the child process according to |process_id|.
-enum ProcessOwner {
-  OWNER_NATIVE_WINDOW,
-  OWNER_GUEST_WEB_CONTENTS,
-  OWNER_NONE,  // it might be devtools though.
-};
-
-ProcessOwner GetProcessOwner(int process_id,
-                             NativeWindow** window,
-                             WebViewManager::WebViewInfo* info) {
-  content::WebContents* web_contents = content::WebContents::FromRenderViewHost(
-      content::RenderViewHost::FromID(process_id, kDefaultRoutingID));
-  if (!web_contents)
-    return OWNER_NONE;
-
-  // First search for NativeWindow.
-  *window = NativeWindow::FromWebContents(web_contents);
-  if (*window)
-    return OWNER_NATIVE_WINDOW;
-
-  // Then search for guest WebContents.
-  auto data = static_cast<WebViewManager::WebViewInfoUserData*>(
-      web_contents->GetUserData(web_view::kWebViewInfoKeyName));
-  if (data) {
-    *info = data->web_view_info();
-    return OWNER_GUEST_WEB_CONTENTS;
-  }
-
-  return OWNER_NONE;
-}
 
 scoped_refptr<net::X509Certificate> ImportCertFromFile(
     const base::FilePath& path) {
@@ -162,16 +129,7 @@ void AtomBrowserClient::OverrideWebkitPrefs(
 
   // Custom preferences of guest page.
   auto web_contents = content::WebContents::FromRenderViewHost(host);
-  auto info = static_cast<WebViewManager::WebViewInfoUserData*>(
-      web_contents->GetUserData(web_view::kWebViewInfoKeyName));
-  if (info) {
-    prefs->web_security_enabled = !info->web_view_info().disable_web_security;
-    return;
-  }
-
-  NativeWindow* window = NativeWindow::FromWebContents(web_contents);
-  if (window)
-    WebContentsPreferences::OverrideWebkitPrefs(web_contents, prefs);
+  WebContentsPreferences::OverrideWebkitPrefs(web_contents, prefs);
 }
 
 std::string AtomBrowserClient::GetApplicationLocale() {
@@ -227,24 +185,14 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   if (ContainsKey(pending_processes_, process_id))
     process_id = pending_processes_[process_id];
 
-  NativeWindow* window;
-  WebViewManager::WebViewInfo info;
-  ProcessOwner owner = GetProcessOwner(process_id, &window, &info);
+  // Get the WebContents of the render process.
+  content::WebContents* web_contents = content::WebContents::FromRenderViewHost(
+      content::RenderViewHost::FromID(process_id, kDefaultRoutingID));
+  if (!web_contents)
+    return;
 
-  if (owner == OWNER_NATIVE_WINDOW) {
-    WebContentsPreferences::AppendExtraCommandLineSwitches(
-        window->web_contents(), command_line);
-  } else if (owner == OWNER_GUEST_WEB_CONTENTS) {
-    command_line->AppendSwitchASCII(
-        switches::kGuestInstanceID, base::IntToString(info.guest_instance_id));
-    command_line->AppendSwitchASCII(
-        switches::kNodeIntegration, info.node_integration ? "true" : "false");
-    if (info.plugins)
-      command_line->AppendSwitch(switches::kEnablePlugins);
-    if (!info.preload_script.empty())
-      command_line->AppendSwitchPath(
-          switches::kPreloadScript, info.preload_script);
-  }
+  WebContentsPreferences::AppendExtraCommandLineSwitches(
+      web_contents, command_line);
 }
 
 void AtomBrowserClient::DidCreatePpapiPlugin(

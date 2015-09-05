@@ -132,12 +132,14 @@ attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
     return unless guestInstances[oldGuestInstanceId]?
     destroyGuest embedder, oldGuestInstanceId
 
-  webViewManager.addGuest guestInstanceId, elementInstanceId, embedder, guest,
-    nodeIntegration: params.nodeintegration
-    plugins: params.plugins
-    disableWebSecurity: params.disablewebsecurity
-    preloadUrl: params.preload ? ''
-    partitionId: getPartitionId(params.partition)
+  webPreferences =
+    'guest-instance-id': guestInstanceId
+    'node-integration': params.nodeintegration ? false
+    'plugins': params.plugins
+    'web-security': !params.disablewebsecurity
+  webPreferences['preload-url'] = params.preload if params.preload
+  webPreferences['partition'] = getPartitionId(params.partition) if params.partition
+  webViewManager.addGuest guestInstanceId, elementInstanceId, embedder, guest, webPreferences
 
   guest.attachParams = params
   embedderElementsMap[key] = guestInstanceId

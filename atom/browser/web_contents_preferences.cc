@@ -44,6 +44,10 @@ WebContentsPreferences::WebContentsPreferences(
 WebContentsPreferences::~WebContentsPreferences() {
 }
 
+void WebContentsPreferences::Merge(const base::DictionaryValue& extend) {
+  web_preferences_.MergeDictionary(&extend);
+}
+
 // static
 WebContentsPreferences* WebContentsPreferences::From(
     content::WebContents* web_contents) {
@@ -55,7 +59,9 @@ WebContentsPreferences* WebContentsPreferences::From(
 void WebContentsPreferences::AppendExtraCommandLineSwitches(
     content::WebContents* web_contents, base::CommandLine* command_line) {
   WebContentsPreferences* self = From(web_contents);
-  CHECK(self);
+  if (!self)
+    return;
+
   base::DictionaryValue& web_preferences = self->web_preferences_;
 
   bool b;
@@ -110,12 +116,21 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
       zoom_factor != 1.0)
     command_line->AppendSwitchASCII(switches::kZoomFactor,
                                     base::DoubleToString(zoom_factor));
+
+  // --guest-instance-id, which is used to identify guest WebContents.
+  int guest_instance_id;
+  if (web_preferences.GetInteger(switches::kGuestInstanceID,
+                                 &guest_instance_id))
+      command_line->AppendSwitchASCII(switches::kGuestInstanceID,
+                                      base::IntToString(guest_instance_id));
 }
 
+// static
 void WebContentsPreferences::OverrideWebkitPrefs(
     content::WebContents* web_contents, content::WebPreferences* prefs) {
   WebContentsPreferences* self = From(web_contents);
-  CHECK(self);
+  if (!self)
+    return;
 
   bool b;
   if (self->web_preferences_.GetBoolean("javascript", &b))

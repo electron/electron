@@ -150,7 +150,7 @@ AtomBrowserContext::GetDownloadManagerDelegate() {
 
 content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
   if (!guest_manager_)
-    guest_manager_.reset(new WebViewManager(this));
+    guest_manager_.reset(new WebViewManager);
   return guest_manager_.get();
 }
 
