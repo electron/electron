@@ -23,8 +23,7 @@ class BrowserContext : public content::BrowserContext,
   BrowserContext();
   ~BrowserContext();
 
-  virtual void Initialize(const std::string& partition_path,
-                          bool in_memory = false);
+  void Initialize(const std::string& partition, bool in_memory = false);
 
   // content::BrowserContext:
   scoped_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(

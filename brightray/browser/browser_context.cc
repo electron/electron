@@ -16,9 +16,11 @@
 #include "base/prefs/pref_registry_simple.h"
 #include "base/prefs/pref_service.h"
 #include "base/prefs/pref_service_factory.h"
+#include "base/strings/string_util.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_context.h"
 #include "content/public/browser/storage_partition.h"
+#include "net/base/escape.h"
 #include "net/ssl/client_cert_store.h"
 
 #if defined(USE_NSS_CERTS)
@@ -32,6 +34,15 @@
 using content::BrowserThread;
 
 namespace brightray {
+
+namespace {
+
+// Convert string to lower case and escape it.
+std::string MakePartitionName(const std::string& input) {
+  return net::EscapePath(base::StringToLowerASCII(input));
+}
+
+}  // namespace
 
 class BrowserContext::ResourceContext : public content::ResourceContext {
  public:
@@ -66,19 +77,22 @@ class BrowserContext::ResourceContext : public content::ResourceContext {
   URLRequestContextGetter* getter_;
 };
 
-BrowserContext::BrowserContext() : resource_context_(new ResourceContext) {
+BrowserContext::BrowserContext()
+    : in_memory_(false),
+      resource_context_(new ResourceContext) {
 }
 
-void BrowserContext::Initialize(const std::string& partition_path, bool in_memory) {
+void BrowserContext::Initialize(const std::string& partition, bool in_memory) {
   if (!PathService::Get(DIR_USER_DATA, &path_)) {
     PathService::Get(DIR_APP_DATA, &path_);
     path_ = path_.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
     PathService::Override(DIR_USER_DATA, path_);
   }
 
-  if (!partition_path.empty())
-    path_ = path_.Append(base::FilePath::FromUTF8Unsafe(partition_path));
   in_memory_ = in_memory;
+  if (!in_memory && !partition.empty())
+    path_ = path_.Append(FILE_PATH_LITERAL("Partitions"))
+                 .Append(base::FilePath::FromUTF8Unsafe(MakePartitionName(partition)));
 
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
   base::PrefServiceFactory prefs_factory;
