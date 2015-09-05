@@ -156,30 +156,36 @@ WebContents::WebContents(content::WebContents* web_contents)
 
 WebContents::WebContents(v8::Isolate* isolate,
                          const mate::Dictionary& options) {
+  // Whether it is a guest WebContents.
   bool is_guest = false;
   options.Get("isGuest", &is_guest);
-
   type_ = is_guest ? WEB_VIEW : BROWSER_WINDOW;
 
-  // TODO(zcbenz): Use host's BrowserContext when no partition is specified.
-  content::BrowserContext* browser_context =
-      AtomBrowserMainParts::Get()->browser_context();
+  // Obtain the session.
+  std::string partition;
+  mate::Handle<api::Session> session;
+  if (options.Get("session", &session)) {
+  } else if (options.Get("partition", &partition)) {
+    bool in_memory = true;
+    options.Get("inMemory", &in_memory);
+    session = Session::FromPartition(isolate, partition, in_memory);
+  } else {
+    // Use the default session if not specified.
+    session = Session::FromPartition(isolate, "", false);
+  }
+  session_.Reset(isolate, session.ToV8());
+
   content::WebContents* web_contents;
   if (is_guest) {
-    std::string partition;
-    bool in_memory = false;
-    options.Get("partition", &partition);
-    options.Get("inMemory", &in_memory);
-    if (!partition.empty())
-      browser_context = brightray::BrowserContext::From(partition, in_memory);
     content::SiteInstance* site_instance = content::SiteInstance::CreateForURL(
-        browser_context, GURL("chrome-guest://fake-host"));
-    content::WebContents::CreateParams params(browser_context, site_instance);
+        session->browser_context(), GURL("chrome-guest://fake-host"));
+    content::WebContents::CreateParams params(
+        session->browser_context(), site_instance);
     guest_delegate_.reset(new WebViewGuestDelegate);
     params.guest_delegate = guest_delegate_.get();
     web_contents = content::WebContents::Create(params);
   } else {
-    content::WebContents::CreateParams params(browser_context);
+    content::WebContents::CreateParams params(session->browser_context());
     web_contents = content::WebContents::Create(params);
   }
 
@@ -496,6 +502,7 @@ void WebContents::NavigationEntryCommitted(
 }
 
 void WebContents::Destroy() {
+  session_.Reset();
   if (type_ == WEB_VIEW && managed_web_contents()) {
     // When force destroying the "destroyed" event is not emitted.
     WebContentsDestroyed();
@@ -658,10 +665,6 @@ void WebContents::InspectServiceWorker() {
 }
 
 v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
-  if (session_.IsEmpty()) {
-    auto handle = Session::CreateFrom(isolate, GetBrowserContext());
-    session_.Reset(isolate, handle.ToV8());
-  }
   return v8::Local<v8::Value>::New(isolate, session_);
 }
 

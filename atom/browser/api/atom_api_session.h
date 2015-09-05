@@ -37,7 +37,11 @@ class Session: public mate::TrackableObject<Session>,
   static mate::Handle<Session> CreateFrom(
       v8::Isolate* isolate, AtomBrowserContext* browser_context);
 
-  AtomBrowserContext* browser_context() const { return browser_context_; }
+  // Gets the Session of |partition| and |in_memory|.
+  static mate::Handle<Session> FromPartition(
+      v8::Isolate* isolate, const std::string& partition, bool in_memory);
+
+  AtomBrowserContext* browser_context() const { return browser_context_.get(); }
 
  protected:
   explicit Session(AtomBrowserContext* browser_context);
@@ -61,7 +65,7 @@ class Session: public mate::TrackableObject<Session>,
 
   v8::Global<v8::Value> cookies_;
 
-  AtomBrowserContext* browser_context_;  // weak ref
+  scoped_refptr<AtomBrowserContext> browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(Session);
 };

@@ -241,7 +241,7 @@ Session::Session(AtomBrowserContext* browser_context)
 
 Session::~Session() {
   auto download_manager =
-      content::BrowserContext::GetDownloadManager(browser_context_);
+      content::BrowserContext::GetDownloadManager(browser_context());
   download_manager->RemoveObserver(this);
 }
 
@@ -258,7 +258,7 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
 }
 
 void Session::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
-  new ResolveProxyHelper(browser_context_, url, callback);
+  new ResolveProxyHelper(browser_context(), url, callback);
 }
 
 void Session::ClearCache(const net::CompletionCallback& callback) {
@@ -279,7 +279,7 @@ void Session::ClearStorageData(mate::Arguments* args) {
   }
 
   auto storage_partition =
-      content::BrowserContext::GetStoragePartition(browser_context_, nullptr);
+      content::BrowserContext::GetStoragePartition(browser_context(), nullptr);
   storage_partition->ClearData(
       options.storage_types, options.quota_types, options.origin,
       content::StoragePartition::OriginMatcherFunction(),
@@ -300,7 +300,7 @@ void Session::SetDownloadPath(const base::FilePath& path) {
 
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
-    auto handle = atom::api::Cookies::Create(isolate, browser_context_);
+    auto handle = atom::api::Cookies::Create(isolate, browser_context());
     cookies_.Reset(isolate, handle.ToV8());
   }
   return v8::Local<v8::Value>::New(isolate, cookies_);
@@ -319,8 +319,7 @@ mate::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
 
 // static
 mate::Handle<Session> Session::CreateFrom(
-    v8::Isolate* isolate,
-    AtomBrowserContext* browser_context) {
+    v8::Isolate* isolate, AtomBrowserContext* browser_context) {
   auto existing = TrackableObject::FromWrappedClass(isolate, browser_context);
   if (existing)
     return mate::CreateHandle(isolate, static_cast<Session*>(existing));
@@ -328,6 +327,14 @@ mate::Handle<Session> Session::CreateFrom(
   auto handle = mate::CreateHandle(isolate, new Session(browser_context));
   g_wrap_session.Run(handle.ToV8());
   return handle;
+}
+
+// static
+mate::Handle<Session> Session::FromPartition(
+    v8::Isolate* isolate, const std::string& partition, bool in_memory) {
+  auto browser_context = brightray::BrowserContext::From(partition, in_memory);
+  return CreateFrom(isolate,
+                    static_cast<AtomBrowserContext*>(browser_context.get()));
 }
 
 void SetWrapSession(const WrapSessionCallback& callback) {
@@ -348,6 +355,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
+  dict.SetMethod("fromPartition", &atom::api::Session::FromPartition);
   dict.SetMethod("_setWrapSession", &atom::api::SetWrapSession);
   dict.SetMethod("_clearWrapSession", &atom::api::ClearWrapSession);
 }
