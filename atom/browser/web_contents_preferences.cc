@@ -8,7 +8,7 @@
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
 #include "content/public/common/web_preferences.h"
-#include "storage/common/fileapi/file_system_util.h"  // IsAbsolute
+#include "net/base/filename_util.h"
 
 #if defined(OS_WIN)
 #include "ui/gfx/switches.h"
@@ -90,10 +90,19 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
 
   // The preload script.
   base::FilePath::StringType preload;
-  if (web_preferences.GetString(switches::kPreloadScript, &preload) &&
-      !preload.empty() &&
-      base::FilePath(preload).IsAbsolute())
-    command_line->AppendSwitchNative(switches::kPreloadScript, preload);
+  if (web_preferences.GetString(switches::kPreloadScript, &preload)) {
+    if (base::FilePath(preload).IsAbsolute())
+      command_line->AppendSwitchNative(switches::kPreloadScript, preload);
+    else
+      LOG(ERROR) << "preload script must have abosulute path.";
+  } else if (web_preferences.GetString(switches::kPreloadUrl, &preload)) {
+    // Translate to file path if there is "preload-url" option.
+    base::FilePath preload_path;
+    if (net::FileURLToFilePath(GURL(preload), &preload_path))
+      command_line->AppendSwitchPath(switches::kPreloadScript, preload_path);
+    else
+      LOG(ERROR) << "preload url must be file:// protocol.";
+  }
 
   // The zoom factor.
   double zoom_factor = 1.0;

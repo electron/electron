@@ -75,6 +75,9 @@ const char kGuestInstanceID[] = "guest-instance-id";
 // Script that will be loaded by guest WebContents before other scripts.
 const char kPreloadScript[] = "preload";
 
+// Like --preload, but the passed argument is an URL.
+const char kPreloadUrl[] = "preload-url";
+
 // Whether the window should be transparent.
 const char kTransparent[] = "transparent";
 
