@@ -38,9 +38,12 @@ Electron을 빌드 하는 방법과 프로젝트에 기여하는 방법도 문�
 
 ## 참조 문서 (번역)
 
+- [브라질 포르투칼어](https://github.com/atom/electron/tree/master/docs-translations/pt-BR)
 - [한국어](https://github.com/atom/electron/tree/master/docs-translations/ko)
 - [일본어](https://github.com/atom/electron/tree/master/docs-translations/jp)
 - [스페인어](https://github.com/atom/electron/tree/master/docs-translations/es)
+- [중국어 간체](https://github.com/atom/electron/tree/master/docs-translations/zh-CN)
+- [중국어 번체](https://github.com/atom/electron/tree/master/docs-translations/zh-TW)
 
 ## 커뮤니티
 
