@@ -120,7 +120,7 @@ void BrowserMainParts::PreMainMessageLoopStart() {
 }
 
 void BrowserMainParts::PreMainMessageLoopRun() {
-  browser_context_ = CreateBrowserContext();
+  browser_context_ = BrowserContext::From("", false);
 
   content::WebUIControllerFactory::RegisterFactory(
       WebUIControllerFactory::GetInstance());
@@ -142,10 +142,6 @@ int BrowserMainParts::PreCreateThreads() {
 #endif
 
   return 0;
-}
-
-BrowserContext* BrowserMainParts::CreateBrowserContext() {
-  return BrowserContext::From("", false);
 }
 
 }  // namespace brightray

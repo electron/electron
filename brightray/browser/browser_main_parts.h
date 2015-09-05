@@ -46,10 +46,6 @@ class BrowserMainParts : public content::BrowserMainParts {
   void PostMainMessageLoopRun() override;
   int PreCreateThreads() override;
 
-  // Subclasses should override this to provide their own BrowserContxt
-  // implementation. The caller takes ownership of the returned object.
-  virtual BrowserContext* CreateBrowserContext();
-
  private:
 #if defined(OS_MACOSX)
   void IncreaseFileDescriptorLimit();

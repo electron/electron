@@ -11,6 +11,7 @@
 #include "browser/url_request_context_getter.h"
 
 #include "base/memory/ref_counted.h"
+#include "base/memory/weak_ptr.h"
 #include "content/public/browser/browser_context.h"
 
 class PrefRegistrySimple;
@@ -25,10 +26,12 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
                        public brightray::URLRequestContextGetter::Delegate {
  public:
   // Get or Create the BrowserContext according to its |partition| and |in_memory|.
-  static BrowserContext* From(const std::string& partition, bool in_memory);
+  static scoped_refptr<BrowserContext> From(
+      const std::string& partition, bool in_memory);
 
   // Create a new BrowserContext, embedders should implement it on their own.
-  static BrowserContext* Create(const std::string& partition, bool in_memory);
+  static scoped_refptr<BrowserContext> Create(
+      const std::string& partition, bool in_memory);
 
   // content::BrowserContext:
   scoped_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(
@@ -98,7 +101,7 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
     }
   };
   using BrowserContextMap =
-      std::map<PartitionKey, scoped_refptr<brightray::BrowserContext>>;
+      std::map<PartitionKey, base::WeakPtr<brightray::BrowserContext>>;
   static BrowserContextMap browser_context_map_;
 
   base::FilePath path_;
@@ -107,6 +110,8 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   scoped_refptr<URLRequestContextGetter> url_request_getter_;
   scoped_ptr<PrefService> prefs_;
   scoped_ptr<PermissionManager> permission_manager_;
+
+  base::WeakPtrFactory<BrowserContext> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserContext);
 };

@@ -44,20 +44,6 @@ std::string MakePartitionName(const std::string& input) {
 
 }  // namespace
 
-// static
-BrowserContext::BrowserContextMap BrowserContext::browser_context_map_;
-
-// static
-BrowserContext* BrowserContext::From(const std::string& partition,
-                                     bool in_memory) {
-  PartitionKey key(partition, in_memory);
-  if (!ContainsKey(browser_context_map_, key)) {
-    auto browser_context = BrowserContext::Create(partition, in_memory);
-    browser_context_map_[key] = make_scoped_refptr(browser_context);
-  }
-  return browser_context_map_[key].get();
-}
-
 class BrowserContext::ResourceContext : public content::ResourceContext {
  public:
   ResourceContext() : getter_(nullptr) {}
@@ -91,9 +77,25 @@ class BrowserContext::ResourceContext : public content::ResourceContext {
   URLRequestContextGetter* getter_;
 };
 
+// static
+BrowserContext::BrowserContextMap BrowserContext::browser_context_map_;
+
+// static
+scoped_refptr<BrowserContext> BrowserContext::From(
+    const std::string& partition, bool in_memory) {
+  PartitionKey key(partition, in_memory);
+  if (browser_context_map_[key].get())
+    return make_scoped_refptr(browser_context_map_[key].get());
+
+  auto browser_context = BrowserContext::Create(partition, in_memory);
+  browser_context_map_[key] = browser_context->weak_factory_.GetWeakPtr();
+  return browser_context;
+}
+
 BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
     : in_memory_(in_memory),
-      resource_context_(new ResourceContext) {
+      resource_context_(new ResourceContext),
+      weak_factory_(this) {
   if (!PathService::Get(DIR_USER_DATA, &path_)) {
     PathService::Get(DIR_APP_DATA, &path_);
     path_ = path_.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
