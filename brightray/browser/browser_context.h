@@ -8,6 +8,7 @@
 #include "browser/permission_manager.h"
 #include "browser/url_request_context_getter.h"
 
+#include "base/memory/ref_counted.h"
 #include "content/public/browser/browser_context.h"
 
 class PrefRegistrySimple;
@@ -17,7 +18,8 @@ namespace brightray {
 
 class PermissionManager;
 
-class BrowserContext : public content::BrowserContext,
+class BrowserContext : public base::RefCounted<BrowserContext>,
+                       public content::BrowserContext,
                        public brightray::URLRequestContextGetter::Delegate {
  public:
   BrowserContext();
@@ -66,6 +68,7 @@ class BrowserContext : public content::BrowserContext,
   base::FilePath GetPath() const override;
 
  private:
+  friend class base::RefCounted<BrowserContext>;
   class ResourceContext;
 
   void RegisterInternalPrefs(PrefRegistrySimple* pref_registry);

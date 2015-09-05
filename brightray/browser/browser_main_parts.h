@@ -6,6 +6,7 @@
 #define BRIGHTRAY_BROWSER_BROWSER_MAIN_PARTS_H_
 
 #include "base/compiler_specific.h"
+#include "base/memory/ref_counted.h"
 #include "base/memory/scoped_ptr.h"
 #include "content/public/browser/browser_main_parts.h"
 
@@ -55,7 +56,7 @@ class BrowserMainParts : public content::BrowserMainParts {
   void InitializeMainNib();
 #endif
 
-  scoped_ptr<BrowserContext> browser_context_;
+  scoped_refptr<BrowserContext> browser_context_;
   scoped_ptr<devtools_http_handler::DevToolsHttpHandler> devtools_http_handler_;
 
 #if defined(TOOLKIT_VIEWS)

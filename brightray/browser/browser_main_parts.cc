@@ -120,7 +120,7 @@ void BrowserMainParts::PreMainMessageLoopStart() {
 }
 
 void BrowserMainParts::PreMainMessageLoopRun() {
-  browser_context_.reset(CreateBrowserContext());
+  browser_context_ = CreateBrowserContext();
   browser_context_->Initialize(std::string());
 
   content::WebUIControllerFactory::RegisterFactory(
@@ -133,7 +133,7 @@ void BrowserMainParts::PreMainMessageLoopRun() {
 }
 
 void BrowserMainParts::PostMainMessageLoopRun() {
-  browser_context_.reset();
+  browser_context_ = nullptr;
 }
 
 int BrowserMainParts::PreCreateThreads() {
