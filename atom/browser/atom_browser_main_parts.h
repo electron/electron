@@ -35,7 +35,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 
   // Returns the BrowserContext associated with the partition.
   content::BrowserContext* GetBrowserContextForPartition(
-      const GURL& partition);
+      const std::string& partition, bool in_memory);
 
   // Register a callback that should be destroyed before JavaScript environment
   // gets destroyed.

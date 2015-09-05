@@ -161,19 +161,21 @@ WebContents::WebContents(v8::Isolate* isolate,
 
   type_ = is_guest ? WEB_VIEW : BROWSER_WINDOW;
 
+  // TODO(zcbenz): Use host's BrowserContext when no partition is specified.
   content::BrowserContext* browser_context =
       AtomBrowserMainParts::Get()->browser_context();
   content::WebContents* web_contents;
   if (is_guest) {
-    GURL guest_site;
-    options.Get("partition", &guest_site);
-    // use hosts' browser_context when no partition is specified.
-    if (!guest_site.query().empty()) {
+    std::string partition;
+    bool in_memory = false;
+    options.Get("partition", &partition);
+    options.Get("inMemory", &in_memory);
+    if (!partition.empty()) {
       browser_context = AtomBrowserMainParts::Get()
-          ->GetBrowserContextForPartition(guest_site);
+          ->GetBrowserContextForPartition(partition, in_memory);
     }
-    auto site_instance =
-        content::SiteInstance::CreateForURL(browser_context, guest_site);
+    content::SiteInstance* site_instance = content::SiteInstance::CreateForURL(
+        browser_context, GURL("chrome-guest://fake-host"));
     content::WebContents::CreateParams params(browser_context, site_instance);
     guest_delegate_.reset(new WebViewGuestDelegate);
     params.guest_delegate = guest_delegate_.get();
@@ -190,7 +192,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Save the preferences.
   base::DictionaryValue web_preferences;
   mate::ConvertFromV8(isolate, options.GetHandle(), &web_preferences);
-  new WebContentsPreferences(web_contents, std::move(web_preferences));
+  new WebContentsPreferences(web_contents, &web_preferences);
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 

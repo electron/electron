@@ -34,7 +34,7 @@ class WebContentsPreferences
       content::WebContents* web_contents, content::WebPreferences* prefs);
 
   WebContentsPreferences(content::WebContents* web_contents,
-                         base::DictionaryValue&& web_preferences);
+                         base::DictionaryValue* web_preferences);
   ~WebContentsPreferences() override;
 
   // $.extend(|web_preferences_|, |new_web_preferences|).

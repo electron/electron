@@ -4,6 +4,8 @@
 
 #include "atom/browser/web_contents_preferences.h"
 
+#include <string>
+
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
@@ -36,8 +38,8 @@ const char* kWebRuntimeFeatures[] = {
 
 WebContentsPreferences::WebContentsPreferences(
     content::WebContents* web_contents,
-    base::DictionaryValue&& web_preferences) {
-  web_preferences_.Swap(&web_preferences);
+    base::DictionaryValue* web_preferences) {
+  web_preferences_.Swap(web_preferences);
   web_contents->SetUserData(kWebPreferencesKey, this);
 }
 
