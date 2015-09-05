@@ -56,8 +56,10 @@ std::string RemoveWhitespace(const std::string& str) {
 
 }  // namespace
 
-AtomBrowserContext::AtomBrowserContext()
-    : job_factory_(new AtomURLRequestJobFactory) {
+AtomBrowserContext::AtomBrowserContext(const std::string& partition,
+                                       bool in_memory)
+    : brightray::BrowserContext(partition, in_memory),
+      job_factory_(new AtomURLRequestJobFactory) {
 }
 
 AtomBrowserContext::~AtomBrowserContext() {
@@ -162,3 +164,13 @@ void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
 }
 
 }  // namespace atom
+
+namespace brightray {
+
+// static
+BrowserContext* BrowserContext::Create(const std::string& partition,
+                                     bool in_memory) {
+  return new atom::AtomBrowserContext(partition, in_memory);
+}
+
+}  // namespace brightray

@@ -170,10 +170,8 @@ WebContents::WebContents(v8::Isolate* isolate,
     bool in_memory = false;
     options.Get("partition", &partition);
     options.Get("inMemory", &in_memory);
-    if (!partition.empty()) {
-      browser_context = AtomBrowserMainParts::Get()
-          ->GetBrowserContextForPartition(partition, in_memory);
-    }
+    if (!partition.empty())
+      browser_context = brightray::BrowserContext::From(partition, in_memory);
     content::SiteInstance* site_instance = content::SiteInstance::CreateForURL(
         browser_context, GURL("chrome-guest://fake-host"));
     content::WebContents::CreateParams params(browser_context, site_instance);
