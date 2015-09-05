@@ -121,7 +121,6 @@ void BrowserMainParts::PreMainMessageLoopStart() {
 
 void BrowserMainParts::PreMainMessageLoopRun() {
   browser_context_ = CreateBrowserContext();
-  browser_context_->Initialize(std::string());
 
   content::WebUIControllerFactory::RegisterFactory(
       WebUIControllerFactory::GetInstance());
@@ -146,7 +145,7 @@ int BrowserMainParts::PreCreateThreads() {
 }
 
 BrowserContext* BrowserMainParts::CreateBrowserContext() {
-  return new BrowserContext;
+  return BrowserContext::From("", false);
 }
 
 }  // namespace brightray

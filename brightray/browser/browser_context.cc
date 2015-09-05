@@ -44,6 +44,20 @@ std::string MakePartitionName(const std::string& input) {
 
 }  // namespace
 
+// static
+BrowserContext::BrowserContextMap BrowserContext::browser_context_map_;
+
+// static
+BrowserContext* BrowserContext::From(const std::string& partition,
+                                     bool in_memory) {
+  PartitionKey key(partition, in_memory);
+  if (!ContainsKey(browser_context_map_, key)) {
+    auto browser_context = BrowserContext::Create(partition, in_memory);
+    browser_context_map_[key] = make_scoped_refptr(browser_context);
+  }
+  return browser_context_map_[key].get();
+}
+
 class BrowserContext::ResourceContext : public content::ResourceContext {
  public:
   ResourceContext() : getter_(nullptr) {}
@@ -77,20 +91,16 @@ class BrowserContext::ResourceContext : public content::ResourceContext {
   URLRequestContextGetter* getter_;
 };
 
-BrowserContext::BrowserContext()
-    : in_memory_(false),
+BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
+    : in_memory_(in_memory),
       resource_context_(new ResourceContext) {
-}
-
-void BrowserContext::Initialize(const std::string& partition, bool in_memory) {
   if (!PathService::Get(DIR_USER_DATA, &path_)) {
     PathService::Get(DIR_APP_DATA, &path_);
     path_ = path_.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
     PathService::Override(DIR_USER_DATA, path_);
   }
 
-  in_memory_ = in_memory;
-  if (!in_memory && !partition.empty())
+  if (!in_memory_ && !partition.empty())
     path_ = path_.Append(FILE_PATH_LITERAL("Partitions"))
                  .Append(base::FilePath::FromUTF8Unsafe(MakePartitionName(partition)));
 

@@ -5,6 +5,8 @@
 #ifndef BRIGHTRAY_BROWSER_BROWSER_CONTEXT_H_
 #define BRIGHTRAY_BROWSER_BROWSER_CONTEXT_H_
 
+#include <map>
+
 #include "browser/permission_manager.h"
 #include "browser/url_request_context_getter.h"
 
@@ -22,10 +24,11 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
                        public content::BrowserContext,
                        public brightray::URLRequestContextGetter::Delegate {
  public:
-  BrowserContext();
-  ~BrowserContext();
+  // Get or Create the BrowserContext according to its |partition| and |in_memory|.
+  static BrowserContext* From(const std::string& partition, bool in_memory);
 
-  void Initialize(const std::string& partition, bool in_memory = false);
+  // Create a new BrowserContext, embedders should implement it on their own.
+  static BrowserContext* Create(const std::string& partition, bool in_memory);
 
   // content::BrowserContext:
   scoped_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(
@@ -59,6 +62,9 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   PrefService* prefs() { return prefs_.get(); }
 
  protected:
+  BrowserContext(const std::string& partition, bool in_memory);
+  ~BrowserContext() override;
+
   // Subclasses should override this to register custom preferences.
   virtual void RegisterPrefs(PrefRegistrySimple* pref_registry) {}
 
@@ -72,6 +78,28 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   class ResourceContext;
 
   void RegisterInternalPrefs(PrefRegistrySimple* pref_registry);
+
+  // partition_id => browser_context
+  struct PartitionKey {
+    std::string partition;
+    bool in_memory;
+
+    PartitionKey(const std::string& partition, bool in_memory)
+        : partition(partition), in_memory(in_memory) {}
+
+    bool operator<(const PartitionKey& other) const {
+      if (partition != other.partition)
+        return in_memory < other.in_memory;
+      return partition < other.partition;
+    }
+
+    bool operator==(const PartitionKey& other) const {
+      return (partition == other.partition) && (in_memory == other.in_memory);
+    }
+  };
+  using BrowserContextMap =
+      std::map<PartitionKey, scoped_refptr<brightray::BrowserContext>>;
+  static BrowserContextMap browser_context_map_;
 
   base::FilePath path_;
   bool in_memory_;
