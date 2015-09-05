@@ -10,7 +10,6 @@
 #include <string>
 
 #include "base/callback.h"
-#include "base/containers/scoped_ptr_hash_map.h"
 #include "base/timer/timer.h"
 #include "brightray/browser/browser_main_parts.h"
 #include "content/public/browser/browser_context.h"
@@ -79,7 +78,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   std::list<base::Closure> destruction_callbacks_;
 
   // partition_id => browser_context
-  base::ScopedPtrHashMap<std::string, scoped_ptr<brightray::BrowserContext>>
+  std::map<std::string, scoped_refptr<brightray::BrowserContext>>
       browser_context_map_;
 
   static AtomBrowserMainParts* self_;
