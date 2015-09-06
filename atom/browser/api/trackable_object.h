@@ -9,7 +9,9 @@
 
 #include "atom/browser/api/event_emitter.h"
 #include "atom/common/id_weak_map.h"
+#include "base/bind.h"
 #include "base/memory/scoped_ptr.h"
+#include "base/memory/weak_ptr.h"
 
 namespace base {
 class SupportsUserData;
@@ -28,6 +30,9 @@ class TrackableObjectBase : public mate::EventEmitter {
   // Wrap TrackableObject into a class that SupportsUserData.
   void AttachAsUserData(base::SupportsUserData* wrapped);
 
+  // Subclasses should implement this to destroy their native types.
+  virtual void Destroy() = 0;
+
  protected:
   ~TrackableObjectBase() override;
 
@@ -39,12 +44,14 @@ class TrackableObjectBase : public mate::EventEmitter {
 
   // Register a callback that should be destroyed before JavaScript environment
   // gets destroyed.
-  static void RegisterDestructionCallback(void (*callback)());
+  static void RegisterDestructionCallback(const base::Closure& closure);
 
   int32_t weak_map_id_;
   base::SupportsUserData* wrapped_;
 
  private:
+  base::WeakPtrFactory<TrackableObjectBase> weak_factory_;
+
   DISALLOW_COPY_AND_ASSIGN(TrackableObjectBase);
 };
 
@@ -85,7 +92,8 @@ class TrackableObject : public TrackableObjectBase {
   }
 
   TrackableObject() {
-    RegisterDestructionCallback(&TrackableObject<T>::ReleaseAllWeakReferences);
+    RegisterDestructionCallback(
+        base::Bind(&TrackableObject<T>::ReleaseAllWeakReferences));
   }
 
   // Removes this instance from the weak map.

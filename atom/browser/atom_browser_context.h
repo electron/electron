@@ -17,8 +17,8 @@ class WebViewManager;
 
 class AtomBrowserContext : public brightray::BrowserContext {
  public:
-  AtomBrowserContext();
-  virtual ~AtomBrowserContext();
+  AtomBrowserContext(const std::string& partition, bool in_memory);
+  ~AtomBrowserContext() override;
 
   // brightray::URLRequestContextGetter::Delegate:
   std::string GetUserAgent() override;
@@ -41,7 +41,8 @@ class AtomBrowserContext : public brightray::BrowserContext {
   scoped_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
   scoped_ptr<WebViewManager> guest_manager_;
 
-  AtomURLRequestJobFactory* job_factory_;  // Weak reference.
+  // Managed by brightray::BrowserContext.
+  AtomURLRequestJobFactory* job_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);
 };

@@ -38,29 +38,12 @@ moveLastToFirst = (list) ->
 getNextInstanceId = (webContents) ->
   ++nextInstanceId
 
-# Generate URL encoded partition id.
-getPartitionId = (partition) ->
-  # Guest site url will be chrome-guest://fake-host/{persist}?{partitionId}
-  partitionId = "chrome-guest://fake-host/"
-  if partition
-    persist = partition.startsWith('persist:')
-    if persist
-      partition = partition.substring('persist:'.length)
-      partitionId += 'persist?'
-    else
-      # Just to differentiate from same persistant ID
-      partition += "_temp"
-      partitionId += '?'
-    partitionId += encodeURIComponent(partition)
-  return partitionId
-
 # Create a new guest instance.
 createGuest = (embedder, params) ->
   webViewManager ?= process.atomBinding 'web_view_manager'
 
   id = getNextInstanceId embedder
-  partitionId = getPartitionId params.partition
-  guest = webContents.create {isGuest: true, partition: partitionId, embedder}
+  guest = webContents.create {isGuest: true, partition: params.partition, embedder}
   guestInstances[id] = {guest, embedder}
 
   # Destroy guest when the embedder is gone or navigated.
@@ -132,12 +115,13 @@ attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
     return unless guestInstances[oldGuestInstanceId]?
     destroyGuest embedder, oldGuestInstanceId
 
-  webViewManager.addGuest guestInstanceId, elementInstanceId, embedder, guest,
-    nodeIntegration: params.nodeintegration
-    plugins: params.plugins
-    disableWebSecurity: params.disablewebsecurity
-    preloadUrl: params.preload ? ''
-    partitionId: getPartitionId(params.partition)
+  webPreferences =
+    'guest-instance-id': guestInstanceId
+    'node-integration': params.nodeintegration ? false
+    'plugins': params.plugins
+    'web-security': !params.disablewebsecurity
+  webPreferences['preload-url'] = params.preload if params.preload
+  webViewManager.addGuest guestInstanceId, elementInstanceId, embedder, guest, webPreferences
 
   guest.attachParams = params
   embedderElementsMap[key] = guestInstanceId

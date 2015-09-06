@@ -13,6 +13,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/options_switches.h"
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
@@ -64,9 +65,22 @@ void OnCapturePageDone(
 
 
 Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
+  // Use options['web-preferences'] to create WebContents.
+  mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
+  options.Get(switches::kWebPreferences, &web_preferences);
+
+  // Be compatible with old options which are now in web_preferences.
+  std::string str;
+  double d;
+  if (options.Get(switches::kNodeIntegration, &str))
+    web_preferences.Set(switches::kNodeIntegration, str);
+  if (options.Get(switches::kPreloadScript, &str))
+    web_preferences.Set(switches::kPreloadScript, str);
+  if (options.Get(switches::kZoomFactor, &d))
+    web_preferences.Set(switches::kZoomFactor, d);
+
   // Creates the WebContents used by BrowserWindow.
-  mate::Dictionary web_contents_options(isolate, v8::Object::New(isolate));
-  auto web_contents = WebContents::Create(isolate, web_contents_options);
+  auto web_contents = WebContents::Create(isolate, web_preferences);
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents.get();
 
@@ -207,7 +221,10 @@ bool Window::IsDestroyed() const {
 }
 
 void Window::Destroy() {
-  window_->CloseContents(nullptr);
+  if (window_) {
+    window_->CloseContents(nullptr);
+    window_.reset();
+  }
 }
 
 void Window::Close() {

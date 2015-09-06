@@ -7,45 +7,14 @@
 
 #include <map>
 
-#include "base/files/file_path.h"
-#include "base/supports_user_data.h"
-#include "base/synchronization/lock.h"
 #include "content/public/browser/browser_plugin_guest_manager.h"
-#include "content/public/browser/site_instance.h"
-
-namespace content {
-class BrowserContext;
-class RenderProcessHost;
-}
 
 namespace atom {
 
 class WebViewManager : public content::BrowserPluginGuestManager {
  public:
-  struct WebViewInfo {
-    int guest_instance_id;
-    content::WebContents* embedder;
-    bool node_integration;
-    bool plugins;
-    bool disable_web_security;
-    base::FilePath preload_script;
-    GURL partition_id;
-  };
-
-  class WebViewInfoUserData : public base::SupportsUserData::Data {
-   public:
-    explicit WebViewInfoUserData(WebViewInfo info)
-        : web_view_info_(info) {}
-    ~WebViewInfoUserData() override {}
-
-    WebViewInfo& web_view_info() { return web_view_info_; }
-
-   private:
-    WebViewInfo web_view_info_;
-  };
-
-  explicit WebViewManager(content::BrowserContext* context);
-  virtual ~WebViewManager();
+  WebViewManager();
+  ~WebViewManager() override;
 
   void AddGuest(int guest_instance_id,
                 int element_instance_id,
@@ -89,8 +58,6 @@ class WebViewManager : public content::BrowserPluginGuestManager {
   };
   // (embedder_process_id, element_instance_id) => guest_instance_id
   std::map<ElementInstanceKey, int> element_instance_id_to_guest_map_;
-
-  base::Lock lock_;
 
   DISALLOW_COPY_AND_ASSIGN(WebViewManager);
 };

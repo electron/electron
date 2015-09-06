@@ -78,8 +78,10 @@ class Window : public mate::TrackableObject<Window>,
   bool IsDestroyed() const override;
 
  private:
+  // mate::TrackableObject:
+  void Destroy() override;
+
   // APIs for NativeWindow.
-  void Destroy();
   void Close();
   bool IsClosed();
   void Focus();
