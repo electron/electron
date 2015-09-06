@@ -99,13 +99,7 @@ Properties `width` and `height` are required.
   * `text-areas-are-resizable` Boolean
   * `webgl` Boolean
   * `webaudio` Boolean
-  * `plugins` Boolean - Whether plugins should be enabled, currently only
-    `NPAPI` plugins are supported.
-  * `extra-plugin-dirs` Array - Array of paths that would be searched for
-    plugins. Note that if you want to add a directory under your app, you
-    should use `__dirname` or `process.resourcesPath` to join the paths to
-    make them absolute, using relative paths would make Electron search
-    under current working directory.
+  * `plugins` Boolean - Whether plugins should be enabled.
   * `experimental-features` Boolean
   * `experimental-canvas-features` Boolean
   * `subpixel-font-scaling` Boolean
