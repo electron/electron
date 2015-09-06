@@ -233,16 +233,16 @@ void SetProxyInIO(net::URLRequestContextGetter* getter,
 Session::Session(AtomBrowserContext* browser_context)
     : browser_context_(browser_context) {
   AttachAsUserData(browser_context);
+
   // Observe DownloadManger to get download notifications.
-  auto download_manager =
-      content::BrowserContext::GetDownloadManager(browser_context);
-  download_manager->AddObserver(this);
+  content::BrowserContext::GetDownloadManager(browser_context)->
+      AddObserver(this);
 }
 
 Session::~Session() {
-  auto download_manager =
-      content::BrowserContext::GetDownloadManager(browser_context());
-  download_manager->RemoveObserver(this);
+  content::BrowserContext::GetDownloadManager(browser_context())->
+      RemoveObserver(this);
+  Destroy();
 }
 
 void Session::OnDownloadCreated(content::DownloadManager* manager,
@@ -255,6 +255,14 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
     item->Cancel(true);
     item->Remove();
   }
+}
+
+bool Session::IsDestroyed() const {
+  return !browser_context_;
+}
+
+void Session::Destroy() {
+  browser_context_ = nullptr;
 }
 
 void Session::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {

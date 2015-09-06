@@ -51,11 +51,15 @@ class Session: public mate::TrackableObject<Session>,
   void OnDownloadCreated(content::DownloadManager* manager,
                          content::DownloadItem* item) override;
 
-  // mate::Wrappable implementations:
+  // mate::Wrappable:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
+  bool IsDestroyed() const override;
 
  private:
+  // mate::TrackableObject:
+  void Destroy() override;
+
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
   void ClearCache(const net::CompletionCallback& callback);
   void ClearStorageData(mate::Arguments* args);
@@ -63,6 +67,7 @@ class Session: public mate::TrackableObject<Session>,
   void SetDownloadPath(const base::FilePath& path);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
 
+  // Cached object for cookies API.
   v8::Global<v8::Value> cookies_;
 
   scoped_refptr<AtomBrowserContext> browser_context_;

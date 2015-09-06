@@ -48,7 +48,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static mate::Handle<WebContents> Create(
       v8::Isolate* isolate, const mate::Dictionary& options);
 
-  void Destroy();
+  // mate::TrackableObject:
+  void Destroy() override;
+
   bool IsAlive() const;
   int GetID() const;
   bool Equal(const WebContents* web_contents) const;
