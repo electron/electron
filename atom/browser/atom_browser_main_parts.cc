@@ -28,7 +28,8 @@ namespace atom {
 
 namespace {
 
-const base::FilePath::CharType kStoragePartitionDirname[] = "Partitions";
+const base::FilePath::CharType kStoragePartitionDirname[] =
+    FILE_PATH_LITERAL("Partitions");
 
 void GetStoragePartitionConfig(const GURL& partition,
                                base::FilePath* partition_path,
@@ -77,7 +78,7 @@ content::BrowserContext* AtomBrowserMainParts::GetBrowserContextForPartition(
     return browser_context_map_.get(id);
 
   scoped_ptr<brightray::BrowserContext> browser_context(CreateBrowserContext());
-  browser_context->Initialize(partition_path.value(), in_memory);
+  browser_context->Initialize(partition_path.AsUTF8Unsafe(), in_memory);
   browser_context_map_.set(id, browser_context.Pass());
   return browser_context_map_.get(id);
 }
