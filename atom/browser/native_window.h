@@ -24,10 +24,6 @@
 
 class SkRegion;
 
-namespace base {
-class CommandLine;
-}
-
 namespace brightray {
 class InspectableWebContents;
 }
@@ -186,9 +182,6 @@ class NativeWindow : public content::WebContentsObserver,
   virtual void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) {}
-
-  // Called when renderer process is going to be started.
-  void AppendExtraCommandLineSwitches(base::CommandLine* command_line);
 
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
