@@ -38,21 +38,12 @@ moveLastToFirst = (list) ->
 getNextInstanceId = (webContents) ->
   ++nextInstanceId
 
-# Parse the partition string.
-parsePartition = (partition) ->
-  return ['', false] unless partition
-  if partition.startsWith 'persist:'
-    [partition.substr('persist:'.length), false]
-  else
-    [partition, true]
-
 # Create a new guest instance.
 createGuest = (embedder, params) ->
   webViewManager ?= process.atomBinding 'web_view_manager'
 
   id = getNextInstanceId embedder
-  [partition, inMemory] = parsePartition params.partition
-  guest = webContents.create {isGuest: true, partition, inMemory, embedder}
+  guest = webContents.create {isGuest: true, partition: params.partition, embedder}
   guestInstances[id] = {guest, embedder}
 
   # Destroy guest when the embedder is gone or navigated.
