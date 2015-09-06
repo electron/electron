@@ -1,7 +1,9 @@
 ﻿# 어플리케이션 배포
 
-Electron 어플리케이션을 배포하려면 어플리케이션 폴더 이름을 `app`으로 지정한 후 Electron 실행파일의 리소스 디렉터리에 집어넣기만 하면 됩니다.
-리소스 디렉터리는 OS X에선 `Electron.app/Contents/Resources/` Windows와 Linux에선 `resources/` 입니다.
+Electron 어플리케이션을 배포하는 방법은 간단합니다.
+
+먼저 폴더 이름을 `app`로 지정한 후 Electron 리소스 디렉터리에 폴더를 통째로 집어넣기만 하면 됩니다.
+리소스 디렉터리는 OS X: `Electron.app/Contents/Resources/` Windows와 Linux: `resources/` 입니다.
 
 예제:
 
@@ -32,7 +34,7 @@ electron/resources/app
 어플리케이션의 소스코드가 사용자에게 노출되는 것을 방지할 수 있습니다.
 
 `asar` 아카이브를 사용할 땐 단순히 `app` 폴더 대신에 어플리케이션을 패키징한 `app.asar` 파일로 대체하면됩니다.
-이렇게 하면 Electron은 아카이브를 `app`폴더 대신 asar 아카이브를 기반으로 어플리케이션을 실행합니다.
+Electron은 자동으로 `app`폴더 대신 asar 아카이브를 기반으로 어플리케이션을 실행합니다.
 
 OS X의 경우:
 
