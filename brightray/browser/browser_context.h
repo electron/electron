@@ -91,7 +91,7 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
         : partition(partition), in_memory(in_memory) {}
 
     bool operator<(const PartitionKey& other) const {
-      if (partition != other.partition)
+      if (partition == other.partition)
         return in_memory < other.in_memory;
       return partition < other.partition;
     }
