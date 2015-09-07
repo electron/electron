@@ -137,3 +137,6 @@ describe 'node feature', ->
   describe 'process.stdout', ->
     it 'should not throw exception', ->
       process.stdout
+
+    it 'should have isTTY defined', ->
+      assert.equal typeof(process.stdout.isTTY), 'boolean'
