@@ -10,6 +10,11 @@ process.port = 0;  // will be used by crash-reporter spec.
 app.commandLine.appendSwitch('js-flags', '--expose_gc');
 app.commandLine.appendSwitch('ignore-certificate-errors');
 
+// Accessing stdout in the main process will result in the process.stdout
+// throwing UnknownSystemError in renderer process sometimes. This line makes
+// sure we can reproduce it in renderer process.
+process.stdout;
+
 ipc.on('message', function(event, arg) {
   event.sender.send('message', arg);
 });

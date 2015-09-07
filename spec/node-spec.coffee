@@ -133,3 +133,11 @@ describe 'node feature', ->
       b = new Buffer(p.innerText)
       assert.equal b.toString(), 'Jøhänñéß'
       assert.equal Buffer.byteLength(p.innerText), 13
+
+  describe 'process.stdout', ->
+    it 'should not throw exception', ->
+      process.stdout
+
+    # Not reliable on some machines
+    xit 'should have isTTY defined', ->
+      assert.equal typeof(process.stdout.isTTY), 'boolean'
