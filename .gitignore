@@ -1,5 +1,4 @@
 .DS_Store
-/atom/common/chrome_version.h
 /build/
 /dist/
 /external_binaries/
