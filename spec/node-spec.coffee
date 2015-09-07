@@ -138,5 +138,6 @@ describe 'node feature', ->
     it 'should not throw exception', ->
       process.stdout
 
-    it 'should have isTTY defined', ->
+    # Not reliable on some machines
+    xit 'should have isTTY defined', ->
       assert.equal typeof(process.stdout.isTTY), 'boolean'
