@@ -7,10 +7,9 @@
 #include "base/time/time.h"
 #include "atom/browser/auto_updater.h"
 #include "atom/browser/browser.h"
+#include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 

@@ -12,12 +12,11 @@
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/node_includes.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "ui/events/event_constants.h"
 #include "ui/gfx/image/image.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 

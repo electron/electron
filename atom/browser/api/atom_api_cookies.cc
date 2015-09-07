@@ -20,8 +20,6 @@
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
 
-#include "atom/common/node_includes.h"
-
 using atom::api::Cookies;
 using content::BrowserThread;
 
