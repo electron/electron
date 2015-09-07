@@ -87,8 +87,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
                   const PrintToPDFCallback& callback);
 
   // DevTools workspace api.
-  void AddWorkSpace(const base::FilePath& path);
-  void RemoveWorkSpace(const base::FilePath& path);
+  void AddWorkSpace(mate::Arguments* args, const base::FilePath& path);
+  void RemoveWorkSpace(mate::Arguments* args, const base::FilePath& path);
 
   // Editing commands.
   void Undo();

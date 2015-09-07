@@ -35,7 +35,8 @@ Tray::~Tray() {
 // static
 mate::Wrappable* Tray::New(v8::Isolate* isolate, const gfx::Image& image) {
   if (!Browser::Get()->is_ready()) {
-    node::ThrowError(isolate, "Cannot create Tray before app is ready");
+    isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
+        isolate, "Cannot create Tray before app is ready")));
     return nullptr;
   }
   return new Tray(image);

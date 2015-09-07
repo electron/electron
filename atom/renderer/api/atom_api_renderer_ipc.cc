@@ -30,7 +30,7 @@ RenderView* GetCurrentRenderView() {
   return RenderView::FromWebView(view);
 }
 
-void Send(v8::Isolate* isolate,
+void Send(mate::Arguments* args,
           const base::string16& channel,
           const base::ListValue& arguments) {
   RenderView* render_view = GetCurrentRenderView();
@@ -41,10 +41,10 @@ void Send(v8::Isolate* isolate,
       render_view->GetRoutingID(), channel, arguments));
 
   if (!success)
-    node::ThrowError(isolate, "Unable to send AtomViewHostMsg_Message");
+    args->ThrowError("Unable to send AtomViewHostMsg_Message");
 }
 
-base::string16 SendSync(v8::Isolate* isolate,
+base::string16 SendSync(mate::Arguments* args,
                         const base::string16& channel,
                         const base::ListValue& arguments) {
   base::string16 json;
@@ -60,7 +60,7 @@ base::string16 SendSync(v8::Isolate* isolate,
   bool success = render_view->Send(message);
 
   if (!success)
-    node::ThrowError(isolate, "Unable to send AtomViewHostMsg_Message_Sync");
+    args->ThrowError("Unable to send AtomViewHostMsg_Message_Sync");
 
   return json;
 }

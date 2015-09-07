@@ -717,17 +717,19 @@ void WebContents::PrintToPDF(const base::DictionaryValue& setting,
       PrintToPDF(setting, callback);
 }
 
-void WebContents::AddWorkSpace(const base::FilePath& path) {
+void WebContents::AddWorkSpace(mate::Arguments* args,
+                               const base::FilePath& path) {
   if (path.empty()) {
-    node::ThrowError(isolate(), "path cannot be empty");
+    args->ThrowError("path cannot be empty");
     return;
   }
   DevToolsAddFileSystem(path);
 }
 
-void WebContents::RemoveWorkSpace(const base::FilePath& path) {
+void WebContents::RemoveWorkSpace(mate::Arguments* args,
+                                  const base::FilePath& path) {
   if (path.empty()) {
-    node::ThrowError(isolate(), "path cannot be empty");
+    args->ThrowError("path cannot be empty");
     return;
   }
   DevToolsRemoveFileSystem(path);
