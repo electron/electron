@@ -133,3 +133,7 @@ describe 'node feature', ->
       b = new Buffer(p.innerText)
       assert.equal b.toString(), 'Jøhänñéß'
       assert.equal Buffer.byteLength(p.innerText), 13
+
+  describe 'process.stdout', ->
+    it 'should not throw exception', ->
+      process.stdout
