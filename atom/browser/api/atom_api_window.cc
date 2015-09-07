@@ -209,8 +209,8 @@ void Window::OnExecuteWindowsCommand(const std::string& command_name) {
 mate::Wrappable* Window::New(v8::Isolate* isolate,
                              const mate::Dictionary& options) {
   if (!Browser::Get()->is_ready()) {
-    node::ThrowError(isolate,
-                     "Cannot create BrowserWindow before app is ready");
+    isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
+        isolate, "Cannot create BrowserWindow before app is ready")));
     return nullptr;
   }
   return new Window(isolate, options);
