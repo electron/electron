@@ -41,6 +41,7 @@ extern const char kPpapiFlashPath[];
 extern const char kPpapiFlashVersion[];
 extern const char kGuestInstanceID[];
 extern const char kPreloadScript[];
+extern const char kPreloadUrl[];
 extern const char kTransparent[];
 extern const char kType[];
 extern const char kDisableAutoHideCursor[];

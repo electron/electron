@@ -29,7 +29,9 @@ class IDUserData : public base::SupportsUserData::Data {
 }  // namespace
 
 TrackableObjectBase::TrackableObjectBase()
-    : weak_map_id_(0), wrapped_(nullptr) {
+    : weak_map_id_(0), wrapped_(nullptr), weak_factory_(this) {
+  RegisterDestructionCallback(
+      base::Bind(&TrackableObjectBase::Destroy, weak_factory_.GetWeakPtr()));
 }
 
 TrackableObjectBase::~TrackableObjectBase() {
@@ -61,8 +63,9 @@ int32_t TrackableObjectBase::GetIDFromWrappedClass(base::SupportsUserData* w) {
 }
 
 // static
-void TrackableObjectBase::RegisterDestructionCallback(void (*c)()) {
-  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(base::Bind(c));
+void TrackableObjectBase::RegisterDestructionCallback(
+    const base::Closure& closure) {
+  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(closure);
 }
 
 }  // namespace mate

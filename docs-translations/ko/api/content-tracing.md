@@ -15,7 +15,7 @@ contentTracing.startRecording('*', contentTracing.DEFAULT_OPTIONS, function() {
     });
   }, 5000);
 });
-``
+```
 
 ## Methods
 

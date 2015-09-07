@@ -26,23 +26,6 @@
 
 namespace atom {
 
-namespace {
-
-const base::FilePath::CharType kStoragePartitionDirname[] = "Partitions";
-
-void GetStoragePartitionConfig(const GURL& partition,
-                               base::FilePath* partition_path,
-                               bool* in_memory,
-                               std::string* id) {
-  *in_memory = (partition.path() != "/persist");
-  net::UnescapeRule::Type flags =
-      net::UnescapeRule::SPACES | net::UnescapeRule::URL_SPECIAL_CHARS;
-  *id = net::UnescapeURLComponent(partition.query(), flags);
-  *partition_path = base::FilePath(kStoragePartitionDirname).AppendASCII(*id);
-}
-
-}  // namespace
-
 // static
 AtomBrowserMainParts* AtomBrowserMainParts::self_ = NULL;
 
@@ -67,28 +50,9 @@ AtomBrowserMainParts* AtomBrowserMainParts::Get() {
   return self_;
 }
 
-content::BrowserContext* AtomBrowserMainParts::GetBrowserContextForPartition(
-    const GURL& partition) {
-  std::string id;
-  bool in_memory;
-  base::FilePath partition_path;
-  GetStoragePartitionConfig(partition, &partition_path, &in_memory, &id);
-  if (browser_context_map_.contains(id))
-    return browser_context_map_.get(id);
-
-  scoped_ptr<brightray::BrowserContext> browser_context(CreateBrowserContext());
-  browser_context->Initialize(partition_path.value(), in_memory);
-  browser_context_map_.set(id, browser_context.Pass());
-  return browser_context_map_.get(id);
-}
-
 void AtomBrowserMainParts::RegisterDestructionCallback(
     const base::Closure& callback) {
   destruction_callbacks_.push_back(callback);
-}
-
-brightray::BrowserContext* AtomBrowserMainParts::CreateBrowserContext() {
-  return new AtomBrowserContext();
 }
 
 void AtomBrowserMainParts::PostEarlyInitialization() {
