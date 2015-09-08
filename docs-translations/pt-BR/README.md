@@ -17,7 +17,7 @@
 ## API - Referencias
 
 * [Sinopse](../../docs/api/synopsis.md)
-* [Processos](../../docs-translations/pt-BR/api/process.md)
+* [Processos](api/process.md)
 * [Parâmetros CLI suportados (Chrome)](../../docs/api/chrome-command-line-switches.md)
 
 DOM elementos personalizados:
