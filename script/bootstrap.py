@@ -162,13 +162,16 @@ def create_chrome_version_h():
     version = f.read()
   with open(template_file, 'r') as f:
     template = f.read()
-  if sys.platform in ['win32', 'cygwin']:
-    open_mode = 'wb+'
-  else:
-    open_mode = 'w+'
-  with open(target_file, open_mode) as f:
-    content = template.replace('{PLACEHOLDER}', version.strip())
-    if f.read() != content:
+  content = template.replace('{PLACEHOLDER}', version.strip())
+
+  # We update the file only if the content has changed (ignoring line ending
+  # differences).
+  should_write = True
+  if os.path.isfile(target_file):
+    with open(target_file, 'r') as f:
+      should_write = f.read().replace('r', '') != content.replace('r', '')
+  if should_write:
+    with open(target_file, 'w') as f:
       f.write(content)
 
 

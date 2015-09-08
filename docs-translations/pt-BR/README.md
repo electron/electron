@@ -1,7 +1,7 @@
 ## Guias
 
-* [Distribuir Aplicação](../../docs/tutorial/application-distribution.md)
-* [Empacotamento da aplicação](../../docs/tutorial/application-packaging.md)
+* [Distribuir Aplicação](tutorial/application-distribution.md)
+* [Empacotamento da aplicação](tutorial/application-packaging.md)
 * [Usando módulos nativos](../../docs/tutorial/using-native-node-modules.md)
 * [Depuração do processo principal](../../docs/tutorial/debugging-main-process.md)
 * [Usando Selenium e WebDriver](../../docs/tutorial/using-selenium-and-webdriver.md)
