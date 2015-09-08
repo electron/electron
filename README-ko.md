@@ -13,6 +13,8 @@ Electron 프레임워크는 JavaScript, HTML 그리고 CSS를 사용하여 Cross
 
 Electron에 대한 중요한 알림을 받고 싶다면 Twitter에서 [@ElectronJS](https://twitter.com/electronjs)를 팔로우 하세요.
 
+이 프로젝트는 기여자 규약 1.2를 준수합니다. 이 프로젝트에 참여할 때 코드를 유지해야 합니다. 받아들일 수 없는 행동은 atom@github.com로 보고 하십시오.
+
 ## 다운로드
 
 Linux, Windows, Mac용으로 미리 빌드된 Electron 바이너리와 디버그 심볼이 준비되어 있습니다. [releases](https://github.com/atom/electron/releases) 페이지에서 받아 볼 수 있습니다.
