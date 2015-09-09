@@ -117,7 +117,7 @@ Properties `width` and `height` are required.
 
 The `BrowserWindow` object emits the following events:
 
-+**Note** Some events are only available on specific operating systems and are labeled as such.
+**Note** Some events are only available on specific operating systems and are labeled as such.
 
 ### Event: 'page-title-updated'
 
@@ -292,7 +292,7 @@ Remove the devtools extension whose name is `name`.
 
 Objects created with `new BrowserWindow` have the following instance methods:
 
-+**Note** Some methods are only available on specific operating systems and are labeled as such.
+**Note** Some methods are only available on specific operating systems and are labeled as such.
 
 ```javascript
 var BrowserWindow = require('browser-window');
