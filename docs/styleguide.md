@@ -1,7 +1,7 @@
 # Electron Documentation Styleguide
 
-Find the appropriate section for your task: [reading Electron documentation](#)
-or [writing Electron documentation](#).
+Find the appropriate section for your task: [reading Electron documentation](#reading-electron-documentation)
+or [writing Electron documentation](#writing-electron-documentation).
 
 ## Writing Electron Documentation
 
