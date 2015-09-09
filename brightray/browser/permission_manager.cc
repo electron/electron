@@ -5,7 +5,10 @@
 #include "browser/permission_manager.h"
 
 #include "base/callback.h"
+#include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/permission_type.h"
+#include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/render_process_host.h"
 
 namespace brightray {
 
@@ -22,6 +25,10 @@ void PermissionManager::RequestPermission(
     const GURL& requesting_origin,
     bool user_gesture,
     const base::Callback<void(content::PermissionStatus)>& callback) {
+  if (permission == content::PermissionType::MIDI_SYSEX) {
+    content::ChildProcessSecurityPolicy::GetInstance()->
+        GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
+  }
   callback.Run(content::PERMISSION_STATUS_GRANTED);
 }
 
