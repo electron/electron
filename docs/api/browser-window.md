@@ -224,15 +224,15 @@ Emitted when the window leaves full screen state triggered by html api.
 
 ### Event: 'devtools-opened'
 
-Emitted when devtools is opened.
+Emitted when DevTools is opened.
 
 ### Event: 'devtools-closed'
 
-Emitted when devtools is closed.
+Emitted when DevTools is closed.
 
 ### Event: 'devtools-focused'
 
-Emitted when devtools is focused / opened.
+Emitted when DevTools is focused / opened.
 
 ### Event: 'app-command' _Windows_
 
@@ -277,7 +277,7 @@ Find a window according to its ID.
 
 * `path` String
 
-Adds devtools extension located at `path`, and returns extension's name.
+Adds DevTools extension located at `path`, and returns extension's name.
 
 The extension will be remembered so you only need to call this API once, this
 API is not for programming use.
@@ -286,7 +286,7 @@ API is not for programming use.
 
 * `name` String
 
-Remove the devtools extension whose name is `name`.
+Remove the DevTools extension whose name is `name`.
 
 ## Instance Methods
 
@@ -315,10 +315,10 @@ when the renderer process (web page) has crashed.
 
 ### `win.devToolsWebContents()`
 
-Get the `WebContents` of devtools for this window.
+Get the `WebContents` of DevTools for this window.
 
 **Note:** Users should never store this object because it may become `null`
-when the devtools has been closed.
+when the DevTools has been closed.
 
 ### `win.id()`
 
@@ -577,7 +577,7 @@ Whether the window's document has been edited.
 ### `win.openDevTools([options])`
 
 * `options` Object (optional). Properties:
-  * `detach` Boolean - opens devtools in a new window
+  * `detach` Boolean - opens DevTools in a new window
 
 Opens the developer tools.
 

@@ -242,15 +242,15 @@ user action, can take advantage of this option for automation.
 
 ### `<webview>.openDevTools()`
 
-Opens a devtools window for guest page.
+Opens a DevTools window for guest page.
 
 ### `<webview>.closeDevTools()`
 
-Closes the devtools window of guest page.
+Closes the DevTools window of guest page.
 
 ### `<webview>.isDevToolsOpened()`
 
-Returns a boolean whether guest page has a devtools window attached.
+Returns a boolean whether guest page has a DevTools window attached.
 
 ### `<webview>.inspectElement(x, y)`
 
@@ -261,7 +261,7 @@ Starts inspecting element at position (`x`, `y`) of guest page.
 
 ### `<webview>.inspectServiceWorker()`
 
-Opens the devtools for the service worker context present in the guest page.
+Opens the DevTools for the service worker context present in the guest page.
 
 ### `<webview>.setAudioMuted(muted)`
 

@@ -426,13 +426,13 @@ win.webContents.on("did-finish-load", function() {
 
 * `path` String
 
-Adds the specified path to devtools workspace.
+Adds the specified path to DevTools workspace.
 
 ### `webContents.removeWorkSpace(path)`
 
 * `path` String
 
-Removes the specified path from devtools workspace.
+Removes the specified path from DevTools workspace.
 
 ### `webContents.send(channel[, args...])`
 
