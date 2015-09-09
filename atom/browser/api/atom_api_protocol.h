@@ -66,7 +66,7 @@ class Protocol : public mate::Wrappable {
    public:
     CustomProtocolHandler(
         v8::Isolate* isolate,
-        scoped_refptr<net::URLRequestContextGetter> request_context,
+        net::URLRequestContextGetter* request_context,
         const Handler& handler)
         : isolate_(isolate),
           request_context_(request_context),
@@ -83,7 +83,7 @@ class Protocol : public mate::Wrappable {
 
    private:
     v8::Isolate* isolate_;
-    scoped_refptr<net::URLRequestContextGetter> request_context_;
+    net::URLRequestContextGetter* request_context_;
     Protocol::Handler handler_;
 
     DISALLOW_COPY_AND_ASSIGN(CustomProtocolHandler);
@@ -172,7 +172,7 @@ class Protocol : public mate::Wrappable {
   // Convert error code to string.
   std::string ErrorCodeToString(ProtocolError error);
 
-  scoped_refptr<net::URLRequestContextGetter> request_context_getter_;
+  net::URLRequestContextGetter* request_context_getter_;
 
   // Map that stores the original protocols of schemes.
   using OriginalProtocolsMap = base::ScopedPtrHashMap<
