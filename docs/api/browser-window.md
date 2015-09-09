@@ -288,7 +288,6 @@ API is not for programming use.
 
 Remove the devtools extension whose name is `name`.
 
-
 ## Instance Properties
 
 Objects created with `new BrowserWindow` have the following properties:
@@ -322,7 +321,6 @@ when the devtools has been closed.
 ### `win.id`
 
 The unique ID of this window.
-
 
 ## Instance Methods
 
