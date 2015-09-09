@@ -288,6 +288,42 @@ API is not for programming use.
 
 Remove the devtools extension whose name is `name`.
 
+
+## Instance Properties
+
+Objects created with `new BrowserWindow` have the following properties:
+
+```javascript
+var BrowserWindow = require('browser-window');
+
+// In this example `win` is our instance
+var win = new BrowserWindow({ width: 800, height: 600 });
+
+```
+
+### `win.webContents`
+
+The `WebContents` object this window owns, all web page related events and
+operations will be done via it.
+
+See the [`webContents` documentation](web-contents.md) for its methods and
+events.
+
+**Note:** Users should never store this object because it may become `null`
+when the renderer process (web page) has crashed.
+
+### `win.devToolsWebContents`
+
+The `WebContents` of devtools for this window.
+
+**Note:** Users should never store this object because it may become `null`
+when the devtools has been closed.
+
+### `win.id`
+
+The unique ID of this window.
+
+
 ## Instance Methods
 
 Objects created with `new BrowserWindow` have the following instance methods:
@@ -301,28 +337,6 @@ var BrowserWindow = require('browser-window');
 var win = new BrowserWindow({ width: 800, height: 600 });
 
 ```
-
-### `win.webContents()`
-
-The `WebContents` object this window owns, all web page related events and
-operations will be done via it.
-
-See the [`webContents` documentation](web-contents.md) for its methods and
-events.
-
-**Note:** Users should never store this object because it may become `null`
-when the renderer process (web page) has crashed.
-
-### `win.devToolsWebContents()`
-
-Get the `WebContents` of devtools for this window.
-
-**Note:** Users should never store this object because it may become `null`
-when the devtools has been closed.
-
-### `win.id()`
-
-Get the unique ID of this window.
 
 ### `win.destroy()`
 
