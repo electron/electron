@@ -39,8 +39,6 @@ AtomBrowserMainParts::AtomBrowserMainParts()
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {
-  for (const auto& callback : destruction_callbacks_)
-    callback.Run();
 }
 
 // static
@@ -116,6 +114,16 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   Browser::Get()->WillFinishLaunching();
   Browser::Get()->DidFinishLaunching();
 #endif
+}
+
+void AtomBrowserMainParts::PostMainMessageLoopRun() {
+  brightray::BrowserMainParts::PostMainMessageLoopRun();
+
+  // Make sure destruction callbacks are called before message loop is
+  // destroyed, otherwise some objects that need to be deleted on IO thread
+  // won't be freed.
+  for (const auto& callback : destruction_callbacks_)
+    callback.Run();
 }
 
 }  // namespace atom
