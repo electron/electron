@@ -4,7 +4,7 @@ The `ipc` module provides a few methods so you can send synchronous and
 asynchronous messages from the render process (web page) to the main process.
 You can also receive replies from the main process.
 
-**Note**: If you want to make use of modules in the main process from the renderer
+**Note:** If you want to make use of modules in the main process from the renderer
 process, you might consider using the [remote](remote.md) module.
 
 See [ipc (main process)](ipc-main-process.md) for code examples.
@@ -13,7 +13,7 @@ See [ipc (main process)](ipc-main-process.md) for code examples.
 
 The `ipc` module has the following methods for sending messages:
 
-**Note**: When using these methods to send a `message` you must also listen
+**Note:** When using these methods to send a `message` you must also listen
 for it in the main process with [`ipc (main process)`](ipc-main-process.md).
 
 ### `ipc.send(channel[, arg1][, arg2][, ...])`

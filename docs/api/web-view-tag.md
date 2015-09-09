@@ -135,7 +135,7 @@ If "on", the guest page will have web security disabled.
 
 The `webview` tag has the following methods:
 
-**Note**: The webview element must be loaded before using the methods.
+**Note:** The webview element must be loaded before using the methods.
 
 **Example**
 ```javascript
