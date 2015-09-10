@@ -5,6 +5,8 @@
 #ifndef ATOM_COMMON_NODE_INCLUDES_H_
 #define ATOM_COMMON_NODE_INCLUDES_H_
 
+#include "base/logging.h"
+
 // Include common headers for using node APIs.
 
 #define BUILDING_NODE_EXTENSION

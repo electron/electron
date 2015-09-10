@@ -230,8 +230,6 @@
       'atom/browser/web_contents_preferences.h',
       'atom/browser/web_dialog_helper.cc',
       'atom/browser/web_dialog_helper.h',
-      'atom/browser/web_view_constants.cc',
-      'atom/browser/web_view_constants.h',
       'atom/browser/web_view_guest_delegate.cc',
       'atom/browser/web_view_guest_delegate.h',
       'atom/browser/web_view_manager.cc',

@@ -75,6 +75,7 @@
         'xcode_settings': {
           'GCC_TREAT_WARNINGS_AS_ERRORS': 'NO',
           'WARNING_CFLAGS': [
+            '-Wno-unknown-warning-option',
             '-Wno-parentheses-equality',
             '-Wno-unused-function',
             '-Wno-sometimes-uninitialized',

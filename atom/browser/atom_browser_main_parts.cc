@@ -13,6 +13,7 @@
 #include "atom/browser/node_debugger.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/node_bindings.h"
+#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/thread_task_runner_handle.h"
 #include "chrome/browser/browser_process.h"
@@ -21,8 +22,6 @@
 #if defined(USE_X11)
 #include "chrome/browser/ui/libgtk2ui/gtk2_util.h"
 #endif
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -40,8 +39,6 @@ AtomBrowserMainParts::AtomBrowserMainParts()
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {
-  for (const auto& callback : destruction_callbacks_)
-    callback.Run();
 }
 
 // static
@@ -117,6 +114,16 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   Browser::Get()->WillFinishLaunching();
   Browser::Get()->DidFinishLaunching();
 #endif
+}
+
+void AtomBrowserMainParts::PostMainMessageLoopRun() {
+  brightray::BrowserMainParts::PostMainMessageLoopRun();
+
+  // Make sure destruction callbacks are called before message loop is
+  // destroyed, otherwise some objects that need to be deleted on IO thread
+  // won't be freed.
+  for (const auto& callback : destruction_callbacks_)
+    callback.Run();
 }
 
 }  // namespace atom

@@ -11,6 +11,7 @@
 #include "atom/common/api/locker.h"
 #include "atom/common/atom_command_line.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/base_paths.h"
 #include "base/files/file_path.h"
@@ -20,8 +21,6 @@
 #include "content/public/common/content_paths.h"
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebScopedMicrotaskSuppression.h"
-
-#include "atom/common/node_includes.h"
 
 using content::BrowserThread;
 
