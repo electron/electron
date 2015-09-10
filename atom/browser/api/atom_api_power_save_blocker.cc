@@ -6,9 +6,9 @@
 
 #include <string>
 
+#include "atom/common/node_includes.h"
 #include "content/public/browser/power_save_blocker.h"
 #include "native_mate/dictionary.h"
-#include "atom/common/node_includes.h"
 
 namespace mate {
 

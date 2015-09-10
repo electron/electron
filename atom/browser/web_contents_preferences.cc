@@ -16,12 +16,11 @@
 #include "ui/gfx/switches.h"
 #endif
 
+DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::WebContentsPreferences);
+
 namespace atom {
 
 namespace {
-
-// Pointer as WebContents's user data key.
-const char* kWebPreferencesKey = "WebContentsPreferences";
 
 // Array of available web runtime features.
 const char* kWebRuntimeFeatures[] = {
@@ -40,7 +39,7 @@ WebContentsPreferences::WebContentsPreferences(
     content::WebContents* web_contents,
     base::DictionaryValue* web_preferences) {
   web_preferences_.Swap(web_preferences);
-  web_contents->SetUserData(kWebPreferencesKey, this);
+  web_contents->SetUserData(UserDataKey(), this);
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
@@ -51,16 +50,9 @@ void WebContentsPreferences::Merge(const base::DictionaryValue& extend) {
 }
 
 // static
-WebContentsPreferences* WebContentsPreferences::From(
-    content::WebContents* web_contents) {
-  return static_cast<WebContentsPreferences*>(
-      web_contents->GetUserData(kWebPreferencesKey));
-}
-
-// static
 void WebContentsPreferences::AppendExtraCommandLineSwitches(
     content::WebContents* web_contents, base::CommandLine* command_line) {
-  WebContentsPreferences* self = From(web_contents);
+  WebContentsPreferences* self = FromWebContents(web_contents);
   if (!self)
     return;
 
@@ -130,7 +122,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
 // static
 void WebContentsPreferences::OverrideWebkitPrefs(
     content::WebContents* web_contents, content::WebPreferences* prefs) {
-  WebContentsPreferences* self = From(web_contents);
+  WebContentsPreferences* self = FromWebContents(web_contents);
   if (!self)
     return;
 

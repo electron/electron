@@ -12,12 +12,11 @@
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/node_includes.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "ui/events/event_constants.h"
 #include "ui/gfx/image/image.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -35,7 +34,8 @@ Tray::~Tray() {
 // static
 mate::Wrappable* Tray::New(v8::Isolate* isolate, const gfx::Image& image) {
   if (!Browser::Get()->is_ready()) {
-    node::ThrowError(isolate, "Cannot create Tray before app is ready");
+    isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
+        isolate, "Cannot create Tray before app is ready")));
     return nullptr;
   }
   return new Tray(image);
