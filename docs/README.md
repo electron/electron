@@ -1,32 +1,32 @@
 ## Guides
 
-* [Application distribution](tutorial/application-distribution.md)
-* [Application packaging](tutorial/application-packaging.md)
-* [Using native node modules](tutorial/using-native-node-modules.md)
-* [Debugging main process](tutorial/debugging-main-process.md)
+* [Application Distribution](tutorial/application-distribution.md)
+* [Application Packaging](tutorial/application-packaging.md)
+* [Using Native Node Modules](tutorial/using-native-node-modules.md)
+* [Debugging Main Process](tutorial/debugging-main-process.md)
 * [Using Selenium and WebDriver](tutorial/using-selenium-and-webdriver.md)
-* [DevTools extension](tutorial/devtools-extension.md)
-* [Using pepper flash plugin](tutorial/using-pepper-flash-plugin.md)
+* [DevTools Extension](tutorial/devtools-extension.md)
+* [Using Pepper Flash Plugin](tutorial/using-pepper-flash-plugin.md)
 
 ## Tutorials
 
-* [Quick start](tutorial/quick-start.md)
-* [Desktop environment integration](tutorial/desktop-environment-integration.md)
-* [Online/offline event detection](tutorial/online-offline-events.md)
+* [Quick Start](tutorial/quick-start.md)
+* [Desktop Environment Integration](tutorial/desktop-environment-integration.md)
+* [Online/Offline Event Detection](tutorial/online-offline-events.md)
 
-## API references
+## API References
 
 * [Synopsis](api/synopsis.md)
-* [Process object](api/process.md)
-* [Supported Chrome command line switches](api/chrome-command-line-switches.md)
+* [Process Object](api/process.md)
+* [Supported Chrome Command Line Switches](api/chrome-command-line-switches.md)
 
-Custom DOM elements:
+### Custom DOM Elements:
 
-* [`File` object](api/file-object.md)
-* [`<webview>` tag](api/web-view-tag.md)
-* [`window.open` function](api/window-open.md)
+* [`File` Object](api/file-object.md)
+* [`<webview>` Tag](api/web-view-tag.md)
+* [`window.open` Function](api/window-open.md)
 
-Modules for the main process:
+### Modules for the Main Process:
 
 * [app](api/app.md)
 * [auto-updater](api/auto-updater.md)
@@ -41,16 +41,16 @@ Modules for the main process:
 * [power-save-blocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
 * [session](api/session.md)
-* [webContents](api/web-contents.md)
+* [web-contents](api/web-contents.md)
 * [tray](api/tray.md)
 
-Modules for the renderer process (web page):
+### Modules for the Renderer Process (Web Page):
 
 * [ipc (renderer)](api/ipc-renderer.md)
 * [remote](api/remote.md)
 * [web-frame](api/web-frame.md)
 
-Modules for both processes:
+### Modules for Both Processes:
 
 * [clipboard](api/clipboard.md)
 * [crash-reporter](api/crash-reporter.md)
@@ -60,11 +60,11 @@ Modules for both processes:
 
 ## Development
 
-* [Coding style](development/coding-style.md)
-* [Source code directory structure](development/source-code-directory-structure.md)
-* [Technical differences to NW.js (formerly node-webkit)](development/atom-shell-vs-node-webkit.md)
-* [Build system overview](development/build-system-overview.md)
-* [Build instructions (Mac)](development/build-instructions-osx.md)
-* [Build instructions (Windows)](development/build-instructions-windows.md)
-* [Build instructions (Linux)](development/build-instructions-linux.md)
-* [Setting up symbol server in debugger](development/setting-up-symbol-server.md)
+* [Coding Style](development/coding-style.md)
+* [Source Code Directory Structure](development/source-code-directory-structure.md)
+* [Technical Differences to NW.js (formerly node-webkit)](development/atom-shell-vs-node-webkit.md)
+* [Build System Overview](development/build-system-overview.md)
+* [Build Instructions (Mac)](development/build-instructions-osx.md)
+* [Build Instructions (Windows)](development/build-instructions-windows.md)
+* [Build Instructions (Linux)](development/build-instructions-linux.md)
+* [Setting Up Symbol Server in debugger](development/setting-up-symbol-server.md)

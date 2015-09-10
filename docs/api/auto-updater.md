@@ -53,7 +53,7 @@ server that you are requesting updates from. A common approach is to use query
 parameters, like this:
 
 ```javascript
-// On the main process
+// In the main process
 var app = require('app');
 var autoUpdater = require('auto-updater');
 autoUpdater.setFeedUrl('http://mycompany.com/myapp/latest?version=' + app.getVersion());
