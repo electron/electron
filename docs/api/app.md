@@ -152,7 +152,7 @@ Emitted when the gpu process crashes.
 
 The `app` object has the following methods:
 
-**Note** Some methods are only available on specific operating systems and are labeled as such.
+**Note:** Some methods are only available on specific operating systems and are labeled as such.
 
 ### `app.quit()`
 
