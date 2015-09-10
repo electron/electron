@@ -7,7 +7,7 @@ a renderer will be emitted to this module.
 ## Sending Messages
 
 It is also possible to send messages from the main process to the renderer
-process, see [WebContents.send](browser-window.md#webcontents-send-channel-args)
+process, see [WebContents.send](web-contents.md#webcontentssendchannel-args)
 for more information.
 
 - When sending a message, the event name is the `channel`.

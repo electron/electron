@@ -263,7 +263,7 @@ Returns the window that is focused in this application.
 
 ### `BrowserWindow.fromWebContents(webContents)`
 
-* `webContents` [WebContents](#webcontents)
+* `webContents` [WebContents](web-contents.md)
 
 Find a window according to the `webContents` it owns.
 
