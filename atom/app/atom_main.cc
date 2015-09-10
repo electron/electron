@@ -90,12 +90,9 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   if (env->GetVar("OS", &os) && os != "cygwin") {
     AttachConsole(ATTACH_PARENT_PROCESS);
 
-    FILE* dontcare, *out, *err;
-    out = fopen("out.txt", "w");
-    err = fopen("err.txt", "w");
-    freopen_s(&out, "CON", "w", stdout);
-    freopen_s(&err, "CON", "w", stderr);
-    freopen_s(&dontcare, "CON", "r", stdin);
+    FILE* dontcare;
+    freopen_s(&dontcare, "CON", "w", stdout);
+    freopen_s(&dontcare, "CON", "w", stderr);
   }
 
   // Convert argv to to UTF8
