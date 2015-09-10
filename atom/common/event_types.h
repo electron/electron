@@ -5,6 +5,8 @@
 #ifndef ATOM_COMMON_EVENT_TYPES_H_
 #define ATOM_COMMON_EVENT_TYPES_H_
 
+#include "third_party/WebKit/public/web/WebInputEvent.h"
+
 namespace atom {
 
 namespace event_types {
@@ -41,7 +43,9 @@ extern const char kModifierIsAutoRepeat[];
 extern const char kModifierIsLeft[];
 extern const char kModifierIsRight[];
 
-}  // namespace switches
+int modifierStrToWebModifier(std::string modifier);
+
+}  // namespace event_types
 
 }  // namespace atom
 

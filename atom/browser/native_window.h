@@ -332,6 +332,7 @@ class NativeWindow : public content::WebContentsObserver,
   DISALLOW_COPY_AND_ASSIGN(NativeWindow);
 };
 
+//This class provides a way to listen to frame renders and to use the rendered frames for offscreen rendering
 class RenderSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
  public:
   RenderSubscriber(gfx::Size size, base::Callback<void(bool, scoped_refptr<media::VideoFrame>)> callback) : size_(size), callback_(callback) {}

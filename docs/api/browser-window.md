@@ -759,16 +759,16 @@ Sends a mouse event to the BrowserWindow.
     * `middle` String - The middle button was pressed.
   * `click-count` Integer - The number of clicks associated with the mouse event.
   * `precise` Boolean - For the `wheel` event type, this option sets the `hasPreciseScrollingDeltas` option of the event.
-  * `modifiers` Array of Strings - The modifier values associated with the event.
-    * `left-button-down` String - The left mouse button was pressed.
-    * `middle-button-down` String - The right mouse button was pressed.
-    * `right-button-down` String - The middle mouse button was pressed.
-    * `shift` String - The shift key was pressed.
-    * `control` String - The control key was pressed.
-    * `alt` String - The alt key was pressed.
-    * `meta` String - The meta key was pressed.
-    * `caps-lock` String - The caps-lock key was pressed.
-    * `num-lock` String - The num-lock key was pressed.
+  * `modifiers` Object - The modifier values associated with the event.
+    * `left-button-down` Boolean - The left mouse button was pressed.
+    * `middle-button-down` Boolean - The right mouse button was pressed.
+    * `right-button-down` Boolean - The middle mouse button was pressed.
+    * `shift` Boolean - The shift key was pressed.
+    * `control` Boolean - The control key was pressed.
+    * `alt` Boolean - The alt key was pressed.
+    * `meta` Boolean - The meta key was pressed.
+    * `caps-lock` Boolean - The caps-lock key was on.
+    * `num-lock` Boolean - The num-lock key was on.
 
 ### BrowserWindow.sendKeyboardEvent(options)
 
@@ -780,17 +780,17 @@ Sends a keyboard event to the BrowserWindow.
     * `char` String - Character event.
   * `code` Integer - The key code of the key that generated the event.
   * `native` Integer - The native key code of the key that generated the event.
-  * `modifiers` Array of Strings - The modifier values associated with the event.
-    * `keypad` String - Sets the `IsKeyPad` option of the event.
-    * `auto-repeat` String - Sets the `IsAutoRepeat` option of the event.
-    * `left` String - Sets the `IsLeft` option of the event.
-    * `right` String - Sets the `IsRight` option of the event.
-    * `shift` String - The shift key was pressed.
-    * `control` String - The control key was pressed.
-    * `alt` String - The alt key was pressed.
-    * `meta` String - The meta key was pressed.
-    * `caps-lock` String - The caps-lock key was pressed.
-    * `num-lock` String - The num-lock key was pressed.
+  * `modifiers` Object - The modifier values associated with the event.
+    * `keypad` Boolean - Sets the `IsKeyPad` option of the event.
+    * `auto-repeat` Boolean - Sets the `IsAutoRepeat` option of the event.
+    * `left` Boolean - Sets the `IsLeft` option of the event.
+    * `right` Boolean - Sets the `IsRight` option of the event.
+    * `shift` Boolean - The shift key was pressed.
+    * `control` Boolean - The control key was pressed.
+    * `alt` Boolean - The alt key was pressed.
+    * `meta` Boolean - The meta key was pressed.
+    * `caps-lock` Boolean - The caps-lock key was on.
+    * `num-lock` Boolean - The num-lock key was on.
 
 ## Class: WebContents
 

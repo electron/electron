@@ -528,10 +528,10 @@ void Window::SendKeyboardEvent(v8::Isolate* isolate, const mate::Dictionary& dat
   int keycode = 0;
   int native = 0;
   std::string type_str = "";
-  std::vector<std::string> modifier_array;
+  mate::Dictionary modifier_list = mate::Dictionary::CreateEmpty(isolate);
 
   data.Get(switches::kEventType, &type_str);
-  data.Get(switches::kModifiers, &modifier_array);
+  data.Get(switches::kModifiers, &modifier_list);
   data.Get(switches::kKeyCode, &keycode);
   data.Get(switches::kNativeKeyCode, &native);
 
@@ -543,28 +543,22 @@ void Window::SendKeyboardEvent(v8::Isolate* isolate, const mate::Dictionary& dat
     type = blink::WebInputEvent::Type::Char;
   }
 
-  for(std::vector<std::string>::iterator mod = modifier_array.begin(); mod != modifier_array.end(); ++mod) {
-    if(mod->compare(event_types::kModifierIsKeyPad) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::IsKeyPad;
-    }else if(mod->compare(event_types::kModifierIsAutoRepeat) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::IsAutoRepeat;
-    }else if(mod->compare(event_types::kModifierIsLeft) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::IsLeft;
-    }else if(mod->compare(event_types::kModifierIsRight) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::IsRight;
-    }else if(mod->compare(event_types::kModifierShiftKey) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::ShiftKey;
-    }else if(mod->compare(event_types::kModifierControlKey) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::ControlKey;
-    }else if(mod->compare(event_types::kModifierAltKey) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::AltKey;
-    }else if(mod->compare(event_types::kModifierMetaKey) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::MetaKey;
-    }else if(mod->compare(event_types::kModifierCapsLockOn) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::CapsLockOn;
-    }else if(mod->compare(event_types::kModifierNumLockOn) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::NumLockOn;
-    }
+  std::map<std::string, bool> modifier_types;
+  modifier_types[event_types::kModifierIsKeyPad] = false;
+  modifier_types[event_types::kModifierIsAutoRepeat] = false;
+  modifier_types[event_types::kModifierIsLeft] = false;
+  modifier_types[event_types::kModifierIsRight] = false;
+  modifier_types[event_types::kModifierShiftKey] = false;
+  modifier_types[event_types::kModifierControlKey] = false;
+  modifier_types[event_types::kModifierAltKey] = false;
+  modifier_types[event_types::kModifierMetaKey] = false;
+  modifier_types[event_types::kModifierCapsLockOn] = false;
+  modifier_types[event_types::kModifierNumLockOn] = false;
+
+  for(std::map<std::string, bool>::iterator it = modifier_types.begin(); it != modifier_types.end(); ++it){
+    modifier_list.Get(it->first,&(it->second));
+
+    if(it->second) modifiers = modifiers & event_types::modifierStrToWebModifier(it->first);
   }
 
   window_->SendKeyboardEvent(type, modifiers, keycode, native);
@@ -574,7 +568,7 @@ void Window::SendMouseEvent(v8::Isolate* isolate, const mate::Dictionary& data){
   int x, y, movementX, movementY, clickCount;
   std::string type_str = "";
   std::string button_str = "";
-  std::vector<std::string> modifier_array;
+  mate::Dictionary modifier_list = mate::Dictionary::CreateEmpty(isolate);
 
   blink::WebInputEvent::Type type = blink::WebInputEvent::Type::MouseMove;
   blink::WebMouseEvent::Button button = blink::WebMouseEvent::Button::ButtonNone;
@@ -582,7 +576,7 @@ void Window::SendMouseEvent(v8::Isolate* isolate, const mate::Dictionary& data){
 
   data.Get(switches::kEventType, &type_str);
   data.Get(switches::kMouseEventButton, &button_str);
-  data.Get(switches::kModifiers, &modifier_array);
+  data.Get(switches::kModifiers, &modifier_list);
 
   if(type_str.compare(event_types::kMouseDown) == 0){
     type = blink::WebInputEvent::Type::MouseDown;
@@ -600,37 +594,24 @@ void Window::SendMouseEvent(v8::Isolate* isolate, const mate::Dictionary& data){
     type = blink::WebInputEvent::Type::MouseWheel;
   }
 
-  if(button_str.compare(event_types::kMouseLeftButton) == 0){
-    modifiers = modifiers & blink::WebInputEvent::Modifiers::LeftButtonDown;
-    button = blink::WebMouseEvent::Button::ButtonLeft;
-  }else if(button_str.compare(event_types::kMouseRightButton) == 0){
-    modifiers = modifiers & blink::WebInputEvent::Modifiers::RightButtonDown;
-    button = blink::WebMouseEvent::Button::ButtonRight;
-  }else if(button_str.compare(event_types::kMouseMiddleButton) == 0){
-    modifiers = modifiers & blink::WebInputEvent::Modifiers::MiddleButtonDown;
-    button = blink::WebMouseEvent::Button::ButtonMiddle;
-  }
+  std::map<std::string, bool> modifier_types;
+  modifier_types[event_types::kMouseLeftButton] = false;
+  modifier_types[event_types::kMouseRightButton] = false;
+  modifier_types[event_types::kMouseMiddleButton] = false;
+  modifier_types[event_types::kModifierLeftButtonDown] = false;
+  modifier_types[event_types::kModifierMiddleButtonDown] = false;
+  modifier_types[event_types::kModifierRightButtonDown] = false;
+  modifier_types[event_types::kModifierShiftKey] = false;
+  modifier_types[event_types::kModifierControlKey] = false;
+  modifier_types[event_types::kModifierAltKey] = false;
+  modifier_types[event_types::kModifierMetaKey] = false;
+  modifier_types[event_types::kModifierCapsLockOn] = false;
+  modifier_types[event_types::kModifierNumLockOn] = false;
 
-  for(std::vector<std::string>::iterator mod = modifier_array.begin(); mod != modifier_array.end(); ++mod) {
-    if(mod->compare(event_types::kModifierLeftButtonDown) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::LeftButtonDown;
-    }else if(mod->compare(event_types::kModifierMiddleButtonDown) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::MiddleButtonDown;
-    }else if(mod->compare(event_types::kModifierRightButtonDown) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::RightButtonDown;
-    }else if(mod->compare(event_types::kModifierShiftKey) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::ShiftKey;
-    }else if(mod->compare(event_types::kModifierControlKey) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::ControlKey;
-    }else if(mod->compare(event_types::kModifierAltKey) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::AltKey;
-    }else if(mod->compare(event_types::kModifierMetaKey) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::MetaKey;
-    }else if(mod->compare(event_types::kModifierCapsLockOn) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::CapsLockOn;
-    }else if(mod->compare(event_types::kModifierNumLockOn) == 0){
-      modifiers = modifiers & blink::WebInputEvent::Modifiers::NumLockOn;
-    }
+  for(std::map<std::string, bool>::iterator it = modifier_types.begin(); it != modifier_types.end(); ++it){
+    modifier_list.Get(it->first,&(it->second));
+
+    if(it->second) modifiers = modifiers & event_types::modifierStrToWebModifier(it->first);
   }
 
   if(type == blink::WebInputEvent::Type::MouseWheel){
