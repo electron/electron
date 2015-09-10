@@ -384,6 +384,7 @@ Returns:
 
 * `errorCode` Integer
 * `errorDescription` String
+* `validatedUrl` String
 
 This event is like `did-finish-load`, but fired when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
