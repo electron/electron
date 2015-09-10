@@ -313,7 +313,6 @@ when the renderer process (web page) has crashed.
 
 ### `win.devToolsWebContents`
 
-
 Get the `WebContents` of DevTools for this window.
 
 **Note:** Users should never store this object because it may become `null`
