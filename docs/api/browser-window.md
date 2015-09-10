@@ -117,7 +117,7 @@ Properties `width` and `height` are required.
 
 The `BrowserWindow` object emits the following events:
 
-+**Note:** Some events are only available on specific operating systems and are labeled as such.
+**Note:** Some events are only available on specific operating systems and are labeled as such.
 
 ### Event: 'page-title-updated'
 
@@ -288,11 +288,9 @@ API is not for programming use.
 
 Remove the DevTools extension whose name is `name`.
 
-## Instance Methods
+## Instance Properties
 
-Objects created with `new BrowserWindow` have the following instance methods:
-
-+**Note:** Some methods are only available on specific operating systems and are labeled as such.
+Objects created with `new BrowserWindow` have the following properties:
 
 ```javascript
 var BrowserWindow = require('browser-window');
@@ -302,7 +300,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ```
 
-### `win.webContents()`
+### `win.webContents`
 
 The `WebContents` object this window owns, all web page related events and
 operations will be done via it.
@@ -313,16 +311,30 @@ events.
 **Note:** Users should never store this object because it may become `null`
 when the renderer process (web page) has crashed.
 
-### `win.devToolsWebContents()`
+### `win.devToolsWebContents`
 
 Get the `WebContents` of DevTools for this window.
 
 **Note:** Users should never store this object because it may become `null`
 when the DevTools has been closed.
 
-### `win.id()`
+### `win.id`
 
-Get the unique ID of this window.
+The unique ID of this window.
+
+## Instance Methods
+
+Objects created with `new BrowserWindow` have the following instance methods:
+
+**Note:** Some methods are only available on specific operating systems and are labeled as such.
+
+```javascript
+var BrowserWindow = require('browser-window');
+
+// In this example `win` is our instance
+var win = new BrowserWindow({ width: 800, height: 600 });
+
+```
 
 ### `win.destroy()`
 
