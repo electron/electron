@@ -38,7 +38,9 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 #else
   settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
 #endif  // defined(DEBUG)
-#endif  // defined(OS_WIN)
+#else  // defined(OS_WIN)
+  settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
+#endif  // !defined(OS_WIN)
   logging::InitLogging(settings);
 
   // Logging with pid and timestamp.

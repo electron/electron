@@ -388,7 +388,7 @@ void WebContents::DidFailProvisionalLoad(
     int error_code,
     const base::string16& error_description,
     bool was_ignored_by_handler) {
-  Emit("did-fail-load", error_code, error_description);
+  Emit("did-fail-load", error_code, error_description, validated_url);
 }
 
 void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
@@ -396,7 +396,7 @@ void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
                               int error_code,
                               const base::string16& error_description,
                               bool was_ignored_by_handler) {
-  Emit("did-fail-load", error_code, error_description);
+  Emit("did-fail-load", error_code, error_description, validated_url);
 }
 
 void WebContents::DidStartLoading() {
