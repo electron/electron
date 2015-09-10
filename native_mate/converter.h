@@ -15,6 +15,20 @@
 
 namespace mate {
 
+template<typename KeyType>
+bool SetProperty(v8::Isolate* isolate,
+                 v8::Local<v8::Object> object,
+                 KeyType key,
+                 v8::Local<v8::Value> value) {
+  auto maybe = object->Set(isolate->GetCurrentContext(), key, value);
+  return !maybe.IsNothing() && maybe.FromJust();
+}
+
+template<typename T>
+struct ToV8ReturnsMaybe {
+  static const bool value = false;
+};
+
 template<typename T, typename Enable = void>
 struct Converter {};
 
@@ -241,18 +255,59 @@ struct Converter<std::set<T> > {
   }
 };
 
+template<typename T>
+struct ToV8ReturnsMaybe<std::vector<T>> {
+  static const bool value = true;
+};
+
 // Convenience functions that deduce T.
 template<typename T>
-v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate,
-                                  const T& input) {
+v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, const T& input) {
   return Converter<T>::ToV8(isolate, input);
 }
 
 inline v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate,
-                                         const char* input) {
+                                        const char* input) {
   return Converter<const char*>::ToV8(isolate, input);
 }
 
+template<typename T>
+v8::MaybeLocal<v8::Value> ConvertToV8(v8::Local<v8::Context> context,
+                                      const T& input) {
+  return Converter<T>::ToV8(context, input);
+}
+
+template<typename T, bool = ToV8ReturnsMaybe<T>::value> struct ToV8Traits;
+
+template <typename T>
+struct ToV8Traits<T, true> {
+  static bool TryConvertToV8(v8::Isolate* isolate,
+                             const T& input,
+                             v8::Local<v8::Value>* output) {
+    auto maybe = ConvertToV8(isolate->GetCurrentContext(), input);
+    if (maybe.IsEmpty())
+      return false;
+    *output = maybe.ToLocalChecked();
+    return true;
+  }
+};
+
+template <typename T>
+struct ToV8Traits<T, false> {
+  static bool TryConvertToV8(v8::Isolate* isolate,
+                             const T& input,
+                             v8::Local<v8::Value>* output) {
+    *output = ConvertToV8(isolate, input);
+    return true;
+  }
+};
+
+template <typename T>
+bool TryConvertToV8(v8::Isolate* isolate,
+                    T input,
+                    v8::Local<v8::Value>* output) {
+  return ToV8Traits<T>::TryConvertToV8(isolate, input, output);
+}
 inline v8::Local<v8::String> StringToV8(
     v8::Isolate* isolate,
     const base::StringPiece& input) {

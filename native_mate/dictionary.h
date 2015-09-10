@@ -10,6 +10,15 @@
 
 namespace mate {
 
+namespace internal {
+
+// Returns true if |maybe| is both a value, and that value is true.
+inline bool IsTrue(v8::Maybe<bool> maybe) {
+  return maybe.IsJust() && maybe.FromJust();
+}
+
+}  // namespace internal
+
 // Dictionary is useful when writing bindings for a function that either
 // receives an arbitrary JavaScript object as an argument or returns an
 // arbitrary JavaScript object as a result. For example, Dictionary is useful
@@ -32,27 +41,44 @@ class Dictionary {
 
   template<typename T>
   bool Get(const base::StringPiece& key, T* out) const {
-    v8::Local<v8::Value> val = GetHandle()->Get(StringToV8(isolate_, key));
+    // Check for existence before getting, otherwise this method will always
+    // returns true when T == v8::Local<v8::Value>.
+    v8::Local<v8::Context> context = isolate_->GetCurrentContext();
+    v8::Local<v8::String> v8_key = StringToV8(isolate_, key);
+    if (!internal::IsTrue(GetHandle()->Has(context, v8_key)))
+      return false;
+
+    v8::Local<v8::Value> val;
+    if (!GetHandle()->Get(context, v8_key).ToLocal(&val))
+      return false;
     return ConvertFromV8(isolate_, val, out);
   }
 
   template<typename T>
   bool GetHidden(const base::StringPiece& key, T* out) const {
-    v8::Local<v8::Value> val = GetHandle()->GetHiddenValue(
-        StringToV8(isolate_, key));
+    v8::Local<v8::Value> val =
+        GetHandle()->GetHiddenValue(StringToV8(isolate_, key));
     return ConvertFromV8(isolate_, val, out);
   }
 
   template<typename T>
   bool Set(const base::StringPiece& key, T val) {
-    return GetHandle()->Set(StringToV8(isolate_, key),
-                            ConvertToV8(isolate_, val));
+    v8::Local<v8::Value> v8_value;
+    if (!TryConvertToV8(isolate_, val, &v8_value))
+      return false;
+    v8::Maybe<bool> result =
+        GetHandle()->Set(isolate_->GetCurrentContext(),
+                         StringToV8(isolate_, key),
+                         v8_value);
+    return !result.IsNothing() && result.FromJust();
   }
 
   template<typename T>
   bool SetHidden(const base::StringPiece& key, T val) {
-    return GetHandle()->SetHiddenValue(StringToV8(isolate_, key),
-                                       ConvertToV8(isolate_, val));
+    v8::Local<v8::Value> v8_value;
+    if (!TryConvertToV8(isolate_, val, &v8_value))
+      return false;
+    return GetHandle()->SetHiddenValue(StringToV8(isolate_, key), v8_value);
   }
 
   template<typename T>
