@@ -21,7 +21,7 @@ win.loadUrl('https://github.com');
 ```
 
 **Note:** for the reverse (access the renderer process from the main process),
-you can use [webContents.executeJavascript](browser-window.md#webcontents-executejavascript-code).
+you can use [webContents.executeJavascript](web-contents.md#webcontentsexecutejavascriptcode-usergesture).
 
 ## Remote Objects
 
