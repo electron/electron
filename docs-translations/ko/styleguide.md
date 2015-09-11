@@ -1,6 +1,6 @@
 ﻿# Electron 문서 스타일 가이드
 
-[Electron 문서 읽기](#) 와 [Electron 문서 작성하기](#) 중 적당히 필요한 부분을 찾아 참고하세요:
+[Electron 문서 읽기](#electron-문서-읽기) 와 [Electron 문서 작성하기](#electron-문서-작성하기) 중 이해가 필요한 부분을 찾아 참고하세요:
 
 ## Electron 문서 작성하기
 
@@ -22,6 +22,19 @@ Electron 문서를 작성하는 규칙은 다음과 같습니다.
 - 문장의 길이는 한 줄당 80 칸을 유지합니다.
 - 플랫폼 특정 메서드 헤더는 이탈릭체로 표시합니다.
  - ```### `method(foo, bar)` _OS X_```
+- 'on' 표현 대신 'in the ___ process' 형식의 표현을 지향합니다.
+
+### 번역된 참조 문서
+
+번역된 Electron의 참조 문서는 `docs-translations` 디렉터리에 있습니다.
+
+아직 번역되지 않은 언어를 추가하려면 (일부분 포함):
+
+- 언어의 약어(예: en, ja, ko등)로 서브 디렉터리를 만듭니다.
+- 서브 디렉터리에 `docs` 디렉터리를 복사합니다. 파일 이름과 디렉터리 구조는 모두 유지합니다.
+- 문서를 번역합니다.
+- `README.md`에 번역한 문서의 링크를 추가하고 업데이트 합니다.
+- 메인 Electron의 [README](https://github.com/atom/electron#documentation-translations)에 번역된 디렉터리의 링크를 추가합니다.
 
 ## Electron 문서 읽기
 

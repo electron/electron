@@ -49,6 +49,10 @@ Electron을 빌드 하는 방법과 프로젝트에 기여하는 방법도 문�
 
 ## 커뮤니티
 
-[Atom 포럼내의 `electron` 카테고리](http://discuss.atom.io/category/electron)와 Freenode `#atom-shell` 채팅 채널에서 활발하게 토론이 이어지고 있습니다.
+다음 링크를 통해 커뮤니티에 질문을 올리거나 토론을 나누실 수 있습니다:
+
+- Atom 포럼의 [`electron`](http://discuss.atom.io/category/electron) 카테고리
+- Freenode 채팅의 `#atom-shell` 채널 
+- Slack의 [`Atom`](http://atom-slack.herokuapp.com/) 채널
 
 [awesome-electron](https://github.com/sindresorhus/awesome-electron) 프로젝트엔 커뮤니티가 운영중인 유용한 예제 어플리케이션과 도구, 리소스가 있으니 한번 참고해 보시기 바랍니다.

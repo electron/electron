@@ -139,7 +139,7 @@
 
 `webview` 태그는 다음과 같은 메서드를 가지고 있습니다:
 
-**참고:** Webview 메서드는 페이지 로드가 끝난 뒤에만 사용할 수 있습니다.
+**참고:** <webview> 태그 객체의 메서드는 페이지 로드가 끝난 뒤에만 사용할 수 있습니다.
 
 **예제**
 ```javascript
@@ -248,15 +248,15 @@ webview.addEventListener("dom-ready", function() {
 
 ### `<webview>.openDevTools()`
 
-페이지에 대한 개발자 툴을 엽니다.
+페이지에 대한 개발자 콘솔을 엽니다.
 
 ### `<webview>.closeDevTools()`
 
-페이지에 대한 개발자 툴을 닫습니다.
+페이지에 대한 개발자 콘솔을 닫습니다.
 
 ### `<webview>.isDevToolsOpened()`
 
-페이지에 대한 개발자 툴이 열려있는지 확인합니다. 불린 값을 반환합니다.
+페이지에 대한 개발자 콘솔이 열려있는지 확인합니다. 불린 값을 반환합니다.
 
 ### `<webview>.inspectElement(x, y)`
 
@@ -267,7 +267,7 @@ webview.addEventListener("dom-ready", function() {
 
 ### `<webview>.inspectServiceWorker()`
 
-Service worker에 대한 개발자 툴을 엽니다.
+Service worker에 대한 개발자 콘솔을 엽니다.
 
 ### `<webview>.undo()`
 
@@ -333,7 +333,7 @@ Webview 페이지를 PDF 형식으로 인쇄합니다. `webContents.printToPDF(o
 `channel`을 통해 페이지에 `args` 비동기 메시지를 보냅니다.
 페이지에선 `ipc` 모듈의 `channel` 이벤트를 사용하면 이 메시지를 받을 수 있습니다.
 
-예제는 [WebContents.send](browser-window.md#webcontentssendchannel-args)를 참고하세요.
+예제는 [WebContents.send](web-contents.md#webcontentssendchannel-args)를 참고하세요.
 
 ## DOM 이벤트
 
@@ -360,6 +360,7 @@ Returns:
 
 * `errorCode` Integer
 * `errorDescription` String
+* `validatedUrl` String
 
 `did-finish-load`와 비슷합니다. 하지만 이 이벤트는 `window.stop()`과 같은 무언가로 인해 로드에 실패했을 때 발생하는 이벤트입니다.
 
