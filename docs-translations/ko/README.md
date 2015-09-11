@@ -28,9 +28,9 @@
 
 ### 메인 프로세스를 위한 모듈들:
 
-* [app](api/app.md)
+* [app (0% 번역됨)](api/app.md)
 * [auto-updater](api/auto-updater.md)
-* [browser-window](api/browser-window.md)
+* [browser-window (0% 번역됨)](api/browser-window.md)
 * [content-tracing](api/content-tracing.md)
 * [dialog](api/dialog.md)
 * [global-shortcut](api/global-shortcut.md)
@@ -41,7 +41,7 @@
 * [power-save-blocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
 * [session](api/session.md)
-* [web-contents](api/web-contents.md)
+* [web-contents (0% 번역됨)](api/web-contents.md)
 * [tray](api/tray.md)
 
 ### 랜더러 프로세스를 위한 모듈들 (웹 페이지):
