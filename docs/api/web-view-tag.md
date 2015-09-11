@@ -153,7 +153,7 @@ value will fail with a DOM exception.
 
 The `webview` tag has the following methods:
 
-**Note**: The webview element must be loaded before using the methods.
+**Note:** The webview element must be loaded before using the methods.
 
 **Example**
 ```javascript
@@ -260,15 +260,15 @@ user action, can take advantage of this option for automation.
 
 ### `<webview>.openDevTools()`
 
-Opens a devtools window for guest page.
+Opens a DevTools window for guest page.
 
 ### `<webview>.closeDevTools()`
 
-Closes the devtools window of guest page.
+Closes the DevTools window of guest page.
 
 ### `<webview>.isDevToolsOpened()`
 
-Returns a boolean whether guest page has a devtools window attached.
+Returns a boolean whether guest page has a DevTools window attached.
 
 ### `<webview>.inspectElement(x, y)`
 
@@ -279,7 +279,7 @@ Starts inspecting element at position (`x`, `y`) of guest page.
 
 ### `<webview>.inspectServiceWorker()`
 
-Opens the devtools for the service worker context present in the guest page.
+Opens the DevTools for the service worker context present in the guest page.
 
 ### `<webview>.setAudioMuted(muted)`
 
@@ -355,7 +355,7 @@ Prints webview's web page as PDF, Same with `webContents.printToPDF(options, cal
 Send `args..` to guest page via `channel` in asynchronous message, the guest
 page can handle it by listening to the `channel` event of `ipc` module.
 
-See [WebContents.send](browser-window.md#webcontentssendchannel-args) for
+See [WebContents.send](web-contents.md#webcontentssendchannel-args) for
 examples.
 
 ## DOM events

@@ -1,7 +1,7 @@
 # Electron Documentation Styleguide
 
-Find the appropriate section for your task: [reading Electron documentation](#)
-or [writing Electron documentation](#).
+Find the appropriate section for your task: [reading Electron documentation](#reading-electron-documentation)
+or [writing Electron documentation](#writing-electron-documentation).
 
 ## Writing Electron Documentation
 
@@ -25,6 +25,22 @@ These are the ways that we construct the Electron documentation.
 - Line length is 80-column wrapped.
 - Platform specific methods are noted in italics following method header.
  - ```### `method(foo, bar)` _OS X_```
+- Prefer 'in the ___ process' over 'on'
+
+### Documentation Translations
+
+Translations of the Electron docs are located within the `docs-translations`
+directory.
+
+To add another set (or partial set):
+
+- Create a subdirectory named by language abbreviation.
+- Within that subdirectory, duplicate the `docs` directory, keeping the
+  names of directories and files same.
+- Translate the files.
+- Update the `README.md` within your language directory to link to the files
+  you have translated.
+- Add a link to your translation directory on the main Electron [README](https://github.com/atom/electron#documentation-translations).
 
 ## Reading Electron Documentation
 

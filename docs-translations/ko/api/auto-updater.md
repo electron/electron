@@ -38,7 +38,7 @@ Squirrel은 응답을 분석해야 할 책임이 있기 때문에 `Accept: appli
 버전 식별자와 다른 기준을 특정하는 업데이트 요청 폼을 서버로 전달하기 위한 공통적인 방법으로 쿼리 인자를 사용하는 방법이 있습니다:
 
 ```javascript
-// On the main process
+// In the main process
 var app = require('app');
 var autoUpdater = require('auto-updater');
 autoUpdater.setFeedUrl('http://mycompany.com/myapp/latest?version=' + app.getVersion());

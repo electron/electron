@@ -74,7 +74,7 @@ mixed with other content to create the desired final appearance.
 The most common case is to use template images for a menu bar icon so it can
 adapt to both light and dark menu bars.
 
-**Note**: Template image is only supported on OS X.
+**Note:** Template image is only supported on OS X.
 
 To mark an image as a template image, its filename should end with the word
 `Template`. For example:

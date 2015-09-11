@@ -19,13 +19,14 @@ Node v0.11.x 버전부터는 V8 API의 중대한 변경이 있었습니다. 하�
 ### 쉬운 방법
 
 [`electron-rebuild`](https://github.com/paulcbetts/electron-rebuild) 패키지를 사용하면 빠르고 간단하게 네이티브 모듈을 다시 빌드할 수 있습니다.
-간단한 절차를 통해 자동으로 헤더를 다운로드하고 네이티브 모듈을 빌드할 수 있습니다:
+
+다음 예제는 `electron-rebuild`를 통해 자동으로 모듈의 헤더를 다운로드하고 네이티브 모듈을 빌드합니다:
 
 ```sh
 npm install --save-dev electron-rebuild
 
 # 필요한 네이티브 모듈을 `npm install`로 설치한 후 다음 명령을 실행하세요:
-./node_modules/.bin/electron-rebuild
+node ./node_modules/.bin/electron-rebuild
 ```
 
 ### node-gyp을 이용한 방법
