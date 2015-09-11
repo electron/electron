@@ -31,7 +31,7 @@ which handles the manual steps of downloading headers and building native module
 npm install --save-dev electron-rebuild
 
 # Every time you run npm install, run this
-./node_modules/.bin/electron-rebuild
+node ./node_modules/.bin/electron-rebuild
 ```
 
 ### The node-gyp Way

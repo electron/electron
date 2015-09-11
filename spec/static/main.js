@@ -2,13 +2,17 @@ var app = require('app');
 var ipc = require('ipc');
 var dialog = require('dialog');
 var BrowserWindow = require('browser-window');
-var Menu = require('menu');
 
 var window = null;
 process.port = 0;  // will be used by crash-reporter spec.
 
 app.commandLine.appendSwitch('js-flags', '--expose_gc');
 app.commandLine.appendSwitch('ignore-certificate-errors');
+
+// Accessing stdout in the main process will result in the process.stdout
+// throwing UnknownSystemError in renderer process sometimes. This line makes
+// sure we can reproduce it in renderer process.
+process.stdout;
 
 ipc.on('message', function(event, arg) {
   event.sender.send('message', arg);
@@ -47,93 +51,6 @@ app.on('window-all-closed', function() {
 });
 
 app.on('ready', function() {
-  var template = [
-    {
-      label: 'Atom',
-      submenu: [
-        {
-          label: 'Quit',
-          accelerator: 'CommandOrControl+Q',
-          click: function(item, window) { app.quit(); }
-        },
-      ],
-    },
-    {
-      label: 'Edit',
-      submenu: [
-        {
-          label: 'Undo',
-          accelerator: 'CommandOrControl+Z',
-          selector: 'undo:',
-        },
-        {
-          label: 'Redo',
-          accelerator: 'CommandOrControl+Shift+Z',
-          selector: 'redo:',
-        },
-        {
-          type: 'separator',
-        },
-        {
-          label: 'Cut',
-          accelerator: 'CommandOrControl+X',
-          selector: 'cut:',
-        },
-        {
-          label: 'Copy',
-          accelerator: 'CommandOrControl+C',
-          selector: 'copy:',
-        },
-        {
-          label: 'Paste',
-          accelerator: 'CommandOrControl+V',
-          selector: 'paste:',
-        },
-        {
-          label: 'Select All',
-          accelerator: 'CommandOrControl+A',
-          selector: 'selectAll:',
-        },
-      ]
-    },
-    {
-      label: 'View',
-      submenu: [
-        {
-          label: 'Reload',
-          accelerator: 'CommandOrControl+R',
-          click: function(item, window) { window.restart(); }
-        },
-        {
-          label: 'Enter Fullscreen',
-          click: function(item, window) { window.setFullScreen(true); }
-        },
-        {
-          label: 'Toggle DevTools',
-          accelerator: 'Alt+CommandOrControl+I',
-          click: function(item, window) { window.toggleDevTools(); }
-        },
-      ]
-    },
-    {
-      label: 'Window',
-      submenu: [
-        {
-          label: 'Open',
-          accelerator: 'CommandOrControl+O',
-        },
-        {
-          label: 'Close',
-          accelerator: 'CommandOrControl+W',
-          click: function(item, window) { window.close(); }
-        },
-      ]
-    },
-  ];
-
-  var menu = Menu.buildFromTemplate(template);
-  app.setApplicationMenu(menu);
-
   // Test if using protocol module would crash.
   require('protocol').registerStringProtocol('test-if-crashes', function() {});
 

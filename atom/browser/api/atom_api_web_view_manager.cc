@@ -10,6 +10,8 @@
 #include "content/public/browser/browser_context.h"
 #include "native_mate/dictionary.h"
 
+using atom::WebContentsPreferences;
+
 namespace mate {
 
 template<>
@@ -48,7 +50,7 @@ void AddGuest(int guest_instance_id,
     manager->AddGuest(guest_instance_id, element_instance_id, embedder,
                       guest_web_contents);
 
-  atom::WebContentsPreferences::From(guest_web_contents)->Merge(options);
+  WebContentsPreferences::FromWebContents(guest_web_contents)->Merge(options);
 }
 
 void RemoveGuest(content::WebContents* embedder, int guest_instance_id) {

@@ -19,6 +19,7 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
@@ -33,8 +34,6 @@
 #if defined(OS_WIN)
 #include "base/strings/utf_string_conversions.h"
 #endif
-
-#include "atom/common/node_includes.h"
 
 using atom::Browser;
 

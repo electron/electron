@@ -22,9 +22,6 @@ namespace atom {
 class WebContentsPreferences
     : public content::WebContentsUserData<WebContentsPreferences> {
  public:
-  // Get the preferences of |web_contents|.
-  static WebContentsPreferences* From(content::WebContents* web_contents);
-
   // Append command paramters according to |web_contents|'s preferences.
   static void AppendExtraCommandLineSwitches(
       content::WebContents* web_contents, base::CommandLine* command_line);

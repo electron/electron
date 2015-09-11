@@ -78,7 +78,7 @@ class Cookies : public mate::Wrappable {
   // Must be called on IO thread.
   net::CookieStore* GetCookieStore();
 
-  scoped_refptr<net::URLRequestContextGetter> request_context_getter_;
+  net::URLRequestContextGetter* request_context_getter_;
 
   DISALLOW_COPY_AND_ASSIGN(Cookies);
 };

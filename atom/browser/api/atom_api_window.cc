@@ -70,14 +70,13 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   options.Get(switches::kWebPreferences, &web_preferences);
 
   // Be compatible with old options which are now in web_preferences.
-  std::string str;
-  double d;
-  if (options.Get(switches::kNodeIntegration, &str))
-    web_preferences.Set(switches::kNodeIntegration, str);
-  if (options.Get(switches::kPreloadScript, &str))
-    web_preferences.Set(switches::kPreloadScript, str);
-  if (options.Get(switches::kZoomFactor, &d))
-    web_preferences.Set(switches::kZoomFactor, d);
+  v8::Local<v8::Value> value;
+  if (options.Get(switches::kNodeIntegration, &value))
+    web_preferences.Set(switches::kNodeIntegration, value);
+  if (options.Get(switches::kPreloadScript, &value))
+    web_preferences.Set(switches::kPreloadScript, value);
+  if (options.Get(switches::kZoomFactor, &value))
+    web_preferences.Set(switches::kZoomFactor, value);
 
   // Creates the WebContents used by BrowserWindow.
   auto web_contents = WebContents::Create(isolate, web_preferences);
@@ -209,8 +208,8 @@ void Window::OnExecuteWindowsCommand(const std::string& command_name) {
 mate::Wrappable* Window::New(v8::Isolate* isolate,
                              const mate::Dictionary& options) {
   if (!Browser::Get()->is_ready()) {
-    node::ThrowError(isolate,
-                     "Cannot create BrowserWindow before app is ready");
+    isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
+        isolate, "Cannot create BrowserWindow before app is ready")));
     return nullptr;
   }
   return new Window(isolate, options);
