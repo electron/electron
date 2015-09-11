@@ -6,7 +6,7 @@
 ## 메시지 전송
 
 물론 메인 프로세스에서 랜더러 프로세스로 메시지를 보내는 것도 가능합니다.
-자세한 내용은 [WebContents.send](browser-window.md#webcontentssendchannel-args)를 참고하세요.
+자세한 내용은 [WebContents.send](web-contents.md#webcontentssendchannel-args)를 참고하세요.
 
 - 메시지를 전송할 때 이벤트 이름은 `channel`이 됩니다.
 - 메시지에 동기로 응답할 땐 반드시 `event.returnValue`를 설정해야 합니다.
