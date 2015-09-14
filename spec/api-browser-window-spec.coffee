@@ -4,6 +4,7 @@ path   = require 'path'
 remote = require 'remote'
 http   = require 'http'
 url    = require 'url'
+os     = require 'os'
 
 BrowserWindow = remote.require 'browser-window'
 
@@ -159,6 +160,22 @@ describe 'browser-window module', ->
       size = w.getSize()
       assert.equal size[0], 400
       assert.equal size[1], 400
+
+  describe '"title-bar-style" option', ->
+    return if process.platform isnt 'darwin'
+    return if parseInt(os.release().split('.')[0]) < 14 # only run these tests on Yosemite or newer
+
+    it 'creates browser window with hidden title bar', ->
+      w.destroy()
+      w = new BrowserWindow(show: false, width: 400, height: 400, 'title-bar-style': 'hidden')
+      contentSize = w.getContentSize()
+      assert.equal contentSize[1], 400
+
+    it 'creates browser window with hidden inset title bar', ->
+      w.destroy()
+      w = new BrowserWindow(show: false, width: 400, height: 400, 'title-bar-style': 'hidden-inset')
+      contentSize = w.getContentSize()
+      assert.equal contentSize[1], 400
 
   describe '"enable-larger-than-screen" option', ->
     return if process.platform is 'linux'

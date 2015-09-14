@@ -70,6 +70,16 @@ Properties `width` and `height` are required.
   Linux.
 * `standard-window` Boolean - Uses the OS X's standard window instead of the
   textured window. Defaults to `true`.
+* `title-bar-style` String, OS X - specifies the style of window title bar.
+  This option is supported on OS X 10.10 Yosemite and newer. There are three
+  possible values:
+  * `default` or not specified results in the standard gray opaque Mac title
+  bar.
+  * `hidden` results in a hidden title bar and a full size content window, yet
+  the title bar still has the standard window controls ("traffic lights") in
+  the top left.
+  * `hidden-inset` results in a hidden title bar with an alternative look
+  where the traffic light buttons are slightly more inset from the window edge.
 * `web-preferences` Object - Settings of web page's features, properties:
   * `node-integration` Boolean - Whether node integration is enabled. Default
     is `true`.
