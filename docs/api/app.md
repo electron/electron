@@ -94,7 +94,7 @@ must be registered to be opened by your application.
 
 You should call `event.preventDefault()` if you want to handle this event.
 
-### Event: 'activate-with-no-open-windows'
+### Event: 'activate-with-no-open-windows' _OS X_
 
 Emitted when the application is activated while there are no open windows, which
 usually happens when the user has closed all of the application's windows and
