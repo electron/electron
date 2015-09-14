@@ -37,8 +37,6 @@ wrapWithActivateUvLoop = (func) ->
     process.activateUvLoop()
     func.apply this, arguments
 process.nextTick = wrapWithActivateUvLoop process.nextTick
-global.setImmediate = wrapWithActivateUvLoop timers.setImmediate
-global.clearImmediate = timers.clearImmediate
 
 # setTimeout needs to update the polling timeout of the event loop, when called
 # under Chromium's event loop the node's event loop won't get a chance to update
