@@ -84,6 +84,14 @@ describe '<webview> tag', ->
       webview.src = "file://#{fixtures}/pages/e.html"
       document.body.appendChild webview
 
+    it 'preload script can still use "process" in required modules when nodeintegration is off', (done) ->
+      webview.addEventListener 'console-message', (e) ->
+        assert.equal e.message, 'object function object'
+        done()
+      webview.setAttribute 'preload', "#{fixtures}/module/preload-node-off.js"
+      webview.src = "file://#{fixtures}/api/blank.html"
+      document.body.appendChild webview
+
     it 'receives ipc message in preload script', (done) ->
       message = 'boom!'
       listener = (e) ->
