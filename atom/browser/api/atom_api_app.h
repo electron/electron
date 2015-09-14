@@ -42,6 +42,7 @@ class App : public mate::EventEmitter,
   void OnOpenFile(bool* prevent_default, const std::string& file_path) override;
   void OnOpenURL(const std::string& url) override;
   void OnActivateWithNoOpenWindows() override;
+  void OnActivateWithOpenWindows() override;
   void OnWillFinishLaunching() override;
   void OnFinishLaunching() override;
   void OnSelectCertificate(

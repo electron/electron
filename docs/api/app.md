@@ -100,6 +100,11 @@ Emitted when the application is activated while there are no open windows, which
 usually happens when the user has closed all of the application's windows and
 then clicks on the application's dock icon.
 
+### Event: activated-with-open-windows _OS X_
+
+Emitted when the application is activated while there are open windows, which
+usually happens when clicks on the applications's dock icon.
+
 ### Event: 'browser-window-blur'
 
 Returns:

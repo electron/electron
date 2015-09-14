@@ -53,6 +53,7 @@
                     hasVisibleWindows:(BOOL)flag {
   atom::Browser* browser = atom::Browser::Get();
   if (flag) {
+    browser->ActivateWithOpenWindows();
     return YES;
   } else {
     browser->ActivateWithNoOpenWindows();

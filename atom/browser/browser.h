@@ -111,6 +111,9 @@ class Browser : public WindowListObserver {
   // Tell the application that application is activated with no open windows.
   void ActivateWithNoOpenWindows();
 
+  // Tell the application that application is activated with open windows.
+  void ActivateWithOpenWindows();
+
   // Tell the application the loading has been done.
   void WillFinishLaunching();
   void DidFinishLaunching();

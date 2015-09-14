@@ -98,6 +98,10 @@ void Browser::ActivateWithNoOpenWindows() {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnActivateWithNoOpenWindows());
 }
 
+void Browser::ActivateWithOpenWindows() {
+  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnActivateWithOpenWindows());
+}
+
 void Browser::WillFinishLaunching() {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWillFinishLaunching());
 }
