@@ -118,6 +118,15 @@ Returns:
 
 Emitted when a [browserWindow](browser-window.md) gets focused.
 
+### Event: 'browser-window-created'
+
+Returns:
+
+* `event` Event
+* `window` BrowserWindow
+
+Emitted when a new [browserWindow](browser-window.md) is created.
+
 ### Event: 'select-certificate'
 
 Emitted when a client certificate is requested.
