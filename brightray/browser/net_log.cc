@@ -30,6 +30,12 @@ scoped_ptr<base::DictionaryValue> GetConstants() {
 }  // namespace
 
 NetLog::NetLog() {
+}
+
+NetLog::~NetLog() {
+}
+
+void NetLog::StartLogging(net::URLRequestContext* url_request_context) {
   auto command_line = base::CommandLine::ForCurrentProcess();
   if (!command_line->HasSwitch(switches::kLogNetLog))
     return;
@@ -46,17 +52,12 @@ NetLog::NetLog() {
                << "for net logging";
     return;
   }
-}
-
-NetLog::~NetLog() {
-}
-
-void NetLog::StartLogging(net::URLRequestContext* url_request_context) {
-  if (!log_file_)
-    return;
 
   scoped_ptr<base::Value> constants(GetConstants());
-  write_to_file_observer_.StartObserving(this, log_file_.Pass(), constants.get(), url_request_context);
+  write_to_file_observer_.StartObserving(this,
+                                         log_file_.Pass(),
+                                         constants.get(),
+                                         url_request_context);
 }
 
 }  // namespace brightray
