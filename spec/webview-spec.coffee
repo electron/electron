@@ -3,13 +3,13 @@ path   = require 'path'
 http   = require 'http'
 
 describe '<webview> tag', ->
+  @timeout 10000
+
   fixtures = path.join __dirname, 'fixtures'
 
   webview = null
-
   beforeEach ->
     webview = new WebView
-
   afterEach ->
     document.body.removeChild webview
 
