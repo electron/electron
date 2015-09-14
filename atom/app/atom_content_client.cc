@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -14,6 +15,7 @@
 #include "base/strings/string_util.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/pepper_plugin_info.h"
+#include "content/public/common/user_agent.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
 
 namespace atom {
@@ -70,6 +72,12 @@ AtomContentClient::~AtomContentClient() {
 
 std::string AtomContentClient::GetProduct() const {
   return "Chrome/" CHROME_VERSION_STRING;
+}
+
+std::string AtomContentClient::GetUserAgent() const {
+  return content::BuildUserAgentFromProduct(
+      "Chrome/" CHROME_VERSION_STRING " "
+      ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING);
 }
 
 void AtomContentClient::AddAdditionalSchemes(
