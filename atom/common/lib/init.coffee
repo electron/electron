@@ -38,10 +38,15 @@ wrapWithActivateUvLoop = (func) ->
     func.apply this, arguments
 process.nextTick = wrapWithActivateUvLoop process.nextTick
 
-# setTimeout needs to update the polling timeout of the event loop, when called
-# under Chromium's event loop the node's event loop won't get a chance to update
-# the timeout, so we have to force the node's event loop to recalculate the
-# timeout in browser process.
 if process.type is 'browser'
+  # setTimeout needs to update the polling timeout of the event loop, when
+  # called under Chromium's event loop the node's event loop won't get a chance
+  # to update the timeout, so we have to force the node's event loop to
+  # recalculate the timeout in browser process.
   global.setTimeout = wrapWithActivateUvLoop timers.setTimeout
   global.setInterval = wrapWithActivateUvLoop timers.setInterval
+else
+  # There are no setImmediate under renderer process by default, so we need to
+  # manually setup them here.
+  global.setImmediate = setImmediate
+  global.clearImmediate = clearImmediate
