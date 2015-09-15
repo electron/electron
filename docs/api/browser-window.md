@@ -613,7 +613,11 @@ Returns whether the developer tools are opened.
 
 ### `win.toggleDevTools()`
 
-Toggle the developer tools.
+Toggles the developer tools.
+
+### `win.isDevToolsFocused()`
+
+Returns whether the developer tools is focused.
 
 ### `win.inspectElement(x, y)`
 
