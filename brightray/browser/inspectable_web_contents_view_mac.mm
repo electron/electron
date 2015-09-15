@@ -42,6 +42,10 @@ bool InspectableWebContentsViewMac::IsDevToolsViewShowing() {
   return [view_ isDevToolsVisible];
 }
 
+bool InspectableWebContentsViewMac::IsDevToolsViewFocused() {
+  return [view_ isDevToolsFocused];
+}
+
 void InspectableWebContentsViewMac::SetIsDocked(bool docked) {
   [view_ setIsDocked:docked];
 }

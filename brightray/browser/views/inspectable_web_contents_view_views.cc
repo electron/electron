@@ -145,6 +145,13 @@ bool InspectableWebContentsViewViews::IsDevToolsViewShowing() {
   return devtools_visible_;
 }
 
+bool InspectableWebContentsViewViews::IsDevToolsViewFocused() {
+  if (devtools_web_view_)
+    return devtools_web_view_->HasFocus();
+  else
+    return false;
+}
+
 void InspectableWebContentsViewViews::SetIsDocked(bool docked) {
   CloseDevTools();
 

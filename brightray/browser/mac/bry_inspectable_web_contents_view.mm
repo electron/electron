@@ -1,6 +1,7 @@
 #include "browser/mac/bry_inspectable_web_contents_view.h"
 
 #include "browser/inspectable_web_contents_impl.h"
+#include "browser/inspectable_web_contents_view_delegate.h"
 #include "browser/inspectable_web_contents_view_mac.h"
 
 #include "content/public/browser/render_widget_host_view.h"
@@ -19,6 +20,19 @@ using namespace brightray;
   inspectableWebContentsView_ = view;
   devtools_visible_ = NO;
   devtools_docked_ = NO;
+  devtools_is_first_responder_ = NO;
+
+  [[NSNotificationCenter defaultCenter]
+       addObserver:self
+          selector:@selector(viewDidBecomeFirstResponder:)
+              name:kViewDidBecomeFirstResponder
+            object:nil];
+
+  [[NSNotificationCenter defaultCenter]
+       addObserver:self
+          selector:@selector(parentWindowBecameMain:)
+              name:NSWindowDidBecomeMainNotification
+            object:nil];
 
   auto contents = inspectableWebContentsView_->inspectable_web_contents()->GetWebContents();
   auto contentsView = contents->GetNativeView();
@@ -31,12 +45,22 @@ using namespace brightray;
   return self;
 }
 
+- (void)dealloc {
+  [[NSNotificationCenter defaultCenter] removeObserver:self];
+  [super dealloc];
+}
+
 - (void)resizeSubviewsWithOldSize:(NSSize)oldBoundsSize {
   [self adjustSubviews];
 }
 
 - (IBAction)showDevTools:(id)sender {
   inspectableWebContentsView_->inspectable_web_contents()->ShowDevTools();
+}
+
+- (void)notifyDevToolsFocused {
+  if (inspectableWebContentsView_->GetDelegate())
+    inspectableWebContentsView_->GetDelegate()->DevToolsFocused();
 }
 
 - (void)setDevToolsVisible:(BOOL)visible {
@@ -84,6 +108,14 @@ using namespace brightray;
 
 - (BOOL)isDevToolsVisible {
   return devtools_visible_;
+}
+
+- (BOOL)isDevToolsFocused {
+  if (devtools_docked_) {
+    return [[self window] isKeyWindow] && devtools_is_first_responder_;
+  } else {
+    return [devtools_window_ isKeyWindow];
+  }
 }
 
 - (void)setIsDocked:(BOOL)docked {
@@ -156,6 +188,36 @@ using namespace brightray;
   [devtools_window_ setTitle:title];
 }
 
+- (void)viewDidBecomeFirstResponder:(NSNotification*)notification {
+  auto inspectable_web_contents = inspectableWebContentsView_->inspectable_web_contents();
+  if (!inspectable_web_contents)
+    return;
+  auto webContents = inspectable_web_contents->GetWebContents();
+  auto webContentsView = webContents->GetNativeView();
+
+  NSView* view = [notification object];
+  if ([[webContentsView subviews] containsObject:view]) {
+    devtools_is_first_responder_ = NO;
+    return;
+  }
+
+  auto devToolsWebContents = inspectable_web_contents->GetDevToolsWebContents();
+  if (!devToolsWebContents)
+    return;
+  auto devToolsView = devToolsWebContents->GetNativeView();
+
+  if ([[devToolsView subviews] containsObject:view]) {
+    devtools_is_first_responder_ = YES;
+    [self notifyDevToolsFocused];
+  }
+}
+
+- (void)parentWindowBecameMain:(NSNotification*)notification {
+  NSWindow* parentWindow = [notification object];
+  if ([self window] == parentWindow && devtools_docked_ && devtools_is_first_responder_)
+    [self notifyDevToolsFocused];
+}
+
 #pragma mark - NSWindowDelegate
 
 - (void)windowWillClose:(NSNotification*)notification {
@@ -173,6 +235,8 @@ using namespace brightray;
   content::RenderWidgetHostView* rwhv = web_contents->GetRenderWidgetHostView();
   if (rwhv)
     rwhv->SetActive(true);
+
+  [self notifyDevToolsFocused];
 }
 
 - (void)windowDidResignMain:(NSNotification*)notification {
