@@ -18,6 +18,10 @@ describe 'crash-reporter module', ->
   # It is not working on 64bit Windows.
   return if process.platform is 'win32' and process.arch is 'x64'
 
+  # The crash-reporter test is not reliable on CI machine.
+  isCI = remote.process.argv[2] == '--ci'
+  return if isCI
+
   it 'should send minidump when renderer crashes', (done) ->
     @timeout 120000
     server = http.createServer (req, res) ->
