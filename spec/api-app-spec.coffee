@@ -26,19 +26,30 @@ describe 'app module', ->
       assert.equal app.getName(), 'test-name'
       app.setName 'Electron Test'
 
-  describe 'focus/blur event', ->
+  describe 'BrowserWindow events', ->
     w = null
-    beforeEach ->
-      w.destroy() if w?
-      w = new BrowserWindow(show: false, width: 400, height: 400)
     afterEach ->
       w.destroy() if w?
       w = null
-    it 'should emit focus event', (done) ->
+
+    it 'should emit browser-window-focus event when window is focused', (done) ->
+      app.once 'browser-window-focus', (e, window) ->
+        assert.equal w.id, window.id
+        done()
+      w = new BrowserWindow(show: false)
+      w.emit 'focus'
+
+    it 'should emit browser-window-blur event when window is blured', (done) ->
       app.once 'browser-window-blur', (e, window) ->
         assert.equal w.id, window.id
         done()
-      app.once 'browser-window-focus', (e, window) ->
-        assert.equal w.id, window.id
-        w.emit 'blur'
-      w.emit 'focus'
+      w = new BrowserWindow(show: false)
+      w.emit 'blur'
+
+    it 'should emit browser-window-created event when window is created', (done) ->
+      app.once 'browser-window-created', (e, window) ->
+        setImmediate ->
+          assert.equal w.id, window.id
+          done()
+      w = new BrowserWindow(show: false)
+      w.emit 'blur'

@@ -357,6 +357,17 @@ NativeWindowMac::NativeWindowMac(
     styleMask |= NSTexturedBackgroundWindowMask;
   }
 
+  std::string titleBarStyle = "default";
+  options.Get(switches::kTitleBarStyle, &titleBarStyle);
+
+  if (base::mac::IsOSYosemiteOrLater()) {
+    // New title bar styles are available in Yosemite or newer
+    if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
+      styleMask |= NSFullSizeContentViewWindowMask;
+      styleMask |= NSUnifiedTitleAndToolbarWindowMask;
+    }
+  }
+
   window_.reset([[AtomNSWindow alloc]
       initWithContentRect:cocoa_bounds
                 styleMask:styleMask
@@ -381,6 +392,20 @@ NativeWindowMac::NativeWindowMac(
 
   // We will manage window's lifetime ourselves.
   [window_ setReleasedWhenClosed:NO];
+
+  // Configure title bar look on Yosemite or newer
+  if (base::mac::IsOSYosemiteOrLater()) {
+    if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
+      [window_ setTitlebarAppearsTransparent:YES];
+      [window_ setTitleVisibility:NSWindowTitleHidden];
+      if (titleBarStyle == "hidden-inset") {
+        NSToolbar *toolbar = [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"];
+        toolbar.showsBaselineSeparator = NO;
+        [window_ setToolbar:toolbar];
+        [toolbar release];
+      }
+    }
+  }
 
   // On OS X the initial window size doesn't include window frame.
   bool use_content_size = false;

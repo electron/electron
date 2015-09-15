@@ -45,6 +45,9 @@ BrowserWindow::_init = ->
   @on 'focus', (event) =>
     app.emit 'browser-window-focus', event, this
 
+  # Notify the creation of the window.
+  app.emit 'browser-window-created', {}, this
+
 BrowserWindow.getFocusedWindow = ->
   windows = BrowserWindow.getAllWindows()
   return window for window in windows when window.isFocused()

@@ -3,13 +3,13 @@ path   = require 'path'
 http   = require 'http'
 
 describe '<webview> tag', ->
+  @timeout 10000
+
   fixtures = path.join __dirname, 'fixtures'
 
   webview = null
-
   beforeEach ->
     webview = new WebView
-
   afterEach ->
     document.body.removeChild webview
 
@@ -82,6 +82,14 @@ describe '<webview> tag', ->
       webview.addEventListener 'console-message', listener
       webview.setAttribute 'preload', "#{fixtures}/module/preload.js"
       webview.src = "file://#{fixtures}/pages/e.html"
+      document.body.appendChild webview
+
+    it 'preload script can still use "process" in required modules when nodeintegration is off', (done) ->
+      webview.addEventListener 'console-message', (e) ->
+        assert.equal e.message, 'object function object'
+        done()
+      webview.setAttribute 'preload', "#{fixtures}/module/preload-node-off.js"
+      webview.src = "file://#{fixtures}/api/blank.html"
       document.body.appendChild webview
 
     it 'receives ipc message in preload script', (done) ->
