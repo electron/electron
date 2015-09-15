@@ -1,6 +1,7 @@
 #include "browser/mac/bry_inspectable_web_contents_view.h"
 
 #include "browser/inspectable_web_contents_impl.h"
+#include "browser/inspectable_web_contents_view_delegate.h"
 #include "browser/inspectable_web_contents_view_mac.h"
 
 #include "content/public/browser/render_widget_host_view.h"
@@ -27,6 +28,12 @@ using namespace brightray;
               name:kViewDidBecomeFirstResponder
             object:nil];
 
+  [[NSNotificationCenter defaultCenter]
+       addObserver:self
+          selector:@selector(parentWindowBecameMain:)
+              name:NSWindowDidBecomeMainNotification
+            object:nil];
+
   auto contents = inspectableWebContentsView_->inspectable_web_contents()->GetWebContents();
   auto contentsView = contents->GetNativeView();
   [contentsView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
@@ -38,12 +45,22 @@ using namespace brightray;
   return self;
 }
 
+- (void)dealloc {
+  [[NSNotificationCenter defaultCenter] removeObserver:self];
+  [super dealloc];
+}
+
 - (void)resizeSubviewsWithOldSize:(NSSize)oldBoundsSize {
   [self adjustSubviews];
 }
 
 - (IBAction)showDevTools:(id)sender {
   inspectableWebContentsView_->inspectable_web_contents()->ShowDevTools();
+}
+
+- (void)notifyDevToolsFocused {
+  if (inspectableWebContentsView_->GetDelegate())
+    inspectableWebContentsView_->GetDelegate()->DevToolsFocused();
 }
 
 - (void)setDevToolsVisible:(BOOL)visible {
@@ -191,7 +208,14 @@ using namespace brightray;
 
   if ([[devToolsView subviews] containsObject:view]) {
     devtools_is_first_responder_ = YES;
+    [self notifyDevToolsFocused];
   }
+}
+
+- (void)parentWindowBecameMain:(NSNotification*)notification {
+  NSWindow* parentWindow = [notification object];
+  if ([self window] == parentWindow && devtools_docked_ && devtools_is_first_responder_)
+    [self notifyDevToolsFocused];
 }
 
 #pragma mark - NSWindowDelegate
@@ -211,6 +235,8 @@ using namespace brightray;
   content::RenderWidgetHostView* rwhv = web_contents->GetRenderWidgetHostView();
   if (rwhv)
     rwhv->SetActive(true);
+
+  [self notifyDevToolsFocused];
 }
 
 - (void)windowDidResignMain:(NSNotification*)notification {

@@ -608,8 +608,10 @@ void InspectableWebContentsImpl::CloseContents(content::WebContents* source) {
 }
 
 void InspectableWebContentsImpl::OnWebContentsFocused() {
+#if defined(TOOLKIT_VIEWS)
   if (view_->GetDelegate())
     view_->GetDelegate()->DevToolsFocused();
+#endif
 }
 
 void InspectableWebContentsImpl::OnURLFetchComplete(const net::URLFetcher* source) {
