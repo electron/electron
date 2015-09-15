@@ -94,11 +94,15 @@ must be registered to be opened by your application.
 
 You should call `event.preventDefault()` if you want to handle this event.
 
-### Event: 'activate-with-no-open-windows'
+### Event: 'activate' _OS X_
 
-Emitted when the application is activated while there are no open windows, which
-usually happens when the user has closed all of the application's windows and
-then clicks on the application's dock icon.
+Returns:
+
+* `event` Event
+* `hasVisibleWindows` Bool
+
+Emitted when the application is activated, which usually happens when clicks on
+the applications's dock icon.
 
 ### Event: 'browser-window-blur'
 
