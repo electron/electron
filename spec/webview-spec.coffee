@@ -11,7 +11,7 @@ describe '<webview> tag', ->
   beforeEach ->
     webview = new WebView
   afterEach ->
-    document.body.removeChild webview
+    document.body.removeChild(webview) if document.body.contains(webview)
 
   describe 'src attribute', ->
     it 'specifies the page to load', (done) ->
