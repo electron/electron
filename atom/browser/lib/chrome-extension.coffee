@@ -32,6 +32,7 @@ getExtensionInfoFromPath = (srcDirectory) ->
       startPage: page
       name: manifest.name
       srcDirectory: srcDirectory
+      exposeExperimentalAPIs: true
     extensionInfoMap[manifest.name]
 
 # The loaded extensions cache and its persistent path.

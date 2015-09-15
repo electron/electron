@@ -547,6 +547,10 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   web_contents()->GetController().LoadURLWithParams(params);
 }
 
+GURL WebContents::GetURL() const {
+  return web_contents()->GetURL();
+}
+
 base::string16 WebContents::GetTitle() const {
   return web_contents()->GetTitle();
 }
@@ -815,6 +819,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("getId", &WebContents::GetID)
         .SetMethod("equal", &WebContents::Equal)
         .SetMethod("_loadUrl", &WebContents::LoadURL)
+        .SetMethod("_getUrl", &WebContents::GetURL)
         .SetMethod("getTitle", &WebContents::GetTitle)
         .SetMethod("isLoading", &WebContents::IsLoading)
         .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)

@@ -183,21 +183,21 @@ void Window::OnDevToolsFocus() {
 }
 
 void Window::OnDevToolsOpened() {
-  Emit("devtools-opened");
-
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   auto handle = WebContents::CreateFrom(
       isolate(), api_web_contents_->GetDevToolsWebContents());
   devtools_web_contents_.Reset(isolate(), handle.ToV8());
+
+  Emit("devtools-opened");
 }
 
 void Window::OnDevToolsClosed() {
-  Emit("devtools-closed");
-
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   devtools_web_contents_.Reset();
+
+  Emit("devtools-closed");
 }
 
 void Window::OnExecuteWindowsCommand(const std::string& command_name) {

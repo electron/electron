@@ -16,6 +16,11 @@ class NavigationController
   constructor: (@webContents) ->
     @clearHistory()
 
+    # webContents may have already navigated to a page.
+    if @webContents._getUrl()
+      @currentIndex++
+      @history.push @webContents._getUrl()
+
     @webContents.on 'navigation-entry-commited', (event, url, inPage, replaceEntry) =>
       if @inPageIndex > -1 and not inPage
         # Navigated to a new page, clear in-page mark.
