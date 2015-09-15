@@ -56,6 +56,7 @@
   if (flag) {
     return YES;
   } else {
+    // Deprecated API, for compatibility.
     browser->ActivateWithNoOpenWindows();
     return NO;
   }
