@@ -47,9 +47,9 @@ class BrowserObserver {
   // dock icon).
   virtual void OnActivateWithNoOpenWindows() {}
 
-  // The browser is activated with open windows (usually by clicking on the dock
-  // icon).
-  virtual void OnActivateWithOpenWindows() {}
+  // The browser is activated with visible/invisible windows (usually by
+  // clicking on the dock icon).
+  virtual void OnActivate(bool hasVisibleWindows) {}
 
   // The browser has finished loading.
   virtual void OnWillFinishLaunching() {}

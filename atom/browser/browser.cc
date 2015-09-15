@@ -98,8 +98,8 @@ void Browser::ActivateWithNoOpenWindows() {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnActivateWithNoOpenWindows());
 }
 
-void Browser::ActivateWithOpenWindows() {
-  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnActivateWithOpenWindows());
+void Browser::Activate(bool hasVisibleWindows) {
+  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnActivate(hasVisibleWindows));
 }
 
 void Browser::WillFinishLaunching() {

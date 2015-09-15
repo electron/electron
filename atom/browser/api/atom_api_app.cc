@@ -171,8 +171,8 @@ void App::OnActivateWithNoOpenWindows() {
   Emit("activate-with-no-open-windows");
 }
 
-void App::OnActivateWithOpenWindows() {
-  Emit("activate-with-open-windows");
+void App::OnActivate(bool hasVisibleWindows) {
+  Emit("activate", hasVisibleWindows);
 }
 
 void App::OnWillFinishLaunching() {

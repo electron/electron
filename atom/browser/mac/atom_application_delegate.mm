@@ -52,8 +52,8 @@
 - (BOOL)applicationShouldHandleReopen:(NSApplication*)theApplication
                     hasVisibleWindows:(BOOL)flag {
   atom::Browser* browser = atom::Browser::Get();
+  browser->Activate(static_cast<bool>(flag));
   if (flag) {
-    browser->ActivateWithOpenWindows();
     return YES;
   } else {
     browser->ActivateWithNoOpenWindows();
