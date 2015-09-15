@@ -33,7 +33,7 @@
       'GCC_TREAT_WARNINGS_AS_ERRORS': 'YES',
       'MACOSX_DEPLOYMENT_TARGET': '10.10',
       'RUN_CLANG_STATIC_ANALYZER': 'YES',
-      'SDKROOT': 'macosx',
+      'SDKROOT': 'macosx10.10',
       'USE_HEADER_MAP': 'NO',
       'WARNING_CFLAGS': [
         '-Wall',
