@@ -18,6 +18,7 @@ using brightray::InspectableWebContentsViewMac;
   base::scoped_nsobject<NSWindow> devtools_window_;
   BOOL devtools_visible_;
   BOOL devtools_docked_;
+  BOOL devtools_is_first_responder_;
 
   DevToolsContentsResizingStrategy strategy_;
 }
@@ -25,6 +26,7 @@ using brightray::InspectableWebContentsViewMac;
 - (instancetype)initWithInspectableWebContentsViewMac:(InspectableWebContentsViewMac*)view;
 - (void)setDevToolsVisible:(BOOL)visible;
 - (BOOL)isDevToolsVisible;
+- (BOOL)isDevToolsFocused;
 - (void)setIsDocked:(BOOL)docked;
 - (void)setContentsResizingStrategy:(const DevToolsContentsResizingStrategy&)strategy;
 - (void)setTitle:(NSString*)title;

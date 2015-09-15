@@ -21,6 +21,7 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
   void ShowDevTools() override;
   void CloseDevTools() override;
   bool IsDevToolsViewShowing() override;
+  bool IsDevToolsViewFocused() override;
   void SetIsDocked(bool docked) override;
   void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) override;

@@ -19,6 +19,13 @@ using namespace brightray;
   inspectableWebContentsView_ = view;
   devtools_visible_ = NO;
   devtools_docked_ = NO;
+  devtools_is_first_responder_ = NO;
+
+  [[NSNotificationCenter defaultCenter]
+       addObserver:self
+          selector:@selector(viewDidBecomeFirstResponder:)
+              name:kViewDidBecomeFirstResponder
+            object:nil];
 
   auto contents = inspectableWebContentsView_->inspectable_web_contents()->GetWebContents();
   auto contentsView = contents->GetNativeView();
@@ -84,6 +91,14 @@ using namespace brightray;
 
 - (BOOL)isDevToolsVisible {
   return devtools_visible_;
+}
+
+- (BOOL)isDevToolsFocused {
+  if (devtools_docked_) {
+    return [[self window] isKeyWindow] && devtools_is_first_responder_;
+  } else {
+    return [devtools_window_ isKeyWindow];
+  }
 }
 
 - (void)setIsDocked:(BOOL)docked {
@@ -154,6 +169,29 @@ using namespace brightray;
 
 - (void)setTitle:(NSString*)title {
   [devtools_window_ setTitle:title];
+}
+
+- (void)viewDidBecomeFirstResponder:(NSNotification*)notification {
+  auto inspectable_web_contents = inspectableWebContentsView_->inspectable_web_contents();
+  if (!inspectable_web_contents)
+    return;
+  auto webContents = inspectable_web_contents->GetWebContents();
+  auto webContentsView = webContents->GetNativeView();
+
+  NSView* view = [notification object];
+  if ([[webContentsView subviews] containsObject:view]) {
+    devtools_is_first_responder_ = NO;
+    return;
+  }
+
+  auto devToolsWebContents = inspectable_web_contents->GetDevToolsWebContents();
+  if (!devToolsWebContents)
+    return;
+  auto devToolsView = devToolsWebContents->GetNativeView();
+
+  if ([[devToolsView subviews] containsObject:view]) {
+    devtools_is_first_responder_ = YES;
+  }
 }
 
 #pragma mark - NSWindowDelegate
