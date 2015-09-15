@@ -94,12 +94,10 @@ void Browser::OpenURL(const std::string& url) {
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnOpenURL(url));
 }
 
-void Browser::ActivateWithNoOpenWindows() {
-  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnActivateWithNoOpenWindows());
-}
-
-void Browser::Activate(bool hasVisibleWindows) {
-  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnActivate(hasVisibleWindows));
+void Browser::Activate(bool has_visible_windows) {
+  FOR_EACH_OBSERVER(BrowserObserver,
+                    observers_,
+                    OnActivate(has_visible_windows));
 }
 
 void Browser::WillFinishLaunching() {

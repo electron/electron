@@ -53,13 +53,7 @@
                     hasVisibleWindows:(BOOL)flag {
   atom::Browser* browser = atom::Browser::Get();
   browser->Activate(static_cast<bool>(flag));
-  if (flag) {
-    return YES;
-  } else {
-    // Deprecated API, for compatibility.
-    browser->ActivateWithNoOpenWindows();
-    return NO;
-  }
+  return flag;
 }
 
 @end

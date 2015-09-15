@@ -108,12 +108,9 @@ class Browser : public WindowListObserver {
   // Tell the application to open a url.
   void OpenURL(const std::string& url);
 
-  // Tell the application that application is activated with no open windows.
-  void ActivateWithNoOpenWindows();
-
   // Tell the application that application is activated with visible/invisible
   // windows.
-  void Activate(bool hasVisibleWindows);
+  void Activate(bool has_visible_windows);
 
   // Tell the application the loading has been done.
   void WillFinishLaunching();

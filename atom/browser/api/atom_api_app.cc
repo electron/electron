@@ -167,12 +167,8 @@ void App::OnOpenURL(const std::string& url) {
   Emit("open-url", url);
 }
 
-void App::OnActivateWithNoOpenWindows() {
-  Emit("activate-with-no-open-windows");
-}
-
-void App::OnActivate(bool hasVisibleWindows) {
-  Emit("activate", hasVisibleWindows);
+void App::OnActivate(bool has_visible_windows) {
+  Emit("activate", has_visible_windows);
 }
 
 void App::OnWillFinishLaunching() {
