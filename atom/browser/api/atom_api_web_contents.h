@@ -55,6 +55,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   int GetID() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
+  GURL GetURL() const;
   base::string16 GetTitle() const;
   bool IsLoading() const;
   bool IsWaitingForResponse() const;
