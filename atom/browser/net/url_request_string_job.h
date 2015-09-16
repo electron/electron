@@ -19,6 +19,9 @@ class URLRequestStringJob : public JsAsker<net::URLRequestSimpleJob> {
   // JsAsker:
   void StartAsync(scoped_ptr<base::Value> options) override;
 
+  // URLRequestJob:
+  void GetResponseInfo(net::HttpResponseInfo* info) override;
+
   // URLRequestSimpleJob:
   int GetData(std::string* mime_type,
               std::string* charset,

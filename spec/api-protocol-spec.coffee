@@ -318,6 +318,19 @@ describe 'protocol module', ->
           error: (xhr, errorType, error) ->
             done(error)
 
+    it 'can set content-type', (done) ->
+      handler = (request, callback) ->
+        callback({mimeType: 'application/json', data: '{"value": 1}'})
+      protocol.interceptStringProtocol 'http', handler, (error) ->
+        $.ajax
+          url: 'http://fake-host'
+          success: (data) ->
+            assert.equal typeof(data), 'object'
+            assert.equal data.value, 1
+            done()
+          error: (xhr, errorType, error) ->
+            done(error)
+
   describe 'protocol.interceptBufferProtocol', ->
     it 'can intercept http protocol', (done) ->
       handler = (request, callback) -> callback(new Buffer(text))
