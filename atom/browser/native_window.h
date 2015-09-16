@@ -242,7 +242,7 @@ class NativeWindow : public content::WebContentsObserver,
   void SendMouseEvent(blink::WebInputEvent::Type type, int modifiers, blink::WebMouseEvent::Button button, int x, int y, int movementX, int movementY, int clickCount);
   void SendMouseWheelEvent(int modifiers, int x, int y, bool clickCount);
 
-  void SetOffscreenRender(bool isOffscreen);
+  void SetFrameSubscription(bool isOffscreen);
 
  protected:
   NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,

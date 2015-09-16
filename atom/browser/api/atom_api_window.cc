@@ -8,6 +8,7 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "atom/common/event_types.h"
 #include "atom/common/native_mate_converters/callback.h"
@@ -99,10 +100,9 @@ void Window::OnFrameRendered(scoped_ptr<uint8[]> rgb, const int size) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
 
-  v8::Local<v8::ArrayBuffer> data = v8::ArrayBuffer::New(isolate(), rgb.get(), size);
-  v8::Local<v8::Uint8ClampedArray> uint_data = v8::Uint8ClampedArray::New(data, 0, size);
+  auto data = node::Buffer::New(isolate(), reinterpret_cast<const char*>(rgb.get()), static_cast<size_t>(size));
 
-  Emit("frame-rendered", uint_data, size);
+  Emit("frame-rendered", data, size);
 }
 
 void Window::OnWindowClosed() {
@@ -442,8 +442,12 @@ void Window::CapturePage(mate::Arguments* args) {
       rect, base::Bind(&OnCapturePageDone, args->isolate(), callback));
 }
 
-void Window::SetOffscreenRender(bool isOffscreen) {
-  window_->SetOffscreenRender(isOffscreen);
+void Window::BeginFrameSubscription() {
+  window_->SetFrameSubscription(true);
+}
+
+void Window::EndFrameSubscription() {
+  window_->SetFrameSubscription(false);
 }
 
 void Window::SetProgressBar(double progress) {
@@ -728,7 +732,8 @@ void Window::BuildPrototype(v8::Isolate* isolate,
                  &Window::IsVisibleOnAllWorkspaces)
       .SetMethod("sendMouseEvent", &Window::SendMouseEvent)
       .SetMethod("sendKeyboardEvent", &Window::SendKeyboardEvent)
-      .SetMethod("setOffscreenRender", &Window::SetOffscreenRender)
+      .SetMethod("beginFrameSubscription", &Window::BeginFrameSubscription)
+      .SetMethod("endFrameSubscription", &Window::EndFrameSubscription)
 #if defined(OS_MACOSX)
       .SetMethod("showDefinitionForSelection",
                  &Window::ShowDefinitionForSelection)

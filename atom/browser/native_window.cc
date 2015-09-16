@@ -333,7 +333,7 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
       kBGRA_8888_SkColorType);
 }
 
-void NativeWindow::SetOffscreenRender(bool isOffscreen) {
+void NativeWindow::SetFrameSubscription(bool isOffscreen) {
   if (!isOffscreen && !offscreen_) return;
 
   const auto view = web_contents()->GetRenderWidgetHostView();
@@ -637,7 +637,7 @@ void NativeWindow::SendMouseWheelEvent(int modifiers, int x, int y, bool precise
 }
 
 void NativeWindow::DidFinishLoad(content::RenderFrameHost* render_frame_host, const GURL& validated_url) {
-  SetOffscreenRender(offscreen_);
+  SetFrameSubscription(offscreen_);
 }
 
 void NativeWindow::RenderViewCreated(

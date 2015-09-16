@@ -141,7 +141,8 @@ class Window : public mate::TrackableObject<Window>,
 
   void SendKeyboardEvent(v8::Isolate* isolate, const mate::Dictionary& data);
   void SendMouseEvent(v8::Isolate* isolate, const mate::Dictionary& data);
-  void SetOffscreenRender(bool isOffscreen);
+  void BeginFrameSubscription();
+  void EndFrameSubscription();
 
 #if defined(OS_MACOSX)
   void ShowDefinitionForSelection();

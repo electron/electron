@@ -75,7 +75,8 @@ You can also create a window without chrome by using
   * `standard-window` Boolean - Uses the OS X's standard window instead of the
     textured window. Defaults to `true`.
   * `offscreen-render` Boolean - The frame of the window will be accessible
-    through the `frame-rendered` event in a buffer. Defaults to `false`.
+    through the `frame-rendered` event in a buffer (Uint8, BGRA). Defaults to
+    `false`.
   * `web-preferences` Object - Settings of web page's features
     * `javascript` Boolean
     * `web-security` Boolean - When setting `false`, it will disable the same-origin
@@ -732,10 +733,15 @@ Returns whether the window is visible on all workspaces.
 
 **Note:** This API always returns false on Windows.
 
-### BrowserWindow.setOffscreenRender(isOffscreen)
+### BrowserWindow.beginFrameSubscription()
 
-Sets the offscreen rendering, if `true` the `frame-rendered` event will fire,
-when the frame changes.
+Enables offscreen rendering, after this call `frame-rendered` events will be
+fired when the window receives a new frame from the renderer.
+
+### BrowserWindow.endFrameSubscription()
+
+Enables offscreen rendering, after this call `frame-rendered` events will
+no longer be fired if offscreen rendering was enabled before.
 
 ### BrowserWindow.sendMouseEvent(options)
 
