@@ -8,7 +8,7 @@ from lib.util import atom_gyp, execute, s3put, scoped_cwd
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-OUT_DIR     = os.path.join(SOURCE_ROOT, 'out', 'R')
+OUT_DIR     = os.path.join(SOURCE_ROOT, 'out', 'D')
 
 PROJECT_NAME = atom_gyp()['project_name%']
 PRODUCT_NAME = atom_gyp()['product_name%']
