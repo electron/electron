@@ -65,6 +65,7 @@ class App : public mate::EventEmitter,
 
   void SetDesktopName(const std::string& desktop_name);
   void SetAppUserModelId(const std::string& app_id);
+  std::string GetLocale();
   v8::Local<v8::Value> DefaultSession(v8::Isolate* isolate);
 
   v8::Global<v8::Value> default_session_;
