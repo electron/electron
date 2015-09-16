@@ -123,7 +123,7 @@ Emitted when dragged files are dropped in the tray icon.
 
 The `Tray` module has the following methods:
 
-**Note**: Some methods are only available on specific operating systems and are
+**Note:** Some methods are only available on specific operating systems and are
 labeled as such.
 
 ### `Tray.destroy()`

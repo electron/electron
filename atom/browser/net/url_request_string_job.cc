@@ -28,6 +28,20 @@ void URLRequestStringJob::StartAsync(scoped_ptr<base::Value> options) {
   net::URLRequestSimpleJob::Start();
 }
 
+void URLRequestStringJob::GetResponseInfo(net::HttpResponseInfo* info) {
+  std::string status("HTTP/1.1 200 OK");
+  net::HttpResponseHeaders* headers = new net::HttpResponseHeaders(status);
+
+  if (!mime_type_.empty()) {
+    std::string content_type_header(net::HttpRequestHeaders::kContentType);
+    content_type_header.append(": ");
+    content_type_header.append(mime_type_);
+    headers->AddHeader(content_type_header);
+  }
+
+  info->headers = headers;
+}
+
 int URLRequestStringJob::GetData(
     std::string* mime_type,
     std::string* charset,

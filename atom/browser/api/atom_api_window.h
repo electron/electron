@@ -78,8 +78,10 @@ class Window : public mate::TrackableObject<Window>,
   bool IsDestroyed() const override;
 
  private:
+  // mate::TrackableObject:
+  void Destroy() override;
+
   // APIs for NativeWindow.
-  void Destroy();
   void Close();
   bool IsClosed();
   void Focus();
@@ -122,6 +124,7 @@ class Window : public mate::TrackableObject<Window>,
   void FocusOnWebView();
   void BlurWebView();
   bool IsWebViewFocused();
+  bool IsDevToolsFocused();
   void SetRepresentedFilename(const std::string& filename);
   std::string GetRepresentedFilename();
   void SetDocumentEdited(bool edited);

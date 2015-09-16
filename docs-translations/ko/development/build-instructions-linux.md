@@ -1,11 +1,13 @@
 ﻿# 빌드 설명서 (Linux)
 
+이 가이드는 Linux 운영체제에서 Electron을 빌드하는 방법을 설명합니다.
+
 ## 빌드전 요구사양
 
 * Python 2.7.x. 몇몇 CentOS와 같은 배포판들은 아직도 Python 2.6.x 버전을 사용합니다. 그래서 `python -V`를 통해 버전을 확인해 줄 필요가 있습니다.
 * Node.js v0.12.x. Node를 설치하는 방법은 여러가지가 있습니다. 그중 하나는 [Node.js](http://nodejs.org) 사이트에서 소스코드를 받아 빌드하는 방법입니다.
-이렇게 하면 Node를 일반 유저로 홈 디렉터리에 설치할 수 있습니다. 또는 [NodeSource](https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories)에서 소스 파일을 받아올 수 있습니다.
-자세한 내용은 [Node.js 설치 방법](https://github.com/joyent/node/wiki/Installation) 을 참고하세요.
+  이렇게 하면 Node를 일반 유저로 홈 디렉터리에 설치할 수 있습니다. 또는 [NodeSource](https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories)에서 소스 파일을 받아올 수 있습니다.
+  자세한 내용은 [Node.js 설치 방법](https://github.com/joyent/node/wiki/Installation) 을 참고하세요.
 * Clang 3.4 또는 최신 버전
 * GTK+ 와 libnotify의 개발용 헤더
 
@@ -54,7 +56,7 @@ $ ./script/bootstrap.py -v
 
 ### 크로스 컴파일
 
-`arm` 아키텍쳐로 빌드 하려면 먼저 종속성 라이브러리를 설치해야 합니다:
+`arm` 아키텍쳐로 빌드 하려면 다음 종속성 라이브러리를 설치해야 합니다:
 
 ```bash
 $ sudo apt-get install libc6-dev-armhf-cross linux-libc-dev-armhf-cross \
@@ -84,7 +86,7 @@ $ ./script/create-dist.py
 ```
 
 이 스크립트는 매우 작은 배포판을 `dist` 디렉터리에 생성합니다.
-create-dist.py 스크립트를 실행한 이후 1.3GB를 초과하는 공간을 차지하는 out/R 폴더의 실행파일 바이너리는 삭제해도 됩니다.
+create-dist.py 스크립트를 실행한 이후부턴 1.3GB를 초과하는 공간을 차지하는 `out/R` 폴더의 바이너리는 삭제해도 됩니다.
 
 또는 `Debug` 타겟만 빌드 할 수 있습니다:
 
@@ -109,7 +111,7 @@ $ ./script/clean.py
 ## libtinfo.so.5 동적 링크 라이브러리를 로드하는 도중 에러가 발생할 경우
 
 미리 빌드된 `clang`은 `libtinfo.so.5`로 링크를 시도합니다.
-플랫폼에 따라 적당한 `libncurses` symlink를 추가하세요.
+따라서 플랫폼에 따라 적당한 `libncurses` symlink를 추가하세요:
 
 ```bash
 $ sudo ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5

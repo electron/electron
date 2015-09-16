@@ -3,7 +3,7 @@
 Electron은 프로젝트 생성을 위해 `gyp`를 사용하며 `ninja`를 이용하여 빌드합니다.
 프로젝트 설정은 `.gyp` 와 `.gypi` 파일에서 볼 수 있습니다.
 
-## gyp 파일들
+## gyp 파일
 
 Electron을 빌드 할 때 `gyp` 파일들은 다음과 같은 규칙을 따릅니다:
 
@@ -15,8 +15,8 @@ Electron을 빌드 할 때 `gyp` 파일들은 다음과 같은 규칙을 따릅�
 ## 구성요소 빌드
 
 Chromium은 꽤나 큰 프로젝트입니다. 이 때문에 최종 링킹 작업은 상당한 시간이 소요될 수 있습니다.
-이러한 문제로 인해 개발 시 빌드 작업을 까다롭게 만듭니다. 이 문제를 해결하기 위해 Chromium은 "component build"를 도입했습니다.
-이는 각각의 컴포넌트를 각각 따로 분리하여 공유 라이브러리로 빌드 합니다. 이렇게 되면 링킹작업은 매우 빨라지지만 파일 크기와 성능이 느려집니다.
+이 문제는 보통 개발을 어렵게 만듭니다. 우리는 이 문제를 해결하기 위해 Chromium의 "component build" 방식을 도입했습니다.
+이는 각각의 컴포넌트를 각각 따로 분리하여 공유 라이브러리로 빌드 합니다. 하지만 이 방식을 사용하면 링킹 작업은 매우 빨라지지만 파일 크기와 성능이 느려집니다.
 
 Electron도 상당히 비슷한 접근을 했습니다:
 `Debug`빌드 시 바이너리는 공유 라이브러리 버전의 Chromium 컴포넌트를 사용해서 링크 속도를 높이고
@@ -28,7 +28,7 @@ Electron도 상당히 비슷한 접근을 했습니다:
 Prebuilt된 모든 Chromium 바이너리들은 부트스트랩 스크립트가 실행될 때 다운로드됩니다.
 기본적으로 공유 라이브러리와 정적 라이브러리 모두 다운로드되며 최종 전체 파일 크기는 플랫폼에 따라 800MB에서 2GB까지 차지합니다.
 
-기본적으로 libchromiumcontent는 Amazon Web Service를 통해 다운로드 됩니다.
+기본적으로 (`libchromiumcontent`)는 Amazon Web Service를 통해 다운로드 됩니다.
 만약 `LIBCHROMIUMCONTENT_MIRROR` 환경 변수가 설정되어 있으면 부트스트랩은 해당 링크를 사용하여 바이너리를 다운로드 합니다.
 [libchromiumcontent-qiniu-mirror](https://github.com/hokein/libchromiumcontent-qiniu-mirror)는 libchromiumcontent의 미러입니다.
 만약 AWS에 접근할 수 없다면 `export LIBCHROMIUMCONTENT_MIRROR=http://7xk3d2.dl1.z0.glb.clouddn.com/`를 통해 다운로드 할 수 있습니다.
@@ -43,9 +43,9 @@ $ ./script/build.py -c D
 ## 프로젝트 생성 (two-phrase)
 
 Electron은 `Release`와 `Debug` 빌드가 서로 다른 라이브러리 링크 방식을 사용합니다.
-그러나 `gyp`는 따로 빌드 설정을 분리하여 라이브러리 링크 방식을 정의하는 것을 지원하지 않습니다.
+하지만 `gyp`는 따로 빌드 설정을 분리하여 라이브러리 링크 방식을 정의하는 것을 지원하지 않습니다.
 
-이러한 문제를 해결하기 위해 Electron은 링크 설정을 제어하는 `gyp` 변수 `libchromiumcontent_component`를 사용하고 `gyp`를 실행할 때 단 하나의 타겟만을 생성합니다.
+이 문제를 해결하기 위해 Electron은 링크 설정을 제어하는 `gyp` 변수 `libchromiumcontent_component`를 사용하고 `gyp`를 실행할 때 단 하나의 타겟만 생성합니다.
 
 ## 타겟 이름
 

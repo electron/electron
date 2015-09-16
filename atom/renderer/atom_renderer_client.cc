@@ -7,11 +7,12 @@
 #include <string>
 
 #include "atom/common/api/atom_bindings.h"
-#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/node_bindings.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/guest_view_container.h"
+#include "atom/renderer/node_array_buffer_bridge.h"
 #include "base/command_line.h"
 #include "chrome/renderer/pepper/pepper_helper.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
@@ -20,15 +21,11 @@
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_thread.h"
-#include "third_party/WebKit/public/web/WebArrayBuffer.h"
-#include "third_party/WebKit/public/web/WebArrayBufferConverter.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebPluginParams.h"
 #include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebRuntimeFeatures.h"
-
-#include "atom/common/node_includes.h"
 
 #if defined(OS_WIN)
 #include <shlobj.h>
@@ -49,37 +46,6 @@ bool IsSwitchEnabled(base::CommandLine* command_line,
   else
     return false;
   return true;
-}
-
-// global.Uint8Array;
-v8::Local<v8::Function> GetUint8ArrayConstructor(
-    v8::Isolate* isolate, v8::Local<v8::Context> context) {
-  v8::Local<v8::Value> constructor = context->Global()->Get(
-      mate::StringToV8(isolate, "Uint8Array"));
-  return v8::Local<v8::Function>::Cast(constructor);
-}
-
-// new ArrayBuffer(size);
-v8::Local<v8::ArrayBuffer> BlinkArrayBufferCreate(
-    v8::Isolate* isolate, size_t size) {
-  blink::WebArrayBuffer buffer = blink::WebArrayBuffer::create(size, 1);
-  return v8::Local<v8::ArrayBuffer>::Cast(
-      blink::WebArrayBufferConverter::toV8Value(
-          &buffer, isolate->GetCurrentContext()->Global(), isolate));
-}
-
-// new Uint8Array(array_buffer, offset, size);
-v8::Local<v8::Uint8Array> BlinkUint8ArrayCreate(
-    v8::Local<v8::ArrayBuffer> ab, size_t offset, size_t size) {
-  v8::Local<v8::Context> context = ab->CreationContext();
-  v8::Isolate* isolate = context->GetIsolate();
-  v8::Local<v8::Function> constructor =
-      GetUint8ArrayConstructor(isolate, context);
-  v8::Local<v8::Value> args[] = {
-      ab, mate::ConvertToV8(isolate, offset), mate::ConvertToV8(isolate, size)
-  };
-  return v8::Local<v8::Uint8Array>::Cast(constructor->NewInstance(
-      context, arraysize(args), args).ToLocalChecked());
 }
 
 // Helper class to forward the messages to the client.
@@ -120,9 +86,7 @@ void AtomRendererClient::WebKitInitialized() {
   blink::WebCustomElement::addEmbedderCustomElementName("webview");
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
 
-  // Override Node's ArrayBuffer with DOM's ArrayBuffer.
-  node::Buffer::SetArrayBufferCreator(&BlinkArrayBufferCreate,
-                                      &BlinkUint8ArrayCreate);
+  OverrideNodeArrayBuffer();
 
   node_bindings_->Initialize();
   node_bindings_->PrepareMessageLoop();

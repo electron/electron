@@ -46,7 +46,7 @@ class JsAsker : public RequestJob {
   // Called by |CustomProtocolHandler| to store handler related information.
   void SetHandlerInfo(
       v8::Isolate* isolate,
-      scoped_refptr<net::URLRequestContextGetter> request_context_getter,
+      net::URLRequestContextGetter* request_context_getter,
       const JavaScriptHandler& handler) {
     isolate_ = isolate;
     request_context_getter_ = request_context_getter;
@@ -57,7 +57,7 @@ class JsAsker : public RequestJob {
   virtual void StartAsync(scoped_ptr<base::Value> options) = 0;
 
   net::URLRequestContextGetter* request_context_getter() const {
-    return request_context_getter_.get();
+    return request_context_getter_;
   }
 
  private:
@@ -89,7 +89,7 @@ class JsAsker : public RequestJob {
   }
 
   v8::Isolate* isolate_;
-  scoped_refptr<net::URLRequestContextGetter> request_context_getter_;
+  net::URLRequestContextGetter* request_context_getter_;
   JavaScriptHandler handler_;
 
   base::WeakPtrFactory<JsAsker> weak_factory_;

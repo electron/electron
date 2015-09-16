@@ -13,6 +13,20 @@ var BrowserWindow = require('browser-window');
 var win = new BrowserWindow({ width: 800, height: 600, frame: false });
 ```
 
+### Alternatives on Mac
+
+On Mac OS X 10.10 Yosemite and newer, there's an alternative way to specify
+a chromeless window. Instead of setting `frame` to `false` which disables
+both the titlebar and window controls, you may want to have the title bar
+hidden and your content extend to the full window size, yet still preserve
+the window controls ("traffic lights") for standard window actions.
+You can do so by specifying the new `title-bar-style` option:
+
+```javascript
+var BrowserWindow = require('browser-window');
+var win = new BrowserWindow({ width: 800, height: 600, 'title-bar-style': 'hidden' });
+```
+
 ## Transparent window
 
 By setting the `transparent` option to `true`, you can also make the frameless

@@ -138,22 +138,22 @@ If "on", the guest page will have web security disabled.
 <webview src="http://electron.atom.io" partition="electron"></webview>
 ```
 
-Sets the storage partition used by the `webview`. If the storage partition ID starts with `persist:`,
-the `webview` will use a persistent storage partition available to all `webview` in the app with
-the same storage partition ID. if there is no `persist:` prefix, the `webview` will
-use an in-memory storage partition. By assigning the same partition ID, multiple `webview`
-can share the same storage partition. If the storage partition ID is unset then default storage
-of the app will be used.
+Sets the session used by the page. If `partition` starts with `persist:`, the
+page will use a persistent session available to all pages in the app with the
+same `partition`. if there is no `persist:` prefix, the page will use an
+in-memory session. By assigning the same `partition`, multiple pages can share
+the same session. If the `partition` is unset then default session of the app
+will be used.
 
-This value can only be modified before the first navigation, since the storage partition of an active
-renderer process cannot change. Subsequent attempts to modify the value will fail with a
-DOM exception.
+This value can only be modified before the first navigation, since the session
+of an active renderer process cannot change. Subsequent attempts to modify the
+value will fail with a DOM exception.
 
 ## Methods
 
 The `webview` tag has the following methods:
 
-**Note**: The webview element must be loaded before using the methods.
+**Note:** The webview element must be loaded before using the methods.
 
 **Example**
 ```javascript
@@ -260,15 +260,15 @@ user action, can take advantage of this option for automation.
 
 ### `<webview>.openDevTools()`
 
-Opens a devtools window for guest page.
+Opens a DevTools window for guest page.
 
 ### `<webview>.closeDevTools()`
 
-Closes the devtools window of guest page.
+Closes the DevTools window of guest page.
 
 ### `<webview>.isDevToolsOpened()`
 
-Returns a boolean whether guest page has a devtools window attached.
+Returns a boolean whether guest page has a DevTools window attached.
 
 ### `<webview>.inspectElement(x, y)`
 
@@ -279,7 +279,7 @@ Starts inspecting element at position (`x`, `y`) of guest page.
 
 ### `<webview>.inspectServiceWorker()`
 
-Opens the devtools for the service worker context present in the guest page.
+Opens the DevTools for the service worker context present in the guest page.
 
 ### `<webview>.setAudioMuted(muted)`
 
@@ -355,7 +355,7 @@ Prints webview's web page as PDF, Same with `webContents.printToPDF(options, cal
 Send `args..` to guest page via `channel` in asynchronous message, the guest
 page can handle it by listening to the `channel` event of `ipc` module.
 
-See [WebContents.send](browser-window.md#webcontentssendchannel-args) for
+See [WebContents.send](web-contents.md#webcontentssendchannel-args) for
 examples.
 
 ## DOM events
@@ -384,6 +384,7 @@ Returns:
 
 * `errorCode` Integer
 * `errorDescription` String
+* `validatedUrl` String
 
 This event is like `did-finish-load`, but fired when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.

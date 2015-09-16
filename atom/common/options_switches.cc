@@ -42,6 +42,9 @@ const char kAcceptFirstMouse[] = "accept-first-mouse";
 // Whether window size should include window frame.
 const char kUseContentSize[] = "use-content-size";
 
+// The requested title bar style for the window
+const char kTitleBarStyle[] = "title-bar-style";
+
 // The WebPreferences.
 const char kWebPreferences[] = "web-preferences";
 
@@ -74,6 +77,9 @@ const char kGuestInstanceID[] = "guest-instance-id";
 
 // Script that will be loaded by guest WebContents before other scripts.
 const char kPreloadScript[] = "preload";
+
+// Like --preload, but the passed argument is an URL.
+const char kPreloadUrl[] = "preload-url";
 
 // Whether the window should be transparent.
 const char kTransparent[] = "transparent";

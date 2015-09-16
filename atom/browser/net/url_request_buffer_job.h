@@ -9,6 +9,7 @@
 
 #include "atom/browser/net/js_asker.h"
 #include "base/memory/ref_counted_memory.h"
+#include "net/http/http_status_code.h"
 #include "net/url_request/url_request_simple_job.h"
 
 namespace atom {
@@ -20,6 +21,9 @@ class URLRequestBufferJob : public JsAsker<net::URLRequestSimpleJob> {
   // JsAsker:
   void StartAsync(scoped_ptr<base::Value> options) override;
 
+  // URLRequestJob:
+  void GetResponseInfo(net::HttpResponseInfo* info) override;
+
   // URLRequestSimpleJob:
   int GetRefCountedData(std::string* mime_type,
                         std::string* charset,
@@ -30,6 +34,7 @@ class URLRequestBufferJob : public JsAsker<net::URLRequestSimpleJob> {
   std::string mime_type_;
   std::string charset_;
   scoped_refptr<base::RefCountedBytes> data_;
+  net::HttpStatusCode status_code_;
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestBufferJob);
 };

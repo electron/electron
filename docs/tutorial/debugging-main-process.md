@@ -1,6 +1,6 @@
 # Debugging the Main Process
 
-The browser window devtools can only debug the renderer process scripts (i.e.
+The browser window DevTools can only debug the renderer process scripts (i.e.
 the web pages). In order to provide a way to debug the scripts from the main
 process, Electron has provided the `--debug` and `--debug-brk` switches.
 

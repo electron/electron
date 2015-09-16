@@ -11,6 +11,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
@@ -153,37 +154,52 @@ WebContents::WebContents(content::WebContents* web_contents)
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 }
 
-WebContents::WebContents(const mate::Dictionary& options) {
+WebContents::WebContents(v8::Isolate* isolate,
+                         const mate::Dictionary& options) {
+  // Whether it is a guest WebContents.
   bool is_guest = false;
   options.Get("isGuest", &is_guest);
-
   type_ = is_guest ? WEB_VIEW : BROWSER_WINDOW;
 
-  content::BrowserContext* browser_context =
-      AtomBrowserMainParts::Get()->browser_context();
+  // Obtain the session.
+  std::string partition;
+  mate::Handle<api::Session> session;
+  if (options.Get("session", &session)) {
+  } else if (options.Get("partition", &partition) && !partition.empty()) {
+    bool in_memory = true;
+    if (base::StartsWith(partition, "persist:", base::CompareCase::SENSITIVE)) {
+      in_memory = false;
+      partition = partition.substr(8);
+    }
+    session = Session::FromPartition(isolate, partition, in_memory);
+  } else {
+    // Use the default session if not specified.
+    session = Session::FromPartition(isolate, "", false);
+  }
+  session_.Reset(isolate, session.ToV8());
+
   content::WebContents* web_contents;
   if (is_guest) {
-    GURL guest_site;
-    options.Get("partition", &guest_site);
-    // use hosts' browser_context when no partition is specified.
-    if (!guest_site.query().empty()) {
-      browser_context = AtomBrowserMainParts::Get()
-          ->GetBrowserContextForPartition(guest_site);
-    }
-    auto site_instance =
-        content::SiteInstance::CreateForURL(browser_context, guest_site);
-    content::WebContents::CreateParams params(browser_context, site_instance);
+    content::SiteInstance* site_instance = content::SiteInstance::CreateForURL(
+        session->browser_context(), GURL("chrome-guest://fake-host"));
+    content::WebContents::CreateParams params(
+        session->browser_context(), site_instance);
     guest_delegate_.reset(new WebViewGuestDelegate);
     params.guest_delegate = guest_delegate_.get();
     web_contents = content::WebContents::Create(params);
   } else {
-    content::WebContents::CreateParams params(browser_context);
+    content::WebContents::CreateParams params(session->browser_context());
     web_contents = content::WebContents::Create(params);
   }
 
   Observe(web_contents);
   AttachAsUserData(web_contents);
   InitWithWebContents(web_contents);
+
+  // Save the preferences.
+  base::DictionaryValue web_preferences;
+  mate::ConvertFromV8(isolate, options.GetHandle(), &web_preferences);
+  new WebContentsPreferences(web_contents, &web_preferences);
 
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
@@ -372,7 +388,7 @@ void WebContents::DidFailProvisionalLoad(
     int error_code,
     const base::string16& error_description,
     bool was_ignored_by_handler) {
-  Emit("did-fail-load", error_code, error_description);
+  Emit("did-fail-load", error_code, error_description, validated_url);
 }
 
 void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
@@ -380,7 +396,7 @@ void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
                               int error_code,
                               const base::string16& error_description,
                               bool was_ignored_by_handler) {
-  Emit("did-fail-load", error_code, error_description);
+  Emit("did-fail-load", error_code, error_description, validated_url);
 }
 
 void WebContents::DidStartLoading() {
@@ -489,6 +505,7 @@ void WebContents::NavigationEntryCommitted(
 }
 
 void WebContents::Destroy() {
+  session_.Reset();
   if (type_ == WEB_VIEW && managed_web_contents()) {
     // When force destroying the "destroyed" event is not emitted.
     WebContentsDestroyed();
@@ -528,6 +545,10 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
   web_contents()->GetController().LoadURLWithParams(params);
+}
+
+GURL WebContents::GetURL() const {
+  return web_contents()->GetURL();
 }
 
 base::string16 WebContents::GetTitle() const {
@@ -651,10 +672,6 @@ void WebContents::InspectServiceWorker() {
 }
 
 v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
-  if (session_.IsEmpty()) {
-    auto handle = Session::CreateFrom(isolate, GetBrowserContext());
-    session_.Reset(isolate, handle.ToV8());
-  }
   return v8::Local<v8::Value>::New(isolate, session_);
 }
 
@@ -704,17 +721,19 @@ void WebContents::PrintToPDF(const base::DictionaryValue& setting,
       PrintToPDF(setting, callback);
 }
 
-void WebContents::AddWorkSpace(const base::FilePath& path) {
+void WebContents::AddWorkSpace(mate::Arguments* args,
+                               const base::FilePath& path) {
   if (path.empty()) {
-    node::ThrowError(isolate(), "path cannot be empty");
+    args->ThrowError("path cannot be empty");
     return;
   }
   DevToolsAddFileSystem(path);
 }
 
-void WebContents::RemoveWorkSpace(const base::FilePath& path) {
+void WebContents::RemoveWorkSpace(mate::Arguments* args,
+                                  const base::FilePath& path) {
   if (path.empty()) {
-    node::ThrowError(isolate(), "path cannot be empty");
+    args->ThrowError("path cannot be empty");
     return;
   }
   DevToolsRemoveFileSystem(path);
@@ -800,6 +819,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("getId", &WebContents::GetID)
         .SetMethod("equal", &WebContents::Equal)
         .SetMethod("_loadUrl", &WebContents::LoadURL)
+        .SetMethod("_getUrl", &WebContents::GetURL)
         .SetMethod("getTitle", &WebContents::GetTitle)
         .SetMethod("isLoading", &WebContents::IsLoading)
         .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
@@ -890,7 +910,7 @@ mate::Handle<WebContents> WebContents::CreateFrom(
 // static
 mate::Handle<WebContents> WebContents::Create(
     v8::Isolate* isolate, const mate::Dictionary& options) {
-  auto handle =  mate::CreateHandle(isolate, new WebContents(options));
+  auto handle =  mate::CreateHandle(isolate, new WebContents(isolate, options));
   g_wrap_web_contents.Run(handle.ToV8());
   return handle;
 }

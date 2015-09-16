@@ -13,6 +13,7 @@
 #include "atom/browser/node_debugger.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/node_bindings.h"
+#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/thread_task_runner_handle.h"
 #include "chrome/browser/browser_process.h"
@@ -22,26 +23,7 @@
 #include "chrome/browser/ui/libgtk2ui/gtk2_util.h"
 #endif
 
-#include "atom/common/node_includes.h"
-
 namespace atom {
-
-namespace {
-
-const base::FilePath::CharType kStoragePartitionDirname[] = "Partitions";
-
-void GetStoragePartitionConfig(const GURL& partition,
-                               base::FilePath* partition_path,
-                               bool* in_memory,
-                               std::string* id) {
-  *in_memory = (partition.path() != "/persist");
-  net::UnescapeRule::Type flags =
-      net::UnescapeRule::SPACES | net::UnescapeRule::URL_SPECIAL_CHARS;
-  *id = net::UnescapeURLComponent(partition.query(), flags);
-  *partition_path = base::FilePath(kStoragePartitionDirname).AppendASCII(*id);
-}
-
-}  // namespace
 
 // static
 AtomBrowserMainParts* AtomBrowserMainParts::self_ = NULL;
@@ -57,8 +39,6 @@ AtomBrowserMainParts::AtomBrowserMainParts()
 }
 
 AtomBrowserMainParts::~AtomBrowserMainParts() {
-  for (const auto& callback : destruction_callbacks_)
-    callback.Run();
 }
 
 // static
@@ -67,28 +47,9 @@ AtomBrowserMainParts* AtomBrowserMainParts::Get() {
   return self_;
 }
 
-content::BrowserContext* AtomBrowserMainParts::GetBrowserContextForPartition(
-    const GURL& partition) {
-  std::string id;
-  bool in_memory;
-  base::FilePath partition_path;
-  GetStoragePartitionConfig(partition, &partition_path, &in_memory, &id);
-  if (browser_context_map_.contains(id))
-    return browser_context_map_.get(id);
-
-  scoped_ptr<brightray::BrowserContext> browser_context(CreateBrowserContext());
-  browser_context->Initialize(partition_path.value(), in_memory);
-  browser_context_map_.set(id, browser_context.Pass());
-  return browser_context_map_.get(id);
-}
-
 void AtomBrowserMainParts::RegisterDestructionCallback(
     const base::Closure& callback) {
   destruction_callbacks_.push_back(callback);
-}
-
-brightray::BrowserContext* AtomBrowserMainParts::CreateBrowserContext() {
-  return new AtomBrowserContext();
 }
 
 void AtomBrowserMainParts::PostEarlyInitialization() {
@@ -153,6 +114,16 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   Browser::Get()->WillFinishLaunching();
   Browser::Get()->DidFinishLaunching();
 #endif
+}
+
+void AtomBrowserMainParts::PostMainMessageLoopRun() {
+  brightray::BrowserMainParts::PostMainMessageLoopRun();
+
+  // Make sure destruction callbacks are called before message loop is
+  // destroyed, otherwise some objects that need to be deleted on IO thread
+  // won't be freed.
+  for (const auto& callback : destruction_callbacks_)
+    callback.Run();
 }
 
 }  // namespace atom

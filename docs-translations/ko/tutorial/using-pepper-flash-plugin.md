@@ -1,7 +1,7 @@
 ﻿# Pepper 플래시 플러그인 사용하기
 
-작업에 필요한 경우 pepper 플래시 플러그인을 사용할 수 있습니다.
-Electron에서 pepper 플래시 플러그인을 사용하기 위해선 따로 pepper 플래시 플러그인의 위치를 지정해 주어야합니다.
+Electron은 Pepper 플래시 플러그인을 지원합니다.
+Pepper 플래시 플러그인을 사용하려면 Pepper 플래시 플러그인의 위치를 지정해야 합니다.
 
 ## 플래시 플러그인 준비하기
 
@@ -10,7 +10,7 @@ Electron에서 플래시 플러그인을 지원하기 위해선 이 두 가지�
 
 ## Electron 스위치 추가
 
-플러그인을 사용하기 위해 직접적으로 `--ppapi-flash-path` 와 `ppapi-flash-version` 플래그를 ready 이벤트가 호출되기 전에 추가해야합니다.
+플러그인을 사용하려면 Electron 커맨드 라인에 `--ppapi-flash-path` 와 `ppapi-flash-version` 플래그를 app의 ready 이벤트가 호출되기 전에 추가해야 합니다.
 그리고 `browser-window`에 `plugins` 스위치도 추가해야합니다.
 
 ```javascript
@@ -20,8 +20,6 @@ var BrowserWindow = require('browser-window');
 // Report crashes to our server.
 require('crash-reporter').start();
 
-// Keep a global reference of the window object, if you don't, the window will
-// be closed automatically when the javascript object is GCed.
 var mainWindow = null;
 
 // Quit when all windows are closed.
@@ -54,7 +52,9 @@ app.on('ready', function() {
 ```
 
 ## `<webview>` 태그를 이용하여 플러그인을 활성화
+
 `plugins` 속성을 `<webview>` 태그에 추가합니다.
+
 ```html
 <webview src="http://www.adobe.com/software/flash/about/" plugins></webview>
 ```

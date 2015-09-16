@@ -56,8 +56,10 @@ std::string RemoveWhitespace(const std::string& str) {
 
 }  // namespace
 
-AtomBrowserContext::AtomBrowserContext()
-    : job_factory_(new AtomURLRequestJobFactory) {
+AtomBrowserContext::AtomBrowserContext(const std::string& partition,
+                                       bool in_memory)
+    : brightray::BrowserContext(partition, in_memory),
+      job_factory_(new AtomURLRequestJobFactory) {
 }
 
 AtomBrowserContext::~AtomBrowserContext() {
@@ -150,7 +152,7 @@ AtomBrowserContext::GetDownloadManagerDelegate() {
 
 content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
   if (!guest_manager_)
-    guest_manager_.reset(new WebViewManager(this));
+    guest_manager_.reset(new WebViewManager);
   return guest_manager_.get();
 }
 
@@ -162,3 +164,13 @@ void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
 }
 
 }  // namespace atom
+
+namespace brightray {
+
+// static
+scoped_refptr<BrowserContext> BrowserContext::Create(
+    const std::string& partition, bool in_memory) {
+  return make_scoped_refptr(new atom::AtomBrowserContext(partition, in_memory));
+}
+
+}  // namespace brightray

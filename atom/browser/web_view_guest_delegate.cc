@@ -5,7 +5,6 @@
 #include "atom/browser/web_view_guest_delegate.h"
 
 #include "atom/browser/api/atom_api_web_contents.h"
-#include "atom/browser/web_view_constants.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "content/public/browser/guest_host.h"
 #include "content/public/browser/render_frame_host.h"
@@ -13,6 +12,13 @@
 #include "content/public/browser/render_widget_host_view.h"
 
 namespace atom {
+
+namespace {
+
+const int kDefaultWidth = 300;
+const int kDefaultHeight = 300;
+
+}  // namespace
 
 WebViewGuestDelegate::WebViewGuestDelegate()
     : guest_opaque_(true),
@@ -172,7 +178,7 @@ gfx::Size WebViewGuestDelegate::GetDefaultSize() const {
     return embedder_web_contents_->GetRenderWidgetHostView()
                                  ->GetVisibleViewportSize();
   } else {
-    return gfx::Size(web_view::kDefaultWidth, web_view::kDefaultHeight);
+    return gfx::Size(kDefaultWidth, kDefaultHeight);
   }
 }
 

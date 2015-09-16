@@ -7,7 +7,7 @@
 
 ## 최근 사용한 문서 (Windows & OS X)
 
-Windows와 OS X는 dock menu나 JumpList등을 통하여 최근 문서 리스트에 쉽게 접근할 수 있습니다.
+알다 싶이 Windows와 OS X는 JumpList 또는 dock 메뉴를 통해 최근 문서 리스트에 쉽게 접근할 수 있습니다.
 
 __JumpList:__
 
@@ -88,10 +88,10 @@ __Internet Explorer의 작업:__
 
 ![IE](http://i.msdn.microsoft.com/dynimg/IC420539.png)
 
-OS X의 말 그대로 메뉴로 작동하는 dock menu 와는 달리 Windows의 사용자 작업은 어플리케이션 바로가기처럼 작동합니다.
-유저가 작업을 클릭할 시 설정한 인자와 함께 새로운 어플리케이션이 실행됩니다.
+OS X의 dock menu(진짜 메뉴)와는 달리 Windows의 사용자 작업은 어플리케이션 바로 가기처럼 작동합니다.
+유저가 작업을 클릭할 때 설정한 인자와 함께 새로운 어플리케이션이 실행됩니다.
 
-사용자 작업을 설정하려면 [app.setUserTasks][setusertaskstasks] API를 사용하여 구현할 수 있습니다:
+사용자 작업을 설정하려면 [app.setUserTasks][setusertaskstasks] 메서드를 통해 구현할 수 있습니다:
 
 ```javascript
 var app = require('app');
@@ -166,7 +166,7 @@ win.setThumbarButtons([]);
 
 ## Unity 런처 숏컷 기능 (Linux)
 
-Unity 환경에선 `.desktop` 파일을 수정함으로써 런처에 새로운 커스텀 엔트리를 추가할 수 있습니다. [Adding shortcuts to a launcher][unity-launcher] 가이드를 참고하세요.
+Unity 환경에선 `.desktop` 파일을 수정함으로써 런처에 새로운 커스텀 엔트리를 추가할 수 있습니다. [Adding Shortcuts to a Launcher][unity-launcher] 가이드를 참고하세요.
 
 __Audacious의 런처 숏컷:__
 

@@ -1,12 +1,14 @@
-﻿# 빌드 설명서 (Mac)
+﻿# 빌드 설명서 (OS X)
+
+이 가이드는 OS X 운영체제에서 Electron을 빌드하는 방법을 설명합니다.
 
 ## 빌드전 요구 사항
 
 * OS X >= 10.8
 * [Xcode](https://developer.apple.com/technologies/tools/) >= 5.1
-* [node.js](http://nodejs.org) (external).
+* [node.js](http://nodejs.org) (external)
 
-만약 Homebrew를 이용해 파이선을 설치했다면 다음 파이선 모듈도 같이 설치해야 합니다:
+만약 Homebrew를 이용해 파이선을 설치했다면 다음 Python 모듈도 같이 설치해야 합니다:
 
 * pyobjc
 
@@ -44,7 +46,7 @@ $ ./script/build.py -c D
 
 ## 32비트 지원
 
-Electron은 현재 OS X 64비트 빌드만 지원하고 있습니다. 그리고 앞으로도 OS X 32비트는 지원할 계획이 없습니다.
+Electron은 현재 OS X 64비트만 지원하고 있습니다. 그리고 앞으로도 OS X 32비트는 지원할 계획이 없습니다.
 
 ## 테스트
 

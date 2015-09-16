@@ -13,6 +13,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/options_switches.h"
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
@@ -64,9 +65,21 @@ void OnCapturePageDone(
 
 
 Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
+  // Use options['web-preferences'] to create WebContents.
+  mate::Dictionary web_preferences = mate::Dictionary::CreateEmpty(isolate);
+  options.Get(switches::kWebPreferences, &web_preferences);
+
+  // Be compatible with old options which are now in web_preferences.
+  v8::Local<v8::Value> value;
+  if (options.Get(switches::kNodeIntegration, &value))
+    web_preferences.Set(switches::kNodeIntegration, value);
+  if (options.Get(switches::kPreloadScript, &value))
+    web_preferences.Set(switches::kPreloadScript, value);
+  if (options.Get(switches::kZoomFactor, &value))
+    web_preferences.Set(switches::kZoomFactor, value);
+
   // Creates the WebContents used by BrowserWindow.
-  mate::Dictionary web_contents_options(isolate, v8::Object::New(isolate));
-  auto web_contents = WebContents::Create(isolate, web_contents_options);
+  auto web_contents = WebContents::Create(isolate, web_preferences);
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents.get();
 
@@ -170,21 +183,21 @@ void Window::OnDevToolsFocus() {
 }
 
 void Window::OnDevToolsOpened() {
-  Emit("devtools-opened");
-
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   auto handle = WebContents::CreateFrom(
       isolate(), api_web_contents_->GetDevToolsWebContents());
   devtools_web_contents_.Reset(isolate(), handle.ToV8());
+
+  Emit("devtools-opened");
 }
 
 void Window::OnDevToolsClosed() {
-  Emit("devtools-closed");
-
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   devtools_web_contents_.Reset();
+
+  Emit("devtools-closed");
 }
 
 void Window::OnExecuteWindowsCommand(const std::string& command_name) {
@@ -195,8 +208,8 @@ void Window::OnExecuteWindowsCommand(const std::string& command_name) {
 mate::Wrappable* Window::New(v8::Isolate* isolate,
                              const mate::Dictionary& options) {
   if (!Browser::Get()->is_ready()) {
-    node::ThrowError(isolate,
-                     "Cannot create BrowserWindow before app is ready");
+    isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
+        isolate, "Cannot create BrowserWindow before app is ready")));
     return nullptr;
   }
   return new Window(isolate, options);
@@ -207,7 +220,10 @@ bool Window::IsDestroyed() const {
 }
 
 void Window::Destroy() {
-  window_->CloseContents(nullptr);
+  if (window_) {
+    window_->CloseContents(nullptr);
+    window_.reset();
+  }
 }
 
 void Window::Close() {
@@ -398,6 +414,10 @@ bool Window::IsWebViewFocused() {
   return window_->IsWebViewFocused();
 }
 
+bool Window::IsDevToolsFocused() {
+  return window_->IsDevToolsFocused();
+}
+
 void Window::SetRepresentedFilename(const std::string& filename) {
   window_->SetRepresentedFilename(filename);
 }
@@ -575,6 +595,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("focusOnWebView", &Window::FocusOnWebView)
       .SetMethod("blurWebView", &Window::BlurWebView)
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)
+      .SetMethod("isDevToolsFocused", &Window::IsDevToolsFocused)
       .SetMethod("capturePage", &Window::CapturePage)
       .SetMethod("setProgressBar", &Window::SetProgressBar)
       .SetMethod("setOverlayIcon", &Window::SetOverlayIcon)

@@ -3,15 +3,15 @@ path   = require 'path'
 http   = require 'http'
 
 describe '<webview> tag', ->
+  @timeout 10000
+
   fixtures = path.join __dirname, 'fixtures'
 
   webview = null
-
   beforeEach ->
     webview = new WebView
-
   afterEach ->
-    document.body.removeChild webview
+    document.body.removeChild(webview) if document.body.contains(webview)
 
   describe 'src attribute', ->
     it 'specifies the page to load', (done) ->
@@ -82,6 +82,14 @@ describe '<webview> tag', ->
       webview.addEventListener 'console-message', listener
       webview.setAttribute 'preload', "#{fixtures}/module/preload.js"
       webview.src = "file://#{fixtures}/pages/e.html"
+      document.body.appendChild webview
+
+    it 'preload script can still use "process" in required modules when nodeintegration is off', (done) ->
+      webview.addEventListener 'console-message', (e) ->
+        assert.equal e.message, 'object function object'
+        done()
+      webview.setAttribute 'preload', "#{fixtures}/module/preload-node-off.js"
+      webview.src = "file://#{fixtures}/api/blank.html"
       document.body.appendChild webview
 
     it 'receives ipc message in preload script', (done) ->
@@ -160,7 +168,7 @@ describe '<webview> tag', ->
         assert.equal e.message, 'undefined undefined undefined undefined'
         done()
       webview.src = "file://#{fixtures}/pages/c.html"
-      webview.partition = "test"
+      webview.partition = 'test1'
       document.body.appendChild webview
 
     it 'inserts node symbols when set', (done) ->
@@ -169,7 +177,7 @@ describe '<webview> tag', ->
         done()
       webview.setAttribute 'nodeintegration', 'on'
       webview.src = "file://#{fixtures}/pages/d.html"
-      webview.partition = "test"
+      webview.partition = 'test2'
       document.body.appendChild webview
 
     it 'isolates storage for different id', (done) ->
@@ -180,7 +188,7 @@ describe '<webview> tag', ->
       window.localStorage.setItem 'test', 'one'
       webview.addEventListener 'console-message', listener
       webview.src = "file://#{fixtures}/pages/partition/one.html"
-      webview.partition = "test"
+      webview.partition = 'test3'
       document.body.appendChild webview
 
     it 'uses current session storage when no id is provided', (done) ->

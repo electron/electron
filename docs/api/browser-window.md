@@ -46,10 +46,8 @@ Properties `width` and `height` are required.
 * `always-on-top` Boolean - Whether the window should always stay on top of
    other windows.
 * `fullscreen` Boolean - Whether the window should show in fullscreen. When
-  set to `false` the fullscreen button will also be hidden on OS X.
+  set to `false` the fullscreen button will be hidden or disabled on OS X.
 * `skip-taskbar` Boolean - Whether to show the window in taskbar.
-* `zoom-factor` Number - The default zoom factor of the page, `3.0` represents
-`300%`.
 * `kiosk` Boolean - The kiosk mode.
 * `title` String - Default window title.
 * `icon` [NativeImage](native-image.md) - The window icon, when omitted on
@@ -57,8 +55,6 @@ Properties `width` and `height` are required.
 * `show` Boolean - Whether window should be shown when created.
 * `frame` Boolean - Specify `false` to create a
 [Frameless Window](frameless-window.md).
-* `node-integration` Boolean - Whether node integration is enabled. Default
-  is `true`.
 * `accept-first-mouse` Boolean - Whether the web view accepts a single
   mouse-down event that simultaneously activates the window.
 * `disable-auto-hide-cursor` Boolean - Whether to hide cursor when typing.
@@ -68,22 +64,42 @@ Properties `width` and `height` are required.
   than screen.
 * `dark-theme` Boolean - Forces using dark theme for the window, only works on
   some GTK+3 desktop environments.
-* `preload` String - Specifies a script that will be loaded before other
-  scripts run in the window. This script will always have access to node APIs
-  no matter whether node integration is turned on for the window, and the path
-  of `preload` script has to be absolute path.
 * `transparent` Boolean - Makes the window [transparent](frameless-window.md).
 * `type` String - Specifies the type of the window, possible types are
   `desktop`, `dock`, `toolbar`, `splash`, `notification`. This only works on
   Linux.
 * `standard-window` Boolean - Uses the OS X's standard window instead of the
   textured window. Defaults to `true`.
+* `title-bar-style` String, OS X - specifies the style of window title bar.
+  This option is supported on OS X 10.10 Yosemite and newer. There are three
+  possible values:
+  * `default` or not specified results in the standard gray opaque Mac title
+  bar.
+  * `hidden` results in a hidden title bar and a full size content window, yet
+  the title bar still has the standard window controls ("traffic lights") in
+  the top left.
+  * `hidden-inset` results in a hidden title bar with an alternative look
+  where the traffic light buttons are slightly more inset from the window edge.
 * `web-preferences` Object - Settings of web page's features, properties:
+  * `node-integration` Boolean - Whether node integration is enabled. Default
+    is `true`.
+  * `preload` String - Specifies a script that will be loaded before other
+    scripts run in the page. This script will always have access to node APIs
+    no matter whether node integration is turned on for the page, and the path
+    of `preload` script has to be absolute path.
+  * `partition` String - Sets the session used by the page. If `partition`
+    starts with `persist:`, the page will use a persistent session available to
+    all pages in the app with the same `partition`. if there is no `persist:`
+    prefix, the page will use an in-memory session. By assigning the same
+    `partition`, multiple pages can share the same session. If the `partition`
+    is unset then default session of the app will be used.
+  * `zoom-factor` Number - The default zoom factor of the page, `3.0` represents
+    `300%`.
   * `javascript` Boolean
   * `web-security` Boolean - When setting `false`, it will disable the
-    same-origin policy (Usually using testing websites by people), and set `allow_displaying_insecure_content`
-    and `allow_running_insecure_content` to `true` if these two options are not
-    set by user.
+    same-origin policy (Usually using testing websites by people), and set
+    `allow_displaying_insecure_content` and `allow_running_insecure_content` to
+    `true` if these two options are not set by user.
   * `allow-displaying-insecure-content` Boolean - Allow an https page to display
     content like images from http URLs.
   * `allow-running-insecure-content` Boolean - Allow a https page to run
@@ -93,13 +109,7 @@ Properties `width` and `height` are required.
   * `text-areas-are-resizable` Boolean
   * `webgl` Boolean
   * `webaudio` Boolean
-  * `plugins` Boolean - Whether plugins should be enabled, currently only
-    `NPAPI` plugins are supported.
-  * `extra-plugin-dirs` Array - Array of paths that would be searched for
-    plugins. Note that if you want to add a directory under your app, you
-    should use `__dirname` or `process.resourcesPath` to join the paths to
-    make them absolute, using relative paths would make Electron search
-    under current working directory.
+  * `plugins` Boolean - Whether plugins should be enabled.
   * `experimental-features` Boolean
   * `experimental-canvas-features` Boolean
   * `subpixel-font-scaling` Boolean
@@ -117,7 +127,7 @@ Properties `width` and `height` are required.
 
 The `BrowserWindow` object emits the following events:
 
-+**Note** Some events are only available on specific operating systems and are labeled as such.
+**Note:** Some events are only available on specific operating systems and are labeled as such.
 
 ### Event: 'page-title-updated'
 
@@ -224,15 +234,15 @@ Emitted when the window leaves full screen state triggered by html api.
 
 ### Event: 'devtools-opened'
 
-Emitted when devtools is opened.
+Emitted when DevTools is opened.
 
 ### Event: 'devtools-closed'
 
-Emitted when devtools is closed.
+Emitted when DevTools is closed.
 
 ### Event: 'devtools-focused'
 
-Emitted when devtools is focused / opened.
+Emitted when DevTools is focused / opened.
 
 ### Event: 'app-command' _Windows_
 
@@ -263,7 +273,7 @@ Returns the window that is focused in this application.
 
 ### `BrowserWindow.fromWebContents(webContents)`
 
-* `webContents` [WebContents](#webcontents)
+* `webContents` [WebContents](web-contents.md)
 
 Find a window according to the `webContents` it owns.
 
@@ -277,7 +287,7 @@ Find a window according to its ID.
 
 * `path` String
 
-Adds devtools extension located at `path`, and returns extension's name.
+Adds DevTools extension located at `path`, and returns extension's name.
 
 The extension will be remembered so you only need to call this API once, this
 API is not for programming use.
@@ -286,13 +296,11 @@ API is not for programming use.
 
 * `name` String
 
-Remove the devtools extension whose name is `name`.
+Remove the DevTools extension whose name is `name`.
 
-## Instance Methods
+## Instance Properties
 
-Objects created with `new BrowserWindow` have the following instance methods:
-
-+**Note** Some methods are only available on specific operating systems and are labeled as such.
+Objects created with `new BrowserWindow` have the following properties:
 
 ```javascript
 var BrowserWindow = require('browser-window');
@@ -302,7 +310,7 @@ var win = new BrowserWindow({ width: 800, height: 600 });
 
 ```
 
-### `win.webContents()`
+### `win.webContents`
 
 The `WebContents` object this window owns, all web page related events and
 operations will be done via it.
@@ -313,16 +321,30 @@ events.
 **Note:** Users should never store this object because it may become `null`
 when the renderer process (web page) has crashed.
 
-### `win.devToolsWebContents()`
+### `win.devToolsWebContents`
 
-Get the `WebContents` of devtools for this window.
+Get the `WebContents` of DevTools for this window.
 
 **Note:** Users should never store this object because it may become `null`
-when the devtools has been closed.
+when the DevTools has been closed.
 
-### `win.id()`
+### `win.id`
 
-Get the unique ID of this window.
+The unique ID of this window.
+
+## Instance Methods
+
+Objects created with `new BrowserWindow` have the following instance methods:
+
+**Note:** Some methods are only available on specific operating systems and are labeled as such.
+
+```javascript
+var BrowserWindow = require('browser-window');
+
+// In this example `win` is our instance
+var win = new BrowserWindow({ width: 800, height: 600 });
+
+```
 
 ### `win.destroy()`
 
@@ -577,7 +599,7 @@ Whether the window's document has been edited.
 ### `win.openDevTools([options])`
 
 * `options` Object (optional). Properties:
-  * `detach` Boolean - opens devtools in a new window
+  * `detach` Boolean - opens DevTools in a new window
 
 Opens the developer tools.
 
@@ -591,7 +613,11 @@ Returns whether the developer tools are opened.
 
 ### `win.toggleDevTools()`
 
-Toggle the developer tools.
+Toggles the developer tools.
+
+### `win.isDevToolsFocused()`
+
+Returns whether the developer tools is focused.
 
 ### `win.inspectElement(x, y)`
 

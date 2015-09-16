@@ -36,12 +36,23 @@ describe 'chromium feature', ->
 
   describe 'window.open', ->
     it 'returns a BrowserWindowProxy object', ->
-      b = window.open 'about:blank', 'test', 'show=no'
+      b = window.open 'about:blank', '', 'show=no'
       assert.equal b.closed, false
       assert.equal b.constructor.name, 'BrowserWindowProxy'
       b.close()
 
+    it 'accepts "node-integration" as feature', (done) ->
+      listener = (event) ->
+        window.removeEventListener 'message', listener
+        b.close()
+        assert.equal event.data, 'undefined'
+        done()
+      window.addEventListener 'message', listener
+      b = window.open "file://#{fixtures}/pages/window-opener-node.html", '', 'node-integration=no,show=no'
+
   describe 'window.opener', ->
+    @timeout 10000
+
     ipc = remote.require 'ipc'
     url = "file://#{fixtures}/pages/window-opener.html"
     w = null
@@ -52,25 +63,28 @@ describe 'chromium feature', ->
 
     it 'is null for main window', (done) ->
       ipc.on 'opener', (event, opener) ->
-        done(if opener is null then undefined else opener)
+        assert.equal opener, null
+        done()
       BrowserWindow = remote.require 'browser-window'
       w = new BrowserWindow(show: false)
       w.loadUrl url
 
     it 'is not null for window opened by window.open', (done) ->
-      b = window.open url, 'test2', 'show=no'
       ipc.on 'opener', (event, opener) ->
         b.close()
         done(if opener isnt null then undefined else opener)
+      b = window.open url, '', 'show=no'
 
   describe 'window.opener.postMessage', ->
     it 'sets source and origin correctly', (done) ->
-      b = window.open "file://#{fixtures}/pages/window-opener-postMessage.html", 'test', 'show=no'
-      window.addEventListener 'message', (event) ->
+      listener = (event) ->
+        window.removeEventListener 'message', listener
         b.close()
         assert.equal event.source.guestId, b.guestId
         assert.equal event.origin, 'file://'
         done()
+      window.addEventListener 'message', listener
+      b = window.open "file://#{fixtures}/pages/window-opener-postMessage.html", '', 'show=no'
 
   describe 'creating a Uint8Array under browser side', ->
     it 'does not crash', ->

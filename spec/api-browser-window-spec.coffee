@@ -4,6 +4,7 @@ path   = require 'path'
 remote = require 'remote'
 http   = require 'http'
 url    = require 'url'
+os     = require 'os'
 
 BrowserWindow = remote.require 'browser-window'
 
@@ -160,6 +161,22 @@ describe 'browser-window module', ->
       assert.equal size[0], 400
       assert.equal size[1], 400
 
+  describe '"title-bar-style" option', ->
+    return if process.platform isnt 'darwin'
+    return if parseInt(os.release().split('.')[0]) < 14 # only run these tests on Yosemite or newer
+
+    it 'creates browser window with hidden title bar', ->
+      w.destroy()
+      w = new BrowserWindow(show: false, width: 400, height: 400, 'title-bar-style': 'hidden')
+      contentSize = w.getContentSize()
+      assert.equal contentSize[1], 400
+
+    it 'creates browser window with hidden inset title bar', ->
+      w.destroy()
+      w = new BrowserWindow(show: false, width: 400, height: 400, 'title-bar-style': 'hidden-inset')
+      contentSize = w.getContentSize()
+      assert.equal contentSize[1], 400
+
   describe '"enable-larger-than-screen" option', ->
     return if process.platform is 'linux'
 
@@ -182,15 +199,36 @@ describe 'browser-window module', ->
       assert.equal after[0], size.width
       assert.equal after[1], size.height
 
-  describe '"preload" options', ->
-    it 'loads the script before other scripts in window', (done) ->
-      preload = path.join fixtures, 'module', 'set-global.js'
-      remote.require('ipc').once 'preload', (event, test) ->
-        assert.equal(test, 'preload')
-        done()
-      w.destroy()
-      w = new BrowserWindow(show: false, width: 400, height: 400, preload: preload)
-      w.loadUrl 'file://' + path.join(fixtures, 'api', 'preload.html')
+  describe '"web-preferences" option', ->
+    afterEach ->
+      remote.require('ipc').removeAllListeners('answer')
+
+    describe '"preload" option', ->
+      it 'loads the script before other scripts in window', (done) ->
+        preload = path.join fixtures, 'module', 'set-global.js'
+        remote.require('ipc').once 'answer', (event, test) ->
+          assert.equal(test, 'preload')
+          done()
+        w.destroy()
+        w = new BrowserWindow
+          show: false
+          'web-preferences':
+            preload: preload
+        w.loadUrl 'file://' + path.join(fixtures, 'api', 'preload.html')
+
+    describe '"node-integration" option', ->
+      it 'disables node integration when specified to false', (done) ->
+        preload = path.join fixtures, 'module', 'send-later.js'
+        remote.require('ipc').once 'answer', (event, test) ->
+          assert.equal(test, 'undefined')
+          done()
+        w.destroy()
+        w = new BrowserWindow
+          show: false
+          'web-preferences':
+            preload: preload
+            'node-integration': false
+        w.loadUrl 'file://' + path.join(fixtures, 'api', 'blank.html')
 
   describe 'beforeunload handler', ->
     it 'returning true would not prevent close', (done) ->

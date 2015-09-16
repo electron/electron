@@ -6,12 +6,14 @@
 
 ### [Electron](https://github.com/atom/electron/) 한국어 참조문서
 
-:zap: *프레임워크 이름이 Atom Shell에서 Electron으로 바뀌었습니다* :zap:
+:zap: *프레임워크 이름이 Atom Shell에서 Electron으로 변경되었습니다* :zap:
 
 Electron 프레임워크는 JavaScript, HTML 그리고 CSS를 사용하여 Cross-Platform 데스크톱 어플리케이션을 개발할 수 있도록 해주는 프레임워크입니다. 이 프레임워크는 [io.js](http://iojs.org) 와
 [Chromium](http://www.chromium.org)을 기반으로 만들어 졌으며 [Atom Editor](https://github.com/atom/atom)에 사용되고 있습니다.
 
 Electron에 대한 중요한 알림을 받고 싶다면 Twitter에서 [@ElectronJS](https://twitter.com/electronjs)를 팔로우 하세요.
+
+이 프로젝트는 기여자 규약 1.2를 준수합니다. 이 프로젝트에 참여할 때 코드를 유지해야 합니다. 받아들일 수 없는 행동은 atom@github.com로 보고 하십시오.
 
 ## 다운로드
 
@@ -38,12 +40,19 @@ Electron을 빌드 하는 방법과 프로젝트에 기여하는 방법도 문�
 
 ## 참조 문서 (번역)
 
+- [브라질 포르투칼어](https://github.com/atom/electron/tree/master/docs-translations/pt-BR)
 - [한국어](https://github.com/atom/electron/tree/master/docs-translations/ko)
 - [일본어](https://github.com/atom/electron/tree/master/docs-translations/jp)
 - [스페인어](https://github.com/atom/electron/tree/master/docs-translations/es)
+- [중국어 간체](https://github.com/atom/electron/tree/master/docs-translations/zh-CN)
+- [중국어 번체](https://github.com/atom/electron/tree/master/docs-translations/zh-TW)
 
 ## 커뮤니티
 
-[Atom 포럼내의 `electron` 카테고리](http://discuss.atom.io/category/electron)와 Freenode `#atom-shell` 채팅 채널에서 활발하게 토론이 이어지고 있습니다.
+다음 링크를 통해 커뮤니티에 질문을 올리거나 토론을 나누실 수 있습니다:
+
+- Atom 포럼의 [`electron`](http://discuss.atom.io/category/electron) 카테고리
+- Freenode 채팅의 `#atom-shell` 채널 
+- Slack의 [`Atom`](http://atom-slack.herokuapp.com/) 채널
 
 [awesome-electron](https://github.com/sindresorhus/awesome-electron) 프로젝트엔 커뮤니티가 운영중인 유용한 예제 어플리케이션과 도구, 리소스가 있으니 한번 참고해 보시기 바랍니다.

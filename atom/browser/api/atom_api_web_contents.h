@@ -48,11 +48,14 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static mate::Handle<WebContents> Create(
       v8::Isolate* isolate, const mate::Dictionary& options);
 
-  void Destroy();
+  // mate::TrackableObject:
+  void Destroy() override;
+
   bool IsAlive() const;
   int GetID() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const mate::Dictionary& options);
+  GURL GetURL() const;
   base::string16 GetTitle() const;
   bool IsLoading() const;
   bool IsWaitingForResponse() const;
@@ -85,8 +88,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
                   const PrintToPDFCallback& callback);
 
   // DevTools workspace api.
-  void AddWorkSpace(const base::FilePath& path);
-  void RemoveWorkSpace(const base::FilePath& path);
+  void AddWorkSpace(mate::Arguments* args, const base::FilePath& path);
+  void RemoveWorkSpace(mate::Arguments* args, const base::FilePath& path);
 
   // Editing commands.
   void Undo();
@@ -116,7 +119,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
  protected:
   explicit WebContents(content::WebContents* web_contents);
-  explicit WebContents(const mate::Dictionary& options);
+  WebContents(v8::Isolate* isolate, const mate::Dictionary& options);
   ~WebContents();
 
   // mate::Wrappable:

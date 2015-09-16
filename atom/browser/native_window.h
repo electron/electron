@@ -19,15 +19,10 @@
 #include "content/public/browser/readback_types.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
-#include "native_mate/persistent_dictionary.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
 
 class SkRegion;
-
-namespace base {
-class CommandLine;
-}
 
 namespace brightray {
 class InspectableWebContents;
@@ -35,7 +30,6 @@ class InspectableWebContents;
 
 namespace content {
 struct NativeWebKeyboardEvent;
-struct WebPreferences;
 }
 
 namespace gfx {
@@ -154,6 +148,7 @@ class NativeWindow : public content::WebContentsObserver,
   virtual void FocusOnWebView();
   virtual void BlurWebView();
   virtual bool IsWebViewFocused();
+  virtual bool IsDevToolsFocused();
 
   // Captures the page with |rect|, |callback| would be called when capturing is
   // done.
@@ -188,10 +183,6 @@ class NativeWindow : public content::WebContentsObserver,
   virtual void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) {}
-
-  // Called when renderer process is going to be started.
-  void AppendExtraCommandLineSwitches(base::CommandLine* command_line);
-  void OverrideWebkitPrefs(content::WebPreferences* prefs);
 
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
@@ -282,24 +273,12 @@ class NativeWindow : public content::WebContentsObserver,
   // The windows has been closed.
   bool is_closed_;
 
-  // Whether node integration is enabled.
-  bool node_integration_;
-
   // There is a dialog that has been attached to window.
   bool has_dialog_attached_;
 
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.
   base::CancelableClosure window_unresposive_closure_;
-
-  // Web preferences.
-  mate::PersistentDictionary web_preferences_;
-
-  // The script to load before page's JavaScript starts to run.
-  base::FilePath preload_script_;
-
-  // Page's default zoom factor.
-  double zoom_factor_;
 
   // Used to maintain the aspect ratio of a view which is inside of the
   // content view.
