@@ -592,12 +592,8 @@ void NativeWindow::SendKeyboardEvent(blink::WebInputEvent::Type type, int modifi
 
   const auto view = web_contents()->GetRenderWidgetHostView();
   const auto host = view ? view->GetRenderWidgetHost() : nullptr;
-  host->ForwardKeyboardEvent(*keyb_event);
 
-  if(keyb_event->type == blink::WebInputEvent::Type::KeyDown){
-    keyb_event->type = blink::WebInputEvent::RawKeyDown;
-    host->ForwardKeyboardEvent(*keyb_event);
-  }
+  host->ForwardKeyboardEvent(*keyb_event);
 }
 
 void NativeWindow::SendMouseEvent(blink::WebInputEvent::Type type, int modifiers, blink::WebMouseEvent::Button button, int x, int y, int movementX, int movementY, int clickCount){
