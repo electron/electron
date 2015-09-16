@@ -45,7 +45,7 @@ app.getHomeDir = -> @getPath 'home'
 app.getDataPath = -> @getPath 'userData'
 app.setDataPath = (path) -> @setPath 'userData', path
 app.resolveProxy = -> @defaultSession.resolveProxy.apply @defaultSession, arguments
-app.on 'activate', (event, hasVisibleWindows) -> @emit 'activate-with-no-open-windows' if hasVisibleWindows
+app.on 'activate', (event, hasVisibleWindows) -> @emit 'activate-with-no-open-windows' if not hasVisibleWindows
 
 # Session wrapper.
 sessionBindings._setWrapSession wrapSession
