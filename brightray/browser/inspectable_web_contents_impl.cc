@@ -281,6 +281,9 @@ void InspectableWebContentsImpl::CallClientFunction(const std::string& function_
                                                     const base::Value* arg1,
                                                     const base::Value* arg2,
                                                     const base::Value* arg3) {
+  if (!devtools_web_contents_)
+    return;
+
   std::string javascript = function_name + "(";
   if (arg1) {
     std::string json;
