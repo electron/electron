@@ -30,7 +30,7 @@ possible with your report. If you can, please include:
 * Follow the CoffeeScript, JavaScript, C++ and Python [coding style defined in docs](/docs/development/coding-style.md).
 * Write documentation in [Markdown](https://daringfireball.net/projects/markdown).
   See the [Documentation Styleguide](/docs/styleguide.md).
-* Use short, present tense commit messages. See [Commit Message Styleguide](#git-commit-messages-styleguide).
+* Use short, present tense commit messages. See [Commit Message Styleguide](#git-commit-messages).
 
 ## Styleguides
 
