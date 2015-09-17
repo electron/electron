@@ -223,10 +223,8 @@ bool Window::IsDestroyed() const {
 }
 
 void Window::Destroy() {
-  if (window_) {
+  if (window_)
     window_->CloseContents(nullptr);
-    window_.reset();
-  }
 }
 
 void Window::Close() {
