@@ -46,7 +46,7 @@ Properties `width` and `height` are required.
 * `always-on-top` Boolean - Whether the window should always stay on top of
    other windows.
 * `fullscreen` Boolean - Whether the window should show in fullscreen. When
-  set to `false` the fullscreen button will also be hidden on OS X.
+  set to `false` the fullscreen button will be hidden or disabled on OS X.
 * `skip-taskbar` Boolean - Whether to show the window in taskbar.
 * `kiosk` Boolean - The kiosk mode.
 * `title` String - Default window title.
@@ -613,7 +613,11 @@ Returns whether the developer tools are opened.
 
 ### `win.toggleDevTools()`
 
-Toggle the developer tools.
+Toggles the developer tools.
+
+### `win.isDevToolsFocused()`
+
+Returns whether the developer tools is focused.
 
 ### `win.inspectElement(x, y)`
 

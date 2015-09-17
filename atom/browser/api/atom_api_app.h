@@ -41,7 +41,7 @@ class App : public mate::EventEmitter,
   void OnQuit() override;
   void OnOpenFile(bool* prevent_default, const std::string& file_path) override;
   void OnOpenURL(const std::string& url) override;
-  void OnActivateWithNoOpenWindows() override;
+  void OnActivate(bool has_visible_windows) override;
   void OnWillFinishLaunching() override;
   void OnFinishLaunching() override;
   void OnSelectCertificate(
@@ -65,6 +65,7 @@ class App : public mate::EventEmitter,
 
   void SetDesktopName(const std::string& desktop_name);
   void SetAppUserModelId(const std::string& app_id);
+  std::string GetLocale();
   v8::Local<v8::Value> DefaultSession(v8::Isolate* isolate);
 
   v8::Global<v8::Value> default_session_;

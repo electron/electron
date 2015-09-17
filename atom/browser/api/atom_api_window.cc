@@ -183,21 +183,21 @@ void Window::OnDevToolsFocus() {
 }
 
 void Window::OnDevToolsOpened() {
-  Emit("devtools-opened");
-
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   auto handle = WebContents::CreateFrom(
       isolate(), api_web_contents_->GetDevToolsWebContents());
   devtools_web_contents_.Reset(isolate(), handle.ToV8());
+
+  Emit("devtools-opened");
 }
 
 void Window::OnDevToolsClosed() {
-  Emit("devtools-closed");
-
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   devtools_web_contents_.Reset();
+
+  Emit("devtools-closed");
 }
 
 void Window::OnExecuteWindowsCommand(const std::string& command_name) {
@@ -414,6 +414,10 @@ bool Window::IsWebViewFocused() {
   return window_->IsWebViewFocused();
 }
 
+bool Window::IsDevToolsFocused() {
+  return window_->IsDevToolsFocused();
+}
+
 void Window::SetRepresentedFilename(const std::string& filename) {
   window_->SetRepresentedFilename(filename);
 }
@@ -591,6 +595,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("focusOnWebView", &Window::FocusOnWebView)
       .SetMethod("blurWebView", &Window::BlurWebView)
       .SetMethod("isWebViewFocused", &Window::IsWebViewFocused)
+      .SetMethod("isDevToolsFocused", &Window::IsDevToolsFocused)
       .SetMethod("capturePage", &Window::CapturePage)
       .SetMethod("setProgressBar", &Window::SetProgressBar)
       .SetMethod("setOverlayIcon", &Window::SetOverlayIcon)

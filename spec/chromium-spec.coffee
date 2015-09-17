@@ -51,6 +51,8 @@ describe 'chromium feature', ->
       b = window.open "file://#{fixtures}/pages/window-opener-node.html", '', 'node-integration=no,show=no'
 
   describe 'window.opener', ->
+    @timeout 10000
+
     ipc = remote.require 'ipc'
     url = "file://#{fixtures}/pages/window-opener.html"
     w = null
@@ -61,16 +63,17 @@ describe 'chromium feature', ->
 
     it 'is null for main window', (done) ->
       ipc.on 'opener', (event, opener) ->
-        done(if opener is null then undefined else opener)
+        assert.equal opener, null
+        done()
       BrowserWindow = remote.require 'browser-window'
       w = new BrowserWindow(show: false)
       w.loadUrl url
 
     it 'is not null for window opened by window.open', (done) ->
-      b = window.open url, '', 'show=no'
       ipc.on 'opener', (event, opener) ->
         b.close()
         done(if opener isnt null then undefined else opener)
+      b = window.open url, '', 'show=no'
 
   describe 'window.opener.postMessage', ->
     it 'sets source and origin correctly', (done) ->

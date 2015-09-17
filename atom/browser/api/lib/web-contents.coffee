@@ -44,10 +44,8 @@ wrapWebContents = (webContents) ->
 
   # Make sure webContents.executeJavaScript would run the code only when the
   # web contents has been loaded.
-  webContents.loaded = false
-  webContents.once 'did-finish-load', -> @loaded = true
   webContents.executeJavaScript = (code, hasUserGesture=false) ->
-    if @loaded
+    if @getUrl() and not @isLoading()
       @_executeJavaScript code, hasUserGesture
     else
       webContents.once 'did-finish-load', @_executeJavaScript.bind(this, code, hasUserGesture)

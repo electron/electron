@@ -30,6 +30,7 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/ssl/ssl_cert_request_info.h"
+#include "ui/base/l10n/l10n_util.h"
 
 #if defined(OS_WIN)
 #include "base/strings/utf_string_conversions.h"
@@ -167,8 +168,8 @@ void App::OnOpenURL(const std::string& url) {
   Emit("open-url", url);
 }
 
-void App::OnActivateWithNoOpenWindows() {
-  Emit("activate-with-no-open-windows");
+void App::OnActivate(bool has_visible_windows) {
+  Emit("activate", has_visible_windows);
 }
 
 void App::OnWillFinishLaunching() {
@@ -248,6 +249,10 @@ void App::SetAppUserModelId(const std::string& app_id) {
 #endif
 }
 
+std::string App::GetLocale() {
+  return l10n_util::GetApplicationLocale("");
+}
+
 v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
   if (default_session_.IsEmpty())
     return v8::Null(isolate);
@@ -278,6 +283,7 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("setAppUserModelId", &App::SetAppUserModelId)
+      .SetMethod("getLocale", &App::GetLocale)
       .SetProperty("defaultSession", &App::DefaultSession);
 }
 

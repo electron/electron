@@ -26,6 +26,10 @@ describe 'app module', ->
       assert.equal app.getName(), 'test-name'
       app.setName 'Electron Test'
 
+  describe 'app.getLocale()', ->
+    it 'should not be empty', ->
+      assert.notEqual app.getLocale(), ''
+
   describe 'BrowserWindow events', ->
     w = null
     afterEach ->
