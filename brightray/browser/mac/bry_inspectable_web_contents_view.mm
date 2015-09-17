@@ -45,9 +45,8 @@ using namespace brightray;
   return self;
 }
 
-- (void)dealloc {
+- (void)removeObservers {
   [[NSNotificationCenter defaultCenter] removeObserver:self];
-  [super dealloc];
 }
 
 - (void)resizeSubviewsWithOldSize:(NSSize)oldBoundsSize {
