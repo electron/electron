@@ -116,6 +116,9 @@ void Window::OnWindowClosed() {
   window_->RemoveObserver(this);
 
   Emit("closed");
+
+  // Clean up the resources after window has been closed.
+  base::MessageLoop::current()->DeleteSoon(FROM_HERE, window_.release());
 }
 
 void Window::OnWindowBlur() {
@@ -220,10 +223,8 @@ bool Window::IsDestroyed() const {
 }
 
 void Window::Destroy() {
-  if (window_) {
+  if (window_)
     window_->CloseContents(nullptr);
-    window_.reset();
-  }
 }
 
 void Window::Close() {
