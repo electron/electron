@@ -148,3 +148,7 @@ describe 'node feature', ->
     # Not reliable on some machines
     xit 'should have isTTY defined', ->
       assert.equal typeof(process.stdout.isTTY), 'boolean'
+
+  describe 'vm.createContext', ->
+    it 'should not crash', ->
+      require('vm').runInNewContext('')
