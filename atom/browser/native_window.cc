@@ -107,9 +107,8 @@ NativeWindow* NativeWindow::FromWebContents(
     content::WebContents* web_contents) {
   WindowList& window_list = *WindowList::GetInstance();
   for (NativeWindow* window : window_list) {
-    if (window->web_contents() == web_contents){
+    if (window->web_contents() == web_contents)
       return window;
-    }
   }
   return nullptr;
 }
@@ -290,16 +289,12 @@ void NativeWindow::SetAspectRatio(double aspect_ratio,
 
 void NativeWindow::SetFrameSubscription(bool isOffscreen) {
   const auto view = web_contents()->GetRenderWidgetHostView();
-
   if (view) {
     if (isOffscreen) {
       scoped_ptr<content::RenderWidgetHostViewFrameSubscriber> subscriber(
         new RenderSubscriber(
           view->GetVisibleViewportSize(),
-          base::Bind(&NativeWindow::OnFrameReceived, base::Unretained(this))
-        )
-      );
-
+          base::Bind(&NativeWindow::OnFrameReceived, base::Unretained(this))));
       view->BeginFrameSubscription(subscriber.Pass());
     } else {
       view->EndFrameSubscription();
@@ -593,7 +588,8 @@ bool RenderSubscriber::ShouldCaptureFrame(
                                             gfx::Rect(size_), size_,
                                             base::TimeDelta());
 
-  *callback = base::Bind(&RenderSubscriber::CallbackMethod, callback_, *storage);
+  *callback =
+      base::Bind(&RenderSubscriber::CallbackMethod, callback_, *storage);
   return true;
 }
 
