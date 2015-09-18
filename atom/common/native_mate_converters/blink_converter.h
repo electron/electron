@@ -8,13 +8,51 @@
 #include "native_mate/converter.h"
 
 namespace blink {
+class WebInputEvent;
+class WebMouseEvent;
+class WebMouseWheelEvent;
+class WebKeyboardEvent;
 struct WebDeviceEmulationParams;
 struct WebFloatPoint;
 struct WebPoint;
 struct WebSize;
 }
 
+namespace content {
+struct NativeWebKeyboardEvent;
+}
+
 namespace mate {
+
+template<>
+struct Converter<blink::WebInputEvent> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     blink::WebInputEvent* out);
+};
+
+template<>
+struct Converter<blink::WebKeyboardEvent> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     blink::WebKeyboardEvent* out);
+};
+
+template<>
+struct Converter<content::NativeWebKeyboardEvent> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     content::NativeWebKeyboardEvent* out);
+};
+
+template<>
+struct Converter<blink::WebMouseEvent> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     blink::WebMouseEvent* out);
+};
+
+template<>
+struct Converter<blink::WebMouseWheelEvent> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     blink::WebMouseWheelEvent* out);
+};
 
 template<>
 struct Converter<blink::WebFloatPoint> {

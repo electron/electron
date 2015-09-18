@@ -283,6 +283,8 @@
       'atom/common/google_api_key.h',
       'atom/common/id_weak_map.cc',
       'atom/common/id_weak_map.h',
+      'atom/common/keyboad_util.cc',
+      'atom/common/keyboad_util.h',
       'atom/common/linux/application_info.cc',
       'atom/common/native_mate_converters/accelerator_converter.cc',
       'atom/common/native_mate_converters/accelerator_converter.h',
