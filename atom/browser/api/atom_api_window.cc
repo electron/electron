@@ -9,7 +9,6 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/common/node_includes.h"
-#include "atom/common/options_switches.h"
 #include "atom/common/event_types.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
@@ -21,7 +20,6 @@
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/geometry/rect.h"
-#include "v8/include/v8.h"
 
 #if defined(OS_WIN)
 #include "atom/browser/native_window_views.h"
@@ -112,10 +110,11 @@ void Window::WillCloseWindow(bool* prevent_default) {
 void Window::OnFrameRendered(scoped_ptr<uint8[]> rgb, const int size) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-
-  auto data = node::Buffer::New(isolate(), reinterpret_cast<const char*>(rgb.get()), static_cast<size_t>(size));
-
-  Emit("frame-rendered", data, size);
+  v8::MaybeLocal<v8::Object> data = node::Buffer::New(
+      isolate(),
+      reinterpret_cast<char*>(rgb.release()),
+      static_cast<size_t>(size));
+  Emit("frame-rendered", data.ToLocalChecked(), size);
 }
 
 void Window::OnWindowClosed() {
