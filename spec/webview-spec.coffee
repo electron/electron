@@ -336,3 +336,26 @@ describe '<webview> tag', ->
       webview.addEventListener 'did-finish-load', listener2
       webview.src = "file://#{fixtures}/pages/fullscreen.html"
       document.body.appendChild webview
+
+  describe 'sendInputEvent', ->
+    it 'can send keyboard event', (done) ->
+      webview.addEventListener 'ipc-message', (e) ->
+        assert.equal e.channel, 'keyup'
+        assert.deepEqual e.args, [67, true, false]
+        done()
+      webview.addEventListener 'dom-ready', ->
+        webview.sendInputEvent type: 'keyup', keyCode: 'c', modifiers: ['shift']
+      webview.src = "file://#{fixtures}/pages/onkeyup.html"
+      webview.setAttribute 'nodeintegration', 'on'
+      document.body.appendChild webview
+
+    it 'can send mouse event', (done) ->
+      webview.addEventListener 'ipc-message', (e) ->
+        assert.equal e.channel, 'mouseup'
+        assert.deepEqual e.args, [10, 20, false, true]
+        done()
+      webview.addEventListener 'dom-ready', ->
+        webview.sendInputEvent type: 'mouseup', modifiers: ['ctrl'], x: 10, y: 20
+      webview.src = "file://#{fixtures}/pages/onmouseup.html"
+      webview.setAttribute 'nodeintegration', 'on'
+      document.body.appendChild webview
