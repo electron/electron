@@ -511,3 +511,43 @@ Enable device emulation with the given parameters.
 ### `webContents.disableDeviceEmulation()`
 
 Disable device emulation enabled by `webContents.enableDeviceEmulation`.
+
+### `webContents.sendInputEvent(event)`
+
+* `event` Object
+  * `type` String (**required**) - The type of the event, can be `mouseDown`,
+    `mouseUp`, `mouseEnter`, `mouseLeave`, `contextMenu`, `mouseWheel`,
+    `keyDown`, `keyUp`, `char`.
+  * `modifiers` Array - An array of modifiers of the event, can
+    include `shift`, `control`, `alt`, `meta`, `isKeypad`, `isAutoRepeat`,
+    `leftButtonDown`, `middleButtonDown`, `rightButtonDown`, `capsLock`,
+    `numLock`, `left`, `right`.
+
+Sends an input `event` to the page.
+
+For keyboard events, the `event` object also have following properties:
+
+* `keyCode` String (**required**) - A single character that will be sent as
+  keyboard event. Can be any ASCII character on the keyboard, like `a`, `1`
+  and `=`.
+
+For mouse events, the `event` object also have following properties:
+
+* `x` Integer (**required**)
+* `y` Integer (**required**)
+* `globalX` Integer
+* `globalY` Integer
+* `movementX` Integer
+* `movementY` Integer
+* `clickCount` Integer
+
+For the `mouseWheel` event, the `event` object also have following properties:
+
+* `deltaX` Integer
+* `deltaY` Integer
+* `wheelTicksX` Integer
+* `wheelTicksY` Integer
+* `accelerationRatioX` Integer
+* `accelerationRatioY` Integer
+* `hasPreciseScrollingDeltas` Boolean
+* `canScroll` Boolean
