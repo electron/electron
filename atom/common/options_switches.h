@@ -62,8 +62,6 @@ extern const char kRegisterStandardSchemes[];
 
 extern const char kAppUserModelId[];
 
-extern const char kOffScreenRender[];
-
 extern const char kModifiers[];
 extern const char kKeyCode[];
 extern const char kNativeKeyCode[];

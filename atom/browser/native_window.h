@@ -246,7 +246,6 @@ class NativeWindow : public content::WebContentsObserver,
 
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
-  void DidFinishLoad(content::RenderFrameHost* render_frame_host, const GURL& validated_url) override;
   void BeforeUnloadDialogCancelled() override;
   void TitleWasSet(content::NavigationEntry* entry, bool explicit_set) override;
   bool OnMessageReceived(const IPC::Message& message) override;
@@ -266,8 +265,6 @@ class NativeWindow : public content::WebContentsObserver,
   void OnCapturePageDone(const CapturePageCallback& callback,
                          const SkBitmap& bitmap,
                          content::ReadbackResponse response);
-
-  bool offscreen_;
 
   // Whether window has standard frame.
   bool has_frame_;

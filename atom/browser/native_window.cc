@@ -167,9 +167,6 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   options.Get(switches::kTitle, &title);
   SetTitle(title);
 
-  offscreen_ = false;
-  options.Get(switches::kOffScreenRender, &offscreen_);
-
   // Then show it.
   bool show = true;
   options.Get(switches::kShow, &show);
@@ -297,8 +294,6 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
 }
 
 void NativeWindow::SetFrameSubscription(bool isOffscreen) {
-  if (!isOffscreen && !offscreen_) return;
-
   const auto view = web_contents()->GetRenderWidgetHostView();
 
   if (view) {
@@ -314,8 +309,6 @@ void NativeWindow::SetFrameSubscription(bool isOffscreen) {
     } else {
       view->EndFrameSubscription();
     }
-
-    offscreen_ = isOffscreen;
   }
 }
 
@@ -518,10 +511,6 @@ void NativeWindow::SendMouseWheelEvent(int modifiers, int x, int y, bool precise
   const auto view = web_contents()->GetRenderWidgetHostView();
   const auto host = view ? view->GetRenderWidgetHost() : nullptr;
   host->ForwardWheelEvent(*wheel_event);
-}
-
-void NativeWindow::DidFinishLoad(content::RenderFrameHost* render_frame_host, const GURL& validated_url) {
-  SetFrameSubscription(offscreen_);
 }
 
 void NativeWindow::RenderViewCreated(
