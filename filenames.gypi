@@ -311,6 +311,8 @@
       'atom/common/node_includes.h',
       'atom/common/options_switches.cc',
       'atom/common/options_switches.h',
+      'atom/common/event_types.cc',
+      'atom/common/event_types.h',
       'atom/common/platform_util.h',
       'atom/common/platform_util_linux.cc',
       'atom/common/platform_util_mac.mm',

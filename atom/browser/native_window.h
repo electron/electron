@@ -9,6 +9,10 @@
 #include <string>
 #include <vector>
 
+#include "media/base/video_frame.h"
+#include "content/public/browser/render_widget_host_view_frame_subscriber.h"
+#include "content/public/browser/native_web_keyboard_event.h"
+#include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/browser/ui/accelerator_util.h"
 #include "base/cancelable_callback.h"
@@ -223,6 +227,14 @@ class NativeWindow : public content::WebContentsObserver,
     has_dialog_attached_ = has_dialog_attached;
   }
 
+  void OnFrameReceived(bool result, scoped_refptr<media::VideoFrame> frame);
+
+  void SendKeyboardEvent(blink::WebInputEvent::Type type, int modifiers, int keycode, int nativeKeycode);
+  void SendMouseEvent(blink::WebInputEvent::Type type, int modifiers, blink::WebMouseEvent::Button button, int x, int y, int movementX, int movementY, int clickCount);
+  void SendMouseWheelEvent(int modifiers, int x, int y, bool clickCount);
+
+  void SetFrameSubscription(bool isOffscreen);
+
  protected:
   NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,
                const mate::Dictionary& options);
@@ -234,6 +246,7 @@ class NativeWindow : public content::WebContentsObserver,
 
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
+  void DidFinishLoad(content::RenderFrameHost* render_frame_host, const GURL& validated_url) override;
   void BeforeUnloadDialogCancelled() override;
   void TitleWasSet(content::NavigationEntry* entry, bool explicit_set) override;
   bool OnMessageReceived(const IPC::Message& message) override;
@@ -253,6 +266,8 @@ class NativeWindow : public content::WebContentsObserver,
   void OnCapturePageDone(const CapturePageCallback& callback,
                          const SkBitmap& bitmap,
                          content::ReadbackResponse response);
+
+  bool offscreen_;
 
   // Whether window has standard frame.
   bool has_frame_;
@@ -296,6 +311,30 @@ class NativeWindow : public content::WebContentsObserver,
   DISALLOW_COPY_AND_ASSIGN(NativeWindow);
 };
 
+//This class provides a way to listen to frame renders and to use the rendered frames for offscreen rendering
+class RenderSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
+ public:
+  RenderSubscriber(gfx::Size size, base::Callback<void(bool, scoped_refptr<media::VideoFrame>)> callback) : size_(size), callback_(callback) {}
+
+  bool ShouldCaptureFrame(const gfx::Rect& damage_rect,
+                          base::TimeTicks present_time,
+                          scoped_refptr<media::VideoFrame>* storage,
+                          DeliverFrameCallback* callback) override;
+
+  base::TimeTicks last_present_time() const { return last_present_time_; }
+
+  static void CallbackMethod(base::Callback<void(bool, scoped_refptr<media::VideoFrame>)> callback,
+                             scoped_refptr<media::VideoFrame> frame,
+                             base::TimeTicks present_time,
+                             bool success) {
+    callback.Run(success, frame);
+  }
+
+ private:
+  gfx::Size size_;
+  base::Callback<void(bool, scoped_refptr<media::VideoFrame>)> callback_;
+  base::TimeTicks last_present_time_;
+};
 
 // This class provides a hook to get a NativeWindow from a WebContents.
 class NativeWindowRelay :
