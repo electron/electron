@@ -476,3 +476,38 @@ app.on('ready', function() {
    which is different from the handlers in the main process.
 2. There is no way to send synchronous messages from the main process to a
    renderer process, because it would be very easy to cause dead locks.
+
+### `webContents.enableDeviceEmulation(parameters)`
+
+`parameters` Object, properties:
+
+* `screenPosition` String - Specify the screen type to emulate
+    (default: `desktop`)
+  * `desktop`
+  * `mobile`
+* `screenSize` Object - Set the emulated screen size (screenPosition == mobile)
+  * `width` Integer - Set the emulated screen width
+  * `height` Integer - Set the emulated screen height
+* `viewPosition` Object - Position the view on the screen
+    (screenPosition == mobile) (default: `{x: 0, y: 0}`)
+  * `x` Integer - Set the x axis offset from top left corner
+  * `y` Integer - Set the y axis offset from top left corner
+* `deviceScaleFactor` Integer - Set the device scale factor (if zero defaults to
+    original device scale factor) (default: `0`)
+* `viewSize` Object - Set the emulated view size (empty means no override)
+  * `width` Integer - Set the emulated view width
+  * `height` Integer - Set the emulated view height
+* `fitToView` Boolean - Whether emulated view should be scaled down if
+    necessary to fit into available space (default: `false`)
+* `offset` Object - Offset of the emulated view inside available space (not in
+    fit to view mode) (default: `{x: 0, y: 0}`)
+  * `x` Float - Set the x axis offset from top left corner
+  * `y` Float - Set the y axis offset from top left corner
+* `scale` Float - Scale of emulated view inside available space (not in fit to
+    view mode) (default: `1`)
+
+Enable device emulation with the given parameters.
+
+### `webContents.disableDeviceEmulation()`
+
+Disable device emulation enabled by `webContents.enableDeviceEmulation`.

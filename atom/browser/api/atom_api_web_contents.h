@@ -74,6 +74,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void CloseDevTools();
   bool IsDevToolsOpened();
   void ToggleDevTools();
+  void EnableDeviceEmulation(const base::DictionaryValue&);
+  void DisableDeviceEmulation();
   void InspectElement(int x, int y);
   void InspectServiceWorker();
   v8::Local<v8::Value> Session(v8::Isolate* isolate);
