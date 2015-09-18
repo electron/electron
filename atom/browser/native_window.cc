@@ -8,10 +8,6 @@
 #include <utility>
 #include <vector>
 
-#include "content/public/browser/render_widget_host_view_frame_subscriber.h"
-#include "content/public/browser/native_web_keyboard_event.h"
-#include "third_party/WebKit/public/web/WebInputEvent.h"
-#include "media/base/video_frame.h"
 #include "media/base/yuv_convert.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
@@ -43,7 +39,6 @@
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/screen.h"
 #include "ui/gl/gpu_switching_manager.h"
-#include "ui/events/event.h"
 
 using content::NavigationEntry;
 using content::RenderWidgetHostView;
@@ -312,6 +307,38 @@ void NativeWindow::SetFrameSubscription(bool isOffscreen) {
   }
 }
 
+void NativeWindow::SendInputEvent(const blink::WebMouseEvent& mouse_event) {
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  if (!view)
+    return;
+  const auto host = view->GetRenderWidgetHost();
+  if (!host)
+    return;
+  host->ForwardMouseEvent(mouse_event);
+}
+
+void NativeWindow::SendInputEvent(
+    const blink::WebMouseWheelEvent& mouse_wheel_event) {
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  if (!view)
+    return;
+  const auto host = view->GetRenderWidgetHost();
+  if (!host)
+    return;
+  host->ForwardWheelEvent(mouse_wheel_event);
+}
+
+void NativeWindow::SendInputEvent(
+    const content::NativeWebKeyboardEvent& keyboard_event) {
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  if (!view)
+    return;
+  const auto host = view->GetRenderWidgetHost();
+  if (!host)
+    return;
+  host->ForwardKeyboardEvent(keyboard_event);
+}
+
 void NativeWindow::RequestToClosePage() {
   bool prevent_default = false;
   FOR_EACH_OBSERVER(NativeWindowObserver,
@@ -452,65 +479,6 @@ void NativeWindow::DevToolsOpened() {
 
 void NativeWindow::DevToolsClosed() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsClosed());
-}
-
-void NativeWindow::SendKeyboardEvent(blink::WebInputEvent::Type type, int modifiers, int keycode, int nativeKeycode){
-  auto keyb_event = new content::NativeWebKeyboardEvent;
-
-  keyb_event->nativeKeyCode = nativeKeycode;
-  keyb_event->windowsKeyCode = keycode;
-  keyb_event->setKeyIdentifierFromWindowsKeyCode();
-  keyb_event->type = type;
-  keyb_event->modifiers = modifiers;
-  keyb_event->isSystemKey = false;
-  keyb_event->timeStampSeconds = base::Time::Now().ToDoubleT();
-  keyb_event->skip_in_browser = false;
-
-  if (type == blink::WebInputEvent::Char || type == blink::WebInputEvent::RawKeyDown) {
-    keyb_event->text[0] = keycode;
-    keyb_event->unmodifiedText[0] = keycode;
-  }
-
-  const auto view = web_contents()->GetRenderWidgetHostView();
-  const auto host = view ? view->GetRenderWidgetHost() : nullptr;
-
-  host->ForwardKeyboardEvent(*keyb_event);
-}
-
-void NativeWindow::SendMouseEvent(blink::WebInputEvent::Type type, int modifiers, blink::WebMouseEvent::Button button, int x, int y, int movementX, int movementY, int clickCount){
-  auto mouse_event = new blink::WebMouseEvent();
-
-  mouse_event->x = x;
-  mouse_event->y = y;
-  mouse_event->windowX = x;
-  mouse_event->windowY = y;
-  mouse_event->clickCount = clickCount;
-  mouse_event->type = type;
-  mouse_event->modifiers = modifiers;
-  mouse_event->button = button;
-
-  mouse_event->timeStampSeconds = base::Time::Now().ToDoubleT();
-
-  const auto view = web_contents()->GetRenderWidgetHostView();
-  const auto host = view ? view->GetRenderWidgetHost() : nullptr;
-  host->ForwardMouseEvent(*mouse_event);
-}
-
-void NativeWindow::SendMouseWheelEvent(int modifiers, int x, int y, bool precise){
-  auto wheel_event = new blink::WebMouseWheelEvent();
-
-  wheel_event->type = blink::WebInputEvent::MouseWheel;
-  wheel_event->deltaX = x;
-  wheel_event->deltaY = y;
-  if(x) wheel_event->wheelTicksX = x > 0.0f ? 1.0f : -1.0f;
-  if(y) wheel_event->wheelTicksY = y > 0.0f ? 1.0f : -1.0f;
-  wheel_event->modifiers = modifiers;
-  wheel_event->hasPreciseScrollingDeltas = precise;
-  wheel_event->canScroll = true;
-
-  const auto view = web_contents()->GetRenderWidgetHostView();
-  const auto host = view ? view->GetRenderWidgetHost() : nullptr;
-  host->ForwardWheelEvent(*wheel_event);
 }
 
 void NativeWindow::RenderViewCreated(

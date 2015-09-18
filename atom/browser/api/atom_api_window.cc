@@ -9,16 +9,18 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/common/node_includes.h"
-#include "atom/common/event_types.h"
+#include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/options_switches.h"
+#include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
+#include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "ui/gfx/geometry/rect.h"
 
 #if defined(OS_WIN)
@@ -462,14 +464,6 @@ void Window::CapturePage(mate::Arguments* args) {
       rect, base::Bind(&OnCapturePageDone, args->isolate(), callback));
 }
 
-void Window::BeginFrameSubscription() {
-  window_->SetFrameSubscription(true);
-}
-
-void Window::EndFrameSubscription() {
-  window_->SetFrameSubscription(false);
-}
-
 void Window::SetProgressBar(double progress) {
   window_->SetProgressBar(progress);
 }
@@ -546,125 +540,39 @@ bool Window::IsVisibleOnAllWorkspaces() {
   return window_->IsVisibleOnAllWorkspaces();
 }
 
-void Window::SendKeyboardEvent(v8::Isolate* isolate, const mate::Dictionary& data){
-  auto type = blink::WebInputEvent::Type::Char;
-  int modifiers = 0;
-  int keycode = 0;
-  int native = 0;
-  std::string type_str = "";
-  mate::Dictionary modifier_list = mate::Dictionary::CreateEmpty(isolate);
-
-  data.Get(switches::kEventType, &type_str);
-  data.Get(switches::kModifiers, &modifier_list);
-  data.Get(switches::kKeyCode, &keycode);
-  data.Get(switches::kNativeKeyCode, &native);
-
-  if(type_str.compare(event_types::kKeyDown) == 0){
-    type = blink::WebInputEvent::Type::KeyDown;
-  }else if(type_str.compare(event_types::kKeyUp) == 0){
-    type = blink::WebInputEvent::Type::KeyUp;
-  }else if(type_str.compare(event_types::kChar) == 0){
-    type = blink::WebInputEvent::Type::Char;
-  }
-
-  std::map<std::string, bool> modifier_types;
-  modifier_types[event_types::kModifierIsKeyPad] = false;
-  modifier_types[event_types::kModifierIsAutoRepeat] = false;
-  modifier_types[event_types::kModifierIsLeft] = false;
-  modifier_types[event_types::kModifierIsRight] = false;
-  modifier_types[event_types::kModifierShiftKey] = false;
-  modifier_types[event_types::kModifierControlKey] = false;
-  modifier_types[event_types::kModifierAltKey] = false;
-  modifier_types[event_types::kModifierMetaKey] = false;
-  modifier_types[event_types::kModifierCapsLockOn] = false;
-  modifier_types[event_types::kModifierNumLockOn] = false;
-
-  for(std::map<std::string, bool>::iterator it = modifier_types.begin(); it != modifier_types.end(); ++it){
-    modifier_list.Get(it->first,&(it->second));
-
-    if(it->second) modifiers = modifiers & event_types::modifierStrToWebModifier(it->first);
-  }
-
-  window_->SendKeyboardEvent(type, modifiers, keycode, native);
-}
-
-void Window::SendMouseEvent(v8::Isolate* isolate, const mate::Dictionary& data){
-  int x, y, movementX, movementY, clickCount;
-  std::string type_str = "";
-  std::string button_str = "";
-  mate::Dictionary modifier_list = mate::Dictionary::CreateEmpty(isolate);
-
-  blink::WebInputEvent::Type type = blink::WebInputEvent::Type::MouseMove;
-  blink::WebMouseEvent::Button button = blink::WebMouseEvent::Button::ButtonNone;
-  int modifiers = 0;
-
-  data.Get(switches::kEventType, &type_str);
-  data.Get(switches::kMouseEventButton, &button_str);
-  data.Get(switches::kModifiers, &modifier_list);
-
-  if(type_str.compare(event_types::kMouseDown) == 0){
-    type = blink::WebInputEvent::Type::MouseDown;
-  }else if(type_str.compare(event_types::kMouseUp) == 0){
-    type = blink::WebInputEvent::Type::MouseUp;
-  }else if(type_str.compare(event_types::kMouseMove) == 0){
-    type = blink::WebInputEvent::Type::MouseMove;
-  }else if(type_str.compare(event_types::kMouseEnter) == 0){
-    type = blink::WebInputEvent::Type::MouseEnter;
-  }else if(type_str.compare(event_types::kMouseLeave) == 0){
-    type = blink::WebInputEvent::Type::MouseLeave;
-  }else if(type_str.compare(event_types::kContextMenu) == 0){
-    type = blink::WebInputEvent::Type::ContextMenu;
-  }else if(type_str.compare(event_types::kMouseWheel) == 0){
-    type = blink::WebInputEvent::Type::MouseWheel;
-  }
-
-  std::map<std::string, bool> modifier_types;
-  modifier_types[event_types::kMouseLeftButton] = false;
-  modifier_types[event_types::kMouseRightButton] = false;
-  modifier_types[event_types::kMouseMiddleButton] = false;
-  modifier_types[event_types::kModifierLeftButtonDown] = false;
-  modifier_types[event_types::kModifierMiddleButtonDown] = false;
-  modifier_types[event_types::kModifierRightButtonDown] = false;
-  modifier_types[event_types::kModifierShiftKey] = false;
-  modifier_types[event_types::kModifierControlKey] = false;
-  modifier_types[event_types::kModifierAltKey] = false;
-  modifier_types[event_types::kModifierMetaKey] = false;
-  modifier_types[event_types::kModifierCapsLockOn] = false;
-  modifier_types[event_types::kModifierNumLockOn] = false;
-
-  for(std::map<std::string, bool>::iterator it = modifier_types.begin(); it != modifier_types.end(); ++it){
-    modifier_list.Get(it->first,&(it->second));
-
-    if(it->second) modifiers = modifiers & event_types::modifierStrToWebModifier(it->first);
-  }
-
-  if(type == blink::WebInputEvent::Type::MouseWheel){
-    bool precise = true;
-
-    x = 0;
-    y = 0;
-    data.Get(switches::kX, &x);
-    data.Get(switches::kY, &y);
-    data.Get(switches::kMouseWheelPrecise, &precise);
-
-    window_->SendMouseWheelEvent(modifiers, x, y, precise);
-  }else{
-    if (data.Get(switches::kX, &x) && data.Get(switches::kY, &y)) {
-      if(!data.Get(switches::kMovementX, &movementX)){
-        movementX = 0;
-      }
-
-      if(!data.Get(switches::kMovementY, &movementY)){
-        movementY = 0;
-      }
-
-      if(!data.Get(switches::kClickCount, &clickCount)){
-        clickCount = 0;
-      }
-
-      window_->SendMouseEvent(type, modifiers, button, x, y, movementX, movementY, clickCount);
+void Window::SendInputEvent(v8::Isolate* isolate,
+                            v8::Local<v8::Value> input_event) {
+  int type = mate::GetWebInputEventType(isolate, input_event);
+  if (blink::WebInputEvent::isMouseEventType(type)) {
+    blink::WebMouseEvent mouse_event;
+    if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
+      window_->SendInputEvent(mouse_event);
+      return;
+    }
+  } else if (blink::WebInputEvent::isKeyboardEventType(type)) {
+    content::NativeWebKeyboardEvent keyboard_event;;
+    if (mate::ConvertFromV8(isolate, input_event, &keyboard_event)) {
+      window_->SendInputEvent(keyboard_event);
+      return;
+    }
+  } else if (type == blink::WebInputEvent::MouseWheel) {
+    blink::WebMouseWheelEvent mouse_wheel_event;
+    if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
+      window_->SendInputEvent(mouse_wheel_event);
+      return;
     }
   }
+
+  isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
+      isolate, "Invalid event type")));
+}
+
+void Window::BeginFrameSubscription() {
+  window_->SetFrameSubscription(true);
+}
+
+void Window::EndFrameSubscription() {
+  window_->SetFrameSubscription(false);
 }
 
 int32_t Window::ID() const {
@@ -751,8 +659,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
                  &Window::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &Window::IsVisibleOnAllWorkspaces)
-      .SetMethod("sendMouseEvent", &Window::SendMouseEvent)
-      .SetMethod("sendKeyboardEvent", &Window::SendKeyboardEvent)
+      .SetMethod("sendInputEvent", &Window::SendInputEvent)
       .SetMethod("beginFrameSubscription", &Window::BeginFrameSubscription)
       .SetMethod("endFrameSubscription", &Window::EndFrameSubscription)
 #if defined(OS_MACOSX)

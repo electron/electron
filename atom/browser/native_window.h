@@ -11,8 +11,6 @@
 
 #include "media/base/video_frame.h"
 #include "content/public/browser/render_widget_host_view_frame_subscriber.h"
-#include "content/public/browser/native_web_keyboard_event.h"
-#include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/browser/ui/accelerator_util.h"
 #include "base/cancelable_callback.h"
@@ -27,6 +25,11 @@
 #include "ui/gfx/image/image_skia.h"
 
 class SkRegion;
+
+namespace blink {
+class WebMouseEvent;
+class WebMouseWheelEvent;
+}
 
 namespace brightray {
 class InspectableWebContents;
@@ -173,6 +176,14 @@ class NativeWindow : public content::WebContentsObserver,
   gfx::Size GetAspectRatioExtraSize();
   void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size);
 
+  // Subscribe to the frame updates.
+  void SetFrameSubscription(bool isOffscreen);
+
+  // Send the WebInputEvent to the page.
+  void SendInputEvent(const blink::WebMouseEvent& mouse_event);
+  void SendInputEvent(const blink::WebMouseWheelEvent& mouse_wheel_event);
+  void SendInputEvent(const content::NativeWebKeyboardEvent& keyboard_event);
+
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
@@ -228,12 +239,6 @@ class NativeWindow : public content::WebContentsObserver,
   }
 
   void OnFrameReceived(bool result, scoped_refptr<media::VideoFrame> frame);
-
-  void SendKeyboardEvent(blink::WebInputEvent::Type type, int modifiers, int keycode, int nativeKeycode);
-  void SendMouseEvent(blink::WebInputEvent::Type type, int modifiers, blink::WebMouseEvent::Button button, int x, int y, int movementX, int movementY, int clickCount);
-  void SendMouseWheelEvent(int modifiers, int x, int y, bool clickCount);
-
-  void SetFrameSubscription(bool isOffscreen);
 
  protected:
   NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,

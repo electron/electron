@@ -24,6 +24,8 @@ struct NativeWebKeyboardEvent;
 
 namespace mate {
 
+int GetWebInputEventType(v8::Isolate* isolate, v8::Local<v8::Value> val);
+
 template<>
 struct Converter<blink::WebInputEvent> {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
