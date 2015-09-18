@@ -53,7 +53,6 @@ class Window : public mate::TrackableObject<Window>,
   void OnPageTitleUpdated(bool* prevent_default,
                           const std::string& title) override;
   void WillCloseWindow(bool* prevent_default) override;
-  void OnFrameRendered(scoped_ptr<uint8[]> rgb, const int size) override;
   void OnWindowClosed() override;
   void OnWindowBlur() override;
   void OnWindowFocus() override;
@@ -141,11 +140,6 @@ class Window : public mate::TrackableObject<Window>,
   void SetMenuBarVisibility(bool visible);
   bool IsMenuBarVisible();
   void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
-
-  void SendKeyboardEvent(v8::Isolate* isolate, const mate::Dictionary& data);
-  void SendMouseEvent(v8::Isolate* isolate, const mate::Dictionary& data);
-  void BeginFrameSubscription();
-  void EndFrameSubscription();
 
 #if defined(OS_MACOSX)
   void ShowDefinitionForSelection();

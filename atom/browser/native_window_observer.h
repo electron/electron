@@ -27,8 +27,6 @@ class NativeWindowObserver {
                                      const std::string& partition_id,
                                      WindowOpenDisposition disposition) {}
 
-  virtual void OnFrameRendered(scoped_ptr<uint8[]> rgb, const int size) {}
-
   // Called when user is starting an navigation in web page.
   virtual void WillNavigate(bool* prevent_default, const GURL& url) {}
 

@@ -8,11 +8,6 @@
 #include <utility>
 #include <vector>
 
-#include "content/public/browser/render_widget_host_view_frame_subscriber.h"
-#include "content/public/browser/native_web_keyboard_event.h"
-#include "third_party/WebKit/public/web/WebInputEvent.h"
-#include "media/base/video_frame.h"
-#include "media/base/yuv_convert.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/window_list.h"
@@ -43,11 +38,6 @@
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/screen.h"
 #include "ui/gl/gpu_switching_manager.h"
-#include "ui/events/event.h"
-
-using content::NavigationEntry;
-using content::RenderWidgetHostView;
-using content::RenderWidgetHost;
 
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
 
@@ -112,9 +102,8 @@ NativeWindow* NativeWindow::FromWebContents(
     content::WebContents* web_contents) {
   WindowList& window_list = *WindowList::GetInstance();
   for (NativeWindow* window : window_list) {
-    if (window->web_contents() == web_contents){
+    if (window->web_contents() == web_contents)
       return window;
-    }
   }
   return nullptr;
 }
@@ -167,9 +156,6 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   options.Get(switches::kTitle, &title);
   SetTitle(title);
 
-  offscreen_ = false;
-  options.Get(switches::kOffScreenRender, &offscreen_);
-
   // Then show it.
   bool show = true;
   options.Get(switches::kShow, &show);
@@ -208,38 +194,6 @@ bool NativeWindow::IsDocumentEdited() {
 }
 
 void NativeWindow::SetMenu(ui::MenuModel* menu) {
-}
-
-void NativeWindow::ShowDefinitionForSelection() {
-  NOTIMPLEMENTED();
-}
-
-void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {
-}
-
-bool NativeWindow::IsMenuBarAutoHide() {
-  return false;
-}
-
-void NativeWindow::SetMenuBarVisibility(bool visible) {
-}
-
-bool NativeWindow::IsMenuBarVisible() {
-  return true;
-}
-
-double NativeWindow::GetAspectRatio() {
-  return aspect_ratio_;
-}
-
-gfx::Size NativeWindow::GetAspectRatioExtraSize() {
-  return aspect_ratio_extraSize_;
-}
-
-void NativeWindow::SetAspectRatio(double aspect_ratio,
-                                  const gfx::Size& extra_size) {
-  aspect_ratio_ = aspect_ratio;
-  aspect_ratio_extraSize_ = extra_size;
 }
 
 bool NativeWindow::HasModalDialog() {
@@ -296,27 +250,36 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
       kBGRA_8888_SkColorType);
 }
 
-void NativeWindow::SetFrameSubscription(bool isOffscreen) {
-  if (!isOffscreen && !offscreen_) return;
+void NativeWindow::ShowDefinitionForSelection() {
+  NOTIMPLEMENTED();
+}
 
-  const auto view = web_contents()->GetRenderWidgetHostView();
+void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {
+}
 
-  if (view) {
-    if (isOffscreen) {
-      scoped_ptr<content::RenderWidgetHostViewFrameSubscriber> subscriber(
-        new RenderSubscriber(
-          view->GetVisibleViewportSize(),
-          base::Bind(&NativeWindow::OnFrameReceived, base::Unretained(this))
-        )
-      );
+bool NativeWindow::IsMenuBarAutoHide() {
+  return false;
+}
 
-      view->BeginFrameSubscription(subscriber.Pass());
-    } else {
-      view->EndFrameSubscription();
-    }
+void NativeWindow::SetMenuBarVisibility(bool visible) {
+}
 
-    offscreen_ = isOffscreen;
-  }
+bool NativeWindow::IsMenuBarVisible() {
+  return true;
+}
+
+double NativeWindow::GetAspectRatio() {
+  return aspect_ratio_;
+}
+
+gfx::Size NativeWindow::GetAspectRatioExtraSize() {
+  return aspect_ratio_extraSize_;
+}
+
+void NativeWindow::SetAspectRatio(double aspect_ratio,
+                                  const gfx::Size& extra_size) {
+  aspect_ratio_ = aspect_ratio;
+  aspect_ratio_extraSize_ = extra_size;
 }
 
 void NativeWindow::RequestToClosePage() {
@@ -461,69 +424,6 @@ void NativeWindow::DevToolsClosed() {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsClosed());
 }
 
-void NativeWindow::SendKeyboardEvent(blink::WebInputEvent::Type type, int modifiers, int keycode, int nativeKeycode){
-  auto keyb_event = new content::NativeWebKeyboardEvent;
-
-  keyb_event->nativeKeyCode = nativeKeycode;
-  keyb_event->windowsKeyCode = keycode;
-  keyb_event->setKeyIdentifierFromWindowsKeyCode();
-  keyb_event->type = type;
-  keyb_event->modifiers = modifiers;
-  keyb_event->isSystemKey = false;
-  keyb_event->timeStampSeconds = base::Time::Now().ToDoubleT();
-  keyb_event->skip_in_browser = false;
-
-  if (type == blink::WebInputEvent::Char || type == blink::WebInputEvent::RawKeyDown) {
-    keyb_event->text[0] = keycode;
-    keyb_event->unmodifiedText[0] = keycode;
-  }
-
-  const auto view = web_contents()->GetRenderWidgetHostView();
-  const auto host = view ? view->GetRenderWidgetHost() : nullptr;
-
-  host->ForwardKeyboardEvent(*keyb_event);
-}
-
-void NativeWindow::SendMouseEvent(blink::WebInputEvent::Type type, int modifiers, blink::WebMouseEvent::Button button, int x, int y, int movementX, int movementY, int clickCount){
-  auto mouse_event = new blink::WebMouseEvent();
-
-  mouse_event->x = x;
-  mouse_event->y = y;
-  mouse_event->windowX = x;
-  mouse_event->windowY = y;
-  mouse_event->clickCount = clickCount;
-  mouse_event->type = type;
-  mouse_event->modifiers = modifiers;
-  mouse_event->button = button;
-
-  mouse_event->timeStampSeconds = base::Time::Now().ToDoubleT();
-
-  const auto view = web_contents()->GetRenderWidgetHostView();
-  const auto host = view ? view->GetRenderWidgetHost() : nullptr;
-  host->ForwardMouseEvent(*mouse_event);
-}
-
-void NativeWindow::SendMouseWheelEvent(int modifiers, int x, int y, bool precise){
-  auto wheel_event = new blink::WebMouseWheelEvent();
-
-  wheel_event->type = blink::WebInputEvent::MouseWheel;
-  wheel_event->deltaX = x;
-  wheel_event->deltaY = y;
-  if(x) wheel_event->wheelTicksX = x > 0.0f ? 1.0f : -1.0f;
-  if(y) wheel_event->wheelTicksY = y > 0.0f ? 1.0f : -1.0f;
-  wheel_event->modifiers = modifiers;
-  wheel_event->hasPreciseScrollingDeltas = precise;
-  wheel_event->canScroll = true;
-
-  const auto view = web_contents()->GetRenderWidgetHostView();
-  const auto host = view ? view->GetRenderWidgetHost() : nullptr;
-  host->ForwardWheelEvent(*wheel_event);
-}
-
-void NativeWindow::DidFinishLoad(content::RenderFrameHost* render_frame_host, const GURL& validated_url) {
-  SetFrameSubscription(offscreen_);
-}
-
 void NativeWindow::RenderViewCreated(
     content::RenderViewHost* render_view_host) {
   if (!transparent_)
@@ -599,45 +499,6 @@ void NativeWindow::OnCapturePageDone(const CapturePageCallback& callback,
                                      const SkBitmap& bitmap,
                                      content::ReadbackResponse response) {
   callback.Run(bitmap);
-}
-
-void NativeWindow::OnFrameReceived(bool result,
-                                   scoped_refptr<media::VideoFrame> frame) {
-  if (result) {
-    gfx::Rect rect = frame->visible_rect();
-
-    const int rgb_arr_size = rect.width() * rect.height() * 4;
-    scoped_ptr<uint8[]> rgb_bytes(new uint8[rgb_arr_size]);
-
-    // Convert a frame of YUV to 32 bit ARGB.
-    media::ConvertYUVToRGB32(frame->data(media::VideoFrame::kYPlane),
-                             frame->data(media::VideoFrame::kUPlane),
-                             frame->data(media::VideoFrame::kVPlane),
-                             rgb_bytes.get(),
-                             rect.width(), rect.height(),
-                             frame->stride(media::VideoFrame::kYPlane),
-                             frame->stride(media::VideoFrame::kUVPlane),
-                             rect.width() * 4,
-                             media::YV12);
-
-    FOR_EACH_OBSERVER(NativeWindowObserver,
-                      observers_,
-                      OnFrameRendered(rgb_bytes.Pass(), rgb_arr_size));
-  }
-}
-
-bool RenderSubscriber::ShouldCaptureFrame(
-                        const gfx::Rect& damage_rect,
-                        base::TimeTicks present_time,
-                        scoped_refptr<media::VideoFrame>* storage,
-                        DeliverFrameCallback* callback) {
-  last_present_time_ = present_time;
-  *storage = media::VideoFrame::CreateFrame(media::VideoFrame::YV12, size_,
-                                            gfx::Rect(size_), size_,
-                                            base::TimeDelta());
-
-  *callback = base::Bind(&RenderSubscriber::CallbackMethod, callback_, *storage);
-  return true;
 }
 
 }  // namespace atom
