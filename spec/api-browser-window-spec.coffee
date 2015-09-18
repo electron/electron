@@ -303,3 +303,11 @@ describe 'browser-window module', ->
         assert.equal url, 'https://www.github.com/'
         done()
       w.loadUrl "file://#{fixtures}/pages/will-navigate.html"
+
+  describe 'beginFrameSubscription method', ->
+    it 'subscribes frame updates', (done) ->
+      w.loadUrl "file://#{fixtures}/api/blank.html"
+      w.webContents.beginFrameSubscription (data) ->
+        assert.notEqual data.length, 0
+        w.webContents.endFrameSubscription()
+        done()
