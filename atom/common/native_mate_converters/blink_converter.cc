@@ -73,7 +73,7 @@ struct Converter<blink::WebInputEvent::Type> {
       *out = blink::WebInputEvent::TouchEnd;
     else if (type == "touchcancel")
       *out = blink::WebInputEvent::TouchCancel;
-    return false;
+    return true;
   }
 };
 
@@ -108,12 +108,12 @@ struct Converter<blink::WebInputEvent::Modifiers> {
       *out = blink::WebInputEvent::IsLeft;
     else if (modifier == "right")
       *out = blink::WebInputEvent::IsRight;
-    return false;
+    return true;
   }
 };
 
 int GetWebInputEventType(v8::Isolate* isolate, v8::Local<v8::Value> val) {
-  int type = -1;
+  blink::WebInputEvent::Type type = blink::WebInputEvent::Undefined;
   mate::Dictionary dict;
   ConvertFromV8(isolate, val, &dict) && dict.Get("type", &type);
   return type;
@@ -152,7 +152,7 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(
   if (shifted)
     out->modifiers |= blink::WebInputEvent::ShiftKey;
   out->setKeyIdentifierFromWindowsKeyCode();
-  return false;
+  return true;
 }
 
 bool Converter<content::NativeWebKeyboardEvent>::FromV8(
@@ -164,7 +164,7 @@ bool Converter<content::NativeWebKeyboardEvent>::FromV8(
   if (!ConvertFromV8(isolate, val, static_cast<blink::WebKeyboardEvent*>(out)))
     return false;
   dict.Get("skipInBrowser", &out->skip_in_browser);
-  return false;
+  return true;
 }
 
 bool Converter<blink::WebMouseEvent>::FromV8(
@@ -181,7 +181,7 @@ bool Converter<blink::WebMouseEvent>::FromV8(
   dict.Get("movementX", &out->movementX);
   dict.Get("movementY", &out->movementY);
   dict.Get("clickCount", &out->clickCount);
-  return false;
+  return true;
 }
 
 bool Converter<blink::WebMouseWheelEvent>::FromV8(
@@ -200,7 +200,7 @@ bool Converter<blink::WebMouseWheelEvent>::FromV8(
   dict.Get("accelerationRatioY", &out->accelerationRatioY);
   dict.Get("hasPreciseScrollingDeltas", &out->hasPreciseScrollingDeltas);
   dict.Get("canScroll", &out->canScroll);
-  return false;
+  return true;
 }
 
 bool Converter<blink::WebFloatPoint>::FromV8(

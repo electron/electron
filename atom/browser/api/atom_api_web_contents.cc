@@ -847,7 +847,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
   }
 
   isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
-      isolate, "Invalid event type")));
+      isolate, "Invalid event object")));
 }
 
 void WebContents::BeginFrameSubscription(
