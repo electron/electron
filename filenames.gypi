@@ -103,6 +103,8 @@
       'atom/browser/api/event_emitter.h',
       'atom/browser/api/trackable_object.cc',
       'atom/browser/api/trackable_object.h',
+      'atom/browser/api/frame_subscriber.cc',
+      'atom/browser/api/frame_subscriber.h',
       'atom/browser/auto_updater.cc',
       'atom/browser/auto_updater.h',
       'atom/browser/auto_updater_delegate.h',

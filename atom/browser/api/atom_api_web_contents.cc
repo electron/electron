@@ -850,7 +850,21 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
       isolate, "Invalid event type")));
 }
 
+void WebContents::BeginFrameSubscription(
+    const FrameSubscriber::FrameCaptureCallback& callback) {
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  if (view) {
+    scoped_ptr<FrameSubscriber> frame_subscriber(new FrameSubscriber(
+        isolate(), view->GetVisibleViewportSize(), callback));
+    view->BeginFrameSubscription(frame_subscriber.Pass());
+  }
+}
 
+void WebContents::EndFrameSubscription() {
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  if (view)
+    view->EndFrameSubscription();
+}
 
 void WebContents::SetSize(const SetSizeParams& params) {
   if (guest_delegate_)
@@ -915,6 +929,9 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("tabTraverse", &WebContents::TabTraverse)
         .SetMethod("_send", &WebContents::SendIPCMessage, true)
         .SetMethod("sendInputEvent", &WebContents::SendInputEvent)
+        .SetMethod("beginFrameSubscription",
+                   &WebContents::BeginFrameSubscription)
+        .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
         .SetMethod("setSize", &WebContents::SetSize)
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
         .SetMethod("isGuest", &WebContents::IsGuest)

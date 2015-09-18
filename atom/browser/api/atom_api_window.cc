@@ -13,6 +13,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/constructor.h"
@@ -23,8 +24,6 @@
 #include "atom/browser/native_window_views.h"
 #include "atom/browser/ui/win/taskbar_host.h"
 #endif
-
-#include "atom/common/node_includes.h"
 
 #if defined(OS_WIN)
 namespace mate {
@@ -103,16 +102,6 @@ void Window::OnPageTitleUpdated(bool* prevent_default,
 
 void Window::WillCloseWindow(bool* prevent_default) {
   *prevent_default = Emit("close");
-}
-
-void Window::OnFrameRendered(scoped_ptr<uint8[]> rgb, const int size) {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  v8::MaybeLocal<v8::Object> data = node::Buffer::New(
-      isolate(),
-      reinterpret_cast<char*>(rgb.release()),
-      static_cast<size_t>(size));
-  Emit("frame-rendered", data.ToLocalChecked(), size);
 }
 
 void Window::OnWindowClosed() {
@@ -536,14 +525,6 @@ bool Window::IsVisibleOnAllWorkspaces() {
   return window_->IsVisibleOnAllWorkspaces();
 }
 
-void Window::BeginFrameSubscription() {
-  window_->SetFrameSubscription(true);
-}
-
-void Window::EndFrameSubscription() {
-  window_->SetFrameSubscription(false);
-}
-
 int32_t Window::ID() const {
   return weak_map_id();
 }
@@ -628,8 +609,6 @@ void Window::BuildPrototype(v8::Isolate* isolate,
                  &Window::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &Window::IsVisibleOnAllWorkspaces)
-      .SetMethod("beginFrameSubscription", &Window::BeginFrameSubscription)
-      .SetMethod("endFrameSubscription", &Window::EndFrameSubscription)
 #if defined(OS_MACOSX)
       .SetMethod("showDefinitionForSelection",
                  &Window::ShowDefinitionForSelection)
