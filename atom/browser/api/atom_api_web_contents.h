@@ -15,6 +15,10 @@
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
 
+namespace blink {
+struct WebDeviceEmulationParams;
+}
+
 namespace brightray {
 class InspectableWebContents;
 }
@@ -74,7 +78,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void CloseDevTools();
   bool IsDevToolsOpened();
   void ToggleDevTools();
-  void EnableDeviceEmulation(const base::DictionaryValue&);
+  void EnableDeviceEmulation(const blink::WebDeviceEmulationParams& params);
   void DisableDeviceEmulation();
   void InspectElement(int x, int y);
   void InspectServiceWorker();
