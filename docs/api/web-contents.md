@@ -78,6 +78,10 @@ Returns:
 * `oldUrl` String
 * `newUrl` String
 * `isMainFrame` Boolean
+* `httpResponseCode` Integer
+* `requestMethod` String
+* `referrer` String
+* `headers` Object
 
 Emitted when a redirect is received while requesting a resource.
 
