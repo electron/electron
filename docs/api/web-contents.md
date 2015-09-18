@@ -551,3 +551,17 @@ For the `mouseWheel` event, the `event` object also have following properties:
 * `accelerationRatioY` Integer
 * `hasPreciseScrollingDeltas` Boolean
 * `canScroll` Boolean
+
+### `webContents.beginFrameSubscription(callback)`
+
+* `callback` Function
+
+Begin subscribing for presentation events and captured frames, the `callback`
+will be called with `callback(frameBuffer)` when there is a presentation event.
+
+The `frameBuffer` is a `Buffer` that contains raw pixel data, in the format of
+32bit ARGB.
+
+### `webContents.endFrameSubscription()`
+
+End subscribing for frame presentation events.

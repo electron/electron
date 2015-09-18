@@ -772,13 +772,3 @@ Sets whether the window should be visible on all workspaces.
 Returns whether the window is visible on all workspaces.
 
 **Note:** This API always returns false on Windows.
-
-### BrowserWindow.beginFrameSubscription()
-
-Enables offscreen rendering, after this call `frame-rendered` events will be
-fired when the window receives a new frame from the renderer.
-
-### BrowserWindow.endFrameSubscription()
-
-Enables offscreen rendering, after this call `frame-rendered` events will
-no longer be fired if offscreen rendering was enabled before.
