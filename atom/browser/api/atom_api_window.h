@@ -142,7 +142,6 @@ class Window : public mate::TrackableObject<Window>,
   bool IsMenuBarVisible();
   void SetAspectRatio(double aspect_ratio, mate::Arguments* args);
 
-  void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);
   void BeginFrameSubscription();
   void EndFrameSubscription();
 

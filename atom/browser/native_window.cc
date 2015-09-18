@@ -40,10 +40,6 @@
 #include "ui/gfx/screen.h"
 #include "ui/gl/gpu_switching_manager.h"
 
-using content::NavigationEntry;
-using content::RenderWidgetHostView;
-using content::RenderWidgetHost;
-
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
 
 namespace atom {
@@ -300,38 +296,6 @@ void NativeWindow::SetFrameSubscription(bool isOffscreen) {
       view->EndFrameSubscription();
     }
   }
-}
-
-void NativeWindow::SendInputEvent(const blink::WebMouseEvent& mouse_event) {
-  const auto view = web_contents()->GetRenderWidgetHostView();
-  if (!view)
-    return;
-  const auto host = view->GetRenderWidgetHost();
-  if (!host)
-    return;
-  host->ForwardMouseEvent(mouse_event);
-}
-
-void NativeWindow::SendInputEvent(
-    const blink::WebMouseWheelEvent& mouse_wheel_event) {
-  const auto view = web_contents()->GetRenderWidgetHostView();
-  if (!view)
-    return;
-  const auto host = view->GetRenderWidgetHost();
-  if (!host)
-    return;
-  host->ForwardWheelEvent(mouse_wheel_event);
-}
-
-void NativeWindow::SendInputEvent(
-    const content::NativeWebKeyboardEvent& keyboard_event) {
-  const auto view = web_contents()->GetRenderWidgetHostView();
-  if (!view)
-    return;
-  const auto host = view->GetRenderWidgetHost();
-  if (!host)
-    return;
-  host->ForwardKeyboardEvent(keyboard_event);
 }
 
 void NativeWindow::RequestToClosePage() {

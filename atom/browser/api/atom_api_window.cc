@@ -8,18 +8,15 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
-#include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/options_switches.h"
-#include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
-#include "third_party/WebKit/public/web/WebInputEvent.h"
 #include "ui/gfx/geometry/rect.h"
 
 #if defined(OS_WIN)
@@ -539,33 +536,6 @@ bool Window::IsVisibleOnAllWorkspaces() {
   return window_->IsVisibleOnAllWorkspaces();
 }
 
-void Window::SendInputEvent(v8::Isolate* isolate,
-                            v8::Local<v8::Value> input_event) {
-  int type = mate::GetWebInputEventType(isolate, input_event);
-  if (blink::WebInputEvent::isMouseEventType(type)) {
-    blink::WebMouseEvent mouse_event;
-    if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
-      window_->SendInputEvent(mouse_event);
-      return;
-    }
-  } else if (blink::WebInputEvent::isKeyboardEventType(type)) {
-    content::NativeWebKeyboardEvent keyboard_event;;
-    if (mate::ConvertFromV8(isolate, input_event, &keyboard_event)) {
-      window_->SendInputEvent(keyboard_event);
-      return;
-    }
-  } else if (type == blink::WebInputEvent::MouseWheel) {
-    blink::WebMouseWheelEvent mouse_wheel_event;
-    if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
-      window_->SendInputEvent(mouse_wheel_event);
-      return;
-    }
-  }
-
-  isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
-      isolate, "Invalid event type")));
-}
-
 void Window::BeginFrameSubscription() {
   window_->SetFrameSubscription(true);
 }
@@ -658,7 +628,6 @@ void Window::BuildPrototype(v8::Isolate* isolate,
                  &Window::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &Window::IsVisibleOnAllWorkspaces)
-      .SetMethod("sendInputEvent", &Window::SendInputEvent)
       .SetMethod("beginFrameSubscription", &Window::BeginFrameSubscription)
       .SetMethod("endFrameSubscription", &Window::EndFrameSubscription)
 #if defined(OS_MACOSX)

@@ -26,11 +26,6 @@
 
 class SkRegion;
 
-namespace blink {
-class WebMouseEvent;
-class WebMouseWheelEvent;
-}
-
 namespace brightray {
 class InspectableWebContents;
 }
@@ -178,11 +173,6 @@ class NativeWindow : public content::WebContentsObserver,
 
   // Subscribe to the frame updates.
   void SetFrameSubscription(bool isOffscreen);
-
-  // Send the WebInputEvent to the page.
-  void SendInputEvent(const blink::WebMouseEvent& mouse_event);
-  void SendInputEvent(const blink::WebMouseWheelEvent& mouse_wheel_event);
-  void SendInputEvent(const content::NativeWebKeyboardEvent& keyboard_event);
 
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
