@@ -79,7 +79,7 @@ exports.withLocalCallback = function() {
 
 ```javascript
 // renderer process
-var mapNumbers = require("remote").require("mapNumbers");
+var mapNumbers = require("remote").require("./mapNumbers");
 
 var withRendererCb = mapNumbers.withRendererCallback(function(x) {
   return x + 1;
