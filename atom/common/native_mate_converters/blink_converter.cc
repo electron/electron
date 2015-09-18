@@ -4,6 +4,8 @@
 
 #include "atom/common/native_mate_converters/blink_converter.h"
 
+#include <string>
+
 #include "base/strings/string_util.h"
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebDeviceEmulationParams.h"
