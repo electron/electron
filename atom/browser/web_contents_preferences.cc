@@ -94,7 +94,7 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
     if (base::FilePath(preload).IsAbsolute())
       command_line->AppendSwitchNative(switches::kPreloadScript, preload);
     else
-      LOG(ERROR) << "preload script must have abosulute path.";
+      LOG(ERROR) << "preload script must have absolute path.";
   } else if (web_preferences.GetString(switches::kPreloadUrl, &preload)) {
     // Translate to file path if there is "preload-url" option.
     base::FilePath preload_path;
