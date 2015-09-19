@@ -335,6 +335,14 @@ Webview 페이지를 PDF 형식으로 인쇄합니다. `webContents.printToPDF(o
 
 예제는 [WebContents.send](web-contents.md#webcontentssendchannel-args)를 참고하세요.
 
+### `<webview>.sendInputEvent(event)`
+
+* `event` Object
+
+페이지에 input `event`를 보냅니다.
+
+`event` 객체에 대해 자세한 내용을 알아보려면 [WebContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)를 참고하세요.
+
 ## DOM 이벤트
 
 `webview` 태그는 다음과 같은 DOM 이벤트를 가지고 있습니다:
