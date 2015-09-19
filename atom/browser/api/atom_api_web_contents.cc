@@ -15,6 +15,7 @@
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
@@ -27,13 +28,16 @@
 #include "brightray/browser/inspectable_web_contents.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
+#include "content/common/view_messages.h"
 #include "content/public/browser/favicon_status.h"
+#include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/resource_request_details.h"
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/storage_partition.h"
@@ -44,6 +48,7 @@
 #include "net/http/http_response_headers.h"
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
+#include "third_party/WebKit/public/web/WebInputEvent.h"
 
 #include "atom/common/node_includes.h"
 
@@ -640,6 +645,21 @@ bool WebContents::IsDevToolsOpened() {
   return managed_web_contents()->IsDevToolsViewShowing();
 }
 
+void WebContents::EnableDeviceEmulation(
+    const blink::WebDeviceEmulationParams& params) {
+  if (type_ == REMOTE)
+    return;
+
+  Send(new ViewMsg_EnableDeviceEmulation(routing_id(), params));
+}
+
+void WebContents::DisableDeviceEmulation() {
+  if (type_ == REMOTE)
+    return;
+
+  Send(new ViewMsg_DisableDeviceEmulation(routing_id()));
+}
+
 void WebContents::ToggleDevTools() {
   if (IsDevToolsOpened())
     CloseDevTools();
@@ -796,6 +816,56 @@ bool WebContents::SendIPCMessage(const base::string16& channel,
   return Send(new AtomViewMsg_Message(routing_id(), channel, args));
 }
 
+void WebContents::SendInputEvent(v8::Isolate* isolate,
+                                 v8::Local<v8::Value> input_event) {
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  if (!view)
+    return;
+  const auto host = view->GetRenderWidgetHost();
+  if (!host)
+    return;
+
+  int type = mate::GetWebInputEventType(isolate, input_event);
+  if (blink::WebInputEvent::isMouseEventType(type)) {
+    blink::WebMouseEvent mouse_event;
+    if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
+      host->ForwardMouseEvent(mouse_event);
+      return;
+    }
+  } else if (blink::WebInputEvent::isKeyboardEventType(type)) {
+    content::NativeWebKeyboardEvent keyboard_event;;
+    if (mate::ConvertFromV8(isolate, input_event, &keyboard_event)) {
+      host->ForwardKeyboardEvent(keyboard_event);
+      return;
+    }
+  } else if (type == blink::WebInputEvent::MouseWheel) {
+    blink::WebMouseWheelEvent mouse_wheel_event;
+    if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
+      host->ForwardWheelEvent(mouse_wheel_event);
+      return;
+    }
+  }
+
+  isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
+      isolate, "Invalid event object")));
+}
+
+void WebContents::BeginFrameSubscription(
+    const FrameSubscriber::FrameCaptureCallback& callback) {
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  if (view) {
+    scoped_ptr<FrameSubscriber> frame_subscriber(new FrameSubscriber(
+        isolate(), view->GetVisibleViewportSize(), callback));
+    view->BeginFrameSubscription(frame_subscriber.Pass());
+  }
+}
+
+void WebContents::EndFrameSubscription() {
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  if (view)
+    view->EndFrameSubscription();
+}
+
 void WebContents::SetSize(const SetSizeParams& params) {
   if (guest_delegate_)
     guest_delegate_->SetSize(params);
@@ -836,6 +906,10 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("openDevTools", &WebContents::OpenDevTools)
         .SetMethod("closeDevTools", &WebContents::CloseDevTools)
         .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
+        .SetMethod("enableDeviceEmulation",
+                   &WebContents::EnableDeviceEmulation)
+        .SetMethod("disableDeviceEmulation",
+                   &WebContents::DisableDeviceEmulation)
         .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)
         .SetMethod("inspectElement", &WebContents::InspectElement)
         .SetMethod("setAudioMuted", &WebContents::SetAudioMuted)
@@ -854,6 +928,10 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("focus", &WebContents::Focus)
         .SetMethod("tabTraverse", &WebContents::TabTraverse)
         .SetMethod("_send", &WebContents::SendIPCMessage, true)
+        .SetMethod("sendInputEvent", &WebContents::SendInputEvent)
+        .SetMethod("beginFrameSubscription",
+                   &WebContents::BeginFrameSubscription)
+        .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
         .SetMethod("setSize", &WebContents::SetSize)
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
         .SetMethod("isGuest", &WebContents::IsGuest)

@@ -358,6 +358,15 @@ page can handle it by listening to the `channel` event of `ipc` module.
 See [WebContents.send](web-contents.md#webcontentssendchannel-args) for
 examples.
 
+### `<webview>.sendInputEvent(event)`
+
+* `event` Object
+
+Sends an input `event` to the page.
+
+See [WebContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)
+for detailed description of `event` object.
+
 ## DOM events
 
 The following DOM events are available to the `webview` tag:

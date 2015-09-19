@@ -8,12 +8,17 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/api/frame_subscriber.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/common_web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
+
+namespace blink {
+struct WebDeviceEmulationParams;
+}
 
 namespace brightray {
 class InspectableWebContents;
@@ -74,6 +79,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void CloseDevTools();
   bool IsDevToolsOpened();
   void ToggleDevTools();
+  void EnableDeviceEmulation(const blink::WebDeviceEmulationParams& params);
+  void DisableDeviceEmulation();
   void InspectElement(int x, int y);
   void InspectServiceWorker();
   v8::Local<v8::Value> Session(v8::Isolate* isolate);
@@ -108,9 +115,17 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void Focus();
   void TabTraverse(bool reverse);
 
-  // Sending messages to browser.
+  // Send messages to browser.
   bool SendIPCMessage(const base::string16& channel,
                       const base::ListValue& args);
+
+  // Send WebInputEvent to the page.
+  void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);
+
+  // Subscribe to the frame updates.
+  void BeginFrameSubscription(
+      const FrameSubscriber::FrameCaptureCallback& callback);
+  void EndFrameSubscription();
 
   // Methods for creating <webview>.
   void SetSize(const SetSizeParams& params);

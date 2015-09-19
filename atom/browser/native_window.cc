@@ -39,10 +39,6 @@
 #include "ui/gfx/screen.h"
 #include "ui/gl/gpu_switching_manager.h"
 
-using content::NavigationEntry;
-using content::RenderWidgetHostView;
-using content::RenderWidgetHost;
-
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
 
 namespace atom {
@@ -200,38 +196,6 @@ bool NativeWindow::IsDocumentEdited() {
 void NativeWindow::SetMenu(ui::MenuModel* menu) {
 }
 
-void NativeWindow::ShowDefinitionForSelection() {
-  NOTIMPLEMENTED();
-}
-
-void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {
-}
-
-bool NativeWindow::IsMenuBarAutoHide() {
-  return false;
-}
-
-void NativeWindow::SetMenuBarVisibility(bool visible) {
-}
-
-bool NativeWindow::IsMenuBarVisible() {
-  return true;
-}
-
-double NativeWindow::GetAspectRatio() {
-  return aspect_ratio_;
-}
-
-gfx::Size NativeWindow::GetAspectRatioExtraSize() {
-  return aspect_ratio_extraSize_;
-}
-
-void NativeWindow::SetAspectRatio(double aspect_ratio,
-                                  const gfx::Size& extra_size) {
-  aspect_ratio_ = aspect_ratio;
-  aspect_ratio_extraSize_ = extra_size;
-}
-
 bool NativeWindow::HasModalDialog() {
   return has_dialog_attached_;
 }
@@ -284,6 +248,38 @@ void NativeWindow::CapturePage(const gfx::Rect& rect,
                  weak_factory_.GetWeakPtr(),
                  callback),
       kBGRA_8888_SkColorType);
+}
+
+void NativeWindow::ShowDefinitionForSelection() {
+  NOTIMPLEMENTED();
+}
+
+void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {
+}
+
+bool NativeWindow::IsMenuBarAutoHide() {
+  return false;
+}
+
+void NativeWindow::SetMenuBarVisibility(bool visible) {
+}
+
+bool NativeWindow::IsMenuBarVisible() {
+  return true;
+}
+
+double NativeWindow::GetAspectRatio() {
+  return aspect_ratio_;
+}
+
+gfx::Size NativeWindow::GetAspectRatioExtraSize() {
+  return aspect_ratio_extraSize_;
+}
+
+void NativeWindow::SetAspectRatio(double aspect_ratio,
+                                  const gfx::Size& extra_size) {
+  aspect_ratio_ = aspect_ratio;
+  aspect_ratio_extraSize_ = extra_size;
 }
 
 void NativeWindow::RequestToClosePage() {
