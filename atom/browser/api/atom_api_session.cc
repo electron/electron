@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "atom/browser/api/atom_api_cookies.h"
+#include "atom/browser/api/atom_api_download_item.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_download_manager_delegate.h"
 #include "atom/browser/api/atom_api_web_contents.h"
@@ -99,19 +100,6 @@ struct Converter<ClearStorageDataOptions> {
     if (options.Get("quotas", &types))
       out->quota_types = GetQuotaMask(types);
     return true;
-  }
-};
-
-template<>
-struct Converter<content::DownloadItem*> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   content::DownloadItem* val) {
-    mate::Dictionary dict(isolate, v8::Object::New(isolate));
-    dict.Set("url", val->GetURL());
-    dict.Set("filename", val->GetSuggestedFilename());
-    dict.Set("mimeType", val->GetMimeType());
-    dict.Set("hasUserGesture", val->HasUserGesture());
-    return dict.GetHandle();
   }
 };
 
@@ -248,9 +236,10 @@ Session::~Session() {
 void Session::OnDownloadCreated(content::DownloadManager* manager,
                                 content::DownloadItem* item) {
   auto web_contents = item->GetWebContents();
-  bool prevent_default = Emit("will-download", item,
-                              api::WebContents::CreateFrom(isolate(),
-                                                           web_contents));
+  bool prevent_default = Emit(
+      "will-download",
+      DownloadItem::Create(isolate(), item),
+      api::WebContents::CreateFrom(isolate(), web_contents));
   if (prevent_default) {
     item->Cancel(true);
     item->Remove();

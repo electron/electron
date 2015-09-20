@@ -71,6 +71,8 @@
       'atom/browser/api/atom_api_content_tracing.cc',
       'atom/browser/api/atom_api_cookies.cc',
       'atom/browser/api/atom_api_cookies.h',
+      'atom/browser/api/atom_api_download_item.cc',
+      'atom/browser/api/atom_api_download_item.h',
       'atom/browser/api/atom_api_dialog.cc',
       'atom/browser/api/atom_api_global_shortcut.cc',
       'atom/browser/api/atom_api_global_shortcut.h',
