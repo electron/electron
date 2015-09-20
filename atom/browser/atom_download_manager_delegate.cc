@@ -23,7 +23,8 @@ namespace atom {
 AtomDownloadManagerDelegate::AtomDownloadManagerDelegate(
     content::DownloadManager* manager)
     : download_manager_(manager),
-      weak_ptr_factory_(this) {}
+      weak_ptr_factory_(this),
+      open_download_dialog_(true) {}
 
 AtomDownloadManagerDelegate::~AtomDownloadManagerDelegate() {
   if (download_manager_) {
@@ -74,20 +75,28 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
     window = relay->window.get();
 
   file_dialog::Filters filters;
-  base::FilePath path;
-  if (!file_dialog::ShowSaveDialog(window, item->GetURL().spec(), default_path,
+  base::FilePath path = default_path;
+  if (open_download_dialog_ &&
+      !file_dialog::ShowSaveDialog(window, item->GetURL().spec(), default_path,
                                    filters, &path)) {
     return;
   }
 
-  // Remeber the last selected download directory.
-  AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
-      download_manager_->GetBrowserContext());
-  browser_context->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
-                                        path.DirName());
+  if (open_download_dialog_) {
+    // Remeber the last selected download directory.
+    AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
+        download_manager_->GetBrowserContext());
+    browser_context->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
+                                          path.DirName());
+  }
   callback.Run(path,
                content::DownloadItem::TARGET_DISPOSITION_PROMPT,
                content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path);
+}
+
+void AtomDownloadManagerDelegate::SetOpenDownloadDialog(
+    bool open_download_dialog) {
+  open_download_dialog_ = open_download_dialog;
 }
 
 void AtomDownloadManagerDelegate::Shutdown() {

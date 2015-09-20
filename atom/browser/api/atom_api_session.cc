@@ -9,6 +9,7 @@
 
 #include "atom/browser/api/atom_api_cookies.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/atom_download_manager_delegate.h"
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -245,7 +246,7 @@ Session::~Session() {
 }
 
 void Session::OnDownloadCreated(content::DownloadManager* manager,
-                                    content::DownloadItem* item) {
+                                content::DownloadItem* item) {
   auto web_contents = item->GetWebContents();
   bool prevent_default = Emit("will-download", item,
                               api::WebContents::CreateFrom(isolate(),
@@ -305,6 +306,13 @@ void Session::SetDownloadPath(const base::FilePath& path) {
       prefs::kDownloadDefaultDirectory, path);
 }
 
+void Session::SetOpenDownloadDialog(bool open_download_dialog) {
+  AtomDownloadManagerDelegate* delegate =
+      static_cast<AtomDownloadManagerDelegate*>(
+          browser_context()->GetDownloadManagerDelegate());
+  delegate->SetOpenDownloadDialog(open_download_dialog);
+}
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
     auto handle = atom::api::Cookies::Create(isolate, browser_context());
@@ -321,6 +329,7 @@ mate::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("clearStorageData", &Session::ClearStorageData)
       .SetMethod("setProxy", &Session::SetProxy)
       .SetMethod("setDownloadPath", &Session::SetDownloadPath)
+      .SetMethod("setOpenDownloadDialog", &Session::SetOpenDownloadDialog)
       .SetProperty("cookies", &Session::Cookies);
 }
 
