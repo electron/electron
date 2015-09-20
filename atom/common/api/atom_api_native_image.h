@@ -41,7 +41,7 @@ class NativeImage : public mate::Wrappable {
   static mate::Handle<NativeImage> CreateFromPath(
       v8::Isolate* isolate, const base::FilePath& path);
   static mate::Handle<NativeImage> CreateFromBuffer(
-      mate::Arguments* args, v8::Handle<v8::Value> buffer);
+      mate::Arguments* args, v8::Local<v8::Value> buffer);
   static mate::Handle<NativeImage> CreateFromDataURL(
       v8::Isolate* isolate, const GURL& url);
 
@@ -59,14 +59,16 @@ class NativeImage : public mate::Wrappable {
       v8::Isolate* isolate) override;
 
  private:
-  v8::Handle<v8::Value> ToPNG(v8::Isolate* isolate);
-  v8::Handle<v8::Value> ToJPEG(v8::Isolate* isolate, int quality);
+  v8::Local<v8::Value> ToPNG(v8::Isolate* isolate);
+  v8::Local<v8::Value> ToJPEG(v8::Isolate* isolate, int quality);
   std::string ToDataURL();
   bool IsEmpty();
   gfx::Size GetSize();
 
   // Mark the image as template image.
   void SetTemplateImage(bool setAsTemplate);
+  // Determine if the image is a template image.
+  bool IsTemplateImage();
 
   gfx::Image image_;
 

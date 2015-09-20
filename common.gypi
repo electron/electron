@@ -1,14 +1,20 @@
 {
   'includes': [
+    'toolchain.gypi',
     'vendor/brightray/brightray.gypi',
   ],
   'variables': {
     # Required by breakpad.
     'os_bsd': 0,
+    'chromeos': 0,
     # Reflects node's config.gypi.
     'component%': 'static_library',
     'python': 'python',
+    'openssl_fips': '',
     'openssl_no_asm': 1,
+    'node_release_urlbase': 'https://atom.io/download/atom-shell',
+    'node_byteorder': '<!(python -c "import sys; print sys.byteorder")',
+    'node_target_type': 'shared_library',
     'node_install_npm': 'false',
     'node_prefix': '',
     'node_shared_cares': 'false',
@@ -26,25 +32,25 @@
     'uv_library': 'static_library',
     'uv_parent_path': 'vendor/node/deps/uv',
     'uv_use_dtrace': 'false',
+    'V8_BASE': '',
     'v8_postmortem_support': 'false',
     'v8_enable_i18n_support': 'false',
-    # Required by Linux (empty for now, should support it in future).
-    'sysroot': '',
   },
   # Settings to compile node under Windows.
   'target_defaults': {
     'target_conditions': [
       ['_target_name in ["libuv", "http_parser", "openssl", "cares", "node", "zlib"]', {
         'msvs_disabled_warnings': [
-          4703,  # potentially uninitialized local pointer variable 'req' used
           4013,  # 'free' undefined; assuming extern returning int
           4018,  # signed/unsigned mismatch
           4054,  #
+          4055,  # 'type cast' : from data pointer 'void *' to function pointer
           4057,  # 'function' : 'volatile LONG *' differs in indirection to slightly different base types from 'unsigned long *'
           4189,  #
           4131,  # uses old-style declarator
           4133,  # incompatible types
           4146,  # unary minus operator applied to unsigned type, result still unsigned
+          4164,  # intrinsic function not declared
           4152,  # function/data pointer conversion in expression
           4206,  # translation unit is empty
           4204,  # non-constant aggregate initializer
@@ -56,6 +62,7 @@
           4389,  # '==' : signed/unsigned mismatch
           4505,  # unreferenced local function has been removed
           4701,  # potentially uninitialized local variable 'sizew' used
+          4703,  # potentially uninitialized local pointer variable 'req' used
           4706,  # assignment within conditional expression
           4804,  # unsafe use of type 'bool' in operation
           4996,  # this function or variable may be unsafe.
@@ -68,6 +75,7 @@
         'xcode_settings': {
           'GCC_TREAT_WARNINGS_AS_ERRORS': 'NO',
           'WARNING_CFLAGS': [
+            '-Wno-unknown-warning-option',
             '-Wno-parentheses-equality',
             '-Wno-unused-function',
             '-Wno-sometimes-uninitialized',
@@ -78,6 +86,7 @@
             '-Wno-deprecated-declarations',
             '-Wno-return-type',
             '-Wno-gnu-folding-constant',
+            '-Wno-shift-negative-value',
           ],
         },
         'conditions': [
@@ -92,6 +101,7 @@
               '-Wno-unused-value',
               '-Wno-deprecated-declarations',
               '-Wno-return-type',
+              '-Wno-shift-negative-value',
               # Required when building as shared library.
               '-fPIC',
             ],
@@ -99,7 +109,10 @@
         ],
       }],
       ['_target_name=="node"', {
-        'include_dirs': [ '<(libchromiumcontent_src_dir)/v8/include' ],
+        'include_dirs': [
+          '<(libchromiumcontent_src_dir)/v8',
+          '<(libchromiumcontent_src_dir)/v8/include',
+        ],
         'conditions': [
           ['OS=="mac" and libchromiumcontent_component==0', {
             # -all_load is the "whole-archive" on OS X.

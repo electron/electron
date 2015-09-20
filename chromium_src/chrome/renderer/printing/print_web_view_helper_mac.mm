@@ -50,6 +50,47 @@ void PrintWebViewHelper::PrintPageInternal(
   Send(new PrintHostMsg_DidPrintPage(routing_id(), page_params));
 }
 
+bool PrintWebViewHelper::RenderPreviewPage(
+    int page_number,
+    const PrintMsg_Print_Params& print_params) {
+  PrintMsg_Print_Params printParams = print_params;
+  scoped_ptr<PdfMetafileSkia> draft_metafile;
+  PdfMetafileSkia* initial_render_metafile = print_preview_context_.metafile();
+
+  bool render_to_draft = print_preview_context_.IsModifiable() &&
+                         is_print_ready_metafile_sent_;
+
+  if (render_to_draft) {
+    draft_metafile.reset(new PdfMetafileSkia());
+    if (!draft_metafile->Init()) {
+      print_preview_context_.set_error(
+          PREVIEW_ERROR_MAC_DRAFT_METAFILE_INIT_FAILED);
+      LOG(ERROR) << "Draft PdfMetafileSkia Init failed";
+      return false;
+    }
+    initial_render_metafile = draft_metafile.get();
+  }
+
+  base::TimeTicks begin_time = base::TimeTicks::Now();
+  gfx::Size page_size;
+  RenderPage(printParams, page_number, print_preview_context_.prepared_frame(),
+             true, initial_render_metafile, &page_size, NULL);
+  print_preview_context_.RenderedPreviewPage(
+      base::TimeTicks::Now() - begin_time);
+
+  if (draft_metafile.get()) {
+    draft_metafile->FinishDocument();
+  } else {
+    if (print_preview_context_.IsModifiable() &&
+        print_preview_context_.generate_draft_pages()) {
+      DCHECK(!draft_metafile.get());
+      draft_metafile =
+          print_preview_context_.metafile()->GetMetafileForCurrentPage();
+    }
+  }
+  return PreviewPageRendered(page_number, draft_metafile.get());
+}
+
 void PrintWebViewHelper::RenderPage(const PrintMsg_Print_Params& params,
                                     int page_number,
                                     WebFrame* frame,

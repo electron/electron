@@ -4,29 +4,36 @@ webFrame = require 'web-frame'
 requestId = 0
 
 WEB_VIEW_EVENTS =
+  'load-commit': ['url', 'isMainFrame']
   'did-finish-load': []
-  'did-fail-load': ['errorCode', 'errorDescription']
+  'did-fail-load': ['errorCode', 'errorDescription', 'validatedUrl']
   'did-frame-finish-load': ['isMainFrame']
   'did-start-loading': []
   'did-stop-loading': []
   'did-get-response-details': ['status', 'newUrl', 'originalUrl',
-                               'httpResponseCode', 'requestMethod', 'referrer']
+                               'httpResponseCode', 'requestMethod', 'referrer',
+                               'headers']
   'did-get-redirect-request': ['oldUrl', 'newUrl', 'isMainFrame']
   'dom-ready': []
   'console-message': ['level', 'message', 'line', 'sourceId']
   'new-window': ['url', 'frameName', 'disposition']
   'close': []
   'crashed': []
+  'gpu-crashed': []
+  'plugin-crashed': ['name', 'version']
   'destroyed': []
   'page-title-set': ['title', 'explicitSet']
   'page-favicon-updated': ['favicons']
+  'enter-html-full-screen': []
+  'leave-html-full-screen': []
 
 dispatchEvent = (webView, event, args...) ->
-  throw new Error("Unkown event #{event}") unless WEB_VIEW_EVENTS[event]?
+  throw new Error("Unknown event #{event}") unless WEB_VIEW_EVENTS[event]?
   domEvent = new Event(event)
   for f, i in WEB_VIEW_EVENTS[event]
     domEvent[f] = args[i]
   webView.dispatchEvent domEvent
+  webView.onLoadCommit domEvent if event == 'load-commit'
 
 module.exports =
   registerEvents: (webView, viewInstanceId) ->
@@ -50,9 +57,9 @@ module.exports =
     ipc.removeAllListeners "ATOM_SHELL_GUEST_VIEW_INTERNAL_IPC_MESSAGE-#{viewInstanceId}"
     ipc.removeAllListeners "ATOM_SHELL_GUEST_VIEW_INTERNAL_SIZE_CHANGED-#{viewInstanceId}"
 
-  createGuest: (type, params, callback) ->
+  createGuest: (params, callback) ->
     requestId++
-    ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_CREATE_GUEST', type, params, requestId
+    ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_CREATE_GUEST', params, requestId
     ipc.once "ATOM_SHELL_RESPONSE_#{requestId}", callback
 
   attachGuest: (elementInstanceId, guestInstanceId, params) ->
@@ -62,8 +69,8 @@ module.exports =
   destroyGuest: (guestInstanceId) ->
     ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_DESTROY_GUEST', guestInstanceId
 
-  setAutoSize: (guestInstanceId, params) ->
-    ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_AUTO_SIZE', guestInstanceId, params
+  setSize: (guestInstanceId, params) ->
+    ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_SIZE', guestInstanceId, params
 
   setAllowTransparency: (guestInstanceId, allowtransparency) ->
     ipc.send 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_ALLOW_TRANSPARENCY', guestInstanceId, allowtransparency

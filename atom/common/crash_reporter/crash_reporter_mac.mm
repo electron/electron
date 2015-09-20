@@ -4,20 +4,25 @@
 
 #include "atom/common/crash_reporter/crash_reporter_mac.h"
 
+#include "base/files/file_path.h"
+#include "base/files/file_util.h"
+#include "base/mac/bundle_locations.h"
 #include "base/mac/mac_util.h"
 #include "base/memory/singleton.h"
+#include "base/strings/string_piece.h"
+#include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
-#import "vendor/breakpad/src/client/apple/Framework/BreakpadDefines.h"
+#include "vendor/crashpad/client/crash_report_database.h"
+#include "vendor/crashpad/client/crashpad_client.h"
+#include "vendor/crashpad/client/crashpad_info.h"
+#include "vendor/crashpad/client/settings.h"
 
 namespace crash_reporter {
 
-CrashReporterMac::CrashReporterMac()
-    : breakpad_(NULL) {
+CrashReporterMac::CrashReporterMac() {
 }
 
 CrashReporterMac::~CrashReporterMac() {
-  if (breakpad_ != NULL)
-    BreakpadRelease(breakpad_);
 }
 
 void CrashReporterMac::InitBreakpad(const std::string& product_name,
@@ -26,59 +31,97 @@ void CrashReporterMac::InitBreakpad(const std::string& product_name,
                                     const std::string& submit_url,
                                     bool auto_submit,
                                     bool skip_system_crash_handler) {
-  if (breakpad_ != NULL)
-    BreakpadRelease(breakpad_);
-
-  NSMutableDictionary* parameters =
-      [NSMutableDictionary dictionaryWithCapacity:4];
-
-  [parameters setValue:@ATOM_PRODUCT_NAME
-                forKey:@BREAKPAD_PRODUCT];
-  [parameters setValue:base::SysUTF8ToNSString(product_name)
-                forKey:@BREAKPAD_PRODUCT_DISPLAY];
-  [parameters setValue:base::SysUTF8ToNSString(version)
-                forKey:@BREAKPAD_VERSION];
-  [parameters setValue:base::SysUTF8ToNSString(company_name)
-                forKey:@BREAKPAD_VENDOR];
-  [parameters setValue:base::SysUTF8ToNSString(submit_url)
-                forKey:@BREAKPAD_URL];
-  [parameters setValue:(auto_submit ? @"YES" : @"NO")
-                forKey:@BREAKPAD_SKIP_CONFIRM];
-  [parameters setValue:(skip_system_crash_handler ? @"YES" : @"NO")
-                forKey:@BREAKPAD_SEND_AND_EXIT];
-
-  // Report all crashes (important for testing the crash reporter).
-  [parameters setValue:@"0" forKey:@BREAKPAD_REPORT_INTERVAL];
-
-  // Put dump files under "/tmp/ProductName Crashes".
-  std::string dump_dir = "/tmp/" + product_name + " Crashes";
-  [parameters setValue:base::SysUTF8ToNSString(dump_dir)
-                forKey:@BREAKPAD_DUMP_DIRECTORY];
-
-  // Temporarily run Breakpad in-process on 10.10 and later because APIs that
-  // it depends on got broken (http://crbug.com/386208).
-  // This can catch crashes in the browser process only.
-  if (base::mac::IsOSYosemiteOrLater()) {
-    [parameters setObject:[NSNumber numberWithBool:YES]
-                   forKey:@BREAKPAD_IN_PROCESS];
-  }
-
-  breakpad_ = BreakpadCreate(parameters);
-  if (!breakpad_) {
-    LOG(ERROR) << "Failed to initialize breakpad";
+  // check whether crashpad has been initilized.
+  // Only need to initilize once.
+  if (simple_string_dictionary_)
     return;
+
+  std::string dump_dir = "/tmp/" + product_name + " Crashes";
+  base::FilePath database_path(dump_dir);
+  if (is_browser_) {
+    @autoreleasepool {
+      base::FilePath framework_bundle_path = base::mac::FrameworkBundlePath();
+      base::FilePath handler_path =
+          framework_bundle_path.Append("Resources").Append("crashpad_handler");
+
+      crashpad::CrashpadClient crashpad_client;
+      if (crashpad_client.StartHandler(handler_path, database_path,
+                                       submit_url,
+                                       StringMap(),
+                                       std::vector<std::string>())) {
+        crashpad_client.UseHandler();
+      }
+    }  // @autoreleasepool
   }
 
-  for (StringMap::const_iterator iter = upload_parameters_.begin();
-       iter != upload_parameters_.end(); ++iter) {
-    BreakpadAddUploadParameter(breakpad_,
-                               base::SysUTF8ToNSString(iter->first),
-                               base::SysUTF8ToNSString(iter->second));
+  crashpad::CrashpadInfo* crashpad_info =
+      crashpad::CrashpadInfo::GetCrashpadInfo();
+  if (skip_system_crash_handler) {
+    crashpad_info->set_system_crash_reporter_forwarding(
+        crashpad::TriState::kDisabled);
+  }
+
+  simple_string_dictionary_.reset(new crashpad::SimpleStringDictionary());
+  crashpad_info->set_simple_annotations(simple_string_dictionary_.get());
+
+  SetCrashKeyValue("prod", ATOM_PRODUCT_NAME);
+  SetCrashKeyValue("process_type", is_browser_ ? "browser" : "renderer");
+  SetCrashKeyValue("ver", version);
+
+  for (const auto& upload_parameter: upload_parameters_) {
+    SetCrashKeyValue(upload_parameter.first, upload_parameter.second);
+  }
+  if (is_browser_) {
+    scoped_ptr<crashpad::CrashReportDatabase> database =
+        crashpad::CrashReportDatabase::Initialize(database_path);
+    if (database) {
+      database->GetSettings()->SetUploadsEnabled(auto_submit);
+    }
   }
 }
 
 void CrashReporterMac::SetUploadParameters() {
   upload_parameters_["platform"] = "darwin";
+}
+
+void CrashReporterMac::SetCrashKeyValue(const base::StringPiece& key,
+                                        const base::StringPiece& value) {
+  simple_string_dictionary_->SetKeyValue(key.data(), value.data());
+}
+
+std::vector<CrashReporter::UploadReportResult>
+CrashReporterMac::GetUploadedReports(const std::string& path) {
+  std::vector<CrashReporter::UploadReportResult> uploaded_reports;
+
+  base::FilePath file_path(path);
+  if (!base::PathExists(file_path)) {
+    return uploaded_reports;
+  }
+  // Load crashpad database.
+  scoped_ptr<crashpad::CrashReportDatabase> database =
+    crashpad::CrashReportDatabase::Initialize(file_path);
+  DCHECK(database);
+
+  std::vector<crashpad::CrashReportDatabase::Report> completed_reports;
+  crashpad::CrashReportDatabase::OperationStatus status =
+      database->GetCompletedReports(&completed_reports);
+  if (status != crashpad::CrashReportDatabase::kNoError) {
+    return uploaded_reports;
+  }
+
+  for (const crashpad::CrashReportDatabase::Report& completed_report :
+       completed_reports) {
+    if (completed_report.uploaded) {
+      uploaded_reports.push_back(
+          UploadReportResult(static_cast<int>(completed_report.creation_time),
+                             completed_report.id));
+    }
+  }
+
+  auto sort_by_time = [](const UploadReportResult& a,
+      const UploadReportResult& b) {return a.first >= b.first;};
+  std::sort(uploaded_reports.begin(), uploaded_reports.end(), sort_by_time);
+  return uploaded_reports;
 }
 
 // static

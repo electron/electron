@@ -1,7 +1,7 @@
 # Supported Chrome command line switches
 
-Following command lines switches in Chrome browser are also Supported in
-Electron, you can use [app.commandLine.appendSwitch][append-switch] to append
+This page lists the command line switches used by the Chrome browser that are also supported by
+Electron. You can use [app.commandLine.appendSwitch][append-switch] to append
 them in your app's main script before the [ready][ready] event of [app][app]
 module is emitted:
 
@@ -11,8 +11,17 @@ app.commandLine.appendSwitch('remote-debugging-port', '8315');
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
 
 app.on('ready', function() {
+  // Your code here
 });
 ```
+
+## --client-certificate=`path`
+
+Sets the `path` of client certificate file.
+
+## --ignore-connections-limit=`domains`
+
+Ignore the connections limit for `domains` list separated by `,`.
 
 ## --disable-http-cache
 
@@ -20,21 +29,25 @@ Disables the disk cache for HTTP requests.
 
 ## --remote-debugging-port=`port`
 
-Enables remote debug over HTTP on the specified `port`.
+Enables remote debugging over HTTP on the specified `port`.
 
 ## --proxy-server=`address:port`
 
-Uses a specified proxy server, overrides system settings. This switch only
+Use a specified proxy server, which overrides the system setting. This switch only
 affects HTTP and HTTPS requests.
+
+## --proxy-pac-url=`url`
+
+Uses the PAC script at the specified `url`.
 
 ## --no-proxy-server
 
-Don't use a proxy server, always make direct connections. Overrides any other
+Don't use a proxy server and always make direct connections. Overrides any other
 proxy server flags that are passed.
 
 ## --host-rules=`rules`
 
-Comma-separated list of `rules` that control how hostnames are mapped.
+A comma-separated list of `rules` that control how hostnames are mapped.
 
 For example:
 
@@ -47,7 +60,7 @@ For example:
   "www.google.com".
 
 These mappings apply to the endpoint host in a net request (the TCP connect
-and host resolver in a direct connection, and the `CONNECT` in an http proxy
+and host resolver in a direct connection, and the `CONNECT` in an HTTP proxy
 connection, and the endpoint host in a `SOCKS` proxy connection).
 
 ## --host-resolver-rules=`rules`
@@ -60,15 +73,19 @@ Like `--host-rules` but these `rules` only apply to the host resolver.
 
 ## --ignore-certificate-errors
 
-Ignore certificate related errors.
+Ignores certificate related errors.
 
-## --ppapi-flash-path
+## --ppapi-flash-path=`path`
 
-Set path to pepper flash plugin for use.
+Sets the `path` of the pepper flash plugin.
 
-## --ppapi-flash-version
+## --ppapi-flash-version=`version`
 
-Set the pepper flash version.
+Sets the `version` of the pepper flash plugin.
+
+## --log-net-log=`path`
+
+Enables net log events to be saved and writes them to `path`.
 
 ## --v=`log_level`
 
@@ -85,7 +102,7 @@ source files `my_module.*` and `foo*.*`.
 
 Any pattern containing a forward or backward slash will be tested against the
 whole pathname and not just the module. E.g. `*/foo/bar/*=2` would change the
-logging level for all code in source files under a `foo/bar` directory.
+logging level for all code in the source files under a `foo/bar` directory.
 
 To disable all chromium related logs and only enable your application logs you
 can do:

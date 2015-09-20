@@ -14,12 +14,12 @@ namespace mate {
 
 template<>
 struct Converter<base::FilePath> {
-  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                     const base::FilePath& val) {
     return Converter<base::FilePath::StringType>::ToV8(isolate, val.value());
   }
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      base::FilePath* out) {
     base::FilePath::StringType path;
     if (Converter<base::FilePath::StringType>::FromV8(isolate, val, &path)) {

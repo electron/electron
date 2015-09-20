@@ -15,8 +15,9 @@
 #include "base/files/file.h"
 #include "base/logging.h"
 #include "base/pickle.h"
-#include "base/json/json_string_value_serializer.h"
+#include "base/json/json_reader.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/values.h"
 
 namespace asar {
 
@@ -53,6 +54,11 @@ bool GetChildNode(const base::DictionaryValue* root,
                   const std::string& name,
                   const base::DictionaryValue* dir,
                   const base::DictionaryValue** out) {
+  if (name == "") {
+    *out = root;
+    return true;
+  }
+
   const base::DictionaryValue* files = NULL;
   return GetFilesNode(root, dir, &files) &&
          files->GetDictionaryWithoutPathExpansion(name, out);
@@ -130,7 +136,8 @@ bool Archive::Init() {
   }
 
   uint32 size;
-  if (!PickleIterator(Pickle(buf.data(), buf.size())).ReadUInt32(&size)) {
+  if (!base::PickleIterator(base::Pickle(buf.data(), buf.size())).ReadUInt32(
+          &size)) {
     LOG(ERROR) << "Failed to parse header size from " << path_.value();
     return false;
   }
@@ -143,21 +150,22 @@ bool Archive::Init() {
   }
 
   std::string header;
-  if (!PickleIterator(Pickle(buf.data(), buf.size())).ReadString(&header)) {
+  if (!base::PickleIterator(base::Pickle(buf.data(), buf.size())).ReadString(
+        &header)) {
     LOG(ERROR) << "Failed to parse header from " << path_.value();
     return false;
   }
 
   std::string error;
-  JSONStringValueSerializer serializer(&header);
-  base::Value* value = serializer.Deserialize(NULL, &error);
+  base::JSONReader reader;
+  scoped_ptr<base::Value> value(reader.ReadToValue(header));
   if (!value || !value->IsType(base::Value::TYPE_DICTIONARY)) {
     LOG(ERROR) << "Failed to parse header: " << error;
     return false;
   }
 
   header_size_ = 8 + size;
-  header_.reset(static_cast<base::DictionaryValue*>(value));
+  header_.reset(static_cast<base::DictionaryValue*>(value.release()));
   return true;
 }
 

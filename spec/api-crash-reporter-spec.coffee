@@ -5,12 +5,10 @@ url        = require 'url'
 remote     = require 'remote'
 formidable = require 'formidable'
 
+crashReporter = remote.require 'crash-reporter'
 BrowserWindow = remote.require 'browser-window'
 
 describe 'crash-reporter module', ->
-  # We have trouble makeing crash reporter work on Yosemite.
-  return if process.platform is 'darwin'
-
   fixtures = path.resolve __dirname, 'fixtures'
 
   w = null
@@ -20,9 +18,14 @@ describe 'crash-reporter module', ->
   # It is not working on 64bit Windows.
   return if process.platform is 'win32' and process.arch is 'x64'
 
+  # The crash-reporter test is not reliable on CI machine.
+  isCI = remote.process.argv[2] == '--ci'
+  return if isCI
+
   it 'should send minidump when renderer crashes', (done) ->
-    @timeout 60000
+    @timeout 120000
     server = http.createServer (req, res) ->
+      server.close()
       form = new formidable.IncomingForm()
       process.throwDeprecation = false
       form.parse req, (error, fields, files) ->
@@ -39,12 +42,16 @@ describe 'crash-reporter module', ->
         assert files['upload_file_minidump']['name']?
 
         res.end('abc-123-def')
-        server.close()
         done()
-    server.listen 0, '127.0.0.1', ->
+    # Server port is generated randomly for the first run, it will be reused
+    # when page is refreshed.
+    port = remote.process.port
+    server.listen port, '127.0.0.1', ->
       {port} = server.address()
+      remote.process.port = port
       url = url.format
         protocol: 'file'
         pathname: path.join fixtures, 'api', 'crash.html'
         search: "?port=#{port}"
+      crashReporter.start {'submitUrl': 'http://127.0.0.1:' + port}
       w.loadUrl url

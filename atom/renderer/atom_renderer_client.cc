@@ -8,22 +8,28 @@
 
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/node_bindings.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/guest_view_container.h"
+#include "atom/renderer/node_array_buffer_bridge.h"
+#include "base/command_line.h"
 #include "chrome/renderer/pepper/pepper_helper.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/common/content_constants.h"
+#include "content/public/renderer/render_frame.h"
+#include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_thread.h"
-#include "base/command_line.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
-#include "third_party/WebKit/public/web/WebFrame.h"
+#include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebPluginParams.h"
 #include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebRuntimeFeatures.h"
 
-#include "atom/common/node_includes.h"
+#if defined(OS_WIN)
+#include <shlobj.h>
+#endif
 
 namespace atom {
 
@@ -42,16 +48,33 @@ bool IsSwitchEnabled(base::CommandLine* command_line,
   return true;
 }
 
-bool IsGuestFrame(blink::WebFrame* frame) {
-  return frame->uniqueName().utf8() == "ATOM_SHELL_GUEST_WEB_VIEW";
-}
+// Helper class to forward the messages to the client.
+class AtomRenderFrameObserver : public content::RenderFrameObserver {
+ public:
+  AtomRenderFrameObserver(content::RenderFrame* frame,
+                          AtomRendererClient* renderer_client)
+      : content::RenderFrameObserver(frame),
+        renderer_client_(renderer_client) {}
+
+  // content::RenderFrameObserver:
+  void DidCreateScriptContext(v8::Handle<v8::Context> context,
+                              int extension_group,
+                              int world_id) {
+    renderer_client_->DidCreateScriptContext(
+        render_frame()->GetWebFrame(), context);
+  }
+
+ private:
+  AtomRendererClient* renderer_client_;
+
+  DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
+};
 
 }  // namespace
 
 AtomRendererClient::AtomRendererClient()
     : node_bindings_(NodeBindings::Create(false)),
-      atom_bindings_(new AtomBindings),
-      main_frame_(nullptr) {
+      atom_bindings_(new AtomBindings) {
 }
 
 AtomRendererClient::~AtomRendererClient() {
@@ -62,6 +85,8 @@ void AtomRendererClient::WebKitInitialized() {
 
   blink::WebCustomElement::addEmbedderCustomElementName("webview");
   blink::WebCustomElement::addEmbedderCustomElementName("browserplugin");
+
+  OverrideNodeArrayBuffer();
 
   node_bindings_->Initialize();
   node_bindings_->PrepareMessageLoop();
@@ -78,11 +103,21 @@ void AtomRendererClient::WebKitInitialized() {
 
 void AtomRendererClient::RenderThreadStarted() {
   content::RenderThread::Get()->AddObserver(this);
+
+#if defined(OS_WIN)
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  base::string16 app_id =
+      command_line->GetSwitchValueNative(switches::kAppUserModelId);
+  if (!app_id.empty()) {
+    SetCurrentProcessExplicitAppUserModelID(app_id.c_str());
+  }
+#endif
 }
 
 void AtomRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new PepperHelper(render_frame);
+  new AtomRenderFrameObserver(render_frame, this);
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
@@ -109,18 +144,12 @@ bool AtomRendererClient::OverrideCreatePlugin(
   return true;
 }
 
-void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,
-                                                v8::Handle<v8::Context> context,
-                                                int extension_group,
-                                                int world_id) {
-  // Only attach node bindings in main frame or guest frame.
-  if (!IsGuestFrame(frame)) {
-    if (main_frame_)
-      return;
-
-    // The first web frame is the main frame.
-    main_frame_ = frame;
-  }
+void AtomRendererClient::DidCreateScriptContext(
+    blink::WebFrame* frame,
+    v8::Handle<v8::Context> context) {
+  // Only insert node integration for the main frame.
+  if (frame->parent())
+    return;
 
   // Give the node loop a run to make sure everything is ready.
   node_bindings_->RunMessageLoop();
@@ -139,20 +168,17 @@ void AtomRendererClient::DidCreateScriptContext(blink::WebFrame* frame,
   node_bindings_->LoadEnvironment(env);
 }
 
-bool AtomRendererClient::ShouldFork(blink::WebFrame* frame,
+bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
                                     const GURL& url,
                                     const std::string& http_method,
                                     bool is_initial_navigation,
                                     bool is_server_redirect,
                                     bool* send_referrer) {
-  // Never fork renderer process for guests.
-  if (IsGuestFrame(frame))
-    return false;
-
   // Handle all the navigations and reloads in browser.
   // FIXME We only support GET here because http method will be ignored when
   // the OpenURLFromTab is triggered, which means form posting would not work,
   // we should solve this by patching Chromium in future.
+  *send_referrer = true;
   return http_method == "GET";
 }
 
@@ -165,6 +191,21 @@ content::BrowserPluginDelegate* AtomRendererClient::CreateBrowserPluginDelegate(
   } else {
     return nullptr;
   }
+}
+
+bool AtomRendererClient::ShouldOverridePageVisibilityState(
+    const content::RenderFrame* render_frame,
+    blink::WebPageVisibilityState* override_state) {
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  bool b;
+
+  if (IsSwitchEnabled(command_line, switches::kPageVisibility, &b)
+      && b) {
+    *override_state = blink::WebPageVisibilityStateVisible;
+    return true;
+  }
+
+  return false;
 }
 
 void AtomRendererClient::EnableWebRuntimeFeatures() {

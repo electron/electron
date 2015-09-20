@@ -3,6 +3,8 @@
 import atexit
 import contextlib
 import errno
+import platform
+import re
 import shutil
 import ssl
 import subprocess
@@ -14,6 +16,29 @@ import os
 import zipfile
 
 from config import is_verbose_mode
+
+
+def get_host_arch():
+  """Returns the host architecture with a predictable string."""
+  host_arch = platform.machine()
+
+  # Convert machine type to format recognized by gyp.
+  if re.match(r'i.86', host_arch) or host_arch == 'i86pc':
+    host_arch = 'ia32'
+  elif host_arch in ['x86_64', 'amd64']:
+    host_arch = 'x64'
+  elif host_arch.startswith('arm'):
+    host_arch = 'arm'
+
+  # platform.machine is based on running kernel. It's possible to use 64-bit
+  # kernel with 32-bit userland, e.g. to give linker slightly more memory.
+  # Distinguish between different userland bitness by querying
+  # the python binary.
+  if host_arch == 'x64' and platform.architecture()[0] == '32bit':
+    host_arch = 'ia32'
+
+  return host_arch
+
 
 def tempdir(prefix=''):
   directory = tempfile.mkdtemp(prefix=prefix)
@@ -108,9 +133,8 @@ def make_zip(zip_file_path, files, dirs):
 def rm_rf(path):
   try:
     shutil.rmtree(path)
-  except OSError as e:
-    if e.errno != errno.ENOENT:
-      raise
+  except OSError:
+    pass
 
 
 def safe_unlink(path):
@@ -166,13 +190,6 @@ def get_atom_shell_version():
   return 'v' + atom_gyp()['version%']
 
 
-def get_chromedriver_version():
-  SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
-  chromedriver = os.path.join(SOURCE_ROOT, 'dist', 'chromedriver')
-  output = subprocess.check_output([chromedriver, '-v']).strip()
-  return 'v' + output[13:output.rfind(' ')]
-
-
 def parse_version(version):
   if version[0] == 'v':
     version = version[1:]
@@ -185,8 +202,18 @@ def parse_version(version):
 
 
 def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
+  env = os.environ.copy()
+  BOTO_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', 'vendor',
+                                          'boto'))
+  env['PYTHONPATH'] = os.path.pathsep.join([
+    env.get('PYTHONPATH', ''),
+    os.path.join(BOTO_DIR, 'build', 'lib'),
+    os.path.join(BOTO_DIR, 'build', 'lib.linux-x86_64-2.7')])
+
+  boto = os.path.join(BOTO_DIR, 'bin', 's3put')
   args = [
-    's3put',
+    sys.executable,
+    boto,
     '--bucket', bucket,
     '--access_key', access_key,
     '--secret_key', secret_key,
@@ -195,4 +222,4 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
     '--grant', 'public-read'
   ] + files
 
-  execute(args)
+  execute(args, env)

@@ -24,7 +24,7 @@ void MenuViews::PopupAt(Window* window, int x, int y) {
   NativeWindow* native_window = static_cast<NativeWindow*>(window->window());
   if (!native_window)
     return;
-  content::WebContents* web_contents = native_window->GetWebContents();
+  content::WebContents* web_contents = native_window->web_contents();
   if (!web_contents)
     return;
   content::RenderWidgetHostView* view = web_contents->GetRenderWidgetHostView();

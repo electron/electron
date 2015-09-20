@@ -1,15 +1,28 @@
+git:
+  depth: 10
+notifications:
+  email: false
+
 language: cpp
 compiler: clang
 os:
   - linux
   - osx
+env:
+  - TARGET_ARCH=x64
 
-notifications:
-  email:
-    on_success: never
-    on_failure: change
+matrix:
+  include:
+    - os: linux
+      env: TARGET_ARCH=arm
+    - os: linux
+      env: TARGET_ARCH=ia32
+  allow_failures:
+    - env: TARGET_ARCH=arm
+    - env: TARGET_ARCH=ia32
 
 script: './script/cibuild'
 
-git:
-  depth: 10
+branches:
+  only:
+    - master

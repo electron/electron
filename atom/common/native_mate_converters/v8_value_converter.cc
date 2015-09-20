@@ -11,12 +11,14 @@
 #include "base/logging.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/values.h"
+#include "native_mate/dictionary.h"
+#include "vendor/node/src/node_buffer.h"
 
 namespace atom {
 
 namespace {
 
-const int kMaxRecursionDepth = 20;
+const int kMaxRecursionDepth = 100;
 
 }  // namespace
 
@@ -46,7 +48,7 @@ class V8ValueConverter::FromV8ValueState {
   // other handle B in the map points to the same object as A. Note that A can
   // be unique even if there already is another handle with the same identity
   // hash (key) in the map, because two objects can have the same hash.
-  bool UpdateAndCheckUniqueness(v8::Handle<v8::Object> handle) {
+  bool UpdateAndCheckUniqueness(v8::Local<v8::Object> handle) {
     typedef HashToHandleMap::const_iterator Iterator;
     int hash = handle->GetIdentityHash();
     // We only compare using == with handles to objects with the same identity
@@ -67,7 +69,7 @@ class V8ValueConverter::FromV8ValueState {
   }
 
  private:
-  typedef std::multimap<int, v8::Handle<v8::Object> > HashToHandleMap;
+  typedef std::multimap<int, v8::Local<v8::Object> > HashToHandleMap;
   HashToHandleMap unique_map_;
 
   int max_recursion_depth_;
@@ -178,7 +180,8 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Array(
 
 v8::Local<v8::Value> V8ValueConverter::ToV8Object(
     v8::Isolate* isolate, const base::DictionaryValue* val) const {
-  v8::Local<v8::Object> result(v8::Object::New(isolate));
+  mate::Dictionary result = mate::Dictionary::CreateEmpty(isolate);
+  result.SetHidden("simple", true);
 
   for (base::DictionaryValue::Iterator iter(*val);
        !iter.IsAtEnd(); iter.Advance()) {
@@ -187,22 +190,19 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Object(
     CHECK(!child_v8.IsEmpty());
 
     v8::TryCatch try_catch;
-    result->Set(
-        v8::String::NewFromUtf8(isolate, key.c_str(), v8::String::kNormalString,
-                                key.length()),
-        child_v8);
+    result.Set(key, child_v8);
     if (try_catch.HasCaught()) {
       LOG(ERROR) << "Setter for property " << key.c_str() << " threw an "
                  << "exception.";
     }
   }
 
-  return result;
+  return result.GetHandle();
 }
 
 base::Value* V8ValueConverter::FromV8ValueImpl(
     FromV8ValueState* state,
-    v8::Handle<v8::Value> val,
+    v8::Local<v8::Value> val,
     v8::Isolate* isolate) const {
   CHECK(!val.IsEmpty());
 
@@ -211,7 +211,7 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
     return NULL;
 
   if (val->IsNull())
-    return base::Value::CreateNullValue();
+    return base::Value::CreateNullValue().release();
 
   if (val->IsBoolean())
     return new base::FundamentalValue(val->ToBoolean()->Value());
@@ -258,6 +258,10 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
     return FromV8Object(val->ToObject(), state, isolate);
   }
 
+  if (node::Buffer::HasInstance(val)) {
+    return FromNodeBuffer(val, state, isolate);
+  }
+
   if (val->IsObject()) {
     return FromV8Object(val->ToObject(), state, isolate);
   }
@@ -267,11 +271,11 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
 }
 
 base::Value* V8ValueConverter::FromV8Array(
-    v8::Handle<v8::Array> val,
+    v8::Local<v8::Array> val,
     FromV8ValueState* state,
     v8::Isolate* isolate) const {
   if (!state->UpdateAndCheckUniqueness(val))
-    return base::Value::CreateNullValue();
+    return base::Value::CreateNullValue().release();
 
   scoped_ptr<v8::Context::Scope> scope;
   // If val was created in a different context than our current one, change to
@@ -305,12 +309,20 @@ base::Value* V8ValueConverter::FromV8Array(
   return result;
 }
 
+base::Value* V8ValueConverter::FromNodeBuffer(
+    v8::Local<v8::Value> value,
+    FromV8ValueState* state,
+    v8::Isolate* isolate) const {
+  return base::BinaryValue::CreateWithCopiedBuffer(
+      node::Buffer::Data(value), node::Buffer::Length(value));
+}
+
 base::Value* V8ValueConverter::FromV8Object(
     v8::Local<v8::Object> val,
     FromV8ValueState* state,
     v8::Isolate* isolate) const {
   if (!state->UpdateAndCheckUniqueness(val))
-    return base::Value::CreateNullValue();
+    return base::Value::CreateNullValue().release();
 
   scoped_ptr<v8::Context::Scope> scope;
   // If val was created in a different context than our current one, change to

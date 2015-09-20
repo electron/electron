@@ -14,12 +14,13 @@ getOrCreateArchive = (p) ->
 
 # Clean cache on quit.
 process.on 'exit', ->
-  archive.destroy() for p, archive of cachedArchives
+  archive.destroy() for own p, archive of cachedArchives
 
 # Separate asar package's path from full path.
 splitPath = (p) ->
   return [false] if typeof p isnt 'string'
   return [true, p, ''] if p.substr(-5) is '.asar'
+  p = path.normalize p
   index = p.lastIndexOf ".asar#{path.sep}"
   return [false] if index is -1
   [true, p.substr(0, index + 5), p.substr(index + 6)]
@@ -309,6 +310,42 @@ exports.wrapFsWithAsar = (fs) ->
     notFoundError asarPath, filePath unless files
 
     files
+
+  internalModuleReadFile = process.binding('fs').internalModuleReadFile
+  process.binding('fs').internalModuleReadFile = (p) ->
+    [isAsar, asarPath, filePath] = splitPath p
+    return internalModuleReadFile p unless isAsar
+
+    archive = getOrCreateArchive asarPath
+    return undefined unless archive
+
+    info = archive.getFileInfo filePath
+    return undefined unless info
+    return '' if info.size is 0
+
+    if info.unpacked
+      realPath = archive.copyFileOut filePath
+      return fs.readFileSync realPath, encoding: 'utf8'
+
+    buffer = new Buffer(info.size)
+    fd = archive.getFd()
+    retrun undefined unless fd >= 0
+
+    fs.readSync fd, buffer, 0, info.size, info.offset
+    buffer.toString 'utf8'
+
+  internalModuleStat = process.binding('fs').internalModuleStat
+  process.binding('fs').internalModuleStat = (p) ->
+    [isAsar, asarPath, filePath] = splitPath p
+    return internalModuleStat p unless isAsar
+
+    archive = getOrCreateArchive asarPath
+    return -34 unless archive  # -ENOENT
+
+    stats = archive.stat filePath
+    return -34 unless stats  # -ENOENT
+
+    if stats.isDirectory then return 1 else return 0
 
   overrideAPI fs, 'open'
   overrideAPI child_process, 'execFile'

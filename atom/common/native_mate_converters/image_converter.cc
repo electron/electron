@@ -11,7 +11,7 @@
 namespace mate {
 
 bool Converter<gfx::ImageSkia>::FromV8(v8::Isolate* isolate,
-                                       v8::Handle<v8::Value> val,
+                                       v8::Local<v8::Value> val,
                                        gfx::ImageSkia* out) {
   gfx::Image image;
   if (!ConvertFromV8(isolate, val, &image))
@@ -22,7 +22,7 @@ bool Converter<gfx::ImageSkia>::FromV8(v8::Isolate* isolate,
 }
 
 bool Converter<gfx::Image>::FromV8(v8::Isolate* isolate,
-                                   v8::Handle<v8::Value> val,
+                                   v8::Local<v8::Value> val,
                                    gfx::Image* out) {
   if (val->IsNull())
     return true;
@@ -43,7 +43,7 @@ bool Converter<gfx::Image>::FromV8(v8::Isolate* isolate,
   return true;
 }
 
-v8::Handle<v8::Value> Converter<gfx::Image>::ToV8(v8::Isolate* isolate,
+v8::Local<v8::Value> Converter<gfx::Image>::ToV8(v8::Isolate* isolate,
                                                   const gfx::Image& val) {
   return ConvertToV8(isolate, atom::api::NativeImage::Create(isolate, val));
 }

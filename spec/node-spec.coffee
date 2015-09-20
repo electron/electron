@@ -56,6 +56,13 @@ describe 'node feature', ->
           done()
         child.send 'message'
 
+      it 'has setImmediate working in script', (done) ->
+        child = child_process.fork path.join(fixtures, 'module', 'set-immediate.js')
+        child.on 'message', (msg) ->
+          assert.equal msg, 'ok'
+          done()
+        child.send 'message'
+
   describe 'contexts', ->
     describe 'setTimeout in fs callback', ->
       it 'does not crash', (done) ->
@@ -126,3 +133,22 @@ describe 'node feature', ->
       b = new Buffer(p.innerText)
       assert.equal b.toString(), '闲云潭影日悠悠，物换星移几度秋'
       assert.equal Buffer.byteLength(p.innerText), 45
+
+    it 'correctly parses external one-byte UTF8 string', ->
+      p = document.createElement 'p'
+      p.innerText = 'Jøhänñéß'
+      b = new Buffer(p.innerText)
+      assert.equal b.toString(), 'Jøhänñéß'
+      assert.equal Buffer.byteLength(p.innerText), 13
+
+  describe 'process.stdout', ->
+    it 'should not throw exception', ->
+      process.stdout
+
+    # Not reliable on some machines
+    xit 'should have isTTY defined', ->
+      assert.equal typeof(process.stdout.isTTY), 'boolean'
+
+  describe 'vm.createContext', ->
+    it 'should not crash', ->
+      require('vm').runInNewContext('')

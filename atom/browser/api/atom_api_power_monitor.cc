@@ -5,11 +5,10 @@
 #include "atom/browser/api/atom_api_power_monitor.h"
 
 #include "atom/browser/browser.h"
+#include "atom/common/node_includes.h"
 #include "base/power_monitor/power_monitor.h"
 #include "base/power_monitor/power_monitor_device_source.h"
 #include "native_mate/dictionary.h"
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -39,10 +38,11 @@ void PowerMonitor::OnResume() {
 }
 
 // static
-v8::Handle<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
+v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
   if (!Browser::Get()->is_ready()) {
-    node::ThrowError("Cannot initialize \"power-monitor\" module"
-                     "before app is ready");
+    isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
+        isolate,
+        "Cannot initialize \"power-monitor\" module before app is ready")));
     return v8::Null(isolate);
   }
 
@@ -56,8 +56,8 @@ v8::Handle<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
 #if defined(OS_MACOSX)
   base::PowerMonitorDeviceSource::AllocateSystemIOPorts();
 #endif

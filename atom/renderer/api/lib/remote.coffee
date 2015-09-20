@@ -5,16 +5,31 @@ CallbacksRegistry = require 'callbacks-registry'
 
 callbacksRegistry = new CallbacksRegistry
 
+# Check for circular reference.
+isCircular = (field, visited) ->
+  if typeof field is 'object'
+    if field in visited
+      return true
+    visited.push field
+  return false
+
 # Convert the arguments object into an array of meta data.
-wrapArgs = (args) ->
+wrapArgs = (args, visited=[]) ->
   valueToMeta = (value) ->
     if Array.isArray value
-      type: 'array', value: wrapArgs(value)
+      type: 'array', value: wrapArgs(value, visited)
+    else if Buffer.isBuffer value
+      type: 'buffer', value: Array::slice.call(value, 0)
+    else if value? and value.constructor.name is 'Promise'
+      type: 'promise', then: valueToMeta(value.then.bind(value))
     else if value? and typeof value is 'object' and v8Util.getHiddenValue value, 'atomId'
       type: 'remote-object', id: v8Util.getHiddenValue value, 'atomId'
     else if value? and typeof value is 'object'
       ret = type: 'object', name: value.constructor.name, members: []
-      ret.members.push(name: prop, value: valueToMeta(field)) for prop, field of value
+      for prop, field of value
+        ret.members.push
+          name: prop
+          value: valueToMeta(if isCircular(field, visited) then null else field)
       ret
     else if typeof value is 'function' and v8Util.getHiddenValue value, 'returnValue'
       type: 'function-with-return-value', value: valueToMeta(value())
@@ -30,6 +45,8 @@ metaToValue = (meta) ->
   switch meta.type
     when 'value' then meta.value
     when 'array' then (metaToValue(el) for el in meta.members)
+    when 'buffer' then new Buffer(meta.value)
+    when 'promise' then Promise.resolve(then: metaToValue(meta.then))
     when 'error'
       throw new Error("#{meta.message}\n#{meta.stack}")
     else
@@ -85,7 +102,7 @@ metaToValue = (meta) ->
       # Track delegate object's life time, and tell the browser to clean up
       # when the object is GCed.
       v8Util.setDestructor ret, ->
-        ipc.send 'ATOM_BROWSER_DEREFERENCE', meta.storeId
+        ipc.send 'ATOM_BROWSER_DEREFERENCE', meta.id
 
       # Remember object's id.
       v8Util.setHiddenValue ret, 'atomId', meta.id

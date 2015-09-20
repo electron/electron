@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "atom/common/api/event_emitter_caller.h"
 #include "native_mate/wrappable.h"
 
 namespace content {
@@ -22,10 +23,15 @@ namespace mate {
 // Provide helperers to emit event in JavaScript.
 class EventEmitter : public Wrappable {
  public:
-  typedef std::vector<v8::Handle<v8::Value>> ValueArray;
+  typedef std::vector<v8::Local<v8::Value>> ValueArray;
 
- protected:
-  EventEmitter();
+  // this.emit(name, event, args...);
+  template<typename... Args>
+  bool EmitCustomEvent(const base::StringPiece& name,
+                       v8::Local<v8::Object> event,
+                       const Args&... args) {
+    return EmitWithEvent(name, CreateCustomEvent(isolate(), event), args...);
+  }
 
   // this.emit(name, new Event(), args...);
   template<typename... Args>
@@ -39,21 +45,33 @@ class EventEmitter : public Wrappable {
                       content::WebContents* sender,
                       IPC::Message* message,
                       const Args&... args) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    v8::Locker locker(isolate);
-    v8::HandleScope handle_scope(isolate);
-
-    ValueArray converted = { ConvertToV8(isolate, args)... };
-    return CallEmit(isolate, name, sender, message, converted);
+    v8::Locker locker(isolate());
+    v8::HandleScope handle_scope(isolate());
+    v8::Local<v8::Object> event = CreateJSEvent(isolate(), sender, message);
+    return EmitWithEvent(name, event, args...);
   }
 
+ protected:
+  EventEmitter();
+
  private:
-  // Lower level implementations.
-  bool CallEmit(v8::Isolate* isolate,
-                const base::StringPiece& name,
-                content::WebContents* sender,
-                IPC::Message* message,
-                ValueArray args);
+  // this.emit(name, event, args...);
+  template<typename... Args>
+  bool EmitWithEvent(const base::StringPiece& name,
+                     v8::Local<v8::Object> event,
+                     const Args&... args) {
+    v8::Locker locker(isolate());
+    v8::HandleScope handle_scope(isolate());
+    EmitEvent(isolate(), GetWrapper(isolate()), name, event, args...);
+    return event->Get(
+        StringToV8(isolate(), "defaultPrevented"))->BooleanValue();
+  }
+
+  v8::Local<v8::Object> CreateJSEvent(v8::Isolate* isolate,
+                                      content::WebContents* sender,
+                                      IPC::Message* message);
+  v8::Local<v8::Object> CreateCustomEvent(
+      v8::Isolate* isolate, v8::Local<v8::Object> event);
 
   DISALLOW_COPY_AND_ASSIGN(EventEmitter);
 };

@@ -38,7 +38,9 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 #else
   settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
 #endif  // defined(DEBUG)
-#endif  // defined(OS_WIN)
+#else  // defined(OS_WIN)
+  settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
+#endif  // !defined(OS_WIN)
   logging::InitLogging(settings);
 
   // Logging with pid and timestamp.
@@ -64,6 +66,10 @@ void AtomMainDelegate::PreSandboxStartup() {
   std::string process_type = command_line->GetSwitchValueASCII(
       switches::kProcessType);
 
+  if (process_type == switches::kUtilityProcess) {
+    AtomContentUtilityClient::PreSandboxStartup();
+  }
+
   // Only append arguments for browser process.
   if (!process_type.empty())
     return;
@@ -77,6 +83,9 @@ void AtomMainDelegate::PreSandboxStartup() {
 
   // Disable renderer sandbox for most of node's functions.
   command_line->AppendSwitch(switches::kNoSandbox);
+
+  // Allow file:// URIs to read other file:// URIs by default.
+  command_line->AppendSwitch(switches::kAllowFileAccessFromFiles);
 
 #if defined(OS_MACOSX)
   // Enable AVFoundation.

@@ -42,6 +42,7 @@ void TrayIconGtk::SetContextMenu(ui::SimpleMenuModel* menu_model) {
 }
 
 void TrayIconGtk::OnClick() {
+  NotifyClicked();
 }
 
 bool TrayIconGtk::HasClickAction() {

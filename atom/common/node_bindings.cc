@@ -7,8 +7,11 @@
 #include <string>
 #include <vector>
 
-#include "atom/app/atom_main_args.h"
+#include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/api/locker.h"
+#include "atom/common/atom_command_line.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/base_paths.h"
 #include "base/files/file_path.h"
@@ -16,10 +19,8 @@
 #include "base/path_service.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
-#include "native_mate/locker.h"
 #include "native_mate/dictionary.h"
-
-#include "atom/common/node_includes.h"
+#include "third_party/WebKit/public/web/WebScopedMicrotaskSuppression.h"
 
 using content::BrowserThread;
 
@@ -35,8 +36,10 @@ REFERENCE_MODULE(atom_browser_content_tracing);
 REFERENCE_MODULE(atom_browser_dialog);
 REFERENCE_MODULE(atom_browser_menu);
 REFERENCE_MODULE(atom_browser_power_monitor);
+REFERENCE_MODULE(atom_browser_power_save_blocker);
 REFERENCE_MODULE(atom_browser_protocol);
 REFERENCE_MODULE(atom_browser_global_shortcut);
+REFERENCE_MODULE(atom_browser_session);
 REFERENCE_MODULE(atom_browser_tray);
 REFERENCE_MODULE(atom_browser_web_contents);
 REFERENCE_MODULE(atom_browser_web_view_manager);
@@ -44,7 +47,6 @@ REFERENCE_MODULE(atom_browser_window);
 REFERENCE_MODULE(atom_common_asar);
 REFERENCE_MODULE(atom_common_clipboard);
 REFERENCE_MODULE(atom_common_crash_reporter);
-REFERENCE_MODULE(atom_common_id_weak_map);
 REFERENCE_MODULE(atom_common_native_image);
 REFERENCE_MODULE(atom_common_screen);
 REFERENCE_MODULE(atom_common_shell);
@@ -128,10 +130,11 @@ void NodeBindings::Initialize() {
   node::g_standalone_mode = is_browser_;
   node::g_upstream_node_mode = false;
 
-  // Parse the debug args.
-  auto args = AtomCommandLine::argv();
-  for (const std::string& arg : args)
-    node::ParseDebugOpt(arg.c_str());
+#if defined(OS_LINUX)
+  // Get real command line in renderer process forked by zygote.
+  if (!is_browser_)
+    AtomCommandLine::InitializeFromCommandLine();
+#endif
 
   // Init node.
   // (we assume node::Init would not modify the parameters under embedded mode).
@@ -170,14 +173,8 @@ node::Environment* NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
-  node::node_isolate = env->isolate();
-  if (node::use_debug_agent)
-    node::StartDebug(env, node::debug_wait_connect);
-
   node::LoadEnvironment(env);
-
-  if (node::use_debug_agent)
-    node::EnableDebug(env);
+  mate::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
 
 void NodeBindings::PrepareMessageLoop() {
@@ -216,6 +213,10 @@ void NodeBindings::UvRunOnce() {
 
   // Enter node context while dealing with uv events.
   v8::Context::Scope context_scope(env->context());
+
+  // Perform microtask checkpoint after running JavaScript.
+  scoped_ptr<blink::WebScopedRunV8Script> script_scope(
+      is_browser_ ? nullptr : new blink::WebScopedRunV8Script(env->isolate()));
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, UV_RUN_NOWAIT);

@@ -4,20 +4,24 @@
 
 #include "atom/browser/atom_browser_main_parts.h"
 
+#include "atom/browser/api/trackable_object.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/bridge_task_runner.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/javascript_environment.h"
+#include "atom/browser/node_debugger.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/node_bindings.h"
+#include "atom/common/node_includes.h"
 #include "base/command_line.h"
+#include "base/thread_task_runner_handle.h"
+#include "chrome/browser/browser_process.h"
 #include "v8/include/v8-debug.h"
 
 #if defined(USE_X11)
 #include "chrome/browser/ui/libgtk2ui/gtk2_util.h"
 #endif
-
-#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -25,7 +29,8 @@ namespace atom {
 AtomBrowserMainParts* AtomBrowserMainParts::self_ = NULL;
 
 AtomBrowserMainParts::AtomBrowserMainParts()
-    : browser_(new Browser),
+    : fake_browser_process_(new BrowserProcess),
+      browser_(new Browser),
       node_bindings_(NodeBindings::Create(true)),
       atom_bindings_(new AtomBindings),
       gc_timer_(true, true) {
@@ -42,8 +47,9 @@ AtomBrowserMainParts* AtomBrowserMainParts::Get() {
   return self_;
 }
 
-brightray::BrowserContext* AtomBrowserMainParts::CreateBrowserContext() {
-  return new AtomBrowserContext();
+void AtomBrowserMainParts::RegisterDestructionCallback(
+    const base::Closure& callback) {
+  destruction_callbacks_.push_back(callback);
 }
 
 void AtomBrowserMainParts::PostEarlyInitialization() {
@@ -53,14 +59,29 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   SetDPIFromGSettings();
 #endif
 
-  // The ProxyResolverV8 has setup a complete V8 environment, in order to avoid
-  // conflicts we only initialize our V8 environment after that.
-  js_env_.reset(new JavascriptEnvironment);
+  {
+    // Temporary set the bridge_task_runner_ as current thread's task runner,
+    // so we can fool gin::PerIsolateData to use it as its task runner, instead
+    // of getting current message loop's task runner, which is null for now.
+    bridge_task_runner_ = new BridgeTaskRunner;
+    base::ThreadTaskRunnerHandle handle(bridge_task_runner_);
+
+    // The ProxyResolverV8 has setup a complete V8 environment, in order to
+    // avoid conflicts we only initialize our V8 environment after that.
+    js_env_.reset(new JavascriptEnvironment);
+  }
 
   node_bindings_->Initialize();
 
+  // Support the "--debug" switch.
+  node_debugger_.reset(new NodeDebugger(js_env_->isolate()));
+
   // Create the global environment.
   global_env = node_bindings_->CreateEnvironment(js_env_->context());
+
+  // Make sure node can get correct environment when debugging.
+  if (node_debugger_->IsRunning())
+    global_env->AssignToContext(v8::Debug::GetDebugContext());
 
   // Add atom-shell extended APIs.
   atom_bindings_->BindTo(js_env_->isolate(), global_env->process_object());
@@ -93,6 +114,16 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   Browser::Get()->WillFinishLaunching();
   Browser::Get()->DidFinishLaunching();
 #endif
+}
+
+void AtomBrowserMainParts::PostMainMessageLoopRun() {
+  brightray::BrowserMainParts::PostMainMessageLoopRun();
+
+  // Make sure destruction callbacks are called before message loop is
+  // destroyed, otherwise some objects that need to be deleted on IO thread
+  // won't be freed.
+  for (const auto& callback : destruction_callbacks_)
+    callback.Run();
 }
 
 }  // namespace atom

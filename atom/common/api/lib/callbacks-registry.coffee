@@ -1,3 +1,5 @@
+savedGlobal = global  # the "global.global" might be deleted later
+
 module.exports =
 class CallbacksRegistry
   constructor: ->
@@ -16,10 +18,10 @@ class CallbacksRegistry
     @callbacks[id] ? ->
 
   call: (id, args...) ->
-    @get(id).call global, args...
+    @get(id).call savedGlobal, args...
 
   apply: (id, args...) ->
-    @get(id).apply global, args...
+    @get(id).apply savedGlobal, args...
 
   remove: (id) ->
     delete @callbacks[id]

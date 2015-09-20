@@ -22,7 +22,7 @@ class SpellCheckClient : public blink::WebSpellCheckClient {
   SpellCheckClient(const std::string& language,
                    bool auto_spell_correct_turned_on,
                    v8::Isolate* isolate,
-                   v8::Handle<v8::Object> provider);
+                   v8::Local<v8::Object> provider);
   virtual ~SpellCheckClient();
 
  private:

@@ -11,8 +11,10 @@
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/base64.h"
 #include "base/strings/string_util.h"
+#include "base/strings/pattern.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/base/data_url.h"
@@ -23,7 +25,11 @@
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/image/image_util.h"
 
-#include "atom/common/node_includes.h"
+#if defined(OS_WIN)
+#include "atom/common/asar/archive.h"
+#include "base/win/scoped_gdi_object.h"
+#include "ui/gfx/icon_util.h"
+#endif
 
 namespace atom {
 
@@ -57,7 +63,7 @@ float GetScaleFactorFromPath(const base::FilePath& path) {
   // We don't try to convert string to float here because it is very very
   // expensive.
   for (unsigned i = 0; i < arraysize(kScaleFactorPairs); ++i) {
-    if (EndsWith(filename, kScaleFactorPairs[i].name, true))
+    if (base::EndsWith(filename, kScaleFactorPairs[i].name, true))
       return kScaleFactorPairs[i].scale;
   }
 
@@ -78,7 +84,7 @@ bool AddImageSkiaRep(gfx::ImageSkia* image,
   if (!decoded)
     return false;
 
-  image->AddRepresentation(gfx::ImageSkiaRep(*decoded.release(), scale_factor));
+  image->AddRepresentation(gfx::ImageSkiaRep(*decoded, scale_factor));
   return true;
 }
 
@@ -99,7 +105,7 @@ bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
                                    const base::FilePath& path) {
   bool succeed = false;
   std::string filename(path.BaseName().RemoveExtension().AsUTF8Unsafe());
-  if (MatchPattern(filename, "*@*x"))
+  if (base::MatchPattern(filename, "*@*x"))
     // Don't search for other representations if the DPI has been specified.
     return AddImageSkiaRep(image, path, GetScaleFactorFromPath(path));
   else
@@ -113,9 +119,36 @@ bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
 }
 
 #if defined(OS_MACOSX)
-bool IsTemplateImage(const base::FilePath& path) {
-  return (MatchPattern(path.value(), "*Template.*") ||
-          MatchPattern(path.value(), "*Template@*x.*"));
+bool IsTemplateFilename(const base::FilePath& path) {
+  return (base::MatchPattern(path.value(), "*Template.*") ||
+          base::MatchPattern(path.value(), "*Template@*x.*"));
+}
+#endif
+
+#if defined(OS_WIN)
+bool ReadImageSkiaFromICO(gfx::ImageSkia* image, const base::FilePath& path) {
+  // If file is in asar archive, we extract it to a temp file so LoadImage can
+  // load it.
+  base::FilePath asar_path, relative_path;
+  base::FilePath image_path(path);
+  if (asar::GetAsarArchivePath(image_path, &asar_path, &relative_path)) {
+    std::shared_ptr<asar::Archive> archive =
+        asar::GetOrCreateAsarArchive(asar_path);
+    if (archive)
+      archive->CopyFileOut(relative_path, &image_path);
+  }
+
+  // Load the icon from file.
+  base::win::ScopedHICON icon(static_cast<HICON>(
+      LoadImage(NULL, image_path.value().c_str(), IMAGE_ICON, 0, 0,
+                LR_DEFAULTSIZE | LR_LOADFROMFILE)));
+  if (!icon)
+    return false;
+
+  // Convert the icon from the Windows specific HICON to gfx::ImageSkia.
+  scoped_ptr<SkBitmap> bitmap(IconUtil::CreateSkBitmapFromHICON(icon));
+  image->AddRepresentation(gfx::ImageSkiaRep(*bitmap, 1.0f));
+  return true;
 }
 #endif
 
@@ -139,25 +172,27 @@ mate::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
         .SetMethod("isEmpty", &NativeImage::IsEmpty)
         .SetMethod("getSize", &NativeImage::GetSize)
         .SetMethod("setTemplateImage", &NativeImage::SetTemplateImage)
+        .SetMethod("isTemplateImage", &NativeImage::IsTemplateImage)
         .Build());
 
   return mate::ObjectTemplateBuilder(
       isolate, v8::Local<v8::ObjectTemplate>::New(isolate, template_));
 }
 
-v8::Handle<v8::Value> NativeImage::ToPNG(v8::Isolate* isolate) {
+v8::Local<v8::Value> NativeImage::ToPNG(v8::Isolate* isolate) {
   scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
-  return node::Buffer::New(isolate,
-                           reinterpret_cast<const char*>(png->front()),
-                           png->size());
+  return node::Buffer::Copy(isolate,
+                            reinterpret_cast<const char*>(png->front()),
+                            static_cast<size_t>(png->size())).ToLocalChecked();
 }
 
-v8::Handle<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
+v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
   std::vector<unsigned char> output;
   gfx::JPEG1xEncodedDataFromImage(image_, quality, &output);
-  return node::Buffer::New(isolate,
-                           reinterpret_cast<const char*>(&output.front()),
-                           output.size());
+  return node::Buffer::Copy(
+      isolate,
+      reinterpret_cast<const char*>(&output.front()),
+      static_cast<size_t>(output.size())).ToLocalChecked();
 }
 
 std::string NativeImage::ToDataURL() {
@@ -179,6 +214,10 @@ gfx::Size NativeImage::GetSize() {
 
 #if !defined(OS_MACOSX)
 void NativeImage::SetTemplateImage(bool setAsTemplate) {
+}
+
+bool NativeImage::IsTemplateImage() {
+  return false;
 }
 #endif
 
@@ -213,11 +252,17 @@ mate::Handle<NativeImage> NativeImage::CreateFromJPEG(
 mate::Handle<NativeImage> NativeImage::CreateFromPath(
     v8::Isolate* isolate, const base::FilePath& path) {
   gfx::ImageSkia image_skia;
-  PopulateImageSkiaRepsFromPath(&image_skia, path);
+  if (path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
+#if defined(OS_WIN)
+    ReadImageSkiaFromICO(&image_skia, path);
+#endif
+  } else {
+    PopulateImageSkiaRepsFromPath(&image_skia, path);
+  }
   gfx::Image image(image_skia);
   mate::Handle<NativeImage> handle = Create(isolate, image);
 #if defined(OS_MACOSX)
-  if (IsTemplateImage(path))
+  if (IsTemplateFilename(path))
     handle->SetTemplateImage(true);
 #endif
   return handle;
@@ -225,7 +270,7 @@ mate::Handle<NativeImage> NativeImage::CreateFromPath(
 
 // static
 mate::Handle<NativeImage> NativeImage::CreateFromBuffer(
-    mate::Arguments* args, v8::Handle<v8::Value> buffer) {
+    mate::Arguments* args, v8::Local<v8::Value> buffer) {
   double scale_factor = 1.;
   args->GetNext(&scale_factor);
 
@@ -258,8 +303,8 @@ mate::Handle<NativeImage> NativeImage::CreateFromDataURL(
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createEmpty", &atom::api::NativeImage::CreateEmpty);
   dict.SetMethod("createFromPath", &atom::api::NativeImage::CreateFromPath);

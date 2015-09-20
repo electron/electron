@@ -14,6 +14,7 @@ module.exports =
   ATTRIBUTE_PLUGINS: 'plugins'
   ATTRIBUTE_DISABLEWEBSECURITY: 'disablewebsecurity'
   ATTRIBUTE_PRELOAD: 'preload'
+  ATTRIBUTE_USERAGENT: 'useragent'
 
   # Internal attribute.
   ATTRIBUTE_INTERNALINSTANCEID: 'internalinstanceid'

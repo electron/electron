@@ -1,17 +1,17 @@
-# Desktop environment integration
+# Desktop Environment Integration
 
-Different operating systems provide different features on integrating desktop
-applications into their desktop environments, for example, on Windows
-applications can put shortcuts in the JumpList of task bar, and on Mac
+Different operating systems provide different features for integrating desktop
+applications into their desktop environments. For example, on Windows,
+applications can put shortcuts in the JumpList of task bar, and on Mac,
 applications can put a custom menu in the dock menu.
 
-This guide introduces how to integrate your application into those desktop
+This guide explains how to integrate your application into those desktop
 environments with Electron APIs.
 
 ## Recent documents (Windows & OS X)
 
-Windows and OS X have provided easy access to recent documents opened by the
-application via JumpList and dock menu.
+Windows and OS X provide easy access to a list of recent documents opened by
+the application via JumpList or dock menu, respectively.
 
 __JumpList:__
 
@@ -21,7 +21,7 @@ __Application dock menu:__
 
 <img src="https://cloud.githubusercontent.com/assets/639601/5069610/2aa80758-6e97-11e4-8cfb-c1a414a10774.png" height="353" width="428" >
 
-To add a file to recent documents, you can use
+To add a file to recent documents, you can use the
 [app.addRecentDocument][addrecentdocument] API:
 
 ```javascript
@@ -29,31 +29,30 @@ var app = require('app');
 app.addRecentDocument('/Users/USERNAME/Desktop/work.type');
 ```
 
-And you can use [app.clearRecentDocuments](clearrecentdocuments) API to empty
+And you can use [app.clearRecentDocuments][clearrecentdocuments] API to empty
 the recent documents list:
 
 ```javascript
 app.clearRecentDocuments();
 ```
 
-### Windows notes
+### Windows Notes
 
 In order to be able to use this feature on Windows, your application has to be
-registered as handler of the file type of the document, otherwise the file won't
-appear in JumpList even after you have added it. You can find everything on
-registering your application in [Application Registration][app-registration].
+registered as a handler of the file type of the document, otherwise the file
+won't appear in JumpList even after you have added it. You can find everything
+on registering your application in [Application Registration][app-registration].
 
-When a user clicks a file from JumpList, a new instance of your application will
-be started with the path of file appended in command line.
+When a user clicks a file from the JumpList, a new instance of your application will be started with the path of the file added as a command line argument.
 
-### OS X notes
+### OS X Notes
 
 When a file is requested from the recent documents menu, the `open-file` event
-of `app` module would be emitted for it.
+of `app` module will be emitted for it.
 
-## Custom dock menu (OS X)
+## Custom Dock Menu (OS X)
 
-OS X enables developers to specify a custom menu for dock, which usually
+OS X enables developers to specify a custom menu for the dock, which usually
 contains some shortcuts for commonly used features of your application:
 
 __Dock menu of Terminal.app:__
@@ -70,14 +69,14 @@ var dockMenu = Menu.buildFromTemplate([
   { label: 'New Window', click: function() { console.log('New Window'); } },
   { label: 'New Window with Settings', submenu: [
     { label: 'Basic' },
-    { label: 'Pro'},
+    { label: 'Pro'}
   ]},
-  { label: 'New Command...'},
+  { label: 'New Command...'}
 ]);
 app.dock.setMenu(dockMenu);
 ```
 
-## User tasks (Windows)
+## User Tasks (Windows)
 
 On Windows you can specify custom actions in the `Tasks` category of JumpList,
 as quoted from MSDN:
@@ -104,7 +103,7 @@ __Tasks of Internet Explorer:__
 ![IE](http://i.msdn.microsoft.com/dynimg/IC420539.png)
 
 Unlike the dock menu in OS X which is a real menu, user tasks in Windows work
-like application shortcuts that when user clicks a task a program would be
+like application shortcuts such that when user clicks a task, a program will be
 executed with specified arguments.
 
 To set user tasks for your application, you can use
@@ -119,12 +118,12 @@ app.setUserTasks([
     iconPath: process.execPath,
     iconIndex: 0,
     title: 'New Window',
-    description: 'Create a new window',
+    description: 'Create a new window'
   }
 ]);
 ```
 
-To clean your tasks list, just call `app.setUserTasks` with empty array:
+To clean your tasks list, just call `app.setUserTasks` with an empty array:
 
 ```javascript
 app.setUserTasks([]);
@@ -134,23 +133,76 @@ The user tasks will still show even after your application closes, so the icon
 and program path specified for a task should exist until your application is
 uninstalled.
 
-## Unity launcher shortcuts (Linux)
+## Thumbnail Toolbars
 
-In Unity, you can add custom entries to its launcher via modifying `.desktop`
-file, see [Adding shortcuts to a launcher][unity-launcher].
+On Windows you can add a thumbnail toolbar with specified buttons in a taskbar
+layout of an application window. It provides users a way to access to a
+particular window's command without restoring or activating the window.
+
+From MSDN, it's illustrated:
+
+> This toolbar is simply the familiar standard toolbar common control. It has a
+> maximum of seven buttons. Each button's ID, image, tooltip, and state are defined
+> in a structure, which is then passed to the taskbar. The application can show,
+> enable, disable, or hide buttons from the thumbnail toolbar as required by its
+> current state.
+>
+> For example, Windows Media Player might offer standard media transport controls
+> such as play, pause, mute, and stop.
+
+__Thumbnail toolbar of Windows Media Player:__
+
+![player](https://i-msdn.sec.s-msft.com/dynimg/IC420540.png)
+
+You can use [BrowserWindow.setThumbarButtons][setthumbarbuttons] to set thumbnail
+toolbar in your application:
+
+```
+var BrowserWindow = require('browser-window');
+var path = require('path');
+var win = new BrowserWindow({
+  width: 800,
+  height: 600
+});
+win.setThumbarButtons([
+  {
+    tooltip: "button1",
+    icon: path.join(__dirname, 'button1.png'),
+    click: function() { console.log("button2 clicked"); }
+  },
+  {
+    tooltip: "button2",
+    icon: path.join(__dirname, 'button2.png'),
+    flags:['enabled', 'dismissonclick'],
+    click: function() { console.log("button2 clicked."); }
+  }
+]);
+```
+
+To clean thumbnail toolbar buttons, just call `BrowserWindow.setThumbarButtons`
+with an empty array:
+
+```javascript
+win.setThumbarButtons([]);
+```
+
+## Unity Launcher Shortcuts (Linux)
+
+In Unity, you can add custom entries to its launcher via modifying the `.desktop`
+file, see [Adding Shortcuts to a Launcher][unity-launcher].
 
 __Launcher shortcuts of Audacious:__
 
 ![audacious](https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles?action=AttachFile&do=get&target=shortcuts.png)
 
-## Progress bar in taskbar (Windows & Unity)
+## Progress Bar in Taskbar (Windows & Unity)
 
-On Windows, a taskbar button can be used to display a progress bar. This enables
-a window to provide progress information to the user without that user having to
+On Windows a taskbar button can be used to display a progress bar. This enables
+a window to provide progress information to the user without the user having to
 switch to the window itself.
 
-The Unity DE also has a simililar feature that allows you to specify progress
-bar in the lancher.
+The Unity DE also has a similar feature that allows you to specify the progress
+bar in the launcher.
 
 __Progress bar in taskbar button:__
 
@@ -168,14 +220,14 @@ var window = new BrowserWindow({...});
 window.setProgressBar(0.5);
 ```
 
-## Represented file of window (OS X)
+## Represented File of Window (OS X)
 
 On OS X a window can set its represented file, so the file's icon can show in
-title bar, and when users Command-Click or Control-Click on the tile a path
+the title bar and when users Command-Click or Control-Click on the tile a path
 popup will show.
 
-You can also set edited state of a window so the file icon can indicate whether
-the document in this window has been modified.
+You can also set the edited state of a window so that the file icon can indicate
+whether the document in this window has been modified.
 
 __Represented file popup menu:__
 
@@ -199,3 +251,4 @@ window.setDocumentEdited(true);
 [setdocumentedited]: ../api/browser-window.md#browserwindowsetdocumenteditededited
 [app-registration]: http://msdn.microsoft.com/en-us/library/windows/desktop/ee872121(v=vs.85).aspx
 [unity-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
+[setthumbarbuttons]: ../api/browser-window.md#browserwindowsetthumbarbuttonsbuttons

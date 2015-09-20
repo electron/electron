@@ -38,7 +38,7 @@ process.on 'uncaughtException', (error) ->
   # Show error in GUI.
   stack = error.stack ? "#{error.name}: #{error.message}"
   message = "Uncaught Exception:\n#{stack}"
-  require('dialog').showErrorBox 'A JavaScript error occured in the browser process', message
+  require('dialog').showErrorBox 'A JavaScript error occurred in the main process', message
 
 # Emit 'exit' event on quit.
 app = require 'app'
@@ -87,9 +87,13 @@ app.commandLine.appendSwitch 'enable-npapi'
 # Set the user path according to application's name.
 app.setPath 'userData', path.join(app.getPath('appData'), app.getName())
 app.setPath 'userCache', path.join(app.getPath('cache'), app.getName())
+app.setAppPath packagePath
 
 # Load the chrome extension support.
 require './chrome-extension'
 
+# Set main startup script of the app.
+mainStartupScript = packageJson.main or 'index.js'
+
 # Finally load app's main.js and transfer control to C++.
-Module._load path.join(packagePath, packageJson.main), Module, true
+Module._load path.join(packagePath, mainStartupScript), Module, true

@@ -7,6 +7,17 @@
 
 #include <string>
 
+#include "base/memory/scoped_ptr.h"
+#include "content/public/browser/client_certificate_delegate.h"
+
+namespace content {
+class WebContents;
+}
+
+namespace net {
+class SSLCertRequestInfo;
+}
+
 namespace atom {
 
 class BrowserObserver {
@@ -32,13 +43,19 @@ class BrowserObserver {
   // Browser is used to open a url.
   virtual void OnOpenURL(const std::string& url) {}
 
-  // The browser is activated with no open windows (usually by clicking on the
-  // dock icon).
-  virtual void OnActivateWithNoOpenWindows() {}
+  // The browser is activated with visible/invisible windows (usually by
+  // clicking on the dock icon).
+  virtual void OnActivate(bool has_visible_windows) {}
 
   // The browser has finished loading.
   virtual void OnWillFinishLaunching() {}
   virtual void OnFinishLaunching() {}
+
+  // The browser requires client certificate.
+  virtual void OnSelectCertificate(
+      content::WebContents* web_contents,
+      net::SSLCertRequestInfo* cert_request_info,
+      scoped_ptr<content::ClientCertificateDelegate> delegate) {}
 
  protected:
   virtual ~BrowserObserver() {}

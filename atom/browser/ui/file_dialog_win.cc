@@ -120,12 +120,13 @@ struct RunState {
 };
 
 bool CreateDialogThread(RunState* run_state) {
-  base::Thread* thread = new base::Thread(ATOM_PRODUCT_NAME "FileDialogThread");
+  scoped_ptr<base::Thread> thread(
+      new base::Thread(ATOM_PRODUCT_NAME "FileDialogThread"));
   thread->init_com_with_mta(false);
   if (!thread->Start())
     return false;
 
-  run_state->dialog_thread = thread;
+  run_state->dialog_thread = thread.release();
   run_state->ui_message_loop = base::MessageLoop::current();
   return true;
 }
@@ -251,7 +252,7 @@ bool ShowSaveDialog(atom::NativeWindow* parent_window,
 
     bool matched = false;
     for (size_t i = 0; i < filter.second.size(); ++i) {
-      if (EndsWith(file_name, filter.second[i], false)) {
+      if (base::EndsWith(file_name, filter.second[i], false)) {
         matched = true;
         break;;
       }

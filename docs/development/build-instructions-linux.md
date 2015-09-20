@@ -1,33 +1,44 @@
-# Build instructions (Linux)
+# Build Instructions (Linux)
+
+Follow the guidelines below for building Electron on Linux.
 
 ## Prerequisites
 
-* [Node.js](http://nodejs.org)
-* Clang 3.4 or later
-* Development headers of GTK+ and libnotify
+* Python 2.7.x. Some distributions like CentOS still use Python 2.6.x
+  so you may need to check your Python version with `python -V`.
+* Node.js v0.12.x. There are various ways to install Node. You can download
+  source code from [Node.js](http://nodejs.org) and compile from source.
+  Doing so permits installing Node on your own home directory as a standard user.
+  Or try repositories such as [NodeSource](https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories).
+* Clang 3.4 or later.
+* Development headers of GTK+ and libnotify.
 
-On Ubuntu you could install the libraries via:
+On Ubuntu, install the following libraries:
 
 ```bash
 $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
                        libnotify-dev libgnome-keyring-dev libgconf2-dev \
                        libasound2-dev libcap-dev libcups2-dev libxtst-dev \
-                       gcc-multilib g++-multilib
+                       libxss1 libnss3-dev gcc-multilib g++-multilib
 ```
 
-Latest Node.js could be installed via ppa:
+On Fedora, install the following libraries:
 
 ```bash
-$ sudo apt-get install python-software-properties software-properties-common
-$ sudo add-apt-repository ppa:chris-lea/node.js
-$ sudo apt-get update
-$ sudo apt-get install nodejs
-
-# Update to latest npm
-$ sudo npm install npm -g
+$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel libgnome-keyring-devel \
+                   xorg-x11-server-utils libcap-devel cups-devel libXtst-devel \
+                   alsa-lib-devel libXrandr-devel GConf2-devel nss-devel
 ```
 
-## Getting the code
+Other distributions may offer similar packages for installation via package
+managers such as pacman. Or one can compile from source code.
+
+## If You Use Virtual Machines For Building
+
+If you plan to build Electron on a virtual machine you will need a fixed-size
+device container of at least 25 gigabytes in size.
+
+## Getting the Code
 
 ```bash
 $ git clone https://github.com/atom/electron.git
@@ -36,88 +47,91 @@ $ git clone https://github.com/atom/electron.git
 ## Bootstrapping
 
 The bootstrap script will download all necessary build dependencies and create
-build project files. Notice that we're using `ninja` to build Electron so
-there is no `Makefile` generated.
+the build project files. You must have Python 2.7.x for the script to succeed.
+Downloading certain files can take a long time. Notice that we are using
+`ninja` to build Electron so there is no `Makefile` generated.
 
 ```bash
 $ cd electron
 $ ./script/bootstrap.py -v
 ```
 
+### Cross compilation
+
+If you want to build for an `arm` target you should also install the following
+dependencies:
+
+```bash
+$ sudo apt-get install libc6-dev-armhf-cross linux-libc-dev-armhf-cross \
+                       g++-arm-linux-gnueabihf
+```
+
+And to cross compile for `arm` or `ia32` targets, you should pass the
+`--target_arch` parameter to the `bootstrap.py` script:
+
+```bash
+$ ./script/bootstrap.py -v --target_arch=arm
+```
+
 ## Building
 
-Build both `Release` and `Debug` targets:
+If you would like to build both `Release` and `Debug` targets:
 
 ```bash
 $ ./script/build.py
 ```
 
-You can also only build the `Debug` target:
+This script will cause a very large Electron executable to be placed in
+the directory `out/R`. The file size is in excess of 1.3 gigabytes. This
+happens because the Release target binary contains debugging symbols.
+To reduce the file size, run the `create-dist.py` script:
+
+```bash
+$ ./script/create-dist.py
+```
+
+This will put a working distribution with much smaller file sizes in
+the `dist` directory. After running the create-dist.py script, you
+may want to remove the 1.3+ gigabyte binary which is still in `out/R`.
+
+You can also build the `Debug` target only:
 
 ```bash
 $ ./script/build.py -c D
 ```
 
-After building is done, you can find `atom` under `out/D`.
+After building is done, you can find the `electron` debug binary under `out/D`.
+
+## Cleaning
+
+To clean the build files:
+
+```bash
+$ ./script/clean.py
+```
 
 ## Troubleshooting
 
-### fatal error: bits/predefs.h: No such file or directory
+Make sure you have installed all of the build dependencies.
 
-If you got an error like this:
+### Error While Loading Shared Libraries: libtinfo.so.5
 
-````
-In file included from /usr/include/stdio.h:28:0,
-                 from ../../../svnsrc/libgcc/../gcc/tsystem.h:88,
-                 from ../../../svnsrc/libgcc/libgcc2.c:29:
-/usr/include/features.h:324:26: fatal error: bits/predefs.h: No such file or directory
- #include <bits/predefs.h>
-````
-
-Then you need to install `gcc-multilib` and `g++-multilib`, on Ubuntu you can do
-this:
+Prebulit `clang` will try to link to `libtinfo.so.5`. Depending on the host
+architecture, symlink to appropriate `libncurses`:
 
 ```bash
-$ sudo apt-get install gcc-multilib g++-multilib
+$ sudo ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5
 ```
-
-### error adding symbols: DSO missing from command line
-
-If you got an error like this:
-
-````
-/usr/bin/ld: vendor/download/libchromiumcontent/Release/libchromiumcontent.so: undefined reference to symbol 'gconf_client_get'
-//usr/lib/x86_64-linux-gnu/libgconf-2.so.4: error adding symbols: DSO missing from command line
-````
-
-libchromiumcontent.so is build with clang 3.0 which is incompatible with newer
-versions of clang. Try using clang 3.0, default version in Ubuntu 12.04.
-
-### libudev.so.0 missing
-
-If you get an error like:
-
-````
-/usr/bin/ld: warning: libudev.so.0, needed by .../vendor/brightray/vendor/download/libchromiumcontent/Release/libchromiumcontent.so, not found (try using -rpath or -rpath-link)
-````
-
-and you are on Ubuntu 13.04+, 64 bit system, try doing
-
-```bash
-sudo ln -s /lib/x86_64-linux-gnu/libudev.so.1.3.5 /usr/lib/libudev.so.0
-```
-
-for ubuntu 13.04+ 32 bit systems, try doing
-
-```bash
-sudo ln -s /lib/i386-linux-gnu/libudev.so.1.3.5  /usr/lib/libudev.so.0
-```
-
-also see
-
-https://github.com/nwjs/nw.js/wiki/The-solution-of-lacking-libudev.so.0
 
 ## Tests
+
+Test your changes conform to the project coding style using:
+
+```bash
+$ ./script/cpplint.py
+```
+
+Test functionality using:
 
 ```bash
 $ ./script/test.py

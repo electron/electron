@@ -6,8 +6,9 @@ import platform
 import sys
 
 
-BASE_URL = 'http://gh-contractor-zcbenz.s3.amazonaws.com/libchromiumcontent'
-LIBCHROMIUMCONTENT_COMMIT = '90a5b9c3792645067ad9517e60cf5eb99730e0f9'
+BASE_URL = os.getenv('LIBCHROMIUMCONTENT_MIRROR') or \
+    'http://github-janky-artifacts.s3.amazonaws.com/libchromiumcontent'
+LIBCHROMIUMCONTENT_COMMIT = '8482fe555913dea3bde8a74f754524e2cfb02bc5'
 
 PLATFORM = {
   'cygwin': 'win32',
@@ -20,31 +21,24 @@ verbose_mode = False
 
 
 def get_target_arch():
-  # Always build 64bit on OS X.
-  if PLATFORM == 'darwin':
-    return 'x64'
-  # Only build for host's arch on Linux.
-  elif PLATFORM == 'linux':
-    if platform.architecture()[0] == '32bit':
-      return 'ia32'
-    else:
-      return 'x64'
-  # On Windows it depends on user.
-  elif PLATFORM == 'win32':
-    try:
-      target_arch_path = os.path.join(__file__, '..', '..', '..', 'vendor',
-                                      'brightray', 'vendor', 'download',
-                                      'libchromiumcontent', '.target_arch')
-      with open(os.path.normpath(target_arch_path)) as f:
-        return f.read().strip()
-    except IOError as e:
-      if e.errno != errno.ENOENT:
-        raise
-    # Build 32bit by default.
+  try:
+    target_arch_path = os.path.join(__file__, '..', '..', '..', 'vendor',
+                                    'brightray', 'vendor', 'download',
+                                    'libchromiumcontent', '.target_arch')
+    with open(os.path.normpath(target_arch_path)) as f:
+      return f.read().strip()
+  except IOError as e:
+    if e.errno != errno.ENOENT:
+      raise
+
+  if PLATFORM == 'win32':
     return 'ia32'
-  # Maybe we will support other platforms in future.
   else:
     return 'x64'
+
+
+def get_chromedriver_version():
+  return 'v2.15'
 
 
 def s3_config():

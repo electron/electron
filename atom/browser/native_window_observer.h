@@ -47,17 +47,27 @@ class NativeWindowObserver {
   virtual void OnWindowUnmaximize() {}
   virtual void OnWindowMinimize() {}
   virtual void OnWindowRestore() {}
+  virtual void OnWindowResize() {}
+  virtual void OnWindowMove() {}
+  virtual void OnWindowMoved() {}
   virtual void OnWindowEnterFullScreen() {}
   virtual void OnWindowLeaveFullScreen() {}
+  virtual void OnWindowEnterHtmlFullScreen() {}
+  virtual void OnWindowLeaveHtmlFullScreen() {}
 
-  // Called when devtools window gets focused.
+  // Redirect devtools events.
   virtual void OnDevToolsFocus() {}
+  virtual void OnDevToolsOpened() {}
+  virtual void OnDevToolsClosed() {}
 
   // Called when renderer is hung.
   virtual void OnRendererUnresponsive() {}
 
   // Called when renderer recovers.
   virtual void OnRendererResponsive() {}
+
+  // Called on Windows when App Commands arrive (WM_APPCOMMAND)
+  virtual void OnExecuteWindowsCommand(const std::string& command_name) {}
 };
 
 }  // namespace atom

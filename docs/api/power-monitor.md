@@ -1,10 +1,10 @@
 # power-monitor
 
-The `power-monitor` module is used to monitor the power state change. You can
-only use it on the main process. You should not use this module until the `ready` 
-event of `app` module gets emitted.
+The `power-monitor` module is used to monitor power state changes. You can
+only use it in the main process. You should not use this module until the `ready`
+event of the `app` module is emitted.
 
-An example is:
+For example:
 
 ```javascript
 var app = require('app');
@@ -16,18 +16,22 @@ app.on('ready', function() {
 });
 ```
 
-## Event: suspend
+## Events
+
+The `power-monitor` module emits the following events:
+
+### Event: 'suspend'
 
 Emitted when the system is suspending.
 
-## Event: resume
+### Event: 'resume'
 
 Emitted when system is resuming.
 
-## Event: on-ac
+### Event: 'on-ac'
 
 Emitted when the system changes to AC power.
 
-## Event: on-battery
+### Event: 'on-battery'
 
 Emitted when system changes to battery power.

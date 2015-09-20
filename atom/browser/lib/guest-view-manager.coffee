@@ -3,6 +3,7 @@ webContents = require 'web-contents'
 webViewManager = null  # Doesn't exist in early initialization.
 
 supportedWebViewEvents = [
+  'load-commit'
   'did-finish-load'
   'did-fail-load'
   'did-frame-finish-load'
@@ -15,15 +16,23 @@ supportedWebViewEvents = [
   'new-window'
   'close'
   'crashed'
+  'gpu-crashed'
+  'plugin-crashed'
   'destroyed'
   'page-title-set'
   'page-favicon-updated'
+  'enter-html-full-screen'
+  'leave-html-full-screen'
 ]
 
 nextInstanceId = 0
 guestInstances = {}
 embedderElementsMap = {}
 reverseEmbedderElementsMap = {}
+
+# Moves the last element of array to the first one.
+moveLastToFirst = (list) ->
+  list.unshift list.pop()
 
 # Generate guestInstanceId.
 getNextInstanceId = (webContents) ->
@@ -34,17 +43,20 @@ createGuest = (embedder, params) ->
   webViewManager ?= process.atomBinding 'web_view_manager'
 
   id = getNextInstanceId embedder
-  guest = webContents.create
-    isGuest: true
-    guestInstanceId: id
-    storagePartitionId: params.storagePartitionId
+  guest = webContents.create {isGuest: true, partition: params.partition, embedder}
   guestInstances[id] = {guest, embedder}
 
   # Destroy guest when the embedder is gone or navigated.
   destroyEvents = ['destroyed', 'crashed', 'did-navigate-to-different-page']
   destroy = ->
     destroyGuest embedder, id if guestInstances[id]?
-  embedder.once event, destroy for event in destroyEvents
+  for event in destroyEvents
+    embedder.once event, destroy
+    # Users might also listen to the crashed event, so We must ensure the guest
+    # is destroyed before users' listener gets called. It is done by moving our
+    # listener to the first one in queue.
+    listeners = embedder._events[event]
+    moveLastToFirst listeners if Array.isArray listeners
   guest.once 'destroyed', ->
     embedder.removeListener event, destroy for event in destroyEvents
 
@@ -54,14 +66,21 @@ createGuest = (embedder, params) ->
     delete @attachParams
 
     @viewInstanceId = params.instanceId
-    min = width: params.minwidth, height: params.minheight
-    max = width: params.maxwidth, height: params.maxheight
-    @setAutoSize params.autosize, min, max
+    @setSize
+      normal:
+        width: params.elementWidth, height: params.elementHeight
+      enableAutoSize: params.autosize
+      min:
+        width: params.minwidth, height: params.minheight
+      max:
+        width: params.maxwidth, height: params.maxheight
+
     if params.src
-      if params.httpreferrer
-        @loadUrl params.src, {httpreferrer: params.httpreferrer}
-      else
-        @loadUrl params.src
+      opts = {}
+      opts.httpReferrer = params.httpreferrer if params.httpreferrer
+      opts.userAgent = params.useragent if params.useragent
+      @loadUrl params.src, opts
+
     if params.allowtransparency?
       @setAllowTransparency params.allowtransparency
 
@@ -96,11 +115,13 @@ attachGuest = (embedder, elementInstanceId, guestInstanceId, params) ->
     return unless guestInstances[oldGuestInstanceId]?
     destroyGuest embedder, oldGuestInstanceId
 
-  webViewManager.addGuest guestInstanceId, elementInstanceId, embedder, guest,
-    nodeIntegration: params.nodeintegration
-    plugins: params.plugins
-    disableWebSecurity: params.disablewebsecurity
-    preloadUrl: params.preload ? ''
+  webPreferences =
+    'guest-instance-id': guestInstanceId
+    'node-integration': params.nodeintegration ? false
+    'plugins': params.plugins
+    'web-security': !params.disablewebsecurity
+  webPreferences['preload-url'] = params.preload if params.preload
+  webViewManager.addGuest guestInstanceId, elementInstanceId, embedder, guest, webPreferences
 
   guest.attachParams = params
   embedderElementsMap[key] = guestInstanceId
@@ -117,7 +138,7 @@ destroyGuest = (embedder, id) ->
     delete reverseEmbedderElementsMap[id]
     delete embedderElementsMap[key]
 
-ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_CREATE_GUEST', (event, type, params, requestId) ->
+ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_CREATE_GUEST', (event, params, requestId) ->
   event.sender.send "ATOM_SHELL_RESPONSE_#{requestId}", createGuest(event.sender, params)
 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_ATTACH_GUEST', (event, elementInstanceId, guestInstanceId, params) ->
@@ -126,8 +147,8 @@ ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_ATTACH_GUEST', (event, elementInstanceId, 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_DESTROY_GUEST', (event, id) ->
   destroyGuest event.sender, id
 
-ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_AUTO_SIZE', (event, id, params) ->
-  guestInstances[id]?.guest.setAutoSize params.enableAutoSize, params.min, params.max
+ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_SIZE', (event, id, params) ->
+  guestInstances[id]?.guest.setSize params
 
 ipc.on 'ATOM_SHELL_GUEST_VIEW_MANAGER_SET_ALLOW_TRANSPARENCY', (event, id, allowtransparency) ->
   guestInstances[id]?.guest.setAllowTransparency allowtransparency

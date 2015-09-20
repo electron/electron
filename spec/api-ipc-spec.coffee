@@ -5,6 +5,13 @@ remote = require 'remote'
 
 BrowserWindow = remote.require 'browser-window'
 
+comparePaths = (path1, path2) ->
+  if process.platform is 'win32'
+    # Paths in Windows are case insensitive.
+    path1 = path1.toLowerCase()
+    path2 = path2.toLowerCase()
+  assert.equal path1, path2
+
 describe 'ipc module', ->
   fixtures = path.join __dirname, 'fixtures'
 
@@ -19,8 +26,8 @@ describe 'ipc module', ->
       assert.equal a.id, 1127
 
     it 'should search module from the user app', ->
-      assert.equal path.normalize(remote.process.mainModule.filename), path.resolve(__dirname, 'static', 'main.js')
-      assert.equal path.normalize(remote.process.mainModule.paths[0]), path.resolve(__dirname, 'static', 'node_modules')
+      comparePaths path.normalize(remote.process.mainModule.filename), path.resolve(__dirname, 'static', 'main.js')
+      comparePaths path.normalize(remote.process.mainModule.paths[0]), path.resolve(__dirname, 'static', 'node_modules')
 
   describe 'remote.createFunctionWithReturnValue', ->
     it 'should be called in browser synchronously', ->
@@ -51,6 +58,14 @@ describe 'ipc module', ->
       buf = new Buffer('test')
       print_name = remote.require path.join(fixtures, 'module', 'print_name.js')
       assert.equal print_name.print(buf), 'Buffer'
+
+  describe 'remote promise', ->
+    it 'can be used as promise in each side', (done) ->
+      promise = remote.require path.join(fixtures, 'module', 'promise.js')
+      promise.twicePromise(Promise.resolve(1234))
+        .then (value) =>
+          assert.equal value, 2468
+          done()
 
   describe 'ipc.sender.send', ->
     it 'should work when sending an object containing id property', (done) ->

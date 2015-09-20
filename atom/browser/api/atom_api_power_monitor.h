@@ -17,7 +17,7 @@ namespace api {
 class PowerMonitor : public mate::EventEmitter,
                      public base::PowerObserver {
  public:
-  static v8::Handle<v8::Value> Create(v8::Isolate* isolate);
+  static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 
  protected:
   PowerMonitor();

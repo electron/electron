@@ -24,7 +24,7 @@ namespace api {
 class Screen : public mate::EventEmitter,
                public gfx::DisplayObserver {
  public:
-  static v8::Handle<v8::Value> Create(v8::Isolate* isolate);
+  static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 
  protected:
   explicit Screen(gfx::Screen* screen);

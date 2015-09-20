@@ -1,9 +1,14 @@
 EventEmitter = require('events').EventEmitter
 
 bindings = process.atomBinding 'app'
+sessionBindings = process.atomBinding 'session'
 
 app = bindings.app
 app.__proto__ = EventEmitter.prototype
+
+wrapSession = (session) ->
+  # session is an Event Emitter.
+  session.__proto__ = EventEmitter.prototype
 
 app.setApplicationMenu = (menu) ->
   require('menu').setApplicationMenu menu
@@ -25,13 +30,26 @@ if process.platform is 'darwin'
     show: bindings.dockShow
     setMenu: bindings.dockSetMenu
 
+appPath = null
+app.setAppPath = (path) ->
+  appPath = path
+
+app.getAppPath = ->
+  appPath
+
 # Be compatible with old API.
-app.once 'ready', -> app.emit 'finish-launching'
+app.once 'ready', -> @emit 'finish-launching'
 app.terminate = app.quit
 app.exit = process.exit
-app.getHomeDir = -> app.getPath 'home'
-app.getDataPath = -> app.getPath 'userData'
-app.setDataPath = (path) -> app.setPath 'userData', path
+app.getHomeDir = -> @getPath 'home'
+app.getDataPath = -> @getPath 'userData'
+app.setDataPath = (path) -> @setPath 'userData', path
+app.resolveProxy = -> @defaultSession.resolveProxy.apply @defaultSession, arguments
+app.on 'activate', (event, hasVisibleWindows) -> @emit 'activate-with-no-open-windows' if not hasVisibleWindows
+
+# Session wrapper.
+sessionBindings._setWrapSession wrapSession
+process.once 'exit', sessionBindings._clearWrapSession
 
 # Only one App object pemitted.
 module.exports = app

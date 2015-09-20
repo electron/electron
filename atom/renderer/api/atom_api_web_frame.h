@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "atom/renderer/guest_view_container.h"
 #include "base/memory/scoped_ptr.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
@@ -40,15 +41,23 @@ class WebFrame : public mate::Wrappable {
   double SetZoomFactor(double factor);
   double GetZoomFactor() const;
 
-  v8::Handle<v8::Value> RegisterEmbedderCustomElement(
-      const base::string16& name, v8::Handle<v8::Object> options);
+  void SetZoomLevelLimits(double min_level, double max_level);
+
+  v8::Local<v8::Value> RegisterEmbedderCustomElement(
+      const base::string16& name, v8::Local<v8::Object> options);
+  void RegisterElementResizeCallback(
+      int element_instance_id,
+      const GuestViewContainer::ResizeCallback& callback);
   void AttachGuest(int element_instance_id);
 
   // Set the provider that will be used by SpellCheckClient for spell check.
   void SetSpellCheckProvider(mate::Arguments* args,
                              const std::string& language,
                              bool auto_spell_correct_turned_on,
-                             v8::Handle<v8::Object> provider);
+                             v8::Local<v8::Object> provider);
+
+  void RegisterURLSchemeAsSecure(const std::string& scheme);
+  void RegisterURLSchemeAsBypassingCsp(const std::string& scheme);
 
   // mate::Wrappable:
   virtual mate::ObjectTemplateBuilder GetObjectTemplateBuilder(

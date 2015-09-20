@@ -8,20 +8,19 @@
 
 #include "atom_natives.h"  // NOLINT: This file is generated with coffee2c.
 #include "atom/common/asar/archive.h"
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/node_includes.h"
 #include "native_mate/arguments.h"
-#include "native_mate/callback.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "native_mate/wrappable.h"
-
-#include "atom/common/node_includes.h"
 
 namespace {
 
 class Archive : public mate::Wrappable {
  public:
-  static v8::Handle<v8::Value> Create(v8::Isolate* isolate,
+  static v8::Local<v8::Value> Create(v8::Isolate* isolate,
                                       const base::FilePath& path) {
     scoped_ptr<asar::Archive> archive(new asar::Archive(path));
     if (!archive->Init())
@@ -34,7 +33,7 @@ class Archive : public mate::Wrappable {
       : archive_(archive.Pass()) {}
 
   // Reads the offset and size of file.
-  v8::Handle<v8::Value> GetFileInfo(v8::Isolate* isolate,
+  v8::Local<v8::Value> GetFileInfo(v8::Isolate* isolate,
                                     const base::FilePath& path) {
     asar::Archive::FileInfo info;
     if (!archive_ || !archive_->GetFileInfo(path, &info))
@@ -47,7 +46,7 @@ class Archive : public mate::Wrappable {
   }
 
   // Returns a fake result of fs.stat(path).
-  v8::Handle<v8::Value> Stat(v8::Isolate* isolate,
+  v8::Local<v8::Value> Stat(v8::Isolate* isolate,
                              const base::FilePath& path) {
     asar::Archive::Stats stats;
     if (!archive_ || !archive_->Stat(path, &stats))
@@ -62,7 +61,7 @@ class Archive : public mate::Wrappable {
   }
 
   // Returns all files under a directory.
-  v8::Handle<v8::Value> Readdir(v8::Isolate* isolate,
+  v8::Local<v8::Value> Readdir(v8::Isolate* isolate,
                                 const base::FilePath& path) {
     std::vector<base::FilePath> files;
     if (!archive_ || !archive_->Readdir(path, &files))
@@ -71,7 +70,7 @@ class Archive : public mate::Wrappable {
   }
 
   // Returns the path of file with symbol link resolved.
-  v8::Handle<v8::Value> Realpath(v8::Isolate* isolate,
+  v8::Local<v8::Value> Realpath(v8::Isolate* isolate,
                                  const base::FilePath& path) {
     base::FilePath realpath;
     if (!archive_ || !archive_->Realpath(path, &realpath))
@@ -80,7 +79,7 @@ class Archive : public mate::Wrappable {
   }
 
   // Copy the file out into a temporary file and returns the new path.
-  v8::Handle<v8::Value> CopyFileOut(v8::Isolate* isolate,
+  v8::Local<v8::Value> CopyFileOut(v8::Isolate* isolate,
                                     const base::FilePath& path) {
     base::FilePath new_path;
     if (!archive_ || !archive_->CopyFileOut(path, &new_path))
@@ -120,8 +119,8 @@ class Archive : public mate::Wrappable {
 };
 
 void InitAsarSupport(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> process,
-                     v8::Handle<v8::Value> require) {
+                     v8::Local<v8::Value> process,
+                     v8::Local<v8::Value> require) {
   // Evaluate asar_init.coffee.
   v8::Local<v8::Script> asar_init = v8::Script::Compile(v8::String::NewFromUtf8(
       isolate,
@@ -131,8 +130,8 @@ void InitAsarSupport(v8::Isolate* isolate,
   v8::Local<v8::Value> result = asar_init->Run();
 
   // Initialize asar support.
-  base::Callback<void(v8::Handle<v8::Value>,
-                      v8::Handle<v8::Value>,
+  base::Callback<void(v8::Local<v8::Value>,
+                      v8::Local<v8::Value>,
                       std::string)> init;
   if (mate::ConvertFromV8(isolate, result, &init)) {
     init.Run(process,
@@ -141,8 +140,8 @@ void InitAsarSupport(v8::Isolate* isolate,
   }
 }
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createArchive", &Archive::Create);
   dict.SetMethod("initAsarSupport", &InitAsarSupport);

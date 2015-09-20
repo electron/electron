@@ -7,14 +7,13 @@
 #include "atom/common/platform_util.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
-#include "native_mate/dictionary.h"
-
 #include "atom/common/node_includes.h"
+#include "native_mate/dictionary.h"
 
 namespace {
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("showItemInFolder", &platform_util::ShowItemInFolder);
   dict.SetMethod("openItem", &platform_util::OpenItem);

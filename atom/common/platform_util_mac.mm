@@ -118,26 +118,34 @@ void OpenItem(const base::FilePath& full_path) {
   }
 }
 
-void OpenExternal(const GURL& url) {
+bool OpenExternal(const GURL& url) {
   DCHECK([NSThread isMainThread]);
   NSString* url_string = base::SysUTF8ToNSString(url.spec());
   NSURL* ns_url = [NSURL URLWithString:url_string];
-  if (!ns_url || ![[NSWorkspace sharedWorkspace] openURL:ns_url])
-    LOG(WARNING) << "NSWorkspace failed to open URL " << url;
+  if (!ns_url) {
+    return false;
+  }
+
+  CFURLRef openingApp = NULL;
+  OSStatus status = LSGetApplicationForURL((CFURLRef)ns_url,
+                                           kLSRolesAll,
+                                           NULL,
+                                           &openingApp);
+  if (status != noErr) {
+    return false;
+  }
+  CFRelease(openingApp);  // NOT A BUG; LSGetApplicationForURL retains for us
+
+  return [[NSWorkspace sharedWorkspace] openURL:ns_url];
 }
 
 bool MoveItemToTrash(const base::FilePath& full_path) {
-  DCHECK([NSThread isMainThread]);
   NSString* path_string = base::SysUTF8ToNSString(full_path.value());
-  NSArray* file_array =
-      [NSArray arrayWithObject:[path_string lastPathComponent]];
-  BOOL status = [[NSWorkspace sharedWorkspace]
-                performFileOperation:NSWorkspaceRecycleOperation
-                source:[path_string stringByDeletingLastPathComponent]
-                destination:@""
-                files:file_array
-                tag:nil];
-  if (!path_string || !file_array || !status)
+  BOOL status = [[NSFileManager defaultManager]
+                trashItemAtURL:[NSURL fileURLWithPath:path_string]
+                resultingItemURL:nil
+                error:nil];
+  if (!path_string || !status)
     LOG(WARNING) << "NSWorkspace failed to move file " << full_path.value()
                  << " to trash";
   return status;

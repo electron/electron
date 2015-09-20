@@ -29,8 +29,6 @@ for arg in process.argv
   if arg.indexOf('--guest-instance-id=') == 0
     # This is a guest web view.
     process.guestInstanceId = parseInt arg.substr(arg.indexOf('=') + 1)
-    # Set the frame name to make AtomRendererClient recognize this guest.
-    require('web-frame').setName 'ATOM_SHELL_GUEST_WEB_VIEW'
   else if arg.indexOf('--node-integration=') == 0
     nodeIntegration = arg.substr arg.indexOf('=') + 1
   else if arg.indexOf('--preload=') == 0
@@ -77,7 +75,7 @@ if nodeIntegration in ['true', 'all', 'except-iframe', 'manual-enable-iframe']
     global.__dirname = __dirname
 
   # Redirect window.onerror to uncaughtException.
-  window.onerror = (error) ->
+  window.onerror = (message, filename, lineno, colno, error) ->
     if global.process.listeners('uncaughtException').length > 0
       global.process.emit 'uncaughtException', error
       true
@@ -88,15 +86,12 @@ if nodeIntegration in ['true', 'all', 'except-iframe', 'manual-enable-iframe']
   window.addEventListener 'unload', ->
     process.emit 'exit'
 else
-  # The Module.runMain will run process._tickCallck() immediately, so we are
-  # able to delete the symbols in this tick even though we used process.nextTick
-  # to schedule it.
-  # It is important that we put this in process.nextTick, if we delete them now
-  # some code in node.js will complain about "process not defined".
-  process.nextTick ->
+  # Delete Node's symbols after the Environment has been loaded.
+  process.once 'loaded', ->
     delete global.process
     delete global.setImmediate
     delete global.clearImmediate
+    delete global.global
 
 # Load the script specfied by the "preload" attribute.
 if preloadScript

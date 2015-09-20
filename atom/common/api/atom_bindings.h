@@ -24,7 +24,7 @@ class AtomBindings {
 
   // Add process.atomBinding function, which behaves like process.binding but
   // load native code from atom-shell instead.
-  void BindTo(v8::Isolate* isolate, v8::Handle<v8::Object> process);
+  void BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process);
 
  private:
   void ActivateUVLoop(v8::Isolate* isolate);

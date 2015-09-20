@@ -23,7 +23,7 @@ void OpenItem(const base::FilePath& full_path);
 
 // Open the given external protocol URL in the desktop's default manner.
 // (For example, mailto: URLs in the default mail user agent.)
-void OpenExternal(const GURL& url);
+bool OpenExternal(const GURL& url);
 
 // Move a file to trash.
 bool MoveItemToTrash(const base::FilePath& full_path);

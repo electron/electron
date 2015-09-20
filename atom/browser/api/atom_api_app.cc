@@ -12,28 +12,29 @@
 #endif
 
 #include "atom/browser/api/atom_api_menu.h"
+#include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
+#include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/gurl_converter.h"
+#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "brightray/browser/brightray_paths.h"
-#include "native_mate/callback.h"
+#include "content/public/browser/client_certificate_delegate.h"
+#include "content/public/browser/gpu_data_manager.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
-#include "net/base/load_flags.h"
-#include "net/proxy/proxy_service.h"
-#include "net/url_request/url_request_context.h"
-#include "net/url_request/url_request_context_getter.h"
+#include "net/ssl/ssl_cert_request_info.h"
+#include "ui/base/l10n/l10n_util.h"
 
 #if defined(OS_WIN)
 #include "base/strings/utf_string_conversions.h"
 #endif
-
-#include "atom/common/node_includes.h"
 
 using atom::Browser;
 
@@ -42,7 +43,7 @@ namespace mate {
 #if defined(OS_WIN)
 template<>
 struct Converter<Browser::UserTask> {
-  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      Browser::UserTask* out) {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
@@ -59,6 +60,21 @@ struct Converter<Browser::UserTask> {
   }
 };
 #endif
+
+template<>
+struct Converter<scoped_refptr<net::X509Certificate>> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const scoped_refptr<net::X509Certificate>& val) {
+    mate::Dictionary dict(isolate, v8::Object::New(isolate));
+    std::string encoded_data;
+    net::X509Certificate::GetPEMEncoded(
+        val->os_cert_handle(), &encoded_data);
+    dict.Set("data", encoded_data);
+    dict.Set("issuerName", val->issuer().GetDisplayName());
+    return dict.GetHandle();
+  }
+};
 
 }  // namespace mate
 
@@ -93,50 +109,39 @@ int GetPathConstant(const std::string& name) {
     return -1;
 }
 
-class ResolveProxyHelper {
- public:
-  ResolveProxyHelper(const GURL& url, App::ResolveProxyCallback callback)
-      : callback_(callback) {
-    net::ProxyService* proxy_service = AtomBrowserContext::Get()->
-        url_request_context_getter()->GetURLRequestContext()->proxy_service();
-
-    // Start the request.
-    int result = proxy_service->ResolveProxy(
-        url, net::LOAD_NORMAL, &proxy_info_,
-        base::Bind(&ResolveProxyHelper::OnResolveProxyCompleted,
-                   base::Unretained(this)),
-        &pac_req_, nullptr, net::BoundNetLog());
-
-    // Completed synchronously.
-    if (result != net::ERR_IO_PENDING)
-      OnResolveProxyCompleted(result);
+void OnClientCertificateSelected(
+    v8::Isolate* isolate,
+    std::shared_ptr<content::ClientCertificateDelegate> delegate,
+    mate::Arguments* args) {
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  mate::Dictionary cert_data;
+  if (!(args->Length() == 1 && args->GetNext(&cert_data))) {
+    args->ThrowError();
+    return;
   }
 
-  void OnResolveProxyCompleted(int result) {
-    std::string proxy;
-    if (result == net::OK)
-      proxy = proxy_info_.ToPacString();
-    callback_.Run(proxy);
+  std::string encoded_data;
+  cert_data.Get("data", &encoded_data);
 
-    delete this;
-  }
+  auto certs =
+      net::X509Certificate::CreateCertificateListFromBytes(
+          encoded_data.data(), encoded_data.size(),
+          net::X509Certificate::FORMAT_AUTO);
 
- private:
-  App::ResolveProxyCallback callback_;
-  net::ProxyInfo proxy_info_;
-  net::ProxyService::PacRequest* pac_req_;
-
-  DISALLOW_COPY_AND_ASSIGN(ResolveProxyHelper);
-};
+  delegate->ContinueWithCertificate(certs[0].get());
+}
 
 }  // namespace
 
 App::App() {
   Browser::Get()->AddObserver(this);
+  content::GpuDataManager::GetInstance()->AddObserver(this);
 }
 
 App::~App() {
   Browser::Get()->RemoveObserver(this);
+  content::GpuDataManager::GetInstance()->RemoveObserver(this);
 }
 
 void App::OnBeforeQuit(bool* prevent_default) {
@@ -163,8 +168,8 @@ void App::OnOpenURL(const std::string& url) {
   Emit("open-url", url);
 }
 
-void App::OnActivateWithNoOpenWindows() {
-  Emit("activate-with-no-open-windows");
+void App::OnActivate(bool has_visible_windows) {
+  Emit("activate", has_visible_windows);
 }
 
 void App::OnWillFinishLaunching() {
@@ -172,7 +177,40 @@ void App::OnWillFinishLaunching() {
 }
 
 void App::OnFinishLaunching() {
+  // Create the defaultSession.
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  auto browser_context = static_cast<AtomBrowserContext*>(
+      AtomBrowserMainParts::Get()->browser_context());
+  auto handle = Session::CreateFrom(isolate(), browser_context);
+  default_session_.Reset(isolate(), handle.ToV8());
+
   Emit("ready");
+}
+
+void App::OnSelectCertificate(
+    content::WebContents* web_contents,
+    net::SSLCertRequestInfo* cert_request_info,
+    scoped_ptr<content::ClientCertificateDelegate> delegate) {
+  std::shared_ptr<content::ClientCertificateDelegate>
+      shared_delegate(delegate.release());
+  bool prevent_default =
+      Emit("select-certificate",
+           api::WebContents::CreateFrom(isolate(), web_contents),
+           cert_request_info->host_and_port.ToString(),
+           cert_request_info->client_certs,
+           base::Bind(&OnClientCertificateSelected,
+                      isolate(),
+                      shared_delegate));
+
+  // Default to first certificate from the platform store.
+  if (!prevent_default)
+    shared_delegate->ContinueWithCertificate(
+        cert_request_info->client_certs[0].get());
+}
+
+void App::OnGpuProcessCrashed(base::TerminationStatus exit_code) {
+  Emit("gpu-process-crashed");
 }
 
 base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
@@ -197,10 +235,6 @@ void App::SetPath(mate::Arguments* args,
     args->ThrowError("Failed to set path");
 }
 
-void App::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
-  new ResolveProxyHelper(url, callback);
-}
-
 void App::SetDesktopName(const std::string& desktop_name) {
 #if defined(OS_LINUX)
   scoped_ptr<base::Environment> env(base::Environment::Create());
@@ -213,6 +247,17 @@ void App::SetAppUserModelId(const std::string& app_id) {
   base::string16 app_id_utf16 = base::UTF8ToUTF16(app_id);
   SetCurrentProcessExplicitAppUserModelID(app_id_utf16.c_str());
 #endif
+}
+
+std::string App::GetLocale() {
+  return l10n_util::GetApplicationLocale("");
+}
+
+v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
+  if (default_session_.IsEmpty())
+    return v8::Null(isolate);
+  else
+    return v8::Local<v8::Value>::New(isolate, default_session_);
 }
 
 mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
@@ -236,9 +281,10 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
 #endif
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)
-      .SetMethod("resolveProxy", &App::ResolveProxy)
       .SetMethod("setDesktopName", &App::SetDesktopName)
-      .SetMethod("setAppUserModelId", &App::SetAppUserModelId);
+      .SetMethod("setAppUserModelId", &App::SetAppUserModelId)
+      .SetMethod("getLocale", &App::GetLocale)
+      .SetProperty("defaultSession", &App::DefaultSession);
 }
 
 // static
@@ -277,8 +323,8 @@ void DockSetMenu(atom::api::Menu* menu) {
 }
 #endif
 
-void Initialize(v8::Handle<v8::Object> exports, v8::Handle<v8::Value> unused,
-                v8::Handle<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   auto command_line = base::CommandLine::ForCurrentProcess();
 

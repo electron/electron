@@ -41,7 +41,7 @@ bool HasWordCharacters(const base::string16& text, int index) {
 SpellCheckClient::SpellCheckClient(const std::string& language,
                                    bool auto_spell_correct_turned_on,
                                    v8::Isolate* isolate,
-                                   v8::Handle<v8::Object> provider)
+                                   v8::Local<v8::Object> provider)
     : auto_spell_correct_turned_on_(auto_spell_correct_turned_on),
       isolate_(isolate),
       provider_(isolate, provider) {
@@ -160,8 +160,8 @@ bool SpellCheckClient::SpellCheckWord(const base::string16& word_to_check) {
     return true;
 
   v8::HandleScope handle_scope(isolate_);
-  v8::Handle<v8::Value> word = mate::ConvertToV8(isolate_, word_to_check);
-  v8::Handle<v8::Value> result = spell_check_.NewHandle()->Call(
+  v8::Local<v8::Value> word = mate::ConvertToV8(isolate_, word_to_check);
+  v8::Local<v8::Value> result = spell_check_.NewHandle()->Call(
       provider_.NewHandle(), 1, &word);
 
   if (result->IsBoolean())

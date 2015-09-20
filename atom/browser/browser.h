@@ -108,12 +108,19 @@ class Browser : public WindowListObserver {
   // Tell the application to open a url.
   void OpenURL(const std::string& url);
 
-  // Tell the application that application is activated with no open windows.
-  void ActivateWithNoOpenWindows();
+  // Tell the application that application is activated with visible/invisible
+  // windows.
+  void Activate(bool has_visible_windows);
 
   // Tell the application the loading has been done.
   void WillFinishLaunching();
   void DidFinishLaunching();
+
+  // Called when client certificate is required.
+  void ClientCertificateSelector(
+      content::WebContents* web_contents,
+      net::SSLCertRequestInfo* cert_request_info,
+      scoped_ptr<content::ClientCertificateDelegate> delegate);
 
   void AddObserver(BrowserObserver* obs) {
     observers_.AddObserver(obs);
@@ -147,7 +154,7 @@ class Browser : public WindowListObserver {
   void OnWindowAllClosed() override;
 
   // Observers of the browser.
-  ObserverList<BrowserObserver> observers_;
+  base::ObserverList<BrowserObserver> observers_;
 
   // Whether "ready" event has been emitted.
   bool is_ready_;

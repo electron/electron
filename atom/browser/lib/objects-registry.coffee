@@ -1,82 +1,65 @@
 EventEmitter = require('events').EventEmitter
-IDWeakMap = require 'id-weak-map'
 v8Util = process.atomBinding 'v8_util'
-
-# Class to reference all objects.
-class ObjectsStore
-  @stores = {}
-
-  constructor: ->
-    @nextId = 0
-    @objects = []
-
-  getNextId: ->
-    ++@nextId
-
-  add: (obj) ->
-    id = @getNextId()
-    @objects[id] = obj
-    id
-
-  has: (id) ->
-    @objects[id]?
-
-  remove: (id) ->
-    throw new Error("Invalid key #{id} for ObjectsStore") unless @has id
-    delete @objects[id]
-
-  get: (id) ->
-    throw new Error("Invalid key #{id} for ObjectsStore") unless @has id
-    @objects[id]
-
-  @forRenderView: (key) ->
-    @stores[key] = new ObjectsStore unless @stores[key]?
-    @stores[key]
-
-  @releaseForRenderView: (key) ->
-    delete @stores[key]
 
 class ObjectsRegistry extends EventEmitter
   constructor: ->
     @setMaxListeners Number.MAX_VALUE
+    @nextId = 0
 
-    # Objects in weak map will be not referenced (so we won't leak memory), and
-    # every object created in browser will have a unique id in weak map.
-    @objectsWeakMap = new IDWeakMap
-    @objectsWeakMap.add = (obj) ->
-      id = IDWeakMap::add.call this, obj
-      v8Util.setHiddenValue obj, 'atomId', id
-      id
+    # Stores all objects by ref-counting.
+    # (id) => {object, count}
+    @storage = {}
+
+    # Stores the IDs of objects referenced by WebContents.
+    # (webContentsId) => {(id) => (count)}
+    @owners = {}
 
   # Register a new object, the object would be kept referenced until you release
   # it explicitly.
-  add: (key, obj) ->
-    # Some native objects may already been added to objectsWeakMap, be care not
-    # to add it twice.
-    @objectsWeakMap.add obj unless v8Util.getHiddenValue obj, 'atomId'
-    id = v8Util.getHiddenValue obj, 'atomId'
+  add: (webContentsId, obj) ->
+    id = @saveToStorage obj
+    # Remember the owner.
+    @owners[webContentsId] ?= {}
+    @owners[webContentsId][id] ?= 0
+    @owners[webContentsId][id]++
+    # Returns object's id
+    id
 
-    # Store and reference the object, then return the storeId which points to
-    # where the object is stored. The caller can later dereference the object
-    # with the storeId.
-    # We use a difference key because the same object can be referenced for
-    # multiple times by the same renderer view.
-    store = ObjectsStore.forRenderView key
-    storeId = store.add obj
-
-    [id, storeId]
-
-  # Get an object according to its id.
+  # Get an object according to its ID.
   get: (id) ->
-    @objectsWeakMap.get id
+    @storage[id]?.object
 
-  # Remove an object according to its storeId.
-  remove: (key, storeId) ->
-    ObjectsStore.forRenderView(key).remove storeId
+  # Dereference an object according to its ID.
+  remove: (webContentsId, id) ->
+    @dereference id, 1
+    # Also reduce the count in owner.
+    pointer = @owners[webContentsId]
+    --pointer[id]
+    delete pointer[id] if pointer[id] is 0
 
-  # Clear all references to objects from renderer view.
-  clear: (key) ->
-    @emit "clear-#{key}"
-    ObjectsStore.releaseForRenderView key
+  # Clear all references to objects refrenced by the WebContents.
+  clear: (webContentsId) ->
+    @emit "clear-#{webContentsId}"
+    return unless @owners[webContentsId]?
+    @dereference id, count for id, count of @owners[webContentsId]
+    delete @owners[webContentsId]
+
+  # Private: Saves the object into storage and assigns an ID for it.
+  saveToStorage: (object) ->
+    id = v8Util.getHiddenValue object, 'atomId'
+    unless id
+      id = ++@nextId
+      @storage[id] = {count: 0, object}
+      v8Util.setHiddenValue object, 'atomId', id
+    ++@storage[id].count
+    id
+
+  # Private: Dereference the object from store.
+  dereference: (id, count) ->
+    pointer = @storage[id]
+    pointer.count -= count
+    if pointer.count is 0
+      v8Util.deleteHiddenValue pointer.object, 'atomId'
+      delete @storage[id]
 
 module.exports = new ObjectsRegistry

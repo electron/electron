@@ -2,11 +2,13 @@ assert = require 'assert'
 http = require 'http'
 https = require 'https'
 path = require 'path'
+ws = require 'ws'
+remote = require 'remote'
 
 describe 'chromium feature', ->
   fixtures = path.resolve __dirname, 'fixtures'
 
-  describe 'heap snapshot', ->
+  xdescribe 'heap snapshot', ->
     it 'does not crash', ->
       process.atomBinding('v8_util').takeHeapSnapshot()
 
@@ -34,13 +36,59 @@ describe 'chromium feature', ->
 
   describe 'window.open', ->
     it 'returns a BrowserWindowProxy object', ->
-      b = window.open 'about:blank', 'test', 'show=no'
+      b = window.open 'about:blank', '', 'show=no'
+      assert.equal b.closed, false
       assert.equal b.constructor.name, 'BrowserWindowProxy'
       b.close()
 
+    it 'accepts "node-integration" as feature', (done) ->
+      listener = (event) ->
+        window.removeEventListener 'message', listener
+        b.close()
+        assert.equal event.data, 'undefined'
+        done()
+      window.addEventListener 'message', listener
+      b = window.open "file://#{fixtures}/pages/window-opener-node.html", '', 'node-integration=no,show=no'
+
+  describe 'window.opener', ->
+    @timeout 10000
+
+    ipc = remote.require 'ipc'
+    url = "file://#{fixtures}/pages/window-opener.html"
+    w = null
+
+    afterEach ->
+      w?.destroy()
+      ipc.removeAllListeners 'opener'
+
+    it 'is null for main window', (done) ->
+      ipc.on 'opener', (event, opener) ->
+        assert.equal opener, null
+        done()
+      BrowserWindow = remote.require 'browser-window'
+      w = new BrowserWindow(show: false)
+      w.loadUrl url
+
+    it 'is not null for window opened by window.open', (done) ->
+      ipc.on 'opener', (event, opener) ->
+        b.close()
+        done(if opener isnt null then undefined else opener)
+      b = window.open url, '', 'show=no'
+
+  describe 'window.opener.postMessage', ->
+    it 'sets source and origin correctly', (done) ->
+      listener = (event) ->
+        window.removeEventListener 'message', listener
+        b.close()
+        assert.equal event.source.guestId, b.guestId
+        assert.equal event.origin, 'file://'
+        done()
+      window.addEventListener 'message', listener
+      b = window.open "file://#{fixtures}/pages/window-opener-postMessage.html", '', 'show=no'
+
   describe 'creating a Uint8Array under browser side', ->
     it 'does not crash', ->
-      RUint8Array = require('remote').getGlobal 'Uint8Array'
+      RUint8Array = remote.getGlobal 'Uint8Array'
       new RUint8Array
 
   describe 'webgl', ->
@@ -82,3 +130,60 @@ describe 'chromium feature', ->
       iframe.onload = ->
         assert.equal iframe.contentWindow.test, 'undefined undefined undefined'
         done()
+
+  describe 'storage', ->
+    it 'requesting persitent quota works', (done) ->
+      navigator.webkitPersistentStorage.requestQuota 1024 * 1024, (grantedBytes) ->
+        assert.equal grantedBytes, 1048576
+        done()
+
+  describe 'websockets', ->
+    wss = null
+    server = null
+    WebSocketServer = ws.Server
+
+    afterEach ->
+      wss.close()
+      server.close()
+
+    it 'has user agent', (done) ->
+      server = http.createServer()
+      server.listen 0, '127.0.0.1', ->
+        port = server.address().port
+        wss = new WebSocketServer(server: server)
+        wss.on 'error', done
+        wss.on 'connection', (ws) ->
+          if ws.upgradeReq.headers['user-agent']
+            done()
+          else
+            done('user agent is empty')
+        websocket = new WebSocket("ws://127.0.0.1:#{port}")
+
+  describe 'Promise', ->
+    it 'resolves correctly in Node.js calls', (done) ->
+      document.registerElement('x-element', {
+        prototype: Object.create(HTMLElement.prototype, {
+          createdCallback: { value: -> }
+        })
+      })
+
+      setImmediate ->
+        called = false
+        Promise.resolve().then ->
+          done(if called then undefined else new Error('wrong sequnce'))
+        document.createElement 'x-element'
+        called = true
+
+    it 'resolves correctly in Electron calls', (done) ->
+      document.registerElement('y-element', {
+        prototype: Object.create(HTMLElement.prototype, {
+          createdCallback: { value: -> }
+        })
+      })
+
+      remote.getGlobal('setImmediate') ->
+        called = false
+        Promise.resolve().then ->
+          done(if called then undefined else new Error('wrong sequnce'))
+        document.createElement 'y-element'
+        called = true

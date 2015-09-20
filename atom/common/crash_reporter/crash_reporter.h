@@ -7,6 +7,8 @@
 
 #include <map>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "base/basictypes.h"
 
@@ -15,6 +17,7 @@ namespace crash_reporter {
 class CrashReporter {
  public:
   typedef std::map<std::string, std::string> StringMap;
+  typedef std::pair<int, std::string> UploadReportResult;  // upload-date, id
 
   static CrashReporter* GetInstance();
 
@@ -24,6 +27,9 @@ class CrashReporter {
              bool auto_submit,
              bool skip_system_crash_handler,
              const StringMap& extra_parameters);
+
+  virtual std::vector<CrashReporter::UploadReportResult> GetUploadedReports(
+      const std::string& path);
 
  protected:
   CrashReporter();

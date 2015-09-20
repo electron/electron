@@ -4,53 +4,75 @@
 
 #include "atom/browser/atom_browser_client.h"
 
+#if defined(OS_WIN)
+#include <shlobj.h>
+#endif
+
 #include "atom/browser/atom_access_token_store.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
-#include "atom/browser/atom_resource_dispatcher_host_delegate.h"
+#include "atom/browser/atom_quota_permission_context.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
-#include "atom/browser/web_view_manager.h"
+#include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
+#include "base/files/file_util.h"
+#include "base/stl_util.h"
+#include "base/strings/string_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "chrome/browser/printing/printing_message_filter.h"
 #include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
 #include "chrome/browser/speech/tts_message_filter.h"
 #include "content/public/browser/browser_ppapi_host.h"
+#include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
-#include "content/public/browser/resource_dispatcher_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/web_preferences.h"
+#include "net/cert/x509_certificate.h"
+#include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
 #include "ui/base/l10n/l10n_util.h"
+#include "v8/include/v8.h"
 
 namespace atom {
 
 namespace {
 
+// The default routing id of WebContents.
+// In Electron each RenderProcessHost only has one WebContents, so this ID is
+// same for every WebContents.
+int kDefaultRoutingID = 2;
+
 // Next navigation should not restart renderer process.
 bool g_suppress_renderer_process_restart = false;
 
-struct FindByProcessId {
-  explicit FindByProcessId(int child_process_id)
-      : child_process_id_(child_process_id) {
-  }
+// Custom schemes to be registered to standard.
+std::string g_custom_schemes = "";
 
-  bool operator() (NativeWindow* const window) {
-    content::WebContents* web_contents = window->GetWebContents();
-    if (!web_contents)
-      return false;
+scoped_refptr<net::X509Certificate> ImportCertFromFile(
+    const base::FilePath& path) {
+  if (path.empty())
+    return nullptr;
 
-    int id = window->GetWebContents()->GetRenderProcessHost()->GetID();
-    return id == child_process_id_;
-  }
+  std::string cert_data;
+  if (!base::ReadFileToString(path, &cert_data))
+    return nullptr;
 
-  int child_process_id_;
-};
+  net::CertificateList certs =
+      net::X509Certificate::CreateCertificateListFromBytes(
+          cert_data.data(), cert_data.size(),
+          net::X509Certificate::FORMAT_AUTO);
+
+  if (certs.empty())
+    return nullptr;
+
+  return certs[0];
+}
 
 }  // namespace
 
@@ -59,8 +81,12 @@ void AtomBrowserClient::SuppressRendererProcessRestartForOnce() {
   g_suppress_renderer_process_restart = true;
 }
 
-AtomBrowserClient::AtomBrowserClient()
-    : dying_render_process_(nullptr) {
+void AtomBrowserClient::SetCustomSchemes(
+    const std::vector<std::string>& schemes) {
+  g_custom_schemes = JoinString(schemes, ',');
+}
+
+AtomBrowserClient::AtomBrowserClient() {
 }
 
 AtomBrowserClient::~AtomBrowserClient() {
@@ -68,9 +94,9 @@ AtomBrowserClient::~AtomBrowserClient() {
 
 void AtomBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
-  int id = host->GetID();
-  host->AddFilter(new printing::PrintingMessageFilter(host->GetID()));
-  host->AddFilter(new TtsMessageFilter(id, host->GetBrowserContext()));
+  int process_id = host->GetID();
+  host->AddFilter(new printing::PrintingMessageFilter(process_id));
+  host->AddFilter(new TtsMessageFilter(process_id, host->GetBrowserContext()));
 }
 
 content::SpeechRecognitionManagerDelegate*
@@ -82,15 +108,8 @@ content::AccessTokenStore* AtomBrowserClient::CreateAccessTokenStore() {
   return new AtomAccessTokenStore;
 }
 
-void AtomBrowserClient::ResourceDispatcherHostCreated() {
-  resource_dispatcher_delegate_.reset(new AtomResourceDispatcherHostDelegate);
-  content::ResourceDispatcherHost::Get()->SetDelegate(
-      resource_dispatcher_delegate_.get());
-}
-
 void AtomBrowserClient::OverrideWebkitPrefs(
-    content::RenderViewHost* render_view_host,
-    content::WebPreferences* prefs) {
+    content::RenderViewHost* host, content::WebPreferences* prefs) {
   prefs->javascript_enabled = true;
   prefs->web_security_enabled = true;
   prefs->javascript_can_open_windows_automatically = true;
@@ -108,26 +127,9 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->allow_displaying_insecure_content = false;
   prefs->allow_running_insecure_content = false;
 
-  // Turn off web security for devtools.
-  auto web_contents = content::WebContents::FromRenderViewHost(
-      render_view_host);
-  if (web_contents && web_contents->GetURL().SchemeIs("chrome-devtools")) {
-    prefs->web_security_enabled = false;
-    return;
-  }
-
   // Custom preferences of guest page.
-  auto process = render_view_host->GetProcess();
-  WebViewManager::WebViewInfo info;
-  if (WebViewManager::GetInfoForProcess(process, &info)) {
-    prefs->web_security_enabled = !info.disable_web_security;
-    return;
-  }
-
-  NativeWindow* window = NativeWindow::FromRenderView(
-      process->GetID(), render_view_host->GetRoutingID());
-  if (window)
-    window->OverrideWebkitPrefs(prefs);
+  auto web_contents = content::WebContents::FromRenderViewHost(host);
+  WebContentsPreferences::OverrideWebkitPrefs(web_contents, prefs);
 }
 
 std::string AtomBrowserClient::GetApplicationLocale() {
@@ -144,88 +146,101 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
     return;
   }
 
-  if (current_instance->HasProcess())
-    dying_render_process_ = current_instance->GetProcess();
+  // Restart renderer process for all navigations except "javacript:" scheme.
+  if (url.SchemeIs(url::kJavaScriptScheme))
+    return;
 
-  // Restart renderer process for all navigations.
   *new_instance = content::SiteInstance::CreateForURL(browser_context, url);
+
+  // Remember the original renderer process of the pending renderer process.
+  auto current_process = current_instance->GetProcess();
+  auto pending_process = (*new_instance)->GetProcess();
+  pending_processes_[pending_process->GetID()] = current_process->GetID();
+  // Clear the entry in map when process ends.
+  current_process->AddObserver(this);
 }
 
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
     base::CommandLine* command_line,
-    int child_process_id) {
+    int process_id) {
   std::string process_type = command_line->GetSwitchValueASCII("type");
   if (process_type != "renderer")
     return;
 
-  WindowList* list = WindowList::GetInstance();
-  NativeWindow* window = nullptr;
+  // The registered standard schemes.
+  if (!g_custom_schemes.empty())
+    command_line->AppendSwitchASCII(switches::kRegisterStandardSchemes,
+                                    g_custom_schemes);
 
-  // Find the owner of this child process.
-  WindowList::const_iterator iter = std::find_if(
-      list->begin(), list->end(), FindByProcessId(child_process_id));
-  if (iter != list->end())
-    window = *iter;
-
-  // If the render process is a newly started one, which means the window still
-  // uses the old going-to-be-swapped render process, then we try to find the
-  // window from the swapped render process.
-  if (!window && dying_render_process_) {
-    int dying_process_id = dying_render_process_->GetID();
-    WindowList::const_iterator iter = std::find_if(
-        list->begin(), list->end(), FindByProcessId(dying_process_id));
-    if (iter != list->end()) {
-      window = *iter;
-      child_process_id = dying_process_id;
-    } else {
-      // It appears that the dying process doesn't belong to a BrowserWindow,
-      // then it might be a guest process, if it is we should update its
-      // process ID in the WebViewManager.
-      auto child_process = content::RenderProcessHost::FromID(child_process_id);
-      // Update the process ID in webview guests.
-      WebViewManager::UpdateGuestProcessID(dying_render_process_,
-                                           child_process);
-    }
+#if defined(OS_WIN)
+  // Append --app-user-model-id.
+  PWSTR current_app_id;
+  if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
+    command_line->AppendSwitchNative(switches::kAppUserModelId, current_app_id);
+    CoTaskMemFree(current_app_id);
   }
+#endif
 
-  if (window) {
-    window->AppendExtraCommandLineSwitches(command_line, child_process_id);
-  } else {
-    // Append commnad line arguments for guest web view.
-    auto child_process = content::RenderProcessHost::FromID(child_process_id);
-    WebViewManager::WebViewInfo info;
-    if (WebViewManager::GetInfoForProcess(child_process, &info)) {
-      command_line->AppendSwitchASCII(
-          switches::kGuestInstanceID,
-          base::IntToString(info.guest_instance_id));
-      command_line->AppendSwitchASCII(
-          switches::kNodeIntegration,
-          info.node_integration ? "true" : "false");
-      if (info.plugins)
-        command_line->AppendSwitch(switches::kEnablePlugins);
-      if (!info.preload_script.empty())
-        command_line->AppendSwitchPath(
-            switches::kPreloadScript,
-            info.preload_script);
-    }
-  }
+  // If the process is a pending process, we should use the old one.
+  if (ContainsKey(pending_processes_, process_id))
+    process_id = pending_processes_[process_id];
 
-  dying_render_process_ = nullptr;
+  // Get the WebContents of the render process.
+  content::WebContents* web_contents = content::WebContents::FromRenderViewHost(
+      content::RenderViewHost::FromID(process_id, kDefaultRoutingID));
+  if (!web_contents)
+    return;
+
+  WebContentsPreferences::AppendExtraCommandLineSwitches(
+      web_contents, command_line);
 }
 
 void AtomBrowserClient::DidCreatePpapiPlugin(
-    content::BrowserPpapiHost* browser_host) {
-  auto command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kEnablePlugins))
-    browser_host->GetPpapiHost()->AddHostFactoryFilter(
-        scoped_ptr<ppapi::host::HostFactory>(
-            new chrome::ChromeBrowserPepperHostFactory(browser_host)));
+    content::BrowserPpapiHost* host) {
+  host->GetPpapiHost()->AddHostFactoryFilter(
+      make_scoped_ptr(new chrome::ChromeBrowserPepperHostFactory(host)));
+}
+
+content::QuotaPermissionContext*
+    AtomBrowserClient::CreateQuotaPermissionContext() {
+  return new AtomQuotaPermissionContext;
+}
+
+void AtomBrowserClient::SelectClientCertificate(
+    content::WebContents* web_contents,
+    net::SSLCertRequestInfo* cert_request_info,
+    scoped_ptr<content::ClientCertificateDelegate> delegate) {
+  // --client-certificate=`path`
+  auto cmd = base::CommandLine::ForCurrentProcess();
+  if (cmd->HasSwitch(switches::kClientCertificate)) {
+    auto cert_path = cmd->GetSwitchValuePath(switches::kClientCertificate);
+    auto certificate = ImportCertFromFile(cert_path);
+    if (certificate.get())
+      delegate->ContinueWithCertificate(certificate.get());
+    return;
+  }
+
+  if (!cert_request_info->client_certs.empty())
+    Browser::Get()->ClientCertificateSelector(web_contents,
+                                              cert_request_info,
+                                              delegate.Pass());
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
     const content::MainFunctionParams&) {
   v8::V8::Initialize();  // Init V8 before creating main parts.
   return new AtomBrowserMainParts;
+}
+
+void AtomBrowserClient::RenderProcessHostDestroyed(
+    content::RenderProcessHost* host) {
+  int process_id = host->GetID();
+  for (const auto& entry : pending_processes_) {
+    if (entry.first == process_id || entry.second == process_id) {
+      pending_processes_.erase(entry.first);
+      break;
+    }
+  }
 }
 
 }  // namespace atom

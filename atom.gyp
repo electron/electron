@@ -4,9 +4,7 @@
     'product_name%': 'Electron',
     'company_name%': 'GitHub, Inc',
     'company_abbr%': 'github',
-    'version%': '0.26.0',
-
-    'atom_source_root': '<!(["python", "tools/atom_source_root.py"])',
+    'version%': '0.33.0',
   },
   'includes': [
     'filenames.gypi',
@@ -17,8 +15,12 @@
       'ATOM_PRODUCT_NAME="<(product_name)"',
       'ATOM_PROJECT_NAME="<(project_name)"',
     ],
-    'mac_framework_dirs': [
-      '<(atom_source_root)/external_binaries',
+    'conditions': [
+      ['OS=="mac"', {
+        'mac_framework_dirs': [
+          '<(source_root)/external_binaries',
+        ],
+      }],
     ],
   },
   'targets': [
@@ -114,6 +116,15 @@
           ],
         }],  # OS!="mac"
         ['OS=="win"', {
+          'include_dirs': [
+            '<(libchromiumcontent_dir)/gen/ui/resources',
+          ],
+          'msvs_settings': {
+            'VCManifestTool': {
+              'EmbedManifest': 'true',
+              'AdditionalManifestFiles': 'atom/browser/resources/win/atom.manifest',
+            }
+          },
           'copies': [
             {
               'variables': {
@@ -124,14 +135,15 @@
                       '<@(libchromiumcontent_shared_v8_libraries)',
                     ],
                   }, {
-                    'copied_libraries': [],
+                    'copied_libraries': [
+                      '<(libchromiumcontent_dir)/pdf.dll',
+                    ],
                   }],
                 ],
               },
               'destination': '<(PRODUCT_DIR)',
               'files': [
                 '<@(copied_libraries)',
-                '<(libchromiumcontent_dir)/ffmpegsumo.dll',
                 '<(libchromiumcontent_dir)/libEGL.dll',
                 '<(libchromiumcontent_dir)/libGLESv2.dll',
                 '<(libchromiumcontent_dir)/icudtl.dat',
@@ -153,6 +165,10 @@
                 'atom/browser/default_app',
               ]
             },
+          ],
+        }, {
+          'dependencies': [
+            'vendor/breakpad/breakpad.gyp:dump_syms#host',
           ],
         }],  # OS=="win"
         ['OS=="linux"', {
@@ -176,7 +192,6 @@
               'destination': '<(PRODUCT_DIR)',
               'files': [
                 '<@(copied_libraries)',
-                '<(libchromiumcontent_dir)/libffmpegsumo.so',
                 '<(libchromiumcontent_dir)/icudtl.dat',
                 '<(libchromiumcontent_dir)/content_shell.pak',
                 '<(libchromiumcontent_dir)/natives_blob.bin',
@@ -209,8 +224,6 @@
         # Defined in Chromium but not exposed in its gyp file.
         'V8_USE_EXTERNAL_STARTUP_DATA',
         'ENABLE_PLUGINS',
-        # Needed by Node.
-        'NODE_WANT_INTERNALS=1',
       ],
       'sources': [
         '<@(lib_sources)',
@@ -255,8 +268,9 @@
             'libraries': [
               '-limm32.lib',
               '-loleacc.lib',
-              '-lComdlg32.lib',
-              '-lWininet.lib',
+              '-lcomctl32.lib',
+              '-lcomdlg32.lib',
+              '-lwininet.lib',
             ],
           },
           'dependencies': [
@@ -273,7 +287,8 @@
         }],  # OS=="win"
         ['OS=="mac"', {
           'dependencies': [
-            'vendor/breakpad/breakpad.gyp:breakpad',
+            'vendor/crashpad/client/client.gyp:crashpad_client',
+            'vendor/crashpad/handler/handler.gyp:crashpad_handler',
           ],
         }],  # OS=="mac"
         ['OS=="linux"', {
@@ -422,14 +437,12 @@
               'destination': '<(PRODUCT_DIR)/<(product_name) Framework.framework/Versions/A/Libraries',
               'files': [
                 '<@(copied_libraries)',
-                '<(libchromiumcontent_dir)/ffmpegsumo.so',
               ],
             },
             {
               'destination': '<(PRODUCT_DIR)/<(product_name) Framework.framework/Versions/A/Resources',
               'files': [
-                '<(PRODUCT_DIR)/Inspector',
-                '<(PRODUCT_DIR)/crash_report_sender.app',
+                '<(PRODUCT_DIR)/crashpad_handler',
               ],
             },
           ],
@@ -445,12 +458,21 @@
               ],
             },
             {
+              'postbuild_name': 'Fix path of ffmpeg',
+              'action': [
+                'install_name_tool',
+                '-change',
+                '@loader_path/libffmpeg.dylib',
+                '@rpath/libffmpeg.dylib',
+                '${BUILT_PRODUCTS_DIR}/<(product_name) Framework.framework/Versions/A/<(product_name) Framework',
+              ],
+            },
+            {
               'postbuild_name': 'Add symlinks for framework subdirectories',
               'action': [
                 'tools/mac/create-framework-subdir-symlinks.sh',
                 '<(product_name) Framework',
                 'Libraries',
-                'Frameworks',
               ],
             },
           ],

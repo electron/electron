@@ -11,6 +11,7 @@
 #include "atom/common/chrome_version.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/logging.h"
+#include "base/process/process_metrics.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
@@ -24,6 +25,11 @@ struct DummyClass { bool crash; };
 
 void Crash() {
   static_cast<DummyClass*>(NULL)->crash = true;
+}
+
+void Hang() {
+  for (;;)
+    base::PlatformThread::Sleep(base::TimeDelta::FromSeconds(1));
 }
 
 // Called when there is a fatal error in V8, we just crash the process here so
@@ -49,12 +55,16 @@ AtomBindings::~AtomBindings() {
 }
 
 void AtomBindings::BindTo(v8::Isolate* isolate,
-                          v8::Handle<v8::Object> process) {
+                          v8::Local<v8::Object> process) {
   v8::V8::SetFatalErrorHandler(FatalErrorCallback);
 
   mate::Dictionary dict(isolate, process);
   dict.SetMethod("crash", &Crash);
+  dict.SetMethod("hang", &Hang);
   dict.SetMethod("log", &Log);
+#if defined(OS_POSIX)
+  dict.SetMethod("setFdLimit", &base::SetFdLimit);
+#endif
   dict.SetMethod("activateUvLoop",
       base::Bind(&AtomBindings::ActivateUVLoop, base::Unretained(this)));
 
@@ -91,6 +101,10 @@ void AtomBindings::OnCallNextTick(uv_async_t* handle) {
     v8::Context::Scope context_scope(env->context());
     if (tick_info->in_tick())
       continue;
+
+    if (tick_info->length() == 0) {
+      env->isolate()->RunMicrotasks();
+    }
 
     if (tick_info->length() == 0) {
       tick_info->set_index(0);

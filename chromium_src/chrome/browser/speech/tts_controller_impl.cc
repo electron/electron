@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 
-#include "base/float_util.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/speech/tts_platform.h"
