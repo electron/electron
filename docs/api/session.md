@@ -18,11 +18,7 @@ var session = win.webContents.session
 ### Event: 'will-download'
 
 * `event` Event
-* `item` Object
-  * `url` String
-  * `filename` String
-  * `mimeType` String
-  * `hasUserGesture` Boolean
+* `item` [DownloadItem](download-item.md)
 * `webContents` [WebContents](web-contents.md)
 
 Fired when Electron is about to download `item` in `webContents`.
@@ -32,7 +28,7 @@ Calling `event.preventDefault()` will cancel the download.
 ```javascript
 session.on('will-download', function(event, item, webContents) {
   event.preventDefault();
-  require('request')(item.url, function(data) {
+  require('request')(item.getURL(), function(data) {
     require('fs').writeFileSync('/somewhere', data);
   });
 });
@@ -195,3 +191,10 @@ proxy-uri = [<proxy-scheme>"://"]<proxy-host>[":"<proxy-port>]
 
 Sets download saving directory. By default, the download directory will be the
 `Downloads` under the respective app folder.
+
+### `session.setOpenDownloadDialog(openDownloadDialog)`
+
+* `openDownloadDialog` Boolean - Whether a download saving dialog will be
+  prompted when the download starts.
+
+By default, the download saving dialog is enable in Electron.
