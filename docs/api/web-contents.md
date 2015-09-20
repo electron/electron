@@ -415,7 +415,7 @@ win.webContents.on("did-finish-load", function() {
   win.webContents.printToPDF({}, function(error, data) {
     if (error) throw error;
     fs.writeFile("/tmp/print.pdf", data, function(error) {
-      if (err)
+      if (error)
         throw error;
       console.log("Write PDF successfully.");
     })
