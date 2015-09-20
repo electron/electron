@@ -41,11 +41,11 @@ void DownloadItem::OnDownloadDestroyed(content::DownloadItem* download) {
 
 bool DownloadItem::IsDestroyed() const {
   return download_item_ == nullptr;
-};
+}
 
 void DownloadItem::Destroy() {
   download_item_ = nullptr;
-};
+}
 
 int64 DownloadItem::GetReceivedBytes() {
   return download_item_->GetReceivedBytes();

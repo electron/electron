@@ -19,7 +19,7 @@ namespace api {
 class DownloadItem : public mate::TrackableObject<DownloadItem>,
                      public content::DownloadItem::Observer {
  public:
-  DownloadItem(content::DownloadItem* download_item);
+  explicit DownloadItem(content::DownloadItem* download_item);
   ~DownloadItem();
   static mate::Handle<DownloadItem> Create(v8::Isolate* isolate,
                                            content::DownloadItem* item);
