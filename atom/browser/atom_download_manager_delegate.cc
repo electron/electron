@@ -75,20 +75,24 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
     window = relay->window.get();
 
   file_dialog::Filters filters;
-  base::FilePath path = default_path;
-  if (open_download_dialog_ &&
-      !file_dialog::ShowSaveDialog(window, item->GetURL().spec(), default_path,
-                                   filters, &path)) {
-    return;
+  base::FilePath path;
+  if (!open_download_dialog_) {
+    // Use default_path if download dialog is disabled.
+    path = default_path;
+  } else {
+    if (file_dialog::ShowSaveDialog(window, item->GetURL().spec(), default_path,
+                                    filters, &path)) {
+      // Remember the last selected download directory.
+      AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
+          download_manager_->GetBrowserContext());
+      browser_context->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
+                                            path.DirName());
+    }
   }
 
-  if (open_download_dialog_) {
-    // Remeber the last selected download directory.
-    AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
-        download_manager_->GetBrowserContext());
-    browser_context->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
-                                          path.DirName());
-  }
+  // Running the DownloadTargetCallback with an empty FilePath signals that the
+  // download should be cancelled.
+  // If user cancels the file save dialog, run the callback with empty FilePath.
   callback.Run(path,
                content::DownloadItem::TARGET_DISPOSITION_PROMPT,
                content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path);
