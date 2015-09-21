@@ -9,6 +9,32 @@
 #include "atom/common/node_includes.h"
 #include "native_mate/dictionary.h"
 
+namespace mate {
+
+template<>
+struct Converter<content::DownloadItem::DownloadState> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   content::DownloadItem::DownloadState state) {
+    std::string download_state;
+    switch (state) {
+      case content::DownloadItem::COMPLETE:
+        download_state = "completed";
+        break;
+      case content::DownloadItem::CANCELLED:
+        download_state = "cancelled";
+        break;
+      case content::DownloadItem::INTERRUPTED:
+        download_state = "interrputed";
+        break;
+      default:
+        break;
+    }
+    return ConvertToV8(isolate, download_state);
+  }
+};
+
+}  // namespace mate
+
 namespace atom {
 
 namespace api {
@@ -29,8 +55,10 @@ DownloadItem::~DownloadItem() {
 }
 
 void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
-  if (download_item_ == item)
-    download_item_->IsDone() ? Emit("completed") : Emit("updated");
+  if (download_item_ == item) {
+    download_item_->IsDone() ?
+        Emit("done", item->GetState()) : Emit("updated");
+  }
 }
 
 void DownloadItem::OnDownloadDestroyed(content::DownloadItem* download) {

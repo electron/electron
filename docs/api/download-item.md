@@ -16,8 +16,8 @@ win.webContents.session.on('will-download', function(event, item, webContents) {
   item.on('updated', function() {
     console.log('Recived bytes: ' + item.getReceiveBytes());
   });
-  item.on('completed', function() {
-    if (item.getReceiveBytes() >= item.getTotalBytes()) {
+  item.on('done', function(e, state) {
+    if (state == "completed") {
       console.log("Download successfully");
     } else {
       console.log("Download is cancelled or interrupted that can't be resumed");
@@ -32,7 +32,13 @@ win.webContents.session.on('will-download', function(event, item, webContents) {
 
 Emits when the `downloadItem` gets updated.
 
-### Event: 'completed'
+### Event: 'done'
+
+* `event` Event
+* `state` String
+  * `completed` - The download completed successfully.
+  * `cancelled` - The download has been cancelled.
+  * `interrupted` - An error broke the connection with the file server.
 
 Emits when the download is in a terminal state. This includes a completed
 download, a cancelled download(via `downloadItem.cancel()`), and interrputed
@@ -77,6 +83,7 @@ dialog, the actual name of saved file will be different with the suggested one.
 ### `downloadItem.getTotalBytes()`
 
 Returns a `Integer` represents the total size in bytes of the download item.
+If the size is unknown, it returns 0.
 
 ### `downloadItem.getReceivedBytes()`
 
