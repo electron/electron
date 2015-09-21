@@ -2,6 +2,7 @@ assert = require 'assert'
 remote = require 'remote'
 http   = require 'http'
 path   = require 'path'
+fs     = require 'fs'
 app    = remote.require 'app'
 BrowserWindow = remote.require 'browser-window'
 
@@ -72,3 +73,52 @@ describe 'session module', ->
           quotas: ['persistent'],
         w.webContents.session.clearStorageData options, ->
           w.webContents.send 'getcount'
+
+  describe 'DownloadItem', ->
+    # A 5MB mock pdf.
+    mockPDF = new Buffer(1024*1024*5)
+    contentDisposition = 'inline; filename="mock.pdf"'
+    # TODO(hokein): Change the download directory to spec/fixtures directory.
+    # We have to use the # default download directory due to the broken
+    # session.setDownloadPath API is broken. Once the API is fixed, we can make
+    # this change.
+    defaultDownloadDir = path.join app.getPath('userData'), 'Downloads'
+    downloadFilePath = path.join defaultDownloadDir, "mock.pdf"
+    downloadServer = http.createServer (req, res) ->
+      res.writeHead 200, {
+        'Content-Length': mockPDF.length,
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': contentDisposition
+      }
+      res.end mockPDF
+      downloadServer.close()
+
+    it 'can download successfully', (done) ->
+      downloadServer.listen 0, '127.0.0.1', ->
+        {port} = downloadServer.address()
+        w.loadUrl "#{url}:#{port}"
+        w.webContents.session.setOpenDownloadDialog false
+
+        w.webContents.session.once 'will-download', (e, item, webContents) ->
+          item.on 'done', (e, state) ->
+            assert.equal state, "completed"
+            assert.equal item.getContentDisposition(), contentDisposition
+            assert.equal item.getReceiveBytes(), mockPDF.length
+            assert.equal item.getTotalBytes(), mockPDF.length
+            assert fs.existsSync downloadFilePath
+            fs.unlinkSync downloadFilePath
+            done()
+          assert.equal item.getURL(), "#{url}:#{port}/"
+          assert.equal item.getMimeType(), "application/pdf"
+
+    it 'can cancel download', (done) ->
+      downloadServer.listen 0, '127.0.0.1', ->
+        {port} = downloadServer.address()
+        w.loadUrl "#{url}:#{port}/"
+        w.webContents.session.setOpenDownloadDialog false
+        w.webContents.session.once 'will-download', (e, item, webContents) ->
+          item.pause()
+          item.on 'done', (e, state) ->
+            assert.equal state, "cancelled"
+            done()
+          item.cancel()
