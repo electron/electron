@@ -1,0 +1,338 @@
+# app
+
+`app` 模块是为了控制整个应用的生命周期设计的。
+
+下面的这个例子将会展示如何在最后一个窗口被关闭时退出应用：
+
+```javascript
+var app = require('app');
+app.on('window-all-closed', function() {
+  app.quit();
+});
+```
+
+## 事件
+
+`app` 对象会触发以下的事件：
+
+### 事件： 'will-finish-launching'
+
+当应用程序完成基础的启动的时候被触发。在 Windows 和 Linux 中，
+`will-finish-launching` 事件与 `ready` 事件是相同的； 在 OS X 中，
+这个时间相当于 `NSApplication` 中的 `applicationWillFinishLaunching` 提示。
+你应该经常在这里为 `open-file` 和 `open-url` 设置监听器，并启动崩溃报告和自动更新。
+
+在大多数的情况下，你应该只在 `ready` 事件处理器中完成所有的业务。
+
+### 事件： 'ready'
+
+当 Electron 完成初始化时被触发。
+
+### 事件： 'window-all-closed'
+
+当所有的窗口都被关闭时触发。
+
+这个时间仅在应用还没有退出时才能触发。 如果用户按下了 `Cmd + Q`，
+或者开发者调用了 `app.quit()` ，Electron 将会先尝试关闭所有的窗口再触发 `will-quit` 事件，
+在这种情况下 `window-all-closed` 不会被触发。
+
+### 事件： 'before-quit'
+
+返回：
+
+* `event` 事件
+
+在应用程序开始关闭它的窗口的时候被触发。
+调用 `event.preventDefault()` 将会阻止终止应用程序的默认行为。
+
+### 事件： 'will-quit'
+
+返回：
+
+* `event` 事件
+
+当所有的窗口已经被关闭，应用即将退出时被触发。
+调用 `event.preventDefault()` 将会阻止终止应用程序的默认行为。
+
+你可以在 `window-all-closed` 事件的描述中看到 `will-quit` 事件
+和 `window-all-closed` 事件的区别。
+
+### 事件： 'quit'
+
+当应用程序正在退出时触发。
+
+### 事件： 'open-file'
+
+返回：
+
+* `event` 事件
+* `path` 字符串
+
+当用户想要在应用中打开一个文件时触发。`open-file` 事件常常在应用已经打开并且系统想要再次使用应用打开文件时被触发。
+ `open-file` 也会在一个文件被拖入 dock 且应用还没有运行的时候被触发。
+请确认在应用启动的时候（甚至在 `ready` 事件被触发前）就对 `open-file` 事件进行监听，以处理这种情况。
+
+如果你想处理这个事件，你应该调用 `event.preventDefault()` 。
+
+### 事件： 'open-url'
+
+返回：
+
+* `event` 事件
+* `url` 字符串
+
+当用户想要在应用中打开一个url的时候被触发。URL格式必须要提前标识才能被你的应用打开。
+
+如果你想处理这个事件，你应该调用 `event.preventDefault()` 。
+
+### 事件： 'activate' _OS X_
+
+返回：
+
+* `event` 事件
+* `hasVisibleWindows` 布尔值
+
+当应用被激活时触发，常用于点击应用的 dock 图标的时候。
+
+### 事件： 'browser-window-blur'
+
+返回：
+
+* `event` 事件
+* `window` 浏览器窗口
+
+当一个 [浏览器窗口](browser-window.md) 失去焦点的时候触发。
+
+### 事件： 'browser-window-focus'
+
+返回：
+
+* `event` 事件
+* `window` 浏览器窗口
+
+当一个 [浏览器窗口](browser-window.md) 获得焦点的时候触发。
+
+### 事件： 'browser-window-created'
+
+返回：
+
+* `event` 事件
+* `window` 浏览器窗口
+
+当一个 [浏览器窗口](browser-window.md) 被创建的时候触发。
+
+### 事件： 'select-certificate'
+
+Emitted when a client certificate is requested.
+
+返回：
+
+* `event` 事件
+* `webContents` [WebContents](browser-window.md#class-webcontents)
+* `url` String
+* `certificateList` [Objects]
+  * `data` PEM encoded data
+  * `issuerName` Issuer's Common Name
+* `callback` Function
+
+```javascript
+app.on('select-certificate', function(event, host, url, list, callback) {
+  event.preventDefault();
+  callback(list[0]);
+})
+```
+
+The `url` corresponds to the navigation entry requesting the client certificate
+and `callback` needs to be called with an entry filtered from the list. Using
+`event.preventDefault()` prevents the application from using the first
+certificate from the store.
+
+### 事件： 'gpu-process-crashed'
+
+Emitted when the gpu process crashes.
+
+## Methods
+
+The `app` object has the following methods:
+
+**Note:** Some methods are only available on specific operating systems and are labeled as such.
+
+### `app.quit()`
+
+Try to close all windows. The `before-quit` event will emitted first. If all
+windows are successfully closed, the `will-quit` event will be emitted and by
+default the application will terminate.
+
+This method guarantees that all `beforeunload` and `unload` event handlers are
+correctly executed. It is possible that a window cancels the quitting by
+returning `false` in the `beforeunload` event handler.
+
+### `app.getAppPath()`
+
+Returns the current application directory.
+
+### `app.getPath(name)`
+
+* `name` String
+
+Retrieves a path to a special directory or file associated with `name`. On
+failure an `Error` is thrown.
+
+You can request the following paths by the name:
+
+* `home` User's home directory.
+* `appData` Per-user application data directory, which by default points to:
+  * `%APPDATA%` on Windows
+  * `$XDG_CONFIG_HOME` or `~/.config` on Linux
+  * `~/Library/Application Support` on OS X
+* `userData` The directory for storing your app's configuration files, which by
+  default it is the `appData` directory appended with your app's name.
+* `cache` Per-user application cache directory, which by default points to:
+  * `%APPDATA%` on Windows (which doesn't have a universal cache location)
+  * `$XDG_CACHE_HOME` or `~/.cache` on Linux
+  * `~/Library/Caches` on OS X
+* `userCache` The directory for placing your app's caches, by default it is the
+ `cache` directory appended with your app's name.
+* `temp` Temporary directory.
+* `userDesktop` The current user's Desktop directory.
+* `exe` The current executable file.
+* `module` The `libchromiumcontent` library.
+
+### `app.setPath(name, path)`
+
+* `name` String
+* `path` String
+
+Overrides the `path` to a special directory or file associated with `name`. If
+the path specifies a directory that does not exist, the directory will be
+created by this method. On failure an `Error` is thrown.
+
+You can only override paths of a `name` defined in `app.getPath`.
+
+By default, web pages's cookies and caches will be stored under the `userData`
+directory. If you want to change this location, you have to override the
+`userData` path before the `ready` event of the `app` module is emitted.
+
+### `app.getVersion()`
+
+Returns the version of the loaded application. If no version is found in the
+application's `package.json` file, the version of the current bundle or
+executable is returned.
+
+### `app.getName()`
+
+Returns the current application's name, which is the name in the application's
+`package.json` file.
+
+Usually the `name` field of `package.json` is a short lowercased name, according
+to the npm modules spec. You should usually also specify a `productName`
+field, which is your application's full capitalized name, and which will be
+preferred over `name` by Electron.
+
+### `app.getLocale()`
+
+Returns the current application locale.
+
+### `app.resolveProxy(url, callback)`
+
+* `url` URL
+* `callback` Function
+
+Resolves the proxy information for `url`. The `callback` will be called with
+`callback(proxy)` when the request is performed.
+
+### `app.addRecentDocument(path)`
+
+* `path` String
+
+Adds `path` to the recent documents list.
+
+This list is managed by the OS. On Windows you can visit the list from the task
+bar, and on OS X you can visit it from dock menu.
+
+### `app.clearRecentDocuments()`
+
+Clears the recent documents list.
+
+### `app.setUserTasks(tasks)` _Windows_
+
+* `tasks` Array - Array of `Task` objects
+
+Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
+
+`tasks` is an array of `Task` objects in following format:
+
+`Task` Object
+* `program` String - Path of the program to execute, usually you should
+  specify `process.execPath` which opens the current program.
+* `arguments` String - The command line arguments when `program` is
+  executed.
+* `title` String - The string to be displayed in a JumpList.
+* `description` String - Description of this task.
+* `iconPath` String - The absolute path to an icon to be displayed in a
+  JumpList, which can be an arbitrary resource file that contains an icon. You
+  can usually specify `process.execPath` to show the icon of the program.
+* `iconIndex` Integer - The icon index in the icon file. If an icon file
+  consists of two or more icons, set this value to identify the icon. If an
+  icon file consists of one icon, this value is 0.
+
+### `app.commandLine.appendSwitch(switch[, value])`
+
+Append a switch (with optional `value`) to Chromium's command line.
+
+**Note:** This will not affect `process.argv`, and is mainly used by developers
+to control some low-level Chromium behaviors.
+
+### `app.commandLine.appendArgument(value)`
+
+Append an argument to Chromium's command line. The argument will be quoted
+correctly.
+
+**Note:** This will not affect `process.argv`.
+
+### `app.dock.bounce([type])` _OS X_
+
+* `type` String (optional) - Can be `critical` or `informational`. The default is
+ `informational`
+
+When `critical` is passed, the dock icon will bounce until either the
+application becomes active or the request is canceled.
+
+When `informational` is passed, the dock icon will bounce for one second.
+However, the request remains active until either the application becomes active
+or the request is canceled.
+
+Returns an ID representing the request.
+
+### `app.dock.cancelBounce(id)` _OS X_
+
+* `id` Integer
+
+Cancel the bounce of `id`.
+
+### `app.dock.setBadge(text)` _OS X_
+
+* `text` String
+
+Sets the string to be displayed in the dock’s badging area.
+
+### `app.dock.getBadge()` _OS X_
+
+Returns the badge string of the dock.
+
+### `app.dock.hide()` _OS X_
+
+Hides the dock icon.
+
+### `app.dock.show()` _OS X_
+
+Shows the dock icon.
+
+### `app.dock.setMenu(menu)` _OS X_
+
+* `menu` Menu
+
+Sets the application's [dock menu][dock-menu].
+
+[dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
+[tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
