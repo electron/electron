@@ -81,3 +81,8 @@ Returns a `Integer` represents the total size in bytes of the download item.
 ### `downloadItem.getReceivedBytes()`
 
 Returns a `Integer` represents the received bytes of the download item.
+
+### `downloadItem.getContentDisposition()`
+
+Returns a `String` represents the Content-Disposition field from the response
+header.

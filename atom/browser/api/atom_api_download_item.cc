@@ -71,6 +71,10 @@ std::string DownloadItem::GetSuggestedFilename() {
   return download_item_->GetSuggestedFilename();
 }
 
+std::string DownloadItem::GetContentDisposition() {
+  return download_item_->GetContentDisposition();
+}
+
 void DownloadItem::Pause() {
   download_item_->Pause();
 }
@@ -94,7 +98,8 @@ mate::ObjectTemplateBuilder DownloadItem::GetObjectTemplateBuilder(
       .SetMethod("getURL", &DownloadItem::GetURL)
       .SetMethod("getMimeType", &DownloadItem::GetMimeType)
       .SetMethod("hasUserGesture", &DownloadItem::HasUserGesture)
-      .SetMethod("getSuggestedFilename", &DownloadItem::GetSuggestedFilename);
+      .SetMethod("getSuggestedFilename", &DownloadItem::GetSuggestedFilename)
+      .SetMethod("getContentDisposition", &DownloadItem::GetContentDisposition);
 }
 
 void SetWrapDownloadItem(const WrapDownloadItemCallback& callback) {

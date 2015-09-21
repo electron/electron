@@ -36,6 +36,7 @@ class DownloadItem : public mate::TrackableObject<DownloadItem>,
   std::string GetMimeType();
   bool HasUserGesture();
   std::string GetSuggestedFilename();
+  std::string GetContentDisposition();
   const GURL& GetURL();
 
  private:
