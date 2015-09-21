@@ -117,6 +117,10 @@ URLRequestContextGetter::Delegate::CreateHttpCacheBackendFactory(const base::Fil
       BrowserThread::GetMessageLoopProxyForThread(BrowserThread::CACHE));
 }
 
+net::SSLConfigService* URLRequestContextGetter::Delegate::CreateSSLConfigService() {
+  return new net::SSLConfigServiceDefaults;
+}
+
 URLRequestContextGetter::URLRequestContextGetter(
     Delegate* delegate,
     NetLog* net_log,
@@ -239,7 +243,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     storage_->set_cert_verifier(net::CertVerifier::CreateDefault());
     storage_->set_transport_security_state(new net::TransportSecurityState);
-    storage_->set_ssl_config_service(new net::SSLConfigServiceDefaults);
+    storage_->set_ssl_config_service(delegate_->CreateSSLConfigService());
     storage_->set_http_auth_handler_factory(auth_handler_factory);
     scoped_ptr<net::HttpServerProperties> server_properties(
         new net::HttpServerPropertiesImpl);
