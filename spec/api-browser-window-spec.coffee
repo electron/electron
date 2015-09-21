@@ -306,8 +306,11 @@ describe 'browser-window module', ->
 
   describe 'beginFrameSubscription method', ->
     it 'subscribes frame updates', (done) ->
+      called = false
       w.loadUrl "file://#{fixtures}/api/blank.html"
       w.webContents.beginFrameSubscription (data) ->
+        return if called
+        called = true
         assert.notEqual data.length, 0
         w.webContents.endFrameSubscription()
         done()
