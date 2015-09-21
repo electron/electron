@@ -305,6 +305,7 @@ describe 'browser-window module', ->
       w.loadUrl url
 
   describe 'beginFrameSubscription method', ->
+    @timeout 10000
     it 'subscribes frame updates', (done) ->
       called = false
       w.loadUrl "file://#{fixtures}/api/blank.html"
