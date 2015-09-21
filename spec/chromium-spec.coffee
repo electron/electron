@@ -62,7 +62,7 @@ describe 'chromium feature', ->
       ipc.removeAllListeners 'opener'
 
     it 'is null for main window', (done) ->
-      ipc.on 'opener', (event, opener) ->
+      ipc.once 'opener', (event, opener) ->
         assert.equal opener, null
         done()
       BrowserWindow = remote.require 'browser-window'
@@ -70,7 +70,7 @@ describe 'chromium feature', ->
       w.loadUrl url
 
     it 'is not null for window opened by window.open', (done) ->
-      ipc.on 'opener', (event, opener) ->
+      ipc.once 'opener', (event, opener) ->
         b.close()
         done(if opener isnt null then undefined else opener)
       b = window.open url, '', 'show=no'
