@@ -14,6 +14,11 @@ wrapSession = (session) ->
 wrapDownloadItem = (download_item) ->
   # download_item is an Event Emitter.
   download_item.__proto__ = EventEmitter.prototype
+  # Be compatible with old APIs.
+  download_item.url = download_item.getURL()
+  download_item.filename = download_item.getSuggestedFilename()
+  download_item.mimeType = download_item.getMimeType()
+  download_item.hasUserGesture = download_item.hasUserGesture()
 
 app.setApplicationMenu = (menu) ->
   require('menu').setApplicationMenu menu
