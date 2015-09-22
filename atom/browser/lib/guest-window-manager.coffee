@@ -41,7 +41,7 @@ createGuest = (embedder, url, frameName, options) ->
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', (event, args...) ->
   [url, frameName, options] = args
   event.sender.emit 'new-window', event, url, frameName, 'new-window'
-  if event.sender.isGuest() or event.defaultPrevented
+  if (event.sender.isGuest() and not event.sender.allowPopups) or event.defaultPrevented
     event.returnValue = null
   else
     event.returnValue = createGuest event.sender, args...
