@@ -37,6 +37,8 @@ wrapWithActivateUvLoop = (func) ->
     process.activateUvLoop()
     func.apply this, arguments
 process.nextTick = wrapWithActivateUvLoop process.nextTick
+global.setImmediate = wrapWithActivateUvLoop timers.setImmediate
+global.clearImmediate = timers.clearImmediate
 
 if process.type is 'browser'
   # setTimeout needs to update the polling timeout of the event loop, when
@@ -45,10 +47,3 @@ if process.type is 'browser'
   # recalculate the timeout in browser process.
   global.setTimeout = wrapWithActivateUvLoop timers.setTimeout
   global.setInterval = wrapWithActivateUvLoop timers.setInterval
-  global.setImmediate = wrapWithActivateUvLoop timers.setImmediate
-  global.clearImmediate = wrapWithActivateUvLoop timers.clearImmediate
-else
-  # There are no setImmediate under renderer process by default, so we need to
-  # manually setup them here.
-  global.setImmediate = setImmediate
-  global.clearImmediate = clearImmediate
