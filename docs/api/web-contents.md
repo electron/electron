@@ -111,6 +111,8 @@ Returns:
 * `frameName` String
 * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
   `new-window` and `other`.
+* `options` Object - The options which will be used for creating the new
+  `BrowserWindow`.
 
 Emitted when the page requests to open a new window for a `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.
