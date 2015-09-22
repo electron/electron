@@ -1,4 +1,3 @@
-process = global.process
 ipc = require 'ipc'
 v8Util = process.atomBinding 'v8_util'
 CallbacksRegistry = require 'callbacks-registry'

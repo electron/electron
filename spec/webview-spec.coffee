@@ -86,7 +86,7 @@ describe '<webview> tag', ->
 
     it 'preload script can still use "process" in required modules when nodeintegration is off', (done) ->
       webview.addEventListener 'console-message', (e) ->
-        assert.equal e.message, 'object function object'
+        assert.equal e.message, 'object undefined object'
         done()
       webview.setAttribute 'preload', "#{fixtures}/module/preload-node-off.js"
       webview.src = "file://#{fixtures}/api/blank.html"
