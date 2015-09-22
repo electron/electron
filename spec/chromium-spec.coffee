@@ -35,6 +35,8 @@ describe 'chromium feature', ->
       assert.notEqual navigator.language, ''
 
   describe 'window.open', ->
+    @timeout 10000
+
     it 'returns a BrowserWindowProxy object', ->
       b = window.open 'about:blank', '', 'show=no'
       assert.equal b.closed, false
