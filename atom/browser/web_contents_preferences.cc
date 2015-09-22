@@ -40,6 +40,9 @@ WebContentsPreferences::WebContentsPreferences(
     base::DictionaryValue* web_preferences) {
   web_preferences_.Swap(web_preferences);
   web_contents->SetUserData(UserDataKey(), this);
+
+  // The "isGuest" is not a preferences field.
+  web_preferences_.Remove("isGuest", nullptr);
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
