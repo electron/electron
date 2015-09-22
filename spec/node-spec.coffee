@@ -56,6 +56,13 @@ describe 'node feature', ->
           done()
         child.send 'message'
 
+      it 'has setImmediate working in script', (done) ->
+        child = child_process.fork path.join(fixtures, 'module', 'set-immediate.js')
+        child.on 'message', (msg) ->
+          assert.equal msg, 'ok'
+          done()
+        child.send 'message'
+
   describe 'contexts', ->
     describe 'setTimeout in fs callback', ->
       it 'does not crash', (done) ->
@@ -141,3 +148,7 @@ describe 'node feature', ->
     # Not reliable on some machines
     xit 'should have isTTY defined', ->
       assert.equal typeof(process.stdout.isTTY), 'boolean'
+
+  describe 'vm.createContext', ->
+    it 'should not crash', ->
+      require('vm').runInNewContext('')

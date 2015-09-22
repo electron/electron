@@ -98,6 +98,16 @@ void WebFrame::RegisterURLSchemeAsBypassingCsp(const std::string& scheme) {
       blink::WebString::fromUTF8(scheme));
 }
 
+void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme) {
+  // Register scheme to privileged list (https, wss, data, chrome-extension)
+  blink::WebString privileged_scheme(blink::WebString::fromUTF8(scheme));
+  blink::WebSecurityPolicy::registerURLSchemeAsSecure(privileged_scheme);
+  blink::WebSecurityPolicy::registerURLSchemeAsBypassingContentSecurityPolicy(
+      privileged_scheme);
+  blink::WebSecurityPolicy::registerURLSchemeAsAllowingServiceWorkers(
+      privileged_scheme);
+}
+
 mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
@@ -116,7 +126,9 @@ mate::ObjectTemplateBuilder WebFrame::GetObjectTemplateBuilder(
       .SetMethod("registerUrlSchemeAsSecure",
                  &WebFrame::RegisterURLSchemeAsSecure)
       .SetMethod("registerUrlSchemeAsBypassingCsp",
-                 &WebFrame::RegisterURLSchemeAsBypassingCsp);
+                 &WebFrame::RegisterURLSchemeAsBypassingCsp)
+      .SetMethod("registerUrlSchemeAsPrivileged",
+                 &WebFrame::RegisterURLSchemeAsPrivileged);
 }
 
 // static

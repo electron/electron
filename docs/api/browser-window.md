@@ -244,7 +244,7 @@ Emitted when DevTools is closed.
 
 Emitted when DevTools is focused / opened.
 
-### Event: 'app-command' _Windows_
+### Event: 'app-command':
 
 Emitted when an [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx)
 is invoked. These are typically related to keyboard media keys or browser

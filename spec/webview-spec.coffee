@@ -86,7 +86,7 @@ describe '<webview> tag', ->
 
     it 'preload script can still use "process" in required modules when nodeintegration is off', (done) ->
       webview.addEventListener 'console-message', (e) ->
-        assert.equal e.message, 'object function object'
+        assert.equal e.message, 'object undefined object'
         done()
       webview.setAttribute 'preload', "#{fixtures}/module/preload-node-off.js"
       webview.src = "file://#{fixtures}/api/blank.html"
@@ -199,6 +199,26 @@ describe '<webview> tag', ->
       window.localStorage.setItem 'test', 'one'
       webview.addEventListener 'console-message', listener
       webview.src = "file://#{fixtures}/pages/partition/one.html"
+      document.body.appendChild webview
+
+  describe 'allowpopups attribute', ->
+    it 'can not open new window when not set', (done) ->
+      listener = (e) ->
+        assert.equal e.message, 'null'
+        webview.removeEventListener 'console-message', listener
+        done()
+      webview.addEventListener 'console-message', listener
+      webview.src = "file://#{fixtures}/pages/window-open-hide.html"
+      document.body.appendChild webview
+
+    it 'can open new window when set', (done) ->
+      listener = (e) ->
+        assert.equal e.message, 'window'
+        webview.removeEventListener 'console-message', listener
+        done()
+      webview.addEventListener 'console-message', listener
+      webview.setAttribute 'allowpopups', 'on'
+      webview.src = "file://#{fixtures}/pages/window-open-hide.html"
       document.body.appendChild webview
 
   describe 'new-window event', ->
@@ -335,4 +355,27 @@ describe '<webview> tag', ->
       webview.addEventListener 'enter-html-full-screen', listener
       webview.addEventListener 'did-finish-load', listener2
       webview.src = "file://#{fixtures}/pages/fullscreen.html"
+      document.body.appendChild webview
+
+  describe 'sendInputEvent', ->
+    it 'can send keyboard event', (done) ->
+      webview.addEventListener 'ipc-message', (e) ->
+        assert.equal e.channel, 'keyup'
+        assert.deepEqual e.args, [67, true, false]
+        done()
+      webview.addEventListener 'dom-ready', ->
+        webview.sendInputEvent type: 'keyup', keyCode: 'c', modifiers: ['shift']
+      webview.src = "file://#{fixtures}/pages/onkeyup.html"
+      webview.setAttribute 'nodeintegration', 'on'
+      document.body.appendChild webview
+
+    it 'can send mouse event', (done) ->
+      webview.addEventListener 'ipc-message', (e) ->
+        assert.equal e.channel, 'mouseup'
+        assert.deepEqual e.args, [10, 20, false, true]
+        done()
+      webview.addEventListener 'dom-ready', ->
+        webview.sendInputEvent type: 'mouseup', modifiers: ['ctrl'], x: 10, y: 20
+      webview.src = "file://#{fixtures}/pages/onmouseup.html"
+      webview.setAttribute 'nodeintegration', 'on'
       document.body.appendChild webview

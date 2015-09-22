@@ -295,11 +295,19 @@ describe 'browser-window module', ->
       w.minimize()
 
   describe 'will-navigate event', ->
-    return if isCI and process.platform is 'darwin'
+    @timeout 10000
     it 'emits when user starts a navigation', (done) ->
-      @timeout 10000
-      w.webContents.on 'will-navigate', (event, url) ->
+      url = "file://#{fixtures}/pages/will-navigate.html"
+      w.webContents.on 'will-navigate', (event, u) ->
         event.preventDefault()
-        assert.equal url, 'https://www.github.com/'
+        assert.equal u, url
         done()
-      w.loadUrl "file://#{fixtures}/pages/will-navigate.html"
+      w.loadUrl url
+
+  xdescribe 'beginFrameSubscription method', ->
+    it 'subscribes frame updates', (done) ->
+      w.loadUrl "file://#{fixtures}/api/blank.html"
+      w.webContents.beginFrameSubscription (data) ->
+        assert.notEqual data.length, 0
+        w.webContents.endFrameSubscription()
+        done()

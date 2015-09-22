@@ -149,6 +149,14 @@ This value can only be modified before the first navigation, since the session
 of an active renderer process cannot change. Subsequent attempts to modify the
 value will fail with a DOM exception.
 
+### `allowpopups`
+
+```html
+<webview src="https://www.github.com/" allowpopups></webview>
+```
+
+If "on", the guest page will be allowed to open new windows.
+
 ## Methods
 
 The `webview` tag has the following methods:
@@ -358,6 +366,15 @@ page can handle it by listening to the `channel` event of `ipc` module.
 See [WebContents.send](web-contents.md#webcontentssendchannel-args) for
 examples.
 
+### `<webview>.sendInputEvent(event)`
+
+* `event` Object
+
+Sends an input `event` to the page.
+
+See [WebContents.sendInputEvent](web-contents.md##webcontentssendinputeventevent)
+for detailed description of `event` object.
+
 ## DOM events
 
 The following DOM events are available to the `webview` tag:
@@ -487,7 +504,9 @@ Returns:
 * `url` String
 * `frameName` String
 * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
-  `new-window` and `other`
+  `new-window` and `other`.
+* `options` Object - The options which should be used for creating the new
+  `BrowserWindow`.
 
 Fired when the guest page attempts to open a new browser window.
 

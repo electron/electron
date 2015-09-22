@@ -1,8 +1,7 @@
-process = global.process
-events  = require 'events'
-path    = require 'path'
-url     = require 'url'
-Module  = require 'module'
+events = require 'events'
+path   = require 'path'
+url    = require 'url'
+Module = require 'module'
 
 # We modified the original process.argv to let node.js load the
 # atom-renderer.js, we need to restore it here.

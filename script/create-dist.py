@@ -126,6 +126,8 @@ def copy_chrome_binary(binary):
 
 
 def copy_license():
+  shutil.copy2(os.path.join(CHROMIUM_DIR, '..', 'LICENSES.chromium.html'),
+               DIST_DIR)
   shutil.copy2(os.path.join(SOURCE_ROOT, 'LICENSE'), DIST_DIR)
 
 

@@ -13,6 +13,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "content/public/browser/render_process_host.h"
 #include "native_mate/constructor.h"
@@ -23,8 +24,6 @@
 #include "atom/browser/native_window_views.h"
 #include "atom/browser/ui/win/taskbar_host.h"
 #endif
-
-#include "atom/common/node_includes.h"
 
 #if defined(OS_WIN)
 namespace mate {
@@ -83,6 +82,10 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents.get();
 
+  // Keep a copy of the options for later use.
+  mate::Dictionary(isolate, web_contents->GetWrapper(isolate)).Set(
+      "browserWindowOptions", options);
+
   // Creates BrowserWindow.
   window_.reset(NativeWindow::Create(web_contents->managed_web_contents(),
                                      options));
@@ -116,6 +119,9 @@ void Window::OnWindowClosed() {
   window_->RemoveObserver(this);
 
   Emit("closed");
+
+  // Clean up the resources after window has been closed.
+  base::MessageLoop::current()->DeleteSoon(FROM_HERE, window_.release());
 }
 
 void Window::OnWindowBlur() {
@@ -220,10 +226,8 @@ bool Window::IsDestroyed() const {
 }
 
 void Window::Destroy() {
-  if (window_) {
+  if (window_)
     window_->CloseContents(nullptr);
-    window_.reset();
-  }
 }
 
 void Window::Close() {

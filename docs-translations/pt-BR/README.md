@@ -17,7 +17,8 @@
 ## API - Referencias
 
 * [Sinopse](../../docs/api/synopsis.md)
-* [Processos](../../docs/api/process.md)
+* [Processos](api/process.md)
+* [Aceleradores (Teclas de Atalho)](api/accelerator.md)
 * [Parâmetros CLI suportados (Chrome)](../../docs/api/chrome-command-line-switches.md)
 
 DOM elementos personalizados:
@@ -56,7 +57,7 @@ Módulos de ambos os processos:
 * [crash-reporter](../../docs/api/crash-reporter.md)
 * [native-image](../../docs/api/native-image.md)
 * [screen](../../docs/api/screen.md)
-* [shell](../../docs/api/shell.md)
+* [shell](api/shell.md)
 
 ## Desenvolvimento
 

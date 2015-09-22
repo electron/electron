@@ -15,6 +15,7 @@
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/native_mate_converters/blink_converter.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
@@ -27,13 +28,16 @@
 #include "brightray/browser/inspectable_web_contents.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
+#include "content/common/view_messages.h"
 #include "content/public/browser/favicon_status.h"
+#include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/resource_request_details.h"
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/storage_partition.h"
@@ -44,6 +48,7 @@
 #include "net/http/http_response_headers.h"
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
+#include "third_party/WebKit/public/web/WebInputEvent.h"
 
 #include "atom/common/node_includes.h"
 
@@ -115,6 +120,33 @@ struct Converter<WindowOpenDisposition> {
   }
 };
 
+template<>
+struct Converter<net::HttpResponseHeaders*> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   net::HttpResponseHeaders* headers) {
+    base::DictionaryValue response_headers;
+    if (headers) {
+      void* iter = nullptr;
+      std::string key;
+      std::string value;
+      while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
+        key = base::StringToLowerASCII(key);
+        value = base::StringToLowerASCII(value);
+        if (response_headers.HasKey(key)) {
+          base::ListValue* values = nullptr;
+          if (response_headers.GetList(key, &values))
+            values->AppendString(value);
+        } else {
+          scoped_ptr<base::ListValue> values(new base::ListValue());
+          values->AppendString(value);
+          response_headers.Set(key, values.Pass());
+        }
+      }
+    }
+    return ConvertToV8(isolate, response_headers);
+  }
+};
+
 }  // namespace mate
 
 
@@ -126,7 +158,7 @@ namespace {
 
 v8::Persistent<v8::ObjectTemplate> template_;
 
-// The wrapWebContents funtion which is implemented in JavaScript
+// The wrapWebContents function which is implemented in JavaScript
 using WrapWebContentsCallback = base::Callback<void(v8::Local<v8::Value>)>;
 WrapWebContentsCallback g_wrap_web_contents;
 
@@ -196,7 +228,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   AttachAsUserData(web_contents);
   InitWithWebContents(web_contents);
 
-  // Save the preferences.
+  // Save the preferences in C++.
   base::DictionaryValue web_preferences;
   mate::ConvertFromV8(isolate, options.GetHandle(), &web_preferences);
   new WebContentsPreferences(web_contents, &web_preferences);
@@ -409,30 +441,6 @@ void WebContents::DidStopLoading() {
 
 void WebContents::DidGetResourceResponseStart(
     const content::ResourceRequestDetails& details) {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  base::DictionaryValue response_headers;
-
-  net::HttpResponseHeaders* headers = details.headers.get();
-  if (!headers)
-    return;
-  void* iter = nullptr;
-  std::string key;
-  std::string value;
-  while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
-    key = base::StringToLowerASCII(key);
-    value = base::StringToLowerASCII(value);
-    if (response_headers.HasKey(key)) {
-      base::ListValue* values = nullptr;
-      if (response_headers.GetList(key, &values))
-        values->AppendString(value);
-    } else {
-      scoped_ptr<base::ListValue> values(new base::ListValue());
-      values->AppendString(value);
-      response_headers.Set(key, values.Pass());
-    }
-  }
-
   Emit("did-get-response-details",
        details.socket_address.IsEmpty(),
        details.url,
@@ -440,7 +448,7 @@ void WebContents::DidGetResourceResponseStart(
        details.http_response_code,
        details.method,
        details.referrer,
-       response_headers);
+       details.headers.get());
 }
 
 void WebContents::DidGetRedirectForResourceRequest(
@@ -449,7 +457,11 @@ void WebContents::DidGetRedirectForResourceRequest(
   Emit("did-get-redirect-request",
        details.url,
        details.new_url,
-       (details.resource_type == content::RESOURCE_TYPE_MAIN_FRAME));
+       (details.resource_type == content::RESOURCE_TYPE_MAIN_FRAME),
+       details.http_response_code,
+       details.method,
+       details.referrer,
+       details.headers.get());
 }
 
 void WebContents::DidNavigateMainFrame(
@@ -640,6 +652,21 @@ bool WebContents::IsDevToolsOpened() {
   return managed_web_contents()->IsDevToolsViewShowing();
 }
 
+void WebContents::EnableDeviceEmulation(
+    const blink::WebDeviceEmulationParams& params) {
+  if (type_ == REMOTE)
+    return;
+
+  Send(new ViewMsg_EnableDeviceEmulation(routing_id(), params));
+}
+
+void WebContents::DisableDeviceEmulation() {
+  if (type_ == REMOTE)
+    return;
+
+  Send(new ViewMsg_DisableDeviceEmulation(routing_id()));
+}
+
 void WebContents::ToggleDevTools() {
   if (IsDevToolsOpened())
     CloseDevTools();
@@ -796,6 +823,56 @@ bool WebContents::SendIPCMessage(const base::string16& channel,
   return Send(new AtomViewMsg_Message(routing_id(), channel, args));
 }
 
+void WebContents::SendInputEvent(v8::Isolate* isolate,
+                                 v8::Local<v8::Value> input_event) {
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  if (!view)
+    return;
+  const auto host = view->GetRenderWidgetHost();
+  if (!host)
+    return;
+
+  int type = mate::GetWebInputEventType(isolate, input_event);
+  if (blink::WebInputEvent::isMouseEventType(type)) {
+    blink::WebMouseEvent mouse_event;
+    if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
+      host->ForwardMouseEvent(mouse_event);
+      return;
+    }
+  } else if (blink::WebInputEvent::isKeyboardEventType(type)) {
+    content::NativeWebKeyboardEvent keyboard_event;;
+    if (mate::ConvertFromV8(isolate, input_event, &keyboard_event)) {
+      host->ForwardKeyboardEvent(keyboard_event);
+      return;
+    }
+  } else if (type == blink::WebInputEvent::MouseWheel) {
+    blink::WebMouseWheelEvent mouse_wheel_event;
+    if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
+      host->ForwardWheelEvent(mouse_wheel_event);
+      return;
+    }
+  }
+
+  isolate->ThrowException(v8::Exception::Error(mate::StringToV8(
+      isolate, "Invalid event object")));
+}
+
+void WebContents::BeginFrameSubscription(
+    const FrameSubscriber::FrameCaptureCallback& callback) {
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  if (view) {
+    scoped_ptr<FrameSubscriber> frame_subscriber(new FrameSubscriber(
+        isolate(), view->GetVisibleViewportSize(), callback));
+    view->BeginFrameSubscription(frame_subscriber.Pass());
+  }
+}
+
+void WebContents::EndFrameSubscription() {
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  if (view)
+    view->EndFrameSubscription();
+}
+
 void WebContents::SetSize(const SetSizeParams& params) {
   if (guest_delegate_)
     guest_delegate_->SetSize(params);
@@ -808,6 +885,12 @@ void WebContents::SetAllowTransparency(bool allow) {
 
 bool WebContents::IsGuest() const {
   return type_ == WEB_VIEW;
+}
+
+v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
+  WebContentsPreferences* web_preferences =
+      WebContentsPreferences::FromWebContents(web_contents());
+  return mate::ConvertToV8(isolate, *web_preferences->web_preferences());
 }
 
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
@@ -836,6 +919,10 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("openDevTools", &WebContents::OpenDevTools)
         .SetMethod("closeDevTools", &WebContents::CloseDevTools)
         .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
+        .SetMethod("enableDeviceEmulation",
+                   &WebContents::EnableDeviceEmulation)
+        .SetMethod("disableDeviceEmulation",
+                   &WebContents::DisableDeviceEmulation)
         .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)
         .SetMethod("inspectElement", &WebContents::InspectElement)
         .SetMethod("setAudioMuted", &WebContents::SetAudioMuted)
@@ -854,9 +941,14 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("focus", &WebContents::Focus)
         .SetMethod("tabTraverse", &WebContents::TabTraverse)
         .SetMethod("_send", &WebContents::SendIPCMessage, true)
+        .SetMethod("sendInputEvent", &WebContents::SendInputEvent)
+        .SetMethod("beginFrameSubscription",
+                   &WebContents::BeginFrameSubscription)
+        .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
         .SetMethod("setSize", &WebContents::SetSize)
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
         .SetMethod("isGuest", &WebContents::IsGuest)
+        .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
         .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
         .SetMethod("unregisterServiceWorker",
                    &WebContents::UnregisterServiceWorker)
@@ -910,7 +1002,7 @@ mate::Handle<WebContents> WebContents::CreateFrom(
 // static
 mate::Handle<WebContents> WebContents::Create(
     v8::Isolate* isolate, const mate::Dictionary& options) {
-  auto handle =  mate::CreateHandle(isolate, new WebContents(isolate, options));
+  auto handle = mate::CreateHandle(isolate, new WebContents(isolate, options));
   g_wrap_web_contents.Run(handle.ToV8());
   return handle;
 }

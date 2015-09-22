@@ -296,7 +296,6 @@ class NativeWindow : public content::WebContentsObserver,
   DISALLOW_COPY_AND_ASSIGN(NativeWindow);
 };
 
-
 // This class provides a hook to get a NativeWindow from a WebContents.
 class NativeWindowRelay :
     public content::WebContentsUserData<NativeWindowRelay> {

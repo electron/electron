@@ -78,6 +78,10 @@ Returns:
 * `oldUrl` String
 * `newUrl` String
 * `isMainFrame` Boolean
+* `httpResponseCode` Integer
+* `requestMethod` String
+* `referrer` String
+* `headers` Object
 
 Emitted when a redirect is received while requesting a resource.
 
@@ -107,6 +111,8 @@ Returns:
 * `frameName` String
 * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
   `new-window` and `other`.
+* `options` Object - The options which will be used for creating the new
+  `BrowserWindow`.
 
 Emitted when the page requests to open a new window for a `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.
@@ -415,7 +421,7 @@ win.webContents.on("did-finish-load", function() {
   win.webContents.printToPDF({}, function(error, data) {
     if (error) throw error;
     fs.writeFile("/tmp/print.pdf", data, function(error) {
-      if (err)
+      if (error)
         throw error;
       console.log("Write PDF successfully.");
     })
@@ -476,3 +482,92 @@ app.on('ready', function() {
    which is different from the handlers in the main process.
 2. There is no way to send synchronous messages from the main process to a
    renderer process, because it would be very easy to cause dead locks.
+
+### `webContents.enableDeviceEmulation(parameters)`
+
+`parameters` Object, properties:
+
+* `screenPosition` String - Specify the screen type to emulate
+    (default: `desktop`)
+  * `desktop`
+  * `mobile`
+* `screenSize` Object - Set the emulated screen size (screenPosition == mobile)
+  * `width` Integer - Set the emulated screen width
+  * `height` Integer - Set the emulated screen height
+* `viewPosition` Object - Position the view on the screen
+    (screenPosition == mobile) (default: `{x: 0, y: 0}`)
+  * `x` Integer - Set the x axis offset from top left corner
+  * `y` Integer - Set the y axis offset from top left corner
+* `deviceScaleFactor` Integer - Set the device scale factor (if zero defaults to
+    original device scale factor) (default: `0`)
+* `viewSize` Object - Set the emulated view size (empty means no override)
+  * `width` Integer - Set the emulated view width
+  * `height` Integer - Set the emulated view height
+* `fitToView` Boolean - Whether emulated view should be scaled down if
+    necessary to fit into available space (default: `false`)
+* `offset` Object - Offset of the emulated view inside available space (not in
+    fit to view mode) (default: `{x: 0, y: 0}`)
+  * `x` Float - Set the x axis offset from top left corner
+  * `y` Float - Set the y axis offset from top left corner
+* `scale` Float - Scale of emulated view inside available space (not in fit to
+    view mode) (default: `1`)
+
+Enable device emulation with the given parameters.
+
+### `webContents.disableDeviceEmulation()`
+
+Disable device emulation enabled by `webContents.enableDeviceEmulation`.
+
+### `webContents.sendInputEvent(event)`
+
+* `event` Object
+  * `type` String (**required**) - The type of the event, can be `mouseDown`,
+    `mouseUp`, `mouseEnter`, `mouseLeave`, `contextMenu`, `mouseWheel`,
+    `keyDown`, `keyUp`, `char`.
+  * `modifiers` Array - An array of modifiers of the event, can
+    include `shift`, `control`, `alt`, `meta`, `isKeypad`, `isAutoRepeat`,
+    `leftButtonDown`, `middleButtonDown`, `rightButtonDown`, `capsLock`,
+    `numLock`, `left`, `right`.
+
+Sends an input `event` to the page.
+
+For keyboard events, the `event` object also have following properties:
+
+* `keyCode` String (**required**) - A single character that will be sent as
+  keyboard event. Can be any ASCII character on the keyboard, like `a`, `1`
+  and `=`.
+
+For mouse events, the `event` object also have following properties:
+
+* `x` Integer (**required**)
+* `y` Integer (**required**)
+* `globalX` Integer
+* `globalY` Integer
+* `movementX` Integer
+* `movementY` Integer
+* `clickCount` Integer
+
+For the `mouseWheel` event, the `event` object also have following properties:
+
+* `deltaX` Integer
+* `deltaY` Integer
+* `wheelTicksX` Integer
+* `wheelTicksY` Integer
+* `accelerationRatioX` Integer
+* `accelerationRatioY` Integer
+* `hasPreciseScrollingDeltas` Boolean
+* `canScroll` Boolean
+
+### `webContents.beginFrameSubscription(callback)`
+
+* `callback` Function
+
+Begin subscribing for presentation events and captured frames, the `callback`
+will be called with `callback(frameBuffer)` when there is a presentation event.
+
+The `frameBuffer` is a `Buffer` that contains raw pixel data, in the format of
+32bit ARGB.
+
+### `webContents.endFrameSubscription()`
+
+End subscribing for frame presentation events.
