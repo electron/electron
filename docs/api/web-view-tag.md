@@ -505,6 +505,8 @@ Returns:
 * `frameName` String
 * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
   `new-window` and `other`.
+* `options` Object - The options which should be used for creating the new
+  `BrowserWindow`.
 
 Fired when the guest page attempts to open a new browser window.
 

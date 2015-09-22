@@ -22,7 +22,7 @@ createGuest = (embedder, url, frameName, options) ->
     guest.loadUrl url
     return guest.id
 
-  guest = new BrowserWindow(mergeBrowserWindowOptions(embedder, options))
+  guest = new BrowserWindow(options)
   guest.loadUrl url
 
   # Remember the embedder, will be used by window.opener methods.
@@ -51,11 +51,12 @@ createGuest = (embedder, url, frameName, options) ->
 # Routed window.open messages.
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', (event, args...) ->
   [url, frameName, options] = args
-  event.sender.emit 'new-window', event, url, frameName, 'new-window'
+  options = mergeBrowserWindowOptions event.sender, options
+  event.sender.emit 'new-window', event, url, frameName, 'new-window', options
   if (event.sender.isGuest() and not event.sender.allowPopups) or event.defaultPrevented
     event.returnValue = null
   else
-    event.returnValue = createGuest event.sender, args...
+    event.returnValue = createGuest event.sender, url, frameName, options
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', (event, guestId) ->
   BrowserWindow.fromId(guestId)?.destroy()
