@@ -132,6 +132,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetAllowTransparency(bool allow);
   bool IsGuest() const;
 
+  // Returns the web preferences of current WebContents.
+  v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
+
  protected:
   explicit WebContents(content::WebContents* web_contents);
   WebContents(v8::Isolate* isolate, const mate::Dictionary& options);

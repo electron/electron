@@ -82,6 +82,10 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents.get();
 
+  // Keep a copy of the options for later use.
+  mate::Dictionary(isolate, web_contents->GetWrapper(isolate)).Set(
+      "browserWindowOptions", options);
+
   // Creates BrowserWindow.
   window_.reset(NativeWindow::Create(web_contents->managed_web_contents(),
                                      options));

@@ -4,6 +4,17 @@ BrowserWindow = require 'browser-window'
 
 frameToGuest = {}
 
+# Merge |options| with the |embedder|'s window's options.
+mergeBrowserWindowOptions = (embedder, options) ->
+  if embedder.browserWindowOptions?
+    # Inherit the original options if it is a BrowserWindow.
+    options.__proto__ = embedder.browserWindowOptions
+  else
+    # Or only inherit web-preferences if it is a webview.
+    options['web-preferences'] ?= {}
+    options['web-preferences'].__proto__ = embedder.getWebPreferences()
+  options
+
 # Create a new guest created by |embedder| with |options|.
 createGuest = (embedder, url, frameName, options) ->
   guest = frameToGuest[frameName]
@@ -11,7 +22,7 @@ createGuest = (embedder, url, frameName, options) ->
     guest.loadUrl url
     return guest.id
 
-  guest = new BrowserWindow(options)
+  guest = new BrowserWindow(mergeBrowserWindowOptions(embedder, options))
   guest.loadUrl url
 
   # Remember the embedder, will be used by window.opener methods.

@@ -228,7 +228,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   AttachAsUserData(web_contents);
   InitWithWebContents(web_contents);
 
-  // Save the preferences.
+  // Save the preferences in C++.
   base::DictionaryValue web_preferences;
   mate::ConvertFromV8(isolate, options.GetHandle(), &web_preferences);
   new WebContentsPreferences(web_contents, &web_preferences);
@@ -887,6 +887,12 @@ bool WebContents::IsGuest() const {
   return type_ == WEB_VIEW;
 }
 
+v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
+  WebContentsPreferences* web_preferences =
+      WebContentsPreferences::FromWebContents(web_contents());
+  return mate::ConvertToV8(isolate, *web_preferences->web_preferences());
+}
+
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   if (template_.IsEmpty())
@@ -942,6 +948,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("setSize", &WebContents::SetSize)
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
         .SetMethod("isGuest", &WebContents::IsGuest)
+        .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
         .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
         .SetMethod("unregisterServiceWorker",
                    &WebContents::UnregisterServiceWorker)
@@ -995,7 +1002,7 @@ mate::Handle<WebContents> WebContents::CreateFrom(
 // static
 mate::Handle<WebContents> WebContents::Create(
     v8::Isolate* isolate, const mate::Dictionary& options) {
-  auto handle =  mate::CreateHandle(isolate, new WebContents(isolate, options));
+  auto handle = mate::CreateHandle(isolate, new WebContents(isolate, options));
   g_wrap_web_contents.Run(handle.ToV8());
   return handle;
 }
