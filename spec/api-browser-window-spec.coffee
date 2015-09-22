@@ -304,10 +304,7 @@ describe 'browser-window module', ->
         done()
       w.loadUrl url
 
-  describe 'beginFrameSubscription method', ->
-    # It is not very reliable on Travis CI.
-    return if process.env.TRAVIS is 'true'
-
+  xdescribe 'beginFrameSubscription method', ->
     it 'subscribes frame updates', (done) ->
       w.loadUrl "file://#{fixtures}/api/blank.html"
       w.webContents.beginFrameSubscription (data) ->
