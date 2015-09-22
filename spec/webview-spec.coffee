@@ -201,6 +201,26 @@ describe '<webview> tag', ->
       webview.src = "file://#{fixtures}/pages/partition/one.html"
       document.body.appendChild webview
 
+  describe 'allowpopups attribute', ->
+    it 'can not open new window when not set', (done) ->
+      listener = (e) ->
+        assert.equal e.message, 'null'
+        webview.removeEventListener 'console-message', listener
+        done()
+      webview.addEventListener 'console-message', listener
+      webview.src = "file://#{fixtures}/pages/window-open-hide.html"
+      document.body.appendChild webview
+
+    it 'can open new window when set', (done) ->
+      listener = (e) ->
+        assert.equal e.message, 'window'
+        webview.removeEventListener 'console-message', listener
+        done()
+      webview.addEventListener 'console-message', listener
+      webview.setAttribute 'allowpopups', 'on'
+      webview.src = "file://#{fixtures}/pages/window-open-hide.html"
+      document.body.appendChild webview
+
   describe 'new-window event', ->
     it 'emits when window.open is called', (done) ->
       webview.addEventListener 'new-window', (e) ->
