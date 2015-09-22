@@ -70,7 +70,6 @@ window.open = (url, frameName='', features='') ->
   if guestId
     new BrowserWindowProxy(guestId)
   else
-    console.error 'It is not allowed to open new window from this WebContents'
     null
 
 # Use the dialog API to implement alert().
