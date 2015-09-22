@@ -1,4 +1,3 @@
-process = global.process
 ipc = require 'ipc'
 remote = require 'remote'
 
