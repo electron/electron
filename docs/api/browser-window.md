@@ -665,7 +665,7 @@ Same as `webContents.loadUrl(url[, options])`.
 
 Same as `webContents.reload`.
 
-### `win.setMenu(menu)` _OS X_
+### `win.setMenu(menu)` _Linux_ _Windows_
 
 * `menu` Menu
 
