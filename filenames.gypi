@@ -129,6 +129,8 @@
       'atom/browser/atom_quota_permission_context.h',
       'atom/browser/atom_speech_recognition_manager_delegate.cc',
       'atom/browser/atom_speech_recognition_manager_delegate.h',
+      'atom/browser/atom_ssl_config_service.cc',
+      'atom/browser/atom_ssl_config_service.h',
       'atom/browser/bridge_task_runner.cc',
       'atom/browser/bridge_task_runner.h',
       'atom/browser/browser.cc',

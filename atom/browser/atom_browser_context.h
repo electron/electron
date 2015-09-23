@@ -27,6 +27,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
       content::URLRequestInterceptorScopedVector* interceptors) override;
   net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
       const base::FilePath& base_path) override;
+  net::SSLConfigService* CreateSSLConfigService() override;
 
   // content::BrowserContext:
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
