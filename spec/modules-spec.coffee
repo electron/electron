@@ -23,6 +23,7 @@ describe 'third-party module', ->
           done()
 
     describe 'ffi', ->
+      return if process.platform is 'darwin'
       it 'does not crash', ->
         require 'ffi'
 
