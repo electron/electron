@@ -43,6 +43,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
         content::URLRequestInterceptorScopedVector* protocol_interceptors);
     virtual net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
         const base::FilePath& base_path);
+    virtual net::SSLConfigService* CreateSSLConfigService();
   };
 
   URLRequestContextGetter(
