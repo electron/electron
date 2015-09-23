@@ -22,6 +22,11 @@ describe 'third-party module', ->
           assert.equal msg, 'ok'
           done()
 
+    describe 'ffi', ->
+      return if process.platform is 'darwin'
+      it 'does not crash', ->
+        require 'ffi'
+
   describe 'q', ->
     Q = require 'q'
 
