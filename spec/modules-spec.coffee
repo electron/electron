@@ -22,6 +22,10 @@ describe 'third-party module', ->
           assert.equal msg, 'ok'
           done()
 
+    describe 'ffi', ->
+      it 'does not crash', ->
+        require 'ffi'
+
   describe 'q', ->
     Q = require 'q'
 
