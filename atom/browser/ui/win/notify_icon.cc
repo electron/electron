@@ -28,8 +28,7 @@ NotifyIcon::NotifyIcon(NotifyIconHost* host,
       icon_id_(id),
       window_(window),
       message_id_(message),
-      menu_model_(NULL),
-      has_tray_app_id_hash_(false) {
+      menu_model_(NULL) {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
   icon_data.uFlags |= NIF_MESSAGE;
