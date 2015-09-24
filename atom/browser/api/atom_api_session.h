@@ -43,8 +43,6 @@ class Session: public mate::TrackableObject<Session>,
 
   AtomBrowserContext* browser_context() const { return browser_context_.get(); }
 
-  void SetOpenDownloadDialog(bool open_download_dialog);
-
  protected:
   explicit Session(AtomBrowserContext* browser_context);
   ~Session();

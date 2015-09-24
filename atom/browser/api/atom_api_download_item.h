@@ -8,6 +8,7 @@
 #include <string>
 
 #include "atom/browser/api/trackable_object.h"
+#include "base/files/file_path.h"
 #include "content/public/browser/download_item.h"
 #include "native_mate/handle.h"
 #include "url/gurl.h"
@@ -16,9 +17,17 @@ namespace atom {
 
 namespace api {
 
-class DownloadItem : public mate::TrackableObject<DownloadItem>,
+class DownloadItem : public mate::EventEmitter,
                      public content::DownloadItem::Observer {
  public:
+  class SavePathData : public base::SupportsUserData::Data {
+   public:
+    explicit SavePathData(const base::FilePath& path);
+    const base::FilePath& path();
+   private:
+    base::FilePath path_;
+  };
+
   explicit DownloadItem(content::DownloadItem* download_item);
   ~DownloadItem();
   static mate::Handle<DownloadItem> Create(v8::Isolate* isolate,
@@ -37,16 +46,17 @@ class DownloadItem : public mate::TrackableObject<DownloadItem>,
   bool HasUserGesture();
   std::string GetSuggestedFilename();
   std::string GetContentDisposition();
-  const GURL& GetURL();
+  const GURL& GetUrl();
+  void SetSavePath(const base::FilePath& path);
 
+  static void* UserDataKey();
  private:
   // mate::Wrappable:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   bool IsDestroyed() const override;
 
-  // mate::TrackableObject:
-  void Destroy() override;
+  void Destroy();
 
   content::DownloadItem* download_item_;
 

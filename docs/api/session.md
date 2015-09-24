@@ -191,10 +191,3 @@ proxy-uri = [<proxy-scheme>"://"]<proxy-host>[":"<proxy-port>]
 
 Sets download saving directory. By default, the download directory will be the
 `Downloads` under the respective app folder.
-
-### `session.setOpenDownloadDialog(openDownloadDialog)`
-
-* `openDownloadDialog` Boolean - Whether a download saving dialog will be
-  prompted when the download starts.
-
-By default, the download saving dialog is enable in Electron.

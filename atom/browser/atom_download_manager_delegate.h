@@ -49,7 +49,6 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
  private:
   content::DownloadManager* download_manager_;
   base::WeakPtrFactory<AtomDownloadManagerDelegate> weak_ptr_factory_;
-  bool open_download_dialog_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomDownloadManagerDelegate);
 };

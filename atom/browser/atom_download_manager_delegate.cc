@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "atom/browser/api/atom_api_download_item.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
@@ -23,8 +24,7 @@ namespace atom {
 AtomDownloadManagerDelegate::AtomDownloadManagerDelegate(
     content::DownloadManager* manager)
     : download_manager_(manager),
-      weak_ptr_factory_(this),
-      open_download_dialog_(true) {}
+      weak_ptr_factory_(this) {}
 
 AtomDownloadManagerDelegate::~AtomDownloadManagerDelegate() {
   if (download_manager_) {
@@ -74,20 +74,14 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   if (relay)
     window = relay->window.get();
 
-  file_dialog::Filters filters;
   base::FilePath path;
-  if (!open_download_dialog_) {
-    // Use default_path if download dialog is disabled.
-    path = default_path;
-  } else {
-    if (file_dialog::ShowSaveDialog(window, item->GetURL().spec(), default_path,
-                                    filters, &path)) {
-      // Remember the last selected download directory.
-      AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
-          download_manager_->GetBrowserContext());
-      browser_context->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
-                                            path.DirName());
-    }
+  if (file_dialog::ShowSaveDialog(window, item->GetURL().spec(), default_path,
+                                  file_dialog::Filters(), &path)) {
+    // Remember the last selected download directory.
+    AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
+        download_manager_->GetBrowserContext());
+    browser_context->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
+                                          path.DirName());
   }
 
   // Running the DownloadTargetCallback with an empty FilePath signals that the
@@ -96,11 +90,6 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   callback.Run(path,
                content::DownloadItem::TARGET_DISPOSITION_PROMPT,
                content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path);
-}
-
-void AtomDownloadManagerDelegate::SetOpenDownloadDialog(
-    bool open_download_dialog) {
-  open_download_dialog_ = open_download_dialog;
 }
 
 void AtomDownloadManagerDelegate::Shutdown() {
@@ -113,6 +102,25 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
     const content::DownloadTargetCallback& callback) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
+  if (!download->GetForcedFilePath().empty()) {
+    callback.Run(download->GetForcedFilePath(),
+                 content::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
+                 content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
+                 download->GetForcedFilePath());
+    return true;
+  }
+  base::SupportsUserData::Data* save_path = download->GetUserData(
+      atom::api::DownloadItem::UserDataKey());
+  if (save_path) {
+    const base::FilePath& default_download_path =
+        static_cast<api::DownloadItem::SavePathData*>(save_path)->path();
+    callback.Run(default_download_path,
+                 content::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
+                 content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
+                 default_download_path);
+    return true;
+  }
+
   AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
       download_manager_->GetBrowserContext());
   base::FilePath default_download_path = browser_context->prefs()->GetFilePath(
@@ -121,14 +129,6 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
   if (default_download_path.empty()) {
     auto path = download_manager_->GetBrowserContext()->GetPath();
     default_download_path = path.Append(FILE_PATH_LITERAL("Downloads"));
-  }
-
-  if (!download->GetForcedFilePath().empty()) {
-    callback.Run(download->GetForcedFilePath(),
-                 content::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
-                 content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-                 download->GetForcedFilePath());
-    return true;
   }
 
   CreateDownloadPathCallback download_path_callback =

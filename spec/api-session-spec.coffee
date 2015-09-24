@@ -75,15 +75,11 @@ describe 'session module', ->
           w.webContents.send 'getcount'
 
   describe 'DownloadItem', ->
-    # A 5MB mock pdf.
-    mockPDF = new Buffer(1024*1024*5)
+    # A 5 MB mock pdf.
+    mockPDF = new Buffer 1024 * 1024 * 5
     contentDisposition = 'inline; filename="mock.pdf"'
-    # TODO(hokein): Change the download directory to spec/fixtures directory.
-    # We have to use the # default download directory due to the broken
-    # session.setDownloadPath API is broken. Once the API is fixed, we can make
-    # this change.
-    defaultDownloadDir = path.join app.getPath('userData'), 'Downloads'
-    downloadFilePath = path.join defaultDownloadDir, "mock.pdf"
+    ipc = require 'ipc'
+    downloadFilePath = path.join fixtures, 'mock.pdf'
     downloadServer = http.createServer (req, res) ->
       res.writeHead 200, {
         'Content-Length': mockPDF.length,
@@ -96,29 +92,30 @@ describe 'session module', ->
     it 'can download successfully', (done) ->
       downloadServer.listen 0, '127.0.0.1', ->
         {port} = downloadServer.address()
+        ipc.sendSync 'set-download-option', false
         w.loadUrl "#{url}:#{port}"
-        w.webContents.session.setOpenDownloadDialog false
-
-        w.webContents.session.once 'will-download', (e, item, webContents) ->
-          item.on 'done', (e, state) ->
-            assert.equal state, "completed"
-            assert.equal item.getContentDisposition(), contentDisposition
-            assert.equal item.getReceiveBytes(), mockPDF.length
-            assert.equal item.getTotalBytes(), mockPDF.length
-            assert fs.existsSync downloadFilePath
-            fs.unlinkSync downloadFilePath
-            done()
-          assert.equal item.getURL(), "#{url}:#{port}/"
-          assert.equal item.getMimeType(), "application/pdf"
+        ipc.once 'download-done', (state, url, mimeType, receivedBytes,
+            totalBytes, disposition) ->
+          assert.equal state, 'completed'
+          assert.equal url, "http://127.0.0.1:#{port}/"
+          assert.equal mimeType, 'application/pdf'
+          assert.equal receivedBytes, mockPDF.length
+          assert.equal totalBytes, mockPDF.length
+          assert.equal disposition, contentDisposition
+          assert fs.existsSync downloadFilePath
+          fs.unlinkSync downloadFilePath
+          done()
 
     it 'can cancel download', (done) ->
       downloadServer.listen 0, '127.0.0.1', ->
         {port} = downloadServer.address()
+        ipc.sendSync 'set-download-option', true
         w.loadUrl "#{url}:#{port}/"
-        w.webContents.session.setOpenDownloadDialog false
-        w.webContents.session.once 'will-download', (e, item, webContents) ->
-          item.pause()
-          item.on 'done', (e, state) ->
-            assert.equal state, "cancelled"
-            done()
-          item.cancel()
+        ipc.once 'download-done', (state, url, mimeType, receivedBytes,
+            totalBytes, disposition) ->
+          assert.equal state, 'cancelled'
+          assert.equal mimeType, 'application/pdf'
+          assert.equal receivedBytes, 0
+          assert.equal totalBytes, mockPDF.length
+          assert.equal disposition, contentDisposition
+          done()

@@ -4,9 +4,13 @@
 
 #include "atom/browser/api/atom_api_download_item.h"
 
+#include <map>
+
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/node_includes.h"
+#include "base/memory/linked_ptr.h"
 #include "native_mate/dictionary.h"
 
 namespace mate {
@@ -43,7 +47,19 @@ namespace {
 // The wrapDownloadItem funtion which is implemented in JavaScript
 using WrapDownloadItemCallback = base::Callback<void(v8::Local<v8::Value>)>;
 WrapDownloadItemCallback g_wrap_download_item;
+
+char kDownloadItemSavePathKey[] = "DownloadItemSavePathKey";
+
+std::map<uint32, linked_ptr<v8::Global<v8::Value>>> g_download_item_objects;
 }  // namespace
+
+DownloadItem::SavePathData::SavePathData(const base::FilePath& path) :
+  path_(path) {
+}
+
+const base::FilePath& DownloadItem::SavePathData::path() {
+  return path_;
+}
 
 DownloadItem::DownloadItem(content::DownloadItem* download_item) :
     download_item_(download_item) {
@@ -51,19 +67,16 @@ DownloadItem::DownloadItem(content::DownloadItem* download_item) :
 }
 
 DownloadItem::~DownloadItem() {
-  download_item_->RemoveObserver(this);
+  Destroy();
 }
 
-void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
-  if (download_item_ == item) {
-    download_item_->IsDone() ?
-        Emit("done", item->GetState()) : Emit("updated");
-  }
-}
-
-void DownloadItem::OnDownloadDestroyed(content::DownloadItem* download) {
-  if (download_item_ == download) {
+void DownloadItem::Destroy() {
+  if (download_item_) {
     download_item_->RemoveObserver(this);
+    auto iter = g_download_item_objects.find(download_item_->GetId());
+    if (iter != g_download_item_objects.end())
+      g_download_item_objects.erase(iter);
+    download_item_ = nullptr;
   }
 }
 
@@ -71,8 +84,12 @@ bool DownloadItem::IsDestroyed() const {
   return download_item_ == nullptr;
 }
 
-void DownloadItem::Destroy() {
-  download_item_ = nullptr;
+void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
+  download_item_->IsDone() ? Emit("done", item->GetState()) : Emit("updated");
+}
+
+void DownloadItem::OnDownloadDestroyed(content::DownloadItem* download) {
+  Destroy();
 }
 
 int64 DownloadItem::GetReceivedBytes() {
@@ -83,7 +100,7 @@ int64 DownloadItem::GetTotalBytes() {
   return download_item_->GetTotalBytes();
 }
 
-const GURL& DownloadItem::GetURL() {
+const GURL& DownloadItem::GetUrl() {
   return download_item_->GetURL();
 }
 
@@ -101,6 +118,10 @@ std::string DownloadItem::GetSuggestedFilename() {
 
 std::string DownloadItem::GetContentDisposition() {
   return download_item_->GetContentDisposition();
+}
+
+void DownloadItem::SetSavePath(const base::FilePath& path) {
+  download_item_->SetUserData(UserDataKey(), new SavePathData(path));
 }
 
 void DownloadItem::Pause() {
@@ -121,13 +142,14 @@ mate::ObjectTemplateBuilder DownloadItem::GetObjectTemplateBuilder(
       .SetMethod("pause", &DownloadItem::Pause)
       .SetMethod("resume", &DownloadItem::Resume)
       .SetMethod("cancel", &DownloadItem::Cancel)
-      .SetMethod("getReceiveBytes", &DownloadItem::GetReceivedBytes)
+      .SetMethod("getReceivedBytes", &DownloadItem::GetReceivedBytes)
       .SetMethod("getTotalBytes", &DownloadItem::GetTotalBytes)
-      .SetMethod("getURL", &DownloadItem::GetURL)
+      .SetMethod("getUrl", &DownloadItem::GetUrl)
       .SetMethod("getMimeType", &DownloadItem::GetMimeType)
       .SetMethod("hasUserGesture", &DownloadItem::HasUserGesture)
       .SetMethod("getSuggestedFilename", &DownloadItem::GetSuggestedFilename)
-      .SetMethod("getContentDisposition", &DownloadItem::GetContentDisposition);
+      .SetMethod("getContentDisposition", &DownloadItem::GetContentDisposition)
+      .SetMethod("setSavePath", &DownloadItem::SetSavePath);
 }
 
 void SetWrapDownloadItem(const WrapDownloadItemCallback& callback) {
@@ -138,11 +160,19 @@ void ClearWrapDownloadItem() {
   g_wrap_download_item.Reset();
 }
 
+// static
 mate::Handle<DownloadItem> DownloadItem::Create(
     v8::Isolate* isolate, content::DownloadItem* item) {
   auto handle = mate::CreateHandle(isolate, new DownloadItem(item));
   g_wrap_download_item.Run(handle.ToV8());
+  g_download_item_objects[item->GetId()] = make_linked_ptr(
+      new v8::Global<v8::Value>(isolate, handle.ToV8()));
   return handle;
+}
+
+// static
+void* DownloadItem::UserDataKey() {
+  return &kDownloadItemSavePathKey;
 }
 
 }  // namespace api

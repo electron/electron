@@ -5,16 +5,15 @@ is used in `will-download` event of `Session` module, and allows users to
 control the download item.
 
 ```javascript
-// Disable showing the download saving dialog.
-win.webContents.session.setOpenDownloadDialog(false);
-
+// In the main process.
 win.webContents.session.on('will-download', function(event, item, webContents) {
-  console.log("Download from " + item.getURL());
+  // Set the save path, making Electron not to prompt a save dialog.
+  item.setSavePath('/tmp/save.pdf');
   console.log(item.getMimeType());
   console.log(item.getSuggestedFilename());
   console.log(item.getTotalBytes());
   item.on('updated', function() {
-    console.log('Recived bytes: ' + item.getReceiveBytes());
+    console.log('Recived bytes: ' + item.getReceivedBytes());
   });
   item.on('done', function(e, state) {
     if (state == "completed") {
@@ -47,6 +46,14 @@ download that can't be resumed.
 ## Methods
 
 The `downloadItem` object has the following methods:
+
+### `downloadItem.setSavePath(path)`
+
+* `path` String - Set the save file path of the download item.
+
+The API is only available in session's `will-download` callback function.
+If user doesn't set the save path via the API, Electron will use the original
+routine to determine the save path(Usually prompts a save dialog).
 
 ### `downloadItem.pause()`
 
