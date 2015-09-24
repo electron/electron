@@ -24,7 +24,9 @@ describe 'third-party module', ->
 
     describe 'ffi', ->
       it 'does not crash', ->
-        require 'ffi'
+        ffi = require 'ffi'
+        libm = ffi.Library('libm', ceil: [ 'double', [ 'double' ] ])
+        assert.equal libm.ceil(1.5), 2
 
   describe 'q', ->
     Q = require 'q'
