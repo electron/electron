@@ -23,9 +23,10 @@ describe 'third-party module', ->
           done()
 
     describe 'ffi', ->
-      return if process.platform is 'darwin'
       it 'does not crash', ->
-        require 'ffi'
+        ffi = require 'ffi'
+        libm = ffi.Library('libm', ceil: [ 'double', [ 'double' ] ])
+        assert.equal libm.ceil(1.5), 2
 
   describe 'q', ->
     Q = require 'q'
