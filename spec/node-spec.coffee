@@ -65,8 +65,8 @@ describe 'node feature', ->
 
   describe 'contexts', ->
     describe 'setTimeout in fs callback', ->
+      return if process.env.TRAVIS is 'true'
       it 'does not crash', (done) ->
-        @timeout 10000
         fs.readFile __filename, ->
           setTimeout done, 0
 
