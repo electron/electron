@@ -338,15 +338,18 @@ bool NativeWindowViews::IsFocused() {
 }
 
 void NativeWindowViews::Show() {
+  web_contents()->WasShown();
   window_->native_widget_private()->ShowWithWindowState(GetRestoredState());
 }
 
 void NativeWindowViews::ShowInactive() {
+  web_contents()->WasShown();
   window_->ShowInactive();
 }
 
 void NativeWindowViews::Hide() {
   window_->Hide();
+  web_contents()->WasHidden();
 }
 
 bool NativeWindowViews::IsVisible() {
