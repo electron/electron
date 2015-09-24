@@ -135,6 +135,14 @@
 즉. 작동중인 랜더러 프로세스의 세션은 변경할 수 없습니다.
 이후 이 값을 바꾸려고 시도하면 DOM 예외를 발생시킵니다.
 
+### `allowpopups`
+
+```html
+<webview src="https://www.github.com/" allowpopups></webview>
+```
+
+"on"으로 지정하면 페이지에서 새로운 창을 열 수 있도록 허용합니다.
+
 ## Methods
 
 `webview` 태그는 다음과 같은 메서드를 가지고 있습니다:
@@ -467,8 +475,8 @@ Returns:
 
 * `url` String
 * `frameName` String
-* `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
-  `new-window` and `other`
+* `disposition` String - `default`, `foreground-tab`, `background-tab`, `new-window`, `other`를 사용할 수 있습니다.
+* `options` Object - 새로운 `BrowserWindow`를 만들 때 사용되어야 하는 옵션.
 
 페이지가 새로운 브라우저 창을 생성할 때 발생하는 이벤트입니다.
 
