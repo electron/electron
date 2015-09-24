@@ -34,7 +34,6 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
   void OnDownloadPathGenerated(uint32 download_id,
                                const content::DownloadTargetCallback& callback,
                                const base::FilePath& default_path);
-  void SetOpenDownloadDialog(bool open_download_dialog);
 
   // content::DownloadManagerDelegate:
   void Shutdown() override;

@@ -28,10 +28,13 @@ class DownloadItem : public mate::EventEmitter,
     base::FilePath path_;
   };
 
-  explicit DownloadItem(content::DownloadItem* download_item);
-  ~DownloadItem();
   static mate::Handle<DownloadItem> Create(v8::Isolate* isolate,
                                            content::DownloadItem* item);
+  static void* UserDataKey();
+
+ protected:
+  explicit DownloadItem(content::DownloadItem* download_item);
+  ~DownloadItem();
 
   // Override content::DownloadItem::Observer methods
   void OnDownloadUpdated(content::DownloadItem* download) override;
@@ -49,7 +52,6 @@ class DownloadItem : public mate::EventEmitter,
   const GURL& GetUrl();
   void SetSavePath(const base::FilePath& path);
 
-  static void* UserDataKey();
  private:
   // mate::Wrappable:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
