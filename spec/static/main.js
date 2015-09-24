@@ -1,6 +1,7 @@
 var app = require('app');
 var ipc = require('ipc');
 var dialog = require('dialog');
+var path = require('path');
 var BrowserWindow = require('browser-window');
 
 var window = null;
@@ -72,5 +73,28 @@ app.on('ready', function() {
       detail: 'The window is not responding. Would you like to force close it or just keep waiting?'
     });
     if (chosen == 0) window.destroy();
+  });
+
+  // For session's download test, listen 'will-download' event in browser, and
+  // reply the result to renderer for verifying
+  var downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf');
+  require('ipc').on('set-download-option', function(event, need_cancel) {
+    window.webContents.session.once('will-download',
+        function(e, item, webContents) {
+          item.setSavePath(downloadFilePath);
+          item.on('done', function(e, state) {
+            window.webContents.send('download-done',
+                                    state,
+                                    item.getUrl(),
+                                    item.getMimeType(),
+                                    item.getReceivedBytes(),
+                                    item.getTotalBytes(),
+                                    item.getContentDisposition(),
+                                    item.getFilename());
+          });
+          if (need_cancel)
+            item.cancel();
+        });
+    event.returnValue = "done";
   });
 });
