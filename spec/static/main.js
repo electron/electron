@@ -89,7 +89,8 @@ app.on('ready', function() {
                                     item.getMimeType(),
                                     item.getReceivedBytes(),
                                     item.getTotalBytes(),
-                                    item.getContentDisposition());
+                                    item.getContentDisposition(),
+                                    item.getFilename());
           });
           if (need_cancel)
             item.cancel();

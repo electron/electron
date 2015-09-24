@@ -44,7 +44,7 @@ class DownloadItem : public mate::EventEmitter,
   int64 GetTotalBytes();
   std::string GetMimeType();
   bool HasUserGesture();
-  std::string GetSuggestedFilename();
+  std::string GetFilename();
   std::string GetContentDisposition();
   const GURL& GetUrl();
   void SetSavePath(const base::FilePath& path);

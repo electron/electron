@@ -11,7 +11,9 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/memory/linked_ptr.h"
+#include "base/strings/utf_string_conversions.h"
 #include "native_mate/dictionary.h"
+#include "net/base/filename_util.h"
 
 namespace mate {
 
@@ -112,8 +114,13 @@ bool DownloadItem::HasUserGesture() {
   return download_item_->HasUserGesture();
 }
 
-std::string DownloadItem::GetSuggestedFilename() {
-  return download_item_->GetSuggestedFilename();
+std::string DownloadItem::GetFilename() {
+  return base::UTF16ToUTF8(net::GenerateFileName(GetUrl(),
+                           GetContentDisposition(),
+                           std::string(),
+                           download_item_->GetSuggestedFilename(),
+                           GetMimeType(),
+                           std::string()).LossyDisplayName());
 }
 
 std::string DownloadItem::GetContentDisposition() {
@@ -147,7 +154,7 @@ mate::ObjectTemplateBuilder DownloadItem::GetObjectTemplateBuilder(
       .SetMethod("getUrl", &DownloadItem::GetUrl)
       .SetMethod("getMimeType", &DownloadItem::GetMimeType)
       .SetMethod("hasUserGesture", &DownloadItem::HasUserGesture)
-      .SetMethod("getSuggestedFilename", &DownloadItem::GetSuggestedFilename)
+      .SetMethod("getFilename", &DownloadItem::GetFilename)
       .SetMethod("getContentDisposition", &DownloadItem::GetContentDisposition)
       .SetMethod("setSavePath", &DownloadItem::SetSavePath);
 }

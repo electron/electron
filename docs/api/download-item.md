@@ -10,10 +10,10 @@ win.webContents.session.on('will-download', function(event, item, webContents) {
   // Set the save path, making Electron not to prompt a save dialog.
   item.setSavePath('/tmp/save.pdf');
   console.log(item.getMimeType());
-  console.log(item.getSuggestedFilename());
+  console.log(item.getFilename());
   console.log(item.getTotalBytes());
   item.on('updated', function() {
-    console.log('Recived bytes: ' + item.getReceivedBytes());
+    console.log('Received bytes: ' + item.getReceivedBytes());
   });
   item.on('done', function(e, state) {
     if (state == "completed") {
@@ -23,7 +23,6 @@ win.webContents.session.on('will-download', function(event, item, webContents) {
     }
   });
 ```
-
 
 ## Events
 
@@ -79,13 +78,13 @@ Returns a `String` represents the mime type.
 
 Returns a `Boolean` indicates whether the download has user gesture.
 
-### `downloadItem.getSuggestedFilename()`
+### `downloadItem.getFilename()`
 
-Returns a `String` represents the suggested file name of the download file.
+Returns a `String` represents the file name of the download item.
 
-**Note:** The suggested file name is not always the same as the actual one saved
-in local disk. If user changes the file name in a prompted download saving
-dialog, the actual name of saved file will be different with the suggested one.
+**Note:** The file name is not always the same as the actual one saved in local
+disk. If user changes the file name in a prompted download saving dialog, the
+actual name of saved file will be different.
 
 ### `downloadItem.getTotalBytes()`
 

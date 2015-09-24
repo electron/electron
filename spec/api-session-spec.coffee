@@ -95,8 +95,9 @@ describe 'session module', ->
         ipc.sendSync 'set-download-option', false
         w.loadUrl "#{url}:#{port}"
         ipc.once 'download-done', (state, url, mimeType, receivedBytes,
-            totalBytes, disposition) ->
+            totalBytes, disposition, filename) ->
           assert.equal state, 'completed'
+          assert.equal filename, 'mock.pdf'
           assert.equal url, "http://127.0.0.1:#{port}/"
           assert.equal mimeType, 'application/pdf'
           assert.equal receivedBytes, mockPDF.length
@@ -112,8 +113,9 @@ describe 'session module', ->
         ipc.sendSync 'set-download-option', true
         w.loadUrl "#{url}:#{port}/"
         ipc.once 'download-done', (state, url, mimeType, receivedBytes,
-            totalBytes, disposition) ->
+            totalBytes, disposition, filename) ->
           assert.equal state, 'cancelled'
+          assert.equal filename, 'mock.pdf'
           assert.equal mimeType, 'application/pdf'
           assert.equal receivedBytes, 0
           assert.equal totalBytes, mockPDF.length

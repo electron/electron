@@ -16,7 +16,7 @@ wrapDownloadItem = (download_item) ->
   download_item.__proto__ = EventEmitter.prototype
   # Be compatible with old APIs.
   download_item.url = download_item.getUrl()
-  download_item.filename = download_item.getSuggestedFilename()
+  download_item.filename = download_item.getFilename()
   download_item.mimeType = download_item.getMimeType()
   download_item.hasUserGesture = download_item.hasUserGesture()
 
