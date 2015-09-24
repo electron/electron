@@ -4,10 +4,7 @@
 
 #include "atom/browser/ui/win/notify_icon.h"
 
-#include <shobjidl.h>
-
 #include "atom/browser/ui/win/notify_icon_host.h"
-#include "base/md5.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/windows_version.h"
@@ -57,10 +54,6 @@ void NotifyIcon::HandleClickEvent(const gfx::Point& cursor_pos,
   icon_id.uID = icon_id_;
   icon_id.hWnd = window_;
   icon_id.cbSize = sizeof(NOTIFYICONIDENTIFIER);
-  if (has_tray_app_id_hash_)
-    memcpy(reinterpret_cast<void*>(&icon_id.guidItem),
-           &tray_app_id_hash_,
-           sizeof(GUID));
 
   RECT rect = { 0 };
   Shell_NotifyIconGetRect(&icon_id, &rect);
