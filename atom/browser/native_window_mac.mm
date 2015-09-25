@@ -391,7 +391,7 @@ NativeWindowMac::NativeWindowMac(
   // We will manage window's lifetime ourselves.
   [window_ setReleasedWhenClosed:NO];
 
-  // Configure title bar look on Yosemite or newer
+  // Hide the title bar.
   if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
     [window_ setTitlebarAppearsTransparent:YES];
     [window_ setTitleVisibility:NSWindowTitleHidden];
@@ -401,6 +401,8 @@ NativeWindowMac::NativeWindowMac(
       [toolbar setShowsBaselineSeparator:NO];
       [window_ setToolbar:toolbar];
     }
+    // We should be aware of draggable regions when using hidden titlebar.
+    set_force_using_draggable_region(true);
   }
 
   // On OS X the initial window size doesn't include window frame.
@@ -432,6 +434,11 @@ NativeWindowMac::NativeWindowMac(
   [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
   InstallView();
+
+  // Install the DraggableRegionView if it is forced to use draggable regions
+  // for normal window.
+  if (has_frame() && force_using_draggable_region())
+    InstallDraggableRegionView();
 }
 
 NativeWindowMac::~NativeWindowMac() {
