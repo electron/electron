@@ -28,7 +28,7 @@ Calling `event.preventDefault()` will cancel the download.
 ```javascript
 session.on('will-download', function(event, item, webContents) {
   event.preventDefault();
-  require('request')(item.getURL(), function(data) {
+  require('request')(item.getUrl(), function(data) {
     require('fs').writeFileSync('/somewhere', data);
   });
 });
