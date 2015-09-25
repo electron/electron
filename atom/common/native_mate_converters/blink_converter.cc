@@ -78,6 +78,21 @@ struct Converter<blink::WebInputEvent::Type> {
 };
 
 template<>
+struct Converter<blink::WebMouseEvent::Button> {
+  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+                     blink::WebMouseEvent::Button* out) {
+    std::string button = base::StringToLowerASCII(V8ToString(val));
+    if (button == "left")
+      *out = blink::WebMouseEvent::Button::ButtonLeft;
+    else if (button == "middle")
+      *out = blink::WebMouseEvent::Button::ButtonMiddle;
+    else if (button == "right")
+      *out = blink::WebMouseEvent::Button::ButtonRight;
+    return true;
+  }
+};
+
+template<>
 struct Converter<blink::WebInputEvent::Modifiers> {
   static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
                      blink::WebInputEvent::Modifiers* out) {
@@ -176,6 +191,7 @@ bool Converter<blink::WebMouseEvent>::FromV8(
     return false;
   if (!dict.Get("x", &out->x) || !dict.Get("y", &out->y))
     return false;
+  dict.Get("button", &out->button);
   dict.Get("globalX", &out->globalX);
   dict.Get("globalY", &out->globalY);
   dict.Get("movementX", &out->movementX);
