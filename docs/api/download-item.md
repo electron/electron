@@ -39,7 +39,7 @@ Emits when the `downloadItem` gets updated.
   * `interrupted` - An error broke the connection with the file server.
 
 Emits when the download is in a terminal state. This includes a completed
-download, a cancelled download(via `downloadItem.cancel()`), and interrputed
+download, a cancelled download(via `downloadItem.cancel()`), and interrupted
 download that can't be resumed.
 
 ## Methods
@@ -66,7 +66,7 @@ Resumes the download that has been paused.
 
 Cancels the download operation.
 
-### `downloadItem.getURL()`
+### `downloadItem.getUrl()`
 
 Returns a `String` represents the origin url where the item is downloaded from.
 

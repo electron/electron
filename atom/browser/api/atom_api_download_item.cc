@@ -30,7 +30,7 @@ struct Converter<content::DownloadItem::DownloadState> {
         download_state = "cancelled";
         break;
       case content::DownloadItem::INTERRUPTED:
-        download_state = "interrputed";
+        download_state = "interrupted";
         break;
       default:
         break;
