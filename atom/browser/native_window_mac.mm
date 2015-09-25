@@ -351,21 +351,19 @@ NativeWindowMac::NativeWindowMac(
   bool useStandardWindow = true;
   options.Get(switches::kStandardWindow, &useStandardWindow);
 
+  // New title bar styles are available in Yosemite or newer
+  std::string titleBarStyle;
+  if (base::mac::IsOSYosemiteOrLater())
+    options.Get(switches::kTitleBarStyle, &titleBarStyle);
+
   NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask |
                          NSMiniaturizableWindowMask | NSResizableWindowMask;
   if (!useStandardWindow || transparent() || !has_frame()) {
     styleMask |= NSTexturedBackgroundWindowMask;
   }
-
-  std::string titleBarStyle = "default";
-  options.Get(switches::kTitleBarStyle, &titleBarStyle);
-
-  if (base::mac::IsOSYosemiteOrLater()) {
-    // New title bar styles are available in Yosemite or newer
-    if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
-      styleMask |= NSFullSizeContentViewWindowMask;
-      styleMask |= NSUnifiedTitleAndToolbarWindowMask;
-    }
+  if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
+    styleMask |= NSFullSizeContentViewWindowMask;
+    styleMask |= NSUnifiedTitleAndToolbarWindowMask;
   }
 
   window_.reset([[AtomNSWindow alloc]
@@ -394,16 +392,14 @@ NativeWindowMac::NativeWindowMac(
   [window_ setReleasedWhenClosed:NO];
 
   // Configure title bar look on Yosemite or newer
-  if (base::mac::IsOSYosemiteOrLater()) {
-    if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
-      [window_ setTitlebarAppearsTransparent:YES];
-      [window_ setTitleVisibility:NSWindowTitleHidden];
-      if (titleBarStyle == "hidden-inset") {
-        NSToolbar *toolbar = [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"];
-        toolbar.showsBaselineSeparator = NO;
-        [window_ setToolbar:toolbar];
-        [toolbar release];
-      }
+  if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
+    [window_ setTitlebarAppearsTransparent:YES];
+    [window_ setTitleVisibility:NSWindowTitleHidden];
+    if (titleBarStyle == "hidden-inset") {
+      base::scoped_nsobject<NSToolbar> toolbar(
+          [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
+      [toolbar setShowsBaselineSeparator:NO];
+      [window_ setToolbar:toolbar];
     }
   }
 
