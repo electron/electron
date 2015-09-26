@@ -111,6 +111,7 @@ app.on('ready', function() {
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8">
     <title>헬로 월드!</title>
   </head>
   <body>

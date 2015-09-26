@@ -29,7 +29,20 @@ npm install --save-dev electron-rebuild
 node ./node_modules/.bin/electron-rebuild
 ```
 
-### node-gyp을 이용한 방법
+### `npm`을 이용한 방법
+
+또한 `npm`을 통해 설치할 수도 있습니다.
+환경변수가 필요한 것을 제외하고 일반 Node 모듈을 설치하는 방법과 완전히 똑같습니다:
+
+```bash
+export npm_config_disturl=https://atom.io/download/atom-shell
+export npm_config_target=0.33.1
+export npm_config_arch=x64
+export npm_config_runtime=electron
+HOME=~/.electron-gyp npm install module-name
+```
+
+### `node-gyp`를 이용한 방법
 
 Node 모듈을 `node-gyp`를 사용하여 Electron을 타겟으로 빌드할 때는 `node-gyp`에 헤더 다운로드 주소와 버전을 알려주어야 합니다:
 
@@ -40,15 +53,3 @@ $ HOME=~/.electron-gyp node-gyp rebuild --target=0.29.1 --arch=x64 --dist-url=ht
 
 `HOME=~/.electron-gyp`은 변경할 헤더의 위치를 찾습니다. `--target=0.29.1`은 Electron의 버전입니다.
 `--dist-url=...`은 헤더를 다운로드 하는 주소입니다. `--arch=x64`는 64비트 시스템을 타겟으로 빌드 한다는 것을 `node-gyp`에게 알려줍니다.
-
-### npm을 이용한 방법
-
-또한 `npm`을 통해 설치할 수도 있습니다.
-환경변수가 필요한 것을 제외하고 일반 Node 모듈을 설치하는 방법과 완전히 똑같습니다:
-
-```bash
-export npm_config_disturl=https://atom.io/download/atom-shell
-export npm_config_target=0.29.1
-export npm_config_arch=x64
-HOME=~/.electron-gyp npm install module-name
-```
