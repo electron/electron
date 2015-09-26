@@ -13,8 +13,8 @@ app.on('window-all-closed', function() {
 
 // Parse command line options.
 var argv = process.argv.slice(1);
-var option = { file: null, help: null, version: null, webdriver: null };
-for (var i in argv) {
+var option = { file: null, help: null, version: null, webdriver: null, modules: [] };
+for (var i = 0; i < argv.length; i++) {
   if (argv[i] == '--version' || argv[i] == '-v') {
     option.version = true;
     break;
@@ -23,6 +23,9 @@ for (var i in argv) {
     break;
   } else if (argv[i] == '--test-type=webdriver') {
     option.webdriver = true;
+  } else if (argv[i] == '--require' || argv[i] == '-r') {
+    option.modules.push(argv[++i]);
+    continue;
   } else if (argv[i][0] == '-') {
     continue;
   } else {
@@ -212,6 +215,10 @@ app.once('ready', function() {
   Menu.setApplicationMenu(menu);
 });
 
+if (option.modules.length > 0) {
+  require('module')._preloadModules(option.modules);
+}
+
 // Start the specified app if there is one specified in command line, otherwise
 // start the default app.
 if (option.file && !option.webdriver) {
@@ -253,6 +260,7 @@ if (option.file && !option.webdriver) {
   helpMessage    += "A path to an Electron application may be specified. The path must be to \n";
   helpMessage    += "an index.js file or to a folder containing a package.json or index.js file.\n\n";
   helpMessage    += "Options:\n";
+  helpMessage    += "  -r, --require         Module to preload (option can be repeated)";
   helpMessage    += "  -h, --help            Print this usage message.\n";
   helpMessage    += "  -v, --version         Print the version.";
   console.log(helpMessage);
