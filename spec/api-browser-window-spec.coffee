@@ -294,16 +294,6 @@ describe 'browser-window module', ->
       w.show()
       w.minimize()
 
-  describe 'will-navigate event', ->
-    @timeout 10000
-    it 'emits when user starts a navigation', (done) ->
-      url = "file://#{fixtures}/pages/will-navigate.html"
-      w.webContents.on 'will-navigate', (event, u) ->
-        event.preventDefault()
-        assert.equal u, url
-        done()
-      w.loadUrl url
-
   xdescribe 'beginFrameSubscription method', ->
     it 'subscribes frame updates', (done) ->
       w.loadUrl "file://#{fixtures}/api/blank.html"

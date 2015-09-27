@@ -124,6 +124,7 @@ Finally the `index.html` is the web page you want to show:
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8">
     <title>Hello World!</title>
   </head>
   <body>

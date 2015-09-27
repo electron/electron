@@ -68,6 +68,7 @@ NativeWindow::NativeWindow(
     const mate::Dictionary& options)
     : content::WebContentsObserver(inspectable_web_contents->GetWebContents()),
       has_frame_(true),
+      force_using_draggable_region_(false),
       transparent_(false),
       enable_larger_than_screen_(false),
       is_closed_(false),
@@ -159,8 +160,13 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   // Then show it.
   bool show = true;
   options.Get(switches::kShow, &show);
-  if (show)
+  if (show) {
     Show();
+  } else {
+    // When RenderView is created it sets to visible, this is to prevent
+    // breaking the visibility API.
+    web_contents()->WasHidden();
+  }
 }
 
 void NativeWindow::SetSize(const gfx::Size& size) {
@@ -468,7 +474,7 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
 void NativeWindow::UpdateDraggableRegions(
     const std::vector<DraggableRegion>& regions) {
   // Draggable region is not supported for non-frameless window.
-  if (has_frame_)
+  if (has_frame_ && !force_using_draggable_region_)
     return;
   draggable_region_ = DraggableRegionsToSkRegion(regions);
 }

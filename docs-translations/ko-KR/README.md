@@ -26,7 +26,7 @@
 * [`<webview>` 태그](api/web-view-tag.md)
 * [`window.open` 함수](api/window-open.md)
 
-### 메인 프로세스를 위한 모듈들:
+### 메인 프로세스에서 사용할 수 있는 모듈:
 
 * [app (0% 번역됨)](api/app.md)
 * [auto-updater](api/auto-updater.md)
@@ -44,13 +44,13 @@
 * [web-contents (0% 번역됨)](api/web-contents.md)
 * [tray](api/tray.md)
 
-### 랜더러 프로세스를 위한 모듈들 (웹 페이지):
+### 랜더러 프로세스에서 사용할 수 있는 모듈 (웹 페이지):
 
 * [ipc (renderer)](api/ipc-renderer.md)
 * [remote](api/remote.md)
 * [web-frame](api/web-frame.md)
 
-### 두 프로세스에서 모두 사용 가능한 모듈들:
+### 두 프로세스 모두 사용할 수 있는 모듈:
 
 * [clipboard](api/clipboard.md)
 * [crash-reporter](api/crash-reporter.md)

@@ -23,6 +23,23 @@ describe 'chromium feature', ->
         {port} = server.address()
         $.get "http://127.0.0.1:#{port}"
 
+  describe 'document.hidden', ->
+    BrowserWindow = remote.require 'browser-window'
+    ipc = remote.require 'ipc'
+    url = "file://#{fixtures}/pages/document-hidden.html"
+    w = null
+
+    afterEach ->
+      w?.destroy()
+      ipc.removeAllListeners 'hidden'
+
+    it 'is set correctly when window is not shown', (done) ->
+      ipc.once 'hidden', (event, hidden) ->
+        assert hidden
+        done()
+      w = new BrowserWindow(show:false)
+      w.loadUrl url
+
   describe 'navigator.webkitGetUserMedia', ->
     it 'calls its callbacks', (done) ->
       @timeout 5000

@@ -113,6 +113,10 @@ const char kDisableHttpCache[] = "disable-http-cache";
 // Register schemes to standard.
 const char kRegisterStandardSchemes[] = "register-standard-schemes";
 
+// The minimum SSL/TLS version ("tls1", "tls1.1", or "tls1.2") that
+// TLS fallback will accept.
+const char kSSLVersionFallbackMin[] = "ssl-version-fallback-min";
+
 // The browser process app model ID
 const char kAppUserModelId[] = "app-user-model-id";
 
