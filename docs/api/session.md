@@ -191,3 +191,18 @@ proxy-uri = [<proxy-scheme>"://"]<proxy-host>[":"<proxy-port>]
 
 Sets download saving directory. By default, the download directory will be the
 `Downloads` under the respective app folder.
+
+### `session.enableNetworkEmulation(options)`
+
+* `options` Object
+  * `offline` Boolean - Whether to emulate network outage.
+  * `latency` Double - RTT in ms
+  * `downloadThroughput` Double - Download rate in Bps
+  * `uploadThroughput` Double - Upload rate in Bps
+
+Emulates network with the given configuration for the `session`.
+
+### `session.disableNetworkEmulation`
+
+Disables any network emulation already active for the `session`. Resets to
+the original network configuration.
