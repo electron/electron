@@ -23,6 +23,23 @@ describe 'chromium feature', ->
         {port} = server.address()
         $.get "http://127.0.0.1:#{port}"
 
+  describe 'document.hidden', ->
+    BrowserWindow = remote.require 'browser-window'
+    ipc = remote.require 'ipc'
+    url = "file://#{fixtures}/pages/document-hidden.html"
+    w = null
+
+    afterEach ->
+      w?.destroy()
+      ipc.removeAllListeners 'hidden'
+
+    it 'is set correctly when window is not shown', (done) ->
+      ipc.once 'hidden', (event, hidden) ->
+        assert hidden
+        done()
+      w = new BrowserWindow(show:false)
+      w.loadUrl url
+
   describe 'navigator.webkitGetUserMedia', ->
     it 'calls its callbacks', (done) ->
       @timeout 5000
@@ -35,6 +52,8 @@ describe 'chromium feature', ->
       assert.notEqual navigator.language, ''
 
   describe 'window.open', ->
+    @timeout 10000
+
     it 'returns a BrowserWindowProxy object', ->
       b = window.open 'about:blank', '', 'show=no'
       assert.equal b.closed, false
@@ -50,6 +69,16 @@ describe 'chromium feature', ->
       window.addEventListener 'message', listener
       b = window.open "file://#{fixtures}/pages/window-opener-node.html", '', 'node-integration=no,show=no'
 
+    it 'inherit options of parent window', (done) ->
+      listener = (event) ->
+        window.removeEventListener 'message', listener
+        b.close()
+        size = remote.getCurrentWindow().getSize()
+        assert.equal event.data, "size: #{size.width} #{size.height}"
+        done()
+      window.addEventListener 'message', listener
+      b = window.open "file://#{fixtures}/pages/window-open-size.html", '', 'show=no'
+
   describe 'window.opener', ->
     @timeout 10000
 
@@ -62,7 +91,7 @@ describe 'chromium feature', ->
       ipc.removeAllListeners 'opener'
 
     it 'is null for main window', (done) ->
-      ipc.on 'opener', (event, opener) ->
+      ipc.once 'opener', (event, opener) ->
         assert.equal opener, null
         done()
       BrowserWindow = remote.require 'browser-window'
@@ -70,7 +99,7 @@ describe 'chromium feature', ->
       w.loadUrl url
 
     it 'is not null for window opened by window.open', (done) ->
-      ipc.on 'opener', (event, opener) ->
+      ipc.once 'opener', (event, opener) ->
         b.close()
         done(if opener isnt null then undefined else opener)
       b = window.open url, '', 'show=no'

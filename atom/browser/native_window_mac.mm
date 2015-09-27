@@ -351,21 +351,19 @@ NativeWindowMac::NativeWindowMac(
   bool useStandardWindow = true;
   options.Get(switches::kStandardWindow, &useStandardWindow);
 
+  // New title bar styles are available in Yosemite or newer
+  std::string titleBarStyle;
+  if (base::mac::IsOSYosemiteOrLater())
+    options.Get(switches::kTitleBarStyle, &titleBarStyle);
+
   NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask |
                          NSMiniaturizableWindowMask | NSResizableWindowMask;
   if (!useStandardWindow || transparent() || !has_frame()) {
     styleMask |= NSTexturedBackgroundWindowMask;
   }
-
-  std::string titleBarStyle = "default";
-  options.Get(switches::kTitleBarStyle, &titleBarStyle);
-
-  if (base::mac::IsOSYosemiteOrLater()) {
-    // New title bar styles are available in Yosemite or newer
-    if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
-      styleMask |= NSFullSizeContentViewWindowMask;
-      styleMask |= NSUnifiedTitleAndToolbarWindowMask;
-    }
+  if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
+    styleMask |= NSFullSizeContentViewWindowMask;
+    styleMask |= NSUnifiedTitleAndToolbarWindowMask;
   }
 
   window_.reset([[AtomNSWindow alloc]
@@ -393,18 +391,18 @@ NativeWindowMac::NativeWindowMac(
   // We will manage window's lifetime ourselves.
   [window_ setReleasedWhenClosed:NO];
 
-  // Configure title bar look on Yosemite or newer
-  if (base::mac::IsOSYosemiteOrLater()) {
-    if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
-      [window_ setTitlebarAppearsTransparent:YES];
-      [window_ setTitleVisibility:NSWindowTitleHidden];
-      if (titleBarStyle == "hidden-inset") {
-        NSToolbar *toolbar = [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"];
-        toolbar.showsBaselineSeparator = NO;
-        [window_ setToolbar:toolbar];
-        [toolbar release];
-      }
+  // Hide the title bar.
+  if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
+    [window_ setTitlebarAppearsTransparent:YES];
+    [window_ setTitleVisibility:NSWindowTitleHidden];
+    if (titleBarStyle == "hidden-inset") {
+      base::scoped_nsobject<NSToolbar> toolbar(
+          [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
+      [toolbar setShowsBaselineSeparator:NO];
+      [window_ setToolbar:toolbar];
     }
+    // We should be aware of draggable regions when using hidden titlebar.
+    set_force_using_draggable_region(true);
   }
 
   // On OS X the initial window size doesn't include window frame.
@@ -436,6 +434,11 @@ NativeWindowMac::NativeWindowMac(
   [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
   InstallView();
+
+  // Install the DraggableRegionView if it is forced to use draggable regions
+  // for normal window.
+  if (has_frame() && force_using_draggable_region())
+    InstallDraggableRegionView();
 }
 
 NativeWindowMac::~NativeWindowMac() {
@@ -467,6 +470,8 @@ bool NativeWindowMac::IsFocused() {
 }
 
 void NativeWindowMac::Show() {
+  web_contents()->WasShown();
+
   // This method is supposed to put focus on window, however if the app does not
   // have focus then "makeKeyAndOrderFront" will only show the window.
   [NSApp activateIgnoringOtherApps:YES];
@@ -475,11 +480,13 @@ void NativeWindowMac::Show() {
 }
 
 void NativeWindowMac::ShowInactive() {
+  web_contents()->WasShown();
   [window_ orderFrontRegardless];
 }
 
 void NativeWindowMac::Hide() {
   [window_ orderOut:nil];
+  web_contents()->WasHidden();
 }
 
 bool NativeWindowMac::IsVisible() {

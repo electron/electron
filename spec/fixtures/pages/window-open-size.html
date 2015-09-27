@@ -1,0 +1,8 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  var size = require('remote').getCurrentWindow().getSize();
+  window.opener.postMessage('size: ' + size.width + ' ' + size.height, '*')
+</script>
+</body>
+</html>

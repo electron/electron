@@ -84,6 +84,8 @@ createGuest = (embedder, params) ->
     if params.allowtransparency?
       @setAllowTransparency params.allowtransparency
 
+    guest.allowPopups = params.allowpopups
+
   # Dispatch events to embedder.
   for event in supportedWebViewEvents
     do (event) ->

@@ -6,6 +6,7 @@
 
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_download_manager_delegate.h"
+#include "atom/browser/atom_ssl_config_service.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/asar/asar_protocol_handler.h"
@@ -154,6 +155,10 @@ content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
   if (!guest_manager_)
     guest_manager_.reset(new WebViewManager);
   return guest_manager_.get();
+}
+
+net::SSLConfigService* AtomBrowserContext::CreateSSLConfigService() {
+  return new AtomSSLConfigService;
 }
 
 void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {

@@ -87,6 +87,11 @@ Sets the `version` of the pepper flash plugin.
 
 Enables net log events to be saved and writes them to `path`.
 
+## --ssl-version-fallback-min=`version`
+
+Set the minimum SSL/TLS version ("tls1", "tls1.1" or "tls1.2") that TLS
+fallback will accept.
+
 ## --v=`log_level`
 
 Gives the default maximal active V-logging level; 0 is the default. Normally

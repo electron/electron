@@ -18,11 +18,7 @@ var session = win.webContents.session
 ### Event: 'will-download'
 
 * `event` Event
-* `item` Object
-  * `url` String
-  * `filename` String
-  * `mimeType` String
-  * `hasUserGesture` Boolean
+* `item` [DownloadItem](download-item.md)
 * `webContents` [WebContents](web-contents.md)
 
 Fired when Electron is about to download `item` in `webContents`.
@@ -32,7 +28,7 @@ Calling `event.preventDefault()` will cancel the download.
 ```javascript
 session.on('will-download', function(event, item, webContents) {
   event.preventDefault();
-  require('request')(item.url, function(data) {
+  require('request')(item.getUrl(), function(data) {
     require('fs').writeFileSync('/somewhere', data);
   });
 });

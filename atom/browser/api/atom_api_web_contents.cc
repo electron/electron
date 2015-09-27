@@ -120,6 +120,33 @@ struct Converter<WindowOpenDisposition> {
   }
 };
 
+template<>
+struct Converter<net::HttpResponseHeaders*> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   net::HttpResponseHeaders* headers) {
+    base::DictionaryValue response_headers;
+    if (headers) {
+      void* iter = nullptr;
+      std::string key;
+      std::string value;
+      while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
+        key = base::StringToLowerASCII(key);
+        value = base::StringToLowerASCII(value);
+        if (response_headers.HasKey(key)) {
+          base::ListValue* values = nullptr;
+          if (response_headers.GetList(key, &values))
+            values->AppendString(value);
+        } else {
+          scoped_ptr<base::ListValue> values(new base::ListValue());
+          values->AppendString(value);
+          response_headers.Set(key, values.Pass());
+        }
+      }
+    }
+    return ConvertToV8(isolate, response_headers);
+  }
+};
+
 }  // namespace mate
 
 
@@ -131,7 +158,7 @@ namespace {
 
 v8::Persistent<v8::ObjectTemplate> template_;
 
-// The wrapWebContents funtion which is implemented in JavaScript
+// The wrapWebContents function which is implemented in JavaScript
 using WrapWebContentsCallback = base::Callback<void(v8::Local<v8::Value>)>;
 WrapWebContentsCallback g_wrap_web_contents;
 
@@ -201,7 +228,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   AttachAsUserData(web_contents);
   InitWithWebContents(web_contents);
 
-  // Save the preferences.
+  // Save the preferences in C++.
   base::DictionaryValue web_preferences;
   mate::ConvertFromV8(isolate, options.GetHandle(), &web_preferences);
   new WebContentsPreferences(web_contents, &web_preferences);
@@ -414,30 +441,6 @@ void WebContents::DidStopLoading() {
 
 void WebContents::DidGetResourceResponseStart(
     const content::ResourceRequestDetails& details) {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  base::DictionaryValue response_headers;
-
-  net::HttpResponseHeaders* headers = details.headers.get();
-  if (!headers)
-    return;
-  void* iter = nullptr;
-  std::string key;
-  std::string value;
-  while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
-    key = base::StringToLowerASCII(key);
-    value = base::StringToLowerASCII(value);
-    if (response_headers.HasKey(key)) {
-      base::ListValue* values = nullptr;
-      if (response_headers.GetList(key, &values))
-        values->AppendString(value);
-    } else {
-      scoped_ptr<base::ListValue> values(new base::ListValue());
-      values->AppendString(value);
-      response_headers.Set(key, values.Pass());
-    }
-  }
-
   Emit("did-get-response-details",
        details.socket_address.IsEmpty(),
        details.url,
@@ -445,7 +448,7 @@ void WebContents::DidGetResourceResponseStart(
        details.http_response_code,
        details.method,
        details.referrer,
-       response_headers);
+       details.headers.get());
 }
 
 void WebContents::DidGetRedirectForResourceRequest(
@@ -454,7 +457,11 @@ void WebContents::DidGetRedirectForResourceRequest(
   Emit("did-get-redirect-request",
        details.url,
        details.new_url,
-       (details.resource_type == content::RESOURCE_TYPE_MAIN_FRAME));
+       (details.resource_type == content::RESOURCE_TYPE_MAIN_FRAME),
+       details.http_response_code,
+       details.method,
+       details.referrer,
+       details.headers.get());
 }
 
 void WebContents::DidNavigateMainFrame(
@@ -880,6 +887,12 @@ bool WebContents::IsGuest() const {
   return type_ == WEB_VIEW;
 }
 
+v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
+  WebContentsPreferences* web_preferences =
+      WebContentsPreferences::FromWebContents(web_contents());
+  return mate::ConvertToV8(isolate, *web_preferences->web_preferences());
+}
+
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   if (template_.IsEmpty())
@@ -935,6 +948,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("setSize", &WebContents::SetSize)
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
         .SetMethod("isGuest", &WebContents::IsGuest)
+        .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
         .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
         .SetMethod("unregisterServiceWorker",
                    &WebContents::UnregisterServiceWorker)
@@ -988,7 +1002,7 @@ mate::Handle<WebContents> WebContents::CreateFrom(
 // static
 mate::Handle<WebContents> WebContents::Create(
     v8::Isolate* isolate, const mate::Dictionary& options) {
-  auto handle =  mate::CreateHandle(isolate, new WebContents(isolate, options));
+  auto handle = mate::CreateHandle(isolate, new WebContents(isolate, options));
   g_wrap_web_contents.Run(handle.ToV8());
   return handle;
 }

@@ -78,6 +78,10 @@ Returns:
 * `oldUrl` String
 * `newUrl` String
 * `isMainFrame` Boolean
+* `httpResponseCode` Integer
+* `requestMethod` String
+* `referrer` String
+* `headers` Object
 
 Emitted when a redirect is received while requesting a resource.
 
@@ -107,6 +111,8 @@ Returns:
 * `frameName` String
 * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
   `new-window` and `other`.
+* `options` Object - The options which will be used for creating the new
+  `BrowserWindow`.
 
 Emitted when the page requests to open a new window for a `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.
@@ -415,7 +421,7 @@ win.webContents.on("did-finish-load", function() {
   win.webContents.printToPDF({}, function(error, data) {
     if (error) throw error;
     fs.writeFile("/tmp/print.pdf", data, function(error) {
-      if (err)
+      if (error)
         throw error;
       console.log("Write PDF successfully.");
     })

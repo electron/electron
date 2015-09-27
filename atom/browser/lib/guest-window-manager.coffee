@@ -4,6 +4,17 @@ BrowserWindow = require 'browser-window'
 
 frameToGuest = {}
 
+# Merge |options| with the |embedder|'s window's options.
+mergeBrowserWindowOptions = (embedder, options) ->
+  if embedder.browserWindowOptions?
+    # Inherit the original options if it is a BrowserWindow.
+    options.__proto__ = embedder.browserWindowOptions
+  else
+    # Or only inherit web-preferences if it is a webview.
+    options['web-preferences'] ?= {}
+    options['web-preferences'].__proto__ = embedder.getWebPreferences()
+  options
+
 # Create a new guest created by |embedder| with |options|.
 createGuest = (embedder, url, frameName, options) ->
   guest = frameToGuest[frameName]
@@ -40,11 +51,12 @@ createGuest = (embedder, url, frameName, options) ->
 # Routed window.open messages.
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPEN', (event, args...) ->
   [url, frameName, options] = args
-  event.sender.emit 'new-window', event, url, frameName, 'new-window'
-  if event.sender.isGuest() or event.defaultPrevented
+  options = mergeBrowserWindowOptions event.sender, options
+  event.sender.emit 'new-window', event, url, frameName, 'new-window', options
+  if (event.sender.isGuest() and not event.sender.allowPopups) or event.defaultPrevented
     event.returnValue = null
   else
-    event.returnValue = createGuest event.sender, args...
+    event.returnValue = createGuest event.sender, url, frameName, options
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_CLOSE', (event, guestId) ->
   BrowserWindow.fromId(guestId)?.destroy()
