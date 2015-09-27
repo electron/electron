@@ -17,11 +17,7 @@ var session = win.webContents.session
 ### Event: 'will-download'
 
 * `event` Event
-* `item` Object
-  * `url` String
-  * `filename` String
-  * `mimeType` String
-  * `hasUserGesture` Boolean
+* `item` [DownloadItem](download-item.md)
 * `webContents` [WebContents](web-contents.md)
 
 Electron의 `webContents`에서 `item`을 다운로드할 때 발생하는 이벤트입니다.
@@ -31,7 +27,7 @@ Electron의 `webContents`에서 `item`을 다운로드할 때 발생하는 이�
 ```javascript
 session.on('will-download', function(event, item, webContents) {
   event.preventDefault();
-  require('request')(item.url, function(data) {
+  require('request')(item.getUrl(), function(data) {
     require('fs').writeFileSync('/somewhere', data);
   });
 });
