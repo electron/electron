@@ -16,6 +16,8 @@ class DevToolsHttpHandler;
 
 namespace brightray {
 
+class DevToolsNetworkProtocolHandler;
+
 class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
  public:
   static devtools_http_handler::DevToolsHttpHandler* CreateHttpHandler();
@@ -32,6 +34,8 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
                                        base::DictionaryValue* command) override;
 
  private:
+  scoped_ptr<DevToolsNetworkProtocolHandler> handler_;
+
   DISALLOW_COPY_AND_ASSIGN(DevToolsManagerDelegate);
 };
 

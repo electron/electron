@@ -6,6 +6,8 @@
 
 #include <vector>
 
+#include "browser/net/devtools_network_protocol_handler.h"
+
 #include "base/bind.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
@@ -140,7 +142,8 @@ DevToolsManagerDelegate::CreateHttpHandler() {
       GetBrightrayUserAgent());
 }
 
-DevToolsManagerDelegate::DevToolsManagerDelegate() {
+DevToolsManagerDelegate::DevToolsManagerDelegate()
+    : handler_(new DevToolsNetworkProtocolHandler) {
   // NB(zcbenz): This call does nothing, the only purpose is to make sure the
   // devtools_discovery module is linked into the final executable on Linux.
   // Though it is possible to achieve this by modifying the gyp settings, it
@@ -155,7 +158,7 @@ DevToolsManagerDelegate::~DevToolsManagerDelegate() {
 base::DictionaryValue* DevToolsManagerDelegate::HandleCommand(
     content::DevToolsAgentHost* agent_host,
     base::DictionaryValue* command) {
-  return NULL;
+  return handler_->HandleCommand(agent_host, command);
 }
 
 }  // namespace brightray

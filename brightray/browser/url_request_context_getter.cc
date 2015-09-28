@@ -6,6 +6,8 @@
 
 #include <algorithm>
 
+#include "browser/net/devtools_network_controller.h"
+#include "browser/net/devtools_network_transaction_factory.h"
 #include "browser/net_log.h"
 #include "browser/network_delegate.h"
 
@@ -123,6 +125,7 @@ net::SSLConfigService* URLRequestContextGetter::Delegate::CreateSSLConfigService
 
 URLRequestContextGetter::URLRequestContextGetter(
     Delegate* delegate,
+    DevToolsNetworkController* controller,
     NetLog* net_log,
     const base::FilePath& base_path,
     bool in_memory,
@@ -131,6 +134,7 @@ URLRequestContextGetter::URLRequestContextGetter(
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector protocol_interceptors)
     : delegate_(delegate),
+      controller_(controller),
       net_log_(net_log),
       base_path_(base_path),
       in_memory_(in_memory),
@@ -279,13 +283,17 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     storage_->set_host_resolver(host_resolver.Pass());
     network_session_params.host_resolver = url_request_context_->host_resolver();
 
+    net::HttpNetworkSession* session = new net::HttpNetworkSession(network_session_params);
     net::HttpCache::BackendFactory* backend = nullptr;
     if (in_memory_) {
       backend = net::HttpCache::DefaultBackend::InMemory(0);
     } else {
       backend = delegate_->CreateHttpCacheBackendFactory(base_path_);
     }
-    storage_->set_http_transaction_factory(new net::HttpCache(network_session_params, backend));
+    storage_->set_http_transaction_factory(new net::HttpCache(
+        new DevToolsNetworkTransactionFactory(controller_, session),
+        url_request_context_->net_log(),
+        backend));
 
     storage_->set_job_factory(delegate_->CreateURLRequestJobFactory(
         &protocol_handlers_, &protocol_interceptors_));
