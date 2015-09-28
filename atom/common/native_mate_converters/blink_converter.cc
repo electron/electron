@@ -166,7 +166,8 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(
   if (shifted)
     out->modifiers |= blink::WebInputEvent::ShiftKey;
   out->setKeyIdentifierFromWindowsKeyCode();
-  if (out->type == blink::WebInputEvent::Char || out->type == blink::WebInputEvent::RawKeyDown) {
+  if (out->type == blink::WebInputEvent::Char
+  || out->type == blink::WebInputEvent::RawKeyDown) {
     out->text[0] = code;
     out->unmodifiedText[0] = code;
   }
