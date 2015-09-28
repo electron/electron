@@ -64,9 +64,6 @@
               'files': [
                 '<(PRODUCT_DIR)/<(product_name) Helper.app',
                 '<(PRODUCT_DIR)/<(product_name) Framework.framework',
-                'external_binaries/Squirrel.framework',
-                'external_binaries/ReactiveCocoa.framework',
-                'external_binaries/Mantle.framework',
               ],
             },
             {
@@ -109,7 +106,21 @@
                 '<@(locale_dirs)',
               ],
             },
-          ]
+          ],
+          'conditions': [
+            ['mas_build==0', {
+              'copies': [
+                {
+                  'destination': '<(PRODUCT_DIR)/<(product_name).app/Contents/Frameworks',
+                  'files': [
+                    'external_binaries/Squirrel.framework',
+                    'external_binaries/ReactiveCocoa.framework',
+                    'external_binaries/Mantle.framework',
+                  ],
+                },
+              ],
+            }],
+          ],
         }, {  # OS=="mac"
           'dependencies': [
             'make_locale_paks',
@@ -296,6 +307,7 @@
             'MAS_BUILD',
           ],
           'sources!': [
+            'atom/browser/auto_updater_mac.mm',
             'atom/common/crash_reporter/crash_reporter_mac.h',
             'atom/common/crash_reporter/crash_reporter_mac.mm',
           ],
@@ -402,9 +414,6 @@
             'libraries': [
               '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
               '$(SDKROOT)/System/Library/Frameworks/QuartzCore.framework',
-              'external_binaries/Squirrel.framework',
-              'external_binaries/ReactiveCocoa.framework',
-              'external_binaries/Mantle.framework',
             ],
           },
           'mac_bundle': 1,
@@ -481,6 +490,13 @@
           ],
           'conditions': [
             ['mas_build==0', {
+              'link_settings': {
+                'libraries': [
+                  'external_binaries/Squirrel.framework',
+                  'external_binaries/ReactiveCocoa.framework',
+                  'external_binaries/Mantle.framework',
+                ],
+              },
               'copies': [
                 {
                   'destination': '<(PRODUCT_DIR)/<(product_name) Framework.framework/Versions/A/Resources',
