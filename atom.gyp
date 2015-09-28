@@ -285,12 +285,21 @@
             'vendor/breakpad/breakpad.gyp:breakpad_sender',
           ],
         }],  # OS=="win"
-        ['OS=="mac"', {
+        ['OS=="mac" and mas_build==0', {
           'dependencies': [
             'vendor/crashpad/client/client.gyp:crashpad_client',
             'vendor/crashpad/handler/handler.gyp:crashpad_handler',
           ],
-        }],  # OS=="mac"
+        }],  # OS=="mac" and mas_build==0
+        ['OS=="mac" and mas_build==1', {
+          'defines': [
+            'MAS_BUILD',
+          ],
+          'sources!': [
+            'atom/common/crash_reporter/crash_reporter_mac.h',
+            'atom/common/crash_reporter/crash_reporter_mac.mm',
+          ],
+        }],  # OS=="mac" and mas_build==1
         ['OS=="linux"', {
           'link_settings': {
             'ldflags': [
@@ -439,12 +448,6 @@
                 '<@(copied_libraries)',
               ],
             },
-            {
-              'destination': '<(PRODUCT_DIR)/<(product_name) Framework.framework/Versions/A/Resources',
-              'files': [
-                '<(PRODUCT_DIR)/crashpad_handler',
-              ],
-            },
           ],
           'postbuilds': [
             {
@@ -475,6 +478,18 @@
                 'Libraries',
               ],
             },
+          ],
+          'conditions': [
+            ['mas_build==0', {
+              'copies': [
+                {
+                  'destination': '<(PRODUCT_DIR)/<(product_name) Framework.framework/Versions/A/Resources',
+                  'files': [
+                    '<(PRODUCT_DIR)/crashpad_handler',
+                  ],
+                },
+              ],
+            }],
           ],
         },  # target framework
         {

@@ -40,8 +40,8 @@ class CrashReporter {
                             const std::string& company_name,
                             const std::string& submit_url,
                             bool auto_submit,
-                            bool skip_system_crash_handler) = 0;
-  virtual void SetUploadParameters() = 0;
+                            bool skip_system_crash_handler);
+  virtual void SetUploadParameters();
 
   StringMap upload_parameters_;
   bool is_browser_;
