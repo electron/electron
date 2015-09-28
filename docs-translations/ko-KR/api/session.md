@@ -181,3 +181,29 @@ proxy-uri = [<proxy-scheme>"://"]<proxy-host>[":"<proxy-port>]
 * `path` String - 다운로드 위치
 
 다운로드 저장 위치를 지정합니다. 기본 다운로드 위치는 각 어플리케이션 데이터 디렉터리의 `Downloads` 폴더입니다.
+
+### `session.enableNetworkEmulation(options)`
+
+* `options` Object
+  * `offline` Boolean - 네트워크의 오프라인 상태 여부
+  * `latency` Double - 밀리세컨드 단위의 RTT
+  * `downloadThroughput` Double - Bps 단위의 다운로드 주기
+  * `uploadThroughput` Double - Bps 단위의 업로드 주기
+
+제공된 설정으로 `session`의 네트워크를 에뮬레이트합니다.
+
+```javascript
+// 50kbps의 처리량과 함께 500ms의 레이턴시로 GPRS 연결을 에뮬레이트합니다.
+window.webContents.session.enableNetworkEmulation({
+    latency: 500,
+    downloadThroughput: 6400,
+    uploadThroughput: 6400
+});
+
+// 네트워크가 끊긴 상태를 에뮬레이트합니다.
+window.webContents.session.enableNetworkEmulation({offline: true});
+```
+
+### `session.disableNetworkEmulation`
+
+활성화된 `session`의 에뮬레이션을 비활성화합니다. 기본 네트워크 설정으로 돌아갑니다.
