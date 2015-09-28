@@ -9,6 +9,7 @@
 
 #include "atom/common/keyboad_util.h"
 #include "base/strings/string_util.h"
+#include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebDeviceEmulationParams.h"
@@ -29,10 +30,10 @@ int VectorToBitArray(const std::vector<T>& vec) {
 namespace mate {
 
 template<>
-struct Converter<char> {
+struct Converter<base::char16> {
   static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
-                     char* out) {
-    std::string code = base::StringToLowerASCII(V8ToString(val));
+                     base::char16* out) {
+    base::string16 code = base::UTF8ToUTF16(V8ToString(val));
     if (code.length() != 1)
       return false;
     *out = code[0];
@@ -157,16 +158,18 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(
     return false;
   if (!ConvertFromV8(isolate, val, static_cast<blink::WebInputEvent*>(out)))
     return false;
-  char code;
+  base::char16 code;
   if (!dict.Get("keyCode", &code))
     return false;
   bool shifted = false;
   out->windowsKeyCode = atom::KeyboardCodeFromCharCode(code, &shifted);
-  if (out->windowsKeyCode == ui::VKEY_UNKNOWN)
-    return false;
   if (shifted)
     out->modifiers |= blink::WebInputEvent::ShiftKey;
   out->setKeyIdentifierFromWindowsKeyCode();
+  if (out->type == blink::WebInputEvent::Char || out->type == blink::WebInputEvent::RawKeyDown) {
+    out->text[0] = code;
+    out->unmodifiedText[0] = code;
+  }
   return true;
 }
 
