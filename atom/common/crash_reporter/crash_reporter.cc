@@ -64,7 +64,6 @@ CrashReporter::GetUploadedReports(const std::string& path) {
   return result;
 }
 
-#if defined(OS_MACOSX) && defined(MAS_BUILD)
 void CrashReporter::InitBreakpad(const std::string& product_name,
                                  const std::string& version,
                                  const std::string& company_name,
@@ -76,6 +75,7 @@ void CrashReporter::InitBreakpad(const std::string& product_name,
 void CrashReporter::SetUploadParameters() {
 }
 
+#if defined(OS_MACOSX) && defined(MAS_BUILD)
 // static
 CrashReporter* CrashReporter::GetInstance() {
   static CrashReporter crash_reporter;
