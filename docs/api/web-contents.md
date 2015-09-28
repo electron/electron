@@ -534,13 +534,13 @@ Sends an input `event` to the page.
 For keyboard events, the `event` object also have following properties:
 
 * `keyCode` String (**required**) - A single character that will be sent as
-  keyboard event. Can be any ASCII character on the keyboard, like `a`, `1`
-  and `=`.
+  keyboard event. Can be any UTF-8 character.
 
 For mouse events, the `event` object also have following properties:
 
 * `x` Integer (**required**)
 * `y` Integer (**required**)
+* `button` String - The button pressed, can be `left`, `middle`, `right`
 * `globalX` Integer
 * `globalY` Integer
 * `movementX` Integer
