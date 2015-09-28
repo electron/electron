@@ -202,6 +202,18 @@ Sets download saving directory. By default, the download directory will be the
 
 Emulates network with the given configuration for the `session`.
 
+```javascript
+// To emulate a GPRS connection with 50kbps throughput and 500 ms latency.
+window.webContents.session.enableNetworkEmulation({
+    latency: 500,
+    downloadThroughput: 6400,
+    uploadThroughput: 6400
+});
+
+// To emulate a network outage.
+window.webContents.session.enableNetworkEmulation({offline: true});
+```
+
 ### `session.disableNetworkEmulation`
 
 Disables any network emulation already active for the `session`. Resets to
