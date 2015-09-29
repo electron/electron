@@ -142,6 +142,8 @@ class NativeWindowViews : public NativeWindow,
   // MessageHandlerDelegate:
   bool PreHandleMSG(
       UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) override;
+
+  void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
 #endif
 
   // NativeWindow:
@@ -178,9 +180,9 @@ class NativeWindowViews : public NativeWindow,
 #elif defined(OS_WIN)
   // Weak ref.
   AtomDesktopWindowTreeHostWin* atom_desktop_window_tree_host_win_;
-  // Records window was whether restored from minimized state or maximized
-  // state.
-  bool is_minimized_;
+
+  ui::WindowShowState last_window_state_;
+
   // In charge of running taskbar related APIs.
   TaskbarHost taskbar_host_;
 #endif
