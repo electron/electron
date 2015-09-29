@@ -18,6 +18,8 @@
   <string>atom.icns</string>
   <key>CFBundleVersion</key>
   <string>0.33.7</string>
+  <key>CFBundleShortVersionString</key>
+  <string>0.33.7</string>
   <key>LSMinimumSystemVersion</key>
   <string>10.8.0</string>
   <key>NSMainNibFile</key>
