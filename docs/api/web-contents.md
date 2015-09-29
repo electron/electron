@@ -565,8 +565,11 @@ For the `mouseWheel` event, the `event` object also have following properties:
 Begin subscribing for presentation events and captured frames, the `callback`
 will be called with `callback(frameBuffer)` when there is a presentation event.
 
-The `frameBuffer` is a `Buffer` that contains raw pixel data, in the format of
-32bit ARGB.
+The `frameBuffer` is a `Buffer` that contains raw pixel data. On most machines,
+the pixel data is effectively stored in 32bit BGRA format, but the actual
+representation depends on the endianness of the processor (most modern
+processors are little-endian, on machines with big-endian processors the data
+is in 32bit ARGB format).
 
 ### `webContents.endFrameSubscription()`
 
