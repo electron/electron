@@ -20,6 +20,8 @@
   <string>0.33.7</string>
   <key>CFBundleShortVersionString</key>
   <string>0.33.7</string>
+  <key>LSApplicationCategoryType</key>
+  <string>public.app-category.developer-tools</string>
   <key>LSMinimumSystemVersion</key>
   <string>10.8.0</string>
   <key>NSMainNibFile</key>
