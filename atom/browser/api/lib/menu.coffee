@@ -79,7 +79,11 @@ Menu::_init = ->
         v8Util.setHiddenValue group[0], 'checked', true unless checked
 
 Menu::popup = (window, x, y) ->
-  throw new TypeError('Invalid window') unless window?.constructor is BrowserWindow
+  unless window?.constructor is BrowserWindow
+    # Shift.
+    y = x
+    x = window
+    window = BrowserWindow.getFocusedWindow()
   if x? and y?
     @_popupAt(window, x, y)
   else
