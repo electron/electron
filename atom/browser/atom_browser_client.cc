@@ -11,6 +11,7 @@
 #include "atom/browser/atom_access_token_store.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_browser_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_quota_permission_context.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/browser.h"
@@ -30,6 +31,7 @@
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/resource_dispatcher_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/web_preferences.h"
@@ -224,6 +226,13 @@ void AtomBrowserClient::SelectClientCertificate(
     Browser::Get()->ClientCertificateSelector(web_contents,
                                               cert_request_info,
                                               delegate.Pass());
+}
+
+void AtomBrowserClient::ResourceDispatcherHostCreated() {
+  resource_dispatcher_host_delegate_.reset(
+      new AtomResourceDispatcherHostDelegate);
+  content::ResourceDispatcherHost::Get()->SetDelegate(
+      resource_dispatcher_host_delegate_.get());
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
