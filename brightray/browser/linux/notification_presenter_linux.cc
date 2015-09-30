@@ -13,6 +13,7 @@
 #include "content/public/browser/desktop_notification_delegate.h"
 #include "content/public/common/platform_notification_data.h"
 #include "common/application_info.h"
+#include <stdlib.h>
 #include "third_party/skia/include/core/SkBitmap.h"
 
 using namespace base;
@@ -30,6 +31,11 @@ static bool UnityIsRunning() {
 
   if (unity_has_result) {
     return unity_result;
+  }
+
+  if (getenv("ELECTRON_USE_UBUNTU_NOTIFIER")) {
+    unity_result = true;
+    goto out;
   }
  
   // Look for the presence of libunity as our hint that we're under Ubuntu
