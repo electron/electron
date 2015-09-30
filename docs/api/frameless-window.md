@@ -33,7 +33,7 @@ By setting the `transparent` option to `true`, you can also make the frameless
 window transparent:
 
 ```javascript
-var win = new BrowserWindow({ transparent: true, frame: false });
+var win = new BrowserWindow({ width: 800, height: 600, transparent: true, frame: false });
 ```
 
 ### Limitations

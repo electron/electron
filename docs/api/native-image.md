@@ -8,7 +8,8 @@ image file path as a `String`:
 
 ```javascript
 var appIcon = new Tray('/Users/somebody/images/icon.png');
-var window = new BrowserWindow({icon: '/Users/somebody/images/window.png'});
+var windowIcon = new NativeImage('/Users/somebody/images/window.png');
+var window = new BrowserWindow({ width: 800, height: 600, icon: windowIcon});
 ```
 
 Or read the image from the clipboard which returns a `NativeImage`:
