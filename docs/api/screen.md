@@ -46,8 +46,10 @@ app.on('ready', function() {
 
   if (externalDisplay) {
     mainWindow = new BrowserWindow({
+      width: 800,
+      height: 600,
       x: externalDisplay.bounds.x + 50,
-      y: externalDisplay.bounds.y + 50,
+      y: externalDisplay.bounds.y + 50
     });
   }
 });
