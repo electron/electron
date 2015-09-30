@@ -534,13 +534,13 @@ Sends an input `event` to the page.
 For keyboard events, the `event` object also have following properties:
 
 * `keyCode` String (**required**) - A single character that will be sent as
-  keyboard event. Can be any ASCII character on the keyboard, like `a`, `1`
-  and `=`.
+  keyboard event. Can be any UTF-8 character.
 
 For mouse events, the `event` object also have following properties:
 
 * `x` Integer (**required**)
 * `y` Integer (**required**)
+* `button` String - The button pressed, can be `left`, `middle`, `right`
 * `globalX` Integer
 * `globalY` Integer
 * `movementX` Integer
@@ -565,8 +565,11 @@ For the `mouseWheel` event, the `event` object also have following properties:
 Begin subscribing for presentation events and captured frames, the `callback`
 will be called with `callback(frameBuffer)` when there is a presentation event.
 
-The `frameBuffer` is a `Buffer` that contains raw pixel data, in the format of
-32bit ARGB.
+The `frameBuffer` is a `Buffer` that contains raw pixel data. On most machines,
+the pixel data is effectively stored in 32bit BGRA format, but the actual
+representation depends on the endianness of the processor (most modern
+processors are little-endian, on machines with big-endian processors the data
+is in 32bit ARGB format).
 
 ### `webContents.endFrameSubscription()`
 
