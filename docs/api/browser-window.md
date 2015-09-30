@@ -24,14 +24,13 @@ You can also create a window without chrome by using
 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
 
 It creates a new `BrowserWindow` with native properties as set by the `options`.
-Properties `width` and `height` are required.
 
 ### `new BrowserWindow(options)`
 
 `options` Object, properties:
 
-* `width` Integer (**required**) - Window's width.
-* `height` Integer (**required**) - Window's height.
+* `width` Integer - Window's width.
+* `height` Integer - Window's height.
 * `x` Integer - Window's left offset from screen.
 * `y` Integer - Window's top offset from screen.
 * `use-content-size` Boolean - The `width` and `height` would be used as web
