@@ -8,6 +8,7 @@
 #include "base/bind.h"
 #include "base/logging.h"
 #include "base/files/file_enumerator.h"
+#include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/libgtk2ui/skia_utils_gtk2.h"
 #include "content/public/browser/desktop_notification_delegate.h"
@@ -16,46 +17,33 @@
 #include <stdlib.h>
 #include "third_party/skia/include/core/SkBitmap.h"
 
-using namespace base;
-using namespace std;
-
 namespace brightray {
 
 namespace {
 
-static bool unity_has_result = false;
-static bool unity_result = false;
+bool unity_has_result = false;
+bool unity_result = false;
 
-static bool UnityIsRunning() {
-  FileEnumerator* enumerator = NULL;
+bool UnityIsRunning() {
+  if (getenv("ELECTRON_USE_UBUNTU_NOTIFIER"))
+    return true;
 
-  if (unity_has_result) {
+  if (unity_has_result)
     return unity_result;
-  }
 
-  if (getenv("ELECTRON_USE_UBUNTU_NOTIFIER")) {
-    unity_result = true;
-    goto out;
-  }
- 
-  // Look for the presence of libunity as our hint that we're under Ubuntu
-  FilePath haystack;
-  string needle("/usr/lib/libunity-");
+  unity_has_result = true;
 
-  enumerator = new FileEnumerator(FilePath("/usr/lib"), false, FileEnumerator::FILES);
-  
-  while (!((haystack = enumerator->Next()).empty())) {
-    if (haystack.value().compare(0, needle.length(), needle) == 0) {
+  // Look for the presence of libunity as our hint that we're under Ubuntu.
+  base::FileEnumerator enumerator(base::FilePath("/usr/lib"),
+                                  false, base::FileEnumerator::FILES);
+  base::FilePath haystack;
+  while (!((haystack = enumerator.Next()).empty())) {
+    if (base::StartsWith(haystack.value(), "/usr/lib/libunity-", base::CompareCase::SENSITIVE)) {
       unity_result = true;
-      goto out;
+      break;
     }
   }
-  
-  unity_result = false;
-  
-out: 
-  if (enumerator) delete enumerator;
-  unity_has_result = true;
+
   return unity_result;
 }
 
