@@ -136,7 +136,11 @@ void CommonWebContentsDelegate::InitWithWebContents(
 }
 
 void CommonWebContentsDelegate::SetOwnerWindow(NativeWindow* owner_window) {
-  content::WebContents* web_contents = GetWebContents();
+  SetOwnerWindow(GetWebContents(), owner_window);
+}
+
+void CommonWebContentsDelegate::SetOwnerWindow(
+    content::WebContents* web_contents, NativeWindow* owner_window) {
   owner_window_ = owner_window->GetWeakPtr();
   NativeWindowRelay* relay = new NativeWindowRelay(owner_window_);
   web_contents->SetUserData(relay->key, relay);

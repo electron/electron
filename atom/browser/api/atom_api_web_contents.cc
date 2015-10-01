@@ -506,6 +506,11 @@ void WebContents::DevToolsOpened() {
       isolate(), managed_web_contents()->GetDevToolsWebContents());
   devtools_web_contents_.Reset(isolate(), handle.ToV8());
 
+  // Inherit owner window in devtools.
+  if (owner_window())
+    handle->SetOwnerWindow(managed_web_contents()->GetDevToolsWebContents(),
+                           owner_window());
+
   Emit("devtools-opened");
 }
 

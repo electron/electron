@@ -34,6 +34,8 @@ class CommonWebContentsDelegate
 
   // Set the window as owner window.
   void SetOwnerWindow(NativeWindow* owner_window);
+  void SetOwnerWindow(content::WebContents* web_contents,
+                      NativeWindow* owner_window);
 
   // Destroy the managed InspectableWebContents object.
   void DestroyWebContents();
