@@ -7,13 +7,17 @@
 
 #include "base/bind.h"
 #include "base/logging.h"
+#include "base/files/file_enumerator.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/libgtk2ui/skia_utils_gtk2.h"
 #include "content/public/browser/desktop_notification_delegate.h"
 #include "content/public/common/platform_notification_data.h"
 #include "common/application_info.h"
-#include "dbus/dbus.h"
+#include <stdlib.h>
 #include "third_party/skia/include/core/SkBitmap.h"
+
+using namespace base;
+using namespace std;
 
 namespace brightray {
 
@@ -23,34 +27,34 @@ static bool unity_has_result = false;
 static bool unity_result = false;
 
 static bool UnityIsRunning() {
+  FileEnumerator* enumerator = NULL;
+
   if (unity_has_result) {
     return unity_result;
   }
 
-  struct DBusError err;
-  struct DBusConnection* bus = NULL;
-
-  dbus_error_init(&err);
-
-  bus = dbus_bus_get(DBUS_BUS_SESSION, &err);
-  if (dbus_error_is_set(&err)) {
-    g_debug("Failed to get Session Bus reference");
-    unity_result = false;
-    dbus_error_free(&err);
-
+  if (getenv("ELECTRON_USE_UBUNTU_NOTIFIER")) {
+    unity_result = true;
     goto out;
   }
+ 
+  // Look for the presence of libunity as our hint that we're under Ubuntu
+  FilePath haystack;
+  string needle("/usr/lib/libunity-");
 
-  unity_result = dbus_bus_name_has_owner(bus, "com.canonical.indicator.session", &err);
-
-  if (dbus_error_is_set(&err)) {
-    unity_result = false;
-    dbus_error_free(&err);
+  enumerator = new FileEnumerator(FilePath("/usr/lib"), false, FileEnumerator::FILES);
+  
+  while (!((haystack = enumerator->Next()).empty())) {
+    if (haystack.value().compare(0, needle.length(), needle) == 0) {
+      unity_result = true;
+      goto out;
+    }
   }
-
-out:
-  if (bus) dbus_connection_unref(bus);
-
+  
+  unity_result = false;
+  
+out: 
+  if (enumerator) delete enumerator;
   unity_has_result = true;
   return unity_result;
 }
