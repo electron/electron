@@ -43,6 +43,10 @@ class Window : public mate::TrackableObject<Window>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::ObjectTemplate> prototype);
 
+  // Returns the BrowserWindow object from |native_window|.
+  static v8::Local<v8::Value> From(v8::Isolate* isolate,
+                                   NativeWindow* native_window);
+
   NativeWindow* window() const { return window_.get(); }
 
  protected:

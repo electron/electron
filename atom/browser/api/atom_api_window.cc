@@ -92,6 +92,7 @@ Window::Window(v8::Isolate* isolate, const mate::Dictionary& options) {
   web_contents->SetOwnerWindow(window_.get());
   window_->InitFromOptions(options);
   window_->AddObserver(this);
+  AttachAsUserData(window_.get());
 }
 
 Window::~Window() {
@@ -590,6 +591,16 @@ void Window::BuildPrototype(v8::Isolate* isolate,
 #endif
       .SetProperty("id", &Window::ID, true)
       .SetProperty("webContents", &Window::WebContents, true);
+}
+
+// static
+v8::Local<v8::Value> Window::From(v8::Isolate* isolate,
+                                  NativeWindow* native_window) {
+  auto existing = TrackableObject::FromWrappedClass(isolate, native_window);
+  if (existing)
+    return existing->GetWrapper(isolate);
+  else
+    return v8::Null(isolate);
 }
 
 }  // namespace api

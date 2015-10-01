@@ -15,6 +15,7 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
+#include "base/supports_user_data.h"
 #include "content/public/browser/readback_types.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
@@ -49,7 +50,8 @@ namespace atom {
 
 struct DraggableRegion;
 
-class NativeWindow : public content::WebContentsObserver {
+class NativeWindow : public base::SupportsUserData,
+                     public content::WebContentsObserver {
  public:
   using CapturePageCallback = base::Callback<void(const SkBitmap& bitmap)>;
 

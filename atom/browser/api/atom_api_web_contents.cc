@@ -7,6 +7,7 @@
 #include <set>
 
 #include "atom/browser/api/atom_api_session.h"
+#include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
@@ -914,6 +915,13 @@ v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
   return mate::ConvertToV8(isolate, *web_preferences->web_preferences());
 }
 
+v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow() {
+  if (owner_window())
+    return Window::From(isolate(), owner_window());
+  else
+    return v8::Null(isolate());
+}
+
 v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, session_);
 }
@@ -981,6 +989,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
         .SetMethod("isGuest", &WebContents::IsGuest)
         .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
+        .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
         .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
         .SetMethod("unregisterServiceWorker",
                    &WebContents::UnregisterServiceWorker)
