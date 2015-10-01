@@ -25,6 +25,7 @@
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/common/user_agent.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_fetcher.h"
 #include "net/url_request/url_fetcher_response_writer.h"
@@ -40,10 +41,14 @@ const double kPresetZoomFactors[] = { 0.25, 0.333, 0.5, 0.666, 0.75, 0.9, 1.0,
 
 const char kChromeUIDevToolsURL[] =
     "chrome-devtools://devtools/bundled/inspector.html?"
+    "remoteBase=%s&"
     "can_dock=%s&"
     "toolbarColor=rgba(223,223,223,1)&"
     "textColor=rgba(0,0,0,1)&"
     "experiments=true";
+const char kChromeUIDevToolsRemoteFrontendBase[] =
+    "https://chrome-devtools-frontend.appspot.com/";
+const char kChromeUIDevToolsRemoteFrontendPath[] = "serve_file";
 
 const char kDevToolsBoundsPref[] = "brightray.devtools.bounds";
 const char kDevToolsZoomPref[] = "brightray.devtools.zoom";
@@ -99,6 +104,14 @@ double GetNextZoomLevel(double level, bool out) {
       return content::ZoomFactorToZoomLevel(kPresetZoomFactors[i + 1]);
   }
   return level;
+}
+
+GURL GetRemoteBaseURL() {
+  return GURL(base::StringPrintf(
+      "%s%s/%s/",
+      kChromeUIDevToolsRemoteFrontendBase,
+      kChromeUIDevToolsRemoteFrontendPath,
+      content::GetWebKitRevision().c_str()));
 }
 
 // ResponseWriter -------------------------------------------------------------
@@ -241,7 +254,9 @@ void InspectableWebContentsImpl::ShowDevTools() {
         web_contents_->GetMainFrame(), this));
     agent_host_->AttachClient(this);
 
-    GURL devtools_url(base::StringPrintf(kChromeUIDevToolsURL, can_dock_ ? "true" : ""));
+    GURL devtools_url(base::StringPrintf(kChromeUIDevToolsURL,
+                                         GetRemoteBaseURL().spec().c_str(),
+                                         can_dock_ ? "true" : ""));
     devtools_web_contents_->GetController().LoadURL(
         devtools_url,
         content::Referrer(),
