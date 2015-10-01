@@ -158,13 +158,8 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   // Then show it.
   bool show = true;
   options.Get(switches::kShow, &show);
-  if (show) {
+  if (show)
     Show();
-  } else {
-    // When RenderView is created it sets to visible, this is to prevent
-    // breaking the visibility API.
-    web_contents()->WasHidden();
-  }
 }
 
 void NativeWindow::SetSize(const gfx::Size& size) {

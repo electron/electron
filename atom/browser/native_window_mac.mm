@@ -470,8 +470,6 @@ bool NativeWindowMac::IsFocused() {
 }
 
 void NativeWindowMac::Show() {
-  web_contents()->WasShown();
-
   // This method is supposed to put focus on window, however if the app does not
   // have focus then "makeKeyAndOrderFront" will only show the window.
   [NSApp activateIgnoringOtherApps:YES];
@@ -480,13 +478,11 @@ void NativeWindowMac::Show() {
 }
 
 void NativeWindowMac::ShowInactive() {
-  web_contents()->WasShown();
   [window_ orderFrontRegardless];
 }
 
 void NativeWindowMac::Hide() {
   [window_ orderOut:nil];
-  web_contents()->WasHidden();
 }
 
 bool NativeWindowMac::IsVisible() {
