@@ -69,9 +69,6 @@ class Window : public mate::TrackableObject<Window>,
   void OnWindowLeaveHtmlFullScreen() override;
   void OnRendererUnresponsive() override;
   void OnRendererResponsive() override;
-  void OnDevToolsFocus() override;
-  void OnDevToolsOpened() override;
-  void OnDevToolsClosed() override;
   void OnExecuteWindowsCommand(const std::string& command_name) override;
 
   // mate::Wrappable:
@@ -150,10 +147,8 @@ class Window : public mate::TrackableObject<Window>,
 
   int32_t ID() const;
   v8::Local<v8::Value> WebContents(v8::Isolate* isolate);
-  v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
 
   v8::Global<v8::Value> web_contents_;
-  v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> menu_;
 
   api::WebContents* api_web_contents_;

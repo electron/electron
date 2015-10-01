@@ -83,7 +83,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DisableDeviceEmulation();
   void InspectElement(int x, int y);
   void InspectServiceWorker();
-  v8::Local<v8::Value> Session(v8::Isolate* isolate);
   void HasServiceWorker(const base::Callback<void(bool)>&);
   void UnregisterServiceWorker(const base::Callback<void(bool)>&);
   void SetAudioMuted(bool muted);
@@ -134,6 +133,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
+
+  // Properties.
+  v8::Local<v8::Value> Session(v8::Isolate* isolate);
+  v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
 
  protected:
   explicit WebContents(content::WebContents* web_contents);
@@ -218,6 +221,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void PluginCrashed(const base::FilePath& plugin_path,
                      base::ProcessId plugin_pid) override;
 
+  // brightray::InspectableWebContentsViewDelegate:
+  void DevToolsFocused() override;
+  void DevToolsOpened() override;
+  void DevToolsClosed() override;
+
  private:
   enum Type {
     BROWSER_WINDOW,  // Used by BrowserWindow.
@@ -237,6 +245,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              IPC::Message* message);
 
   v8::Global<v8::Value> session_;
+  v8::Global<v8::Value> devtools_web_contents_;
 
   scoped_ptr<WebViewGuestDelegate> guest_delegate_;
 

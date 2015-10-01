@@ -184,28 +184,6 @@ void Window::OnRendererResponsive() {
   Emit("responsive");
 }
 
-void Window::OnDevToolsFocus() {
-  Emit("devtools-focused");
-}
-
-void Window::OnDevToolsOpened() {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  auto handle = WebContents::CreateFrom(
-      isolate(), api_web_contents_->GetDevToolsWebContents());
-  devtools_web_contents_.Reset(isolate(), handle.ToV8());
-
-  Emit("devtools-opened");
-}
-
-void Window::OnDevToolsClosed() {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  devtools_web_contents_.Reset();
-
-  Emit("devtools-closed");
-}
-
 void Window::OnExecuteWindowsCommand(const std::string& command_name) {
   Emit("app-command", command_name);
 }
@@ -540,13 +518,6 @@ v8::Local<v8::Value> Window::WebContents(v8::Isolate* isolate) {
     return v8::Local<v8::Value>::New(isolate, web_contents_);
 }
 
-v8::Local<v8::Value> Window::DevToolsWebContents(v8::Isolate* isolate) {
-  if (devtools_web_contents_.IsEmpty())
-    return v8::Null(isolate);
-  else
-    return v8::Local<v8::Value>::New(isolate, devtools_web_contents_);
-}
-
 // static
 void Window::BuildPrototype(v8::Isolate* isolate,
                             v8::Local<v8::ObjectTemplate> prototype) {
@@ -618,8 +589,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
                  &Window::ShowDefinitionForSelection)
 #endif
       .SetProperty("id", &Window::ID, true)
-      .SetProperty("webContents", &Window::WebContents, true)
-      .SetProperty("devToolsWebContents", &Window::DevToolsWebContents, true);
+      .SetProperty("webContents", &Window::WebContents, true);
 }
 
 }  // namespace api

@@ -76,8 +76,6 @@ NativeWindow::NativeWindow(
       aspect_ratio_(0.0),
       inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
-  inspectable_web_contents->GetView()->SetDelegate(this);
-
   options.Get(switches::kFrame, &has_frame_);
   options.Get(switches::kTransparent, &transparent_);
   options.Get(switches::kEnableLargerThanScreen, &enable_larger_than_screen_);
@@ -416,18 +414,6 @@ void NativeWindow::NotifyWindowExecuteWindowsCommand(
     const std::string& command) {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
                     OnExecuteWindowsCommand(command));
-}
-
-void NativeWindow::DevToolsFocused() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsFocus());
-}
-
-void NativeWindow::DevToolsOpened() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsOpened());
-}
-
-void NativeWindow::DevToolsClosed() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsClosed());
 }
 
 void NativeWindow::RenderViewCreated(
