@@ -122,3 +122,7 @@ window.history.go = (offset) -> sendHistoryOperation 'goToOffset', offset
 Object.defineProperty window.history, 'length',
   get: ->
     getHistoryOperation 'length'
+
+# Make document.hidden return the correct value.
+Object.defineProperty document, 'hidden',
+  get: -> !remote.getCurrentWindow().isVisible()
