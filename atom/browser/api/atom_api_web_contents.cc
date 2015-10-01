@@ -7,6 +7,7 @@
 #include <set>
 
 #include "atom/browser/api/atom_api_session.h"
+#include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
@@ -26,6 +27,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
+#include "brightray/browser/inspectable_web_contents_view.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "content/common/view_messages.h"
@@ -227,6 +229,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   Observe(web_contents);
   AttachAsUserData(web_contents);
   InitWithWebContents(web_contents);
+
+  managed_web_contents()->GetView()->SetDelegate(this);
 
   // Save the preferences in C++.
   base::DictionaryValue web_preferences;
@@ -491,6 +495,33 @@ void WebContents::DidUpdateFaviconURL(
   Emit("page-favicon-updated", unique_urls);
 }
 
+void WebContents::DevToolsFocused() {
+  Emit("devtools-focused");
+}
+
+void WebContents::DevToolsOpened() {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  auto handle = WebContents::CreateFrom(
+      isolate(), managed_web_contents()->GetDevToolsWebContents());
+  devtools_web_contents_.Reset(isolate(), handle.ToV8());
+
+  // Inherit owner window in devtools.
+  if (owner_window())
+    handle->SetOwnerWindow(managed_web_contents()->GetDevToolsWebContents(),
+                           owner_window());
+
+  Emit("devtools-opened");
+}
+
+void WebContents::DevToolsClosed() {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  devtools_web_contents_.Reset();
+
+  Emit("devtools-closed");
+}
+
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(WebContents, message)
@@ -698,10 +729,6 @@ void WebContents::InspectServiceWorker() {
   }
 }
 
-v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
-  return v8::Local<v8::Value>::New(isolate, session_);
-}
-
 void WebContents::HasServiceWorker(
     const base::Callback<void(bool)>& callback) {
   auto context = GetServiceWorkerContext(web_contents());
@@ -893,6 +920,24 @@ v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
   return mate::ConvertToV8(isolate, *web_preferences->web_preferences());
 }
 
+v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow() {
+  if (owner_window())
+    return Window::From(isolate(), owner_window());
+  else
+    return v8::Null(isolate());
+}
+
+v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
+  return v8::Local<v8::Value>::New(isolate, session_);
+}
+
+v8::Local<v8::Value> WebContents::DevToolsWebContents(v8::Isolate* isolate) {
+  if (devtools_web_contents_.IsEmpty())
+    return v8::Null(isolate);
+  else
+    return v8::Local<v8::Value>::New(isolate, devtools_web_contents_);
+}
+
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   if (template_.IsEmpty())
@@ -949,6 +994,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
         .SetMethod("isGuest", &WebContents::IsGuest)
         .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
+        .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
         .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
         .SetMethod("unregisterServiceWorker",
                    &WebContents::UnregisterServiceWorker)
@@ -957,7 +1003,9 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("_printToPDF", &WebContents::PrintToPDF)
         .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
         .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
-        .SetProperty("session", &WebContents::Session)
+        .SetProperty("session", &WebContents::Session, true)
+        .SetProperty("devToolsWebContents",
+                     &WebContents::DevToolsWebContents, true)
         .Build());
 
   return mate::ObjectTemplateBuilder(

@@ -823,18 +823,6 @@ bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
 }
 #endif
 
-gfx::ImageSkia NativeWindowViews::GetDevToolsWindowIcon() {
-  return GetWindowAppIcon();
-}
-
-#if defined(USE_X11)
-void NativeWindowViews::GetDevToolsWindowWMClass(
-    std::string* name, std::string* class_name) {
-  *class_name = Browser::Get()->GetName();
-  *name = base::StringToLowerASCII(*class_name);
-}
-#endif
-
 #if defined(OS_WIN)
 bool NativeWindowViews::PreHandleMSG(
     UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) {
