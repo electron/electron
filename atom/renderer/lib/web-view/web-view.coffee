@@ -46,6 +46,7 @@ class WebViewImpl
     # that we don't end up allocating a second guest.
     if @guestInstanceId
       guestViewInternal.destroyGuest @guestInstanceId
+      @webContents = null
       @guestInstanceId = undefined
       @beforeFirstNavigation = true
       @attributes[webViewConstants.ATTRIBUTE_PARTITION].validPartitionId = true
@@ -188,6 +189,7 @@ class WebViewImpl
 
   attachWindow: (guestInstanceId) ->
     @guestInstanceId = guestInstanceId
+    @webContents = remote.getGuestWebContents @guestInstanceId
     return true unless @internalInstanceId
 
     guestViewInternal.attachGuest @internalInstanceId, @guestInstanceId, @buildParams()
@@ -299,7 +301,7 @@ registerWebViewElement = ->
   createHandler = (m) ->
     (args...) ->
       internal = v8Util.getHiddenValue this, 'internal'
-      remote.getGuestWebContents(internal.guestInstanceId)[m]  args...
+      internal.webContents[m] args...
   proto[m] = createHandler m for m in methods
 
   window.WebView = webFrame.registerEmbedderCustomElement 'webview',

@@ -229,11 +229,11 @@ Menu.setApplicationMenu(menu);
 
 또한 `template`에는 다른 속성도 추가할 수 있으며 메뉴가 만들어질 때 해당 메뉴 아이템의 프로퍼티로 변환됩니다.
 
-### `Menu.popup(browserWindow[, x, y])`
+### `Menu.popup([browserWindow, x, y])`
 
-* `browserWindow` BrowserWindow
+* `browserWindow` BrowserWindow (optional)
 * `x` Number (optional)
-* `y` Number (만약 `x`를 지정했을 경우 `y`도 필수로 지정해야 합니다)
+* `y` Number (만약 `x`를 지정했을 경우 반드시 `y`도 지정해야 합니다)
 
 메뉴를 `browserWindow` 내부 팝업으로 표시합니다.
 옵션으로 메뉴를 표시할 `(x,y)` 좌표를 지정할 수 있습니다.

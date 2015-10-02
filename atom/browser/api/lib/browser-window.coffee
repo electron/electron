@@ -48,6 +48,15 @@ BrowserWindow::_init = ->
   # Notify the creation of the window.
   app.emit 'browser-window-created', {}, this
 
+  # Be compatible with old APIs.
+  @webContents.on 'devtools-focused', => @emit 'devtools-focused'
+  @webContents.on 'devtools-opened', => @emit 'devtools-opened'
+  @webContents.on 'devtools-closed', => @emit 'devtools-closed'
+  Object.defineProperty this, 'devToolsWebContents',
+    enumerable: true,
+    configurable: false,
+    get: -> @webContents.devToolsWebContents
+
 BrowserWindow.getFocusedWindow = ->
   windows = BrowserWindow.getAllWindows()
   return window for window in windows when window.isFocused()
