@@ -127,31 +127,31 @@ app.on('ready', function() {
 앱을 작성한 후 [어플리케이션 배포](application-distribution.md) 가이드를 따라 앱을 패키징 하고 패키징한 앱을 실행할 수 있습니다.
 또한 Electron 실행파일을 다운로드 받아 바로 실행해 볼 수도 있습니다.
 
-### electron-prebuilt
+### electron-prebuilt 사용
 
 `npm`을 통해 `electron-prebuilt` 패키지를 전역에 설치하면 간단한 명령으로 앱을 실행할 수 있습니다.
 
-앱 디렉터리 내에서 이렇게 실행합니다:
+앱 디렉터리 내에서 다음 명령으로 실행할 수 있습니다:
 
 ```bash
 electron .
 ```
 
-또는 앱 디렉터리 밖에서 앱 디렉터리를 입력해도 됩니다:
+또는 앱 디렉터리 밖에서 앱을 실행할 수도 있습니다:
 
 ```bash
 electron app
 ```
 
-npm 모듈을 로컬에 설치했다면 이렇게 실행할 수 있습니다:
+npm 모듈을 로컬에 설치했다면 다음 명령으로 실행할 수 있습니다:
 
 ```bash
 ./node_modules/.bin/electron .
 ```
 
-### 임의로 다운로드 받은 Electron
+### 다운로드 받은 Electron 바이너리 사용
 
-만약 Electron 바이너리를 임의로 다운로드 받았다면 다음과 같이 앱 디렉터리에 놓고 실행하면 됩니다.
+따로 Electron 바이너리를 다운로드 받았다면 다음 예시와 같이 실행하면 됩니다.
 
 #### Windows
 
