@@ -245,6 +245,10 @@
         'vendor/node/deps/cares/include',
         # The `third_party/WebKit/Source/platform/weborigin/SchemeRegistry.h` is using `platform/PlatformExport.h`.
         '<(libchromiumcontent_src_dir)/third_party/WebKit/Source',
+        # The 'third_party/libyuv/include/libyuv/scale_argb.h' is using 'libyuv/basic_types.h'.
+        '<(libchromiumcontent_src_dir)/third_party/libyuv/include',
+        # The 'third_party/webrtc/modules/desktop_capture/desktop_frame.h' is using 'webrtc/base/scoped_ptr.h'.
+        '<(libchromiumcontent_src_dir)/third_party/',
       ],
       'direct_dependent_settings': {
         'include_dirs': [

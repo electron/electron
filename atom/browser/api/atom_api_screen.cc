@@ -56,6 +56,21 @@ Screen::~Screen() {
   screen_->RemoveObserver(this);
 }
 
+mate::Handle<atom::api::DesktopCapturer> Screen::GetDesktopCapturer(
+    const std::vector<std::string>& sources) {
+  bool show_screens = false;
+  bool show_windows = false;
+  for (const auto& source_type : sources) {
+    if (source_type == "screen") {
+      show_screens = true;
+    } else if (source_type == "window") {
+      show_windows = true;
+    }
+  }
+
+  return DesktopCapturer::Create(isolate(), show_screens, show_windows);
+}
+
 gfx::Point Screen::GetCursorScreenPoint() {
   return screen_->GetCursorScreenPoint();
 }
@@ -107,7 +122,8 @@ mate::ObjectTemplateBuilder Screen::GetObjectTemplateBuilder(
       .SetMethod("getPrimaryDisplay", &Screen::GetPrimaryDisplay)
       .SetMethod("getAllDisplays", &Screen::GetAllDisplays)
       .SetMethod("getDisplayNearestPoint", &Screen::GetDisplayNearestPoint)
-      .SetMethod("getDisplayMatching", &Screen::GetDisplayMatching);
+      .SetMethod("getDisplayMatching", &Screen::GetDisplayMatching)
+      .SetMethod("getDesktopCapturer", &Screen::GetDesktopCapturer);
 }
 
 // static
