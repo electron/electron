@@ -11,9 +11,6 @@ process.argv.splice 1, 1
 # of Atom's built-in libraries.
 globalPaths = Module.globalPaths
 globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
-# And also app.
-globalPaths.push path.join(process.resourcesPath, 'app')
-globalPaths.push path.join(process.resourcesPath, 'app.asar')
 
 # Import common settings.
 require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
