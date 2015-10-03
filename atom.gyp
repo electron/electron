@@ -275,8 +275,14 @@
               '-lcomctl32.lib',
               '-lcomdlg32.lib',
               '-lwininet.lib',
+              '-lwinmm.lib',
             ],
           },
+          'defines': [
+            # The usage of "webrtc/modules/desktop_capture/desktop_capture_options.h"
+            # is required to see this macro.
+            'WEBRTC_WIN',
+          ],
           'dependencies': [
             # Node is built as static_library on Windows, so we also need to
             # include its dependencies here.
@@ -290,6 +296,11 @@
           ],
         }],  # OS=="win"
         ['OS=="mac"', {
+          'defines': [
+            # The usage of "webrtc/modules/desktop_capture/desktop_capture_options.h"
+            # is required to see this macro.
+            'WEBRTC_MAC',
+          ],
           'dependencies': [
             'vendor/crashpad/client/client.gyp:crashpad_client',
             'vendor/crashpad/handler/handler.gyp:crashpad_handler',

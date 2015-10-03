@@ -47,10 +47,23 @@ const int kThumbnailHeight = 150;
 }  // namespace
 
 DesktopCapturer::DesktopCapturer(bool show_screens, bool show_windows) {
+  webrtc::DesktopCaptureOptions options =
+      webrtc::DesktopCaptureOptions::CreateDefault();
+
+#if defined(OS_WIN)
+  // On windows, desktop effects (e.g. Aero) will be disabled when the Desktop
+  // capture API is active by default.
+  // We keep the desktop effects in most times. Howerver, the screen still
+  // fickers when the API is capturing the window due to limitation of current
+  // implemetation. This is a known and wontFix issue in webrtc (see:
+  // http://code.google.com/p/webrtc/issues/detail?id=3373)
+  options.set_disable_effects(false);
+#endif
+
   scoped_ptr<webrtc::ScreenCapturer> screen_capturer(
-      show_screens ? webrtc::ScreenCapturer::Create() : nullptr);
+      show_screens ? webrtc::ScreenCapturer::Create(options) : nullptr);
   scoped_ptr<webrtc::WindowCapturer> window_capturer(
-      show_windows ? webrtc::WindowCapturer::Create() : nullptr);
+      show_windows ? webrtc::WindowCapturer::Create(options) : nullptr);
   media_list_.reset(new NativeDesktopMediaList(screen_capturer.Pass(),
       window_capturer.Pass()));
   media_list_->SetThumbnailSize(gfx::Size(kThumbnailWidth, kThumbnailHeight));
