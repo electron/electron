@@ -15,7 +15,7 @@ Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
 announcements.
 
 This project adheres to the [Contributor Covenant 1.2](http://contributor-covenant.org/version/1/2/0).
-By participating, you are expected to uphold this code. Please report 
+By participating, you are expected to uphold this code. Please report
 unacceptable behavior to atom@github.com.
 
 ## Downloads
@@ -38,12 +38,6 @@ npm install electron-prebuilt --save-dev
 
 - [China](https://npm.taobao.org/mirrors/electron)
 
-## Supported Operating Systems
-
-- Ubuntu: 14.04 and higher
-- Mac: OS X 10.8.0 and higher
-- Windows: Win7 or higher
-
 ## Documentation
 
 Guides and the API reference are located in the
@@ -59,15 +53,14 @@ contains documents describing how to build and contribute to Electron.
 - [Simplified Chinese](https://github.com/atom/electron/tree/master/docs-translations/zh-CN)
 - [Traditional Chinese](https://github.com/atom/electron/tree/master/docs-translations/zh-TW)
 
-
 ## Community
 
-You can ask questions and interact with the community in the following 
+You can ask questions and interact with the community in the following
 locations:
-- [`electron`](http://discuss.atom.io/category/electron) category on the Atom 
+- [`electron`](http://discuss.atom.io/category/electron) category on the Atom
 forums
 - `#atom-shell` channel on Freenode
 - [`Atom`](http://atom-slack.herokuapp.com/) channel on Slack
 
-Check out [awesome-electron](https://github.com/sindresorhus/awesome-electron) 
+Check out [awesome-electron](https://github.com/sindresorhus/awesome-electron)
 for a community maintained list of useful example apps, tools and resources.
