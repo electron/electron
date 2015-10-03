@@ -104,11 +104,15 @@ gfx::Size FramelessView::GetPreferredSize() const {
 }
 
 gfx::Size FramelessView::GetMinimumSize() const {
-  return window_->GetMinimumSize();
+  gfx::Size size = window_->WindowSizeToFramelessSize(
+      window_->GetMinimumSize());
+  return size;
 }
 
 gfx::Size FramelessView::GetMaximumSize() const {
-  return window_->GetMaximumSize();
+  gfx::Size size = window_->WindowSizeToFramelessSize(
+      window_->GetMaximumSize());
+  return size;
 }
 
 const char* FramelessView::GetClassName() const {
