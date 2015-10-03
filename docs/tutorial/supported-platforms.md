@@ -8,9 +8,9 @@ Only 64bit binaries are provided for OS X, and the minimum OS X version supporte
 
 ### Windows
 
-Windows 7 and later are supported, Electron should be able to run on Windows Vista, but there is no testing done on it.
+Windows 7 and later are supported, older operating systems are not supported (and do not work).
 
-Both `x86` and `x64` binaries are provided for Windows, and `ARM` version of Windows is not supported for now.
+Both `x86` and `amd64` (x64) binaries are provided for Windows, and `ARM` version of Windows is not supported for now.
 
 ### Linux
 
