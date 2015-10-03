@@ -7,13 +7,16 @@ Module = require 'module'
 # we need to restore it here.
 process.argv.splice 1, 1
 
+# Clear search paths.
+require path.resolve(__dirname, '..', '..', 'common', 'lib', 'reset-search-paths')
+
+# Import common settings.
+require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
+
 # Add browser/api/lib to module search paths, which contains javascript part of
 # Electron's built-in libraries.
 globalPaths = Module.globalPaths
 globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
-
-# Import common settings.
-require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
 
 if process.platform is 'win32'
   # Redirect node's console to use our own implementations, since node can not
