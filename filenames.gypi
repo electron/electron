@@ -37,6 +37,7 @@
       'atom/common/api/lib/native-image.coffee',
       'atom/common/api/lib/shell.coffee',
       'atom/common/lib/init.coffee',
+      'atom/common/lib/reset-search-paths.coffee',
       'atom/renderer/lib/chrome-api.coffee',
       'atom/renderer/lib/init.coffee',
       'atom/renderer/lib/inspector.coffee',
