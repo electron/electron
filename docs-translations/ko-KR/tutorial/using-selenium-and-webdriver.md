@@ -71,7 +71,7 @@ driver.quit();
 먼저, `chromedriver` 바이너리를 다운로드 받고 실행합니다:
 
 ```bash
-$ chromedriver --url-base=/wd/hub --port=9515
+$ chromedriver --url-base=wd/hub --port=9515
 Starting ChromeDriver (v2.10.291558) on port 9515
 Only local connections are allowed.
 ```
