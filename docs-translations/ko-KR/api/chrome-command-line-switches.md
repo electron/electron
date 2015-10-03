@@ -84,13 +84,19 @@ Net log 이벤트를 활성화하고 `path`에 로그를 기록합니다.
 
 ## --ssl-version-fallback-min=`version`
 
-Fallback SSL/TLS 최소 버전을 지정합니다. ("tls1", "tls1.1", "tls1.2")
+TLS fallback에서 사용할 SSL/TLS 최소 버전을 지정합니다. ("tls1", "tls1.1", "tls1.2")
+
+## --enable-logging
+
+Chromium의 로그를 콘솔에 출력합니다.
+
+이 스위치는 어플리케이션이 로드되기 전에 파싱 되므로 `app.commandLine.appendSwitch`에서 사용할 수 없습니다.
 
 ## --v=`log_level`
 
 기본 V-logging 최대 활성화 레벨을 지정합니다. 기본값은 0입니다. 기본적으로 양수를 레벨로 사용합니다.
 
-`--v=-1`를 사용하면 로깅이 비활성화 됩니다.
+이 스위치는 `--enable-logging` 스위치를 같이 지정해야 작동합니다.
 
 ## --vmodule=`pattern`
 
@@ -100,10 +106,4 @@ Fallback SSL/TLS 최소 버전을 지정합니다. ("tls1", "tls1.1", "tls1.2")
 또한 슬래시(`/`) 또는 백슬래시(`\`)를 포함하는 패턴은 지정한 경로에 대해 패턴을 테스트 합니다.
 예를 들어 `*/foo/bar/*=2` 표현식은 `foo/bar` 디렉터리 안의 모든 소스 코드의 로깅 레벨을 2로 지정합니다.
 
-모든 크로미움과 관련된 로그를 비활성화하고 어플리케이션의 로그만 활성화 하려면 다음과 같이 코드를 작성하면 됩니다:
-
-
-```javascript
-app.commandLine.appendSwitch('v', -1);
-app.commandLine.appendSwitch('vmodule', 'console=0');
-```
+이 스위치는 `--enable-logging` 스위치를 같이 지정해야 작동합니다.
