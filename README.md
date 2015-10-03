@@ -53,6 +53,12 @@ contains documents describing how to build and contribute to Electron.
 - [Simplified Chinese](https://github.com/atom/electron/tree/master/docs-translations/zh-CN)
 - [Traditional Chinese](https://github.com/atom/electron/tree/master/docs-translations/zh-TW)
 
+## Supported Operating Systems
+
+- Ubuntu: 14.04 and higher
+- Mac: OS X 10.8.0 and higher
+- Windows: Win7 or higher
+
 ## Community
 
 You can ask questions and interact with the community in the following 
