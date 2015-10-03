@@ -38,6 +38,12 @@ npm install electron-prebuilt --save-dev
 
 - [China](https://npm.taobao.org/mirrors/electron)
 
+## Supported Operating Systems
+
+- Ubuntu: 14.04 and higher
+- Mac: OS X 10.8.0 and higher
+- Windows: Win7 or higher
+
 ## Documentation
 
 Guides and the API reference are located in the
@@ -52,6 +58,7 @@ contains documents describing how to build and contribute to Electron.
 - [Spanish](https://github.com/atom/electron/tree/master/docs-translations/es)
 - [Simplified Chinese](https://github.com/atom/electron/tree/master/docs-translations/zh-CN)
 - [Traditional Chinese](https://github.com/atom/electron/tree/master/docs-translations/zh-TW)
+
 
 ## Community
 
