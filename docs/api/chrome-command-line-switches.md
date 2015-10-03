@@ -89,15 +89,21 @@ Enables net log events to be saved and writes them to `path`.
 
 ## --ssl-version-fallback-min=`version`
 
-Set the minimum SSL/TLS version ("tls1", "tls1.1" or "tls1.2") that TLS
+Sets the minimum SSL/TLS version ("tls1", "tls1.1" or "tls1.2") that TLS
 fallback will accept.
+
+## --enable-logging
+
+Prints Chromium's logging into console.
+
+This switch can not be used in `app.commandLine.appendSwitch` since it is parsed earlier than user's app is loaded.
 
 ## --v=`log_level`
 
 Gives the default maximal active V-logging level; 0 is the default. Normally
 positive values are used for V-logging levels.
 
-Passing `--v=-1` will disable logging.
+This switch only works when `--enable-logging` is also passed.
 
 ## --vmodule=`pattern`
 
@@ -109,10 +115,4 @@ Any pattern containing a forward or backward slash will be tested against the
 whole pathname and not just the module. E.g. `*/foo/bar/*=2` would change the
 logging level for all code in the source files under a `foo/bar` directory.
 
-To disable all chromium related logs and only enable your application logs you
-can do:
-
-```javascript
-app.commandLine.appendSwitch('v', -1);
-app.commandLine.appendSwitch('vmodule', 'console=0');
-```
+This switch only works when `--enable-logging` is also passed.

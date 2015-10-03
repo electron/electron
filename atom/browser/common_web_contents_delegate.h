@@ -12,6 +12,7 @@
 #include "brightray/browser/default_web_contents_delegate.h"
 #include "brightray/browser/inspectable_web_contents_impl.h"
 #include "brightray/browser/inspectable_web_contents_delegate.h"
+#include "brightray/browser/inspectable_web_contents_view_delegate.h"
 
 namespace atom {
 
@@ -21,7 +22,8 @@ class WebDialogHelper;
 
 class CommonWebContentsDelegate
     : public brightray::DefaultWebContentsDelegate,
-      public brightray::InspectableWebContentsDelegate {
+      public brightray::InspectableWebContentsDelegate,
+      public brightray::InspectableWebContentsViewDelegate {
  public:
   CommonWebContentsDelegate();
   virtual ~CommonWebContentsDelegate();
@@ -32,6 +34,8 @@ class CommonWebContentsDelegate
 
   // Set the window as owner window.
   void SetOwnerWindow(NativeWindow* owner_window);
+  void SetOwnerWindow(content::WebContents* web_contents,
+                      NativeWindow* owner_window);
 
   // Destroy the managed InspectableWebContents object.
   void DestroyWebContents();
@@ -85,6 +89,15 @@ class CommonWebContentsDelegate
   void DevToolsAddFileSystem(const base::FilePath& path) override;
   void DevToolsRemoveFileSystem(
       const base::FilePath& file_system_path) override;
+
+  // brightray::InspectableWebContentsViewDelegate:
+#if defined(TOOLKIT_VIEWS)
+  gfx::ImageSkia GetDevToolsWindowIcon() override;
+#endif
+#if defined(USE_X11)
+  void GetDevToolsWindowWMClass(
+      std::string* name, std::string* class_name) override;
+#endif
 
  private:
   // Callback for when DevToolsSaveToFile has completed.

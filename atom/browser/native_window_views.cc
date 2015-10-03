@@ -343,17 +343,14 @@ bool NativeWindowViews::IsFocused() {
 }
 
 void NativeWindowViews::Show() {
-  web_contents()->WasShown();
   window_->native_widget_private()->ShowWithWindowState(GetRestoredState());
 }
 
 void NativeWindowViews::ShowInactive() {
-  web_contents()->WasShown();
   window_->ShowInactive();
 }
 
 void NativeWindowViews::Hide() {
-  window_->Hide();
   web_contents()->WasHidden();
 }
 
@@ -820,18 +817,6 @@ bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
   std::string command = AppCommandToString(command_id);
   NotifyWindowExecuteWindowsCommand(command);
   return false;
-}
-#endif
-
-gfx::ImageSkia NativeWindowViews::GetDevToolsWindowIcon() {
-  return GetWindowAppIcon();
-}
-
-#if defined(USE_X11)
-void NativeWindowViews::GetDevToolsWindowWMClass(
-    std::string* name, std::string* class_name) {
-  *class_name = Browser::Get()->GetName();
-  *name = base::StringToLowerASCII(*class_name);
 }
 #endif
 

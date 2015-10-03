@@ -154,6 +154,18 @@ Emitted when a plugin process has crashed.
 
 Emitted when `webContents` is destroyed.
 
+### Event: 'devtools-opened'
+
+Emitted when DevTools is opened.
+
+### Event: 'devtools-closed'
+
+Emitted when DevTools is closed.
+
+### Event: 'devtools-focused'
+
+Emitted when DevTools is focused / opened.
+
 ## Instance Methods
 
 The `webContents` object has the following instance methods:
@@ -441,6 +453,40 @@ Adds the specified path to DevTools workspace.
 
 Removes the specified path from DevTools workspace.
 
+### `webContents.openDevTools([options])`
+
+* `options` Object (optional). Properties:
+  * `detach` Boolean - opens DevTools in a new window
+
+Opens the developer tools.
+
+### `webContents.closeDevTools()`
+
+Closes the developer tools.
+
+### `webContents.isDevToolsOpened()`
+
+Returns whether the developer tools are opened.
+
+### `webContents.toggleDevTools()`
+
+Toggles the developer tools.
+
+### `webContents.isDevToolsFocused()`
+
+Returns whether the developer tools is focused.
+
+### `webContents.inspectElement(x, y)`
+
+* `x` Integer
+* `y` Integer
+
+Starts inspecting element at position (`x`, `y`).
+
+### `webContents.inspectServiceWorker()`
+
+Opens the developer tools for the service worker context.
+
 ### `webContents.send(channel[, args...])`
 
 * `channel` String
@@ -574,3 +620,14 @@ is in 32bit ARGB format).
 ### `webContents.endFrameSubscription()`
 
 End subscribing for frame presentation events.
+
+## Instance Properties
+
+`WebContents` objects also have the following properties:
+
+### `webContents.devToolsWebContents`
+
+Get the `WebContents` of DevTools for this `WebContents`.
+
+**Note:** Users should never store this object because it may become `null`
+when the DevTools has been closed.

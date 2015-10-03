@@ -74,7 +74,7 @@ driver.
 First you need to download the `chromedriver` binary, and run it:
 
 ```bash
-$ chromedriver --url-base=/wd/hub --port=9515
+$ chromedriver --url-base=wd/hub --port=9515
 Starting ChromeDriver (v2.10.291558) on port 9515
 Only local connections are allowed.
 ```

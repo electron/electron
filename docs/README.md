@@ -1,5 +1,6 @@
 ## Guides
 
+* [Supported Platforms](tutorial/supported-platforms.md)
 * [Application Distribution](tutorial/application-distribution.md)
 * [Application Packaging](tutorial/application-packaging.md)
 * [Using Native Node Modules](tutorial/using-native-node-modules.md)

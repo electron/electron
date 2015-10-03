@@ -64,7 +64,9 @@ for packagePath in searchPaths
   catch e
     continue
 
-throw new Error("Unable to find a valid app") unless packageJson?
+unless packageJson?
+  process.nextTick -> process.exit 1
+  throw new Error("Unable to find a valid app")
 
 # Set application's version.
 app.setVersion packageJson.version if packageJson.version?

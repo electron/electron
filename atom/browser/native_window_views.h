@@ -131,13 +131,6 @@ class NativeWindowViews : public NativeWindow,
   bool ExecuteWindowsCommand(int command_id) override;
 #endif
 
-  // brightray::InspectableWebContentsViewDelegate:
-  gfx::ImageSkia GetDevToolsWindowIcon() override;
-#if defined(USE_X11)
-  void GetDevToolsWindowWMClass(
-      std::string* name, std::string* class_name) override;
-#endif
-
 #if defined(OS_WIN)
   // MessageHandlerDelegate:
   bool PreHandleMSG(
