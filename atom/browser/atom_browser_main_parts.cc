@@ -55,10 +55,6 @@ void AtomBrowserMainParts::RegisterDestructionCallback(
 void AtomBrowserMainParts::PostEarlyInitialization() {
   brightray::BrowserMainParts::PostEarlyInitialization();
 
-#if defined(USE_X11)
-  SetDPIFromGSettings();
-#endif
-
   {
     // Temporary set the bridge_task_runner_ as current thread's task runner,
     // so we can fool gin::PerIsolateData to use it as its task runner, instead
