@@ -43,6 +43,7 @@ class BrowserMainParts : public content::BrowserMainParts {
   void ToolkitInitialized() override;
   void PreMainMessageLoopStart() override;
   void PreMainMessageLoopRun() override;
+  void PostMainMessageLoopStart() override;
   void PostMainMessageLoopRun() override;
   int PreCreateThreads() override;
 
