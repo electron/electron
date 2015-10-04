@@ -39,8 +39,10 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 
  protected:
   // content::BrowserMainParts:
+  void PreEarlyInitialization() override;
   void PostEarlyInitialization() override;
   void PreMainMessageLoopRun() override;
+  void PostMainMessageLoopStart() override;
   void PostMainMessageLoopRun() override;
 #if defined(OS_MACOSX)
   void PreMainMessageLoopStart() override;
@@ -48,6 +50,12 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 #endif
 
  private:
+#if defined(OS_POSIX)
+  // Set signal handlers.
+  void HandleSIGCHLD();
+  void HandleShutdownSignals();
+#endif
+
   // A fake BrowserProcess object that used to feed the source code from chrome.
   scoped_ptr<BrowserProcess> fake_browser_process_;
 
