@@ -53,6 +53,7 @@ void AtomBrowserMainParts::RegisterDestructionCallback(
 }
 
 void AtomBrowserMainParts::PreEarlyInitialization() {
+  brightray::BrowserMainParts::PreEarlyInitialization();
 #if defined(OS_POSIX)
   HandleSIGCHLD();
 #endif
@@ -119,6 +120,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 }
 
 void AtomBrowserMainParts::PostMainMessageLoopStart() {
+  brightray::BrowserMainParts::PostMainMessageLoopStart();
 #if defined(OS_POSIX)
   HandleShutdownSignals();
 #endif
