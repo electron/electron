@@ -24,14 +24,13 @@ You can also create a window without chrome by using
 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
 
 It creates a new `BrowserWindow` with native properties as set by the `options`.
-Properties `width` and `height` are required.
 
 ### `new BrowserWindow(options)`
 
 `options` Object, properties:
 
-* `width` Integer (**required**) - Window's width.
-* `height` Integer (**required**) - Window's height.
+* `width` Integer - Window's width.
+* `height` Integer - Window's height.
 * `x` Integer - Window's left offset from screen.
 * `y` Integer - Window's top offset from screen.
 * `use-content-size` Boolean - The `width` and `height` would be used as web
@@ -232,18 +231,6 @@ Emitted when the window enters full screen state triggered by html api.
 
 Emitted when the window leaves full screen state triggered by html api.
 
-### Event: 'devtools-opened'
-
-Emitted when DevTools is opened.
-
-### Event: 'devtools-closed'
-
-Emitted when DevTools is closed.
-
-### Event: 'devtools-focused'
-
-Emitted when DevTools is focused / opened.
-
 ### Event: 'app-command':
 
 Emitted when an [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx)
@@ -317,16 +304,6 @@ operations will be done via it.
 
 See the [`webContents` documentation](web-contents.md) for its methods and
 events.
-
-**Note:** Users should never store this object because it may become `null`
-when the renderer process (web page) has crashed.
-
-### `win.devToolsWebContents`
-
-Get the `WebContents` of DevTools for this window.
-
-**Note:** Users should never store this object because it may become `null`
-when the DevTools has been closed.
 
 ### `win.id`
 
@@ -595,41 +572,6 @@ bar will become grey when set to `true`.
 ### `win.IsDocumentEdited()` _OS X_
 
 Whether the window's document has been edited.
-
-### `win.openDevTools([options])`
-
-* `options` Object (optional). Properties:
-  * `detach` Boolean - opens DevTools in a new window
-
-Opens the developer tools.
-
-### `win.closeDevTools()`
-
-Closes the developer tools.
-
-### `win.isDevToolsOpened()`
-
-Returns whether the developer tools are opened.
-
-### `win.toggleDevTools()`
-
-Toggles the developer tools.
-
-### `win.isDevToolsFocused()`
-
-Returns whether the developer tools is focused.
-
-### `win.inspectElement(x, y)`
-
-* `x` Integer
-* `y` Integer
-
-Starts inspecting element at position (`x`, `y`).
-
-### `win.inspectServiceWorker()`
-
-Opens the developer tools for the service worker context present in the web
-contents.
 
 ### `win.focusOnWebView()`
 

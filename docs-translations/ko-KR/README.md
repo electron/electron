@@ -1,5 +1,6 @@
 ﻿## 개발 가이드
 
+* [지원하는 플랫폼](tutorial/supported-platforms.md)
 * [어플리케이션 배포](tutorial/application-distribution.md)
 * [어플리케이션 패키징](tutorial/application-packaging.md)
 * [네이티브 Node 모듈 사용하기](tutorial/using-native-node-modules.md)

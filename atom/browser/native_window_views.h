@@ -131,17 +131,12 @@ class NativeWindowViews : public NativeWindow,
   bool ExecuteWindowsCommand(int command_id) override;
 #endif
 
-  // brightray::InspectableWebContentsViewDelegate:
-  gfx::ImageSkia GetDevToolsWindowIcon() override;
-#if defined(USE_X11)
-  void GetDevToolsWindowWMClass(
-      std::string* name, std::string* class_name) override;
-#endif
-
 #if defined(OS_WIN)
   // MessageHandlerDelegate:
   bool PreHandleMSG(
       UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) override;
+
+  void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
 #endif
 
   // NativeWindow:
@@ -178,9 +173,9 @@ class NativeWindowViews : public NativeWindow,
 #elif defined(OS_WIN)
   // Weak ref.
   AtomDesktopWindowTreeHostWin* atom_desktop_window_tree_host_win_;
-  // Records window was whether restored from minimized state or maximized
-  // state.
-  bool is_minimized_;
+
+  ui::WindowShowState last_window_state_;
+
   // In charge of running taskbar related APIs.
   TaskbarHost taskbar_host_;
 #endif
