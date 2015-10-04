@@ -3,18 +3,17 @@ EventEmitter = require('events').EventEmitter
 bindings = process.atomBinding 'app'
 sessionBindings = process.atomBinding 'session'
 downloadItemBindings = process.atomBinding 'download_item'
-desktopCapturerBindings = process.atomBinding 'desktop_capturer'
 
 app = bindings.app
 app.__proto__ = EventEmitter.prototype
 
-wrapToEventListener = (item) ->
-  # item is an Event Emitter.
-  item.__proto__ = EventEmitter.prototype
+wrapSession = (session) ->
+  # session is an Event Emitter.
+  session.__proto__ = EventEmitter.prototype
 
 wrapDownloadItem = (download_item) ->
   # download_item is an Event Emitter.
-  wrapToEventListener download_item
+  download_item.__proto__ = EventEmitter.prototype
   # Be compatible with old APIs.
   download_item.url = download_item.getUrl()
   download_item.filename = download_item.getFilename()
@@ -59,14 +58,11 @@ app.resolveProxy = -> @defaultSession.resolveProxy.apply @defaultSession, argume
 app.on 'activate', (event, hasVisibleWindows) -> @emit 'activate-with-no-open-windows' if not hasVisibleWindows
 
 # Session wrapper.
-sessionBindings._setWrapSession wrapToEventListener
+sessionBindings._setWrapSession wrapSession
 process.once 'exit', sessionBindings._clearWrapSession
 
 downloadItemBindings._setWrapDownloadItem wrapDownloadItem
 process.once 'exit', downloadItemBindings._clearWrapDownloadItem
-
-desktopCapturerBindings._setWrapDesktopCapturer wrapToEventListener
-process.once 'exit', desktopCapturerBindings._clearWrapDesktopCapturer
 
 # Only one App object pemitted.
 module.exports = app

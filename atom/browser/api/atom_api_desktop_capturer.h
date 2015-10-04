@@ -2,8 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_ATOM_API_DESKTOP_CAPTURER_
-#define ATOM_BROWSER_API_ATOM_API_DESKTOP_CAPTURER_
+#ifndef ATOM_BROWSER_API_ATOM_API_DESKTOP_CAPTURER_H_
+#define ATOM_BROWSER_API_ATOM_API_DESKTOP_CAPTURER_H_
+
+#include <string>
+#include <vector>
 
 #include "base/memory/scoped_ptr.h"
 #include "atom/browser/api/event_emitter.h"
@@ -18,13 +21,13 @@ namespace api {
 class DesktopCapturer: public mate::EventEmitter,
                        public DesktopMediaListObserver {
  public:
-  static mate::Handle<DesktopCapturer> Create(v8::Isolate* isolate,
-    bool show_screens, bool show_windows);
+  static mate::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
 
-  const DesktopMediaList::Source& GetSource(int index);
+  void StartUpdating(const std::vector<std::string>& sources);
+  void StopUpdating();
 
  protected:
-  DesktopCapturer(bool show_screens, bool show_windows);
+  DesktopCapturer();
   ~DesktopCapturer();
 
   // DesktopMediaListObserver overrides.
@@ -48,4 +51,4 @@ class DesktopCapturer: public mate::EventEmitter,
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_API_ATOM_API_DESKTOP_CAPTURER_
+#endif  // ATOM_BROWSER_API_ATOM_API_DESKTOP_CAPTURER_H_

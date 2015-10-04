@@ -5,7 +5,6 @@
 #include "atom/browser/api/atom_api_desktop_capturer.h"
 
 #include "atom/common/api/atom_api_native_image.h"
-#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/node_includes.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/media/desktop_media_list.h"
@@ -25,7 +24,8 @@ struct Converter<DesktopMediaList::Source> {
     content::DesktopMediaID id = source.id;
     dict.Set("name", base::UTF16ToUTF8(source.name));
     dict.Set("id", id.ToString());
-    dict.Set("thumbnail",
+    dict.Set(
+        "thumbnail",
         atom::api::NativeImage::Create(isolate, gfx::Image(source.thumbnail)));
     return ConvertToV8(isolate, dict);
   }
@@ -38,15 +38,29 @@ namespace atom {
 namespace api {
 
 namespace {
-// The wrapDesktopCapturer funtion which is implemented in JavaScript
-using WrapDesktopCapturerCallback = base::Callback<void(v8::Local<v8::Value>)>;
-WrapDesktopCapturerCallback g_wrap_desktop_capturer;
-
 const int kThumbnailWidth = 150;
 const int kThumbnailHeight = 150;
 }  // namespace
 
-DesktopCapturer::DesktopCapturer(bool show_screens, bool show_windows) {
+DesktopCapturer::DesktopCapturer() {
+}
+
+DesktopCapturer::~DesktopCapturer() {
+}
+
+void DesktopCapturer::StartUpdating(const std::vector<std::string>& sources) {
+  bool show_screens = false;
+  bool show_windows = false;
+  for (const auto& source_type : sources) {
+    if (source_type == "screen")
+      show_screens = true;
+    else if (source_type == "window")
+      show_windows = true;
+  }
+
+  if (!show_windows && !show_screens)
+    return;
+
   webrtc::DesktopCaptureOptions options =
       webrtc::DesktopCaptureOptions::CreateDefault();
 
@@ -70,54 +84,39 @@ DesktopCapturer::DesktopCapturer(bool show_screens, bool show_windows) {
   media_list_->StartUpdating(this);
 }
 
-DesktopCapturer::~DesktopCapturer() {
-}
-
-const DesktopMediaList::Source& DesktopCapturer::GetSource(int index) {
-  return media_list_->GetSource(index);
+void DesktopCapturer::StopUpdating() {
+  media_list_.reset();
 }
 
 void DesktopCapturer::OnSourceAdded(int index) {
-  Emit("source-added", index);
+  Emit("source-added", media_list_->GetSource(index));
 }
 
 void DesktopCapturer::OnSourceRemoved(int index) {
-  Emit("source-removed", index);
+  Emit("source-removed", media_list_->GetSource(index));
 }
 
 void DesktopCapturer::OnSourceMoved(int old_index, int new_index) {
-  Emit("source-moved", old_index, new_index);
 }
 
 void DesktopCapturer::OnSourceNameChanged(int index) {
-  Emit("source-name-changed", index);
+  Emit("source-name-changed", media_list_->GetSource(index));
 }
 
 void DesktopCapturer::OnSourceThumbnailChanged(int index) {
-  Emit("source-thumbnail-changed", index);
+  Emit("source-thumbnail-changed", media_list_->GetSource(index));
 }
 
 mate::ObjectTemplateBuilder DesktopCapturer::GetObjectTemplateBuilder(
       v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
-      .SetMethod("getSource", &DesktopCapturer::GetSource);
-}
-
-void SetWrapDesktopCapturer(const WrapDesktopCapturerCallback& callback) {
-  g_wrap_desktop_capturer = callback;
-}
-
-void ClearWrapDesktopCapturer() {
-  g_wrap_desktop_capturer.Reset();
+      .SetMethod("startUpdating", &DesktopCapturer::StartUpdating)
+      .SetMethod("stopUpdating", &DesktopCapturer::StopUpdating);
 }
 
 // static
-mate::Handle<DesktopCapturer> DesktopCapturer::Create(v8::Isolate* isolate,
-    bool show_screens, bool show_windows) {
-  auto handle = mate::CreateHandle(isolate,
-      new DesktopCapturer(show_screens, show_windows));
-  g_wrap_desktop_capturer.Run(handle.ToV8());
-  return handle;
+mate::Handle<DesktopCapturer> DesktopCapturer::Create(v8::Isolate* isolate) {
+  return mate::CreateHandle(isolate, new DesktopCapturer);
 }
 
 }  // namespace api
@@ -130,9 +129,7 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
-  dict.SetMethod("_setWrapDesktopCapturer", &atom::api::SetWrapDesktopCapturer);
-  dict.SetMethod("_clearWrapDesktopCapturer",
-                 &atom::api::ClearWrapDesktopCapturer);
+  dict.Set("desktopCapturer", atom::api::DesktopCapturer::Create(isolate));
 }
 
 }  // namespace

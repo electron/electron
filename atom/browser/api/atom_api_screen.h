@@ -6,9 +6,7 @@
 #define ATOM_BROWSER_API_ATOM_API_SCREEN_H_
 
 #include <vector>
-#include <string>
 
-#include "atom/browser/api/atom_api_desktop_capturer.h"
 #include "atom/browser/api/event_emitter.h"
 #include "native_mate/handle.h"
 #include "ui/gfx/display_observer.h"
@@ -37,9 +35,6 @@ class Screen : public mate::EventEmitter,
   std::vector<gfx::Display> GetAllDisplays();
   gfx::Display GetDisplayNearestPoint(const gfx::Point& point);
   gfx::Display GetDisplayMatching(const gfx::Rect& match_rect);
-
-  mate::Handle<DesktopCapturer> GetDesktopCapturer(
-      const std::vector<std::string>& sources);
 
   // gfx::DisplayObserver:
   void OnDisplayAdded(const gfx::Display& new_display) override;

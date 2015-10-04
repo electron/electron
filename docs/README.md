@@ -46,6 +46,7 @@
 
 ### Modules for the Renderer Process (Web Page):
 
+* [desktop-capturer](api/desktop-capturer.md)
 * [ipc (renderer)](api/ipc-renderer.md)
 * [remote](api/remote.md)
 * [web-frame](api/web-frame.md)
