@@ -125,6 +125,7 @@
       'atom/browser/atom_browser_main_parts.cc',
       'atom/browser/atom_browser_main_parts.h',
       'atom/browser/atom_browser_main_parts_mac.mm',
+      'atom/browser/atom_browser_main_parts_posix.cc',
       'atom/browser/atom_javascript_dialog_manager.cc',
       'atom/browser/atom_javascript_dialog_manager.h',
       'atom/browser/atom_quota_permission_context.cc',

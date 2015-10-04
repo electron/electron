@@ -52,6 +52,12 @@ void AtomBrowserMainParts::RegisterDestructionCallback(
   destruction_callbacks_.push_back(callback);
 }
 
+void AtomBrowserMainParts::PreEarlyInitialization() {
+#if defined(OS_POSIX)
+  HandleSIGCHLD();
+#endif
+}
+
 void AtomBrowserMainParts::PostEarlyInitialization() {
   brightray::BrowserMainParts::PostEarlyInitialization();
 
@@ -109,6 +115,12 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   // The corresponding call in OS X is in AtomApplicationDelegate.
   Browser::Get()->WillFinishLaunching();
   Browser::Get()->DidFinishLaunching();
+#endif
+}
+
+void AtomBrowserMainParts::PostMainMessageLoopStart() {
+#if defined(OS_POSIX)
+  HandleShutdownSignals();
 #endif
 }
 
