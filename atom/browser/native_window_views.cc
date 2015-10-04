@@ -905,9 +905,6 @@ void NativeWindowViews::HandleKeyboardEvent(
     // When a single Alt is pressed:
     menu_bar_alt_pressed_ = true;
   } else if (event.type == blink::WebInputEvent::KeyUp && IsAltKey(event) &&
-#if defined(USE_X11)
-             event.modifiers == 0 &&
-#endif
              menu_bar_alt_pressed_) {
     // When a single Alt is released right after a Alt is pressed:
     menu_bar_alt_pressed_ = false;
