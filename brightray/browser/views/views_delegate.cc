@@ -5,6 +5,7 @@
 #include "browser/views/views_delegate.h"
 
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
+#include "ui/views/widget/native_widget_aura.h"
 
 #if defined(OS_LINUX)
 #include "ui/views/linux_ui/linux_ui.h"
@@ -89,10 +90,13 @@ void ViewsDelegate::OnBeforeWidgetInit(
   if (params->native_widget)
     return;
 
-  // The native_widget is required when using aura.
-  if (params->type == views::Widget::InitParams::TYPE_MENU ||
-      (params->parent == NULL && params->context == NULL && !params->child))
+  if (params->parent &&
+      params->type != views::Widget::InitParams::TYPE_MENU &&
+      params->type != views::Widget::InitParams::TYPE_TOOLTIP) {
+    params->native_widget = new views::NativeWidgetAura(delegate);
+  } else {
     params->native_widget = new views::DesktopNativeWidgetAura(delegate);
+  }
 }
 
 
