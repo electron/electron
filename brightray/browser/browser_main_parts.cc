@@ -212,10 +212,13 @@ void BrowserMainParts::PostMainMessageLoopRun() {
 
 int BrowserMainParts::PreCreateThreads() {
 #if defined(USE_AURA)
-  gfx::Screen::SetScreenInstance(gfx::SCREEN_TYPE_NATIVE,
-                                 views::CreateDesktopScreen());
+  gfx::Screen* screen = views::CreateDesktopScreen();
+  gfx::Screen::SetScreenInstance(gfx::SCREEN_TYPE_NATIVE, screen);
+#if defined(USE_X11)
+  views::LinuxUI::instance()->UpdateDeviceScaleFactor(
+      screen->GetPrimaryDisplay().device_scale_factor());
 #endif
-
+#endif
   return 0;
 }
 
