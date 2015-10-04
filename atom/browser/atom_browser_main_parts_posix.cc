@@ -171,7 +171,7 @@ void AtomBrowserMainParts::HandleSIGCHLD() {
   struct sigaction action;
   memset(&action, 0, sizeof(action));
   action.sa_handler = SIGCHLDHandler;
-  CHECK(sigaction(SIGCHLD, &action, NULL) == 0);
+  CHECK_EQ(sigaction(SIGCHLD, &action, NULL), 0);
 }
 
 void AtomBrowserMainParts::HandleShutdownSignals() {
@@ -211,15 +211,15 @@ void AtomBrowserMainParts::HandleShutdownSignals() {
   struct sigaction action;
   memset(&action, 0, sizeof(action));
   action.sa_handler = SIGTERMHandler;
-  CHECK(sigaction(SIGTERM, &action, NULL) == 0);
+  CHECK_EQ(sigaction(SIGTERM, &action, NULL), 0);
   // Also handle SIGINT - when the user terminates the browser via Ctrl+C. If
   // the browser process is being debugged, GDB will catch the SIGINT first.
   action.sa_handler = SIGINTHandler;
-  CHECK(sigaction(SIGINT, &action, NULL) == 0);
+  CHECK_EQ(sigaction(SIGINT, &action, NULL), 0);
   // And SIGHUP, for when the terminal disappears. On shutdown, many Linux
   // distros send SIGHUP, SIGTERM, and then SIGKILL.
   action.sa_handler = SIGHUPHandler;
-  CHECK(sigaction(SIGHUP, &action, NULL) == 0);
+  CHECK_EQ(sigaction(SIGHUP, &action, NULL), 0);
 }
 
 }  // namespace atom
