@@ -353,7 +353,7 @@ void NativeWindowViews::ShowInactive() {
 }
 
 void NativeWindowViews::Hide() {
-  web_contents()->WasHidden();
+  window_->Hide();
 }
 
 bool NativeWindowViews::IsVisible() {
