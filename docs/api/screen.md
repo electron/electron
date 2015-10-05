@@ -37,8 +37,8 @@ app.on('ready', function() {
   var electronScreen = require('screen');
   var displays = electronScreen.getAllDisplays();
   var externalDisplay = null;
-  for (var i =0; i< displays.length; i++) {
-    if (displays[i].bounds.x !==0 || displays[i].bounds.y !== 0) {
+  for (var i in displays) {
+    if (displays[i].bounds.x != 0 || displays[i].bounds.y != 0) {
       externalDisplay = displays[i];
       break;
     }
@@ -48,8 +48,6 @@ app.on('ready', function() {
     mainWindow = new BrowserWindow({
       x: externalDisplay.bounds.x + 50,
       y: externalDisplay.bounds.y + 50,
-       width: 900,
-       height:600
     });
   }
 });
