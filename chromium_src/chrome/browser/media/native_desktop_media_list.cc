@@ -358,6 +358,7 @@ void NativeDesktopMediaList::OnSourceThumbnail(
 }
 
 void NativeDesktopMediaList::OnRefreshFinished() {
+  observer_->OnRefreshFinished();
   BrowserThread::PostDelayedTask(
       BrowserThread::UI, FROM_HERE,
       base::Bind(&NativeDesktopMediaList::Refresh,

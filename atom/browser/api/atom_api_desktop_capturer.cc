@@ -14,30 +14,13 @@
 #include "third_party/webrtc/modules/desktop_capture/screen_capturer.h"
 #include "third_party/webrtc/modules/desktop_capture/window_capturer.h"
 
-namespace mate {
-
-template<>
-struct Converter<DesktopMediaList::Source> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const DesktopMediaList::Source& source) {
-    mate::Dictionary dict(isolate, v8::Object::New(isolate));
-    content::DesktopMediaID id = source.id;
-    dict.Set("name", base::UTF16ToUTF8(source.name));
-    dict.Set("id", id.ToString());
-    dict.Set(
-        "thumbnail",
-        atom::api::NativeImage::Create(isolate, gfx::Image(source.thumbnail)));
-    return ConvertToV8(isolate, dict);
-  }
-};
-
-}  // namespace mate
-
 namespace atom {
 
 namespace api {
 
 namespace {
+// Refresh every second.
+const int kUpdatePeriod = 1000;
 const int kThumbnailWidth = 150;
 const int kThumbnailHeight = 150;
 }  // namespace
@@ -48,7 +31,11 @@ DesktopCapturer::DesktopCapturer() {
 DesktopCapturer::~DesktopCapturer() {
 }
 
-void DesktopCapturer::StartUpdating(const std::vector<std::string>& sources) {
+void DesktopCapturer::StartUpdating(const mate::Dictionary& args) {
+  std::vector<std::string> sources;
+  if (!args.Get("types", &sources))
+    return;
+
   bool show_screens = false;
   bool show_windows = false;
   for (const auto& source_type : sources) {
@@ -80,7 +67,16 @@ void DesktopCapturer::StartUpdating(const std::vector<std::string>& sources) {
       show_windows ? webrtc::WindowCapturer::Create(options) : nullptr);
   media_list_.reset(new NativeDesktopMediaList(screen_capturer.Pass(),
       window_capturer.Pass()));
-  media_list_->SetThumbnailSize(gfx::Size(kThumbnailWidth, kThumbnailHeight));
+
+  int update_period = kUpdatePeriod;
+  int thumbnail_width = kThumbnailWidth, thumbnail_height = kThumbnailHeight;
+  args.Get("updatePeriod", &update_period);
+  args.Get("thumbnailWidth", &thumbnail_width);
+  args.Get("thumbnailHeight", &thumbnail_height);
+
+  media_list_->SetUpdatePeriod(base::TimeDelta::FromMilliseconds(
+        update_period));
+  media_list_->SetThumbnailSize(gfx::Size(thumbnail_width, thumbnail_height));
   media_list_->StartUpdating(this);
 }
 
@@ -89,22 +85,40 @@ void DesktopCapturer::StopUpdating() {
 }
 
 void DesktopCapturer::OnSourceAdded(int index) {
-  Emit("source-added", media_list_->GetSource(index));
+  EmitDesktopCapturerEvent("source-added", index, false);
 }
 
 void DesktopCapturer::OnSourceRemoved(int index) {
-  Emit("source-removed", media_list_->GetSource(index));
+  EmitDesktopCapturerEvent("source-removed", index, false);
 }
 
+// Ignore this event.
 void DesktopCapturer::OnSourceMoved(int old_index, int new_index) {
 }
 
 void DesktopCapturer::OnSourceNameChanged(int index) {
-  Emit("source-name-changed", media_list_->GetSource(index));
+  EmitDesktopCapturerEvent("source-removed", index, false);
 }
 
 void DesktopCapturer::OnSourceThumbnailChanged(int index) {
-  Emit("source-thumbnail-changed", media_list_->GetSource(index));
+  EmitDesktopCapturerEvent("source-thumbnail-changed", index, true);
+}
+
+void DesktopCapturer::OnRefreshFinished() {
+  Emit("refresh-finished");
+}
+
+void DesktopCapturer::EmitDesktopCapturerEvent(
+    const std::string& event_name, int index, bool with_thumbnail) {
+  const DesktopMediaList::Source& source = media_list_->GetSource(index);
+  content::DesktopMediaID id = source.id;
+  if (!with_thumbnail)
+    Emit(event_name, id.ToString(), base::UTF16ToUTF8(source.name));
+  else {
+    Emit(event_name, id.ToString(), base::UTF16ToUTF8(source.name),
+         atom::api::NativeImage::Create(isolate(),
+                                        gfx::Image(source.thumbnail)));
+  }
 }
 
 mate::ObjectTemplateBuilder DesktopCapturer::GetObjectTemplateBuilder(

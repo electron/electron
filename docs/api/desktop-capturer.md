@@ -7,13 +7,13 @@ screen and individual app windows.
 // In the renderer process.
 var desktopCapturer = require('desktop-capturer');
 
-desktopCapturer.on('source-added', function(source) {
-  console.log("source " + source.name + " is added.");
-  // source.thumbnail is not ready to use here and webkitGetUserMedia neither.
+desktopCapturer.on('source-added', function(id, name) {
+  console.log("source " + name + " is added.");
+  // navigator.webkitGetUserMedia is not ready for use now.
 });
 
-desktopCapturer.on('source-thumbnail-changed', function(source) {
-  if (source.name == "Electron") {
+desktopCapturer.on('source-thumbnail-changed', function(id, name, thumbnail) {
+  if (name == "Electron") {
     // stopUpdating since we have found the window that we want to capture.
     desktopCapturer.stopUpdating();
 
@@ -23,7 +23,7 @@ desktopCapturer.on('source-thumbnail-changed', function(source) {
       video: {
         mandatory: {
           chromeMediaSource: 'desktop',
-          chromeMediaSourceId: source.id,
+          chromeMediaSourceId: id,
           minWidth: 1280,
           maxWidth: 1280,
           minHeight: 720,
@@ -50,32 +50,47 @@ function getUserMediaError(e) {
 
 ### Event: 'source-added'
 
-* `source` Source
+* `id` String - The id of the captured window or screen used in
+  `navigator.webkitGetUserMedia`. The format looks like 'window:XX' or
+  'screen:XX' where XX is a random generated number.
+* `name` String - The descriped name of the capturing screen or window. If the
+  source is a screen, the name will be 'Entire Screen' or 'Screen <index>'; if
+  it is a window, the name will be the window's title.
 
-Emits when there is a new source added, usually a new window is created,
-a new screen is attached.
+Emits when there is a new source added, usually a new window is created or a new
+screen is attached.
 
-**Note:** The thumbnail of the source is not ready for use when 'source-added'
-event is emitted, and `navigator.webkitGetUserMedia` neither.
+**Note:** `navigator.webkitGetUserMedia` is not ready for use in this event.
 
 ### Event: 'source-removed'
 
-* `source` Source
+* `id` String - The id of the captured window or screen used in
+  `navigator.webkitGetUserMedia`.
+* `name` String - The descriped name of the capturing screen or window.
 
 Emits when there is a source removed.
 
 ### Event: 'source-name-changed'
 
-* `source` Source
+* `id` String - The id of the captured window or screen used in
+  `navigator.webkitGetUserMedia`.
+* `name` String - The descriped name of the capturing screen or window.
 
 Emits when the name of source is changed.
 
 ### Event: 'source-thumbnail-changed'
 
-* `source` Source
+* `id` String - The id of the captured window or screen used in
+  `navigator.webkitGetUserMedia`.
+* `name` String - The descriped name of the capturing screen or window.
+* `thumbnail` [NativeImage](NativeImage.md) - A thumbnail image.
 
 Emits when the thumbnail of source is changed. `desktopCapturer` will refresh
 all sources every second.
+
+### Event: 'refresh-finished'
+
+Emits when `desktopCapturer` finishes a refresh.
 
 ## Methods
 
@@ -83,9 +98,17 @@ The `desktopCapturer` module has the following methods:
 
 ### `desktopCapturer.startUpdating(options)`
 
-* `options` Array - An array of String that enums the types of desktop sources.
+`options` Object, properties:
+
+* `types` Array - An array of String that enums the types of desktop sources.
   * `screen` String - Screen
   * `window` String - Individual window
+* `updatePeriod` Integer (optional) - The update period in milliseconds. By
+  default, `desktopCapturer` updates every second.
+* `thumbnailWidth` Integer (optional) - The width of thumbnail. By default, it
+  is 150px.
+* `thumbnailHeight` Integer (optional) - The height of thumbnail. By default, it
+  is 150px.
 
 Starts updating desktopCapturer. The events of `desktopCapturer` will only be
 emitted after `startUpdating` API is invoked.
@@ -104,15 +127,5 @@ Stops updating desktopCapturer. The events of `desktopCapturer` will not be
 emitted after the API is invoked.
 
 **Note:** It is a good practice to call `stopUpdating` when you do not need
-getting any infomation of sources, usually after passing a id of source to
+getting any infomation of sources, usually after passing a id to
 `navigator.webkitGetUserMedia`.
-
-## Source
-
-`Source` is an object represents a captured screen or individual window. It has
-following properties:
-
-* `id` String - The id of the capturing window or screen used in
-  `navigator.webkitGetUserMedia`.
-* `name` String - The descriped name of the capturing screen or window.
-* `thumbnail` [NativeImage](NativeImage.md) - A thumbnail image.

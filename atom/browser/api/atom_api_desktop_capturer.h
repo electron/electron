@@ -14,6 +14,10 @@
 #include "chrome/browser/media/native_desktop_media_list.h"
 #include "native_mate/handle.h"
 
+namespace mate {
+class Dictionary;
+}
+
 namespace atom {
 
 namespace api {
@@ -23,7 +27,8 @@ class DesktopCapturer: public mate::EventEmitter,
  public:
   static mate::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
 
-  void StartUpdating(const std::vector<std::string>& sources);
+  void StartUpdating(const mate::Dictionary& args);
+
   void StopUpdating();
 
  protected:
@@ -36,8 +41,11 @@ class DesktopCapturer: public mate::EventEmitter,
   void OnSourceMoved(int old_index, int new_index) override;
   void OnSourceNameChanged(int index) override;
   void OnSourceThumbnailChanged(int index) override;
+  void OnRefreshFinished() override;
 
  private:
+  void EmitDesktopCapturerEvent(
+      const std::string& event_name, int index, bool with_thumbnail);
   // mate::Wrappable:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
