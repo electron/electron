@@ -163,6 +163,13 @@
               '-fno-rtti',
             ],
           }],  # OS=="linux"
+          ['OS=="mac"', {
+            'defines': [
+              # The usage of "webrtc/modules/desktop_capture/desktop_capture_options.h"
+              # is required to see this macro.
+              'WEBRTC_MAC',
+             ],
+          }],  # OS=="mac"
           ['OS=="win"', {
             'include_dirs': [
               '<(libchromiumcontent_src_dir)/third_party/wtl/include',
@@ -179,6 +186,9 @@
               'WIN32_LEAN_AND_MEAN',
               '_ATL_NO_OPENGL',
               '_SECURE_ATL',
+              # The usage of "webrtc/modules/desktop_capture/desktop_capture_options.h"
+              # is required to see this macro.
+              'WEBRTC_WIN',
             ],
             'conditions': [
               ['target_arch=="x64"', {
