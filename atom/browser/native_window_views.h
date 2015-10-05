@@ -94,6 +94,8 @@ class NativeWindowViews : public NativeWindow,
 
   gfx::AcceleratedWidget GetAcceleratedWidget();
 
+  gfx::Size WindowSizeToFramelessSize(const gfx::Size& size);
+
   views::Widget* widget() const { return window_.get(); }
 
 #if defined(OS_WIN)
