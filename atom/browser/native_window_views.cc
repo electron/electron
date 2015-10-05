@@ -854,33 +854,6 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
 }
 #endif
 
-gfx::Size NativeWindowViews::WindowSizeToFramelessSize(
-    const gfx::Size& size) {
-  if (size.width() == 0 && size.height() == 0)
-    return size;
-
-  gfx::Rect window_bounds = gfx::Rect(size);
-  if (use_content_size_) {
-    if (menu_bar_ && menu_bar_visible_) {
-      window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
-    }
-  } else if (has_frame()) {
-#if defined(OS_WIN)
-  gfx::Size frame_size = gfx::win::ScreenToDIPRect(
-      window_->non_client_view()->GetWindowBoundsForClientBounds(
-          gfx::Rect())).size();
-#else
-  gfx::Size frame_size =
-      window_->non_client_view()->GetWindowBoundsForClientBounds(
-          gfx::Rect()).size();
-#endif
-    window_bounds.set_height(window_bounds.height() - frame_size.height());
-    window_bounds.set_width(window_bounds.width() - frame_size.width());
-  }
-
-  return window_bounds.size();
-}
-
 gfx::Size NativeWindowViews::ContentSizeToWindowSize(const gfx::Size& size) {
   if (!has_frame())
     return size;
