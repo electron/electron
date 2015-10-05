@@ -443,6 +443,11 @@ gfx::Rect NativeWindowViews::GetBounds() {
 }
 
 gfx::Size NativeWindowViews::GetContentSize() {
+#if defined(OS_WIN)
+  if (IsMinimized())
+    return NativeWindow::GetContentSize();
+#endif
+
   return web_view_->size();
 }
 
