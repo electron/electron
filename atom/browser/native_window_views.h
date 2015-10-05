@@ -63,6 +63,12 @@ class NativeWindowViews : public NativeWindow,
   bool IsFullscreen() const override;
   void SetBounds(const gfx::Rect& bounds) override;
   gfx::Rect GetBounds() override;
+  void SetSizeConstraints(
+      const extensions::SizeConstraints& size_constraints) override;
+  extensions::SizeConstraints GetSizeConstraints() override;
+  void SetContentSizeConstraints(
+      const extensions::SizeConstraints& size_constraints) override;
+  extensions::SizeConstraints GetContentSizeConstraints() override;
   void SetContentSize(const gfx::Size& size) override;
   gfx::Size GetContentSize() override;
   void SetMinimumSize(const gfx::Size& size) override;

@@ -429,6 +429,8 @@
       'chromium_src/chrome/renderer/tts_dispatcher.cc',
       'chromium_src/chrome/renderer/tts_dispatcher.h',
       'chromium_src/chrome/utility/utility_message_handler.h',
+      'chromium_src/extensions/browser/app_window/size_constraints.cc',
+      'chromium_src/extensions/browser/app_window/size_constraints.h',
       'chromium_src/library_loaders/libspeechd_loader.cc',
       'chromium_src/library_loaders/libspeechd.h',
       'chromium_src/net/test/embedded_test_server/stream_listen_socket.cc',

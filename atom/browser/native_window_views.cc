@@ -440,6 +440,22 @@ gfx::Rect NativeWindowViews::GetBounds() {
   return window_->GetWindowBoundsInScreen();
 }
 
+void NativeWindowViews::SetSizeConstraints(
+    const extensions::SizeConstraints& size_constraints) {
+}
+
+extensions::SizeConstraints NativeWindowViews::GetSizeConstraints() {
+  return extensions::SizeConstraints();
+}
+
+void NativeWindowViews::SetContentSizeConstraints(
+    const extensions::SizeConstraints& size_constraints) {
+}
+
+extensions::SizeConstraints NativeWindowViews::GetContentSizeConstraints() {
+  return extensions::SizeConstraints();
+}
+
 void NativeWindowViews::SetContentSize(const gfx::Size& size) {
   if (!has_frame()) {
     NativeWindow::SetSize(size);
