@@ -237,9 +237,9 @@ Generally, the `template` is just an array of `options` for constructing a
 You can also attach other fields to the element of the `template` and they
 will become properties of the constructed menu items.
 
-### `Menu.popup(browserWindow[, x, y])`
+### `Menu.popup([browserWindow, x, y])`
 
-* `browserWindow` BrowserWindow
+* `browserWindow` BrowserWindow (optional)
 * `x` Number (optional)
 * `y` Number (**required** if `x` is used)
 

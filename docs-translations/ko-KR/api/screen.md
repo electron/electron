@@ -6,7 +6,7 @@
 `screen`은 [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter)를 상속 받았습니다.
 
 **참고:** 랜더러 / DevTools에선 이미 DOM 속성이 `window.screen`을 가지고 있으므로 `screen = require('screen')` 형식으로 모듈을 사용할 수 없습니다.
-밑의 예제와 같이 `atomScreen` 같은 이름으로 모듈 이름을 대체하여 사용해야 합니다.
+아래의 예제와 같이 `electronScreen` 같은 이름으로 모듈 이름을 대체하여 사용해야 합니다.
 
 다음 예제는 화면 전체를 채우는 윈도우 창을 생성합니다:
 
@@ -17,8 +17,8 @@ var BrowserWindow = require('browser-window');
 var mainWindow;
 
 app.on('ready', function() {
-  var atomScreen = require('screen');
-  var size = atomScreen.getPrimaryDisplay().workAreaSize;
+  var electronScreen = require('screen');
+  var size = electronScreen.getPrimaryDisplay().workAreaSize;
   mainWindow = new BrowserWindow({ width: size.width, height: size.height });
 });
 ```
@@ -32,8 +32,8 @@ var BrowserWindow = require('browser-window');
 var mainWindow;
 
 app.on('ready', function() {
-  var atomScreen = require('screen');
-  var displays = atomScreen.getAllDisplays();
+  var electronScreen = require('screen');
+  var displays = electronScreen.getAllDisplays();
   var externalDisplay = null;
   for (var i in displays) {
     if (displays[i].bounds.x > 0 || displays[i].bounds.y > 0) {

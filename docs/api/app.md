@@ -197,12 +197,6 @@ You can request the following paths by the name:
   * `~/Library/Application Support` on OS X
 * `userData` The directory for storing your app's configuration files, which by
   default it is the `appData` directory appended with your app's name.
-* `cache` Per-user application cache directory, which by default points to:
-  * `%APPDATA%` on Windows (which doesn't have a universal cache location)
-  * `$XDG_CACHE_HOME` or `~/.cache` on Linux
-  * `~/Library/Caches` on OS X
-* `userCache` The directory for placing your app's caches, by default it is the
- `cache` directory appended with your app's name.
 * `temp` Temporary directory.
 * `userDesktop` The current user's Desktop directory.
 * `exe` The current executable file.

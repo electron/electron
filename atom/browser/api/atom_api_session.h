@@ -20,6 +20,7 @@ class FilePath;
 
 namespace mate {
 class Arguments;
+class Dictionary;
 }
 
 namespace atom {
@@ -65,6 +66,8 @@ class Session: public mate::TrackableObject<Session>,
   void ClearStorageData(mate::Arguments* args);
   void SetProxy(const std::string& proxy, const base::Closure& callback);
   void SetDownloadPath(const base::FilePath& path);
+  void EnableNetworkEmulation(const mate::Dictionary& options);
+  void DisableNetworkEmulation();
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
 
   // Cached object for cookies API.

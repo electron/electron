@@ -79,6 +79,9 @@ class FileDialog {
     if (!title.empty())
       GetPtr()->SetTitle(base::UTF8ToUTF16(title).c_str());
 
+    if (!filterspec.empty())
+      GetPtr()->SetDefaultExtension(filterspec.front().pszSpec);
+
     SetDefaultFolder(default_path);
   }
 

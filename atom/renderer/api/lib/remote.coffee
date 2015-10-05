@@ -130,7 +130,7 @@ exports.require = (module) ->
 windowCache = null
 exports.getCurrentWindow = ->
   return windowCache if windowCache?
-  meta = ipc.sendSync 'ATOM_BROWSER_CURRENT_WINDOW', process.guestInstanceId
+  meta = ipc.sendSync 'ATOM_BROWSER_CURRENT_WINDOW'
   windowCache = metaToValue meta
 
 # Get current WebContents object.

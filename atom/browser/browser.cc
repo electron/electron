@@ -16,7 +16,8 @@ namespace atom {
 
 Browser::Browser()
     : is_quiting_(false),
-      is_ready_(false) {
+      is_ready_(false),
+      is_shutdown_(false) {
   WindowList::AddObserver(this);
 }
 
@@ -30,6 +31,9 @@ Browser* Browser::Get() {
 }
 
 void Browser::Quit() {
+  if (is_quiting_)
+    return;
+
   is_quiting_ = HandleBeforeQuit();
   if (!is_quiting_)
     return;
@@ -42,9 +46,13 @@ void Browser::Quit() {
 }
 
 void Browser::Shutdown() {
-  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnQuit());
+  if (is_shutdown_)
+    return;
 
+  is_shutdown_ = true;
   is_quiting_ = true;
+
+  FOR_EACH_OBSERVER(BrowserObserver, observers_, OnQuit());
   base::MessageLoop::current()->PostTask(
       FROM_HERE, base::MessageLoop::QuitWhenIdleClosure());
 }
@@ -121,6 +129,9 @@ void Browser::ClientCertificateSelector(
 }
 
 void Browser::NotifyAndShutdown() {
+  if (is_shutdown_)
+    return;
+
   bool prevent_default = false;
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWillQuit(&prevent_default));
 
