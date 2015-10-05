@@ -559,11 +559,11 @@ void NativeWindowMac::SetContentSizeConstraints(
   NSView* content = [window_ contentView];
   if (size_constraints.HasMinimumSize()) {
     NSSize min_size = ToNSSize(size_constraints.GetMinimumSize());
-    [window_ setMinSize:[content convertSize:min_size toView:nil]];
+    [window_ setContentMinSize:[content convertSize:min_size toView:nil]];
   }
   if (size_constraints.HasMaximumSize()) {
     NSSize max_size = ToNSSize(size_constraints.GetMaximumSize());
-    [window_ setMaxSize:[content convertSize:max_size toView:nil]];
+    [window_ setContentMaxSize:[content convertSize:max_size toView:nil]];
   }
   NativeWindow::SetContentSizeConstraints(size_constraints);
 }
