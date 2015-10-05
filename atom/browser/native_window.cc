@@ -119,15 +119,23 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   } else if (options.Get(switches::kCenter, &center) && center) {
     Center();
   }
+  extensions::SizeConstraints size_constraints;
   int min_height = 0, min_width = 0;
   if (options.Get(switches::kMinHeight, &min_height) |
       options.Get(switches::kMinWidth, &min_width)) {
-    SetMinimumSize(gfx::Size(min_width, min_height));
+    size_constraints.set_minimum_size(gfx::Size(min_width, min_height));
   }
   int max_height = INT_MAX, max_width = INT_MAX;
   if (options.Get(switches::kMaxHeight, &max_height) |
       options.Get(switches::kMaxWidth, &max_width)) {
-    SetMaximumSize(gfx::Size(max_width, max_height));
+    size_constraints.set_maximum_size(gfx::Size(max_width, max_height));
+  }
+  bool use_content_size = false;
+  options.Get(switches::kUseContentSize, &use_content_size);
+  if (use_content_size) {
+    SetContentSizeConstraints(size_constraints);
+  } else {
+    SetSizeConstraints(size_constraints);
   }
   bool resizable;
   if (options.Get(switches::kResizable, &resizable)) {
