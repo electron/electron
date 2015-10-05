@@ -789,12 +789,18 @@ void NativeWindowMac::HandleKeyboardEvent(
 }
 
 gfx::Size NativeWindowMac::ContentSizeToWindowSize(const gfx::Size& size) {
+  if (!has_frame())
+    return size;
+
   NSRect content = NSMakeRect(0, 0, size.width(), size.height());
   NSRect frame = [window_ frameRectForContentRect:content];
   return gfx::Size(frame.size);
 }
 
 gfx::Size NativeWindowMac::WindowSizeToContentSize(const gfx::Size& size) {
+  if (!has_frame())
+    return size;
+
   NSRect frame = NSMakeRect(0, 0, size.width(), size.height());
   NSRect content = [window_ contentRectForFrameRect:frame];
   return gfx::Size(content.size);
