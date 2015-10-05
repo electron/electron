@@ -154,6 +154,7 @@
       'atom/browser/mac/atom_application_delegate.mm',
       'atom/browser/native_window.cc',
       'atom/browser/native_window.h',
+      'atom/browser/native_window_views_win.cc',
       'atom/browser/native_window_views.cc',
       'atom/browser/native_window_views.h',
       'atom/browser/native_window_mac.h',
