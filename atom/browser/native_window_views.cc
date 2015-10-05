@@ -283,6 +283,8 @@ NativeWindowViews::NativeWindowViews(
   else
     last_window_state_ = ui::SHOW_STATE_NORMAL;
 
+  last_normal_size_ = gfx::Size(widget_size_);
+
   if (!has_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
@@ -851,23 +853,35 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       NotifyWindowMinimize();
       break;
     case SIZE_RESTORED:
-      if (last_window_state_ == ui::SHOW_STATE_NORMAL)
-        return;
-
-      switch (last_window_state_) {
-        case ui::SHOW_STATE_MAXIMIZED:
-          last_window_state_ = ui::SHOW_STATE_NORMAL;
-          NotifyWindowUnmaximize();
-          break;
-        case ui::SHOW_STATE_MINIMIZED:
-          if (IsFullscreen()) {
-            last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
-            NotifyWindowEnterFullScreen();
-          } else {
+      if (last_window_state_ == ui::SHOW_STATE_NORMAL) {
+        // Window was resized so we save it's new size.
+        last_normal_size_ = GetSize();
+      } else {
+        switch (last_window_state_) {
+          case ui::SHOW_STATE_MAXIMIZED:
             last_window_state_ = ui::SHOW_STATE_NORMAL;
-            NotifyWindowRestore();
-          }
-          break;
+
+            // When the window is restored we resize it to the previous known
+            // normal size.
+            NativeWindow::SetSize(last_normal_size_);
+
+            NotifyWindowUnmaximize();
+            break;
+          case ui::SHOW_STATE_MINIMIZED:
+            if (IsFullscreen()) {
+              last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
+              NotifyWindowEnterFullScreen();
+            } else {
+              last_window_state_ = ui::SHOW_STATE_NORMAL;
+
+              // When the window is restored we resize it to the previous known
+              // normal size.
+              NativeWindow::SetSize(last_normal_size_);
+
+              NotifyWindowRestore();
+            }
+            break;
+        }
       }
       break;
   }
