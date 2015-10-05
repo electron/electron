@@ -23,6 +23,8 @@ class SSLCertRequestInfo;
 
 namespace atom {
 
+class AtomResourceDispatcherHostDelegate;
+
 class AtomBrowserClient : public brightray::BrowserClient,
                           public content::RenderProcessHostObserver {
  public:
@@ -56,6 +58,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
       scoped_ptr<content::ClientCertificateDelegate> delegate) override;
+  void ResourceDispatcherHostCreated() override;
 
   // brightray::BrowserClient:
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
@@ -67,6 +70,9 @@ class AtomBrowserClient : public brightray::BrowserClient,
  private:
   // pending_render_process => current_render_process.
   std::map<int, int> pending_processes_;
+
+  scoped_ptr<AtomResourceDispatcherHostDelegate>
+      resource_dispatcher_host_delegate_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
 };

@@ -169,9 +169,6 @@ NativeWindowViews::NativeWindowViews(
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
-#if defined(OS_WIN)
-      is_minimized_(false),
-#endif
       keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
       use_content_size_(false),
       resizable_(true) {
@@ -228,6 +225,9 @@ NativeWindowViews::NativeWindowViews(
 
   window_->Init(params);
 
+  bool fullscreen = false;
+  options.Get(switches::kFullscreen, &fullscreen);
+
 #if defined(USE_X11)
   // Start monitoring window states.
   window_state_watcher_.reset(new WindowStateWatcher(this));
@@ -253,8 +253,7 @@ NativeWindowViews::NativeWindowViews(
   }
 
   // Before the window is mapped, there is no SHOW_FULLSCREEN_STATE.
-  bool fullscreen = false;
-  if (options.Get(switches::kFullscreen, & fullscreen) && fullscreen) {
+  if (fullscreen) {
     state_atom_list.push_back(GetAtom("_NET_WM_STATE_FULLSCREEN"));
   }
 
@@ -278,6 +277,14 @@ NativeWindowViews::NativeWindowViews(
     bounds = ContentBoundsToWindowBounds(bounds);
 
 #if defined(OS_WIN)
+  // Save initial window state.
+  if (fullscreen)
+    last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
+  else
+    last_window_state_ = ui::SHOW_STATE_NORMAL;
+
+  last_normal_size_ = gfx::Size(widget_size_);
+
   if (!has_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
@@ -338,18 +345,15 @@ bool NativeWindowViews::IsFocused() {
 }
 
 void NativeWindowViews::Show() {
-  web_contents()->WasShown();
   window_->native_widget_private()->ShowWithWindowState(GetRestoredState());
 }
 
 void NativeWindowViews::ShowInactive() {
-  web_contents()->WasShown();
   window_->ShowInactive();
 }
 
 void NativeWindowViews::Hide() {
   window_->Hide();
-  web_contents()->WasHidden();
 }
 
 bool NativeWindowViews::IsVisible() {
@@ -391,11 +395,16 @@ bool NativeWindowViews::IsMinimized() {
 void NativeWindowViews::SetFullScreen(bool fullscreen) {
 #if defined(OS_WIN)
   // There is no native fullscreen state on Windows.
-  window_->SetFullscreen(fullscreen);
-  if (fullscreen)
+  if (fullscreen) {
+    last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
     NotifyWindowEnterFullScreen();
-  else
+  } else {
+    last_window_state_ = ui::SHOW_STATE_NORMAL;
     NotifyWindowLeaveFullScreen();
+  }
+  // We set the new value after notifying, so we can handle the size event
+  // correctly.
+  window_->SetFullscreen(fullscreen);
 #else
   if (IsVisible())
     window_->SetFullscreen(fullscreen);
@@ -807,50 +816,102 @@ void NativeWindowViews::OnWidgetMove() {
 
 #if defined(OS_WIN)
 bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
-  // Windows uses the 4 lower order bits of |command_id| for type-specific
-  // information so we must exclude this when comparing.
-  static const int sc_mask = 0xFFF0;
-  if ((command_id & sc_mask) == SC_MINIMIZE) {
-    NotifyWindowMinimize();
-    is_minimized_ = true;
-  } else if ((command_id & sc_mask) == SC_RESTORE) {
-    if (is_minimized_)
-      NotifyWindowRestore();
-    else
-      NotifyWindowUnmaximize();
-    is_minimized_ = false;
-  } else if ((command_id & sc_mask) == SC_MAXIMIZE) {
-    NotifyWindowMaximize();
-  } else {
-    std::string command = AppCommandToString(command_id);
-    NotifyWindowExecuteWindowsCommand(command);
-  }
+  std::string command = AppCommandToString(command_id);
+  NotifyWindowExecuteWindowsCommand(command);
   return false;
 }
-#endif
 
-gfx::ImageSkia NativeWindowViews::GetDevToolsWindowIcon() {
-  return GetWindowAppIcon();
-}
-
-#if defined(USE_X11)
-void NativeWindowViews::GetDevToolsWindowWMClass(
-    std::string* name, std::string* class_name) {
-  *class_name = Browser::Get()->GetName();
-  *name = base::StringToLowerASCII(*class_name);
-}
-#endif
-
-#if defined(OS_WIN)
 bool NativeWindowViews::PreHandleMSG(
     UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) {
-  // Handle thumbar button click message.
-  if (message == WM_COMMAND && HIWORD(w_param) == THBN_CLICKED)
-    return taskbar_host_.HandleThumbarButtonEvent(LOWORD(w_param));
-  else
-    return false;
+  switch (message) {
+    case WM_COMMAND:
+      // Handle thumbar button click message.
+      if (HIWORD(w_param) == THBN_CLICKED)
+        return taskbar_host_.HandleThumbarButtonEvent(LOWORD(w_param));
+      return false;
+    case WM_SIZE:
+      // Handle window state change.
+      HandleSizeEvent(w_param, l_param);
+      return false;
+    default:
+      return false;
+  }
+}
+
+void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
+  // Here we handle the WM_SIZE event in order to figure out what is the current
+  // window state and notify the user accordingly.
+  switch (w_param) {
+    case SIZE_MAXIMIZED:
+      last_window_state_ = ui::SHOW_STATE_MAXIMIZED;
+      NotifyWindowMaximize();
+      break;
+    case SIZE_MINIMIZED:
+      last_window_state_ = ui::SHOW_STATE_MINIMIZED;
+      NotifyWindowMinimize();
+      break;
+    case SIZE_RESTORED:
+      if (last_window_state_ == ui::SHOW_STATE_NORMAL) {
+        // Window was resized so we save it's new size.
+        last_normal_size_ = GetSize();
+      } else {
+        switch (last_window_state_) {
+          case ui::SHOW_STATE_MAXIMIZED:
+            last_window_state_ = ui::SHOW_STATE_NORMAL;
+
+            // When the window is restored we resize it to the previous known
+            // normal size.
+            NativeWindow::SetSize(last_normal_size_);
+
+            NotifyWindowUnmaximize();
+            break;
+          case ui::SHOW_STATE_MINIMIZED:
+            if (IsFullscreen()) {
+              last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
+              NotifyWindowEnterFullScreen();
+            } else {
+              last_window_state_ = ui::SHOW_STATE_NORMAL;
+
+              // When the window is restored we resize it to the previous known
+              // normal size.
+              NativeWindow::SetSize(last_normal_size_);
+
+              NotifyWindowRestore();
+            }
+            break;
+        }
+      }
+      break;
+  }
 }
 #endif
+
+gfx::Size NativeWindowViews::WindowSizeToFramelessSize(
+    const gfx::Size& size) {
+  if (size.width() == 0 && size.height() == 0)
+    return size;
+
+  gfx::Rect window_bounds = gfx::Rect(size);
+  if (use_content_size_) {
+    if (menu_bar_ && menu_bar_visible_) {
+      window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
+    }
+  } else if (has_frame()) {
+#if defined(OS_WIN)
+  gfx::Size frame_size = gfx::win::ScreenToDIPRect(
+      window_->non_client_view()->GetWindowBoundsForClientBounds(
+          gfx::Rect())).size();
+#else
+  gfx::Size frame_size =
+      window_->non_client_view()->GetWindowBoundsForClientBounds(
+          gfx::Rect()).size();
+#endif
+    window_bounds.set_height(window_bounds.height() - frame_size.height());
+    window_bounds.set_width(window_bounds.width() - frame_size.width());
+  }
+
+  return window_bounds.size();
+}
 
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
@@ -883,9 +944,6 @@ void NativeWindowViews::HandleKeyboardEvent(
     // When a single Alt is pressed:
     menu_bar_alt_pressed_ = true;
   } else if (event.type == blink::WebInputEvent::KeyUp && IsAltKey(event) &&
-#if defined(USE_X11)
-             event.modifiers == 0 &&
-#endif
              menu_bar_alt_pressed_) {
     // When a single Alt is released right after a Alt is pressed:
     menu_bar_alt_pressed_ = false;
