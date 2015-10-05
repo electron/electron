@@ -442,6 +442,10 @@ gfx::Rect NativeWindowViews::GetBounds() {
   return window_->GetWindowBoundsInScreen();
 }
 
+gfx::Size NativeWindowViews::GetContentSize() {
+  return web_view_->size();
+}
+
 void NativeWindowViews::SetResizable(bool resizable) {
 #if defined(OS_WIN)
   // WS_MAXIMIZEBOX => Maximize button
