@@ -176,6 +176,12 @@ class NativeWindowViews : public NativeWindow,
 
   ui::WindowShowState last_window_state_;
 
+  // There's an issue with restore on Windows, that sometimes causes the Window
+  // to receive the wrong size (#2498). To circumvent that, we keep tabs on the
+  // size of the window while in the normal state (not maximized, minimized or
+  // fullscreen), so we restore it correctly.
+  gfx::Size last_normal_size_;
+
   // In charge of running taskbar related APIs.
   TaskbarHost taskbar_host_;
 #endif
