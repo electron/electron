@@ -61,7 +61,7 @@ struct Converter<blink::WebInputEvent::Type> {
     else if (type == "mousewheel")
       *out = blink::WebInputEvent::MouseWheel;
     else if (type == "keydown")
-      *out = blink::WebInputEvent::KeyDown;
+      *out = blink::WebInputEvent::RawKeyDown;
     else if (type == "keyup")
       *out = blink::WebInputEvent::KeyUp;
     else if (type == "char")
