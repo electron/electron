@@ -6,6 +6,7 @@
 
 #include <X11/Xatom.h>
 
+#include "base/environment.h"
 #include "base/strings/string_util.h"
 #include "dbus/bus.h"
 #include "dbus/object_proxy.h"
@@ -50,6 +51,10 @@ void SetWindowType(::Window xwindow, const std::string& type) {
 }
 
 bool ShouldUseGlobalMenuBar() {
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  if (env->HasVar("ELECTRON_FORCE_WINDOW_MENU_BAR"))
+    return false;
+
   dbus::Bus::Options options;
   scoped_refptr<dbus::Bus> bus(new dbus::Bus(options));
 

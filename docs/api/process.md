@@ -9,7 +9,25 @@ upstream node:
 * `process.versions['chrome']` String - Version of Chromium.
 * `process.resourcesPath` String - Path to JavaScript source code.
 
-# Methods
+## Events
+
+### Event: 'loaded'
+
+Emitted when Electron has loaded its internal initialization script and is
+beginning to load the web page or the main script.
+
+It can be used by the preload script to add removed Node global symbols back to
+the global scope when node integration is turned off:
+
+```js
+// preload.js
+process.once('loaded', function() {
+  global.setImmediate = setImmediate;
+  global.clearImmediate = clearImmediate;
+});
+```
+
+## Methods
 
 The `process` object has the following method:
 
@@ -17,7 +35,7 @@ The `process` object has the following method:
 
 Causes the main thread of the current process hang.
 
-## process.setFdLimit(maxDescriptors) _OS X_ _Linux_
+### process.setFdLimit(maxDescriptors) _OS X_ _Linux_
 
 * `maxDescriptors` Integer
 

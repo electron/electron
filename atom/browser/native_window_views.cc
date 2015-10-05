@@ -283,6 +283,8 @@ NativeWindowViews::NativeWindowViews(
   else
     last_window_state_ = ui::SHOW_STATE_NORMAL;
 
+  last_normal_size_ = gfx::Size(widget_size_);
+
   if (!has_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
@@ -351,7 +353,7 @@ void NativeWindowViews::ShowInactive() {
 }
 
 void NativeWindowViews::Hide() {
-  web_contents()->WasHidden();
+  window_->Hide();
 }
 
 bool NativeWindowViews::IsVisible() {
@@ -818,9 +820,7 @@ bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
   NotifyWindowExecuteWindowsCommand(command);
   return false;
 }
-#endif
 
-#if defined(OS_WIN)
 bool NativeWindowViews::PreHandleMSG(
     UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) {
   switch (message) {
@@ -851,28 +851,67 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       NotifyWindowMinimize();
       break;
     case SIZE_RESTORED:
-      if (last_window_state_ == ui::SHOW_STATE_NORMAL)
-        return;
-
-      switch (last_window_state_) {
-        case ui::SHOW_STATE_MAXIMIZED:
-          last_window_state_ = ui::SHOW_STATE_NORMAL;
-          NotifyWindowUnmaximize();
-          break;
-        case ui::SHOW_STATE_MINIMIZED:
-          if (IsFullscreen()) {
-            last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
-            NotifyWindowEnterFullScreen();
-          } else {
+      if (last_window_state_ == ui::SHOW_STATE_NORMAL) {
+        // Window was resized so we save it's new size.
+        last_normal_size_ = GetSize();
+      } else {
+        switch (last_window_state_) {
+          case ui::SHOW_STATE_MAXIMIZED:
             last_window_state_ = ui::SHOW_STATE_NORMAL;
-            NotifyWindowRestore();
-          }
-          break;
+
+            // When the window is restored we resize it to the previous known
+            // normal size.
+            NativeWindow::SetSize(last_normal_size_);
+
+            NotifyWindowUnmaximize();
+            break;
+          case ui::SHOW_STATE_MINIMIZED:
+            if (IsFullscreen()) {
+              last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
+              NotifyWindowEnterFullScreen();
+            } else {
+              last_window_state_ = ui::SHOW_STATE_NORMAL;
+
+              // When the window is restored we resize it to the previous known
+              // normal size.
+              NativeWindow::SetSize(last_normal_size_);
+
+              NotifyWindowRestore();
+            }
+            break;
+        }
       }
       break;
   }
 }
 #endif
+
+gfx::Size NativeWindowViews::WindowSizeToFramelessSize(
+    const gfx::Size& size) {
+  if (size.width() == 0 && size.height() == 0)
+    return size;
+
+  gfx::Rect window_bounds = gfx::Rect(size);
+  if (use_content_size_) {
+    if (menu_bar_ && menu_bar_visible_) {
+      window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
+    }
+  } else if (has_frame()) {
+#if defined(OS_WIN)
+  gfx::Size frame_size = gfx::win::ScreenToDIPRect(
+      window_->non_client_view()->GetWindowBoundsForClientBounds(
+          gfx::Rect())).size();
+#else
+  gfx::Size frame_size =
+      window_->non_client_view()->GetWindowBoundsForClientBounds(
+          gfx::Rect()).size();
+#endif
+    window_bounds.set_height(window_bounds.height() - frame_size.height());
+    window_bounds.set_width(window_bounds.width() - frame_size.width());
+  }
+
+  return window_bounds.size();
+}
 
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
@@ -905,9 +944,6 @@ void NativeWindowViews::HandleKeyboardEvent(
     // When a single Alt is pressed:
     menu_bar_alt_pressed_ = true;
   } else if (event.type == blink::WebInputEvent::KeyUp && IsAltKey(event) &&
-#if defined(USE_X11)
-             event.modifiers == 0 &&
-#endif
              menu_bar_alt_pressed_) {
     // When a single Alt is released right after a Alt is pressed:
     menu_bar_alt_pressed_ = false;
