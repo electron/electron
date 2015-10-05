@@ -63,18 +63,6 @@ class NativeWindowViews : public NativeWindow,
   bool IsFullscreen() const override;
   void SetBounds(const gfx::Rect& bounds) override;
   gfx::Rect GetBounds() override;
-  void SetSizeConstraints(
-      const extensions::SizeConstraints& size_constraints) override;
-  extensions::SizeConstraints GetSizeConstraints() override;
-  void SetContentSizeConstraints(
-      const extensions::SizeConstraints& size_constraints) override;
-  extensions::SizeConstraints GetContentSizeConstraints() override;
-  void SetContentSize(const gfx::Size& size) override;
-  gfx::Size GetContentSize() override;
-  void SetMinimumSize(const gfx::Size& size) override;
-  gfx::Size GetMinimumSize() override;
-  void SetMaximumSize(const gfx::Size& size) override;
-  gfx::Size GetMaximumSize() override;
   void SetResizable(bool resizable) override;
   bool IsResizable() override;
   void SetAlwaysOnTop(bool top) override;
@@ -148,19 +136,19 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
   // NativeWindow:
+  gfx::Size ContentSizeToWindowSize(const gfx::Size& size) override;
+  gfx::Size WindowSizeToContentSize(const gfx::Size& size) override;
   void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) override;
 
   // views::View:
+  gfx::Size GetMinimumSize() override;
+  gfx::Size GetMaximumSize() override;
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
 
   // Register accelerators supported by the menu model.
   void RegisterAccelerators(ui::MenuModel* menu_model);
-
-  // Converts between client area and window area, since we include the menu bar
-  // in client area we need to substract/add menu bar's height in convertions.
-  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& content_bounds);
 
   // Returns the restore state for the window.
   ui::WindowShowState GetRestoredState();
@@ -203,8 +191,6 @@ class NativeWindowViews : public NativeWindow,
   bool use_content_size_;
   bool resizable_;
   std::string title_;
-  gfx::Size minimum_size_;
-  gfx::Size maximum_size_;
   gfx::Size widget_size_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowViews);

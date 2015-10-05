@@ -41,13 +41,13 @@ int WinFrameView::NonClientHitTest(const gfx::Point& point) {
 
 gfx::Size WinFrameView::GetMinimumSize() const {
   gfx::Size size = window_->WindowSizeToFramelessSize(
-      window_->GetMinimumSize());
+      FramelessView::GetMinimumSize());
   return gfx::win::DIPToScreenSize(size);
 }
 
 gfx::Size WinFrameView::GetMaximumSize() const {
   gfx::Size size = window_->WindowSizeToFramelessSize(
-      window_->GetMaximumSize());
+      FramelessView::GetMaximumSize());
   return gfx::win::DIPToScreenSize(size);
 }
 

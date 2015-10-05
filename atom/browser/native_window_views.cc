@@ -186,7 +186,8 @@ NativeWindowViews::NativeWindowViews(
     // will not allow us to resize the window larger than scree.
     // Setting directly to INT_MAX somehow doesn't work, so we just devide
     // by 10, which should still be large enough.
-    maximum_size_.SetSize(INT_MAX / 10, INT_MAX / 10);
+    SetContentSizeConstraints(extensions::SizeConstraints(
+        gfx::Size(), gfx::Size(INT_MAX / 10, INT_MAX / 10)));
 
   int width = 800, height = 600;
   options.Get(switches::kWidth, &width);
@@ -271,11 +272,6 @@ NativeWindowViews::NativeWindowViews(
   set_background(views::Background::CreateStandardPanelBackground());
   AddChildView(web_view_);
 
-  if (has_frame() &&
-      options.Get(switches::kUseContentSize, &use_content_size_) &&
-      use_content_size_)
-    bounds = ContentBoundsToWindowBounds(bounds);
-
 #if defined(OS_WIN)
   // Save initial window state.
   if (fullscreen)
@@ -316,8 +312,14 @@ NativeWindowViews::NativeWindowViews(
   if (transparent() && !has_frame())
     wm::SetShadowType(GetNativeWindow(), wm::SHADOW_TYPE_NONE);
 
+  gfx::Size size = bounds.size();
+  if (has_frame() &&
+      options.Get(switches::kUseContentSize, &use_content_size_) &&
+      use_content_size_)
+    size = ContentSizeToWindowSize(size);
+
   window_->UpdateWindowIcon();
-  window_->CenterWindow(bounds.size());
+  window_->CenterWindow(size);
   Layout();
 }
 
@@ -438,60 +440,6 @@ gfx::Rect NativeWindowViews::GetBounds() {
 #endif
 
   return window_->GetWindowBoundsInScreen();
-}
-
-void NativeWindowViews::SetSizeConstraints(
-    const extensions::SizeConstraints& size_constraints) {
-}
-
-extensions::SizeConstraints NativeWindowViews::GetSizeConstraints() {
-  return extensions::SizeConstraints();
-}
-
-void NativeWindowViews::SetContentSizeConstraints(
-    const extensions::SizeConstraints& size_constraints) {
-}
-
-extensions::SizeConstraints NativeWindowViews::GetContentSizeConstraints() {
-  return extensions::SizeConstraints();
-}
-
-void NativeWindowViews::SetContentSize(const gfx::Size& size) {
-  if (!has_frame()) {
-    NativeWindow::SetSize(size);
-    return;
-  }
-
-  gfx::Rect bounds = window_->GetWindowBoundsInScreen();
-  bounds.set_size(size);
-  SetBounds(ContentBoundsToWindowBounds(bounds));
-}
-
-gfx::Size NativeWindowViews::GetContentSize() {
-  if (!has_frame())
-    return GetSize();
-
-  gfx::Size content_size =
-      window_->non_client_view()->frame_view()->GetBoundsForClientView().size();
-  if (menu_bar_ && menu_bar_visible_)
-    content_size.set_height(content_size.height() - kMenuBarHeight);
-  return content_size;
-}
-
-void NativeWindowViews::SetMinimumSize(const gfx::Size& size) {
-  minimum_size_ = size;
-}
-
-gfx::Size NativeWindowViews::GetMinimumSize() {
-  return minimum_size_;
-}
-
-void NativeWindowViews::SetMaximumSize(const gfx::Size& size) {
-  maximum_size_ = size;
-}
-
-gfx::Size NativeWindowViews::GetMaximumSize() {
-  return maximum_size_;
 }
 
 void NativeWindowViews::SetResizable(bool resizable) {
@@ -929,6 +877,47 @@ gfx::Size NativeWindowViews::WindowSizeToFramelessSize(
   return window_bounds.size();
 }
 
+gfx::Size NativeWindowViews::ContentSizeToWindowSize(const gfx::Size& size) {
+  if (!has_frame())
+    return size;
+
+  gfx::Size window_size(size);
+#if defined(OS_WIN)
+  gfx::Rect dpi_bounds =
+      gfx::Rect(gfx::Point(), gfx::win::DIPToScreenSize(size));
+  gfx::Rect window_bounds = gfx::win::ScreenToDIPRect(
+      window_->non_client_view()->GetWindowBoundsForClientBounds(dpi_bounds));
+  window_size = window_bounds.size();
+#endif
+
+  if (menu_bar_ && menu_bar_visible_)
+    window_size.set_height(window_size.height() + kMenuBarHeight);
+  return window_size;
+}
+
+gfx::Size NativeWindowViews::WindowSizeToContentSize(const gfx::Size& size) {
+  if (!has_frame())
+    return size;
+
+  gfx::Size content_size(size);
+#if defined(OS_WIN)
+  content_size = gfx::win::DIPToScreenSize(content_size);
+  RECT rect;
+  SetRectEmpty(&rect);
+  HWND hwnd = GetAcceleratedWidget();
+  DWORD style = ::GetWindowLong(hwnd, GWL_STYLE);
+  DWORD ex_style = ::GetWindowLong(hwnd, GWL_EXSTYLE);
+  AdjustWindowRectEx(&rect, style, FALSE, ex_style);
+  content_size.set_width(content_size.width() - (rect.right - rect.left));
+  content_size.set_height(content_size.height() - (rect.bottom - rect.top));
+  content_size = gfx::win::ScreenToDIPSize(content_size);
+#endif
+
+  if (menu_bar_ && menu_bar_visible_)
+    content_size.set_height(content_size.height() - kMenuBarHeight);
+  return content_size;
+}
+
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
@@ -970,6 +959,14 @@ void NativeWindowViews::HandleKeyboardEvent(
   }
 }
 
+gfx::Size NativeWindowViews::GetMinimumSize() {
+  return NativeWindow::GetMinimumSize();
+}
+
+gfx::Size NativeWindowViews::GetMaximumSize() {
+  return NativeWindow::GetMaximumSize();
+}
+
 bool NativeWindowViews::AcceleratorPressed(const ui::Accelerator& accelerator) {
   return accelerator_util::TriggerAcceleratorTableCommand(
       &accelerator_table_, accelerator);
@@ -990,26 +987,6 @@ void NativeWindowViews::RegisterAccelerators(ui::MenuModel* menu_model) {
     focus_manager->RegisterAccelerator(
         iter->first, ui::AcceleratorManager::kNormalPriority, this);
   }
-}
-
-gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
-    const gfx::Rect& bounds) {
-  gfx::Point origin = bounds.origin();
-#if defined(OS_WIN)
-  gfx::Rect dpi_bounds = gfx::win::DIPToScreenRect(bounds);
-  gfx::Rect window_bounds = gfx::win::ScreenToDIPRect(
-      window_->non_client_view()->GetWindowBoundsForClientBounds(dpi_bounds));
-#else
-  gfx::Rect window_bounds =
-      window_->non_client_view()->GetWindowBoundsForClientBounds(bounds);
-#endif
-  // The window's position would also be changed, but we only want to change
-  // the size.
-  window_bounds.set_origin(origin);
-
-  if (menu_bar_ && menu_bar_visible_)
-    window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
-  return window_bounds;
 }
 
 ui::WindowShowState NativeWindowViews::GetRestoredState() {

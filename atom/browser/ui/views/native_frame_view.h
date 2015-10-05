@@ -9,13 +9,13 @@
 
 namespace atom {
 
-class NativeWindowViews;
+class NativeWindow;
 
 // Like the views::NativeFrameView, but returns the min/max size from the
 // NativeWindowViews.
 class NativeFrameView : public views::NativeFrameView {
  public:
-  NativeFrameView(NativeWindowViews* window, views::Widget* widget);
+  NativeFrameView(NativeWindow* window, views::Widget* widget);
 
  protected:
   // views::View:
@@ -24,7 +24,7 @@ class NativeFrameView : public views::NativeFrameView {
   const char* GetClassName() const override;
 
  private:
-  NativeWindowViews* window_;  // weak ref.
+  NativeWindow* window_;  // weak ref.
 
   DISALLOW_COPY_AND_ASSIGN(NativeFrameView);
 };
