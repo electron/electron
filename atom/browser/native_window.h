@@ -242,8 +242,8 @@ class NativeWindow : public base::SupportsUserData,
                const mate::Dictionary& options);
 
   // Converts between content size to window size.
-  virtual gfx::Size ContentSizeToWindowSize(const gfx::Size& size);
-  virtual gfx::Size WindowSizeToContentSize(const gfx::Size& size);
+  virtual gfx::Size ContentSizeToWindowSize(const gfx::Size& size) = 0;
+  virtual gfx::Size WindowSizeToContentSize(const gfx::Size& size) = 0;
 
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;

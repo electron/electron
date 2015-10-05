@@ -170,14 +170,6 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     Show();
 }
 
-gfx::Size NativeWindow::ContentSizeToWindowSize(const gfx::Size& size) {
-  return size;
-}
-
-gfx::Size NativeWindow::WindowSizeToContentSize(const gfx::Size& size) {
-  return size;
-}
-
 void NativeWindow::SetSize(const gfx::Size& size) {
   SetBounds(gfx::Rect(GetPosition(), size));
 }
