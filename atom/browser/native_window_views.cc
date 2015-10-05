@@ -519,8 +519,24 @@ void NativeWindowViews::SetMenu(ui::MenuModel* menu_model) {
 
     if (!menu_bar_autohide_) {
       SetMenuBarVisibility(true);
-      if (use_content_size_)
+      if (use_content_size_) {
+        // Enlarge the size constraints for the menu.
+        extensions::SizeConstraints constraints = GetContentSizeConstraints();
+        if (constraints.HasMinimumSize()) {
+          gfx::Size min_size = constraints.GetMinimumSize();
+          min_size.set_height(min_size.height() + kMenuBarHeight);
+          constraints.set_minimum_size(min_size);
+        }
+        if (constraints.HasMaximumSize()) {
+          gfx::Size max_size = constraints.GetMaximumSize();
+          max_size.set_height(max_size.height() + kMenuBarHeight);
+          constraints.set_maximum_size(max_size);
+        }
+        SetContentSizeConstraints(constraints);
+
+        // Resize the window to make sure content size is not changed.
         SetContentSize(content_size);
+      }
     }
   }
 
