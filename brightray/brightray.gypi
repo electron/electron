@@ -31,9 +31,9 @@
       'GCC_ENABLE_CPP_EXCEPTIONS': 'NO',
       'GCC_ENABLE_CPP_RTTI': 'NO',
       'GCC_TREAT_WARNINGS_AS_ERRORS': 'YES',
+      'CLANG_CXX_LANGUAGE_STANDARD': 'c++11',
       'MACOSX_DEPLOYMENT_TARGET': '10.8',
       'RUN_CLANG_STATIC_ANALYZER': 'YES',
-      'SDKROOT': 'macosx10.10',
       'USE_HEADER_MAP': 'NO',
       'WARNING_CFLAGS': [
         '-Wall',
