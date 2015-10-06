@@ -4,7 +4,7 @@
 
 #include "atom/browser/ui/views/native_frame_view.h"
 
-#include "atom/browser/native_window_views.h"
+#include "atom/browser/native_window.h"
 
 namespace atom {
 
@@ -14,8 +14,7 @@ const char kViewClassName[] = "AtomNativeFrameView";
 
 }  // namespace
 
-NativeFrameView::NativeFrameView(NativeWindowViews* window,
-                                 views::Widget* widget)
+NativeFrameView::NativeFrameView(NativeWindow* window, views::Widget* widget)
     : views::NativeFrameView(widget),
       window_(window) {
 }
