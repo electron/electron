@@ -64,6 +64,8 @@ class NativeWindowViews : public NativeWindow,
   void SetBounds(const gfx::Rect& bounds) override;
   gfx::Rect GetBounds() override;
   gfx::Size GetContentSize() override;
+  void SetContentSizeConstraints(
+      const extensions::SizeConstraints& size_constraints) override;
   void SetResizable(bool resizable) override;
   bool IsResizable() override;
   void SetAlwaysOnTop(bool top) override;
@@ -165,6 +167,11 @@ class NativeWindowViews : public NativeWindow,
 
   // Handles window state events.
   scoped_ptr<WindowStateWatcher> window_state_watcher_;
+
+  // The "resizable" flag on Linux is implemented by setting size constraints,
+  // we need to make sure size constraints are restored when window becomes
+  // resizable again.
+  extensions::SizeConstraints old_size_constraints_;
 #elif defined(OS_WIN)
   // Weak ref.
   AtomDesktopWindowTreeHostWin* atom_desktop_window_tree_host_win_;

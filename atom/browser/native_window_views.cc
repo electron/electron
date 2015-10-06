@@ -387,6 +387,15 @@ gfx::Size NativeWindowViews::GetContentSize() {
   return web_view_->size();
 }
 
+void NativeWindowViews::SetContentSizeConstraints(
+    const extensions::SizeConstraints& size_constraints) {
+  NativeWindow::SetContentSizeConstraints(size_constraints);
+#if defined(USE_X11)
+  if (resizable_)
+    old_size_constraints_ = size_constraints;
+#endif
+}
+
 void NativeWindowViews::SetResizable(bool resizable) {
 #if defined(OS_WIN)
   // WS_MAXIMIZEBOX => Maximize button
@@ -403,11 +412,13 @@ void NativeWindowViews::SetResizable(bool resizable) {
     // On Linux there is no "resizable" property of a window, we have to set
     // both the minimum and maximum size to the window size to achieve it.
     if (resizable) {
-      SetMaximumSize(gfx::Size());
-      SetMinimumSize(gfx::Size());
+      SetContentSizeConstraints(old_size_constraints_);
     } else {
-      SetMaximumSize(GetSize());
-      SetMinimumSize(GetSize());
+      old_size_constraints_ = GetContentSizeConstraints();
+      resizable_ = false;
+      gfx::Size content_size = GetContentSize();
+      SetContentSizeConstraints(
+          extensions::SizeConstraints(content_size, content_size));
     }
   }
 #endif
