@@ -62,6 +62,7 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
     return url_request_getter_.get();
   }
 
+  void InitPrefs();
   PrefService* prefs() { return prefs_.get(); }
 
  protected:
