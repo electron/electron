@@ -22,11 +22,6 @@
 
 namespace {
 
-// Converts gfx::Size to NSSize.
-inline NSSize ToNSSize(const gfx::Size& size) {
-  return NSMakeSize(size.width(), size.height());
-}
-
 // Prevents window from resizing during the scope.
 class ScopedDisableResize {
  public:
@@ -556,13 +551,25 @@ gfx::Rect NativeWindowMac::GetBounds() {
 
 void NativeWindowMac::SetContentSizeConstraints(
     const extensions::SizeConstraints& size_constraints) {
+  auto convertSize = [this](const gfx::Size& size) {
+    // Our frameless window still has titlebar attached, so setting contentSize
+    // will result in actual content size being larger.
+    if (!has_frame()) {
+      NSRect frame = NSMakeRect(0, 0, size.width(), size.height());
+      NSRect content = [window_ contentRectForFrameRect:frame];
+      return content.size;
+    } else {
+      return NSMakeSize(size.width(), size.height());
+    }
+  };
+
   NSView* content = [window_ contentView];
   if (size_constraints.HasMinimumSize()) {
-    NSSize min_size = ToNSSize(size_constraints.GetMinimumSize());
+    NSSize min_size = convertSize(size_constraints.GetMinimumSize());
     [window_ setContentMinSize:[content convertSize:min_size toView:nil]];
   }
   if (size_constraints.HasMaximumSize()) {
-    NSSize max_size = ToNSSize(size_constraints.GetMaximumSize());
+    NSSize max_size = convertSize(size_constraints.GetMaximumSize());
     [window_ setContentMaxSize:[content convertSize:max_size toView:nil]];
   }
   NativeWindow::SetContentSizeConstraints(size_constraints);
