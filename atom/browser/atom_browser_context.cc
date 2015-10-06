@@ -175,7 +175,10 @@ namespace brightray {
 // static
 scoped_refptr<BrowserContext> BrowserContext::Create(
     const std::string& partition, bool in_memory) {
-  return make_scoped_refptr(new atom::AtomBrowserContext(partition, in_memory));
+  auto context = make_scoped_refptr(
+      new atom::AtomBrowserContext(partition, in_memory));
+  context->InitPrefs();
+  return context;
 }
 
 }  // namespace brightray
