@@ -2,7 +2,7 @@
 
 Electron enables you to create desktop applications with pure JavaScript by
 providing a runtime with rich native (operating system) APIs. You could see it
-as a variant of the io.js runtime that is focused on desktop applications
+as a variant of the Node.js runtime that is focused on desktop applications
 instead of web servers.
 
 This doesn't mean Electron is a JavaScript binding to graphical user interface
@@ -22,8 +22,9 @@ multi-process architecture is also used. Each web page in Electron runs in
 its own process, which is called __the renderer process__.
 
 In normal browsers, web pages usually run in a sandboxed environment and are not
-allowed access to native resources. Electron users, however, have the power to use
-io.js APIs in web pages allowing lower level operating system interactions.
+allowed access to native resources. Electron users, however, have the power to
+use Node.js APIs in web pages allowing lower level operating system
+interactions.
 
 ### Differences Between Main Process and Renderer Process
 
@@ -124,11 +125,12 @@ Finally the `index.html` is the web page you want to show:
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8">
     <title>Hello World!</title>
   </head>
   <body>
     <h1>Hello World!</h1>
-    We are using io.js <script>document.write(process.version)</script>
+    We are using Node.js <script>document.write(process.version)</script>
     and Electron <script>document.write(process.versions['electron'])</script>.
   </body>
 </html>
@@ -142,8 +144,8 @@ working as expected.
 
 ### electron-prebuilt
 
-If you've installed `electron-prebuilt` globally with `npm`, then you need only
-run the following in your app's source directory:
+If you've installed `electron-prebuilt` globally with `npm`, then you will only need
+to run the following in your app's source directory:
 
 ```bash
 electron .
@@ -157,7 +159,7 @@ If you've installed it locally, then run:
 
 ### Manually Downloaded Electron Binary
 
-If you downloaded Electron manually, you can also just use the included
+If you downloaded Electron manually, you can also use the included
 binary to execute your app directly.
 
 #### Windows

@@ -6,6 +6,8 @@
 프록시 객체는 브라우저의 웹 페이지 창과 호환될 수 있도록 일부 제한된 표준 기능만 가지고 있습니다.
 창의 모든 컨트롤 권한을 가지려면 `BrowserWindow`를 직접 생성해서 사용해야 합니다.
 
+새롭게 생성된 `BrowserWindow`는 기본적으로 부모 창의 옵션을 상속합니다. 이 옵션을 변경하려면 새 창을 열 때 `features` 인자를 지정해야 합니다.
+
 ### `window.open(url[, frameName][, features])`
 
 * `url` String
@@ -13,6 +15,8 @@
 * `features` String (optional)
 
 `BrowserWindowProxy` 클래스의 객체를 반환하는 새로운 윈도우를 생성합니다.
+
+`features` 문자열은 표준 브라우저의 포맷을 따르고 있지만, 각 기능은 `BrowserWindow`의 옵션이어야 합니다.
 
 ### `window.opener.postMessage(message, targetOrigin)`
 

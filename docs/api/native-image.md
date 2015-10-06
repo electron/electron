@@ -142,7 +142,7 @@ Returns a boolean whether the image is empty.
 
 Returns the size of the image.
 
-[buffer]: https://iojs.org/api/buffer.html#buffer_class_buffer
+[buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer
 
 ### `image.setTemplateImage(option)`
 

@@ -142,4 +142,4 @@ var image = NativeImage.createFromPath('/Users/somebody/images/icon.png');
 
 이미지가 템플릿 이미지인지 확인합니다.
 
-[buffer]: https://iojs.org/api/buffer.html#buffer_class_buffer
+[buffer]: https://nodejs.org/api/buffer.html#buffer_class_buffer

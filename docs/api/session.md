@@ -18,11 +18,7 @@ var session = win.webContents.session
 ### Event: 'will-download'
 
 * `event` Event
-* `item` Object
-  * `url` String
-  * `filename` String
-  * `mimeType` String
-  * `hasUserGesture` Boolean
+* `item` [DownloadItem](download-item.md)
 * `webContents` [WebContents](web-contents.md)
 
 Fired when Electron is about to download `item` in `webContents`.
@@ -32,7 +28,7 @@ Calling `event.preventDefault()` will cancel the download.
 ```javascript
 session.on('will-download', function(event, item, webContents) {
   event.preventDefault();
-  require('request')(item.url, function(data) {
+  require('request')(item.getUrl(), function(data) {
     require('fs').writeFileSync('/somewhere', data);
   });
 });
@@ -195,3 +191,30 @@ proxy-uri = [<proxy-scheme>"://"]<proxy-host>[":"<proxy-port>]
 
 Sets download saving directory. By default, the download directory will be the
 `Downloads` under the respective app folder.
+
+### `session.enableNetworkEmulation(options)`
+
+* `options` Object
+  * `offline` Boolean - Whether to emulate network outage.
+  * `latency` Double - RTT in ms
+  * `downloadThroughput` Double - Download rate in Bps
+  * `uploadThroughput` Double - Upload rate in Bps
+
+Emulates network with the given configuration for the `session`.
+
+```javascript
+// To emulate a GPRS connection with 50kbps throughput and 500 ms latency.
+window.webContents.session.enableNetworkEmulation({
+    latency: 500,
+    downloadThroughput: 6400,
+    uploadThroughput: 6400
+});
+
+// To emulate a network outage.
+window.webContents.session.enableNetworkEmulation({offline: true});
+```
+
+### `session.disableNetworkEmulation`
+
+Disables any network emulation already active for the `session`. Resets to
+the original network configuration.

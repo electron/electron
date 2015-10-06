@@ -3,7 +3,7 @@
 ## 소개
 
 Electron은 자바스크립트와 함께 제공된 풍부한 네이티브 API를 사용하여 멋진 데스크탑 어플리케이션을 만들 수 있도록 해주는 프레임워크입니다.
-이 프레임워크의 io.js(node.js)는 웹 서버 개발이 아닌 데스크탑 어플리케이션 개발에 초점을 맞췄습니다.
+이 프레임워크의 Node.js는 웹 서버 개발이 아닌 데스크탑 어플리케이션 개발에 초점을 맞췄습니다.
 
 이 말은 Electron이 GUI 라이브러리의 자바스크립트 바인딩이라는 뜻이 아닙니다.
 대신, Electron은 웹 페이지의 GUI를 사용합니다. 쉽게 말해 Electron은 자바스크립트를 사용하여 조작하는 작은 Chromium 브라우저로 볼 수 있습니다.
@@ -19,7 +19,7 @@ Electron이 웹페이지를 보여줄 때 Chromium의 multi-processes 구조도 
 Electron 프로세스 내에서 작동하는 웹 페이지를 __랜더러 프로세스__ 라고 불립니다.
 
 보통 일반 브라우저의 웹 페이지들은 샌드박스가 적용된 환경에서 작동하며 네이티브 리소스에는 접근할 수 없도록 되어 있습니다.
-하지만 Electron은 웹 페이지 내에서 io.js(node.js) API를 사용하여 low-level 수준으로 운영체제와 상호작용할 수 있습니다.
+하지만 Electron은 웹 페이지 내에서 Node.js API를 사용하여 low-level 수준으로 운영체제와 상호작용할 수 있습니다.
 
 ### 메인 프로세스와 랜더러 프로세스의 차이점
 
@@ -111,11 +111,12 @@ app.on('ready', function() {
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8">
     <title>헬로 월드!</title>
   </head>
   <body>
     <h1>헬로 월드!</h1>
-    이 어플리케이션은 io.js <script>document.write(process.version)</script> 과
+    이 어플리케이션은 Node.js <script>document.write(process.version)</script> 과
     Electron <script>document.write(process.versions['electron'])</script>을 사용합니다.
   </body>
 </html>
@@ -126,31 +127,31 @@ app.on('ready', function() {
 앱을 작성한 후 [어플리케이션 배포](application-distribution.md) 가이드를 따라 앱을 패키징 하고 패키징한 앱을 실행할 수 있습니다.
 또한 Electron 실행파일을 다운로드 받아 바로 실행해 볼 수도 있습니다.
 
-### electron-prebuilt
+### electron-prebuilt 사용
 
 `npm`을 통해 `electron-prebuilt` 패키지를 전역에 설치하면 간단한 명령으로 앱을 실행할 수 있습니다.
 
-앱 디렉터리 내에서 이렇게 실행합니다:
+앱 디렉터리 내에서 다음 명령으로 실행할 수 있습니다:
 
 ```bash
 electron .
 ```
 
-또는 앱 디렉터리 밖에서 앱 디렉터리를 입력해도 됩니다:
+또는 앱 디렉터리 밖에서 앱을 실행할 수도 있습니다:
 
 ```bash
 electron app
 ```
 
-npm 모듈을 로컬에 설치했다면 이렇게 실행할 수 있습니다:
+npm 모듈을 로컬에 설치했다면 다음 명령으로 실행할 수 있습니다:
 
 ```bash
 ./node_modules/.bin/electron .
 ```
 
-### 임의로 다운로드 받은 Electron
+### 다운로드 받은 Electron 바이너리 사용
 
-만약 Electron 바이너리를 임의로 다운로드 받았다면 다음과 같이 앱 디렉터리에 놓고 실행하면 됩니다.
+따로 Electron 바이너리를 다운로드 받았다면 다음 예시와 같이 실행하면 됩니다.
 
 #### Windows
 

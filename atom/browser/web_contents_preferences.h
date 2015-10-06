@@ -37,6 +37,9 @@ class WebContentsPreferences
   // $.extend(|web_preferences_|, |new_web_preferences|).
   void Merge(const base::DictionaryValue& new_web_preferences);
 
+  // Returns the web preferences.
+  base::DictionaryValue* web_preferences() { return &web_preferences_; }
+
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
 

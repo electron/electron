@@ -78,6 +78,10 @@ Returns:
 * `oldUrl` String
 * `newUrl` String
 * `isMainFrame` Boolean
+* `httpResponseCode` Integer
+* `requestMethod` String
+* `referrer` String
+* `headers` Object
 
 Emitted when a redirect is received while requesting a resource.
 
@@ -107,6 +111,8 @@ Returns:
 * `frameName` String
 * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
   `new-window` and `other`.
+* `options` Object - The options which will be used for creating the new
+  `BrowserWindow`.
 
 Emitted when the page requests to open a new window for a `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.
@@ -147,6 +153,18 @@ Emitted when a plugin process has crashed.
 ### Event: 'destroyed'
 
 Emitted when `webContents` is destroyed.
+
+### Event: 'devtools-opened'
+
+Emitted when DevTools is opened.
+
+### Event: 'devtools-closed'
+
+Emitted when DevTools is closed.
+
+### Event: 'devtools-focused'
+
+Emitted when DevTools is focused / opened.
 
 ## Instance Methods
 
@@ -415,7 +433,7 @@ win.webContents.on("did-finish-load", function() {
   win.webContents.printToPDF({}, function(error, data) {
     if (error) throw error;
     fs.writeFile("/tmp/print.pdf", data, function(error) {
-      if (err)
+      if (error)
         throw error;
       console.log("Write PDF successfully.");
     })
@@ -434,6 +452,40 @@ Adds the specified path to DevTools workspace.
 * `path` String
 
 Removes the specified path from DevTools workspace.
+
+### `webContents.openDevTools([options])`
+
+* `options` Object (optional). Properties:
+  * `detach` Boolean - opens DevTools in a new window
+
+Opens the developer tools.
+
+### `webContents.closeDevTools()`
+
+Closes the developer tools.
+
+### `webContents.isDevToolsOpened()`
+
+Returns whether the developer tools are opened.
+
+### `webContents.toggleDevTools()`
+
+Toggles the developer tools.
+
+### `webContents.isDevToolsFocused()`
+
+Returns whether the developer tools is focused.
+
+### `webContents.inspectElement(x, y)`
+
+* `x` Integer
+* `y` Integer
+
+Starts inspecting element at position (`x`, `y`).
+
+### `webContents.inspectServiceWorker()`
+
+Opens the developer tools for the service worker context.
 
 ### `webContents.send(channel[, args...])`
 
@@ -528,13 +580,13 @@ Sends an input `event` to the page.
 For keyboard events, the `event` object also have following properties:
 
 * `keyCode` String (**required**) - A single character that will be sent as
-  keyboard event. Can be any ASCII character on the keyboard, like `a`, `1`
-  and `=`.
+  keyboard event. Can be any UTF-8 character.
 
 For mouse events, the `event` object also have following properties:
 
 * `x` Integer (**required**)
 * `y` Integer (**required**)
+* `button` String - The button pressed, can be `left`, `middle`, `right`
 * `globalX` Integer
 * `globalY` Integer
 * `movementX` Integer
@@ -559,9 +611,23 @@ For the `mouseWheel` event, the `event` object also have following properties:
 Begin subscribing for presentation events and captured frames, the `callback`
 will be called with `callback(frameBuffer)` when there is a presentation event.
 
-The `frameBuffer` is a `Buffer` that contains raw pixel data, in the format of
-32bit ARGB.
+The `frameBuffer` is a `Buffer` that contains raw pixel data. On most machines,
+the pixel data is effectively stored in 32bit BGRA format, but the actual
+representation depends on the endianness of the processor (most modern
+processors are little-endian, on machines with big-endian processors the data
+is in 32bit ARGB format).
 
 ### `webContents.endFrameSubscription()`
 
 End subscribing for frame presentation events.
+
+## Instance Properties
+
+`WebContents` objects also have the following properties:
+
+### `webContents.devToolsWebContents`
+
+Get the `WebContents` of DevTools for this `WebContents`.
+
+**Note:** Users should never store this object because it may become `null`
+when the DevTools has been closed.

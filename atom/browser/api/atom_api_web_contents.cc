@@ -7,6 +7,7 @@
 #include <set>
 
 #include "atom/browser/api/atom_api_session.h"
+#include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
@@ -26,6 +27,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
+#include "brightray/browser/inspectable_web_contents_view.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "content/common/view_messages.h"
@@ -120,6 +122,33 @@ struct Converter<WindowOpenDisposition> {
   }
 };
 
+template<>
+struct Converter<net::HttpResponseHeaders*> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   net::HttpResponseHeaders* headers) {
+    base::DictionaryValue response_headers;
+    if (headers) {
+      void* iter = nullptr;
+      std::string key;
+      std::string value;
+      while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
+        key = base::StringToLowerASCII(key);
+        value = base::StringToLowerASCII(value);
+        if (response_headers.HasKey(key)) {
+          base::ListValue* values = nullptr;
+          if (response_headers.GetList(key, &values))
+            values->AppendString(value);
+        } else {
+          scoped_ptr<base::ListValue> values(new base::ListValue());
+          values->AppendString(value);
+          response_headers.Set(key, values.Pass());
+        }
+      }
+    }
+    return ConvertToV8(isolate, response_headers);
+  }
+};
+
 }  // namespace mate
 
 
@@ -131,7 +160,7 @@ namespace {
 
 v8::Persistent<v8::ObjectTemplate> template_;
 
-// The wrapWebContents funtion which is implemented in JavaScript
+// The wrapWebContents function which is implemented in JavaScript
 using WrapWebContentsCallback = base::Callback<void(v8::Local<v8::Value>)>;
 WrapWebContentsCallback g_wrap_web_contents;
 
@@ -201,7 +230,9 @@ WebContents::WebContents(v8::Isolate* isolate,
   AttachAsUserData(web_contents);
   InitWithWebContents(web_contents);
 
-  // Save the preferences.
+  managed_web_contents()->GetView()->SetDelegate(this);
+
+  // Save the preferences in C++.
   base::DictionaryValue web_preferences;
   mate::ConvertFromV8(isolate, options.GetHandle(), &web_preferences);
   new WebContentsPreferences(web_contents, &web_preferences);
@@ -414,30 +445,6 @@ void WebContents::DidStopLoading() {
 
 void WebContents::DidGetResourceResponseStart(
     const content::ResourceRequestDetails& details) {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  base::DictionaryValue response_headers;
-
-  net::HttpResponseHeaders* headers = details.headers.get();
-  if (!headers)
-    return;
-  void* iter = nullptr;
-  std::string key;
-  std::string value;
-  while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
-    key = base::StringToLowerASCII(key);
-    value = base::StringToLowerASCII(value);
-    if (response_headers.HasKey(key)) {
-      base::ListValue* values = nullptr;
-      if (response_headers.GetList(key, &values))
-        values->AppendString(value);
-    } else {
-      scoped_ptr<base::ListValue> values(new base::ListValue());
-      values->AppendString(value);
-      response_headers.Set(key, values.Pass());
-    }
-  }
-
   Emit("did-get-response-details",
        details.socket_address.IsEmpty(),
        details.url,
@@ -445,7 +452,7 @@ void WebContents::DidGetResourceResponseStart(
        details.http_response_code,
        details.method,
        details.referrer,
-       response_headers);
+       details.headers.get());
 }
 
 void WebContents::DidGetRedirectForResourceRequest(
@@ -454,7 +461,11 @@ void WebContents::DidGetRedirectForResourceRequest(
   Emit("did-get-redirect-request",
        details.url,
        details.new_url,
-       (details.resource_type == content::RESOURCE_TYPE_MAIN_FRAME));
+       (details.resource_type == content::RESOURCE_TYPE_MAIN_FRAME),
+       details.http_response_code,
+       details.method,
+       details.referrer,
+       details.headers.get());
 }
 
 void WebContents::DidNavigateMainFrame(
@@ -482,6 +493,33 @@ void WebContents::DidUpdateFaviconURL(
       unique_urls.insert(url);
   }
   Emit("page-favicon-updated", unique_urls);
+}
+
+void WebContents::DevToolsFocused() {
+  Emit("devtools-focused");
+}
+
+void WebContents::DevToolsOpened() {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  auto handle = WebContents::CreateFrom(
+      isolate(), managed_web_contents()->GetDevToolsWebContents());
+  devtools_web_contents_.Reset(isolate(), handle.ToV8());
+
+  // Inherit owner window in devtools.
+  if (owner_window())
+    handle->SetOwnerWindow(managed_web_contents()->GetDevToolsWebContents(),
+                           owner_window());
+
+  Emit("devtools-opened");
+}
+
+void WebContents::DevToolsClosed() {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  devtools_web_contents_.Reset();
+
+  Emit("devtools-closed");
 }
 
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
@@ -691,10 +729,6 @@ void WebContents::InspectServiceWorker() {
   }
 }
 
-v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
-  return v8::Local<v8::Value>::New(isolate, session_);
-}
-
 void WebContents::HasServiceWorker(
     const base::Callback<void(bool)>& callback) {
   auto context = GetServiceWorkerContext(web_contents());
@@ -880,6 +914,30 @@ bool WebContents::IsGuest() const {
   return type_ == WEB_VIEW;
 }
 
+v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
+  WebContentsPreferences* web_preferences =
+      WebContentsPreferences::FromWebContents(web_contents());
+  return mate::ConvertToV8(isolate, *web_preferences->web_preferences());
+}
+
+v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow() {
+  if (owner_window())
+    return Window::From(isolate(), owner_window());
+  else
+    return v8::Null(isolate());
+}
+
+v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
+  return v8::Local<v8::Value>::New(isolate, session_);
+}
+
+v8::Local<v8::Value> WebContents::DevToolsWebContents(v8::Isolate* isolate) {
+  if (devtools_web_contents_.IsEmpty())
+    return v8::Null(isolate);
+  else
+    return v8::Local<v8::Value>::New(isolate, devtools_web_contents_);
+}
+
 mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   if (template_.IsEmpty())
@@ -935,6 +993,8 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("setSize", &WebContents::SetSize)
         .SetMethod("setAllowTransparency", &WebContents::SetAllowTransparency)
         .SetMethod("isGuest", &WebContents::IsGuest)
+        .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
+        .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
         .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
         .SetMethod("unregisterServiceWorker",
                    &WebContents::UnregisterServiceWorker)
@@ -943,7 +1003,9 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("_printToPDF", &WebContents::PrintToPDF)
         .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
         .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
-        .SetProperty("session", &WebContents::Session)
+        .SetProperty("session", &WebContents::Session, true)
+        .SetProperty("devToolsWebContents",
+                     &WebContents::DevToolsWebContents, true)
         .Build());
 
   return mate::ObjectTemplateBuilder(
@@ -988,7 +1050,7 @@ mate::Handle<WebContents> WebContents::CreateFrom(
 // static
 mate::Handle<WebContents> WebContents::Create(
     v8::Isolate* isolate, const mate::Dictionary& options) {
-  auto handle =  mate::CreateHandle(isolate, new WebContents(isolate, options));
+  auto handle = mate::CreateHandle(isolate, new WebContents(isolate, options));
   g_wrap_web_contents.Run(handle.ToV8());
   return handle;
 }

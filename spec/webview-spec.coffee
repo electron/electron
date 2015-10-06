@@ -86,7 +86,7 @@ describe '<webview> tag', ->
 
     it 'preload script can still use "process" in required modules when nodeintegration is off', (done) ->
       webview.addEventListener 'console-message', (e) ->
-        assert.equal e.message, 'object function object'
+        assert.equal e.message, 'object undefined object'
         done()
       webview.setAttribute 'preload', "#{fixtures}/module/preload-node-off.js"
       webview.src = "file://#{fixtures}/api/blank.html"
@@ -199,6 +199,26 @@ describe '<webview> tag', ->
       window.localStorage.setItem 'test', 'one'
       webview.addEventListener 'console-message', listener
       webview.src = "file://#{fixtures}/pages/partition/one.html"
+      document.body.appendChild webview
+
+  describe 'allowpopups attribute', ->
+    it 'can not open new window when not set', (done) ->
+      listener = (e) ->
+        assert.equal e.message, 'null'
+        webview.removeEventListener 'console-message', listener
+        done()
+      webview.addEventListener 'console-message', listener
+      webview.src = "file://#{fixtures}/pages/window-open-hide.html"
+      document.body.appendChild webview
+
+    it 'can open new window when set', (done) ->
+      listener = (e) ->
+        assert.equal e.message, 'window'
+        webview.removeEventListener 'console-message', listener
+        done()
+      webview.addEventListener 'console-message', listener
+      webview.setAttribute 'allowpopups', 'on'
+      webview.src = "file://#{fixtures}/pages/window-open-hide.html"
       document.body.appendChild webview
 
   describe 'new-window event', ->

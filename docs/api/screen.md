@@ -8,7 +8,7 @@ position, etc. You should not use this module until the `ready` event of the
 
 **Note:** In the renderer / DevTools, `window.screen` is a reserved
 DOM property, so writing `var screen = require('screen')` will not work. In our
-examples below, we use `atomScreen` as the variable name instead.
+examples below, we use `electronScreen` as the variable name instead.
 
 An example of creating a window that fills the whole screen:
 
@@ -19,8 +19,8 @@ var BrowserWindow = require('browser-window');
 var mainWindow;
 
 app.on('ready', function() {
-  var atomScreen = require('screen');
-  var size = atomScreen.getPrimaryDisplay().workAreaSize;
+  var electronScreen = require('screen');
+  var size = electronScreen.getPrimaryDisplay().workAreaSize;
   mainWindow = new BrowserWindow({ width: size.width, height: size.height });
 });
 ```
@@ -34,11 +34,11 @@ var BrowserWindow = require('browser-window');
 var mainWindow;
 
 app.on('ready', function() {
-  var atomScreen = require('screen');
-  var displays = atomScreen.getAllDisplays();
+  var electronScreen = require('screen');
+  var displays = electronScreen.getAllDisplays();
   var externalDisplay = null;
   for (var i in displays) {
-    if (displays[i].bounds.x > 0 || displays[i].bounds.y > 0) {
+    if (displays[i].bounds.x != 0 || displays[i].bounds.y != 0) {
       externalDisplay = displays[i];
       break;
     }
@@ -47,7 +47,7 @@ app.on('ready', function() {
   if (externalDisplay) {
     mainWindow = new BrowserWindow({
       x: externalDisplay.bounds.x + 50,
-      y: externalDisplay.bounds.y + 50,
+      y: externalDisplay.bounds.y + 50
     });
   }
 });

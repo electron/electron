@@ -69,6 +69,7 @@ class Archive {
  private:
   base::FilePath path_;
   base::File file_;
+  int fd_;
   uint32 header_size_;
   scoped_ptr<base::DictionaryValue> header_;
 

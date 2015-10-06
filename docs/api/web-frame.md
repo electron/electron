@@ -83,4 +83,11 @@ attackers.
 Resources will be loaded from this `scheme` regardless of the current page's
 Content Security Policy.
 
+### `webFrame.registerUrlSchemeAsPrivileged(scheme)`
+
+* `scheme` String
+
+Registers the `scheme` as secure, bypasses content security policy for resources and
+allows registering ServiceWorker.
+
 [spellchecker]: https://github.com/atom/node-spellchecker

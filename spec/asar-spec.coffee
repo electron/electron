@@ -8,6 +8,10 @@ describe 'asar package', ->
 
   describe 'node api', ->
     describe 'fs.readFileSync', ->
+      it 'does not leak fd', ->
+        for i in [1..10000]
+          fs.readFileSync(path.join(process.resourcesPath, 'atom.asar', 'renderer', 'api', 'lib', 'ipc.js'))
+
       it 'reads a normal file', ->
         file1 = path.join fixtures, 'asar', 'a.asar', 'file1'
         assert.equal fs.readFileSync(file1).toString().trim(), 'file1'

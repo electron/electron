@@ -1,4 +1,3 @@
-process = global.process
 ipc = require 'ipc'
 remote = require 'remote'
 
@@ -71,7 +70,6 @@ window.open = (url, frameName='', features='') ->
   if guestId
     new BrowserWindowProxy(guestId)
   else
-    console.error 'It is not allowed to open new window from this WebContents'
     null
 
 # Use the dialog API to implement alert().
@@ -124,3 +122,7 @@ window.history.go = (offset) -> sendHistoryOperation 'goToOffset', offset
 Object.defineProperty window.history, 'length',
   get: ->
     getHistoryOperation 'length'
+
+# Make document.hidden return the correct value.
+Object.defineProperty document, 'hidden',
+  get: -> !remote.getCurrentWindow().isVisible()

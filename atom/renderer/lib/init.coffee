@@ -1,23 +1,22 @@
-process = global.process
-events  = require 'events'
-path    = require 'path'
-url     = require 'url'
-Module  = require 'module'
+events = require 'events'
+path   = require 'path'
+url    = require 'url'
+Module = require 'module'
 
 # We modified the original process.argv to let node.js load the
 # atom-renderer.js, we need to restore it here.
 process.argv.splice 1, 1
 
+# Clear search paths.
+require path.resolve(__dirname, '..', '..', 'common', 'lib', 'reset-search-paths')
+
+# Import common settings.
+require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
+
 # Add renderer/api/lib to require's search paths, which contains javascript part
 # of Atom's built-in libraries.
 globalPaths = Module.globalPaths
 globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
-# And also app.
-globalPaths.push path.join(process.resourcesPath, 'app')
-globalPaths.push path.join(process.resourcesPath, 'app.asar')
-
-# Import common settings.
-require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
 
 # The global variable will be used by ipc for event dispatching
 v8Util = process.atomBinding 'v8_util'

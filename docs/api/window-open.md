@@ -8,6 +8,10 @@ The proxy has limited standard functionality implemented to be
 compatible with traditional web pages. For full control of the new window
 you should create a `BrowserWindow` directly.
 
+The newly created `BrowserWindow` will inherit parent window's options by
+default, to override inherited options you can set them in the `features`
+string.
+
 ### `window.open(url[, frameName][, features])`
 
 * `url` String
@@ -15,6 +19,9 @@ you should create a `BrowserWindow` directly.
 * `features` String (optional)
 
 Creates a new window and returns an instance of `BrowserWindowProxy` class.
+
+The `features` string follows the format of standard browser, but each feature
+has to be a field of `BrowserWindow`'s options.
 
 ### `window.opener.postMessage(message, targetOrigin)`
 

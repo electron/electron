@@ -68,6 +68,7 @@ NativeWindow::NativeWindow(
     const mate::Dictionary& options)
     : content::WebContentsObserver(inspectable_web_contents->GetWebContents()),
       has_frame_(true),
+      force_using_draggable_region_(false),
       transparent_(false),
       enable_larger_than_screen_(false),
       is_closed_(false),
@@ -75,8 +76,6 @@ NativeWindow::NativeWindow(
       aspect_ratio_(0.0),
       inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
-  inspectable_web_contents->GetView()->SetDelegate(this);
-
   options.Get(switches::kFrame, &has_frame_);
   options.Get(switches::kTransparent, &transparent_);
   options.Get(switches::kEnableLargerThanScreen, &enable_larger_than_screen_);
@@ -113,27 +112,34 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   int x = -1, y = -1;
   bool center;
   if (options.Get(switches::kX, &x) && options.Get(switches::kY, &y)) {
-    int width = -1, height = -1;
-    options.Get(switches::kWidth, &width);
-    options.Get(switches::kHeight, &height);
-    SetBounds(gfx::Rect(x, y, width, height));
+    SetPosition(gfx::Point(x, y));
   } else if (options.Get(switches::kCenter, &center) && center) {
     Center();
   }
+  extensions::SizeConstraints size_constraints;
   int min_height = 0, min_width = 0;
   if (options.Get(switches::kMinHeight, &min_height) |
       options.Get(switches::kMinWidth, &min_width)) {
-    SetMinimumSize(gfx::Size(min_width, min_height));
+    size_constraints.set_minimum_size(gfx::Size(min_width, min_height));
   }
   int max_height = INT_MAX, max_width = INT_MAX;
   if (options.Get(switches::kMaxHeight, &max_height) |
       options.Get(switches::kMaxWidth, &max_width)) {
-    SetMaximumSize(gfx::Size(max_width, max_height));
+    size_constraints.set_maximum_size(gfx::Size(max_width, max_height));
   }
+  bool use_content_size = false;
+  options.Get(switches::kUseContentSize, &use_content_size);
+  if (use_content_size) {
+    SetContentSizeConstraints(size_constraints);
+  } else {
+    SetSizeConstraints(size_constraints);
+  }
+#if defined(OS_WIN) || defined(USE_X11)
   bool resizable;
   if (options.Get(switches::kResizable, &resizable)) {
     SetResizable(resizable);
   }
+#endif
   bool top;
   if (options.Get(switches::kAlwaysOnTop, &top) && top) {
     SetAlwaysOnTop(true);
@@ -177,6 +183,67 @@ void NativeWindow::SetPosition(const gfx::Point& position) {
 
 gfx::Point NativeWindow::GetPosition() {
   return GetBounds().origin();
+}
+
+void NativeWindow::SetContentSize(const gfx::Size& size) {
+  SetSize(ContentSizeToWindowSize(size));
+}
+
+gfx::Size NativeWindow::GetContentSize() {
+  return WindowSizeToContentSize(GetSize());
+}
+
+void NativeWindow::SetSizeConstraints(
+    const extensions::SizeConstraints& window_constraints) {
+  extensions::SizeConstraints content_constraints;
+  if (window_constraints.HasMaximumSize())
+    content_constraints.set_maximum_size(
+        WindowSizeToContentSize(window_constraints.GetMaximumSize()));
+  if (window_constraints.HasMinimumSize())
+    content_constraints.set_minimum_size(
+        WindowSizeToContentSize(window_constraints.GetMinimumSize()));
+  SetContentSizeConstraints(content_constraints);
+}
+
+extensions::SizeConstraints NativeWindow::GetSizeConstraints() {
+  extensions::SizeConstraints content_constraints = GetContentSizeConstraints();
+  extensions::SizeConstraints window_constraints;
+  if (content_constraints.HasMaximumSize())
+    window_constraints.set_maximum_size(
+        ContentSizeToWindowSize(content_constraints.GetMaximumSize()));
+  if (content_constraints.HasMinimumSize())
+    window_constraints.set_minimum_size(
+        ContentSizeToWindowSize(content_constraints.GetMinimumSize()));
+  return window_constraints;
+}
+
+void NativeWindow::SetContentSizeConstraints(
+    const extensions::SizeConstraints& size_constraints) {
+  size_constraints_ = size_constraints;
+}
+
+extensions::SizeConstraints NativeWindow::GetContentSizeConstraints() {
+  return size_constraints_;
+}
+
+void NativeWindow::SetMinimumSize(const gfx::Size& size) {
+  extensions::SizeConstraints size_constraints;
+  size_constraints.set_minimum_size(size);
+  SetSizeConstraints(size_constraints);
+}
+
+gfx::Size NativeWindow::GetMinimumSize() {
+  return GetSizeConstraints().GetMinimumSize();
+}
+
+void NativeWindow::SetMaximumSize(const gfx::Size& size) {
+  extensions::SizeConstraints size_constraints;
+  size_constraints.set_maximum_size(size);
+  SetSizeConstraints(size_constraints);
+}
+
+gfx::Size NativeWindow::GetMaximumSize() {
+  return GetSizeConstraints().GetMaximumSize();
 }
 
 void NativeWindow::SetRepresentedFilename(const std::string& filename) {
@@ -412,18 +479,6 @@ void NativeWindow::NotifyWindowExecuteWindowsCommand(
                     OnExecuteWindowsCommand(command));
 }
 
-void NativeWindow::DevToolsFocused() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsFocus());
-}
-
-void NativeWindow::DevToolsOpened() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsOpened());
-}
-
-void NativeWindow::DevToolsClosed() {
-  FOR_EACH_OBSERVER(NativeWindowObserver, observers_, OnDevToolsClosed());
-}
-
 void NativeWindow::RenderViewCreated(
     content::RenderViewHost* render_view_host) {
   if (!transparent_)
@@ -468,7 +523,7 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message) {
 void NativeWindow::UpdateDraggableRegions(
     const std::vector<DraggableRegion>& regions) {
   // Draggable region is not supported for non-frameless window.
-  if (has_frame_)
+  if (has_frame_ && !force_using_draggable_region_)
     return;
   draggable_region_ = DraggableRegionsToSkRegion(regions);
 }

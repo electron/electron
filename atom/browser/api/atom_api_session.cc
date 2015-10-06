@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "atom/browser/api/atom_api_cookies.h"
+#include "atom/browser/api/atom_api_download_item.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/native_mate_converters/callback.h"
@@ -18,6 +19,8 @@
 #include "base/prefs/pref_service.h"
 #include "base/strings/string_util.h"
 #include "base/thread_task_runner_handle.h"
+#include "brightray/browser/net/devtools_network_conditions.h"
+#include "brightray/browser/net/devtools_network_controller.h"
 #include "chrome/common/pref_names.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
@@ -98,19 +101,6 @@ struct Converter<ClearStorageDataOptions> {
     if (options.Get("quotas", &types))
       out->quota_types = GetQuotaMask(types);
     return true;
-  }
-};
-
-template<>
-struct Converter<content::DownloadItem*> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   content::DownloadItem* val) {
-    mate::Dictionary dict(isolate, v8::Object::New(isolate));
-    dict.Set("url", val->GetURL());
-    dict.Set("filename", val->GetSuggestedFilename());
-    dict.Set("mimeType", val->GetMimeType());
-    dict.Set("hasUserGesture", val->HasUserGesture());
-    return dict.GetHandle();
   }
 };
 
@@ -245,11 +235,12 @@ Session::~Session() {
 }
 
 void Session::OnDownloadCreated(content::DownloadManager* manager,
-                                    content::DownloadItem* item) {
+                                content::DownloadItem* item) {
   auto web_contents = item->GetWebContents();
-  bool prevent_default = Emit("will-download", item,
-                              api::WebContents::CreateFrom(isolate(),
-                                                           web_contents));
+  bool prevent_default = Emit(
+      "will-download",
+      DownloadItem::Create(isolate(), item),
+      api::WebContents::CreateFrom(isolate(), web_contents));
   if (prevent_default) {
     item->Cancel(true);
     item->Remove();
@@ -305,6 +296,43 @@ void Session::SetDownloadPath(const base::FilePath& path) {
       prefs::kDownloadDefaultDirectory, path);
 }
 
+void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
+  scoped_ptr<brightray::DevToolsNetworkConditions> conditions;
+  bool offline = false;
+  double latency, download_throughput, upload_throughput;
+  if (options.Get("offline", &offline) && offline) {
+    conditions.reset(new brightray::DevToolsNetworkConditions(offline));
+  } else {
+    options.Get("latency", &latency);
+    options.Get("downloadThroughput", &download_throughput);
+    options.Get("uploadThroughput", &upload_throughput);
+    conditions.reset(
+        new brightray::DevToolsNetworkConditions(false,
+                                                 latency,
+                                                 download_throughput,
+                                                 upload_throughput));
+  }
+  auto controller = browser_context_->GetDevToolsNetworkController();
+
+  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
+      base::Bind(&brightray::DevToolsNetworkController::SetNetworkState,
+                 base::Unretained(controller),
+                 std::string(),
+                 base::Passed(&conditions)));
+}
+
+void Session::DisableNetworkEmulation() {
+  scoped_ptr<brightray::DevToolsNetworkConditions> conditions(
+      new brightray::DevToolsNetworkConditions(false));
+  auto controller = browser_context_->GetDevToolsNetworkController();
+
+  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
+      base::Bind(&brightray::DevToolsNetworkController::SetNetworkState,
+                 base::Unretained(controller),
+                 std::string(),
+                 base::Passed(&conditions)));
+}
+
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
     auto handle = atom::api::Cookies::Create(isolate, browser_context());
@@ -321,6 +349,8 @@ mate::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("clearStorageData", &Session::ClearStorageData)
       .SetMethod("setProxy", &Session::SetProxy)
       .SetMethod("setDownloadPath", &Session::SetDownloadPath)
+      .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
+      .SetMethod("disableNetworkEmulation", &Session::DisableNetworkEmulation)
       .SetProperty("cookies", &Session::Cookies);
 }
 

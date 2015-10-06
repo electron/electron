@@ -15,10 +15,11 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
-#include "brightray/browser/inspectable_web_contents_view_delegate.h"
+#include "base/supports_user_data.h"
 #include "content/public/browser/readback_types.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
+#include "extensions/browser/app_window/size_constraints.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
 
@@ -50,8 +51,8 @@ namespace atom {
 
 struct DraggableRegion;
 
-class NativeWindow : public content::WebContentsObserver,
-                     public brightray::InspectableWebContentsViewDelegate {
+class NativeWindow : public base::SupportsUserData,
+                     public content::WebContentsObserver {
  public:
   using CapturePageCallback = base::Callback<void(const SkBitmap& bitmap)>;
 
@@ -110,12 +111,18 @@ class NativeWindow : public content::WebContentsObserver,
   virtual gfx::Size GetSize();
   virtual void SetPosition(const gfx::Point& position);
   virtual gfx::Point GetPosition();
-  virtual void SetContentSize(const gfx::Size& size) = 0;
-  virtual gfx::Size GetContentSize() = 0;
-  virtual void SetMinimumSize(const gfx::Size& size) = 0;
-  virtual gfx::Size GetMinimumSize() = 0;
-  virtual void SetMaximumSize(const gfx::Size& size) = 0;
-  virtual gfx::Size GetMaximumSize() = 0;
+  virtual void SetContentSize(const gfx::Size& size);
+  virtual gfx::Size GetContentSize();
+  virtual void SetSizeConstraints(
+      const extensions::SizeConstraints& size_constraints);
+  virtual extensions::SizeConstraints GetSizeConstraints();
+  virtual void SetContentSizeConstraints(
+      const extensions::SizeConstraints& size_constraints);
+  virtual extensions::SizeConstraints GetContentSizeConstraints();
+  virtual void SetMinimumSize(const gfx::Size& size);
+  virtual gfx::Size GetMinimumSize();
+  virtual void SetMaximumSize(const gfx::Size& size);
+  virtual gfx::Size GetMaximumSize();
   virtual void SetResizable(bool resizable) = 0;
   virtual bool IsResizable() = 0;
   virtual void SetAlwaysOnTop(bool top) = 0;
@@ -219,6 +226,13 @@ class NativeWindow : public content::WebContentsObserver,
   bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
   gfx::ImageSkia icon() const { return icon_; }
 
+  bool force_using_draggable_region() const {
+    return force_using_draggable_region_;
+  }
+  void set_force_using_draggable_region(bool force) {
+    force_using_draggable_region_ = true;
+  }
+
   void set_has_dialog_attached(bool has_dialog_attached) {
     has_dialog_attached_ = has_dialog_attached;
   }
@@ -227,10 +241,9 @@ class NativeWindow : public content::WebContentsObserver,
   NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,
                const mate::Dictionary& options);
 
-  // brightray::InspectableWebContentsViewDelegate:
-  void DevToolsFocused() override;
-  void DevToolsOpened() override;
-  void DevToolsClosed() override;
+  // Converts between content size to window size.
+  virtual gfx::Size ContentSizeToWindowSize(const gfx::Size& size) = 0;
+  virtual gfx::Size WindowSizeToContentSize(const gfx::Size& size) = 0;
 
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
@@ -257,12 +270,18 @@ class NativeWindow : public content::WebContentsObserver,
   // Whether window has standard frame.
   bool has_frame_;
 
+  // Force the window to be aware of draggable regions.
+  bool force_using_draggable_region_;
+
   // Whether window is transparent.
   bool transparent_;
 
   // For custom drag, the whole window is non-draggable and the draggable region
   // has to been explicitly provided.
   scoped_ptr<SkRegion> draggable_region_;  // used in custom drag.
+
+  // Minimum and maximum size, stored as content size.
+  extensions::SizeConstraints size_constraints_;
 
   // Whether window can be resized larger than screen.
   bool enable_larger_than_screen_;
