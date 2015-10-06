@@ -34,6 +34,7 @@ class ObjectsRegistry extends EventEmitter
     @dereference id, 1
     # Also reduce the count in owner.
     pointer = @owners[webContentsId]
+    return unless pointer?
     --pointer[id]
     delete pointer[id] if pointer[id] is 0
 
@@ -57,6 +58,7 @@ class ObjectsRegistry extends EventEmitter
   # Private: Dereference the object from store.
   dereference: (id, count) ->
     pointer = @storage[id]
+    return unless pointer?
     pointer.count -= count
     if pointer.count is 0
       v8Util.deleteHiddenValue pointer.object, 'atomId'
