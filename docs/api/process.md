@@ -21,9 +21,11 @@ the global scope when node integration is turned off:
 
 ```js
 // preload.js
+var _setImmediate = setImmediate;
+var _clearImmediate = clearImmediate;
 process.once('loaded', function() {
-  global.setImmediate = setImmediate;
-  global.clearImmediate = clearImmediate;
+  global.setImmediate = _setImmediate;
+  global.clearImmediate = _clearImmediate;
 });
 ```
 
