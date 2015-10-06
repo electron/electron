@@ -44,12 +44,8 @@ class NativeWindowMac : public NativeWindow {
   bool IsFullscreen() const override;
   void SetBounds(const gfx::Rect& bounds) override;
   gfx::Rect GetBounds() override;
-  void SetContentSize(const gfx::Size& size) override;
-  gfx::Size GetContentSize() override;
-  void SetMinimumSize(const gfx::Size& size) override;
-  gfx::Size GetMinimumSize() override;
-  void SetMaximumSize(const gfx::Size& size) override;
-  gfx::Size GetMaximumSize() override;
+  void SetContentSizeConstraints(
+      const extensions::SizeConstraints& size_constraints) override;
   void SetResizable(bool resizable) override;
   bool IsResizable() override;
   void SetAlwaysOnTop(bool top) override;
@@ -89,6 +85,10 @@ class NativeWindowMac : public NativeWindow {
       const content::NativeWebKeyboardEvent&) override;
 
  private:
+  // NativeWindow:
+  gfx::Size ContentSizeToWindowSize(const gfx::Size& size) override;
+  gfx::Size WindowSizeToContentSize(const gfx::Size& size) override;
+
   void InstallView();
   void UninstallView();
 

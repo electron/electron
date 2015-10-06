@@ -10,9 +10,10 @@ namespace atom {
 ui::KeyboardCode KeyboardCodeFromCharCode(char c, bool* shifted) {
   *shifted = false;
   switch (c) {
-    case 8: case 0x7F: return ui::VKEY_BACK;
-    case 9: return ui::VKEY_TAB;
-    case 0xD: case 3: return ui::VKEY_RETURN;
+    case 0x08: return ui::VKEY_BACK;
+    case 0x7F: return ui::VKEY_DELETE;
+    case 0x09: return ui::VKEY_TAB;
+    case 0x0D: return ui::VKEY_RETURN;
     case 0x1B: return ui::VKEY_ESCAPE;
     case ' ': return ui::VKEY_SPACE;
 
