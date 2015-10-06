@@ -88,6 +88,7 @@ scoped_refptr<BrowserContext> BrowserContext::From(
     return make_scoped_refptr(browser_context_map_[key].get());
 
   auto browser_context = BrowserContext::Create(partition, in_memory);
+  browser_context->InitPrefs();
   browser_context_map_[key] = browser_context->weak_factory_.GetWeakPtr();
   return browser_context;
 }
@@ -105,7 +106,9 @@ BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
   if (!in_memory_ && !partition.empty())
     path_ = path_.Append(FILE_PATH_LITERAL("Partitions"))
                  .Append(base::FilePath::FromUTF8Unsafe(MakePartitionName(partition)));
+}
 
+void BrowserContext::InitPrefs() {
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
   base::PrefServiceFactory prefs_factory;
   prefs_factory.SetUserPrefsFile(prefs_path,
