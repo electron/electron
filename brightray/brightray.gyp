@@ -153,7 +153,7 @@
                   '$(SDKROOT)/System/Library/Frameworks/CoreFoundation.framework',
                   '$(SDKROOT)/System/Library/Frameworks/IOKit.framework',
                   # content_browser.gypi:
-                  '$(SDKROOT)/usr/lib/libbsm.dylib',
+                  '-lbsm',
                   # bluetooth.gyp:
                   '$(SDKROOT)/System/Library/Frameworks/IOBluetooth.framework',
                 ],
