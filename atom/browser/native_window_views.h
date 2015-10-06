@@ -94,6 +94,8 @@ class NativeWindowViews : public NativeWindow,
 
   gfx::AcceleratedWidget GetAcceleratedWidget();
 
+  gfx::Size WindowSizeToFramelessSize(const gfx::Size& size);
+
   views::Widget* widget() const { return window_.get(); }
 
 #if defined(OS_WIN)
@@ -175,6 +177,12 @@ class NativeWindowViews : public NativeWindow,
   AtomDesktopWindowTreeHostWin* atom_desktop_window_tree_host_win_;
 
   ui::WindowShowState last_window_state_;
+
+  // There's an issue with restore on Windows, that sometimes causes the Window
+  // to receive the wrong size (#2498). To circumvent that, we keep tabs on the
+  // size of the window while in the normal state (not maximized, minimized or
+  // fullscreen), so we restore it correctly.
+  gfx::Size last_normal_size_;
 
   // In charge of running taskbar related APIs.
   TaskbarHost taskbar_host_;
