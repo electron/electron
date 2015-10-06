@@ -390,6 +390,7 @@ gfx::Size NativeWindowViews::GetContentSize() {
 void NativeWindowViews::SetContentSizeConstraints(
     const extensions::SizeConstraints& size_constraints) {
   NativeWindow::SetContentSizeConstraints(size_constraints);
+  window_->OnSizeConstraintsChanged();
 #if defined(USE_X11)
   if (resizable_)
     old_size_constraints_ = size_constraints;
