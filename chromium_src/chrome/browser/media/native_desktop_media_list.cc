@@ -358,10 +358,13 @@ void NativeDesktopMediaList::OnSourceThumbnail(
 }
 
 void NativeDesktopMediaList::OnRefreshFinished() {
-  observer_->OnRefreshFinished();
-  BrowserThread::PostDelayedTask(
-      BrowserThread::UI, FROM_HERE,
-      base::Bind(&NativeDesktopMediaList::Refresh,
-                 weak_factory_.GetWeakPtr()),
-      update_period_);
+  // Give a chance to the observer to stop the refresh work.
+  bool is_continue = observer_->OnRefreshFinished();
+  if (is_continue) {
+    BrowserThread::PostDelayedTask(
+        BrowserThread::UI, FROM_HERE,
+        base::Bind(&NativeDesktopMediaList::Refresh,
+                   weak_factory_.GetWeakPtr()),
+        update_period_);
+  }
 }

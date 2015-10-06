@@ -6,6 +6,7 @@
 
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/node_includes.h"
+#include "atom/common/native_mate_converters/gfx_converter.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/media/desktop_media_list.h"
 #include "native_mate/dictionary.h"
@@ -14,13 +15,30 @@
 #include "third_party/webrtc/modules/desktop_capture/screen_capturer.h"
 #include "third_party/webrtc/modules/desktop_capture/window_capturer.h"
 
+namespace mate {
+
+template<>
+struct Converter<DesktopMediaList::Source> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const DesktopMediaList::Source& source) {
+    mate::Dictionary dict(isolate, v8::Object::New(isolate));
+    content::DesktopMediaID id = source.id;
+    dict.Set("name", base::UTF16ToUTF8(source.name));
+    dict.Set("id", id.ToString());
+    dict.Set(
+        "thumbnail",
+        atom::api::NativeImage::Create(isolate, gfx::Image(source.thumbnail)));
+    return ConvertToV8(isolate, dict);
+  }
+};
+
+}  // namespace mate
+
 namespace atom {
 
 namespace api {
 
 namespace {
-// Refresh every second.
-const int kUpdatePeriod = 1000;
 const int kThumbnailWidth = 150;
 const int kThumbnailHeight = 150;
 }  // namespace
@@ -31,7 +49,7 @@ DesktopCapturer::DesktopCapturer() {
 DesktopCapturer::~DesktopCapturer() {
 }
 
-void DesktopCapturer::StartUpdating(const mate::Dictionary& args) {
+void DesktopCapturer::StartHandling(const mate::Dictionary& args) {
   std::vector<std::string> sources;
   if (!args.Get("types", &sources))
     return;
@@ -68,64 +86,41 @@ void DesktopCapturer::StartUpdating(const mate::Dictionary& args) {
   media_list_.reset(new NativeDesktopMediaList(screen_capturer.Pass(),
       window_capturer.Pass()));
 
-  int update_period = kUpdatePeriod;
-  int thumbnail_width = kThumbnailWidth, thumbnail_height = kThumbnailHeight;
-  args.Get("updatePeriod", &update_period);
-  args.Get("thumbnailWidth", &thumbnail_width);
-  args.Get("thumbnailHeight", &thumbnail_height);
+  gfx::Size thumbnail_size(kThumbnailWidth, kThumbnailHeight);
+  args.Get("thumbnailSize", &thumbnail_size);
 
-  media_list_->SetUpdatePeriod(base::TimeDelta::FromMilliseconds(
-        update_period));
-  media_list_->SetThumbnailSize(gfx::Size(thumbnail_width, thumbnail_height));
+  media_list_->SetThumbnailSize(thumbnail_size);
   media_list_->StartUpdating(this);
 }
 
-void DesktopCapturer::StopUpdating() {
-  media_list_.reset();
-}
-
 void DesktopCapturer::OnSourceAdded(int index) {
-  EmitDesktopCapturerEvent("source-added", index, false);
 }
 
 void DesktopCapturer::OnSourceRemoved(int index) {
-  EmitDesktopCapturerEvent("source-removed", index, false);
 }
 
-// Ignore this event.
 void DesktopCapturer::OnSourceMoved(int old_index, int new_index) {
 }
 
 void DesktopCapturer::OnSourceNameChanged(int index) {
-  EmitDesktopCapturerEvent("source-removed", index, false);
 }
 
 void DesktopCapturer::OnSourceThumbnailChanged(int index) {
-  EmitDesktopCapturerEvent("source-thumbnail-changed", index, true);
 }
 
-void DesktopCapturer::OnRefreshFinished() {
-  Emit("refresh-finished");
-}
-
-void DesktopCapturer::EmitDesktopCapturerEvent(
-    const std::string& event_name, int index, bool with_thumbnail) {
-  const DesktopMediaList::Source& source = media_list_->GetSource(index);
-  content::DesktopMediaID id = source.id;
-  if (!with_thumbnail)
-    Emit(event_name, id.ToString(), base::UTF16ToUTF8(source.name));
-  else {
-    Emit(event_name, id.ToString(), base::UTF16ToUTF8(source.name),
-         atom::api::NativeImage::Create(isolate(),
-                                        gfx::Image(source.thumbnail)));
-  }
+bool DesktopCapturer::OnRefreshFinished() {
+  std::vector<DesktopMediaList::Source> sources;
+  for (int i = 0; i < media_list_->GetSourceCount(); ++i)
+    sources.push_back(media_list_->GetSource(i));
+  media_list_.reset();
+  Emit("refresh-finished", sources);
+  return false;
 }
 
 mate::ObjectTemplateBuilder DesktopCapturer::GetObjectTemplateBuilder(
       v8::Isolate* isolate) {
   return mate::ObjectTemplateBuilder(isolate)
-      .SetMethod("startUpdating", &DesktopCapturer::StartUpdating)
-      .SetMethod("stopUpdating", &DesktopCapturer::StopUpdating);
+      .SetMethod("startHandling", &DesktopCapturer::StartHandling);
 }
 
 // static

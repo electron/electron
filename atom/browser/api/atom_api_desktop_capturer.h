@@ -27,9 +27,7 @@ class DesktopCapturer: public mate::EventEmitter,
  public:
   static mate::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
 
-  void StartUpdating(const mate::Dictionary& args);
-
-  void StopUpdating();
+  void StartHandling(const mate::Dictionary& args);
 
  protected:
   DesktopCapturer();
@@ -41,11 +39,9 @@ class DesktopCapturer: public mate::EventEmitter,
   void OnSourceMoved(int old_index, int new_index) override;
   void OnSourceNameChanged(int index) override;
   void OnSourceThumbnailChanged(int index) override;
-  void OnRefreshFinished() override;
+  bool OnRefreshFinished() override;
 
  private:
-  void EmitDesktopCapturerEvent(
-      const std::string& event_name, int index, bool with_thumbnail);
   // mate::Wrappable:
   mate::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

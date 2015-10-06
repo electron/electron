@@ -1,38 +1,38 @@
 ipc = require 'ipc'
-BrowserWindow = require 'browser-window'
 
 # The browser module manages all desktop-capturer moduels in renderer process.
 desktopCapturer = process.atomBinding('desktop_capturer').desktopCapturer
 
-getWebContentsFromId = (id) ->
-  windows = BrowserWindow.getAllWindows()
-  return window.webContents for window in windows when window.webContents?.getId() == id
+isOptionsEqual = (opt1, opt2) ->
+  return JSON.stringify opt1 is JSON.stringify opt2
 
-# The set for tracking id of webContents.
-webContentsIds = new Set
+# A queue for holding all requests from renderer process.
+requestsQueue = []
 
-stopDesktopCapture = (id) ->
-  webContentsIds.delete id
-  # Stop updating if no renderer process listens the desktop capturer.
-  if webContentsIds.size is 0
-    desktopCapturer.stopUpdating()
+ipc.on 'ATOM_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', (event, options) ->
+  request = { options: options, webContents: event.sender }
+  desktopCapturer.startHandling options if requestsQueue.length is 0
+  requestsQueue.push request
+  # If the WebContents is destroyed before receiving result, just remove the
+  # reference from requestsQueue to make the module not send the result to it.
+  event.sender.once 'destroyed', () ->
+    request.webContents = null
 
-# Handle `desktopCapturer.startUpdating` API.
-ipc.on 'ATOM_BROWSER_DESKTOP_CAPTURER_START_UPDATING', (event, args) ->
-  id = event.sender.getId()
-  if not webContentsIds.has id
-    # Stop sending desktop capturer events to the destroyed webContents.
-    event.sender.on 'destroyed', ()->
-      stopDesktopCapture id
-  # Start updating the desktopCapturer if it doesn't.
-  if webContentsIds.size is 0
-    desktopCapturer.startUpdating args
-  webContentsIds.add id
+desktopCapturer.emit = (event_name, event, sources) ->
+  # Receiving sources result from main process, now send them back to renderer.
+  handledRequest = requestsQueue.shift 0
+  result = ({ id: source.id, name: source.name, thumbnail: source.thumbnail.toDataUrl() } for source in sources)
+  handledRequest.webContents?.send 'ATOM_REDNERER_DESKTOP_CAPTURER_RESULT', result
 
-# Handle `desktopCapturer.stopUpdating` API.
-ipc.on 'ATOM_BROWSER_DESKTOP_CAPTURER_STOP_UPDATING', (event) ->
-  stopDesktopCapture event.sender.getId()
-
-desktopCapturer.emit = (event_name, event, desktopId, name, thumbnail) ->
-  webContentsIds.forEach (id) ->
-    getWebContentsFromId(id).send 'ATOM_RENDERER_DESKTOP_CAPTURER', event_name, desktopId, name, thumbnail?.toDataUrl()
+  # Check the queue to see whether there is other same request. If has, handle
+  # it for reducing redunplicated `desktopCaptuer.startHandling` calls.
+  unhandledRequestsQueue = []
+  for request in requestsQueue
+    if isOptionsEqual handledRequest.options, request.options
+      request.webContents?.send 'ATOM_REDNERER_DESKTOP_CAPTURER_RESULT', result
+    else
+      unhandledRequestsQueue.push request
+  requestsQueue = unhandledRequestsQueue
+  # If the requestsQueue is not empty, start a new request handling.
+  if requestsQueue.length > 0
+    desktopCapturer.startHandling requestsQueue[0].options
