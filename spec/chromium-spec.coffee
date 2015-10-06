@@ -56,6 +56,8 @@ describe 'chromium feature', ->
       assert.notEqual navigator.language, ''
 
   describe 'window.open', ->
+    @timeout 10000
+
     it 'returns a BrowserWindowProxy object', ->
       b = window.open 'about:blank', '', 'show=no'
       assert.equal b.closed, false
@@ -80,6 +82,8 @@ describe 'chromium feature', ->
       b = window.open "file://#{fixtures}/pages/window-open-size.html", '', 'show=no'
 
   describe 'window.opener', ->
+    @timeout 10000
+
     url = "file://#{fixtures}/pages/window-opener.html"
     w = null
 
