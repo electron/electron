@@ -112,10 +112,7 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   int x = -1, y = -1;
   bool center;
   if (options.Get(switches::kX, &x) && options.Get(switches::kY, &y)) {
-    int width = -1, height = -1;
-    options.Get(switches::kWidth, &width);
-    options.Get(switches::kHeight, &height);
-    SetBounds(gfx::Rect(x, y, width, height));
+    SetPosition(gfx::Point(x, y));
   } else if (options.Get(switches::kCenter, &center) && center) {
     Center();
   }
