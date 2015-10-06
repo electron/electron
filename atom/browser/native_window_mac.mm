@@ -350,6 +350,8 @@ NativeWindowMac::NativeWindowMac(
 
   bool useStandardWindow = true;
   options.Get(switches::kStandardWindow, &useStandardWindow);
+  bool resizable = true;
+  options.Get(switches::kResizable, &resizable);
 
   // New title bar styles are available in Yosemite or newer
   std::string titleBarStyle;
@@ -357,9 +359,12 @@ NativeWindowMac::NativeWindowMac(
     options.Get(switches::kTitleBarStyle, &titleBarStyle);
 
   NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask |
-                         NSMiniaturizableWindowMask | NSResizableWindowMask;
+                         NSMiniaturizableWindowMask;
   if (!useStandardWindow || transparent() || !has_frame()) {
     styleMask |= NSTexturedBackgroundWindowMask;
+  }
+  if (resizable) {
+    styleMask |= NSResizableWindowMask;
   }
   if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
     styleMask |= NSFullSizeContentViewWindowMask;
@@ -549,56 +554,30 @@ gfx::Rect NativeWindowMac::GetBounds() {
   return bounds;
 }
 
-void NativeWindowMac::SetContentSize(const gfx::Size& size) {
-  if (!has_frame()) {
-    SetSize(size);
-    return;
+void NativeWindowMac::SetContentSizeConstraints(
+    const extensions::SizeConstraints& size_constraints) {
+  auto convertSize = [this](const gfx::Size& size) {
+    // Our frameless window still has titlebar attached, so setting contentSize
+    // will result in actual content size being larger.
+    if (!has_frame()) {
+      NSRect frame = NSMakeRect(0, 0, size.width(), size.height());
+      NSRect content = [window_ contentRectForFrameRect:frame];
+      return content.size;
+    } else {
+      return NSMakeSize(size.width(), size.height());
+    }
+  };
+
+  NSView* content = [window_ contentView];
+  if (size_constraints.HasMinimumSize()) {
+    NSSize min_size = convertSize(size_constraints.GetMinimumSize());
+    [window_ setContentMinSize:[content convertSize:min_size toView:nil]];
   }
-
-  NSRect frame_nsrect = [window_ frame];
-  NSSize frame = frame_nsrect.size;
-  NSSize content = [window_ contentRectForFrameRect:frame_nsrect].size;
-
-  int width = size.width() + frame.width - content.width;
-  int height = size.height() + frame.height - content.height;
-  frame_nsrect.origin.y -= height - frame_nsrect.size.height;
-  frame_nsrect.size.width = width;
-  frame_nsrect.size.height = height;
-  [window_ setFrame:frame_nsrect display:YES];
-}
-
-gfx::Size NativeWindowMac::GetContentSize() {
-  if (!has_frame())
-    return GetSize();
-
-  NSRect bounds = [[window_ contentView] bounds];
-  return gfx::Size(bounds.size.width, bounds.size.height);
-}
-
-void NativeWindowMac::SetMinimumSize(const gfx::Size& size) {
-  NSSize min_size = NSMakeSize(size.width(), size.height());
-  NSView* content = [window_ contentView];
-  [window_ setContentMinSize:[content convertSize:min_size toView:nil]];
-}
-
-gfx::Size NativeWindowMac::GetMinimumSize() {
-  NSView* content = [window_ contentView];
-  NSSize min_size = [content convertSize:[window_ contentMinSize]
-                                fromView:nil];
-  return gfx::Size(min_size.width, min_size.height);
-}
-
-void NativeWindowMac::SetMaximumSize(const gfx::Size& size) {
-  NSSize max_size = NSMakeSize(size.width(), size.height());
-  NSView* content = [window_ contentView];
-  [window_ setContentMaxSize:[content convertSize:max_size toView:nil]];
-}
-
-gfx::Size NativeWindowMac::GetMaximumSize() {
-  NSView* content = [window_ contentView];
-  NSSize max_size = [content convertSize:[window_ contentMaxSize]
-                                fromView:nil];
-  return gfx::Size(max_size.width, max_size.height);
+  if (size_constraints.HasMaximumSize()) {
+    NSSize max_size = convertSize(size_constraints.GetMaximumSize());
+    [window_ setContentMaxSize:[content convertSize:max_size toView:nil]];
+  }
+  NativeWindow::SetContentSizeConstraints(size_constraints);
 }
 
 void NativeWindowMac::SetResizable(bool resizable) {
@@ -819,6 +798,24 @@ void NativeWindowMac::HandleKeyboardEvent(
         (event.os_event.keyCode == 50  /* ~ key */))
       Focus(true);
   }
+}
+
+gfx::Size NativeWindowMac::ContentSizeToWindowSize(const gfx::Size& size) {
+  if (!has_frame())
+    return size;
+
+  NSRect content = NSMakeRect(0, 0, size.width(), size.height());
+  NSRect frame = [window_ frameRectForContentRect:content];
+  return gfx::Size(frame.size);
+}
+
+gfx::Size NativeWindowMac::WindowSizeToContentSize(const gfx::Size& size) {
+  if (!has_frame())
+    return size;
+
+  NSRect frame = NSMakeRect(0, 0, size.width(), size.height());
+  NSRect content = [window_ contentRectForFrameRect:frame];
+  return gfx::Size(content.size);
 }
 
 void NativeWindowMac::InstallView() {
