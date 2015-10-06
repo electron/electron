@@ -350,6 +350,8 @@ NativeWindowMac::NativeWindowMac(
 
   bool useStandardWindow = true;
   options.Get(switches::kStandardWindow, &useStandardWindow);
+  bool resizable = true;
+  options.Get(switches::kResizable, &resizable);
 
   // New title bar styles are available in Yosemite or newer
   std::string titleBarStyle;
@@ -357,9 +359,12 @@ NativeWindowMac::NativeWindowMac(
     options.Get(switches::kTitleBarStyle, &titleBarStyle);
 
   NSUInteger styleMask = NSTitledWindowMask | NSClosableWindowMask |
-                         NSMiniaturizableWindowMask | NSResizableWindowMask;
+                         NSMiniaturizableWindowMask;
   if (!useStandardWindow || transparent() || !has_frame()) {
     styleMask |= NSTexturedBackgroundWindowMask;
+  }
+  if (resizable) {
+    styleMask |= NSResizableWindowMask;
   }
   if ((titleBarStyle == "hidden") || (titleBarStyle == "hidden-inset")) {
     styleMask |= NSFullSizeContentViewWindowMask;

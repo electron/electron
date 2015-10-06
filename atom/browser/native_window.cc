@@ -134,10 +134,12 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   } else {
     SetSizeConstraints(size_constraints);
   }
+#if defined(OS_WIN) || defined(USE_X11)
   bool resizable;
   if (options.Get(switches::kResizable, &resizable)) {
     SetResizable(resizable);
   }
+#endif
   bool top;
   if (options.Get(switches::kAlwaysOnTop, &top) && top) {
     SetAlwaysOnTop(true);
