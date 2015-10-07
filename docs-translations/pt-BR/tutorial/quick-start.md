@@ -185,7 +185,7 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 `Electron.app` aqui é uma parte do pacote de lançamento do Electron, você pode baixa-lo
 [aqui](https://github.com/atom/electron/releases).
 
-### Executar como umas distribuição
+### Executar como uma distribuição
 
 Depois de terminar seu app, você pode criar uma distribuição seguindo o guia 
 [Application Distribution](./application-distribution.md) e então executar o app
