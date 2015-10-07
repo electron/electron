@@ -1,7 +1,7 @@
 # Introdução
 
 Electron permite criar aplicações desktop com puro JavaScript através de
-um runtime APIs ricas e nativas. Você pode ver isso como uma variação do
+um runtime com APIs ricas e nativas. Você pode ver isso como uma variação do
 runtime do io.js que é focado em aplicações desktop em vez de web servers.
 
 Isso não significa que o Electron é uma ligação em JavaScript para blibliotécas
@@ -38,13 +38,13 @@ correspondentes. Cada processo renderizador é isolado e toma conta de sua
 respectiva página web.
 
 Nas páginas web, chamar APIs nativas relacionadas à GUI não é permitido porque
-gerênciar recursos de GUI em páginas web é muito perigoso e o fazamento de recursos
-se torna fácil. Se você quer realizar operações com GUI em páginas web, o processo
+gerênciar recursos de GUI em páginas web é muito perigoso e torna fácil o vazamento de 
+recursos. Se você quer realizar operações com GUI em páginas web, o processo
 renderizador da página web deve se comunicar com o processo principal para requisitar
 que o processo principal realize estas operações.
 
 No Electron, nós fornecemos o módulo [ipc](../../../docs/api/ipc-renderer.md) para
-comunicação entre o processo principal e o processo renderizador. Isso também um
+comunicação entre o processo principal e o processo renderizador. Que é também um
 módulo [remoto](../../../docs/api/remote.md) para comunicação RPC.
 
 ## Crie seu Primeiro App Electron
@@ -61,7 +61,7 @@ your-app/
 O formato de `package.json` é exatamente o mesmo que os dos módulos do Node, e
 e o script especificado pelo campo `main` é o script de inicialização do seu app,
 que irá executar o processo principal. Um exemplo do seu `package.json` deve parecer
-como isso:
+com isso:
 
 ```json
 {
