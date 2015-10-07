@@ -20,6 +20,7 @@
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/node_includes.h"
+#include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
@@ -27,6 +28,7 @@
 #include "brightray/browser/brightray_paths.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
+#include "content/public/common/content_switches.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -301,6 +303,16 @@ namespace {
 
 void AppendSwitch(const std::string& switch_string, mate::Arguments* args) {
   auto command_line = base::CommandLine::ForCurrentProcess();
+
+  if (switch_string == atom::switches::kPpapiFlashPath ||
+      switch_string == atom::switches::kClientCertificate ||
+      switch_string == switches::kLogNetLog) {
+    base::FilePath path;
+    args->GetNext(&path);
+    command_line->AppendSwitchPath(switch_string, path);
+    return;
+  }
+
   std::string value;
   if (args->GetNext(&value))
     command_line->AppendSwitchASCII(switch_string, value);
