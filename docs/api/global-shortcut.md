@@ -62,4 +62,4 @@ Unregisters the global shortcut of `accelerator`.
 
 ### `globalShortcut.unregisterAll()`
 
-Unregisters all the global shortcuts.
+Unregisters all of the global shortcuts.
