@@ -67,7 +67,7 @@ ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_METHOD', (event, guestId, method,
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE', (event, guestId, message, targetOrigin) ->
   guestContents = BrowserWindow.fromId(guestId)?.webContents
   if guestContents?.getUrl().indexOf(targetOrigin) is 0 or targetOrigin is '*'
-    guestContents.send 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', message, targetOrigin
+    guestContents.send 'ATOM_SHELL_GUEST_WINDOW_POSTMESSAGE', guestId, message, targetOrigin
 
 ipc.on 'ATOM_SHELL_GUEST_WINDOW_MANAGER_WINDOW_OPENER_POSTMESSAGE', (event, guestId, message, targetOrigin, sourceOrigin) ->
   embedder = v8Util.getHiddenValue event.sender, 'embedder'
