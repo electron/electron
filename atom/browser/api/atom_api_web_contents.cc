@@ -143,7 +143,6 @@ struct Converter<net::HttpResponseHeaders*> {
       std::string value;
       while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
         key = base::StringToLowerASCII(key);
-        value = base::StringToLowerASCII(value);
         if (response_headers.HasKey(key)) {
           base::ListValue* values = nullptr;
           if (response_headers.GetList(key, &values))
