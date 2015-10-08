@@ -123,17 +123,17 @@ app.on('window-all-closed', function() {
 
 ### 事件： 'select-certificate'
 
-Emitted when a client certificate is requested.
+当一个客户端认证被请求的时候被触发。
 
 返回：
 
 * `event` 事件
-* `webContents` [WebContents](browser-window.md#class-webcontents)
-* `url` String
-* `certificateList` [Objects]
-  * `data` PEM encoded data
-  * `issuerName` Issuer's Common Name
-* `callback` Function
+* `webContents` [web组件](browser-window.md#class-webcontents)
+* `url` 字符串
+* `certificateList` 对象
+  * `data` PEM 编码数据
+  * `issuerName` 发行者的公有名称
+* `callback` 函数
 
 ```javascript
 app.on('select-certificate', function(event, host, url, list, callback) {
@@ -143,116 +143,103 @@ app.on('select-certificate', function(event, host, url, list, callback) {
 ```
 
 The `url` corresponds to the navigation entry requesting the client certificate
-and `callback` needs to be called with an entry filtered from the list. Using
-`event.preventDefault()` prevents the application from using the first
+and `callback` needs to be called with an entry filtered from the list. 
+Using `event.preventDefault()` prevents the application from using the first
 certificate from the store.
 
 ### 事件： 'gpu-process-crashed'
 
-Emitted when the gpu process crashes.
+当GPU进程崩溃时触发。
 
-## Methods
+## 方法
 
-The `app` object has the following methods:
+`app` 对象拥有以下的方法：
 
-**Note:** Some methods are only available on specific operating systems and are labeled as such.
+**提示:** 有的方法只能用于特定的操作系统。
 
 ### `app.quit()`
 
-Try to close all windows. The `before-quit` event will emitted first. If all
-windows are successfully closed, the `will-quit` event will be emitted and by
-default the application will terminate.
+试图关掉所有的窗口。`before-quit` 事件将会被最先触发。如果所有的窗口都被成功关闭了，
+`will-quit` 事件将会被触发，默认下应用将会被关闭。
 
-This method guarantees that all `beforeunload` and `unload` event handlers are
-correctly executed. It is possible that a window cancels the quitting by
-returning `false` in the `beforeunload` event handler.
+这个方法保证了所有的 `beforeunload` 和 `unload` 事件处理器被正确执行。会存在一个窗口被 `beforeunload` 事件处理器返回 `false` 取消退出的可能性。
 
 ### `app.getAppPath()`
 
-Returns the current application directory.
+返回当前应用所在的文件路径。
 
 ### `app.getPath(name)`
 
-* `name` String
+* `name` 字符串
 
-Retrieves a path to a special directory or file associated with `name`. On
-failure an `Error` is thrown.
+返回一个与 `name` 参数相关的特殊文件夹或文件路径。当失败时抛出一个 `Error` 。
 
-You can request the following paths by the name:
+你可以通过名称请求以下的路径：
 
-* `home` User's home directory.
-* `appData` Per-user application data directory, which by default points to:
-  * `%APPDATA%` on Windows
-  * `$XDG_CONFIG_HOME` or `~/.config` on Linux
-  * `~/Library/Application Support` on OS X
-* `userData` The directory for storing your app's configuration files, which by
-  default it is the `appData` directory appended with your app's name.
-* `cache` Per-user application cache directory, which by default points to:
-  * `%APPDATA%` on Windows (which doesn't have a universal cache location)
-  * `$XDG_CACHE_HOME` or `~/.cache` on Linux
-  * `~/Library/Caches` on OS X
-* `userCache` The directory for placing your app's caches, by default it is the
- `cache` directory appended with your app's name.
-* `temp` Temporary directory.
-* `userDesktop` The current user's Desktop directory.
-* `exe` The current executable file.
-* `module` The `libchromiumcontent` library.
+* `home` 用户的 home 文件夹。
+* `appData` 所有用户的应用数据文件夹，默认对应：
+  * `%APPDATA%` Windows 中
+  * `$XDG_CONFIG_HOME` or `~/.config` Linux 中
+  * `~/Library/Application Support` OS X 中
+* `userData` 储存你应用程序设置文件的文件夹，默认是 `appData` 文件夹附加应用的名称。
+* `cache` 所有用户应用程序缓存的文件夹，默认对应：
+  * `%APPDATA%` Windows 中 (没有一个通用的缓存位置)
+  * `$XDG_CACHE_HOME` 或 `~/.cache` Linux 中
+  * `~/Library/Caches` OS X 中
+* `userCache` 用于存放应用程序缓存的文件夹，默认是 `cache` 文件夹附加应用的名称。
+* `temp` 临时文件夹。
+* `userDesktop` 当前用户的桌面文件夹。
+* `exe` 当前的可执行文件。
+* `module` `libchromiumcontent` 库。
 
 ### `app.setPath(name, path)`
 
-* `name` String
-* `path` String
+* `name` 字符串
+* `path` 字符串
 
-Overrides the `path` to a special directory or file associated with `name`. If
-the path specifies a directory that does not exist, the directory will be
-created by this method. On failure an `Error` is thrown.
+重写 `path` 参数到一个特别的文件夹或者是一个和 `name` 参数有关系的文件。
+如果这个路径指向的文件夹不存在，这个文件夹将会被这个方法创建。
+如果错误则抛出 `Error` 。
 
-You can only override paths of a `name` defined in `app.getPath`.
+你只可以指向 `app.getPath` 中定义过 `name` 的路径。You can only override paths of a `name` defined in `app.getPath`.
 
-By default, web pages's cookies and caches will be stored under the `userData`
-directory. If you want to change this location, you have to override the
-`userData` path before the `ready` event of the `app` module is emitted.
+默认情况下，网页的 cookie 和缓存都会储存在 `userData` 文件夹。
+如果你想要改变这个位置，你需要在 `app` 模块中的 `ready` 事件被触发之前重写 `userData` 的路径。
 
 ### `app.getVersion()`
 
-Returns the version of the loaded application. If no version is found in the
-application's `package.json` file, the version of the current bundle or
-executable is returned.
+返回加载应用程序的版本。如果应用程序的 `package.json` 文件中没有写版本号，
+将会返回当前包或者可执行文件的版本。
 
 ### `app.getName()`
 
-Returns the current application's name, which is the name in the application's
-`package.json` file.
+返回当前应用程序的 `package.json` 文件中的名称。
 
-Usually the `name` field of `package.json` is a short lowercased name, according
-to the npm modules spec. You should usually also specify a `productName`
-field, which is your application's full capitalized name, and which will be
-preferred over `name` by Electron.
+通常 `name` 字段是一个短的小写字符串，其命名规则按照 npm 中的模块命名规则。你应该单独列举一个
+`productName` 字段，用于表示你的应用程序的完整名称，这个名称将会被 Electron 优先采用。
 
 ### `app.getLocale()`
 
-Returns the current application locale.
+返回当前应用程序的位置。
 
 ### `app.resolveProxy(url, callback)`
 
 * `url` URL
-* `callback` Function
+* `callback` 函数
 
-Resolves the proxy information for `url`. The `callback` will be called with
-`callback(proxy)` when the request is performed.
+为 `url` 解析代理信息。 `callback`  在请求被执行之后将会被 `callback(proxy)` 调用。
 
 ### `app.addRecentDocument(path)`
 
-* `path` String
+* `path` 字符串
 
-Adds `path` to the recent documents list.
+为最近访问的文档列表中添加 `path` 。
 
-This list is managed by the OS. On Windows you can visit the list from the task
-bar, and on OS X you can visit it from dock menu.
+这个列表由操作系统进行管理。在 Windows 中您可以通过任务条进行访问，在 OS X 中你可以通过dock 菜单进行访问。
 
 ### `app.clearRecentDocuments()`
 
-Clears the recent documents list.
+清除最近访问的文档列表。
 
 ### `app.setUserTasks(tasks)` _Windows_
 
