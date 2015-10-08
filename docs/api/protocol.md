@@ -140,7 +140,7 @@ which sends a file as a response.
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a `String` as a response.
 
-## `protocol.interceptBufferProtocol(scheme, handler[, completion])`
+### `protocol.interceptBufferProtocol(scheme, handler[, completion])`
 
 * `scheme` String
 * `handler` Function
@@ -149,7 +149,7 @@ which sends a `String` as a response.
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a `Buffer` as a response.
 
-## `protocol.interceptHttpProtocol(scheme, handler[, completion])`
+### `protocol.interceptHttpProtocol(scheme, handler[, completion])`
 
 * `scheme` String
 * `handler` Function
@@ -158,7 +158,7 @@ which sends a `Buffer` as a response.
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a new HTTP request as a response.
 
-## `protocol.uninterceptProtocol(scheme[, completion])`
+### `protocol.uninterceptProtocol(scheme[, completion])`
 
 * `scheme` String
 * `completion` Function

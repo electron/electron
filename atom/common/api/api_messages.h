@@ -30,6 +30,12 @@ IPC_SYNC_MESSAGE_ROUTED2_1(AtomViewHostMsg_Message_Sync,
                            base::ListValue /* arguments */,
                            base::string16 /* result (in JSON) */)
 
+IPC_MESSAGE_ROUTED1(AtomViewHostMsg_ZoomLevelChanged,
+                    double /* level */)
+
+IPC_MESSAGE_ROUTED1(AtomViewMsg_SetZoomLevel,
+                    double /* level */)
+
 IPC_MESSAGE_ROUTED2(AtomViewMsg_Message,
                     base::string16 /* channel */,
                     base::ListValue /* arguments */)

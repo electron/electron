@@ -99,7 +99,7 @@ void AtomContentClient::AddAdditionalSchemes(
 void AtomContentClient::AddPepperPlugins(
     std::vector<content::PepperPluginInfo>* plugins) {
   auto command_line = base::CommandLine::ForCurrentProcess();
-  auto flash_path = command_line->GetSwitchValueNative(
+  auto flash_path = command_line->GetSwitchValuePath(
       switches::kPpapiFlashPath);
   if (flash_path.empty())
     return;
@@ -108,7 +108,7 @@ void AtomContentClient::AddPepperPlugins(
       switches::kPpapiFlashVersion);
 
   plugins->push_back(
-      CreatePepperFlashInfo(base::FilePath(flash_path), flash_version));
+      CreatePepperFlashInfo(flash_path, flash_version));
 }
 
 }  // namespace atom

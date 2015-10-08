@@ -4,11 +4,13 @@
 
 #include "atom/renderer/api/atom_api_web_frame.h"
 
+#include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/renderer/api/atom_api_spell_check_client.h"
 #include "content/public/renderer/render_frame.h"
+#include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
@@ -34,6 +36,10 @@ void WebFrame::SetName(const std::string& name) {
 }
 
 double WebFrame::SetZoomLevel(double level) {
+  auto render_view = content::RenderView::FromWebView(web_frame_->view());
+  // Notify guests if any for zoom level change.
+  render_view->Send(
+      new AtomViewHostMsg_ZoomLevelChanged(MSG_ROUTING_NONE, level));
   return web_frame_->view()->setZoomLevel(level);
 }
 

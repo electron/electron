@@ -10,15 +10,15 @@
 
 ## Tutoriales
 
-* [Introducción](../../docs/tutorial/quick-start.md)
-* [Integración con el entorno de escritorio](../../docs/tutorial/desktop-environment-integration.md)
-* [Detección del evento en línea/fuera de línea](../../docs/tutorial/online-offline-events.md)
+* [Introducción](tutorial/quick-start.md)
+* [Integración con el entorno de escritorio](tutorial/desktop-environment-integration.md)
+* [Detección del evento en línea/fuera de línea](tutorial/online-offline-events.md)
 
 ## API
 
-* [Sinopsis](../../docs/api/synopsis.md)
-* [Proceso](../../docs/api/process.md)
-* [Parámetros CLI soportados (Chrome)](../../docs/api/chrome-command-line-switches.md)
+* [Sinopsis](api/synopsis.md)
+* [Proceso](api/process.md)
+* [Parámetros CLI soportados (Chrome)](api/chrome-command-line-switches.md)
 
 Elementos DOM customizados:
 
