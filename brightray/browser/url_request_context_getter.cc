@@ -40,6 +40,7 @@
 #include "net/url_request/url_request_context_storage.h"
 #include "net/url_request/url_request_intercepting_job_factory.h"
 #include "net/url_request/url_request_job_factory_impl.h"
+#include "ui/base/l10n/l10n_util.h"
 #include "url/url_constants.h"
 #include "storage/browser/quota/special_storage_policy.h"
 
@@ -191,8 +192,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     storage_->set_channel_id_service(make_scoped_ptr(
         new net::ChannelIDService(new net::DefaultChannelIDStore(NULL),
                                   base::WorkerPool::GetTaskRunner(true))));
+
+    std::string accept_lang = l10n_util::GetApplicationLocale("");
     storage_->set_http_user_agent_settings(new net::StaticHttpUserAgentSettings(
-        "en-us,en", delegate_->GetUserAgent()));
+        net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang), delegate_->GetUserAgent()));
 
     scoped_ptr<net::HostResolver> host_resolver(net::HostResolver::CreateDefaultResolver(nullptr));
 
