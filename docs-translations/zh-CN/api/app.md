@@ -259,61 +259,57 @@ certificate from the store.
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 
+通过可选的参数 `value` 给 Chromium 命令行中添加一个开关。
 Append a switch (with optional `value`) to Chromium's command line.
 
-**Note:** This will not affect `process.argv`, and is mainly used by developers
-to control some low-level Chromium behaviors.
+**贴士:** 这不会影响 `process.argv` ，这个方法主要被开发者用于控制一些低层级的 Chromium 行为。
 
 ### `app.commandLine.appendArgument(value)`
 
-Append an argument to Chromium's command line. The argument will be quoted
-correctly.
+给 Chromium 命令行中加入一个参数。这个参数是当前正在被引用的。
 
-**Note:** This will not affect `process.argv`.
+**贴士:** 这不会影响 `process.argv`。
 
 ### `app.dock.bounce([type])` _OS X_
 
-* `type` String (optional) - Can be `critical` or `informational`. The default is
- `informational`
+* `type` 字符串 (可选的) - 可以是 `critical` 或 `informational`。默认下是 `informational`
 
-When `critical` is passed, the dock icon will bounce until either the
-application becomes active or the request is canceled.
+当输入 `critical` 时，dock 中的 icon 将会开始弹跳直到应用被激活或者这个请求被取消。
 
-When `informational` is passed, the dock icon will bounce for one second.
-However, the request remains active until either the application becomes active
-or the request is canceled.
+当输入 `informational` 时，dock 中的 icon 只会弹跳一秒钟。
+然而，这个请求仍然会激活，直到应用被激活或者请求被取消。
 
-Returns an ID representing the request.
+返回一个表示这个请求的 ID。
 
 ### `app.dock.cancelBounce(id)` _OS X_
 
-* `id` Integer
+* `id` 整数
 
-Cancel the bounce of `id`.
+取消这个 `id` 对应的请求。
 
 ### `app.dock.setBadge(text)` _OS X_
 
-* `text` String
+* `text` 字符串
 
-Sets the string to be displayed in the dock’s badging area.
+设置 dock 中显示的字符。
 
 ### `app.dock.getBadge()` _OS X_
 
-Returns the badge string of the dock.
+返回 dock 中显示的字符。
 
 ### `app.dock.hide()` _OS X_
 
-Hides the dock icon.
+隐藏 dock 中的 icon。
 
 ### `app.dock.show()` _OS X_
 
-Shows the dock icon.
+显示 dock 中的 icon。
 
 ### `app.dock.setMenu(menu)` _OS X_
 
-* `menu` Menu
+* `menu` 菜单
 
-Sets the application's [dock menu][dock-menu].
+设置应用的 [dock 菜单][dock-menu].
 
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
 [tasks]:http://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
