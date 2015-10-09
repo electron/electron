@@ -243,25 +243,19 @@ certificate from the store.
 
 ### `app.setUserTasks(tasks)` _Windows_
 
-* `tasks` Array - Array of `Task` objects
+* `tasks` 由 `Task` 对象构成的数组
 
-Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
+将 `tasks` 添加到 Windows 中 JumpList 功能的 [Tasks][tasks] 分类中。
 
-`tasks` is an array of `Task` objects in following format:
+`tasks` 中的 `Task` 对象格式如下：
 
-`Task` Object
-* `program` String - Path of the program to execute, usually you should
-  specify `process.execPath` which opens the current program.
-* `arguments` String - The command line arguments when `program` is
-  executed.
-* `title` String - The string to be displayed in a JumpList.
-* `description` String - Description of this task.
-* `iconPath` String - The absolute path to an icon to be displayed in a
-  JumpList, which can be an arbitrary resource file that contains an icon. You
-  can usually specify `process.execPath` to show the icon of the program.
-* `iconIndex` Integer - The icon index in the icon file. If an icon file
-  consists of two or more icons, set this value to identify the icon. If an
-  icon file consists of one icon, this value is 0.
+`Task` 对象
+* `program` 字符串 - 执行程序的路径，通常你应该说明当前程序的路径为 `process.execPath` 字段。
+* `arguments` 字符串 - 当 `program` 执行时的命令行参数。
+* `title` 字符串 - JumpList 中显示的标题。
+* `description` 字符串 - 对这个任务的描述。
+* `iconPath` 字符串 - JumpList 中显示的 icon 的绝对路径，可以是一个任意包含一个icon的资源文件。你通常可以通过指明 `process.execPath` 来显示程序中的icon。
+* `iconIndex` 整数 - icon文件中的icon目录。如果一个icon文件包括了两个或多个icon，就需要设置这个值以确定icon。如果一个文件仅包含一个icon，那么这个值为0。
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 
