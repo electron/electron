@@ -301,6 +301,12 @@
             'vendor/crashpad/client/client.gyp:crashpad_client',
             'vendor/crashpad/handler/handler.gyp:crashpad_handler',
           ],
+          'link_settings': {
+            # Do not link with QTKit for mas build.
+            'libraries': [
+              '$(SDKROOT)/System/Library/Frameworks/QTKit.framework',
+            ],
+          },
         }],  # OS=="mac" and mas_build==0
         ['OS=="mac" and mas_build==1', {
           'defines': [
