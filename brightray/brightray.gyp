@@ -142,7 +142,6 @@
                   '$(SDKROOT)/System/Library/Frameworks/CoreMIDI.framework',
                   '$(SDKROOT)/System/Library/Frameworks/CoreVideo.framework',
                   '$(SDKROOT)/System/Library/Frameworks/OpenGL.framework',
-                  '$(SDKROOT)/System/Library/Frameworks/QTKit.framework',
                   # surface.gyp:
                   '$(SDKROOT)/System/Library/Frameworks/IOSurface.framework',
                   # content_common.gypi:
