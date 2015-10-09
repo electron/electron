@@ -52,12 +52,15 @@ void AtomBrowserMainParts::RegisterDestructionCallback(
   destruction_callbacks_.push_back(callback);
 }
 
+void AtomBrowserMainParts::PreEarlyInitialization() {
+  brightray::BrowserMainParts::PreEarlyInitialization();
+#if defined(OS_POSIX)
+  HandleSIGCHLD();
+#endif
+}
+
 void AtomBrowserMainParts::PostEarlyInitialization() {
   brightray::BrowserMainParts::PostEarlyInitialization();
-
-#if defined(USE_X11)
-  SetDPIFromGSettings();
-#endif
 
   {
     // Temporary set the bridge_task_runner_ as current thread's task runner,
@@ -113,6 +116,13 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   // The corresponding call in OS X is in AtomApplicationDelegate.
   Browser::Get()->WillFinishLaunching();
   Browser::Get()->DidFinishLaunching();
+#endif
+}
+
+void AtomBrowserMainParts::PostMainMessageLoopStart() {
+  brightray::BrowserMainParts::PostMainMessageLoopStart();
+#if defined(OS_POSIX)
+  HandleShutdownSignals();
 #endif
 }
 
