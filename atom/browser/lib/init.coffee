@@ -22,7 +22,7 @@ if process.platform is 'win32'
   # Redirect node's console to use our own implementations, since node can not
   # handle console output when running as GUI program.
   print = (args...) ->
-    process.log util.format(args...)
+    process.log util.format(args...) + "\n"
   console.log = console.error = console.warn = print
   process.stdout.write = process.stderr.write = print
 
