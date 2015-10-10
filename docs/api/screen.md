@@ -47,7 +47,7 @@ app.on('ready', function() {
   if (externalDisplay) {
     mainWindow = new BrowserWindow({
       x: externalDisplay.bounds.x + 50,
-      y: externalDisplay.bounds.y + 50,
+      y: externalDisplay.bounds.y + 50
     });
   }
 });
