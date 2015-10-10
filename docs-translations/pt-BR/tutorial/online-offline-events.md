@@ -1,7 +1,8 @@
 # Online/Offline Event Detection
 
-Online and offline event detection can be implemented in the renderer process
-using standard HTML5 APIs, as shown in the following example.
+Os eventos de detecão Online e Offile podem ser implementados no processo
+de renderização utilizando a API padrão do HTML, como é mostrado no exemplo
+a seguir.
 
 _main.js_
 
@@ -36,11 +37,11 @@ _online-status.html_
 </html>
 ```
 
-There may be instances where you want to respond to these events in the
-main process as well. The main process however does not have a
-`navigator` object and thus cannot detect these events directly. Using
-Electron's inter-process communication utilities, the events can be forwarded
-to the main process and handled as needed, as shown in the following example.
+Pode haver casos onde você também deseja responder a estes eventos no processo principal.
+Mas o processo principal não consegue detectar esses eventos diretamente, pois não possui
+um objeto `navigator`. Utilizando a ferramentas para comunicação entre processos, os eventos
+podem ser direcionados para o processo principal e manipulados quando necessário. Você
+pode ser isto no exemplo abaixo.
 
 _main.js_
 
