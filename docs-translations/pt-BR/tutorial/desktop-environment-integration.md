@@ -1,17 +1,17 @@
 # Integração com o ambiente desktop
 
-Diferentes sistemas operacionais proveem diferentes features para integrar
+Diferentes sistemas operacionais possuem diferentes formas de integrar
 aplicacões desktop em seus ambientes. Por exemplo, no Windows, as aplicações podem
 inserir atalhos no JumpList da barra de tarefas, no Mac, aplicações podem implementar um
 menu customizado na dock.
 
-Este guia explica como intregar suas aplicações no ambiente desktop com a API
+Este guia explica como integrar suas aplicações no ambiente desktop com a API
 do Electron.
 
 ## Documentos Recentes (Windows & OS X)
 
 O Windows e o OS X disponibilizam um acesso fácil para a lista de arquivos
-abertos recentemente pela aplicação através do JumpList ou Dock Menu, respectivamente.
+abertos recentemente pela aplicação através do JumpList ou Dock Menu respectivamente.
 
 __JumpList:__
 
@@ -38,7 +38,7 @@ app.clearRecentDocuments();
 
 ### Notas para Windows
 
-A fim de ser possível usar essas funcionalidades no Windows, sua aplicação deve
+A fim de ser possível usar estas funcionalidades no Windows, sua aplicação deve
 estar registrada como um handler daquele tipo de documento, caso contrário o
 arquivo não será exibido no JumpList mesmo depois de você ter adicionado isto.
 Você pode encontrar qualquer coisa sobre o registro da aplicacão em
@@ -57,9 +57,9 @@ do módulo `app` deve ser emitido.
 
 OS X permite que desenvolvedores especifiquem um menu customizado para a dock,
 que normalmente contém alguns atalhos para as funcionalidades mais utilizadas
-da sua aplicacão.
+da sua aplicação.
 
-__Dock menu of Terminal.app:__
+__Dock menu do Terminal.app:__
 
 <img src="https://cloud.githubusercontent.com/assets/639601/5069962/6032658a-6e9c-11e4-9953-aa84006bdfff.png" height="354" width="341" >
 
@@ -82,7 +82,7 @@ app.dock.setMenu(dockMenu);
 
 ## Tarefas do Usuário (Windows)
 
-No Windows você pode especificar ações customizadas na categoria `Tasks` do JumList,
+No Windows você pode especificar ações customizadas na categoria `Tasks` do JumpList,
 esse texto foi copiado do MSDN:
 
 > Applications define tasks based on both the program's features and the key
@@ -135,17 +135,17 @@ app.setUserTasks([]);
 ```
 
 As tarefas do usuário são exibidas mesmo depois da aplicação ser fechada,
-então o ícone e o caminho programa especificado pela tarefa deve existir
-até sua aplicação for fechada.
+então o ícone e o caminho do programa especificado pela tarefa deve existir
+até sua aplicação ser desinstalada.
 
 ## Miniaturas na Barra de Ferramentas
 
 No Windows você pode adicionar uma miniatura na barra de ferramentas com botões
-específicos e barra de tarefas com uma janela da aplicação. Isso provê ao usuário
+específicos para a janela e barra de tarefas para aplicação. Isso provê ao usuário
 uma forma de acessar um comando específico da janela sem ser necessário restaurar
-or ativar a janela.
+ou ativar a janela.
 
-Isso é ilustrado no MSDN:
+Isto é ilustrado no MSDN:
 
 > This toolbar is simply the familiar standard toolbar common control. It has a
 > maximum of seven buttons. Each button's ID, image, tooltip, and state are defined
@@ -161,7 +161,7 @@ __Miniaturas da barra de tarefas do Windows Media Player:__
 ![player](https://i-msdn.sec.s-msft.com/dynimg/IC420540.png)
 
 Você pode usar [BrowserWindow.setThumbarButtons][setthumbarbuttons] para criar
-miniaturas na barra de ferramentas para sua aplicacão.
+miniaturas na barra de ferramentas para sua aplicação.
 
 ```
 var BrowserWindow = require('browser-window');
@@ -204,8 +204,8 @@ __Launcher shortcuts do Audacious:__
 ## Barra de Progresso na Barra de Tarefas (Windows & Unity)
 
 No Windows o botão na barra de tarefas pode ser usado para exibir uma barra de progresso.
-Isto permite que a janela exiba informação sobre o progresso de algum progresso sem
-a necessidadedo usuário mudar de janela.
+Isto permite que a janela exiba informação sobre o progresso de algum processo sem
+a necessidade do usuário mudar de janela.
 
 A Unity DE também tem uma funcionalidade parecida que permite especificar uma barra
 de progresso no ícone do lançador.
@@ -219,7 +219,6 @@ __Barra de progresso no Unity launcher:__
 ![Unity Launcher](https://cloud.githubusercontent.com/assets/639601/5081747/4a0a589e-6f0f-11e4-803f-91594716a546.png)
 
 Para adicionar uma barra de progresso para uma janela, você pode ver a API:
-To set the progress bar for a Window, you can use the
 [BrowserWindow.setProgressBar][setprogressbar]:
 
 ```javascript
@@ -233,7 +232,7 @@ No OS X, uma janela pode possuir a representação de um arquivo na barra de tí
 para que o ícone do arquivo possa ser exibido na barra de título e uma janela seja
 exibida quando o usuário usar um Command-Click ou Control-Click no título.
 
-Você também pode inserir um estado de edicão na janela para que o ícone do arquivo
+Você também pode inserir um estado de edição na janela para que o ícone do arquivo
 possa indicar se o documento nesta janela foi modificado.
 
 __Menu popup da representação de arquivo:__
