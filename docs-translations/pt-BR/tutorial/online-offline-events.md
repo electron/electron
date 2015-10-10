@@ -41,7 +41,7 @@ Pode haver casos onde você também deseja responder a estes eventos no processo
 Mas o processo principal não consegue detectar esses eventos diretamente, pois não possui
 um objeto `navigator`. Utilizando a ferramentas para comunicação entre processos, os eventos
 podem ser direcionados para o processo principal e manipulados quando necessário. Você
-pode ser isto no exemplo abaixo.
+pode ver isto no exemplo abaixo.
 
 _main.js_
 

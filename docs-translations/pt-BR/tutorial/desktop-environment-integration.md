@@ -39,7 +39,7 @@ app.clearRecentDocuments();
 ### Notas para Windows
 
 A fim de ser possível usar estas funcionalidades no Windows, sua aplicação deve
-estar registrada como um handler daquele tipo de documento, caso contrário o
+estar registrada como um handler daquele tipo de documento, caso contrário, o
 arquivo não será exibido no JumpList mesmo depois de você ter adicionado isto.
 Você pode encontrar qualquer coisa sobre o registro da aplicacão em
 [Application Registration][app-registration].
@@ -51,7 +51,7 @@ linha de comando.
 ### Notas para OS X
 
 Quando um arquivo for requisitado pelo menu de documentos recentes, o evento `open-file`
-do módulo `app` deve ser emitido.
+do módulo `app` irá ser emitido.
 
 ## Dock Menu customizado (OS X)
 
@@ -82,7 +82,7 @@ app.dock.setMenu(dockMenu);
 
 ## Tarefas do Usuário (Windows)
 
-No Windows você pode especificar ações customizadas na categoria `Tasks` do JumpList,
+No Windows você pode especificar ações customizadas na categoria `Tarefas` do JumpList,
 esse texto foi copiado do MSDN:
 
 > Applications define tasks based on both the program's features and the key
@@ -142,7 +142,7 @@ até sua aplicação ser desinstalada.
 
 No Windows você pode adicionar uma miniatura na barra de ferramentas com botões
 específicos para a janela e barra de tarefas para aplicação. Isso provê ao usuário
-uma forma de acessar um comando específico da janela sem ser necessário restaurar
+uma forma de acessar um comando específico para janela sem ser necessário restaurar
 ou ativar a janela.
 
 Isto é ilustrado no MSDN:
@@ -229,8 +229,8 @@ window.setProgressBar(0.5);
 ## Representação do arquivo na janela (OS X)
 
 No OS X, uma janela pode possuir a representação de um arquivo na barra de título,
-para que o ícone do arquivo possa ser exibido na barra de título e uma janela seja
-exibida quando o usuário usar um Command-Click ou Control-Click no título.
+permitindo que ao usuário acionar um Command-Click ou Control-Click sobre o título da janela,
+uma pop-up de navegação entre arquivos é exibida.
 
 Você também pode inserir um estado de edição na janela para que o ícone do arquivo
 possa indicar se o documento nesta janela foi modificado.
