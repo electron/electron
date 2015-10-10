@@ -20,7 +20,7 @@ void ShowItemInFolder(const base::FilePath& full_path) {
   DCHECK([NSThread isMainThread]);
   NSString* path_string = base::SysUTF8ToNSString(full_path.value());
   if (!path_string || ![[NSWorkspace sharedWorkspace] selectFile:path_string
-                                        inFileViewerRootedAtPath:nil])
+                                        inFileViewerRootedAtPath:@""])
     LOG(WARNING) << "NSWorkspace failed to select file " << full_path.value();
 }
 

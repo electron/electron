@@ -18,6 +18,9 @@ for (var i = 0; i < argv.length; i++) {
   if (argv[i] == '--version' || argv[i] == '-v') {
     option.version = true;
     break;
+  } else if (argv[i].match(/^--app=/)) {
+    option.file = argv[i].split('=')[1];
+    break;
   } else if (argv[i] == '--help' || argv[i] == '-h') {
     option.help = true;
     break;
