@@ -14,6 +14,10 @@ $ cd /some-directory
 $ git clone --recursive https://github.com/facebook/react-devtools.git
 ```
 
+[`react-devtools/shells/chrome/Readme.md`](https://github.com/facebook/react-devtools/blob/master/shells/chrome/Readme.md)
+가이드를 통해 확장 기능을 개발하는 방법을 알아볼 수 있습니다.
+
+
 그리고 개발자 콘솔에서 다음 코드를 입력하면 확장 기능을 로드할 수 있습니다:
 
 ```javascript
