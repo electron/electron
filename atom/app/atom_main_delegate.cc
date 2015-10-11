@@ -48,8 +48,10 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 
   // Only enable logging when --enable-logging is specified.
   auto command_line = base::CommandLine::ForCurrentProcess();
-  if (!command_line->HasSwitch(switches::kEnableLogging))
+  if (!command_line->HasSwitch(switches::kEnableLogging)) {
     settings.logging_dest = logging::LOG_NONE;
+    logging::SetMinLogLevel(logging::LOG_NUM_SEVERITIES);
+  }
 
   logging::InitLogging(settings);
 
