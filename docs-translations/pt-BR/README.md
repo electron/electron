@@ -10,9 +10,9 @@
 
 ## Tutoriais
 
-* [Introdução](../../docs/tutorial/quick-start.md)
-* [A integração com o ambiente de desenvolvimento](../../docs/tutorial/desktop-environment-integration.md)
-* [Evento de detecção on-line/off-line](../../docs/tutorial/online-offline-events.md)
+* [Introdução](tutorial/quick-start.md)
+* [A integração com o ambiente de desenvolvimento](tutorial/desktop-environment-integration.md)
+* [Evento de detecção on-line/off-line](tutorial/online-offline-events.md)
 
 ## API - Referencias
 
