@@ -6,7 +6,7 @@
 
 主进程也可以向渲染进程发送信息,具体可以看[WebContents.send](web-contents.md#webcontentssendchannel-args).
 
-- 当发送消息的时候,事件名字为'channel'.
+- 当发送消息的时候,事件名字为`channel`.
 - 回复一个同步消息的时候,你需要使用`event.returnValue`
 - 回复一个异步消息的时候,使用`event.sender.send(...)`
 
