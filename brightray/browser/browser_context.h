@@ -18,6 +18,10 @@
 class PrefRegistrySimple;
 class PrefService;
 
+namespace storage {
+class SpecialStoragePolicy;
+}
+
 namespace brightray {
 
 class PermissionManager;
@@ -112,6 +116,7 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   scoped_ptr<ResourceContext> resource_context_;
   scoped_ptr<DevToolsNetworkController> controller_;
   scoped_refptr<URLRequestContextGetter> url_request_getter_;
+  scoped_refptr<storage::SpecialStoragePolicy> storage_policy_;
   scoped_ptr<PrefService> prefs_;
   scoped_ptr<PermissionManager> permission_manager_;
 

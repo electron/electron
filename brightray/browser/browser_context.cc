@@ -8,6 +8,7 @@
 #include "browser/inspectable_web_contents_impl.h"
 #include "browser/network_delegate.h"
 #include "browser/permission_manager.h"
+#include "browser/special_storage_policy.h"
 #include "common/application_info.h"
 
 #include "base/files/file_path.h"
@@ -96,6 +97,7 @@ scoped_refptr<BrowserContext> BrowserContext::From(
 BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
     : in_memory_(in_memory),
       resource_context_(new ResourceContext),
+      storage_policy_(new SpecialStoragePolicy),
       weak_factory_(this) {
   if (!PathService::Get(DIR_USER_DATA, &path_)) {
     PathService::Get(DIR_APP_DATA, &path_);
@@ -213,7 +215,7 @@ content::BrowserPluginGuestManager* BrowserContext::GetGuestManager() {
 }
 
 storage::SpecialStoragePolicy* BrowserContext::GetSpecialStoragePolicy() {
-  return nullptr;
+  return storage_policy_.get();
 }
 
 content::PushMessagingService* BrowserContext::GetPushMessagingService() {

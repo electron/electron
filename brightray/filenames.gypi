@@ -63,6 +63,8 @@
       'browser/platform_notification_service_impl.h',
       'browser/linux/notification_presenter_linux.h',
       'browser/linux/notification_presenter_linux.cc',
+      'browser/special_storage_policy.cc',
+      'browser/special_storage_policy.h',
       'browser/url_request_context_getter.cc',
       'browser/url_request_context_getter.h',
       'browser/views/inspectable_web_contents_view_views.h',
