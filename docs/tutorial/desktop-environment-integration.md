@@ -223,7 +223,7 @@ window.setProgressBar(0.5);
 ## Represented File of Window (OS X)
 
 On OS X a window can set its represented file, so the file's icon can show in
-the title bar and when users Command-Click or Control-Click on the tile a path
+the title bar and when users Command-Click or Control-Click on the title a path
 popup will show.
 
 You can also set the edited state of a window so that the file icon can indicate
