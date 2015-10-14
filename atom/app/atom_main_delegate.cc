@@ -5,6 +5,7 @@
 #include "atom/app/atom_main_delegate.h"
 
 #include <string>
+#include <iostream>
 
 #include "atom/app/atom_content_client.h"
 #include "atom/browser/atom_browser_client.h"
@@ -29,6 +30,9 @@ AtomMainDelegate::~AtomMainDelegate() {
 bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   logging::LoggingSettings settings;
 #if defined(OS_WIN)
+  // On Windows the terminal returns immediately, so we add a new line to
+  // prevent output in the same line as the prompt.
+  std::wcout << std::endl;
 #if defined(DEBUG)
   // Print logging to debug.log on Windows
   settings.logging_dest = logging::LOG_TO_ALL;
@@ -44,8 +48,10 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 
   // Only enable logging when --enable-logging is specified.
   auto command_line = base::CommandLine::ForCurrentProcess();
-  if (!command_line->HasSwitch(switches::kEnableLogging))
+  if (!command_line->HasSwitch(switches::kEnableLogging)) {
     settings.logging_dest = logging::LOG_NONE;
+    logging::SetMinLogLevel(logging::LOG_NUM_SEVERITIES);
+  }
 
   logging::InitLogging(settings);
 

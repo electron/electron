@@ -16,11 +16,13 @@ $ cd /some-directory
 $ git clone --recursive https://github.com/facebook/react-devtools.git
 ```
 
+Follow the instructions in [`react-devtools/shells/chrome/Readme.md`](https://github.com/facebook/react-devtools/blob/master/shells/chrome/Readme.md) to build the extension.
+
 Then you can load the extension in Electron by opening DevTools in any window,
 and running the following code in the DevTools console:
 
 ```javascript
-require('remote').require('browser-window').addDevToolsExtension('/some-directory/react-devtools');
+require('remote').require('browser-window').addDevToolsExtension('/some-directory/react-devtools/shells/chrome');
 ```
 
 To unload the extension, you can call the `BrowserWindow.removeDevToolsExtension`

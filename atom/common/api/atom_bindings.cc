@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <string>
+#include <iostream>
 
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
@@ -40,7 +41,7 @@ void FatalErrorCallback(const char* location, const char* message) {
 }
 
 void Log(const base::string16& message) {
-  logging::LogMessage("CONSOLE", 0, 0).stream() << message;
+  std::cout << message;
 }
 
 }  // namespace
@@ -70,6 +71,10 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
 
   // Do not warn about deprecated APIs.
   dict.Set("noDeprecation", true);
+
+#if defined(MAS_BUILD)
+  dict.Set("mas", true);
+#endif
 
   mate::Dictionary versions;
   if (dict.Get("versions", &versions)) {

@@ -152,6 +152,10 @@ v8::Local<v8::Value> V8ValueConverter::ToV8ValueImpl(
       return ToV8Object(isolate,
                         static_cast<const base::DictionaryValue*>(value));
 
+    case base::Value::TYPE_BINARY:
+      return ToArrayBuffer(isolate,
+                           static_cast<const base::BinaryValue*>(value));
+
     default:
       LOG(ERROR) << "Unexpected value type: " << value->GetType();
       return v8::Null(isolate);
@@ -198,6 +202,13 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Object(
   }
 
   return result.GetHandle();
+}
+
+v8::Local<v8::Value> V8ValueConverter::ToArrayBuffer(
+    v8::Isolate* isolate, const base::BinaryValue* value) const {
+  return node::Buffer::Copy(isolate,
+                            value->GetBuffer(),
+                            value->GetSize()).ToLocalChecked();
 }
 
 base::Value* V8ValueConverter::FromV8ValueImpl(

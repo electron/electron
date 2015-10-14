@@ -35,7 +35,7 @@ exposing your app's source code to users.
 
 To use an `asar` archive to replace the `app` folder, you need to rename the
 archive to `app.asar`, and put it under Electron's resources directory like
-below, and Electron will then try read the archive and start from it.
+below, and Electron will then try to read the archive and start from it.
 
 On OS X:
 

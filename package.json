@@ -4,7 +4,9 @@
     "asar": "^0.8.0",
     "coffee-script": "^1.9.2",
     "coffeelint": "^1.9.4",
-    "request": "*",
+    "request": "*"
+  },
+  "optionalDependencies": {
     "runas": "^3.0.0"
   },
   "private": true,

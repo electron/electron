@@ -18,20 +18,6 @@ require path.resolve(__dirname, '..', '..', 'common', 'lib', 'init')
 globalPaths = Module.globalPaths
 globalPaths.push path.resolve(__dirname, '..', 'api', 'lib')
 
-if process.platform is 'win32'
-  # Redirect node's console to use our own implementations, since node can not
-  # handle console output when running as GUI program.
-  print = (args...) ->
-    process.log util.format(args...)
-  console.log = console.error = console.warn = print
-  process.stdout.write = process.stderr.write = print
-
-  # Always returns EOF for stdin stream.
-  Readable = require('stream').Readable
-  stdin = new Readable
-  stdin.push null
-  process.__defineGetter__ 'stdin', -> stdin
-
 # Don't quit on fatal error.
 process.on 'uncaughtException', (error) ->
   # Do nothing if the user has a custom uncaught exception handler.
