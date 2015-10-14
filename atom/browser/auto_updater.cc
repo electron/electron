@@ -16,4 +16,12 @@ void AutoUpdater::SetDelegate(AutoUpdaterDelegate* delegate) {
   delegate_ = delegate;
 }
 
+#if defined(OS_MACOSX) && defined(MAS_BUILD)
+void AutoUpdater::SetFeedURL(const std::string& url) {
+}
+
+void AutoUpdater::CheckForUpdates() {
+}
+#endif
+
 }  // namespace auto_updater

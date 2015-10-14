@@ -20,6 +20,13 @@ PLATFORM = {
 verbose_mode = False
 
 
+def get_platform_key():
+  if os.environ.has_key('MAS_BUILD'):
+    return 'mas'
+  else:
+    return PLATFORM
+
+
 def get_target_arch():
   try:
     target_arch_path = os.path.join(__file__, '..', '..', '..', 'vendor',
