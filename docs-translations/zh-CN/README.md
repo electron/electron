@@ -1,5 +1,6 @@
 ## 向导
 
+* [支持平台](tutorial/supported-platforms.md)
 * [应用部署](tutorial/application-distribution.md)
 * [应用打包](tutorial/application-packaging.md)
 * [使用原生模块](tutorial/using-native-node-modules.md)
