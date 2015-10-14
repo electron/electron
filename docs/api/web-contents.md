@@ -631,3 +631,26 @@ Get the `WebContents` of DevTools for this `WebContents`.
 
 **Note:** Users should never store this object because it may become `null`
 when the DevTools has been closed.
+
+### `webContents.savePage(fullPath, saveType, callback)`
+
+* `fullPath` String - The full file path.
+* `saveType` String - Specify the save type.
+  * `HTMLOnly` - Save only the HTML of the page.
+  * `HTMLComplete` - Save complete-html page.
+  * `MHTML` - Save complete-html page as MHTML.
+* `callback` Function - `function(error) {}`.
+  * `error` Error
+
+Returns true if the process of saving page has been initiated successfully.
+
+```javascript
+win.loadUrl('https://github.com');
+
+win.webContents.on('did-finish-load', function() {
+  win.webContents.savePage('/tmp/test.html', 'HTMLComplete', function(error) {
+    if (!error)
+      console.log("Save page successfully");
+  });
+});
+```

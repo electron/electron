@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "atom/browser/api/frame_subscriber.h"
+#include "atom/browser/api/save_page_handler.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/common_web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -73,6 +74,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent();
   void InsertCSS(const std::string& css);
+  bool SavePage(const base::FilePath& full_file_path,
+                const content::SavePageType& save_type,
+                const SavePageHandler::SavePageCallback& callback);
   void ExecuteJavaScript(const base::string16& code,
                          bool has_user_gesture);
   void OpenDevTools(mate::Arguments* args);

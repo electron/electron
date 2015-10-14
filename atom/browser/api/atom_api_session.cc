@@ -11,6 +11,7 @@
 #include "atom/browser/api/atom_api_download_item.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/api/save_page_handler.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -237,6 +238,8 @@ Session::~Session() {
 void Session::OnDownloadCreated(content::DownloadManager* manager,
                                 content::DownloadItem* item) {
   auto web_contents = item->GetWebContents();
+  if (SavePageHandler::IsSavePageTypes(item->GetMimeType()))
+    return;
   bool prevent_default = Emit(
       "will-download",
       DownloadItem::Create(isolate(), item),
