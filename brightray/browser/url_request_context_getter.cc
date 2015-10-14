@@ -176,9 +176,9 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     auto& command_line = *base::CommandLine::ForCurrentProcess();
     url_request_context_.reset(new net::URLRequestContext);
 
-    #if defined(USE_NSS_CERTS)
-      net::SetURLRequestContextForNSSHttpIO(url_request_context_.get());
-    #endif
+#if defined(USE_NSS_CERTS)
+    net::SetURLRequestContextForNSSHttpIO(url_request_context_.get());
+#endif
 
     // --log-net-log
     net_log_->StartLogging(url_request_context_.get());
