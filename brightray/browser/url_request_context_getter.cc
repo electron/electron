@@ -44,6 +44,10 @@
 #include "url/url_constants.h"
 #include "storage/browser/quota/special_storage_policy.h"
 
+#if defined(USE_NSS_CERTS)
+#include "net/cert_net/nss_ocsp.h"
+#endif
+
 using content::BrowserThread;
 
 namespace brightray {
@@ -156,6 +160,9 @@ URLRequestContextGetter::URLRequestContextGetter(
 }
 
 URLRequestContextGetter::~URLRequestContextGetter() {
+#if defined(USE_NSS_CERTS)
+  net::SetURLRequestContextForNSSHttpIO(NULL);
+#endif
 }
 
 net::HostResolver* URLRequestContextGetter::host_resolver() {
@@ -168,6 +175,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   if (!url_request_context_.get()) {
     auto& command_line = *base::CommandLine::ForCurrentProcess();
     url_request_context_.reset(new net::URLRequestContext);
+
+    #if defined(USE_NSS_CERTS)
+      net::SetURLRequestContextForNSSHttpIO(url_request_context_.get());
+    #endif
 
     // --log-net-log
     net_log_->StartLogging(url_request_context_.get());
