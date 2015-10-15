@@ -17,9 +17,6 @@ template <typename T> struct DefaultSingletonTraits;
 
 namespace crash_reporter {
 
-// Hook up V8 to breakpad.
-void SetupV8CodeRangeHook();
-
 class CrashReporterWin : public CrashReporter {
  public:
   static CrashReporterWin* GetInstance();
