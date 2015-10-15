@@ -17,6 +17,9 @@ template <typename T> struct DefaultSingletonTraits;
 
 namespace crash_reporter {
 
+// Hook up V8 to breakpad.
+void SetupV8CodeRangeHook();
+
 class CrashReporterWin : public CrashReporter {
  public:
   static CrashReporterWin* GetInstance();
@@ -28,6 +31,9 @@ class CrashReporterWin : public CrashReporter {
                     bool auto_submit,
                     bool skip_system_crash_handler) override;
   void SetUploadParameters() override;
+
+  // Crashes the process after generating a dump for the provided exception.
+  int CrashForException(EXCEPTION_POINTERS* info);
 
  private:
   friend struct DefaultSingletonTraits<CrashReporterWin>;

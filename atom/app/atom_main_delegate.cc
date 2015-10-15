@@ -19,6 +19,10 @@
 #include "content/public/common/content_switches.h"
 #include "ui/base/resource/resource_bundle.h"
 
+#if defined(OS_WIN)
+#include "atom/common/crash_reporter/crash_reporter_win.h"
+#endif
+
 namespace atom {
 
 namespace {
@@ -68,6 +72,10 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 
   // Logging with pid and timestamp.
   logging::SetLogItems(true, false, true, false);
+
+#if defined(OS_WIN)
+  crash_reporter::SetupV8CodeRangeHook();
+#endif
 
 #if defined(DEBUG) && defined(OS_LINUX)
   // Enable convient stack printing.
