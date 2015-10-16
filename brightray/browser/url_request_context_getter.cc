@@ -84,6 +84,16 @@ const char kProxyPacUrl[] = "proxy-pac-url";
 
 }  // namespace
 
+ExplicitURLSecurityManager::ExplicitURLSecurityManager() : allow_default_creds_(false) {}
+
+bool ExplicitURLSecurityManager::CanUseDefaultCredentials(const GURL& auth_origin) const {
+  return allow_default_creds_;
+}
+
+bool ExplicitURLSecurityManager::CanDelegate(const GURL& auth_origin) const {
+  return false;
+}
+
 std::string URLRequestContextGetter::Delegate::GetUserAgent() {
   return base::EmptyString();
 }

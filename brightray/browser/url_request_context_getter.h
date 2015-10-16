@@ -30,6 +30,21 @@ namespace brightray {
 class DevToolsNetworkController;
 class NetLog;
 
+class ExplicitURLSecurityManager : public net::URLSecurityManager {
+public:
+  ExplicitURLSecurityManager();
+
+  virtual bool CanUseDefaultCredentials(const GURL& auth_origin) const override;
+  virtual bool CanDelegate(const GURL& auth_origin) const override;
+
+  void AllowNTLMCredentialsForAllDomains(bool should_allow) { allow_default_creds_ = should_allow; }
+
+private:
+  bool allow_default_creds_;
+
+  DISALLOW_COPY_AND_ASSIGN(ExplicitURLSecurityManager);
+};
+
 class URLRequestContextGetter : public net::URLRequestContextGetter {
  public:
   class Delegate {
