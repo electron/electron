@@ -37,4 +37,4 @@ process.once('loaded', function() {
 
 * `maxDescriptors` Integer
 
-`maxDescriptors`에 file descriptor 소프트 리미트를 설정하거나 OS 하드 리미트를 설정합니다. 값은 현재 프로세스에 대해 낮은 값이어야 합니다.
+현재 프로세스의 파일 기술자의 제한 값을 소프트 제한 `maxDescriptors`의 값이나 OS 하드 제한 중 낮은 값으로 설정합니다.

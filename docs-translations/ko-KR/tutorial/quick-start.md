@@ -71,7 +71,7 @@ var BrowserWindow = require('browser-window');  // 네이티브 브라우저 창
 require('crash-reporter').start();
 
 // 윈도우 객체를 전역에 유지합니다. 만약 이렇게 하지 않으면
-// 자바스크립트 GC가 일어날 때 창이 자동으로 닫혀버립니다.
+// 자바스크립트 GC가 일어날 때 창이 멋대로 닫혀버립니다.
 var mainWindow = null;
 
 // 모든 창이 닫히면 어플리케이션 종료.

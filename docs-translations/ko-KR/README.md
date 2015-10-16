@@ -19,7 +19,7 @@
 
 * [개요](api/synopsis.md)
 * [Process 객체](api/process.md)
-* [크롬 Command Line 스위치 지원](api/chrome-command-line-switches.md)
+* [크롬 명령줄 스위치 지원](api/chrome-command-line-switches.md)
 
 ### 커스텀 DOM elements:
 
