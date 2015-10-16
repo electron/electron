@@ -1,29 +1,28 @@
 # Mac App Store Submission Guide
 
-Since v0.34.0, Electron allows submitting packaged apps to Mac App Store (MAS),
-this guide provides information on how to submit your app, and the limitations
+Since v0.34.0, Electron allows submitting packaged apps to the Mac App Store (MAS).
+This guide provides information on: how to submit your app & the limitations
 of the MAS build.
 
-## How to submit your app
+## How to Submit Your App
 
-Following steps introduces a simple way to submit your app to Mac App Store, but
-it doesn't make sure your app gets approved by Apple, you still have to read
-apple's [Submitting Your App][submitting-your-app] guide on how to meet Mac
-App Store's requirements.
+The following steps introduce a simple way to submit your app to Mac App Store. However, these steps
+do not ensure sure your app will be approved by Apple; you still need to read
+Apple's [Submitting Your App][submitting-your-app] guide on how to meet the Mac
+App Store requirements.
 
-### Get certificate
+### Get Certificate
 
-To submit your app to Mac App Store, you have to get a certificate from Apple
-first, you can follow [existing guides][nwjs-guide] on web.
+To submit your app to the Mac App Store, you first must get a certificate from Apple. You can follow these [existing guides][nwjs-guide] on web.
 
-### Sign your app
+### Sign Your App
 
-After getting the certificate, you can package your app by following
-[Application Distribution](application-distribution.md), and then sign your app.
-The step is basically the same with other programs, the key is to sign every
+After getting the certificate from Apple, you can package your app by following
+[Application Distribution](application-distribution.md), and then proceed to signing your app.
+This step is basically the same with other programs, but the key is to sign every
 dependency of Electron one by one.
 
-First you need to prepare two entitlements files.
+First, you need to prepare two entitlements files.
 
 `child.plist`:
 
@@ -53,7 +52,7 @@ First you need to prepare two entitlements files.
 </plist>
 ```
 
-And then sign your app with following script:
+...and then sign your app with the following script:
 
 ```bash
 #!/bin/bash
@@ -80,32 +79,32 @@ codesign  -fs "$APP_KEY" --entitlements parent.plist "$APP_PATH"
 productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$APP_PATH"
 ```
 
-If you are new to app sandboxing of OS X, you should also go through Apple's
-[Enabling App Sandbox][enable-app-sandbox] to have a basic idea, and add keys
+If you are new to app sandboxing under OS X, you should also read through Apple's
+[Enabling App Sandbox][enable-app-sandbox] to have a basic idea, then add keys
 for the permissions needed by your app to the entitlements files.
 
-### Upload your app and submit for review
+### Upload Your App and Submit for Review
 
-After signing your app you can use Application Loader to upload it to iTunes
-Connect for processing, make sure you have [created a record][create-record]
+After signing your app, you can use Application Loader to upload it to iTunes
+Connect for processing, making sure you have [created a record][create-record]
 before uploading. Then you can [submit your app for review][submit-for-review].
 
-## Limitations of MAS build
+## Limitations of MAS Build
 
-In order to satisfy requirements for app sandboxing, following modules have been
-disabled in MAS build:
+In order to satisfy all requirements for app sandboxing, the following modules have been
+disabled in the MAS build:
 
 * `crash-reporter`
 * `auto-updater`
 
-and following behaviors have been changed:
+and the following behaviors have been changed:
 
 * Video capture may not work for some machines.
 * Certain accessibility features may not work.
 * Apps will not be aware of DNS changes.
 
-Also due to the usage of app sandboxing, the resources can be accessed by the
-app is strictly limited, you can read [App Sandboxing][app-sandboxing] for more.
+Also, due to the usage of app sandboxing, the resources which can be accessed by the
+app are strictly limited; you can read [App Sandboxing][app-sandboxing] for more information.
 
 [submitting-your-app]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/AppDistributionGuide/SubmittingYourApp/SubmittingYourApp.html
 [nwjs-guide]: https://github.com/nwjs/nw.js/wiki/Mac-App-Store-%28MAS%29-Submission-Guideline#first-steps
