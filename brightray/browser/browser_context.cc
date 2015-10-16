@@ -232,4 +232,8 @@ content::PermissionManager* BrowserContext::GetPermissionManager() {
   return permission_manager_.get();
 }
 
+void BrowserContext::AllowNTLMCredentialsForAllDomains(bool should_allow) {
+  url_request_getter_->AllowNTLMCredentialsForAllDomains(should_allow);
+}
+
 }  // namespace brightray

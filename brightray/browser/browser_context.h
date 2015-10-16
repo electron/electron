@@ -71,6 +71,8 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   void InitPrefs();
   PrefService* prefs() { return prefs_.get(); }
 
+  void AllowNTLMCredentialsForAllDomains(bool should_allow);
+
  protected:
   BrowserContext(const std::string& partition, bool in_memory);
   ~BrowserContext() override;

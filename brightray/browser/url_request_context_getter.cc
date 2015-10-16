@@ -330,4 +330,8 @@ scoped_refptr<base::SingleThreadTaskRunner> URLRequestContextGetter::GetNetworkT
   return BrowserThread::GetMessageLoopProxyForThread(BrowserThread::IO);
 }
 
+void URLRequestContextGetter::AllowNTLMCredentialsForAllDomains(bool should_allow) {
+  url_sec_mgr_->AllowNTLMCredentialsForAllDomains(should_allow);
+}
+
 }  // namespace brightray
