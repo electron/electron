@@ -13,7 +13,7 @@ var BrowserWindow = require('browser-window');
 var win = new BrowserWindow({ width: 800, height: 600, frame: false });
 ```
 
-### Alternatives on Mac
+### Alternatives on OS X
 
 On Mac OS X 10.10 Yosemite and newer, there's an alternative way to specify
 a chromeless window. Instead of setting `frame` to `false` which disables

@@ -31,6 +31,7 @@
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "content/common/view_messages.h"
+#include "content/public/browser/browser_plugin_guest_manager.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
@@ -51,6 +52,7 @@
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "third_party/WebKit/public/web/WebInputEvent.h"
+#include "ui/base/l10n/l10n_util.h"
 
 #include "atom/common/node_includes.h"
 
@@ -62,9 +64,21 @@ struct PrintSettings {
 };
 
 void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
+                      std::string accept_lang,
                       std::string user_agent) {
   getter->GetURLRequestContext()->set_http_user_agent_settings(
-      new net::StaticHttpUserAgentSettings("en-us,en", user_agent));
+      new net::StaticHttpUserAgentSettings(
+          net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang),
+          user_agent));
+}
+
+bool NotifyZoomLevelChanged(
+    double level, content::WebContents* guest_web_contents) {
+  guest_web_contents->SendToAllFrames(
+      new AtomViewMsg_SetZoomLevel(MSG_ROUTING_NONE, level));
+
+  // Return false to iterate over all guests.
+  return false;
 }
 
 }  // namespace
@@ -133,7 +147,6 @@ struct Converter<net::HttpResponseHeaders*> {
       std::string value;
       while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
         key = base::StringToLowerASCII(key);
-        value = base::StringToLowerASCII(value);
         if (response_headers.HasKey(key)) {
           base::ListValue* values = nullptr;
           if (response_headers.GetList(key, &values))
@@ -146,6 +159,26 @@ struct Converter<net::HttpResponseHeaders*> {
       }
     }
     return ConvertToV8(isolate, response_headers);
+  }
+};
+
+template<>
+struct Converter<content::SavePageType> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     content::SavePageType* out) {
+    std::string save_type;
+    if (!ConvertFromV8(isolate, val, &save_type))
+      return false;
+    if (save_type == "HTMLOnly") {
+      *out = content::SAVE_PAGE_TYPE_AS_ONLY_HTML;
+    } else if (save_type == "HTMLComplete") {
+      *out = content::SAVE_PAGE_TYPE_AS_COMPLETE_HTML;
+    } else if (save_type == "MHTML") {
+      *out = content::SAVE_PAGE_TYPE_AS_MHTML;
+    } else {
+      return false;
+    }
+    return true;
   }
 };
 
@@ -528,6 +561,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
     IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
                                     OnRendererMessageSync)
+    IPC_MESSAGE_HANDLER(AtomViewHostMsg_ZoomLevelChanged, OnZoomLevelChanged)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -637,8 +671,10 @@ void WebContents::SetUserAgent(const std::string& user_agent) {
   web_contents()->SetUserAgentOverride(user_agent);
   scoped_refptr<net::URLRequestContextGetter> getter =
       web_contents()->GetBrowserContext()->GetRequestContext();
+
+  auto accept_lang = l10n_util::GetApplicationLocale("");
   getter->GetNetworkTaskRunner()->PostTask(FROM_HERE,
-      base::Bind(&SetUserAgentInIO, getter, user_agent));
+      base::Bind(&SetUserAgentInIO, getter, accept_lang, user_agent));
 }
 
 std::string WebContents::GetUserAgent() {
@@ -647,6 +683,13 @@ std::string WebContents::GetUserAgent() {
 
 void WebContents::InsertCSS(const std::string& css) {
   web_contents()->InsertCSS(css);
+}
+
+bool WebContents::SavePage(const base::FilePath& full_file_path,
+                           const content::SavePageType& save_type,
+                           const SavePageHandler::SavePageCallback& callback) {
+  auto handler = new SavePageHandler(web_contents(), callback);
+  return handler->Handle(full_file_path, save_type);
 }
 
 void WebContents::ExecuteJavaScript(const base::string16& code,
@@ -960,6 +1003,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("setUserAgent", &WebContents::SetUserAgent)
         .SetMethod("getUserAgent", &WebContents::GetUserAgent)
         .SetMethod("insertCSS", &WebContents::InsertCSS)
+        .SetMethod("savePage", &WebContents::SavePage)
         .SetMethod("_executeJavaScript", &WebContents::ExecuteJavaScript)
         .SetMethod("openDevTools", &WebContents::OpenDevTools)
         .SetMethod("closeDevTools", &WebContents::CloseDevTools)
@@ -1031,6 +1075,15 @@ void WebContents::OnRendererMessageSync(const base::string16& channel,
                                         IPC::Message* message) {
   // webContents.emit(channel, new Event(sender, message), args...);
   EmitWithSender(base::UTF16ToUTF8(channel), web_contents(), message, args);
+}
+
+void WebContents::OnZoomLevelChanged(double level) {
+  auto manager = web_contents()->GetBrowserContext()->GetGuestManager();
+  if (!manager)
+    return;
+  manager->ForEachGuest(web_contents(),
+                        base::Bind(&NotifyZoomLevelChanged,
+                                   level));
 }
 
 // static

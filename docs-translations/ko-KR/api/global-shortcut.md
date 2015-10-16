@@ -12,7 +12,9 @@ var globalShortcut = require('global-shortcut');
 
 app.on('ready', function() {
   // 'ctrl+x' 단축키를 리스너에 등록합니다.
-  var ret = globalShortcut.register('ctrl+x', function() { console.log('ctrl+x is pressed'); })
+  var ret = globalShortcut.register('ctrl+x', function() {
+    console.log('ctrl+x is pressed');
+  });
 
   if (!ret) {
     console.log('registration failed');
@@ -56,4 +58,4 @@ app.on('will-quit', function() {
 
 ### `globalShortcut.unregisterAll()`
 
-모든 전역 단축키 등록을 해제합니다.
+모든 전역 단축키의 등록을 해제합니다.

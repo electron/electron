@@ -18,6 +18,9 @@ for (var i = 0; i < argv.length; i++) {
   if (argv[i] == '--version' || argv[i] == '-v') {
     option.version = true;
     break;
+  } else if (argv[i].match(/^--app=/)) {
+    option.file = argv[i].split('=')[1];
+    break;
   } else if (argv[i] == '--help' || argv[i] == '-h') {
     option.help = true;
     break;
@@ -260,7 +263,7 @@ if (option.file && !option.webdriver) {
   helpMessage    += "A path to an Electron application may be specified. The path must be to \n";
   helpMessage    += "an index.js file or to a folder containing a package.json or index.js file.\n\n";
   helpMessage    += "Options:\n";
-  helpMessage    += "  -r, --require         Module to preload (option can be repeated)";
+  helpMessage    += "  -r, --require         Module to preload (option can be repeated)\n";
   helpMessage    += "  -h, --help            Print this usage message.\n";
   helpMessage    += "  -v, --version         Print the version.";
   console.log(helpMessage);

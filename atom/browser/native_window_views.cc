@@ -390,7 +390,10 @@ gfx::Size NativeWindowViews::GetContentSize() {
 void NativeWindowViews::SetContentSizeConstraints(
     const extensions::SizeConstraints& size_constraints) {
   NativeWindow::SetContentSizeConstraints(size_constraints);
-  window_->OnSizeConstraintsChanged();
+  // widget_delegate() is only available after Init() is called, we make use of
+  // this to determine whether native widget has initialized.
+  if (window_ && window_->widget_delegate())
+    window_->OnSizeConstraintsChanged();
 #if defined(USE_X11)
   if (resizable_)
     old_size_constraints_ = size_constraints;

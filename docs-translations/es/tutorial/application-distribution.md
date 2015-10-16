@@ -1,10 +1,11 @@
-# Distribución de aplicaciones
+# Distribución de la Aplicación
 
-Para distribuir tu aplicación con Electron, debes nombrar al directorio de tu aplicación
-como `app`, y ponerlo bajo el directorio de recursos de Electron (en OSX es `Electron.app/Contents/Resources/`,
-en Linux y Windows es `resources/`):
+Para distribuir tu aplicación con Electron, el directorio que contiene la
+aplicación deberá llamarse `app`, y ser colocado debajo del directorio de
+recursos de Electron (en OSX es `Electron.app/Contents/Resources/`, en Linux y
+Windows es `resources/`), de esta forma:
 
-En OSX:
+En OS X:
 
 ```text
 electron/Electron.app/Contents/Resources/app/
@@ -22,18 +23,19 @@ electron/resources/app
 └── index.html
 ```
 
-Posteriormente ejecutas `Electron.app` (o `electron` en Linux, `electron.exe` en Windows),
-y Electron iniciará la aplicación.  El directorio `electron` será la distribución que recibirán los usuarios finales.
+Luego ejecutar `Electron.app` (o `electron` en Linux, `electron.exe` en Windows),
+y Electron será iniciado como tu aplicación. El directorio `electron` será
+entonces tu distribución que recibirán los usuarios finales.
 
-## Empaquetando tu aplicación como un archivo
+## Empaquetando tu aplicación en un archivo
 
-Además de copiar todos tus archivos fuente para la distribución, también puedes
-empaquetar tu aplicación como un archivo [asar](https://github.com/atom/asar)
-y de esta forma evitar la exposición del código fuente de tu aplicación a los usuarios.
+Además de distribuir tu aplicación al copiar todos los archivos de código fuente,
+también puedes empaquetar tu aplicación como un archivo [asar](https://github.com/atom/asar)
+y de esta forma evitar exponer del código fuente de tu aplicación a los usuarios.
 
-Para usar un archivo `asar` en reemplazo de la carpeta `app`, debes renombrar
-el archivo a `app.asar`, y ponerlo bajo el directorio de recursos de Electron (como arriba),
-Electron intentará leer el archivo y ejecutar la aplicación desde él.
+Para utilizar un archivo `asar` en reemplazo del directorio `app`, debes de
+renombrar el archivo a `app.asar`, y colocarlo por debajo el directorio de recursos
+de Electron (ver en seguida), Electron intentará leer el archivo y arrancar desde el.
 
 En OS X:
 
@@ -49,30 +51,33 @@ electron/resources/
 └── app.asar
 ```
 
-Más detalles en [Empaquetamiento de aplicaciones](application-packaging-es.md).
+Más detalles en [Empaquetado de Aplicaciones](application-packaging.md).
 
-## Rebranding con binarios descargados
+## Redefinición con Binarios Descargados
 
-Luego de empaquetar tu aplicación con Electron, podría ser útil agregar tu marca
-antes de realizar la distribución.
+Luego de empaquetar tu aplicación en Electron, querrás redefinir Electron antes
+de distribuirlo a los usuarios.
 
 ### Windows
 
-Puedes renombrar `electron.exe` a cualquier nombre que desees, y editar su ícono y otras informaciones
-con herramientas como [rcedit](https://github.com/atom/rcedit) o [ResEdit](http://www.resedit.net).
+Puedes renombrar `electron.exe` a cualquier nombre que desees, y editar su ícono
+y otra información con herramientas como [rcedit](https://github.com/atom/rcedit)
+o [ResEdit](http://www.resedit.net).
 
-### OS X
+### OSX
 
-Puedes renombrar `Electron.app` a cualquier nombre que desees. También debes modificar los campos 
-`CFBundleDisplayName`, `CFBundleIdentifier` y `CFBundleName` en los siguientes archivos:
+Puedes renombrar `Electron.app` a cualquier nombre que desees, y tendrás que
+renombrar los campos `CFBundleDisplayName`, `CFBundleIdentifier` y `CFBundleName`
+en los siguientes archivos:
 
 * `Electron.app/Contents/Info.plist`
 * `Electron.app/Contents/Frameworks/Electron Helper.app/Contents/Info.plist`
 
-También puedes renombrar el helper de la aplicación para evitar que aparezca como  `Electron Helper`
-en el Monitor de Actividades.
+También puedes renombrar el helper de la aplicación para evitar que aparezca
+como `Electron Helper` en el Monitor de Actividades. Pero asegurate de renombrar
+el nombre de archivo del ejecutable.
 
-La estructura de una aplicación renombrada sería así:
+La estructura de una aplicación renombrada será:
 
 ```
 MyApp.app/Contents
@@ -98,17 +103,19 @@ MyApp.app/Contents
 
 Puedes renombrar el ejectuable `electron` a cualquier nombre que desees.
 
-## Rebranding desde el código fuente de Electron
+## Redefinición mediante la recompilación de Electron desde el código fuente
 
-También es posible agregar tu marca a Electron mediante un build personalizado.
-Para realizar esto debes modificar el archivo `atom.gyp`.
+También es posible redefinir Electron cambiando el nombre del producto y
+compilandolo desde sus fuentes. Para realizar esto necesitas modificar el
+archivo `atom.gyp` y realizar una compilación desde cero.
 
 ### grunt-build-atom-shell
 
-La modificación del código de Electron para agregar tu marca puede resultar complicada, una tarea Grunt
-se ha creado para manejar esto de forma automatizada:
-
+La modificación a mano del código de Electron y su compilación puede resultar
+complicada, por lo cual se ha generado una tarea Grunt para manejar esto de
+forma automaticamente:
 [grunt-build-atom-shell](https://github.com/paulcbetts/grunt-build-atom-shell).
 
-Esta tarea se encargará de modificar el archivo `.gyp`, compilar el código
-y reconstruir los módulos nativos de la aplicación para que coincidan con el nuevo nombre.
+Esta tarea se encargará de modificar el archivo `.gyp`, compilar el código desde
+las fuentes, y luego reconstruir los módulos nativos de la aplicación para que
+coincidan con el nuevo nombre del ejecutable.

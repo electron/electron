@@ -2,6 +2,7 @@
 
 * [Supported Platforms](tutorial/supported-platforms.md)
 * [Application Distribution](tutorial/application-distribution.md)
+* [Mac App Store Submission Guide](tutorial/mac-app-store-submission-guide.md)
 * [Application Packaging](tutorial/application-packaging.md)
 * [Using Native Node Modules](tutorial/using-native-node-modules.md)
 * [Debugging Main Process](tutorial/debugging-main-process.md)
@@ -65,7 +66,7 @@
 * [Source Code Directory Structure](development/source-code-directory-structure.md)
 * [Technical Differences to NW.js (formerly node-webkit)](development/atom-shell-vs-node-webkit.md)
 * [Build System Overview](development/build-system-overview.md)
-* [Build Instructions (Mac)](development/build-instructions-osx.md)
+* [Build Instructions (OS X)](development/build-instructions-osx.md)
 * [Build Instructions (Windows)](development/build-instructions-windows.md)
 * [Build Instructions (Linux)](development/build-instructions-linux.md)
 * [Setting Up Symbol Server in debugger](development/setting-up-symbol-server.md)
