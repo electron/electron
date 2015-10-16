@@ -251,6 +251,12 @@ void App::SetAppUserModelId(const std::string& app_id) {
 #endif
 }
 
+void App::AllowNTLMCredentialsForAllDomains(bool should_allow) {
+  auto browser_context = static_cast<AtomBrowserContext*>(
+        AtomBrowserMainParts::Get()->browser_context());
+  browser_context->AllowNTLMCredentialsForAllDomains(should_allow);
+}
+
 std::string App::GetLocale() {
   return l10n_util::GetApplicationLocale("");
 }
