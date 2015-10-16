@@ -6,7 +6,7 @@ of the MAS build.
 
 ## How to submit your app
 
-Following steps introduces a simple way submit your app to Mac App Store, but
+Following steps introduces a simple way to submit your app to Mac App Store, but
 it doesn't make sure your app gets approved by Apple, you still have to read
 apple's [Submitting Your App][submitting-your-app] guide on how to meet Mac
 App Store's requirements.
@@ -14,10 +14,7 @@ App Store's requirements.
 ### Get certificate
 
 To submit your app to Mac App Store, you have to get a certificate from Apple
-first, you can follow existing guides on web:
-
-* "First steps" of [Mac App Store (MAS) Submission Guideline][nwjs-guide]
-* "Step 2" of [Distributing an app on Mac OS X without Xcode][dist-no-xcode]
+first, you can follow [existing guides][nwjs-guide] on web.
 
 ### Sign your app
 
@@ -73,9 +70,9 @@ INSTALLER_KEY="3rd Party Mac Developer Installer: Company Name (APPIDENTITY)"
 
 FRAMEWORKS_PATH="$APP_PATH/Contents/Frameworks"
 
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Framework.framework/Libraries/libnode.dylib"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Framework.framework/$APP Framework"
-codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Framework.framework/"
+codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Libraries/libnode.dylib"
+codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/Electron Framework"
+codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/Electron Framework.framework/"
 codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper.app/"
 codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper EH.app/"
 codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP Helper NP.app/"
@@ -112,7 +109,6 @@ app is strictly limited, you can read [App Sandboxing][app-sandboxing] for more.
 
 [submitting-your-app]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/AppDistributionGuide/SubmittingYourApp/SubmittingYourApp.html
 [nwjs-guide]: https://github.com/nwjs/nw.js/wiki/Mac-App-Store-%28MAS%29-Submission-Guideline#first-steps
-[dist-no-xcode]: https://devreboot.wordpress.com/2014/07/04/distributing-an-app-on-mac-os-x-without-xcode-outside-the-mac-app-store/
 [enable-app-sandbox]: https://developer.apple.com/library/ios/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html
 [create-record]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/CreatingiTunesConnectRecord.html
 [submit-for-review]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/SubmittingTheApp.html
