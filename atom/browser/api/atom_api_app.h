@@ -66,7 +66,7 @@ class App : public mate::EventEmitter,
   void SetDesktopName(const std::string& desktop_name);
   void SetAppUserModelId(const std::string& app_id);
   void AllowNTLMCredentialsForAllDomains(bool should_allow);
-
+  
   std::string GetLocale();
   v8::Local<v8::Value> DefaultSession(v8::Isolate* isolate);
 
