@@ -108,6 +108,8 @@
       'atom/browser/api/trackable_object.h',
       'atom/browser/api/frame_subscriber.cc',
       'atom/browser/api/frame_subscriber.h',
+      'atom/browser/api/save_page_handler.cc',
+      'atom/browser/api/save_page_handler.h',
       'atom/browser/auto_updater.cc',
       'atom/browser/auto_updater.h',
       'atom/browser/auto_updater_delegate.h',
