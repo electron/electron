@@ -71,7 +71,7 @@ unwrapArgs = (sender, args) ->
         ret = ->
           if rendererReleased
             throw new Error("Attempting to call a function in a renderer window
-             that has been closed or released. Function provided here: #{meta.id}.")
+              that has been closed or released. Function provided here: #{meta.id}.")
           sender.send 'ATOM_RENDERER_CALLBACK', meta.id, valueToMeta(sender, arguments)
         v8Util.setDestructor ret, ->
           return if rendererReleased
