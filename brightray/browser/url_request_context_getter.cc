@@ -155,7 +155,7 @@ URLRequestContextGetter::URLRequestContextGetter(
       in_memory_(in_memory),
       io_loop_(io_loop),
       file_loop_(file_loop),
-      url_sec_mgr_(net::URLSecurityManager::Create(NULL, NULL)),
+      url_sec_mgr_(new ExplicitURLSecurityManager()),
       protocol_interceptors_(protocol_interceptors.Pass()) {
   // Must first be created on the UI thread.
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));

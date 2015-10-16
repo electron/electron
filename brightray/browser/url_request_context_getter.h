@@ -95,7 +95,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   scoped_ptr<net::URLRequestContextStorage> storage_;
   scoped_ptr<net::URLRequestContext> url_request_context_;
   scoped_ptr<net::HostMappingRules> host_mapping_rules_;
-  scoped_ptr<net::URLSecurityManager> url_sec_mgr_;
+  scoped_ptr<ExplicitURLSecurityManager> url_sec_mgr_;
   content::ProtocolHandlerMap protocol_handlers_;
   content::URLRequestInterceptorScopedVector protocol_interceptors_;
 
