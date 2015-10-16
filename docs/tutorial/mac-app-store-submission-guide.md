@@ -1,26 +1,27 @@
 # Mac App Store Submission Guide
 
-Since v0.34.0, Electron allows submitting packaged apps to the Mac App Store (MAS).
-This guide provides information on: how to submit your app & the limitations
-of the MAS build.
+Since v0.34.0, Electron allows submitting packaged apps to the Mac App Store 
+(MAS). This guide provides information on: how to submit your app and the 
+limitations of the MAS build.
 
 ## How to Submit Your App
 
-The following steps introduce a simple way to submit your app to Mac App Store. However, these steps
-do not ensure sure your app will be approved by Apple; you still need to read
-Apple's [Submitting Your App][submitting-your-app] guide on how to meet the Mac
-App Store requirements.
+The following steps introduce a simple way to submit your app to Mac App Store. 
+However, these steps do not ensure sure your app will be approved by Apple; you 
+still need to read Apple's [Submitting Your App][submitting-your-app] guide on 
+how to meet the Mac App Store requirements.
 
 ### Get Certificate
 
-To submit your app to the Mac App Store, you first must get a certificate from Apple. You can follow these [existing guides][nwjs-guide] on web.
+To submit your app to the Mac App Store, you first must get a certificate from 
+Apple. You can follow these [existing guides][nwjs-guide] on web.
 
 ### Sign Your App
 
 After getting the certificate from Apple, you can package your app by following
-[Application Distribution](application-distribution.md), and then proceed to signing your app.
-This step is basically the same with other programs, but the key is to sign every
-dependency of Electron one by one.
+[Application Distribution](application-distribution.md), and then proceed to 
+signing your app. This step is basically the same with other programs, but the 
+key is to sign every dependency of Electron one by one.
 
 First, you need to prepare two entitlements files.
 
@@ -52,7 +53,7 @@ First, you need to prepare two entitlements files.
 </plist>
 ```
 
-...and then sign your app with the following script:
+And then sign your app with the following script:
 
 ```bash
 #!/bin/bash
@@ -78,10 +79,10 @@ codesign --deep -fs "$APP_KEY" --entitlements child.plist "$FRAMEWORKS_PATH/$APP
 codesign  -fs "$APP_KEY" --entitlements parent.plist "$APP_PATH"
 productbuild --component "$APP_PATH" /Applications --sign "$INSTALLER_KEY" "$APP_PATH"
 ```
-
-If you are new to app sandboxing under OS X, you should also read through Apple's
-[Enabling App Sandbox][enable-app-sandbox] to have a basic idea, then add keys
-for the permissions needed by your app to the entitlements files.
+a
+If you are new to app sandboxing under OS X, you should also read through 
+Apple's [Enabling App Sandbox][enable-app-sandbox] to have a basic idea, then 
+add keys for the permissions needed by your app to the entitlements files.
 
 ### Upload Your App and Submit for Review
 
@@ -91,8 +92,8 @@ before uploading. Then you can [submit your app for review][submit-for-review].
 
 ## Limitations of MAS Build
 
-In order to satisfy all requirements for app sandboxing, the following modules have been
-disabled in the MAS build:
+In order to satisfy all requirements for app sandboxing, the following modules 
+have been disabled in the MAS build:
 
 * `crash-reporter`
 * `auto-updater`
@@ -103,8 +104,9 @@ and the following behaviors have been changed:
 * Certain accessibility features may not work.
 * Apps will not be aware of DNS changes.
 
-Also, due to the usage of app sandboxing, the resources which can be accessed by the
-app are strictly limited; you can read [App Sandboxing][app-sandboxing] for more information.
+Also, due to the usage of app sandboxing, the resources which can be accessed by
+ the app are strictly limited; you can read [App Sandboxing][app-sandboxing] for
+ more information.
 
 [submitting-your-app]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/AppDistributionGuide/SubmittingYourApp/SubmittingYourApp.html
 [nwjs-guide]: https://github.com/nwjs/nw.js/wiki/Mac-App-Store-%28MAS%29-Submission-Guideline#first-steps
