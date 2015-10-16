@@ -72,6 +72,10 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
   // Do not warn about deprecated APIs.
   dict.Set("noDeprecation", true);
 
+#if defined(MAS_BUILD)
+  dict.Set("mas", true);
+#endif
+
   mate::Dictionary versions;
   if (dict.Get("versions", &versions)) {
     versions.Set(ATOM_PROJECT_NAME, ATOM_VERSION_STRING);

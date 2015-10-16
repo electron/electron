@@ -111,7 +111,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `plugins` Boolean - Whether plugins should be enabled.
   * `experimental-features` Boolean
   * `experimental-canvas-features` Boolean
-  * `subpixel-font-scaling` Boolean
   * `overlay-scrollbars` Boolean
   * `overlay-fullscreen-video` Boolean
   * `shared-worker` Boolean

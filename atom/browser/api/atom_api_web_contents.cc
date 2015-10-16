@@ -162,6 +162,26 @@ struct Converter<net::HttpResponseHeaders*> {
   }
 };
 
+template<>
+struct Converter<content::SavePageType> {
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     content::SavePageType* out) {
+    std::string save_type;
+    if (!ConvertFromV8(isolate, val, &save_type))
+      return false;
+    if (save_type == "HTMLOnly") {
+      *out = content::SAVE_PAGE_TYPE_AS_ONLY_HTML;
+    } else if (save_type == "HTMLComplete") {
+      *out = content::SAVE_PAGE_TYPE_AS_COMPLETE_HTML;
+    } else if (save_type == "MHTML") {
+      *out = content::SAVE_PAGE_TYPE_AS_MHTML;
+    } else {
+      return false;
+    }
+    return true;
+  }
+};
+
 }  // namespace mate
 
 
@@ -665,6 +685,13 @@ void WebContents::InsertCSS(const std::string& css) {
   web_contents()->InsertCSS(css);
 }
 
+bool WebContents::SavePage(const base::FilePath& full_file_path,
+                           const content::SavePageType& save_type,
+                           const SavePageHandler::SavePageCallback& callback) {
+  auto handler = new SavePageHandler(web_contents(), callback);
+  return handler->Handle(full_file_path, save_type);
+}
+
 void WebContents::ExecuteJavaScript(const base::string16& code,
                                     bool has_user_gesture) {
   Send(new AtomViewMsg_ExecuteJavaScript(routing_id(), code, has_user_gesture));
@@ -976,6 +1003,7 @@ mate::ObjectTemplateBuilder WebContents::GetObjectTemplateBuilder(
         .SetMethod("setUserAgent", &WebContents::SetUserAgent)
         .SetMethod("getUserAgent", &WebContents::GetUserAgent)
         .SetMethod("insertCSS", &WebContents::InsertCSS)
+        .SetMethod("savePage", &WebContents::SavePage)
         .SetMethod("_executeJavaScript", &WebContents::ExecuteJavaScript)
         .SetMethod("openDevTools", &WebContents::OpenDevTools)
         .SetMethod("closeDevTools", &WebContents::CloseDevTools)
