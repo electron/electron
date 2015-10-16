@@ -31,15 +31,15 @@ class DevToolsNetworkController;
 class NetLog;
 
 class ExplicitURLSecurityManager : public net::URLSecurityManager {
-public:
+ public:
   ExplicitURLSecurityManager();
 
-  virtual bool CanUseDefaultCredentials(const GURL& auth_origin) const override;
-  virtual bool CanDelegate(const GURL& auth_origin) const override;
+  bool CanUseDefaultCredentials(const GURL& auth_origin) const override;
+  bool CanDelegate(const GURL& auth_origin) const override;
 
   void AllowNTLMCredentialsForAllDomains(bool should_allow) { allow_default_creds_ = should_allow; }
 
-private:
+ private:
   bool allow_default_creds_;
   scoped_ptr<net::URLSecurityManager> orig_url_sec_mgr_;
 

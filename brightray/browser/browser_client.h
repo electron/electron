@@ -50,6 +50,7 @@ class BrowserClient : public content::ContentBrowserClient {
   BrowserMainParts* browser_main_parts_;
   NetLog net_log_;
 
+ private:
   DISALLOW_COPY_AND_ASSIGN(BrowserClient);
 };
 
