@@ -6,7 +6,7 @@
 * [Depuração do processo principal](../../docs/tutorial/debugging-main-process.md)
 * [Usando Selenium e WebDriver](../../docs/tutorial/using-selenium-and-webdriver.md)
 * [Extensão DevTools](../../docs/tutorial/devtools-extension.md)
-* [Usando o plugin papper flash](../../docs/tutorial/using-pepper-flash-plugin.md)
+* [Usando o plugin papper flash](tutorial/using-pepper-flash-plugin.md)
 
 ## Tutoriais
 
