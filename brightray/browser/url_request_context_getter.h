@@ -41,6 +41,7 @@ public:
 
 private:
   bool allow_default_creds_;
+  scoped_ptr<net::URLSecurityManager> orig_url_sec_mgr_;
 
   DISALLOW_COPY_AND_ASSIGN(ExplicitURLSecurityManager);
 };

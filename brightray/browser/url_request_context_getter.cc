@@ -84,14 +84,20 @@ const char kProxyPacUrl[] = "proxy-pac-url";
 
 }  // namespace
 
-ExplicitURLSecurityManager::ExplicitURLSecurityManager() : allow_default_creds_(false) {}
+ExplicitURLSecurityManager::ExplicitURLSecurityManager() :
+  allow_default_creds_(false),
+  orig_url_sec_mgr_(net::URLSecurityManager::Create(NULL, NULL)) {}
 
 bool ExplicitURLSecurityManager::CanUseDefaultCredentials(const GURL& auth_origin) const {
-  return allow_default_creds_;
+  if (allow_default_creds_) {
+    return true;
+  }
+
+  return orig_url_sec_mgr_->CanUseDefaultCredentials(auth_origin);
 }
 
 bool ExplicitURLSecurityManager::CanDelegate(const GURL& auth_origin) const {
-  return false;
+  return orig_url_sec_mgr_->CanDelegate(auth_origin);
 }
 
 std::string URLRequestContextGetter::Delegate::GetUserAgent() {
