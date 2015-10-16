@@ -11,6 +11,20 @@ class CallbacksRegistry
 
   add: (callback) ->
     id = Math.random().toString()
+
+    # Capture the location of the function and put it in the ID string,
+    # so that release errors can be tracked down easily.
+    regexp = /at (.*)/gi
+    stackString = (new Error).stack
+
+    while (match = regexp.exec(stackString)) isnt null
+      [x, location] = match
+      continue if location.indexOf('(native)') isnt -1
+      continue if location.indexOf('atom.asar') isnt -1
+      [x, filenameAndLine] = /([^/^\)]*)\)?$/gi.exec(location)
+      id = "#{filenameAndLine} (#{id})"
+      break
+
     @callbacks[id] = callback
     id
 
