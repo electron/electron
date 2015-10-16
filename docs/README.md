@@ -2,6 +2,7 @@
 
 * [Supported Platforms](tutorial/supported-platforms.md)
 * [Application Distribution](tutorial/application-distribution.md)
+* [Mac App Store Submission Guide](tutorial/mac-app-store-submission-guide.md)
 * [Application Packaging](tutorial/application-packaging.md)
 * [Using Native Node Modules](tutorial/using-native-node-modules.md)
 * [Debugging Main Process](tutorial/debugging-main-process.md)

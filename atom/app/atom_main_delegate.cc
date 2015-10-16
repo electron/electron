@@ -21,6 +21,15 @@
 
 namespace atom {
 
+namespace {
+
+bool IsBrowserProcess(base::CommandLine* cmd) {
+  std::string process_type = cmd->GetSwitchValueASCII(switches::kProcessType);
+  return process_type.empty();
+}
+
+}  // namespace
+
 AtomMainDelegate::AtomMainDelegate() {
 }
 
@@ -28,11 +37,14 @@ AtomMainDelegate::~AtomMainDelegate() {
 }
 
 bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
+  auto command_line = base::CommandLine::ForCurrentProcess();
+
   logging::LoggingSettings settings;
 #if defined(OS_WIN)
   // On Windows the terminal returns immediately, so we add a new line to
   // prevent output in the same line as the prompt.
-  std::wcout << std::endl;
+  if (IsBrowserProcess(command_line))
+    std::wcout << std::endl;
 #if defined(DEBUG)
   // Print logging to debug.log on Windows
   settings.logging_dest = logging::LOG_TO_ALL;
@@ -47,7 +59,6 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 #endif  // !defined(OS_WIN)
 
   // Only enable logging when --enable-logging is specified.
-  auto command_line = base::CommandLine::ForCurrentProcess();
   if (!command_line->HasSwitch(switches::kEnableLogging)) {
     settings.logging_dest = logging::LOG_NONE;
     logging::SetMinLogLevel(logging::LOG_NUM_SEVERITIES);
@@ -83,7 +94,7 @@ void AtomMainDelegate::PreSandboxStartup() {
   }
 
   // Only append arguments for browser process.
-  if (!process_type.empty())
+  if (!IsBrowserProcess(command_line))
     return;
 
 #if defined(OS_WIN)

@@ -311,7 +311,7 @@ bool CrashService::Initialize(const base::string16& application_name,
   // service is initialized.
   base::string16 wait_name = ReplaceStringPlaceholders(
       kWaitEventFormat, application_name, NULL);
-  HANDLE wait_event = ::CreateEventW(NULL, TRUE, FALSE, wait_name.c_str());
+  HANDLE wait_event = ::CreateEventW(NULL, TRUE, TRUE, wait_name.c_str());
   ::SetEvent(wait_event);
 
   return true;
