@@ -3,7 +3,7 @@
 * [Distribuição de Aplicações](tutorial/application-distribution.md)
 * [Empacotamento da aplicação](tutorial/application-packaging.md)
 * [Usando módulos nativos](tutorial/using-native-node-modules.md)
-* [Depuração do processo principal](../../docs/tutorial/debugging-main-process.md)
+* [Depuração do processo principal](tutorial/debugging-main-process.md)
 * [Usando Selenium e WebDriver](../../docs/tutorial/using-selenium-and-webdriver.md)
 * [Extensão DevTools](../../docs/tutorial/devtools-extension.md)
 * [Usando o plugin papper flash](tutorial/using-pepper-flash-plugin.md)
