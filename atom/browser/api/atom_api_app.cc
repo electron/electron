@@ -291,7 +291,8 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("setAppUserModelId", &App::SetAppUserModelId)
-      .SetMethod("allowNTLMCredentialsForAllDomains", &App::AllowNTLMCredentialsForAllDomains)
+      .SetMethod("allowNTLMCredentialsForAllDomains",
+                 &App::AllowNTLMCredentialsForAllDomains)
       .SetMethod("getLocale", &App::GetLocale)
       .SetProperty("defaultSession", &App::DefaultSession);
 }
