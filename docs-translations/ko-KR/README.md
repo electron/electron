@@ -29,7 +29,7 @@
 
 ### 메인 프로세스에서 사용할 수 있는 모듈:
 
-* [app (0% 번역됨)](api/app.md)
+* [app](api/app.md)
 * [auto-updater](api/auto-updater.md)
 * [browser-window (0% 번역됨)](api/browser-window.md)
 * [content-tracing](api/content-tracing.md)
