@@ -13,7 +13,7 @@ var BrowserWindow = require('browser-window');
 var win = new BrowserWindow({ width: 800, height: 600, frame: false });
 ```
 
-### 최신 Mac에서 사용할 수 있는 대안
+### 최신 OS X에서 사용할 수 있는 대안
 
 OS X 10.10 Yosemite 이후의 최신 버전부터는 테두리가 없는 창을 만들 때 새로운 방법을 사용할 수 있습니다.
 `frame` 옵션을 `false`로 지정하여 제목과 창 구성 요소를 모두 비활성화하는 대신 새로운 `title-bar-style`
