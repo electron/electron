@@ -47,8 +47,8 @@ The `desktopCapturer` module has the following methods:
 * `types` Array - An array of String that enums the types of desktop sources.
   * `screen` String - Screen
   * `window` String - Individual window
-* `thumnailSize` Object (optional) - The suggested size that thumbnail should be
-  scaled.
+* `thumbnailSize` Object (optional) - The suggested size that thumbnail should
+  be scaled.
   * `width` Integer - The width of thumbnail. By default, it is 150px.
   * `height` Integer - The height of thumbnail. By default, it is 150px.
 
@@ -59,8 +59,8 @@ The `desktopCapturer` module has the following methods:
 Gets all desktop sources.
 
 **Note:** There is no garuantee that the size of `source.thumbnail` is always
-the same as the `thumnailSize` in `options`. It also depends on the scale of the
-screen or window.
+the same as the `thumnbailSize` in `options`. It also depends on the scale of
+the screen or window.
 
 ## Source
 

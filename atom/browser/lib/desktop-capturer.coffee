@@ -22,14 +22,14 @@ desktopCapturer.emit = (event_name, event, sources) ->
   # Receiving sources result from main process, now send them back to renderer.
   handledRequest = requestsQueue.shift 0
   result = ({ id: source.id, name: source.name, thumbnail: source.thumbnail.toDataUrl() } for source in sources)
-  handledRequest.webContents?.send 'ATOM_REDNERER_DESKTOP_CAPTURER_RESULT', result
+  handledRequest.webContents?.send 'ATOM_RENDERER_DESKTOP_CAPTURER_RESULT', result
 
   # Check the queue to see whether there is other same request. If has, handle
   # it for reducing redunplicated `desktopCaptuer.startHandling` calls.
   unhandledRequestsQueue = []
   for request in requestsQueue
     if isOptionsEqual handledRequest.options, request.options
-      request.webContents?.send 'ATOM_REDNERER_DESKTOP_CAPTURER_RESULT', result
+      request.webContents?.send 'ATOM_RENDERER_DESKTOP_CAPTURER_RESULT', result
     else
       unhandledRequestsQueue.push request
   requestsQueue = unhandledRequestsQueue
