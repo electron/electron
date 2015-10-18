@@ -5,7 +5,8 @@ Electron의 `process` 객체는 기존의 node와는 달리 약간의 차이점�
 * `process.type` String - 프로세스의 타입, `browser` (메인 프로세스) 또는 `renderer`가 됩니다.
 * `process.versions['electron']` String - Electron의 버전.
 * `process.versions['chrome']` String - Chromium의 버전.
-* `process.resourcesPath` String - JavaScript 소스코드의 경로.
+* `process.resourcesPath` String - JavaScript 소스 코드의 경로.
+* `process.mas` Boolean - Mac 앱 스토어용 빌드일 때 `true`로 지정됩니다. 다른 빌드일 땐 `undefined`로 지정됩니다.
 
 ## Events
 
@@ -37,4 +38,4 @@ process.once('loaded', function() {
 
 * `maxDescriptors` Integer
 
-`maxDescriptors`에 file descriptor 소프트 리미트를 설정하거나 OS 하드 리미트를 설정합니다. 값은 현재 프로세스에 대해 낮은 값이어야 합니다.
+현재 프로세스의 파일 기술자의 제한 값을 소프트 제한 `maxDescriptors`의 값이나 OS 하드 제한 중 낮은 값으로 설정합니다.
