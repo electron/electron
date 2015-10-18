@@ -36,8 +36,13 @@ bool SavePageHandler::Handle(const base::FilePath& full_path,
   auto download_manager = content::BrowserContext::GetDownloadManager(
       web_contents_->GetBrowserContext());
   download_manager->AddObserver(this);
+  // Chromium will create a 'foo_files' directory under the directory of saving
+  // page 'foo.html' for holding other resource files of 'foo.html'.
+  base::FilePath saved_main_directory_path = full_path.DirName().Append(
+      full_path.RemoveExtension().BaseName().value() +
+      FILE_PATH_LITERAL("_files"));
   bool result = web_contents_->SavePage(full_path,
-                                        full_path.DirName(),
+                                        saved_main_directory_path,
                                         save_type);
   download_manager->RemoveObserver(this);
   // If initialization fails which means fail to create |DownloadItem|, we need
