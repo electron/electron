@@ -55,7 +55,7 @@ void TrayIcon::NotifyRightClicked(const gfx::Rect& bounds, int modifiers) {
                     OnRightClicked(bounds, modifiers));
 }
 
-void TrayIcon::NotfiyDropFiles(const std::vector<std::string>& files) {
+void TrayIcon::NotifyDropFiles(const std::vector<std::string>& files) {
   FOR_EACH_OBSERVER(TrayIconObserver, observers_, OnDropFiles(files));
 }
 
