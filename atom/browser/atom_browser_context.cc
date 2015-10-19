@@ -60,8 +60,8 @@ std::string RemoveWhitespace(const std::string& str) {
 AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory)
     : brightray::BrowserContext(partition, in_memory),
-      job_factory_(new AtomURLRequestJobFactory) {
-}
+      job_factory_(new AtomURLRequestJobFactory),
+      allow_ntlm_everywhere_(false) : { }
 
 AtomBrowserContext::~AtomBrowserContext() {
 }
@@ -166,6 +166,12 @@ void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
                                       base::FilePath());
   pref_registry->RegisterFilePathPref(prefs::kDownloadDefaultDirectory,
                                       base::FilePath());
+}
+
+
+bool AtomBrowserContext::AllowNTLMCredentialsForDomain(const GURL& auth_origin) {
+  if (allow_ntlm_everywhere_) return true;
+  return brightray::URLRequestContextGetter::Delegate::AllowNTLMCredentialsForDomain(auth_origin);
 }
 
 }  // namespace atom

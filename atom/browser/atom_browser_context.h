@@ -28,6 +28,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
       const base::FilePath& base_path) override;
   net::SSLConfigService* CreateSSLConfigService() override;
+  bool AllowNTLMCredentialsForDomain(const GURL& auth_origin) override;
 
   // content::BrowserContext:
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
@@ -44,6 +45,8 @@ class AtomBrowserContext : public brightray::BrowserContext {
 
   // Managed by brightray::BrowserContext.
   AtomURLRequestJobFactory* job_factory_;
+  
+  bool allow_ntlm_everywhere_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);
 };
