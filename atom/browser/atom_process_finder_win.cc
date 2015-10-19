@@ -43,13 +43,6 @@ NotifyChromeResult AttemptToNotifyRunningAtom(HWND remote_window,
     return NOTIFY_FAILED;
 
   base::CommandLine command_line(*base::CommandLine::ForCurrentProcess());
-  command_line.AppendSwitchASCII(
-      switches::kOriginalProcessStartTime,
-      base::Int64ToString(
-          base::CurrentProcessInfo::CreationTime().ToInternalValue()));
-
-  if (fast_start)
-    command_line.AppendSwitch(switches::kFastStart);
 
   // Send the command line to the remote chrome window.
   // Format is "START\0<<<current directory>>>\0<<<commandline>>>".
