@@ -19,6 +19,7 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/native_mate_converters/command_line_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -268,7 +269,19 @@ v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
     return v8::Local<v8::Value>::New(isolate, default_session_);
 }
 
-bool App::MakeSingleInstance(const SingleInstanceCallback& callback) {
+bool App::MakeSingleInstance(const ProcessSingleton::NotificationCallback& callback) {
+  auto browser = Browser::Get();
+  browser->SetSingleInstanceCallback(&callback);
+  
+  switch(browser->GetSingleInstanceResult()) {
+    case ProcessSingleton::NotifyResult::PROCESS_NONE:
+      return false;
+    case ProcessSingleton::NotifyResult::LOCK_ERROR:
+    case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
+    case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED:
+      return true;
+  }
+  
   return false;
 }
 

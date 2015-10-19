@@ -9,6 +9,7 @@
 
 #include "atom/browser/api/event_emitter.h"
 #include "atom/browser/browser_observer.h"
+#include "atom/browser/process_singleton.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "native_mate/handle.h"
@@ -24,8 +25,6 @@ class Arguments;
 namespace atom {
 
 namespace api {
-
-using SingleInstanceCallback = base::Callback<void(const std::string&)>;
 
 class App : public mate::EventEmitter,
             public BrowserObserver,
@@ -70,8 +69,8 @@ class App : public mate::EventEmitter,
   void SetAppUserModelId(const std::string& app_id);
 
   void AllowNTLMCredentialsForAllDomains(bool should_allow);
-  
-  bool MakeSingleInstance(const SingleInstanceCallback& callback);
+
+  bool MakeSingleInstance(const ProcessSingleton::NotificationCallback& callback);
 
   std::string GetLocale();
   v8::Local<v8::Value> DefaultSession(v8::Isolate* isolate);
