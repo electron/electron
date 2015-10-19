@@ -41,6 +41,24 @@ namespace api {
 namespace {
 const int kThumbnailWidth = 150;
 const int kThumbnailHeight = 150;
+
+bool GetCapturerTypes(const mate::Dictionary& args,
+                      bool* show_windows,
+                      bool* show_screens) {
+  *show_windows = false;
+  *show_screens = false;
+  std::vector<std::string> sources;
+  if (!args.Get("types", &sources))
+    return false;
+  for (const auto& source_type : sources) {
+    if (source_type == "screen")
+      *show_screens = true;
+    else if (source_type == "window")
+      *show_windows = true;
+  }
+  return !show_windows && !show_screens ? false : true;
+}
+
 }  // namespace
 
 DesktopCapturer::DesktopCapturer() {
@@ -50,21 +68,14 @@ DesktopCapturer::~DesktopCapturer() {
 }
 
 void DesktopCapturer::StartHandling(const mate::Dictionary& args) {
-  std::vector<std::string> sources;
-  if (!args.Get("types", &sources))
-    return;
-
   bool show_screens = false;
   bool show_windows = false;
-  for (const auto& source_type : sources) {
-    if (source_type == "screen")
-      show_screens = true;
-    else if (source_type == "window")
-      show_windows = true;
-  }
-
-  if (!show_windows && !show_screens)
+  if (!GetCapturerTypes(args, &show_windows, &show_screens)) {
+    Emit("handling-finished",
+         "Invalid options.",
+         std::vector<DesktopMediaList::Source>());
     return;
+  }
 
   webrtc::DesktopCaptureOptions options =
       webrtc::DesktopCaptureOptions::CreateDefault();
@@ -113,7 +124,7 @@ bool DesktopCapturer::OnRefreshFinished() {
   for (int i = 0; i < media_list_->GetSourceCount(); ++i)
     sources.push_back(media_list_->GetSource(i));
   media_list_.reset();
-  Emit("refresh-finished", sources);
+  Emit("handling-finished", "", sources);
   return false;
 }
 

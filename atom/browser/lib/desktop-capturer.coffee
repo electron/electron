@@ -11,25 +11,26 @@ requestsQueue = []
 
 ipc.on 'ATOM_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', (event, options) ->
   request = { options: options, webContents: event.sender }
-  desktopCapturer.startHandling options if requestsQueue.length is 0
   requestsQueue.push request
+  desktopCapturer.startHandling options if requestsQueue.length is 1
   # If the WebContents is destroyed before receiving result, just remove the
   # reference from requestsQueue to make the module not send the result to it.
   event.sender.once 'destroyed', () ->
     request.webContents = null
 
-desktopCapturer.emit = (event_name, event, sources) ->
+desktopCapturer.emit = (event_name, event, error_message, sources) ->
   # Receiving sources result from main process, now send them back to renderer.
   handledRequest = requestsQueue.shift 0
+  error = if error_message then Error error_message else null
   result = ({ id: source.id, name: source.name, thumbnail: source.thumbnail.toDataUrl() } for source in sources)
-  handledRequest.webContents?.send 'ATOM_RENDERER_DESKTOP_CAPTURER_RESULT', result
+  handledRequest.webContents?.send 'ATOM_RENDERER_DESKTOP_CAPTURER_RESULT', error_message, result
 
   # Check the queue to see whether there is other same request. If has, handle
   # it for reducing redunplicated `desktopCaptuer.startHandling` calls.
   unhandledRequestsQueue = []
   for request in requestsQueue
     if isOptionsEqual handledRequest.options, request.options
-      request.webContents?.send 'ATOM_RENDERER_DESKTOP_CAPTURER_RESULT', result
+      request.webContents?.send 'ATOM_RENDERER_DESKTOP_CAPTURER_RESULT', error_message, result
     else
       unhandledRequestsQueue.push request
   requestsQueue = unhandledRequestsQueue

@@ -7,7 +7,8 @@ screen and individual app windows.
 // In the renderer process.
 var desktopCapturer = require('desktop-capturer');
 
-desktopCapturer.getSources({types: ['window', 'screen']}, function(sources) {
+desktopCapturer.getSources({types: ['window', 'screen']}, function(error, sources) {
+  if (error) throw error;
   for (var i = 0; i < sources.length; ++i) {
     if (sources[i].name == "Electron") {
       navigator.webkitGetUserMedia({
@@ -52,9 +53,10 @@ The `desktopCapturer` module has the following methods:
   * `width` Integer - The width of thumbnail. By default, it is 150px.
   * `height` Integer - The height of thumbnail. By default, it is 150px.
 
-`callback` Function - `function(sources) {}`
+`callback` Function - `function(error, sources) {}`
 
-* `Sources` Array - An array of Source
+* `error` Error
+* `sources` Array - An array of Source
 
 Gets all desktop sources.
 
