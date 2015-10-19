@@ -4,13 +4,13 @@ ipc = require 'ipc'
 desktopCapturer = process.atomBinding('desktop_capturer').desktopCapturer
 
 isOptionsEqual = (opt1, opt2) ->
-  return JSON.stringify opt1 is JSON.stringify opt2
+  return JSON.stringify(opt1) is JSON.stringify(opt2)
 
 # A queue for holding all requests from renderer process.
 requestsQueue = []
 
-ipc.on 'ATOM_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', (event, options) ->
-  request = { options: options, webContents: event.sender }
+ipc.on 'ATOM_BROWSER_DESKTOP_CAPTURER_GET_SOURCES', (event, options, id) ->
+  request = { id: id, options: options, webContents: event.sender }
   requestsQueue.push request
   desktopCapturer.startHandling options if requestsQueue.length is 1
   # If the WebContents is destroyed before receiving result, just remove the
@@ -23,14 +23,14 @@ desktopCapturer.emit = (event_name, event, error_message, sources) ->
   handledRequest = requestsQueue.shift 0
   error = if error_message then Error error_message else null
   result = ({ id: source.id, name: source.name, thumbnail: source.thumbnail.toDataUrl() } for source in sources)
-  handledRequest.webContents?.send 'ATOM_RENDERER_DESKTOP_CAPTURER_RESULT', error_message, result
+  handledRequest.webContents?.send "ATOM_RENDERER_DESKTOP_CAPTURER_RESULT_#{handledRequest.id}", error_message, result
 
   # Check the queue to see whether there is other same request. If has, handle
   # it for reducing redunplicated `desktopCaptuer.startHandling` calls.
   unhandledRequestsQueue = []
   for request in requestsQueue
     if isOptionsEqual handledRequest.options, request.options
-      request.webContents?.send 'ATOM_RENDERER_DESKTOP_CAPTURER_RESULT', error_message, result
+      request.webContents?.send "ATOM_RENDERER_DESKTOP_CAPTURER_RESULT_#{request.id}", error_message, result
     else
       unhandledRequestsQueue.push request
   requestsQueue = unhandledRequestsQueue
