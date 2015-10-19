@@ -53,6 +53,11 @@ contains documents describing how to build and contribute to Electron.
 - [Simplified Chinese](https://github.com/atom/electron/tree/master/docs-translations/zh-CN)
 - [Traditional Chinese](https://github.com/atom/electron/tree/master/docs-translations/zh-TW)
 
+## Quick Start
+
+Clone and run the [`atom/electron-quick-start`](https://github.com/atom/electron-quick-start)
+repository to see a minimal Electron app in action.
+
 ## Community
 
 You can ask questions and interact with the community in the following
