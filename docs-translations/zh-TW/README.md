@@ -1,7 +1,9 @@
 ## 導引
 
+* [支援平台](tutorial/supported-platforms.md)
 * [應用程式發布](tutorial/application-distribution.md)
 * [應用程式打包](tutorial/application-packaging.md)
+* [Mac App Store 上架指引](tutorial/mac-app-store-submission-guide.md)
 * [使用原生 node 模組](tutorial/using-native-node-modules.md)
 * [主行程 Debug](tutorial/debugging-main-process.md)
 * [使用 Selenium 和 WebDriver](tutorial/using-selenium-and-webdriver.md)
