@@ -268,6 +268,10 @@ v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
     return v8::Local<v8::Value>::New(isolate, default_session_);
 }
 
+bool App::MakeSingleInstance(const SingleInstanceCallback& callback) {
+  return false;
+}
+
 mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   auto browser = base::Unretained(Browser::Get());
@@ -294,6 +298,7 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("allowNTLMCredentialsForAllDomains",
                  &App::AllowNTLMCredentialsForAllDomains)
       .SetMethod("getLocale", &App::GetLocale)
+      .SetMethod("MakeSingleInstance", &App::MakeSingleInstance)
       .SetProperty("defaultSession", &App::DefaultSession);
 }
 
