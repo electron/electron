@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "process_singleton_startup_lock.h"
+#include "atom/browser/process_singleton_startup_lock.h"
 
 #include "base/bind.h"
 #include "base/logging.h"

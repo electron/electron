@@ -37,7 +37,7 @@
 // retrieves the process id from the symbol link and kills it by sending
 // SIGKILL. Then the second process starts as normal.
 
-#include "process_singleton.h"
+#include "atom/browser/process_singleton.h"
 
 #include <errno.h>
 #include <fcntl.h>

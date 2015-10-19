@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CHROME_BROWSER_PROCESS_SINGLETON_STARTUP_LOCK_H_
-#define CHROME_BROWSER_PROCESS_SINGLETON_STARTUP_LOCK_H_
+#ifndef ATOM_BROWSER_PROCESS_SINGLETON_STARTUP_LOCK_H_
+#define ATOM_BROWSER_PROCESS_SINGLETON_STARTUP_LOCK_H_
 
 #include <set>
 #include <utility>
@@ -13,7 +13,7 @@
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/threading/non_thread_safe.h"
-#include "process_singleton.h"
+#include "atom/browser/process_singleton.h"
 
 // Provides a ProcessSingleton::NotificationCallback that can queue up
 // command-line invocations during startup and execute them when startup

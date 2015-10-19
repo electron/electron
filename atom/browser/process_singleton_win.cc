@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "process_singleton.h"
+#include "atom/browser/process_singleton.h"
 
 #include <shellapi.h>
 
@@ -22,7 +22,7 @@
 #include "base/win/windows_version.h"
 //#include "chrome/browser/browser_process.h"
 //#include "chrome/browser/browser_process_platform_part.h"
-#include "chrome_process_finder_win.h"   // TODO: Pull this in
+#include "atom/browser/atom_process_finder_win.h"
 //#include "chrome/browser/shell_integration.h"  // TODO: Maybe pull this in?
 #include "content/public/common/result_codes.h"
 #include "net/base/escape.h"
