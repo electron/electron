@@ -49,7 +49,7 @@ Electron을 빌드 하는 방법과 프로젝트에 기여하는 방법도 문�
 
 ## 커뮤니티
 
-다음 링크를 통해 커뮤니티에 질문을 올리거나 토론을 나누실 수 있습니다:
+다음 링크를 통해 커뮤니티에 질문을 올리거나 토론을 나눌 수 있습니다:
 
 - Atom 포럼의 [`electron`](http://discuss.atom.io/category/electron) 카테고리
 - Freenode 채팅의 `#atom-shell` 채널 
