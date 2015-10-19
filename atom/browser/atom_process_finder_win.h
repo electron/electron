@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CHROME_BROWSER_CHROME_PROCESS_FINDER_WIN_H_
-#define CHROME_BROWSER_CHROME_PROCESS_FINDER_WIN_H_
+#ifndef ATOM_BROWSER_ATOM_PROCESS_FINDER_WIN_H_
+#define ATOM_BROWSER_ATOM_PROCESS_FINDER_WIN_H_
 
 #include <windows.h>
 
@@ -13,7 +13,7 @@ namespace base {
 class FilePath;
 }
 
-namespace chrome {
+namespace atom {
 
 enum NotifyChromeResult {
   NOTIFY_SUCCESS,
@@ -22,13 +22,13 @@ enum NotifyChromeResult {
 };
 
 // Finds an already running Chrome window if it exists.
-HWND FindRunningChromeWindow(const base::FilePath& user_data_dir);
+HWND FindRunningAtomWindow(const base::FilePath& user_data_dir);
 
 // Attempts to send the current command line to an already running instance of
 // Chrome via a WM_COPYDATA message.
 // Returns true if a running Chrome is found and successfully notified.
 // |fast_start| is true when this is being called on the window fast start path.
-NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window,
+NotifyChromeResult AttemptToNotifyRunningAtom(HWND remote_window,
                                                 bool fast_start);
 
 // Changes the notification timeout to |new_timeout|, returns the old timeout.
@@ -36,4 +36,4 @@ base::TimeDelta SetNotificationTimeoutForTesting(base::TimeDelta new_timeout);
 
 }  // namespace chrome
 
-#endif  // CHROME_BROWSER_CHROME_PROCESS_FINDER_WIN_H_
+#endif  // ATOM_BROWSER_ATOM_PROCESS_FINDER_WIN_H_

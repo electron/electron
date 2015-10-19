@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "chrome/browser/chrome_process_finder_win.h"
+#include "atom/browser/atom_process_finder_win.h"
 
 #include <shellapi.h>
 #include <string>
@@ -20,8 +20,6 @@
 #include "base/win/scoped_handle.h"
 #include "base/win/win_util.h"
 #include "base/win/windows_version.h"
-#include "chrome/common/chrome_constants.h"
-#include "chrome/common/chrome_switches.h"
 
 
 namespace {
@@ -30,14 +28,14 @@ int timeout_in_milliseconds = 20 * 1000;
 
 }  // namespace
 
-namespace chrome {
+namespace atom {
 
-HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
+HWND FindRunningAtomWindow(const base::FilePath& user_data_dir) {
   return base::win::MessageWindow::FindWindow(user_data_dir.value());
 }
 
-NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window,
-                                                bool fast_start) {
+NotifyChromeResult AttemptToNotifyRunningAtom(HWND remote_window,
+                                              bool fast_start) {
   DCHECK(remote_window);
   DWORD process_id = 0;
   DWORD thread_id = GetWindowThreadProcessId(remote_window, &process_id);
