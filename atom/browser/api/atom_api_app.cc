@@ -89,26 +89,28 @@ namespace {
 
 // Return the path constant from string.
 int GetPathConstant(const std::string& name) {
-  if (name == "appData")
-    return brightray::DIR_APP_DATA;
-  else if (name == "userData")
-    return brightray::DIR_USER_DATA;
-  else if (name == "cache")
-    return brightray::DIR_CACHE;
-  else if (name == "userCache")
-    return brightray::DIR_USER_CACHE;
-  else if (name == "home")
-    return base::DIR_HOME;
-  else if (name == "temp")
-    return base::DIR_TEMP;
-  else if (name == "userDesktop")
-    return base::DIR_USER_DESKTOP;
-  else if (name == "exe")
-    return base::FILE_EXE;
-  else if (name == "module")
-    return base::FILE_MODULE;
-  else
-    return -1;
+  switch (name) {
+    case "appData":
+      return brightray::DIR_APP_DATA;
+    case "userData":
+      return brightray::DIR_USER_DATA;
+    case "cache":
+      return brightray::DIR_CACHE;
+    case "userCache":
+      return brightray::DIR_USER_CACHE;
+    case "home":
+      return base::DIR_HOME;
+    case "temp":
+      return base::DIR_TEMP;
+    case "userDesktop":
+      return base::DIR_USER_DESKTOP;
+    case "exe":
+      return base::FILE_EXE;
+    case "module":
+      return base::FILE_MODULE;
+    default:
+      return -1;
+  }
 }
 
 void OnClientCertificateSelected(
