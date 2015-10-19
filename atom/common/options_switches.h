@@ -60,6 +60,7 @@ extern const char kPageVisibility[];
 extern const char kDisableHttpCache[];
 extern const char kRegisterStandardSchemes[];
 extern const char kSSLVersionFallbackMin[];
+extern const char kCipherSuiteBlacklist[];
 
 extern const char kAppUserModelId[];
 
