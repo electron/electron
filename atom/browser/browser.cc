@@ -9,6 +9,8 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/window_list.h"
 #include "base/message_loop/message_loop.h"
+#include "base/path_service.h"
+#include "brightray/browser/brightray_paths.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "net/ssl/ssl_cert_request_info.h"
 
@@ -17,7 +19,18 @@ namespace atom {
 Browser::Browser()
     : is_quiting_(false),
       is_ready_(false),
-      is_shutdown_(false) {
+      is_shutdown_(false),
+      process_notify_callback_(NULL) {
+  base::FilePath userDir;
+  PathService::Get(brightray::DIR_USER_DATA, &userDir);
+  
+  auto no_refcount_this = base::Unretained(this);
+  process_singleton_.reset(new AtomProcessSingleton(
+    userDir, 
+    base::Bind(&Browser::OnProcessSingletonNotification, no_refcount_this)));
+    
+  process_notify_result_ = process_singleton_->NotifyOtherProcessOrCreate();
+  
   WindowList::AddObserver(this);
 }
 
@@ -114,6 +127,7 @@ void Browser::WillFinishLaunching() {
 
 void Browser::DidFinishLaunching() {
   is_ready_ = true;
+  process_singleton_->Unlock()  ;
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnFinishLaunching());
 }
 
@@ -139,7 +153,8 @@ void Browser::NotifyAndShutdown() {
     is_quiting_ = false;
     return;
   }
-
+  
+  process_singleton_->Cleanup();
   Shutdown();
 }
 
@@ -150,6 +165,14 @@ bool Browser::HandleBeforeQuit() {
                     OnBeforeQuit(&prevent_default));
 
   return !prevent_default;
+}
+
+ProcessSingleton::NotifyResult Browser::GetSingleInstanceResult() {
+  return process_notify_result_;
+}
+  
+void Browser::SetSingleInstanceCallback(ProcessSingleton::NotificationCallback* callback) {
+  process_notify_callback_ = callback;
 }
 
 void Browser::OnWindowCloseCancelled(NativeWindow* window) {
@@ -164,6 +187,16 @@ void Browser::OnWindowAllClosed() {
     NotifyAndShutdown();
   else
     FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWindowAllClosed());
+}
+
+bool Browser::OnProcessSingletonNotification(
+    const base::CommandLine& command_line,
+    const base::FilePath& current_directory) {
+  if (process_notify_callback_) {
+    return (*process_notify_callback_).Run(command_line, current_directory);
+  } else {
+    return true;    // We'll handle this, not a different process
+  }
 }
 
 }  // namespace atom
