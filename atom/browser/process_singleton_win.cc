@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "chrome/browser/process_singleton.h"
+#include "process_singleton.h"
 
 #include <shellapi.h>
 
@@ -20,18 +20,10 @@
 #include "base/win/registry.h"
 #include "base/win/scoped_handle.h"
 #include "base/win/windows_version.h"
-#include "chrome/browser/browser_process.h"
-#include "chrome/browser/browser_process_platform_part.h"
-#include "chrome/browser/chrome_process_finder_win.h"
-#include "chrome/browser/metro_utils/metro_chrome_win.h"
-#include "chrome/browser/shell_integration.h"
-#include "chrome/browser/ui/simple_message_box.h"
-#include "chrome/common/chrome_constants.h"
-#include "chrome/common/chrome_paths.h"
-#include "chrome/common/chrome_paths_internal.h"
-#include "chrome/common/chrome_switches.h"
-#include "chrome/grit/chromium_strings.h"
-#include "chrome/installer/util/wmi.h"
+//#include "chrome/browser/browser_process.h"
+//#include "chrome/browser/browser_process_platform_part.h"
+#include "chrome_process_finder_win.h"   // TODO: Pull this in
+//#include "chrome/browser/shell_integration.h"  // TODO: Maybe pull this in?
 #include "content/public/common/result_codes.h"
 #include "net/base/escape.h"
 #include "ui/base/l10n/l10n_util.h"

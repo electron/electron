@@ -37,7 +37,7 @@
 // retrieves the process id from the symbol link and kills it by sending
 // SIGKILL. Then the second process starts as normal.
 
-#include "chrome/browser/process_singleton.h"
+#include "process_singleton.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -77,20 +77,9 @@
 #include "base/threading/platform_thread.h"
 #include "base/time/time.h"
 #include "base/timer/timer.h"
-#include "chrome/common/chrome_constants.h"
-#include "chrome/grit/chromium_strings.h"
-#include "chrome/grit/generated_resources.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/net_util.h"
 #include "ui/base/l10n/l10n_util.h"
-
-#if defined(OS_LINUX)
-#include "chrome/browser/ui/process_singleton_dialog_linux.h"
-#endif
-
-#if defined(TOOLKIT_VIEWS) && defined(OS_LINUX) && !defined(OS_CHROMEOS)
-#include "ui/views/linux_ui/linux_ui.h"
-#endif
 
 using content::BrowserThread;
 

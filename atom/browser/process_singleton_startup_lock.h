@@ -13,7 +13,7 @@
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/threading/non_thread_safe.h"
-#include "chrome/browser/process_singleton.h"
+#include "process_singleton.h"
 
 // Provides a ProcessSingleton::NotificationCallback that can queue up
 // command-line invocations during startup and execute them when startup

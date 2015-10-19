@@ -5,8 +5,6 @@
 #ifndef CHROME_BROWSER_PROCESS_SINGLETON_H_
 #define CHROME_BROWSER_PROCESS_SINGLETON_H_
 
-#include "build/build_config.h"
-
 #if defined(OS_WIN)
 #include <windows.h>
 #endif  // defined(OS_WIN)
