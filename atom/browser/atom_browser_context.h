@@ -19,7 +19,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
  public:
   AtomBrowserContext(const std::string& partition, bool in_memory);
   ~AtomBrowserContext() override;
-  
+
   // brightray::URLRequestContextGetter::Delegate:
   std::string GetUserAgent() override;
   net::URLRequestJobFactory* CreateURLRequestJobFactory(
@@ -36,7 +36,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
 
   // brightray::BrowserContext:
   void RegisterPrefs(PrefRegistrySimple* pref_registry) override;
-  
+
   void AllowNTLMCredentialsForAllDomains(bool should_allow);
 
   AtomURLRequestJobFactory* job_factory() const { return job_factory_; }
@@ -47,7 +47,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
 
   // Managed by brightray::BrowserContext.
   AtomURLRequestJobFactory* job_factory_;
-  
+
   bool allow_ntlm_everywhere_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);
