@@ -134,7 +134,7 @@
                   '$(SDKROOT)/System/Library/Frameworks/Foundation.framework',
                   '$(SDKROOT)/System/Library/Frameworks/Security.framework',
                   '$(SDKROOT)/System/Library/Frameworks/SystemConfiguration.framework',
-                  '$(SDKROOT)/usr/lib/libresolv.dylib',
+                  '-lresolv',
                   # media.gyp:
                   '$(SDKROOT)/System/Library/Frameworks/AudioToolbox.framework',
                   '$(SDKROOT)/System/Library/Frameworks/AudioUnit.framework',
