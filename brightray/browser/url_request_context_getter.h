@@ -30,27 +30,11 @@ namespace brightray {
 class DevToolsNetworkController;
 class NetLog;
 
-class ExplicitURLSecurityManager : public net::URLSecurityManager {
- public:
-  ExplicitURLSecurityManager();
-
-  bool CanUseDefaultCredentials(const GURL& auth_origin) const override;
-  bool CanDelegate(const GURL& auth_origin) const override;
-
-  void AllowNTLMCredentialsForAllDomains(bool should_allow) { allow_default_creds_ = should_allow; }
-
- private:
-  bool allow_default_creds_;
-  scoped_ptr<net::URLSecurityManager> orig_url_sec_mgr_;
-
-  DISALLOW_COPY_AND_ASSIGN(ExplicitURLSecurityManager);
-};
-
 class URLRequestContextGetter : public net::URLRequestContextGetter {
  public:
   class Delegate {
    public:
-    Delegate() {}
+    Delegate();
     virtual ~Delegate() {}
 
     virtual net::NetworkDelegate* CreateNetworkDelegate() { return NULL; }
@@ -61,6 +45,24 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     virtual net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
         const base::FilePath& base_path);
     virtual net::SSLConfigService* CreateSSLConfigService();
+    virtual bool AllowNTLMCredentialsForDomain(const GURL& auth_origin);
+    virtual bool CanDelegateURLSecurity(const GURL& auth_origin);
+    
+   private:
+    scoped_ptr<net::URLSecurityManager> orig_url_sec_mgr_;
+  };
+  
+  class DelegateURLSecurityManager : public net::URLSecurityManager {
+   public:
+    DelegateURLSecurityManager(URLRequestContextGetter::Delegate* delegate);
+
+    bool CanUseDefaultCredentials(const GURL& auth_origin) const override;
+    bool CanDelegate(const GURL& auth_origin) const override;
+
+   private:
+    URLRequestContextGetter::Delegate* delegate_;
+
+    DISALLOW_COPY_AND_ASSIGN(DelegateURLSecurityManager);
   };
 
   URLRequestContextGetter(
@@ -98,7 +100,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   scoped_ptr<net::URLRequestContextStorage> storage_;
   scoped_ptr<net::URLRequestContext> url_request_context_;
   scoped_ptr<net::HostMappingRules> host_mapping_rules_;
-  scoped_ptr<ExplicitURLSecurityManager> url_sec_mgr_;
+  scoped_ptr<net::URLSecurityManager> url_sec_mgr_;
   content::ProtocolHandlerMap protocol_handlers_;
   content::URLRequestInterceptorScopedVector protocol_interceptors_;
 
