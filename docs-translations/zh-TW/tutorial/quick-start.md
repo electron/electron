@@ -3,7 +3,7 @@
 ## 簡介
 
 Electron 可以讓你使用純 JavaScript 提供豐富的原生的 APIs 來創造桌面應用程式。
-你可以把它視為一個 io.js 的變體，專注於桌面應用程式而不是 web 伺服器。
+你可以把它視為一個 Node.js 的變體，專注於桌面應用程式而不是 web 伺服器。
 
 這不表示 Electron 是一個用 JavaScript 去綁定 GUI 函式庫。取而代之的，Electron 是使用網頁介面來作為它的 GUI ，
 所以你可以把它看作是一個被 JavaScript 所控制且精簡化的 Chromium 瀏覽器。
@@ -19,7 +19,7 @@ Electron 可以讓你使用純 JavaScript 提供豐富的原生的 APIs 來創�
 每一個網頁在 Electron 裏執行各自的行程，被稱為 __渲染行程__。
 
 在一般瀏覽器中，網頁通常會在沙盒環境下運行，並且不允許存取原生資源。然而，
-Electron 的用戶擁有在網頁中呼叫 io.js APIs 的能力，允許低級別操作與作業系統的交互作用。
+Electron 的用戶擁有在網頁中呼叫 Node.js APIs 的能力，允許低級別操作與作業系統的交互作用。
 
 ## 主行程與渲染行程的區別
 
@@ -110,7 +110,7 @@ app.on('ready', function() {
   </head>
   <body>
     <h1>Hello World!</h1>
-    We are using io.js <script>document.write(process.version)</script>
+    We are using Node.js <script>document.write(process.version)</script>
     and Electron <script>document.write(process.versions['electron'])</script>.
   </body>
 </html>
