@@ -92,6 +92,10 @@ Enables net log events to be saved and writes them to `path`.
 Sets the minimum SSL/TLS version ("tls1", "tls1.1" or "tls1.2") that TLS
 fallback will accept.
 
+## --cipher-suite-blacklist=`cipher_suites`
+
+Specify comma-separated list of SSL cipher suites to disable.
+
 ## --enable-logging
 
 Prints Chromium's logging into console.
