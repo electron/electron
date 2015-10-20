@@ -239,10 +239,6 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
     result = NotifyOtherProcess();
     if (result == PROCESS_NONE)
       result = PROFILE_IN_USE;
-  } else {
-    // TODO: Figure out how to implement this
-    //g_browser_process->platform_part()->PlatformSpecificCommandLineProcessing(
-    //    *base::CommandLine::ForCurrentProcess());
   }
   return result;
 }
