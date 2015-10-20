@@ -311,7 +311,7 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("allowNTLMCredentialsForAllDomains",
                  &App::AllowNTLMCredentialsForAllDomains)
       .SetMethod("getLocale", &App::GetLocale)
-      .SetMethod("MakeSingleInstance", &App::MakeSingleInstance)
+      .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
       .SetProperty("defaultSession", &App::DefaultSession);
 }
 
