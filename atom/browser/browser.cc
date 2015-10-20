@@ -20,7 +20,7 @@ Browser::Browser()
     : is_quiting_(false),
       is_ready_(false),
       is_shutdown_(false),
-      process_notify_callback_(NULL) {
+      process_notify_callback_set_(false) {
   WindowList::AddObserver(this);
 }
 
@@ -169,11 +169,13 @@ bool Browser::HandleBeforeQuit() {
 }
 
 ProcessSingleton::NotifyResult Browser::GetSingleInstanceResult() {
+  LOG(ERROR) << "Process Notify Result: " << process_notify_result_;
   return process_notify_result_;
 }
-  
-void Browser::SetSingleInstanceCallback(const ProcessSingleton::NotificationCallback* callback) {
+
+void Browser::SetSingleInstanceCallback(const ProcessSingleton::NotificationCallback& callback) {
   process_notify_callback_ = callback;
+  process_notify_callback_set_ = true;
 }
 
 void Browser::OnWindowCloseCancelled(NativeWindow* window) {
@@ -193,8 +195,8 @@ void Browser::OnWindowAllClosed() {
 bool Browser::OnProcessSingletonNotification(
     const base::CommandLine& command_line,
     const base::FilePath& current_directory) {
-  if (process_notify_callback_) {
-    return (*process_notify_callback_).Run(command_line, current_directory);
+  if (process_notify_callback_set_) {
+    return process_notify_callback_.Run(command_line, current_directory);
   } else {
     return true;    // We'll handle this, not a different process
   }

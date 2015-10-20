@@ -269,10 +269,21 @@ v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
     return v8::Local<v8::Value>::New(isolate, default_session_);
 }
 
-bool App::MakeSingleInstance(const ProcessSingleton::NotificationCallback& callback) {
+bool App::OnProcessSingletonNotification(
+    const base::CommandLine& command_line,
+    const base::FilePath& current_directory) {
+  return true;
+}
+
+bool App::MakeSingleInstance(v8::Local<v8::Function> callback) {
+  single_instance_callback_ = callback;
+
   auto browser = Browser::Get();
-  browser->SetSingleInstanceCallback(&callback);
-  
+
+  auto no_refcount_this = base::Unretained(this);
+  browser->SetSingleInstanceCallback(
+    base::Bind(&App::OnProcessSingletonNotification, no_refcount_this));
+
   switch(browser->GetSingleInstanceResult()) {
     case ProcessSingleton::NotifyResult::PROCESS_NONE:
       return false;

@@ -70,11 +70,16 @@ class App : public mate::EventEmitter,
 
   void AllowNTLMCredentialsForAllDomains(bool should_allow);
 
-  bool MakeSingleInstance(const ProcessSingleton::NotificationCallback& callback);
+  bool MakeSingleInstance(v8::Local<v8::Function> callback);
+
+  bool OnProcessSingletonNotification(
+    const base::CommandLine& command_line,
+    const base::FilePath& current_directory);
 
   std::string GetLocale();
   v8::Local<v8::Value> DefaultSession(v8::Isolate* isolate);
 
+  v8::Local<v8::Function> single_instance_callback_;
   v8::Global<v8::Value> default_session_;
 
   DISALLOW_COPY_AND_ASSIGN(App);
