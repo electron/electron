@@ -71,10 +71,13 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   // Logging with pid and timestamp.
   logging::SetLogItems(true, false, true, false);
 
-#if defined(DEBUG) && defined(OS_LINUX)
   // Enable convient stack printing.
-  base::debug::EnableInProcessStackDumping();
+  bool enable_stack_dumping = env->HasVar("ELECTRON_ENABLE_STACK_DUMPING");
+#if defined(DEBUG) && defined(OS_LINUX)
+  enable_stack_dumping = true;
 #endif
+  if (enable_stack_dumping)
+    base::debug::EnableInProcessStackDumping();
 
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
