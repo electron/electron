@@ -116,7 +116,8 @@ app.on('ready', function() {
   </head>
   <body>
     <h1>헬로 월드!</h1>
-    이 어플리케이션은 Node.js <script>document.write(process.version)</script> 과
+    이 어플리케이션은 node <script>document.write(process.version)</script>,
+    Chrome <script>document.write(process.versions.chrome)</script>,
     Electron <script>document.write(process.versions['electron'])</script>을 사용합니다.
   </body>
 </html>
@@ -174,6 +175,23 @@ $ ./Electron.app/Contents/MacOS/Electron your-app/
 어플리케이션 실행파일은 `Electron`의 release 패키지에 포함되어 있습니다.
 [여기](https://github.com/atom/electron/releases)에서 다운로드 받을 수 있습니다.
 
-### 배포용 파일 만들기
+### 배포용 실행 파일 만들기
 
-어플리케이션 작성을 완료했다면 [어플리케이션 배포](application-distribution.md) 가이드를 통해 제작한 앱을 본격적으로 배포할 수 있습니다.
+어플리케이션 작성을 모두 끝냈다면 [어플리케이션 배포](application-distribution.md) 가이드를 통해 제작한 앱을 패키징하고 배포할 수 있습니다.
+
+### 미리 작성된 앱 실행하기
+
+[`atom/electron-quick-start`](https://github.com/atom/electron-quick-start) 저장소를 클론하면 이 가이드에서 작성한 예제 앱을 바로 실행해 볼 수 있습니다.
+
+**참고**: 이 예제를 실행시키려면 [Git](https://git-scm.com)과 [Node.js](https://nodejs.org/en/download/)가 필요합니다. (CLI에서 실행 가능한 [npm](https://npmjs.org)이 있어야 합니다)
+
+**역주**: `npm`은 보통 Node.js를 설치하면 자동으로 같이 설치됩니다.
+
+```bash
+# 저장소를 클론합니다
+$ git clone https://github.com/atom/electron-quick-start
+# 저장소 안으로 들어갑니다
+$ cd electron-quick-start
+# 어플리케이션의 종속성 모듈을 설치한 후 실행합니다
+$ npm install && npm start
+```

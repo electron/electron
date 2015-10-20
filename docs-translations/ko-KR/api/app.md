@@ -98,7 +98,7 @@ Returns:
 Returns:
 
 * `event` Event
-* `hasVisibleWindows` Bool
+* `hasVisibleWindows` Boolean
 
 어플리케이션이 활성화 되었을 때 발생하는 이벤트 입니다.
 이 이벤트는 어플리케이션의 dock 아이콘을 클릭했을 때 주로 발생합니다.
@@ -277,7 +277,13 @@ Windows에서 사용할 수 있는 JumpList의 [Tasks][tasks] 카테고리에 `t
   보통 어플리케이션의 아이콘을 그대로 사용하기 위해 `process.execPath`를 지정합니다.
 * `iconIndex` Integer - 아이콘 파일의 인덱스. 만약 아이콘 파일이 두 개 이상의 아이콘을 가지고 있을 경우,
   사용할 아이콘의 인덱스를 이 옵션으로 지정해 주어야 합니다. 단, 아이콘을 하나만 포함하고 있는 경우 0을 지정하면 됩니다.
-  
+
+### `app.allowNTLMCredentialsForAllDomains(allow)`
+
+* `allow` Boolean
+
+항상 동적으로 HTTP NTLM 또는 Negotiate 인증에 자격 증명을 보낼 것인지 설정합니다.
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 Chrominum의 명령줄에 스위치를 추가합니다. `value`는 추가적인 값을 뜻하며 옵션입니다.
