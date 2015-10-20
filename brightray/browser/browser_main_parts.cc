@@ -137,10 +137,6 @@ BrowserMainParts::~BrowserMainParts() {
 }
 
 void BrowserMainParts::PreEarlyInitialization() {
-#if defined(OS_MACOSX)
-  IncreaseFileDescriptorLimit();
-#endif
-
 #if defined(USE_X11)
   views::LinuxUI::SetInstance(BuildGtk2UI());
   OverrideLinuxAppDataPath();
