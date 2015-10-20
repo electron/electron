@@ -272,7 +272,10 @@ v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
 bool App::OnProcessSingletonNotification(
     const base::CommandLine& command_line,
     const base::FilePath& current_directory) {
-  return true;
+  ProcessSingleton::NotificationCallback cb;
+  mate::Converter<ProcessSingleton::NotificationCallback>::FromV8(isolate(), single_instance_callback_, &cb);
+  
+  return cb.Run(command_line, current_directory);
 }
 
 bool App::MakeSingleInstance(v8::Local<v8::Function> callback) {
