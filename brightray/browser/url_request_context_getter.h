@@ -34,7 +34,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
  public:
   class Delegate {
    public:
-    Delegate() {}
+    Delegate();
     virtual ~Delegate() {}
 
     virtual net::NetworkDelegate* CreateNetworkDelegate() { return NULL; }
@@ -45,6 +45,24 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     virtual net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
         const base::FilePath& base_path);
     virtual net::SSLConfigService* CreateSSLConfigService();
+    virtual bool AllowNTLMCredentialsForDomain(const GURL& auth_origin);
+    virtual bool CanDelegateURLSecurity(const GURL& auth_origin);
+    
+   private:
+    scoped_ptr<net::URLSecurityManager> orig_url_sec_mgr_;
+  };
+  
+  class DelegateURLSecurityManager : public net::URLSecurityManager {
+   public:
+    DelegateURLSecurityManager(URLRequestContextGetter::Delegate* delegate);
+
+    bool CanUseDefaultCredentials(const GURL& auth_origin) const override;
+    bool CanDelegate(const GURL& auth_origin) const override;
+
+   private:
+    URLRequestContextGetter::Delegate* delegate_;
+
+    DISALLOW_COPY_AND_ASSIGN(DelegateURLSecurityManager);
   };
 
   URLRequestContextGetter(

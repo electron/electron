@@ -84,6 +84,24 @@ const char kProxyPacUrl[] = "proxy-pac-url";
 
 }  // namespace
 
+
+URLRequestContextGetter::DelegateURLSecurityManager::DelegateURLSecurityManager
+  (URLRequestContextGetter::Delegate* delegate) :
+  delegate_(delegate) {}
+
+bool URLRequestContextGetter::DelegateURLSecurityManager::CanUseDefaultCredentials
+    (const GURL& auth_origin) const {
+  return delegate_->AllowNTLMCredentialsForDomain(auth_origin);
+}
+
+bool URLRequestContextGetter::DelegateURLSecurityManager::CanDelegate
+    (const GURL& auth_origin) const {
+  return delegate_->CanDelegateURLSecurity(auth_origin);
+}
+
+URLRequestContextGetter::Delegate::Delegate() :
+  orig_url_sec_mgr_(net::URLSecurityManager::Create(NULL, NULL)) {}
+
 std::string URLRequestContextGetter::Delegate::GetUserAgent() {
   return base::EmptyString();
 }
@@ -128,6 +146,15 @@ net::SSLConfigService* URLRequestContextGetter::Delegate::CreateSSLConfigService
   return new net::SSLConfigServiceDefaults;
 }
 
+bool URLRequestContextGetter::Delegate::AllowNTLMCredentialsForDomain(const GURL& auth_origin) {
+  return orig_url_sec_mgr_->CanUseDefaultCredentials(auth_origin);
+}
+
+bool URLRequestContextGetter::Delegate::CanDelegateURLSecurity(const GURL& auth_origin) {
+  return orig_url_sec_mgr_->CanDelegate(auth_origin);
+}
+
+
 URLRequestContextGetter::URLRequestContextGetter(
     Delegate* delegate,
     DevToolsNetworkController* controller,
@@ -145,7 +172,7 @@ URLRequestContextGetter::URLRequestContextGetter(
       in_memory_(in_memory),
       io_loop_(io_loop),
       file_loop_(file_loop),
-      url_sec_mgr_(net::URLSecurityManager::Create(NULL, NULL)),
+      url_sec_mgr_(new URLRequestContextGetter::DelegateURLSecurityManager(delegate)),
       protocol_interceptors_(protocol_interceptors.Pass()) {
   // Must first be created on the UI thread.
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
