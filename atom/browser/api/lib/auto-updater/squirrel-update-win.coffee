@@ -2,10 +2,10 @@ ChildProcess = require 'child_process'
 fs           = require 'fs'
 path         = require 'path'
 
-appFolder             = path.dirname(process.execPath) # i.e. my-app/app-0.1.13/
-rootApplicationFolder = path.resolve(appFolder, '..')  # i.e. my-app/
-updateDotExe          = path.join(rootApplicationFolder, 'Update.exe')
-exeName               = path.basename(process.execPath)
+appFolder             = path.dirname process.execPath # i.e. my-app/app-0.1.13/
+rootApplicationFolder = path.resolve appFolder, '..'  # i.e. my-app/
+updateDotExe          = path.join rootApplicationFolder, 'Update.exe'
+exeName               = path.basename process.execPath
 
 # Spawn a command and invoke the callback when it completes with an error
 # and the output from standard out.

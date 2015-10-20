@@ -1,6 +1,6 @@
 switch process.platform
   when 'win32'
-    autoUpdater = require('./auto-updater/auto-updater-win')
+    autoUpdater = require './auto-updater/auto-updater-win'
   else
     # take the default binding for the current platform
     autoUpdater  = process.atomBinding('auto_updater').autoUpdater
