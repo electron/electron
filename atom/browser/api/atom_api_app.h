@@ -21,7 +21,7 @@ class FilePath;
 namespace mate {
 class Arguments;
 }
-  
+
 namespace atom {
 
 namespace api {
@@ -71,11 +71,7 @@ class App : public mate::EventEmitter,
   void AllowNTLMCredentialsForAllDomains(bool should_allow);
 
   bool MakeSingleInstance(v8::Local<v8::Function> callback);
-
-  bool OnProcessSingletonNotification(
-    const base::CommandLine& command_line,
-    const base::FilePath& current_directory);
-
+  
   std::string GetLocale();
   v8::Local<v8::Value> DefaultSession(v8::Isolate* isolate);
 
