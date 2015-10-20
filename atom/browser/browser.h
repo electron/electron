@@ -67,7 +67,7 @@ class Browser : public WindowListObserver {
   void ClearRecentDocuments();
 
   ProcessSingleton::NotifyResult GetSingleInstanceResult();
-  void SetSingleInstanceCallback(const ProcessSingleton::NotificationCallback& callback);
+  void SetSingleInstanceCallback(ProcessSingleton::NotificationCallback callback);
 
 #if defined(OS_MACOSX)
   // Bounce the dock icon.
@@ -176,7 +176,7 @@ class Browser : public WindowListObserver {
 
   scoped_ptr<AtomProcessSingleton> process_singleton_;
   ProcessSingleton::NotifyResult process_notify_result_;
-  const ProcessSingleton::NotificationCallback process_notify_callback_;
+  ProcessSingleton::NotificationCallback process_notify_callback_;
   bool process_notify_callback_set_;
 
 #if defined(OS_WIN)

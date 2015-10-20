@@ -21,7 +21,7 @@ class FilePath;
 namespace mate {
 class Arguments;
 }
-
+  
 namespace atom {
 
 namespace api {

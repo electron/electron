@@ -173,7 +173,7 @@ ProcessSingleton::NotifyResult Browser::GetSingleInstanceResult() {
   return process_notify_result_;
 }
 
-void Browser::SetSingleInstanceCallback(const ProcessSingleton::NotificationCallback& callback) {
+void Browser::SetSingleInstanceCallback(ProcessSingleton::NotificationCallback callback) {
   process_notify_callback_ = callback;
   process_notify_callback_set_ = true;
 }
