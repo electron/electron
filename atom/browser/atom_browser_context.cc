@@ -169,14 +169,11 @@ void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
                                       base::FilePath());
 }
 
-
-bool AtomBrowserContext::AllowNTLMCredentialsForDomain
-    (const GURL& auth_origin) {
-  if (allow_ntlm_everywhere_) return true;
-  return brightray::URLRequestContextGetter
-    ::Delegate::AllowNTLMCredentialsForDomain(auth_origin);
+bool AtomBrowserContext::AllowNTLMCredentialsForDomain(const GURL& origin) {
+  if (allow_ntlm_everywhere_)
+    return true;
+  return Delegate::AllowNTLMCredentialsForDomain(origin);
 }
-
 
 void AtomBrowserContext::AllowNTLMCredentialsForAllDomains(bool should_allow) {
   allow_ntlm_everywhere_ = should_allow;
