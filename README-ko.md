@@ -47,6 +47,10 @@ Electron을 빌드 하는 방법과 프로젝트에 기여하는 방법도 문�
 - [중국어 간체](https://github.com/atom/electron/tree/master/docs-translations/zh-CN)
 - [중국어 번체](https://github.com/atom/electron/tree/master/docs-translations/zh-TW)
 
+## 시작하기
+
+[`atom/electron-quick-start`](https://github.com/atom/electron-quick-start) 저장소를 클론하여 Electron을 간단히 접해볼 수 있습니다.
+
 ## 커뮤니티
 
 다음 링크를 통해 커뮤니티에 질문을 올리거나 토론을 나눌 수 있습니다:
