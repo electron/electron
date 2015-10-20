@@ -116,6 +116,9 @@ const char kRegisterStandardSchemes[] = "register-standard-schemes";
 // TLS fallback will accept.
 const char kSSLVersionFallbackMin[] = "ssl-version-fallback-min";
 
+// Comma-separated list of SSL cipher suites to disable.
+const char kCipherSuiteBlacklist[] = "cipher-suite-blacklist";
+
 // The browser process app model ID
 const char kAppUserModelId[] = "app-user-model-id";
 

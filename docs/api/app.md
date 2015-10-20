@@ -99,7 +99,7 @@ You should call `event.preventDefault()` if you want to handle this event.
 Returns:
 
 * `event` Event
-* `hasVisibleWindows` Bool
+* `hasVisibleWindows` Boolean
 
 Emitted when the application is activated, which usually happens when clicks on
 the applications's dock icon.
@@ -279,6 +279,13 @@ Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
 * `iconIndex` Integer - The icon index in the icon file. If an icon file
   consists of two or more icons, set this value to identify the icon. If an
   icon file consists of one icon, this value is 0.
+
+### `app.allowNTLMCredentialsForAllDomains(allow)`
+
+* `allow` Boolean
+
+Dynamically sets whether to always send credentials for HTTP NTLM or Negotiate
+authentication.
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 
