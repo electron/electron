@@ -100,7 +100,9 @@ Specify comma-separated list of SSL cipher suites to disable.
 
 Prints Chromium's logging into console.
 
-This switch can not be used in `app.commandLine.appendSwitch` since it is parsed earlier than user's app is loaded.
+This switch can not be used in `app.commandLine.appendSwitch` since it is parsed
+earlier than user's app is loaded, but you can set the `ELECTRON_ENABLE_LOGGING`
+environment variable to achieve the same effect.
 
 ## --v=`log_level`
 
