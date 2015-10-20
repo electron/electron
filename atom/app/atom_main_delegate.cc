@@ -69,7 +69,7 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   // Logging with pid and timestamp.
   logging::SetLogItems(true, false, true, false);
 
-#if defined(DEBUG) && defined(OS_LINUX)
+#if defined(DEBUG)
   // Enable convient stack printing.
   base::debug::EnableInProcessStackDumping();
 #endif

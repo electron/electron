@@ -71,7 +71,7 @@ def main():
     run_script('upload.py')
   else:
     run_script('build.py', ['-c', 'D'])
-    if PLATFORM != 'win32' and target_arch == 'x64':
+    if target_arch == 'x64':
       run_script('test.py', ['--ci'])
 
   run_script('clean.py')
