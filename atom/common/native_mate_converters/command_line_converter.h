@@ -16,13 +16,14 @@ template<>
 struct Converter<base::CommandLine> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                     const base::CommandLine& val) {
-    return Converter<base::CommandLine::StringType>::ToV8(isolate, val.GetCommandLineString());
+    return Converter<base::CommandLine::StringType>::ToV8(
+        isolate, val.GetCommandLineString());
   }
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      base::CommandLine* out) {
     base::FilePath::StringType path;
-    
+
     if (Converter<base::FilePath::StringType>::FromV8(isolate, val, &path)) {
       *out = base::CommandLine(base::FilePath(path));
       return true;
@@ -34,4 +35,4 @@ struct Converter<base::CommandLine> {
 
 }  // namespace mate
 
-#endif  // ATOM_COMMON_NATIVE_MATE_CONVERTERS_FILE_PATH_CONVERTER_H_
+#endif  // ATOM_COMMON_NATIVE_MATE_CONVERTERS_COMMAND_LINE_CONVERTER_H_

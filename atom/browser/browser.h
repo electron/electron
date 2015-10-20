@@ -68,7 +68,8 @@ class Browser : public WindowListObserver {
 
   void InitializeSingleInstance();
   ProcessSingleton::NotifyResult GetSingleInstanceResult();
-  void SetSingleInstanceCallback(ProcessSingleton::NotificationCallback callback);
+  void SetSingleInstanceCallback(
+      ProcessSingleton::NotificationCallback callback);
 
 #if defined(OS_MACOSX)
   // Bounce the dock icon.

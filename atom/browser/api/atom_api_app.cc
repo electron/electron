@@ -276,11 +276,12 @@ bool App::MakeSingleInstance(v8::Local<v8::Function> callback) {
   browser->InitializeSingleInstance();
 
   ProcessSingleton::NotificationCallback cb;
-  mate::Converter<ProcessSingleton::NotificationCallback>::FromV8(isolate(), single_instance_callback_, &cb);
+  mate::Converter<ProcessSingleton::NotificationCallback>::FromV8(
+      isolate(), single_instance_callback_, &cb);
 
   browser->SetSingleInstanceCallback(cb);
 
-  switch(browser->GetSingleInstanceResult()) {
+  switch (browser->GetSingleInstanceResult()) {
     case ProcessSingleton::NotifyResult::PROCESS_NONE:
       return false;
     case ProcessSingleton::NotifyResult::LOCK_ERROR:

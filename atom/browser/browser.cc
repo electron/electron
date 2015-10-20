@@ -117,7 +117,7 @@ void Browser::WillFinishLaunching() {
 
 void Browser::DidFinishLaunching() {
   is_ready_ = true;
-  process_singleton_->Unlock()  ;
+  process_singleton_->Unlock();
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnFinishLaunching());
 }
 
@@ -174,7 +174,8 @@ ProcessSingleton::NotifyResult Browser::GetSingleInstanceResult() {
   return process_notify_result_;
 }
 
-void Browser::SetSingleInstanceCallback(ProcessSingleton::NotificationCallback callback) {
+void Browser::SetSingleInstanceCallback(
+    ProcessSingleton::NotificationCallback callback) {
   process_notify_callback_ = callback;
   process_notify_callback_set_ = true;
 }

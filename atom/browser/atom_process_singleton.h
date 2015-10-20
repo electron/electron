@@ -16,7 +16,7 @@ class AtomProcessSingleton {
   AtomProcessSingleton(
       const base::FilePath& user_data_dir,
       const ProcessSingleton::NotificationCallback& notification_callback);
-      
+
   ~AtomProcessSingleton();
 
   // Notify another process, if available. Otherwise sets ourselves as the

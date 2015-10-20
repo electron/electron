@@ -71,7 +71,7 @@ class App : public mate::EventEmitter,
   void AllowNTLMCredentialsForAllDomains(bool should_allow);
 
   bool MakeSingleInstance(v8::Local<v8::Function> callback);
-  
+
   std::string GetLocale();
   v8::Local<v8::Value> DefaultSession(v8::Isolate* isolate);
 
