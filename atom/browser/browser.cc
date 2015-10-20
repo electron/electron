@@ -112,17 +112,6 @@ void Browser::Activate(bool has_visible_windows) {
 }
 
 void Browser::WillFinishLaunching() {
-  base::FilePath userDir;
-  PathService::Get(brightray::DIR_USER_DATA, &userDir);
-  
-  auto no_refcount_this = base::Unretained(this);
-  process_singleton_.reset(new AtomProcessSingleton(
-    userDir,
-    base::Bind(&Browser::OnProcessSingletonNotification, no_refcount_this)));
-
-  LOG(ERROR) << "Setting up Process Singleton: " << userDir.value();
-  process_notify_result_ = process_singleton_->NotifyOtherProcessOrCreate();
-
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnWillFinishLaunching());
 }
 
@@ -154,7 +143,7 @@ void Browser::NotifyAndShutdown() {
     is_quiting_ = false;
     return;
   }
-  
+
   process_singleton_->Cleanup();
   Shutdown();
 }
@@ -166,6 +155,18 @@ bool Browser::HandleBeforeQuit() {
                     OnBeforeQuit(&prevent_default));
 
   return !prevent_default;
+}
+
+void Browser::InitializeSingleInstance() {
+  base::FilePath userDir;
+  PathService::Get(brightray::DIR_USER_DATA, &userDir);
+
+  auto no_refcount_this = base::Unretained(this);
+  process_singleton_.reset(new AtomProcessSingleton(
+    userDir,
+    base::Bind(&Browser::OnProcessSingletonNotification, no_refcount_this)));
+
+  process_notify_result_ = process_singleton_->NotifyOtherProcessOrCreate();
 }
 
 ProcessSingleton::NotifyResult Browser::GetSingleInstanceResult() {

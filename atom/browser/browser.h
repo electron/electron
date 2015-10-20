@@ -66,6 +66,7 @@ class Browser : public WindowListObserver {
   // Clear the recent documents list.
   void ClearRecentDocuments();
 
+  void InitializeSingleInstance();
   ProcessSingleton::NotifyResult GetSingleInstanceResult();
   void SetSingleInstanceCallback(ProcessSingleton::NotificationCallback callback);
 
@@ -157,7 +158,7 @@ class Browser : public WindowListObserver {
   // WindowListObserver implementations:
   void OnWindowCloseCancelled(NativeWindow* window) override;
   void OnWindowAllClosed() override;
-  
+
   bool OnProcessSingletonNotification(
     const base::CommandLine& command_line,
     const base::FilePath& current_directory);

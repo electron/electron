@@ -270,12 +270,14 @@ v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
 }
 
 bool App::MakeSingleInstance(v8::Local<v8::Function> callback) {
+  auto browser = Browser::Get();
   single_instance_callback_ = callback;
+
+  browser->InitializeSingleInstance();
 
   ProcessSingleton::NotificationCallback cb;
   mate::Converter<ProcessSingleton::NotificationCallback>::FromV8(isolate(), single_instance_callback_, &cb);
 
-  auto browser = Browser::Get();
   browser->SetSingleInstanceCallback(cb);
 
   switch(browser->GetSingleInstanceResult()) {
