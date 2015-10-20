@@ -7,8 +7,8 @@
 
 #include "base/basictypes.h"
 #include "base/files/file_path.h"
-#include "atom/browser/process_singleton.h"
-#include "atom/browser/process_singleton_startup_lock.h"
+#include "chrome/browser/process_singleton.h"
+#include "chrome/browser/process_singleton_startup_lock.h"
 
 // Composes a basic ProcessSingleton with ProcessSingletonStartupLock
 class AtomProcessSingleton {

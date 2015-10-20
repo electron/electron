@@ -9,8 +9,8 @@
 
 #include "atom/browser/api/event_emitter.h"
 #include "atom/browser/browser_observer.h"
-#include "atom/browser/process_singleton.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "chrome/browser/process_singleton.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "native_mate/handle.h"
 
