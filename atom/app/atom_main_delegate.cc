@@ -59,7 +59,9 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 #endif  // !defined(OS_WIN)
 
   // Only enable logging when --enable-logging is specified.
-  if (!command_line->HasSwitch(switches::kEnableLogging)) {
+  scoped_ptr<base::Environment> env(base::Environment::Create());
+  if (!command_line->HasSwitch(switches::kEnableLogging) &&
+      !env->HasVar("ELECTRON_ENABLE_LOGGING")) {
     settings.logging_dest = logging::LOG_NONE;
     logging::SetMinLogLevel(logging::LOG_NUM_SEVERITIES);
   }
