@@ -43,26 +43,6 @@ DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
 
 namespace atom {
 
-namespace {
-
-// Convert draggable regions in raw format to SkRegion format. Caller is
-// responsible for deleting the returned SkRegion instance.
-scoped_ptr<SkRegion> DraggableRegionsToSkRegion(
-    const std::vector<DraggableRegion>& regions) {
-  scoped_ptr<SkRegion> sk_region(new SkRegion);
-  for (const DraggableRegion& region : regions) {
-    sk_region->op(
-        region.bounds.x(),
-        region.bounds.y(),
-        region.bounds.right(),
-        region.bounds.bottom(),
-        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
-  }
-  return sk_region.Pass();
-}
-
-}  // namespace
-
 NativeWindow::NativeWindow(
     brightray::InspectableWebContents* inspectable_web_contents,
     const mate::Dictionary& options)
@@ -478,6 +458,20 @@ void NativeWindow::NotifyWindowExecuteWindowsCommand(
     const std::string& command) {
   FOR_EACH_OBSERVER(NativeWindowObserver, observers_,
                     OnExecuteWindowsCommand(command));
+}
+
+scoped_ptr<SkRegion> NativeWindow::DraggableRegionsToSkRegion(
+    const std::vector<DraggableRegion>& regions) {
+  scoped_ptr<SkRegion> sk_region(new SkRegion);
+  for (const DraggableRegion& region : regions) {
+    sk_region->op(
+        region.bounds.x(),
+        region.bounds.y(),
+        region.bounds.right(),
+        region.bounds.bottom(),
+        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
+  }
+  return sk_region.Pass();
 }
 
 void NativeWindow::RenderViewCreated(

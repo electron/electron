@@ -241,9 +241,18 @@ class NativeWindow : public base::SupportsUserData,
   NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,
                const mate::Dictionary& options);
 
+  // Convert draggable regions in raw format to SkRegion format. Caller is
+  // responsible for deleting the returned SkRegion instance.
+  scoped_ptr<SkRegion> DraggableRegionsToSkRegion(
+      const std::vector<DraggableRegion>& regions);
+
   // Converts between content size to window size.
   virtual gfx::Size ContentSizeToWindowSize(const gfx::Size& size) = 0;
   virtual gfx::Size WindowSizeToContentSize(const gfx::Size& size) = 0;
+
+  // Called when the window needs to update its draggable region.
+  virtual void UpdateDraggableRegions(
+      const std::vector<DraggableRegion>& regions);
 
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
@@ -252,10 +261,6 @@ class NativeWindow : public base::SupportsUserData,
   bool OnMessageReceived(const IPC::Message& message) override;
 
  private:
-  // Called when the window needs to update its draggable region.
-  void UpdateDraggableRegions(
-      const std::vector<DraggableRegion>& regions);
-
   // Schedule a notification unresponsive event.
   void ScheduleUnresponsiveEvent(int ms);
 

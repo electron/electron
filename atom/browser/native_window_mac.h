@@ -71,12 +71,10 @@ class NativeWindowMac : public NativeWindow {
   void SetVisibleOnAllWorkspaces(bool visible) override;
   bool IsVisibleOnAllWorkspaces() override;
 
-  // Returns true if |point| in local Cocoa coordinate system falls within
-  // the draggable region.
-  bool IsWithinDraggableRegion(NSPoint point) const;
-
-  // Called to handle a mouse event.
-  void HandleMouseEvent(NSEvent* event);
+  // Refresh the DraggableRegion views.
+  void UpdateDraggableRegionViews() {
+    UpdateDraggableRegionViews(draggable_regions_);
+  }
 
  protected:
   // NativeWindow:
@@ -84,17 +82,24 @@ class NativeWindowMac : public NativeWindow {
       content::WebContents*,
       const content::NativeWebKeyboardEvent&) override;
 
+  // Return a vector of non-draggable regions that fill a window of size
+  // |width| by |height|, but leave gaps where the window should be draggable.
+  std::vector<gfx::Rect> CalculateNonDraggableRegions(
+      const std::vector<DraggableRegion>& regions, int width, int height);
+
  private:
   // NativeWindow:
   gfx::Size ContentSizeToWindowSize(const gfx::Size& size) override;
   gfx::Size WindowSizeToContentSize(const gfx::Size& size) override;
+  void UpdateDraggableRegions(
+      const std::vector<DraggableRegion>& regions) override;
 
   void InstallView();
   void UninstallView();
 
   // Install the drag view, which will cover the whole window and decides
   // whehter we can drag.
-  void InstallDraggableRegionView();
+  void UpdateDraggableRegionViews(const std::vector<DraggableRegion>& regions);
 
   base::scoped_nsobject<AtomNSWindow> window_;
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;
@@ -102,16 +107,14 @@ class NativeWindowMac : public NativeWindow {
   // The view that will fill the whole frameless window.
   base::scoped_nsobject<FullSizeContentView> content_view_;
 
+  std::vector<DraggableRegion> draggable_regions_;
+
   bool is_kiosk_;
 
   NSInteger attention_request_id_;  // identifier from requestUserAttention
 
   // The presentation options before entering kiosk mode.
   NSApplicationPresentationOptions kiosk_options_;
-
-  // Mouse location since the last mouse event, in screen coordinates. This is
-  // used in custom drag to compute the window movement.
-  NSPoint last_mouse_offset_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);
 };

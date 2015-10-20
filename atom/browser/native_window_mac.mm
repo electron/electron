@@ -19,6 +19,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "native_mate/dictionary.h"
+#include "ui/gfx/skia_util.h"
 
 namespace {
 
@@ -146,6 +147,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)windowDidResize:(NSNotification*)notification {
+  shell_->UpdateDraggableRegionViews();
   shell_->NotifyWindowResize();
 }
 
@@ -257,43 +259,23 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-@interface ControlRegionView : NSView {
- @private
-  atom::NativeWindowMac* shellWindow_;  // Weak; owns self.
-}
+@interface ControlRegionView : NSView
 @end
 
 @implementation ControlRegionView
-
-- (id)initWithShellWindow:(atom::NativeWindowMac*)shellWindow {
-  if ((self = [super init]))
-    shellWindow_ = shellWindow;
-  return self;
-}
 
 - (BOOL)mouseDownCanMoveWindow {
   return NO;
 }
 
 - (NSView*)hitTest:(NSPoint)aPoint {
-  if (!shellWindow_->IsWithinDraggableRegion(aPoint)) {
-    return nil;
-  }
-  return self;
+  return nil;
 }
 
-- (void)mouseDown:(NSEvent*)event {
-  shellWindow_->HandleMouseEvent(event);
-}
+@end
 
-- (void)mouseDragged:(NSEvent*)event {
-  shellWindow_->HandleMouseEvent(event);
-}
-
-- (BOOL)acceptsFirstMouse:(NSEvent*)event {
-  return YES;
-}
-
+@interface NSView (WebContentsView)
+- (void)setMouseDownCanMoveWindow:(BOOL)can_move;
 @end
 
 @interface AtomProgressBar : NSProgressIndicator
@@ -439,11 +421,6 @@ NativeWindowMac::NativeWindowMac(
   [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
   InstallView();
-
-  // Install the DraggableRegionView if it is forced to use draggable regions
-  // for normal window.
-  if (has_frame() && force_using_draggable_region())
-    InstallDraggableRegionView();
 }
 
 NativeWindowMac::~NativeWindowMac() {
@@ -746,36 +723,6 @@ bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
   return collectionBehavior & NSWindowCollectionBehaviorCanJoinAllSpaces;
 }
 
-bool NativeWindowMac::IsWithinDraggableRegion(NSPoint point) const {
-  if (!draggable_region())
-    return false;
-  if (!web_contents())
-    return false;
-  NSView* webView = web_contents()->GetNativeView();
-  NSInteger webViewHeight = NSHeight([webView bounds]);
-  // |draggable_region_| is stored in local platform-indepdent coordiate system
-  // while |point| is in local Cocoa coordinate system. Do the conversion
-  // to match these two.
-  return draggable_region()->contains(point.x, webViewHeight - point.y);
-}
-
-void NativeWindowMac::HandleMouseEvent(NSEvent* event) {
-  NSPoint eventLoc = [event locationInWindow];
-  NSRect mouseRect = [window_ convertRectToScreen:NSMakeRect(eventLoc.x, eventLoc.y, 0, 0)];
-  NSPoint current_mouse_location = mouseRect.origin;
-
-  if ([event type] == NSLeftMouseDown) {
-    NSPoint frame_origin = [window_ frame].origin;
-    last_mouse_offset_ = NSMakePoint(
-        frame_origin.x - current_mouse_location.x,
-        frame_origin.y - current_mouse_location.y);
-  } else if ([event type] == NSLeftMouseDragged) {
-    [window_ setFrameOrigin:NSMakePoint(
-        current_mouse_location.x + last_mouse_offset_.x,
-        current_mouse_location.y + last_mouse_offset_.y)];
-  }
-}
-
 void NativeWindowMac::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
@@ -800,6 +747,23 @@ void NativeWindowMac::HandleKeyboardEvent(
   }
 }
 
+std::vector<gfx::Rect> NativeWindowMac::CalculateNonDraggableRegions(
+    const std::vector<DraggableRegion>& regions, int width, int height) {
+  std::vector<gfx::Rect> result;
+  if (regions.empty()) {
+    result.push_back(gfx::Rect(0, 0, width, height));
+  } else {
+    scoped_ptr<SkRegion> draggable(DraggableRegionsToSkRegion(regions));
+    scoped_ptr<SkRegion> non_draggable(new SkRegion);
+    non_draggable->op(0, 0, width, height, SkRegion::kUnion_Op);
+    non_draggable->op(*draggable, SkRegion::kDifference_Op);
+    for (SkRegion::Iterator it(*non_draggable); !it.done(); it.next()) {
+      result.push_back(gfx::SkIRectToRect(it.rect()));
+    }
+  }
+  return result;
+}
+
 gfx::Size NativeWindowMac::ContentSizeToWindowSize(const gfx::Size& size) {
   if (!has_frame())
     return size;
@@ -816,6 +780,13 @@ gfx::Size NativeWindowMac::WindowSizeToContentSize(const gfx::Size& size) {
   NSRect frame = NSMakeRect(0, 0, size.width(), size.height());
   NSRect content = [window_ contentRectForFrameRect:frame];
   return gfx::Size(content.size);
+}
+
+void NativeWindowMac::UpdateDraggableRegions(
+    const std::vector<DraggableRegion>& regions) {
+  NativeWindow::UpdateDraggableRegions(regions);
+  draggable_regions_ = regions;
+  UpdateDraggableRegionViews(regions);
 }
 
 void NativeWindowMac::InstallView() {
@@ -840,8 +811,6 @@ void NativeWindowMac::InstallView() {
     [view setFrame:[content_view_ bounds]];
     [content_view_ addSubview:view];
 
-    InstallDraggableRegionView();
-
     [[window_ standardWindowButton:NSWindowZoomButton] setHidden:YES];
     [[window_ standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
     [[window_ standardWindowButton:NSWindowCloseButton] setHidden:YES];
@@ -858,14 +827,55 @@ void NativeWindowMac::UninstallView() {
   [view removeFromSuperview];
 }
 
-void NativeWindowMac::InstallDraggableRegionView() {
+void NativeWindowMac::UpdateDraggableRegionViews(
+    const std::vector<DraggableRegion>& regions) {
+  if (has_frame() && !force_using_draggable_region())
+    return;
+
+  // All ControlRegionViews should be added as children of the WebContentsView,
+  // because WebContentsView will be removed and re-added when entering and
+  // leaving fullscreen mode.
   NSView* webView = web_contents()->GetNativeView();
-  base::scoped_nsobject<NSView> controlRegion(
-      [[ControlRegionView alloc] initWithShellWindow:this]);
-  [controlRegion setFrame:NSMakeRect(0, 0,
-                                     NSWidth([webView bounds]),
-                                     NSHeight([webView bounds]))];
-  [webView addSubview:controlRegion];
+  NSInteger webViewWidth = NSWidth([webView bounds]);
+  NSInteger webViewHeight = NSHeight([webView bounds]);
+
+  [webView setMouseDownCanMoveWindow:YES];
+
+  // Remove all ControlRegionViews that are added last time.
+  // Note that [webView subviews] returns the view's mutable internal array and
+  // it should be copied to avoid mutating the original array while enumerating
+  // it.
+  base::scoped_nsobject<NSArray> subviews([[webView subviews] copy]);
+  for (NSView* subview in subviews.get())
+    if ([subview isKindOfClass:[ControlRegionView class]])
+      [subview removeFromSuperview];
+
+  // Draggable regions is implemented by having the whole web view draggable
+  // (mouseDownCanMoveWindow) and overlaying regions that are not draggable.
+  std::vector<gfx::Rect> system_drag_exclude_areas =
+      CalculateNonDraggableRegions(regions, webViewWidth, webViewHeight);
+
+  // Create and add a ControlRegionView for each region that needs to be
+  // excluded from the dragging.
+  for (std::vector<gfx::Rect>::const_iterator iter =
+           system_drag_exclude_areas.begin();
+       iter != system_drag_exclude_areas.end();
+       ++iter) {
+    base::scoped_nsobject<NSView> controlRegion(
+        [[ControlRegionView alloc] initWithFrame:NSZeroRect]);
+    [controlRegion setFrame:NSMakeRect(iter->x(),
+                                       webViewHeight - iter->bottom(),
+                                       iter->width(),
+                                       iter->height())];
+    [webView addSubview:controlRegion];
+  }
+
+  // AppKit will not update its cache of mouseDownCanMoveWindow unless something
+  // changes. Previously we tried adding an NSView and removing it, but for some
+  // reason it required reposting the mouse-down event, and didn't always work.
+  // Calling the below seems to be an effective solution.
+  [window_ setMovableByWindowBackground:NO];
+  [window_ setMovableByWindowBackground:YES];
 }
 
 // static
