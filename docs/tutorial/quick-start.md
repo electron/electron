@@ -130,8 +130,9 @@ Finally the `index.html` is the web page you want to show:
   </head>
   <body>
     <h1>Hello World!</h1>
-    We are using Node.js <script>document.write(process.version)</script>
-    and Electron <script>document.write(process.versions['electron'])</script>.
+    We are using node <script>document.write(process.versions.node)</script>,
+    Chrome <script>document.write(process.versions.chrome)</script>,
+    and Electron <script>document.write(process.versions.electron)</script>.
   </body>
 </html>
 ```
