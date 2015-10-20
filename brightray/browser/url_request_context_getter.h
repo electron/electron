@@ -81,8 +81,6 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   net::URLRequestContext* GetURLRequestContext() override;
   scoped_refptr<base::SingleThreadTaskRunner> GetNetworkTaskRunner() const override;
 
-  void AllowNTLMCredentialsForAllDomains(bool should_allow);
-
   net::HostResolver* host_resolver();
 
  private:
