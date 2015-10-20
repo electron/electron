@@ -285,7 +285,10 @@ Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
 * `allow` Boolean
 
 Dynamically sets whether to always send credentials for HTTP NTLM or Negotiate
-authentication.
+authentication - normally, Electron will only send NTLM/Kerberos credentials for
+URLs that fall under "Local Intranet" sites (i.e. are in the same domain as you).
+However, this detection often fails when corporate networks are badly configured,
+so this lets you co-opt this behavior and enable it for all URLs.
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 
