@@ -5,8 +5,6 @@
 #ifndef CHROME_BROWSER_PROCESS_SINGLETON_H_
 #define CHROME_BROWSER_PROCESS_SINGLETON_H_
 
-#include "build/build_config.h"
-
 #if defined(OS_WIN)
 #include <windows.h>
 #endif  // defined(OS_WIN)
@@ -128,8 +126,6 @@ class ProcessSingleton : public base::NonThreadSafe {
   NotificationCallback notification_callback_;  // Handler for notifications.
 
 #if defined(OS_WIN)
-  bool EscapeVirtualization(const base::FilePath& user_data_dir);
-
   HWND remote_window_;  // The HWND_MESSAGE of another browser.
   base::win::MessageWindow window_;  // The message-only window.
   bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.

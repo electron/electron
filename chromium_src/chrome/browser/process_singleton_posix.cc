@@ -77,16 +77,9 @@
 #include "base/threading/platform_thread.h"
 #include "base/time/time.h"
 #include "base/timer/timer.h"
-#include "chrome/common/chrome_constants.h"
-#include "chrome/grit/chromium_strings.h"
-#include "chrome/grit/generated_resources.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/net_util.h"
 #include "ui/base/l10n/l10n_util.h"
-
-#if defined(OS_LINUX)
-#include "chrome/browser/ui/process_singleton_dialog_linux.h"
-#endif
 
 #if defined(TOOLKIT_VIEWS) && defined(OS_LINUX) && !defined(OS_CHROMEOS)
 #include "ui/views/linux_ui/linux_ui.h"
@@ -111,6 +104,13 @@ const int kMaxMessageLength = 32 * 1024;
 const int kMaxACKMessageLength = arraysize(kShutdownToken) - 1;
 
 const char kLockDelimiter = '-';
+
+const base::FilePath::CharType kSingletonCookieFilename[] =
+      FILE_PATH_LITERAL("SingletonCookie");
+
+const base::FilePath::CharType kSingletonLockFilename[] = FILE_PATH_LITERAL("SingletonLock");
+const base::FilePath::CharType kSingletonSocketFilename[] =
+      FILE_PATH_LITERAL("SingletonSocket");
 
 // Set the close-on-exec bit on a file descriptor.
 // Returns 0 on success, -1 on failure.
@@ -304,33 +304,20 @@ bool ParseLockPath(const base::FilePath& path,
 bool DisplayProfileInUseError(const base::FilePath& lock_path,
                               const std::string& hostname,
                               int pid) {
-  base::string16 error = l10n_util::GetStringFUTF16(
-      IDS_PROFILE_IN_USE_POSIX,
-      base::IntToString16(pid),
-      base::ASCIIToUTF16(hostname));
-  LOG(ERROR) << error;
-
-  if (g_disable_prompt)
-    return false;
-
-#if defined(OS_LINUX)
-  base::string16 relaunch_button_text = l10n_util::GetStringUTF16(
-      IDS_PROFILE_IN_USE_LINUX_RELAUNCH);
-  return ShowProcessSingletonDialog(error, relaunch_button_text);
-#elif defined(OS_MACOSX)
-  // On Mac, always usurp the lock.
+  // TODO: yolo
   return true;
-#endif
-
-  NOTREACHED();
-  return false;
 }
 
 bool IsChromeProcess(pid_t pid) {
   base::FilePath other_chrome_path(base::GetProcessExecutablePath(pid));
+
+  auto command_line = base::CommandLine::ForCurrentProcess();
+  base::FilePath exec_path(command_line->GetProgram());
+  PathService::Get(base::FILE_EXE, &exec_path);
+
   return (!other_chrome_path.empty() &&
           other_chrome_path.BaseName() ==
-          base::FilePath(chrome::kBrowserProcessExecutableName));
+          exec_path.BaseName());
 }
 
 // A helper class to hold onto a socket.
@@ -371,7 +358,7 @@ bool ConnectSocket(ScopedSocket* socket,
     if (cookie.empty())
       return false;
     base::FilePath remote_cookie = socket_target.DirName().
-                             Append(chrome::kSingletonCookieFilename);
+                             Append(kSingletonCookieFilename);
     // Verify the cookie before connecting.
     if (!CheckCookie(remote_cookie, cookie))
       return false;
@@ -516,7 +503,7 @@ class ProcessSingleton::LinuxWatcher
     // reads.
     size_t bytes_read_;
 
-    base::OneShotTimer timer_;
+    base::OneShotTimer<SocketReader> timer_;
 
     DISALLOW_COPY_AND_ASSIGN(SocketReader);
   };
@@ -731,9 +718,9 @@ ProcessSingleton::ProcessSingleton(
     : notification_callback_(notification_callback),
       current_pid_(base::GetCurrentProcId()),
       watcher_(new LinuxWatcher(this)) {
-  socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
-  lock_path_ = user_data_dir.Append(chrome::kSingletonLockFilename);
-  cookie_path_ = user_data_dir.Append(chrome::kSingletonCookieFilename);
+  socket_path_ = user_data_dir.Append(kSingletonSocketFilename);
+  lock_path_ = user_data_dir.Append(kSingletonLockFilename);
+  cookie_path_ = user_data_dir.Append(kSingletonCookieFilename);
 
   kill_callback_ = base::Bind(&ProcessSingleton::KillProcess,
                               base::Unretained(this));
@@ -973,10 +960,10 @@ bool ProcessSingleton::Create() {
 
   // Setup the socket symlink and the two cookies.
   base::FilePath socket_target_path =
-      socket_dir_.path().Append(chrome::kSingletonSocketFilename);
+      socket_dir_.path().Append(kSingletonSocketFilename);
   base::FilePath cookie(GenerateCookie());
   base::FilePath remote_cookie_path =
-      socket_dir_.path().Append(chrome::kSingletonCookieFilename);
+      socket_dir_.path().Append(kSingletonCookieFilename);
   UnlinkPath(socket_path_);
   UnlinkPath(cookie_path_);
   if (!SymlinkPath(socket_target_path, socket_path_) ||
