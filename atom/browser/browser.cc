@@ -117,7 +117,11 @@ void Browser::WillFinishLaunching() {
 
 void Browser::DidFinishLaunching() {
   is_ready_ = true;
-  process_singleton_->Unlock();
+
+  if (process_notify_callback_set_) {
+    process_singleton_->Unlock();
+  }
+
   FOR_EACH_OBSERVER(BrowserObserver, observers_, OnFinishLaunching());
 }
 
@@ -144,7 +148,10 @@ void Browser::NotifyAndShutdown() {
     return;
   }
 
-  process_singleton_->Cleanup();
+  if (process_notify_callback_set_) {
+    process_singleton_->Cleanup();
+  }
+
   Shutdown();
 }
 
@@ -167,6 +174,10 @@ void Browser::InitializeSingleInstance() {
     base::Bind(&Browser::OnProcessSingletonNotification, no_refcount_this)));
 
   process_notify_result_ = process_singleton_->NotifyOtherProcessOrCreate();
+
+  if (is_ready_) {
+    process_singleton_->Unlock();
+  }
 }
 
 ProcessSingleton::NotifyResult Browser::GetSingleInstanceResult() {
