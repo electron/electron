@@ -66,7 +66,7 @@ class Browser : public WindowListObserver {
   // Clear the recent documents list.
   void ClearRecentDocuments();
 
-  void InitializeSingleInstance();
+  bool InitializeSingleInstance();
   ProcessSingleton::NotifyResult GetSingleInstanceResult();
   void SetSingleInstanceCallback(
       ProcessSingleton::NotificationCallback callback);

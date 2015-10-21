@@ -165,7 +165,7 @@ bool Browser::HandleBeforeQuit() {
   return !prevent_default;
 }
 
-void Browser::InitializeSingleInstance() {
+bool Browser::InitializeSingleInstance() {
   base::FilePath userDir;
   PathService::Get(brightray::DIR_USER_DATA, &userDir);
 
@@ -174,11 +174,12 @@ void Browser::InitializeSingleInstance() {
     userDir,
     base::Bind(&Browser::OnProcessSingletonNotification, no_refcount_this)));
 
-  process_notify_result_ = process_singleton_->NotifyOtherProcessOrCreate();
-
   if (is_ready_) {
     process_singleton_->Unlock();
   }
+
+  process_notify_result_ = process_singleton_->NotifyOtherProcessOrCreate();
+  return true;
 }
 
 ProcessSingleton::NotifyResult Browser::GetSingleInstanceResult() {
