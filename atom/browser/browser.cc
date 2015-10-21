@@ -149,8 +149,11 @@ void Browser::NotifyAndShutdown() {
   }
 
   if (process_notify_callback_set_) {
-    process_singleton_->Cleanup();
     process_notify_callback_.Reset();
+
+    if (process_notify_result_ == ProcessSingleton::PROCESS_NONE) {
+      process_singleton_->Cleanup();
+    }
   }
 
   Shutdown();
