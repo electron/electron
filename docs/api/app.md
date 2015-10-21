@@ -169,7 +169,7 @@ The `app` object has the following methods:
 
 ### `app.quit()`
 
-Try to close all windows. The `before-quit` event will emitted first. If all
+Try to close all windows. The `before-quit` event will be emitted first. If all
 windows are successfully closed, the `will-quit` event will be emitted and by
 default the application will terminate.
 
@@ -213,7 +213,7 @@ created by this method. On failure an `Error` is thrown.
 
 You can only override paths of a `name` defined in `app.getPath`.
 
-By default, web pages's cookies and caches will be stored under the `userData`
+By default, web pages' cookies and caches will be stored under the `userData`
 directory. If you want to change this location, you have to override the
 `userData` path before the `ready` event of the `app` module is emitted.
 
@@ -264,7 +264,7 @@ Clears the recent documents list.
 
 Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
 
-`tasks` is an array of `Task` objects in following format:
+`tasks` is an array of `Task` objects in the following format:
 
 `Task` Object
 * `program` String - Path of the program to execute, usually you should
@@ -285,7 +285,10 @@ Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
 * `allow` Boolean
 
 Dynamically sets whether to always send credentials for HTTP NTLM or Negotiate
-authentication.
+authentication - normally, Electron will only send NTLM/Kerberos credentials for
+URLs that fall under "Local Intranet" sites (i.e. are in the same domain as you).
+However, this detection often fails when corporate networks are badly configured,
+so this lets you co-opt this behavior and enable it for all URLs.
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 

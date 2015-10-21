@@ -20,7 +20,6 @@ JavascriptEnvironment::JavascriptEnvironment()
 }
 
 bool JavascriptEnvironment::Initialize() {
-  gin::V8Initializer::LoadV8Snapshot();
   gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
                                  gin::ArrayBufferAllocator::SharedInstance());
   return true;

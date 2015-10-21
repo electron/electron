@@ -1,8 +1,8 @@
 ## Guías
 
-* [Platfaformas Soportadas](tutorial/supported-platforms.md)
-* [Distribución de la Aplicacion](tutorial/application-distribution.md)
-* [Empaquetamiento de la Aplicacion](tutorial/application-packaging.md)
+* [Plataformas Soportadas](tutorial/supported-platforms.md)
+* [Distribución de la Aplicación](tutorial/application-distribution.md)
+* [Empaquetamiento de la Aplicación](tutorial/application-packaging.md)
 * [Utilizando Módulos Node Nativos](tutorial/using-native-node-modules.md)
 * [Depurando el Proceso Principal](tutorial/debugging-main-process.md)
 * [Utilizando Selenium y WebDriver](tutorial/using-selenium-and-webdriver.md)
