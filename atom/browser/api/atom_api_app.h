@@ -8,6 +8,7 @@
 #include <string>
 
 #include "atom/browser/api/event_emitter.h"
+#include "atom/browser/atom_process_singleton.h"
 #include "atom/browser/browser_observer.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "chrome/browser/process_singleton.h"
@@ -70,13 +71,15 @@ class App : public mate::EventEmitter,
 
   void AllowNTLMCredentialsForAllDomains(bool should_allow);
 
-  bool MakeSingleInstance(v8::Local<v8::Function> callback);
+  bool MakeSingleInstance(ProcessSingleton::NotificationCallback callback);
 
   std::string GetLocale();
   v8::Local<v8::Value> DefaultSession(v8::Isolate* isolate);
 
-  v8::Local<v8::Function> single_instance_callback_;
   v8::Global<v8::Value> default_session_;
+  
+  scoped_ptr<AtomProcessSingleton> process_singleton_;
+  ProcessSingleton::NotifyResult process_notify_result_;
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };

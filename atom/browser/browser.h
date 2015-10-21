@@ -9,10 +9,8 @@
 #include <vector>
 
 #include "base/basictypes.h"
-#include "base/memory/scoped_ptr.h"
 #include "base/compiler_specific.h"
 #include "base/observer_list.h"
-#include "atom/browser/atom_process_singleton.h"
 #include "atom/browser/browser_observer.h"
 #include "atom/browser/window_list_observer.h"
 
@@ -65,11 +63,6 @@ class Browser : public WindowListObserver {
 
   // Clear the recent documents list.
   void ClearRecentDocuments();
-
-  bool InitializeSingleInstance();
-  ProcessSingleton::NotifyResult GetSingleInstanceResult();
-  void SetSingleInstanceCallback(
-      ProcessSingleton::NotificationCallback callback);
 
 #if defined(OS_MACOSX)
   // Bounce the dock icon.
@@ -160,10 +153,6 @@ class Browser : public WindowListObserver {
   void OnWindowCloseCancelled(NativeWindow* window) override;
   void OnWindowAllClosed() override;
 
-  bool OnProcessSingletonNotification(
-    const base::CommandLine& command_line,
-    const base::FilePath& current_directory);
-
   // Observers of the browser.
   base::ObserverList<BrowserObserver> observers_;
 
@@ -175,11 +164,6 @@ class Browser : public WindowListObserver {
 
   std::string version_override_;
   std::string name_override_;
-
-  scoped_ptr<AtomProcessSingleton> process_singleton_;
-  ProcessSingleton::NotifyResult process_notify_result_;
-  ProcessSingleton::NotificationCallback process_notify_callback_;
-  bool process_notify_callback_set_;
 
 #if defined(OS_WIN)
   base::string16 app_user_model_id_;

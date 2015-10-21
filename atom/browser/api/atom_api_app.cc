@@ -161,6 +161,14 @@ void App::OnWindowAllClosed() {
 
 void App::OnQuit() {
   Emit("quit");
+  
+  if (process_singleton_.get()) {
+    if (process_notify_result_ == ProcessSingleton::PROCESS_NONE) {
+      process_singleton_->Cleanup();
+    }
+  
+    process_singleton_.reset();
+  }
 }
 
 void App::OnOpenFile(bool* prevent_default, const std::string& file_path) {
@@ -187,6 +195,10 @@ void App::OnFinishLaunching() {
       AtomBrowserMainParts::Get()->browser_context());
   auto handle = Session::CreateFrom(isolate(), browser_context);
   default_session_.Reset(isolate(), handle.ToV8());
+  
+  if (process_singleton_.get()) {
+    process_singleton_->Unlock();
+  }
 
   Emit("ready");
 }
@@ -269,28 +281,32 @@ v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
     return v8::Local<v8::Value>::New(isolate, default_session_);
 }
 
-bool App::MakeSingleInstance(v8::Local<v8::Function> callback) {
-  auto browser = Browser::Get();
-  if (browser->InitializeSingleInstance()) {
-    single_instance_callback_ = callback;
+bool App::MakeSingleInstance(ProcessSingleton::NotificationCallback callback) {
+  
+  base::FilePath userDir;
+  PathService::Get(brightray::DIR_USER_DATA, &userDir);
+  
+  if (!process_singleton_.get()) {
+    auto browser = Browser::Get();
+    process_singleton_.reset(new AtomProcessSingleton(userDir, callback));
+    
+    if (browser->is_ready()) {
+      process_singleton_->Unlock();
+    }
 
-    ProcessSingleton::NotificationCallback cb;
-    mate::Converter<ProcessSingleton::NotificationCallback>::FromV8(
-        isolate(), single_instance_callback_, &cb);
-
-    browser->SetSingleInstanceCallback(cb);
+    process_notify_result_ = process_singleton_->NotifyOtherProcessOrCreate();
   }
 
-  switch (browser->GetSingleInstanceResult()) {
+  switch (process_notify_result_) {
     case ProcessSingleton::NotifyResult::PROCESS_NONE:
       return false;
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
     case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
     case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED:
       return true;
+    default:
+      return false;
   }
-
-  return false;
 }
 
 mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
