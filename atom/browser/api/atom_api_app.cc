@@ -197,7 +197,7 @@ void App::OnFinishLaunching() {
   default_session_.Reset(isolate(), handle.ToV8());
 
   if (process_singleton_.get()) {
-    process_singleton_->Unlock();
+    process_singleton_startup_lock_->Unlock();
   }
 
   Emit("ready");
@@ -287,10 +287,16 @@ bool App::MakeSingleInstance(ProcessSingleton::NotificationCallback callback) {
 
   if (!process_singleton_.get()) {
     auto browser = Browser::Get();
-    process_singleton_.reset(new AtomProcessSingleton(userDir, callback));
+    process_singleton_startup_lock_.reset(
+      new ProcessSingletonStartupLock(callback));
+
+    process_singleton_.reset(
+      new ProcessSingleton(
+        userDir,
+        process_singleton_startup_lock_->AsNotificationCallback()));
 
     if (browser->is_ready()) {
-      process_singleton_->Unlock();
+      process_singleton_startup_lock_->Unlock();
     }
 
     process_notify_result_ = process_singleton_->NotifyOtherProcessOrCreate();

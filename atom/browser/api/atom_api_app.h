@@ -8,10 +8,10 @@
 #include <string>
 
 #include "atom/browser/api/event_emitter.h"
-#include "atom/browser/atom_process_singleton.h"
 #include "atom/browser/browser_observer.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "chrome/browser/process_singleton.h"
+#include "chrome/browser/process_singleton_startup_lock.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "native_mate/handle.h"
 
@@ -78,7 +78,8 @@ class App : public mate::EventEmitter,
 
   v8::Global<v8::Value> default_session_;
 
-  scoped_ptr<AtomProcessSingleton> process_singleton_;
+  scoped_ptr<ProcessSingleton> process_singleton_;
+  scoped_ptr<ProcessSingletonStartupLock> process_singleton_startup_lock_;
   ProcessSingleton::NotifyResult process_notify_result_;
 
   DISALLOW_COPY_AND_ASSIGN(App);
