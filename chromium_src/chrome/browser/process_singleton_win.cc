@@ -293,6 +293,11 @@ bool ProcessSingleton::Create() {
         bool result = window_.CreateNamed(
             base::Bind(&ProcessLaunchNotification, notification_callback_),
             user_data_dir_.value());
+
+        // NB: Ensure that if the primary app gets started as elevated
+        // admin inadvertently, secondary windows running not as elevated
+        // will still be able to send messages
+        ::ChangeWindowMessageFilterEx(window_.hwnd(), WM_COPYDATA, MSGFLT_ALLOW, NULL);
         CHECK(result && window_.hwnd());
       }
     }
