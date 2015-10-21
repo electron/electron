@@ -284,6 +284,10 @@ Windows에서 사용할 수 있는 JumpList의 [Tasks][tasks] 카테고리에 `t
 
 항상 동적으로 HTTP NTLM 또는 Negotiate 인증에 자격 증명을 보낼 것인지 설정합니다.
 
+기본적으로 Electron은 "로컬 인터넷" 사이트 URL에서 NTLM/Kerberos 자격 증명만을 보냅니다. (같은 도메인 내에서)
+그러나 기업 네트워크가 잘못 구성된 경우 종종 작업에 실패할 수 있습니다.
+이때 이 메서드를 통해 모든 URL을 허용할 수 있습니다.
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 Chrominum의 명령줄에 스위치를 추가합니다. `value`는 추가적인 값을 뜻하며 옵션입니다.
