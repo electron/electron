@@ -288,10 +288,6 @@ v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
 
 bool App::MakeSingleInstance(
     const ProcessSingleton::NotificationCallback& callback) {
-#if defined(OS_MACOSX)
-  LOG(ERROR) << "MakeSingleInstance is not implemnted on OS X";
-  return false;
-#endif
   if (process_singleton_.get())
     return false;
 

@@ -290,7 +290,7 @@ URLs that fall under "Local Intranet" sites (i.e. are in the same domain as you)
 However, this detection often fails when corporate networks are badly configured,
 so this lets you co-opt this behavior and enable it for all URLs.
 
-### `app.makeSingleInstance(callback)` _Windows_ _Linux_
+### `app.makeSingleInstance(callback)`
 
 * `callback` Function
 
