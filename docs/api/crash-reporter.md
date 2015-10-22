@@ -59,11 +59,10 @@ ID.
 
 The crash reporter will send the following data to the `submitUrl` as `POST`:
 
-* `rept` String - e.g. 'electron-crash-service'.
 * `ver` String - The version of Electron.
 * `platform` String - e.g. 'win32'.
 * `process_type` String - e.g. 'renderer'.
-* `ptime` Number
+* `guid` String - e.g. '5e1286fc-da97-479e-918b-6bfb0c3d1c72' 
 * `_version` String - The version in `package.json`.
 * `_productName` String - The product name in the `crashReporter` `options`
   object.
