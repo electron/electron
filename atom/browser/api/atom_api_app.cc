@@ -310,14 +310,15 @@ bool App::MakeSingleInstance(
     process_singleton_startup_lock_->Unlock();
 
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
-    case ProcessSingleton::NotifyResult::PROCESS_NONE:
-      return false;
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
     case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
     case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED:
       process_singleton_.reset();
       process_singleton_startup_lock_.reset();
       return true;
+    case ProcessSingleton::NotifyResult::PROCESS_NONE:
+    default:  // Shouldn't be needed, but VS warns if it is not there.
+      return false;
   }
 }
 
