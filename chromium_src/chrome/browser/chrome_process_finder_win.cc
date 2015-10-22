@@ -42,8 +42,6 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window,
   if (!thread_id || !process_id)
     return NOTIFY_FAILED;
 
-  base::CommandLine command_line(*base::CommandLine::ForCurrentProcess());
-
   // Send the command line to the remote chrome window.
   // Format is "START\0<<<current directory>>>\0<<<commandline>>>".
   std::wstring to_send(L"START\0", 6);  // want the NULL in the string.
@@ -52,7 +50,7 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window,
     return NOTIFY_FAILED;
   to_send.append(cur_dir.value());
   to_send.append(L"\0", 1);  // Null separator.
-  to_send.append(command_line.GetCommandLineString());
+  to_send.append(::GetCommandLineW());
   to_send.append(L"\0", 1);  // Null separator.
 
   // Allow the current running browser window to make itself the foreground
