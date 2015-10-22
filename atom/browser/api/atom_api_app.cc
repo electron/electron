@@ -163,10 +163,7 @@ void App::OnQuit() {
   Emit("quit");
 
   if (process_singleton_.get()) {
-    if (process_notify_result_ == ProcessSingleton::PROCESS_NONE) {
-      process_singleton_->Cleanup();
-    }
-
+    process_singleton_->Cleanup();
     process_singleton_.reset();
   }
 }
@@ -196,9 +193,8 @@ void App::OnFinishLaunching() {
   auto handle = Session::CreateFrom(isolate(), browser_context);
   default_session_.Reset(isolate(), handle.ToV8());
 
-  if (process_singleton_.get()) {
+  if (process_singleton_startup_lock_.get())
     process_singleton_startup_lock_->Unlock();
-  }
 
   Emit("ready");
 }
@@ -282,35 +278,31 @@ v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
 }
 
 bool App::MakeSingleInstance(ProcessSingleton::NotificationCallback callback) {
-  base::FilePath userDir;
-  PathService::Get(brightray::DIR_USER_DATA, &userDir);
+  if (process_singleton_.get())
+    return false;
 
-  if (!process_singleton_.get()) {
-    auto browser = Browser::Get();
-    process_singleton_startup_lock_.reset(
+  base::FilePath user_dir;
+  PathService::Get(brightray::DIR_USER_DATA, &user_dir);
+
+  process_singleton_startup_lock_.reset(
       new ProcessSingletonStartupLock(callback));
-
-    process_singleton_.reset(
+  process_singleton_.reset(
       new ProcessSingleton(
-        userDir,
+        user_dir,
         process_singleton_startup_lock_->AsNotificationCallback()));
 
-    if (browser->is_ready()) {
-      process_singleton_startup_lock_->Unlock();
-    }
+  if (Browser::Get()->is_ready())
+    process_singleton_startup_lock_->Unlock();
 
-    process_notify_result_ = process_singleton_->NotifyOtherProcessOrCreate();
-  }
-
-  switch (process_notify_result_) {
+  switch (process_singleton_->NotifyOtherProcessOrCreate()) {
     case ProcessSingleton::NotifyResult::PROCESS_NONE:
       return false;
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
     case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
     case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED:
+      process_singleton_.reset();
+      process_singleton_startup_lock_.reset();
       return true;
-    default:
-      return false;
   }
 }
 

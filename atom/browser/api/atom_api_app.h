@@ -80,7 +80,6 @@ class App : public mate::EventEmitter,
 
   scoped_ptr<ProcessSingleton> process_singleton_;
   scoped_ptr<ProcessSingletonStartupLock> process_singleton_startup_lock_;
-  ProcessSingleton::NotifyResult process_notify_result_;
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };
