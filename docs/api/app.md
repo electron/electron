@@ -299,40 +299,50 @@ allowing multiple instances of your app to run, this will ensure that only a
 single instance of your app is running, and other instances signal this
 instance and exit.
 
-`callback` is called when a second instance has been executed, and provides
-the command-line (including Chromium flags) and the working directory of the
-secondary instance. Usually applications respond to this by making their
-primary window focused and non-minimized.
+`callback` will be called with `callback(argv, workingDirectory)` when a second
+instance has been executed. `argv` is an Array of the second instance's command
+line arguments, and `workingDirectory` is its current working directory. Usually
+applications respond to this by making their primary window focused and
+non-minimized.
 
-`callback` should return `true` if the message was successfully handled, or
-`false` if the secondary process should retry sending it or it failed.
+The `callback` is guaranteed to be executed after the `ready` event of `app`
+gets emitted.
+
+This method returns `false` if your process is the primary instance of the
+application and your app should continue loading. And returns `true` if your
+process has sent its parameters to another instance, and you should immediately
+quit.
+
+On OS X the system enforces single instance automatically when users try to open
+a second instance of your app in Finder, and the `open-file` and `open-url`
+events will be emitted for that. However when users start your app in command
+line the system's single instance machanism will be bypassed and you have to
+use this method to ensure single instance.
+
+An example of activating the window of primary instance when a second instance
+starts:
 
 ```js
-var myWindow;
-app.on('ready', function() {
-  var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) {
-    // Someone tried to run a second instance, we should focus our window
-    if (myWindow) {
-      if (myWindow.isMinimized()) myWindow.restore();
-      myWindow.focus();
-    }
+var myWindow = null;
 
-    // We successfully handled the command line
-    return true;
-  });
-
-  if (shouldQuit) {
-    app.quit();
-    return;
+var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) {
+  // Someone tried to run a second instance, we should focus our window
+  if (myWindow) {
+    if (myWindow.isMinimized()) myWindow.restore();
+    myWindow.focus();
   }
+  return true;
+});
 
-  // Create myWindow, load the rest of the app, etc...
+if (shouldQuit) {
+  app.quit();
+  return;
+}
+
+// Create myWindow, load the rest of the app, etc...
+app.on('ready', function() {
 });
 ```
-
-Returns a Boolean - if `false`, your process is the primary instance of the
-application and your app should continue loading. If `true`, your process has
-sent its parameters to another instance, and you should immediately quit.
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 
