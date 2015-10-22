@@ -52,6 +52,7 @@
 #include <set>
 #include <string>
 
+#include "atom/common/atom_command_line.h"
 #include "base/base_paths.h"
 #include "base/basictypes.h"
 #include "base/bind.h"
@@ -817,7 +818,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
     return PROCESS_NONE;
   to_send.append(current_dir.value());
 
-  const std::vector<std::string>& argv = cmd_line.argv();
+  const std::vector<std::string>& argv = atom::AtomCommandLine::argv();
   for (std::vector<std::string>::const_iterator it = argv.begin();
       it != argv.end(); ++it) {
     to_send.push_back(kTokenDelimiter);
