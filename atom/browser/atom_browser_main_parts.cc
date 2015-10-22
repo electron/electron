@@ -105,6 +105,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
                  1000));
 
   brightray::BrowserMainParts::PreMainMessageLoopRun();
+  BridgeTaskRunner::MessageLoopIsReady();
 
 #if defined(USE_X11)
   libgtk2ui::GtkInitFromCommandLine(*base::CommandLine::ForCurrentProcess());
