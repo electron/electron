@@ -133,6 +133,9 @@ class ProcessSingleton : public base::NonThreadSafe {
   base::FilePath user_data_dir_;
   ShouldKillRemoteProcessCallback should_kill_remote_process_callback_;
 #elif defined(OS_POSIX) && !defined(OS_ANDROID)
+  // Start listening to the socket.
+  void StartListening(int sock);
+
   // Return true if the given pid is one of our child processes.
   // Assumes that the current pid is the root of all pids of the current
   // instance.

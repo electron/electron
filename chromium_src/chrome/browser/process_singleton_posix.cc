@@ -316,8 +316,7 @@ bool IsChromeProcess(pid_t pid) {
   PathService::Get(base::FILE_EXE, &exec_path);
 
   return (!other_chrome_path.empty() &&
-          other_chrome_path.BaseName() ==
-          exec_path.BaseName());
+          other_chrome_path.BaseName() == exec_path.BaseName());
 }
 
 // A helper class to hold onto a socket.
@@ -988,13 +987,15 @@ bool ProcessSingleton::Create() {
   if (listen(sock, 5) < 0)
     NOTREACHED() << "listen failed: " << base::safe_strerror(errno);
 
-  DCHECK(BrowserThread::IsMessageLoopValid(BrowserThread::IO));
-  BrowserThread::PostTask(
-      BrowserThread::IO,
+  // In Electron the ProcessSingleton is created earlier than the IO
+  // thread gets created, so we have to postpone the call until message
+  // loop is up an running.
+  scoped_refptr<base::SingleThreadTaskRunner> task_runner(
+      base::ThreadTaskRunnerHandle::Get());
+  task_runner->PostTask(
       FROM_HERE,
-      base::Bind(&ProcessSingleton::LinuxWatcher::StartListening,
-                 watcher_.get(),
-                 sock));
+      base::Bind(&ProcessSingleton::StartListening,
+                 base::Unretained(this), sock));
 
   return true;
 }
@@ -1003,6 +1004,16 @@ void ProcessSingleton::Cleanup() {
   UnlinkPath(socket_path_);
   UnlinkPath(cookie_path_);
   UnlinkPath(lock_path_);
+}
+
+void ProcessSingleton::StartListening(int sock) {
+  DCHECK(BrowserThread::IsMessageLoopValid(BrowserThread::IO));
+  BrowserThread::PostTask(
+      BrowserThread::IO,
+      FROM_HERE,
+      base::Bind(&ProcessSingleton::LinuxWatcher::StartListening,
+                 watcher_.get(),
+                 sock));
 }
 
 bool ProcessSingleton::IsSameChromeInstance(pid_t pid) {
