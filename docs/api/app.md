@@ -245,7 +245,7 @@ Returns the current application locale.
 Resolves the proxy information for `url`. The `callback` will be called with
 `callback(proxy)` when the request is performed.
 
-### `app.addRecentDocument(path)`
+### `app.addRecentDocument(path)` _OS X_ _Windows_
 
 * `path` String
 
@@ -254,7 +254,7 @@ Adds `path` to the recent documents list.
 This list is managed by the OS. On Windows you can visit the list from the task
 bar, and on OS X you can visit it from dock menu.
 
-### `app.clearRecentDocuments()`
+### `app.clearRecentDocuments()` _OS X_ _Windows_
 
 Clears the recent documents list.
 
@@ -308,10 +308,9 @@ primary window focused and non-minimized.
 `false` if the secondary process should retry sending it or it failed.
 
 ```js
+var myWindow;
 app.on('ready', function() {
-  var myWindow;
-
-  var shouldQuit = app.makeSingleInstance(function(command_line, working_directory) {
+  var shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) {
     // Someone tried to run a second instance, we should focus our window
     if (myWindow) {
       if (myWindow.isMinimized()) myWindow.restore();
