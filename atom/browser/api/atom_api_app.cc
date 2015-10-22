@@ -112,12 +112,20 @@ int GetPathConstant(const std::string& name) {
     return -1;
 }
 
-// Run the NotificationCallback and returns whether browser is shuting down.
 bool NotificationCallbackWrapper(
     const ProcessSingleton::NotificationCallback& callback,
-    const base::CommandLine& command_line,
-    const base::FilePath& current_directory) {
-  callback.Run(command_line, current_directory);
+    const base::CommandLine& cmd,
+    const base::FilePath& cwd) {
+  // Make sure the callback is called after app gets ready.
+  if (Browser::Get()->is_ready()) {
+    callback.Run(cmd, cwd);
+  } else {
+    scoped_refptr<base::SingleThreadTaskRunner> task_runner(
+        base::ThreadTaskRunnerHandle::Get());
+    task_runner->PostTask(
+        FROM_HERE, base::Bind(base::IgnoreResult(callback), cmd, cwd));
+  }
+  // ProcessSingleton needs to know whether current process is quiting.
   return !Browser::Get()->is_shutting_down();
 }
 
@@ -201,9 +209,6 @@ void App::OnFinishLaunching() {
       AtomBrowserMainParts::Get()->browser_context());
   auto handle = Session::CreateFrom(isolate(), browser_context);
   default_session_.Reset(isolate(), handle.ToV8());
-
-  if (process_singleton_startup_lock_.get())
-    process_singleton_startup_lock_->Unlock();
 
   Emit("ready");
 }
@@ -293,24 +298,14 @@ bool App::MakeSingleInstance(
 
   base::FilePath user_dir;
   PathService::Get(brightray::DIR_USER_DATA, &user_dir);
-
-  process_singleton_startup_lock_.reset(
-      new ProcessSingletonStartupLock(
-          base::Bind(NotificationCallbackWrapper, callback)));
-  process_singleton_.reset(
-      new ProcessSingleton(
-        user_dir,
-        process_singleton_startup_lock_->AsNotificationCallback()));
-
-  if (Browser::Get()->is_ready())
-    process_singleton_startup_lock_->Unlock();
+  process_singleton_.reset(new ProcessSingleton(
+      user_dir, base::Bind(NotificationCallbackWrapper, callback)));
 
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
     case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
     case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED:
       process_singleton_.reset();
-      process_singleton_startup_lock_.reset();
       return true;
     case ProcessSingleton::NotifyResult::PROCESS_NONE:
     default:  // Shouldn't be needed, but VS warns if it is not there.
