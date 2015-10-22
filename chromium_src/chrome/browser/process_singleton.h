@@ -60,7 +60,7 @@ class ProcessSingleton : public base::NonThreadSafe {
   // handled within the current browser instance or false if the remote process
   // should handle it (i.e., because the current process is shutting down).
   using NotificationCallback =
-      base::Callback<bool(const base::CommandLine& command_line,
+      base::Callback<bool(const base::CommandLine::StringVector& command_line,
                           const base::FilePath& current_directory)>;
 
   ProcessSingleton(const base::FilePath& user_data_dir,

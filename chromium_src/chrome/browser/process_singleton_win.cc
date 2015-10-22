@@ -77,8 +77,21 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
   return !*result;
 }
 
+// Convert Command line string to argv.
+base::CommandLine::StringVector CommandLineStringToArgv(
+    const std::wstring& command_line_string) {
+  int num_args = 0;
+  wchar_t** args = NULL;
+  args = ::CommandLineToArgvW(command_line_string.c_str(), &num_args);
+  base::CommandLine::StringVector argv;
+  for (int i = 0; i < num_args; ++i)
+    argv.push_back(std::wstring(args[i]));
+  LocalFree(args);
+  return argv;
+}
+
 bool ParseCommandLine(const COPYDATASTRUCT* cds,
-                      base::CommandLine* parsed_command_line,
+                      base::CommandLine::StringVector* parsed_command_line,
                       base::FilePath* current_directory) {
   // We should have enough room for the shortest command (min_message_size)
   // and also be a multiple of wchar_t bytes. The shortest command
@@ -131,7 +144,7 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
     // Get command line.
     const std::wstring cmd_line =
         msg.substr(second_null + 1, third_null - second_null);
-    *parsed_command_line = base::CommandLine::FromString(cmd_line);
+    *parsed_command_line = CommandLineStringToArgv(cmd_line);
     return true;
   }
   return false;
@@ -149,7 +162,7 @@ bool ProcessLaunchNotification(
   // Handle the WM_COPYDATA message from another process.
   const COPYDATASTRUCT* cds = reinterpret_cast<COPYDATASTRUCT*>(lparam);
 
-  base::CommandLine parsed_command_line(base::CommandLine::NO_PROGRAM);
+  base::CommandLine::StringVector parsed_command_line;
   base::FilePath current_directory;
   if (!ParseCommandLine(cds, &parsed_command_line, &current_directory)) {
     *result = TRUE;

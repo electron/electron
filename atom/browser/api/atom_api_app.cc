@@ -19,7 +19,6 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/native_mate_converters/command_line_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -114,7 +113,7 @@ int GetPathConstant(const std::string& name) {
 
 bool NotificationCallbackWrapper(
     const ProcessSingleton::NotificationCallback& callback,
-    const base::CommandLine& cmd,
+    const base::CommandLine::StringVector& cmd,
     const base::FilePath& cwd) {
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {

@@ -600,7 +600,7 @@ void ProcessSingleton::LinuxWatcher::HandleMessage(
   DCHECK(ui_message_loop_ == base::MessageLoop::current());
   DCHECK(reader);
 
-  if (parent_->notification_callback_.Run(base::CommandLine(argv),
+  if (parent_->notification_callback_.Run(argv,
                                           base::FilePath(current_dir))) {
     // Send back "ACK" message to prevent the client process from starting up.
     reader->FinishWithACK(kACKToken, arraysize(kACKToken) - 1);
