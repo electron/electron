@@ -61,13 +61,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   key is pressed.
 * `enable-larger-than-screen` Boolean - Enable the window to be resized larger
   than screen.
-* `background-color` String - Window's background color as Hexadecimal value.
-```javascript
-var win = new BrowserWindow({ width: 800, height: 600, 'background-color': '#66CD00' })
-
-// #abc will be expanded to #aabbcc
-var win = new BrowserWindow({ width: 800, height: 600, 'background-color': '#fff' })
-```
+* `background-color` String - Window's background color as Hexadecimal value,
+  like `#66CD00` or `#FFF`. This is only implemented on Linux.
 * `dark-theme` Boolean - Forces using dark theme for the window, only works on
   some GTK+3 desktop environments.
 * `transparent` Boolean - Makes the window [transparent](frameless-window.md).
