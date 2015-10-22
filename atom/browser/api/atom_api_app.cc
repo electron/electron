@@ -112,6 +112,15 @@ int GetPathConstant(const std::string& name) {
     return -1;
 }
 
+// Run the NotificationCallback and returns whether browser is shuting down.
+bool NotificationCallbackWrapper(
+    const ProcessSingleton::NotificationCallback& callback,
+    const base::CommandLine& command_line,
+    const base::FilePath& current_directory) {
+  callback.Run(command_line, current_directory);
+  return !Browser::Get()->is_shutting_down();
+}
+
 void OnClientCertificateSelected(
     v8::Isolate* isolate,
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
@@ -277,7 +286,8 @@ v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
     return v8::Local<v8::Value>::New(isolate, default_session_);
 }
 
-bool App::MakeSingleInstance(ProcessSingleton::NotificationCallback callback) {
+bool App::MakeSingleInstance(
+    const ProcessSingleton::NotificationCallback& callback) {
 #if defined(OS_MACOSX)
   LOG(ERROR) << "MakeSingleInstance is not implemnted on OS X";
   return false;
@@ -289,7 +299,8 @@ bool App::MakeSingleInstance(ProcessSingleton::NotificationCallback callback) {
   PathService::Get(brightray::DIR_USER_DATA, &user_dir);
 
   process_singleton_startup_lock_.reset(
-      new ProcessSingletonStartupLock(callback));
+      new ProcessSingletonStartupLock(
+          base::Bind(NotificationCallbackWrapper, callback)));
   process_singleton_.reset(
       new ProcessSingleton(
         user_dir,
