@@ -9,6 +9,9 @@
 
 #include "atom/browser/api/event_emitter.h"
 #include "atom/browser/browser_observer.h"
+#include "atom/common/native_mate_converters/callback.h"
+#include "chrome/browser/process_singleton.h"
+#include "chrome/browser/process_singleton_startup_lock.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "native_mate/handle.h"
 
@@ -65,12 +68,19 @@ class App : public mate::EventEmitter,
 
   void SetDesktopName(const std::string& desktop_name);
   void SetAppUserModelId(const std::string& app_id);
+
   void AllowNTLMCredentialsForAllDomains(bool should_allow);
+
+  bool MakeSingleInstance(ProcessSingleton::NotificationCallback callback);
 
   std::string GetLocale();
   v8::Local<v8::Value> DefaultSession(v8::Isolate* isolate);
 
   v8::Global<v8::Value> default_session_;
+
+  scoped_ptr<ProcessSingleton> process_singleton_;
+  scoped_ptr<ProcessSingletonStartupLock> process_singleton_startup_lock_;
+  ProcessSingleton::NotifyResult process_notify_result_;
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };

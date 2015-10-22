@@ -290,6 +290,51 @@ URLs that fall under "Local Intranet" sites (i.e. are in the same domain as you)
 However, this detection often fails when corporate networks are badly configured,
 so this lets you co-opt this behavior and enable it for all URLs.
 
+### `app.makeSingleInstance(callback)`
+
+* `callback` Function
+
+This method makes your application a Single Instance Application - instead of
+allowing multiple instances of your app to run, this will ensure that only a
+single instance of your app is running, and other instances signal this
+instance and exit.
+
+`callback` is called when a second instance has been executed, and provides
+the command-line (including Chromium flags) and the working directory of the
+secondary instance. Usually applications respond to this by making their
+primary window focused and non-minimized.
+
+`callback` should return `true` if the message was successfully handled, or
+`false` if the secondary process should retry sending it or it failed.
+
+```js
+app.on('ready', function() {
+  var myWindow;
+
+  var shouldQuit = app.makeSingleInstance(function(command_line, working_directory) {
+    // Someone tried to run a second instance, we should focus our window
+    if (myWindow) {
+      if (myWindow.isMinimized()) myWindow.restore();
+      myWindow.focus();
+    }
+
+    // We successfully handled the command line
+    return true;
+  });
+
+  if (shouldQuit) {
+    app.quit();
+    return;
+  }
+
+  // Create myWindow, load the rest of the app, etc...
+});
+```
+
+Returns a Boolean - if `false`, your process is the primary instance of the
+application and your app should continue loading. If `true`, your process has
+sent its parameters to another instance, and you should immediately quit.
+
 ### `app.commandLine.appendSwitch(switch[, value])`
 
 Append a switch (with optional `value`) to Chromium's command line.

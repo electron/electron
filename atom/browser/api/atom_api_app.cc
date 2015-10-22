@@ -19,6 +19,7 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/native_mate_converters/command_line_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -160,6 +161,14 @@ void App::OnWindowAllClosed() {
 
 void App::OnQuit() {
   Emit("quit");
+
+  if (process_singleton_.get()) {
+    if (process_notify_result_ == ProcessSingleton::PROCESS_NONE) {
+      process_singleton_->Cleanup();
+    }
+
+    process_singleton_.reset();
+  }
 }
 
 void App::OnOpenFile(bool* prevent_default, const std::string& file_path) {
@@ -186,6 +195,10 @@ void App::OnFinishLaunching() {
       AtomBrowserMainParts::Get()->browser_context());
   auto handle = Session::CreateFrom(isolate(), browser_context);
   default_session_.Reset(isolate(), handle.ToV8());
+
+  if (process_singleton_.get()) {
+    process_singleton_startup_lock_->Unlock();
+  }
 
   Emit("ready");
 }
@@ -268,6 +281,39 @@ v8::Local<v8::Value> App::DefaultSession(v8::Isolate* isolate) {
     return v8::Local<v8::Value>::New(isolate, default_session_);
 }
 
+bool App::MakeSingleInstance(ProcessSingleton::NotificationCallback callback) {
+  base::FilePath userDir;
+  PathService::Get(brightray::DIR_USER_DATA, &userDir);
+
+  if (!process_singleton_.get()) {
+    auto browser = Browser::Get();
+    process_singleton_startup_lock_.reset(
+      new ProcessSingletonStartupLock(callback));
+
+    process_singleton_.reset(
+      new ProcessSingleton(
+        userDir,
+        process_singleton_startup_lock_->AsNotificationCallback()));
+
+    if (browser->is_ready()) {
+      process_singleton_startup_lock_->Unlock();
+    }
+
+    process_notify_result_ = process_singleton_->NotifyOtherProcessOrCreate();
+  }
+
+  switch (process_notify_result_) {
+    case ProcessSingleton::NotifyResult::PROCESS_NONE:
+      return false;
+    case ProcessSingleton::NotifyResult::LOCK_ERROR:
+    case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
+    case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED:
+      return true;
+    default:
+      return false;
+  }
+}
+
 mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   auto browser = base::Unretained(Browser::Get());
@@ -294,6 +340,7 @@ mate::ObjectTemplateBuilder App::GetObjectTemplateBuilder(
       .SetMethod("allowNTLMCredentialsForAllDomains",
                  &App::AllowNTLMCredentialsForAllDomains)
       .SetMethod("getLocale", &App::GetLocale)
+      .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
       .SetProperty("defaultSession", &App::DefaultSession);
 }
 
